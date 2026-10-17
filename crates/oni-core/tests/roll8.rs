@@ -27,11 +27,11 @@ impl Roll {
         let mut frames = Vec::new();
         for entry in std::fs::read_dir(&source).unwrap().flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
-            if !name.ends_with(".json") {
+            // The roll's frames and its marker; a contact sheet's sidecar is no frame of the roll.
+            if !name.ends_with(".NEF.json") && name != ".oni-roll.json" {
                 continue;
             }
             std::fs::copy(entry.path(), dir.join(&name)).unwrap();
-            // The roll's marker travels with its frames and is none of them.
             if let Some(original) = name.strip_suffix(".json").filter(|_| !name.starts_with('.')) {
                 frames.push(dir.join(original).to_string_lossy().into_owned());
             }

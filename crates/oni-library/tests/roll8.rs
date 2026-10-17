@@ -77,7 +77,7 @@ impl Copy {
         for name in before.keys().filter(|n| n.ends_with(".NEF.json")) {
             std::fs::write(roll.join(name), std::fs::read(staged.join(name)).unwrap()).unwrap();
             let original = name.trim_end_matches(".json");
-            if real && before.contains_key(original) {
+            if real && before.contains_key(original) && ORACLE.iter().any(|(f, _)| *f == original) {
                 std::fs::copy(staged.join(original), roll.join(original)).unwrap();
             } else {
                 std::fs::write(roll.join(original), b"").unwrap();
@@ -313,7 +313,7 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     let members = copy.members();
     assert_eq!(members.len(), FRAMES);
     let name = |p: &str| Path::new(p).file_name().unwrap().to_string_lossy().into_owned();
-    let real: Vec<&String> = members.iter().filter(|m| copy.before.contains_key(&name(m))).collect();
+    let real: Vec<&String> = members.iter().filter(|m| ORACLE.iter().any(|(f, _)| *f == name(m))).collect();
     assert_eq!(real.len(), ORACLE.len());
 
     let rows = indexed_all(&members);

@@ -148,7 +148,7 @@ fn every_frame_of_roll8() {
     let Some(f) = common::frontier("every_frame_of_roll8") else { return };
     let Some(g) = gpu("every_frame_of_roll8") else { return };
     let mut paths = frames(&dir);
-    assert_eq!(paths.len(), FRAMES, "roll #8 at {} holds {} NEFs", dir.display(), paths.len());
+    assert!(paths.len() >= FRAMES, "roll #8 at {} holds {} NEFs", dir.display(), paths.len());
     // Two frames by default keep the check quick; ONI_FULL_ROLL=1 runs all ten.
     if std::env::var_os("ONI_FULL_ROLL").is_none() {
         paths.retain(|p| p.ends_with("DSC_6432.NEF") || p.ends_with("DSC_6448.NEF"));

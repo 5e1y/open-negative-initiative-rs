@@ -11,7 +11,10 @@ fn sidecars(folder: &Path) -> Vec<PathBuf> {
     let mut out: Vec<PathBuf> = std::fs::read_dir(folder)
         .unwrap_or_else(|e| panic!("{}: {e}", folder.display()))
         .filter_map(|e| e.ok().map(|e| e.path()))
-        .filter(|p| p.extension().is_some_and(|x| x == "json") && !p.file_name().unwrap().to_string_lossy().starts_with('.'))
+        .filter(|p| {
+            let name = p.file_name().unwrap().to_string_lossy();
+            name.ends_with(".NEF.json") || name.ends_with(".RW2.json")
+        })
         .collect();
     out.sort();
     out
@@ -117,7 +120,9 @@ fn twin_a_moved_field_in_a_roll_8_sidecar_is_seen() {
 #[test]
 fn the_version_14_lumix_frames_read_the_migrations_they_are_due() {
     let Some(lumix) = oni_fixtures::lumix_dir("the_version_14_lumix_frames_read_the_migrations_they_are_due") else { return };
-    let files = sidecars(&lumix);
+    let mut files = sidecars(&lumix);
+    // The two calibration frames; the folder may hold other scans beside them.
+    files.retain(|p| p.ends_with("P1072392.RW2.json") || p.ends_with("P1072404.RW2.json"));
     assert_eq!(files.len(), 2);
     for path in &files {
         let original = value(&std::fs::read_to_string(path).unwrap());
