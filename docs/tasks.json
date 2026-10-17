@@ -187,6 +187,8 @@
     "id": 25,
     "type": "bug",
     "title": "Scroll every surface by the wheel only; dragging stays on the sliders and the image",
-    "status": "doing"
+    "status": "done",
+    "commit": "b7f1bfb",
+    "outcome": "The design system's Scroller and ListView set mouse-drag-pan-enabled false; the panel panes and the catalogue use them and the strict check refuses a raw Flickable or ScrollView (planted twin added). tests/scroll.rs drags the catalogue page and asserts it stays put while the wheel scrolls it; with the flag turned back on the same test fails. The library ListView is covered by the component, not by a drag test. oni-app suite green on llvmpipe."
   }
 ]
