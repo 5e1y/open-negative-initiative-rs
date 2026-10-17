@@ -1,6 +1,7 @@
 //! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on Exposure at a
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
-//! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render.
+//! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
+//! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -28,12 +29,14 @@ const SIZES: [(f32, f32); 2] = [(1100.0, 712.0), (900.0, 600.0)];
 pub enum Mode {
     Drag,
     Resize,
+    Settled,
 }
 
 pub fn requested() -> Option<Mode> {
     match std::env::var("ONI_BENCH").ok()?.as_str() {
         "1" => Some(Mode::Drag),
         "resize" => Some(Mode::Resize),
+        "settled" => Some(Mode::Settled),
         _ => None,
     }
 }
@@ -71,7 +74,8 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         };
         match phase.get() {
             Phase::Loading => {
-                if ctl.state.borrow().renders() >= 1 {
+                let settled = mode != Mode::Settled || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
+                if ctl.state.borrow().renders() >= 1 && settled {
                     let from = ctl.state.borrow().notches().count();
                     g.invoke_press(field, false);
                     phase.set(Phase::Dragging { notch: 0, from });
@@ -100,6 +104,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 let title = match mode {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
+                    Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
                 };
                 let report = ctl.state.borrow().notches().summary(from, &title);
                 ctl.act("undo");

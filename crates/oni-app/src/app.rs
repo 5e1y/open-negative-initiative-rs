@@ -37,13 +37,16 @@ const HISTOGRAM: (usize, usize) = (680, 300);
 
 pub struct Options {
     pub screen: Screen,
+    /// The device Slint draws the window with, on which the display kernel writes the canvas;
+    /// none on the software renderer.
+    pub canvas: Option<(wgpu::Device, wgpu::Queue)>,
     /// Where the phone link keeps its key and the phones it trusts.
     pub support: PathBuf,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Options { screen: Screen::Srgb, support: timing::support() }
+        Options { screen: Screen::Srgb, canvas: None, support: timing::support() }
     }
 }
 
@@ -76,17 +79,26 @@ struct Gpu {
     queue: wgpu::Queue,
     kernel: display::Gpu,
     target: Option<wgpu::Texture>,
-    pending: Option<(Picture, Shown)>,
     /// The picture the canvas was last encoded from, alive until the next one is encoded.
     current: Option<Picture>,
+    /// A frame was encoded since the histogram last counted one.
+    uncounted: bool,
     seed: u32,
 }
 
 impl Gpu {
-    /// The histogram counted on a frame already shown, once its readback has landed.
-    fn landed(&self) -> Option<Histogram> {
+    /// The histogram counted on a frame already shown, once its readback has landed; then the
+    /// newest frame is counted, so the GPU counts at the pulse's pace and never on a notch.
+    fn landed(&mut self) -> Option<Histogram> {
         let _ = self.device.poll(wgpu::PollType::Poll);
-        self.kernel.histogram()
+        let landed = self.kernel.histogram();
+        if self.uncounted
+            && let Some(target) = &self.target
+            && self.kernel.count(&self.device, &self.queue, target)
+        {
+            self.uncounted = false;
+        }
+        landed
     }
 }
 
@@ -147,6 +159,11 @@ impl State {
 
     pub fn loaded(&self) -> usize {
         self.loaded
+    }
+
+    /// The photos the open folder holds, which the thumbnails count up to.
+    pub fn photos(&self) -> usize {
+        self.order.len()
     }
 
     pub fn visible(&self) -> std::ops::Range<usize> {
@@ -291,6 +308,7 @@ impl Shell {
     pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let window = MainWindow::new()?;
         let worker = Worker::new(Box::new(engine.clone()), options.screen, |done| with_shell(move |c| c.deliver(done)));
+        worker.on_gpu.store(options.canvas.is_some(), Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,
@@ -317,7 +335,12 @@ impl Shell {
             last_change: None,
             status: String::new(),
             brush: 0.0,
-            gpu: None,
+            // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
+            // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
+            gpu: options.canvas.map(|(device, queue)| {
+                let kernel = display::Gpu::new(&device);
+                Gpu { device, queue, kernel, target: None, current: None, uncounted: false, seed: 0 }
+            }),
             renders: 0,
             opened_at: Instant::now(),
             notches: Notches::default(),
@@ -488,6 +511,10 @@ impl Ctl {
 
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
     fn request_render(&self) {
+        let canvas = self.window().map(|w| {
+            let (c, scale) = (w.global::<Canvas>(), w.window().scale_factor());
+            (c.get_width() * scale, c.get_height() * scale)
+        });
         let job = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
@@ -499,13 +526,14 @@ impl Ctl {
             s.requested = revision;
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
             let (kind, asked) = if s.rendered == 0 { (Kind::Open, s.opened_at) } else { (Kind::Notch, Instant::now()) };
-            Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked }
+            let side = canvas.and_then(|c| render::fitted_side(negative.size(), c));
+            Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked, side }
         };
         self.worker.submit(job);
     }
 
-    /// A render arrived: stale ones are dropped, the GPU path takes the linear image, the software
-    /// renderer the bytes encoded on the render thread.
+    /// A render arrived: stale ones are dropped, the GPU path encodes its texture into the canvas,
+    /// the software renderer shows the bytes encoded on the render thread.
     fn deliver(self: &Rc<Self>, done: Result<Done, String>) {
         let Some(w) = self.window() else { return };
         let done = match done {
@@ -527,15 +555,9 @@ impl Ctl {
                 return;
             }
         }
-        // A render made for the display kernel after the renderer fell back to software is made again.
-        if matches!(done.picture, Picture::Resident(_)) && self.state.borrow().gpu.is_none() {
-            self.state.borrow_mut().requested = 0;
-            self.request_render();
-            return;
-        }
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
         let (width, height) = (done.width, done.height);
-        let software = {
+        let on_gpu = {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
             s.renders += 1;
@@ -543,22 +565,16 @@ impl Ctl {
                 s.histogram = Some(h);
                 s.histogram_dirty = true;
             }
-            match s.gpu.as_mut() {
-                Some(g) => {
-                    g.pending = Some((done.picture, shown));
-                    None
-                }
-                None => Some((done.picture, shown)),
-            }
+            s.gpu.is_some()
         };
-        match software {
-            None => w.window().request_redraw(),
-            Some((picture, shown)) => {
-                if let Picture::Pixels { rgba8, .. } = picture {
-                    w.global::<Canvas>().set_frame(image(&rgba8, width, height));
-                }
-                self.shown(shown);
+        if on_gpu {
+            self.encode(done.picture, shown);
+            w.window().request_redraw();
+        } else {
+            if let Picture::Pixels { rgba8, .. } = done.picture {
+                w.global::<Canvas>().set_frame(image(&rgba8, width, height));
             }
+            self.shown(shown);
         }
         let status = {
             let s = self.state.borrow();
@@ -569,21 +585,13 @@ impl Ctl {
         w.global::<Canvas>().set_status(status.into());
     }
 
-    /// The rendering notifier's half: on a wgpu renderer the display kernel writes the canvas texture.
-    fn before_rendering(&self) {
+    /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
+    fn encode(&self, picture: Picture, shown: Shown) {
         let Some(w) = self.window() else { return };
         let image = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
             let Some(g) = s.gpu.as_mut() else { return };
-            let landed = g.landed();
-            let Some((picture, shown)) = g.pending.take() else {
-                if let Some(h) = landed {
-                    s.histogram = Some(h);
-                    s.histogram_dirty = true;
-                }
-                return;
-            };
             let uploaded;
             let (source, wd, ht) = match &picture {
                 Picture::Resident(source) => {
@@ -608,10 +616,7 @@ impl Ctl {
             g.seed = g.seed.wrapping_add(1);
             g.kernel.run(&g.device, &g.queue, &source, &Params::new(screen, wd, ht, g.seed), &target);
             g.current = Some(picture);
-            if let Some(h) = landed {
-                s.histogram = Some(h);
-                s.histogram_dirty = true;
-            }
+            g.uncounted = true;
             (imported, shown)
         };
         if let (Some(image), _) = &image {
@@ -641,7 +646,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (histogram, loading, flush) = {
             let mut s = self.state.borrow_mut();
-            if let Some(h) = s.gpu.as_ref().and_then(Gpu::landed) {
+            if let Some(h) = s.gpu.as_mut().and_then(Gpu::landed) {
                 s.histogram = Some(h);
                 s.histogram_dirty = true;
             }
@@ -1404,31 +1409,6 @@ impl Ctl {
                 p.pulse();
             }
         });
-
-        let p = Rc::downgrade(me);
-        let notifier = window.window().set_rendering_notifier(move |state, api| {
-            let Some(p) = p.upgrade() else { return };
-            if let slint::RenderingState::RenderingSetup = state {
-                timing::line(&format!("Slint renderer: {api:?}"));
-            }
-            match (state, api) {
-                (slint::RenderingState::RenderingSetup, slint::GraphicsAPI::WGPU30 { device, queue, .. }) => {
-                    let kernel = display::Gpu::new(device);
-                    p.worker.on_gpu.store(true, Ordering::Relaxed);
-                    p.state.borrow_mut().gpu =
-                        Some(Gpu { device: device.clone(), queue: queue.clone(), kernel, target: None, pending: None, current: None, seed: 0 });
-                }
-                (slint::RenderingState::BeforeRendering, _) => p.before_rendering(),
-                (slint::RenderingState::RenderingTeardown, _) => {
-                    p.worker.on_gpu.store(false, Ordering::Relaxed);
-                    p.state.borrow_mut().gpu = None;
-                }
-                _ => {}
-            }
-        });
-        if let Err(e) = notifier {
-            timing::line(&format!("Slint renderer: software, the canvas encoded on the CPU ({e})"));
-        }
     }
 }
 

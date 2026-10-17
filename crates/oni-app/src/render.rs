@@ -133,6 +133,8 @@ impl Device {
 pub struct Engine {
     graph: Graph,
     pipeline: Pipeline,
+    /// The open frame's preview reduced to the canvas: its source's id, its long side, its pixels.
+    fitted: Option<(u64, usize, Source)>,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -232,7 +234,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -274,13 +276,34 @@ impl Engine {
     }
 
     /// `Pipeline.apply` on the preview, left on the GPU in one texture for the display kernel to read.
-    pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Source, String> {
+    /// With `side`, on the preview reduced once to that long side, so a notch computes no hidden pixel.
+    pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Result<Source, String> {
+        let (w, h) = negative.size();
+        let long = w.max(h) as usize;
+        let source = match side.filter(|&s| s < long) {
+            Some(side) => self.fitted(negative, side, long)?,
+            None => negative.preview.clone(),
+        };
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
-        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
         let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
         if source.view().is_none() {
             return Err("the render is wider than one texture".into());
         }
+        Ok(source)
+    }
+
+    fn fitted(&mut self, negative: &Negative, side: usize, long: usize) -> Result<Source, String> {
+        let id = negative.preview.id();
+        if let Some((kept, s, source)) = &self.fitted
+            && (*kept, *s) == (id, side)
+        {
+            return Ok(source.clone());
+        }
+        self.fitted = None;
+        let reduced = Image::new(&negative.preview).lanczos(side as f64 / long as f64);
+        let source = self.graph.materialise(&reduced).map_err(|e| e.to_string())?;
+        self.fitted = Some((id, side, source.clone()));
         Ok(source)
     }
 }
@@ -289,8 +312,9 @@ impl Engine {
 pub trait Renderer<I>: Send {
     fn render(&mut self, negative: &I, settings: &PipelineSettings) -> Result<Linear, String>;
 
-    /// The same render kept on the GPU for the display kernel; `None` where only pixels are made.
-    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings) -> Option<Result<Source, String>> {
+    /// The same render kept on the GPU for the display kernel, fitted to `side` when given; `None`
+    /// where only pixels are made.
+    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _side: Option<usize>) -> Option<Result<Source, String>> {
         None
     }
 }
@@ -300,8 +324,8 @@ impl Renderer<Negative> for Shared {
         self.lock()?.render(negative, settings, None)
     }
 
-    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Result<Source, String>> {
-        Some(self.lock().and_then(|mut e| e.resident(negative, settings)))
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Option<Result<Source, String>> {
+        Some(self.lock().and_then(|mut e| e.resident(negative, settings, side)))
     }
 }
 
@@ -345,6 +369,17 @@ pub struct Job<I> {
     pub kind: crate::timing::Kind,
     /// When the store asked for it, or the frame was opened, which the end-to-end time starts from.
     pub asked: Instant,
+    /// The long side, in device pixels, the picture is shown at; none renders the whole preview.
+    pub side: Option<usize>,
+}
+
+/// The long side of a `size` picture fitted inside a `canvas` of device pixels; none while it has no area.
+pub fn fitted_side(size: (u32, u32), canvas: (f32, f32)) -> Option<usize> {
+    let (w, h) = (size.0 as f32, size.1 as f32);
+    if canvas.0 < 1.0 || canvas.1 < 1.0 || w < 1.0 || h < 1.0 {
+        return None;
+    }
+    Some(((canvas.0 / w).min(canvas.1 / h) * w.max(h)).ceil() as usize)
 }
 
 /// What a render hands the canvas: a texture the display kernel encodes, or for the software
@@ -403,7 +438,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     };
                     seed = seed.wrapping_add(1);
                     let started = Instant::now();
-                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings) } else { None };
+                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings, job.side) } else { None };
                     let done = match resident {
                         Some(made) => made.map(|source| {
                             let e = source.extent();
@@ -538,7 +573,7 @@ mod tests {
             let mut settings = PipelineSettings::default();
             settings.print.exposure = revision as f32;
             let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked });
+            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, side: None });
             std::thread::sleep(Duration::from_millis(2));
         }
         let mut revisions = Vec::new();
@@ -549,6 +584,15 @@ mod tests {
         assert!(revisions.len() <= 3, "{revisions:?}: the slot replaced the waiting jobs");
         // Twin: twenty submissions, so a queue would have rendered twenty.
         assert!(seen.lock().unwrap().len() < 20);
+    }
+
+    #[test]
+    fn a_render_is_fitted_inside_the_canvas_on_its_long_side() {
+        assert_eq!(fitted_side((2000, 1332), (808.0, 1052.0)), Some(808), "a wide frame meets the canvas's sides");
+        assert_eq!(fitted_side((1332, 2000), (808.0, 1052.0)), Some(1052), "a tall one meets its top and bottom");
+        assert_eq!(fitted_side((2000, 1332), (0.0, 600.0)), None, "a canvas not laid out yet asks for the whole preview");
+        // Twin: fitting the short side would leave the wide frame overflowing the canvas.
+        assert_ne!(fitted_side((2000, 1332), (808.0, 1052.0)), Some((808.0 * 2000.0 / 1332.0) as usize));
     }
 
     #[test]

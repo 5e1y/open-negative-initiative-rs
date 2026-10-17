@@ -76,6 +76,11 @@ impl Source {
         self.0.tiles.len()
     }
 
+    /// Unique for the run: two sources with one id hold the same pixels.
+    pub fn id(&self) -> u64 {
+        self.0.id
+    }
+
     /// The one texture covering the whole extent, its texel (0, 0) at the extent's corner; none when tiled.
     pub fn view(&self) -> Option<&wgpu::TextureView> {
         match self.0.tiles.as_slice() {
@@ -348,10 +353,6 @@ impl Graph {
 
     pub fn max_side(&self) -> u32 {
         self.max_side
-    }
-
-    pub fn device(&self) -> &wgpu::Device {
-        &self.device
     }
 
     /// The largest parameter block one stage may bind.

@@ -181,8 +181,8 @@ enum Mapping {
     Mapped,
 }
 
-/// The kernels on a device: one dispatch per frame into a texture Slint can import, and the
-/// histogram of what it wrote, read back without waiting while no earlier count is still mapping.
+/// The kernels on a device: one dispatch per frame into a texture Slint can import, and on its own
+/// pace the histogram of what it wrote, read back without waiting.
 pub struct Gpu {
     pipeline: wgpu::ComputePipeline,
     layout: wgpu::BindGroupLayout,
@@ -253,8 +253,7 @@ impl Gpu {
         })
     }
 
-    /// Encodes `source`, an rgba32float texture the size of `target`, into `target` in one submission,
-    /// with the histogram's count when the last one has been read.
+    /// Encodes `source`, an rgba32float texture the size of `target`, into `target`.
     pub fn run(&self, device: &wgpu::Device, queue: &wgpu::Queue, source: &wgpu::TextureView, k: &Params, target: &wgpu::Texture) {
         use wgpu::util::DeviceExt;
         let block = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -279,39 +278,42 @@ impl Gpu {
             pass.set_bind_group(0, &group, &[]);
             pass.dispatch_workgroups(k.width.div_ceil(8), k.height.div_ceil(8), 1);
         }
-        let count = {
-            let mut m = self.mapping.lock().expect("histogram mapping");
-            let idle = *m == Mapping::Idle;
-            if idle {
-                *m = Mapping::Waiting;
-            }
-            idle
-        };
-        if count {
-            let counting = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("histogram"),
-                layout: &self.histogram.get_bind_group_layout(0),
-                entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
-                    wgpu::BindGroupEntry { binding: 1, resource: self.counts.as_entire_binding() },
-                ],
-            });
-            encoder.clear_buffer(&self.counts, 0, None);
-            {
-                let mut pass = encoder.begin_compute_pass(&Default::default());
-                pass.set_pipeline(&self.histogram);
-                pass.set_bind_group(0, &counting, &[]);
-                pass.dispatch_workgroups(k.width.div_ceil(2).div_ceil(8), k.height.div_ceil(2).div_ceil(8), 1);
-            }
-            encoder.copy_buffer_to_buffer(&self.counts, 0, &self.staging, 0, BINS);
-        }
         queue.submit([encoder.finish()]);
-        if count {
-            let mapping = self.mapping.clone();
-            self.staging.slice(..).map_async(wgpu::MapMode::Read, move |r| {
-                *mapping.lock().expect("histogram mapping") = if r.is_ok() { Mapping::Mapped } else { Mapping::Idle };
-            });
+    }
+
+    /// Counts the levels `target` holds, unless the last count is still being read; says whether it did.
+    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, target: &wgpu::Texture) -> bool {
+        {
+            let mut m = self.mapping.lock().expect("histogram mapping");
+            if *m != Mapping::Idle {
+                return false;
+            }
+            *m = Mapping::Waiting;
         }
+        let view = target.create_view(&Default::default());
+        let counting = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("histogram"),
+            layout: &self.histogram.get_bind_group_layout(0),
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
+                wgpu::BindGroupEntry { binding: 1, resource: self.counts.as_entire_binding() },
+            ],
+        });
+        let mut encoder = device.create_command_encoder(&Default::default());
+        encoder.clear_buffer(&self.counts, 0, None);
+        {
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&self.histogram);
+            pass.set_bind_group(0, &counting, &[]);
+            pass.dispatch_workgroups(target.width().div_ceil(2).div_ceil(8), target.height().div_ceil(2).div_ceil(8), 1);
+        }
+        encoder.copy_buffer_to_buffer(&self.counts, 0, &self.staging, 0, BINS);
+        queue.submit([encoder.finish()]);
+        let mapping = self.mapping.clone();
+        self.staging.slice(..).map_async(wgpu::MapMode::Read, move |r| {
+            *mapping.lock().expect("histogram mapping") = if r.is_ok() { Mapping::Mapped } else { Mapping::Idle };
+        });
+        true
     }
 
     /// The last count once its readback has landed, which a `device.poll` delivers; none before.
@@ -419,6 +421,36 @@ mod tests {
             let wrong = encode(&pixels, &Params::new(other, w, h, 3));
             assert!(got.iter().zip(&wrong).any(|(a, b)| a.abs_diff(*b) > 2));
         }
+    }
+
+    /// The GPU count against `Histogram::of` on the same shown bytes, sampled on every second row and column.
+    #[test]
+    fn the_histogram_kernel_counts_what_the_cpu_counts() {
+        let instance = wgpu::Instance::default();
+        let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
+            eprintln!("no adapter: the histogram kernel is not exercised");
+            return;
+        };
+        let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
+        let (w, h) = (37u32, 23u32);
+        let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32 / w as f32, (i / w) as f32 / h as f32, 0.4, 1.0]).collect();
+        let gpu = Gpu::new(&device);
+        let source = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
+        let target = Gpu::target(&device, w, h);
+        gpu.run(&device, &queue, &source, &Params::new(Screen::Srgb, w, h, 9), &target);
+        assert!(gpu.count(&device, &queue, &target));
+        assert!(!gpu.count(&device, &queue, &target), "a second count waits for the first to be read");
+        device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        let counted = gpu.histogram().expect("the count landed");
+        let shown = read_back(&device, &queue, &target, w, h);
+        let sampled: Vec<u8> = (0..h as usize)
+            .step_by(2)
+            .flat_map(|y| (0..w as usize).step_by(2).map(move |x| (y * w as usize + x) * 4))
+            .flat_map(|i| shown[i..i + 4].to_vec())
+            .collect();
+        assert_eq!(counted, crate::render::Histogram::of(&sampled));
+        // Twin: every pixel counted is another histogram, so a kernel that skips no row would be seen.
+        assert_ne!(counted, crate::render::Histogram::of(&shown));
     }
 
     fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32) -> Vec<u8> {

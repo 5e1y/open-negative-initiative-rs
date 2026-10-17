@@ -34,15 +34,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             queue: gpu.queue.clone(),
         })
         .select();
-    match wgpu {
-        Ok(()) => timing::line("Slint backend: femtovg-wgpu on the pipeline's device"),
-        Err(e) => timing::line(&format!("no wgpu renderer ({e}); the canvas is encoded on the CPU")),
-    }
+    let canvas = match wgpu {
+        Ok(()) => {
+            timing::line("Slint backend: femtovg-wgpu on the pipeline's device");
+            Some((gpu.device.clone(), gpu.queue.clone()))
+        }
+        Err(e) => {
+            timing::line(&format!("no wgpu renderer ({e}); the canvas is encoded on the CPU"));
+            None
+        }
+    };
     let engine = Engine::shared(&gpu);
     let gate = engine.clone();
     let folder = std::env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(|| oni_fixtures::folder(oni_fixtures::RAW_DIR));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options { support, ..Options::default() })?;
+    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, ..Options::default() })?;
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |_, event| {
         if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
