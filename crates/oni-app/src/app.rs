@@ -19,6 +19,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -88,6 +89,8 @@ pub struct State {
     thumbs: HashMap<String, Image>,
     loaded: usize,
     negatives: Arc<Mutex<HashMap<String, Arc<Linear>>>>,
+    /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
+    hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
     rendered: u64,
     requested: u64,
@@ -257,6 +260,7 @@ impl Shell {
             thumbs: HashMap::new(),
             loaded: 0,
             negatives: Arc::default(),
+            hands: Arc::default(),
             slides: Field::ALL.iter().map(|_| Slide::default()).collect(),
             rendered: 0,
             requested: 0,
@@ -439,7 +443,12 @@ impl Ctl {
         let done = match done {
             Ok(d) => d,
             Err(e) => {
-                self.say(&format!("Render failed: {e}"));
+                // The canvas never keeps another photo's picture under this one's name.
+                w.global::<Canvas>().set_frame(Image::default());
+                w.global::<Canvas>().set_busy(false);
+                w.global::<Plots>().set_output(Image::default());
+                self.state.borrow_mut().histogram_dirty = false;
+                self.say(&format!("Not rendered: {e}"));
                 return;
             }
         };
@@ -487,17 +496,18 @@ impl Ctl {
             let Some(g) = s.gpu.as_mut() else { return };
             let Some(linear) = g.pending.take() else { return };
             let (wd, ht) = (linear.width as u32, linear.height as u32);
-            let target = match &g.target {
-                Some(t) if t.width() == wd && t.height() == ht => t.clone(),
+            // The texture is imported once per size; a new render only rewrites its texels.
+            let (target, imported) = match &g.target {
+                Some(t) if t.width() == wd && t.height() == ht => (t.clone(), None),
                 _ => {
                     let t = display::Gpu::target(&g.device, wd, ht);
                     g.target = Some(t.clone());
-                    t
+                    (t.clone(), Image::try_from(t).ok())
                 }
             };
             g.seed = g.seed.wrapping_add(1);
             g.kernel.run(&g.device, &g.queue, &linear.pixels, &Params::new(screen, wd, ht, g.seed), &target);
-            Image::try_from(target).ok()
+            imported
         };
         if let Some(image) = image {
             w.global::<Canvas>().set_frame(image);
@@ -662,36 +672,46 @@ impl Ctl {
     /// Every photo's thumbnail, decoded and converted on its own sidecar off this thread, one by one.
     fn read_thumbnails(&self, order: Vec<String>) {
         let negatives = self.state.borrow().negatives.clone();
+        let hands = self.state.borrow().hands.clone();
         let screen = self.state.borrow().screen;
         std::thread::Builder::new()
             .name("thumbnails".into())
             .spawn(move || {
                 let mut renderer = render::Stage47;
                 for (n, path) in order.into_iter().enumerate() {
-                    let known = negatives.lock().expect("negatives").get(&path).cloned();
-                    let negative = match known {
-                        Some(n) => n,
-                        None => match render::decode(Path::new(&path), CANVAS_SIDE) {
-                            Ok(l) => {
-                                let l = Arc::new(l);
+                    while hands.load(Ordering::Relaxed) > 0 {
+                        std::thread::sleep(Duration::from_millis(20));
+                    }
+                    let thumbnail = (|| -> Result<(Vec<u8>, usize, usize), String> {
+                        let known = negatives.lock().expect("negatives").get(&path).cloned();
+                        let negative = match known {
+                            Some(n) => n,
+                            None => {
+                                let l = Arc::new(render::decode(Path::new(&path), CANVAS_SIDE)?);
                                 negatives.lock().expect("negatives").insert(path.clone(), l.clone());
                                 l
                             }
-                            Err(_) => continue,
-                        },
-                    };
-                    let small = negative.reduced(THUMB_SIDE);
-                    let settings = oni_settings::sidecar::read(Path::new(&path), true, true)
-                        .map(|l| l.settings)
-                        .unwrap_or_else(|_| oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true));
-                    let Ok(linear) = renderer.render(&small, &settings) else { continue };
-                    let bytes = display::encode(&linear.pixels, &Params::new(screen, linear.width as u32, linear.height as u32, n as u32));
-                    let (w, h) = (linear.width, linear.height);
+                        };
+                        let settings = oni_settings::sidecar::read(Path::new(&path), true, true).map_err(|e| e.to_string())?.settings;
+                        let linear = renderer.render(&negative.reduced(THUMB_SIDE), &settings)?;
+                        let k = Params::new(screen, linear.width as u32, linear.height as u32, n as u32);
+                        Ok((display::encode(&linear.pixels, &k), linear.width, linear.height))
+                    })();
+                    // A frame that fails still counts as read, its tile left empty and the reason said.
                     with_shell(move |c| {
-                        {
+                        let failure = {
                             let mut s = c.state.borrow_mut();
-                            s.thumbs.insert(path, image(&bytes, w, h));
                             s.loaded += 1;
+                            match thumbnail {
+                                Ok((bytes, w, h)) => {
+                                    s.thumbs.insert(path, image(&bytes, w, h));
+                                    None
+                                }
+                                Err(e) => Some(format!("{}: {e}", stem(&path))),
+                            }
+                        };
+                        if let Some(message) = failure {
+                            c.say(&message);
                         }
                         c.publish_tiles();
                     });
@@ -904,6 +924,7 @@ impl Ctl {
                 slide.start = if double { None } else { Some(slide.shown) };
                 if !double {
                     s.store.hold();
+                    s.hands.fetch_add(1, Ordering::Relaxed);
                 }
                 double
             };
@@ -956,6 +977,7 @@ impl Ctl {
             let i = f.index() as usize;
             let live = {
                 let mut s = p.state.borrow_mut();
+                let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
                 let slide = &mut s.slides[i];
                 slide.start = None;
                 slide.resetting = false;

@@ -1,5 +1,5 @@
-//! The keycap chrome, rasterised once per colour and height from the Frustum light, then nine-sliced
-//! by Slint to each key's width: the face's dish and the walls vary only across the cap's height.
+//! The keycap chrome, rasterised once per colour and height from the Frustum light. A key draws both
+//! ends whole and stretches the middle, since the dish and the walls vary only down the cap.
 
 use oni_ui_poc::keycap::{self, Style};
 use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
@@ -46,15 +46,16 @@ impl Chrome {
         s.corner_radius.max(s.face_radius + s.wall_left.max(s.wall_right)) + 2.0 * s.seam_blur
     }
 
-    /// Premultiplied RGBA8 at `scale` device pixels per point, with its nine-slice edges set.
+    /// The end in whole raster pixels at `scale`.
+    pub fn end_px(&self, scale: f64) -> usize {
+        (self.end() * scale).ceil() as usize
+    }
+
+    /// Premultiplied RGBA8 at `scale` device pixels per point.
     pub fn image(&self, scale: f64) -> Image {
         let width = (self.height * WIDTH_PER_HEIGHT).max(2.0 * self.end() + 2.0);
         let (w, h, bytes) = keycap::cap_pixels(&self.style(), width, self.height, scale, false);
-        let mut image = Image::from_rgba8_premultiplied(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(&bytes, w as u32, h as u32));
-        let end = (self.end() * scale).ceil() as u16;
-        let half = (h as u16 / 2).saturating_sub(1);
-        image.set_nine_slice_edges(half, end, half, end);
-        image
+        Image::from_rgba8_premultiplied(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(&bytes, w as u32, h as u32))
     }
 }
 
@@ -108,6 +109,12 @@ pub fn install(caps: &crate::Caps, scale: f64) {
     caps.set_mini_padding((PADDING_H * mini.factor) as f32);
     caps.set_small_corner(small.style().corner_radius as f32);
     caps.set_mini_corner(mini.style().corner_radius as f32);
+    // The length is the whole pixels over the scale, so each end lands one pixel per pixel.
+    let (small_px, mini_px) = (small.end_px(scale), mini.end_px(scale));
+    caps.set_small_end_px(small_px as i32);
+    caps.set_small_end((small_px as f64 / scale) as f32);
+    caps.set_mini_end_px(mini_px as i32);
+    caps.set_mini_end((mini_px as f64 / scale) as f32);
 }
 
 #[cfg(test)]

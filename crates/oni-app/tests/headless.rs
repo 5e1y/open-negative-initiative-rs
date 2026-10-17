@@ -1,6 +1,5 @@
-//! The whole window on Slint's software renderer, with no screen: roll #8 opened from a mirror of
-//! hard links, so a sidecar the shell writes never lands beside the originals. `ONI_SHOTS` names
-//! the folder the screenshots go to.
+//! The whole window on Slint's software renderer, no screen: roll #8 opened from a mirror of hard
+//! links, so no sidecar is written beside the originals; screenshots go to `ONI_SHOTS`.
 
 use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
@@ -73,6 +72,7 @@ impl Rig {
             std::thread::sleep(Duration::from_millis(20));
         }
         self.pump();
+        println!("{what}: {:.1} s", start.elapsed().as_secs_f64());
     }
 
     /// Lets springs and the tooltip delay finish, as a person waits before looking.
@@ -248,6 +248,16 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.until("ten thumbnails", Duration::from_secs(600), || ctl.state.borrow().loaded() >= 10);
     let tiles = app::tiles(w);
     assert_eq!(tiles.len(), 10, "every cell of a ten-photo roll is in view");
+    // The stand-in renders the Pro face only: a Scanner-face frame's tile stays empty, never misdrawn.
+    for t in &tiles {
+        let path = folder.join(format!("{}.NEF", t.caption));
+        let face = oni_settings::sidecar::read(&path, true, true).unwrap().settings.face;
+        let pro = face == oni_settings::Face::Pro;
+        assert_eq!(t.picture.size().width > 0, pro, "{}: {face:?}", t.caption);
+    }
+    let drawn = tiles.iter().filter(|t| t.picture.size().width > 0).count();
+    println!("{drawn} of 10 thumbnails drawn, the rest on the Scanner face");
+    assert!(drawn > 0);
     w.global::<Library>().invoke_tile_clicked(3, false, false);
     rig.pump();
     rig.settle();
@@ -267,9 +277,21 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     w.invoke_refocus();
     rig.key("1");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Bronze);
-    rig.key("0");
+    rig.key("3");
+    assert_eq!(label_of(&fourth), oni_settings::Medal::Gold);
     rig.settle();
     println!("shot {}", rig.shot("gallery-labelled").display());
+
+    // A Scanner-face frame opened in the editor: the canvas is emptied and says why.
+    let scanner = tiles.iter().find(|t| t.picture.size().width == 0).map(|t| t.index);
+    if let Some(i) = scanner {
+        let canvas = w.global::<oni_app::Canvas>();
+        w.global::<Library>().invoke_tile_opened(i);
+        rig.until("the refused render", Duration::from_secs(120), || canvas.get_status().starts_with("Not rendered"));
+        assert_eq!(canvas.get_frame().size().width, 0, "no other photo's picture stays on the canvas");
+        rig.settle();
+        println!("shot {}", rig.shot("editor-scanner-face").display());
+    }
 
     // Every write went to the mirror: the originals' folder reads as it did before the run.
     assert_eq!(stamps(&roll), originals);

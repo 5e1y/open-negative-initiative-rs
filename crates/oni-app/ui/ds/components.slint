@@ -4,7 +4,8 @@ import { DS } from "tokens.slint";
 import { Icons } from "../icons.slint";
 export { DS, Icons }
 
-// Rasters of the keycap chrome, drawn in Rust from the Frustum light; nine-sliced to any width.
+// Rasters of the keycap chrome, drawn in Rust from the Frustum light; each key draws both ends
+// whole and stretches the middle, which only varies down the cap.
 export global Caps {
     in property <image> grey;
     in property <image> pale;
@@ -28,6 +29,11 @@ export global Caps {
     in property <length> mini-padding: 12.16px;
     in property <length> small-corner: 8.4px;
     in property <length> mini-corner: 6.08px;
+    // The end kept whole, in raster pixels and in the length those pixels cover.
+    in property <int> small-end-px;
+    in property <int> mini-end-px;
+    in property <length> small-end;
+    in property <length> mini-end;
 }
 
 // What a hovered key or mark says after the system's tooltip delay, drawn by the window.
@@ -238,6 +244,8 @@ export component Keycap inherits Rectangle {
     property <length> travel: (root.mini ? 0.38 : 0.525) * 1px;
     callback clicked();
     height: root.mini ? DS.control-keycap-mini-height : DS.control-app-bar-keycap-height;
+    // The chrome image would lend the key its raster's width; the key asks only for its legend's.
+    preferred-width: self.min-width;
     min-width: root.fixed-width > 0 ? root.fixed-width
         : root.has-icon ? self.height
         : max(label.preferred-width, measure.preferred-width) + 2 * root.pad;
@@ -246,11 +254,35 @@ export component Keycap inherits Rectangle {
     accessible-enabled: root.enabled;
     accessible-action-default => { root.clicked(); }
 
+    // Both rounded ends drawn one raster pixel per device pixel, the uniform middle stretched between.
+    property <length> end: root.mini ? Caps.mini-end : Caps.small-end;
+    property <int> end-px: root.mini ? Caps.mini-end-px : Caps.small-end-px;
     Image {
         source: root.chrome;
-        width: parent.width;
+        x: 0;
+        width: root.end;
         height: parent.height;
         image-fit: fill;
+        source-clip-x: 0;
+        source-clip-width: root.end-px;
+    }
+    Image {
+        source: root.chrome;
+        x: root.end;
+        width: max(0px, parent.width - 2 * root.end);
+        height: parent.height;
+        image-fit: fill;
+        source-clip-x: root.end-px;
+        source-clip-width: root.chrome.width - 2 * root.end-px;
+    }
+    Image {
+        source: root.chrome;
+        x: parent.width - root.end;
+        width: root.end;
+        height: parent.height;
+        image-fit: fill;
+        source-clip-x: root.chrome.width - root.end-px;
+        source-clip-width: root.end-px;
     }
     measure := Text {
         text: root.widest;
@@ -385,6 +417,7 @@ export component Section inherits VerticalLayout {
             // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
             if root.block >= 0: PanelButton {
                 mini: true;
+                horizontal-stretch: 0;
                 text: "RESET";
                 opacity: root.modified ? 1 : 0;
                 enabled: root.modified;
@@ -392,6 +425,7 @@ export component Section inherits VerticalLayout {
             }
             PanelButton {
                 mini: true;
+                horizontal-stretch: 0;
                 has-icon: true;
                 icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
                 icon-size: 10px;
