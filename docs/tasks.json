@@ -21,6 +21,7 @@
     "title": "Vendor LibRaw 0.22.2 and build it from source on every platform",
     "status": "done",
     "detail": "LibRaw 0.21 from the system knows no Nikon Z f: identity rgb_cam, zero cam_xyz, so roll #8 decoded as raw camera RGB.",
-    "outcome": "LibRaw 0.22.2 vendored and compiled by build.rs with cc, pkg-config dropped. Z f now gets its matrix (cam_xyz non-zero); linearity test 2.0000 at +1 EV on three roll #8 frames; against the Swift decode a 3x3 fit is near-diagonal (scale about 2.7, median error 0.3 to 0.9 % on DSC_6448), so no channel swap or clipping."
+    "outcome": "LibRaw 0.22.2 vendored and compiled by build.rs with cc, pkg-config dropped. Z f now gets its matrix (cam_xyz non-zero); linearity test 2.0000 at +1 EV on three roll #8 frames; against the Swift decode a 3x3 fit is near-diagonal (scale about 2.7, median error 0.3 to 0.9 % on DSC_6448), so no channel swap or clipping.",
+    "commit": "a6100ee"
   }
 ]
