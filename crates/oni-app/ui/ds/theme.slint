@@ -1,0 +1,236 @@
+// The semantic tokens: what each value is for, bound to the generated Swift tokens wherever one exists.
+// One edit here restyles every component that reads the group; screens never read `DS` directly.
+import { DS } from "tokens.slint";
+export { DS }
+
+// Surfaces from back to front, then inks, then the meaning colours.
+export global Colour {
+    out property <color> ground: DS.palette-panel;
+    out property <color> canvas: DS.palette-canvas;
+    out property <color> well: DS.palette-tile;
+    out property <color> raised: DS.palette-keycap;
+    out property <color> raised-hover: DS.palette-keycap.brighter(0.25);
+    out property <color> raised-pressed: DS.palette-keycap.darker(0.25);
+    out property <color> ink: DS.system-primary;
+    out property <color> ink-secondary: DS.palette-text-secondary;
+    out property <color> ink-tertiary: DS.palette-text-tertiary;
+    out property <color> ink-on-fill: DS.palette-text-on-fill;
+    out property <color> ink-on-light: DS.palette-text-on-light;
+    out property <color> accent: DS.palette-accent;
+    out property <color> accent-hover: DS.palette-accent.brighter(0.15);
+    out property <color> accent-pressed: DS.palette-accent.darker(0.2);
+    out property <color> on: DS.system-primary;
+    out property <color> on-hover: DS.system-white;
+    out property <color> caution: DS.tint-undoable;
+    out property <color> caution-hover: DS.tint-undoable.brighter(0.15);
+    out property <color> caution-pressed: DS.tint-undoable.darker(0.2);
+    out property <color> destructive: DS.tint-destructive;
+    out property <color> destructive-hover: DS.tint-destructive.brighter(0.15);
+    out property <color> destructive-pressed: DS.tint-destructive.darker(0.2);
+    out property <color> confirm: DS.tint-confirm;
+    out property <color> separator: DS.palette-separator;
+    out property <color> hover: DS.palette-hover;
+    out property <color> row-selected: DS.palette-track;
+    out property <color> selected: DS.palette-selected;
+    out property <color> focus: DS.palette-accent;
+    out property <color> scrim: DS.palette-scrim;
+    out property <color> track: DS.palette-track;
+    out property <color> track-fill: DS.palette-track-fill;
+    out property <color> skeleton: DS.palette-skeleton;
+    out property <color> paper: DS.system-white;
+    out property <color> white: DS.system-white;
+    out property <color> black: DS.system-black;
+    out property <color> metal-dark: DS.scanner-metal-dark;
+    out property <color> metal-light: DS.scanner-metal-light;
+    // `GainChannel`'s hues and complements: the sensor's own channels, no Swift token holds them.
+    out property <color> channel-blue: #0a84ff;
+    out property <color> channel-yellow: #ffd60a;
+    out property <color> channel-green: #30d158;
+    out property <color> channel-magenta: #ff00ff;
+    // `DSMedalPicker`'s three foils as flat colours, index 0 being no medal.
+    out property <[color]> medal: [transparent, #b08d57, #c0c0c0, #e6c200];
+    // The system tooltip's ground, opaque enough to read over a photo.
+    out property <color> tip: #2c2c2cf2;
+}
+
+export global Space {
+    out property <length> xxs: DS.space-xxs;
+    out property <length> xs: DS.space-xs;
+    out property <length> s: DS.space-sm;
+    out property <length> m: DS.space-md;
+    out property <length> l: DS.space-lg;
+}
+
+// The four radius tokens `DSShape.rounded` allows, by what they round.
+export global Radius {
+    out property <length> track: DS.radius-track;
+    out property <length> badge: DS.radius-badge;
+    out property <length> card: DS.radius-card;
+    out property <length> control: DS.radius-control;
+}
+
+export global Stroke {
+    out property <length> hairline: DS.stroke-hairline;
+    out property <length> line: DS.stroke-line;
+    out property <length> emphasis: DS.stroke-emphasis;
+}
+
+export global Type {
+    out property <string> family: DS.typo-label-family;
+    out property <string> brand-family: DS.typo-box-title-family;
+    out property <int> regular: DS.typo-label-weight;
+    out property <int> strong: 600;
+    out property <length> label: DS.typo-label-size;
+    out property <length> value: DS.typo-value-size;
+    out property <length> chip: DS.typo-chip-size;
+    out property <length> title: DS.typo-title-size;
+    out property <length> section: DS.typo-section-size;
+    out property <length> heading: DS.typo-box-title-size;
+}
+
+// Opacities of a state, never of a colour.
+export global State {
+    out property <float> disabled: DS.state-missing;
+    out property <float> idle: DS.state-idle-label;
+}
+
+export global Motion {
+    out property <duration> quick: DS.motion-curtain-duration;
+    out property <duration> slide: DS.motion-reveal-response * 1s;
+    // The system tooltip's delay before it shows.
+    out property <duration> tip-delay: 1000ms;
+}
+
+export global ButtonStyle {
+    out property <length> height: DS.control-field-height;
+    out property <length> small-height: DS.control-icon-button-size;
+    out property <length> radius: Radius.badge;
+    out property <length> small-radius: Radius.track;
+    out property <length> padding: Space.m;
+    out property <length> small-padding: Space.s;
+    out property <length> group-gap: Space.xxs;
+    out property <length> icon: DS.control-icon-size;
+    out property <length> small-icon: DS.control-toggle-glyph;
+    out property <length> label: Type.chip;
+    out property <int> weight: Type.strong;
+    out property <length> tracking: Stroke.hairline;
+    out property <length> lamp: DS.control-lamp-size;
+}
+
+export global SliderStyle {
+    out property <length> row: DS.control-handle-length;
+    out property <length> track: DS.control-track-height;
+    out property <length> track-radius: Radius.track;
+    out property <length> knob-width: DS.control-handle-thickness;
+    out property <length> knob-height: DS.control-handle-length;
+    out property <length> knob-radius: Radius.badge;
+    out property <float> knob-grow: DS.control-knob-grow;
+    out property <length> grip: DS.control-knob-line * 1px;
+    out property <length> grip-gap: DS.control-knob-line-gap * 1px;
+    out property <color> knob: Colour.raised-hover;
+    out property <color> knob-edge: DS.palette-track-line;
+    out property <color> grip-ink: Colour.ink-secondary;
+    out property <float> ramp-start: 0.45;
+    out property <float> ramp-end: 0.9;
+    out property <length> label-gap: Space.xs;
+}
+
+export global SectionStyle {
+    out property <length> inset: Space.m;
+    out property <length> before: Space.l;
+    out property <length> after: Space.l;
+    out property <length> gap: Space.s;
+    out property <length> help-mark: DS.control-help-mark-size;
+}
+
+export global TabsStyle {
+    out property <length> height: ButtonStyle.height;
+    out property <length> radius: ButtonStyle.radius;
+    out property <length> inset: Space.xxs;
+    out property <length> pill-radius: Radius.track;
+    out property <length> mark: Space.xs;
+}
+
+export global ToggleStyle {
+    out property <length> height: DS.control-toggle-height;
+    out property <length> width: 2 * DS.control-toggle-cell-width - Space.s;
+    out property <length> inset: Space.xxs;
+}
+
+export global FieldStyle {
+    out property <length> height: DS.control-field-height;
+    out property <length> radius: ButtonStyle.radius;
+    out property <length> padding: Space.s;
+}
+
+export global RowStyle {
+    out property <length> height: DS.control-film-sidebar-row-height;
+    out property <length> padding: Space.s;
+    out property <length> indent: Space.m;
+    out property <length> gap: Space.xs;
+    out property <length> chevron-zone: DS.control-film-sidebar-chevron-zone-width;
+    out property <length> chevron: DS.control-toggle-glyph;
+    out property <length> icon: DS.control-icon-size;
+}
+
+export global TileStyle {
+    out property <length> caption: DS.control-caption-height;
+    out property <length> caption-gap: Space.xs;
+    out property <length> medal: DS.control-medal-size;
+    out property <length> badge-inset: DS.control-badge-padding;
+    out property <length> selection: Stroke.emphasis;
+    out property <length> heading: DS.control-roll-header-height;
+}
+
+export global SheetStyle {
+    out property <length> width: DS.control-dialog-width;
+    out property <length> radius: Radius.card;
+    out property <length> padding: Space.l;
+    out property <length> gap: Space.m;
+    // The pairing code's side, wide enough for a phone's camera across a desk.
+    out property <length> code: 240px;
+}
+
+export global MenuStyle {
+    out property <length> width: DS.control-export-fields-width;
+    out property <length> row: ButtonStyle.height;
+    out property <length> radius: Radius.badge;
+    out property <length> padding: Space.xs;
+}
+
+export global TipStyle {
+    out property <length> radius: Radius.badge / 2;
+    out property <length> padding-x: Space.s;
+    out property <length> padding-y: Space.xs;
+    out property <length> offset: Space.xs;
+    out property <length> max-width: 320px;
+}
+
+export global PlotStyle {
+    out property <length> main: DS.control-main-histogram-height;
+    out property <length> block: DS.control-histogram-height;
+}
+
+export global CardStyle {
+    out property <length> inset: DS.control-card-inset;
+    out property <length> radius: Radius.card;
+    out property <length> padding: DS.control-canvas-padding;
+}
+
+export global StatusStyle {
+    out property <length> height: DS.control-status-row-height;
+}
+
+// The window's frame: its floor, the bar and the three columns.
+export global ShellStyle {
+    out property <length> min-width: DS.control-min-window-width;
+    out property <length> min-height: DS.control-min-window-height;
+    out property <length> bar-padding: Space.s;
+    out property <length> bar-gap: Space.m;
+    out property <length> bar-height: ButtonStyle.height + 2 * Space.s;
+    out property <length> export-width: DS.control-app-bar-export-width;
+    out property <length> filter-width: DS.control-app-bar-filter-width;
+    out property <length> library-width: DS.control-film-sidebar-width;
+    out property <length> panel-width: DS.control-panel-width;
+    out property <length> info-width: DS.control-info-sidebar-width;
+}

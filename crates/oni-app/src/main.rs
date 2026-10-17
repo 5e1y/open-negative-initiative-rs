@@ -1,15 +1,20 @@
-//! `oni [folder]`: opens a folder of scans, roll #8 when none is named. `ONI_BENCH=1` drags sixty
-//! notches on Exposure once the first frame is shown, prints the notch centiles and quits.
+//! `oni [folder]` opens a folder of scans, roll #8 by default; `--catalogue` or `ONI_CATALOGUE=1` shows the
+//! design system alone; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Device, Engine};
-use oni_app::{bench, timing};
+use oni_app::{Catalogue, bench, timing};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::WindowEvent};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let catalogue = std::env::args().any(|a| a == "--catalogue") || std::env::var_os("ONI_CATALOGUE").is_some_and(|v| v == "1");
+    if catalogue {
+        Catalogue::new()?.run()?;
+        return Ok(());
+    }
     let support = timing::support();
     let log = timing::log_path(&support);
     match timing::open_file(&log) {

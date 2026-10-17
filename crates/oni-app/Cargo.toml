@@ -24,7 +24,6 @@ oni-library = { path = "../oni-library" }
 oni-link = { path = "../oni-link" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
-oni-ui-poc = { path = "../oni-ui-poc" }
 pollster.workspace = true
 qrcode = { version = "0.14", default-features = false }
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }

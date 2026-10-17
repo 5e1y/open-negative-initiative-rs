@@ -4114,7 +4114,6 @@ dependencies = [
  "oni-link",
  "oni-pipeline",
  "oni-settings",
- "oni-ui-poc",
  "png",
  "pollster",
  "qrcode",

@@ -1,0 +1,175 @@
+// The containers: a block's section, the help mark, the sheet and the menu.
+import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
+import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
+import { Button, ButtonSize, Look } from "controls.slint";
+import { Icons } from "icons.slint";
+
+// The "?" beside a block's title; its note shows as the tooltip.
+export component HelpMark inherits Rectangle {
+    in property <string> note;
+    width: SectionStyle.help-mark + 2 * Space.xxs;
+    height: self.width;
+    accessible-role: button;
+    accessible-label: "What this block does";
+    Icon {
+        source: Icons.question;
+        tone: area.has-hover ? Tone.secondary : Tone.tertiary;
+        width: SectionStyle.help-mark;
+        height: SectionStyle.help-mark;
+    }
+    area := TouchArea {
+        changed has-hover => { Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+}
+
+// `DSSection`: a rule above every block, then a title row with its note, reset and fold keys.
+export component Section inherits VerticalLayout {
+    in property <string> title;
+    in property <string> help;
+    in property <int> block: -1;
+    in property <bool> modified;
+    in property <bool> separated: true;
+    in-out property <bool> folded;
+    callback reset(int);
+    if root.separated: Divider { }
+    VerticalLayout {
+        padding-left: SectionStyle.inset;
+        padding-right: SectionStyle.inset;
+        padding-top: SectionStyle.before;
+        padding-bottom: SectionStyle.after;
+        spacing: 0;
+        if root.title != "": HorizontalLayout {
+            spacing: Space.s;
+            Label {
+                role: TextRole.section;
+                text: root.title;
+                TouchArea { clicked => { root.folded = !root.folded; } }
+            }
+            if root.help != "": VerticalLayout {
+                alignment: center;
+                HelpMark { note: root.help; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
+            if root.block >= 0: Button {
+                size: ButtonSize.small;
+                horizontal-stretch: 0;
+                text: "RESET";
+                opacity: root.modified ? 1 : 0;
+                enabled: root.modified;
+                clicked => { root.reset(root.block); }
+            }
+            Button {
+                size: ButtonSize.small;
+                has-icon: true;
+                width: self.height;
+                horizontal-stretch: 0;
+                icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
+                help: root.folded ? "Show " + root.title : "Hide " + root.title;
+                clicked => { root.folded = !root.folded; }
+            }
+        }
+        // Folded, the content keeps its place in the tree at zero height, so its state survives.
+        Rectangle {
+            height: root.folded && root.title != "" ? 0px : content.preferred-height;
+            clip: true;
+            content := VerticalLayout {
+                width: parent.width;
+                spacing: SectionStyle.gap;
+                padding-top: root.title != "" ? SectionStyle.gap : 0px;
+                @children
+            }
+        }
+    }
+}
+
+// The sheet's card alone: a title, the content, a rounded panel; `Sheet` lays it over a scrim.
+export component Dialog inherits Rectangle {
+    in property <string> title;
+    width: SheetStyle.width;
+    height: column.preferred-height;
+    background: Colour.ground;
+    border-radius: SheetStyle.radius;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    // A click on the card stays on it, so only the scrim closes the sheet.
+    TouchArea { }
+    column := VerticalLayout {
+        padding: SheetStyle.padding;
+        spacing: SheetStyle.gap;
+        if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; }
+        @children
+    }
+}
+
+// A modal sheet: the scrim over the window, the dialog centred on it; a click on the scrim closes.
+export component Sheet inherits Rectangle {
+    in property <string> title;
+    callback dismissed();
+    background: Colour.scrim;
+    TouchArea { clicked => { root.dismissed(); } }
+    Dialog {
+        title: root.title;
+        @children
+    }
+}
+
+// One line of a menu: its word, its shortcut, a hover band.
+export component MenuEntry inherits Rectangle {
+    in property <string> text;
+    in property <string> shortcut;
+    in property <bool> enabled: true;
+    in property <bool> checked;
+    in property <Look> look: Look.live;
+    callback activated();
+    height: MenuStyle.row;
+    border-radius: ButtonStyle.small-radius;
+    background: root.enabled && (area.has-hover || root.look != Look.live) ? Colour.accent : transparent;
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: button;
+    accessible-label: root.text;
+    HorizontalLayout {
+        padding-left: Space.s;
+        padding-right: Space.s;
+        spacing: Space.s;
+        Rectangle {
+            width: ButtonStyle.small-icon;
+            if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
+        }
+        Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
+        Label { text: root.shortcut; tone: Tone.secondary; }
+    }
+    area := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.activated(); }
+    }
+}
+
+// A menu's body: the entries on a raised panel, a rule between groups as a `Divider`.
+export component MenuPanel inherits Rectangle {
+    width: MenuStyle.width;
+    height: column.preferred-height;
+    background: Colour.raised;
+    border-radius: MenuStyle.radius;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    column := VerticalLayout {
+        padding: MenuStyle.padding;
+        spacing: 0;
+        @children
+    }
+}
+
+// A popup menu of words; the chosen index comes back through `chosen`.
+export component Menu inherits PopupWindow {
+    in property <[string]> entries;
+    in property <int> current: -1;
+    callback chosen(int);
+    MenuPanel {
+        for word[i] in root.entries: MenuEntry {
+            text: word;
+            checked: i == root.current;
+            activated => { root.chosen(i); }
+        }
+    }
+}

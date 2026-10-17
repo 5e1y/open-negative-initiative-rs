@@ -3,16 +3,18 @@
 
 pub mod app;
 pub mod bench;
-pub mod caps;
 pub mod display;
 pub mod fields;
 pub mod gallery;
 pub mod library;
+pub mod motion;
 pub mod phone;
 pub mod render;
 pub mod store;
+pub mod strict;
 pub mod timing;
 pub mod tokens;
+pub mod track;
 
 use std::path::PathBuf;
 
