@@ -10,6 +10,7 @@ use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 /// `Negative.previewSide`: the long side every editor render and thumbnail starts from.
 pub const PREVIEW_SIDE: usize = 2000;
@@ -227,6 +228,9 @@ pub struct Job<I> {
     pub path: PathBuf,
     pub negative: Arc<I>,
     pub settings: PipelineSettings,
+    pub kind: crate::timing::Kind,
+    /// When the store asked for it, or the frame was opened, which the end-to-end time starts from.
+    pub asked: Instant,
 }
 
 /// A finished render: the linear image for the GPU kernel and, encoded on this thread, the bytes
@@ -237,6 +241,9 @@ pub struct Done {
     pub linear: Linear,
     pub rgba8: Vec<u8>,
     pub histogram: Histogram,
+    pub kind: crate::timing::Kind,
+    pub asked: Instant,
+    pub pipeline: Duration,
 }
 
 struct Slot<I> {
@@ -274,7 +281,9 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         s.waiting.take().expect("a job")
                     };
                     seed = seed.wrapping_add(1);
+                    let started = Instant::now();
                     let done = renderer.render(&job.negative, &job.settings).map(|linear| {
+                        let pipeline = started.elapsed();
                         let k = Params::new(screen, linear.width as u32, linear.height as u32, seed);
                         let (rgba8, histogram) = if gpu.load(Ordering::Relaxed) {
                             (Vec::new(), Histogram::of(&encoded(&linear, &k, 2)))
@@ -283,7 +292,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Histogram::of(&rgba8);
                             (rgba8, histogram)
                         };
-                        Done { revision: job.revision, path: job.path, linear, rgba8, histogram }
+                        Done { revision: job.revision, path: job.path, linear, rgba8, histogram, kind: job.kind, asked: job.asked, pipeline }
                     });
                     deliver(done);
                 }
@@ -402,7 +411,8 @@ mod tests {
         for revision in 1..=20u64 {
             let mut settings = PipelineSettings::default();
             settings.print.exposure = revision as f32;
-            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings });
+            let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked });
             std::thread::sleep(Duration::from_millis(2));
         }
         let mut revisions = Vec::new();

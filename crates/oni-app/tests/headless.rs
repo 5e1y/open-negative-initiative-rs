@@ -5,126 +5,14 @@ use oni_app::app::{self, Options, Shell};
 use oni_app::fields::Field;
 use oni_app::{App, Bar, Library, MainWindow, PanelState, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
-use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType, Rgb565Pixel};
-use slint::platform::{EventLoopProxy, Platform, WindowAdapter, WindowEvent};
+use slint::platform::WindowEvent;
 use slint::{ComponentHandle, PhysicalSize};
+use std::cell::RefCell;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-type Queued = Box<dyn FnOnce() + Send>;
-
-struct Headless {
-    window: Rc<MinimalSoftwareWindow>,
-    queue: Arc<Mutex<Vec<Queued>>>,
-    start: Instant,
-}
-
-struct Proxy(Arc<Mutex<Vec<Queued>>>);
-
-impl EventLoopProxy for Proxy {
-    fn quit_event_loop(&self) -> Result<(), slint::EventLoopError> {
-        Ok(())
-    }
-
-    fn invoke_from_event_loop(&self, event: Queued) -> Result<(), slint::EventLoopError> {
-        self.0.lock().unwrap().push(event);
-        Ok(())
-    }
-}
-
-impl Platform for Headless {
-    fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
-        Ok(self.window.clone())
-    }
-
-    fn duration_since_start(&self) -> Duration {
-        self.start.elapsed()
-    }
-
-    fn new_event_loop_proxy(&self) -> Option<Box<dyn EventLoopProxy>> {
-        Some(Box::new(Proxy(self.queue.clone())))
-    }
-}
-
-struct Rig {
-    window: Rc<MinimalSoftwareWindow>,
-    queue: Arc<Mutex<Vec<Queued>>>,
-    shots: PathBuf,
-}
-
-impl Rig {
-    /// Runs what background threads posted, then the timers and animations.
-    fn pump(&self) {
-        let jobs: Vec<Queued> = std::mem::take(&mut *self.queue.lock().unwrap());
-        for job in jobs {
-            job();
-        }
-        slint::platform::update_timers_and_animations();
-    }
-
-    fn until(&self, what: &str, limit: Duration, done: impl Fn() -> bool) {
-        let start = Instant::now();
-        while !done() {
-            assert!(start.elapsed() < limit, "timed out waiting for {what}");
-            self.pump();
-            std::thread::sleep(Duration::from_millis(20));
-        }
-        self.pump();
-        println!("{what}: {:.1} s", start.elapsed().as_secs_f64());
-    }
-
-    /// Lets springs and the tooltip delay finish, as a person waits before looking.
-    fn settle(&self) {
-        let start = Instant::now();
-        while start.elapsed() < Duration::from_millis(900) {
-            self.pump();
-            std::thread::sleep(Duration::from_millis(16));
-        }
-    }
-
-    fn shot(&self, name: &str) -> PathBuf {
-        self.window.request_redraw();
-        let size = self.window.size();
-        let (w, h) = (size.width as usize, size.height as usize);
-        let mut buffer = vec![Rgb565Pixel(0); w * h];
-        self.window.draw_if_needed(|r| {
-            r.render(&mut buffer, w);
-        });
-        let path = self.shots.join(format!("{name}.png"));
-        let file = std::fs::File::create(&path).unwrap();
-        let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), w as u32, h as u32);
-        encoder.set_color(png::ColorType::Rgb);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().unwrap();
-        let bytes: Vec<u8> = buffer
-            .iter()
-            .flat_map(|p| {
-                let v = p.0;
-                let (r, g, b) = ((v >> 11) & 0x1f, (v >> 5) & 0x3f, v & 0x1f);
-                [(r * 255 / 31) as u8, (g * 255 / 63) as u8, (b * 255 / 31) as u8]
-            })
-            .collect();
-        writer.write_image_data(&bytes).unwrap();
-        path
-    }
-
-    fn key(&self, text: &str) {
-        let t: slint::SharedString = text.into();
-        self.window.dispatch_event(WindowEvent::KeyPressed { text: t.clone() });
-        self.window.dispatch_event(WindowEvent::KeyReleased { text: t });
-        self.pump();
-    }
-
-    fn chord(&self, modifier: slint::platform::Key, text: &str) {
-        let m: slint::SharedString = modifier.into();
-        self.window.dispatch_event(WindowEvent::KeyPressed { text: m.clone() });
-        self.key(text);
-        self.window.dispatch_event(WindowEvent::KeyReleased { text: m });
-        self.pump();
-    }
-}
+mod common;
 
 /// Roll #8 as hard links beside copies of its sidecars and roll marker, in a fresh folder.
 fn mirror(roll: &Path) -> PathBuf {
@@ -177,10 +65,8 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
-    let window = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
-    let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
-    slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now() })).unwrap();
-    let rig = Rig { window: window.clone(), queue, shots };
+    let rig = common::rig(shots);
+    let window = rig.window.clone();
 
     let originals = stamps(&roll);
     let folder = mirror(&roll);
@@ -331,6 +217,20 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert!(canvas.get_frame().size().width > 0, "the canvas shows the Scanner-face frame");
     rig.settle();
     println!("shot {}", rig.shot("editor-scanner-face").display());
+
+    // The bench: sixty notches scripted on Exposure, their centiles, and the drag undone.
+    let before = ctl.state.borrow().store().get(Field::Exposure);
+    let revision = ctl.state.borrow().store().revision();
+    let report = Rc::new(RefCell::new(None));
+    let r = report.clone();
+    oni_app::bench::start(&ctl, move |text| *r.borrow_mut() = Some(text));
+    rig.until("the bench", Duration::from_secs(300), || report.borrow().is_some());
+    let text = report.borrow().clone().unwrap();
+    println!("{text}");
+    assert!(text.starts_with("bench, 60 notches") && text.contains(" p99 "), "{text}");
+    assert_eq!(ctl.state.borrow().store().get(Field::Exposure), before, "the bench undoes its drag");
+    // Twin: the drag did write the store, so a bench that moved nothing would fail here.
+    assert!(ctl.state.borrow().store().revision() >= revision + 2);
 
     // Every write went to the mirror: the originals' folder reads as it did before the run.
     assert_eq!(stamps(&roll), originals);

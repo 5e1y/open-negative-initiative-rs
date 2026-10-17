@@ -154,5 +154,12 @@
     "detail": "row_clicked kept an `if let` scrutinee's RefCell borrow alive through a block that borrowed mutably; the panic happens inside winit's mouse_up, which cannot unwind, so the app aborts.",
     "outcome": "row_clicked binds the index before borrowing mutably. Grepped oni-app for borrows living across a mutable borrow or a Slint setter: publish_bar, publish_tree, publish_tiles, publish's block markers and the gallery scroll now read the state first, then set properties. The headless test on roll #8 clicks DSC_6440's list row (opens it, selects its tile) then a tile (moves the selection): passes in 52 s on llvmpipe; with the old row_clicked restored it panics with 'RefCell already borrowed' at app.rs:637. Not run on the Mac.",
     "commit": "5ccc1ac"
+  },
+  {
+    "id": 18,
+    "type": "feature",
+    "title": "The app logs its GPU and its render times",
+    "status": "doing",
+    "detail": "At startup the wgpu adapter and Slint's renderer; per render its job (notch, thumbnail, open), pipeline and end-to-end times; every 120 notch renders and on exit the notch centiles (p50, p99, worst gap, frames past 8.3 ms); ONI_BENCH=1 scripts a 60-notch Exposure drag and quits. To stderr and <support>/Logs/oni.log."
   }
 ]

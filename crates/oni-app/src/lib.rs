@@ -2,6 +2,7 @@
 //! gallery, drawn by Slint and driven by the editing model of `oni-core`.
 
 pub mod app;
+pub mod bench;
 pub mod caps;
 pub mod display;
 pub mod fields;
@@ -9,6 +10,7 @@ pub mod gallery;
 pub mod library;
 pub mod render;
 pub mod store;
+pub mod timing;
 pub mod tokens;
 
 use std::path::PathBuf;

@@ -7,6 +7,7 @@ use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::render::{self, Done, Histogram, Job, Linear, Negative, Previews, Shared, Worker};
 use crate::store::{self, Store as Settings};
+use crate::timing::{self, Kind, Notches};
 use crate::{App, Bar, Canvas, Caps, Heading, Library, MainWindow, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::Command;
 use oni_ui_poc::motion::Spring;
@@ -44,6 +45,14 @@ impl Default for Options {
     }
 }
 
+/// A render on its way to the screen, timed from its ask.
+struct Shown {
+    kind: Kind,
+    asked: Instant,
+    pipeline: Duration,
+    frame: String,
+}
+
 /// One slider's hand: the dragged value drawn at once, handed to the store thirty times a second.
 #[derive(Default)]
 struct Slide {
@@ -65,7 +74,7 @@ struct Gpu {
     queue: wgpu::Queue,
     kernel: display::Gpu,
     target: Option<wgpu::Texture>,
-    pending: Option<Linear>,
+    pending: Option<(Linear, Shown)>,
     seed: u32,
 }
 
@@ -100,6 +109,8 @@ pub struct State {
     brush: f32,
     gpu: Option<Gpu>,
     renders: usize,
+    opened_at: Instant,
+    notches: Notches,
 }
 
 impl State {
@@ -130,6 +141,11 @@ impl State {
 
     pub fn brush(&self) -> f32 {
         self.brush
+    }
+
+    /// The notch renders shown so far, the index `Notches::summary` starts from.
+    pub fn notches(&self) -> &Notches {
+        &self.notches
     }
 }
 
@@ -278,6 +294,8 @@ impl Shell {
             brush: 0.0,
             gpu: None,
             renders: 0,
+            opened_at: Instant::now(),
+            notches: Notches::default(),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -299,10 +317,15 @@ impl Shell {
     pub fn open_folder(&self, folder: &Path) {
         self.ctl.open_folder(folder);
     }
+
+    /// The session's notch renders, for the line printed on exit.
+    pub fn summary(&self) -> String {
+        self.ctl.state.borrow().notches.summary(0, "session")
+    }
 }
 
 impl Ctl {
-    fn window(&self) -> Option<MainWindow> {
+    pub(crate) fn window(&self) -> Option<MainWindow> {
         self.window.upgrade()
     }
 
@@ -442,7 +465,9 @@ impl Ctl {
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
             s.requested = revision;
-            Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone() }
+            // Until the frame's first picture is shown, a render is the opening one, timed from the open.
+            let (kind, asked) = if s.rendered == 0 { (Kind::Open, s.opened_at) } else { (Kind::Notch, Instant::now()) };
+            Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked }
         };
         self.worker.submit(job);
     }
@@ -470,7 +495,8 @@ impl Ctl {
                 return;
             }
         }
-        let gpu = {
+        let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
+        let shown = {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
             s.renders += 1;
@@ -478,13 +504,13 @@ impl Ctl {
             s.histogram_dirty = true;
             match s.gpu.as_mut() {
                 Some(g) => {
-                    g.pending = Some(done.linear.clone());
-                    true
+                    g.pending = Some((done.linear.clone(), shown));
+                    None
                 }
-                None => false,
+                None => Some(shown),
             }
         };
-        if gpu {
+        if shown.is_none() {
             w.window().request_redraw();
         } else {
             // A render started while the display kernel still drew carries no bytes.
@@ -492,6 +518,9 @@ impl Ctl {
             let (lw, lh) = (done.linear.width, done.linear.height);
             let bytes = if done.rgba8.is_empty() { render::encoded(&done.linear, &Params::new(screen, lw as u32, lh as u32, 0), 1) } else { done.rgba8 };
             w.global::<Canvas>().set_frame(image(&bytes, lw, lh));
+        }
+        if let Some(shown) = shown {
+            self.shown(shown);
         }
         let status = {
             let s = self.state.borrow();
@@ -509,7 +538,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
             let Some(g) = s.gpu.as_mut() else { return };
-            let Some(linear) = g.pending.take() else { return };
+            let Some((linear, shown)) = g.pending.take() else { return };
             let (wd, ht) = (linear.width as u32, linear.height as u32);
             // The texture is imported once per size; a new render only rewrites its texels.
             let (target, imported) = match &g.target {
@@ -522,10 +551,27 @@ impl Ctl {
             };
             g.seed = g.seed.wrapping_add(1);
             g.kernel.run(&g.device, &g.queue, &linear.pixels, &Params::new(screen, wd, ht, g.seed), &target);
-            imported
+            (imported, shown)
         };
-        if let Some(image) = image {
-            w.global::<Canvas>().set_frame(image);
+        if let (Some(image), _) = &image {
+            w.global::<Canvas>().set_frame(image.clone());
+        }
+        self.shown(image.1);
+    }
+
+    /// A render reached the screen: its line, and a notch's place in the centiles.
+    fn shown(&self, shown: Shown) {
+        let end_to_end = shown.asked.elapsed();
+        timing::render(shown.kind, &shown.frame, shown.pipeline, end_to_end);
+        if shown.kind == Kind::Notch {
+            let report = {
+                let mut s = self.state.borrow_mut();
+                s.notches.record(end_to_end, Instant::now());
+                s.notches.due()
+            };
+            if let Some(report) = report {
+                timing::line(&report);
+            }
         }
     }
 
@@ -563,6 +609,14 @@ impl Ctl {
             if let Some(message) = failure {
                 self.say(&message);
             }
+        }
+    }
+
+    /// Writes the open frame's sidecar now when the disk differs.
+    pub(crate) fn flush(&self) {
+        let failure = self.state.borrow_mut().store.flush();
+        if let Some(message) = failure {
+            self.say(&message);
         }
     }
 
@@ -653,6 +707,7 @@ impl Ctl {
             let flush = s.store.flush();
             let opened = s.store.open(path).err();
             s.open = s.order.iter().position(|p| p == path);
+            s.opened_at = Instant::now();
             s.rendered = 0;
             s.requested = 0;
             for slide in &mut s.slides {
@@ -714,6 +769,7 @@ impl Ctl {
                     while hands.load(Ordering::Relaxed) > 0 {
                         std::thread::sleep(Duration::from_millis(20));
                     }
+                    let asked = Instant::now();
                     let thumbnail = (|| -> Result<(Vec<u8>, usize, usize), String> {
                         let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
                         let settings = oni_settings::sidecar::read(Path::new(&path), mosaic, true).map_err(|e| e.to_string())?.settings;
@@ -726,9 +782,15 @@ impl Ctl {
                                 n
                             }
                         };
-                        let linear = engine.lock().map_err(|_| "the render engine failed earlier")?.render(&negative, &settings, Some(THUMB_SIDE))?;
+                        let mut engine = engine.lock().map_err(|_| "the render engine failed earlier")?;
+                        let started = Instant::now();
+                        let linear = engine.render(&negative, &settings, Some(THUMB_SIDE))?;
+                        let pipeline = started.elapsed();
+                        drop(engine);
                         let k = Params::new(screen, linear.width as u32, linear.height as u32, n as u32);
-                        Ok((render::encoded(&linear, &k, 1), linear.width, linear.height))
+                        let bytes = render::encoded(&linear, &k, 1);
+                        timing::render(Kind::Thumbnail, &stem(&path), pipeline, asked.elapsed());
+                        Ok((bytes, linear.width, linear.height))
                     })();
                     // A frame that fails still counts as read, its tile left empty and the reason said.
                     with_shell(move |c| {
@@ -1120,8 +1182,11 @@ impl Ctl {
         });
 
         let p = Rc::downgrade(me);
-        let _ = window.window().set_rendering_notifier(move |state, api| {
+        let notifier = window.window().set_rendering_notifier(move |state, api| {
             let Some(p) = p.upgrade() else { return };
+            if let slint::RenderingState::RenderingSetup = state {
+                timing::line(&format!("Slint renderer: {api:?}"));
+            }
             match (state, api) {
                 (slint::RenderingState::RenderingSetup, slint::GraphicsAPI::WGPU30 { device, queue, .. }) => {
                     let kernel = display::Gpu::new(device);
@@ -1137,6 +1202,9 @@ impl Ctl {
                 _ => {}
             }
         });
+        if let Err(e) = notifier {
+            timing::line(&format!("Slint renderer: software, the canvas encoded on the CPU ({e})"));
+        }
     }
 }
 
