@@ -272,7 +272,11 @@ fn in_quad(p: (f64, f64), q: &[(f64, f64); 4]) -> bool {
 /// The knob of a horizontal track at rest, `scale` device pixels per point, premultiplied RGBA8.
 /// A hover or a grab only scales it, so one raster serves every state.
 pub fn knob_pixels(style: &Style, scale: f64) -> (usize, usize, Vec<u8>) {
-    let (wp, hp) = (KNOB_THICKNESS, KNOB_LENGTH);
+    cap_pixels(style, KNOB_THICKNESS, KNOB_LENGTH, scale, true)
+}
+
+/// A cap of `wp` by `hp` points at rest; `knob` adds the handle's black edge and grip lines.
+pub fn cap_pixels(style: &Style, wp: f64, hp: f64, scale: f64, knob: bool) -> (usize, usize, Vec<u8>) {
     let (w, h) = ((wp * scale).round() as usize, (hp * scale).round() as usize);
     let light = Light { style };
     let face = style.face_rect(wp, hp);
@@ -351,10 +355,10 @@ pub fn knob_pixels(style: &Style, scale: f64) -> (usize, usize, Vec<u8>) {
             let inset = (EDGE, EDGE, wp - 2.0 * EDGE, hp - 2.0 * EDGE);
             let band = rounded_coverage(px, py, silhouette, style.corner_radius, pixel)
                 - rounded_coverage(px, py, inset, style.corner_radius - EDGE, pixel);
-            if band > 0.0 {
+            if knob && band > 0.0 {
                 out.over(i, [0.0; 3], band.clamp(0.0, 1.0));
             }
-            for gx in grip_x {
+            for gx in grip_x.iter().copied().filter(|_| knob) {
                 let cover_x = ((px + pixel / 2.0).min(gx + EDGE) - (px - pixel / 2.0).max(gx)).max(0.0) / pixel;
                 let cover_y = ((py + pixel / 2.0).min(grip_y + GRIP_LINE) - (py - pixel / 2.0).max(grip_y)).max(0.0) / pixel;
                 if cover_x * cover_y > 0.0 {

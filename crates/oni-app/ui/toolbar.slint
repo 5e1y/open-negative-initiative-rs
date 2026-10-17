@@ -1,0 +1,140 @@
+// The top bar in three zones; every key there is a gesture a menu already reaches.
+import { DS, Icons, Caps, Keycap, KeycapPlate } from "ds/components.slint";
+
+export global Bar {
+    in property <bool> editing;
+    in property <bool> has-photo;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    in property <bool> can-paste;
+    in property <bool> can-reset;
+    in property <bool> dedust;
+    in property <int> targets: 1;
+    in property <string> filter: "ALL";
+    in property <string> undo-title: "Undo";
+    in property <string> redo-title: "Redo";
+    // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
+    in property <length> traffic-lights;
+    callback act(string);
+}
+
+// `AppBar.item`: a square icon key at the bar's height.
+component Item inherits Keycap {
+    in property <string> action;
+    has-icon: true;
+    icon-size: 16px;
+    width: DS.control-app-bar-keycap-height;
+    clicked => { Bar.act(root.action); }
+}
+
+// `AppBar.word`: a word key at the bar's height.
+component Word inherits Keycap {
+    in property <string> action;
+    clicked => { Bar.act(root.action); }
+}
+
+component EditorKeys inherits HorizontalLayout {
+    spacing: DS.space-md;
+    KeycapPlate {
+        Item { action: "framing"; icon: Icons.framing; help: "Crop and Straighten (⌘K)"; enabled: Bar.has-photo; }
+        Item { action: "compare"; icon: Icons.compare; help: "Compare"; enabled: Bar.has-photo; }
+        Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; chrome: Caps.grinding; }
+    }
+    KeycapPlate {
+        Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
+        Item { action: "redo"; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
+    }
+    KeycapPlate {
+        Item { action: "copy"; icon: Icons.copy; help: "Copy settings (⌘⇧C)"; enabled: Bar.has-photo; }
+        Item {
+            action: "paste";
+            icon: Icons.paste;
+            help: Bar.targets > 1 ? "Paste settings to " + Bar.targets + " photos (⌘⇧V)" : "Paste settings (⌘⇧V)";
+            enabled: Bar.can-paste;
+        }
+        Word { action: "paste-to-roll"; text: "PASTE TO ROLL"; help: "Paste to the Roll"; enabled: Bar.can-paste; }
+    }
+    Item {
+        action: "correction";
+        icon: Bar.dedust ? Icons.done : Icons.correction;
+        help: Bar.dedust ? "Leave De-dust" : "De-dust";
+        chrome: Bar.dedust ? Caps.confirm : Caps.correction;
+        enabled: Bar.has-photo;
+    }
+    KeycapPlate {
+        Word {
+            action: "reset";
+            text: "RESET SCAN";
+            help: "Reset to Imported State";
+            chrome: Caps.undoable;
+            ink: DS.palette-text-on-light;
+            enabled: Bar.can-reset;
+        }
+    }
+}
+
+component GalleryKeys inherits HorizontalLayout {
+    spacing: DS.space-md;
+    KeycapPlate {
+        Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; chrome: Caps.grinding; enabled: Bar.targets > 0; }
+    }
+    KeycapPlate {
+        Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
+        Item { action: "redo"; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
+    }
+    Word {
+        action: "cycle-filter";
+        text: Bar.filter;
+        fixed-width: DS.control-app-bar-filter-width;
+        help: Bar.filter == "ALL" ? "Filter: All" : "Filter: " + Bar.filter;
+    }
+    Word { action: "prepare-roll"; text: "PREPARE ROLL"; help: "Prepare the Roll"; enabled: Bar.targets > 0; }
+    KeycapPlate {
+        Word {
+            action: "reset";
+            text: "RESET SCAN";
+            help: "Reset to Imported State";
+            chrome: Caps.undoable;
+            ink: DS.palette-text-on-light;
+            enabled: Bar.can-reset;
+        }
+        Item { action: "remove"; icon: Icons.remove; help: "Move to ONI Trash"; chrome: Caps.destructive; enabled: Bar.targets > 0; }
+    }
+}
+
+export component Toolbar inherits Rectangle {
+    height: DS.control-app-bar-keycap-height + 2 * DS.space-sm;
+    background: DS.palette-panel;
+    HorizontalLayout {
+        padding-left: DS.space-sm + Bar.traffic-lights;
+        padding-right: DS.space-sm;
+        padding-top: DS.space-sm;
+        padding-bottom: DS.space-sm;
+        spacing: DS.space-md;
+        Word {
+            action: "toggle-mode";
+            text: Bar.editing ? "GALLERY" : "EDITOR";
+            widest: "GALLERY";
+            help: Bar.editing ? "Gallery (⌘G)" : "Editor (⌘G)";
+            enabled: Bar.editing || Bar.has-photo;
+        }
+        Rectangle { horizontal-stretch: 1; }
+        // A hidden copy of the editor's keys holds the zone's width, so the live keys move inside it.
+        Rectangle {
+            width: sizing.preferred-width;
+            sizing := EditorKeys { visible: false; }
+            if Bar.editing: EditorKeys { x: (parent.width - self.preferred-width) / 2; }
+            if !Bar.editing: GalleryKeys { x: (parent.width - self.preferred-width) / 2; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }
+        Word {
+            action: Bar.editing ? "export" : "open";
+            text: Bar.editing ? (Bar.targets > 1 ? "EXPORT " + Bar.targets + " PHOTOS" : "EXPORT") : "ADD FOLDER (⌘+O)";
+            chrome: Bar.editing ? Caps.accent : Caps.importing;
+            fixed-width: DS.control-app-bar-export-width;
+            help: Bar.editing ? "" : "Add a folder of scans (⌘O) · export stays on ⌘E";
+            enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
+        }
+    }
+}

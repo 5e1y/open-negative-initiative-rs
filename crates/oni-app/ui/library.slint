@@ -1,0 +1,225 @@
+// The archive tree and the gallery grid; both draw only what is on screen.
+import { ListView } from "std-widgets.slint";
+import { DS, Icons, Section, TextField } from "ds/components.slint";
+
+export struct Tile {
+    index: int,
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    picture: image,
+    caption: string,
+    selected: bool,
+    medal: int,
+}
+
+export struct Heading {
+    y: length,
+    title: string,
+    caption: string,
+}
+
+export struct TreeRow {
+    depth: int,
+    title: string,
+    caption: string,
+    // 0 a folder, 1 a roll, 2 a photo.
+    kind: int,
+    expandable: bool,
+    expanded: bool,
+    selected: bool,
+}
+
+export global Library {
+    in property <[TreeRow]> rows;
+    // Only the tiles in view and one row either side, placed in the grid's own coordinates.
+    in property <[Tile]> tiles;
+    in property <[Heading]> headings;
+    in property <length> content-height;
+    in property <length> scroll;
+    in property <string> roll-title;
+    in property <string> stock;
+    in-out property <string> description;
+    callback row-clicked(int);
+    callback tile-clicked(int, bool, bool);
+    callback tile-opened(int);
+    callback scrolled(length);
+    callback resized(length, length);
+}
+
+// `DSMedalPicker`'s three foils, read as flat colours on a tile's corner.
+global Medals {
+    out property <[color]> foil: [transparent, #b08d57, #c0c0c0, #e6c200];
+}
+
+export component Tree inherits Rectangle {
+    background: DS.palette-panel;
+    ListView {
+        for row[i] in Library.rows: Rectangle {
+            height: DS.control-film-sidebar-row-height;
+            background: row.selected ? DS.palette-hover : transparent;
+            HorizontalLayout {
+                padding-left: DS.space-sm + row.depth * DS.space-md;
+                padding-right: DS.space-sm;
+                spacing: DS.space-xs;
+                Rectangle {
+                    width: DS.control-film-sidebar-chevron-zone-width;
+                    if row.expandable: Image {
+                        source: row.expanded ? Icons.chevron-down : Icons.chevron-right;
+                        colorize: DS.palette-text-secondary;
+                        width: 10px;
+                        height: 10px;
+                    }
+                }
+                if row.kind != 2: VerticalLayout {
+                    alignment: center;
+                    Image {
+                        source: row.kind == 1 ? Icons.film-roll : row.expanded ? Icons.folder-open : Icons.folder;
+                        colorize: DS.palette-text-secondary;
+                        width: DS.control-icon-size;
+                        height: DS.control-icon-size;
+                    }
+                }
+                Text {
+                    text: row.title;
+                    font-family: DS.typo-label-family;
+                    font-size: DS.typo-label-size;
+                    color: DS.system-primary;
+                    vertical-alignment: center;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: row.caption;
+                    font-family: DS.typo-value-family;
+                    font-size: DS.typo-value-size;
+                    color: DS.palette-text-tertiary;
+                    vertical-alignment: center;
+                }
+            }
+            TouchArea { clicked => { Library.row-clicked(i); } }
+        }
+    }
+}
+
+export component Grid inherits Rectangle {
+    background: DS.palette-canvas;
+    clip: true;
+    changed width => { Library.resized(self.width, self.height); }
+    changed height => { Library.resized(self.width, self.height); }
+    // The content is the scroll area's child, so a scroll a tile leaves unhandled reaches it.
+    TouchArea {
+        scroll-event(event) => {
+            Library.scrolled(-event.delta-y);
+            EventResult.accept
+        }
+    Rectangle {
+        y: -Library.scroll;
+        width: parent.width;
+        height: Library.content-height;
+        for h in Library.headings: HorizontalLayout {
+            x: DS.space-lg;
+            y: h.y;
+            height: DS.control-roll-header-height;
+            width: root.width - 2 * DS.space-lg;
+            spacing: DS.space-sm;
+            Text {
+                text: h.title;
+                font-family: DS.typo-title-family;
+                font-size: DS.typo-title-size;
+                color: DS.system-primary;
+                vertical-alignment: center;
+            }
+            Text {
+                text: h.caption;
+                font-family: DS.typo-value-family;
+                font-size: DS.typo-value-size;
+                color: DS.palette-text-secondary;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+        }
+        for t in Library.tiles: Rectangle {
+            x: t.x;
+            y: t.y;
+            width: t.width;
+            height: t.height + DS.space-xs + DS.control-caption-height;
+            Rectangle {
+                height: t.height;
+                y: 0;
+                background: DS.palette-tile;
+                Image {
+                    source: t.picture;
+                    width: parent.width;
+                    height: parent.height;
+                    image-fit: contain;
+                }
+                if t.medal > 0: Rectangle {
+                    x: parent.width - self.width - DS.control-badge-padding;
+                    y: DS.control-badge-padding;
+                    width: DS.control-medal-size;
+                    height: DS.control-medal-size;
+                    border-radius: self.width / 2;
+                    background: Medals.foil[t.medal];
+                }
+                Rectangle {
+                    border-width: t.selected ? DS.stroke-emphasis : 0;
+                    border-color: DS.palette-selected;
+                }
+            }
+            Text {
+                y: t.height + DS.space-xs;
+                height: DS.control-caption-height;
+                width: parent.width;
+                text: t.caption;
+                font-family: DS.typo-chip-family;
+                font-size: DS.typo-chip-size;
+                color: t.selected ? DS.system-primary : DS.palette-text-secondary;
+                horizontal-alignment: center;
+                overflow: elide;
+            }
+            TouchArea {
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                        Library.tile-clicked(t.index, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
+                    }
+                }
+                double-clicked => { Library.tile-opened(t.index); }
+            }
+        }
+    }
+    }
+}
+
+// `InfoSidebar`: the selected photo's roll, its stock and a description.
+export component Info inherits Rectangle {
+    width: DS.control-info-sidebar-width;
+    background: DS.palette-panel;
+    VerticalLayout {
+        alignment: start;
+        Section {
+            title: "Roll";
+            separated: false;
+            Text {
+                text: Library.roll-title;
+                font-family: DS.typo-label-family;
+                font-size: DS.typo-label-size;
+                color: DS.system-primary;
+            }
+            Text {
+                text: Library.stock;
+                font-family: DS.typo-value-family;
+                font-size: DS.typo-value-size;
+                color: DS.palette-text-secondary;
+            }
+        }
+        Section {
+            title: "Description";
+            description := TextField {
+                placeholder: "Add a description";
+                text <=> Library.description;
+            }
+        }
+    }
+}

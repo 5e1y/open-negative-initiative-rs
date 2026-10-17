@@ -1,0 +1,568 @@
+// The design system's components: `DSSeparator`, `DSReadout`, `DSRail`, `DSSlider`, `Keycap`,
+// `KeycapPlate`, `DSPanelButton`, `DSSection`, `DSTabBar`, `DSPicker`, `DSTextField`, `DSToggle`.
+import { DS } from "tokens.slint";
+import { Icons } from "../icons.slint";
+export { DS, Icons }
+
+// Rasters of the keycap chrome, drawn in Rust from the Frustum light; nine-sliced to any width.
+export global Caps {
+    in property <image> grey;
+    in property <image> pale;
+    in property <image> accent;
+    in property <image> grinding;
+    in property <image> undoable;
+    in property <image> destructive;
+    in property <image> correction;
+    in property <image> confirm;
+    in property <image> importing;
+    in property <image> update;
+    in property <image> mini-grey;
+    in property <image> plate-grey;
+    in property <image> knob-grey;
+    in property <image> knob-white;
+    in property <image> knob-black;
+    // `KeycapStyle.labelCentring` per variant: the face sits above centre by half the extra lower wall.
+    in property <length> small-centring: -1.05px;
+    in property <length> mini-centring: -0.76px;
+    in property <length> small-padding: 16.8px;
+    in property <length> mini-padding: 12.16px;
+    in property <length> small-corner: 8.4px;
+    in property <length> mini-corner: 6.08px;
+}
+
+// What a hovered key or mark says after the system's tooltip delay, drawn by the window.
+export global Tip {
+    in-out property <string> text;
+    in-out property <length> x;
+    in-out property <length> y;
+    in-out property <bool> shown;
+}
+
+export component Separator inherits VerticalLayout {
+    Rectangle { height: DS.stroke-line; background: DS.palette-groove; }
+    Rectangle { height: DS.stroke-line; background: DS.palette-groove-light; }
+}
+
+export component Readout inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    spacing: DS.space-sm;
+    Text {
+        text: root.label;
+        font-family: DS.typo-label-family;
+        font-size: DS.typo-label-size;
+        color: DS.system-primary;
+        vertical-alignment: center;
+        overflow: elide;
+        horizontal-stretch: 1;
+    }
+    Text {
+        text: root.value;
+        font-family: DS.typo-value-family;
+        font-size: DS.typo-value-size;
+        color: DS.palette-text-secondary;
+        vertical-alignment: center;
+        horizontal-alignment: right;
+    }
+}
+
+// `dsRecessed`: an inset shadow does not exist here, so the hollow is a gradient strip, an outline and a lit rim.
+export component Recess inherits Rectangle {
+    in property <length> radius;
+    in property <length> depth: 4px;
+    Rectangle {
+        y: 0;
+        height: root.depth;
+        border-top-left-radius: root.radius;
+        border-top-right-radius: root.radius;
+        background: @linear-gradient(180deg, DS.palette-recess 0%, transparent 100%);
+    }
+    Rectangle { border-radius: root.radius; border-width: DS.stroke-line; border-color: DS.palette-track-line; }
+    Rectangle {
+        y: parent.height;
+        x: root.radius;
+        width: parent.width - 2 * root.radius;
+        height: DS.stroke-line;
+        background: DS.palette-rim;
+    }
+}
+
+// `DSRail`: drawn past the travel by the knob's half-width at both ends, filled up to the value.
+component Rail inherits Rectangle {
+    in property <float> fraction;
+    in property <length> span;
+    in property <length> overhang;
+    in property <color> tint: DS.palette-track-fill;
+    in property <bool> flat-tint: true;
+    in property <bool> bipolar;
+    in property <color> low;
+    in property <color> high;
+    in property <bool> metal;
+    x: -self.overhang;
+    width: self.span + 2 * self.overhang;
+    height: DS.control-track-height;
+    border-radius: DS.radius-track;
+    background: root.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : DS.palette-track;
+    if !root.bipolar: Rectangle {
+        x: 0;
+        width: root.overhang + clamp(root.fraction, 0, 1) * root.span;
+        border-top-left-radius: DS.radius-track;
+        border-bottom-left-radius: DS.radius-track;
+        // Square inside the rail, rounded as it reaches the rail's own end corners.
+        border-top-right-radius: max(0px, DS.radius-track - (root.width - self.width));
+        border-bottom-right-radius: max(0px, DS.radius-track - (root.width - self.width));
+        background: root.metal
+            ? @linear-gradient(180deg, DS.scanner-metal-dark 0%, DS.scanner-metal-light 35%, DS.scanner-metal-light 65%, DS.scanner-metal-dark 100%)
+            : root.flat-tint ? root.tint
+            : @linear-gradient(90deg, root.tint.with-alpha(0.45) 0%, root.tint.with-alpha(0.9) 100%);
+    }
+    Recess { radius: DS.radius-track; }
+}
+
+// `DSSlider`: the readout, then a track whose whole row grabs; Rust holds the value and its timing.
+export component Slider inherits VerticalLayout {
+    in property <int> field;
+    in property <string> label;
+    in property <string> readout;
+    // The settings' value, which accessibility reads where the readout shows the hand's.
+    in property <string> value-text;
+    in property <float> fraction;
+    in property <image> knob: Caps.knob-grey;
+    in property <color> tint: DS.palette-track-fill;
+    in property <bool> flat-tint: true;
+    in property <bool> bipolar;
+    in property <color> low;
+    in property <color> high;
+    in property <bool> metal;
+    in property <bool> enabled: true;
+    out property <length> knob-centre-x: track.absolute-position.x + track.width * clamp(root.fraction, 0, 1);
+    out property <length> knob-centre-y: track.absolute-position.y + track.height / 2;
+    // Rust answers whether this press is the second of a double click.
+    callback press(int, bool) -> bool;
+    callback drag(int, length, length, bool);
+    callback release(int);
+    // Rust answers whether the scroll runs along the track; one across it is left to the panel.
+    callback scroll(int, length, length, length, bool) -> bool;
+    callback step(int, int);
+    spacing: DS.space-xs;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value-text;
+    accessible-enabled: root.enabled;
+    accessible-action-increment => { root.step(root.field, 1); }
+    accessible-action-decrement => { root.step(root.field, -1); }
+
+    Readout { label: root.label; value: root.readout; opacity: root.enabled ? 1 : DS.state-missing; }
+    HorizontalLayout {
+        padding-left: DS.control-handle-thickness / 2;
+        padding-right: DS.control-handle-thickness / 2;
+        track := Rectangle {
+            height: DS.control-handle-length;
+            Rail {
+                y: (parent.height - self.height) / 2;
+                fraction: root.fraction;
+                span: parent.width;
+                overhang: DS.control-handle-thickness / 2;
+                tint: root.tint;
+                flat-tint: root.flat-tint;
+                bipolar: root.bipolar;
+                low: root.low;
+                high: root.high;
+                metal: root.metal;
+            }
+            Image {
+                property <float> grow: (area.over-knob || area.held) ? DS.control-knob-grow : 1;
+                source: root.knob;
+                width: DS.control-handle-thickness * self.grow;
+                height: DS.control-handle-length * self.grow;
+                x: parent.width * clamp(root.fraction, 0, 1) - self.width / 2;
+                y: (parent.height - self.height) / 2;
+                image-fit: fill;
+                animate grow { duration: 150ms; easing: ease-out-back; }
+            }
+            area := TouchArea {
+                enabled: root.enabled;
+                in-out property <bool> held;
+                property <bool> fine;
+                out property <bool> over-knob: self.has-hover
+                    && abs(self.mouse-x - parent.width * clamp(root.fraction, 0, 1)) <= DS.control-handle-thickness / 2;
+                mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                        self.fine = event.modifiers.alt;
+                        self.held = !root.press(root.field, self.fine);
+                    } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                        if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
+                            self.held = false;
+                            root.release(root.field);
+                        }
+                    } else if (event.kind == PointerEventKind.move) {
+                        self.fine = event.modifiers.alt;
+                    }
+                }
+                moved => {
+                    if (self.held) {
+                        root.drag(root.field, self.mouse-x - self.pressed-x, track.width, self.fine);
+                    }
+                }
+                scroll-event(event) => {
+                    if (root.scroll(root.field, event.delta-x, event.delta-y, track.width, event.modifiers.alt)) {
+                        return EventResult.accept;
+                    }
+                    EventResult.reject
+                }
+            }
+        }
+    }
+}
+
+// `Keycap`: the chrome raster under a word or a glyph; the press sinks the face by the variant's travel.
+export component Keycap inherits Rectangle {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon;
+    in property <length> icon-size: 14px;
+    in property <image> chrome: Caps.grey;
+    in property <color> ink: DS.palette-text-on-fill;
+    in property <bool> enabled: true;
+    in property <bool> mini;
+    in property <string> help;
+    // The widest word the key ever shows, so it opens at that width, as `keycapFitted(to:)` does.
+    in property <string> widest;
+    in property <bool> lamp-shown;
+    in property <bool> lamp-lit;
+    in property <length> fixed-width: 0px;
+    in property <length> corner: root.mini ? Caps.mini-corner : Caps.small-corner;
+    property <length> pad: root.mini ? Caps.mini-padding : Caps.small-padding;
+    property <float> depth: !root.enabled ? 0 : touch.pressed ? 1 : touch.has-hover ? 0.25 : 0;
+    property <length> travel: (root.mini ? 0.38 : 0.525) * 1px;
+    callback clicked();
+    height: root.mini ? DS.control-keycap-mini-height : DS.control-app-bar-keycap-height;
+    min-width: root.fixed-width > 0 ? root.fixed-width
+        : root.has-icon ? self.height
+        : max(label.preferred-width, measure.preferred-width) + 2 * root.pad;
+    accessible-role: button;
+    accessible-label: root.has-icon ? root.help : root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
+
+    Image {
+        source: root.chrome;
+        width: parent.width;
+        height: parent.height;
+        image-fit: fill;
+    }
+    measure := Text {
+        text: root.widest;
+        visible: false;
+        font-family: DS.typo-label-family;
+        font-size: root.mini ? 9px : 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    label := Text {
+        visible: !root.has-icon;
+        text: root.text;
+        font-family: DS.typo-label-family;
+        font-size: root.mini ? 9px : 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: root.ink;
+        opacity: root.enabled ? 1 : 0.3;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2 + (root.mini ? Caps.mini-centring : Caps.small-centring) + root.travel * root.depth;
+    }
+    if root.has-icon: Image {
+        source: root.icon;
+        colorize: root.ink;
+        opacity: root.enabled ? 1 : 0.3;
+        width: root.icon-size;
+        height: root.icon-size;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2 + (root.mini ? Caps.mini-centring : Caps.small-centring) + root.travel * root.depth;
+    }
+    if root.lamp-shown: Rectangle {
+        width: DS.control-lamp-size;
+        height: DS.control-lamp-size;
+        border-radius: self.width / 2;
+        x: parent.width - root.pad / 2 - self.width;
+        y: (parent.height - self.height) / 2 + (root.mini ? Caps.mini-centring : Caps.small-centring);
+        background: root.lamp-lit ? DS.tint-confirm : #00000080;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        changed has-hover => {
+            if (self.has-hover && root.help != "") {
+                Tip.text = root.help;
+                Tip.x = root.absolute-position.x;
+                Tip.y = root.absolute-position.y + root.height + 4px;
+                Tip.shown = true;
+            } else if (Tip.text == root.help) {
+                Tip.shown = false;
+            }
+        }
+    }
+}
+
+// `KeycapPlate`: keys flush on one black plate, its radius growing with the contour.
+export component KeycapPlate inherits Rectangle {
+    in property <bool> mini;
+    background: black;
+    border-radius: root.mini ? Caps.mini-corner : Caps.small-corner;
+    HorizontalLayout {
+        spacing: 0;
+        @children
+    }
+}
+
+// `DSPanelButton`: a block's big key, capitals posed here so a key reads as an engraved legend.
+export component PanelButton inherits Keycap {
+    in property <bool> plate;
+    height: root.plate ? DS.control-keycap-plate-height : root.mini ? DS.control-keycap-mini-height : DS.control-keycap-height;
+    chrome: root.plate ? Caps.plate-grey : root.mini ? Caps.mini-grey : Caps.grey;
+}
+
+export component HelpMark inherits Rectangle {
+    in property <string> note;
+    in property <image> question: Icons.question;
+    width: DS.control-help-mark-size + 2 * DS.space-xxs;
+    height: self.width;
+    accessible-role: button;
+    accessible-label: "What this block does";
+    Image {
+        source: root.question;
+        colorize: area.has-hover ? DS.palette-text-secondary : DS.palette-text-tertiary;
+        width: DS.control-help-mark-size;
+        height: DS.control-help-mark-size;
+    }
+    area := TouchArea {
+        changed has-hover => {
+            if (self.has-hover) {
+                Tip.text = root.note;
+                Tip.x = root.absolute-position.x - 200px;
+                Tip.y = root.absolute-position.y + root.height + 4px;
+                Tip.shown = true;
+            } else if (Tip.text == root.note) {
+                Tip.shown = false;
+            }
+        }
+    }
+}
+
+// `DSSection`: the groove above every block, then a title row with its note, reset and fold keys.
+export component Section inherits VerticalLayout {
+    in property <string> title;
+    in property <string> help;
+    in property <int> block: -1;
+    in property <bool> modified;
+    in property <bool> separated: true;
+    in-out property <bool> folded;
+    in property <image> question: Icons.question;
+    callback reset(int);
+    if root.separated: Separator { }
+    VerticalLayout {
+        padding-left: DS.space-md;
+        padding-right: DS.space-md;
+        padding-top: DS.space-lg;
+        padding-bottom: DS.space-lg;
+        spacing: 0;
+        if root.title != "": HorizontalLayout {
+            spacing: DS.space-sm;
+            Text {
+                text: root.title;
+                font-family: DS.typo-section-family;
+                font-size: DS.typo-section-size;
+                color: DS.system-primary;
+                vertical-alignment: center;
+                TouchArea { clicked => { root.folded = !root.folded; } }
+            }
+            if root.help != "": VerticalLayout {
+                alignment: center;
+                HelpMark { note: root.help; question: root.question; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
+            if root.block >= 0: PanelButton {
+                mini: true;
+                text: "RESET";
+                opacity: root.modified ? 1 : 0;
+                enabled: root.modified;
+                clicked => { root.reset(root.block); }
+            }
+            PanelButton {
+                mini: true;
+                has-icon: true;
+                icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
+                icon-size: 10px;
+                help: root.folded ? "Show " + root.title : "Hide " + root.title;
+                clicked => { root.folded = !root.folded; }
+            }
+        }
+        // Folded, the content keeps its place in the tree at zero height, so its state survives.
+        Rectangle {
+            height: root.folded && root.title != "" ? 0px : content.preferred-height;
+            clip: true;
+            content := VerticalLayout {
+                width: parent.width;
+                spacing: DS.space-sm;
+                padding-top: root.title != "" ? DS.space-sm : 0;
+                @children
+            }
+        }
+    }
+}
+
+// `DSTabBar`: a hollow cut down to the canvas's dark, one pill riding inside under the selection.
+export component TabBar inherits Rectangle {
+    in property <[string]> tabs;
+    in-out property <int> selected;
+    in property <[bool]> marked;
+    callback picked(int);
+    height: DS.control-tab-bar-height;
+    border-radius: self.height / 2;
+    background: DS.palette-canvas;
+    property <length> pitch: (self.width - 2 * DS.space-xs + DS.stroke-line) / max(1, root.tabs.length);
+    Rectangle {
+        x: DS.space-xs + root.selected * root.pitch;
+        y: DS.space-xs;
+        width: root.pitch - DS.stroke-line;
+        height: parent.height - 2 * DS.space-xs;
+        border-radius: self.height / 2;
+        background: DS.palette-track;
+        animate x { duration: 220ms; easing: ease-out; }
+    }
+    for name[i] in root.tabs: Rectangle {
+        x: DS.space-xs + i * root.pitch;
+        y: DS.space-xs;
+        width: root.pitch - DS.stroke-line;
+        height: parent.height - 2 * DS.space-xs;
+        accessible-role: tab;
+        accessible-label: name;
+        Text {
+            text: name;
+            font-family: DS.typo-label-family;
+            font-size: DS.typo-label-size;
+            color: DS.system-primary;
+            opacity: (i == root.selected || touch.has-hover) ? 1 : DS.state-idle-label;
+        }
+        if root.marked[i]: Rectangle {
+            x: parent.width - self.width - DS.space-xxs;
+            y: DS.space-xxs;
+            width: DS.space-xs;
+            height: DS.space-xs;
+            border-radius: self.width / 2;
+            background: DS.palette-accent;
+        }
+        touch := TouchArea {
+            clicked => {
+                root.selected = i;
+                root.picked(i);
+            }
+        }
+    }
+    Recess { radius: parent.height / 2; depth: (DS.control-hollow-drop + DS.control-hollow-blur / 2) * 1px; }
+}
+
+// `DSPicker`: the value in a hollow and a chevron key; the system menu it drops is Rust's.
+export component Picker inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <image> chevron: Icons.chevron-down;
+    callback open();
+    spacing: DS.space-sm;
+    height: DS.control-field-height;
+    if root.label != "": Text {
+        text: root.label;
+        font-family: DS.typo-label-family;
+        font-size: DS.typo-label-size;
+        color: DS.system-primary;
+        vertical-alignment: center;
+    }
+    Rectangle {
+        horizontal-stretch: 1;
+        border-radius: DS.radius-control;
+        background: DS.palette-canvas;
+        Text {
+            x: DS.space-md;
+            text: root.value;
+            font-family: DS.typo-label-family;
+            font-size: DS.typo-label-size;
+            color: DS.system-primary;
+            vertical-alignment: center;
+            height: parent.height;
+        }
+        Recess { radius: DS.radius-control; }
+        TouchArea { clicked => { root.open(); } }
+    }
+}
+
+// `DSTextField`: the field in a hollow, its edge lit while it holds the focus.
+export component TextField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    out property <bool> editing: input.has-focus;
+    callback edited(string);
+    height: DS.control-field-height;
+    border-radius: DS.radius-control;
+    background: DS.palette-canvas;
+    input := TextInput {
+        x: DS.space-md;
+        width: parent.width - 2 * DS.space-md;
+        height: parent.height;
+        vertical-alignment: center;
+        font-family: DS.typo-label-family;
+        font-size: DS.typo-label-size;
+        color: DS.system-primary;
+        edited => { root.edited(self.text); }
+    }
+    if input.text == "" && !input.has-focus: Text {
+        x: DS.space-md;
+        height: parent.height;
+        vertical-alignment: center;
+        text: root.placeholder;
+        font-family: DS.typo-label-family;
+        font-size: DS.typo-label-size;
+        color: DS.palette-text-tertiary;
+    }
+    Recess { radius: DS.radius-control; }
+    Rectangle {
+        border-radius: DS.radius-control;
+        border-width: input.has-focus ? DS.stroke-line : 0;
+        border-color: DS.palette-accent;
+    }
+    TouchArea {
+        clicked => { input.focus(); }
+        mouse-cursor: MouseCursor.text;
+    }
+}
+
+// `DSToggle`: a cross and a check in a hollow, the held state lit.
+export component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    in property <string> label;
+    callback toggled(bool);
+    height: DS.control-toggle-height;
+    width: 2 * DS.control-toggle-cell-width;
+    border-radius: self.height / 2;
+    background: DS.palette-canvas;
+    accessible-role: checkbox;
+    accessible-checked: root.on;
+    accessible-label: root.label;
+    Rectangle {
+        x: root.on ? parent.width / 2 : 0;
+        width: parent.width / 2;
+        border-radius: parent.height / 2;
+        background: root.on ? DS.tint-confirm : DS.palette-track;
+        animate x { duration: 150ms; }
+    }
+    Text { x: DS.control-toggle-cell-width / 2 - 3px; text: "×"; font-size: DS.control-toggle-glyph; color: DS.system-primary; vertical-alignment: center; height: parent.height; }
+    Text { x: DS.control-toggle-cell-width * 1.5 - 4px; text: "✓"; font-size: DS.control-toggle-glyph; color: DS.system-primary; vertical-alignment: center; height: parent.height; }
+    Recess { radius: parent.height / 2; }
+    TouchArea {
+        clicked => {
+            root.on = !root.on;
+            root.toggled(root.on);
+        }
+    }
+}

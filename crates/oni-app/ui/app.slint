@@ -1,0 +1,216 @@
+// The editor window: the bar, the library column, the canvas card or the gallery, the panel.
+import "../fonts/Inter.ttf";
+import "../fonts/Enriqueta-Regular.ttf";
+import { DS, Caps, Tip, Icons } from "ds/components.slint";
+import { Store } from "store.slint";
+import { Panel, Plots, PanelState } from "panel.slint";
+import { Toolbar, Bar } from "toolbar.slint";
+import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
+
+export { DS, Caps, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow }
+
+// The canvas: the photo the display kernel wrote, and the facts the status bar carries.
+export global Canvas {
+    in property <image> frame;
+    in property <string> status;
+    in property <bool> busy;
+    in-out property <length> width;
+    in-out property <length> height;
+}
+
+export global App {
+    in-out property <bool> gallery;
+    in property <bool> panel-hidden;
+    in property <bool> library-hidden;
+    // A key with control, meta, shift and alt; Rust reads ⌘ as meta on macOS, control elsewhere,
+    // and answers whether the key was claimed.
+    callback key(string, bool, bool, bool, bool) -> bool;
+    callback menu(string);
+}
+
+export component MainWindow inherits Window {
+    title: "Open Negative Initiative";
+    min-width: DS.control-min-window-width;
+    min-height: DS.control-min-window-height;
+    preferred-width: DS.control-min-window-width;
+    preferred-height: DS.control-min-window-height;
+    background: DS.palette-panel;
+    default-font-family: DS.typo-label-family;
+    out property <bool> keys-focused: keys.has-focus;
+    // Gives the key monitor the keyboard back after a click elsewhere than a field.
+    public function refocus() { keys.focus(); }
+
+    MenuBar {
+        Menu {
+            title: "File";
+            MenuItem { title: "Open Folder…"; activated => { App.menu("open"); } }
+            MenuSeparator { }
+            MenuItem { title: App.gallery ? "Editor" : "Gallery"; activated => { App.menu("toggle-mode"); } }
+            MenuItem { title: "Export"; activated => { App.menu("export"); } }
+            MenuSeparator { }
+            MenuItem { title: "Recheck Originals"; activated => { App.menu("recheck"); } }
+            MenuItem { title: "Read the Folders Again"; activated => { App.menu("read-folders"); } }
+            MenuItem { title: "Show the Selected Photo"; activated => { App.menu("show-selected"); } }
+            MenuSeparator { }
+            MenuItem { title: "Move to ONI Trash"; activated => { App.menu("remove"); } }
+            MenuItem { title: "Restore"; activated => { App.menu("restore"); } }
+        }
+        Menu {
+            title: "Edit";
+            MenuItem { title: Bar.undo-title; enabled: Bar.can-undo; activated => { App.menu("undo"); } }
+            MenuItem { title: Bar.redo-title; enabled: Bar.can-redo; activated => { App.menu("redo"); } }
+            MenuSeparator { }
+            MenuItem { title: "Reset to Imported State"; activated => { App.menu("reset"); } }
+        }
+        Menu {
+            title: "View";
+            MenuItem { title: "Zoom Out"; activated => { App.menu("smaller"); } }
+            MenuItem { title: "Zoom In"; activated => { App.menu("larger"); } }
+            MenuSeparator { }
+            MenuItem { title: "Compare"; activated => { App.menu("compare"); } }
+            MenuItem { title: App.library-hidden ? "Show Library" : "Hide Library"; activated => { App.menu("hide-library"); } }
+            MenuItem { title: App.panel-hidden ? "Show Panel" : "Hide Panel"; activated => { App.menu("hide-panel"); } }
+            MenuItem { title: "Crop and Straighten"; activated => { App.menu("framing"); } }
+            MenuItem { title: "De-dust"; activated => { App.menu("correction"); } }
+            // Bare keys stay out of `shortcut`: the key monitor routes them, so a field being edited keeps them.
+            MenuItem { title: "Bigger Brush    ]"; activated => { App.menu("bigger-brush"); } }
+            MenuItem { title: "Smaller Brush    ["; activated => { App.menu("smaller-brush"); } }
+            MenuItem { title: "Mirror"; activated => { App.menu("mirror"); } }
+            MenuSeparator { }
+            MenuItem { title: "Screen Gamut"; activated => { App.menu("screen-gamut"); } }
+            MenuSeparator { }
+            MenuItem { title: "Scanner Emulator"; activated => { App.menu("emulator"); } }
+        }
+        Menu {
+            title: "Labels";
+            MenuItem { title: "None    0"; activated => { App.menu("medal-0"); } }
+            MenuItem { title: "Bronze    1"; activated => { App.menu("medal-1"); } }
+            MenuItem { title: "Silver    2"; activated => { App.menu("medal-2"); } }
+            MenuItem { title: "Gold    3"; activated => { App.menu("medal-3"); } }
+            MenuSeparator { }
+            MenuItem { title: "Cycle Filter"; activated => { App.menu("cycle-filter"); } }
+        }
+        Menu {
+            title: "Rolls";
+            MenuItem { title: "New Roll"; activated => { App.menu("new-roll"); } }
+            MenuItem { title: "Ungroup"; activated => { App.menu("ungroup"); } }
+            MenuSeparator { }
+            MenuItem { title: "Make a Contact Sheet"; activated => { App.menu("contact-sheet"); } }
+            MenuItem { title: "Prepare the Roll…"; activated => { App.menu("prepare-roll"); } }
+            MenuItem { title: "Reset to Default…"; activated => { App.menu("reset-to-default"); } }
+        }
+        Menu {
+            title: "Settings";
+            MenuItem { title: "Copy Settings"; activated => { App.menu("copy"); } }
+            MenuItem { title: "Paste Settings"; activated => { App.menu("paste"); } }
+            MenuItem { title: "Paste to the Roll"; activated => { App.menu("paste-to-roll"); } }
+            MenuSeparator { }
+            MenuItem { title: "Save as Preset…"; activated => { App.menu("save-preset"); } }
+            MenuItem { title: "Edit Presets…"; activated => { App.menu("edit-presets"); } }
+            MenuItem { title: "Import Presets…"; activated => { App.menu("import-presets"); } }
+            MenuItem { title: "Paste Preset Code"; activated => { App.menu("paste-preset-code"); } }
+            MenuItem { title: "Show Presets Folder"; activated => { App.menu("show-presets"); } }
+        }
+        Menu {
+            title: "Help";
+            MenuItem { title: "Show Console"; activated => { App.menu("console"); } }
+            MenuItem { title: "What's New in ONI 1.1"; activated => { App.menu("welcome"); } }
+            MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }
+            MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu("report"); } }
+            MenuItem { title: "Show My Year on Film"; activated => { App.menu("wrapped"); } }
+        }
+    }
+
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (App.key(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.shift, event.modifiers.alt)) {
+                return EventResult.accept;
+            }
+            EventResult.reject
+        }
+        VerticalLayout {
+            Toolbar { }
+            HorizontalLayout {
+                vertical-stretch: 1;
+                if !App.library-hidden: Tree { width: DS.control-film-sidebar-width; }
+                Rectangle {
+                    horizontal-stretch: 1;
+                    // The card, inset by `cardInset` from the panel's ground.
+                    card := Rectangle {
+                        x: DS.control-card-inset;
+                        y: 0;
+                        width: parent.width - 2 * DS.control-card-inset;
+                        height: parent.height - DS.control-card-inset - DS.control-status-row-height;
+                        background: DS.palette-canvas;
+                        border-radius: DS.radius-card;
+                        clip: true;
+                        visible: !App.gallery;
+                        changed width => { Canvas.width = self.width - 2 * DS.control-canvas-padding; }
+                        changed height => { Canvas.height = self.height - 2 * DS.control-canvas-padding; }
+                        Image {
+                            x: DS.control-canvas-padding;
+                            y: DS.control-canvas-padding;
+                            width: parent.width - 2 * DS.control-canvas-padding;
+                            height: parent.height - 2 * DS.control-canvas-padding;
+                            source: Canvas.frame;
+                            image-fit: contain;
+                        }
+                        TouchArea { clicked => { root.refocus(); } }
+                    }
+                    Grid {
+                        x: DS.control-card-inset;
+                        width: parent.width - 2 * DS.control-card-inset;
+                        height: parent.height - DS.control-card-inset - DS.control-status-row-height;
+                        border-radius: DS.radius-card;
+                        visible: App.gallery;
+                    }
+                    // `DSStatusBar`: one line under the viewer.
+                    Text {
+                        x: DS.control-card-inset + DS.space-sm;
+                        y: parent.height - DS.control-status-row-height;
+                        height: DS.control-status-row-height;
+                        text: Canvas.status;
+                        font-family: DS.typo-value-family;
+                        font-size: DS.typo-value-size;
+                        color: DS.palette-text-secondary;
+                        vertical-alignment: center;
+                    }
+                }
+                if !App.panel-hidden && !App.gallery: Panel { }
+                if App.gallery: Info { }
+            }
+        }
+    }
+
+    tip := Rectangle {
+        x: min(Tip.x, root.width - self.width - DS.space-sm);
+        y: Tip.y;
+        width: tip-text.preferred-width + 2 * DS.space-sm;
+        height: tip-text.preferred-height + 2 * DS.space-xs;
+        background: #2c2c2cf2;
+        border-radius: DS.radius-badge / 2;
+        border-width: DS.stroke-hairline;
+        border-color: DS.palette-separator;
+        opacity: 0;
+        visible: Tip.text != "";
+        tip-text := Text {
+            text: Tip.text;
+            font-family: DS.typo-chip-family;
+            font-size: DS.typo-chip-size;
+            color: DS.system-primary;
+            wrap: word-wrap;
+            width: min(self.preferred-width, 320px);
+        }
+        // The system tooltip's delay before it shows; it leaves at once.
+        states [
+            shown when Tip.shown: {
+                opacity: 1;
+                in {
+                    animate opacity { delay: 1000ms; duration: 0ms; }
+                }
+            }
+        ]
+    }
+
+    init => { keys.focus(); }
+}

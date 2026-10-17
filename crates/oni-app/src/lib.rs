@@ -1,0 +1,26 @@
+//! The desktop shell of Open Negative Initiative: the window, the bar, the panel, the canvas and the
+//! gallery, drawn by Slint and driven by the editing model of `oni-core`.
+
+pub mod app;
+pub mod caps;
+pub mod display;
+pub mod fields;
+pub mod gallery;
+pub mod library;
+pub mod render;
+pub mod store;
+pub mod tokens;
+
+use std::path::PathBuf;
+
+slint::include_modules!();
+
+/// The Swift app's `Sources/OpenNegative`, which the token generator reads: `ONI_SWIFT_APP`, else
+/// a checkout beside this workspace.
+pub fn swift_sources() -> Option<PathBuf> {
+    if let Some(dir) = std::env::var_os("ONI_SWIFT_APP") {
+        return Some(PathBuf::from(dir));
+    }
+    let beside = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../open-negative-initiative/Sources/OpenNegative");
+    beside.is_dir().then_some(beside)
+}

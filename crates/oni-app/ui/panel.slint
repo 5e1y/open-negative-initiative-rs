@@ -1,0 +1,261 @@
+// The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
+import { DS, Icons, Caps, Slider, Section, TabBar, Picker, PanelButton, KeycapPlate, Toggle } from "ds/components.slint";
+import { Store } from "store.slint";
+
+// What changes on its own rhythm, published apart so a tick touches no panel binding.
+export global Plots {
+    in property <image> output;
+    in property <image> levels;
+}
+
+export global PanelState {
+    in-out property <int> tab: 2;
+    in property <string> film-type: "Color Negative";
+    in property <string> dyes: "Generic C-41";
+    in property <bool> flat-field-on;
+    callback auto-balance();
+    callback pick(string);
+}
+
+component StoreSlider inherits Slider {
+    press(f, fine) => { return Store.press(f, fine); }
+    drag(f, t, s, fine) => { Store.drag(f, t, s, fine); }
+    release(f) => { Store.release(f); }
+    scroll(f, dx, dy, s, fine) => { return Store.scroll(f, dx, dy, s, fine); }
+    step(f, d) => { Store.step(f, d); }
+}
+
+component Block inherits Section {
+    reset(b) => { Store.reset(b); }
+}
+
+// `GainChannel`'s hue and complement: the sensor's own channels, plain colours rather than tokens.
+global Hues {
+    out property <color> blue: #0a84ff;
+    out property <color> yellow: #ffd60a;
+    out property <color> green: #30d158;
+    out property <color> magenta: #ff00ff;
+}
+
+component Pane inherits Flickable {
+    in property <bool> shown;
+    visible: self.shown;
+    content-height: column.preferred-height;
+    column := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        @children
+    }
+}
+
+component RollPane inherits Pane {
+    Block {
+        title: "Measured Roll";
+        help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it.";
+        Text {
+            text: "Acts on the photos measured with this roll.";
+            font-family: DS.typo-label-family;
+            font-size: DS.typo-label-size;
+            color: DS.palette-text-secondary;
+            wrap: word-wrap;
+        }
+    }
+    Block {
+        title: "Film Type";
+        help: "What the film is: a colour negative, a slide or black and white.";
+        Picker { value: PanelState.film-type; open => { PanelState.pick("film-type"); } }
+    }
+    Block {
+        title: "Flat-Field";
+        HorizontalLayout {
+            spacing: DS.space-sm;
+            Text {
+                text: "Flat-field";
+                font-family: DS.typo-label-family;
+                font-size: DS.typo-label-size;
+                color: DS.system-primary;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            Toggle { label: "Flat-field"; on: PanelState.flat-field-on; }
+        }
+    }
+    Block {
+        title: "Dye Separation";
+        block: 5;
+        modified: Store.dye-separation-modified;
+        folded: true;
+        Picker { label: "Dyes"; value: PanelState.dyes; open => { PanelState.pick("dyes"); } }
+        StoreSlider { field: 13; label: "Dye separation"; fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
+    }
+    Block {
+        title: "Balance Strength";
+        help: "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.";
+        block: 3;
+        modified: Store.balance-strength-modified;
+        folded: true;
+        StoreSlider { field: 11; label: "Strength"; fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+    }
+    Block {
+        title: "Density Ceiling";
+        help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
+        block: 4;
+        modified: Store.density-ceiling-modified;
+        folded: true;
+        StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
+    }
+    Block {
+        title: "Per-Channel Levels";
+        TabBar { tabs: ["RGB", "R", "G", "B"]; marked: [false, false, false, false]; }
+        Image { source: Plots.levels; height: DS.control-histogram-height; image-fit: fill; }
+    }
+}
+
+component CropPane inherits Pane {
+    Block {
+        title: "Aspect Ratio";
+        TabBar { tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"]; marked: [false, false, false, false, false, false]; }
+        HorizontalLayout {
+            spacing: DS.space-sm;
+            Text {
+                text: "Vertical";
+                font-family: DS.typo-label-family;
+                font-size: DS.typo-label-size;
+                color: DS.system-primary;
+                vertical-alignment: center;
+                horizontal-stretch: 1;
+            }
+            Toggle { label: "Vertical"; }
+        }
+    }
+    Block {
+        title: "Straighten";
+        StoreSlider { field: 14; label: "Angle"; fraction: Store.angle-fraction; readout: Store.angle-readout; value-text: Store.angle-value; }
+    }
+    Block {
+        title: "Rotate & Mirror";
+        HorizontalLayout {
+            spacing: DS.space-sm;
+            alignment: start;
+            PanelButton { has-icon: true; icon: Icons.rotate; help: "Rotate 90° clockwise"; }
+            KeycapPlate {
+                PanelButton { has-icon: true; icon: Icons.mirror; help: "Mirror left for right"; }
+                PanelButton { has-icon: true; icon: Icons.mirror; help: "Mirror top for bottom"; }
+            }
+        }
+    }
+}
+
+component ColorPane inherits Pane {
+    Block {
+        title: "Color";
+        separated: false;
+        block: 0;
+        modified: Store.color-modified;
+        help: "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.";
+        KeycapPlate {
+            PanelButton {
+                plate: true;
+                text: "AUTO WHITE BALANCE";
+                help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
+                horizontal-stretch: 1;
+                clicked => { PanelState.auto-balance(); }
+            }
+        }
+        StoreSlider {
+            field: 0; label: "Temperature"; fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
+            bipolar: true; low: Hues.blue; high: Hues.yellow;
+        }
+        StoreSlider {
+            field: 1; label: "Tint"; fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
+            bipolar: true; low: Hues.green; high: Hues.magenta;
+        }
+        StoreSlider { field: 2; label: "Color density (same as saturation)"; fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
+    }
+    Block {
+        title: "Lighting";
+        block: 1;
+        modified: Store.lighting-modified;
+        help: "The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself.";
+        StoreSlider { field: 3; label: "Exposure"; fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
+        StoreSlider { field: 4; label: "Highlights"; fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
+        StoreSlider { field: 5; label: "Shadows"; fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
+        StoreSlider {
+            field: 6; label: "White point"; fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
+            tint: white; flat-tint: false; knob: Caps.knob-white;
+        }
+        StoreSlider {
+            field: 7; label: "Black point"; fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
+            tint: black; flat-tint: false; knob: Caps.knob-black;
+        }
+    }
+    Block {
+        title: "Effects";
+        block: 2;
+        modified: Store.effects-modified;
+        help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
+        StoreSlider { field: 8; label: "Contrast"; fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
+        StoreSlider { field: 9; label: "Vignette"; fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
+        StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; metal: true; }
+    }
+    Block {
+        title: "Curves";
+        folded: true;
+        help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
+        TabBar { tabs: ["RGB", "Luma", "R", "G", "B"]; marked: [false, false, false, false, false]; }
+    }
+}
+
+component DetailsPane inherits Pane {
+    Block {
+        title: "Sharpening";
+        block: 6;
+        modified: Store.sharpening-modified;
+        StoreSlider { field: 15; label: "Amount"; fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
+        StoreSlider { field: 16; label: "Radius"; fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
+        StoreSlider { field: 17; label: "Halo limit"; fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
+    }
+    Block {
+        title: "Chroma Denoise";
+        block: 7;
+        modified: Store.chroma-denoise-modified;
+        StoreSlider { field: 18; label: "Amount"; fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
+        StoreSlider { field: 19; label: "Radius"; fraction: Store.chroma-radius-fraction; readout: Store.chroma-radius-readout; value-text: Store.chroma-radius-value; }
+    }
+    Block {
+        title: "Texture";
+        block: 8;
+        modified: Store.texture-modified;
+        StoreSlider { field: 20; label: "Texture"; fraction: Store.texture-fraction; readout: Store.texture-readout; value-text: Store.texture-value; }
+    }
+}
+
+export component Panel inherits Rectangle {
+    width: DS.control-panel-width;
+    background: DS.palette-panel;
+    VerticalLayout {
+        Image {
+            height: DS.control-main-histogram-height;
+            source: Plots.output;
+            image-fit: fill;
+        }
+        HorizontalLayout {
+            padding-left: DS.space-md;
+            padding-right: DS.space-md;
+            padding-top: DS.space-sm;
+            padding-bottom: DS.space-sm;
+            TabBar {
+                tabs: ["Roll", "Crop", "Color", "Details"];
+                marked: [false, false, false, false];
+                selected <=> PanelState.tab;
+            }
+        }
+        Rectangle {
+            vertical-stretch: 1;
+            RollPane { shown: PanelState.tab == 0; }
+            CropPane { shown: PanelState.tab == 1; }
+            ColorPane { shown: PanelState.tab == 2; }
+            DetailsPane { shown: PanelState.tab == 3; }
+        }
+    }
+}
