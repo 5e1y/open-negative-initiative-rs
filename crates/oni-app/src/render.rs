@@ -391,6 +391,15 @@ pub struct View {
     pub settled: bool,
 }
 
+/// A view's identity for a kept render: the viewport, the canvas, settled or not, and which full frame.
+pub type ViewKey = (crate::viewport::Viewport, (f64, f64), bool, Option<u64>);
+
+impl View {
+    pub fn key(&self) -> ViewKey {
+        (self.viewport, self.size, self.settled, self.full.as_ref().map(Source::id))
+    }
+}
+
 /// Where a render sits on the canvas, in drawable pixels, and what it covers.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Placed {
@@ -468,6 +477,8 @@ pub struct Job<I> {
     pub asked: Instant,
     /// What the canvas shows; none renders the whole preview.
     pub view: Option<View>,
+    /// Compare's before, the bar's reset frame with the dust kept, rendered on the same view.
+    pub reference: Option<PipelineSettings>,
 }
 
 /// What a render hands the canvas: a texture the display kernel encodes, or for the software
@@ -490,6 +501,7 @@ pub struct Done {
     pub pipeline: Duration,
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
+    pub before: Option<(Source, Option<Placed>)>,
 }
 
 struct Slot<I> {
@@ -514,6 +526,8 @@ impl<I: Send + Sync + 'static> Worker<I> {
             .name("render".into())
             .spawn(move || {
                 let mut seed = 0u32;
+                // The before is kept while its settings and the view hold, so a notch never renders it again.
+                let mut kept: Option<(PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 loop {
                     let job = {
                         let (lock, wake) = &*shared;
@@ -534,7 +548,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path, picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -542,9 +556,26 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(Histogram::of(&rgba8));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path, picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
                         }),
                     };
+                    let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {
+                        (Some(reference), true) => {
+                            let key = job.view.as_ref().map(View::key);
+                            match &kept {
+                                Some((s, k, source, placed)) if s == reference && *k == key => Some((source.clone(), *placed)),
+                                _ => match renderer.resident(&job.negative, reference, job.view.as_ref()) {
+                                    Some(Ok((source, placed))) => {
+                                        kept = Some((reference.clone(), key, source.clone(), placed));
+                                        Some((source, placed))
+                                    }
+                                    _ => None,
+                                },
+                            }
+                        }
+                        _ => None,
+                    };
+                    let done = done.map(|d| Done { before, ..d });
                     deliver(done);
                 }
             })
@@ -663,7 +694,7 @@ mod tests {
             let mut settings = PipelineSettings::default();
             settings.print.exposure = revision as f32;
             let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None });
+            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None });
             std::thread::sleep(Duration::from_millis(2));
         }
         let mut revisions = Vec::new();

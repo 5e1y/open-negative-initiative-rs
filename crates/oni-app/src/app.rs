@@ -82,6 +82,8 @@ struct Gpu {
     queue: wgpu::Queue,
     kernel: display::Gpu,
     target: Option<wgpu::Texture>,
+    /// Compare's before, encoded beside the after, and the render it was encoded from.
+    before: Option<(wgpu::Texture, oni_graph::Source)>,
     /// The picture the canvas was last encoded from, alive until the next one is encoded.
     current: Option<Picture>,
     /// A frame was encoded since the histogram last counted one.
@@ -150,10 +152,14 @@ pub struct State {
     /// The displayed image's size in full-resolution pixels, from the last render placed.
     full_size: Option<(f64, f64)>,
     /// What the last render request showed, so a navigation alone asks again.
-    requested_view: Option<(Viewport, (f64, f64), bool, bool)>,
+    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool)>,
     placed: Option<Placed>,
     grab: Option<(f32, f32)>,
     pinch: f32,
+    /// Compare Before/After's split, a fraction of the canvas's width; none while off.
+    split: Option<f32>,
+    /// How many distinct befores the canvas encoded, which a kept one does not add to.
+    befores: usize,
     support: PathBuf,
     phone: Option<Phone>,
 }
@@ -209,6 +215,14 @@ impl State {
 
     pub fn viewport(&self) -> Viewport {
         self.viewport
+    }
+
+    pub fn split(&self) -> Option<f32> {
+        self.split
+    }
+
+    pub fn befores(&self) -> usize {
+        self.befores
     }
 
     pub fn phone(&self) -> Option<&Phone> {
@@ -372,7 +386,7 @@ impl Shell {
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: options.canvas.map(|(device, queue)| {
                 let kernel = display::Gpu::new(&device);
-                Gpu { device, queue, kernel, target: None, current: None, uncounted: false, seed: 0 }
+                Gpu { device, queue, kernel, target: None, before: None, current: None, uncounted: false, seed: 0 }
             }),
             renders: 0,
             opened_at: Instant::now(),
@@ -388,6 +402,8 @@ impl Shell {
             placed: None,
             grab: None,
             pinch: 1.0,
+            split: None,
+            befores: 0,
             support: options.support.clone(),
             phone: None,
         };
@@ -564,7 +580,7 @@ impl Ctl {
             let moved_at = s.moved_at.take();
             let settled = s.navigated_at.is_none_or(|t| t.elapsed() >= viewport::SETTLE);
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some()));
+            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some(), s.split.is_some()));
             let moved = revision != s.requested || s.rendered == 0;
             if !moved && view_key == s.requested_view {
                 return;
@@ -590,7 +606,14 @@ impl Ctl {
                 (path.clone(), s.store.settings().primaries_converted)
             });
             let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
-            (Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked, view }, build)
+            let live = s.store.settings().clone();
+            // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
+            let reference = s.split.map(|_| {
+                let mut reference = oni_core::parameters::imported(&live);
+                reference.corrections = live.corrections.clone();
+                reference
+            });
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference }, build)
         };
         self.worker.submit(job);
         if let Some((path, converted)) = build {
@@ -689,6 +712,9 @@ impl Ctl {
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
         let (width, height) = (done.width, done.height);
         self.lay(done.placed, (width, height));
+        if let Some((before, placed)) = done.before {
+            self.encode_before(before, placed);
+        }
         let on_gpu = {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
@@ -742,6 +768,57 @@ impl Ctl {
         c.set_frame_y((rect.1 / scale) as f32);
         c.set_frame_width((rect.2 / scale) as f32);
         c.set_frame_height((rect.3 / scale) as f32);
+    }
+
+    /// Compare's before into its own texture, laid where its view puts it.
+    fn encode_before(&self, before: oni_graph::Source, placed: Option<Placed>) {
+        let Some(w) = self.window() else { return };
+        let (imported, rect) = {
+            let mut s = self.state.borrow_mut();
+            let screen = s.screen;
+            let Some(g) = s.gpu.as_mut() else { return };
+            let Some(view) = before.view().cloned() else { return };
+            let e = before.extent();
+            let reuse = g.before.as_ref().filter(|(t, _)| t.width() == e.w && t.height() == e.h).map(|(t, _)| t.clone());
+            let (target, imported) = match reuse {
+                Some(t) => (t, None),
+                None => {
+                    let t = display::Gpu::target(&g.device, e.w, e.h);
+                    (t.clone(), Image::try_from(t).ok())
+                }
+            };
+            g.kernel.run(&g.device, &g.queue, &view, &Params::new(screen, e.w, e.h, g.seed), &target);
+            if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
+                s.befores += 1;
+            }
+            let Some(g) = s.gpu.as_mut() else { return };
+            g.before = Some((target, before));
+            (imported, placed)
+        };
+        let c = w.global::<Canvas>();
+        if let Some(image) = imported {
+            c.set_before(image);
+        }
+        if let Some(p) = rect {
+            let scale = f64::from(w.window().scale_factor());
+            c.set_before_x((p.x / scale) as f32);
+            c.set_before_y((p.y / scale) as f32);
+            c.set_before_width((p.width / scale) as f32);
+            c.set_before_height((p.height / scale) as f32);
+        }
+    }
+
+    /// Compare Before/After on and off, the split at half the canvas.
+    fn toggle_compare(self: &Rc<Self>) {
+        let split = {
+            let mut s = self.state.borrow_mut();
+            s.split = if s.split.is_some() { None } else { Some(0.5) };
+            s.split
+        };
+        if let Some(w) = self.window() {
+            w.global::<Canvas>().set_split(split.unwrap_or(-1.0));
+        }
+        self.request_render();
     }
 
     /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
@@ -1338,6 +1415,10 @@ impl Ctl {
                     return;
                 }
                 app.set_gallery(gallery);
+                // A mode change drops the split, as Swift's does.
+                if self.state.borrow().split.is_some() {
+                    self.toggle_compare();
+                }
                 self.publish_bar();
                 self.publish_tiles();
             }
@@ -1350,6 +1431,7 @@ impl Ctl {
                 self.relayout();
             }
             "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
+            "compare" if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
             "bigger-brush" | "smaller-brush" => {
                 let by = if action == "bigger-brush" { 1.0 } else { -1.0 };
                 let brush = {
@@ -1604,6 +1686,19 @@ impl Ctl {
                 p.state.borrow_mut().viewport.clamp(full, size);
             }
             p.request_render();
+        });
+
+        let p = me.clone();
+        c.on_split_dragged(move |x| {
+            let width = p.window().map_or(0.0, |w| w.global::<Canvas>().get_width());
+            if width <= 0.0 || p.state.borrow().split.is_none() {
+                return;
+            }
+            let split = (x / width).clamp(0.0, 1.0);
+            p.state.borrow_mut().split = Some(split);
+            if let Some(w) = p.window() {
+                w.global::<Canvas>().set_split(split);
+            }
         });
 
         let p = me.clone();

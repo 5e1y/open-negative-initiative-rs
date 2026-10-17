@@ -1,7 +1,7 @@
 // The primitives every screen composes: text, glyphs, pictures, surfaces, rules and stacks.
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, StatusStyle, ShellStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
 
 export enum TextRole { label, value, caption, title, section, heading, button }
 export enum Tone { primary, secondary, tertiary, on-fill, on-light }
@@ -99,6 +99,42 @@ export component HistogramFrame inherits Picture {
 export component Divider inherits Rectangle {
     height: Stroke.line;
     background: Colour.separator;
+}
+
+// `NegativeView.splitDivider`: the compare split's guide, its before and after labels, a grab the
+// width of a handle; moving it only recomposites.
+export component SplitGuide inherits Rectangle {
+    callback dragged(length);
+    width: SplitStyle.grab;
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        width: grab.has-hover || grab.pressed ? Stroke.line + SplitStyle.grow : Stroke.line;
+        height: parent.height;
+        background: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
+        drop-shadow-color: Colour.contrast-edge;
+        drop-shadow-blur: SplitStyle.shadow;
+    }
+    Label {
+        text: "before";
+        role: TextRole.value;
+        x: (parent.width - self.width) / 2 - SplitStyle.label-inset;
+        y: Space.s;
+    }
+    Label {
+        text: "after";
+        role: TextRole.value;
+        x: (parent.width - self.width) / 2 + SplitStyle.label-inset;
+        y: Space.s;
+    }
+    grab := TouchArea {
+        mouse-cursor: ew-resize;
+        moved => { root.dragged(self.mouse-x); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down) {
+                root.dragged(self.mouse-x);
+            }
+        }
+    }
 }
 
 export component Spacer inherits Rectangle {

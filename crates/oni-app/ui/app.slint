@@ -1,5 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState } from "panel.slint";
@@ -21,6 +21,14 @@ export global Canvas {
     in property <length> frame-y;
     in property <length> frame-width;
     in property <length> frame-height;
+    // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
+    in property <float> split: -1;
+    in property <image> before;
+    in property <length> before-x;
+    in property <length> before-y;
+    in property <length> before-width;
+    in property <length> before-height;
+    callback split-dragged(length);
     callback resized();
     callback double-clicked();
     callback grabbed(length, length);
@@ -172,6 +180,20 @@ export component MainWindow inherits AppWindow {
                                 stretched: true;
                                 source: Canvas.frame;
                             }
+                            if Canvas.split >= 0: Rectangle {
+                                width: parent.width * Canvas.split;
+                                height: parent.height;
+                                clip: true;
+                                Picture {
+                                    x: Canvas.before-x;
+                                    y: Canvas.before-y;
+                                    width: Canvas.before-width;
+                                    height: Canvas.before-height;
+                                    ground: Ground.canvas;
+                                    stretched: true;
+                                    source: Canvas.before;
+                                }
+                            }
                             // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
                             ScaleRotateGestureHandler {
                                 width: parent.width;
@@ -193,6 +215,11 @@ export component MainWindow inherits AppWindow {
                                         Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.meta) ? EventResult.accept : EventResult.reject
                                     }
                                 }
+                            }
+                            if Canvas.split >= 0: SplitGuide {
+                                x: parent.width * Canvas.split - self.width / 2;
+                                height: parent.height;
+                                dragged(at) => { Canvas.split-dragged(self.x + at); }
                             }
                         }
                     }

@@ -29,6 +29,9 @@ export global Colour {
     out property <color> destructive-pressed: DS.tint-destructive.darker(0.2);
     out property <color> confirm: DS.tint-confirm;
     out property <color> separator: DS.palette-separator;
+    out property <color> guide: DS.palette-guide;
+    out property <color> handle-active: DS.palette-handle-active;
+    out property <color> contrast-edge: DS.palette-contrast-edge;
     out property <color> hover: DS.palette-hover;
     out property <color> row-selected: DS.palette-track;
     out property <color> selected: DS.palette-selected;
@@ -215,6 +218,14 @@ export global CardStyle {
     out property <length> inset: DS.control-card-inset;
     out property <length> radius: Radius.card;
     out property <length> padding: DS.control-canvas-padding;
+}
+
+// Compare's split guide: a grab the width of a handle, a line that grows under the hand.
+export global SplitStyle {
+    out property <length> grab: DS.control-grab-size;
+    out property <length> grow: DS.control-guide-grow;
+    out property <length> label-inset: DS.control-split-label-inset;
+    out property <length> shadow: 2px;
 }
 
 export global StatusStyle {

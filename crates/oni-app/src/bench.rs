@@ -3,7 +3,8 @@
 //! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
 //! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
-//! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, and returns to fit.
+//! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, and returns to fit;
+//! `ONI_BENCH=compare` turns Compare on, drags Exposure and the split, and counts the befores.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -38,6 +39,7 @@ pub enum Mode {
     Settled,
     Long,
     Zoom,
+    Compare,
 }
 
 impl Mode {
@@ -58,6 +60,7 @@ pub fn requested() -> Option<Mode> {
         "settled" => Some(Mode::Settled),
         "long" => Some(Mode::Long),
         "zoom" => Some(Mode::Zoom),
+        "compare" => Some(Mode::Compare),
         _ => None,
     }
 }
@@ -100,6 +103,13 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
             Phase::Loading => {
                 let settled = !matches!(mode, Mode::Settled | Mode::Long) || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
                 if ctl.state.borrow().renders() >= 1 && settled {
+                    if mode == Mode::Compare && ctl.state.borrow().split().is_none() {
+                        ctl.act("compare");
+                        return;
+                    }
+                    if mode == Mode::Compare && ctl.state.borrow().befores() == 0 {
+                        return;
+                    }
                     let from = ctl.state.borrow().notches().count();
                     g.invoke_press(field, false);
                     phase.set(Phase::Dragging { notch: 0, from });
@@ -110,6 +120,10 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
             Phase::Dragging { notch, from } => {
                 let notch = notch + 1;
                 g.invoke_drag(field, mode.travel(notch), SPAN, false);
+                if mode == Mode::Compare {
+                    let width = w.global::<crate::Canvas>().get_width();
+                    w.global::<crate::Canvas>().invoke_split_dragged(width * (0.2 + 0.6 * notch as f32 / NOTCHES as f32));
+                }
                 if mode == Mode::Resize {
                     let (width, height) = SIZES[notch % SIZES.len()];
                     w.window().set_size(slint::LogicalSize::new(width, height));
@@ -130,9 +144,14 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
                     Mode::Long | Mode::Zoom => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
-                let report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
+                let mut report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
+                if mode == Mode::Compare {
+                    let s = ctl.state.borrow();
+                    report.push_str(&format!("\ncompare: {} before rendered over the drag, split at {:.2}", s.befores(), s.split().unwrap_or(-1.0)));
+                }
                 ctl.act("undo");
                 ctl.flush();
                 finish(report);
