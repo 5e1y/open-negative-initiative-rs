@@ -52,6 +52,18 @@ pub fn decode(path: &Path, primaries_converted: bool) -> Result<Decoded, String>
     }
 }
 
+/// The frame's own pixels, unreduced: what a zoom past the preview reads.
+pub fn decode_full(path: &Path, primaries_converted: bool) -> Result<Decoded, String> {
+    match oni_decode::route(path) {
+        oni_decode::Branch::LinearRgb if !primaries_converted => {
+            let d = oni_decode::container::linear(path, None).ok_or("its samples are unreadable")?;
+            let full_width = d.width as f64;
+            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
+        }
+        _ => decode(path, primaries_converted),
+    }
+}
+
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.
 pub struct Negative {
     pub preview: Source,
@@ -282,47 +294,124 @@ impl Engine {
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
 
-    /// `Pipeline.apply` on the preview, left on the GPU in one texture for the display kernel to read.
-    /// With `side`, on the preview reduced once to that long side, so a notch computes no hidden pixel.
-    pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Result<Source, String> {
-        let (w, h) = negative.size();
-        let long = w.max(h) as usize;
-        let source = match side.filter(|&s| s < long) {
-            Some(side) => self.fitted(negative, side, long)?,
-            None => negative.preview.clone(),
-        };
+    /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
+    pub fn full(&mut self, decoded: Decoded) -> Result<Source, String> {
+        let l = decoded.linear;
+        self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
+    }
+
+    /// `Pipeline.apply` left on the GPU in one texture for the display kernel to read. With a view,
+    /// only its visible region, from the preview or past its ratio from the full frame, each reduced
+    /// once to the scale shown, so a notch computes no hidden pixel.
+    pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        let Some(view) = view else {
+            let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+            let image = self.proof.laid(&mut self.graph, image, settings)?;
+            return Ok((self.one_texture(&image, None)?, None));
+        };
+        let ratio = negative.size().0 as f64 / negative.full_width;
+        let shown = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?.extent();
+        let full = (shown.w as f64 / ratio, shown.h as f64 / ratio);
+        let vp = view.viewport;
+        let scale = vp.effective_scale(full, view.size);
+        let placement = vp.placement(full, view.size);
+        let at_full = view.settled && vp.needs_full_resolution(ratio, full, view.size, crate::viewport::NOMINAL_BUDGET);
+        let (base, base_ratio) = match (&view.full, at_full) {
+            (Some(f), true) => (f.clone(), 1.0),
+            _ => (negative.preview.clone(), ratio),
+        };
+        let e = base.extent();
+        let long = e.w.max(e.h) as usize;
+        let side = ((long as f64 * (scale / base_ratio).min(1.0)).round() as usize).max(1);
+        let source = if side < long { self.fitted(&base, side, long)? } else { base };
         let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
-        let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
+        let extent = image.extent();
+        let stretch = scale * full.0 / extent.w as f64;
+        let (vx, vy, vw, vh) = placement.visible;
+        let corner = |v: f64, origin: i32, f: fn(f64) -> f64| origin + f(v / stretch) as i32;
+        let region = Rect::from_corners(
+            corner(vx, extent.x, f64::floor).max(extent.x),
+            corner(vy, extent.y, f64::floor).max(extent.y),
+            corner(vx + vw, extent.x, f64::ceil).min(extent.right()),
+            corner(vy + vh, extent.y, f64::ceil).min(extent.bottom()),
+        );
+        if region.is_empty() {
+            return Err("the image is off the canvas".into());
+        }
+        let placed = Placed {
+            x: placement.image.0 + f64::from(region.x - extent.x) * stretch,
+            y: placement.image.1 + f64::from(region.y - extent.y) * stretch,
+            width: f64::from(region.w) * stretch,
+            height: f64::from(region.h) * stretch,
+            full,
+            whole: region == extent,
+            at_full_resolution: at_full && view.full.is_some(),
+        };
+        Ok((self.one_texture(&image, Some(region))?, Some(placed)))
+    }
+
+    fn one_texture(&mut self, image: &Image, region: Option<Rect>) -> Result<Source, String> {
+        let source = match region {
+            Some(r) if r != image.extent() => self.graph.materialise_region(image, r),
+            _ => self.graph.materialise(image),
+        }
+        .map_err(|e| e.to_string())?;
         if source.view().is_none() {
             return Err("the render is wider than one texture".into());
         }
         Ok(source)
     }
 
-    fn fitted(&mut self, negative: &Negative, side: usize, long: usize) -> Result<Source, String> {
-        let id = negative.preview.id();
+    fn fitted(&mut self, base: &Source, side: usize, long: usize) -> Result<Source, String> {
+        let id = base.id();
         if let Some((kept, s, source)) = &self.fitted
             && (*kept, *s) == (id, side)
         {
             return Ok(source.clone());
         }
         self.fitted = None;
-        let reduced = Image::new(&negative.preview).lanczos(side as f64 / long as f64);
+        let reduced = Image::new(base).lanczos(side as f64 / long as f64);
         let source = self.graph.materialise(&reduced).map_err(|e| e.to_string())?;
         self.fitted = Some((id, side, source.clone()));
         Ok(source)
     }
 }
 
+/// What the canvas shows: the viewport over its drawable surface, and the frame's full-resolution
+/// pixels once built, which a zoom past the preview's ratio reads instead of a stretched preview.
+#[derive(Clone)]
+pub struct View {
+    pub viewport: crate::viewport::Viewport,
+    /// The canvas, in drawable pixels.
+    pub size: (f64, f64),
+    pub full: Option<Source>,
+    /// False while a navigation is in the hand: the preview serves it, as Swift's does.
+    pub settled: bool,
+}
+
+/// Where a render sits on the canvas, in drawable pixels, and what it covers.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Placed {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    /// The displayed image's size in full-resolution pixels, which the viewport reasons on.
+    pub full: (f64, f64),
+    /// The render holds the whole image, so its histogram is the picture's.
+    pub whole: bool,
+    pub at_full_resolution: bool,
+}
+
 /// The conversion a canvas copy goes through: settings in, linear Rec. 2020 out.
 pub trait Renderer<I>: Send {
     fn render(&mut self, negative: &I, settings: &PipelineSettings) -> Result<Linear, String>;
 
-    /// The same render kept on the GPU for the display kernel, fitted to `side` when given; `None`
+    /// The same render kept on the GPU for the display kernel, the view's region when given; `None`
     /// where only pixels are made.
-    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _side: Option<usize>) -> Option<Result<Source, String>> {
+    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
         None
     }
 }
@@ -332,8 +421,8 @@ impl Renderer<Negative> for Shared {
         self.lock()?.render(negative, settings, None)
     }
 
-    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Option<Result<Source, String>> {
-        Some(self.lock().and_then(|mut e| e.resident(negative, settings, side)))
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
+        Some(self.lock().and_then(|mut e| e.resident(negative, settings, view)))
     }
 }
 
@@ -377,17 +466,8 @@ pub struct Job<I> {
     pub kind: crate::timing::Kind,
     /// When the store asked for it, or the frame was opened, which the end-to-end time starts from.
     pub asked: Instant,
-    /// The long side, in device pixels, the picture is shown at; none renders the whole preview.
-    pub side: Option<usize>,
-}
-
-/// The long side of a `size` picture fitted inside a `canvas` of device pixels; none while it has no area.
-pub fn fitted_side(size: (u32, u32), canvas: (f32, f32)) -> Option<usize> {
-    let (w, h) = (size.0 as f32, size.1 as f32);
-    if canvas.0 < 1.0 || canvas.1 < 1.0 || w < 1.0 || h < 1.0 {
-        return None;
-    }
-    Some(((canvas.0 / w).min(canvas.1 / h) * w.max(h)).ceil() as usize)
+    /// What the canvas shows; none renders the whole preview.
+    pub view: Option<View>,
 }
 
 /// What a render hands the canvas: a texture the display kernel encodes, or for the software
@@ -408,6 +488,8 @@ pub struct Done {
     pub kind: crate::timing::Kind,
     pub asked: Instant,
     pub pipeline: Duration,
+    /// Where the canvas lays it; none fills the canvas.
+    pub placed: Option<Placed>,
 }
 
 struct Slot<I> {
@@ -446,13 +528,13 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     };
                     seed = seed.wrapping_add(1);
                     let started = Instant::now();
-                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings, job.side) } else { None };
+                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings, job.view.as_ref()) } else { None };
                     let done = match resident {
-                        Some(made) => made.map(|source| {
+                        Some(made) => made.map(|(source, placed)| {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path, picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed() }
+                            Done { revision: job.revision, path: job.path, picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -460,7 +542,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(Histogram::of(&rgba8));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path, picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline }
+                            Done { revision: job.revision, path: job.path, picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None }
                         }),
                     };
                     deliver(done);
@@ -581,7 +663,7 @@ mod tests {
             let mut settings = PipelineSettings::default();
             settings.print.exposure = revision as f32;
             let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, side: None });
+            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None });
             std::thread::sleep(Duration::from_millis(2));
         }
         let mut revisions = Vec::new();
@@ -592,15 +674,6 @@ mod tests {
         assert!(revisions.len() <= 3, "{revisions:?}: the slot replaced the waiting jobs");
         // Twin: twenty submissions, so a queue would have rendered twenty.
         assert!(seen.lock().unwrap().len() < 20);
-    }
-
-    #[test]
-    fn a_render_is_fitted_inside_the_canvas_on_its_long_side() {
-        assert_eq!(fitted_side((2000, 1332), (808.0, 1052.0)), Some(808), "a wide frame meets the canvas's sides");
-        assert_eq!(fitted_side((1332, 2000), (808.0, 1052.0)), Some(1052), "a tall one meets its top and bottom");
-        assert_eq!(fitted_side((2000, 1332), (0.0, 600.0)), None, "a canvas not laid out yet asks for the whole preview");
-        // Twin: fitting the short side would leave the wide frame overflowing the canvas.
-        assert_ne!(fitted_side((2000, 1332), (808.0, 1052.0)), Some((808.0 * 2000.0 / 1332.0) as usize));
     }
 
     #[test]
@@ -648,6 +721,43 @@ mod tests {
         assert!(kept.get("1").is_none(), "the least recently used frame left");
         // Twin: the frame used just before the insertion stayed.
         assert!(kept.get("0").is_some());
+    }
+
+    /// A zoomed view renders only what the canvas shows: at 100 % from the full frame, the canvas's
+    /// own size, laid edge to edge; fitted, the whole image from the preview.
+    #[test]
+    fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
+        let Ok(device) = Device::open() else {
+            eprintln!("no adapter: the views are not exercised");
+            return;
+        };
+        let mut engine = Engine::on(&device);
+        let (fw, fh) = (1600usize, 1000usize);
+        let gradient = |w: usize, h: usize| (0..w * h).map(|i| [0.2 + 0.5 * (i % w) as f32 / w as f32, 0.3, 0.4, 1.0]).collect::<Vec<_>>();
+        // A 400 px preview of a 1600 px frame: the preview's ratio is a quarter.
+        let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64 }).unwrap();
+        let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64 }).unwrap();
+        let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        let size = (600.0, 400.0);
+        let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
+        let view = View { viewport: hundred, size, full: Some(full.clone()), settled: true };
+        let (source, placed) = engine.resident(&negative, &settings, Some(&view)).unwrap();
+        let placed = placed.unwrap();
+        assert!(placed.at_full_resolution && !placed.whole);
+        let e = source.extent();
+        assert!((e.w as f64 - size.0).abs() <= 2.0 && (e.h as f64 - size.1).abs() <= 2.0, "the canvas's pixels only: {e:?}");
+        assert!(placed.x <= 0.0 && placed.y <= 0.0 && placed.x + placed.width >= size.0 && placed.y + placed.height >= size.1);
+        // Twin: unsettled, the same view stays on the preview, a quarter of the pixels stretched four times.
+        let moving = View { settled: false, ..view.clone() };
+        let (stretched, placed) = engine.resident(&negative, &settings, Some(&moving)).unwrap();
+        assert!(!placed.unwrap().at_full_resolution);
+        assert!(stretched.extent().w * 3 < e.w, "{:?}", stretched.extent());
+        // Fitted on a canvas smaller than the preview: the whole image, from the preview.
+        let fitted = View { viewport: crate::viewport::Viewport::default(), size: (300.0, 200.0), full: Some(full), settled: true };
+        let (_, placed) = engine.resident(&negative, &settings, Some(&fitted)).unwrap();
+        let placed = placed.unwrap();
+        assert!(placed.whole && !placed.at_full_resolution, "{placed:?}");
+        assert!((placed.width - 300.0).abs() < 1.0 && (placed.height - 187.5).abs() < 1.0, "{placed:?}");
     }
 
     /// The real pipeline on a two-pixel frame, on the first adapter wgpu finds.

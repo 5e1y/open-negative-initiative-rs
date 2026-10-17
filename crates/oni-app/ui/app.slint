@@ -16,6 +16,19 @@ export global Canvas {
     in property <bool> busy;
     in-out property <length> width;
     in-out property <length> height;
+    // Where the render sits on the canvas, which shows only the viewport's part of the image.
+    in property <length> frame-x;
+    in property <length> frame-y;
+    in property <length> frame-width;
+    in property <length> frame-height;
+    callback resized();
+    callback double-clicked();
+    callback grabbed(length, length);
+    callback dragged(length, length);
+    // The wheel's delta, the pointer, and whether ⌘ is held; answers whether the canvas took it.
+    callback scrolled(length, length, length, length, bool) -> bool;
+    callback pinch-started();
+    callback pinched(float, length, length);
 }
 
 export global App {
@@ -137,17 +150,51 @@ export component MainWindow inherits AppWindow {
                         width: parent.width - 2 * CardStyle.inset;
                         height: parent.height - CardStyle.inset - StatusStyle.height;
                         visible: !App.gallery;
-                        changed width => { Canvas.width = self.width - 2 * CardStyle.padding; }
-                        changed height => { Canvas.height = self.height - 2 * CardStyle.padding; }
-                        Picture {
+                        changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
+                        changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
+                        Rectangle {
                             x: CardStyle.padding;
                             y: CardStyle.padding;
                             width: parent.width - 2 * CardStyle.padding;
                             height: parent.height - 2 * CardStyle.padding;
-                            ground: Ground.canvas;
-                            source: Canvas.frame;
+                            clip: true;
+                            Picture {
+                                width: parent.width;
+                                height: parent.height;
+                                ground: Ground.canvas;
+                            }
+                            Picture {
+                                x: Canvas.frame-x;
+                                y: Canvas.frame-y;
+                                width: Canvas.frame-width;
+                                height: Canvas.frame-height;
+                                ground: Ground.canvas;
+                                stretched: true;
+                                source: Canvas.frame;
+                            }
+                            // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
+                            ScaleRotateGestureHandler {
+                                width: parent.width;
+                                height: parent.height;
+                                started => { Canvas.pinch-started(); }
+                                updated => { Canvas.pinched(self.scale, self.center.x, self.center.y); }
+                                navigation := TouchArea {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    clicked => { root.refocus(); }
+                                    double-clicked => { Canvas.double-clicked(); }
+                                    pointer-event(event) => {
+                                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                                            Canvas.grabbed(self.mouse-x, self.mouse-y);
+                                        }
+                                    }
+                                    moved => { Canvas.dragged(self.mouse-x, self.mouse-y); }
+                                    scroll-event(event) => {
+                                        Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.meta) ? EventResult.accept : EventResult.reject
+                                    }
+                                }
+                            }
                         }
-                        TouchArea { clicked => { root.refocus(); } }
                     }
                     Card {
                         x: CardStyle.inset;

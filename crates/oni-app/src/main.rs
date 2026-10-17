@@ -6,7 +6,8 @@ use oni_app::render::{Device, Engine};
 use oni_app::{Catalogue, bench, timing};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
-use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::WindowEvent};
+use oni_app::viewport::{self, Wheel};
+use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::MouseScrollDelta, winit::event::WindowEvent};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -50,7 +51,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, canvas, ..Options::default() })?;
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
-    shell.window.window().on_winit_window_event(move |_, event| {
+    shell.window.window().on_winit_window_event(move |window, event| {
+        if let WindowEvent::MouseWheel { delta, .. } = event {
+            let wheel = match *delta {
+                MouseScrollDelta::LineDelta(dx, dy) => Wheel { dx: f64::from(dx), dy: f64::from(dy), precise: false },
+                MouseScrollDelta::PixelDelta(p) => {
+                    let scale = f64::from(window.scale_factor());
+                    Wheel { dx: p.x / scale, dy: p.y / scale, precise: true }
+                }
+            };
+            viewport::note_wheel(wheel);
+        }
         if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
             gate.hold();
             let open = gate.clone();

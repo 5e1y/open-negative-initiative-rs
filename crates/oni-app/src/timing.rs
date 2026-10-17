@@ -84,6 +84,8 @@ pub enum Kind {
     Thumbnail,
     /// The first render of a frame just opened, its decode included.
     Open,
+    /// A zoom or a pan over the open frame.
+    View,
 }
 
 impl Kind {
@@ -92,6 +94,7 @@ impl Kind {
             Kind::Notch => "notch",
             Kind::Thumbnail => "thumbnail",
             Kind::Open => "open",
+            Kind::View => "view",
         }
     }
 }

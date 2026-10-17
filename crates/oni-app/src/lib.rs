@@ -19,6 +19,7 @@ pub mod system;
 pub mod timing;
 pub mod tokens;
 pub mod track;
+pub mod viewport;
 
 use std::path::PathBuf;
 

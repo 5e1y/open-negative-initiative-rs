@@ -2,7 +2,8 @@
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
 //! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
-//! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence.
+//! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
+//! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, and returns to fit.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -36,6 +37,7 @@ pub enum Mode {
     Resize,
     Settled,
     Long,
+    Zoom,
 }
 
 impl Mode {
@@ -55,6 +57,7 @@ pub fn requested() -> Option<Mode> {
         "resize" => Some(Mode::Resize),
         "settled" => Some(Mode::Settled),
         "long" => Some(Mode::Long),
+        "zoom" => Some(Mode::Zoom),
         _ => None,
     }
 }
@@ -69,6 +72,9 @@ enum Phase {
 /// Drives the drag on the window's timers; `done` receives the report once the last notch is shown
 /// and the drag is undone, so the frame's sidecar reads as it did.
 pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
+    if mode == Mode::Zoom {
+        return zoom(ctl, done);
+    }
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
@@ -123,12 +129,97 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Long | Mode::Zoom => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
                 let report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
                 ctl.act("undo");
                 ctl.flush();
+                finish(report);
+            }
+        }
+    });
+}
+
+/// Sixty pan steps of 6 points, a trackpad's glide, once at 100 %.
+const PANS: usize = 60;
+const PAN_STEP: f32 = 6.0;
+/// What full resolution may take to arrive, decode included.
+const FULL: Duration = Duration::from_secs(20);
+
+#[derive(Clone, Copy)]
+enum Zoomed {
+    Loading,
+    In { asked: Instant },
+    Panning { step: usize, from: usize },
+    Out { from: usize, full_after: Duration },
+}
+
+/// The canvas's own callbacks driven as a hand would: the double click, the drag, the double click back.
+fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let phase = Cell::new(Zoomed::Loading);
+    let done = RefCell::new(Some(done));
+    let full_after = Cell::new(Duration::ZERO);
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    timer.start(TimerMode::Repeated, PACE, move || {
+        let timer = &held;
+        let Some(ctl) = me.upgrade() else { return timer.stop() };
+        let Some(w) = ctl.window() else { return };
+        let c = w.global::<crate::Canvas>();
+        let finish = |text: String| {
+            timer.stop();
+            if let Some(done) = done.borrow_mut().take() {
+                done(text);
+            }
+        };
+        let s = ctl.state.borrow();
+        match phase.get() {
+            Zoomed::Loading => {
+                if s.renders() >= 1 && s.loaded() >= s.photos() && s.placed().is_some() {
+                    drop(s);
+                    c.invoke_double_clicked();
+                    phase.set(Zoomed::In { asked: Instant::now() });
+                }
+            }
+            Zoomed::In { asked } => {
+                let full = s.placed().is_some_and(|p| p.at_full_resolution);
+                if full {
+                    full_after.set(asked.elapsed());
+                    let from = s.views().count();
+                    drop(s);
+                    c.invoke_grabbed(200.0, 200.0);
+                    phase.set(Zoomed::Panning { step: 0, from });
+                } else if asked.elapsed() > FULL {
+                    drop(s);
+                    finish(format!("bench, zoom: no full-resolution render in {} s", FULL.as_secs()));
+                }
+            }
+            Zoomed::Panning { step, from } => {
+                drop(s);
+                let step = step + 1;
+                let x = 200.0 - step as f32 * PAN_STEP;
+                c.invoke_dragged(x, 200.0 - step as f32 * PAN_STEP / 2.0);
+                if step < PANS {
+                    phase.set(Zoomed::Panning { step, from });
+                } else {
+                    c.invoke_double_clicked();
+                    phase.set(Zoomed::Out { from, full_after: full_after.get() });
+                }
+            }
+            Zoomed::Out { from, full_after } => {
+                let fitted = s.viewport().is_fitted() && s.placed().is_some_and(|p| p.whole);
+                if !fitted {
+                    return;
+                }
+                let report = format!(
+                    "bench, zoom: full resolution {:.0} ms after the double click; {}\n{}",
+                    full_after.as_secs_f64() * 1000.0,
+                    s.views().summary(from, &format!("{PANS} pan steps at 100 %")),
+                    s.views().cadence(from)
+                );
+                drop(s);
                 finish(report);
             }
         }

@@ -5,7 +5,8 @@ use crate::display::{self, Params, Screen};
 use crate::fields::{Block, Field};
 use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
-use crate::render::{self, Done, Histogram, Job, Negative, Picture, Previews, Shared, Worker};
+use crate::render::{self, Done, Histogram, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
+use crate::viewport::{self, Viewport};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
@@ -139,6 +140,20 @@ pub struct State {
     notches: Notches,
     /// When the hand moved the value the next render shows; `None` times a render from its ask.
     moved_at: Option<Instant>,
+    viewport: Viewport,
+    views: Notches,
+    /// The open frame's full-resolution pixels once built, and the frame one is being built for.
+    full: Option<(String, oni_graph::Source)>,
+    building_full: Option<String>,
+    /// The last navigation, which keeps the preview until it settles.
+    navigated_at: Option<Instant>,
+    /// The displayed image's size in full-resolution pixels, from the last render placed.
+    full_size: Option<(f64, f64)>,
+    /// What the last render request showed, so a navigation alone asks again.
+    requested_view: Option<(Viewport, (f64, f64), bool, bool)>,
+    placed: Option<Placed>,
+    grab: Option<(f32, f32)>,
+    pinch: f32,
     support: PathBuf,
     phone: Option<Phone>,
 }
@@ -183,6 +198,19 @@ impl State {
         &self.notches
     }
 
+    /// The zooms and pans shown, timed as the notches are.
+    pub fn views(&self) -> &Notches {
+        &self.views
+    }
+
+    pub fn placed(&self) -> Option<Placed> {
+        self.placed
+    }
+
+    pub fn viewport(&self) -> Viewport {
+        self.viewport
+    }
+
     pub fn phone(&self) -> Option<&Phone> {
         self.phone.as_ref()
     }
@@ -204,6 +232,7 @@ pub struct Ctl {
     trailing: Vec<Timer>,
     arrivals: Vec<Timer>,
     pulse: Timer,
+    settle: Timer,
 }
 
 thread_local! {
@@ -349,6 +378,16 @@ impl Shell {
             opened_at: Instant::now(),
             notches: Notches::default(),
             moved_at: None,
+            viewport: Viewport::default(),
+            views: Notches::default(),
+            full: None,
+            building_full: None,
+            navigated_at: None,
+            full_size: None,
+            requested_view: None,
+            placed: None,
+            grab: None,
+            pinch: 1.0,
             support: options.support.clone(),
             phone: None,
         };
@@ -360,6 +399,7 @@ impl Shell {
             trailing: Field::ALL.iter().map(|_| Timer::default()).collect(),
             arrivals: Field::ALL.iter().map(|_| Timer::default()).collect(),
             pulse: Timer::default(),
+            settle: Timer::default(),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
         Ctl::wire(&ctl, &window);
@@ -515,27 +555,112 @@ impl Ctl {
     // MARK: - Rendering
 
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
-    fn request_render(&self) {
-        let canvas = self.window().map(|w| {
-            let (c, scale) = (w.global::<Canvas>(), w.window().scale_factor());
-            (c.get_width() * scale, c.get_height() * scale)
-        });
-        let job = {
+    fn request_render(self: &Rc<Self>) {
+        let size = self.canvas_size();
+        let (job, build) = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
-            if revision == s.requested && s.rendered != 0 {
+            let settled = s.navigated_at.is_none_or(|t| t.elapsed() >= viewport::SETTLE);
+            let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
+            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some()));
+            let moved = revision != s.requested || s.rendered == 0;
+            if !moved && view_key == s.requested_view {
                 return;
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
             s.requested = revision;
+            s.requested_view = view_key;
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
-            let (kind, asked) = if s.rendered == 0 { (Kind::Open, s.opened_at) } else { (Kind::Notch, moved_at.unwrap_or_else(Instant::now)) };
-            let side = canvas.and_then(|c| render::fitted_side(negative.size(), c));
-            Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked, side }
+            let (kind, asked) = if s.rendered == 0 {
+                (Kind::Open, s.opened_at)
+            } else if moved {
+                (Kind::Notch, moved_at.unwrap_or_else(Instant::now))
+            } else {
+                (Kind::View, Instant::now())
+            };
+            // Full resolution is built once the view settles past the preview's ratio, never mid-gesture.
+            let wants_full = match (size, s.full_size) {
+                (Some(size), Some(f)) => settled && s.viewport.needs_full_resolution(negative.size().0 as f64 / negative.full_width, f, size, viewport::NOMINAL_BUDGET),
+                _ => false,
+            };
+            let build = (wants_full && full.is_none() && s.building_full.as_deref() != Some(path.as_str())).then(|| {
+                s.building_full = Some(path.clone());
+                (path.clone(), s.store.settings().primaries_converted)
+            });
+            let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
+            (Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked, view }, build)
         };
         self.worker.submit(job);
+        if let Some((path, converted)) = build {
+            self.build_full(path, converted);
+        }
+    }
+
+    /// The canvas in drawable pixels, once laid out.
+    fn canvas_size(&self) -> Option<(f64, f64)> {
+        let w = self.window()?;
+        let (c, scale) = (w.global::<Canvas>(), f64::from(w.window().scale_factor()));
+        let size = (f64::from(c.get_width()) * scale, f64::from(c.get_height()) * scale);
+        (size.0 >= 1.0 && size.1 >= 1.0).then_some(size)
+    }
+
+    /// The open frame decoded again at full resolution off this thread, then shown where the view wants it.
+    fn build_full(self: &Rc<Self>, path: String, converted: bool) {
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            let built = render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d));
+            with_shell(move |c| {
+                let open = c.state.borrow().open_path() == Some(path.as_str());
+                {
+                    let mut s = c.state.borrow_mut();
+                    s.building_full = None;
+                    match built {
+                        Ok(full) if open => s.full = Some((path, full)),
+                        Ok(_) => {}
+                        Err(e) => timing::line(&format!("full resolution not built: {e}")),
+                    }
+                }
+                if open {
+                    c.request_render();
+                }
+            });
+        });
+    }
+
+    /// Applies a navigation at once on the preview, then asks again once it has settled.
+    fn navigate(self: &Rc<Self>, change: impl FnOnce(&mut Viewport, (f64, f64), (f64, f64))) {
+        let Some(size) = self.canvas_size() else { return };
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(full) = s.full_size else { return };
+            let before = s.viewport;
+            change(&mut s.viewport, full, size);
+            if s.viewport == before {
+                return;
+            }
+            s.navigated_at = Some(Instant::now());
+        }
+        self.request_render();
+        let me = Rc::downgrade(self);
+        self.settle.start(TimerMode::SingleShot, viewport::SETTLE, move || {
+            if let Some(me) = me.upgrade() {
+                me.request_render();
+            }
+        });
+    }
+
+    /// The bar's − / +: the zoom ladder in the editor.
+    fn step_zoom(self: &Rc<Self>, by: i32) {
+        let rung = {
+            let s = self.state.borrow();
+            let (Some(full), Some(size)) = (s.full_size, self.canvas_size()) else { return };
+            Viewport::rung(s.viewport.effective_scale(full, size), s.viewport.is_fitted(), by)
+        };
+        if let Some(rung) = rung {
+            self.navigate(|v, full, size| v.step(rung, full, size));
+        }
     }
 
     /// A render arrived: stale ones are dropped, the GPU path encodes its texture into the canvas,
@@ -563,6 +688,7 @@ impl Ctl {
         }
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
         let (width, height) = (done.width, done.height);
+        self.lay(done.placed, (width, height));
         let on_gpu = {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
@@ -574,7 +700,8 @@ impl Ctl {
             s.gpu.is_some()
         };
         if on_gpu {
-            self.encode(done.picture, shown);
+            let whole = done.placed.is_none_or(|p| p.whole);
+            self.encode(done.picture, shown, whole);
             w.window().request_redraw();
         } else {
             if let Picture::Pixels { rgba8, .. } = done.picture {
@@ -585,14 +712,40 @@ impl Ctl {
         let status = {
             let s = self.state.borrow();
             let name = s.open_path().map(stem).unwrap_or_default();
-            format!("{name} · {width} × {height}")
+            match (s.placed, self.canvas_size()) {
+                (Some(p), Some(size)) => format!("{name} · {}", viewport::zoom_label(s.viewport.effective_scale(p.full, size), p.at_full_resolution)),
+                _ => format!("{name} · {width} × {height}"),
+            }
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
     }
 
+    /// Lays the render where the viewport puts it; a render with no place fills the canvas, fitted.
+    fn lay(&self, placed: Option<Placed>, size: (usize, usize)) {
+        let Some(w) = self.window() else { return };
+        let scale = f64::from(w.window().scale_factor());
+        let rect = match (placed, self.canvas_size()) {
+            (Some(p), _) => (p.x, p.y, p.width, p.height),
+            (None, Some(view)) => Viewport::default().placement((size.0 as f64, size.1 as f64), view).image,
+            (None, None) => return,
+        };
+        {
+            let mut s = self.state.borrow_mut();
+            s.placed = placed;
+            if let Some(p) = placed {
+                s.full_size = Some(p.full);
+            }
+        }
+        let c = w.global::<Canvas>();
+        c.set_frame_x((rect.0 / scale) as f32);
+        c.set_frame_y((rect.1 / scale) as f32);
+        c.set_frame_width((rect.2 / scale) as f32);
+        c.set_frame_height((rect.3 / scale) as f32);
+    }
+
     /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
-    fn encode(&self, picture: Picture, shown: Shown) {
+    fn encode(&self, picture: Picture, shown: Shown, whole: bool) {
         let Some(w) = self.window() else { return };
         let image = {
             let mut s = self.state.borrow_mut();
@@ -622,7 +775,8 @@ impl Ctl {
             g.seed = g.seed.wrapping_add(1);
             g.kernel.run(&g.device, &g.queue, &source, &Params::new(screen, wd, ht, g.seed), &target);
             g.current = Some(picture);
-            g.uncounted = true;
+            // A region is not the picture: its histogram would describe what the zoom shows.
+            g.uncounted = whole;
             (imported, shown)
         };
         if let (Some(image), _) = &image {
@@ -635,6 +789,9 @@ impl Ctl {
     fn shown(&self, shown: Shown) {
         let end_to_end = shown.asked.elapsed();
         timing::render(shown.kind, &shown.frame, shown.pipeline, end_to_end);
+        if shown.kind == Kind::View {
+            self.state.borrow_mut().views.record(end_to_end, Instant::now());
+        }
         if shown.kind == Kind::Notch {
             let report = {
                 let mut s = self.state.borrow_mut();
@@ -786,6 +943,12 @@ impl Ctl {
             s.opened_at = Instant::now();
             s.rendered = 0;
             s.requested = 0;
+            // Kept, not fitted: walking a roll at 100 % to compare grain needs it.
+            s.viewport.recentre();
+            s.requested_view = None;
+            if s.full.as_ref().is_some_and(|(p, _)| p != path) {
+                s.full = None;
+            }
             for slide in &mut s.slides {
                 slide.published = None;
             }
@@ -1186,6 +1349,7 @@ impl Ctl {
                 self.state.borrow_mut().columns = columns;
                 self.relayout();
             }
+            "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
             "bigger-brush" | "smaller-brush" => {
                 let by = if action == "bigger-brush" { 1.0 } else { -1.0 };
                 let brush = {
@@ -1237,6 +1401,7 @@ impl Ctl {
     }
 
     fn wire(me: &Rc<Ctl>, window: &MainWindow) {
+        Ctl::wire_canvas(me, window);
         let g = window.global::<StoreGlobal>();
 
         let p = me.clone();
@@ -1421,6 +1586,69 @@ impl Ctl {
             if let Some(p) = p.upgrade() {
                 p.pulse();
             }
+        });
+    }
+}
+
+impl Ctl {
+    /// `NegativeView`'s gestures: a drag pans, a double click toggles 100 %, the wheel zooms about
+    /// the pointer, a touch surface pans unless ⌘ is held, a pinch zooms about its centre.
+    fn wire_canvas(me: &Rc<Ctl>, window: &MainWindow) {
+        let c = window.global::<Canvas>();
+        let backing = move |p: &Rc<Ctl>| p.window().map_or(2.0, |w| f64::from(w.window().scale_factor()));
+
+        let p = me.clone();
+        c.on_resized(move || {
+            let size = p.canvas_size();
+            if let (Some(size), Some(full)) = (size, p.state.borrow().full_size) {
+                p.state.borrow_mut().viewport.clamp(full, size);
+            }
+            p.request_render();
+        });
+
+        let p = me.clone();
+        c.on_double_clicked(move || p.navigate(|v, full, size| v.toggle_hundred(full, size)));
+
+        let p = me.clone();
+        c.on_grabbed(move |x, y| p.state.borrow_mut().grab = Some((x, y)));
+
+        let p = me.clone();
+        c.on_dragged(move |x, y| {
+            let Some((gx, gy)) = p.state.borrow_mut().grab.replace((x, y)) else { return };
+            let b = backing(&p);
+            p.navigate(|v, full, size| v.pan(viewport::pan_step(f64::from(x - gx), f64::from(y - gy), b), full, size));
+        });
+
+        let p = me.clone();
+        c.on_scrolled(move |dx, dy, x, y, command| {
+            if p.state.borrow().full_size.is_none() {
+                return false;
+            }
+            let b = backing(&p);
+            let wheel = viewport::take_wheel().unwrap_or(viewport::Wheel { dx: f64::from(dx), dy: f64::from(dy), precise: true });
+            let at = (f64::from(x) * b, f64::from(y) * b);
+            if viewport::zooms(wheel.precise, command) {
+                let factor = viewport::zoom_factor(wheel.dy, wheel.precise);
+                p.navigate(|v, full, size| v.zoom_by(factor, at, full, size));
+            } else {
+                p.navigate(|v, full, size| v.pan(viewport::pan_step(wheel.dx, wheel.dy, b), full, size));
+            }
+            true
+        });
+
+        let p = me.clone();
+        c.on_pinch_started(move || p.state.borrow_mut().pinch = 1.0);
+
+        let p = me.clone();
+        c.on_pinched(move |scale, x, y| {
+            let factor = {
+                let mut s = p.state.borrow_mut();
+                let factor = f64::from(scale / s.pinch.max(1e-6));
+                s.pinch = scale;
+                factor
+            };
+            let b = backing(&p);
+            p.navigate(|v, full, size| v.zoom_by(factor, (f64::from(x) * b, f64::from(y) * b), full, size));
         });
     }
 }

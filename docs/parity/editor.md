@@ -8,10 +8,10 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Open frame rendered through the pipeline | `UI/MetalImageView.swift`, `Negative.swift:46` | `oni-app/src/render.rs`, `oni-graph` | done | 2000 px preview, as Swift's `previewSide` | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
-| Full-resolution region at zoom | `UI/Viewport.swift:138` `needsFullResolution` | `oni-graph` regions (tests only) | partial | Graph renders regions; the app never asks for one | `oni-graph/tests/roll8.rs::a_canvas_region_and_a_slider_on_one_frame` (graph only) |
-| Zoom: wheel, trackpad pinch, ⌘ scroll | `UI/CanvasNavigation.swift:8-38` | none | missing | No canvas zoom | no check |
-| Zoom ladder, fit, 100 % toggle | `UI/Viewport.swift:27-116` | none | missing | ⌘− / ⌘= only resize gallery columns | no check |
-| Pan by drag and scroll | `UI/CanvasNavigation.swift:17`, `Viewport.swift:94` | none | missing | | no check |
+| Full-resolution region at zoom | `UI/Viewport.swift:138` `needsFullResolution` | `oni-app/src/render.rs` `Engine::resident`, `oni-app/src/viewport.rs` | done | Past the preview's ratio, once the view settles (150 ms), the frame is decoded again at full resolution and only the visible region renders; Swift keeps that region with a 30 % margin so a pan reuses it, the port renders the visible region again on each pan step | `oni-app/src/render.rs::a_view_renders_its_visible_region_from_the_source_its_scale_needs`, `oni-app/src/viewport.rs::full_resolution_is_asked_for_at_a_hundred_and_beyond_never_wide_out`, `ONI_BENCH=zoom` |
+| Zoom: wheel, trackpad pinch, ⌘ scroll | `UI/CanvasNavigation.swift:8-38` | `oni-app/src/viewport.rs`, `app.rs` `wire_canvas`, `main.rs` wheel hook | partial | Slint drops the scroll phases: a precise (pixel) delta stands for a phased touch surface, a line delta for a wheel; pinch through Slint's `ScaleRotateGestureHandler`. Neither tried by hand on the Mac | `oni-app/src/viewport.rs::the_wheel_zooms_by_notches_and_a_trackpad_by_points`, `a_zoom_holds_the_pixel_under_the_pointer` |
+| Zoom ladder, fit, 100 % toggle | `UI/Viewport.swift:27-116` | `oni-app/src/viewport.rs`, `app.rs` `step_zoom`, the canvas's double click | done | | `oni-app/src/viewport.rs::the_ladder_steps_strictly_and_fit_is_its_floor`, `a_double_click_lands_on_a_hundred_then_back_on_fit`, `ONI_BENCH=zoom` |
+| Pan by drag and scroll | `UI/CanvasNavigation.swift:17`, `Viewport.swift:94` | `oni-app/src/viewport.rs`, `app.rs` `wire_canvas` | done | The offset is clamped to the overflow; a new frame keeps the scale and drops the pan | `oni-app/src/viewport.rs::the_placement_shows_the_part_of_the_image_inside_the_view`, `walking_the_roll_keeps_the_scale_and_drops_the_pan`, `ONI_BENCH=zoom` |
 | Canvas proofed into the export space | `Scene/EditorScene+Stages.swift`, `Pipeline/Proof.swift` | `oni-colour/src/proof.rs` | partial | Proof exists in the crate; the app shows the working render on the display matrix | `oni-colour/tests/checks.rs::the_proof_clips_what_the_export_space_cannot_hold` (crate only) |
 | Screen gamut stripes | `Pipeline/ScreenGamut.swift` | `oni-colour/src/gamut.rs`, `oni-render` zebra kernel | partial | Kernel and test exist; menu item answers "not in this build" | `oni-colour/tests/checks.rs::the_zebra_stripes_what_the_screen_clips` (crate only) |
 | Compare before/after | `Scene/EditorScene+Actions.swift` `.compare` | none | missing | Bar key and menu item unwired | no check |
@@ -20,7 +20,7 @@ Statuses are defined in [README.md](README.md).
 | Crop overlay: corners, edges, rule of thirds | `UI/CropOverlay.swift` | none | missing | | no check |
 | Measuring window overlay | `UI/MeasureGridOverlay.swift` | none | missing | | no check |
 | Dust brush cursor and strokes | `UI/NegativeView.swift`, `UI/CorrectionsPanel.swift` | none | missing | | no check |
-| Canvas readouts (size, zoom, status) | `UI/NegativeView.swift` | `oni-app/src/app.rs` status line | partial | Shows the preview size, never the zoom or the kept pixels | no check |
+| Canvas readouts (size, zoom, status) | `UI/NegativeView.swift` | `oni-app/src/app.rs` status line | partial | The status line reads the zoom as `AppBar.zoomLabel` (100%, 25% · preview); Swift shows it in the zoom bubble, which is missing | `oni-app/src/viewport.rs::the_placement_shows_the_part_of_the_image_inside_the_view` |
 | Neutral decode notice | `UI/NegativeView.swift` (NeutralDecodeNotice) | none | missing | | no check |
 | Plain image (JPEG, PNG, RGB TIFF) opens | `Pipeline/RawDecode.swift` | `oni-app/src/render.rs` `decode` | missing | Refused with "not read yet" | no check |
 | Linear scan with converted primaries opens | `Pipeline/ContainerRead.swift:388` | `oni-app/src/render.rs` | missing | Refused | no check |
@@ -167,7 +167,7 @@ Statuses are defined in [README.md](README.md).
 | Show the Selected Photo | `UI/EditorCommands.swift:125` | `app.slint:48` | missing | | no check |
 | Move to ONI Trash ⌘⌫ | `UI/EditorCommands.swift:128` | `app.slint:50`, `oni-core/src/store.rs:704` | partial | Core only | `oni-core/tests/roll8.rs::the_trash_marks_the_sidecar_and_never_moves_the_file` (core only) |
 | Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.slint:51`, `store.rs:708` | partial | Core only | no check |
-| Zoom Out ⌘−, Zoom In ⌘+ | `UI/EditorCommands.swift:138-142` | `app.rs:1129` | partial | Gallery columns only | `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` (gallery only) |
+| Zoom Out ⌘−, Zoom In ⌘+ | `UI/EditorCommands.swift:138-142` | `app.rs` `act`, `step_zoom` | done | The editor walks the zoom ladder, the gallery its columns | `oni-app/src/viewport.rs::the_ladder_steps_strictly_and_fit_is_its_floor`, `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` |
 | Compare Before/After | `UI/EditorCommands.swift:145` | `app.slint:65` "Compare" | missing | | no check |
 | Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint:66` "Hide Library" | partial | Works; title differs, no shortcut | no check |
 | Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint:67` | partial | Works; title differs, no shortcut | no check |
