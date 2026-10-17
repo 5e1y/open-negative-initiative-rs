@@ -54,7 +54,9 @@
     "id": 7,
     "type": "bug",
     "title": "Hold the graph checks at the spread Metal measures",
-    "status": "doing",
-    "detail": "On macos-latest the Lanczos enlargement lands 2.2e-5 from its scalar reference, past the 1e-5 set on lavapipe."
+    "status": "done",
+    "detail": "On macos-latest the Lanczos enlargement lands 2.2e-5 from its scalar reference, past the 1e-5 set on lavapipe.",
+    "outcome": "oni-graph tolerance 1e-4 with the measured spreads in its comment; the softened-source twin now printed, 1.4e-3 to 3.9e-3 on roll #8, and every graph check passes on lavapipe. CI run 20 green on macos-latest (build, core and phone link checks); windows-latest still running when this was written. CI now passes --no-fail-fast.",
+    "commit": "55bfa18"
   }
 ]
