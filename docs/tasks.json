@@ -92,6 +92,6 @@
     "title": "Run CI by hand only",
     "status": "done",
     "detail": "The GitHub account's free Actions minutes are used up; further runs are billed.",
-    "outcome": "ci.yml triggers on workflow_dispatch only; the six running or queued runs were cancelled. macOS checks run on the owner's Mac."
+    "outcome": "ci.yml triggers on workflow_dispatch only and runs Windows only; the six running or queued runs were cancelled. macOS checks run on the owner's Mac."
   }
 ]

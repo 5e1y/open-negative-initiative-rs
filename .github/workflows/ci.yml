@@ -1,5 +1,5 @@
 name: CI
-# Manual only: the account's Actions minutes are spent, so no push or pull request starts a run.
+# Manual only, Windows only: macOS checks run locally, and a run is started when a milestone needs Windows.
 on:
   workflow_dispatch:
 jobs:
@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
