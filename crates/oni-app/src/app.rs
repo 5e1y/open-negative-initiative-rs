@@ -158,6 +158,9 @@ pub struct State {
     pinch: f32,
     /// Compare Before/After's split, a fraction of the canvas's width; none while off.
     split: Option<f32>,
+    /// `screenGamutWarning`: the pixels this screen cannot show, striped on the canvas.
+    screen_gamut: bool,
+    before_placed: Option<Placed>,
     /// How many distinct befores the canvas encoded, which a kept one does not add to.
     befores: usize,
     support: PathBuf,
@@ -247,6 +250,7 @@ pub struct Ctl {
     arrivals: Vec<Timer>,
     pulse: Timer,
     settle: Timer,
+    stripes: Timer,
 }
 
 thread_local! {
@@ -404,6 +408,8 @@ impl Shell {
             pinch: 1.0,
             split: None,
             befores: 0,
+            screen_gamut: false,
+            before_placed: None,
             support: options.support.clone(),
             phone: None,
         };
@@ -416,6 +422,7 @@ impl Shell {
             arrivals: Field::ALL.iter().map(|_| Timer::default()).collect(),
             pulse: Timer::default(),
             settle: Timer::default(),
+            stripes: Timer::default(),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
         Ctl::wire(&ctl, &window);
@@ -773,6 +780,7 @@ impl Ctl {
     /// Compare's before into its own texture, laid where its view puts it.
     fn encode_before(&self, before: oni_graph::Source, placed: Option<Placed>) {
         let Some(w) = self.window() else { return };
+        let canvas = self.canvas_size();
         let (imported, rect) = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
@@ -787,10 +795,13 @@ impl Ctl {
                     (t.clone(), Image::try_from(t).ok())
                 }
             };
-            g.kernel.run(&g.device, &g.queue, &view, &Params::new(screen, e.w, e.h, g.seed), &target);
+            let k = zebra(&s, Params::new(screen, e.w, e.h, s.gpu.as_ref().map_or(0, |g| g.seed)), placed, e.w, canvas);
+            let Some(g) = s.gpu.as_mut() else { return };
+            g.kernel.run(&g.device, &g.queue, &view, &k, &target);
             if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
                 s.befores += 1;
             }
+            s.before_placed = placed;
             let Some(g) = s.gpu.as_mut() else { return };
             g.before = Some((target, before));
             (imported, placed)
@@ -806,6 +817,52 @@ impl Ctl {
             c.set_before_width((p.width / scale) as f32);
             c.set_before_height((p.height / scale) as f32);
         }
+    }
+
+    /// `ScreenGamut`'s stripes on and off; while on the canvas is encoded again at their pace,
+    /// from the render it holds, so the stripes move and the pipeline never runs for them.
+    fn toggle_screen_gamut(self: &Rc<Self>) {
+        let on = {
+            let mut s = self.state.borrow_mut();
+            s.screen_gamut = !s.screen_gamut;
+            s.screen_gamut
+        };
+        if on {
+            let me = Rc::downgrade(self);
+            let pace = Duration::from_secs_f64(1.0 / f64::from(oni_colour::gamut::FRAMES_PER_SECOND));
+            self.stripes.start(TimerMode::Repeated, pace, move || {
+                if let Some(me) = me.upgrade() {
+                    me.restripe();
+                }
+            });
+        } else {
+            self.stripes.stop();
+        }
+        self.restripe();
+    }
+
+    /// The canvas, and Compare's before, encoded again from the renders they hold.
+    fn restripe(&self) {
+        let Some(w) = self.window() else { return };
+        let canvas = self.canvas_size();
+        {
+            let s = self.state.borrow();
+            let screen = s.screen;
+            let Some(g) = s.gpu.as_ref() else { return };
+            if let (Some(Picture::Resident(source)), Some(target), Some(view)) = (&g.current, &g.target, g.current.as_ref().and_then(picture_view)) {
+                let e = source.extent();
+                let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.placed, e.w, canvas);
+                g.kernel.run(&g.device, &g.queue, &view, &k, target);
+            }
+            if let Some((target, before)) = &g.before
+                && let Some(view) = before.view()
+            {
+                let e = before.extent();
+                let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.before_placed, e.w, canvas);
+                g.kernel.run(&g.device, &g.queue, view, &k, target);
+            }
+        }
+        w.window().request_redraw();
     }
 
     /// Compare Before/After on and off, the split at half the canvas.
@@ -824,6 +881,7 @@ impl Ctl {
     /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
     fn encode(&self, picture: Picture, shown: Shown, whole: bool) {
         let Some(w) = self.window() else { return };
+        let canvas = self.canvas_size();
         let image = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
@@ -850,7 +908,10 @@ impl Ctl {
                 }
             };
             g.seed = g.seed.wrapping_add(1);
-            g.kernel.run(&g.device, &g.queue, &source, &Params::new(screen, wd, ht, g.seed), &target);
+            let seed = g.seed;
+            let k = zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas);
+            let Some(g) = s.gpu.as_mut() else { return };
+            g.kernel.run(&g.device, &g.queue, &source, &k, &target);
             g.current = Some(picture);
             // A region is not the picture: its histogram would describe what the zoom shows.
             g.uncounted = whole;
@@ -1432,6 +1493,7 @@ impl Ctl {
             }
             "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
             "compare" if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
+            "screen-gamut" => self.toggle_screen_gamut(),
             "bigger-brush" | "smaller-brush" => {
                 let by = if action == "bigger-brush" { 1.0 } else { -1.0 };
                 let brush = {
@@ -1465,6 +1527,7 @@ impl Ctl {
             (true, true, "z") => "redo",
             (true, false, "g") => "toggle-mode",
             (true, true, "g") => "new-roll",
+            (true, true, "y") => "screen-gamut",
             (true, false, "e") => "export",
             (true, false, "o") => "open",
             (true, false, "k") => "framing",
@@ -1753,6 +1816,29 @@ pub fn tiles(window: &MainWindow) -> Vec<Tile> {
     let model = window.global::<Library>().get_tiles();
     (0..model.row_count()).filter_map(|i| model.row_data(i)).collect()
 }
+
+/// The display kernel's block with the screen gamut's stripes when they are on, laid by where the
+/// texture sits on the canvas, so they keep one size on screen whatever the zoom.
+fn zebra(s: &State, k: Params, placed: Option<Placed>, texels: u32, canvas: Option<(f64, f64)>) -> Params {
+    if !s.screen_gamut {
+        return k;
+    }
+    let started = *CLOCK.get_or_init(Instant::now);
+    let height = canvas.map_or(f64::from(k.height), |c| c.1) as f32;
+    let (origin, stretch) = placed.map_or(((0.0, 0.0), 1.0), |p| ((p.x as f32, p.y as f32), (p.width / f64::from(texels.max(1))) as f32));
+    let phase = oni_colour::gamut::phase(started.elapsed().as_secs_f64());
+    k.striped(display::Zebra { origin, stretch, canvas_height: height.max(1.0), phase })
+}
+
+fn picture_view(picture: &Picture) -> Option<wgpu::TextureView> {
+    match picture {
+        Picture::Resident(source) => source.view().cloned(),
+        Picture::Pixels { .. } => None,
+    }
+}
+
+/// The stripes' clock, as Swift reads `CACurrentMediaTime`.
+static CLOCK: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 
 /// A frame decoded on the calling thread, the CPU's part, then laid on the GPU as its preview.
 fn prepared(engine: &Shared, path: &str, primaries_converted: bool) -> Result<Arc<Negative>, String> {

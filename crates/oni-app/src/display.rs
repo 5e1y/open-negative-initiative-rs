@@ -54,7 +54,8 @@ impl Screen {
     }
 }
 
-/// The kernel's uniform block: the matrix by rows, then width, height, seed and the dither's amplitude.
+/// The kernel's uniform block: the matrix by rows, width, height, seed and the dither's amplitude,
+/// then `ScreenGamut`'s zebra: the screen's extended range, its tint, where a texel lands on the canvas.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Params {
@@ -64,13 +65,85 @@ pub struct Params {
     pub seed: u32,
     /// In quantisation steps; 0 turns the dither off.
     pub dither: f32,
+    pub low: [f32; 4],
+    pub high: [f32; 4],
+    /// Working light, as a pixel of the picture is.
+    pub tint: [f32; 4],
+    /// The texture's corner on the canvas, the canvas pixels per texel, the canvas's height.
+    pub origin: [f32; 2],
+    pub stretch: f32,
+    pub canvas_height: f32,
+    pub phase: f32,
+    pub period: f32,
+    pub duty: f32,
+    /// 1 stripes what the screen cannot show, 0 leaves the picture alone.
+    pub zebra: f32,
+}
+
+/// Where the zebra is laid: the texture's place on the canvas, in drawable pixels, and the clock.
+#[derive(Clone, Copy, Debug)]
+pub struct Zebra {
+    pub origin: (f32, f32),
+    pub stretch: f32,
+    pub canvas_height: f32,
+    pub phase: f32,
 }
 
 impl Params {
     pub fn new(screen: Screen, width: u32, height: u32, seed: u32) -> Params {
         let m = screen.matrix();
-        Params { rows: m.map(|r| [r[0], r[1], r[2], 0.0]), width, height, seed, dither: 1.0 }
+        Params {
+            rows: m.map(|r| [r[0], r[1], r[2], 0.0]),
+            width,
+            height,
+            seed,
+            dither: 1.0,
+            low: [0.0; 4],
+            high: [1.0; 4],
+            tint: [0.0; 4],
+            origin: [0.0; 2],
+            stretch: 1.0,
+            canvas_height: height as f32,
+            phase: 0.0,
+            period: oni_colour::gamut::PERIOD,
+            duty: oni_colour::gamut::DUTY,
+            zebra: 0.0,
+        }
     }
+
+    /// With the zebra on: the range is the screen's, mirrored under zero and continued past one by
+    /// `TOLERANCE`, as the system extends a display's space; sRGB and Display P3 share the curve.
+    pub fn striped(self, z: Zebra) -> Params {
+        let tolerance = oni_colour::gamut::TOLERANCE;
+        let decode = |v: f32| if v <= 0.04045 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) };
+        let (low, high) = (-decode(tolerance), decode(1.0 + tolerance));
+        Params {
+            low: [low, low, low, 0.0],
+            high: [high, high, high, 0.0],
+            tint: oni_colour::gamut::tint(),
+            origin: [z.origin.0, z.origin.1],
+            stretch: z.stretch,
+            canvas_height: z.canvas_height,
+            phase: z.phase,
+            zebra: 1.0,
+            ..self
+        }
+    }
+}
+
+/// True where a texel falls on a stripe the screen cannot show: `gamut::stripe` on its canvas pixel, y up.
+fn on_stripe(x: u32, y: u32, k: &Params) -> bool {
+    let cx = k.origin[0] + (x as f32 + 0.5) * k.stretch;
+    let cy = k.canvas_height - (k.origin[1] + (y as f32 + 0.5) * k.stretch);
+    (cx + cy + k.phase).rem_euclid(k.period) < k.duty * k.period
+}
+
+fn beyond(p: [f32; 4], k: &Params) -> bool {
+    (0..3).any(|c| {
+        let r = k.rows[c];
+        let shown = r[0] * p[0] + r[1] * p[1] + r[2] * p[2];
+        shown < k.low[c] || shown > k.high[c]
+    })
 }
 
 /// `pcg` from Jarzynski and Olano, the hash both sides share bit for bit.
@@ -91,6 +164,7 @@ fn transfer(v: f32) -> f32 {
 
 /// One pixel as the kernel writes it: a triangular dither of one step, then the nearest of 256 levels.
 pub fn encode_pixel(p: [f32; 4], x: u32, y: u32, k: &Params) -> [u8; 4] {
+    let p = if k.zebra > 0.5 && beyond(p, k) && on_stripe(x, y, k) { k.tint } else { p };
     let h = pcg(x ^ pcg(y ^ pcg(k.seed)));
     let mut out = [0u8, 0, 0, 255];
     for c in 0..3 {
@@ -117,6 +191,16 @@ struct Params {
     height: u32,
     seed: u32,
     dither: f32,
+    low: vec4<f32>,
+    high: vec4<f32>,
+    tint: vec4<f32>,
+    origin: vec2<f32>,
+    stretch: f32,
+    canvas_height: f32,
+    phase: f32,
+    period: f32,
+    duty: f32,
+    zebra: f32,
 };
 
 @group(0) @binding(0) var<uniform> k: Params;
@@ -141,7 +225,18 @@ fn transfer(v: f32) -> f32 {
 @compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= k.width || id.y >= k.height) { return; }
-    let p = textureLoad(source, vec2<i32>(i32(id.x), i32(id.y)), 0);
+    var p = textureLoad(source, vec2<i32>(i32(id.x), i32(id.y)), 0);
+    if (k.zebra > 0.5) {
+        var beyond = false;
+        for (var c = 0u; c < 3u; c++) {
+            let shown = dot(k.rows[c].xyz, p.xyz);
+            beyond = beyond || shown < k.low[c] || shown > k.high[c];
+        }
+        let cx = k.origin.x + (f32(id.x) + 0.5) * k.stretch;
+        let cy = k.canvas_height - (k.origin.y + (f32(id.y) + 0.5) * k.stretch);
+        let t = cx + cy + k.phase;
+        if (beyond && t - floor(t / k.period) * k.period < k.duty * k.period) { p = k.tint; }
+    }
     let h = pcg(id.x ^ pcg(id.y ^ pcg(k.seed)));
     var out = vec4<f32>(0.0, 0.0, 0.0, 1.0);
     for (var c = 0u; c < 3u; c++) {
@@ -421,6 +516,36 @@ mod tests {
             let wrong = encode(&pixels, &Params::new(other, w, h, 3));
             assert!(got.iter().zip(&wrong).any(|(a, b)| a.abs_diff(*b) > 2));
         }
+    }
+
+    /// The zebra on the GPU against its CPU reference, on colours sRGB cannot hold and one it can.
+    #[test]
+    fn the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does() {
+        let instance = wgpu::Instance::default();
+        let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
+            eprintln!("no adapter: the zebra is not exercised");
+            return;
+        };
+        let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
+        let (w, h) = (48u32, 20u32);
+        // The left half a saturated Rec. 2020 green sRGB cannot show, the right half a grey it can.
+        let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| if i % w < w / 2 { [0.05, 0.6, 0.05, 1.0] } else { [0.3, 0.3, 0.3, 1.0] }).collect();
+        let gpu = Gpu::new(&device);
+        let source = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
+        let zebra = Zebra { origin: (10.0, 4.0), stretch: 2.0, canvas_height: 60.0, phase: 3.0 };
+        let k = Params::new(Screen::Srgb, w, h, 3).striped(zebra);
+        let target = Gpu::target(&device, w, h);
+        gpu.run(&device, &queue, &source, &k, &target);
+        let got = read_back(&device, &queue, &target, w, h);
+        let want = encode(&pixels, &k);
+        assert!(got.iter().zip(&want).all(|(a, b)| a.abs_diff(*b) <= 1));
+        let plain = encode(&pixels, &Params::new(Screen::Srgb, w, h, 3));
+        let changed = |half: std::ops::Range<u32>| (0..h).flat_map(|y| half.clone().map(move |x| (y * w + x) as usize * 4)).filter(|&i| want[i..i + 3] != plain[i..i + 3]).count();
+        assert!(changed(0..w / 2) > 0, "the green the screen cannot show is striped");
+        assert_eq!(changed(w / 2..w), 0, "the grey it can show is left alone");
+        // Twin: another phase moves the stripes, so a kernel ignoring the clock would be seen.
+        let moved = encode(&pixels, &Params::new(Screen::Srgb, w, h, 3).striped(Zebra { phase: 7.5, ..zebra }));
+        assert_ne!(moved, want);
     }
 
     /// The GPU count against `Histogram::of` on the same shown bytes, sampled on every second row and column.
