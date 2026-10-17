@@ -1,0 +1,5 @@
+[
+  { "id": 1, "type": "research", "title": "Proof of concept: fused stages 4-7 in WGSL and a pinned LibRaw decode", "status": "done",
+    "outcome": "WGSL kernel within 8.1e-6 of the CPU reference on nine settings sets (llvmpipe), its 1 % gain twin at 2.2e-3 or more; LibRaw decode doubles every channel mean at +1 EV on three roll #8 NEFs (ratio 2.0000).", "commit": "75531da" },
+  { "id": 2, "type": "chore", "title": "Repository rules, task log and CI on macOS and Windows", "status": "doing" }
+]
