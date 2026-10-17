@@ -1,0 +1,230 @@
+//! The one home of the app's calls to the system: the double-click interval, the file dialogs, the
+//! file manager, the Trash and the general clipboard.
+
+use std::io;
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+/// Slint's and AppKit's default, where the system names none.
+pub const DEFAULT_DOUBLE_CLICK: Duration = Duration::from_millis(500);
+
+/// `NSEvent.doubleClickInterval` on macOS, `GetDoubleClickTime` on Windows, as the person set it.
+pub fn double_click() -> Duration {
+    platform::double_click().filter(|d| !d.is_zero()).unwrap_or(DEFAULT_DOUBLE_CLICK)
+}
+
+/// `NSOpenPanel` for one folder, or the system's own dialog; `None` when the hand cancels or no
+/// dialog exists on this system.
+pub fn pick_folder(message: &str) -> Option<PathBuf> {
+    platform::pick_folder(message)
+}
+
+/// `NSOpenPanel` for several files with one of `extensions` (bare, without the dot; empty takes any
+/// file); empty when the hand cancels.
+pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
+    platform::pick_files(message, extensions)
+}
+
+/// `NSSavePanel` opened on `suggested_name`, limited to `extensions`; `None` when the hand cancels.
+pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
+    platform::save_file(message, suggested_name, extensions)
+}
+
+/// Opens the Finder or the Explorer with `path` selected, as Show in Finder does.
+pub fn reveal(path: &Path) {
+    platform::reveal(path);
+}
+
+/// The system Trash, for files the app owns outright (preset files); a library member is never
+/// trashed, it is marked in the ONI Trash.
+pub fn trash(path: &Path) -> io::Result<()> {
+    if !path.exists() {
+        return Err(io::Error::new(io::ErrorKind::NotFound, path.display().to_string()));
+    }
+    platform::trash(path)
+}
+
+/// Writes `text` to the general clipboard; a system without one ignores it.
+pub fn set_text(text: &str) {
+    if let Ok(mut board) = arboard::Clipboard::new() {
+        let _ = board.set_text(text);
+    }
+}
+
+/// The general clipboard's text, `None` when it holds none or the system has no clipboard.
+pub fn get_text() -> Option<String> {
+    arboard::Clipboard::new().ok()?.get_text().ok()
+}
+
+/// Whether this system has a folder picker at all, so the app says so instead of doing nothing.
+pub const HAS_PICKER: bool = cfg!(any(target_os = "macos", target_os = "windows"));
+
+/// `AppFolders.caches`, which the system may purge and the index rebuilds from; `ONI_CACHES` gives
+/// a check its own.
+pub fn caches() -> PathBuf {
+    if let Some(dir) = std::env::var_os("ONI_CACHES") {
+        return PathBuf::from(dir);
+    }
+    let home = || std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+    let base = if cfg!(target_os = "macos") {
+        home().join("Library/Caches")
+    } else if cfg!(windows) {
+        std::env::var_os("LOCALAPPDATA").map(PathBuf::from).unwrap_or_else(home)
+    } else {
+        std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).unwrap_or_else(|| home().join(".cache"))
+    };
+    base.join(crate::timing::FOLDER)
+}
+
+#[cfg(target_os = "macos")]
+mod platform {
+    use std::io;
+    use std::path::{Path, PathBuf};
+    use std::time::Duration;
+
+    pub fn double_click() -> Option<Duration> {
+        let seconds = objc2_app_kit::NSEvent::doubleClickInterval();
+        Duration::try_from_secs_f64(seconds).ok()
+    }
+
+    pub fn pick_folder(message: &str) -> Option<PathBuf> {
+        rfd::FileDialog::new().set_title(message).pick_folder()
+    }
+
+    fn dialog(message: &str, extensions: &[&str]) -> rfd::FileDialog {
+        let dialog = rfd::FileDialog::new().set_title(message);
+        if extensions.is_empty() { dialog } else { dialog.add_filter("", extensions) }
+    }
+
+    pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
+        dialog(message, extensions).pick_files().unwrap_or_default()
+    }
+
+    pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
+        dialog(message, extensions).set_file_name(suggested_name).save_file()
+    }
+
+    pub fn reveal(path: &Path) {
+        let _ = std::process::Command::new("/usr/bin/open").arg("-R").arg(path).spawn();
+    }
+
+    pub fn trash(path: &Path) -> io::Result<()> {
+        use objc2_foundation::{NSFileManager, NSString, NSURL};
+        let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
+        NSFileManager::defaultManager()
+            .trashItemAtURL_resultingItemURL_error(&url, None)
+            .map_err(|e| io::Error::other(e.localizedDescription().to_string()))
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod platform {
+    use std::io;
+    use std::path::{Path, PathBuf};
+    use std::time::Duration;
+
+    pub fn double_click() -> Option<Duration> {
+        // SAFETY: a plain read of a system setting, with no argument.
+        let ms = unsafe { windows_sys::Win32::UI::Input::KeyboardAndMouse::GetDoubleClickTime() };
+        Some(Duration::from_millis(u64::from(ms)))
+    }
+
+    pub fn pick_folder(message: &str) -> Option<PathBuf> {
+        rfd::FileDialog::new().set_title(message).pick_folder()
+    }
+
+    fn dialog(message: &str, extensions: &[&str]) -> rfd::FileDialog {
+        let dialog = rfd::FileDialog::new().set_title(message);
+        if extensions.is_empty() { dialog } else { dialog.add_filter("", extensions) }
+    }
+
+    pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
+        dialog(message, extensions).pick_files().unwrap_or_default()
+    }
+
+    pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
+        dialog(message, extensions).set_file_name(suggested_name).save_file()
+    }
+
+    pub fn reveal(path: &Path) {
+        use std::os::windows::process::CommandExt;
+        let line = format!("/select,\"{}\"", path.display());
+        let _ = std::process::Command::new("explorer").raw_arg(line).spawn();
+    }
+
+    pub fn trash(path: &Path) -> io::Result<()> {
+        use std::os::windows::ffi::OsStrExt;
+        use windows_sys::Win32::UI::Shell::*;
+        // The source list ends with two NULs; `FOF_ALLOWUNDO` sends it to the Recycle Bin.
+        let mut from: Vec<u16> = std::path::absolute(path)?.as_os_str().encode_wide().collect();
+        from.extend([0, 0]);
+        let mut op = SHFILEOPSTRUCTW {
+            wFunc: FO_DELETE,
+            pFrom: from.as_ptr(),
+            fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT) as u16,
+            ..Default::default()
+        };
+        // SAFETY: `op` and the list it points at live until the call returns.
+        let code = unsafe { SHFileOperationW(&mut op) };
+        if code == 0 && op.fAnyOperationsAborted == 0 {
+            Ok(())
+        } else {
+            Err(io::Error::other(format!("SHFileOperationW failed with {code}")))
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+mod platform {
+    use std::io;
+    use std::path::{Path, PathBuf};
+    use std::time::Duration;
+
+    pub fn double_click() -> Option<Duration> {
+        None
+    }
+
+    pub fn pick_folder(_message: &str) -> Option<PathBuf> {
+        None
+    }
+
+    pub fn pick_files(_message: &str, _extensions: &[&str]) -> Vec<PathBuf> {
+        Vec::new()
+    }
+
+    pub fn save_file(_message: &str, _suggested_name: &str, _extensions: &[&str]) -> Option<PathBuf> {
+        None
+    }
+
+    pub fn reveal(_path: &Path) {}
+
+    pub fn trash(_path: &Path) -> io::Result<()> {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "no system Trash on this system"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_double_click_is_the_systems_and_never_zero() {
+        let d = double_click();
+        assert!(d > Duration::ZERO && d <= Duration::from_secs(5), "{d:?}");
+        // Twin: a system answering zero would make every second press a double click; it falls back.
+        assert_eq!(Some(Duration::ZERO).filter(|d| !d.is_zero()).unwrap_or(DEFAULT_DOUBLE_CLICK), DEFAULT_DOUBLE_CLICK);
+    }
+
+    #[test]
+    fn a_missing_file_is_never_reported_trashed() {
+        let gone = std::env::temp_dir().join(format!("oni-trash-{}-absent", std::process::id()));
+        assert_eq!(trash(&gone).unwrap_err().kind(), io::ErrorKind::NotFound);
+        // Twin: an existing file passes the guard and reaches the platform, which never says NotFound.
+        let here = std::env::temp_dir().join(format!("oni-trash-{}-here", std::process::id()));
+        std::fs::write(&here, b"x").unwrap();
+        if cfg!(not(any(target_os = "macos", target_os = "windows"))) {
+            assert_ne!(trash(&here).unwrap_err().kind(), io::ErrorKind::NotFound);
+        }
+        let _ = std::fs::remove_file(&here);
+    }
+}

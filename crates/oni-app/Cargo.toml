@@ -15,6 +15,7 @@ name = "oni-tokens"
 path = "src/bin/oni-tokens.rs"
 
 [dependencies]
+arboard = { version = "3.6", default-features = false }
 bytemuck.workspace = true
 oni-core = { path = "../oni-core" }
 oni-decode.workspace = true
@@ -26,9 +27,20 @@ oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
 qrcode = { version = "0.14", default-features = false }
+serde_json.workspace = true
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
 tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
 wgpu.workspace = true
+
+# The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSFileManager", "NSURL", "NSString", "NSError"] }
+rfd = { version = "0.17", default-features = false }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell"] }
+rfd = { version = "0.17", default-features = false }
 
 [dev-dependencies]
 png = "0.18"
