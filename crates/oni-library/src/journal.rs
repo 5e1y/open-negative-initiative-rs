@@ -1,0 +1,235 @@
+//! The year's gestures, kept on this machine alone for the Wrapped and never sent: fixed-size
+//! records appended to one file, the photos and names they point at kept once each in a table apart.
+
+use oni_settings::Date;
+use std::collections::HashMap;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+
+/// Appended only, so a file written before still reads every kind it holds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
+pub enum Kind {
+    Opened = 1,
+    Edited,
+    Exported,
+    Medal,
+    Preset,
+    Balanced,
+    Rolled,
+    /// A retired key's, kept so a file written before reads; `value` counts frames.
+    Exposed,
+    Pasted,
+    Measured,
+}
+
+impl Kind {
+    pub const ALL: [Kind; 10] = [
+        Kind::Opened,
+        Kind::Edited,
+        Kind::Exported,
+        Kind::Medal,
+        Kind::Preset,
+        Kind::Balanced,
+        Kind::Rolled,
+        Kind::Exposed,
+        Kind::Pasted,
+        Kind::Measured,
+    ];
+
+    pub fn from_raw(raw: u8) -> Option<Kind> {
+        Self::ALL.into_iter().find(|k| *k as u8 == raw)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Record {
+    pub kind: Kind,
+    pub detail: u16,
+    /// Seconds since `EPOCH`, which carries the file to 2156.
+    pub time: u32,
+    pub subject: u32,
+    pub value: u32,
+}
+
+pub const NOTHING: u32 = u32::MAX;
+pub const RECORD_SIZE: usize = 16;
+pub const MAGIC: [u8; 4] = *b"ONIW";
+pub const VERSION: u16 = 1;
+
+/// 2020-01-02 00:00 UTC, the origin every stored timestamp counts from.
+pub fn epoch() -> Date {
+    Date::since_reference_date(599_616_000.0)
+}
+
+pub struct Journal {
+    folder: PathBuf,
+    /// The name table's indices, read once and then kept; every file touch happens under this lock.
+    indices: Mutex<Option<HashMap<String, u32>>>,
+}
+
+impl Journal {
+    /// `<support>/Journal`, the folder the app keeps its journal in.
+    pub fn in_support(support: &Path) -> Journal {
+        Journal::new(support.join("Journal"))
+    }
+
+    pub fn new(folder: PathBuf) -> Journal {
+        Journal { folder, indices: Mutex::new(None) }
+    }
+
+    fn events(&self) -> PathBuf {
+        self.folder.join("events.bin")
+    }
+
+    fn names(&self) -> PathBuf {
+        self.folder.join("names.txt")
+    }
+
+    /// Appends one gesture; `subject` and `name` enter the table the first time they are seen.
+    pub fn note(&self, kind: Kind, subject: Option<&str>, detail: u16, value: u32, name: Option<&str>, at: Date) {
+        let elapsed = (crate::seconds(at) - crate::seconds(epoch())).trunc();
+        let seconds = if elapsed <= 0.0 {
+            0
+        } else if elapsed >= f64::from(u32::MAX) {
+            u32::MAX
+        } else {
+            elapsed as u32
+        };
+        let Ok(mut held) = self.indices.lock() else { return };
+        let mut record = Record { kind, detail, time: seconds, subject: NOTHING, value };
+        if let Some(subject) = subject {
+            record.subject = self.index(&mut held, subject);
+        }
+        if let Some(name) = name {
+            record.value = self.index(&mut held, name);
+        }
+        self.write(&encode(&record), &self.events(), Some(&header()));
+    }
+
+    fn index(&self, held: &mut Option<HashMap<String, u32>>, name: &str) -> u32 {
+        let table = held.get_or_insert_with(|| self.load_indices());
+        if let Some(known) = table.get(name) {
+            return *known;
+        }
+        let next = table.len() as u32;
+        table.insert(name.to_owned(), next);
+        self.write(format!("{}\n", name.replace('\n', " ")).as_bytes(), &self.names(), None);
+        next
+    }
+
+    fn lines(&self) -> Vec<String> {
+        let text = std::fs::read_to_string(self.names()).unwrap_or_default();
+        let mut lines: Vec<String> = text.split('\n').map(str::to_owned).collect();
+        lines.pop();
+        lines
+    }
+
+    fn load_indices(&self) -> HashMap<String, u32> {
+        let mut table = HashMap::new();
+        for (rank, line) in self.lines().into_iter().enumerate() {
+            table.entry(line).or_insert(rank as u32);
+        }
+        table
+    }
+
+    fn write(&self, data: &[u8], path: &Path, header: Option<&[u8]>) {
+        if std::fs::create_dir_all(&self.folder).is_err() {
+            return;
+        }
+        if !path.exists() && std::fs::write(path, header.unwrap_or(&[])).is_err() {
+            return;
+        }
+        if let Ok(mut file) = std::fs::OpenOptions::new().append(true).open(path) {
+            let _ = file.write_all(data);
+        }
+    }
+
+    pub fn read(&self) -> (Vec<Record>, Vec<String>) {
+        let _held = self.indices.lock();
+        let records = decode(&std::fs::read(self.events()).unwrap_or_default());
+        (records, self.lines())
+    }
+}
+
+pub fn header() -> Vec<u8> {
+    let mut data = MAGIC.to_vec();
+    data.extend_from_slice(&VERSION.to_le_bytes());
+    data.extend_from_slice(&(RECORD_SIZE as u16).to_le_bytes());
+    data
+}
+
+pub fn encode(record: &Record) -> Vec<u8> {
+    let mut data = vec![record.kind as u8, 0];
+    data.extend_from_slice(&record.detail.to_le_bytes());
+    data.extend_from_slice(&record.time.to_le_bytes());
+    data.extend_from_slice(&record.subject.to_le_bytes());
+    data.extend_from_slice(&record.value.to_le_bytes());
+    data
+}
+
+/// Every whole record after a header this version reads; a torn tail and an unknown kind are
+/// skipped, and a header from another version reads as nothing rather than as noise.
+pub fn decode(bytes: &[u8]) -> Vec<Record> {
+    let head = header();
+    if bytes.len() < head.len()
+        || bytes[..4] != MAGIC
+        || u16::from_le_bytes([bytes[4], bytes[5]]) != VERSION
+        || usize::from(u16::from_le_bytes([bytes[6], bytes[7]])) != RECORD_SIZE
+    {
+        return Vec::new();
+    }
+    let u16_at = |at: usize| u16::from_le_bytes([bytes[at], bytes[at + 1]]);
+    let u32_at = |at: usize| u32::from_le_bytes([bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]]);
+    let mut out = Vec::new();
+    let mut at = head.len();
+    while at + RECORD_SIZE <= bytes.len() {
+        if let Some(kind) = Kind::from_raw(bytes[at]) {
+            out.push(Record {
+                kind,
+                detail: u16_at(at + 2),
+                time: u32_at(at + 4),
+                subject: u32_at(at + 8),
+                value: u32_at(at + 12),
+            });
+        }
+        at += RECORD_SIZE;
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scratch::Scratch;
+
+    #[test]
+    fn three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not() {
+        let scratch = Scratch::new("journal");
+        let journal = Journal::new(scratch.path().to_path_buf());
+        let day = Date::since_reference_date(812_000_000.0);
+        journal.note(Kind::Opened, Some("/a.RW2"), 0, 0, None, day);
+        journal.note(Kind::Edited, Some("/a.RW2"), 7, 0, None, crate::later(day, 60.0));
+        journal.note(Kind::Preset, Some("/b.RW2"), 0, 0, Some("Portra warm"), crate::later(day, 120.0));
+        let (records, names) = journal.read();
+        assert_eq!(records.len(), 3);
+        assert_eq!(names, ["/a.RW2", "/b.RW2", "Portra warm"]);
+        assert_eq!((records[1].detail, records[2].subject, records[2].value), (7, 1, 2));
+        assert_eq!(records[0].time, (crate::seconds(day) - crate::seconds(epoch())) as u32);
+        let bytes = std::fs::read(scratch.path().join("events.bin")).unwrap();
+        assert_eq!(bytes.len(), header().len() + 3 * RECORD_SIZE);
+        // Twin: a torn tail is dropped, and another version reads as nothing.
+        let mut torn = bytes.clone();
+        torn.extend_from_slice(&[1, 0, 3, 0, 9, 9, 9]);
+        assert_eq!(decode(&torn).len(), 3);
+        let mut other = bytes.clone();
+        other[4] = 99;
+        assert!(decode(&other).is_empty());
+        // A second journal on the same folder takes its names from the table on disk.
+        let reopened = Journal::new(scratch.path().to_path_buf());
+        reopened.note(Kind::Exported, Some("/b.RW2"), 0, 0, None, day);
+        assert_eq!(reopened.read().0[3].subject, 1);
+        assert_eq!(reopened.read().1.len(), 3);
+    }
+}

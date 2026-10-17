@@ -1,0 +1,16 @@
+[package]
+name = "oni-library"
+description = "The archive of Open Negative Initiative: its folders, rolls, projects, ONI Trash and disposable SQLite index"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+oni-settings.workspace = true
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+oni-fixtures.workspace = true

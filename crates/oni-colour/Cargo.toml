@@ -1,0 +1,22 @@
+[package]
+name = "oni-colour"
+description = "Colour management of Open Negative Initiative: output spaces, ICC conversion, proof, paper correction"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+oni-settings.workspace = true
+moxcms = { version = "0.9.1", features = ["extended_range", "options"] }
+percent-encoding = "2"
+regex = "1"
+serde.workspace = true
+url = "2"
+zip.workspace = true
+
+[dev-dependencies]
+lcms2.workspace = true
+oni-decode.workspace = true
+oni-fixtures.workspace = true
+oni-render.workspace = true
+serde_json.workspace = true

@@ -23,26 +23,7 @@ struct Params {
 @group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
 @group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
 
-const LUMA = vec3<f32>(0.2627, 0.6780, 0.0593);
-const DISPLAY_GAMMA: f32 = 2.2;
-const CONTRAST_WARP: f32 = 0.88927292;
 const CONTRAST_STEP: f32 = 0.05;
-const LOG10_E: f32 = 0.43429448190325176;
-
-fn contrasted(x: f32, travel: f32) -> f32 {
-    let b = abs(travel) * 15.2;
-    if (b <= 1e-4) { return x; }
-    var t = pow(clamp(x, 0.0, 1.0), CONTRAST_WARP);
-    let low = 1.0 / (1.0 + exp(b * 0.5));
-    let high = 1.0 / (1.0 + exp(-b * 0.5));
-    if (travel > 0.0) {
-        t = (1.0 / (1.0 + exp(-b * (t - 0.5))) - low) / (high - low);
-    } else {
-        let g = low + t * (high - low);
-        t = clamp(0.5 - log(1.0 / g - 1.0) / b, 0.0, 1.0);
-    }
-    return pow(t, 1.0 / CONTRAST_WARP);
-}
 
 fn apply_levels(e: f32, lv: vec3<f32>) -> f32 {
     let n = max((e - lv.x) / max(lv.y - lv.x, 1e-4), 0.0);
@@ -97,8 +78,8 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32) -> f32
 }
 
 @compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let i = id.x;
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
     if (i >= P.count.x) { return; }
     let s = src_px[i];
 

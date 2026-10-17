@@ -1,0 +1,25 @@
+[package]
+name = "oni-export"
+description = "Exported files of Open Negative Initiative: TIFF and JPEG writers, metadata, resize, size estimate, presets"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+oni-colour.workspace = true
+oni-settings.workspace = true
+flate2 = "1"
+jpeg-encoder = "0.7"
+kamadak-exif = "0.6"
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+jpeg-decoder = "0.3"
+lcms2.workspace = true
+oni-decode.workspace = true
+oni-fixtures.workspace = true
+oni-render.workspace = true
+tiff = "0.11"
+ultrahdr-rs = "0.3"

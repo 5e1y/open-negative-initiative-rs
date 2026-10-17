@@ -1,0 +1,162 @@
+//! Paths as the archive keeps them: strings in their canonical form, compared and cut the way
+//! Foundation's `NSString` path methods cut them.
+
+use std::cmp::Ordering;
+use std::path::{MAIN_SEPARATOR, Path};
+
+/// `deletingLastPathComponent`: one level up, `/` staying `/`.
+pub fn parent(path: &str) -> String {
+    match Path::new(path).parent() {
+        Some(up) => up.to_string_lossy().into_owned(),
+        None => path.to_owned(),
+    }
+}
+
+/// `lastPathComponent`: the last name, `/` naming itself.
+pub fn name(path: &str) -> String {
+    match Path::new(path).file_name() {
+        Some(last) => last.to_string_lossy().into_owned(),
+        None => path.to_owned(),
+    }
+}
+
+/// `pathExtension`, empty for a name without one.
+pub fn extension(path: &str) -> String {
+    Path::new(path).extension().map(|e| e.to_string_lossy().into_owned()).unwrap_or_default()
+}
+
+/// `deletingPathExtension` of the last name.
+pub fn stem(path: &str) -> String {
+    Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| name(path))
+}
+
+/// `appendingPathComponent`: a name read from a sidecar starting with a separator stays inside `folder`.
+pub fn join(folder: &str, name: &str) -> String {
+    Path::new(folder).join(name.trim_start_matches(['/', MAIN_SEPARATOR])).to_string_lossy().into_owned()
+}
+
+/// Whether `path` is `root` or lies under it; a sibling whose name only starts like `root` is not.
+pub fn holds(root: &str, path: &str) -> bool {
+    if path == root {
+        return true;
+    }
+    if root.ends_with(MAIN_SEPARATOR) {
+        return path.starts_with(root);
+    }
+    path.strip_prefix(root).is_some_and(|rest| rest.starts_with(MAIN_SEPARATOR))
+}
+
+/// The folder's path from the root, the root itself (or a folder outside it) by its own name.
+pub fn relative(folder: &str, root: &str) -> String {
+    if folder == root || !holds(root, folder) {
+        return name(folder);
+    }
+    folder[root.len()..].trim_start_matches(MAIN_SEPARATOR).to_owned()
+}
+
+/// The path with its symbolic links resolved, so a folder reached through a link and through its
+/// real path never becomes two entries for the same photo; a path that cannot resolve stays as written.
+pub fn canonical(path: &Path) -> String {
+    let Ok(resolved) = std::fs::canonicalize(path) else {
+        return path.to_string_lossy().into_owned();
+    };
+    let text = resolved.to_string_lossy().into_owned();
+    #[cfg(target_os = "macos")]
+    {
+        // `resolvingSymlinksInPath` drops `/private` when the shorter path names the same file.
+        if let Some(short) = text.strip_prefix("/private")
+            && short.starts_with('/')
+            && std::fs::canonicalize(short).is_ok_and(|p| p == resolved)
+        {
+            return short.to_owned();
+        }
+    }
+    #[cfg(windows)]
+    {
+        if let Some(plain) = text.strip_prefix(r"\\?\")
+            && plain.as_bytes().get(1) == Some(&b':')
+        {
+            return plain.to_owned();
+        }
+    }
+    text
+}
+
+/// `localizedStandardCompare`, the Finder's order: case folded, runs of digits read as numbers.
+pub fn standard_order(a: &str, b: &str) -> Ordering {
+    let (mut x, mut y) = (a.chars().peekable(), b.chars().peekable());
+    loop {
+        match (x.peek().copied(), y.peek().copied()) {
+            (None, None) => return Ordering::Equal,
+            (None, Some(_)) => return Ordering::Less,
+            (Some(_), None) => return Ordering::Greater,
+            (Some(c), Some(d)) if c.is_ascii_digit() && d.is_ascii_digit() => {
+                let run = |it: &mut std::iter::Peekable<std::str::Chars<'_>>| {
+                    let mut digits = String::new();
+                    while let Some(c) = it.peek().copied().filter(char::is_ascii_digit) {
+                        digits.push(c);
+                        it.next();
+                    }
+                    digits
+                };
+                let (m, n) = (run(&mut x), run(&mut y));
+                let (m, n) = (m.trim_start_matches('0'), n.trim_start_matches('0'));
+                let order = m.len().cmp(&n.len()).then_with(|| m.cmp(n));
+                if order != Ordering::Equal {
+                    return order;
+                }
+            }
+            (Some(c), Some(d)) => {
+                let order = c.to_lowercase().cmp(d.to_lowercase());
+                if order != Ordering::Equal {
+                    return order;
+                }
+                x.next();
+                y.next();
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_root_holds_its_tree_and_never_a_sibling_sharing_its_prefix() {
+        assert!(holds("/r", "/r"));
+        assert!(holds("/r", "/r/a/b"));
+        assert!(holds("/r/", "/r/a"));
+        // Twin: a bare prefix test would take the sibling.
+        assert!("/r/ab".starts_with("/r/a"));
+        assert!(!holds("/r/a", "/r/ab"));
+        assert_eq!(relative("/r/a/b", "/r"), "a/b");
+        assert_eq!(relative("/r", "/r"), "r");
+        assert_eq!(relative("/s/x", "/r"), "x");
+    }
+
+    #[test]
+    fn the_finder_order_reads_numbers_and_folds_case() {
+        assert_eq!(standard_order("f2.RW2", "f10.RW2"), Ordering::Less);
+        assert_eq!(standard_order("Roll b", "roll A"), Ordering::Greater);
+        assert_eq!(standard_order("a", "A"), Ordering::Equal);
+        // Twin: a plain byte order puts f10 first and upper case before lower.
+        assert_eq!("f2.RW2".cmp("f10.RW2"), Ordering::Greater);
+        assert_eq!("Roll b".cmp("roll A"), Ordering::Less);
+    }
+
+    #[test]
+    fn cutting_follows_nsstring() {
+        assert_eq!(parent("/a/b"), "/a");
+        assert_eq!(parent("/a"), "/");
+        assert_eq!(parent("/"), "/");
+        assert_eq!(name("/a/b.RW2"), "b.RW2");
+        assert_eq!(stem("/a/b.RW2"), "b");
+        assert_eq!(extension("/a/Trip"), "");
+        assert_eq!(join("/a", "/b.RW2"), "/a/b.RW2");
+        // Twin: a bare path push lets an absolute name leave the folder.
+        let mut bare = std::path::PathBuf::from("/a");
+        bare.push("/b.RW2");
+        assert_eq!(bare, Path::new("/b.RW2"));
+    }
+}
