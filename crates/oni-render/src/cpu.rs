@@ -741,3 +741,111 @@ pub fn area_histogram(image: &Image, rect: Rect, k: &AreaHistogram) -> Vec<V4> {
         .map(|c| c.map(|v| (v as f64 / n * k.scale as f64) as f32))
         .collect()
 }
+
+// MARK: - Render-graph built-ins
+
+/// Pixels on whole-pixel coordinates of the render graph, top row first, origin at (`x`, `y`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Grid {
+    pub x: i32,
+    pub y: i32,
+    pub width: usize,
+    pub height: usize,
+    pub pixels: Vec<V4>,
+}
+
+impl Grid {
+    pub fn new(x: i32, y: i32, width: usize, height: usize, pixels: Vec<V4>) -> Self {
+        assert_eq!(pixels.len(), width * height, "{width}x{height} needs {} pixels", width * height);
+        Self { x, y, width, height, pixels }
+    }
+
+    pub fn inside(&self, q: [i32; 2]) -> bool {
+        q[0] >= self.x && q[1] >= self.y && q[0] < self.x + self.width as i32 && q[1] < self.y + self.height as i32
+    }
+
+    /// The graph's `load`: the nearest pixel of the extent.
+    pub fn load(&self, q: [i32; 2]) -> V4 {
+        let cx = q[0].clamp(self.x, self.x + self.width as i32 - 1) - self.x;
+        let cy = q[1].clamp(self.y, self.y + self.height as i32 - 1) - self.y;
+        self.pixels[cy as usize * self.width + cx as usize]
+    }
+
+    fn read(&self, q: [i32; 2], transparent: bool) -> V4 {
+        if transparent && !self.inside(q) { [0.0; 4] } else { self.load(q) }
+    }
+
+    /// A grid of `width` by `height` at (`x`, `y`), each pixel `f` of its coordinate.
+    pub fn generated(x: i32, y: i32, width: usize, height: usize, f: impl Fn([i32; 2]) -> V4) -> Self {
+        let pixels = (0..height).flat_map(|r| (0..width).map(move |c| [x + c as i32, y + r as i32])).map(f).collect();
+        Self { x, y, width, height, pixels }
+    }
+}
+
+fn mix4(a: V4, b: V4, t: f32) -> V4 {
+    std::array::from_fn(|c| a[c] + (b[c] - a[c]) * t)
+}
+
+/// `CIGaussianBlur` along one axis, on the input's own extent.
+pub fn gaussian(input: &Grid, k: &crate::Gaussian) -> Grid {
+    let reach = k.reach();
+    let step = if k.vertical { [0, 1] } else { [1, 0] };
+    Grid::generated(input.x, input.y, input.width, input.height, |p| {
+        let mut taps = Taps::new(k.sigma, reach as f32);
+        let centre = taps.centre();
+        let mut sum = input.read(p, k.transparent).map(|v| v * centre);
+        for d in 1..=reach {
+            let w = taps.next(d);
+            let a = input.read([p[0] + d * step[0], p[1] + d * step[1]], k.transparent);
+            let b = input.read([p[0] - d * step[0], p[1] - d * step[1]], k.transparent);
+            for c in 0..4 {
+                sum[c] += w * (a[c] + b[c]);
+            }
+        }
+        sum
+    })
+}
+
+/// The bilinear affine resampling onto `out`, (x, y, width, height).
+pub fn affine(input: &Grid, out: (i32, i32, usize, usize), k: &crate::Affine) -> Grid {
+    Grid::generated(out.0, out.1, out.2, out.3, |p| {
+        let c = [p[0] as f32 + 0.5, p[1] as f32 + 0.5];
+        let at = [
+            k.m[0][0] * c[0] + k.m[0][1] * c[1] + k.m[0][2] - 0.5,
+            k.m[1][0] * c[0] + k.m[1][1] * c[1] + k.m[1][2] - 0.5,
+        ];
+        let f = [at[0].floor(), at[1].floor()];
+        let t = [at[0] - f[0], at[1] - f[1]];
+        let q = [f[0] as i32, f[1] as i32];
+        let r = |dx: i32, dy: i32| input.read([q[0] + dx, q[1] + dy], k.transparent);
+        mix4(mix4(r(0, 0), r(1, 0), t[0]), mix4(r(0, 1), r(1, 1), t[0]), t[1])
+    })
+}
+
+/// The permutation onto `out`, (x, y, width, height).
+pub fn orient(input: &Grid, out: (i32, i32, usize, usize), k: &crate::Orient) -> Grid {
+    Grid::generated(out.0, out.1, out.2, out.3, |p| {
+        input.load([k.a[0] * p[0] + k.a[1] * p[1] + k.b[0], k.a[2] * p[0] + k.a[3] * p[1] + k.b[1]])
+    })
+}
+
+/// The stroke through `points` thickened by `radius`, on `out`, (x, y, width, height).
+pub fn stroke_mask(points: &[[f32; 2]], out: (i32, i32, usize, usize), radius: f32) -> Grid {
+    let segment = |c: [f32; 2], a: [f32; 2], b: [f32; 2]| {
+        let ab = [b[0] - a[0], b[1] - a[1]];
+        let l = ab[0] * ab[0] + ab[1] * ab[1];
+        let t = if l <= 0.0 { 0.0 } else { clamp(((c[0] - a[0]) * ab[0] + (c[1] - a[1]) * ab[1]) / l, 0.0, 1.0) };
+        let d = [c[0] - (a[0] + t * ab[0]), c[1] - (a[1] + t * ab[1])];
+        (d[0] * d[0] + d[1] * d[1]).sqrt()
+    };
+    Grid::generated(out.0, out.1, out.2, out.3, |p| {
+        let c = [p[0] as f32 + 0.5, p[1] as f32 + 0.5];
+        let first = points[0];
+        let mut d = ((c[0] - first[0]).powi(2) + (c[1] - first[1]).powi(2)).sqrt();
+        for pair in points.windows(2) {
+            d = d.min(segment(c, pair[0], pair[1]));
+        }
+        let v = clamp(radius + 0.5 - d, 0.0, 1.0);
+        [v, v, v, 1.0]
+    })
+}

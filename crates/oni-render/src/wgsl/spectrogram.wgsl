@@ -11,10 +11,6 @@ struct Params {
     luma_high: vec4<f32>,
 }
 
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
-
 // Fixed, so editing a band never changes which pixels it catches.
 const BAND_CENTRE = array<f32, 8>(0.0, 30.0, 60.0, 120.0, 180.0, 240.0, 270.0, 300.0);
 // How far past its neighbour a band owns a hue: stopping at its centre turns a hue edge into a luminance one.
@@ -34,19 +30,14 @@ fn band_weight(hue: f32, i: i32) -> f32 {
     return smoothstep(0.0, 1.0, max(0.0, 1.0 - abs(delta) / (span * BAND_SPREAD)));
 }
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    let s = src_px[i];
+fn spectrogram_px(s: vec4<f32>) -> vec4<f32> {
     let y = dot(s.rgb, LUMA);
     let chroma = s.rgb - y;
     let a = dot(chroma, vec3<f32>(1.0, -0.5, -0.5));
     let b = dot(chroma, vec3<f32>(0.0, 0.8660254, -0.8660254));
     let presence = smoothstep(0.0, 0.10 + 0.25 * max(y, 0.0), length(vec2<f32>(a, b)));
     if (presence <= 0.0) {
-        dest[i] = s;
-        return;
+        return s;
     }
     var hue = atan2(b, a) * 57.29577951;
     if (hue < 0.0) { hue += 360.0; }
@@ -69,5 +60,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
     var turned = s.rgb * c + cross(axis, s.rgb) * sn + axis * dot(axis, s.rgb) * (1.0 - c);
     turned = turned + (y - dot(turned, LUMA));
     let mixed = (y + (turned - y) * max(1.0 + boost, 0.0)) * exp2(lift * LUMA_STOPS);
-    dest[i] = vec4<f32>(mixed, s.a);
+    return vec4<f32>(mixed, s.a);
+}
+
+// MARK: - Buffers
+
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
+    if (i >= P.head.x) { return; }
+    dest[i] = spectrogram_px(src_px[i]);
 }

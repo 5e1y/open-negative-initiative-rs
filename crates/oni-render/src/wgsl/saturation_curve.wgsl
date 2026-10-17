@@ -8,15 +8,7 @@ struct Params {
     bends: vec4<f32>,
 }
 
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    let s = src_px[i];
+fn saturation_curve_px(s: vec4<f32>) -> vec4<f32> {
     let knots = P.knots_high.xyz;
     let y = dot(s.rgb, LUMA);
     let x = clamp(pow(max(y, 0.0), 1.0 / 2.2), 0.0, 1.0);
@@ -31,5 +23,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
     let factor = max(2.0 * value, 0.0);
     var chroma = (s.rgb - y) * factor;
     chroma = chroma - dot(chroma, LUMA);
-    dest[i] = vec4<f32>(y + chroma, s.a);
+    return vec4<f32>(y + chroma, s.a);
+}
+
+// MARK: - Buffers
+
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
+    if (i >= P.head.x) { return; }
+    dest[i] = saturation_curve_px(src_px[i]);
 }

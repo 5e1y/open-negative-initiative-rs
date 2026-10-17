@@ -19,10 +19,6 @@ struct Params {
     count: vec4<u32>,
 }
 
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
-
 const CONTRAST_STEP: f32 = 0.05;
 
 fn apply_levels(e: f32, lv: vec3<f32>) -> f32 {
@@ -77,12 +73,7 @@ fn printed(n: f32, stops: f32, contrast: f32, zones: vec2<f32>, own: f32) -> f32
     return pow(max(p, 0.0), DISPLAY_GAMMA);
 }
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.count.x) { return; }
-    let s = src_px[i];
-
+fn stage47_px(s: vec4<f32>) -> vec4<f32> {
     let gain = P.gain_invert.xyz;
     let invert = P.gain_invert.w;
     let red = P.red_density.xyz;
@@ -171,5 +162,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
         let p = dot(pw, LUMA);
         if (p > 1e-12) { e = pw * pow(p, (1.0 / density) - 1.0); }
     }
-    dest[i] = vec4<f32>(e, s.a);
+    return vec4<f32>(e, s.a);
+}
+
+// MARK: - Buffers
+
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
+    if (i >= P.count.x) { return; }
+    dest[i] = stage47_px(src_px[i]);
 }

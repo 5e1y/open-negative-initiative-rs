@@ -16,7 +16,7 @@ fn v22(a: V2, b: V2) -> V4 {
 }
 
 /// The uniform block a shader reads: the head, then the rows.
-pub(crate) fn uniform(head: [u32; 4], rows: &[V4]) -> Vec<u8> {
+pub fn uniform(head: [u32; 4], rows: &[V4]) -> Vec<u8> {
     let mut out = bytemuck::bytes_of(&head).to_vec();
     out.extend_from_slice(bytemuck::cast_slice(rows));
     out
@@ -132,7 +132,7 @@ pub struct FlatField {
 }
 
 impl FlatField {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![[self.amount, self.per_channel, 0.0, 0.0], v3(self.exponent, 0.0)]
     }
 }
@@ -163,7 +163,7 @@ pub struct SaturationCurve {
 }
 
 impl SaturationCurve {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![v3(self.knots, self.high), self.lows, v3(self.bends, 0.0)]
     }
 }
@@ -229,7 +229,7 @@ impl Detail {
         self.reach[0].max(self.reach[1]).max(self.disk) as usize
     }
 
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![v22(self.sigma, self.reach), [self.disk, self.force, self.amount, self.halo]]
     }
 }
@@ -247,7 +247,7 @@ pub struct Spectrogram {
 }
 
 impl Spectrogram {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![self.hue_low, self.hue_high, self.sat_low, self.sat_high, self.luma_low, self.luma_high]
     }
 }
@@ -276,7 +276,7 @@ impl Vignette {
         }
     }
 
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![v22(self.centre, self.half_side), [self.dose[0], self.dose[1], self.hunt, 0.0]]
     }
 }
@@ -294,7 +294,7 @@ pub struct ScreenGamutZebra {
 }
 
 impl ScreenGamutZebra {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![self.tint, [self.period, self.duty, self.phase, self.tolerance]]
     }
 }
@@ -323,7 +323,7 @@ pub struct ScannerDensity {
 }
 
 impl ScannerDensity {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![
             v3(self.gain, self.pedestal),
             v3(self.median, self.log_guard),
@@ -372,7 +372,7 @@ pub struct CorrectionCost {
 }
 
 impl CorrectionCost {
-    pub(crate) fn rows(&self, source_origin: V2) -> Vec<V4> {
+    pub fn rows(&self, source_origin: V2) -> Vec<V4> {
         vec![
             v22(self.dest_centre, self.half_size),
             [self.window_origin[0], self.window_origin[1], self.step, self.grid_n],
@@ -393,7 +393,7 @@ pub struct CorrectionBiasField {
 }
 
 impl CorrectionBiasField {
-    pub(crate) fn rows(&self, patch_origin: V2) -> Vec<V4> {
+    pub fn rows(&self, patch_origin: V2) -> Vec<V4> {
         vec![v3(self.base, 0.0), v3(self.grad_x, 0.0), v3(self.grad_y, 0.0), v22(self.origin, patch_origin)]
     }
 }
@@ -424,7 +424,7 @@ impl Default for ColorMatrix {
 }
 
 impl ColorMatrix {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![self.r_vector, self.g_vector, self.b_vector, self.a_vector, self.bias_vector]
     }
 }
@@ -458,7 +458,7 @@ pub struct LinearGradient {
 }
 
 impl LinearGradient {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![v22(self.point0, self.point1), self.color0, self.color1]
     }
 }
@@ -474,7 +474,7 @@ pub struct RadialGradient {
 }
 
 impl RadialGradient {
-    pub(crate) fn rows(&self) -> Vec<V4> {
+    pub fn rows(&self) -> Vec<V4> {
         vec![[self.center[0], self.center[1], self.radius0, self.radius1], self.color0, self.color1]
     }
 }
@@ -515,4 +515,70 @@ pub struct Rect {
     pub y: usize,
     pub width: usize,
     pub height: usize,
+}
+
+// MARK: - Render-graph built-ins
+
+/// `CIGaussianBlur` of radius `sigma` along one axis; `transparent` reads zero past the extent
+/// instead of its edge, as a blur of an image that was not `clampedToExtent`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Gaussian {
+    pub sigma: f32,
+    pub vertical: bool,
+    pub transparent: bool,
+}
+
+impl Gaussian {
+    /// The taps each side, out to 3.5 deviations as the detail stage reads them.
+    pub fn reach(&self) -> i32 {
+        detail_reach(f64::from(self.sigma))
+    }
+
+    pub fn bytes(&self) -> Vec<u8> {
+        let head = [self.sigma, self.reach() as f32, 0.0, 0.0];
+        let flags = [u32::from(self.vertical), u32::from(self.transparent), 0, 0];
+        [bytemuck::bytes_of(&head), bytemuck::bytes_of(&flags)].concat()
+    }
+}
+
+/// An affine resampling: the output pixel centre `c` reads the input at `m · (c.x, c.y, 1)`, both in
+/// the graph's pixels, bilinearly; `transparent` reads zero past the input's extent.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Affine {
+    pub m: [[f32; 3]; 2],
+    pub transparent: bool,
+}
+
+impl Affine {
+    pub fn bytes(&self) -> Vec<u8> {
+        let rows = [[self.m[0][0], self.m[0][1], self.m[0][2], 0.0], [self.m[1][0], self.m[1][1], self.m[1][2], 0.0]];
+        let flags = [u32::from(self.transparent), 0, 0, 0];
+        [bytemuck::cast_slice::<_, u8>(&rows), bytemuck::bytes_of(&flags)].concat()
+    }
+}
+
+/// An exact permutation: output pixel `p` takes input pixel `a · p + b`, `a` in rows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Orient {
+    pub a: [i32; 4],
+    pub b: [i32; 2],
+}
+
+impl Orient {
+    pub fn bytes(&self) -> Vec<u8> {
+        [bytemuck::bytes_of(&self.a), bytemuck::bytes_of(&[self.b[0], self.b[1], 0, 0])].concat()
+    }
+}
+
+/// A stroke's hard mask: its points in the input row's first two channels, thickened by `radius`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StrokeMask {
+    pub radius: f32,
+    pub count: usize,
+}
+
+impl StrokeMask {
+    pub fn bytes(&self) -> Vec<u8> {
+        bytemuck::bytes_of(&[self.radius, self.count as f32, 0.0, 0.0]).to_vec()
+    }
 }
