@@ -526,3 +526,13 @@ impl Stage for Patched {
         if hit.is_empty() { Rect::new(own.x, own.y, 1, 1) } else { hit }
     }
 }
+
+/// `RawDecode.rebuildingEdge`: a reduced decode darkens its two outer rows and columns, which are
+/// taken from the third.
+pub fn rebuilt_edge(image: oni_graph::Image) -> oni_graph::Image {
+    let e = image.extent();
+    if e.w <= 5 || e.h <= 5 {
+        return image;
+    }
+    image.then(OpaqueEdge { inner: e.outset(-2, -2), extent: e })
+}

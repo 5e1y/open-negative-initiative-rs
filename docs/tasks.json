@@ -226,6 +226,13 @@
     "detail": "Open Folder… and the ADD FOLDER key, the folder remembered across launches, the SQLite index as a disposable cache, thumbnails at 320 px in a durable folder named by fingerprint, Read the Folders Again and Recheck Originals."
   },
   {
+    "id": 27,
+    "type": "feature",
+    "title": "Measure behind the automatic keys: blocks, Classic's two steps, Auto White Balance and the pipette",
+    "status": "doing",
+    "detail": "oni-measure: Pipeline.reading's one door (render before the levels, measuring, clamped, the measurement windows, 19 px blocks), AutoLevels' two steps, FilterBalance's Newton on Temperature and Tint, the pipette's disc, AutomaticKey's sheet branch; the app's Auto White Balance key wired to it."
+  },
+  {
     "id": 28,
     "type": "chore",
     "title": "Port the Swift self-checks whose behaviour lives in the core crates",
@@ -245,6 +252,13 @@
     "title": "Align the values that differ from Swift",
     "status": "doing",
     "detail": "Sidecar write delay 400 ms, a block reset landing on the current mode's rest, Dye Separation reset clearing family and by-hand, the system's double-click interval, the Roll tab block order, straighten re-fitting the crop."
+  },
+  {
+    "id": 31,
+    "type": "feature",
+    "title": "Measure a roll's reference: each frame's Classic, the roll combined, the base pick",
+    "status": "doing",
+    "detail": "RollReference.measured and combined (gains on the median, the most extreme frame dropped from three up, a picked base as every black, the median only when every frame has one), Prepare the Roll's start settings and measureRoll without its sheet, EditorScene.base."
   },
   {
     "id": 32,

@@ -1,0 +1,189 @@
+//! The automatic keys on the graph: Classic's two steps, a frame's roll, Auto White Balance and the
+//! base pick, each read in front of the stage it writes, never off the screen.
+
+use crate::auto_levels::{self, Balance};
+use crate::filter_balance::{self, filtered, minkowski, unlit};
+use crate::pipette;
+use crate::reader::{Copy, Reader, on_graph};
+use crate::roll::{self, Measured};
+use crate::truncate::Stage;
+use crate::window::sheet_reads;
+use oni_core::balance::{self, Outcome, Suggestion};
+use oni_core::parameters;
+use oni_graph::{Graph, Image, Source};
+use oni_pipeline::Pipeline;
+use oni_settings::blocks::Gains;
+use oni_settings::cg::{self, Point};
+use oni_settings::frame::{FlatField, Geometry};
+use oni_settings::{ConversionMode, PipelineSettings};
+use std::path::Path;
+use std::sync::Mutex;
+
+fn at_gains(s: &PipelineSettings, stops: [f32; 3]) -> PipelineSettings {
+    let mut probe = s.clone();
+    probe.gains.stops = stops;
+    probe
+}
+
+/// `RollReference.measured`: the frame's Classic, read in front of the levels.
+pub fn roll_measured(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Measured> {
+    roll::measured(path, s, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
+}
+
+/// `AutoLevels.placed`: both steps on the frame, re-measured between them.
+pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
+    let first = r.reading(copy, s, Stage::Levels).histogram;
+    if first.is_empty() {
+        return None;
+    }
+    auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
+}
+
+/// `AutoLevels.ends`: step two alone, the gains held.
+pub fn ends(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<[Suggestion; 3]> {
+    let h = r.reading(copy, s, Stage::Levels).histogram;
+    if h.is_empty() { None } else { auto_levels::placement(&h, 0.0) }
+}
+
+/// `FilterBalance.shades`: each channel's sixth-power mean under given filters, over the kept pixels.
+pub fn shades(r: &mut Reader, copy: Copy, s: &PipelineSettings, filters: [f32; 3], keeping: fn([f32; 3]) -> bool) -> Option<[f32; 3]> {
+    let mut t = s.clone();
+    filtered(&mut t, filters);
+    let pixels: Vec<[f32; 3]> = r.balance_pixels(copy, &t)?.into_iter().filter(|p| keeping(*p)).collect();
+    minkowski(&pixels)
+}
+
+/// `FilterBalance.filters`: Newton on the frame as it renders, Lighting at rest but for its filters.
+pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f32; 3]) -> bool) -> Option<[f32; 3]> {
+    if s.mode.is_monochrome() {
+        return Some([0.0; 3]);
+    }
+    let base = unlit(s);
+    filter_balance::filters(false, |f| shades(r, copy, &base, f, keeping))
+}
+
+/// `FilterBalance.outcome`: a frame on no roll is first measured as a roll of one.
+pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
+    let (reference, referenced) = match &s.roll_reference {
+        Some(own) => (own.clone(), s.clone()),
+        None => {
+            let frame = roll_measured(r, copy, path, s)?;
+            let roll = roll::combined(&[frame], s.mode, None)?;
+            let on = balance::written(&roll, s);
+            (roll, on)
+        }
+    };
+    let filters = filters(r, copy, &referenced, filter_balance::printable)?;
+    Some(Outcome { reference, filters })
+}
+
+/// `AutomaticKey.outcome`: on a sheet standing on its roll, each frame read alone through its own
+/// window and the mean laid, as a press over the whole roll averaged would.
+pub fn outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
+    let (Some(grid), Some(_)) = (&s.sheet, &s.roll_reference) else {
+        return balance_outcome(r, copy, path, s);
+    };
+    // Each read is already the frame's window: read whole, never inset a second time.
+    let mut frame = s.clone();
+    frame.sheet = None;
+    frame.geometry = Geometry::default();
+    frame.corrections = Vec::new();
+    frame.geometry.measure_window = Some(frame.geometry.crop);
+    let e = copy.source.extent();
+    let extent = cg::Rect::new(0.0, 0.0, f64::from(e.w), f64::from(e.h));
+    let mut found = Vec::new();
+    for cell in sheet_reads(grid, &extent) {
+        let Ok(cut) = r.graph.materialise_region(&Image::new(copy.source), on_graph(e, &cell)) else { continue };
+        if let Some(o) = balance_outcome(r, Copy { source: &cut, full_width: None }, path, &frame) {
+            found.push(o);
+        }
+    }
+    balance::averaged(&found).into_iter().next()
+}
+
+/// `EditorScene.base`: the bare film under the pick, read before the levels on a frame stripped of
+/// its framing, gains and dust, on the roll's film and mask.
+#[allow(clippy::too_many_arguments)]
+pub fn base(
+    r: &mut Reader,
+    copy: Copy,
+    open: &PipelineSettings,
+    mode: ConversionMode,
+    mask: Option<&FlatField>,
+    capture_stops: f32,
+    unit: Point,
+    radius: f64,
+) -> Option<[f32; 3]> {
+    let mut bare = parameters::imported(open);
+    bare.mode = mode;
+    bare.geometry = Geometry::default();
+    bare.gains = Gains::default();
+    bare.corrections = Vec::new();
+    bare.capture_stops = capture_stops;
+    if let Some(m) = mask {
+        bare.flat_field = m.clone();
+    }
+    let graduated = r.plane(copy, &bare, Stage::Levels)?;
+    pipette::read(&graduated, unit, mode, radius, pipette::RETAINED_SPACE, pipette::RETAINED_STATISTIC).map(|x| x.fractions)
+}
+
+/// A file decoded on the CPU: linear Rec. 2020 pixels, and the full width of the frame they came from.
+pub struct Decoded {
+    pub width: u32,
+    pub height: u32,
+    pub pixels: Vec<[f32; 4]>,
+    pub full_width: f64,
+}
+
+pub type Decode = dyn Fn(&Path, bool) -> Result<Decoded, String> + Send + Sync;
+
+/// `Negative.previewSide`, the copy the measuring one is reduced from.
+pub const PREVIEW_SIDE: f64 = 2000.0;
+
+/// The key on files: each decoded as the app decodes it, reduced to its preview then to the
+/// measuring side, then read on a graph of its own.
+pub struct Measurer {
+    engine: Mutex<(Graph, Pipeline)>,
+    decode: Box<Decode>,
+}
+
+impl Measurer {
+    pub fn new(graph: Graph, decode: Box<Decode>) -> Measurer {
+        Measurer { engine: Mutex::new((graph, Pipeline::new())), decode }
+    }
+
+    /// `RawDecode.measuring(url)`: the preview, then the measuring copy, each edge rebuilt.
+    fn copy(graph: &mut Graph, pipeline: &mut Pipeline, d: &Decoded) -> Option<Source> {
+        let source = graph.upload(d.width, d.height, &d.pixels).ok()?;
+        let long = f64::from(d.width.max(d.height));
+        let mut image = Image::new(&source);
+        if long > PREVIEW_SIDE {
+            image = image.lanczos(PREVIEW_SIDE / long);
+        }
+        let preview = graph.materialise(&oni_pipeline::stages::rebuilt_edge(image)).ok()?;
+        drop(source);
+        let measuring = Reader { graph, pipeline }.measuring(&preview);
+        graph.purge();
+        measuring
+    }
+
+    /// Reads one frame with `read`, on its measuring copy; `None` where the file reads nothing.
+    pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
+        let d = (self.decode)(Path::new(path), s.primaries_converted).ok()?;
+        let mut guard = self.engine.lock().ok()?;
+        let (graph, pipeline) = &mut *guard;
+        let source = Self::copy(graph, pipeline, &d)?;
+        let full_width = Some(d.full_width);
+        drop(d);
+        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width });
+        drop(source);
+        graph.purge();
+        out
+    }
+}
+
+impl balance::Measure for Measurer {
+    fn balance(&self, path: &str, settings: &PipelineSettings) -> Option<Outcome> {
+        self.with(path, settings, |r, copy| outcome(r, copy, path, settings))
+    }
+}

@@ -4282,6 +4282,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-measure"
+version = "0.1.0"
+dependencies = [
+ "oni-core",
+ "oni-fixtures",
+ "oni-graph",
+ "oni-pipeline",
+ "oni-settings",
+ "serde_json",
+]
+
+[[package]]
 name = "oni-pipeline"
 version = "0.1.0"
 dependencies = [
