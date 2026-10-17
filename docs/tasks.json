@@ -195,7 +195,9 @@
     "id": 24,
     "type": "chore",
     "title": "Inventory the Swift app's features against the port",
-    "status": "doing",
-    "detail": "docs/parity/: every user-facing feature, hidden constant, interaction rule and codec migration of the Swift app, each with its Swift and Rust file, a status and the Rust test that proves it; every Swift self-check against its Rust twin; which pipeline branches the Swift comparison reaches."
+    "status": "done",
+    "detail": "docs/parity/: every user-facing feature, hidden constant, interaction rule and codec migration of the Swift app, each with its Swift and Rust file, a status and the Rust test that proves it; every Swift self-check against its Rust twin; which pipeline branches the Swift comparison reaches.",
+    "commit": "020b4be",
+    "outcome": "docs/parity/ holds README.md (statuses, counts, values that differ, the ten largest gaps), editor.md, archive.md, export-colour.md, other.md, hidden.md and checks.md. 447 Swift rows: 121 done, 147 partial, 179 missing, 193 with a proving Rust test; 5 port-only rows. Of 162 Swift self-checks, 54 have a Rust twin, 26 a partial one, 82 none. Of 33 pipeline branches, 10 are reached by the Rust-vs-Swift render test and 23 are not. Read from the Swift and Rust code, not run: every cited Rust test name and file was checked to exist by script; no cargo build."
   }
 ]
