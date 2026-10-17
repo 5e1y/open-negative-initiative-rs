@@ -47,6 +47,22 @@ impl Rect {
         )
     }
 
+    /// The smallest rectangle holding both.
+    pub fn union(&self, other: &Rect) -> Self {
+        if self.is_empty() {
+            return *other;
+        }
+        if other.is_empty() {
+            return *self;
+        }
+        Self::from_corners(
+            self.x.min(other.x),
+            self.y.min(other.y),
+            self.right().max(other.right()),
+            self.bottom().max(other.bottom()),
+        )
+    }
+
     pub fn contains(&self, other: &Rect) -> bool {
         other.x >= self.x && other.y >= self.y && other.right() <= self.right() && other.bottom() <= self.bottom()
     }

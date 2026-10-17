@@ -24,6 +24,11 @@ stage needs, runs only those, and reads the region back as `Vec<[f32; 4]>`.
   `@group(0) @binding(3)`, whose bytes `params()` returns.
 - **Regions.** For a request `R`, each depth needs `input_region(next) ∩ extent`. Evaluating a region
   therefore gives exactly the pixels of the full render cut to that region.
+- **Auxiliary inputs.** `then_reading(stage, &[images])` binds up to `MAX_AUX` further images, read in
+  the shader with `load1(q)`, `inside1(q)` and so on, each in its own coordinates; `aux_region(k, output)`
+  declares what is read of each. A render is a graph, not a chain: nodes are keyed by everything upstream
+  of them, so a prefix an auxiliary image shares with the chain runs once, over the union of what its
+  readers need, and its texture returns to the pool once its last reader has run.
 - **Tiles.** A source past the texture side (16 384 px, or the device's limit if lower) is laid in tiles,
   one texture each. A stage that needs pixels from several tiles gets them copied into one texture, so
   a filter across a seam reads its neighbour. A request whose needs pass the side at any depth is halved
@@ -66,6 +71,8 @@ let preview = graph.materialise(&image.clone().lanczos(2000.0 / side))?;
 | `Cache` | Per-stage results for one view. |
 | `stages::Lanczos` | Lanczos-3 along one axis; `Image::lanczos` adds both. |
 | `stages::{Gain, BoxBlur3, Crop}` | The stages the tests drive. |
+| `Image::then_reading`, `Stage::aux_region` | A stage reading further images. |
+| `Graph::upload_at`, `Graph::materialise_region` | A source anywhere; a region held on the GPU. |
 | `cpu` | The scalar reference of every kernel above. |
 
 ## Checks

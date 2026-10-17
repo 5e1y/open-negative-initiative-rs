@@ -2,7 +2,7 @@
 
 mod common;
 
-use common::{LyingBlur, LyingLanczos, TOLERANCE, cut, error, noise};
+use common::{LyingBlur, LyingLanczos, Shifted, TOLERANCE, cut, error, noise};
 use oni_graph::cpu::{self, Plane};
 use oni_graph::stages::{Axis, BoxBlur3, Crop, Gain, Lanczos};
 use oni_graph::{Cache, Graph, Image, Rect, Source};
@@ -76,6 +76,52 @@ fn a_region_equals_the_full_render_cropped() {
     let honest = Image::new(&s).then(Gain([1.3, 0.8, 1.1, 1.0])).then(short);
     let full = g.render(&honest, honest.extent(), None).expect("full render");
     assert_eq!(g.render(&honest, region, None).expect("region"), cut(&full, honest.extent(), region));
+}
+
+#[test]
+fn an_auxiliary_input_is_read_where_declared_and_its_shared_prefix_once() {
+    let Some(mut g) = graph("an_auxiliary_input_is_read_where_declared_and_its_shared_prefix_once") else { return };
+    let (s, pixels) = source(&mut g, 11);
+    let gain = [1.2, 0.9, 1.1, 1.0];
+    let base = Image::new(&s).then(Gain(gain)).then(BoxBlur3);
+    let image = |by: i32, honest: bool| base.clone().then_reading(Shifted { by, honest }, &[base.clone().then(BoxBlur3)]);
+    let honest = image(3, true);
+    let extent = honest.extent();
+    let before = g.stats().dispatches;
+    let full = g.render(&honest, extent, None).expect("full render");
+    assert_eq!(g.stats().dispatches - before, 4, "the gain and the first blur run once for both readers");
+
+    let plane = cpu::box_blur_3(&cpu::gain(&Plane::new(s.extent(), pixels), gain));
+    let blurred = cpu::box_blur_3(&plane);
+    let reference: Vec<[f32; 4]> = (0..H as i32)
+        .flat_map(|y| (0..W as i32).map(move |x| (x, y)))
+        .map(|(x, y)| {
+            let (a, b) = (plane.load(x, y), blurred.load(x + 3, y));
+            std::array::from_fn(|c| a[c] + b[c])
+        })
+        .collect();
+    let e = error(&full, &reference);
+    assert!(e < TOLERANCE, "against the reference: error {e}");
+    for region in regions(extent) {
+        assert_eq!(g.render(&honest, region, None).expect("region"), cut(&full, extent, region), "{region:?}");
+    }
+    let mut cache = Cache::default();
+    g.render(&honest, extent, Some(&mut cache)).expect("cached");
+    let before = g.stats().dispatches;
+    g.render(&image(4, true), extent, Some(&mut cache)).expect("late change");
+    assert_eq!(g.stats().dispatches - before, 1, "a change on the reader alone reruns it alone");
+
+    // Twins: a reader under-declaring its auxiliary reach disagrees with its own full render at a
+    // region's edge, and an auxiliary chain on another gain is a second prefix the counter sees.
+    let liar = image(3, false);
+    let full = g.render(&liar, extent, None).expect("full render");
+    let region = Rect::new(40, 30, 50, 40);
+    let e = error(&g.render(&liar, region, None).expect("region"), &cut(&full, extent, region));
+    assert!(e > 1e-3, "an under-declared auxiliary region went unseen: error {e}");
+    let apart = base.clone().then_reading(Shifted { by: 3, honest: true }, &[Image::new(&s).then(Gain([1.3; 4])).then(BoxBlur3).then(BoxBlur3)]);
+    let before = g.stats().dispatches;
+    g.render(&apart, extent, None).expect("render");
+    assert_eq!(g.stats().dispatches - before, 6, "two prefixes, each run");
 }
 
 #[test]

@@ -10,4 +10,4 @@ mod texture;
 
 pub use graph::{Cache, Error, Graph, Image, Source, Stats, TEXTURE_SIDE};
 pub use rect::Rect;
-pub use stage::Stage;
+pub use stage::{MAX_AUX, Stage};

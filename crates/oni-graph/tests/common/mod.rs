@@ -95,3 +95,33 @@ impl Stage for LyingLanczos {
         }
     }
 }
+
+/// Its input plus its auxiliary input `by` columns to the right; `honest` declares that reach.
+pub struct Shifted {
+    pub by: i32,
+    pub honest: bool,
+}
+
+impl Stage for Shifted {
+    fn name(&self) -> &'static str {
+        if self.honest { "shifted" } else { "lying-shifted" }
+    }
+
+    fn shader(&self) -> &'static str {
+        r#"
+struct Params { by: vec4<i32> }
+@group(0) @binding(3) var<uniform> params: Params;
+fn pixel(p: vec2<i32>) -> vec4<f32> {
+    return load(p) + load1(p + vec2<i32>(params.by.x, 0));
+}
+"#
+    }
+
+    fn params(&self) -> Vec<u8> {
+        [self.by, 0, 0, 0].iter().flat_map(|v| v.to_le_bytes()).collect()
+    }
+
+    fn aux_region(&self, _: usize, output: Rect) -> Rect {
+        if self.honest { Rect::new(output.x + self.by, output.y, output.w, output.h) } else { output }
+    }
+}
