@@ -55,7 +55,7 @@ struct Shown {
     frame: String,
 }
 
-/// One slider's hand: the dragged value drawn at once, handed to the store thirty times a second.
+/// One slider's hand: the dragged value drawn at once, handed to the store once per display frame.
 #[derive(Default)]
 struct Slide {
     live: Option<f32>,

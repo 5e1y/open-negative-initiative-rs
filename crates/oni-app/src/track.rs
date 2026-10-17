@@ -6,8 +6,9 @@ use std::time::{Duration, Instant};
 
 /// `DSTrack.fineFactor`: travel per point while Option is held.
 pub const FINE: f32 = 0.2;
-/// `DS.Motion.recomputedInterval`: a dragged value reaches the settings thirty times a second.
-pub const HAND_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / 30);
+/// One settings write per display frame at 120 Hz: the store recomputes nothing a frame would not
+/// show, so a drag can reach the canvas on every refresh.
+pub const HAND_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / 120);
 /// Slint's and AppKit's default double-click interval.
 pub const DOUBLE_CLICK: Duration = Duration::from_millis(500);
 /// `DSScroll.trackpadTravel`: points of travel per point of trackpad glide.
@@ -127,13 +128,13 @@ mod tests {
     }
 
     #[test]
-    fn values_reach_the_settings_thirty_times_a_second() {
+    fn values_reach_the_settings_once_per_display_frame() {
         let t0 = Instant::now();
         let mut hand = Hand::default();
         assert_eq!(hand.offer(t0), Offer::Now);
-        let early = t0 + Duration::from_millis(10);
-        assert_eq!(hand.offer(early), Offer::After(HAND_INTERVAL - Duration::from_millis(10)));
-        assert_eq!(hand.offer(early + Duration::from_millis(5)), Offer::Wait);
+        let early = t0 + Duration::from_millis(3);
+        assert_eq!(hand.offer(early), Offer::After(HAND_INTERVAL - Duration::from_millis(3)));
+        assert_eq!(hand.offer(early + Duration::from_millis(2)), Offer::Wait);
         hand.trailed(t0 + HAND_INTERVAL);
         assert_eq!(hand.offer(t0 + 2 * HAND_INTERVAL), Offer::Now);
         // A release drops the pending hand-off: the next drag's early value schedules its own.
