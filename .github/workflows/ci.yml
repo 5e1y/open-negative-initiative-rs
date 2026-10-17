@@ -20,7 +20,7 @@ jobs:
         env:
           ONI_SKIP_HEAVY: "1"
         run: >-
-          cargo test --release --workspace
+          cargo test --release --workspace --no-fail-fast
           --exclude oni-decode
           --exclude oni-link --exclude oni-localsend --exclude oni-link-ffi --exclude oni-link-demo
       - name: Phone link checks

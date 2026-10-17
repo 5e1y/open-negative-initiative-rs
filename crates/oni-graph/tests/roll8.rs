@@ -98,6 +98,7 @@ fn every_frame_previews_as_its_reference() {
         let soft = cpu::box_blur_3(&plane);
         let wrong = cpu::lanczos(&cpu::lanczos(&soft, Axis::X, e.w), Axis::Y, e.h);
         let err = error(&shown, &wrong.pixels);
+        println!("twin, softened source: error {err:.1e}");
         assert!(err > TOLERANCE, "a softened source went unseen on real data: error {err}");
     }
 }

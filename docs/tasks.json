@@ -49,5 +49,12 @@
     "detail": "oni-settings, oni-render (replacing the smaller one), oni-graph, oni-colour, oni-export, oni-library and the Slint proof of concept, ported from the Swift app as standalone packages.",
     "outcome": "Seven crates in crates/ (oni-settings, oni-render replacing the smaller copy it contains, oni-graph, oni-colour, oni-export, oni-library, oni-ui-poc) plus oni-fixtures; PaperCorrection kept in oni-settings only and ExifMetadata in place of oni-export's Metadata; Graph::from_device and Gpu::from_device, the shared-device check with its twin. On Linux with lavapipe: build, clippy --all-targets (0 warnings) and cargo test --release --workspace pass, 233 tests in the moved crates with roll #8, the Lumix files and the Swift dumps present; with every folder absent and ONI_SKIP_HEAVY set, as CI runs, 233 pass and 22 checks print SKIPPED, the kernels judged on a stand-in negative; with no Vulkan driver the GPU checks skip. macOS and Windows not verified here: left to the CI run of this push. oni-decode's linearity check still fails without a RAW, so CI excludes it.",
     "commit": "effd7e9"
+  },
+  {
+    "id": 7,
+    "type": "bug",
+    "title": "Hold the graph checks at the spread Metal measures",
+    "status": "doing",
+    "detail": "On macos-latest the Lanczos enlargement lands 2.2e-5 from its scalar reference, past the 1e-5 set on lavapipe."
   }
 ]

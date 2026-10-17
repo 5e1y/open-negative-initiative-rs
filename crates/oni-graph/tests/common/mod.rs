@@ -6,8 +6,9 @@ use oni_graph::cpu::Plane;
 use oni_graph::stages::Lanczos;
 use oni_graph::{Rect, Stage};
 
-/// Largest error accepted between a kernel and its reference, as |gpu - cpu| / (1 + |cpu|).
-pub const TOLERANCE: f32 = 1e-5;
+/// Largest error accepted between a kernel and its reference, as |gpu - cpu| / (1 + |cpu|);
+/// Metal's `sin` puts the Lanczos weights 2.2e-5 off, lavapipe 7.6e-8.
+pub const TOLERANCE: f32 = 1e-4;
 
 /// Deterministic noise in -0.2..1.6, unclamped as a scene-linear decode is: a flat picture hides every region bug.
 pub fn noise(width: u32, height: u32, seed: u64) -> Vec<[f32; 4]> {
