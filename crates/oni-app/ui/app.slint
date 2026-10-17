@@ -6,8 +6,9 @@ import { Store } from "store.slint";
 import { Panel, Plots, PanelState } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
+import { Pairing, PairingSheet } from "pairing.slint";
 
-export { DS, Caps, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow }
+export { DS, Caps, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow, Pairing }
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 export global Canvas {
@@ -44,6 +45,7 @@ export component MainWindow inherits Window {
         Menu {
             title: "File";
             MenuItem { title: "Open Folder…"; activated => { App.menu("open"); } }
+            MenuItem { title: "Pair Phone…"; activated => { App.menu("pair-phone"); } }
             MenuSeparator { }
             MenuItem { title: App.gallery ? "Editor" : "Gallery"; activated => { App.menu("toggle-mode"); } }
             MenuItem { title: "Export"; activated => { App.menu("export"); } }
@@ -180,6 +182,13 @@ export component MainWindow inherits Window {
                 if App.gallery: Info { }
             }
         }
+    }
+
+    if Pairing.shown: PairingSheet {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
     }
 
     tip := Rectangle {

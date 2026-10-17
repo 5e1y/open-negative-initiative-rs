@@ -1,0 +1,72 @@
+// The Pair Phone sheet: the one-time QR code the phone scans, over a scrim on the window.
+import { DS, Keycap } from "ds/components.slint";
+
+export global Pairing {
+    in property <bool> shown;
+    in property <image> code;
+    // The code's text, which a check pairs from as the phone's camera would.
+    in property <string> uri;
+    in property <string> status;
+    callback close();
+}
+
+export component PairingSheet inherits Rectangle {
+    background: DS.palette-scrim;
+    TouchArea { clicked => { Pairing.close(); } }
+
+    card := Rectangle {
+        width: 360px;
+        height: column.preferred-height;
+        background: DS.palette-panel;
+        border-radius: DS.radius-card;
+        border-width: DS.stroke-hairline;
+        border-color: DS.palette-separator;
+        // A click on the card stays on it, so only the scrim closes the sheet.
+        TouchArea { }
+
+        column := VerticalLayout {
+            padding: DS.space-lg;
+            spacing: DS.space-md;
+            Text {
+                text: "Pair Phone";
+                font-family: DS.typo-box-title-family;
+                font-size: DS.typo-box-title-size;
+                font-weight: DS.typo-box-title-weight;
+                color: DS.system-primary;
+                horizontal-alignment: center;
+            }
+            HorizontalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 240px;
+                    height: 240px;
+                    background: Pairing.uri != "" ? white : DS.palette-skeleton;
+                    border-radius: DS.radius-badge;
+                    clip: true;
+                    Image {
+                        width: parent.width;
+                        height: parent.height;
+                        source: Pairing.code;
+                        image-fit: contain;
+                        image-rendering: pixelated;
+                    }
+                }
+            }
+            Text {
+                text: Pairing.status;
+                font-family: DS.typo-label-family;
+                font-size: DS.typo-label-size;
+                color: DS.palette-text-secondary;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                alignment: center;
+                Keycap {
+                    text: "DONE";
+                    clicked => { Pairing.close(); }
+                }
+            }
+        }
+    }
+}

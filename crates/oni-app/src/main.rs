@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let engine = Engine::shared(&gpu);
     let folder = std::env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(|| oni_fixtures::folder(oni_fixtures::RAW_DIR));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options::default())?;
+    let shell = Shell::new(Box::new(store), engine, Options { support, ..Options::default() })?;
     shell.open_folder(&folder);
     if bench::requested() {
         bench::start(&shell.ctl, |report| {

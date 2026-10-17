@@ -8,6 +8,7 @@ pub mod display;
 pub mod fields;
 pub mod gallery;
 pub mod library;
+pub mod phone;
 pub mod render;
 pub mod store;
 pub mod timing;

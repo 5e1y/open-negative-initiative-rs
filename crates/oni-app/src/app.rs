@@ -6,10 +6,13 @@ use crate::fields::{Block, Field};
 use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::render::{self, Done, Histogram, Job, Linear, Negative, Previews, Shared, Worker};
+use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
-use crate::{App, Bar, Canvas, Caps, Heading, Library, MainWindow, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
+use crate::{App, Bar, Canvas, Caps, Heading, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::Command;
+use oni_core::link::Outward;
+use oni_link::HostEvent;
 use oni_ui_poc::motion::Spring;
 use oni_ui_poc::track::{self, Hand, Offer};
 use oni_ui_poc::{DOUBLE_CLICK, TRACKPAD_TRAVEL};
@@ -37,11 +40,13 @@ pub struct Options {
     /// Device pixels per point the chrome is rasterised at.
     pub scale: f64,
     pub screen: Screen,
+    /// Where the phone link keeps its key and the phones it trusts.
+    pub support: PathBuf,
 }
 
 impl Default for Options {
     fn default() -> Self {
-        Options { scale: 2.0, screen: Screen::Srgb }
+        Options { scale: 2.0, screen: Screen::Srgb, support: timing::support() }
     }
 }
 
@@ -111,6 +116,8 @@ pub struct State {
     renders: usize,
     opened_at: Instant,
     notches: Notches,
+    support: PathBuf,
+    phone: Option<Phone>,
 }
 
 impl State {
@@ -146,6 +153,18 @@ impl State {
     /// The notch renders shown so far, the index `Notches::summary` starts from.
     pub fn notches(&self) -> &Notches {
         &self.notches
+    }
+
+    pub fn phone(&self) -> Option<&Phone> {
+        self.phone.as_ref()
+    }
+
+    /// The open frame's place in its group, one-based, and the group's count.
+    fn place(&self) -> Option<(u16, u16)> {
+        let open = self.open_path()?;
+        let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open))?;
+        let at = group.entries.iter().position(|e| e.path == open)?;
+        Some((at as u16 + 1, group.entries.len() as u16))
     }
 }
 
@@ -296,6 +315,8 @@ impl Shell {
             renders: 0,
             opened_at: Instant::now(),
             notches: Notches::default(),
+            support: options.support.clone(),
+            phone: None,
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -310,6 +331,10 @@ impl Shell {
         Ctl::wire(&ctl, &window);
         ctl.publish(true);
         ctl.publish_bar();
+        // A phone paired before finds the desktop listening again; nothing pairs until asked.
+        if phone::has_trusted(&options.support) {
+            ctl.start_phone();
+        }
         Ok(Shell { window, ctl })
     }
 
@@ -376,6 +401,7 @@ impl Ctl {
         if !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
         }
+        self.refresh_phone();
         self.publish_bar();
         self.request_render();
     }
@@ -932,6 +958,157 @@ impl Ctl {
         self.publish_tree();
     }
 
+    // MARK: - The phone
+
+    /// The link's Host on its own thread, once; its events come back to this thread one by one.
+    fn start_phone(self: &Rc<Self>) {
+        if self.state.borrow().phone.is_some() {
+            return;
+        }
+        let support = self.state.borrow().support.clone();
+        match Phone::start(&support, |event| with_shell(move |c| c.phone_said(event))) {
+            Ok(p) => self.state.borrow_mut().phone = Some(p),
+            Err(e) => self.pairing_status(&format!("The phone link cannot start: {e}")),
+        }
+    }
+
+    /// The sheet with a fresh one-time code, once the Host listens.
+    fn pair_phone(self: &Rc<Self>) {
+        if let Some(w) = self.window() {
+            let p = w.global::<Pairing>();
+            p.set_code(Image::default());
+            p.set_uri(SharedString::new());
+            p.set_shown(true);
+        }
+        self.pairing_status("Starting the link…");
+        self.start_phone();
+        self.show_code();
+    }
+
+    fn show_code(&self) {
+        let Some(w) = self.window() else { return };
+        if !w.global::<Pairing>().get_shown() {
+            return;
+        }
+        let code = self.state.borrow().phone.as_ref().and_then(Phone::open_pairing);
+        let Some(code) = code else { return };
+        if code.addresses.is_empty() {
+            return self.pairing_status("No local network: join the phone's Wi-Fi network, then pair again.");
+        }
+        let uri = code.to_uri();
+        match phone::qr(&uri) {
+            Ok((rgba, side)) => {
+                let p = w.global::<Pairing>();
+                p.set_code(image(&rgba, side, side));
+                p.set_uri(uri.into());
+                let at: Vec<String> = code.addresses.iter().map(ToString::to_string).collect();
+                self.pairing_status(&format!("Scan it from the phone app on the same network. One phone, two minutes · {}", at.join(", ")));
+            }
+            Err(e) => self.pairing_status(&format!("The code cannot be drawn: {e}")),
+        }
+    }
+
+    fn close_pairing(&self) {
+        if let Some(p) = self.state.borrow().phone.as_ref() {
+            p.close_pairing();
+        }
+        if let Some(w) = self.window() {
+            w.global::<Pairing>().set_shown(false);
+        }
+    }
+
+    fn pairing_status(&self, text: &str) {
+        if let Some(w) = self.window() {
+            w.global::<Pairing>().set_status(text.into());
+        }
+    }
+
+    /// The store's screen to the phone, the open frame's place with it; unchanged, nothing is sent.
+    fn refresh_phone(&self) {
+        let s = &mut *self.state.borrow_mut();
+        let place = s.place();
+        let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+        p.link.frame = place;
+        p.link.refresh(store);
+    }
+
+    fn phone_said(self: &Rc<Self>, event: phone::Event) {
+        match event {
+            phone::Event::Listening(at) => {
+                timing::line(&format!("phone link listening on {at}"));
+                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
+                    p.listening(at);
+                }
+                self.refresh_phone();
+                self.show_code();
+            }
+            phone::Event::Failed(e) => {
+                timing::line(&format!("phone link failed: {e}"));
+                self.state.borrow_mut().phone = None;
+                self.pairing_status(&format!("The phone link cannot listen: {e}"));
+            }
+            phone::Event::Host(event) => self.phone_event(event),
+        }
+    }
+
+    /// A press lands on the store as one command and one undo step, then the window follows.
+    fn phone_event(self: &Rc<Self>, event: HostEvent) {
+        let (out, changed) = {
+            let s = &mut *self.state.borrow_mut();
+            let place = s.place();
+            let revision = s.store.revision();
+            let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+            p.link.frame = place;
+            let out = p.link.handle(store, event);
+            (out, store.revision() != revision)
+        };
+        if changed {
+            self.state.borrow_mut().last_change = Some(Instant::now());
+            self.publish(false);
+        }
+        match out {
+            Some(Outward::Paired { phone, name }) => {
+                let support = self.state.borrow().support.clone();
+                if let Err(e) = phone::trust(&support, phone) {
+                    self.say(&format!("{name} is paired for this session only: {e}"));
+                }
+                self.pairing_status(&format!("Paired with {name}."));
+            }
+            Some(Outward::Connected { name, .. }) => {
+                timing::line(&format!("phone connected: {name}"));
+                self.say(&format!("{name} connected"));
+                self.pairing_status(&format!("{name} is connected."));
+            }
+            Some(Outward::Disconnected { .. }) => {
+                timing::line("phone disconnected");
+                self.say("The phone disconnected");
+            }
+            Some(Outward::Walk(by)) => self.walk(by),
+            None => {}
+        }
+    }
+
+    /// `walk(by:)`: the neighbour in the open frame's group, opened and selected; the ends stop it.
+    fn walk(self: &Rc<Self>, by: i8) {
+        let target = {
+            let s = self.state.borrow();
+            let Some((at, count)) = s.place() else { return };
+            let to = (i32::from(at) - 1 + i32::from(by)).clamp(0, i32::from(count) - 1) as usize;
+            let open = s.open_path().unwrap_or_default();
+            let group = s.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
+            group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
+        };
+        let Some(path) = target else { return };
+        let index = self.state.borrow().order.iter().position(|p| *p == path);
+        if let Some(index) = index {
+            let mut s = self.state.borrow_mut();
+            s.selection = BTreeSet::from([index]);
+            s.anchor = Some(index);
+        }
+        self.open_photo(&path);
+        self.publish_tiles();
+    }
+
     // MARK: - Gestures
 
     /// Bar keys, menu items and shortcuts meet here; what this build does not carry says so.
@@ -968,6 +1145,8 @@ impl Ctl {
                 };
                 self.say(&format!("Brush step {brush:+}: the De-dust brush is not in this build yet"));
             }
+            "pair-phone" => self.pair_phone(),
+            "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
                 if let Ok(m) = a[6..].parse::<i32>() {
                     self.label(m);
@@ -980,6 +1159,10 @@ impl Ctl {
     /// The key monitor: modifier chords always, bare keys only when no field holds the keyboard, which
     /// is given: a text field consumes its printable keys before they reach this scope.
     fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, _option: bool) -> bool {
+        if text == "\u{1b}" && self.window().is_some_and(|w| w.global::<Pairing>().get_shown()) {
+            self.close_pairing();
+            return true;
+        }
         let key = text.to_lowercase();
         let action = match (command, shift, key.as_str()) {
             (true, false, "z") => "undo",
@@ -1132,6 +1315,8 @@ impl Ctl {
             let command = if cfg!(target_os = "macos") { meta } else { control };
             p.key(&text, command, shift, option)
         });
+        let p = me.clone();
+        window.global::<Pairing>().on_close(move || p.act("close-pairing"));
         let p = me.clone();
         window.global::<PanelState>().on_auto_balance(move || p.act("auto-balance"));
         let p = me.clone();

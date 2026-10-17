@@ -4111,13 +4111,16 @@ dependencies = [
  "oni-fixtures",
  "oni-graph",
  "oni-library",
+ "oni-link",
  "oni-pipeline",
  "oni-settings",
  "oni-ui-poc",
  "png",
  "pollster",
+ "qrcode",
  "slint",
  "slint-build",
+ "tokio",
  "wgpu",
 ]
 

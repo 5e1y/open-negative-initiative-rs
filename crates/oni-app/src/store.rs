@@ -29,6 +29,11 @@ pub trait Store {
     fn get(&self, field: Field) -> f32 {
         field.knob().get(self.settings())
     }
+
+    /// The editing model itself, which the phone link drives; `None` for a stand-in.
+    fn editor(&mut self) -> Option<&mut EditorStore> {
+        None
+    }
 }
 
 impl Store for EditorStore {
@@ -75,6 +80,10 @@ impl Store for EditorStore {
 
     fn revision(&self) -> u64 {
         EditorStore::revision(self)
+    }
+
+    fn editor(&mut self) -> Option<&mut EditorStore> {
+        Some(self)
     }
 }
 

@@ -163,5 +163,12 @@
     "detail": "At startup the wgpu adapter and Slint's renderer; per render its job (notch, thumbnail, open), pipeline and end-to-end times; every 120 notch renders and on exit the notch centiles (p50, p99, worst gap, frames past 8.3 ms); ONI_BENCH=1 scripts a 60-notch Exposure drag and quits. To stderr and <support>/Logs/oni.log.",
     "commit": "4f1484d",
     "outcome": "timing.rs: support folder (ONI_SUPPORT, else ~/Library/Application Support/Open Negative Initiative, %APPDATA% or XDG), log lines stamped in seconds to stderr and <support>/Logs/oni.log, Notches with Swift's FrameRate centiles (sample at count x q) on end-to-end latency and on the gaps between notch frames under 1 s. Jobs carry their kind and ask time; the render thread times the pipeline; a notch ends when the CPU bytes are set or the display kernel has written the texture; an open is timed from open_photo, decode included; thumbnails are timed on their own thread. main logs the adapter (name, backend, type, driver) and the Slint backend, the rendering notifier logs the API it set up, or the software renderer when it refuses notifiers. bench.rs drives press, 60 drags of 2 pt on a 300 pt track every 8.3 ms, release, waits for the last revision on the canvas, undoes, flushes and reports. Verified on llvmpipe: unit tests (centiles with a twin under the budget, idle rest not a gap with a 20 ms twin, the 120-render report window); the headless test on roll #8 ran the bench: 4 notch renders, end to end p50 574 ms, p99 866 ms, worst gap 525 ms, Exposure back at its value, revision moved by at least two. Not run on the Mac: Metal timings, the femtovg-wgpu notifier line, the file on disk there."
+  },
+  {
+    "id": 19,
+    "type": "feature",
+    "title": "Pair the phone from the desktop: the QR code",
+    "status": "doing",
+    "detail": "File > Pair Phone… starts oni-link's Host on the local network on its own thread, shows the pairing QR code in a sheet, and drives the store once paired: the phone's scanner keys step the open frame, State is published after every change, Walk opens and selects the neighbour frame."
   }
 ]

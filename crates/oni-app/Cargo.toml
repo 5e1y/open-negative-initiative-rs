@@ -21,15 +21,19 @@ oni-decode.workspace = true
 oni-fixtures.workspace = true
 oni-graph = { path = "../oni-graph" }
 oni-library = { path = "../oni-library" }
+oni-link = { path = "../oni-link" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 oni-ui-poc = { path = "../oni-ui-poc" }
 pollster.workspace = true
+qrcode = { version = "0.14", default-features = false }
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30"] }
+tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
 wgpu.workspace = true
 
 [dev-dependencies]
 png = "0.18"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 
 [build-dependencies]
 slint-build = "=1.18.1"
