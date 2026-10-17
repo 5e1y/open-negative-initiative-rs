@@ -24,6 +24,71 @@ pub trait Stage: Send + Sync {
     fn input_region(&self, output: Rect) -> Rect {
         output
     }
+
+    /// Every pixel of auxiliary input `index` read for `output`, in that input's own coordinates.
+    fn aux_region(&self, index: usize, output: Rect) -> Rect {
+        let _ = index;
+        output
+    }
+}
+
+/// The most auxiliary inputs one stage reads beside its own.
+pub const MAX_AUX: usize = 3;
+
+/// Where each auxiliary input lies, mirrored by `AuxFrame` in `aux_prelude`.
+#[repr(C)]
+#[derive(Clone, Copy, Default, bytemuck::Pod, bytemuck::Zeroable)]
+pub(crate) struct AuxFrame {
+    pub in_origin: [i32; 2],
+    pub in_min: [i32; 2],
+    pub in_max: [i32; 2],
+    pub pad: [i32; 2],
+}
+
+/// The bindings and readers of `arity` auxiliary inputs: `src1` with `load1` and `inside1`, and so on.
+pub(crate) fn aux_prelude(arity: usize) -> String {
+    if arity == 0 {
+        return String::new();
+    }
+    let mut out = format!(
+        r#"
+struct AuxFrame {{
+    in_origin: vec2<i32>,
+    in_min: vec2<i32>,
+    in_max: vec2<i32>,
+    pad: vec2<i32>,
+}}
+
+struct AuxFrames {{ f: array<AuxFrame, {MAX_AUX}> }}
+
+@group(0) @binding(4) var<uniform> aux_frames: AuxFrames;
+
+fn load_from(t: texture_2d<f32>, f: AuxFrame, q: vec2<i32>) -> vec4<f32> {{
+    let e = clamp(q, f.in_min, f.in_max - vec2<i32>(1)) - f.in_origin;
+    let c = clamp(e, vec2<i32>(0), vec2<i32>(textureDimensions(t)) - vec2<i32>(1));
+    return textureLoad(t, c, 0);
+}}
+"#
+    );
+    for k in 1..=arity {
+        out.push_str(&format!(
+            r#"
+@group(0) @binding({b}) var src{k}: texture_2d<f32>;
+
+fn load{k}(q: vec2<i32>) -> vec4<f32> {{
+    return load_from(src{k}, aux_frames.f[{i}], q);
+}}
+
+fn inside{k}(q: vec2<i32>) -> bool {{
+    let f = aux_frames.f[{i}];
+    return all(q >= f.in_min) && all(q < f.in_max);
+}}
+"#,
+            b = 4 + k,
+            i = k - 1
+        ));
+    }
+    out
 }
 
 /// Header of every dispatch, mirrored by `Frame` in `PRELUDE`.

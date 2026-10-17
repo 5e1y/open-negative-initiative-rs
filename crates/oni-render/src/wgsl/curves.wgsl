@@ -3,26 +3,21 @@
 
 struct Params { head: vec4<u32>, bent: vec4<f32> }
 
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read> rgb_lut: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read> luma_lut: array<vec4<f32>>;
-@group(0) @binding(4) var<storage, read_write> dest: array<vec4<f32>>;
-
 const LUMA_SCALE_MAX: f32 = 8.0;
 
+// The tables are read through `curves_rgb_lut(k)` and `curves_luma_lut(k)`, which each entry point defines.
 fn rgb_at(v: f32) -> vec4<f32> {
     let n = P.head.w;
     let f = clamp(v, 0.0, 1.0) * f32(n - 1u);
     let k = min(u32(floor(f)), n - 1u);
-    return mix(rgb_lut[k], rgb_lut[min(k + 1u, n - 1u)], f - f32(k));
+    return mix(curves_rgb_lut(k), curves_rgb_lut(min(k + 1u, n - 1u)), f - f32(k));
 }
 
 fn luma_at(v: f32) -> f32 {
     let n = P.head.w;
     let f = clamp(v, 0.0, 1.0) * f32(n - 1u);
     let k = min(u32(floor(f)), n - 1u);
-    return mix(luma_lut[k].r, luma_lut[min(k + 1u, n - 1u)].r, f - f32(k));
+    return mix(curves_luma_lut(k).r, curves_luma_lut(min(k + 1u, n - 1u)).r, f - f32(k));
 }
 
 // Past 1 the curve continues as a line of slope 1 instead of clipping.
@@ -36,11 +31,7 @@ fn curve_luma(v: f32) -> f32 {
     return luma_at(1.0) + (v - 1.0);
 }
 
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    let s = src_px[i];
+fn curves_px(s: vec4<f32>) -> vec4<f32> {
     var e = s.rgb;
     if (P.bent.x > 0.5) {
         e = vec3<f32>(curve_rgb(e.r, 1u), curve_rgb(e.g, 2u), curve_rgb(e.b, 3u));
@@ -52,5 +43,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
     if (P.bent.z > 0.5 && y > 1e-4) {
         e = e * clamp(curve_luma(y) / y, 0.0, LUMA_SCALE_MAX);
     }
-    dest[i] = vec4<f32>(e, s.a);
+    return vec4<f32>(e, s.a);
+}
+
+// MARK: - Buffers
+
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read> rgb_lut: array<vec4<f32>>;
+@group(0) @binding(3) var<storage, read> luma_lut: array<vec4<f32>>;
+@group(0) @binding(4) var<storage, read_write> dest: array<vec4<f32>>;
+
+fn curves_rgb_lut(k: u32) -> vec4<f32> {
+    return rgb_lut[k];
+}
+
+fn curves_luma_lut(k: u32) -> vec4<f32> {
+    return luma_lut[k];
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
+    if (i >= P.head.x) { return; }
+    dest[i] = curves_px(src_px[i]);
 }

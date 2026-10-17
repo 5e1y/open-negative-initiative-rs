@@ -8,16 +8,8 @@ struct Params {
     dose_hunt: vec4<f32>,
 }
 
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    let s = src_px[i];
-    let at = ci_coord(i % P.head.y, i / P.head.y, P.origin.xy, P.head.z);
+// `at` is the pixel's centre in the frame `centre_half_side` is written in.
+fn vignette_px(s: vec4<f32>, at: vec2<f32>) -> vec4<f32> {
     let dose = P.dose_hunt.xy;
     let hunt = P.dose_hunt.z;
     let d = (at - P.centre_half_side.xy) / P.centre_half_side.zw;
@@ -34,5 +26,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) g
         let yl = dot(p, LUMA);
         if (yl > 1e-12) { e = p * pow(yl, 1.0 / m - 1.0); }
     }
-    dest[i] = vec4<f32>(e, s.a);
+    return vec4<f32>(e, s.a);
+}
+
+// MARK: - Buffers
+
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
+@group(0) @binding(2) var<storage, read_write> dest: array<vec4<f32>>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
+    let i = flat_index(id, groups);
+    if (i >= P.head.x) { return; }
+    dest[i] = vignette_px(src_px[i], ci_coord(i % P.head.y, i / P.head.y, P.origin.xy, P.head.z));
 }

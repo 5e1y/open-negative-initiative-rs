@@ -2,6 +2,7 @@
 
 pub mod cpu;
 pub mod gpu;
+pub mod wgsl;
 mod params;
 
 pub use params::*;
