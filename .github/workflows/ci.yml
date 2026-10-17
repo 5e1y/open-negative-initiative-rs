@@ -16,3 +16,5 @@ jobs:
         run: cargo build --release --workspace
       - name: Render checks
         run: cargo test --release -p oni-render
+      - name: Phone link checks
+        run: cargo test --release -p oni-link -p oni-localsend -p oni-link-ffi
