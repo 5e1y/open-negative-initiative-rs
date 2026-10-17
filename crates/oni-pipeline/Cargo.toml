@@ -1,0 +1,19 @@
+[package]
+name = "oni-pipeline"
+description = "Open Negative Initiative's render orchestrator: a frame's settings to its working-space image, on the render graph"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+oni-graph = { path = "../oni-graph" }
+oni-render.workspace = true
+oni-settings.workspace = true
+bytemuck.workspace = true
+png = "0.18"
+serde = { workspace = true }
+serde_json.workspace = true
+
+[dev-dependencies]
+oni-decode.workspace = true
+oni-fixtures.workspace = true

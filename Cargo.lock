@@ -4238,6 +4238,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-pipeline"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "oni-decode",
+ "oni-fixtures",
+ "oni-graph",
+ "oni-render",
+ "oni-settings",
+ "png",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "oni-render"
 version = "0.1.0"
 dependencies = [
