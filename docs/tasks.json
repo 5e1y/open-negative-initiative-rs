@@ -93,5 +93,13 @@
     "status": "done",
     "detail": "The GitHub account's free Actions minutes are used up; further runs are billed.",
     "outcome": "ci.yml triggers on workflow_dispatch only and runs Windows only; the six running or queued runs were cancelled. macOS checks run on the owner's Mac."
+  },
+  {
+    "id": 13,
+    "type": "chore",
+    "title": "Prepare the repository to be public",
+    "status": "doing",
+    "detail": "Public repositories get GitHub Actions for free.",
+    "outcome": "History audited: no key, token, private image or RAW; the only personal datum is the owner's commit email on two GitHub merges, already public on the releases repository. LICENSE (GPL-3.0) and a README added."
   }
 ]
