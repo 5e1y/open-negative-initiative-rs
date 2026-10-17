@@ -18,17 +18,18 @@ path = "src/bin/oni-tokens.rs"
 bytemuck.workspace = true
 oni-core = { path = "../oni-core" }
 oni-decode.workspace = true
+oni-fixtures.workspace = true
+oni-graph = { path = "../oni-graph" }
 oni-library = { path = "../oni-library" }
-oni-render.workspace = true
+oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 oni-ui-poc = { path = "../oni-ui-poc" }
-serde_json.workspace = true
+pollster.workspace = true
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30"] }
 wgpu.workspace = true
 
 [dev-dependencies]
 png = "0.18"
-pollster.workspace = true
 
 [build-dependencies]
 slint-build = "=1.18.1"

@@ -5,11 +5,10 @@ use crate::display::{self, Params, Screen};
 use crate::fields::{Block, Field};
 use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
-use crate::render::{self, Done, Histogram, Job, Renderer, Worker};
+use crate::render::{self, Done, Histogram, Job, Linear, Negative, Previews, Shared, Worker};
 use crate::store::{self, Store as Settings};
 use crate::{App, Bar, Canvas, Caps, Heading, Library, MainWindow, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::Command;
-use oni_ui_poc::frame::Linear;
 use oni_ui_poc::motion::Spring;
 use oni_ui_poc::track::{self, Hand, Offer};
 use oni_ui_poc::{DOUBLE_CLICK, TRACKPAD_TRAVEL};
@@ -23,8 +22,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// Long side of the canvas copy, in pixels: what a 1100-point window shows at 2x.
-pub const CANVAS_SIDE: usize = oni_ui_poc::frame::CANVAS_SIDE;
 /// Long side of a gallery thumbnail, in pixels: a 6-column tile at 2x on a wide window.
 pub const THUMB_SIDE: usize = 480;
 const FRAME_TICK: Duration = Duration::from_millis(16);
@@ -88,7 +85,9 @@ pub struct State {
     visible: std::ops::Range<usize>,
     thumbs: HashMap<String, Image>,
     loaded: usize,
-    negatives: Arc<Mutex<HashMap<String, Arc<Linear>>>>,
+    /// The open frame's preview, which the canvas renders; the previews kept besides it.
+    negative: Option<(String, Arc<Negative>)>,
+    previews: Arc<Mutex<Previews>>,
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
     hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
@@ -106,6 +105,11 @@ pub struct State {
 impl State {
     pub fn renders(&self) -> usize {
         self.renders
+    }
+
+    /// The store revision the canvas last showed.
+    pub fn rendered(&self) -> u64 {
+        self.rendered
     }
 
     pub fn store(&self) -> &dyn Settings {
@@ -132,7 +136,8 @@ impl State {
 pub struct Ctl {
     window: slint::Weak<MainWindow>,
     pub state: RefCell<State>,
-    worker: Worker,
+    engine: Shared,
+    worker: Worker<Negative>,
     trailing: Vec<Timer>,
     arrivals: Vec<Timer>,
     pulse: Timer,
@@ -240,10 +245,11 @@ pub struct Shell {
 }
 
 impl Shell {
-    pub fn new(store: Box<dyn Settings>, renderer: Box<dyn Renderer>, options: Options) -> Result<Shell, slint::PlatformError> {
+    /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
+    pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let window = MainWindow::new()?;
         crate::caps::install(&window.global::<Caps>(), options.scale);
-        let worker = Worker::new(renderer, options.screen, |done| with_shell(move |c| c.deliver(done)));
+        let worker = Worker::new(Box::new(engine.clone()), options.screen, |done| with_shell(move |c| c.deliver(done)));
         let state = State {
             store,
             screen: options.screen,
@@ -259,7 +265,8 @@ impl Shell {
             visible: 0..0,
             thumbs: HashMap::new(),
             loaded: 0,
-            negatives: Arc::default(),
+            negative: None,
+            previews: Arc::default(),
             hands: Arc::default(),
             slides: Field::ALL.iter().map(|_| Slide::default()).collect(),
             rendered: 0,
@@ -275,6 +282,7 @@ impl Shell {
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
             state: RefCell::new(state),
+            engine,
             worker,
             trailing: Field::ALL.iter().map(|_| Timer::default()).collect(),
             arrivals: Field::ALL.iter().map(|_| Timer::default()).collect(),
@@ -429,7 +437,7 @@ impl Ctl {
             if revision == s.requested && s.rendered != 0 {
                 return;
             }
-            let Some(negative) = s.negatives.lock().expect("negatives").get(&path).cloned() else { return };
+            let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
             s.requested = revision;
             Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone() }
         };
@@ -476,12 +484,16 @@ impl Ctl {
         if gpu {
             w.window().request_redraw();
         } else {
-            w.global::<Canvas>().set_frame(image(&done.rgba8, done.linear.width, done.linear.height));
+            // A render started while the display kernel still drew carries no bytes.
+            let screen = self.state.borrow().screen;
+            let (lw, lh) = (done.linear.width, done.linear.height);
+            let bytes = if done.rgba8.is_empty() { render::encoded(&done.linear, &Params::new(screen, lw as u32, lh as u32, 0), 1) } else { done.rgba8 };
+            w.global::<Canvas>().set_frame(image(&bytes, lw, lh));
         }
         let status = {
             let s = self.state.borrow();
             let name = s.open_path().map(stem).unwrap_or_default();
-            format!("{name} · {} × {} · stages 4–7 on the CPU, the full pipeline still to come", done.linear.width, done.linear.height)
+            format!("{name} · {} × {}", done.linear.width, done.linear.height)
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
@@ -651,51 +663,66 @@ impl Ctl {
         }
         self.publish(true);
         self.publish_tree();
-        let negatives = self.state.borrow().negatives.clone();
-        if negatives.lock().expect("negatives").contains_key(path) {
+        let (previews, converted) = {
+            let s = self.state.borrow();
+            (s.previews.clone(), s.store.settings().primaries_converted)
+        };
+        let known = previews.lock().expect("previews").get(path);
+        if let Some(negative) = known {
+            self.state.borrow_mut().negative = Some((path.to_string(), negative));
             return self.request_render();
         }
+        self.state.borrow_mut().negative = None;
         let path = path.to_string();
+        let engine = self.engine.clone();
         std::thread::spawn(move || {
-            let decoded = render::decode(Path::new(&path), CANVAS_SIDE);
-            with_shell(move |c| match decoded {
-                Ok(linear) => {
-                    let negatives = c.state.borrow().negatives.clone();
-                    negatives.lock().expect("negatives").insert(path, Arc::new(linear));
-                    c.request_render();
+            let prepared = prepared(&engine, &path, converted);
+            with_shell(move |c| match prepared {
+                Ok(negative) => {
+                    c.state.borrow().previews.lock().expect("previews").insert(path.clone(), negative.clone());
+                    if c.state.borrow().open_path() == Some(path.as_str()) {
+                        c.state.borrow_mut().negative = Some((path, negative));
+                        c.request_render();
+                    }
                 }
-                Err(e) => c.say(&e),
+                Err(e) => {
+                    if c.state.borrow().open_path() == Some(path.as_str()) {
+                        c.deliver(Err(format!("{}: {e}", stem(&path))));
+                    }
+                }
             });
         });
     }
 
-    /// Every photo's thumbnail, decoded and converted on its own sidecar off this thread, one by one.
+    /// Every photo's thumbnail through the pipeline on its own sidecar, off this thread, one by one.
     fn read_thumbnails(&self, order: Vec<String>) {
-        let negatives = self.state.borrow().negatives.clone();
-        let hands = self.state.borrow().hands.clone();
-        let screen = self.state.borrow().screen;
+        let (previews, hands, screen) = {
+            let s = self.state.borrow();
+            (s.previews.clone(), s.hands.clone(), s.screen)
+        };
+        let engine = self.engine.clone();
         std::thread::Builder::new()
             .name("thumbnails".into())
             .spawn(move || {
-                let mut renderer = render::Stage47;
                 for (n, path) in order.into_iter().enumerate() {
                     while hands.load(Ordering::Relaxed) > 0 {
                         std::thread::sleep(Duration::from_millis(20));
                     }
                     let thumbnail = (|| -> Result<(Vec<u8>, usize, usize), String> {
-                        let known = negatives.lock().expect("negatives").get(&path).cloned();
+                        let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
+                        let settings = oni_settings::sidecar::read(Path::new(&path), mosaic, true).map_err(|e| e.to_string())?.settings;
+                        let known = previews.lock().expect("previews").get(&path);
                         let negative = match known {
                             Some(n) => n,
                             None => {
-                                let l = Arc::new(render::decode(Path::new(&path), CANVAS_SIDE)?);
-                                negatives.lock().expect("negatives").insert(path.clone(), l.clone());
-                                l
+                                let n = prepared(&engine, &path, settings.primaries_converted)?;
+                                previews.lock().expect("previews").insert(path.clone(), n.clone());
+                                n
                             }
                         };
-                        let settings = oni_settings::sidecar::read(Path::new(&path), true, true).map_err(|e| e.to_string())?.settings;
-                        let linear = renderer.render(&negative.reduced(THUMB_SIDE), &settings)?;
+                        let linear = engine.lock().map_err(|_| "the render engine failed earlier")?.render(&negative, &settings, Some(THUMB_SIDE))?;
                         let k = Params::new(screen, linear.width as u32, linear.height as u32, n as u32);
-                        Ok((display::encode(&linear.pixels, &k), linear.width, linear.height))
+                        Ok((render::encoded(&linear, &k, 1), linear.width, linear.height))
                     })();
                     // A frame that fails still counts as read, its tile left empty and the reason said.
                     with_shell(move |c| {
@@ -1087,11 +1114,15 @@ impl Ctl {
             match (state, api) {
                 (slint::RenderingState::RenderingSetup, slint::GraphicsAPI::WGPU30 { device, queue, .. }) => {
                     let kernel = display::Gpu::new(device);
+                    p.worker.on_gpu.store(true, Ordering::Relaxed);
                     p.state.borrow_mut().gpu =
                         Some(Gpu { device: device.clone(), queue: queue.clone(), kernel, target: None, pending: None, seed: 0 });
                 }
                 (slint::RenderingState::BeforeRendering, _) => p.before_rendering(),
-                (slint::RenderingState::RenderingTeardown, _) => p.state.borrow_mut().gpu = None,
+                (slint::RenderingState::RenderingTeardown, _) => {
+                    p.worker.on_gpu.store(false, Ordering::Relaxed);
+                    p.state.borrow_mut().gpu = None;
+                }
                 _ => {}
             }
         });
@@ -1102,4 +1133,11 @@ impl Ctl {
 pub fn tiles(window: &MainWindow) -> Vec<Tile> {
     let model = window.global::<Library>().get_tiles();
     (0..model.row_count()).filter_map(|i| model.row_data(i)).collect()
+}
+
+/// A frame decoded on the calling thread, the CPU's part, then laid on the GPU as its preview.
+fn prepared(engine: &Shared, path: &str, primaries_converted: bool) -> Result<Arc<Negative>, String> {
+    let decoded = render::decode(Path::new(path), primaries_converted)?;
+    let negative = engine.lock().map_err(|_| "the render engine failed earlier")?.prepare(decoded)?;
+    Ok(Arc::new(negative))
 }

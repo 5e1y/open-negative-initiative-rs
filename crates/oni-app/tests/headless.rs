@@ -164,11 +164,15 @@ fn label_of(path: &str) -> oni_settings::Medal {
 
 #[test]
 fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
-    let roll = oni_ui_poc::frame::roll_dir();
+    let roll = oni_fixtures::folder(oni_fixtures::RAW_DIR);
     if !roll.join("DSC_6440.NEF").exists() {
         eprintln!("roll #8 is absent: the window is not exercised");
         return;
     }
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the window is not exercised"),
+    };
     let shots = std::env::var_os("ONI_SHOTS")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
@@ -180,8 +184,10 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
 
     let originals = stamps(&roll);
     let folder = mirror(&roll);
-    let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
-    let shell = Shell::new(Box::new(store), Box::new(oni_app::render::Stage47), Options { scale: 2.0, ..Default::default() }).unwrap();
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let engine = oni_app::render::Engine::shared(&gpu);
+    println!("rendering on {}", engine.lock().unwrap().adapter());
+    let shell = Shell::new(Box::new(store), engine, Options { scale: 2.0, ..Default::default() }).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();
@@ -194,6 +200,8 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.settle();
     let first = ctl.state.borrow().open_path().unwrap().to_string();
     assert!(first.ends_with("DSC_6432.NEF"), "{first}");
+    let canvas = w.global::<oni_app::Canvas>();
+    assert!(canvas.get_status().contains(" × "), "{}", canvas.get_status());
     println!("shot {}", rig.shot("editor-color").display());
 
     // A drag on Exposure: notches at the hand's pace, one store step, one render at least.
@@ -236,6 +244,15 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.pump();
     assert_eq!(ctl.state.borrow().store().get(Field::Exposure), Field::Exposure.spec().base);
     rig.chord(slint::platform::Key::Control, "z");
+    rig.settle();
+    // One more notch alone, from the store's write to the canvas: the render a held slider waits on.
+    std::thread::sleep(Duration::from_millis(600));
+    g.invoke_press(field, false);
+    g.invoke_drag(field, 5.0, span, false);
+    g.invoke_release(field);
+    let revision = ctl.state.borrow().store().revision();
+    rig.until("one notch", Duration::from_secs(60), || ctl.state.borrow().rendered() >= revision);
+    rig.chord(slint::platform::Key::Control, "z");
 
     // The Roll tab, then the bar's other face, the gallery, once every thumbnail is in.
     w.global::<PanelState>().set_tab(0);
@@ -248,16 +265,17 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.until("ten thumbnails", Duration::from_secs(600), || ctl.state.borrow().loaded() >= 10);
     let tiles = app::tiles(w);
     assert_eq!(tiles.len(), 10, "every cell of a ten-photo roll is in view");
-    // The stand-in renders the Pro face only: a Scanner-face frame's tile stays empty, never misdrawn.
+    // Both faces through the pipeline: every tile drawn, the Scanner face's among them.
+    let mut scanner_drawn = 0;
     for t in &tiles {
         let path = folder.join(format!("{}.NEF", t.caption));
         let face = oni_settings::sidecar::read(&path, true, true).unwrap().settings.face;
-        let pro = face == oni_settings::Face::Pro;
-        assert_eq!(t.picture.size().width > 0, pro, "{}: {face:?}", t.caption);
+        assert!(t.picture.size().width > 0, "{}: {face:?} left empty", t.caption);
+        scanner_drawn += usize::from(face == oni_settings::Face::Scanner);
     }
-    let drawn = tiles.iter().filter(|t| t.picture.size().width > 0).count();
-    println!("{drawn} of 10 thumbnails drawn, the rest on the Scanner face");
-    assert!(drawn > 0);
+    println!("10 of 10 thumbnails drawn, {scanner_drawn} on the Scanner face");
+    // Twin: the roll holds Scanner-face frames, so a renderer refusing that face fails above.
+    assert!(scanner_drawn > 0);
     w.global::<Library>().invoke_tile_clicked(3, false, false);
     rig.pump();
     rig.settle();
@@ -282,16 +300,20 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.settle();
     println!("shot {}", rig.shot("gallery-labelled").display());
 
-    // A Scanner-face frame opened in the editor: the canvas is emptied and says why.
-    let scanner = tiles.iter().find(|t| t.picture.size().width == 0).map(|t| t.index);
-    if let Some(i) = scanner {
-        let canvas = w.global::<oni_app::Canvas>();
-        w.global::<Library>().invoke_tile_opened(i);
-        rig.until("the refused render", Duration::from_secs(120), || canvas.get_status().starts_with("Not rendered"));
-        assert_eq!(canvas.get_frame().size().width, 0, "no other photo's picture stays on the canvas");
-        rig.settle();
-        println!("shot {}", rig.shot("editor-scanner-face").display());
-    }
+    // A Scanner-face frame opened in the editor renders on the canvas, through the Frontier's table.
+    let scanner = tiles
+        .iter()
+        .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true, true).unwrap().settings.face == oni_settings::Face::Scanner)
+        .map(|t| (t.index, t.caption.to_string()))
+        .expect("roll #8 holds a Scanner-face frame");
+    let renders = ctl.state.borrow().renders();
+    w.global::<Library>().invoke_tile_opened(scanner.0);
+    rig.until("the Scanner-face render", Duration::from_secs(300), || ctl.state.borrow().renders() > renders);
+    let status = canvas.get_status();
+    assert!(status.starts_with(&scanner.1) && !status.contains("Not rendered"), "{status}");
+    assert!(canvas.get_frame().size().width > 0, "the canvas shows the Scanner-face frame");
+    rig.settle();
+    println!("shot {}", rig.shot("editor-scanner-face").display());
 
     // Every write went to the mirror: the originals' folder reads as it did before the run.
     assert_eq!(stamps(&roll), originals);

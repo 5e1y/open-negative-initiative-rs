@@ -61,6 +61,16 @@ fn frames(dir: &Path) -> Vec<(usize, String)> {
     FRAMES.iter().map(|f| (names.iter().position(|n| n == f).unwrap_or_else(|| panic!("{f} is not in list.txt")), f.to_string())).collect()
 }
 
+/// A reference rendered before its sidecar's last edit judges settings it never saw; copies that
+/// lost their dates are trusted with `ONI_REFERENCE_FRESH=1`.
+fn stale(sidecar: &Path, reference: &Path) -> bool {
+    if std::env::var_os("ONI_REFERENCE_FRESH").is_some_and(|v| v == "1") {
+        return false;
+    }
+    let modified = |p: &Path| std::fs::metadata(p).and_then(|m| m.modified()).ok();
+    matches!((modified(sidecar), modified(reference)), (Some(s), Some(r)) if s > r)
+}
+
 fn render(g: &mut Graph, pipeline: &mut Pipeline, source: &Source, s: &PipelineSettings, request: &Request) -> (u32, u32, Vec<[f32; 4]>) {
     let image: Image = pipeline.image(g, source, s, request, &Inputs::default()).expect("the recipe builds");
     let e = image.extent();
@@ -79,10 +89,18 @@ fn roll8_lands_on_the_swift_render() {
     let mut pipeline = Pipeline::new();
     // A frame whose NEF is not in the folder takes the roll's full width, read off the last one decoded.
     let mut roll_width = None;
+    let (mut failures, mut judged, mut skipped) = (Vec::new(), 0, 0);
     for (index, name) in frames(&dir) {
         let file = format!("{index:05}.f32");
-        let (decode, swift) = (dump(&dir.join("decode").join(&file)), dump(&dir.join("render").join(&file)));
         let original = roll.join(&name);
+        let reference = dir.join("render").join(&file);
+        if stale(&oni_settings::sidecar::url_for(&original), &reference) {
+            println!("SKIPPED {name}: its sidecar is newer than the reference render {file}");
+            skipped += 1;
+            continue;
+        }
+        judged += 1;
+        let (decode, swift) = (dump(&dir.join("decode").join(&file)), dump(&reference));
         let settings = oni_settings::sidecar::read(&original, true, false).expect("the sidecar reads").settings.per_pixel_only();
         let full = original.exists().then(|| oni_decode::decode(&original, 1.0).expect("LibRaw decodes the frame"));
         let full_width = full.as_ref().map(|f| f.width as f64).or(roll_width);
@@ -92,10 +110,15 @@ fn roll8_lands_on_the_swift_render() {
         let source = g.upload(decode.width, decode.height, &decode.pixels).unwrap();
         let request = Request { full_width, ..Request::default() };
         let (w, h, ours) = render(&mut g, &mut pipeline, &source, &settings, &request);
-        assert_eq!((w, h), (swift.width, swift.height), "{name}: the frame's size departs from the Swift render's");
+        if (w, h) != (swift.width, swift.height) {
+            failures.push(format!("{name}: {w}x{h} departs from the Swift render's {}x{}", swift.width, swift.height));
+            continue;
+        }
         let (mean, p99) = gap(&ours, &swift.pixels);
         println!("{name} {w}x{h}, on the Swift decode: mean {mean:.5}, p99 {p99:.5}; luma {:.4} for {:.4}", luma(&ours), luma(&swift.pixels));
-        assert!(mean < SWIFT_MEAN && p99 < SWIFT_P99, "{name}: the pipeline departs from the Swift render");
+        if mean >= SWIFT_MEAN || p99 >= SWIFT_P99 {
+            failures.push(format!("{name}: the pipeline departs from the Swift render, mean {mean:.5}, p99 {p99:.5}"));
+        }
 
         // Twins: two channels swapped, the face's own stage moved (Pro's print bypassed, the Scanner's
         // other machine, its clicks ignored), the capture's exposure ignored.
@@ -125,7 +148,9 @@ fn roll8_lands_on_the_swift_render() {
         for (what, twin) in twins {
             let (m, p) = gap(&twin, &swift.pixels);
             println!("  twin, {what}: mean {m:.5}, p99 {p:.5}");
-            assert!(m >= SWIFT_MEAN || p >= SWIFT_P99, "{name}: twin {what} passes, so the check cannot see it");
+            if m < SWIFT_MEAN && p < SWIFT_P99 {
+                failures.push(format!("{name}: twin {what} passes, so the check cannot see it"));
+            }
         }
 
         // LibRaw's whole frame, reduced by the pipeline's own Lanczos to the Swift render's side.
@@ -148,6 +173,32 @@ fn roll8_lands_on_the_swift_render() {
         println!("  LibRaw {fw}x{fh} reduced to {lw}x{lh}, compared on {cw}x{ch}");
         let (m, p) = gap(&common(&libraw, lw), &common(&swift.pixels, swift.width));
         println!("  on LibRaw's decode: mean {m:.5}, p99 {p:.5}; luma {:.4}", luma(&libraw));
-        assert!(m < LIBRAW_MEAN, "{name}: LibRaw's render sits {m:.4} from the Swift one, past the measured move");
+        if m >= LIBRAW_MEAN {
+            failures.push(format!("{name}: LibRaw's render sits {m:.4} from the Swift one, past the measured move"));
+        }
     }
+    println!("{judged} frames judged, {skipped} skipped on a stale reference");
+    if judged == 0 {
+        println!("SKIPPED {check}: every reference is older than its sidecar (ONI_REFERENCE_FRESH=1 trusts copies without dates)");
+    }
+    assert!(failures.is_empty(), "{} of {judged} frames fail:\n{}", failures.len(), failures.join("\n"));
+}
+
+#[test]
+fn a_reference_older_than_its_sidecar_is_stale() {
+    let dir = std::env::temp_dir().join(format!("oni-stale-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (sidecar, reference) = (dir.join("a.NEF.json"), dir.join("00000.f32"));
+    let at = |p: &Path, secs: u64| {
+        let f = std::fs::File::create(p).unwrap();
+        f.set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs)).unwrap();
+    };
+    at(&reference, 1_000);
+    at(&sidecar, 2_000);
+    let trusted = std::env::var_os("ONI_REFERENCE_FRESH").is_some_and(|v| v == "1");
+    assert_eq!(stale(&sidecar, &reference), !trusted, "an edit after the dump makes it stale");
+    // Twin: a sidecar written before the dump keeps the reference.
+    at(&sidecar, 500);
+    assert!(!stale(&sidecar, &reference));
+    let _ = std::fs::remove_dir_all(&dir);
 }

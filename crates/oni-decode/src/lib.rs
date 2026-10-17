@@ -1,4 +1,7 @@
 //! RAW decoding through LibRaw, pinned: demosaiced once, then turned into scene-linear Rec. 2020 in floating point.
+//! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
+
+pub mod container;
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_float, c_int, c_ushort, c_void};
@@ -175,6 +178,45 @@ fn baseline(tag: f32) -> f64 {
     }
 }
 
+/// The branch a file decodes through, as `RawDecode.alone` sorts it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Branch {
+    /// A camera mosaic, through LibRaw.
+    Mosaic,
+    /// A demosaiced linear scan in a TIFF container, through `container`.
+    LinearRgb,
+    /// Anything else, read by an image reader in its declared or chosen space.
+    Plain,
+}
+
+/// Camera RAW extensions (`UTType.rawImage`), the fallback for a file whose bytes no probe claims.
+const RAW_EXTENSIONS: &[&str] = &[
+    "3fr", "ari", "arw", "bay", "braw", "cap", "cr2", "cr3", "crw", "dcr", "dcs", "dng", "drf", "eip", "erf", "fff", "gpr",
+    "iiq", "k25", "kdc", "mdc", "mef", "mos", "mrw", "nef", "nrw", "orf", "pef", "ptx", "pxn", "r3d", "raf", "raw", "rw2",
+    "rwl", "rwz", "sr2", "srf", "srw", "x3f",
+];
+
+/// `RawDecode.isRaw`: the extension, consulted only when the bytes claim nothing.
+pub fn is_raw(path: &Path) -> bool {
+    path.extension().and_then(|e| e.to_str()).is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+}
+
+/// Sorted on the bytes: a CFA is a mosaic, LinearRaw a linear scan; a file neither claims falls back
+/// on the extension, so the probe only ever adds files to the linear branch.
+pub fn route(path: &Path) -> Branch {
+    match container::probe(path) {
+        Some(container::Kind::Mosaic) => Branch::Mosaic,
+        Some(container::Kind::LinearRgb) => Branch::LinearRgb,
+        _ if is_raw(path) => Branch::Mosaic,
+        _ => Branch::Plain,
+    }
+}
+
+/// `RawDecode.decodesViaMosaic`, which the settings' migration shares with the decode.
+pub fn decodes_via_mosaic(path: &Path) -> bool {
+    route(path) == Branch::Mosaic
+}
+
 /// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none, used by the linearity check.
 /// Safe to call from several threads at once: every decode owns its LibRaw instance.
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
@@ -301,6 +343,21 @@ mod tests {
         assert_eq!(baseline(0.35), 0.35f32 as f64);
         // Twin: a tag of zero is a value, not an absence.
         assert_ne!(baseline(0.0), DEFAULT_BASELINE_EV);
+    }
+
+    #[test]
+    fn the_extension_counts_only_when_the_bytes_claim_nothing() {
+        let dir = std::env::temp_dir().join(format!("oni-route-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let jpeg = dir.join("scan.NEF");
+        std::fs::write(&jpeg, b"not a container").unwrap();
+        assert_eq!(route(&jpeg), Branch::Mosaic, "unclaimed bytes fall back on a RAW extension");
+        let plain = dir.join("scan.tif");
+        std::fs::write(&plain, b"not a container").unwrap();
+        assert_eq!(route(&plain), Branch::Plain);
+        // Twin: a missing file with a RAW name still sorts as RAW, and fails at the decode.
+        assert!(decodes_via_mosaic(&dir.join("absent.rw2")));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

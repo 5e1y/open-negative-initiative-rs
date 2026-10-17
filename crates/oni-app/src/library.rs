@@ -174,7 +174,7 @@ mod tests {
 
     /// Roll #8's folder, when this machine has it.
     pub(crate) fn roll8() -> Option<std::path::PathBuf> {
-        let dir = oni_ui_poc::frame::roll_dir();
+        let dir = oni_fixtures::folder(oni_fixtures::RAW_DIR);
         dir.join("DSC_6440.NEF").exists().then_some(dir)
     }
 
