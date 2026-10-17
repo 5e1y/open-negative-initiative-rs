@@ -36,8 +36,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 - **LibRaw replaces Apple's `CIRAWFilter`**, so every RAW render moves once against the Swift app.
   Linear TIFF and DNG renders must not move.
-- **The daylight balance is the camera's fixed `pre_mul`**, never the as-shot one, with LibRaw's
-  highlight mode 1 so no channel is scaled past the 16-bit ceiling.
+- **The balance is the Swift app's 5000 K / tint 0** (Planckian), derived from the camera's own matrix
+  and adapted to D65 by Bradford; never the as-shot one or `pre_mul`. LibRaw's highlight mode 1 keeps
+  every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.

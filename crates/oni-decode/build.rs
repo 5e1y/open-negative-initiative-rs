@@ -84,7 +84,7 @@ const SOURCES: &[&str] = &[
 fn main() {
     let root = std::path::Path::new("libraw");
     let mut lib = cc::Build::new();
-    lib.cpp(true).include(root).warnings(false).define("LIBRAW_NODLL", None).define("LIBRAW_NOTHREADS", None);
+    lib.cpp(true).include(root).warnings(false).define("LIBRAW_NODLL", None);
     if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
         lib.define("_CRT_SECURE_NO_WARNINGS", None).flag("/EHsc");
     }

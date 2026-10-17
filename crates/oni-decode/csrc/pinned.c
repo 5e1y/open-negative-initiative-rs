@@ -3,19 +3,24 @@
 #include <string.h>
 
 typedef struct {
-    int width, height;
-    float pre_mul[4];
-    float rgb_cam[3][4];
+    int width, height, colors, dng;
     float cam_xyz[4][3];
-    float cam_mul[4];
-    float pre_mul_raw[4];
-    unsigned black, maximum;
+    // DNG BaselineExposure in stops; -999 when the file carries none.
+    float baseline_exposure;
     unsigned short *pixels;
     libraw_processed_image_t *image;
     libraw_data_t *raw;
 } oni_decoded;
 
-int oni_decode(const char *path, float exposure_gain, oni_decoded *out)
+void oni_release(oni_decoded *d)
+{
+    if (d->image) libraw_dcraw_clear_mem(d->image);
+    if (d->raw) libraw_close(d->raw);
+    memset(d, 0, sizeof *d);
+}
+
+// Opens and identifies: the colour metadata is read before any multiplier is chosen.
+int oni_open(const char *path, float exposure_gain, oni_decoded *out)
 {
     memset(out, 0, sizeof *out);
     libraw_data_t *lr = libraw_init(0);
@@ -41,34 +46,32 @@ int oni_decode(const char *path, float exposure_gain, oni_decoded *out)
         p->exp_shift = exposure_gain;
         p->exp_preser = 0.0f;
     }
-    int rc = libraw_open_file(lr, path);
-    if (rc == LIBRAW_SUCCESS) rc = libraw_unpack(lr);
-    if (rc != LIBRAW_SUCCESS) { libraw_close(lr); return rc; }
-    // The camera's daylight balance, fixed per body: never the as-shot value, never measured.
-    for (int c = 0; c < 4; c++) p->user_mul[c] = lr->color.pre_mul[c] > 0 ? lr->color.pre_mul[c] : lr->color.pre_mul[1];
-    rc = libraw_dcraw_process(lr);
-    if (rc != LIBRAW_SUCCESS) { libraw_close(lr); return rc; }
-    int err = 0;
-    libraw_processed_image_t *img = libraw_dcraw_make_mem_image(lr, &err);
-    if (!img || img->colors != 3 || img->bits != 16) { if (img) libraw_dcraw_clear_mem(img); libraw_close(lr); return err ? err : -2; }
-    out->width = img->width;
-    out->height = img->height;
-    for (int c = 0; c < 4; c++) out->pre_mul[c] = p->user_mul[c];
-    memcpy(out->rgb_cam, lr->color.rgb_cam, sizeof out->rgb_cam);
-    memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
-    memcpy(out->cam_mul, lr->color.cam_mul, sizeof out->cam_mul);
-    memcpy(out->pre_mul_raw, lr->color.pre_mul, sizeof out->pre_mul_raw);
-    out->black = lr->color.black;
-    out->maximum = lr->color.maximum;
-    out->pixels = (unsigned short *)img->data;
-    out->image = img;
     out->raw = lr;
+    int rc = libraw_open_file(lr, path);
+    if (rc != LIBRAW_SUCCESS) { oni_release(out); return rc; }
+    out->colors = lr->idata.colors;
+    out->dng = lr->idata.dng_version != 0;
+    memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
+    out->baseline_exposure = lr->color.dng_levels.baseline_exposure;
     return 0;
 }
 
-void oni_release(oni_decoded *d)
+int oni_unpack(oni_decoded *d) { return libraw_unpack(d->raw); }
+
+// Demosaics on the given multipliers, then hands out the camera-space 16-bit image.
+int oni_process(oni_decoded *d, const float mul[3])
 {
-    if (d->image) libraw_dcraw_clear_mem(d->image);
-    if (d->raw) libraw_close(d->raw);
-    memset(d, 0, sizeof *d);
+    libraw_data_t *lr = d->raw;
+    for (int c = 0; c < 3; c++) lr->params.user_mul[c] = mul[c];
+    lr->params.user_mul[3] = mul[1];
+    int rc = libraw_dcraw_process(lr);
+    if (rc != LIBRAW_SUCCESS) return rc;
+    int err = 0;
+    libraw_processed_image_t *img = libraw_dcraw_make_mem_image(lr, &err);
+    if (!img || img->colors != 3 || img->bits != 16) { if (img) libraw_dcraw_clear_mem(img); return err ? err : -2; }
+    d->width = img->width;
+    d->height = img->height;
+    d->pixels = (unsigned short *)img->data;
+    d->image = img;
+    return 0;
 }
