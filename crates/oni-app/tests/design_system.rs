@@ -57,6 +57,7 @@ fn a_planted_value_is_refused_outside_the_design_system_only() {
         ("Label { font-size: Type.label; }", Rule::Typography),
         ("Text { text: \"raw\"; }", Rule::Primitive),
         ("Image { source: Icons.undo; }", Rule::Primitive),
+        ("Flickable { }", Rule::Primitive),
         ("Rectangle { opacity: 0.5; }", Rule::Opacity),
     ];
     let root = std::env::temp_dir().join(format!("oni-ds-strict-{}", std::process::id()));

@@ -1,10 +1,19 @@
 // The collections' cells: a list row, a tree row, a gallery tile and a band's heading.
-import { ListView } from "std-widgets.slint";
+import { ListView as StdListView } from "std-widgets.slint";
 import { Colour, Space, RowStyle, TileStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Look } from "controls.slint";
 import { Icons } from "icons.slint";
-export { ListView }
+
+// A list scrolled by the wheel and the trackpad only: dragging is kept for the sliders and the image.
+export component ListView inherits StdListView {
+    mouse-drag-pan-enabled: false;
+}
+
+// A scrolled surface under the same rule as `ListView`.
+export component Scroller inherits Flickable {
+    mouse-drag-pan-enabled: false;
+}
 
 export enum RowKind { folder, roll, photo }
 

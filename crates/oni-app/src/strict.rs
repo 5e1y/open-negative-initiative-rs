@@ -31,8 +31,8 @@ pub const ALLOW: &[(&str, &str, &str)] = &[];
 const LENGTH_UNITS: &[&str] = &["px", "phys-px", "rem", "pt", "cm", "mm", "in", "%"];
 const DURATION_UNITS: &[&str] = &["ms", "s"];
 const ANGLE_UNITS: &[&str] = &["deg", "rad", "turn", "grad"];
-/// The elements the design system wraps: `Label`, `TextField`, `Icon`, `Picture`, `Menu`.
-const PRIMITIVES: &[&str] = &["Text", "TextInput", "Image", "PopupWindow", "Path", "Window"];
+/// The elements the design system wraps: `Label`, `TextField`, `Icon`, `Picture`, `Menu`, `Scroller`.
+const PRIMITIVES: &[&str] = &["Text", "TextInput", "Image", "PopupWindow", "Path", "Window", "Flickable", "ScrollView"];
 const TYPOGRAPHY: &[&str] = &["font-size", "font-weight", "font-family", "font-italic", "letter-spacing", "default-font-family", "default-font-size", "default-font-weight"];
 const STYLING: &[&str] = &[
     "background",

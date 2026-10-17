@@ -4,7 +4,7 @@ import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
-import { ListRow, TreeItem, RowKind, TileView, TileHeading } from "collections.slint";
+import { ListRow, TreeItem, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -72,7 +72,7 @@ export component Catalogue inherits AppWindow {
         { name: "track-fill", colour: Colour.track-fill }, { name: "scrim", colour: Colour.scrim },
     ];
 
-    page := Flickable {
+    page := Scroller {
         content-height: columns.preferred-height;
         columns := HorizontalLayout {
             width: page.width;
