@@ -525,6 +525,9 @@ async fn receive(
     let mut reported = 0;
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
+        if part.written + chunk.len() as u64 > meta.size {
+            return Err((StatusCode::BAD_REQUEST, "more bytes than announced".into()));
+        }
         part.write(&chunk).await.map_err(io_error)?;
         session.touch();
         if part.written - reported >= PROGRESS_STEP {
@@ -536,6 +539,10 @@ async fn receive(
                 size: meta.size,
             });
         }
+    }
+    // The checksum is optional in the protocol: the announced size is the guard every file carries.
+    if part.written != meta.size {
+        return Err((StatusCode::BAD_REQUEST, "fewer bytes than announced".into()));
     }
     let digest = part.seal().await.map_err(io_error)?;
     if let Some(expected) = &meta.sha256

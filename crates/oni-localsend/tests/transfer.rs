@@ -110,6 +110,32 @@ async fn a_lying_checksum_is_refused_and_leaves_nothing() {
     assert_eq!(names(dst.path()), ["truth.dng"]);
 }
 
+/// A body that ends cleanly but short or long, with no checksum to catch it, is refused all the same.
+#[tokio::test]
+async fn a_body_of_the_wrong_size_is_refused_and_leaves_nothing() {
+    let dst = tempfile::tempdir().unwrap();
+    let (receiver, mut events) = start(dst.path(), |_| {}).await;
+    let raw = Raw::new(receiver.local_addr());
+
+    for (name, sent) in [("short.dng", 5usize), ("long.dng", 15)] {
+        let session = raw.prepare_ok(vec![meta("f", name, 10, None)]).await;
+        assert_eq!(raw.upload(&session, "f", vec![1u8; sent]).await, 400, "{name}");
+        let reason = wait_for(&mut events, |e| match e {
+            Event::FileFailed { reason, .. } => Some(reason.clone()),
+            _ => None,
+        })
+        .await;
+        assert!(reason.contains("announced"), "{reason}");
+        wait_for(&mut events, |e| matches!(e, Event::SessionFinished { .. }).then_some(())).await;
+        assert!(names(dst.path()).is_empty(), "nothing written: {:?}", names(dst.path()));
+    }
+
+    // The announced size goes through, so the refusals above are the size check's doing.
+    let session = raw.prepare_ok(vec![meta("f", "exact.dng", 10, None)]).await;
+    assert_eq!(raw.upload(&session, "f", vec![1u8; 10]).await, 200);
+    assert_eq!(names(dst.path()), ["exact.dng"]);
+}
+
 #[tokio::test]
 async fn traversal_names_land_as_plain_names_inside_the_destination() {
     let root = tempfile::tempdir().unwrap();
