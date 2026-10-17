@@ -40,5 +40,12 @@
     "status": "done",
     "detail": "macOS clang found libraw/VERSION for #include <version> on a case-insensitive disk and parsed it as C++.",
     "outcome": "Note moved to crates/oni-decode/LIBRAW_VERSION; Linux build passes; macOS verified by CI on the next run."
+  },
+  {
+    "id": 6,
+    "type": "chore",
+    "title": "Bring the ported core crates into the workspace",
+    "status": "doing",
+    "detail": "oni-settings, oni-render (replacing the smaller one), oni-graph, oni-colour, oni-export, oni-library and the Slint proof of concept, ported from the Swift app as standalone packages."
   }
 ]
