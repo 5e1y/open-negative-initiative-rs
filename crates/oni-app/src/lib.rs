@@ -6,6 +6,7 @@ pub mod bench;
 pub mod display;
 pub mod export;
 pub mod fields;
+pub mod flat_fields;
 pub mod gallery;
 pub mod library;
 pub mod motion;

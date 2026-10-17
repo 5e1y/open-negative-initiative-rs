@@ -4,7 +4,9 @@
 use crate::display::{self, Params, Screen};
 use oni_graph::stages::Crop;
 use oni_graph::{Graph, Image, Rect, Source, Stage};
-use oni_pipeline::{Inputs, Pipeline, Request};
+use oni_pipeline::{CustomFlatField, Inputs, Pipeline, Request};
+use oni_settings::frame::FlatFieldMask;
+use std::collections::HashMap;
 use oni_settings::PipelineSettings;
 use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
@@ -149,6 +151,9 @@ pub struct Engine {
     fitted: Option<(u64, usize, Source)>,
     /// Laid after the pipeline on every render the editor shows, never on an export.
     pub proof: crate::proof::Proofing,
+    /// Where the custom flat-field masks are kept, and those read so far, `None` once one is gone.
+    pub support: Option<PathBuf>,
+    custom: HashMap<String, Option<CustomFlatField>>,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -248,7 +253,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new() }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -287,7 +292,9 @@ impl Engine {
         let long = w.max(h) as f64;
         let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
-        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        self.read_custom(settings);
+        let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let region = image.extent();
         let pixels = self.graph.render(&image, region, None).map_err(|e| e.to_string())?;
@@ -305,13 +312,18 @@ impl Engine {
     /// once to the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        self.read_custom(settings);
         let Some(view) = view else {
-            let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+            let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+            let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
             let image = self.proof.laid(&mut self.graph, image, settings)?;
             return Ok((self.one_texture(&image, None)?, None));
         };
         let ratio = negative.size().0 as f64 / negative.full_width;
-        let shown = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?.extent();
+        let shown = {
+            let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+            self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?.extent()
+        };
         let full = (shown.w as f64 / ratio, shown.h as f64 / ratio);
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
@@ -325,7 +337,8 @@ impl Engine {
         let long = e.w.max(e.h) as usize;
         let side = ((long as f64 * (scale / base_ratio).min(1.0)).round() as usize).max(1);
         let source = if side < long { self.fitted(&base, side, long)? } else { base };
-        let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+        let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let extent = image.extent();
         let stretch = scale * full.0 / extent.w as f64;
@@ -350,6 +363,20 @@ impl Engine {
             at_full_resolution: at_full && view.full.is_some(),
         };
         Ok((self.one_texture(&image, Some(region))?, Some(placed)))
+    }
+
+    /// The custom mask the settings name, read and uploaded once per id.
+    fn read_custom(&mut self, settings: &PipelineSettings) {
+        let f = &settings.flat_field;
+        let (Some(id), Some(support)) = (f.custom.as_ref().filter(|_| f.mask == FlatFieldMask::Custom), self.support.as_ref()) else { return };
+        if self.custom.contains_key(id) {
+            return;
+        }
+        let read = crate::flat_fields::read(support, id).and_then(|m| {
+            let mask = self.graph.upload(m.width, m.height, &m.pixels).ok()?;
+            Some(CustomFlatField { id: id.clone(), mask, peaks: m.peaks, per_channel: m.per_channel })
+        });
+        self.custom.insert(id.clone(), read);
     }
 
     fn one_texture(&mut self, image: &Image, region: Option<Rect>) -> Result<Source, String> {
@@ -377,6 +404,11 @@ impl Engine {
         self.fitted = Some((id, side, source.clone()));
         Ok(source)
     }
+}
+
+/// The custom mask read for the settings' own id, which the pipeline lays only when the ids match.
+fn custom_for<'a>(kept: &'a HashMap<String, Option<CustomFlatField>>, settings: &PipelineSettings) -> Option<&'a CustomFlatField> {
+    kept.get(settings.flat_field.custom.as_deref()?)?.as_ref()
 }
 
 /// What the canvas shows: the viewport over its drawable surface, and the frame's full-resolution
@@ -789,6 +821,40 @@ mod tests {
         let placed = placed.unwrap();
         assert!(placed.whole && !placed.at_full_resolution, "{placed:?}");
         assert!((placed.width - 300.0).abs() < 1.0 && (placed.height - 187.5).abs() < 1.0, "{placed:?}");
+    }
+
+    /// A frame naming a custom flat-field is divided by that mask, read from the support folder;
+    /// one naming a mask that is gone renders as with none, as the Swift app leaves the stage out.
+    #[test]
+    fn a_custom_flat_field_reaches_the_render_by_its_id() {
+        let Ok(device) = Device::open() else {
+            eprintln!("no adapter: the custom flat-field is not exercised");
+            return;
+        };
+        let support = std::env::temp_dir().join(format!("oni-render-custom-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&support);
+        std::fs::create_dir_all(crate::flat_fields::folder(&support)).unwrap();
+        // A panel falling off to the right: the division lifts the right of the frame.
+        let (mw, mh) = (8u32, 4u32);
+        let mask: Vec<f32> = (0..mw * mh).flat_map(|i| { let v = 1.0 - 0.6 * (i % mw) as f32 / mw as f32; [v, v, v, 1.0] }).collect();
+        let out = std::fs::File::create(crate::flat_fields::folder(&support).join("panel.tiff")).unwrap();
+        tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(mw, mh, &mask).unwrap();
+        let mut engine = Engine::on(&device);
+        engine.support = Some(support.clone());
+        let (w, h) = (16usize, 8usize);
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 }).unwrap();
+        let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        let plain = engine.render(&negative, &settings, None).unwrap();
+        settings.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::Custom, custom: Some("panel".into()), ..Default::default() };
+        let divided = engine.render(&negative, &settings, None).unwrap();
+        let at = |l: &Linear, x: usize| l.pixels[(h / 2) * w + x][1];
+        assert!((at(&divided, w - 3) - at(&divided, 2)).abs() > 1e-3, "the mask's falloff shows: {} {}", at(&divided, 2), at(&divided, w - 3));
+        assert!((at(&plain, w - 3) - at(&plain, 2)).abs() < 1e-5, "the flat frame without it stays flat");
+        // Twin: a mask that is gone leaves the stage out, so the frame renders as with none.
+        settings.flat_field.custom = Some("gone".into());
+        let gone = engine.render(&negative, &settings, None).unwrap();
+        assert!(gone.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6));
+        let _ = std::fs::remove_dir_all(&support);
     }
 
     /// The real pipeline on a two-pixel frame, on the first adapter wgpu finds.

@@ -29,8 +29,10 @@ oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
 qrcode = { version = "0.14", default-features = false }
+serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
+tiff = "0.11"
 tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
 wgpu.workspace = true
 
