@@ -42,8 +42,8 @@ pub enum LinkError {
     ImportUnavailable,
     #[error("the desktop refused the photos")]
     ImportRefused,
-    #[error("{message}")]
-    Failed { message: String },
+    #[error("{reason}")]
+    Failed { reason: String },
 }
 
 impl From<oni_link::Error> for LinkError {
@@ -53,7 +53,7 @@ impl From<oni_link::Error> for LinkError {
             oni_link::Error::Version(peer) => LinkError::Version { peer },
             oni_link::Error::Refused => LinkError::Refused,
             oni_link::Error::Unreachable => LinkError::Unreachable,
-            other => LinkError::Failed { message: other.to_string() },
+            other => LinkError::Failed { reason: other.to_string() },
         }
     }
 }
@@ -62,7 +62,7 @@ impl From<SendError> for LinkError {
     fn from(error: SendError) -> Self {
         match error {
             SendError::PinRequired | SendError::Rejected => LinkError::ImportRefused,
-            other => LinkError::Failed { message: other.to_string() },
+            other => LinkError::Failed { reason: other.to_string() },
         }
     }
 }
@@ -418,7 +418,7 @@ impl RemoteSession {
         let files: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
         let sending = runtime()
             .spawn(async move { oni_localsend::send_files(&sender, &target, &files, Some(&import.pin)).await });
-        let report = sending.await.map_err(|error| LinkError::Failed { message: error.to_string() })??;
+        let report = sending.await.map_err(|error| LinkError::Failed { reason: error.to_string() })??;
         let shown = |files: Vec<PathBuf>| files.into_iter().map(|p| p.to_string_lossy().into_owned()).collect();
         Ok(SendResult { sent: shown(report.sent), skipped: shown(report.skipped) })
     }
@@ -428,7 +428,7 @@ impl RemoteSession {
     }
 
     /// Hangs up and stops the listener; the session cannot be reopened.
-    pub fn close(&self) {
+    pub fn hang_up(&self) {
         if let Some(task) = self.listening.lock().expect("listener lock").take() {
             task.abort();
         }
@@ -441,7 +441,7 @@ impl RemoteSession {
         opened: JoinHandle<Result<(Remote, SocketAddr), oni_link::Error>>,
         sender: DeviceInfo,
     ) -> Result<Arc<Self>, LinkError> {
-        let (remote, peer) = opened.await.map_err(|error| LinkError::Failed { message: error.to_string() })??;
+        let (remote, peer) = opened.await.map_err(|error| LinkError::Failed { reason: error.to_string() })??;
         Ok(Arc::new(RemoteSession {
             display: remote.display(),
             host_key: remote.host().0.to_vec(),
@@ -472,7 +472,7 @@ fn sender(me: &Identity, phone_name: &str) -> DeviceInfo {
 
 impl Drop for RemoteSession {
     fn drop(&mut self) {
-        self.close();
+        self.hang_up();
     }
 }
 

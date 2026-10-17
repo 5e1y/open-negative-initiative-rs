@@ -69,6 +69,15 @@
     "commit": "f6dac67"
   },
   {
+    "id": 9,
+    "type": "bug",
+    "title": "Make the phone FFI's Kotlin bindings compile",
+    "status": "done",
+    "detail": "UniFFI's Kotlin RemoteSession implements AutoCloseable, whose close() collides with an exported close(); a Kotlin exception field named message collides with Throwable.message.",
+    "commit": "c72233a",
+    "outcome": "hang_up and Failed { reason } exported. Verified: the generated Kotlin compiles on the JVM and, against oni-link-demo's host, pairs, presses, receives screens through the listener, sends a 300 kB file, reconnects with the stored key, and a stranger key is refused; cargo test -p oni-link-ffi passes."
+  },
+  {
     "id": 10,
     "type": "feature",
     "title": "Port the editing model: store, commands, history, propagation",
