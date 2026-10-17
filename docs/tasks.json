@@ -304,7 +304,9 @@
     "id": 42,
     "type": "perf",
     "title": "The image at a steady 30 fps while a value slides, the interface at the display's rate",
-    "status": "doing",
-    "detail": "The store write and render follow DS.Motion.recomputedInterval (1/30 s) while the knob and its label follow every event; a render never queues; memory stays flat over a long drag. ONI_BENCH=long drags for ten seconds and reports the image's cadence; a notch is timed from the hand's move."
+    "status": "done",
+    "detail": "The store write and render follow DS.Motion.recomputedInterval (1/30 s) while the knob and its label follow every event; a render never queues; memory stays flat over a long drag. ONI_BENCH=long drags for ten seconds and reports the image's cadence; a notch is timed from the hand's move.",
+    "commit": "9836fb0",
+    "outcome": "track.rs: HAND_INTERVAL is 1/30 s again, commented as the image's cadence; the knob and readout are set on every drag event. A notch is timed from the drag event whose value it shows (Slide.moved_at). timing.rs: Notches::cadence counts the gaps within 5 ms of 33.3 ms and past 50 ms. bench.rs: ONI_BENCH=long waits for every thumbnail, then drags Exposure 0.1 pt a notch at 120 Hz for ten seconds. On the Mac (Apple M2 Max, Metal; the one screen connected runs at 75 Hz), ten-second drag on DSC_6432, at 1/120 s: 937 renders, gap p50 8.7 ms, p99 13.4 ms; event to canvas encode p50 0.5 ms, p99 6.8 ms; footprint 1100-1115 MB, graphics 253-262 MB. At 1/30 s, three runs: 247-249 renders, gap mean 33.4-33.5 ms, p50 33.3-33.5 ms, p99 39.5-40.8 ms, worst 40.2-42.1 ms, 226-237 of 246-248 within 5 ms of 33.3 ms, none past 50 ms; event to encode p50 5.4-6.7 ms, p99 13.3-14.1 ms (the wait for the hand-off); footprint 1109-1111 MB, graphics 258-260 MB, flat over the drag. Interface with SLINT_DEBUG_PERFORMANCE=refresh_full_speed: 75 fps every second of the drag, the display's ceiling; the interface thread idle 79 % of the time, about 2.8 ms of work a frame. Not measured: an uncapped rate (Slint sets AutoVsync and drives frames from the display link), per-frame times and present latency (no frame hook without the rendering notifier, which recompiles femtovg's pipelines)."
   }
 ]
