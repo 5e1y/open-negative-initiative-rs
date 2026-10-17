@@ -19,6 +19,8 @@ const SPAN: f32 = 300.0;
 /// The first render waited for, decode included, before the bench gives up.
 const LOADING: Duration = Duration::from_secs(600);
 
+/// On the main screen, whose refresh the gaps are judged against.
+const ORIGIN: (f32, f32) = (80.0, 80.0);
 /// The two window sizes the resize bench alternates between, in logical points.
 const SIZES: [(f32, f32); 2] = [(1100.0, 712.0), (900.0, 600.0)];
 
@@ -50,6 +52,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
     let started = Instant::now();
+    if let Some(w) = ctl.window() {
+        w.window().set_position(slint::LogicalPosition::new(ORIGIN.0, ORIGIN.1));
+    }
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {

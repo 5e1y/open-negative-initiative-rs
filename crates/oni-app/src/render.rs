@@ -272,16 +272,36 @@ impl Engine {
             .map_err(|e| e.to_string())?;
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
+
+    /// `Pipeline.apply` on the preview, left on the GPU in one texture for the display kernel to read.
+    pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Source, String> {
+        let request = Request { full_width: Some(negative.full_width), ..Request::default() };
+        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
+        if source.view().is_none() {
+            return Err("the render is wider than one texture".into());
+        }
+        Ok(source)
+    }
 }
 
 /// The conversion a canvas copy goes through: settings in, linear Rec. 2020 out.
 pub trait Renderer<I>: Send {
     fn render(&mut self, negative: &I, settings: &PipelineSettings) -> Result<Linear, String>;
+
+    /// The same render kept on the GPU for the display kernel; `None` where only pixels are made.
+    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings) -> Option<Result<Source, String>> {
+        None
+    }
 }
 
 impl Renderer<Negative> for Shared {
     fn render(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Linear, String> {
         self.lock()?.render(negative, settings, None)
+    }
+
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Result<Source, String>> {
+        Some(self.lock().and_then(|mut e| e.resident(negative, settings)))
     }
 }
 
@@ -327,14 +347,21 @@ pub struct Job<I> {
     pub asked: Instant,
 }
 
-/// A finished render: the linear image for the GPU kernel and, encoded on this thread, the bytes
-/// the software renderer shows, empty while the display kernel draws, with the histogram of what is shown.
+/// What a render hands the canvas: a texture the display kernel encodes, or for the software
+/// renderer the linear image with its bytes encoded on the render thread.
+pub enum Picture {
+    Resident(Source),
+    Pixels { linear: Linear, rgba8: Vec<u8> },
+}
+
+/// A finished render, with the histogram of what is shown when the render thread measured it.
 pub struct Done {
     pub revision: u64,
     pub path: PathBuf,
-    pub linear: Linear,
-    pub rgba8: Vec<u8>,
-    pub histogram: Histogram,
+    pub picture: Picture,
+    pub width: usize,
+    pub height: usize,
+    pub histogram: Option<Histogram>,
     pub kind: crate::timing::Kind,
     pub asked: Instant,
     pub pipeline: Duration,
@@ -347,7 +374,7 @@ struct Slot<I> {
 
 pub struct Worker<I> {
     slot: Arc<(Mutex<Slot<I>>, Condvar)>,
-    /// Set while the display kernel draws the canvas, so no notch pays for the CPU encode.
+    /// Set while the display kernel draws the canvas, so a notch stays on the GPU end to end.
     pub on_gpu: Arc<AtomicBool>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
@@ -376,18 +403,23 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     };
                     seed = seed.wrapping_add(1);
                     let started = Instant::now();
-                    let done = renderer.render(&job.negative, &job.settings).map(|linear| {
-                        let pipeline = started.elapsed();
-                        let k = Params::new(screen, linear.width as u32, linear.height as u32, seed);
-                        let (rgba8, histogram) = if gpu.load(Ordering::Relaxed) {
-                            (Vec::new(), Histogram::of(&encoded(&linear, &k, 2)))
-                        } else {
-                            let rgba8 = encoded(&linear, &k, 1);
-                            let histogram = Histogram::of(&rgba8);
-                            (rgba8, histogram)
-                        };
-                        Done { revision: job.revision, path: job.path, linear, rgba8, histogram, kind: job.kind, asked: job.asked, pipeline }
-                    });
+                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings) } else { None };
+                    let done = match resident {
+                        Some(made) => made.map(|source| {
+                            let e = source.extent();
+                            let (width, height) = (e.w as usize, e.h as usize);
+                            let picture = Picture::Resident(source);
+                            Done { revision: job.revision, path: job.path, picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed() }
+                        }),
+                        None => renderer.render(&job.negative, &job.settings).map(|linear| {
+                            let pipeline = started.elapsed();
+                            let rgba8 = encoded(&linear, &Params::new(screen, linear.width as u32, linear.height as u32, seed), 1);
+                            let histogram = Some(Histogram::of(&rgba8));
+                            let (width, height) = (linear.width, linear.height);
+                            let picture = Picture::Pixels { linear, rgba8 };
+                            Done { revision: job.revision, path: job.path, picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline }
+                        }),
+                    };
                     deliver(done);
                 }
             })

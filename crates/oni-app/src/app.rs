@@ -5,7 +5,7 @@ use crate::display::{self, Params, Screen};
 use crate::fields::{Block, Field};
 use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
-use crate::render::{self, Done, Histogram, Job, Linear, Negative, Previews, Shared, Worker};
+use crate::render::{self, Done, Histogram, Job, Negative, Picture, Previews, Shared, Worker};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
@@ -79,8 +79,18 @@ struct Gpu {
     queue: wgpu::Queue,
     kernel: display::Gpu,
     target: Option<wgpu::Texture>,
-    pending: Option<(Linear, Shown)>,
+    pending: Option<(Picture, Shown)>,
+    /// The picture the canvas was last encoded from, alive until the next one is encoded.
+    current: Option<Picture>,
     seed: u32,
+}
+
+impl Gpu {
+    /// The histogram counted on a frame already shown, once its readback has landed.
+    fn landed(&self) -> Option<Histogram> {
+        let _ = self.device.poll(wgpu::PollType::Poll);
+        self.kernel.histogram()
+    }
 }
 
 pub struct State {
@@ -521,37 +531,43 @@ impl Ctl {
                 return;
             }
         }
+        // A render made for the display kernel after the renderer fell back to software is made again.
+        if matches!(done.picture, Picture::Resident(_)) && self.state.borrow().gpu.is_none() {
+            self.state.borrow_mut().requested = 0;
+            self.request_render();
+            return;
+        }
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
-        let shown = {
+        let (width, height) = (done.width, done.height);
+        let software = {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
             s.renders += 1;
-            s.histogram = Some(done.histogram);
-            s.histogram_dirty = true;
+            if let Some(h) = done.histogram {
+                s.histogram = Some(h);
+                s.histogram_dirty = true;
+            }
             match s.gpu.as_mut() {
                 Some(g) => {
-                    g.pending = Some((done.linear.clone(), shown));
+                    g.pending = Some((done.picture, shown));
                     None
                 }
-                None => Some(shown),
+                None => Some((done.picture, shown)),
             }
         };
-        if shown.is_none() {
-            w.window().request_redraw();
-        } else {
-            // A render started while the display kernel still drew carries no bytes.
-            let screen = self.state.borrow().screen;
-            let (lw, lh) = (done.linear.width, done.linear.height);
-            let bytes = if done.rgba8.is_empty() { render::encoded(&done.linear, &Params::new(screen, lw as u32, lh as u32, 0), 1) } else { done.rgba8 };
-            w.global::<Canvas>().set_frame(image(&bytes, lw, lh));
-        }
-        if let Some(shown) = shown {
-            self.shown(shown);
+        match software {
+            None => w.window().request_redraw(),
+            Some((picture, shown)) => {
+                if let Picture::Pixels { rgba8, .. } = picture {
+                    w.global::<Canvas>().set_frame(image(&rgba8, width, height));
+                }
+                self.shown(shown);
+            }
         }
         let status = {
             let s = self.state.borrow();
             let name = s.open_path().map(stem).unwrap_or_default();
-            format!("{name} · {} × {}", done.linear.width, done.linear.height)
+            format!("{name} · {width} × {height}")
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
@@ -564,8 +580,26 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
             let Some(g) = s.gpu.as_mut() else { return };
-            let Some((linear, shown)) = g.pending.take() else { return };
-            let (wd, ht) = (linear.width as u32, linear.height as u32);
+            let landed = g.landed();
+            let Some((picture, shown)) = g.pending.take() else {
+                if let Some(h) = landed {
+                    s.histogram = Some(h);
+                    s.histogram_dirty = true;
+                }
+                return;
+            };
+            let uploaded;
+            let (source, wd, ht) = match &picture {
+                Picture::Resident(source) => {
+                    let e = source.extent();
+                    (source.view().expect("a resident render is one texture").clone(), e.w, e.h)
+                }
+                Picture::Pixels { linear, .. } => {
+                    let (w, h) = (linear.width as u32, linear.height as u32);
+                    uploaded = display::upload(&g.device, &g.queue, &linear.pixels, w, h);
+                    (uploaded.create_view(&Default::default()), w, h)
+                }
+            };
             // The texture is imported once per size; a new render only rewrites its texels.
             let (target, imported) = match &g.target {
                 Some(t) if t.width() == wd && t.height() == ht => (t.clone(), None),
@@ -576,7 +610,12 @@ impl Ctl {
                 }
             };
             g.seed = g.seed.wrapping_add(1);
-            g.kernel.run(&g.device, &g.queue, &linear.pixels, &Params::new(screen, wd, ht, g.seed), &target);
+            g.kernel.run(&g.device, &g.queue, &source, &Params::new(screen, wd, ht, g.seed), &target);
+            g.current = Some(picture);
+            if let Some(h) = landed {
+                s.histogram = Some(h);
+                s.histogram_dirty = true;
+            }
             (imported, shown)
         };
         if let (Some(image), _) = &image {
@@ -606,6 +645,10 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (histogram, loading, flush) = {
             let mut s = self.state.borrow_mut();
+            if let Some(h) = s.gpu.as_ref().and_then(Gpu::landed) {
+                s.histogram = Some(h);
+                s.histogram_dirty = true;
+            }
             let histogram = if s.histogram_dirty {
                 s.histogram_dirty = false;
                 s.histogram.clone()
@@ -1377,7 +1420,7 @@ impl Ctl {
                     let kernel = display::Gpu::new(device);
                     p.worker.on_gpu.store(true, Ordering::Relaxed);
                     p.state.borrow_mut().gpu =
-                        Some(Gpu { device: device.clone(), queue: queue.clone(), kernel, target: None, pending: None, seed: 0 });
+                        Some(Gpu { device: device.clone(), queue: queue.clone(), kernel, target: None, pending: None, current: None, seed: 0 });
                 }
                 (slint::RenderingState::BeforeRendering, _) => p.before_rendering(),
                 (slint::RenderingState::RenderingTeardown, _) => {

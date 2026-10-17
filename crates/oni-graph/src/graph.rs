@@ -75,6 +75,14 @@ impl Source {
     pub fn tiles(&self) -> usize {
         self.0.tiles.len()
     }
+
+    /// The one texture covering the whole extent, its texel (0, 0) at the extent's corner; none when tiled.
+    pub fn view(&self) -> Option<&wgpu::TextureView> {
+        match self.0.tiles.as_slice() {
+            [(_, texture)] => Some(texture.view()),
+            _ => None,
+        }
+    }
 }
 
 /// A stage and the further images it reads beside its input.
@@ -340,6 +348,10 @@ impl Graph {
 
     pub fn max_side(&self) -> u32 {
         self.max_side
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
     }
 
     /// The largest parameter block one stage may bind.
