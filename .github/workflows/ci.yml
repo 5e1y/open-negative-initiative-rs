@@ -1,6 +1,8 @@
 name: CI
-# Manual only, Windows only: macOS checks run locally, and a run is started when a milestone needs Windows.
+# Windows only, on every push and pull request: macOS checks run on the owner's Mac.
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 jobs:
   test:

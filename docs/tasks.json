@@ -127,5 +127,19 @@
     "status": "done",
     "detail": "On the owner's Mac, Roll #8 holds 38 NEFs and a contact sheet's sidecar, and Negs holds 13 sidecars: seven checks failed on folder counts.",
     "outcome": "Checks read NEF and RW2 sidecars only, the Lumix check its two calibration frames, the library its ten oracle frames, the render check at least its frames. The four targets pass on the cloud's subset; the Mac rerun is the check on the full folders."
+  },
+  {
+    "id": 16,
+    "type": "feature",
+    "title": "Render the app's canvas through the real pipeline",
+    "status": "doing",
+    "detail": "oni-app renders through oni-pipeline on one wgpu device shared with the display kernel and Slint; a decode router sorts files on their bytes; thumbnails use the same pipeline. Also: the pipeline's roll check judges every frame and skips a frame whose sidecar is newer than its reference dump."
+  },
+  {
+    "id": 17,
+    "type": "chore",
+    "title": "Windows CI on every push again",
+    "status": "doing",
+    "detail": "The repository is public, so Actions minutes are free: push and pull_request triggers return beside workflow_dispatch, the matrix stays Windows only."
   }
 ]
