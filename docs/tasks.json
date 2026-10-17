@@ -187,14 +187,18 @@
     "id": 22,
     "type": "bug",
     "title": "Resizing the window crashes the app",
-    "status": "doing",
-    "detail": "Slint's surface configure waits for the shared device to go idle and wgpu reports a validation error when another thread submitted meanwhile; the default handler panics. Errors are logged instead, and the render thread's submissions stay off the reconfigure."
+    "status": "done",
+    "detail": "Slint's surface configure waits for the shared device to go idle and wgpu reports a validation error when another thread submitted meanwhile; the default handler panics. Errors are logged instead, and the render thread's submissions stay off the reconfigure.",
+    "commit": "5fc3ebf",
+    "outcome": "render.rs: Shared is the engine behind a gate; the interface thread closes it on Resized and ScaleFactorChanged (main.rs, winit window-event hook) and waits for the render and thumbnail threads to leave, so nothing submits while Slint's Surface::configure waits for the device to go idle; it reopens on the next event-loop turn. Device::open logs uncaptured wgpu errors to the log instead of panicking. ONI_BENCH=resize resizes the window between 1100x712 and 900x600 on every notch of the bench drag. On the Mac (Apple M2 Max, Metal): before, 3 of 3 runs aborted with 'In Surface::configure: Failed to wait for GPU to come idle'; after, 5 of 5 runs and 5 more on the final build finished, no wgpu error logged, no panic."
   },
   {
     "id": 23,
     "type": "perf",
     "title": "A drag shows one frame per display refresh",
     "status": "doing",
-    "detail": "A dragged value reaches the settings once per display frame (1/120 s), and the notch path drops its waste: no CPU readback, no per-frame buffer upload on the interface thread, a stale notch superseded rather than queued. Target: gap p99 at or under 8.3 ms."
+    "detail": "A dragged value reaches the settings once per display frame (1/120 s), and the notch path drops its waste: no CPU readback, no per-frame buffer upload on the interface thread, a stale notch superseded rather than queued. Target: gap p99 at or under 8.3 ms.",
+    "commit": "3d18dbf",
+    "outcome": "Measured on the Mac (Apple M2 Max, Metal, 120 Hz main screen), ONI_BENCH=1 on DSC_6432: before, 16-18 of 60 notches rendered, end to end p50 26 ms, gap p50 37-38 ms, p99 47-50 ms; a notch was 5 ms of GPU, 3-9 ms of readback, 3.7 ms of CPU histogram, 5 ms of upload on the interface thread, behind a 30 Hz hand-off. Done: the hand-off is one write per display frame (track.rs, 1/120 s); a notch's render stays on the GPU (materialised, read by the display kernel as a texture); the histogram is counted on the GPU on the pulse; the preview is reduced once to the canvas's device pixels (808 px on the default window); no rendering notifier, whose pre-flush emptied femtovg's pipeline cache and cost 8 ms of the interface thread per frame. After: 47 of 60 notches rendered, the rest superseded in the slot; encode p50 0.4-8 ms; gap p50 8.3-8.5 ms, p99 8.6-30 ms across six runs (ONI_BENCH=1 and settled). Open: p99 under 8.3 ms in every run; 'past 8.3 ms' counts vsync jitter of tenths of a millisecond, and the bench's 8.33 ms timer beats against the display link."
   }
 ]
