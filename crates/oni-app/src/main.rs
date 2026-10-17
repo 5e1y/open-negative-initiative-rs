@@ -46,7 +46,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let engine = Engine::shared(&gpu);
-    engine.lock()?.support = Some(support.clone());
+    {
+        let mut e = engine.lock()?;
+        e.support = Some(support.clone());
+        e.caches = Some(oni_app::patches::caches());
+    }
     let gate = engine.clone();
     let folder = std::env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(|| oni_fixtures::folder(oni_fixtures::RAW_DIR));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));

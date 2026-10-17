@@ -10,6 +10,7 @@ pub mod flat_fields;
 pub mod gallery;
 pub mod library;
 pub mod motion;
+pub mod patches;
 pub mod phone;
 pub mod preferences;
 pub mod proof;

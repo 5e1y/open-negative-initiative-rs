@@ -6,6 +6,7 @@ use oni_graph::stages::Crop;
 use oni_graph::{Graph, Image, Rect, Source, Stage};
 use oni_pipeline::{CustomFlatField, Inputs, Pipeline, Request};
 use oni_settings::frame::FlatFieldMask;
+use oni_settings::id::Id;
 use std::collections::HashMap;
 use oni_settings::PipelineSettings;
 use std::collections::VecDeque;
@@ -154,6 +155,9 @@ pub struct Engine {
     /// Where the custom flat-field masks are kept, and those read so far, `None` once one is gone.
     pub support: Option<PathBuf>,
     custom: HashMap<String, Option<CustomFlatField>>,
+    /// Where the dust patches are kept, and those read so far, `None` while one is not generated.
+    pub caches: Option<PathBuf>,
+    patches: HashMap<Id, Option<Source>>,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -253,7 +257,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new() }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -293,7 +297,7 @@ impl Engine {
         let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
-        let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
         let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let region = image.extent();
@@ -314,14 +318,14 @@ impl Engine {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
         let Some(view) = view else {
-            let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+            let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
             let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
             let image = self.proof.laid(&mut self.graph, image, settings)?;
             return Ok((self.one_texture(&image, None)?, None));
         };
         let ratio = negative.size().0 as f64 / negative.full_width;
         let shown = {
-            let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+            let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
             self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?.extent()
         };
         let full = (shown.w as f64 / ratio, shown.h as f64 / ratio);
@@ -337,7 +341,7 @@ impl Engine {
         let long = e.w.max(e.h) as usize;
         let side = ((long as f64 * (scale / base_ratio).min(1.0)).round() as usize).max(1);
         let source = if side < long { self.fitted(&base, side, long)? } else { base };
-        let inputs = Inputs { patches: HashMap::new(), custom_flat_field: custom_for(&self.custom, settings) };
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
         let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let extent = image.extent();
@@ -365,8 +369,22 @@ impl Engine {
         Ok((self.one_texture(&image, Some(region))?, Some(placed)))
     }
 
+    /// Each correction's patch from the cache, read and uploaded once; one not generated yet is left
+    /// out, and asked for again on the next render.
+    fn read_patches(&mut self, settings: &PipelineSettings) {
+        let Some(caches) = self.caches.clone() else { return };
+        for c in &settings.corrections {
+            if self.patches.get(&c.id).is_some_and(Option::is_some) {
+                continue;
+            }
+            let read = crate::patches::read(&caches, c.id).and_then(|(w, h, pixels)| self.graph.upload(w, h, &pixels).ok());
+            self.patches.insert(c.id, read);
+        }
+    }
+
     /// The custom mask the settings name, read and uploaded once per id.
     fn read_custom(&mut self, settings: &PipelineSettings) {
+        self.read_patches(settings);
         let f = &settings.flat_field;
         let (Some(id), Some(support)) = (f.custom.as_ref().filter(|_| f.mask == FlatFieldMask::Custom), self.support.as_ref()) else { return };
         if self.custom.contains_key(id) {
@@ -404,6 +422,11 @@ impl Engine {
         self.fitted = Some((id, side, source.clone()));
         Ok(source)
     }
+}
+
+/// The patches of the settings' own corrections that have been generated.
+fn patches_for<'a>(kept: &'a HashMap<Id, Option<Source>>, settings: &PipelineSettings) -> HashMap<Id, &'a Source> {
+    settings.corrections.iter().filter_map(|c| Some((c.id, kept.get(&c.id)?.as_ref()?))).collect()
 }
 
 /// The custom mask read for the settings' own id, which the pipeline lays only when the ids match.
@@ -855,6 +878,40 @@ mod tests {
         let gone = engine.render(&negative, &settings, None).unwrap();
         assert!(gone.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6));
         let _ = std::fs::remove_dir_all(&support);
+    }
+
+    /// A correction's patch from the cache is laid through its stroke; one not generated yet is
+    /// left out, so the frame renders as with no correction.
+    #[test]
+    fn a_dust_patch_from_the_cache_heals_its_stroke() {
+        let Ok(device) = Device::open() else {
+            eprintln!("no adapter: the dust patches are not exercised");
+            return;
+        };
+        let caches = std::env::temp_dir().join(format!("oni-render-patches-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&caches);
+        let mut engine = Engine::on(&device);
+        engine.caches = Some(caches.clone());
+        let (w, h) = (64usize, 48usize);
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 }).unwrap();
+        let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        let plain = engine.render(&negative, &settings, None).unwrap();
+        let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+        let point = |x: f64, y: f64| oni_settings::cg::Point { x, y };
+        settings.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0 }];
+        let missing = engine.render(&negative, &settings, None).unwrap();
+        assert!(missing.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6), "no patch, no change");
+        // A bright patch the size of the tile: the frame is 64 × 48, so the tile is the whole frame.
+        std::fs::create_dir_all(caches.join("Corrections")).unwrap();
+        let out = std::fs::File::create(crate::patches::file(&caches, id)).unwrap();
+        let bright: Vec<f32> = (0..w * h).flat_map(|_| [0.9f32, 0.9, 0.9, 1.0]).collect();
+        tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(w as u32, h as u32, &bright).unwrap();
+        let healed = engine.render(&negative, &settings, None).unwrap();
+        let at = |l: &Linear, x: usize, y: usize| l.pixels[y * w + x][1];
+        assert!((at(&healed, w / 2, h / 2) - at(&plain, w / 2, h / 2)).abs() > 1e-2, "the stroke's centre takes the patch");
+        // Twin: far from the stroke the frame is its own, so a patch laid everywhere would be seen.
+        assert!((at(&healed, 2, 2) - at(&plain, 2, 2)).abs() < 1e-5);
+        let _ = std::fs::remove_dir_all(&caches);
     }
 
     /// The real pipeline on a two-pixel frame, on the first adapter wgpu finds.

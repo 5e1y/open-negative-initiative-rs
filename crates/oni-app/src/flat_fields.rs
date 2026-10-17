@@ -30,7 +30,15 @@ pub fn entries(support: &Path) -> Vec<Entry> {
 /// `CustomFlatFields.source`: the mask read with no colour conversion, the stored values already
 /// the working space's, and its peaks, `CIAreaMaximum` over the whole mask; `None` once the file is gone.
 pub fn read(support: &Path, id: &str) -> Option<Mask> {
-    let mut decoder = tiff::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(file(support, id)).ok()?)).ok()?;
+    let (width, height, pixels) = read_tiff(&file(support, id))?;
+    let peaks = pixels.iter().fold([f32::MIN; 3], |m, p| [m[0].max(p[0]), m[1].max(p[1]), m[2].max(p[2])]);
+    let per_channel = entries(support).iter().any(|e| e.id == id && e.per_channel == Some(true));
+    Some(Mask { width, height, pixels, peaks, per_channel })
+}
+
+/// A TIFF the Swift app wrote in working light, half or single float, read as it stands, row 0 at the top.
+pub fn read_tiff(path: &Path) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+    let mut decoder = tiff::decoder::Decoder::new(std::io::BufReader::new(std::fs::File::open(path).ok()?)).ok()?;
     let (width, height) = decoder.dimensions().ok()?;
     let channels = match decoder.colortype().ok()? {
         tiff::ColorType::RGBA(_) => 4,
@@ -55,9 +63,7 @@ pub fn read(support: &Path, id: &str) -> Option<Mask> {
             [v(0), v(1), v(2), if channels == 4 { c[3] } else { 1.0 }]
         })
         .collect();
-    let peaks = pixels.iter().fold([f32::MIN; 3], |m, p| [m[0].max(p[0]), m[1].max(p[1]), m[2].max(p[2])]);
-    let per_channel = entries(support).iter().any(|e| e.id == id && e.per_channel == Some(true));
-    Some(Mask { width, height, pixels, peaks, per_channel })
+    Some((width, height, pixels))
 }
 
 #[cfg(test)]
