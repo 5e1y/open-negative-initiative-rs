@@ -144,7 +144,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Crop display flag stays out of the sidecar | `Pipeline/Geometry.swift` | `oni-settings/src/frame.rs` | done | | `oni-settings/tests/codec_checks.rs::the_crop_display_flag_stays_out_of_the_sidecar` |
 | JSON spelled as Foundation spells it | `JSONEncoder` | `oni-settings/src/json.rs` | done | | `oni-settings/tests/real_files.rs::a_sidecar_read_and_written_back_is_the_same_file` |
 | Every roll #8 sidecar round-trips byte for byte | Swift files | `oni-settings`, `oni-core` | done | | `oni-core/tests/roll8.rs::every_sidecar_of_the_roll_rewrites_to_its_own_bytes` |
-| Sidecar EXIF block | `Pipeline/Sidecar.swift` | `oni-settings/src/sidecar.rs` | partial | Read; not written on first open | no check |
+| Sidecar EXIF block | `Pipeline/Sidecar.swift` | `oni-settings/src/sidecar.rs` | partial | Read; not written on first open | `oni-settings/tests/swift_checks.rs::the_frames_exif_rides_its_sidecar_and_an_empty_box_is_absent` |
 | Roll marker `.oni-roll.json` | `Pipeline/Folders.swift:8` | `oni-library/src/folders.rs:15` | done | | `oni-settings/tests/real_files.rs::the_roll_8_marker_reads_and_writes_back` |
 | Library index schema 9, rebuilt whole | `Pipeline/LibraryIndex.swift:7` | `oni-library/src/index.rs:9` | done | Crate only | `oni-library/src/index.rs::a_schema_of_another_version_is_thrown_away` |
 | Journal records: 16 bytes, magic ONIW, epoch 2020-01-02 | `Pipeline/Journal.swift:24-29` | `oni-library/src/journal.rs:56-62` | done | Crate only | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |

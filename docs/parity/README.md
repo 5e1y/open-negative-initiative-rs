@@ -39,8 +39,8 @@ histogram overshoot and the bare medal keys.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **54 have a Rust twin, 26 a partial one,
-82 none.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **63 have a Rust twin, 18 a partial one,
+81 none.**
 
 ### Pipeline branches against Swift
 

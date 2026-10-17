@@ -302,7 +302,8 @@ pub fn set_trashed(date: Option<Date>, original: &Path, mosaic: bool) -> Result<
 
 /// Deletes only the sidecar, never the original beside it; an absent sidecar is not an error.
 pub fn remove(original: &Path) -> io::Result<()> {
-    match std::fs::remove_file(url_for(original)) {
+    let sidecar = url_for(original);
+    match std::fs::remove_file(&sidecar) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
         other => other,
     }

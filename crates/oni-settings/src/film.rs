@@ -158,13 +158,13 @@ pub mod roll_folder {
 
     /// Marks the folder a roll, or clears the mark on `None`.
     pub fn set_roll(film: Option<&Film>, folder: &Path) -> io::Result<()> {
-        let path = marker(folder);
+        let marker = marker(folder);
         match film {
-            None => match std::fs::remove_file(&path) {
+            None => match std::fs::remove_file(&marker) {
                 Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
                 other => other,
             },
-            Some(film) => crate::sidecar::write_atomically(&path, encode(film).as_bytes()),
+            Some(film) => crate::sidecar::write_atomically(&marker, encode(film).as_bytes()),
         }
     }
 

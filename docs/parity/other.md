@@ -12,13 +12,13 @@ Statuses are defined in [README.md](README.md).
 | Old preset reads its groups and retired rows | `Pipeline/Propagation.swift:169` | `oni-core/src/presets.rs:152` | partial | Core only | `oni-core/src/presets.rs::an_old_preset_reads_its_groups_and_its_retired_rows` |
 | Default name and file stem (64) | `Pipeline/Propagation.swift:189,366` | `oni-core/src/presets.rs:97-110` | partial | Core only | `oni-core/src/presets.rs::names_and_files_are_formed_as_the_shelf_expects` |
 | Apply a preset, auto balance row measured | `Scene/EditorScene+Presets.swift` | `oni-core/src/store.rs:620` | partial | Core only; no `Measure` | no check |
-| Preset tints readable | `Pipeline/PresetTint.swift` | `oni-core/src/presets.rs:28` | partial | Eight tints; contrast not checked | no check |
+| Preset tints readable | `Pipeline/PresetTint.swift` | `oni-core/src/presets.rs:28` | partial | Eight tints; contrast not checked | `oni-core/tests/swift_checks.rs::an_unknown_tint_is_refused_and_the_default_is_neutral` |
 | Preset deck: cards, peek, fade | `UI/PresetCarousel.swift:177-189` | none | missing | | no check |
 | Deck menu: Edit…, Update with Current Settings, Duplicate, Delete | `Scene/EditorScene+Panel.swift` | `oni-core/src/presets.rs:70,230` | partial | Duplicate and delete in core; no UI | no check |
 | Share Preset…, Copy Preset Code, Paste Preset Code (`ONI1:`) | `Pipeline/Propagation.swift:295` | none | missing | | no check |
 | Save as Preset… sheet | `UI/PresetEditor.swift` | none | missing | | no check |
 | Preset editor: every parameter under its interface name | `UI/PresetParameters.swift` | none | missing | | no check |
-| Import Presets…, adopt incoming | `Scene/EditorScene+Presets.swift` | `oni-core/src/presets.rs:241` | partial | Core only | no check |
+| Import Presets…, adopt incoming | `Scene/EditorScene+Presets.swift` | `oni-core/src/presets.rs:241` | partial | Core only | `oni-core/tests/swift_checks.rs::an_import_never_overwrites_and_a_duplicate_says_so` |
 | Show Presets Folder | `UI/EditorCommands.swift:231` | none | missing | | no check |
 | Retired shipped presets remembered | `Pipeline/Propagation.swift:242` | none | missing | | no check |
 

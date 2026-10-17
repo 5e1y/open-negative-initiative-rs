@@ -219,6 +219,20 @@
     "outcome": "Measured on the Mac (Apple M2 Max, Metal, 120 Hz main screen), ONI_BENCH=1 on DSC_6432: before, 16-18 of 60 notches rendered, end to end p50 26 ms, gap p50 37-38 ms, p99 47-50 ms; a notch was 5 ms of GPU, 3-9 ms of readback, 3.7 ms of CPU histogram, 5 ms of upload on the interface thread, behind a 30 Hz hand-off. Done: the hand-off is one write per display frame (track.rs, 1/120 s); a notch's render stays on the GPU (materialised, read by the display kernel as a texture); the histogram is counted on the GPU on the pulse; the preview is reduced once to the canvas's device pixels (808 px on the default window); no rendering notifier, whose pre-flush emptied femtovg's pipeline cache and cost 8 ms of the interface thread per frame. After: 47 of 60 notches rendered, the rest superseded in the slot; encode p50 0.4-8 ms; gap p50 8.3-8.5 ms, p99 8.6-30 ms across six runs (ONI_BENCH=1 and settled). Open: p99 under 8.3 ms in every run; 'past 8.3 ms' counts vsync jitter of tenths of a millisecond, and the bench's 8.33 ms timer beats against the display link."
   },
   {
+    "id": 28,
+    "type": "chore",
+    "title": "Port the Swift self-checks whose behaviour lives in the core crates",
+    "status": "doing",
+    "detail": "docs/parity/checks.md: every none or partial check in oni-settings, oni-library, oni-colour, oni-export, oni-decode, oni-graph, oni-render and oni-core outside measurement becomes a Rust test with the Swift check's adversarial values and a twin that fails by construction."
+  },
+  {
+    "id": 32,
+    "type": "bug",
+    "title": "Parity bugs the ported Swift self-checks found in the core crates",
+    "status": "doing",
+    "detail": "Each failing port is a Rust departure from the Swift code, fixed to match it."
+  },
+  {
     "id": 33,
     "type": "feature",
     "title": "Export is a mode of the card: targets, rows, previews, panel and the export pipeline in the app",

@@ -93,9 +93,14 @@ fn legacy_rows(group: &str) -> &'static [&'static str] {
     }
 }
 
-/// The first free `Preset NN`, case and edge whitespace folded so near-duplicates count as taken.
+/// `CharacterSet.whitespaces`: tabs and space separators, never a line break.
+fn is_blank(c: char) -> bool {
+    c == '\t' || (c.is_whitespace() && !matches!(c, '\n' | '\r' | '\u{0B}' | '\u{0C}' | '\u{85}' | '\u{2028}' | '\u{2029}'))
+}
+
+/// The first free `Preset NN`, case and edge spaces folded so near-duplicates count as taken.
 pub fn default_name(names: &[&str]) -> String {
-    let taken: BTreeSet<String> = names.iter().map(|n| n.trim().to_lowercase()).collect();
+    let taken: BTreeSet<String> = names.iter().map(|n| n.trim_matches(is_blank).to_lowercase()).collect();
     let mut number = 1;
     while taken.contains(&format!("preset {number:02}")) {
         number += 1;
@@ -153,7 +158,7 @@ pub fn decode(data: &[u8]) -> Option<Preset> {
     let decoded = codec::decode(data).ok().filter(|d| !d.is_from_future())?;
     let object: Value = serde_json::from_slice(data).ok()?;
     let meta = object.get("preset").filter(|m| m.is_object()).unwrap_or(&object);
-    let name = meta.get("name")?.as_str()?.trim().to_string();
+    let name = meta.get("name")?.as_str()?.trim_matches(is_blank).to_string();
     if name.is_empty() {
         return None;
     }
@@ -219,8 +224,9 @@ pub fn save(preset: &Preset, directory: &Path) -> io::Result<()> {
     std::fs::write(&temporary, text)?;
     std::fs::rename(&temporary, &path)?;
     for other in files(directory).into_iter().filter(|f| *f != path) {
+        // A stale twin that refuses to go leaves the save standing: the file just written is the preset.
         if std::fs::read(&other).ok().and_then(|d| decode(&d)).is_some_and(|p| p.id == preset.id) {
-            std::fs::remove_file(&other)?;
+            let _ = std::fs::remove_file(&other);
         }
     }
     Ok(())
