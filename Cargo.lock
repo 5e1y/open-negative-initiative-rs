@@ -4120,6 +4120,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-core"
+version = "0.1.0"
+dependencies = [
+ "oni-fixtures",
+ "oni-library",
+ "oni-link",
+ "oni-settings",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "oni-decode"
 version = "0.1.0"
 dependencies = [
