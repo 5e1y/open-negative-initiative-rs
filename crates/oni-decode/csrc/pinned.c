@@ -1,11 +1,15 @@
 // LibRaw driven with every automatic knob pinned, so a file decodes the same way on every machine.
-#include <libraw.h>
+#include "libraw/libraw.h"
 #include <string.h>
 
 typedef struct {
     int width, height;
     float pre_mul[4];
     float rgb_cam[3][4];
+    float cam_xyz[4][3];
+    float cam_mul[4];
+    float pre_mul_raw[4];
+    unsigned black, maximum;
     unsigned short *pixels;
     libraw_processed_image_t *image;
     libraw_data_t *raw;
@@ -51,6 +55,11 @@ int oni_decode(const char *path, float exposure_gain, oni_decoded *out)
     out->height = img->height;
     for (int c = 0; c < 4; c++) out->pre_mul[c] = p->user_mul[c];
     memcpy(out->rgb_cam, lr->color.rgb_cam, sizeof out->rgb_cam);
+    memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
+    memcpy(out->cam_mul, lr->color.cam_mul, sizeof out->cam_mul);
+    memcpy(out->pre_mul_raw, lr->color.pre_mul, sizeof out->pre_mul_raw);
+    out->black = lr->color.black;
+    out->maximum = lr->color.maximum;
     out->pixels = (unsigned short *)img->data;
     out->image = img;
     out->raw = lr;

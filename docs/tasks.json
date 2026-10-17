@@ -1,5 +1,26 @@
 [
-  { "id": 1, "type": "research", "title": "Proof of concept: fused stages 4-7 in WGSL and a pinned LibRaw decode", "status": "done",
-    "outcome": "WGSL kernel within 8.1e-6 of the CPU reference on nine settings sets (llvmpipe), its 1 % gain twin at 2.2e-3 or more; LibRaw decode doubles every channel mean at +1 EV on three roll #8 NEFs (ratio 2.0000).", "commit": "75531da" },
-  { "id": 2, "type": "chore", "title": "Repository rules, task log and CI on macOS and Windows", "status": "doing" }
+  {
+    "id": 1,
+    "type": "research",
+    "title": "Proof of concept: fused stages 4-7 in WGSL and a pinned LibRaw decode",
+    "status": "done",
+    "outcome": "WGSL kernel within 8.1e-6 of the CPU reference on nine settings sets (llvmpipe), its 1 % gain twin at 2.2e-3 or more; LibRaw decode doubles every channel mean at +1 EV on three roll #8 NEFs (ratio 2.0000).",
+    "commit": "75531da"
+  },
+  {
+    "id": 2,
+    "type": "chore",
+    "title": "Repository rules, task log and CI on macOS and Windows",
+    "status": "done",
+    "outcome": "CLAUDE.md with the hard and comment rules, docs/tasks.json, CI building the workspace and running the render checks; first run green on macos-latest and windows-latest.",
+    "commit": "81036e8"
+  },
+  {
+    "id": 3,
+    "type": "feature",
+    "title": "Vendor LibRaw 0.22.2 and build it from source on every platform",
+    "status": "done",
+    "detail": "LibRaw 0.21 from the system knows no Nikon Z f: identity rgb_cam, zero cam_xyz, so roll #8 decoded as raw camera RGB.",
+    "outcome": "LibRaw 0.22.2 vendored and compiled by build.rs with cc, pkg-config dropped. Z f now gets its matrix (cam_xyz non-zero); linearity test 2.0000 at +1 EV on three roll #8 frames; against the Swift decode a 3x3 fit is near-diagonal (scale about 2.7, median error 0.3 to 0.9 % on DSC_6448), so no channel swap or clipping."
+  }
 ]

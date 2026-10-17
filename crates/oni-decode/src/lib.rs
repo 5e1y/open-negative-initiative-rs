@@ -10,6 +10,11 @@ struct Decoded {
     height: c_int,
     pre_mul: [c_float; 4],
     rgb_cam: [[c_float; 4]; 3],
+    cam_xyz: [[c_float; 3]; 4],
+    cam_mul: [c_float; 4],
+    pre_mul_raw: [c_float; 4],
+    black: u32,
+    maximum: u32,
     pixels: *const c_ushort,
     image: *mut c_void,
     raw: *mut c_void,
@@ -61,6 +66,9 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
             [t(0), t(1), t(2), 1.0]
         })
         .collect();
+    if std::env::var_os("ONI_DECODE_TRACE").is_some() {
+        eprintln!("user_mul {:?} pre_mul {:?} cam_mul {:?} black {} max {}\nrgb_cam {:?}\ncam_xyz {:?}", d.pre_mul, d.pre_mul_raw, d.cam_mul, d.black, d.maximum, d.rgb_cam, d.cam_xyz);
+    }
     unsafe { oni_release(&mut d) };
     Ok(Linear { width: w, height: h, pixels })
 }

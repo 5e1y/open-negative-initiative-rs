@@ -12,17 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: LibRaw (macOS)
-        if: runner.os == 'macOS'
-        run: brew install libraw pkg-config
-      - name: LibRaw (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          vcpkg install libraw:x64-windows pkgconf:x64-windows
-          echo "PKG_CONFIG=$VCPKG_INSTALLATION_ROOT/installed/x64-windows/tools/pkgconf/pkgconf.exe" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$VCPKG_INSTALLATION_ROOT/installed/x64-windows/lib/pkgconfig" >> $GITHUB_ENV
-          echo "$VCPKG_INSTALLATION_ROOT/installed/x64-windows/bin" >> $GITHUB_PATH
       - name: Build
         run: cargo build --release --workspace
       - name: Render checks

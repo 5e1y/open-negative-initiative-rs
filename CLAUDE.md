@@ -44,5 +44,5 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 ## Build
 
-`cargo test --release` runs every check. LibRaw comes from pkg-config (Homebrew on macOS, vcpkg on
-Windows).
+`cargo test --release` runs every check. LibRaw is vendored in `crates/oni-decode/libraw` (0.22.2) and
+built by `build.rs`, so a new camera arrives by updating that copy, never from the system.
