@@ -190,5 +190,12 @@
     "status": "done",
     "commit": "b7f1bfb",
     "outcome": "The design system's Scroller and ListView set mouse-drag-pan-enabled false; the panel panes and the catalogue use them and the strict check refuses a raw Flickable or ScrollView (planted twin added). tests/scroll.rs drags the catalogue page and asserts it stays put while the wheel scrolls it; with the flag turned back on the same test fails. The library ListView is covered by the component, not by a drag test. oni-app suite green on llvmpipe."
+  },
+  {
+    "id": 24,
+    "type": "chore",
+    "title": "Inventory the Swift app's features against the port",
+    "status": "doing",
+    "detail": "docs/parity/: every user-facing feature, hidden constant, interaction rule and codec migration of the Swift app, each with its Swift and Rust file, a status and the Rust test that proves it; every Swift self-check against its Rust twin; which pipeline branches the Swift comparison reaches."
   }
 ]

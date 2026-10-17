@@ -1,0 +1,221 @@
+# Parity: the editor
+
+Swift paths are under `Sources/OpenNegative/` of the Swift app; Rust paths are under `crates/`.
+Statuses are defined in [README.md](README.md).
+
+## Canvas
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Open frame rendered through the pipeline | `UI/MetalImageView.swift`, `Negative.swift:46` | `oni-app/src/render.rs`, `oni-graph` | done | 2000 px preview, as Swift's `previewSide` | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
+| Full-resolution region at zoom | `UI/Viewport.swift:138` `needsFullResolution` | `oni-graph` regions (tests only) | partial | Graph renders regions; the app never asks for one | `oni-graph/tests/roll8.rs::a_canvas_region_and_a_slider_on_one_frame` (graph only) |
+| Zoom: wheel, trackpad pinch, ⌘ scroll | `UI/CanvasNavigation.swift:8-38` | none | missing | No canvas zoom | no check |
+| Zoom ladder, fit, 100 % toggle | `UI/Viewport.swift:27-116` | none | missing | ⌘− / ⌘= only resize gallery columns | no check |
+| Pan by drag and scroll | `UI/CanvasNavigation.swift:17`, `Viewport.swift:94` | none | missing | | no check |
+| Canvas proofed into the export space | `Scene/EditorScene+Stages.swift`, `Pipeline/Proof.swift` | `oni-colour/src/proof.rs` | partial | Proof exists in the crate; the app shows the working render on the display matrix | `oni-colour/tests/checks.rs::the_proof_clips_what_the_export_space_cannot_hold` (crate only) |
+| Screen gamut stripes | `Pipeline/ScreenGamut.swift` | `oni-colour/src/gamut.rs`, `oni-render` zebra kernel | partial | Kernel and test exist; menu item answers "not in this build" | `oni-colour/tests/checks.rs::the_zebra_stripes_what_the_screen_clips` (crate only) |
+| Compare before/after | `Scene/EditorScene+Actions.swift` `.compare` | none | missing | Bar key and menu item unwired | no check |
+| Dust patches on the canvas render | `Scene/EditorScene+Panel.swift` (correction pipeline) | `oni-pipeline` `Inputs` | partial | App passes `Inputs::default()`, so no patch reaches the canvas | `oni-pipeline/src/corrections.rs::a_reduced_patch_lands_where_the_full_one_does` (crate only) |
+| Custom flat-field mask on the canvas | `Scene/EditorScene+FlatField.swift` | `oni-pipeline/src/flat_field.rs` | partial | Shipped mask only; no custom mask is loaded | `oni-pipeline/src/flat_field.rs::the_shipped_mask_decodes_whole_with_a_peak_under_one` (shipped only) |
+| Crop overlay: corners, edges, rule of thirds | `UI/CropOverlay.swift` | none | missing | | no check |
+| Measuring window overlay | `UI/MeasureGridOverlay.swift` | none | missing | | no check |
+| Dust brush cursor and strokes | `UI/NegativeView.swift`, `UI/CorrectionsPanel.swift` | none | missing | | no check |
+| Canvas readouts (size, zoom, status) | `UI/NegativeView.swift` | `oni-app/src/app.rs` status line | partial | Shows the preview size, never the zoom or the kept pixels | no check |
+| Neutral decode notice | `UI/NegativeView.swift` (NeutralDecodeNotice) | none | missing | | no check |
+| Plain image (JPEG, PNG, RGB TIFF) opens | `Pipeline/RawDecode.swift` | `oni-app/src/render.rs` `decode` | missing | Refused with "not read yet" | no check |
+| Linear scan with converted primaries opens | `Pipeline/ContainerRead.swift:388` | `oni-app/src/render.rs` | missing | Refused | no check |
+| Ground behind the frame, contact-sheet ground | `UI/MetalImageView.swift:324-330` | none | missing | | no check |
+| Splash while the first frame decodes | `UI/Splash.swift` | none | missing | | no check |
+
+## Main band above the panel
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Histogram, morphing between renders | `Pipeline/Histogram.swift`, `DesignSystem/DSHistogram` | `oni-app/src/render.rs` histogram | partial | Counted per channel and drawn; no morph, no throttle (`Histogram.swift:59-63`) | `oni-app/src/render.rs::the_histogram_counts_each_channel_on_its_own` |
+| Print curve drawn over the histogram (Color tab) | `UI/PrintPanel.swift` | none | missing | | no check |
+| Loupe on the Details tab | `UI/Loupe.swift` | none | missing | | no check |
+| Lab screen on the Scanner face | `UI/Lab/` | none | missing | | no check |
+| Preset deck (carousel) | `UI/PresetCarousel.swift` | none | missing | See [other.md](other.md) | no check |
+
+## Panel: tabs
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Tabs Roll, Crop, Color, Details | `UI/PanelTab.swift` | `oni-app/ui/panel.slint` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
+| De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17` | none | missing | | no check |
+| Scanner face tabs (Lab keypad) | `Scene/EditorScene+Lab.swift` | none | missing | | no check |
+| Block help bubbles (`help:`) | every `DSSection` | none | missing | | no check |
+| Block reset key, shown off rest | `DSSection(resetting:)` | `oni-app/src/store.rs:94-108` | partial | Nine blocks; rest is always Negative's (`store.rs:92`) | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_in_one_write` |
+| Blocks folded by default | `.folded(byDefault: true)` | none | missing | Every block is open | no check |
+| Panel width resizer | `DesignSystem/DSPanel` `DSColumnResizer` | none | missing | | no check |
+| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `oni-app/src/app.rs:1127` | partial | Menu works; the shortcut is not mapped | no check |
+
+## Panel: Roll tab
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Block order | `UI/SettingsPane.swift:28-112` | `oni-app/ui/panel.slint:45-95` | partial | Swift: Measured Roll, Film Type, Flat-Field, Source Encoding, Source Balance, Density Ceiling, Per-Channel Levels, Dye Separation, Balance Strength. Rust puts Dye Separation and Balance Strength third and fourth | no check |
+| Measured Roll: count note, warnings | `UI/SettingsPane.swift:114-140` | `panel.slint:45` | partial | Static text | no check |
+| Prepare the Roll… key | `UI/SettingsPane.swift:117` | none | missing | | no check |
+| Join the Roll / Join the N | `UI/SettingsPane.swift:126` | `oni-core/src/store.rs:680` `join_roll` | partial | Core only | no check |
+| Roll of the N | `UI/SettingsPane.swift:129` | none | missing | | no check |
+| Film Type tabs (negative, slide, B&W) | `UI/SettingsPane.swift:38` | `panel.slint:54`, `oni-core/src/store.rs:610` | partial | Picker unwired | no check |
+| Flat-Field toggle, gear, mask picker | `UI/FlatFieldControls.swift` | `panel.slint:59-63` | partial | Toggle unbound | no check |
+| Use This Photo as Flat-Field, Load…, Rename, Folder | `UI/FlatFieldControls.swift` | none | missing | | no check |
+| Apply to Selection | `UI/FlatFieldControls.swift` | none | missing | | no check |
+| Flat-field Amount, Temperature, Tint | `UI/FlatFieldControls.swift` | none | missing | Model fields exist | no check |
+| Source Encoding (undeclared files) | `UI/SettingsPane.swift:53-66` | none | missing | Model field exists | no check |
+| Source Balance (gains R, G, B) | `UI/SettingsPane.swift:136`, `UI/GainPanel.swift` | none | missing | | no check |
+| Density Ceiling slider | `UI/SettingsPane.swift:146` | `panel.slint:87` field 12 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:161`, `UI/LevelsView.swift` | `panel.slint:90-95` | partial | Tabs and an empty histogram; no handle, no write | no check |
+| Dye Separation: family tabs | `UI/SettingsPane.swift:73-84` | `panel.slint:70` | partial | Picker static | no check |
+| Dye Separation dose slider | `UI/SettingsPane.swift:85` | `panel.slint:71` field 13 | done | Reset does not clear family and `byHand` | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Dye Separation hidden in B&W, RGB passes, Scanner face | `UI/SettingsPane.swift:69` | none | missing | Always shown | no check |
+| Balance Strength slider | `UI/SettingsPane.swift:93` | `panel.slint:79` field 11 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Roll-wide write of a Roll gesture | `Scene/EditorScene+RollSettings.swift` | `oni-core` `measured_with`, `tests/roll8.rs` | done | One step over every frame naming the reference | `oni-core/tests/roll8.rs::a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes_byte_for_byte` |
+
+## Panel: Crop tab
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Crop block: Copy, Paste, Paste to Roll framing | `UI/FramePane.swift:21` | `oni-core/src/store.rs:554-560` | partial | Core only; paste skips the fit inside the image | no check |
+| Aspect Ratio tabs Free, 3:2, 4:3, 1:1, 6:7, 5:4 | `UI/GeometryPanel.swift:17` | `panel.slint:98` | partial | Static; no `applyRatio` | no check |
+| Vertical toggle | `UI/GeometryPanel.swift:17` | `panel.slint:101` | partial | Unbound | no check |
+| Straighten Angle slider | `UI/GeometryPanel.swift:27` | `panel.slint:107` field 14 | partial | Writes the raw angle, no `straightened` re-fit | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Rotate 90°, Mirror horizontally, vertically | `UI/GeometryPanel.swift:37`, `Pipeline/Geometry.swift:39-72` | `panel.slint:110` | partial | Buttons without handlers; no model functions | no check |
+| Measuring Window keys | `UI/GeometryPanel.swift:63`, `Geometry.swift:143` | none | missing | | no check |
+| Kept pixels LCD | `UI/GeometryPanel.swift`, `Geometry.swift:163` | none | missing | | no check |
+| Crop-first warning before Auto White Balance | `UI/GeometryPanel.swift:5` | none | missing | | no check |
+
+## Panel: Color tab
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Auto White Balance key | `UI/ColorPane.swift:57` | `panel.slint:131` | partial | Button unwired; `Measure` has no implementation | no check |
+| Batch choice for a selection (AutoBalanceChoice) | `UI/ColorPane.swift:335` | `oni-core/src/balance.rs:98` `averaged` | partial | Core averaging only | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
+| Temperature, Tint sliders, coloured tracks | `UI/TemperatureTintPanel.swift` | `panel.slint:137-141` | done | Track ends not tinted | `oni-core/src/knob.rs::temperature_and_tint_move_on_axes_that_leave_each_other_alone` |
+| Color density slider | `UI/ColorPane.swift:57` | `panel.slint:144` field 2 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Paper Correction block (paper profile only) | `UI/ColorPane.swift:82` | none | missing | Model in `oni-colour/src/paper.rs` | no check |
+| Auto Paper Correction key | `UI/ColorPane.swift:82` | `oni-colour/src/paper.rs` | partial | Solver exists; no UI | `oni-colour/tests/checks.rs::the_automatic_key_solves_the_paper_s_white` (crate only) |
+| Lighting: Exposure, Highlights, Shadows, White point, Black point | `UI/ColorPane.swift:104`, `UI/PrintPanel.swift` | `panel.slint:147-160` | done | | `oni-app/src/fields.rs::the_black_point_runs_the_other_way`, `each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Effects: Contrast, Vignette, Chrome | `UI/ColorPane.swift:114` | `panel.slint:164-170` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Effects on the Scanner face: CONTRAST, VIGNETTE, CHROME step keys | `UI/ColorPane.swift:121-131` | none | missing | | no check |
+| Curves editor: RGB, Luma, R, G, B | `UI/ColorPane.swift:157`, `UI/CurveEditorView.swift` | `panel.slint:173` | partial | Tabs only; no editor | no check |
+| Spectrogram Finishing | `UI/GradePane.swift:12`, `UI/SpectrogramPanel.swift` | none | missing | Kernel exists | no check |
+| Saturation Curve | `UI/GradePane.swift:22`, `UI/SaturationCurveView.swift` | none | missing | Kernel exists | no check |
+| Grade blocks hidden in monochrome | `UI/GradePane.swift` | none | missing | | no check |
+
+## Panel: Details tab
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Sharpening: Amount, Radius, Halo limit | `UI/DetailsPane.swift:9`, `UI/SharpenPanel.swift` | `panel.slint:182-187` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint:190-194` | done | Not hidden in monochrome | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Texture | `UI/DetailsPane.swift:25` | `panel.slint:197-200` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Off on a contact sheet, with its note | `UI/DetailsPane.swift:37` | none | missing | | no check |
+
+## Panel: De-dust
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Brush Size slider, [ and ] keys | `UI/DedustPane.swift:14`, `UI/EditorCommands.swift:159-163` | `oni-app/src/app.rs:1135` | missing | Keys answer "not in this build" | no check |
+| Stroke painting on the canvas | `UI/NegativeView.swift` | none | missing | | no check |
+| Patch search and generation | `Pipeline/Corrections.swift`, `CorrectionRenderer` | `oni-render` correction kernels, `oni-pipeline/src/corrections.rs` | partial | Kernels and tile geometry tested; no orchestration | `oni-render/tests/kernels.rs::correction_search` (kernel only) |
+| Corrections list, Remove this correction | `UI/CorrectionsPanel.swift` | none | missing | | no check |
+| Generating… note, fallback warning | `UI/CorrectionsPanel.swift` | none | missing | | no check |
+| Space held: hand tool | `UI/NegativeView.swift` | none | missing | | no check |
+| Patch cache | `Pipeline/Corrections.swift` `CorrectionCache` | none | missing | | no check |
+
+## Scanner face (Lab)
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Pro / Scanner face tab bar | `Scene/EditorScene+Bar.swift` | none | missing | | no check |
+| Machine: ONI, Frontier | `Scene/EditorScene+Lab.swift:15` | `oni-pipeline/src/scanner.rs` | partial | Render done; no picker | `oni-pipeline/src/scanner.rs::the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks` |
+| Keypad: DARK/LIGHT, RED/CYAN, GREEN/MAGENTA, BLUE/YELLOW, COOL/WARM | `UI/Lab/LabKeyboard.swift` | `oni-settings/src/scanner.rs`, `oni-core/src/command.rs` | partial | Clicks modelled and reachable from the phone; no desktop keys | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` (phone path) |
+| Walk keys between frames | `Scene/EditorScene+Lab.swift:149-159` | none | missing | | no check |
+| Zoom bubble, column key | `Scene/EditorScene+Lab.swift` | none | missing | | no check |
+| Esc leaves the Lab | `Scene/EditorScene+Lab.swift` | none | missing | | no check |
+| Scanner Emulator menu item | `UI/EditorCommands.swift:175` | `app.slint:77` | partial | Unwired | no check |
+
+## Bar
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Three zones, one item per zone | `Scene/EditorScene+Bar.swift`, `UI/AppBar.swift` | `oni-app/ui/toolbar.slint` | done | | `oni-app/tests/design_system.rs::screens_use_only_the_design_system` (tokens only) |
+| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Drawn, unwired | no check |
+| Undo, redo keys with their state | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` | done | Editor surface only | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
+| Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Drawn, unwired; core done | no check |
+| Correction key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
+| RESET SCAN | `Scene/EditorScene+Bar.swift` | `app.rs:1117` | done | | `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
+| Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | Filter label live; the rest unwired | no check |
+| Roll-step keys (Film, Flat-Field, Base, Flags, Window) | `Scene/EditorScene+Bar.swift`, `UI/RollReferenceSurface.swift` | none | missing | | no check |
+| FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
+| EXPORT / ADD FOLDER key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
+| UPDATE key when an update waits | `Scene/EditorScene+Bar.swift`, `Pipeline/Updates.swift` | none | missing | | no check |
+| Traffic lights inset | `Scene/EditorScene+Bar.swift` | `app.rs` | missing | Never set | no check |
+
+## Menus and shortcuts
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Open Folder… ⌘O | `UI/EditorCommands.swift:109` | `app.slint:40`, `app.rs` key | missing | "not in this build" | no check |
+| Gallery / Editor ⌘G | `UI/EditorCommands.swift:113` | `app.slint:43`, `app.rs:1118` | done | | no check |
+| Export… ⌘E | `UI/EditorCommands.swift:116` | `app.slint:44` | missing | Title lacks the ellipsis and the count | no check |
+| Recheck Originals ⌘R | `UI/EditorCommands.swift:120` | `app.slint:46` | missing | | no check |
+| Read the Folders Again | `UI/EditorCommands.swift:123` | `app.slint:47` | missing | | no check |
+| Show the Selected Photo | `UI/EditorCommands.swift:125` | `app.slint:48` | missing | | no check |
+| Move to ONI Trash ⌘⌫ | `UI/EditorCommands.swift:128` | `app.slint:50`, `oni-core/src/store.rs:704` | partial | Core only | `oni-core/tests/roll8.rs::the_trash_marks_the_sidecar_and_never_moves_the_file` (core only) |
+| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.slint:51`, `store.rs:708` | partial | Core only | no check |
+| Zoom Out ⌘−, Zoom In ⌘+ | `UI/EditorCommands.swift:138-142` | `app.rs:1129` | partial | Gallery columns only | `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` (gallery only) |
+| Compare Before/After | `UI/EditorCommands.swift:145` | `app.slint:65` "Compare" | missing | | no check |
+| Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint:66` "Hide Library" | partial | Works; title differs, no shortcut | no check |
+| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint:67` | partial | Works; title differs, no shortcut | no check |
+| Crop and Straighten ⌘K | `UI/EditorCommands.swift:153` | `app.slint:68` | missing | | no check |
+| Remove Dust & Scratches | `UI/EditorCommands.swift:156` | `app.slint:69` "De-dust" | missing | | no check |
+| Bigger Brush ], Smaller Brush [ | `UI/EditorCommands.swift:159-163` | `app.slint:71-72` | missing | Title carries the key as text | no check |
+| Mirror Horizontally ⇧⌘M | `UI/EditorCommands.swift:166` | `app.slint:73` "Mirror" | missing | | no check |
+| Mute Key Clicks | `UI/EditorCommands.swift` `soundTitle` | none | missing | | no check |
+| Show What This Screen Cannot Show ⇧⌘Y | `UI/EditorCommands.swift:171` | `app.slint:75` "Screen Gamut" | missing | | no check |
+| Labels: None 0, Bronze 1, Silver 2, Gold 3 | `UI/EditorCommands.swift:180-183` | `app.slint:81-84`, `app.rs` `label` | done | | `oni-settings/tests/real_files.rs::label_trash_and_draft_touch_nothing_else_and_keep_the_revision` (sidecar only) |
+| Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint:86` "Cycle Filter" | missing | | no check |
+| New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint:90` | missing | | no check |
+| Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app.slint:91` | missing | | no check |
+| New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint:93` | missing | | no check |
+| Prepare the Roll… | `UI/EditorCommands.swift:206` | `app.slint:94` | missing | | no check |
+| Reset to Default… | `UI/EditorCommands.swift:208` | `app.slint:95`, `oni-core/src/store.rs:602` | partial | Core only | no check |
+| Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint:99`, `store.rs:496` | partial | Core only, in-memory board | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` (core only) |
+| Paste Settings ⇧⌘V | `UI/EditorCommands.swift:216` | `app.slint:100`, `store.rs:526` | partial | Core only | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` (core only) |
+| Paste to Roll (no shortcut) | `UI/EditorCommands.swift:220` | `app.slint:101`, `store.rs:535` | partial | Core only | `oni-core/tests/roll8.rs::paste_to_roll_is_one_editor_step_over_the_whole_roll` (core only) |
+| Save as, Edit, Import Presets, Paste Preset Code, Show Presets Folder | `UI/EditorCommands.swift:223-231` | `app.slint:103-107` | missing | | no check |
+| Preset list with its parameters | `UI/EditorCommands.swift:238` | none | missing | | no check |
+| Delete a Preset submenu | `UI/EditorCommands.swift:245` | none | missing | | no check |
+| Undo ⌘Z, Redo ⇧⌘Z with action names | `UI/EditorCommands.swift:255-259` | `app.slint:55-56` | partial | Shortcuts work; titles never name the action | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
+| Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint:58` | partial | Menu works; no shortcut | no check |
+| Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint:111-115` | missing | | no check |
+| Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
+| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | undo, redo only | partial | | no check |
+| Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
+
+## Keys outside the menus
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Gallery ⌘A, arrows, Return, Space | `UI/GalleryEngine.swift:425-439` | none | missing | | no check |
+| Bare keys yield to a focused text field | `DesignSystem/DSKeyboard` `DSTextFocus` | `oni-app/src/app.rs:1155` | done | Slint text fields consume their keys first | no check |
+| Exclusive key surfaces | `DSKeyMonitor.exclusiveSurfaces` | none | missing | | no check |
+| Esc closes Lab, Crop, Wrapped | `Scene/EditorScene+Lab.swift`, `UI/CropOverlay.swift`, `UI/WrappedView.swift` | Esc closes pairing only | missing | | no check |
+| Tab walks spectrogram bands | `UI/SpectrogramPanel.swift` | none | missing | | no check |
+| Option on the spectrogram | `UI/SpectrogramPanel.swift:81` | none | missing | | no check |
+| Prepare the Roll arrows | `UI/RollReferenceSurface.swift:223` | none | missing | | no check |
+
+## History
+
+| Feature | Swift | Rust | Status | Gap | Check |
+|---|---|---|---|---|---|
+| Editor history, coalescing 0.4 s, 200 steps | `Pipeline/History.swift:6-8` | `oni-core/src/history.rs:8-9` | done | | `oni-core/src/history.rs::a_drag_within_the_window_is_one_step`, `the_stack_holds_its_limit` |
+| Gallery history, 100 steps | `Pipeline/GalleryHistory.swift:28` | `oni-library/src/gallery_history.rs:39` | partial | Model done; bar and menu read the editor's only | `oni-library/src/gallery_history.rs::the_stack_keeps_its_last_hundred_steps` (model only) |
+| Undo title names the action | `Scene/EditorScene+History.swift` | `oni-app/ui/toolbar.slint:14` `undo-title` | partial | Property never set: always "Undo" | no check |
+| A roll write is one step | `Scene/EditorScene+RollSettings.swift` | `oni-core/tests/roll8.rs` | done | | `oni-core/tests/roll8.rs::a_drag_is_one_step_and_one_roll_write` |
+| Sidecar written 400 ms after the last notch | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs:34` | partial | App waits 500 ms; `oni-settings/src/sidecar.rs:65` has 400 unused | `oni-core/src/store.rs::an_untouched_frame_gains_no_sidecar_and_a_rested_edit_writes_one` (no delay asserted) |
+| Flush on quit and window close | `Pipeline/QuitGuard` | none | missing | Pending writes are lost on close | no check |
