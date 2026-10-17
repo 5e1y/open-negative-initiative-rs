@@ -28,8 +28,10 @@
     "id": 4,
     "type": "feature",
     "title": "Phone link: scanner remote over Noise, LocalSend import, phone FFI",
-    "status": "doing",
-    "detail": "Crates oni-link, oni-localsend, oni-link-ffi and oni-link-demo for ONI Mobile; the desktop drives Host, HostEvents and publish."
+    "status": "done",
+    "detail": "Crates oni-link, oni-localsend, oni-link-ffi and oni-link-demo for ONI Mobile; the desktop drives Host, HostEvents and publish.",
+    "outcome": "Four crates, 44 tests with twins that fail when a guard is removed (stranger key, reused pairing code, revoked phone, lying sha256, wrong size, traversal, wrong pinned fingerprint), green on macOS and Windows CI. Loopback bench 0.08 ms median, 0.31 ms p99 per press. The FFI was built for iOS and linked into ONI Mobile, which launched in the iOS simulator on the reference Mac.",
+    "commit": "7d56039"
   },
   {
     "id": 5,
