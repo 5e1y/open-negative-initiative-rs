@@ -241,7 +241,7 @@ fn presets_live_one_file_each_and_a_damaged_one_takes_none_down() {
     std::fs::remove_file(&presets::files(&folder)[0]).unwrap();
     assert_eq!(presets::load(&folder).len(), 2, "a lost file takes no other down");
     let left = presets::load(&folder);
-    presets::delete(&left[0], &folder, &mut |f: &Path| std::fs::remove_file(f)).unwrap();
+    presets::delete(&left[0], &folder, &mut |f: &Path| std::fs::remove_file(f));
     assert_eq!(presets::files(&folder).len(), 1);
 
     let target = &presets::files(&folder)[0];

@@ -1,0 +1,230 @@
+{
+  "preset" : {
+    "id" : "3676F1B6-B28F-4B26-9125-71C8039CD81B",
+    "name" : "Azure",
+    "note" : "",
+    "parameters" : [
+      "autoBalance.body",
+      "density",
+      "spectrogram",
+      "toneBalance"
+    ],
+    "tint" : "teal"
+  },
+  "settings" : {
+    "chroma" : {
+      "force" : 0,
+      "radius" : 0
+    },
+    "curves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0.2360959,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "density" : -0.10109812,
+    "densityCeiling" : 2.0969099999999998,
+    "flatField" : {
+      "amount" : 0.20000000000000001,
+      "mask" : "None"
+    },
+    "gains" : {
+      "stops" : [
+        3,
+        0,
+        -2.4494083
+      ]
+    },
+    "geometry" : {
+      "angle" : 0.72710419999999998,
+      "crop" : [
+        [
+          0.21395481701630475,
+          0.16305952104584559
+        ],
+        [
+          0.63655419515465872,
+          0.63785335347687222
+        ]
+      ],
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "levels" : {
+      "blue" : {
+        "black" : 0.96320700000000004,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.4626714000000001
+      },
+      "green" : {
+        "black" : 1.0941348,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.4248776000000001
+      },
+      "linked" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.68632925,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "luma" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "red" : {
+        "black" : 0.39403280000000002,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.8954953000000001
+      }
+    },
+    "mode" : "negative",
+    "saturation" : {
+      "highlights" : 0,
+      "shadows" : 0
+    },
+    "sharpen" : {
+      "amount" : 0.67000000000000004,
+      "radius" : 2.0920000000000001
+    },
+    "spectrogram" : {
+      "hue" : [
+        5.0831976000000001,
+        -1.6338849,
+        -7.6247983000000001,
+        17.246562999999998,
+        10.347939,
+        -10.166395,
+        -8.1694239999999994,
+        -2.5415988
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        -0.031771720000000003,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "toneBalance" : {
+      "black" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "highlights" : {
+        "colour" : [
+          0.44647263999999998,
+          -0.25417697,
+          -0.23999596000000001
+        ]
+      },
+      "midtones" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "shadows" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "white" : {
+        "colour" : [
+          2,
+          -0.39753509999999997,
+          -2
+        ]
+      }
+    }
+  },
+  "version" : 4
+}

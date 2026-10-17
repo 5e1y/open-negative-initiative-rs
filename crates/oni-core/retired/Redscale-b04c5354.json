@@ -1,0 +1,229 @@
+{
+  "preset" : {
+    "id" : "B04C5354-F9DA-4A6D-9FD8-DC470AB31B0D",
+    "name" : "Redscale",
+    "note" : "",
+    "parameters" : [
+      "autoBalance.body",
+      "spectrogram",
+      "toneBalance"
+    ],
+    "tint" : "rust"
+  },
+  "settings" : {
+    "chroma" : {
+      "force" : 0,
+      "radius" : 0
+    },
+    "curves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "density" : 0,
+    "densityCeiling" : 2.0969099999999998,
+    "flatField" : {
+      "amount" : 0.20000000000000001,
+      "mask" : "None"
+    },
+    "gains" : {
+      "stops" : [
+        0.83334416,
+        0,
+        -1.3020073000000001
+      ]
+    },
+    "geometry" : {
+      "angle" : 0.64789580000000002,
+      "crop" : [
+        [
+          0.18496645373452794,
+          0.21035757015902759
+        ],
+        [
+          0.6413615191208768,
+          0.6361210859743246
+        ]
+      ],
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "levels" : {
+      "blue" : {
+        "black" : 0.89886189999999999,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.0942582999999999
+      },
+      "green" : {
+        "black" : 0.73719440000000003,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.5034702
+      },
+      "linked" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.67000000000000004,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "luma" : {
+        "black" : 0,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1
+      },
+      "red" : {
+        "black" : 0.58216440000000003,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.4732977
+      }
+    },
+    "mode" : "negative",
+    "saturation" : {
+      "highlights" : 0,
+      "shadows" : 0
+    },
+    "sharpen" : {
+      "amount" : 0.67000000000000004,
+      "radius" : 2.0920000000000001
+    },
+    "spectrogram" : {
+      "hue" : [
+        8.7055319999999998,
+        -0.85807659999999997,
+        -5.8417344,
+        -28.602920000000001,
+        -17.246562999999998,
+        -12.707993999999999,
+        23.732230999999999,
+        49.375202000000002
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0.58989893999999998,
+        0.45537156000000001,
+        -0.35910969999999998,
+        -0.64516240000000002,
+        -1,
+        -1,
+        -1,
+        -0.026175737000000001
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "toneBalance" : {
+      "black" : {
+        "colour" : [
+          0.014542103000000001,
+          0,
+          -0.052392750000000002
+        ]
+      },
+      "highlights" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "midtones" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "shadows" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      },
+      "white" : {
+        "colour" : [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "version" : 4
+}

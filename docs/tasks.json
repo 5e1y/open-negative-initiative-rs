@@ -278,5 +278,12 @@
     "type": "feature",
     "title": "Colour management in the app: spaces, profiles, the canvas proof, the paper proof and Paper Correction",
     "status": "doing"
+  },
+  {
+    "id": 39,
+    "type": "feature",
+    "title": "Presets in the app: deck, save sheet, editor, apply, share code, import, menu list",
+    "status": "doing",
+    "detail": "Every presets row of docs/parity (other.md, editor.md): the file side, the form's rows, the share code, import, retire, then the deck, sheets, dialogs and the Settings menu wired through the store."
   }
 ]

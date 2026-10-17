@@ -6,6 +6,8 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+base64 = "0.22"
+flate2 = "1"
 oni-settings.workspace = true
 oni-library = { path = "../oni-library" }
 oni-link = { path = "../oni-link" }
