@@ -135,6 +135,8 @@ pub struct Engine {
     pipeline: Pipeline,
     /// The open frame's preview reduced to the canvas: its source's id, its long side, its pixels.
     fitted: Option<(u64, usize, Source)>,
+    /// Laid after the pipeline on every render the editor shows, never on an export.
+    pub proof: crate::proof::Proofing,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -234,11 +236,16 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default() }
     }
 
     pub fn shared(d: &Device) -> Shared {
         Shared(Arc::new(Gated { engine: Mutex::new(Engine::on(d)), gate: Mutex::new(Gate::default()), turn: Condvar::new() }))
+    }
+
+    /// The graph and the pipeline, for a render the canvas never shows: an export reads them unproofed.
+    pub fn parts(&mut self) -> (&mut Graph, &mut Pipeline) {
+        (&mut self.graph, &mut self.pipeline)
     }
 
     pub fn adapter(&self) -> &str {
@@ -268,10 +275,10 @@ impl Engine {
         let long = w.max(h) as f64;
         let scale = side.map_or(1.0, |s| (s as f64 / long).min(1.0));
         let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
-        let (region, pixels) = self
-            .pipeline
-            .render(&mut self.graph, &negative.preview, settings, &request, &Inputs::default(), None)
-            .map_err(|e| e.to_string())?;
+        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        let image = self.proof.laid(&mut self.graph, image, settings)?;
+        let region = image.extent();
+        let pixels = self.graph.render(&image, region, None).map_err(|e| e.to_string())?;
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
     }
 
@@ -286,6 +293,7 @@ impl Engine {
         };
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &Inputs::default()).map_err(|e| e.to_string())?;
+        let image = self.proof.laid(&mut self.graph, image, settings)?;
         let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
         if source.view().is_none() {
             return Err("the render is wider than one texture".into());

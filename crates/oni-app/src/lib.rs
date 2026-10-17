@@ -4,12 +4,14 @@
 pub mod app;
 pub mod bench;
 pub mod display;
+pub mod export;
 pub mod fields;
 pub mod gallery;
 pub mod library;
 pub mod motion;
 pub mod phone;
 pub mod preferences;
+pub mod proof;
 pub mod render;
 pub mod store;
 pub mod strict;

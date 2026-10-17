@@ -17,8 +17,10 @@ path = "src/bin/oni-tokens.rs"
 [dependencies]
 arboard = { version = "3.6", default-features = false }
 bytemuck.workspace = true
+oni-colour.workspace = true
 oni-core = { path = "../oni-core" }
 oni-decode.workspace = true
+oni-export = { path = "../oni-export" }
 oni-fixtures.workspace = true
 oni-graph = { path = "../oni-graph" }
 oni-library = { path = "../oni-library" }

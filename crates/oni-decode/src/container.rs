@@ -258,6 +258,11 @@ pub fn pixel_size(path: &Path) -> Option<(usize, usize)> {
     Some((d.width, d.height))
 }
 
+/// The main image's bits per sample, without reading its samples.
+pub fn bits_per_sample(path: &Path) -> Option<usize> {
+    Some(main_directory(&of_file(path)?)?.bits_per_sample)
+}
+
 /// Where one output pixel's taps land inside its step: at most four, on the centres of equal
 /// slices, so their mean sits at the step's centre.
 pub fn comb_offsets(step: usize) -> Vec<usize> {
