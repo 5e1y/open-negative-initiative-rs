@@ -1,7 +1,8 @@
 //! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on Exposure at a
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
 //! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
-//! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself.
+//! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
+//! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -12,6 +13,10 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 pub const NOTCHES: usize = 60;
+/// Ten seconds at the trackpad's pace, a tenth of a point a notch: one way, so no turn hands the
+/// same value twice, and inside the range.
+const LONG: usize = 1200;
+const LONG_STEP: f32 = 0.1;
 /// A trackpad reports at 120 Hz.
 const PACE: Duration = Duration::from_micros(8_333);
 /// Two points a notch on a 300-point track: the drag crosses two fifths of it, inside the range.
@@ -30,6 +35,18 @@ pub enum Mode {
     Drag,
     Resize,
     Settled,
+    Long,
+}
+
+impl Mode {
+    fn notches(self) -> usize {
+        if self == Mode::Long { LONG } else { NOTCHES }
+    }
+
+    /// The drag's travel at `notch`, in points.
+    fn travel(self, notch: usize) -> f32 {
+        notch as f32 * if self == Mode::Long { LONG_STEP } else { STEP }
+    }
 }
 
 pub fn requested() -> Option<Mode> {
@@ -37,6 +54,7 @@ pub fn requested() -> Option<Mode> {
         "1" => Some(Mode::Drag),
         "resize" => Some(Mode::Resize),
         "settled" => Some(Mode::Settled),
+        "long" => Some(Mode::Long),
         _ => None,
     }
 }
@@ -74,7 +92,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         };
         match phase.get() {
             Phase::Loading => {
-                let settled = mode != Mode::Settled || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
+                let settled = !matches!(mode, Mode::Settled | Mode::Long) || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
                 if ctl.state.borrow().renders() >= 1 && settled {
                     let from = ctl.state.borrow().notches().count();
                     g.invoke_press(field, false);
@@ -85,12 +103,12 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
             }
             Phase::Dragging { notch, from } => {
                 let notch = notch + 1;
-                g.invoke_drag(field, notch as f32 * STEP, SPAN, false);
+                g.invoke_drag(field, mode.travel(notch), SPAN, false);
                 if mode == Mode::Resize {
                     let (width, height) = SIZES[notch % SIZES.len()];
                     w.window().set_size(slint::LogicalSize::new(width, height));
                 }
-                if notch < NOTCHES {
+                if notch < mode.notches() {
                     phase.set(Phase::Dragging { notch, from });
                 } else {
                     g.invoke_release(field);
@@ -105,8 +123,10 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
+                    Mode::Long => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                 };
-                let report = ctl.state.borrow().notches().summary(from, &title);
+                let notches = ctl.state.borrow().notches().summary(from, &title);
+                let report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
                 ctl.act("undo");
                 ctl.flush();
                 finish(report);

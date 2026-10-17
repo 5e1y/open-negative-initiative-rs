@@ -58,7 +58,7 @@ struct Shown {
     frame: String,
 }
 
-/// One slider's hand: the dragged value drawn at once, handed to the store once per display frame.
+/// One slider's hand: the dragged value drawn at once, handed to the store thirty times a second.
 #[derive(Default)]
 struct Slide {
     live: Option<f32>,
@@ -71,6 +71,8 @@ struct Slide {
     arrival: Option<(f32, f32, Instant)>,
     /// The stored value last published, so a field holding several sliders publishes only the moved one.
     published: Option<f32>,
+    /// When the hand last moved the value, which the notch showing it is timed from.
+    moved_at: Option<Instant>,
 }
 
 /// The display kernel and the texture it writes, once the renderer hands over its wgpu device.
@@ -135,6 +137,8 @@ pub struct State {
     renders: usize,
     opened_at: Instant,
     notches: Notches,
+    /// When the hand moved the value the next render shows; `None` times a render from its ask.
+    moved_at: Option<Instant>,
     support: PathBuf,
     phone: Option<Phone>,
 }
@@ -344,6 +348,7 @@ impl Shell {
             renders: 0,
             opened_at: Instant::now(),
             notches: Notches::default(),
+            moved_at: None,
             support: options.support.clone(),
             phone: None,
         };
@@ -519,13 +524,14 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let revision = s.store.revision();
+            let moved_at = s.moved_at.take();
             if revision == s.requested && s.rendered != 0 {
                 return;
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
             s.requested = revision;
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
-            let (kind, asked) = if s.rendered == 0 { (Kind::Open, s.opened_at) } else { (Kind::Notch, Instant::now()) };
+            let (kind, asked) = if s.rendered == 0 { (Kind::Open, s.opened_at) } else { (Kind::Notch, moved_at.unwrap_or_else(Instant::now)) };
             let side = canvas.and_then(|c| render::fitted_side(negative.size(), c));
             Job { revision, path: PathBuf::from(path), negative, settings: s.store.settings().clone(), kind, asked, side }
         };
@@ -1268,8 +1274,14 @@ impl Ctl {
                 let (false, Some(start)) = (slide.resetting, slide.start) else { return };
                 let asked = track::clamped(track::asked(start, translation, span, fine));
                 let live = stored_at(f, asked);
+                let now = Instant::now();
                 slide.live = Some(live);
-                (asked, live, slide.hand.offer(Instant::now()))
+                slide.moved_at = Some(now);
+                let offer = slide.hand.offer(now);
+                if offer == Offer::Now {
+                    s.moved_at = Some(now);
+                }
+                (asked, live, offer)
             };
             p.place(f, asked);
             if let Some(w) = p.window() {
@@ -1284,6 +1296,7 @@ impl Ctl {
                         let live = {
                             let mut s = q.state.borrow_mut();
                             s.slides[i].hand.trailed(Instant::now());
+                            s.moved_at = s.slides[i].moved_at;
                             s.slides[i].live
                         };
                         if let Some(live) = live {

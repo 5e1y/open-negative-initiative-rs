@@ -14,6 +14,11 @@ pub const FOLDER: &str = "Open Negative Initiative";
 pub const REPORT_EVERY: usize = 120;
 /// One refresh at 120 Hz: a notch shown later than this behind the previous one missed a frame.
 pub const FRAME_BUDGET: Duration = Duration::from_micros(8_333);
+/// The image's cadence while a value slides, and the gap past which the eye sees it stall.
+pub const IMAGE_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / 30);
+pub const STALL: Duration = Duration::from_millis(50);
+/// A shown notch within this of `IMAGE_INTERVAL` behind the previous one is on the beat.
+pub const BEAT: Duration = Duration::from_millis(5);
 /// Beyond this a pause between two notch frames is the hand resting, not a slow frame.
 const IDLE: Duration = Duration::from_secs(1);
 
@@ -166,6 +171,34 @@ impl Notches {
     }
 }
 
+impl Notches {
+    /// The gaps between notch frames since `from` against the image's cadence: how many land on
+    /// the beat, how far the tail reaches, how many stall.
+    pub fn cadence(&self, from: usize) -> String {
+        let gaps: Vec<Duration> = self.gaps.iter().filter(|(i, _)| *i > from).map(|(_, g)| *g).collect();
+        if gaps.is_empty() {
+            return "image cadence: no gap between two notch frames".into();
+        }
+        let g = Centiles::of(&gaps);
+        let mean = gaps.iter().sum::<Duration>() / gaps.len() as u32;
+        let first = *gaps.iter().min().expect("a gap");
+        let beat = gaps.iter().filter(|d| d.abs_diff(IMAGE_INTERVAL) <= BEAT).count();
+        let stalls = gaps.iter().filter(|d| **d > STALL).count();
+        format!(
+            "image cadence: {} gaps, mean {:.1} ms, shortest {:.1} ms, p50 {:.1} ms, p99 {:.1} ms, worst {:.1} ms; {beat} within {:.0} ms of {:.1} ms, {stalls} past {:.0} ms",
+            gaps.len(),
+            ms(mean),
+            ms(first),
+            ms(g.p50),
+            ms(g.p99),
+            ms(g.worst),
+            ms(BEAT),
+            ms(IMAGE_INTERVAL),
+            ms(STALL)
+        )
+    }
+}
+
 /// `FrameRate.describe`'s centile: the sample at `count × q`, never interpolated.
 struct Centiles {
     p50: Duration,
@@ -193,6 +226,18 @@ mod tests {
             n.record(Duration::from_millis(*l), start + Duration::from_millis(gap_ms * i as u64));
         }
         n
+    }
+
+    #[test]
+    fn the_cadence_counts_the_beats_and_the_stalls() {
+        let steady = notches(&[3; 31], 33);
+        let line = steady.cadence(0);
+        assert!(line.contains("30 gaps") && line.contains("30 within 5 ms of 33.3 ms, 0 past 50 ms"), "{line}");
+        // Twin: one render held back 60 ms is a stall and leaves the beat.
+        let mut stalled = notches(&[3; 10], 33);
+        stalled.record(Duration::from_millis(3), stalled.last_shown.unwrap() + Duration::from_millis(60));
+        let line = stalled.cadence(0);
+        assert!(line.contains("9 within 5 ms of 33.3 ms, 1 past 50 ms"), "{line}");
     }
 
     #[test]
