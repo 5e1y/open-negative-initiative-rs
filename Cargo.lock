@@ -4102,6 +4102,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-app"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "oni-core",
+ "oni-decode",
+ "oni-library",
+ "oni-render",
+ "oni-settings",
+ "oni-ui-poc",
+ "png",
+ "pollster",
+ "serde_json",
+ "slint",
+ "slint-build",
+ "wgpu",
+]
+
+[[package]]
 name = "oni-colour"
 version = "0.1.0"
 dependencies = [
