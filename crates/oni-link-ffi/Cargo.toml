@@ -1,0 +1,29 @@
+[package]
+name = "oni-link-ffi"
+description = "The phone side of ONI Link, exported to Swift and Kotlin through UniFFI."
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["staticlib", "cdylib", "lib"]
+name = "oni_link_ffi"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+required-features = ["cli"]
+
+[features]
+cli = ["uniffi/cli"]
+
+[dependencies]
+oni-link = { path = "../oni-link" }
+oni-localsend = { path = "../oni-localsend" }
+thiserror = "2"
+tokio = { version = "1", features = ["net", "rt-multi-thread", "sync", "time"] }
+uniffi = "0.32"
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { version = "1", features = ["full"] }
