@@ -300,6 +300,23 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.settle();
     println!("shot {}", rig.shot("gallery-labelled").display());
 
+    // A photo's row in the library list opens it and selects its tile, with no borrow left held.
+    let rows = w.global::<Library>().get_rows();
+    let row = (0..slint::Model::row_count(&rows))
+        .find(|&i| slint::Model::row_data(&rows, i).is_some_and(|r| r.kind == 2 && r.title.contains("DSC_6440")))
+        .expect("the list holds DSC_6440's row");
+    w.global::<Library>().invoke_row_clicked(row as i32);
+    rig.pump();
+    assert!(ctl.state.borrow().open_path().unwrap().ends_with("DSC_6440.NEF"));
+    let selected: Vec<i32> = app::tiles(w).iter().filter(|t| t.selected).map(|t| t.index).collect();
+    assert_eq!(selected.len(), 1, "{selected:?}");
+    assert!(app::tiles(w)[selected[0] as usize].caption.contains("DSC_6440"));
+    // Twin: a tile click then moves the selection elsewhere, the list's row no longer its target.
+    w.global::<Library>().invoke_tile_clicked(5, false, false);
+    rig.pump();
+    let selected: Vec<i32> = app::tiles(w).iter().filter(|t| t.selected).map(|t| t.index).collect();
+    assert_eq!(selected, vec![5]);
+
     // A Scanner-face frame opened in the editor renders on the canvas, through the Frontier's table.
     let scanner = tiles
         .iter()

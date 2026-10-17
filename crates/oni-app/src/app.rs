@@ -343,12 +343,12 @@ impl Ctl {
                 }
             }
         }
-        {
+        let modified = {
             let s = self.state.borrow();
-            let settings = s.store.settings();
-            for b in Block::ALL {
-                set_modified(&g, b, store::is_modified(settings, b));
-            }
+            Block::ALL.map(|b| (b, store::is_modified(s.store.settings(), b)))
+        };
+        for (b, on) in modified {
+            set_modified(&g, b, on);
         }
         if !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
@@ -357,16 +357,19 @@ impl Ctl {
         self.request_render();
     }
 
+    /// Every property is read before any is set, so no Slint callback runs under the state's borrow.
     fn publish_bar(&self) {
         let Some(w) = self.window() else { return };
         let bar = w.global::<Bar>();
-        let s = self.state.borrow();
-        let has_photo = s.open.is_some();
+        let (has_photo, undo, redo, selected) = {
+            let s = self.state.borrow();
+            (s.open.is_some(), s.store.can_undo(), s.store.can_redo(), s.selection.len())
+        };
         bar.set_has_photo(has_photo);
-        bar.set_can_undo(has_photo && s.store.can_undo());
-        bar.set_can_redo(has_photo && s.store.can_redo());
+        bar.set_can_undo(has_photo && undo);
+        bar.set_can_redo(has_photo && redo);
         bar.set_can_reset(has_photo);
-        bar.set_targets(s.selection.len().max(usize::from(has_photo)) as i32);
+        bar.set_targets(selected.max(usize::from(has_photo)) as i32);
         bar.set_editing(!w.global::<App>().get_gallery());
     }
 
@@ -616,6 +619,7 @@ impl Ctl {
                 selected: matches!(&r.id, oni_library::archive_tree::NodeId::Photo(p) if Some(p.as_str()) == open),
             })
             .collect();
+        drop(s);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
     }
 
@@ -628,7 +632,9 @@ impl Ctl {
         };
         match path {
             Some(path) => {
-                if let Some(index) = self.state.borrow().order.iter().position(|p| *p == path) {
+                // Bound first: an `if let` scrutinee's borrow lives through its block.
+                let index = self.state.borrow().order.iter().position(|p| *p == path);
+                if let Some(index) = index {
                     let mut s = self.state.borrow_mut();
                     s.selection = BTreeSet::from([index]);
                     s.anchor = Some(index);
@@ -798,10 +804,12 @@ impl Ctl {
             .map(|b| Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into() })
             .collect();
         s.visible = range;
+        let (height, scroll) = (s.layout.height, s.scroll);
+        drop(s);
         lib.set_tiles(ModelRc::new(VecModel::from(tiles)));
         lib.set_headings(ModelRc::new(VecModel::from(headings)));
-        lib.set_content_height(s.layout.height);
-        lib.set_scroll(s.scroll);
+        lib.set_content_height(height);
+        lib.set_scroll(scroll);
     }
 
     fn tile_clicked(self: &Rc<Self>, i: usize, toggle: bool, extend: bool) {
@@ -1080,12 +1088,15 @@ impl Ctl {
                 let mut s = p.state.borrow_mut();
                 s.scroll = s.layout.clamped(s.scroll + by, s.grid.1);
             }
-            let range = { p.state.borrow().layout.cells(p.state.borrow().scroll, p.state.borrow().grid.1) };
+            let (moved, scroll) = {
+                let s = p.state.borrow();
+                (s.layout.cells(s.scroll, s.grid.1) != s.visible, s.scroll)
+            };
             // Only a change of the visible range rebuilds the tiles; the offset alone moves them.
-            if range != p.state.borrow().visible {
+            if moved {
                 p.publish_tiles();
             } else if let Some(w) = p.window() {
-                w.global::<Library>().set_scroll(p.state.borrow().scroll);
+                w.global::<Library>().set_scroll(scroll);
             }
         });
         let p = me.clone();

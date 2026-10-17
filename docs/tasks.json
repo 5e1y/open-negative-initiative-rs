@@ -145,5 +145,12 @@
     "detail": "The repository is public, so Actions minutes are free: push and pull_request triggers return beside workflow_dispatch, the matrix stays Windows only.",
     "outcome": "ci.yml runs on push, pull_request and workflow_dispatch, Windows only; the YAML was read back, no run was started or awaited.",
     "commit": "e59d5b1"
+  },
+  {
+    "id": 20,
+    "type": "bug",
+    "title": "Clicking a photo in the library list crashes the app",
+    "status": "doing",
+    "detail": "row_clicked kept an `if let` scrutinee's RefCell borrow alive through a block that borrowed mutably; the panic happens inside winit's mouse_up, which cannot unwind, so the app aborts."
   }
 ]
