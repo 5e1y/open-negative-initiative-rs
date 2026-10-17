@@ -1,7 +1,7 @@
 name: CI
+# Manual only: the account's Actions minutes are spent, so no push or pull request starts a run.
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 jobs:
   test:
     strategy:
