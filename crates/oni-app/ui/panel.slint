@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { DS, Icons, Caps, Slider, Section, TabBar, Picker, PanelButton, KeycapPlate, Toggle } from "ds/components.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, IconButton, ButtonGroup, Toggle, LabelledRow, Label, Tone, HistogramFrame, PlotSize, Surface, ShellStyle } from "ds/ds.slint";
 import { Store } from "store.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
@@ -29,14 +29,6 @@ component Block inherits Section {
     reset(b) => { Store.reset(b); }
 }
 
-// `GainChannel`'s hue and complement: the sensor's own channels, plain colours rather than tokens.
-global Hues {
-    out property <color> blue: #0a84ff;
-    out property <color> yellow: #ffd60a;
-    out property <color> green: #30d158;
-    out property <color> magenta: #ff00ff;
-}
-
 component Pane inherits Flickable {
     in property <bool> shown;
     visible: self.shown;
@@ -52,11 +44,9 @@ component RollPane inherits Pane {
     Block {
         title: "Measured Roll";
         help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it.";
-        Text {
+        Label {
             text: "Acts on the photos measured with this roll.";
-            font-family: DS.typo-label-family;
-            font-size: DS.typo-label-size;
-            color: DS.palette-text-secondary;
+            tone: Tone.secondary;
             wrap: word-wrap;
         }
     }
@@ -67,16 +57,8 @@ component RollPane inherits Pane {
     }
     Block {
         title: "Flat-Field";
-        HorizontalLayout {
-            spacing: DS.space-sm;
-            Text {
-                text: "Flat-field";
-                font-family: DS.typo-label-family;
-                font-size: DS.typo-label-size;
-                color: DS.system-primary;
-                vertical-alignment: center;
-                horizontal-stretch: 1;
-            }
+        LabelledRow {
+            label: "Flat-field";
             Toggle { label: "Flat-field"; on: PanelState.flat-field-on; }
         }
     }
@@ -106,25 +88,17 @@ component RollPane inherits Pane {
     }
     Block {
         title: "Per-Channel Levels";
-        TabBar { tabs: ["RGB", "R", "G", "B"]; marked: [false, false, false, false]; }
-        Image { source: Plots.levels; height: DS.control-histogram-height; image-fit: fill; }
+        Tabs { tabs: ["RGB", "R", "G", "B"]; marked: [false, false, false, false]; }
+        HistogramFrame { source: Plots.levels; size: PlotSize.block; }
     }
 }
 
 component CropPane inherits Pane {
     Block {
         title: "Aspect Ratio";
-        TabBar { tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"]; marked: [false, false, false, false, false, false]; }
-        HorizontalLayout {
-            spacing: DS.space-sm;
-            Text {
-                text: "Vertical";
-                font-family: DS.typo-label-family;
-                font-size: DS.typo-label-size;
-                color: DS.system-primary;
-                vertical-alignment: center;
-                horizontal-stretch: 1;
-            }
+        Tabs { tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"]; marked: [false, false, false, false, false, false]; }
+        LabelledRow {
+            label: "Vertical";
             Toggle { label: "Vertical"; }
         }
     }
@@ -135,12 +109,12 @@ component CropPane inherits Pane {
     Block {
         title: "Rotate & Mirror";
         HorizontalLayout {
-            spacing: DS.space-sm;
+            spacing: Space.s;
             alignment: start;
-            PanelButton { has-icon: true; icon: Icons.rotate; help: "Rotate 90° clockwise"; }
-            KeycapPlate {
-                PanelButton { has-icon: true; icon: Icons.mirror; help: "Mirror left for right"; }
-                PanelButton { has-icon: true; icon: Icons.mirror; help: "Mirror top for bottom"; }
+            IconButton { icon: Icons.rotate; help: "Rotate 90° clockwise"; }
+            ButtonGroup {
+                IconButton { icon: Icons.mirror; help: "Mirror left for right"; }
+                IconButton { icon: Icons.mirror; help: "Mirror top for bottom"; }
             }
         }
     }
@@ -153,22 +127,19 @@ component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         help: "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.";
-        KeycapPlate {
-            PanelButton {
-                plate: true;
-                text: "AUTO WHITE BALANCE";
-                help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
-                horizontal-stretch: 1;
-                clicked => { PanelState.auto-balance(); }
-            }
+        Button {
+            text: "AUTO WHITE BALANCE";
+            help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
+            horizontal-stretch: 1;
+            clicked => { PanelState.auto-balance(); }
         }
         StoreSlider {
             field: 0; label: "Temperature"; fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
-            bipolar: true; low: Hues.blue; high: Hues.yellow;
+            fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
         StoreSlider {
             field: 1; label: "Tint"; fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
-            bipolar: true; low: Hues.green; high: Hues.magenta;
+            fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: "Color density (same as saturation)"; fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
     }
@@ -182,11 +153,11 @@ component ColorPane inherits Pane {
         StoreSlider { field: 5; label: "Shadows"; fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
         StoreSlider {
             field: 6; label: "White point"; fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
-            tint: white; flat-tint: false; knob: Caps.knob-white;
+            fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white;
         }
         StoreSlider {
             field: 7; label: "Black point"; fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
-            tint: black; flat-tint: false; knob: Caps.knob-black;
+            fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black;
         }
     }
     Block {
@@ -196,13 +167,13 @@ component ColorPane inherits Pane {
         help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
         StoreSlider { field: 8; label: "Contrast"; fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 9; label: "Vignette"; fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
-        StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; metal: true; }
+        StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
     Block {
         title: "Curves";
         folded: true;
         help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
-        TabBar { tabs: ["RGB", "Luma", "R", "G", "B"]; marked: [false, false, false, false, false]; }
+        Tabs { tabs: ["RGB", "Luma", "R", "G", "B"]; marked: [false, false, false, false, false]; }
     }
 }
 
@@ -230,21 +201,16 @@ component DetailsPane inherits Pane {
     }
 }
 
-export component Panel inherits Rectangle {
-    width: DS.control-panel-width;
-    background: DS.palette-panel;
+export component Panel inherits Surface {
+    width: ShellStyle.panel-width;
     VerticalLayout {
-        Image {
-            height: DS.control-main-histogram-height;
-            source: Plots.output;
-            image-fit: fill;
-        }
+        HistogramFrame { source: Plots.output; size: PlotSize.main; }
         HorizontalLayout {
-            padding-left: DS.space-md;
-            padding-right: DS.space-md;
-            padding-top: DS.space-sm;
-            padding-bottom: DS.space-sm;
-            TabBar {
+            padding-left: Space.m;
+            padding-right: Space.m;
+            padding-top: Space.s;
+            padding-bottom: Space.s;
+            Tabs {
                 tabs: ["Roll", "Crop", "Color", "Details"];
                 marked: [false, false, false, false];
                 selected <=> PanelState.tab;

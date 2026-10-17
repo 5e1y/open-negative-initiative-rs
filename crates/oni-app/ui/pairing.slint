@@ -1,5 +1,5 @@
 // The Pair Phone sheet: the one-time QR code the phone scans, over a scrim on the window.
-import { DS, Keycap } from "ds/components.slint";
+import { Sheet, Picture, Ground, Label, Tone, Button, SheetStyle } from "ds/ds.slint";
 
 export global Pairing {
     in property <bool> shown;
@@ -10,63 +10,31 @@ export global Pairing {
     callback close();
 }
 
-export component PairingSheet inherits Rectangle {
-    background: DS.palette-scrim;
-    TouchArea { clicked => { Pairing.close(); } }
-
-    card := Rectangle {
-        width: 360px;
-        height: column.preferred-height;
-        background: DS.palette-panel;
-        border-radius: DS.radius-card;
-        border-width: DS.stroke-hairline;
-        border-color: DS.palette-separator;
-        // A click on the card stays on it, so only the scrim closes the sheet.
-        TouchArea { }
-
-        column := VerticalLayout {
-            padding: DS.space-lg;
-            spacing: DS.space-md;
-            Text {
-                text: "Pair Phone";
-                font-family: DS.typo-box-title-family;
-                font-size: DS.typo-box-title-size;
-                font-weight: DS.typo-box-title-weight;
-                color: DS.system-primary;
-                horizontal-alignment: center;
-            }
-            HorizontalLayout {
-                alignment: center;
-                Rectangle {
-                    width: 240px;
-                    height: 240px;
-                    background: Pairing.uri != "" ? white : DS.palette-skeleton;
-                    border-radius: DS.radius-badge;
-                    clip: true;
-                    Image {
-                        width: parent.width;
-                        height: parent.height;
-                        source: Pairing.code;
-                        image-fit: contain;
-                        image-rendering: pixelated;
-                    }
-                }
-            }
-            Text {
-                text: Pairing.status;
-                font-family: DS.typo-label-family;
-                font-size: DS.typo-label-size;
-                color: DS.palette-text-secondary;
-                horizontal-alignment: center;
-                wrap: word-wrap;
-            }
-            HorizontalLayout {
-                alignment: center;
-                Keycap {
-                    text: "DONE";
-                    clicked => { Pairing.close(); }
-                }
-            }
+export component PairingSheet inherits Sheet {
+    title: "Pair Phone";
+    dismissed => { Pairing.close(); }
+    HorizontalLayout {
+        alignment: center;
+        Picture {
+            width: SheetStyle.code;
+            height: SheetStyle.code;
+            ground: Pairing.uri != "" ? Ground.paper : Ground.skeleton;
+            rounded: true;
+            pixelated: true;
+            source: Pairing.code;
+        }
+    }
+    Label {
+        text: Pairing.status;
+        tone: Tone.secondary;
+        centred: true;
+        wrap: word-wrap;
+    }
+    HorizontalLayout {
+        alignment: center;
+        Button {
+            text: "DONE";
+            clicked => { Pairing.close(); }
         }
     }
 }

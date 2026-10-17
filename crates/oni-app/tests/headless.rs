@@ -73,7 +73,7 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     println!("rendering on {}", engine.lock().unwrap().adapter());
-    let shell = Shell::new(Box::new(store), engine, Options { scale: 2.0, ..Default::default() }).unwrap();
+    let shell = Shell::new(Box::new(store), engine, Options::default()).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();

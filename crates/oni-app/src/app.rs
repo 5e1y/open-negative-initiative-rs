@@ -9,13 +9,12 @@ use crate::render::{self, Done, Histogram, Job, Linear, Negative, Previews, Shar
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
-use crate::{App, Bar, Canvas, Caps, Heading, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
+use crate::{App, Bar, Canvas, Heading, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::Command;
 use oni_core::link::Outward;
 use oni_link::HostEvent;
-use oni_ui_poc::motion::Spring;
-use oni_ui_poc::track::{self, Hand, Offer};
-use oni_ui_poc::{DOUBLE_CLICK, TRACKPAD_TRAVEL};
+use crate::motion::Spring;
+use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap};
@@ -37,8 +36,6 @@ const WRITE_DELAY: Duration = Duration::from_millis(500);
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 pub struct Options {
-    /// Device pixels per point the chrome is rasterised at.
-    pub scale: f64,
     pub screen: Screen,
     /// Where the phone link keeps its key and the phones it trusts.
     pub support: PathBuf,
@@ -46,7 +43,7 @@ pub struct Options {
 
 impl Default for Options {
     fn default() -> Self {
-        Options { scale: 2.0, screen: Screen::Srgb, support: timing::support() }
+        Options { screen: Screen::Srgb, support: timing::support() }
     }
 }
 
@@ -283,7 +280,6 @@ impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
     pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let window = MainWindow::new()?;
-        crate::caps::install(&window.global::<Caps>(), options.scale);
         let worker = Worker::new(Box::new(engine.clone()), options.screen, |done| with_shell(move |c| c.deliver(done)));
         let state = State {
             store,

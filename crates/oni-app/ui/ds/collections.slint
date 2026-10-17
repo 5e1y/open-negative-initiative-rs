@@ -1,0 +1,103 @@
+// The collections' cells: a list row, a tree row, a gallery tile and a band's heading.
+import { ListView } from "std-widgets.slint";
+import { Colour, Space, RowStyle, TileStyle } from "theme.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Look } from "controls.slint";
+import { Icons } from "icons.slint";
+export { ListView }
+
+export enum RowKind { folder, roll, photo }
+
+// A line of a list: a title, a caption at the end, the hover and selection bands.
+export component ListRow inherits Rectangle {
+    in property <string> title;
+    in property <string> caption;
+    in property <bool> selected;
+    in property <Look> look: Look.live;
+    in property <length> indent;
+    callback clicked();
+    height: RowStyle.height;
+    background: root.selected ? Colour.row-selected : (area.has-hover || root.look != Look.live) ? Colour.hover : transparent;
+    HorizontalLayout {
+        padding-left: RowStyle.padding + root.indent;
+        padding-right: RowStyle.padding;
+        spacing: RowStyle.gap;
+        @children
+        Label { text: root.title; overflow: elide; horizontal-stretch: 1; }
+        Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
+    }
+    area := TouchArea { clicked => { root.clicked(); } }
+}
+
+// The archive's row: indented by depth, a chevron when it opens, a folder or roll glyph.
+export component TreeItem inherits ListRow {
+    in property <int> depth;
+    in property <RowKind> kind;
+    in property <bool> expandable;
+    in property <bool> expanded;
+    indent: root.depth * RowStyle.indent;
+    Rectangle {
+        width: RowStyle.chevron-zone;
+        if root.expandable: Icon {
+            source: root.expanded ? Icons.chevron-down : Icons.chevron-right;
+            width: RowStyle.chevron;
+            height: RowStyle.chevron;
+        }
+    }
+    if root.kind != RowKind.photo: VerticalLayout {
+        alignment: center;
+        Icon {
+            source: root.kind == RowKind.roll ? Icons.film-roll : root.expanded ? Icons.folder-open : Icons.folder;
+            width: RowStyle.icon;
+            height: RowStyle.icon;
+        }
+    }
+}
+
+// A gallery cell: the picture in its well, the medal, the selection ring, the caption under it.
+export component TileView inherits Rectangle {
+    in property <image> picture;
+    in property <string> caption;
+    in property <bool> selected;
+    in property <int> medal;
+    in property <length> picture-height;
+    height: root.picture-height + TileStyle.caption-gap + TileStyle.caption;
+    Picture {
+        y: 0;
+        height: root.picture-height;
+        ground: Ground.well;
+        source: root.picture;
+        if root.medal > 0: Rectangle {
+            x: parent.width - self.width - TileStyle.badge-inset;
+            y: TileStyle.badge-inset;
+            width: TileStyle.medal;
+            height: TileStyle.medal;
+            border-radius: self.width / 2;
+            background: Colour.medal[root.medal];
+        }
+        Rectangle {
+            border-width: root.selected ? TileStyle.selection : 0px;
+            border-color: Colour.selected;
+        }
+    }
+    Label {
+        y: root.picture-height + TileStyle.caption-gap;
+        height: TileStyle.caption;
+        width: parent.width;
+        role: TextRole.caption;
+        tone: root.selected ? Tone.primary : Tone.secondary;
+        text: root.caption;
+        centred: true;
+        overflow: elide;
+    }
+}
+
+// A band's heading over its tiles: the roll's title and its caption.
+export component TileHeading inherits HorizontalLayout {
+    in property <string> title;
+    in property <string> caption;
+    height: TileStyle.heading;
+    spacing: Space.s;
+    Label { role: TextRole.title; text: root.title; }
+    Label { role: TextRole.value; tone: Tone.secondary; text: root.caption; horizontal-stretch: 1; }
+}

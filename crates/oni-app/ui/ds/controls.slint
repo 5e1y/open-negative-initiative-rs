@@ -1,0 +1,389 @@
+// The controls: buttons, the segmented tabs, the toggle, the slider, the field and the picker.
+import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle } from "theme.slint";
+import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
+import { Icons } from "icons.slint";
+
+export enum ButtonKind { plain, accent, caution, destructive }
+export enum ButtonSize { regular, small }
+// What the catalogue forces a control to look like; `live` follows the pointer.
+export enum Look { live, hover, pressed }
+export enum SliderFill { level, ramp, bipolar, metal }
+export enum Knob { grey, white, black }
+
+export global ButtonInk {
+    public pure function fill(kind: ButtonKind, on: bool, hover: bool, pressed: bool) -> color {
+        if (on) { return hover ? Colour.on-hover : Colour.on; }
+        if (kind == ButtonKind.accent) { return pressed ? Colour.accent-pressed : hover ? Colour.accent-hover : Colour.accent; }
+        if (kind == ButtonKind.caution) { return pressed ? Colour.caution-pressed : hover ? Colour.caution-hover : Colour.caution; }
+        if (kind == ButtonKind.destructive) {
+            return pressed ? Colour.destructive-pressed : hover ? Colour.destructive-hover : Colour.destructive;
+        }
+        pressed ? Colour.raised-pressed : hover ? Colour.raised-hover : Colour.raised
+    }
+    public pure function ink(kind: ButtonKind, on: bool) -> Tone {
+        if (on || kind == ButtonKind.caution) { return Tone.on-light; }
+        kind == ButtonKind.plain ? Tone.primary : Tone.on-fill
+    }
+}
+
+// A flat rounded key: a word, a glyph, or both; `on` lights it as a held toggle.
+export component Button inherits Rectangle {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon;
+    in property <ButtonKind> kind: ButtonKind.plain;
+    in property <ButtonSize> size: ButtonSize.regular;
+    in property <bool> on;
+    in property <bool> enabled: true;
+    in property <string> help;
+    // The widest word the key ever shows, so it keeps that width as its word changes.
+    in property <string> widest;
+    in property <length> fixed-width: 0px;
+    in property <bool> lamp-shown;
+    in property <bool> lamp-lit;
+    in property <Look> look: Look.live;
+    callback clicked();
+    property <bool> small: root.size == ButtonSize.small;
+    property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
+    property <bool> pressed: root.enabled && (touch.pressed || root.look == Look.pressed);
+    property <length> pad: root.small ? ButtonStyle.small-padding : ButtonStyle.padding;
+    property <length> glyph: root.small ? ButtonStyle.small-icon : ButtonStyle.icon;
+    property <bool> worded: root.text != "";
+    height: root.small ? ButtonStyle.small-height : ButtonStyle.height;
+    min-width: root.fixed-width > 0 ? root.fixed-width
+        : root.worded ? max(word.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px)
+        : self.height;
+    preferred-width: self.min-width;
+    border-radius: root.small ? ButtonStyle.small-radius : ButtonStyle.radius;
+    background: ButtonInk.fill(root.kind, root.on, root.hovered, root.pressed);
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: button;
+    accessible-label: root.worded ? root.text : root.help;
+    accessible-enabled: root.enabled;
+    accessible-checked: root.on;
+    accessible-action-default => { root.clicked(); }
+    animate background { duration: Motion.quick; }
+
+    measure := Label {
+        visible: false;
+        role: TextRole.button;
+        text: root.widest;
+        letter-spacing: ButtonStyle.tracking;
+    }
+    HorizontalLayout {
+        alignment: center;
+        spacing: Space.xs;
+        if root.has-icon: VerticalLayout {
+            alignment: center;
+            Icon {
+                source: root.icon;
+                width: root.glyph;
+                height: root.glyph;
+                tone: ButtonInk.ink(root.kind, root.on);
+            }
+        }
+        word := Label {
+            visible: root.worded;
+            width: root.worded ? self.preferred-width : 0px;
+            role: TextRole.button;
+            tone: ButtonInk.ink(root.kind, root.on);
+            text: root.text;
+            letter-spacing: ButtonStyle.tracking;
+        }
+    }
+    if root.lamp-shown: Rectangle {
+        width: ButtonStyle.lamp;
+        height: ButtonStyle.lamp;
+        border-radius: self.width / 2;
+        x: parent.width - root.pad / 2 - self.width;
+        y: (parent.height - self.height) / 2;
+        background: root.lamp-lit ? Colour.confirm : Colour.track;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+}
+
+// A square key holding one glyph; its `help` is its name.
+export component IconButton inherits Button {
+    has-icon: true;
+    width: self.height;
+}
+
+// Keys side by side at the group's gap, read as one family.
+export component ButtonGroup inherits HorizontalLayout {
+    spacing: ButtonStyle.group-gap;
+    alignment: start;
+}
+
+// `DSTabBar` as a segmented control: one raised pill under the selection.
+export component Tabs inherits Rectangle {
+    in property <[string]> tabs;
+    in-out property <int> selected;
+    in property <[bool]> marked;
+    callback picked(int);
+    height: TabsStyle.height;
+    border-radius: TabsStyle.radius;
+    background: Colour.canvas;
+    property <length> pitch: (self.width - 2 * TabsStyle.inset) / max(1, root.tabs.length);
+    Rectangle {
+        x: TabsStyle.inset + root.selected * root.pitch;
+        y: TabsStyle.inset;
+        width: root.pitch;
+        height: parent.height - 2 * TabsStyle.inset;
+        border-radius: TabsStyle.pill-radius;
+        background: Colour.raised;
+        animate x { duration: Motion.slide; easing: ease-out; }
+    }
+    for name[i] in root.tabs: Rectangle {
+        x: TabsStyle.inset + i * root.pitch;
+        y: TabsStyle.inset;
+        width: root.pitch;
+        height: parent.height - 2 * TabsStyle.inset;
+        accessible-role: tab;
+        accessible-label: name;
+        Label {
+            text: name;
+            centred: true;
+            opacity: (i == root.selected || touch.has-hover) ? 1 : State.idle;
+        }
+        if root.marked[i]: Rectangle {
+            x: parent.width - self.width - Space.xs;
+            y: Space.xs;
+            width: TabsStyle.mark;
+            height: TabsStyle.mark;
+            border-radius: self.width / 2;
+            background: Colour.accent;
+        }
+        touch := TouchArea {
+            clicked => {
+                root.selected = i;
+                root.picked(i);
+            }
+        }
+    }
+}
+
+// A switch: a thumb that slides to the lit side.
+export component Toggle inherits Rectangle {
+    in-out property <bool> on;
+    in property <string> label;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+    height: ToggleStyle.height;
+    width: ToggleStyle.width;
+    border-radius: self.height / 2;
+    background: root.on ? Colour.confirm : Colour.track;
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: checkbox;
+    accessible-checked: root.on;
+    accessible-label: root.label;
+    animate background { duration: Motion.quick; }
+    Rectangle {
+        y: ToggleStyle.inset;
+        height: parent.height - 2 * ToggleStyle.inset;
+        width: self.height;
+        x: root.on ? parent.width - self.width - ToggleStyle.inset : ToggleStyle.inset;
+        border-radius: self.height / 2;
+        background: Colour.white;
+        animate x { duration: Motion.quick; }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.on = !root.on;
+            root.toggled(root.on);
+        }
+    }
+}
+
+// A label beside a control that stretches the row between them.
+export component LabelledRow inherits HorizontalLayout {
+    in property <string> label;
+    spacing: Space.s;
+    Label { text: root.label; horizontal-stretch: 1; }
+    @children
+}
+
+// `DSSlider`: the readout, then a track whose whole row grabs; Rust holds the value and its timing.
+export component Slider inherits VerticalLayout {
+    in property <int> field;
+    in property <string> label;
+    in property <string> readout;
+    // The settings' value, which accessibility reads where the readout shows the hand's.
+    in property <string> value-text;
+    in property <float> fraction;
+    in property <SliderFill> fill: SliderFill.level;
+    in property <color> tint: Colour.track-fill;
+    in property <color> low;
+    in property <color> high;
+    in property <Knob> knob: Knob.grey;
+    in property <bool> enabled: true;
+    in property <Look> look: Look.live;
+    // Rust answers whether this press is the second of a double click.
+    callback press(int, bool) -> bool;
+    callback drag(int, length, length, bool);
+    callback release(int);
+    // Rust answers whether the scroll runs along the track; one across it is left to the panel.
+    callback scroll(int, length, length, length, bool) -> bool;
+    callback step(int, int);
+    spacing: SliderStyle.label-gap;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value-text;
+    accessible-enabled: root.enabled;
+    accessible-action-increment => { root.step(root.field, 1); }
+    accessible-action-decrement => { root.step(root.field, -1); }
+    property <float> at: clamp(root.fraction, 0, 1);
+
+    HorizontalLayout {
+        spacing: Space.s;
+        opacity: root.enabled ? 1 : State.disabled;
+        Label { text: root.label; overflow: elide; horizontal-stretch: 1; }
+        Label { text: root.readout; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
+    }
+    HorizontalLayout {
+        padding-left: SliderStyle.knob-width / 2;
+        padding-right: SliderStyle.knob-width / 2;
+        track := Rectangle {
+            height: SliderStyle.row;
+            opacity: root.enabled ? 1 : State.disabled;
+            // Drawn past the travel by the knob's half-width at both ends, filled up to the value.
+            rail := Rectangle {
+                x: -SliderStyle.knob-width / 2;
+                width: parent.width + SliderStyle.knob-width;
+                y: (parent.height - self.height) / 2;
+                height: SliderStyle.track;
+                border-radius: SliderStyle.track-radius;
+                background: root.fill == SliderFill.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : Colour.track;
+                clip: true;
+                if root.fill != SliderFill.bipolar: Rectangle {
+                    x: 0;
+                    width: SliderStyle.knob-width / 2 + root.at * track.width;
+                    background: root.fill == SliderFill.metal
+                        ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 35%, Colour.metal-light 65%, Colour.metal-dark 100%)
+                        : root.fill == SliderFill.ramp
+                        ? @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
+                        : root.tint;
+                }
+            }
+            Rectangle {
+                property <float> grow: (area.over-knob || area.held || root.look != Look.live) ? SliderStyle.knob-grow : 1;
+                width: SliderStyle.knob-width * self.grow;
+                height: SliderStyle.knob-height * self.grow;
+                x: parent.width * root.at - self.width / 2;
+                y: (parent.height - self.height) / 2;
+                border-radius: SliderStyle.knob-radius;
+                background: root.knob == Knob.white ? Colour.white : root.knob == Knob.black ? Colour.black : SliderStyle.knob;
+                border-width: Stroke.line;
+                border-color: SliderStyle.knob-edge;
+                animate grow { duration: Motion.quick; easing: ease-out-back; }
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: SliderStyle.grip-gap - Stroke.line;
+                    padding-top: (parent.height - SliderStyle.grip) / 2;
+                    padding-bottom: (parent.height - SliderStyle.grip) / 2;
+                    for _ in 2: Rectangle {
+                        width: Stroke.line;
+                        background: root.knob == Knob.white ? Colour.ink-on-light : SliderStyle.grip-ink;
+                    }
+                }
+            }
+            area := TouchArea {
+                enabled: root.enabled;
+                in-out property <bool> held;
+                property <bool> fine;
+                out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.at) <= SliderStyle.knob-width / 2;
+                mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                        self.fine = event.modifiers.alt;
+                        self.held = !root.press(root.field, self.fine);
+                    } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                        if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
+                            self.held = false;
+                            root.release(root.field);
+                        }
+                    } else if (event.kind == PointerEventKind.move) {
+                        self.fine = event.modifiers.alt;
+                    }
+                }
+                moved => {
+                    if (self.held) {
+                        root.drag(root.field, self.mouse-x - self.pressed-x, track.width, self.fine);
+                    }
+                }
+                scroll-event(event) => {
+                    if (root.scroll(root.field, event.delta-x, event.delta-y, track.width, event.modifiers.alt)) {
+                        return EventResult.accept;
+                    }
+                    EventResult.reject
+                }
+            }
+        }
+    }
+}
+
+// `DSTextField`: the field on the canvas's dark, its edge lit while it holds the focus.
+export component TextField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    in property <bool> focused-look;
+    out property <bool> editing: input.has-focus;
+    callback edited(string);
+    height: FieldStyle.height;
+    border-radius: FieldStyle.radius;
+    background: Colour.canvas;
+    border-width: (input.has-focus || root.focused-look) ? Stroke.line : Stroke.hairline;
+    border-color: (input.has-focus || root.focused-look) ? Colour.focus : Colour.separator;
+    input := TextInput {
+        x: FieldStyle.padding;
+        width: parent.width - 2 * FieldStyle.padding;
+        height: parent.height;
+        vertical-alignment: center;
+        font-family: Type.family;
+        font-size: Type.label;
+        color: Colour.ink;
+        edited => { root.edited(self.text); }
+    }
+    if input.text == "" && !input.has-focus: Label {
+        x: FieldStyle.padding;
+        height: parent.height;
+        text: root.placeholder;
+        tone: Tone.tertiary;
+    }
+    TouchArea {
+        clicked => { input.focus(); }
+        mouse-cursor: MouseCursor.text;
+    }
+}
+
+// `DSPicker`: the value in a field with a chevron; the menu it drops is Rust's or a `Menu`.
+export component Picker inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    callback open();
+    spacing: Space.s;
+    height: FieldStyle.height;
+    if root.label != "": Label { text: root.label; }
+    Rectangle {
+        horizontal-stretch: 1;
+        border-radius: FieldStyle.radius;
+        background: area.has-hover ? Colour.raised : Colour.canvas;
+        border-width: Stroke.hairline;
+        border-color: Colour.separator;
+        HorizontalLayout {
+            padding-left: FieldStyle.padding;
+            padding-right: FieldStyle.padding;
+            spacing: Space.s;
+            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
+            VerticalLayout {
+                alignment: center;
+                Icon { source: Icons.chevron-down; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
+            }
+        }
+        area := TouchArea { clicked => { root.open(); } }
+    }
+}

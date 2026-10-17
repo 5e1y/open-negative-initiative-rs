@@ -1,0 +1,279 @@
+// The design system's playground: every component in each variant and state, on one scrolling page.
+import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle } from "theme.slint";
+import { Icons } from "icons.slint";
+import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
+import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
+import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
+import { ListRow, TreeItem, RowKind, TileView, TileHeading } from "collections.slint";
+
+struct Swatch { name: string, colour: color }
+
+// A titled group of the page.
+component Group inherits VerticalLayout {
+    in property <string> title;
+    spacing: Space.s;
+    padding-bottom: Space.l;
+    Label { role: TextRole.title; text: root.title; }
+    Divider { }
+    @children
+}
+
+// A row of variants under a caption naming them.
+component Variants inherits VerticalLayout {
+    in property <string> caption;
+    spacing: Space.xs;
+    Label { role: TextRole.caption; tone: Tone.secondary; text: root.caption; }
+    HorizontalLayout {
+        spacing: Space.s;
+        alignment: start;
+        @children
+    }
+}
+
+// Every button state of one kind: rest, hover, pressed, held on, disabled.
+component ButtonStates inherits Variants {
+    in property <ButtonKind> kind;
+    in property <ButtonSize> size;
+    Button { text: "REST"; kind: root.kind; size: root.size; }
+    Button { text: "HOVER"; kind: root.kind; size: root.size; look: Look.hover; }
+    Button { text: "PRESSED"; kind: root.kind; size: root.size; look: Look.pressed; }
+    Button { text: "ON"; kind: root.kind; size: root.size; on: true; }
+    Button { text: "DISABLED"; kind: root.kind; size: root.size; enabled: false; }
+}
+
+// A slider that moves under the hand without a store behind it.
+component Demo inherits Slider {
+    in-out property <float> at: 0.5;
+    property <float> start;
+    fraction: root.at;
+    readout: round(root.at * 100) + " %";
+    value-text: self.readout;
+    press(f, fine) => {
+        root.start = root.at;
+        false
+    }
+    drag(f, t, s, fine) => { root.at = clamp(root.start + t / s, 0, 1); }
+    scroll(f, dx, dy, s, fine) => { false }
+}
+
+export component Catalogue inherits AppWindow {
+    title: "ONI Design System";
+    preferred-width: ShellStyle.min-width + ShellStyle.panel-width;
+    in-out property <length> scroll <=> page.content-y;
+    property <[Swatch]> swatches: [
+        { name: "ground", colour: Colour.ground }, { name: "canvas", colour: Colour.canvas },
+        { name: "well", colour: Colour.well }, { name: "raised", colour: Colour.raised },
+        { name: "raised-hover", colour: Colour.raised-hover }, { name: "ink", colour: Colour.ink },
+        { name: "ink-secondary", colour: Colour.ink-secondary }, { name: "ink-tertiary", colour: Colour.ink-tertiary },
+        { name: "accent", colour: Colour.accent }, { name: "caution", colour: Colour.caution },
+        { name: "destructive", colour: Colour.destructive }, { name: "confirm", colour: Colour.confirm },
+        { name: "separator", colour: Colour.separator }, { name: "hover", colour: Colour.hover },
+        { name: "row-selected", colour: Colour.row-selected }, { name: "track", colour: Colour.track },
+        { name: "track-fill", colour: Colour.track-fill }, { name: "scrim", colour: Colour.scrim },
+    ];
+
+    page := Flickable {
+        content-height: columns.preferred-height;
+        columns := HorizontalLayout {
+            width: page.width;
+            padding: Space.l;
+            spacing: Space.l;
+            alignment: start;
+
+            VerticalLayout {
+                width: ShellStyle.info-width;
+                alignment: start;
+                Group {
+                    title: "Colour";
+                    for s in root.swatches: HorizontalLayout {
+                        spacing: Space.s;
+                        Rectangle {
+                            width: ShellStyle.bar-height;
+                            height: Space.l;
+                            background: s.colour;
+                            border-radius: Radius.track;
+                            border-width: Stroke.hairline;
+                            border-color: Colour.separator;
+                        }
+                        Label { text: s.name; tone: Tone.secondary; }
+                    }
+                }
+                Group {
+                    title: "Type";
+                    Label { role: TextRole.heading; text: "Heading"; }
+                    Label { role: TextRole.title; text: "Title"; }
+                    Label { role: TextRole.section; text: "Section"; }
+                    Label { role: TextRole.label; text: "Label"; }
+                    Label { role: TextRole.value; text: "Value +1.50 EV"; }
+                    Label { role: TextRole.caption; text: "Caption"; }
+                    Label { role: TextRole.button; text: "BUTTON"; }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        Label { text: "primary"; tone: Tone.primary; }
+                        Label { text: "secondary"; tone: Tone.secondary; }
+                        Label { text: "tertiary"; tone: Tone.tertiary; }
+                    }
+                }
+                Group {
+                    title: "Space and radius";
+                    for gap in [Space.xxs, Space.xs, Space.s, Space.m, Space.l]: HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        Rectangle { width: gap; height: Space.s; background: Colour.accent; }
+                        Label { text: gap / 1px + " pt"; role: TextRole.value; tone: Tone.secondary; }
+                    }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        for r in [Radius.track, Radius.badge, Radius.card, Radius.control]: Rectangle {
+                            width: ShellStyle.bar-height;
+                            height: ShellStyle.bar-height;
+                            border-radius: r;
+                            background: Colour.raised;
+                        }
+                    }
+                }
+            }
+
+            VerticalLayout {
+                alignment: start;
+                Group {
+                    title: "Button";
+                    ButtonStates { caption: "plain"; kind: ButtonKind.plain; }
+                    ButtonStates { caption: "accent"; kind: ButtonKind.accent; }
+                    ButtonStates { caption: "caution"; kind: ButtonKind.caution; }
+                    ButtonStates { caption: "destructive"; kind: ButtonKind.destructive; }
+                    ButtonStates { caption: "plain, small"; kind: ButtonKind.plain; size: ButtonSize.small; }
+                    Variants {
+                        caption: "with a glyph, a lamp, a fixed width";
+                        Button { text: "OPEN"; has-icon: true; icon: Icons.folder-open; }
+                        Button { text: "LAMP"; lamp-shown: true; lamp-lit: true; }
+                        Button { text: "ALL"; fixed-width: ShellStyle.filter-width; }
+                    }
+                }
+                Group {
+                    title: "Icon button and group";
+                    Variants {
+                        caption: "rest, hover, pressed, on, disabled, destructive";
+                        IconButton { icon: Icons.undo; help: "Undo"; }
+                        IconButton { icon: Icons.redo; help: "Redo"; look: Look.hover; }
+                        IconButton { icon: Icons.copy; help: "Copy"; look: Look.pressed; }
+                        IconButton { icon: Icons.correction; help: "De-dust"; on: true; }
+                        IconButton { icon: Icons.paste; help: "Paste"; enabled: false; }
+                        IconButton { icon: Icons.remove; help: "Remove"; kind: ButtonKind.destructive; }
+                    }
+                    Variants {
+                        caption: "a group, small keys";
+                        ButtonGroup {
+                            IconButton { icon: Icons.framing; help: "Crop"; }
+                            IconButton { icon: Icons.compare; help: "Compare"; }
+                            Button { text: "PASTE TO ROLL"; }
+                        }
+                        IconButton { icon: Icons.chevron-down; help: "Fold"; size: ButtonSize.small; }
+                    }
+                }
+                Group {
+                    title: "Tabs and toggle";
+                    Tabs { tabs: ["Roll", "Crop", "Color", "Details"]; selected: 2; marked: [true, false, false, false]; }
+                    LabelledRow { label: "Toggle off"; Toggle { label: "off"; } }
+                    LabelledRow { label: "Toggle on"; Toggle { label: "on"; on: true; } }
+                    LabelledRow { label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
+                }
+                Group {
+                    title: "Field and picker";
+                    TextField { placeholder: "Placeholder"; }
+                    TextField { text: "A typed description"; }
+                    TextField { text: "Focused"; focused-look: true; }
+                    Picker { label: "Dyes"; value: "Generic C-41"; open => { menu.show(); } }
+                    menu := Menu { entries: ["Generic C-41", "Kodak", "Fuji"]; current: 0; }
+                }
+            }
+
+            VerticalLayout {
+                width: ShellStyle.panel-width;
+                alignment: start;
+                Group {
+                    title: "Slider";
+                    Demo { label: "Level"; at: 0.62; }
+                    Demo { label: "Ramp, white knob"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white; }
+                    Demo { label: "Ramp, black knob"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black; }
+                    Demo { label: "Bipolar"; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
+                    Demo { label: "Metal"; at: 0.4; fill: SliderFill.metal; }
+                    Demo { label: "Hovered knob"; at: 0.3; look: Look.hover; }
+                    Demo { label: "Disabled"; at: 0.5; enabled: false; }
+                }
+                Group {
+                    title: "Section";
+                    Surface {
+                        height: sections.preferred-height;
+                        sections := VerticalLayout {
+                            Section { title: "Open, modified"; help: "A block's note, shown on hover."; block: 0; modified: true; separated: false; Label { text: "Content"; tone: Tone.secondary; } }
+                            Section { title: "Folded"; folded: true; Label { text: "Hidden"; } }
+                            Section { title: "Unmodified"; block: 1; Label { text: "Content"; tone: Tone.secondary; } }
+                        }
+                    }
+                }
+                Group {
+                    title: "Plot, status, divider";
+                    HistogramFrame { size: PlotSize.block; ground: Ground.canvas; }
+                    StatusLine { text: "DSC_6432 · 2000 × 1332"; }
+                    Divider { }
+                    HorizontalLayout { spacing: Space.s; alignment: start; HelpMark { note: "The help mark's note."; } Label { text: "Help mark"; tone: Tone.secondary; } }
+                }
+            }
+
+            VerticalLayout {
+                width: ShellStyle.library-width;
+                alignment: start;
+                Group {
+                    title: "Rows";
+                    ListRow { title: "List row"; caption: "12"; }
+                    ListRow { title: "Hovered"; caption: "3"; look: Look.hover; }
+                    ListRow { title: "Selected"; selected: true; }
+                    TreeItem { title: "Folder"; caption: "2"; kind: RowKind.folder; expandable: true; expanded: true; }
+                    TreeItem { title: "Roll #8"; caption: "10"; depth: 1; kind: RowKind.roll; expandable: true; }
+                    TreeItem { title: "DSC_6432"; depth: 2; kind: RowKind.photo; selected: true; }
+                }
+                Group {
+                    title: "Tiles";
+                    TileHeading { title: "Roll #8"; caption: "10 photos"; }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        for m in [0, 1, 2, 3]: TileView {
+                            picture-height: Space.l * 2;
+                            caption: m == 0 ? "Plain" : m == 1 ? "Bronze" : m == 2 ? "Silver" : "Gold";
+                            medal: m;
+                            selected: m == 3;
+                        }
+                    }
+                }
+                Group {
+                    title: "Menu";
+                    MenuPanel {
+                        width: parent.width;
+                        MenuEntry { text: "Entry"; shortcut: "⌘E"; }
+                        MenuEntry { text: "Hovered"; look: Look.hover; }
+                        MenuEntry { text: "Checked"; checked: true; }
+                        Divider { }
+                        MenuEntry { text: "Disabled"; enabled: false; }
+                    }
+                }
+                Group {
+                    title: "Sheet";
+                    Surface {
+                        ground: Ground.canvas;
+                        height: dialog.preferred-height + 2 * Space.l;
+                        dialog := Dialog {
+                            width: parent.width - 2 * Space.l;
+                            title: "Sheet";
+                            Label { text: "A dialog's content, over a scrim in the window."; tone: Tone.secondary; wrap: word-wrap; centred: true; }
+                            HorizontalLayout { alignment: center; Button { text: "DONE"; } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    TipLayer { room: root.width; }
+}

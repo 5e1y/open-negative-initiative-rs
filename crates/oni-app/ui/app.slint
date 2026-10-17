@@ -1,14 +1,13 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import "../fonts/Inter.ttf";
-import "../fonts/Enriqueta-Regular.ttf";
-import { DS, Caps, Tip, Icons } from "ds/components.slint";
+import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 
-export { DS, Caps, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow, Pairing }
+export { DS, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 export global Canvas {
@@ -29,14 +28,8 @@ export global App {
     callback menu(string);
 }
 
-export component MainWindow inherits Window {
+export component MainWindow inherits AppWindow {
     title: "Open Negative Initiative";
-    min-width: DS.control-min-window-width;
-    min-height: DS.control-min-window-height;
-    preferred-width: DS.control-min-window-width;
-    preferred-height: DS.control-min-window-height;
-    background: DS.palette-panel;
-    default-font-family: DS.typo-label-family;
     out property <bool> keys-focused: keys.has-focus;
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
@@ -134,48 +127,41 @@ export component MainWindow inherits Window {
             Toolbar { }
             HorizontalLayout {
                 vertical-stretch: 1;
-                if !App.library-hidden: Tree { width: DS.control-film-sidebar-width; }
+                if !App.library-hidden: Tree { width: ShellStyle.library-width; }
                 Rectangle {
                     horizontal-stretch: 1;
                     // The card, inset by `cardInset` from the panel's ground.
-                    card := Rectangle {
-                        x: DS.control-card-inset;
+                    card := Card {
+                        x: CardStyle.inset;
                         y: 0;
-                        width: parent.width - 2 * DS.control-card-inset;
-                        height: parent.height - DS.control-card-inset - DS.control-status-row-height;
-                        background: DS.palette-canvas;
-                        border-radius: DS.radius-card;
-                        clip: true;
+                        width: parent.width - 2 * CardStyle.inset;
+                        height: parent.height - CardStyle.inset - StatusStyle.height;
                         visible: !App.gallery;
-                        changed width => { Canvas.width = self.width - 2 * DS.control-canvas-padding; }
-                        changed height => { Canvas.height = self.height - 2 * DS.control-canvas-padding; }
-                        Image {
-                            x: DS.control-canvas-padding;
-                            y: DS.control-canvas-padding;
-                            width: parent.width - 2 * DS.control-canvas-padding;
-                            height: parent.height - 2 * DS.control-canvas-padding;
+                        changed width => { Canvas.width = self.width - 2 * CardStyle.padding; }
+                        changed height => { Canvas.height = self.height - 2 * CardStyle.padding; }
+                        Picture {
+                            x: CardStyle.padding;
+                            y: CardStyle.padding;
+                            width: parent.width - 2 * CardStyle.padding;
+                            height: parent.height - 2 * CardStyle.padding;
+                            ground: Ground.canvas;
                             source: Canvas.frame;
-                            image-fit: contain;
                         }
                         TouchArea { clicked => { root.refocus(); } }
                     }
-                    Grid {
-                        x: DS.control-card-inset;
-                        width: parent.width - 2 * DS.control-card-inset;
-                        height: parent.height - DS.control-card-inset - DS.control-status-row-height;
-                        border-radius: DS.radius-card;
+                    Card {
+                        x: CardStyle.inset;
+                        y: 0;
+                        width: parent.width - 2 * CardStyle.inset;
+                        height: parent.height - CardStyle.inset - StatusStyle.height;
                         visible: App.gallery;
+                        Grid { }
                     }
-                    // `DSStatusBar`: one line under the viewer.
-                    Text {
-                        x: DS.control-card-inset + DS.space-sm;
-                        y: parent.height - DS.control-status-row-height;
-                        height: DS.control-status-row-height;
+                    StatusLine {
+                        x: CardStyle.inset;
+                        y: parent.height - StatusStyle.height;
+                        width: parent.width - 2 * CardStyle.inset;
                         text: Canvas.status;
-                        font-family: DS.typo-value-family;
-                        font-size: DS.typo-value-size;
-                        color: DS.palette-text-secondary;
-                        vertical-alignment: center;
                     }
                 }
                 if !App.panel-hidden && !App.gallery: Panel { }
@@ -191,35 +177,7 @@ export component MainWindow inherits Window {
         height: root.height;
     }
 
-    tip := Rectangle {
-        x: min(Tip.x, root.width - self.width - DS.space-sm);
-        y: Tip.y;
-        width: tip-text.preferred-width + 2 * DS.space-sm;
-        height: tip-text.preferred-height + 2 * DS.space-xs;
-        background: #2c2c2cf2;
-        border-radius: DS.radius-badge / 2;
-        border-width: DS.stroke-hairline;
-        border-color: DS.palette-separator;
-        opacity: 0;
-        visible: Tip.text != "";
-        tip-text := Text {
-            text: Tip.text;
-            font-family: DS.typo-chip-family;
-            font-size: DS.typo-chip-size;
-            color: DS.system-primary;
-            wrap: word-wrap;
-            width: min(self.preferred-width, 320px);
-        }
-        // The system tooltip's delay before it shows; it leaves at once.
-        states [
-            shown when Tip.shown: {
-                opacity: 1;
-                in {
-                    animate opacity { delay: 1000ms; duration: 0ms; }
-                }
-            }
-        ]
-    }
+    TipLayer { room: root.width; }
 
     init => { keys.focus(); }
 }

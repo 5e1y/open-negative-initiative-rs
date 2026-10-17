@@ -1,0 +1,202 @@
+// The primitives every screen composes: text, glyphs, pictures, surfaces, rules and stacks.
+import "../../fonts/Inter.ttf";
+import "../../fonts/Enriqueta-Regular.ttf";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, StatusStyle, ShellStyle } from "theme.slint";
+
+export enum TextRole { label, value, caption, title, section, heading, button }
+export enum Tone { primary, secondary, tertiary, on-fill, on-light }
+export enum Gap { none, xxs, xs, s, m, l }
+export enum Ground { ground, canvas, well, paper, skeleton }
+export enum PlotSize { main, block }
+
+// What a hovered control says after the system's tooltip delay, drawn by `TipLayer`.
+export global Tip {
+    in-out property <string> text;
+    in-out property <length> x;
+    in-out property <length> y;
+    in-out property <bool> shown;
+}
+
+export global Tones {
+    public pure function ink(tone: Tone) -> color {
+        if (tone == Tone.secondary) { return Colour.ink-secondary; }
+        if (tone == Tone.tertiary) { return Colour.ink-tertiary; }
+        if (tone == Tone.on-fill) { return Colour.ink-on-fill; }
+        if (tone == Tone.on-light) { return Colour.ink-on-light; }
+        Colour.ink
+    }
+    public pure function gap(gap: Gap) -> length {
+        if (gap == Gap.xxs) { return Space.xxs; }
+        if (gap == Gap.xs) { return Space.xs; }
+        if (gap == Gap.s) { return Space.s; }
+        if (gap == Gap.m) { return Space.m; }
+        if (gap == Gap.l) { return Space.l; }
+        0px
+    }
+    public pure function ground(ground: Ground) -> color {
+        if (ground == Ground.canvas) { return Colour.canvas; }
+        if (ground == Ground.well) { return Colour.well; }
+        if (ground == Ground.paper) { return Colour.paper; }
+        if (ground == Ground.skeleton) { return Colour.skeleton; }
+        Colour.ground
+    }
+}
+
+// Every word on screen: its role sets the face and size, its tone the ink.
+export component Label inherits Text {
+    in property <TextRole> role: TextRole.label;
+    in property <Tone> tone: Tone.primary;
+    in property <bool> centred;
+    font-family: root.role == TextRole.heading ? Type.brand-family : Type.family;
+    font-size: root.role == TextRole.value ? Type.value
+        : root.role == TextRole.caption ? Type.chip
+        : root.role == TextRole.button ? Type.chip
+        : root.role == TextRole.title ? Type.title
+        : root.role == TextRole.section ? Type.section
+        : root.role == TextRole.heading ? Type.heading
+        : Type.label;
+    font-weight: root.role == TextRole.button ? Type.strong : Type.regular;
+    color: Tones.ink(root.tone);
+    vertical-alignment: center;
+    horizontal-alignment: root.centred ? center : left;
+}
+
+// A glyph tinted by a tone, square at the size it is given.
+export component Icon inherits Image {
+    in property <Tone> tone: Tone.secondary;
+    in property <color> ink: Tones.ink(root.tone);
+    colorize: root.ink;
+    image-fit: contain;
+}
+
+// A photograph or a plot on its ground, never stretched unless asked.
+export component Picture inherits Rectangle {
+    in property <image> source;
+    in property <Ground> ground: Ground.well;
+    in property <bool> rounded;
+    in property <bool> pixelated;
+    in property <bool> stretched;
+    background: Tones.ground(root.ground);
+    border-radius: root.rounded ? Radius.badge : 0px;
+    clip: root.rounded;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: root.stretched ? ImageFit.fill : ImageFit.contain;
+        image-rendering: root.pixelated ? ImageRendering.pixelated : ImageRendering.smooth;
+    }
+}
+
+// `DSHistogram`'s frame: the plot Rust rasterises, edge to edge at one of two heights.
+export component HistogramFrame inherits Picture {
+    in property <PlotSize> size: PlotSize.main;
+    ground: Ground.ground;
+    stretched: true;
+    height: root.size == PlotSize.main ? PlotStyle.main : PlotStyle.block;
+}
+
+export component Divider inherits Rectangle {
+    height: Stroke.line;
+    background: Colour.separator;
+}
+
+export component Spacer inherits Rectangle {
+    horizontal-stretch: 1;
+    vertical-stretch: 1;
+}
+
+export component HStack inherits HorizontalLayout {
+    in property <Gap> gap: Gap.s;
+    in property <Gap> inset: Gap.none;
+    spacing: Tones.gap(root.gap);
+    padding: Tones.gap(root.inset);
+}
+
+export component VStack inherits VerticalLayout {
+    in property <Gap> gap: Gap.s;
+    in property <Gap> inset: Gap.none;
+    spacing: Tones.gap(root.gap);
+    padding: Tones.gap(root.inset);
+}
+
+// A plain surface: the window's ground, the canvas's dark or a photo's well.
+export component Surface inherits Rectangle {
+    in property <Ground> ground: Ground.ground;
+    background: Tones.ground(root.ground);
+}
+
+// The canvas card: inset from the panel's ground, rounded, its content clipped.
+export component Card inherits Rectangle {
+    background: Colour.canvas;
+    border-radius: CardStyle.radius;
+    clip: true;
+}
+
+// `DSStatusBar`: one line under the viewer.
+export component StatusLine inherits Rectangle {
+    in property <string> text;
+    height: StatusStyle.height;
+    Label {
+        x: Space.s;
+        width: parent.width - 2 * Space.s;
+        height: parent.height;
+        role: TextRole.value;
+        tone: Tone.secondary;
+        text: root.text;
+        overflow: elide;
+    }
+}
+
+// The window: the ground, the font, the floor the Swift app sets.
+export component AppWindow inherits Window {
+    min-width: ShellStyle.min-width;
+    min-height: ShellStyle.min-height;
+    preferred-width: ShellStyle.min-width;
+    preferred-height: ShellStyle.min-height;
+    background: Colour.ground;
+    default-font-family: Type.family;
+}
+
+// The tooltip, drawn above everything by the window that holds it.
+export component TipLayer inherits Rectangle {
+    in property <length> room;
+    x: min(Tip.x, root.room - self.width - Space.s);
+    y: Tip.y;
+    width: tip-text.preferred-width + 2 * TipStyle.padding-x;
+    height: tip-text.preferred-height + 2 * TipStyle.padding-y;
+    background: Colour.tip;
+    border-radius: TipStyle.radius;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    opacity: 0;
+    visible: Tip.text != "";
+    tip-text := Label {
+        role: TextRole.caption;
+        text: Tip.text;
+        wrap: word-wrap;
+        width: min(self.preferred-width, TipStyle.max-width);
+    }
+    states [
+        shown when Tip.shown: {
+            opacity: 1;
+            in {
+                animate opacity { delay: Motion.tip-delay; duration: 0ms; }
+            }
+        }
+    ]
+}
+
+// Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves.
+export global Tips {
+    public function hover(over: bool, text: string, x: length, y: length) {
+        if (over && text != "") {
+            Tip.text = text;
+            Tip.x = x;
+            Tip.y = y + TipStyle.offset;
+            Tip.shown = true;
+        } else if (Tip.text == text) {
+            Tip.shown = false;
+        }
+    }
+}
