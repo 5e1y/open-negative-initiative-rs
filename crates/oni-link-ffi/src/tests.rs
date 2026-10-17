@@ -121,7 +121,7 @@ async fn pairs_presses_and_hears_the_desktop() {
     assert!(!session.can_send_files());
     assert!(matches!(session.send_files(vec![]).await, Err(LinkError::ImportUnavailable)));
 
-    session.close();
+    session.hang_up();
     until(&mut heard, |e| matches!(e, HostEvent::Disconnected { .. })).await;
     assert!(!session.current().connected);
     assert_eq!(session.press(Command::Undo), settled.state, "a closed session sends nothing");
@@ -133,7 +133,7 @@ async fn a_paired_phone_reconnects_by_key_and_a_stranger_does_not() {
     let identity = generate_identity();
     let first = RemoteSession::pair(code.to_uri(), identity.clone(), "Phone".into()).await.unwrap();
     let key = first.host_key();
-    first.close();
+    first.hang_up();
     until(&mut heard, |e| matches!(e, HostEvent::Disconnected { .. })).await;
 
     let addresses = vec![code.addresses[0].to_string()];
