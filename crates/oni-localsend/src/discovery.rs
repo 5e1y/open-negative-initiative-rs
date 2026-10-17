@@ -102,7 +102,8 @@ struct Inner {
 impl Discovery {
     /// Joins the group, starts answering and announces. Fails where the network has no multicast.
     pub async fn start(config: DiscoveryConfig, peers: Peers) -> io::Result<Self> {
-        let socket = UdpSocket::from_std(multicast_socket(config.group, config.multicast_port, config.interface)?.into())?;
+        let socket =
+            UdpSocket::from_std(multicast_socket(config.group, config.multicast_port, config.interface)?.into())?;
         let inner = Arc::new(Inner {
             group: SocketAddrV4::new(config.group, config.multicast_port),
             info: config.info,
