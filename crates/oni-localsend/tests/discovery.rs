@@ -15,6 +15,8 @@ async fn node(dst: &std::path::Path, alias: &str, multicast_port: u16) -> (Recei
     let (receiver, _events) = Receiver::start(config).await.unwrap();
     let mut discovery = DiscoveryConfig::new(receiver.info().clone());
     discovery.multicast_port = multicast_port;
+    // Hosted CI runners route no multicast on their default interface; loopback carries it everywhere.
+    discovery.interface = Ipv4Addr::LOCALHOST;
     let discovery = Discovery::start(discovery, peers.clone()).await.unwrap();
     (receiver, discovery, peers)
 }

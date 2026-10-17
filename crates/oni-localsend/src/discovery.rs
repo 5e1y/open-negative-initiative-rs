@@ -75,11 +75,13 @@ pub struct DiscoveryConfig {
     pub info: DeviceInfo,
     pub multicast_port: u16,
     pub group: Ipv4Addr,
+    /// The interface that joins and sends; unspecified lets the OS pick its default route.
+    pub interface: Ipv4Addr,
 }
 
 impl DiscoveryConfig {
     pub fn new(info: DeviceInfo) -> Self {
-        Self { info, multicast_port: DEFAULT_PORT, group: MULTICAST_GROUP }
+        Self { info, multicast_port: DEFAULT_PORT, group: MULTICAST_GROUP, interface: Ipv4Addr::UNSPECIFIED }
     }
 }
 
@@ -100,7 +102,7 @@ struct Inner {
 impl Discovery {
     /// Joins the group, starts answering and announces. Fails where the network has no multicast.
     pub async fn start(config: DiscoveryConfig, peers: Peers) -> io::Result<Self> {
-        let socket = UdpSocket::from_std(multicast_socket(config.group, config.multicast_port)?.into())?;
+        let socket = UdpSocket::from_std(multicast_socket(config.group, config.multicast_port, config.interface)?.into())?;
         let inner = Arc::new(Inner {
             group: SocketAddrV4::new(config.group, config.multicast_port),
             info: config.info,
@@ -179,13 +181,16 @@ async fn listen(inner: Arc<Inner>) {
 }
 
 /// Shares the port with another LocalSend app on the same machine where the OS allows it.
-fn multicast_socket(group: Ipv4Addr, port: u16) -> io::Result<Socket> {
+fn multicast_socket(group: Ipv4Addr, port: u16, interface: Ipv4Addr) -> io::Result<Socket> {
     let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(SockProtocol::UDP))?;
     socket.set_reuse_address(true)?;
     #[cfg(all(unix, not(any(target_os = "solaris", target_os = "illumos"))))]
     socket.set_reuse_port(true)?;
     socket.bind(&SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port).into())?;
-    socket.join_multicast_v4(&group, &Ipv4Addr::UNSPECIFIED)?;
+    socket.join_multicast_v4(&group, &interface)?;
+    if !interface.is_unspecified() {
+        socket.set_multicast_if_v4(&interface)?;
+    }
     socket.set_multicast_loop_v4(true)?;
     socket.set_nonblocking(true)?;
     Ok(socket)
