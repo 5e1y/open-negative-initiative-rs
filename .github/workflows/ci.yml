@@ -14,7 +14,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Build
         run: cargo build --release --workspace
-      - name: Render checks
-        run: cargo test --release -p oni-render
+      # No RAW and no Swift dump is staged on a runner: those checks print SKIPPED and return, and so do
+      # the GPU checks where no adapter is found. oni-decode's own check needs a RAW and runs elsewhere.
+      - name: Core checks
+        env:
+          ONI_SKIP_HEAVY: "1"
+        run: >-
+          cargo test --release --workspace
+          --exclude oni-decode
+          --exclude oni-link --exclude oni-localsend --exclude oni-link-ffi --exclude oni-link-demo
       - name: Phone link checks
         run: cargo test --release -p oni-link -p oni-localsend -p oni-link-ffi
