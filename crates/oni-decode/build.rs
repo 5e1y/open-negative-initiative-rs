@@ -94,5 +94,5 @@ fn main() {
     lib.compile("raw");
     cc::Build::new().file("csrc/pinned.c").include(root).define("LIBRAW_NODLL", None).compile("oni_pinned");
     println!("cargo:rerun-if-changed=csrc/pinned.c");
-    println!("cargo:rerun-if-changed=libraw/VERSION");
+    println!("cargo:rerun-if-changed=LIBRAW_VERSION");
 }
