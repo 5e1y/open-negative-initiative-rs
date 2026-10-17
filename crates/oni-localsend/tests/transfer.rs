@@ -256,15 +256,14 @@ async fn half_upload(
     raw: &Raw,
     events: &mut tokio::sync::mpsc::UnboundedReceiver<Event>,
     dst: &std::path::Path,
-) -> (PrepareUploadResponse, tokio::task::JoinHandle<Option<u16>>, tokio::sync::mpsc::Sender<Vec<u8>>) {
+) -> (PrepareUploadResponse, tokio::task::JoinHandle<Option<u16>>, tokio::sync::mpsc::Sender<std::io::Result<Vec<u8>>>)
+{
     let session = raw.prepare_ok(vec![meta("f", "big.dng", 10 << 20, None)]).await;
-    let (tx, rx) = tokio::sync::mpsc::channel::<Vec<u8>>(4);
-    let body = futures_util::stream::unfold(rx, |mut rx| async move {
-        rx.recv().await.map(|chunk| (Ok::<_, std::io::Error>(chunk), rx))
-    });
+    let (tx, rx) = tokio::sync::mpsc::channel::<std::io::Result<Vec<u8>>>(4);
+    let body = futures_util::stream::unfold(rx, |mut rx| async move { rx.recv().await.map(|chunk| (chunk, rx)) });
     let request = raw.client.post(raw.upload_url(&session, "f")).body(reqwest::Body::wrap_stream(body));
     let task = tokio::spawn(async move { request.send().await.ok().map(|r| r.status().as_u16()) });
-    tx.send(vec![1u8; 2 << 20]).await.unwrap();
+    tx.send(Ok(vec![1u8; 2 << 20])).await.unwrap();
     wait_for(events, |e| matches!(e, Event::FileProgress { received, .. } if *received >= 1 << 20).then_some(())).await;
     let parts = names(dst);
     assert!(parts.len() == 1 && parts[0].ends_with(".part"), "a part file is being written: {parts:?}");
@@ -293,8 +292,9 @@ async fn a_sender_hanging_up_mid_transfer_leaves_nothing() {
     let raw = Raw::new(receiver.local_addr());
     let (_session, task, tx) = half_upload(&raw, &mut events, dst.path()).await;
 
-    task.abort();
-    drop(tx);
+    // A failing body makes the client drop the connection mid-chunk, as a sender that dies does.
+    tx.send(Err(std::io::Error::other("sender gone"))).await.unwrap();
+    assert_eq!(tokio::time::timeout(Duration::from_secs(5), task).await.unwrap().unwrap(), None);
     wait_for(&mut events, |e| matches!(e, Event::FileFailed { .. }).then_some(())).await;
     wait_for(&mut events, |e| matches!(e, Event::SessionFinished { .. }).then_some(())).await;
     eventually(|| names(dst.path()).is_empty()).await;
