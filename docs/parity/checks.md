@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 72 twin, 15 partial, 75 none.
+Of 162 checks: 73 twin, 14 partial, 75 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -21,7 +21,7 @@ Of 162 checks: 72 twin, 15 partial, 75 none.
 | 7 | `RollFolder.selfCheck` | `Checks/Pipeline/RollFolder+Checks.swift:6` | a roll made on the disk moves its photos in and ⌘Z puts them back | twin | `oni-library/src/roll_folder.rs::a_roll_folder_takes_its_photos_and_gives_them_back` (⌘Z is `take_back`, ⌘⇧Z `lay`), `::a_taken_name_is_numbered_as_the_finder_numbers_a_copy`, `::a_triplet_moves_whole_on_its_names_or_stays_whole` |
 | 8 | `CaptureExposure.selfCheck` | `Checks/Pipeline/CaptureExposure+Checks.swift:7` | a capture's EXIF reads in stops against its roll's common settings | none | none |
 | 9 | `ScannerLook.selfCheck` | `Checks/Pipeline/ScannerLook+Checks.swift:7` | a retired scanner look folds into the photo's curves and Color Density | twin | `oni-settings/src/scanner.rs::a_folded_look_grades_the_curves_as_its_replica_did` |
-| 10 | `ScannerKey.selfCheck` | `Checks/UI/Lab/ScannerKey+Checks.swift:4` | the keypad's keys write the scanner's clicks and nothing of Pro | partial | `oni-core/tests/swift_checks.rs::every_scanner_key_moves_its_own_count_and_nothing_of_pro`, `oni-core/src/command.rs::every_phone_key_crosses_into_the_store_and_back_unchanged`; the keys' render through the Frontier is the Scanner face wave's, the legend widths oni-app's |
+| 10 | `ScannerKey.selfCheck` | `Checks/UI/Lab/ScannerKey+Checks.swift:4` | the keypad's keys write the scanner's clicks and nothing of Pro | twin | `oni-core/tests/scanner.rs::the_keypad_writes_the_scanner_s_clicks_and_nothing_of_pro`, `oni-core/tests/swift_checks.rs::every_scanner_key_moves_its_own_count_and_nothing_of_pro`, `oni-pipeline/src/scanner.rs::a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off`; the legend-width line is a keycap measurement with no flat-key equivalent |
 | 11 | `LightingCatchUp.selfCheck` | `Checks/Pipeline/LightingCatchUp+Checks.swift:8` | a former document opens rendering as it did | twin | `oni-settings/tests/codec_checks.rs::a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not` |
 | 12 | `FilmProbe.axisChecks` | `Pipeline/FilmProbe.swift` | the probe reads the axis the kernel runs | none | none |
 | 13 | `Spectrogram.selfCheck` | `Checks/Pipeline/Spectrogram+Checks.swift:9` | the colour mixer reaches one band and no other | twin | `oni-pipeline/src/finishing.rs::every_band_owns_part_of_its_centre_and_the_packing_divides_by_it` |
@@ -37,7 +37,7 @@ Of 162 checks: 72 twin, 15 partial, 75 none.
 | 23 | `RollPicking.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:36` | a roll's frames are chosen and flagged one click at a time | none | none |
 | 24 | `RollFrameView.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:5` | Prepare the Roll's card shows every frame in its own scan's shape | none | none |
 | 25 | `OniLook.selfCheck` | `Checks/Pipeline/OniLook+Checks.swift:7` | ONI's scanner look is frozen into its cube and its machine sets Lighting at rest | twin | `oni-pipeline/src/oni_look.rs::the_look_lifts_a_mid_grey_and_keeps_it_grey`, `oni-pipeline/src/scanner.rs::the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks` |
-| 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | twin | `oni-settings/tests/swift_checks.rs::a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros` |
+| 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | twin | `oni-core/tests/scanner.rs::a_gesture_on_one_face_never_moves_the_other`, `oni-settings/tests/swift_checks.rs::a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros` |
 | 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | none | none |
 | 28 | `Folders.selfCheck` | `Checks/Pipeline/Folders+Checks.swift:4` | the archive follows the disk's folders | twin | `oni-library/src/folders.rs::folders_lay_newest_first_subfolders_before_their_parent` |
 | 29 | `ArchiveTree.selfCheck` | `Checks/Pipeline/ArchiveTree+Checks.swift:6` | the archive tree unfolds its folders | twin | `oni-library/src/archive_tree.rs::a_folder_opens_on_its_subfolders_then_its_photos` |

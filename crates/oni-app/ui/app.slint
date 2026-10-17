@@ -1,14 +1,14 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
-import { Panel, Plots, PanelState, Framing, Dedust, CorrectionRow } from "panel.slint";
+import { Panel, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
 
-export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow }
+export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow }
 export { Editors } from "editors.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
@@ -96,9 +96,9 @@ export global App {
     in-out property <bool> gallery;
     in property <bool> panel-hidden;
     in property <bool> library-hidden;
-    // A key with control, meta, shift and alt; Rust reads ⌘ as meta on macOS, control elsewhere,
-    // and answers whether the key was claimed.
-    callback key(string, bool, bool, bool, bool) -> bool;
+    // A key with control, meta, shift and alt, then whether it repeats; Rust reads ⌘ as meta on
+    // macOS, control elsewhere, and answers whether the key was claimed.
+    callback key(string, bool, bool, bool, bool, bool) -> bool;
     callback menu(string);
 }
 
@@ -148,7 +148,7 @@ export component MainWindow inherits AppWindow {
             MenuSeparator { }
             MenuItem { title: "Screen Gamut"; activated => { App.menu("screen-gamut"); } }
             MenuSeparator { }
-            MenuItem { title: "Scanner Emulator"; activated => { App.menu("emulator"); } }
+            MenuItem { title: "Scanner Emulator"; enabled: Bar.has-photo && Bar.editing; activated => { App.menu("emulator"); } }
         }
         Menu {
             title: "Labels";
@@ -196,7 +196,7 @@ export component MainWindow inherits AppWindow {
                 Canvas.space-held = true;
                 return EventResult.accept;
             }
-            if (App.key(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.shift, event.modifiers.alt)) {
+            if (App.key(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.shift, event.modifiers.alt, event.repeat)) {
                 return EventResult.accept;
             }
             EventResult.reject

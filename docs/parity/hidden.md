@@ -45,7 +45,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Scanner clicks: density ±24, warmth ±10, held to stops | `Pipeline/ScannerClicks.swift:24-25` | `oni-settings/src/scanner.rs:28-29` | done | | `oni-settings/src/scanner.rs::a_keypad_reads_absent_keys_at_rest_and_clamps_past_its_stops` |
 | ONI look cube (64 nodes, root 2, Rec. 709 luma) | `Pipeline/OniLook.swift:58-197` | `oni-pipeline/src/oni_look.rs:79-82` | done | | `oni-pipeline/src/oni_look.rs::the_cube_is_red_fastest_on_rooted_code` |
 | Scanner look recipes ONI, Noritsu, Frontier | `Pipeline/ScannerLook.swift:63-81` | `oni-settings/src/scanner.rs:78-149` | done | | `oni-settings/src/scanner.rs::a_folded_look_grades_the_curves_as_its_replica_did` |
-| Scanner Finish apart from Pro's | `Pipeline/ScannerFinish.swift:25` | `oni-settings/src/settings.rs:164` | partial | Read for the render; nothing stores a Scanner-face edit into it | no check |
+| Scanner Finish apart from Pro's | `Pipeline/ScannerFinish.swift:25`, `OpenNegativeApp.swift:95-99` | `oni-settings/src/settings.rs:164`, `oni-core/src/store.rs` `face_view`, `Command::Finish` | done | Knob and Finish commands go through the open face's view | `oni-core/tests/scanner.rs::a_gesture_on_one_face_never_moves_the_other` |
 | Paper correction gains, probe 0.18 | `Pipeline/PaperCorrection.swift:9-31` | `oni-settings/src/blocks.rs:172-175` | done | | `oni-settings/src/blocks.rs::the_paper_gains_are_powers_of_two_and_neutral_moves_nothing` |
 | Screen gamut tolerance 0.01, period 9, duty 0.34 | `Pipeline/ScreenGamut.swift:14-29` | `oni-colour/src/gamut.rs:11-29` | done | | `oni-colour/tests/checks.rs::the_zebra_stripes_what_the_screen_clips` |
 | Proof cube 33 in Rec. 2020 | `Pipeline/Proof.swift:53-54` | `oni-colour/src/proof.rs:37` | done | | `oni-colour/tests/checks.rs::the_proof_clips_what_the_export_space_cannot_hold` |
@@ -124,6 +124,8 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Histogram throttle 12 ms, 100 ms while held | `Pipeline/Histogram.swift:59-63` | none | missing | | no check |
 | Histogram graduation overshoot 0.35 | `Pipeline/Histogram.swift:20` | `oni-settings/src/axis.rs:105` | done | | `oni-settings/src/axis.rs::the_graduation_reaches_under_the_lowest_density_a_test_film_holds` |
 | Medal keys 0-3 bare, live only outside text | `UI/EditorCommands.swift:183` | `oni-app/src/app.rs:1172-1175` | done | | no check |
+| A frame opens on the face it is opened in; the switch is one undo step | `Scene/EditorScene+Lab.swift:93-107`, `Scene/EditorScene+Actions.swift:91-93` | `oni-core/src/store.rs` `open`, `Command::Face` | done | Opening adopts the face before the history starts | `oni-core/tests/scanner.rs::the_face_is_one_step_and_a_frame_opens_on_the_face_it_is_opened_in` |
+| The face last left is kept across launches (`lastFaceScanner`) | `OpenNegativeApp.swift:329`, `Scene/EditorScene+Removal.swift:613` | `oni-app/src/app/lab.rs` `remembered` | done | A file in the support folder | `oni-app/src/app/lab.rs::the_face_is_remembered_across_launches`, `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` |
 
 ## Codec, sidecar and index
 

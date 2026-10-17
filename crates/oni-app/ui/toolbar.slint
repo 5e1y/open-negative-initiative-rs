@@ -1,5 +1,5 @@
 // The top bar in three zones; every key there is a gesture a menu already reaches.
-import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, Spacer, ShellStyle } from "ds/ds.slint";
+import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, Spacer, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
 
 export global Bar {
     in property <bool> editing;
@@ -13,6 +13,8 @@ export global Bar {
     in property <string> filter: "ALL";
     in property <string> undo-title: "Undo";
     in property <string> redo-title: "Redo";
+    // The face the open photo is edited on: 0 Pro, 1 Scanner.
+    in-out property <int> face;
     // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
     in property <length> traffic-lights;
     callback act(string);
@@ -48,6 +50,14 @@ component EditorKeys inherits HorizontalLayout {
     ButtonGroup {
         Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
         Item { action: "redo"; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
+    }
+    // `faceBinding`: the faces ride beside the history, present only while a photograph is worked.
+    Tabs {
+        width: ScannerStyle.face-bar;
+        tabs: ["Pro", "Scanner"];
+        marked: [false, false];
+        selected <=> Bar.face;
+        picked(i) => { Bar.act(i == 1 ? "face-scanner" : "face-pro"); }
     }
     ButtonGroup {
         Item { action: "copy"; icon: Icons.copy; help: "Copy settings (⌘⇧C)"; enabled: Bar.has-photo; }

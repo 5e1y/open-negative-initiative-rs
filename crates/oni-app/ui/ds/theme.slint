@@ -288,3 +288,42 @@ export global PlotInkStyle {
     out property <color> handle-active: DS.palette-handle-active;
     out property <color> handle-idle: DS.palette-handle-idle;
 }
+
+// `DS.Scanner`: the Lab keypad's keys and bands, the face bar, the scanner's screen.
+export global ScannerStyle {
+    out property <length> face-bar: DS.control-mode-bar-width;
+    out property <length> key-height: DS.scanner-key-height;
+    out property <length> wide-key: DS.scanner-wide-key-width;
+    out property <length> legend: DS.scanner-key-legend-size;
+    out property <length> key-padding: DS.scanner-key-padding-h;
+    out property <length> key-radius: Radius.track;
+    out property <length> key-gap: Space.xxs;
+    out property <length> socket-radius: Radius.badge;
+    out property <color> socket: DS.palette-tile;
+    // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.
+    out property <color> cap-light: DS.palette-keycap;
+    out property <color> cap-dark: DS.palette-canvas;
+    out property <color> band-dark: DS.scanner-band-dark;
+    out property <color> band-light: DS.scanner-band-light;
+    out property <color> band-red: DS.scanner-band-red;
+    out property <color> band-cyan: DS.scanner-band-cyan;
+    out property <color> band-green: DS.scanner-band-green;
+    out property <color> band-magenta: DS.scanner-band-magenta;
+    out property <color> band-blue: DS.scanner-band-blue;
+    out property <color> band-yellow: DS.scanner-band-yellow;
+    out property <color> band-cool: DS.scanner-band-cool;
+    out property <color> band-warm: DS.scanner-band-warm;
+    // `LabKeyboard.band`: a fill this light in Rec. 709 luma takes the dark ink.
+    out property <float> light-luma: 0.55;
+    out property <color> glass: DS.palette-lcd-glass;
+    out property <color> lcd-ink: DS.palette-lcd-ink;
+    out property <length> screen-label: DS.scanner-screen-label-size;
+    out property <length> screen-value: DS.scanner-screen-value-size;
+    out property <length> scanline-pitch: DS.scanner-scanline-pitch;
+    // `LabScreen`'s scanlines: black at 35 %.
+    out property <color> scanline: #00000059;
+    // The screen's face, the system's monospaced design.
+    out property <string> mono: "monospace";
+    out property <int> value-weight: 700;
+    out property <int> label-weight: 500;
+}

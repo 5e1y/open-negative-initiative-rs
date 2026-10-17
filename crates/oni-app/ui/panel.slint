@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller, Well, HelpMark } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 
@@ -16,9 +16,52 @@ export global PanelState {
     in property <bool> flat-field-on;
     // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
     in property <bool> crop-first;
+    // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
+    in property <bool> separation-shown: true;
     callback auto-balance();
     callback pick(string);
     callback tab-picked(int);
+}
+
+// The Scanner face: its screen, its keypad's state, and the keys' presses for Rust.
+export global Lab {
+    in property <bool> shown;
+    in-out property <int> machine;
+    in property <bool> monochrome;
+    in property <string> frame: "FRAME --/--";
+    in property <string> machine-line;
+    in property <bool> remeasure;
+    in property <[LabCell]> cells;
+    in property <[string]> finish;
+    in property <[string]> legends: ["−3", "−", "+", "+3"];
+    // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
+    in property <[bool]> modified: [false, false, false, false];
+    // A letter by its index in `Letter::ALL` (D, C, M, Y, TEMP), an effect in `Effect`'s order.
+    callback press(int, int);
+    callback clear(int);
+    callback step-effect(int, int);
+    callback clear-effect(int);
+    callback machine-picked(int);
+    callback reset-group(int);
+}
+
+component LabBlock inherits Section {
+    modified: Lab.modified[self.block];
+    reset(b) => { Lab.reset-group(b); }
+}
+
+component LetterRow inherits KeyRow {
+    in property <int> letter;
+    legends: Lab.legends;
+    stepped(by) => { Lab.press(root.letter, by); }
+    reset => { Lab.clear(root.letter); }
+}
+
+component EffectRow inherits KeyRow {
+    in property <int> effect;
+    legends: Lab.legends;
+    stepped(by) => { Lab.step-effect(root.effect, by); }
+    reset => { Lab.clear-effect(root.effect); }
 }
 
 component StoreSlider inherits Slider {
@@ -71,7 +114,7 @@ component RollPane inherits Pane {
             Toggle { label: "Flat-field"; on: PanelState.flat-field-on; }
         }
     }
-    Block {
+    if PanelState.separation-shown: Block {
         title: "Dye Separation";
         block: 5;
         modified: Store.dye-separation-modified;
@@ -232,7 +275,41 @@ component DedustPane inherits Pane {
 }
 
 component ColorPane inherits Pane {
-    Block {
+    // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
+    if Lab.shown: Section {
+        title: "Machine";
+        separated: false;
+        Tabs {
+            tabs: ["ONI", "Frontier"];
+            marked: [false, false];
+            selected <=> Lab.machine;
+            picked(i) => { Lab.machine-picked(i); }
+        }
+    }
+    if Lab.shown: LabBlock {
+        title: "Density";
+        block: 0;
+        Keypad {
+            LetterRow { letter: 0; title: "D"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["D −3: toward dark", "D −: toward dark", "", "D +: toward light", "D +3: toward light"]; }
+        }
+    }
+    if Lab.shown: LabBlock {
+        title: "Color";
+        block: 1;
+        Keypad {
+            LetterRow { letter: 1; title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: ["C −3: toward red", "C −: toward red", "", "C +: toward cyan", "C +3: toward cyan"]; }
+            LetterRow { letter: 2; title: "M"; minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: ["M −3: toward green", "M −: toward green", "", "M +: toward magenta", "M +3: toward magenta"]; }
+            LetterRow { letter: 3; title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: ["Y −3: toward blue", "Y −: toward blue", "", "Y +: toward yellow", "Y +3: toward yellow"]; }
+        }
+    }
+    if Lab.shown: LabBlock {
+        title: "Look";
+        block: 2;
+        Keypad {
+            LetterRow { letter: 4; title: "TEMP"; minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; helps: ["TEMP −3: toward cool", "TEMP −: toward cool", "", "TEMP +: toward warm", "TEMP +3: toward warm"]; }
+        }
+    }
+    if !Lab.shown: Block {
         title: "Color";
         separated: false;
         block: 0;
@@ -260,7 +337,7 @@ component ColorPane inherits Pane {
         }
         StoreSlider { field: 2; label: "Color density (same as saturation)"; fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
     }
-    Block {
+    if !Lab.shown: Block {
         title: "Lighting";
         block: 1;
         modified: Store.lighting-modified;
@@ -277,7 +354,7 @@ component ColorPane inherits Pane {
             fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black;
         }
     }
-    Block {
+    if !Lab.shown: Block {
         title: "Effects";
         block: 2;
         modified: Store.effects-modified;
@@ -285,6 +362,21 @@ component ColorPane inherits Pane {
         StoreSlider { field: 8; label: "Contrast"; fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
         StoreSlider { field: 9; label: "Vignette"; fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
+    }
+    // `LabStepKeys`: on the Scanner face its own finishing, a click a step, the title back to rest.
+    if Lab.shown: LabBlock {
+        title: "Effects";
+        block: 3;
+        help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
+        Keypad {
+            EffectRow { effect: 0; title: "CONTRAST"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["Contrast −3: toward softer, +15 %", "Contrast −: toward softer, +5 %", "Contrast back to 0 %", "Contrast +: toward harder, +5 %", "Contrast +3: toward harder, +15 %"]; }
+        }
+        Keypad {
+            EffectRow { effect: 1; title: "VIGNETTE"; minus: ScannerStyle.band-light; plus: ScannerStyle.band-dark; helps: ["Vignette −3: toward lighter corners, +0.3 EV", "Vignette −: toward lighter corners, +0.1 EV", "Vignette back to 0 EV", "Vignette +: toward darker corners, +0.1 EV", "Vignette +3: toward darker corners, +0.3 EV"]; }
+        }
+        if !Lab.monochrome: Keypad {
+            EffectRow { effect: 2; title: "CHROME"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["Chrome −3: toward less, +15 %", "Chrome −: toward less, +5 %", "Chrome back to 0 %", "Chrome +: toward more, +5 %", "Chrome +3: toward more, +15 %"]; }
+        }
     }
     EditorBlock {
         title: "Curves";
@@ -340,11 +432,21 @@ component DetailsPane inherits Pane {
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
     VerticalLayout {
-        HistogramFrame {
+        // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
+        if !Lab.shown || PanelState.tab == 3: HistogramFrame {
             source: Plots.output;
             size: PlotSize.main;
             // Lighting's curves over the plot, on the Color tab alone.
             if PanelState.tab == 2: PrintOverlay { }
+        }
+        if Lab.shown && PanelState.tab != 3: LabScreen {
+            height: PlotStyle.main;
+            frame: Lab.frame;
+            machine: Lab.machine-line;
+            remeasure: Lab.remeasure;
+            remeasure-help: "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess.";
+            cells: Lab.cells;
+            finish: Lab.finish;
         }
         HorizontalLayout {
             padding-left: Space.m;

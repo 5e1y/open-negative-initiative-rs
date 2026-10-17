@@ -3,7 +3,7 @@
 
 use crate::fields::{Block, Field};
 use oni_core::{Command, EditorStore, Surface};
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, Face, PipelineSettings};
 
 pub trait Store {
     /// Opens a frame on its sidecar, writing the previous one first.
@@ -37,6 +37,16 @@ pub trait Store {
 
     fn editor_ref(&self) -> Option<&EditorStore> {
         None
+    }
+
+    /// The face the open frame is edited on, which `Command::Face` switches.
+    fn face(&self) -> Face {
+        Face::Pro
+    }
+
+    /// The settings as the open face's Color tab reads them.
+    fn face_view(&self) -> PipelineSettings {
+        self.settings().clone()
     }
 }
 
@@ -92,6 +102,14 @@ impl Store for EditorStore {
 
     fn editor_ref(&self) -> Option<&EditorStore> {
         Some(self)
+    }
+
+    fn face(&self) -> Face {
+        EditorStore::face(self)
+    }
+
+    fn face_view(&self) -> PipelineSettings {
+        EditorStore::face_view(self)
     }
 }
 

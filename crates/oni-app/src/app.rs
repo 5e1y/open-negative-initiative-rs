@@ -46,6 +46,8 @@ const WRITE_DELAY: Duration = Duration::from_millis(500);
 /// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
 const HISTOGRAM: (usize, usize) = (680, 300);
 
+mod lab;
+
 pub struct Options {
     pub screen: Screen,
     /// The device Slint draws the window with, on which the display kernel writes the canvas;
@@ -574,6 +576,7 @@ impl Ctl {
         bar.set_can_reset(has_photo);
         bar.set_targets(selected.max(usize::from(has_photo)) as i32);
         bar.set_editing(!w.global::<App>().get_gallery());
+        self.publish_lab();
     }
 
     fn place(&self, f: Field, at: f32) {
@@ -2165,15 +2168,19 @@ impl Ctl {
                     self.label(m);
                 }
             }
+            a if self.lab_act(a) => {}
             other => self.say(&format!("“{other}” is not in this build yet")),
         }
     }
 
     /// The key monitor: modifier chords always, bare keys only when no field holds the keyboard, which
     /// is given: a text field consumes its printable keys before they reach this scope.
-    fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, _option: bool) -> bool {
+    fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         if text == "\u{1b}" && self.window().is_some_and(|w| w.global::<Pairing>().get_shown()) {
             self.close_pairing();
+            return true;
+        }
+        if self.lab_key(text, bare, repeat) {
             return true;
         }
         let key = text.to_lowercase();
@@ -2336,10 +2343,12 @@ impl Ctl {
         let p = me.clone();
         window.global::<App>().on_menu(move |a| p.act(&a));
         let p = me.clone();
-        window.global::<App>().on_key(move |text, control, _meta, shift, option| {
+        window.global::<App>().on_key(move |text, control, meta, shift, option, repeat| {
             // Slint already hands ⌘ over as `control` on a Mac, and the Control key as `meta`.
-            p.key(&text, control, shift, option)
+            p.key(&text, control, shift, !(control || meta || shift || option), repeat)
         });
+        Ctl::wire_lab(me, window);
+        me.adopt_remembered_face();
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));
         let p = me.clone();

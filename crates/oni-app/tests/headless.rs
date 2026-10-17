@@ -73,7 +73,8 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     println!("rendering on {}", engine.lock().unwrap().adapter());
-    let shell = Shell::new(Box::new(store), engine, Options::default()).unwrap();
+    let options = Options { support: folder.parent().unwrap().join("Support"), ..Options::default() };
+    let shell = Shell::new(Box::new(store), engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
     shell.window.show().unwrap();
@@ -209,7 +210,8 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let selected: Vec<i32> = app::tiles(w).iter().filter(|t| t.selected).map(|t| t.index).collect();
     assert_eq!(selected, vec![5]);
 
-    // A Scanner-face frame opened in the editor renders on the canvas, through the Frontier's table.
+    // A Scanner-face frame opened on the Scanner face renders on the canvas, through the Frontier's table.
+    w.global::<oni_app::Bar>().invoke_act("face-scanner".into());
     let scanner = tiles
         .iter()
         .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true, true).unwrap().settings.face == oni_settings::Face::Scanner)
@@ -223,6 +225,8 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert!(canvas.get_frame().size().width > 0, "the canvas shows the Scanner-face frame");
     rig.settle();
     println!("shot {}", rig.shot("editor-scanner-face").display());
+    assert_eq!(ctl.state.borrow().store().settings().face, oni_settings::Face::Scanner);
+    w.global::<oni_app::Bar>().invoke_act("face-pro".into());
 
     // The bench: sixty notches scripted on Exposure, their centiles, and the drag undone.
     let before = ctl.state.borrow().store().get(Field::Exposure);

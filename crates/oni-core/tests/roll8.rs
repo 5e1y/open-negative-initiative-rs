@@ -44,6 +44,12 @@ impl Roll {
         EditorStore::new(Archive::new(self.frames.clone(), |p: &Path| p.extension().is_some_and(|e| e == "NEF")))
     }
 
+    /// Opens a frame on the face its sidecar was left on, so opening alone rewrites nothing.
+    fn open(&self, store: &mut EditorStore, frame: &str) {
+        store.scanner_face = self.settings(frame).face == oni_settings::Face::Scanner;
+        store.open(frame).unwrap();
+    }
+
     fn bytes(&self) -> BTreeMap<String, Vec<u8>> {
         self.frames.iter().map(|f| (f.clone(), std::fs::read(sidecar::url_for(Path::new(f))).unwrap())).collect()
     }
@@ -81,7 +87,7 @@ fn a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes
     let original = roll.bytes();
     let open = roll.frames[3].clone();
     let mut store = roll.store();
-    store.open(&open).unwrap();
+    roll.open(&mut store, &open);
     let id = store.settings().roll_reference.as_ref().unwrap().id;
     let on_roll = store.measured_with(id);
     assert_eq!(on_roll.len(), roll.frames.len());
@@ -119,7 +125,7 @@ fn a_drag_is_one_step_and_one_roll_write() {
     let Some(roll) = Roll::copy("drag") else { return };
     let original = roll.bytes();
     let mut store = roll.store();
-    store.open(&roll.frames[0]).unwrap();
+    roll.open(&mut store, &roll.frames[0]);
     let start = store.settings().density_ceiling;
     store.hold();
     for i in 1..=12 {
@@ -148,7 +154,7 @@ fn a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte() {
     let Some(roll) = Roll::copy("paste") else { return };
     let original = roll.bytes();
     let mut store = roll.store();
-    store.open(&roll.frames[0]).unwrap();
+    roll.open(&mut store, &roll.frames[0]);
     store.apply_at(Command::Set { knob: Knob::Exposure, value: 0.4 }, 0.0);
     store.apply_at(Command::Set { knob: Knob::SharpenAmount, value: 2.2 }, 1.0);
     store.apply_at(Command::Set { knob: Knob::Angle, value: 1.5 }, 2.0);
@@ -182,12 +188,12 @@ fn a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte() {
 fn paste_to_roll_is_one_editor_step_over_the_whole_roll() {
     let Some(roll) = Roll::copy("paste-roll") else { return };
     let mut store = roll.store();
-    store.open(&roll.frames[1]).unwrap();
+    roll.open(&mut store, &roll.frames[1]);
     store.apply_at(Command::Set { knob: Knob::Texture, value: 0.6 }, 0.0);
     store.copy_settings();
     store.close();
     let snapshot = roll.bytes();
-    store.open(&roll.frames[20]).unwrap();
+    roll.open(&mut store, &roll.frames[20]);
     store.paste_to_roll();
     store.flush();
     for frame in &roll.frames {
@@ -210,7 +216,7 @@ fn the_balance_key_writes_only_on_a_press_and_one_undo_takes_it_back() {
     let Some(roll) = Roll::copy("balance") else { return };
     let mut store = roll.store();
     let open = roll.frames[0].clone();
-    store.open(&open).unwrap();
+    roll.open(&mut store, &open);
     store.flush();
     let snapshot = roll.bytes();
     let reference = store.settings().roll_reference.clone().unwrap();
@@ -243,7 +249,7 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     std::fs::write(&frame, b"stand-in original").unwrap();
     let before = roll.bytes();
     let mut store = roll.store();
-    store.open(&frame).unwrap();
+    roll.open(&mut store, &frame);
     assert_eq!(store.move_to_trash(std::slice::from_ref(&frame)), 1);
     assert!(store.path().is_none(), "the open frame closes");
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_some());
@@ -259,6 +265,7 @@ fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
 fn the_bars_reset_keeps_framing_flat_field_and_roll() {
     let Some(roll) = Roll::copy("reset") else { return };
     let mut store = roll.store();
+    // On the Pro face, whatever face the frame was left on.
     store.open(&roll.frames[4]).unwrap();
     store.apply_at(Command::Set { knob: Knob::Angle, value: 2.0 }, 0.0);
     store.apply_at(Command::Set { knob: Knob::SharpenAmount, value: 2.5 }, 1.0);

@@ -1,5 +1,5 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
-import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
@@ -7,6 +7,7 @@ import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "container
 import { ListRow, TreeItem, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { PlotInkStyle } from "theme.slint";
+import { Key, KeyRow, Keypad, LabScreen } from "keypad.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -218,6 +219,28 @@ export component Catalogue inherits AppWindow {
                             Section { title: "Folded"; folded: true; Label { text: "Hidden"; } }
                             Section { title: "Unmodified"; block: 1; Label { text: "Content"; tone: Tone.secondary; } }
                         }
+                    }
+                }
+                Group {
+                    title: "Keypad and Lab screen";
+                    LabScreen {
+                        height: PlotStyle.main;
+                        frame: "FRAME 09/38";
+                        machine: "FRONTIER · NEGA";
+                        remeasure: true;
+                        cells: [{ title: "D", value: "+3" }, { title: "C", value: "−2" }, { title: "M", value: "0" }, { title: "Y", value: "+24" }, { title: "TEMP", value: "−10" }];
+                        finish: ["CT +20 %", "VIG 0 EV", "CHR 0 %"];
+                    }
+                    Keypad {
+                        KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: ["", "", "", "", ""]; }
+                        KeyRow { title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: ["", "", "", "", ""]; }
+                    }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        Key { legend: "REST"; }
+                        Key { legend: "HOVER"; look: Look.hover; }
+                        Key { legend: "PRESSED"; look: Look.pressed; }
+                        Key { legend: "+3"; fill: ScannerStyle.band-light; }
                     }
                 }
                 Group {

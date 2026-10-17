@@ -2,7 +2,7 @@
 //! and the ONI machine, Pro's conversion on a resting Lighting moved by the Frontier's measured clicks.
 
 use crate::conversion::{M3, IDENTITY, separation_matrix};
-use oni_render::{ColorCube, ScannerDensity};
+use oni_render::{ColorCube, ScannerDensity, ScannerOutput, cpu};
 use oni_settings::axis::{density_axis, graduation, pipeline};
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::modes::{Face, ScannerMachine};
@@ -215,9 +215,69 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     Some(out)
 }
 
+/// `ScannerRender.replica`: one transmittance through the Frontier on the CPU, as the GPU renders it;
+/// `None` off the Frontier.
+pub fn replica(t: [f32; 3], s: &PipelineSettings) -> Option<[f32; 3]> {
+    if s.scanner_machine != ScannerMachine::Frontier {
+        return None;
+    }
+    let m = &*MACHINE;
+    let code = cpu::color_cube(cpu::scanner_density([t[0], t[1], t[2], 1.0], &density(s)), &m.render);
+    let (warmth, share) = m.warmth(s.scanner.w).map_or((code, 0.0), |(cube, share)| (cpu::color_cube(code, cube), share));
+    let out = cpu::scanner_output(code, warmth, &ScannerOutput { warmth_share: share, lift: LIFT, contrast: s.scanner_finish.contrast });
+    Some([out[0], out[1], out[2]])
+}
+
+/// `ScannerRender.checkGrey`: a mid grey's densities on a colour negative, its orange mask included.
+pub const CHECK_GREY: [f32; 3] = [0.99, 1.37, 1.67];
+
+/// `ScannerRender.checkRoll`: a roll balanced as a measured one is, the grey on its median, on the Frontier.
+pub fn check_roll() -> PipelineSettings {
+    use oni_settings::ConversionMode;
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+    s.face = Face::Scanner;
+    s.scanner_machine = ScannerMachine::Frontier;
+    let lift = CHECK_GREY.map(|g| g - CHECK_GREY[1]);
+    s.gains.stops = lift.map(|l| l / 2f32.log10());
+    let base = [0.24 - lift[0], 0.62 - lift[1], 0.92 - lift[2]];
+    let grey = CHECK_GREY[1];
+    let white = base.map(|b| b + 2.0 * (grey - b));
+    (s.levels.red.black, s.levels.green.black, s.levels.blue.black) = (base[0], base[1], base[2]);
+    (s.levels.red.white, s.levels.green.white, s.levels.blue.white) = (white[0], white[1], white[2]);
+    let window = graduation::window(ConversionMode::Negative);
+    let median = (grey - window.start()) / (window.end() - window.start());
+    s.roll_reference = Some(oni_settings::frame::RollReference {
+        id: oni_settings::Id::new(),
+        stops: s.gains.stops,
+        black: [0.1; 3],
+        white: [0.7; 3],
+        base: None,
+        median: Some([median; 3]),
+    });
+    s
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// `ScannerKey.selfCheck`'s render half: the keypad's letters read through the measured table.
+    #[test]
+    fn a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off() {
+        let roll = check_roll();
+        let mid = CHECK_GREY.map(|d| 10f32.powf(-d));
+        let rendered = |clicks: ScannerClicks| replica(mid, &PipelineSettings { scanner: clicks, ..roll.clone() }).unwrap();
+        let rest = rendered(ScannerClicks::default());
+        let (lighter, darker) = (rendered(ScannerClicks::new(2, 0, 0, 0, 0)), rendered(ScannerClicks::new(-2, 0, 0, 0, 0)));
+        let (cooler, redder) = (rendered(ScannerClicks::new(0, 2, 0, 0, 0)), rendered(ScannerClicks::new(0, -2, 0, 0, 0)));
+        assert!(lighter[1] > rest[1] && darker[1] < rest[1], "D + lightens: green {} against {}", lighter[1], rest[1]);
+        assert!(cooler[0] < rest[0] && redder[0] > rest[0], "C + takes red off: {} against {}", cooler[0], rest[0]);
+        // Twin: off the Frontier no table is read, so a check through it cannot pass by default.
+        assert!(replica(mid, &PipelineSettings { scanner_machine: ScannerMachine::Oni, ..roll.clone() }).is_none());
+        // And TEMP + warms the grey: more red than blue than at rest.
+        let warm = rendered(ScannerClicks::new(0, 0, 0, 0, 4));
+        assert!(warm[0] - warm[2] > rest[0] - rest[2], "{warm:?} against {rest:?}");
+    }
 
     #[test]
     fn the_table_reads_and_an_odd_count_sits_between_its_neighbours() {

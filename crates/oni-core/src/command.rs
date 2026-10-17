@@ -3,7 +3,7 @@
 
 use crate::knob::Knob;
 use oni_link::scanner::{Effect, Letter, Machine};
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, Face, PipelineSettings};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Command {
@@ -14,6 +14,10 @@ pub enum Command {
     /// A structured edit a knob cannot carry, a curve or a crop, as the whole settings it leaves.
     Write(Box<PipelineSettings>),
     Mode(ConversionMode),
+    /// The face the frame renders by and the Color tab edits: Pro's chain or the Scanner's keypad.
+    Face(Face),
+    /// A structured edit of the Color tab made on `EditorStore::face_view`, stored by the open face.
+    Finish(Box<PipelineSettings>),
     /// The bar's reset: back to the imported state, framing, flat-field and dye family kept.
     Reset,
     /// The scanner's keys, as the phone presses them.

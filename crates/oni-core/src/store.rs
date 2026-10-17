@@ -14,7 +14,7 @@ use oni_settings::codec;
 use oni_settings::frame::Geometry;
 use oni_settings::settings::{look_settings, roll_settings};
 use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{ConversionMode, Date, Id, PipelineSettings, ScannerMachine};
+use oni_settings::{ConversionMode, Date, Face, Id, PipelineSettings, ScannerMachine};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 use std::time::Instant;
@@ -79,7 +79,8 @@ pub struct EditorStore {
     gallery: GalleryHistory,
     archive: Archive,
     pub board: Board,
-    /// Rendering the Scanner face: its reset keeps Chrome and clears the clicks.
+    /// Open on the Scanner face: the frame adopts it, its Color tab edits `ScannerFinish`, its reset
+    /// keeps Chrome and clears the clicks. Set through `Command::Face`.
     pub scanner_face: bool,
     held: bool,
     /// A hand edit of a Roll Settings field waiting for its step, to write the roll with it.
@@ -191,6 +192,9 @@ impl EditorStore {
             Err(e) => (PipelineSettings::rest(ConversionMode::Negative, self.mosaic(path)), false, None, Err(e)),
         };
         self.open = Some(Open { path: path.to_string(), writable, persisted });
+        // `adoptFace`: the frame renders by the face it opens in, and that is where its history starts.
+        let mut settings = settings;
+        settings.face = self.face();
         self.history = History::new(settings.clone());
         self.replace(settings);
         self.pending = FieldSet::all();
@@ -269,6 +273,9 @@ impl EditorStore {
 
     /// Applies a command as at `now`, seconds on the store's own clock.
     pub fn apply_at(&mut self, command: Command, now: f64) -> Applied {
+        if let Command::Face(face) = command {
+            self.scanner_face = face == Face::Scanner;
+        }
         if self.open.is_none() {
             return Applied::default();
         }
@@ -294,12 +301,33 @@ impl EditorStore {
         Applied { changed, walk: None }
     }
 
+    /// The face the open frame is edited on.
+    pub fn face(&self) -> Face {
+        if self.scanner_face { Face::Scanner } else { Face::Pro }
+    }
+
+    /// `colourBinding`: the settings as the open face's Color tab reads them, the Scanner's own
+    /// finishing in Pro's fields on the Scanner face.
+    pub fn face_view(&self) -> PipelineSettings {
+        if self.scanner_face { self.settings.as_scanner() } else { self.settings.clone() }
+    }
+
+    /// An edit made on `face_view`, stored so the other face's finishing stays where it was.
+    fn stored_by_face(&self, edited: PipelineSettings) -> PipelineSettings {
+        if self.scanner_face { self.settings.storing_scanner_edit(&edited) } else { edited }
+    }
+
     fn commanded(&self, command: Command) -> PipelineSettings {
         let s = &self.settings;
         match command {
-            Command::Set { knob, value } => knob.set(s, value),
-            Command::Step { knob, by } => knob.set(s, knob.get(s) + by),
+            Command::Set { knob, value } => self.stored_by_face(knob.set(&self.face_view(), value)),
+            Command::Step { knob, by } => {
+                let view = self.face_view();
+                self.stored_by_face(knob.set(&view, knob.get(&view) + by))
+            }
             Command::Write(next) => *next,
+            Command::Finish(next) => self.stored_by_face(*next),
+            Command::Face(face) => PipelineSettings { face, ..s.clone() },
             Command::Mode(mode) => adapted(s, mode),
             Command::Reset => parameters::reset_blank(s, self.scanner_face),
             Command::Scan(scan) => scanned(s, scan),
