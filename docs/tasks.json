@@ -107,9 +107,10 @@
     "id": 13,
     "type": "chore",
     "title": "Prepare the repository to be public",
-    "status": "doing",
+    "status": "done",
     "detail": "Public repositories get GitHub Actions for free.",
-    "outcome": "History audited: no key, token, private image or RAW; the only personal datum is the owner's commit email on two GitHub merges, already public on the releases repository. LICENSE (GPL-3.0) and a README added."
+    "outcome": "History audited: no key, token, private image or RAW; the only personal datum is the owner's commit email on two GitHub merges, already public on the releases repository. LICENSE (GPL-3.0) and a README added. The repository went public on the owner's word; Windows CI runs on every push.",
+    "commit": "a82106b"
   },
   {
     "id": 14,
