@@ -7,9 +7,10 @@ use oni_graph::{Graph, Image, Rect, Source, Stage};
 use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::PipelineSettings;
 use std::collections::VecDeque;
+use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 /// `Negative.previewSide`: the long side every editor render and thumbnail starts from.
@@ -122,6 +123,8 @@ impl Device {
         let adapter = pollster::block_on(instance.request_adapter(&options)).map_err(|e| format!("no GPU adapter: {e}"))?;
         let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), ..Default::default() };
         let (device, queue) = pollster::block_on(adapter.request_device(&descriptor)).map_err(|e| format!("no GPU device: {e}"))?;
+        // Logged, not raised: a surface reconfigure that loses a race keeps its old size until the next frame.
+        device.on_uncaptured_error(Arc::new(|e: wgpu::Error| crate::timing::line(&format!("wgpu error: {e}"))));
         Ok(Device { instance, adapter, device, queue })
     }
 }
@@ -132,7 +135,98 @@ pub struct Engine {
     pipeline: Pipeline,
 }
 
-pub type Shared = Arc<Mutex<Engine>>;
+/// The engine every thread shares, behind a gate the interface thread closes while the window's
+/// surface is reconfigured: wgpu refuses a reconfigure that another thread submits work during.
+#[derive(Clone)]
+pub struct Shared(Arc<Gated>);
+
+struct Gated {
+    engine: Mutex<Engine>,
+    gate: Mutex<Gate>,
+    turn: Condvar,
+}
+
+#[derive(Default)]
+struct Gate {
+    held: bool,
+    inside: usize,
+}
+
+/// The engine, locked by a thread the gate let through.
+pub struct EngineGuard<'a> {
+    engine: Option<MutexGuard<'a, Engine>>,
+    gated: &'a Gated,
+}
+
+impl Deref for EngineGuard<'_> {
+    type Target = Engine;
+    fn deref(&self) -> &Engine {
+        self.engine.as_ref().expect("held until dropped")
+    }
+}
+
+impl DerefMut for EngineGuard<'_> {
+    fn deref_mut(&mut self) -> &mut Engine {
+        self.engine.as_mut().expect("held until dropped")
+    }
+}
+
+impl Drop for EngineGuard<'_> {
+    fn drop(&mut self) {
+        self.engine.take();
+        self.gated.leave();
+    }
+}
+
+impl Gated {
+    fn leave(&self) {
+        if let Ok(mut g) = self.gate.lock() {
+            g.inside -= 1;
+        }
+        self.turn.notify_all();
+    }
+}
+
+impl Shared {
+    /// Waits while the gate is held, then for the engine.
+    pub fn lock(&self) -> Result<EngineGuard<'_>, String> {
+        let gated = &*self.0;
+        {
+            let mut g = gated.gate.lock().map_err(|_| "the render gate failed earlier")?;
+            while g.held {
+                g = gated.turn.wait(g).map_err(|_| "the render gate failed earlier")?;
+            }
+            g.inside += 1;
+        }
+        match gated.engine.lock() {
+            Ok(engine) => Ok(EngineGuard { engine: Some(engine), gated }),
+            Err(_) => {
+                gated.leave();
+                Err("the render engine failed earlier".into())
+            }
+        }
+    }
+
+    /// Closes the gate and waits for the threads inside to leave, so nothing submits until `release`.
+    pub fn hold(&self) {
+        let gated = &*self.0;
+        let Ok(mut g) = gated.gate.lock() else { return };
+        g.held = true;
+        while g.inside > 0 {
+            match gated.turn.wait(g) {
+                Ok(next) => g = next,
+                Err(_) => return,
+            }
+        }
+    }
+
+    pub fn release(&self) {
+        if let Ok(mut g) = self.0.gate.lock() {
+            g.held = false;
+        }
+        self.0.turn.notify_all();
+    }
+}
 
 impl Engine {
     pub fn on(d: &Device) -> Engine {
@@ -142,7 +236,7 @@ impl Engine {
     }
 
     pub fn shared(d: &Device) -> Shared {
-        Arc::new(Mutex::new(Engine::on(d)))
+        Shared(Arc::new(Gated { engine: Mutex::new(Engine::on(d)), gate: Mutex::new(Gate::default()), turn: Condvar::new() }))
     }
 
     pub fn adapter(&self) -> &str {
@@ -187,7 +281,7 @@ pub trait Renderer<I>: Send {
 
 impl Renderer<Negative> for Shared {
     fn render(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Linear, String> {
-        self.lock().map_err(|_| "the render engine failed earlier".to_string())?.render(negative, settings, None)
+        self.lock()?.render(negative, settings, None)
     }
 }
 

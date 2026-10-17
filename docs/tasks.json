@@ -172,5 +172,19 @@
     "detail": "File > Pair Phone… starts oni-link's Host on the local network on its own thread, shows the pairing QR code in a sheet, and drives the store once paired: the phone's scanner keys step the open frame, State is published after every change, Walk opens and selects the neighbour frame.",
     "commit": "f4b7333",
     "outcome": "phone.rs: the desktop's key made once in <support>/Link/host.key, trusted phones in <support>/Link/trusted.txt, the Host on a 'phone link' thread with a current-thread tokio runtime, listening on 0.0.0.0:53318 (any free port when taken), stopped and joined on drop; the QR code drawn from the URI (8 px modules, 4-module margin) for a Slint image. The pairing code carries the address of the interface that routes outward and the bound port. app.rs: File > Pair Phone… shows the sheet (pairing.slint: scrim, panel card, Enriqueta title, the code on white, status, DONE; DONE, the scrim or Escape close it and spend the code); each Host event is applied on the interface thread through Link::handle on the EditorStore (Store::editor), then the window publishes; every publish refreshes the phone's screen with the open frame's place in its group; Walk opens and selects the neighbour, stopping at the ends. A launch with a trusted phone starts the Host without opening a pairing window. Verified on llvmpipe: unit tests (the QR finder and margin with a light-ring twin, a trusted key written once, the host key kept across starts) and tests/phone.rs on the headless window: the sheet's URI pairs a loopback Remote (its addresses, then 127.0.0.1 on its port), the first screen reads frame 1 of 2, Step D +3 moves the store's scanner.d by 3 and the phone reads it, the phone's undo returns it, Walk +1 opens and selects B, a second walk stops at the end, and after DONE a second phone on the same code is refused while the first stays connected. Screenshot of the sheet read back. Not tried with the Android phone or through the macOS firewall prompt."
+  },
+  {
+    "id": 22,
+    "type": "bug",
+    "title": "Resizing the window crashes the app",
+    "status": "doing",
+    "detail": "Slint's surface configure waits for the shared device to go idle and wgpu reports a validation error when another thread submitted meanwhile; the default handler panics. Errors are logged instead, and the render thread's submissions stay off the reconfigure."
+  },
+  {
+    "id": 23,
+    "type": "perf",
+    "title": "A drag shows one frame per display refresh",
+    "status": "doing",
+    "detail": "A dragged value reaches the settings once per display frame (1/120 s), and the notch path drops its waste: no CPU readback, no per-frame buffer upload on the interface thread, a stale notch superseded rather than queued. Target: gap p99 at or under 8.3 ms."
   }
 ]

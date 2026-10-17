@@ -1,5 +1,6 @@
 //! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on Exposure at a
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
+//! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -18,8 +19,21 @@ const SPAN: f32 = 300.0;
 /// The first render waited for, decode included, before the bench gives up.
 const LOADING: Duration = Duration::from_secs(600);
 
-pub fn requested() -> bool {
-    std::env::var_os("ONI_BENCH").is_some_and(|v| v == "1")
+/// The two window sizes the resize bench alternates between, in logical points.
+const SIZES: [(f32, f32); 2] = [(1100.0, 712.0), (900.0, 600.0)];
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    Drag,
+    Resize,
+}
+
+pub fn requested() -> Option<Mode> {
+    match std::env::var("ONI_BENCH").ok()?.as_str() {
+        "1" => Some(Mode::Drag),
+        "resize" => Some(Mode::Resize),
+        _ => None,
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -31,7 +45,7 @@ enum Phase {
 
 /// Drives the drag on the window's timers; `done` receives the report once the last notch is shown
 /// and the drag is undone, so the frame's sidecar reads as it did.
-pub fn start(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
@@ -63,6 +77,10 @@ pub fn start(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             Phase::Dragging { notch, from } => {
                 let notch = notch + 1;
                 g.invoke_drag(field, notch as f32 * STEP, SPAN, false);
+                if mode == Mode::Resize {
+                    let (width, height) = SIZES[notch % SIZES.len()];
+                    w.window().set_size(slint::LogicalSize::new(width, height));
+                }
                 if notch < NOTCHES {
                     phase.set(Phase::Dragging { notch, from });
                 } else {
@@ -74,7 +92,11 @@ pub fn start(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if ctl.state.borrow().rendered() < revision {
                     return;
                 }
-                let report = ctl.state.borrow().notches().summary(from, &format!("bench, {NOTCHES} notches dragged on Exposure"));
+                let title = match mode {
+                    Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
+                    Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
+                };
+                let report = ctl.state.borrow().notches().summary(from, &title);
                 ctl.act("undo");
                 ctl.flush();
                 finish(report);

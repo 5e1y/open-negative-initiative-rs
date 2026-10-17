@@ -6,6 +6,7 @@ use oni_app::render::{Device, Engine};
 use oni_app::{bench, timing};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
+use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::WindowEvent};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -33,12 +34,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => timing::line(&format!("no wgpu renderer ({e}); the canvas is encoded on the CPU")),
     }
     let engine = Engine::shared(&gpu);
+    let gate = engine.clone();
     let folder = std::env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(|| oni_fixtures::folder(oni_fixtures::RAW_DIR));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, ..Options::default() })?;
+    // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
+    shell.window.window().on_winit_window_event(move |_, event| {
+        if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
+            gate.hold();
+            let open = gate.clone();
+            let _ = slint::invoke_from_event_loop(move || open.release());
+        }
+        EventResult::Propagate
+    });
     shell.open_folder(&folder);
-    if bench::requested() {
-        bench::start(&shell.ctl, |report| {
+    if let Some(mode) = bench::requested() {
+        bench::start(&shell.ctl, mode, |report| {
             timing::line(&report);
             let _ = slint::quit_event_loop();
         });

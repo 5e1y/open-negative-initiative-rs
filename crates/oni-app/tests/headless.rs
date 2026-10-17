@@ -223,7 +223,7 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let revision = ctl.state.borrow().store().revision();
     let report = Rc::new(RefCell::new(None));
     let r = report.clone();
-    oni_app::bench::start(&ctl, move |text| *r.borrow_mut() = Some(text));
+    oni_app::bench::start(&ctl, oni_app::bench::Mode::Drag, move |text| *r.borrow_mut() = Some(text));
     rig.until("the bench", Duration::from_secs(300), || report.borrow().is_some());
     let text = report.borrow().clone().unwrap();
     println!("{text}");
