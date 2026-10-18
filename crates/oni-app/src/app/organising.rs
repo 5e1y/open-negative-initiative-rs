@@ -317,7 +317,8 @@ impl Ctl {
             return self.commit_reorder(r);
         }
         let Some((px, py)) = press else { return };
-        if (x - px).hypot(y - py) >= DRAG_DISTANCE {
+        // The document is as tall as its cells: a click under the last row reaches no gesture.
+        if (x - px).hypot(y - py) >= DRAG_DISTANCE || y >= self.state.borrow().layout.height {
             return;
         }
         let index = self.state.borrow().layout.index_at(x, y);
@@ -399,10 +400,13 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `onClickEmpty`: the ground clears the selection and the ring.
+    /// `onClickEmpty`: the ground clears the selection and the ring; the ONI Trash's, its selection.
     fn click_empty(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
+            if !s.trash_shown() {
+                s.picks.anchor = None;
+            }
             s.shown_picks_mut().clear();
             s.org.project_ring = None;
         }
@@ -716,7 +720,7 @@ impl Ctl {
                             kind: 2,
                             expandable: false,
                             expanded: false,
-                            selected: ringed || (s.org.project_ring.is_none() && s.picks.selection.contains(&entry.path)),
+                            selected: ringed || s.picks.selection.contains(&entry.path),
                         },
                     }
                 })

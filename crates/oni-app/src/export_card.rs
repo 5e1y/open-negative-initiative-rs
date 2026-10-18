@@ -232,7 +232,7 @@ impl Ctl {
     pub fn export_now(self: &Rc<Self>) {
         let targets = {
             let s = self.state.borrow();
-            let paths = export::targets(&s.order, &s.selection, s.open.as_deref());
+            let paths = export::targets(&s.order, &s.selection(), s.open.as_deref());
             let open = s.open_path().map(str::to_string);
             let current = s.store.settings().clone();
             paths
@@ -552,7 +552,7 @@ impl Ctl {
         self.set_space(Space::Profile(profile));
     }
 
-    fn ask(&self, what: &Ask) -> Vec<PathBuf> {
+    fn ask_paths(&self, what: &Ask) -> Vec<PathBuf> {
         let chooser = self.export.borrow().chooser.clone();
         if let Some(chooser) = chooser {
             return chooser(what);
@@ -566,7 +566,7 @@ impl Ctl {
 
     /// `loadProfile`: the files installed into the user's profiles, the first chosen, the rest reported.
     pub fn load_profile(self: &Rc<Self>) {
-        let paths = self.ask(&Ask::Profiles);
+        let paths = self.ask_paths(&Ask::Profiles);
         if paths.is_empty() {
             return;
         }
@@ -632,10 +632,10 @@ impl Ctl {
         if targets.len() == 1 {
             let typed = rows[0].as_ref().map_or("", |r| r.name.as_str());
             let name = oni_export::name(&targets[0].path, typed, format);
-            let Some(destination) = self.ask(&Ask::Save { name, extension: format.file_extension().into() }).into_iter().next() else { return };
+            let Some(destination) = self.ask_paths(&Ask::Save { name, extension: format.file_extension().into() }).into_iter().next() else { return };
             return self.write_export(vec![destination]);
         }
-        let Some(folder) = self.ask(&Ask::Folder { count: targets.len() }).into_iter().next() else { return };
+        let Some(folder) = self.ask_paths(&Ask::Folder { count: targets.len() }).into_iter().next() else { return };
         let destinations = export::destinations(&folder, &targets, &rows, format);
         // A folder picker does not ask before overwriting, so the batch checks its clashes itself.
         let clashes = oni_export::clashes(&destinations, |p| p.exists());
@@ -772,7 +772,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (selected, has_photo) = {
             let s = self.state.borrow();
-            (s.selection.len(), s.open.is_some())
+            (s.picks.selection.len(), s.open.is_some())
         };
         let c = self.export.borrow();
         let e = w.global::<Exporting>();

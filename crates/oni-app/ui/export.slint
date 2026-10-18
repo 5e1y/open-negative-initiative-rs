@@ -340,6 +340,7 @@ export component ExportPanel inherits Surface {
                             placeholder: "W";
                             enabled: Exporting.size-enabled;
                             accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
+                            left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
                         }
                         Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
                         height-box := NumberField {
@@ -347,6 +348,7 @@ export component ExportPanel inherits Surface {
                             placeholder: "H";
                             enabled: Exporting.size-enabled;
                             accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
+                            left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
                         }
                         if Exporting.resized: IconButton { icon: Icons.reset; help: "Full resolution"; clicked => { Exporting.full-size(); } }
                     }

@@ -194,6 +194,8 @@ fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() {
     assert_eq!(filtered("All").len(), 3);
 
     // ⇧⌘G moves the selection into a dated roll folder beside it, one gallery step ⌘Z walks back.
+    // The double-click interval first: a second click on B within it would open B.
+    std::thread::sleep(oni_app::system::double_click() + std::time::Duration::from_millis(50));
     lib.invoke_tile_clicked(1, false, false);
     lib.invoke_tile_clicked(2, true, false);
     rig.pump();

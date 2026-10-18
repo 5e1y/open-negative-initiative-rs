@@ -86,6 +86,12 @@ impl Hand<'_> {
         tiles.into_iter().filter(|t| t.selected).map(|t| t.caption.to_string()).collect()
     }
 
+    /// The sidebar's photo rows lit, in the tree's order.
+    fn lit_rows(&self) -> Vec<String> {
+        let rows = self.w.global::<Library>().get_rows();
+        (0..rows.row_count()).filter_map(|i| rows.row_data(i)).filter(|r| r.kind == 2 && r.selected).map(|r| r.title.to_string()).collect()
+    }
+
     fn shown(&self) -> Vec<String> {
         let mut tiles = app::tiles(self.w);
         tiles.sort_by_key(|t| t.index);
@@ -159,9 +165,22 @@ fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_n
     assert_eq!(hand.status(), "2 selected");
     hand.click("D", &[Key::Shift]);
     assert_eq!(hand.selected(), ["A", "C", "D"], "⇧ runs from C, the anchor ⌘ set, and keeps A");
+    let mut lit = hand.lit_rows();
+    lit.sort();
+    assert_eq!(lit, ["A", "C", "D"], "`TreeEngine.marked`: the sidebar lights the gallery's selection");
     hand.rest();
     hand.click("B", &[]);
     assert_eq!(hand.selected(), ["B"], "twin: a plain click replaces the selection");
+    assert_eq!(hand.lit_rows(), ["B"], "and the sidebar follows it");
+    hand.click("B", &[Key::Control]);
+    assert!(hand.selected().is_empty());
+    assert_eq!(hand.lit_rows(), ["B"], "twin: ⌘ empties the selection, the ring stays on B in the sidebar");
+    hand.click("B", &[Key::Control]);
+    // Under the last row the document has ended: no gesture there, the picks stay.
+    let below = (lib.get_grid_x() + 8.0, lib.get_grid_y() + lib.get_content_height() - lib.get_scroll() + 8.0);
+    hand.press_at(below, PointerEventButton::Left);
+    hand.release_at(below, PointerEventButton::Left);
+    assert_eq!(hand.selected(), ["B"], "a click under the rows picks no cell");
 
     // The second plain click on the same cell within the interval opens it; on another cell it does not.
     hand.rest();
@@ -188,6 +207,7 @@ fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_n
     rig.key(&ret);
     assert!(!w.global::<App>().get_gallery());
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("C.tif").as_str()), "Return opens the cursor, C");
+    assert_eq!(hand.lit_rows(), ["C"], "`designate`: the frame opened is the selection, ⌘A's four narrowed to it");
     rig.chord(Key::Control, "g");
     hand.rest();
 

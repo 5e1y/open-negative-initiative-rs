@@ -211,6 +211,8 @@ pub struct State {
     /// The gallery's picks, kept by path so a relayout keeps them, and the ONI Trash's own.
     picks: crate::organise::Picks,
     trash_picks: crate::organise::Picks,
+    /// The archive tree's rows as published, each photo row's path, so a pick relights them in place.
+    tree_paths: Vec<Option<String>>,
     org: organising::Organising,
     columns: usize,
     scroll: f32,
@@ -294,6 +296,23 @@ pub struct State {
 }
 
 impl State {
+    /// The gallery's picks as places in its order, which a batch walks.
+    pub(crate) fn selection(&self) -> std::collections::BTreeSet<usize> {
+        self.order.iter().enumerate().filter(|(_, p)| self.picks.selection.contains(*p)).map(|(i, _)| i).collect()
+    }
+
+    /// `TreeEngine.marked`: the selection the gallery shares, and the ring (`TreeEngine.swift:247`).
+    fn tree_marks(&self, path: &str) -> bool {
+        self.picks.selection.contains(path) || self.picks.anchor.as_deref() == Some(path)
+    }
+
+    /// `designate(_:)`, which every load runs: the frame opened is the selection, cursor and ring.
+    fn designate(&mut self, path: &str) {
+        self.picks.selection = HashSet::from([path.to_string()]);
+        self.picks.anchor = Some(path.to_string());
+        self.picks.cursor = Some(path.to_string());
+    }
+
     pub fn renders(&self) -> usize {
         self.renders
     }
@@ -576,6 +595,7 @@ impl Shell {
             open: None,
             picks: Default::default(),
             trash_picks: Default::default(),
+            tree_paths: Vec::new(),
             org: Default::default(),
             columns: gallery::COLUMN_STEPS[1],
             scroll: 0.0,
@@ -2129,24 +2149,50 @@ impl Ctl {
 
     fn publish_tree(&self) {
         let Some(w) = self.window() else { return };
-        let s = self.state.borrow();
+        let mut s = self.state.borrow_mut();
         let Some(archive) = &s.archive else { return };
-        let open = s.open_path();
-        let rows: Vec<TreeRow> = archive
-            .rows()
+        let rows = archive.rows();
+        let paths: Vec<Option<String>> = rows
+            .iter()
+            .map(|r| match &r.id {
+                oni_library::archive_tree::NodeId::Photo(p) => Some(p.clone()),
+                _ => None,
+            })
+            .collect();
+        let rows: Vec<TreeRow> = rows
             .into_iter()
-            .map(|r| TreeRow {
+            .zip(&paths)
+            .map(|(r, path)| TreeRow {
                 depth: r.depth as i32,
                 title: r.title.into(),
                 caption: r.caption.into(),
                 kind: r.kind,
                 expandable: r.expandable,
                 expanded: r.expanded,
-                selected: matches!(&r.id, oni_library::archive_tree::NodeId::Photo(p) if Some(p.as_str()) == open),
+                selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
             })
             .collect();
+        s.tree_paths = paths;
         drop(s);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
+    }
+
+    /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
+    fn mark_tree(&self) {
+        let Some(w) = self.window() else { return };
+        let model = w.global::<Library>().get_rows();
+        let s = self.state.borrow();
+        if model.row_count() != s.tree_paths.len() {
+            drop(s);
+            return self.publish_tree();
+        }
+        for (i, path) in s.tree_paths.iter().enumerate() {
+            let marked = path.as_deref().is_some_and(|p| s.tree_marks(p));
+            if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
+                row.selected = marked;
+                model.set_row_data(i, row);
+            }
+        }
     }
 
     fn row_clicked(self: &Rc<Self>, i: usize) {
@@ -2162,13 +2208,7 @@ impl Ctl {
         };
         match path {
             Some(path) => {
-                // Bound first: an `if let` scrutinee's borrow lives through its block.
-                {
-                    let mut s = self.state.borrow_mut();
-                    s.picks.selection = HashSet::from([path.clone()]);
-                    s.picks.anchor = Some(path.clone());
-                    s.picks.cursor = Some(path.clone());
-                }
+                self.state.borrow_mut().designate(&path);
                 self.open_photo(&path);
                 self.publish_tiles();
                 self.publish_organising();
@@ -2257,6 +2297,8 @@ impl Ctl {
 
     /// The cells in view and one row either side, the only tiles Slint is given.
     fn publish_tiles(&self) {
+        // Every change of the picks lays the tiles: the sidebar's rows follow them here.
+        self.mark_tree();
         let Some(w) = self.window() else { return };
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
@@ -2322,6 +2364,7 @@ impl Ctl {
 
     /// `load(_:)` then `mode = .editor`.
     fn open_in_editor(self: &Rc<Self>, path: &str) {
+        self.state.borrow_mut().designate(path);
         self.open_photo(path);
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
@@ -2510,12 +2553,7 @@ impl Ctl {
             group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
         };
         let Some(path) = target else { return };
-        {
-            let mut s = self.state.borrow_mut();
-            s.picks.selection = HashSet::from([path.clone()]);
-            s.picks.anchor = Some(path.clone());
-            s.picks.cursor = Some(path.clone());
-        }
+        self.state.borrow_mut().designate(&path);
         self.open_photo(&path);
         self.publish_tiles();
     }
@@ -2615,7 +2653,7 @@ impl Ctl {
         let frames: Vec<(String, oni_settings::PipelineSettings)> = {
             let s = self.state.borrow();
             let open = s.open_path().map(str::to_string);
-            crate::export::targets(&s.order, &s.selection, open.as_deref())
+            crate::export::targets(&s.order, &s.selection(), open.as_deref())
                 .into_iter()
                 .map(|path| {
                     let settings = if Some(&path) == open.as_ref() {

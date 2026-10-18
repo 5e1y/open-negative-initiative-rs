@@ -7,6 +7,8 @@
 //! `ONI_BENCH=compare` turns Compare on, drags Exposure and the split, and counts the befores;
 //! `ONI_BENCH=crop` frames through the Crop tab's keys and the canvas's handles, then undoes it all;
 //! `ONI_BENCH=dedust` paints a stroke in De-dust, waits for its patch, then removes it.
+//! `ONI_BENCH=flows` walks the owner's flow in the real window: the gallery, a click that selects in
+//! the gallery and the sidebar alike, a double click that opens, an edit, three frames over.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -44,6 +46,7 @@ pub enum Mode {
     Compare,
     Crop,
     Dedust,
+    Flows,
 }
 
 impl Mode {
@@ -67,6 +70,7 @@ pub fn requested() -> Option<Mode> {
         "compare" => Some(Mode::Compare),
         "crop" => Some(Mode::Crop),
         "dedust" => Some(Mode::Dedust),
+        "flows" => Some(Mode::Flows),
         _ => None,
     }
 }
@@ -89,6 +93,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Dedust {
         return dedust(ctl, done);
+    }
+    if mode == Mode::Flows {
+        return flows(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
@@ -155,7 +162,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
@@ -416,4 +423,163 @@ fn finish(timer: &Timer, done: &RefCell<Option<impl FnOnce(String)>>, lines: &Re
     if let Some(done) = done.borrow_mut().take() {
         done(format!("bench, dedust:\n{}\n{last}", lines.borrow().join("\n")));
     }
+}
+
+/// The frames the flow opens from the gallery, by their place in it.
+const FLOW_TILES: [usize; 3] = [1, 4, 7];
+
+#[derive(Clone, Copy)]
+enum Flow {
+    Loading,
+    Gallery { frame: usize },
+    Picked { frame: usize },
+    Opening { frame: usize, at: Instant },
+    Editing { frame: usize, notch: usize },
+    Shown { frame: usize, revision: u64 },
+    Back { frame: usize },
+    Below { name: usize },
+}
+
+/// A press and a release where the hand would put them, through the window's own event path.
+fn click_at(w: &crate::MainWindow, at: slint::LogicalPosition) {
+    use slint::platform::{PointerEventButton, WindowEvent};
+    let window = w.window();
+    window.dispatch_event(WindowEvent::PointerMoved { position: at });
+    window.dispatch_event(WindowEvent::PointerPressed { position: at, button: PointerEventButton::Left });
+    window.dispatch_event(WindowEvent::PointerReleased { position: at, button: PointerEventButton::Left });
+}
+
+/// The tile at place `i` in the gallery, when it is laid on screen.
+fn tile(w: &crate::MainWindow, i: usize) -> Option<crate::Tile> {
+    let lib = w.global::<crate::Library>();
+    let tiles = lib.get_tiles();
+    (0..tiles.row_count()).filter_map(|k| tiles.row_data(k)).find(|t| t.index as usize == i)
+}
+
+/// The tiles and the sidebar's photo rows lit, by name.
+fn lit(w: &crate::MainWindow) -> (Vec<String>, Vec<String>) {
+    let lib = w.global::<crate::Library>();
+    let tiles = lib.get_tiles();
+    let rows = lib.get_rows();
+    (
+        (0..tiles.row_count()).filter_map(|k| tiles.row_data(k)).filter(|t| t.selected).map(|t| t.caption.to_string()).collect(),
+        (0..rows.row_count()).filter_map(|k| rows.row_data(k)).filter(|r| r.kind == 2 && r.selected).map(|r| r.title.to_string()).collect(),
+    )
+}
+
+fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let phase = Cell::new(Flow::Loading);
+    let done = RefCell::new(Some(done));
+    let failures = RefCell::new(Vec::<String>::new());
+    let started = Instant::now();
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    timer.start(TimerMode::Repeated, Duration::from_millis(50), move || {
+        let timer = &held;
+        let Some(ctl) = me.upgrade() else { return timer.stop() };
+        let Some(w) = ctl.window() else { return };
+        let app = w.global::<crate::App>();
+        let lib = w.global::<crate::Library>();
+        let finish = |text: String| {
+            timer.stop();
+            if let Some(done) = done.borrow_mut().take() {
+                done(text);
+            }
+        };
+        let fail = |what: String| failures.borrow_mut().push(what);
+        let centre = |t: &crate::Tile| slint::LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0);
+        // One name lit in the grid and the same one, alone, in the sidebar.
+        let check = |name: &str, when: &str| {
+            let (tiles, rows) = lit(&w);
+            if tiles != [name] || rows != [name] {
+                fail(format!("{name} {when}: the gallery lights {tiles:?}, the sidebar {rows:?}"));
+            }
+        };
+        match phase.get() {
+            Flow::Loading => {
+                if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
+                    ctl.act("toggle-mode");
+                    phase.set(Flow::Gallery { frame: 0 });
+                } else if started.elapsed() > LOADING {
+                    finish("flows: no frame rendered".into());
+                }
+            }
+            Flow::Gallery { frame } => {
+                let Some(t) = tile(&w, FLOW_TILES[frame]).filter(|_| app.get_gallery() && lib.get_grid_x() > 0.0) else { return };
+                // The double-click interval apart from the last click, so this one starts afresh.
+                click_at(&w, centre(&t));
+                phase.set(Flow::Picked { frame });
+            }
+            Flow::Picked { frame } => {
+                let Some(t) = tile(&w, FLOW_TILES[frame]) else { return };
+                let name = t.caption.to_string();
+                if !app.get_gallery() {
+                    fail(format!("{name}: one click left the gallery"));
+                }
+                check(&name, "clicked once");
+                // The second click of a double click, inside the system's interval.
+                click_at(&w, centre(&t));
+                phase.set(Flow::Opening { frame, at: Instant::now() });
+            }
+            Flow::Opening { frame, at } => {
+                let name = tile(&w, FLOW_TILES[frame]).map(|t| t.caption.to_string()).unwrap_or_default();
+                let open = ctl.state.borrow().open_path().is_some_and(|p| p.contains(&name));
+                if !app.get_gallery() && open && ctl.state.borrow().placed().is_some() {
+                    check(&name, "opened");
+                    w.global::<StoreGlobal>().invoke_press(Field::Exposure.index(), false);
+                    phase.set(Flow::Editing { frame, notch: 0 });
+                } else if at.elapsed() > Duration::from_secs(60) {
+                    fail(format!("{name}: a double click did not open it (gallery {}, open {:?})", app.get_gallery(), ctl.state.borrow().open_path()));
+                    finish(format!("flows: {}", failures.borrow().join("; ")));
+                }
+            }
+            Flow::Editing { frame, notch } => {
+                let g = w.global::<StoreGlobal>();
+                let notch = notch + 1;
+                g.invoke_drag(Field::Exposure.index(), notch as f32 * STEP, SPAN, false);
+                // The window resized mid-edit, as entering the editor resizes the canvas.
+                let (width, height) = SIZES[notch % SIZES.len()];
+                w.window().set_size(slint::LogicalSize::new(width, height));
+                if notch < 12 {
+                    phase.set(Flow::Editing { frame, notch });
+                } else {
+                    g.invoke_release(Field::Exposure.index());
+                    phase.set(Flow::Shown { frame, revision: ctl.state.borrow().store().revision() });
+                }
+            }
+            Flow::Shown { frame, revision } => {
+                if ctl.state.borrow().rendered() < revision {
+                    return;
+                }
+                // The edit undone, so the test copy's sidecar reads as it did.
+                ctl.act("undo");
+                ctl.act("toggle-mode");
+                phase.set(Flow::Back { frame });
+            }
+            Flow::Back { frame } => {
+                let Some(t) = tile(&w, FLOW_TILES[frame]).filter(|_| app.get_gallery()) else { return };
+                check(&t.caption, "back in the gallery");
+                if frame + 1 < FLOW_TILES.len() {
+                    phase.set(Flow::Gallery { frame: frame + 1 });
+                } else {
+                    // Under the last row, where the document ends: the picks stay as they were.
+                    let below = slint::LogicalPosition::new(lib.get_grid_x() + 4.0, lib.get_grid_y() + lib.get_content_height() - lib.get_scroll() + 4.0);
+                    click_at(&w, below);
+                    phase.set(Flow::Below { name: FLOW_TILES[frame] });
+                }
+            }
+            Flow::Below { name } => {
+                if let Some(t) = tile(&w, name) {
+                    check(&t.caption, "after a click under the last row");
+                }
+                let failed = failures.borrow();
+                finish(if failed.is_empty() {
+                    format!("flows: {} frames picked, double-clicked open and edited through resizes, a click under the rows changed nothing, no failure", FLOW_TILES.len())
+                } else {
+                    format!("flows: {}", failed.join("; "))
+                });
+            }
+        }
+    });
 }
