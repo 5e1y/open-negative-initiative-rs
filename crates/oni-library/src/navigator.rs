@@ -22,6 +22,11 @@ impl Computer {
         Computer { home: paths::canonical(Path::new(&home)), volumes: "/Volumes".into() }
     }
 
+    /// No disk at all: what a check gets unless it hands one, so no test reads the person's folders.
+    pub fn none() -> Computer {
+        Computer { home: String::new(), volumes: String::new() }
+    }
+
     /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk.
     pub fn computer(&self) -> Vec<String> {
         let mut mounted: Vec<String> = std::fs::read_dir(&self.volumes)
@@ -36,7 +41,7 @@ impl Computer {
             .unwrap_or_default();
         mounted.sort_by(|a, b| paths::standard_order(a, b));
         mounted.dedup();
-        let mut out = vec![self.home.clone()];
+        let mut out: Vec<String> = Some(self.home.clone()).filter(|h| !h.is_empty()).into_iter().collect();
         out.extend(mounted);
         out
     }

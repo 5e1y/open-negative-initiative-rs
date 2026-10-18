@@ -111,7 +111,8 @@ impl Default for Options {
             reporter: std::sync::Arc::new(help::post),
             mask_picker: Box::new(|| system::pick_file(masks::LOAD_MESSAGE, oni_library::library::IMAGE_EXTENSIONS)),
             show_folder: Box::new(system::show_folder),
-            computer: oni_library::navigator::Computer::system(),
+            // The app hands this machine's; a check gets none unless it hands its own.
+            computer: oni_library::navigator::Computer::none(),
             require_roll: false,
         }
     }
