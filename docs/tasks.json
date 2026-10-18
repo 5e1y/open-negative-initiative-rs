@@ -456,5 +456,13 @@
     "title": "New Roll asks for its folder's name, and menu items for features absent from the build stay dark",
     "status": "doing",
     "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry."
+  },
+  {
+    "id": 64,
+    "type": "chore",
+    "title": "Carry the project's decisions, targets and research into the repository for terminal sessions",
+    "status": "done",
+    "detail": "CLAUDE.md gains the goal, definition of done, performance targets, interface rules, working loop and roadmap; docs/research holds the performance and Frontier notes; CLAUDE.local.md is ignored.",
+    "outcome": "CLAUDE.md extended, docs/research/ added with its README, .gitignore ignores CLAUDE.local.md. Checked: tasks.json parses, no private detail in the diff (grep for email, user paths, machine names)."
   }
 ]
