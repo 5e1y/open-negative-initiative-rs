@@ -22,3 +22,13 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [profile.release]
 debug = 1
+
+# Iteration: incremental, the workspace lightly optimised so the scalar references stay quick,
+# every dependency fully; `--release` stays the shipped build.
+[profile.dev]
+opt-level = 1
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.dev.package."*"]
+opt-level = 3
