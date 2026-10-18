@@ -283,15 +283,19 @@
     "id": 35,
     "type": "feature",
     "title": "The manual curves editor and its point rules",
-    "status": "doing",
-    "detail": "Curves editor as a DS plot: natural cubic spline, a press takes the nearest point or adds one, a double-click removes it, drag limits, per channel tabs, one history step per drag through the hand's cadence."
+    "status": "done",
+    "detail": "Curves editor as a DS plot: natural cubic spline, a press takes the nearest point or adds one, a double-click removes it, drag limits, per channel tabs, one history step per drag through the hand's cadence.",
+    "commit": "658a2da",
+    "outcome": "oni-app/src/editors: curve.rs (CurveEditorView: press takes the nearest point within 14 pt to the pointer, else adds one and drags the first within 0.01 in x; a double click removes the disc under it at the second release; Curve.add/move_point/remove in oni-settings hold the 0.001 margin, the square and the two ends), mod.rs Gestures (one store.hold per press, writes through track::Hand at HAND_INTERVAL with a trailing timer, store.release at the end; Scanner face edits land in scanner_finish), shell.rs (Slint glue; the plot redraws from the hand on every event, the store is published only when written). DS: ui/ds/plots.slint (Plot, LevelsTrack, TrackKnob, PlotReadouts, AxisCaptions), the curves block in panel.slint with its reset, lit tabs and fold. Checked on llvmpipe with the shared-target wrapper: 34 editors unit tests with twins (exact point written, writes per hand interval, one undo per press, double click within and past 500 ms, each channel alone, the Scanner face keeping Pro's curves) and tests/editors.rs, which drags a point on the Curves plot with pointer events in the headless window: the dot follows each move ahead of the store, 30 fast moves give at most one write per interval plus the ends, the point lands at (0.5, 0.7), one Edit > Undo takes it back, a folded plot takes no press. oni-settings and oni-app suites green (ONI_SKIP_HEAVY=1). Gap: drawn over the output histogram, where Swift draws the manual curves' input with the channel in focus. Not seen on a Mac screen."
   },
   {
     "id": 36,
     "type": "feature",
     "title": "Levels, spectrogram and saturation curve editors, and the print curve overlay",
-    "status": "doing",
-    "detail": "Per-channel levels track and handles, the spectrogram wheel with its band sliders, the saturation curve, the print curve drawn over the histogram; every hidden rule of LevelsView, SpectrogramPanel, SaturationCurveView and PrintCurveView."
+    "status": "done",
+    "detail": "Per-channel levels track and handles, the spectrogram wheel with its band sliders, the saturation curve, the print curve drawn over the histogram; every hidden rule of LevelsView, SpectrogramPanel, SaturationCurveView and PrintCurveView.",
+    "commit": "658a2da",
+    "outcome": "Levels (levels.rs, LevelsView): five handles on the track sharing the histogram's inset, the median on its own travel, one write path for drag and scroll, a double click resetting the handle alone, presses caught front to back within the grab, scroll along the track moving the handle under the pointer else the nearest; readouts as densities to three decimals; the block resets R, G, B to the roll's window or the bare axis. Spectrogram (spectrogram.rs, SpectrogramPanel and SpectrogramBands): grabbed never jumped, a press alone selects and focuses, arrows step 2 % of the axis, Tab and Option-Tab walk the wheel while it holds the focus, a double click resets the point's own axes; eight swatch tabs (Tabs gained swatches) and the Hue, Saturation, Luminance sliders with their spectra and double click to zero. Saturation curve (saturation.rs): laid on linear light, a press takes the point under it or the closest along the light, a double click lays it on 0.5 from the points before its first press. Print curve (print.rs): the moved channels, the RGB curve and its dashed mirror over the main histogram on the Color tab. Grade blocks hidden in monochrome. Checked on llvmpipe: unit tests with twins port LevelsView.selfCheck and SpectrogramPanel.selfCheck; tests/editors.rs drags the white levels handle 40 pt (it moves by the travel, the others stay, one undo), presses the wheel and steps it with the up arrow (an unfocused wheel ignored it), and a monochrome store lays out no wheel. Screenshots of the three panes read back. Gaps: the levels histogram (Plots.levels) is not filled yet, no 8-bit badge, not hidden on the Scanner face (no face panel yet), the band sliders do not spring on outside changes, a press on a non-focusable surface does not unlight the wheel, no swatch tooltip. Not seen on a Mac screen."
   },
   {
     "id": 37,
