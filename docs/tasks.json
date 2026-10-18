@@ -236,8 +236,10 @@
     "id": 28,
     "type": "chore",
     "title": "Port the Swift self-checks whose behaviour lives in the core crates",
-    "status": "doing",
-    "detail": "docs/parity/checks.md: every none or partial check in oni-settings, oni-library, oni-colour, oni-export, oni-decode, oni-graph, oni-render and oni-core outside measurement becomes a Rust test with the Swift check's adversarial values and a twin that fails by construction."
+    "status": "done",
+    "detail": "docs/parity/checks.md: every none or partial check in oni-settings, oni-library, oni-colour, oni-export, oni-decode, oni-graph, oni-render and oni-core outside measurement becomes a Rust test with the Swift check's adversarial values and a twin that fails by construction.",
+    "outcome": "Thirty-six Rust tests port the Swift self-checks, each with its adversarial values and a twin that fails by construction: oni-settings 7, oni-core 10, oni-library 8, oni-pipeline 9, oni-decode 2, oni-colour 1 (tests/swift_checks.rs in each), plus oni-settings/src/axis.rs for the histogram overshoot: thirty-seven in all. checks.md now reads 72 twin, 15 partial, 75 none of 162; the rows left say why (oni-app, the measurement wave, or no Rust code). Verified: cargo test --release on oni-settings, oni-core, oni-library, oni-decode, oni-colour and the oni-pipeline swift_checks with ONI_SKIP_HEAVY=1, and the heavy RAW checks (density migration, chroma and sharpening tracks) run on roll #8 and the Lumix S1R frames on lavapipe.",
+    "commit": "aaabe00, a177b43, e62e01d"
   },
   {
     "id": 29,
@@ -264,8 +266,10 @@
     "id": 32,
     "type": "bug",
     "title": "Parity bugs the ported Swift self-checks found in the core crates",
-    "status": "doing",
-    "detail": "Each failing port is a Rust departure from the Swift code, fixed to match it."
+    "status": "done",
+    "detail": "Each failing port is a Rust departure from the Swift code, fixed to match it.",
+    "outcome": "Five departures fixed to match Swift: presets::default_name and presets::decode trimmed line breaks where Swift trims .whitespaces only (Propagation.swift:209-211, 476); presets::save failed when a stale same-id file could not be removed where Swift ignores it with try? (Propagation.swift:417); oni-decode had no isLowPrecision or bitsPerSample (RawDecode.swift:400, ContainerRead.swift:198), now is_low_precision and container::bits_per_sample; plain::read dropped a TIFF's embedded profile when it outweighed the pixels (598 bytes over a 4 x 1 frame), because the image crate caps a tag at the pixel byte count, so a tagged file read as undeclared where ImageIO reads its profile (SourceEncoding+Checks.swift:90-91), now read with a decoder on default limits. Each is held by its ported check and that check's twin.",
+    "commit": "aaabe00, a177b43, e62e01d"
   },
   {
     "id": 33,
