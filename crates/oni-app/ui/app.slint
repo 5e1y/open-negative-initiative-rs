@@ -5,15 +5,16 @@ import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount, GalleryStatus } from "library.slint";
+import { Navigator, FolderLine, WelcomeLine, CatchUpLine, RootsCatchUpSheet } from "navigator.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
-export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
+export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice }
-export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
+export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 // A correction's marker on the canvas: its ring's rectangle in points and its number.
@@ -334,7 +335,7 @@ export component MainWindow inherits AppWindow {
             if !Exporting.shown: Toolbar { }
             HorizontalLayout {
                 vertical-stretch: 1;
-                if !App.library-hidden && !Exporting.shown: Tree { width: ShellStyle.library-width; }
+                if !App.library-hidden && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; }
                 Rectangle {
                     horizontal-stretch: 1;
                     // The card, inset by `cardInset` from the panel's ground.
@@ -565,6 +566,7 @@ export component MainWindow inherits AppWindow {
         width: root.width;
         height: root.height;
     }
+    if Navigator.catch-up-shown: RootsCatchUpSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.confirm-shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.stocks-shown: StockSheet { x: 0; y: 0; width: root.width; height: root.height; }

@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 82 twin, 19 partial, 61 none.
+Of 162 checks: 84 twin, 19 partial, 59 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -38,7 +38,7 @@ Of 162 checks: 82 twin, 19 partial, 61 none.
 | 24 | `RollFrameView.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:5` | Prepare the Roll's card shows every frame in its own scan's shape | none | none |
 | 25 | `OniLook.selfCheck` | `Checks/Pipeline/OniLook+Checks.swift:7` | ONI's scanner look is frozen into its cube and its machine sets Lighting at rest | twin | `oni-pipeline/src/oni_look.rs::the_look_lifts_a_mid_grey_and_keeps_it_grey`, `oni-pipeline/src/scanner.rs::the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks` |
 | 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | twin | `oni-core/tests/scanner.rs::a_gesture_on_one_face_never_moves_the_other`, `oni-settings/tests/swift_checks.rs::a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros` |
-| 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | none | none |
+| 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | twin | `oni-library/src/navigator.rs::the_navigator_climbs_one_folder_at_a_time_up_to_computer`, `::computer_lists_the_home_first_then_every_volume_but_the_boot_one`, `::a_folder_lists_its_subfolders_alone_in_the_finders_order` |
 | 28 | `Folders.selfCheck` | `Checks/Pipeline/Folders+Checks.swift:4` | the archive follows the disk's folders | twin | `oni-library/src/folders.rs::folders_lay_newest_first_subfolders_before_their_parent` |
 | 29 | `ArchiveTree.selfCheck` | `Checks/Pipeline/ArchiveTree+Checks.swift:6` | the archive tree unfolds its folders | twin | `oni-library/src/archive_tree.rs::a_folder_opens_on_its_subfolders_then_its_photos` |
 | 30 | `Project.selfCheck` | `Checks/Pipeline/Project+Checks.swift:6` | projects hold their own identity, round-trip through disk and resolve members newest-first | twin | `oni-library/src/project.rs::projects_order_newest_first_and_resolve_by_path_then_fingerprint` |
@@ -48,7 +48,7 @@ Of 162 checks: 82 twin, 19 partial, 61 none.
 | 34 | `treeEngineRowSelfCheck` | `Checks/UI/TreeEngine+Checks.swift:89` | the tree engine's row holds | none | none |
 | 35 | `ListPicking.selfCheck` | `Checks/UI/ListPicking+Checks.swift:5` | a click's ⌘ and ⇧ pick as shown | twin | `oni-app/src/picking.rs::a_clicks_command_and_shift_pick_as_shown` |
 | 36 | `TreeDropTarget.selfCheck` | `Checks/UI/ListPicking+Checks.swift:35` | a drop over the tree lands where its strips say | none | none |
-| 37 | `FolderNavigation.selfCheck` | `Checks/UI/FolderNavigator+Checks.swift:5` | a navigator row opens or unfolds as it holds | none | none |
+| 37 | `FolderNavigation.selfCheck` | `Checks/UI/FolderNavigator+Checks.swift:5` | a navigator row opens or unfolds as it holds | twin | `oni-library/src/navigator.rs::a_row_opens_or_unfolds_as_it_holds` |
 | 38 | `WhatsNew.selfCheck` | `Checks/UI/WhatsNew+Checks.swift:6` | what's new hangs on its headings | none | none |
 | 39 | `InfoSidebar.selfCheck` | `Checks/UI/InfoSidebar+Checks.swift:4` | a project's stocks are counted by photo, and a typed date clamps | twin | `oni-library/src/info.rs::a_projects_stocks_are_counted_by_photo_and_a_photo_with_none_gives_no_row`, `oni-library/src/info.rs::a_typed_date_clamps_to_its_months_last_day_and_an_impossible_month_is_refused` |
 | 40 | `ConversionMode.selfCheck` | `Checks/Pipeline/ConversionMode+Checks.swift:6` | conversion modes hold | partial | `oni-settings/tests/swift_checks.rs::monochrome_inverts_and_rests_like_a_negative_and_a_positive_on_its_own`, `oni-core/tests/swift_checks.rs::a_mode_change_carries_the_handles_at_rest_and_leaves_a_placed_black`, `oni-pipeline/tests/swift_checks.rs::a_monochrome_render_lands_grey_and_a_negative_keeps_its_colour`, `oni-settings/src/modes.rs::an_unknown_mode_reads_negative_and_a_known_one_itself`; the panel tabs a mode leaves (`PanelTab`) are oni-app's |

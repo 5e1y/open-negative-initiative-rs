@@ -101,13 +101,13 @@ pub const PACKAGE_EXTENSIONS: &[&str] = &[
     "lrlibrary",
 ];
 
-fn is_package(path: &Path) -> bool {
+pub(crate) fn is_package(path: &Path) -> bool {
     path.extension()
         .map(|e| e.to_string_lossy().to_lowercase())
         .is_some_and(|e| PACKAGE_EXTENSIONS.contains(&e.as_str()))
 }
 
-fn is_hidden(path: &Path, metadata: &std::fs::Metadata) -> bool {
+pub(crate) fn is_hidden(path: &Path, metadata: &std::fs::Metadata) -> bool {
     let dotted = path.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.'));
     #[cfg(windows)]
     {

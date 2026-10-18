@@ -57,6 +57,7 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
+mod navigator;
 mod organising;
 mod presets;
 mod roll_tab;
@@ -77,6 +78,8 @@ pub struct Options {
     pub caches: PathBuf,
     pub picker: Picker,
     pub discard: Discard,
+    /// The home folder and the volumes' folder the navigator walks; a check hands a disk of its own.
+    pub computer: oni_library::navigator::Computer,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -91,6 +94,7 @@ impl Default for Options {
             caches: system::caches(),
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
             discard: Box::new(system::trash),
+            computer: oni_library::navigator::Computer::system(),
         }
     }
 }
@@ -313,6 +317,7 @@ pub struct State {
     phone: Option<Phone>,
     picker: Picker,
     discard: Discard,
+    nav: navigator::Nav,
 }
 
 impl State {
@@ -697,6 +702,7 @@ impl Shell {
             phone: None,
             picker: options.picker,
             discard: options.discard,
+            nav: navigator::Nav::new(options.computer),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -831,6 +837,7 @@ impl Ctl {
     /// Every property is read before any is set, so no Slint callback runs under the state's borrow.
     fn publish_bar(&self) {
         let Some(w) = self.window() else { return };
+        self.follow_open_photo();
         self.publish_menus();
         let bar = w.global::<Bar>();
         let (has_photo, selected) = {
@@ -1945,6 +1952,7 @@ impl Ctl {
         let file = !path.is_dir();
         let folder = if file { path.parent().unwrap_or(path) } else { path };
         let opening = (file && oni_library::library::is_importable(path)).then(|| oni_library::paths::canonical(path));
+        self.navigator_reveal(folder);
         self.open_folder(folder);
         self.state.borrow_mut().opening = opening;
     }
@@ -1996,6 +2004,7 @@ impl Ctl {
             s.painter.0.lock().expect("painter").pass = None;
             (s.generation.fetch_add(1, Ordering::Relaxed) + 1, s.index_path.clone())
         };
+        self.navigator_opened(&folder);
         self.read_folder(generation, folder, index_path);
     }
 
@@ -2042,6 +2051,7 @@ impl Ctl {
         }
         self.lay_archive();
         if done {
+            self.navigator_read();
             let order = self.state.borrow().order.clone();
             self.offer_neutral_decode_notice(&order);
             self.fill();
@@ -2183,7 +2193,7 @@ impl Ctl {
     fn offer_neutral_decode_notice(&self, paths: &[String]) {
         let Some(w) = self.window() else { return };
         let seen = Preferences::load(&self.state.borrow().support).bool(preferences::NEUTRAL_DECODE_NOTICE_SHOWN).unwrap_or(false);
-        if seen || crate::bench::requested().is_some() || !paths.iter().any(|p| oni_decode::is_raw(Path::new(p))) {
+        if seen || self.catching_up() || crate::bench::requested().is_some() || !paths.iter().any(|p| oni_decode::is_raw(Path::new(p))) {
             return;
         }
         w.global::<crate::Notice>().set_shown(true);
@@ -3450,6 +3460,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_tile_opened(move |i| p.tile_opened(i.max(0) as usize));
         Ctl::wire_organising(me, window);
+        Ctl::wire_navigator(me, window);
         Ctl::wire_presets(me, window);
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);

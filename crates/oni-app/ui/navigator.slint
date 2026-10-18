@@ -1,0 +1,302 @@
+// The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
+// Parent, the favourites key and the base's pill over the folders and the ONI Trash.
+import { Space, RowStyle, Scroller, FolderRow, FolderKind, RenameRow, GlyphKey, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet } from "ds/ds.slint";
+
+// A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
+export struct TrashLine {
+    title: string,
+    trail: string,
+    count: string,
+    depth: int,
+    foldable: bool,
+    unfolded: bool,
+    picked: bool,
+    opened: bool,
+    present: bool,
+    restore-help: string,
+}
+
+// A folder's row: `kind` 0 a folder, 1 a roll, 2 the opened folder.
+export struct FolderLine {
+    title: string,
+    path: string,
+    depth: int,
+    chevron: bool,
+    unfolded: bool,
+    kind: int,
+    picked: bool,
+    opened: bool,
+    favourite: bool,
+    present: bool,
+    renaming: bool,
+}
+
+export struct WelcomeLine { title: string, path: string }
+export struct CatchUpLine { folder: string, count: string }
+
+export global Navigator {
+    in property <[FolderLine]> rows;
+    in property <bool> can-go-up;
+    in property <bool> favourites-only;
+    in property <string> pill-title;
+    in property <string> pill-help;
+    in property <[FolderChoice]> ancestors;
+    in property <bool> no-favourites;
+    // Computer's view, under which the ONI Trash's rows stand.
+    in property <bool> at-computer;
+    // The rows' height beside a photograph, dragged by the line under them.
+    in-out property <length> height;
+    in property <int> reveal-row: -1;
+    in property <int> reveal-serial;
+    in property <[MenuLine]> menu-lines;
+    // The archive tree's pill beside a photograph: the opened folder.
+    in property <string> opened-title;
+    in property <string> opened-help;
+    in property <bool> welcome-shown;
+    in property <[WelcomeLine]> welcome;
+    in property <bool> catch-up-shown;
+    in property <string> catch-up-choose;
+    in property <string> catch-up-left;
+    in property <[CatchUpLine]> catch-up-lines;
+    in property <string> catch-up-more;
+    in property <string> catch-up-all-in;
+    callback row-clicked(int);
+    callback star-clicked(int);
+    callback row-menu(int) -> bool;
+    callback menu-chosen(int);
+    callback rename-committed(int, string);
+    callback rename-cancelled();
+    callback go-up();
+    callback favourites-toggled();
+    callback ancestor-chosen(int);
+    callback height-stored(length);
+    callback mode-changed();
+    callback welcome-added(int);
+    callback welcome-chose();
+    callback catch-up-chose();
+    callback catch-up-added(int);
+    callback catch-up-done();
+}
+
+// The folders, then the ONI Trash's rows under Computer; scrolled by the wheel alone.
+component Rows inherits Scroller {
+    in property <[TrashLine]> trash-rows;
+    callback trash-clicked(int);
+    callback trash-double-clicked(int);
+    callback trash-restore(int);
+    // A right click, at the pointer in window coordinates.
+    callback trash-menu(int, length, length);
+    callback folder-menu(int, length, length);
+    property <int> serial: Navigator.reveal-serial;
+    content-height: column.preferred-height;
+    changed serial => {
+        if (Navigator.reveal-row >= 0) {
+            self.content-y = min(0px, max(self.height - self.content-height, self.height / 2 - (Navigator.reveal-row + 0.5) * RowStyle.height));
+        }
+    }
+    column := VerticalLayout {
+        width: parent.width;
+        alignment: start;
+        padding-left: Space.s;
+        padding-right: Space.s;
+        for row[i] in Navigator.rows: VerticalLayout {
+            if !row.renaming: FolderRow {
+                title: row.title;
+                path: row.path;
+                depth: row.depth;
+                chevron: row.chevron;
+                unfolded: row.unfolded;
+                kind: row.kind == 1 ? FolderKind.roll : row.kind == 2 ? FolderKind.opened : FolderKind.folder;
+                picked: row.picked;
+                opened: row.opened;
+                favourite: row.favourite;
+                present: row.present;
+                clicked => { Navigator.row-clicked(i); }
+                starred => { Navigator.star-clicked(i); }
+                menu(x, y) => { root.folder-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
+            }
+            if row.renaming: RenameRow {
+                text: row.title;
+                depth: row.depth;
+                committed(t) => { Navigator.rename-committed(i, t); }
+                cancelled => { Navigator.rename-cancelled(); }
+            }
+        }
+        if Navigator.at-computer: VerticalLayout {
+            for line[i] in root.trash-rows: TrashRow {
+                title: line.title;
+                trail: line.trail;
+                count: line.count;
+                depth: line.depth;
+                foldable: line.foldable;
+                unfolded: line.unfolded;
+                picked: line.picked;
+                opened: line.opened;
+                present: line.present;
+                restore-help: line.restore-help;
+                clicked => { root.trash-clicked(i); }
+                double-clicked => { root.trash-double-clicked(i); }
+                restore => { root.trash-restore(i); }
+                menu(x, y) => { root.trash-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
+            }
+        }
+    }
+}
+
+// `RootWelcome`: what the archive shows, then the folders a former library held, each a key.
+component Welcome inherits VerticalLayout {
+    padding: Space.m;
+    spacing: Space.s;
+    Label { text: "The archive shows a folder of your disk and everything under it."; tone: Tone.secondary; wrap: word-wrap; }
+    if Navigator.welcome.length > 0: Label { text: "Your photos were in:"; }
+    for line[i] in Navigator.welcome: Button {
+        text: "ADD " + line.title;
+        help: line.path;
+        clicked => { Navigator.welcome-added(i); }
+    }
+    Button {
+        text: "ADD FOLDER…";
+        clicked => { Navigator.welcome-chose(); }
+    }
+}
+
+// `navigatorSection`: beside the grid the rows take the column; beside a photograph they keep
+// their own height, sized by the line under them.
+export component NavigatorSection inherits Rectangle {
+    in property <bool> beside-photo;
+    in property <[TrashLine]> trash-rows;
+    callback trash-clicked(int);
+    callback trash-double-clicked(int);
+    callback trash-restore(int);
+    callback trash-menu(int, length, length);
+    property <length> menu-x;
+    property <length> menu-y;
+    changed beside-photo => { Navigator.mode-changed(); }
+    VerticalLayout {
+        if Navigator.welcome-shown && !root.beside-photo: Welcome { }
+        HorizontalLayout {
+            padding-left: Space.m;
+            padding-right: Space.m;
+            padding-bottom: Space.s;
+            spacing: Space.s;
+            GlyphKey {
+                icon: Icons.parent;
+                help: "Parent folder";
+                enabled: Navigator.can-go-up;
+                clicked => { Navigator.go-up(); }
+            }
+            GlyphKey {
+                icon: Icons.favourite;
+                help: Navigator.favourites-only ? "Show every folder" : "Show the favourites alone";
+                tinted: Navigator.favourites-only;
+                clicked => { Navigator.favourites-toggled(); }
+            }
+            pill := ColumnPill {
+                horizontal-stretch: 1;
+                text: Navigator.pill-title;
+                help: Navigator.pill-help;
+                pressable: true;
+                enabled: !Navigator.favourites-only;
+                clicked => { choices.show(); }
+            }
+        }
+        if !root.beside-photo: Rectangle {
+            vertical-stretch: 1;
+            Rows {
+                trash-rows: root.trash-rows;
+                trash-clicked(i) => { root.trash-clicked(i); }
+                trash-double-clicked(i) => { root.trash-double-clicked(i); }
+                trash-restore(i) => { root.trash-restore(i); }
+                trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
+                folder-menu(i, x, y) => { root.show-menu(i, x, y); }
+            }
+            if Navigator.no-favourites: EmptyState {
+                y: 0;
+                height: self.preferred-height;
+                title: "No Favourites";
+                detail: "Star a folder to keep it here; its photos stay indexed.";
+            }
+        }
+        if root.beside-photo: Rectangle {
+            height: Navigator.height;
+            Rows {
+                trash-rows: root.trash-rows;
+                trash-clicked(i) => { root.trash-clicked(i); }
+                trash-double-clicked(i) => { root.trash-double-clicked(i); }
+                trash-restore(i) => { root.trash-restore(i); }
+                trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
+                folder-menu(i, x, y) => { root.show-menu(i, x, y); }
+            }
+            if Navigator.no-favourites: EmptyState {
+                y: 0;
+                height: self.preferred-height;
+                title: "No Favourites";
+                detail: "Star a folder to keep it here; its photos stay indexed.";
+            }
+        }
+        if root.beside-photo: RowsDivider {
+            rows <=> Navigator.height;
+            released(h) => { Navigator.height-stored(h); }
+        }
+    }
+    function show-menu(i: int, x: length, y: length) {
+        root.menu-x = x - root.absolute-position.x;
+        root.menu-y = y - root.absolute-position.y;
+        if (Navigator.row-menu(i)) { menu.show(); }
+    }
+    choices := FolderMenu {
+        x: pill.absolute-position.x - root.absolute-position.x;
+        y: pill.absolute-position.y - root.absolute-position.y + pill.height;
+        width: pill.width;
+        choices: Navigator.ancestors;
+        chosen(i) => { choices.close(); Navigator.ancestor-chosen(i); }
+    }
+    menu := ContextMenu {
+        x: root.menu-x;
+        y: root.menu-y;
+        lines: Navigator.menu-lines;
+        chosen(i) => { menu.close(); Navigator.menu-chosen(i); }
+    }
+}
+
+// `RootsCatchUp`: shown once to a library made before the archive followed the disk.
+export component RootsCatchUpSheet inherits Sheet {
+    title: "Your Library Now Follows Your Disk";
+    dismissed => { Navigator.catch-up-done(); }
+    for step[i] in [
+        { title: "Pick the folder that holds all your scans", detail: "ONI reads it straight from your disk." },
+        { title: "Every folder inside it comes in", detail: "All the way down, nothing to import." },
+        { title: "Not your whole disk", detail: "Too wide and ONI reads everything; too narrow and photos stay out." },
+    ]: HorizontalLayout {
+        spacing: Space.s;
+        Label { text: i + 1; role: TextRole.title; }
+        VerticalLayout {
+            spacing: Space.xxs;
+            Label { text: step.title; }
+            Label { text: step.detail; role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; }
+        }
+    }
+    Button {
+        text: Navigator.catch-up-choose;
+        clicked => { Navigator.catch-up-chose(); }
+    }
+    if Navigator.catch-up-left != "": VerticalLayout {
+        spacing: Space.xs;
+        Label { text: Navigator.catch-up-left; }
+        for line[i] in Navigator.catch-up-lines: HorizontalLayout {
+            spacing: Space.s;
+            Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+            Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
+            Button { text: "ADD"; clicked => { Navigator.catch-up-added(i); } }
+        }
+        if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
+    }
+    if Navigator.catch-up-all-in != "": Label { text: Navigator.catch-up-all-in; tone: Tone.secondary; }
+    HorizontalLayout {
+        alignment: end;
+        Button {
+            text: "DONE";
+            clicked => { Navigator.catch-up-done(); }
+        }
+    }
+}
