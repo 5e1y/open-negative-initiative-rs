@@ -51,6 +51,9 @@ fn the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_i
     shell.window.show().unwrap();
     shell.open_folder(&folder);
     let ctl = shell.ctl.clone();
+    // A folder opens on the gallery; opening its first tile puts the frame in the editor.
+    rig.until("the library read", Duration::from_secs(120), || ctl.state.borrow().read_done());
+    shell.window.global::<oni_app::Library>().invoke_tile_opened(0);
     rig.until("the first render", Duration::from_secs(300), || ctl.state.borrow().renders() >= 1);
     let open = ctl.state.borrow().open_path().unwrap().to_string();
     assert!(open.ends_with("DSC_6432.NEF"), "{open}");
