@@ -65,6 +65,8 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod stock_picker;
+pub(crate) use stock_picker::StockTarget;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
@@ -275,6 +277,8 @@ pub struct State {
     published_revision: u64,
     /// How the open frame's preview was decoded: a sidecar naming another reading decodes it again.
     reading: Option<render::Reading>,
+    /// Where the stock picker's choice lands while it shows.
+    stock_target: Option<StockTarget>,
     /// The window may close: a failed write was answered with Quit Anyway.
     quitting: bool,
     /// The flat-field masks loaded by hand, read once and again after each change to them.
@@ -692,6 +696,7 @@ impl Shell {
             published_revision: 0,
             reading: None,
             quitting: false,
+            stock_target: None,
             masks: crate::flat_fields::entries(&options.support),
             masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
@@ -2792,6 +2797,7 @@ impl Ctl {
             "open" => self.pick(),
             "recheck" | "read-folders" => self.read_again(),
             "auto-balance" => self.auto_balance(),
+            "select-roll-type" => self.select_roll_type(),
             "save-preset" => self.save_preset(),
             "edit-presets" => self.edit_presets(None),
             "import-presets" => self.import_presets(),
@@ -2860,6 +2866,12 @@ impl Ctl {
         }
         if help.get_report_shown() && text == "\u{1b}" {
             help.invoke_report_closed();
+            return true;
+        }
+        if w.global::<crate::Stocks>().get_shown() {
+            if text == "\u{1b}" {
+                w.global::<crate::Stocks>().invoke_chosen(-1);
+            }
             return true;
         }
         if w.global::<crate::Choice>().get_shown() {
@@ -3594,6 +3606,7 @@ impl Ctl {
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);
         Ctl::wire_help(me, window);
+        Ctl::wire_stock_picker(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         Ctl::wire_prepare(me, window);

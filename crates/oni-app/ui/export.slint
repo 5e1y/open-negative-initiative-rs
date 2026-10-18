@@ -78,9 +78,6 @@ export global Exporting {
     in property <bool> notice-shown;
     in property <string> notice-title;
     in property <string> notice-message;
-    in property <bool> stocks-shown;
-    in property <[string]> stocks;
-    in property <int> stock;
     callback preset(int);
     callback format-picked(int);
     callback space-picked(int);
@@ -429,20 +426,6 @@ export component ExportNoticeSheet inherits Sheet {
     HorizontalLayout {
         alignment: center;
         Button { text: "OK"; clicked => { Exporting.notice-closed(); } }
-    }
-}
-
-// This frame's stock alone: the stock is the frame's, not the roll's.
-export component StockSheet inherits Sheet {
-    title: "Film Stock";
-    dismissed => { Exporting.stock-chosen(-1); }
-    ListView {
-        height: FormStyle.paper-height / 2;
-        for name[i] in Exporting.stocks: ListRow {
-            title: name;
-            selected: i == Exporting.stock;
-            clicked => { Exporting.stock-chosen(i); }
-        }
     }
 }
 

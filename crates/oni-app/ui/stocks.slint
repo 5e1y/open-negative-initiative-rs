@@ -1,0 +1,54 @@
+// `StockPickerSheet`: Select Roll Type, the stocks grouped by brand, one click picking and closing.
+import { Space, StockStyle, Label, TextRole, Tone, Button, Divider, Scroller, PanelSheet, StockCellView } from "ds/ds.slint";
+
+export struct StockCell { index: int, name: string, artwork: image, has-artwork: bool, picked: bool }
+export struct StockRow { cells: [StockCell] }
+export struct StockBrand { brand: string, rows: [StockRow] }
+
+export global Stocks {
+    in property <bool> shown;
+    in property <[StockBrand]> brands;
+    // Fewer than `GridItem(.adaptive)`'s ten, so a name reads whole until the final look lands.
+    in property <int> columns: 6;
+    // The stock's place in the catalogue, -1 for Done.
+    callback chosen(int);
+}
+
+export component StockPickerSheet inherits PanelSheet {
+    panel-width: StockStyle.width;
+    panel-height: StockStyle.height;
+    dismissed => { Stocks.chosen(-1); }
+    VerticalLayout {
+        HorizontalLayout {
+            padding: Space.m;
+            Label { text: "Select Roll Type"; role: TextRole.title; horizontal-stretch: 1; }
+            Button { text: "Done"; clicked => { Stocks.chosen(-1); } }
+        }
+        Divider { }
+        Scroller {
+            vertical-stretch: 1;
+            content-height: list.preferred-height;
+            list := VerticalLayout {
+                padding: Space.m;
+                spacing: Space.l;
+                alignment: start;
+                for brand in Stocks.brands: VerticalLayout {
+                    spacing: Space.s;
+                    Label { text: brand.brand; tone: Tone.secondary; }
+                    for row in brand.rows: HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        for cell in row.cells: StockCellView {
+                            width: (StockStyle.width - 2 * Space.m - (Stocks.columns - 1) * Space.s) / Stocks.columns;
+                            artwork: cell.artwork;
+                            has-artwork: cell.has-artwork;
+                            name: cell.name;
+                            picked: cell.picked;
+                            clicked => { Stocks.chosen(cell.index); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

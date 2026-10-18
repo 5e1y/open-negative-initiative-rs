@@ -530,5 +530,13 @@
     "status": "done",
     "detail": "The console window polling the session's log with Copy and Reveal; What's New's six notes as seals on their headings, read on hover and kept until the app quits, Show What's New Again; the welcome sheet once per edition (welcomeSeen 1.2.1) with Website and Feedback; Report a Bug sealing the log to the maintainers' X25519 key (HKDF-SHA256, ChaCha20-Poly1305, raw deflate, cut from its oldest lines to 58 000 characters) and posting it to the site's /report; Show My Year on Film dark until it exists.",
     "outcome": "oni-app/tests/help.rs over two sessions with an injected reporter (refusal twin); report.rs seals opened by CryptoKit and CryptoKit's opened by Rust (tools/seal_cross.swift, ONI_SEAL_CROSS); ONI_BENCH=console shows the log in the real window."
+  },
+  {
+    "id": 82,
+    "type": "feature",
+    "title": "Select Roll Type: the stocks by brand with their artwork, for a roll and for an export row",
+    "status": "done",
+    "detail": "StockPickerSheet with FilmStockCatalog.byBrand, each stock's SVG artwork shipped with the app and decoded once, the picked one marked, a click picking and closing, Done and Escape changing nothing; the roll's info shows the stock's artwork as heroStock does; the export's film field opens the same sheet for its frame alone.",
+    "outcome": "oni-app/tests/stocks.rs (Escape and Done twins), stocks.rs's artwork check with an unknown stock as twin; the export window test picks through the new sheet."
   }
 ]

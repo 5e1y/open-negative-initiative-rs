@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
+import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke , StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -79,6 +79,8 @@ export global Library {
     in property <string> roll-title;
     in property <string> stock;
     in property <string> stock-note;
+    in property <image> stock-artwork;
+    in property <bool> stock-has-artwork;
     in-out property <string> month;
     in-out property <string> day;
     in-out property <string> year;
@@ -325,8 +327,13 @@ export component Info inherits Surface {
             Section {
                 title: "Film Stock";
                 help: "What this roll was shot on — never guessed, only ever what a hand picks.";
-                Label { text: Library.stock; role: TextRole.title; }
-                if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; }
+                // `heroStock`: the artwork, the name, and where a default came from.
+                HorizontalLayout {
+                    alignment: center;
+                    StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
+                }
+                if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
+                if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
                 Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
             }
             Section {

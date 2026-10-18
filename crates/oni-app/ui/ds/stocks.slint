@@ -1,0 +1,48 @@
+// A film stock: its artwork in its own colours, or the film-roll glyph for a stock without any, and
+// the picker's cell with the name under it, grown under the pointer and filled when picked.
+import { Colour, Space, Radius, Motion, StockStyle } from "theme.slint";
+import { Label, TextRole, Tone, Icon } from "base.slint";
+import { Icons } from "icons.slint";
+
+// `FilmStockIcon`: never tinted, the artwork's colours being the point; the fallback glyph is.
+export component StockIcon inherits Rectangle {
+    in property <image> artwork;
+    in property <bool> has-artwork;
+    in property <length> side: StockStyle.icon;
+    width: root.side;
+    height: root.side;
+    if root.has-artwork: Image { width: root.side; height: root.side; source: root.artwork; }
+    if !root.has-artwork: Icon { width: root.side; height: root.side; source: Icons.film-roll; tone: Tone.secondary; }
+}
+
+export component StockCellView inherits Rectangle {
+    in property <image> artwork;
+    in property <bool> has-artwork;
+    in property <string> name;
+    in property <bool> picked;
+    callback clicked();
+    border-radius: Radius.badge;
+    background: root.picked ? Colour.hover : Colour.ground.transparentize(1);
+    VerticalLayout {
+        padding: Space.xs;
+        spacing: Space.xs;
+        alignment: start;
+        HorizontalLayout {
+            alignment: center;
+            StockIcon {
+                artwork: root.artwork;
+                has-artwork: root.has-artwork;
+                side: touch.has-hover ? StockStyle.icon * StockStyle.grow : StockStyle.icon;
+                animate side { duration: Motion.quick; }
+            }
+        }
+        Label {
+            text: root.name;
+            role: TextRole.value;
+            tone: root.picked ? Tone.primary : Tone.secondary;
+            centred: true;
+            wrap: word-wrap;
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}

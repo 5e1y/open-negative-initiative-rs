@@ -8,16 +8,18 @@ import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCoun
 import { Navigator, FolderLine, WelcomeLine, CatchUpLine, RootsCatchUpSheet } from "navigator.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
+import { Stocks, StockBrand, StockRow, StockCell, StockPickerSheet } from "stocks.slint";
 import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
-import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
+import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 
 export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow }
 export { MaskDialog }
+export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/ds.slint";
 
@@ -582,7 +584,7 @@ export component MainWindow inherits AppWindow {
     if Navigator.catch-up-shown: RootsCatchUpSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.confirm-shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.stocks-shown: StockSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Stocks.shown: StockPickerSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     if Help.welcome-shown: WelcomeSheet { x: 0; y: 0; width: root.width; height: root.height; }

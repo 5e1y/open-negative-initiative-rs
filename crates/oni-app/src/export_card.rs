@@ -833,7 +833,6 @@ impl Ctl {
             e.set_notice_title(title.as_str().into());
             e.set_notice_message(message.as_str().into());
         }
-        e.set_stocks_shown(c.film_row.is_some());
         drop(c);
         self.publish_menus();
     }
@@ -1004,12 +1003,9 @@ impl Ctl {
                 let film = c.rows.get(row.max(0) as usize).cloned().flatten().map(|r| r.metadata.film).unwrap_or_default();
                 FILM_STOCKS.iter().position(|k| k.display_name == film).map_or(-1, |i| i as i32)
             };
-            if let Some(w) = p.window() {
-                let e = w.global::<Exporting>();
-                e.set_stocks(ModelRc::new(VecModel::from(FILM_STOCKS.iter().map(|k| SharedString::from(k.display_name)).collect::<Vec<_>>())));
-                e.set_stock(current);
-            }
-            p.publish_export();
+            // This frame alone: the stock is the frame's, not the roll's.
+            let id = usize::try_from(current).ok().map(|i| FILM_STOCKS[i].id);
+            p.open_stock_picker(crate::app::StockTarget::Export, id);
         });
         let p = me.clone();
         e.on_stock_chosen(move |i| {

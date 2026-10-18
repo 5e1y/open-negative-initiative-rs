@@ -179,6 +179,11 @@ impl State {
 
     /// The roll a click or the anchor stands on: the folder's marker, else the roll every
     /// member's sidecar names; a folder of loose photos is no roll.
+    /// The stock the info sidebar's roll carries, picked by a hand or none.
+    pub(super) fn roll_stock(&self) -> Option<String> {
+        self.roll().and_then(|r| r.film.stock)
+    }
+
     fn roll(&self) -> Option<Roll> {
         let anchor = self.picks.anchor.as_deref()?;
         let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == anchor))?;
@@ -1084,6 +1089,9 @@ impl Ctl {
             (None, Some(k), Some(m)) => (k.display_name.to_string(), format!("Default, from this roll's {} mode", m.label())),
             _ => (String::new(), "No stock set".to_string()),
         };
+        let artwork = explicit.or(fallback).and_then(|k| crate::stocks::icon(k.icon_name));
+        lib.set_stock_has_artwork(artwork.is_some());
+        lib.set_stock_artwork(artwork.unwrap_or_default());
         lib.set_stock(stock.into());
         lib.set_stock_note(note.into());
         let default = if film.shot_date.is_none() { roll.first.as_ref().and_then(|e| e.captured_at) } else { None };
@@ -1102,7 +1110,7 @@ impl Ctl {
 
     /// `updateRoll`: a folder's roll is its marker; a roll its sidecars name is written on each
     /// member as one gallery step.
-    fn update_roll(self: &Rc<Self>, label: &str, mutate: impl FnOnce(&mut Film)) {
+    pub(super) fn update_roll(self: &Rc<Self>, label: &str, mutate: impl FnOnce(&mut Film)) {
         let Some(roll) = self.state.borrow().roll() else { return };
         let mut film = roll.film.clone();
         mutate(&mut film);
