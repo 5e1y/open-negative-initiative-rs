@@ -2,7 +2,8 @@
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
 use oni_core::knob::{CHROMA_FORCE_RANGE, Channel, Knob, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::blocks::{ChromaDenoise, Gains, PaperCorrection, Sharpen, Texture, Vignette, separation};
+use oni_settings::frame::FlatField;
 use oni_settings::tone::{Print, color_density};
 
 /// One slider's value, its index the `field` the Slint `Store` passes back.
@@ -32,6 +33,12 @@ pub enum Field {
     PaperRed,
     PaperGreen,
     PaperBlue,
+    GainRed,
+    GainGreen,
+    GainBlue,
+    FlatAmount,
+    FlatTemperature,
+    FlatTint,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -47,10 +54,12 @@ pub enum Block {
     ChromaDenoise,
     Texture,
     PaperCorrection,
+    SourceBalance,
+    FlatField,
 }
 
 impl Block {
-    pub const ALL: [Block; 10] = [
+    pub const ALL: [Block; 12] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -61,6 +70,8 @@ impl Block {
         Block::ChromaDenoise,
         Block::Texture,
         Block::PaperCorrection,
+        Block::SourceBalance,
+        Block::FlatField,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -80,6 +91,8 @@ impl Block {
             Block::ChromaDenoise => &[ChromaAmount, ChromaRadius],
             Block::Texture => &[Texture],
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
+            Block::SourceBalance => &[GainRed, GainGreen, GainBlue],
+            Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
         }
     }
 }
@@ -147,7 +160,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 24] = [
+    pub const ALL: [Field; 30] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -172,6 +185,12 @@ impl Field {
         Field::PaperRed,
         Field::PaperGreen,
         Field::PaperBlue,
+        Field::GainRed,
+        Field::GainGreen,
+        Field::GainBlue,
+        Field::FlatAmount,
+        Field::FlatTemperature,
+        Field::FlatTint,
     ];
 
     pub fn index(self) -> i32 {
@@ -209,6 +228,12 @@ impl Field {
             Field::PaperRed => "paper-red",
             Field::PaperGreen => "paper-green",
             Field::PaperBlue => "paper-blue",
+            Field::GainRed => "gain-red",
+            Field::GainGreen => "gain-green",
+            Field::GainBlue => "gain-blue",
+            Field::FlatAmount => "flat-amount",
+            Field::FlatTemperature => "flat-temperature",
+            Field::FlatTint => "flat-tint",
         }
     }
 
@@ -268,6 +293,13 @@ impl Field {
             Field::PaperRed => s("Red", PaperCorrection::RANGE, 0.0, Readout::Stops),
             Field::PaperGreen => s("Green", PaperCorrection::RANGE, 0.0, Readout::Stops),
             Field::PaperBlue => s("Blue", PaperCorrection::RANGE, 0.0, Readout::Stops),
+            // `GainPanel`'s rows, named by the ends the mode gives them, which the panel lays.
+            Field::GainRed => s("Red", Gains::RANGE, 0.0, Readout::Stops),
+            Field::GainGreen => s("Green", Gains::RANGE, 0.0, Readout::Stops),
+            Field::GainBlue => s("Blue", Gains::RANGE, 0.0, Readout::Stops),
+            Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, 1.0, Readout::Percent),
+            Field::FlatTemperature => s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
+            Field::FlatTint => s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
         }
     }
 
@@ -276,6 +308,11 @@ impl Field {
     pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
         match self {
             Field::DensityCeiling => oni_settings::axis::density_axis::rest(settings.decoded_from_mosaic, settings.mode),
+            // `restingGains`: a measured roll is the frame's rest, its window's stops.
+            Field::GainRed | Field::GainGreen | Field::GainBlue => {
+                let i = [Field::GainRed, Field::GainGreen, Field::GainBlue].iter().position(|f| *f == self).unwrap_or(0);
+                settings.roll_reference.as_ref().map_or(0.0, |r| r.stops[i])
+            }
             _ => self.spec().base,
         }
     }
@@ -307,6 +344,12 @@ impl Field {
             Field::PaperRed => Knob::Paper(Channel::Red),
             Field::PaperGreen => Knob::Paper(Channel::Green),
             Field::PaperBlue => Knob::Paper(Channel::Blue),
+            Field::GainRed => Knob::Gain(Channel::Red),
+            Field::GainGreen => Knob::Gain(Channel::Green),
+            Field::GainBlue => Knob::Gain(Channel::Blue),
+            Field::FlatAmount => Knob::FlatFieldAmount,
+            Field::FlatTemperature => Knob::FlatFieldTemperature,
+            Field::FlatTint => Knob::FlatFieldTint,
         }
     }
 
@@ -352,8 +395,12 @@ mod tests {
         // The panel passes each slider's own index back.
         let panel = include_str!("../ui/panel.slint");
         for f in Field::ALL {
-            let wired = format!("field: {}; label: \"{}\"; fraction: Store.{}-fraction;", f.index(), f.spec().label, f.slint_name());
-            assert!(panel.contains(&wired), "{f:?} is not wired as {wired}");
+            // Source Balance names each row by the ends the mode gives it, so its label is the panel's.
+            let named = |l: &str| l.contains(&format!("label: \"{}\";", f.spec().label)) || f.block() == Some(Block::SourceBalance);
+            let wired = panel.lines().any(|l| {
+                l.contains(&format!("field: {}; label: ", f.index())) && l.contains(&format!("fraction: Store.{}-fraction;", f.slint_name())) && named(l)
+            });
+            assert!(wired, "{f:?} is not wired by its index, label and fraction");
         }
         // Twin: a field the store never declared is caught.
         assert!(!store.contains("grain-fraction;"));

@@ -32,6 +32,8 @@ pub struct Decoded {
     pub linear: Linear,
     /// The frame's full-resolution width, which the dosed radii and the crop are measured on.
     pub full_width: f64,
+    /// `Some(grey)` for a file naming no profile, which the hand may say how to read.
+    pub undeclared: Option<bool>,
 }
 
 /// How a frame's sidecar asks a file outside the RAW engine to be read.
@@ -65,7 +67,7 @@ fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
         oni_decode::Branch::Mosaic => {
             let d = oni_decode::decode(path, 1.0).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
             let full_width = d.width as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
+            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
         }
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
@@ -100,7 +102,7 @@ fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl F
     let r = laid(&red.linear, &fits.red, w, h, 0);
     let b = laid(&blue.linear, &fits.blue, w, h, 2);
     let pixels = green.linear.pixels.iter().enumerate().map(|(i, g)| [r[i], g[1], b[i], 1.0]).collect();
-    Ok(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: green.full_width })
+    Ok(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: green.full_width, undeclared: None })
 }
 
 /// One channel of a pass on a `w` × `h` frame through its fit, sampled bilinearly with the pass's
@@ -154,20 +156,22 @@ fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full: usize) ->
         }
     }
     let full_width = if full > 0 { full } else { d.width } as f64;
-    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
+    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
 }
 
 /// `plainLinear`: the file's curve undone in its profile, else the chosen encoding, else sRGB.
 fn plain(path: &Path, side: Option<f64>, reading: Reading) -> Result<Decoded, String> {
     let mut e = oni_decode::plain::read(path, side).ok_or("no image reader takes it")?;
     oni_colour::source::Source::of(e.icc.as_deref(), reading.source_encoding, e.grey).linearise(&mut e.pixels, !reading.primaries_converted);
-    Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64 })
+    let undeclared = e.icc.is_none().then_some(e.grey);
+    Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64, undeclared })
 }
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.
 pub struct Negative {
     pub preview: Source,
     pub full_width: f64,
+    pub undeclared: Option<bool>,
 }
 
 impl Negative {
@@ -410,7 +414,7 @@ impl Engine {
         let preview = self.graph.materialise(&rebuilt_edge(image)).map_err(|e| e.to_string())?;
         drop(source);
         self.graph.purge();
-        Ok(Negative { preview, full_width: decoded.full_width })
+        Ok(Negative { preview, full_width: decoded.full_width, undeclared: decoded.undeclared })
     }
 
     /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given.
@@ -667,6 +671,11 @@ impl Default for Previews {
 }
 
 impl Previews {
+    /// Forgets a frame's preview, which a new reading of its file makes stale.
+    pub fn remove(&mut self, path: &str) {
+        self.kept.retain(|(p, _)| p != path);
+    }
+
     pub fn get(&mut self, path: &str) -> Option<Arc<Negative>> {
         let i = self.kept.iter().position(|(p, _)| p == path)?;
         let entry = self.kept.remove(i).expect("found above");
@@ -1063,7 +1072,7 @@ mod tests {
         let mut engine = Engine::on(&device);
         let one = |e: &mut Engine| {
             let linear = Linear { width: 8, height: 8, pixels: vec![[0.5; 4]; 64] };
-            Arc::new(e.prepare(Decoded { linear, full_width: 8.0 }).unwrap())
+            Arc::new(e.prepare(Decoded { linear, full_width: 8.0, undeclared: None }).unwrap())
         };
         let mut kept = Previews::default();
         for k in 0..4 {
@@ -1088,8 +1097,8 @@ mod tests {
         let (fw, fh) = (1600usize, 1000usize);
         let gradient = |w: usize, h: usize| (0..w * h).map(|i| [0.2 + 0.5 * (i % w) as f32 / w as f32, 0.3, 0.4, 1.0]).collect::<Vec<_>>();
         // A 400 px preview of a 1600 px frame: the preview's ratio is a quarter.
-        let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64 }).unwrap();
-        let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: 400, height: 250, pixels: gradient(400, 250) }, full_width: fw as f64, undeclared: None }).unwrap();
+        let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: gradient(fw, fh) }, full_width: fw as f64, undeclared: None }).unwrap();
         let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
         let size = (600.0, 400.0);
         let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
@@ -1132,7 +1141,7 @@ mod tests {
         let mut engine = Engine::on(&device);
         engine.support = Some(support.clone());
         let (w, h) = (16usize, 8usize);
-        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
         let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
         let plain = engine.render(&negative, &settings, None).unwrap();
         settings.flat_field = oni_settings::frame::FlatField { mask: FlatFieldMask::Custom, custom: Some("panel".into()), ..Default::default() };
@@ -1160,7 +1169,7 @@ mod tests {
         let mut engine = Engine::on(&device);
         engine.caches = Some(caches.clone());
         let (w, h) = (64usize, 48usize);
-        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None }).unwrap();
         let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
         let plain = engine.render(&negative, &settings, None).unwrap();
         let id = Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
@@ -1191,7 +1200,7 @@ mod tests {
         let mut engine = Engine::on(&device);
         let (w, h) = (300usize, 200usize);
         let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
-        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
         let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
         let before = engine.inputs(&negative, &rest, false).expect("readings");
         assert!(before.levels.rgb.len() > 2 && before.curves.rgb.len() > 2);
@@ -1238,7 +1247,7 @@ mod tests {
         // Six columns, so the rebuilt edge leaves the two middle ones as they are.
         let (w, h) = (6usize, 6usize);
         let pixels = (0..w * h).map(|i| if (i % w) < 3 { [0.6, 0.4, 0.3, 1.0] } else { [0.05, 0.03, 0.02, 1.0] }).collect();
-        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64, undeclared: None }).unwrap();
         let luma = |p: [f32; 4]| p[0] + p[1] + p[2];
         let settings = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
         let out = engine.render(&negative, &settings, None).unwrap();
@@ -1261,7 +1270,7 @@ mod tests {
         let mut engine = Engine::on(&device);
         let (w, h) = (8usize, 7usize);
         let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32, (i / w) as f32, 0.0, 1.0]).collect();
-        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64 }).unwrap();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels: pixels.clone() }, full_width: w as f64, undeclared: None }).unwrap();
         let mut graph_out = engine.graph.render(&Image::new(&negative.preview), negative.preview.extent(), None).unwrap();
         assert_eq!(graph_out.len(), w * h);
         let at = |x: usize, y: usize| graph_out[y * w + x];

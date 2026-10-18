@@ -59,6 +59,7 @@ const HISTOGRAM: (usize, usize) = (680, 300);
 mod lab;
 mod organising;
 mod presets;
+mod roll_tab;
 mod rolls;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
@@ -248,6 +249,10 @@ pub struct State {
     last_change: Option<Instant>,
     /// The store revision `publish` last saw, so any edit of the open frame arms its write.
     published_revision: u64,
+    /// How the open frame's preview was decoded: a sidecar naming another reading decodes it again.
+    reading: Option<render::Reading>,
+    /// The flat-field masks loaded by hand, read once and again after each change to them.
+    masks: Vec<crate::flat_fields::Entry>,
     status: String,
     brush: f32,
     gpu: Option<Gpu>,
@@ -525,6 +530,12 @@ fields! {
     PaperRed => set_paper_red_fraction, get_paper_red_fraction, set_paper_red_readout, set_paper_red_value;
     PaperGreen => set_paper_green_fraction, get_paper_green_fraction, set_paper_green_readout, set_paper_green_value;
     PaperBlue => set_paper_blue_fraction, get_paper_blue_fraction, set_paper_blue_readout, set_paper_blue_value;
+    GainRed => set_gain_red_fraction, get_gain_red_fraction, set_gain_red_readout, set_gain_red_value;
+    GainGreen => set_gain_green_fraction, get_gain_green_fraction, set_gain_green_readout, set_gain_green_value;
+    GainBlue => set_gain_blue_fraction, get_gain_blue_fraction, set_gain_blue_readout, set_gain_blue_value;
+    FlatAmount => set_flat_amount_fraction, get_flat_amount_fraction, set_flat_amount_readout, set_flat_amount_value;
+    FlatTemperature => set_flat_temperature_fraction, get_flat_temperature_fraction, set_flat_temperature_readout, set_flat_temperature_value;
+    FlatTint => set_flat_tint_fraction, get_flat_tint_fraction, set_flat_tint_readout, set_flat_tint_value;
 }
 
 fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
@@ -539,6 +550,8 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
         Block::ChromaDenoise => g.set_chroma_denoise_modified(on),
         Block::Texture => g.set_texture_modified(on),
         Block::PaperCorrection => g.set_paper_correction_modified(on),
+        Block::SourceBalance => g.set_source_balance_modified(on),
+        Block::FlatField => g.set_flat_field_modified(on),
     }
 }
 
@@ -637,6 +650,8 @@ impl Shell {
             inputs_drawn: None,
             last_change: None,
             published_revision: 0,
+            reading: None,
+            masks: crate::flat_fields::entries(&options.support),
             status: String::new(),
             brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
@@ -793,6 +808,13 @@ impl Ctl {
         };
         for (b, on) in modified {
             set_modified(&g, b, on);
+        }
+        let reread = edited && {
+            let s = self.state.borrow();
+            s.open.is_some() && s.reading.as_ref().is_some_and(|r| *r != render::Reading::of(s.store.settings()))
+        };
+        if reread {
+            self.redecode();
         }
         if edited || !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
@@ -2259,6 +2281,7 @@ impl Ctl {
             // Another photo's distributions never stand under this one's handles.
             s.inputs = None;
             s.shelf.hovered = None;
+            s.reading = Some(render::Reading::of(s.store.settings()));
             s.inputs_drawn = None;
             s.rendered = 0;
             s.requested = 0;
@@ -2283,9 +2306,15 @@ impl Ctl {
         self.publish(true);
         self.publish_tree();
         self.schedule_redraw();
+        self.decode_open(path);
+    }
+
+    /// The open frame's preview: the one kept, else a decode off this thread by the reading its
+    /// settings ask for.
+    fn decode_open(self: &Rc<Self>, path: &str) {
         let (previews, converted) = {
             let s = self.state.borrow();
-            (s.previews.clone(), render::Reading::of(s.store.settings()))
+            (s.previews.clone(), s.reading.clone().unwrap_or_else(|| render::Reading::of(s.store.settings())))
         };
         let known = previews.lock().expect("previews").get(path);
         if let Some(negative) = known {
@@ -2303,6 +2332,7 @@ impl Ctl {
                     if c.state.borrow().open_path() == Some(path.as_str()) {
                         c.state.borrow_mut().negative = Some((path, negative));
                         c.request_render();
+                        c.publish_roll_tab();
                     }
                 }
                 Err(e) => {
@@ -2312,6 +2342,19 @@ impl Ctl {
                 }
             });
         });
+    }
+
+    /// `redecode()`: the open frame read again once its sidecar names another reading.
+    fn redecode(self: &Rc<Self>) {
+        let Some(path) = self.state.borrow().open.clone() else { return };
+        {
+            let mut s = self.state.borrow_mut();
+            s.reading = Some(render::Reading::of(s.store.settings()));
+            s.previews.lock().expect("previews").remove(&path);
+            s.negative = None;
+            s.full = None;
+        }
+        self.decode_open(&path);
     }
 
     // MARK: - The gallery
@@ -3232,6 +3275,7 @@ impl Ctl {
         bar.set_can_prepare(live.measure_roll);
         self.publish_presets();
         self.publish_rolls();
+        self.publish_roll_tab();
         bar.set_filter(menus.get_titles().filter.trim_start_matches("Filter: ").to_uppercase().into());
     }
 
@@ -3408,6 +3452,7 @@ impl Ctl {
         Ctl::wire_organising(me, window);
         Ctl::wire_presets(me, window);
         Ctl::wire_rolls(me, window);
+        Ctl::wire_roll_tab(me, window);
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {

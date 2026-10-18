@@ -146,7 +146,16 @@ pub fn rig(shots: PathBuf) -> Rig {
 
 /// A little-endian LinearRaw TIFF, 16-bit RGB in one strip, a smooth ramp scaled by `tone`: the
 /// linear branch decodes it, so a check renders a frame without a camera file.
+/// A 16-bit RGB TIFF naming no colour profile: a scanner's plain output, whose encoding the hand says.
+pub fn plain_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
+    tiff(path, w, h, tone, false);
+}
+
 pub fn linear_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
+    tiff(path, w, h, tone, true);
+}
+
+fn tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw: bool) {
     let samples: Vec<u16> = (0..w * h)
         .flat_map(|i| {
             let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
@@ -155,19 +164,20 @@ pub fn linear_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
         .collect();
     let data: Vec<u8> = samples.iter().flat_map(|v| v.to_le_bytes()).collect();
     let ifd_at = 8 + data.len();
-    let entries: [(u16, u16, u32, u32); 11] = [
+    let mut entries: Vec<(u16, u16, u32, u32)> = vec![
         (256, 4, 1, w as u32),
         (257, 4, 1, h as u32),
         (258, 3, 1, 16),
         (259, 3, 1, 1),
-        (262, 3, 1, 34892),
+        (262, 3, 1, if linear_raw { 34892 } else { 2 }),
         (273, 4, 1, 8),
         (277, 3, 1, 3),
         (278, 4, 1, h as u32),
         (279, 4, 1, data.len() as u32),
-        (50714, 4, 1, 100),
-        (50717, 4, 1, 1000),
     ];
+    if linear_raw {
+        entries.extend([(50714, 4, 1, 100), (50717, 4, 1, 1000)]);
+    }
     let mut out = b"II".to_vec();
     out.extend(42u16.to_le_bytes());
     out.extend((ifd_at as u32).to_le_bytes());

@@ -481,5 +481,13 @@
     "status": "done",
     "detail": "Reset to Default… from the menu and the cell menu (reach read off the main thread, Swift's confirm, one gallery step); Ungroup in the Rolls menu with its title and rule; the Measured Roll block's count, warnings, Join the N and Roll of the N; Auto White Balance over a selection asking Each or Average, with its progress on the key and the others' thumbnails redrawn; Prepare the Roll and the contact sheet kept dark until they exist. Any new state of the open frame now arms its sidecar write, a slider's or not.",
     "outcome": "oni-app/tests/rolls.rs drives every gesture on the headless window, each with a twin; it found the open frame's reset never written, as no slider had moved. ONI_BENCH=flows and presets pass in the real window."
+  },
+  {
+    "id": 71,
+    "type": "feature",
+    "title": "The Roll tab's settings blocks: Source Encoding, Source Balance, the dye families, the flat-field's toggle, mask and sliders",
+    "status": "done",
+    "detail": "SettingsPane's blocks in Swift's drawn order: the flat-field's toggle, gear, mask picker, Amount, Temperature and Tint, Apply to Selection; Source Encoding for a plain file naming no profile, its pick reading the file again (redecode on any new reading, undo included); Source Balance's three gains named by the mode's ends and reset to the roll's stops; the dye family tabs; Balance Strength hidden with Dye Separation. Swift's gear glyph is brought into the design system.",
+    "outcome": "oni-app/tests/roll_tab.rs drives each block on the headless window with its twins; the block-order check caught a first reorder that broke Swift's (Density Ceiling and the levels belong to manualBalance)."
   }
 ]

@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark, Note, Warning, Progress } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark, Note, Warning, Progress, Field, ContextMenu, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 import { Exporting } from "export.slint";
@@ -19,8 +19,35 @@ export global PanelState {
     // How many photos a paste reaches.
     in property <int> targets: 1;
     callback film-type-picked(int);
-    in property <string> dyes: "Generic C-41";
     in property <bool> flat-field-on;
+    // `SettingsPane.separationFamily`: the family the kernel runs, an index of `Separation.Family`.
+    in property <int> dye-family: 2;
+    callback dye-family-picked(int);
+    // `GainPanel`: the inversion swaps each row's ends, the hue then low.
+    in property <bool> gains-inverted: true;
+    // A file naming no profile, read as the hand says; a grey one offers two encodings.
+    in property <bool> undeclared;
+    in property <bool> grey-source;
+    in property <int> encoding;
+    in property <bool> encoding-modified;
+    callback encoding-picked(int);
+    // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
+    in property <bool> monochrome;
+    in property <string> mask-title;
+    in property <[MenuLine]> mask-lines;
+    in property <bool> masks-empty;
+    in property <bool> masked;
+    in property <int> flat-picked;
+    in property <bool> can-take-mask;
+    in property <bool> can-load-mask;
+    in property <bool> can-rename-mask;
+    callback flat-field-toggled(bool);
+    callback mask-chosen(int);
+    callback take-mask();
+    callback load-mask();
+    callback rename-mask();
+    callback mask-folder();
+    callback flat-apply-selection();
     // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
     in property <bool> crop-first;
     // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
@@ -113,6 +140,7 @@ component Pane inherits Scroller {
 }
 
 component RollPane inherits Pane {
+    property <bool> flat-settings;
     Block {
         title: "Measured Roll";
         help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it.";
@@ -158,11 +186,91 @@ component RollPane inherits Pane {
     }
     Block {
         title: "Flat-Field";
-        LabelledRow {
-            label: "Flat-field";
-            Toggle { label: "Flat-field"; on: PanelState.flat-field-on; }
+        help: "Evens out uneven lighting from the scanner, whatever you crop to.";
+        block: 11;
+        modified: Store.flat-field-modified;
+        folded: true;
+        HorizontalLayout {
+            spacing: Space.s;
+            Label { text: "Flat-field"; horizontal-stretch: 1; }
+            Toggle { label: "Flat-field"; on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
+            IconButton { icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
+        }
+        if PanelState.flat-field-on: Picker {
+            label: "Mask";
+            value: PanelState.mask-title;
+            open => { masks.show(); }
+        }
+        if PanelState.flat-field-on && PanelState.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
+        Button {
+            text: "Use This Photo as Flat-Field";
+            horizontal-stretch: 1;
+            enabled: PanelState.can-take-mask;
+            clicked => { PanelState.take-mask(); }
+        }
+        if root.flat-settings: StoreSlider {
+            field: 27; label: "Amount"; fraction: Store.flat-amount-fraction; readout: Store.flat-amount-readout; value-text: Store.flat-amount-value;
+            enabled: PanelState.masked;
+        }
+        if root.flat-settings && !PanelState.monochrome: StoreSlider {
+            field: 28; label: "Temperature"; fraction: Store.flat-temperature-fraction; readout: Store.flat-temperature-readout; value-text: Store.flat-temperature-value;
+            enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
+        }
+        if root.flat-settings && !PanelState.monochrome: StoreSlider {
+            field: 29; label: "Tint"; fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
+            enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
+        }
+        if root.flat-settings: HorizontalLayout {
+            spacing: Space.s;
+            Button { text: "Load…"; horizontal-stretch: 1; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { text: "Rename"; horizontal-stretch: 1; enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { text: "Folder"; horizontal-stretch: 1; clicked => { PanelState.mask-folder(); } }
+        }
+        if root.flat-settings: Button {
+            text: "Apply to Selection";
+            horizontal-stretch: 1;
+            enabled: PanelState.flat-picked > 0;
+            clicked => { PanelState.flat-apply-selection(); }
+        }
+        masks := ContextMenu {
+            lines: PanelState.mask-lines;
+            chosen(i) => { PanelState.mask-chosen(i); masks.close(); }
         }
     }
+    if PanelState.undeclared: Block {
+        title: "Source Encoding";
+        help: "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.";
+        block: 12;
+        modified: PanelState.encoding-modified;
+        folded: true;
+        Field {
+            label: "Read as";
+            Tabs {
+                tabs: PanelState.grey-source ? ["sRGB", "Linear"] : ["sRGB", "Linear", "Display P3"];
+                selected: PanelState.encoding;
+                picked(i) => { PanelState.encoding-picked(i); }
+            }
+        }
+    }
+    Block {
+        title: "Source Balance";
+        block: 10;
+        modified: Store.source-balance-modified;
+        folded: true;
+        StoreSlider {
+            field: 24; label: PanelState.gains-inverted ? "Red ↔ Cyan" : "Cyan ↔ Red"; fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
+            fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;
+        }
+        StoreSlider {
+            field: 25; label: PanelState.gains-inverted ? "Green ↔ Magenta" : "Magenta ↔ Green"; fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
+            fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
+        }
+        StoreSlider {
+            field: 26; label: PanelState.gains-inverted ? "Blue ↔ Yellow" : "Yellow ↔ Blue"; fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
+            fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
+        }
+    }
+    // Between the balance that feeds it and the windows placed on it, where it acts.
     Block {
         title: "Density Ceiling";
         help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
@@ -182,15 +290,25 @@ component RollPane inherits Pane {
             WarningBadge { text: "8-bit source — 256 levels per channel"; }
         }
     }
+    // After the per-channel windows: a balanced grey is its fixed point. Monochrome, RGB passes and
+    // the Scanner face run none.
     if PanelState.separation-shown: Block {
         title: "Dye Separation";
+        help: "Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.";
         block: 5;
         modified: Store.dye-separation-modified;
         folded: true;
-        Picker { label: "Dyes"; value: PanelState.dyes; open => { PanelState.pick("dyes"); } }
+        Field {
+            label: "Dyes";
+            Tabs {
+                tabs: ["Kodak", "Fuji", "Generic", "ECN-2", "E-6"];
+                selected: PanelState.dye-family;
+                picked(i) => { PanelState.dye-family-picked(i); }
+            }
+        }
         StoreSlider { field: 13; label: "Dye separation"; fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
-    Block {
+    if PanelState.separation-shown: Block {
         title: "Balance Strength";
         help: "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.";
         block: 3;

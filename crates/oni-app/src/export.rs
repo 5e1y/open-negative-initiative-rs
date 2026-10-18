@@ -412,7 +412,7 @@ mod tests {
         engine.support = Some(root.join("support"));
         engine.caches = Some(root.join("caches"));
         let (w, h) = (64usize, 48usize);
-        let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 };
+        let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64, undeclared: None };
         let tiff = |path: &Path, pixels: &[f32]| {
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
             let out = std::fs::File::create(path).unwrap();

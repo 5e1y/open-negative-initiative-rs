@@ -143,6 +143,13 @@ pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
 
 /// Whether the block's reset key shows: its value differs from what its reset writes.
 pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
+    match block {
+        // `FlatField()`: the block's value is the whole flat-field, its mask included.
+        Block::FlatField => return settings.flat_field != Default::default(),
+        // `restingGains`: the measured roll's own stops.
+        Block::SourceBalance => return block.fields().iter().any(|f| (f.knob().get(settings) - f.base(settings)).abs() > 1e-6),
+        _ => {}
+    }
     let rest = rest(settings);
     let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.knob().get(&rest)).abs() > 1e-6);
     // `SettingsPane.dyes`: the block's value is the dose, the family and the hand's mark together.
@@ -153,6 +160,19 @@ pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
 pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
     let rest = rest(settings);
     let mut next = settings.clone();
+    match block {
+        Block::FlatField => {
+            next.flat_field = Default::default();
+            return Command::Write(Box::new(next));
+        }
+        Block::SourceBalance => {
+            for f in block.fields() {
+                next = f.knob().set(&next, f.base(settings));
+            }
+            return Command::Write(Box::new(next));
+        }
+        _ => {}
+    }
     for f in block.fields() {
         next = f.knob().set(&next, f.knob().get(&rest));
     }

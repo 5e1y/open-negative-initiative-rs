@@ -792,6 +792,24 @@ impl EditorStore {
     }
 
     /// The roll's settings and reference on the frames of its folder never measured with it.
+    /// `applyFlatField(to:)`: the open frame's flat-field written on others, one gallery step.
+    pub fn apply_flat_field(&mut self, paths: &[String]) -> usize {
+        let wanted = self.settings.flat_field.clone();
+        let open = self.path().map(str::to_string);
+        let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
+        let (was, now) = self.modify(&others, |_, loaded| {
+            let mut next = loaded.clone();
+            next.flat_field = wanted.clone();
+            Some(next)
+        });
+        let n = was.len();
+        if n > 0 {
+            let label = if n == 1 { "Flat-field on 1 photo".into() } else { format!("Flat-field on {n} photos") };
+            self.gallery.record(&was, &now, &label, None);
+        }
+        n
+    }
+
     pub fn join_roll(&mut self, paths: &[String]) -> usize {
         let Some(reference) = self.settings.roll_reference.clone() else { return 0 };
         let donor = self.settings.clone();
