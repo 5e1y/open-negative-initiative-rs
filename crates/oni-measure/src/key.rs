@@ -135,7 +135,8 @@ pub struct Decoded {
     pub full_width: f64,
 }
 
-pub type Decode = dyn Fn(&Path, bool) -> Result<Decoded, String> + Send + Sync;
+/// Decodes a file as its settings ask: primaries converted, the encoding of a file naming no profile.
+pub type Decode = dyn Fn(&Path, &PipelineSettings) -> Result<Decoded, String> + Send + Sync;
 
 /// `Negative.previewSide`, the copy the measuring one is reduced from.
 pub const PREVIEW_SIDE: f64 = 2000.0;
@@ -169,7 +170,7 @@ impl Measurer {
 
     /// Reads one frame with `read`, on its measuring copy; `None` where the file reads nothing.
     pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
-        let d = (self.decode)(Path::new(path), s.primaries_converted).ok()?;
+        let d = (self.decode)(Path::new(path), s).ok()?;
         let mut guard = self.engine.lock().ok()?;
         let (graph, pipeline) = &mut *guard;
         let source = Self::copy(graph, pipeline, &d)?;

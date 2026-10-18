@@ -17,8 +17,8 @@ pub fn measurer() -> Option<&'static Measurer> {
             let graph = oni_graph::Graph::new().ok()?;
             Some(Measurer::new(
                 graph,
-                Box::new(|path: &Path, converted: bool| {
-                    let d = render::decode(path, converted)?;
+                Box::new(|path: &Path, s: &PipelineSettings| {
+                    let d = render::decode(path, render::Reading::of(s))?;
                     Ok(Decoded { width: d.linear.width as u32, height: d.linear.height as u32, pixels: d.linear.pixels, full_width: d.full_width })
                 }),
             ))
