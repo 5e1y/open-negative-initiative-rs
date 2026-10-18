@@ -286,14 +286,16 @@
     "type": "feature",
     "title": "Export is a mode of the card: targets, rows, previews, panel and the export pipeline in the app",
     "status": "done",
-    "outcome": "Export is a mode of the card (export_card.rs, ui/export.slint): the target is the selection else the open photo, counted in the menu, the bar's key, the card's key and the context label; one line per photo with its proofed preview and EXIF fields kept in the sidecar; presets, format, compression, quality, size, HDR; the estimate; Save or a folder with the clash dialog; the full render unproofed with the canvas's masks and patches, written by oni-export with only ONI's metadata, noted in the journal. Verified by tests/export_window.rs on roll #8 (TIFF 16 read back: size, ZIP, ICC, no scan tags with the NEF as twin, pixels within 0.0076 of the canvas, the swapped-channel twin failing; a batch with its clash and Cancel twin) and the export.rs unit tests, run through the wrapper."
+    "outcome": "Export is a mode of the card (export_card.rs, ui/export.slint): the target is the selection else the open photo, counted in the menu, the bar's key, the card's key and the context label; one line per photo with its proofed preview and EXIF fields kept in the sidecar; presets, format, compression, quality, size, HDR; the estimate; Save or a folder with the clash dialog; the full render unproofed with the canvas's masks and patches, written by oni-export with only ONI's metadata, noted in the journal. Verified by tests/export_window.rs on roll #8 (TIFF 16 read back: size, ZIP, ICC, no scan tags with the NEF as twin, pixels within 0.0076 of the canvas, the swapped-channel twin failing; a batch with its clash and Cancel twin) and the export.rs unit tests, run through the wrapper.",
+    "commit": "b1b35e4"
   },
   {
     "id": 34,
     "type": "feature",
     "title": "Colour management in the app: spaces, profiles, the canvas proof, the paper proof and Paper Correction",
     "status": "done",
-    "outcome": "The canvas, thumbnails and previews are proofed into the export space as a graph stage (proof.rs: matrix for a matrix space, the 33 cube for a profile, Paper Correction on a paper only); the Working Space chip and the space field (Load a Profile…, Custom, colour only), Paper Correction in the Color pane with its Auto key, the Get Paper Profiles… sheet (paper_sheet.rs, web.rs over the system's trust store), and the screen gamut title. Verified by tests/export_paper_window.rs (a stand-in paper proofs 99.7 % of the canvas, colour only and ⌘Z twins, the correction laid on the paper file at 0.12 and not on sRGB at 0.0000), tests/paper_sheet_window.rs (list, filter, install, failed download, uninstall, browser source) and the proof GPU-against-CPU tests, run through the wrapper. The space staging animation is not ported."
+    "outcome": "The canvas, thumbnails and previews are proofed into the export space as a graph stage (proof.rs: matrix for a matrix space, the 33 cube for a profile, Paper Correction on a paper only); the Working Space chip and the space field (Load a Profile…, Custom, colour only), Paper Correction in the Color pane with its Auto key, the Get Paper Profiles… sheet (paper_sheet.rs, web.rs over the system's trust store), and the screen gamut title. Verified by tests/export_paper_window.rs (a stand-in paper proofs 99.7 % of the canvas, colour only and ⌘Z twins, the correction laid on the paper file at 0.12 and not on sRGB at 0.0000), tests/paper_sheet_window.rs (list, filter, install, failed download, uninstall, browser source) and the proof GPU-against-CPU tests, run through the wrapper. The space staging animation is not ported.",
+    "commit": "b1b35e4"
   },
   {
     "id": 35,
