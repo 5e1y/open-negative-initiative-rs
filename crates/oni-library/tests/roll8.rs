@@ -361,3 +361,34 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
     let lost = project::Project::new("Stale", Date::since_reference_date(8e8), vec![stale]);
     assert!(project::grouped(std::slice::from_ref(&lost), &all)[0].entries.is_empty());
 }
+
+/// `CaptureExposure.offsets` on the NEFs present: each frame's stops past the roll's common settings
+/// are those Prepare the Roll wrote in its sidecar, the camera having been left on an automatic mode.
+#[test]
+fn roll8_capture_stops_read_off_the_exif_are_those_swift_wrote() {
+    use oni_library::capture::CaptureExposure;
+    let Some(folder) = staged() else { return };
+    let mut names: Vec<String> = std::fs::read_dir(&folder)
+        .unwrap()
+        .filter_map(Result::ok)
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| n.ends_with(".NEF"))
+        .collect();
+    names.sort();
+    assert!(names.len() >= 2, "too few NEFs to read a roll's common settings");
+    let captures: Vec<Option<CaptureExposure>> = names.iter().map(|n| CaptureExposure::read(&folder.join(n))).collect();
+    assert!(captures.iter().all(Option::is_some), "every NEF carries its exposure");
+    let wrote: Vec<f32> = names
+        .iter()
+        .map(|n| sidecar::read(&folder.join(n), true, false).unwrap().settings.capture_stops)
+        .collect();
+    let ours = CaptureExposure::offsets(&captures);
+    for (((name, o), w), c) in names.iter().zip(&ours).zip(&wrote).zip(&captures) {
+        println!("{name}: {} reads {o:+.6} for Swift's {w:+.6}", c.map(|c| c.label()).unwrap_or_default());
+    }
+    assert!(ours.iter().zip(&wrote).all(|(o, w)| (o - w).abs() < 1e-5), "{ours:?} for {wrote:?}");
+    // Twin: read against the first frame instead of the roll's common settings, the stops part.
+    let first = captures[0].unwrap().stops();
+    let against_first: Vec<f32> = captures.iter().map(|c| c.unwrap().stops() - first).collect();
+    assert!(against_first.iter().zip(&wrote).any(|(o, w)| (o - w).abs() > 0.1), "the check cannot tell the common from the first frame");
+}

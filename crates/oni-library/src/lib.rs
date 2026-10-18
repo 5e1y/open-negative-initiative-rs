@@ -2,6 +2,7 @@
 //! and the SQLite index, a disposable cache rebuilt from the sidecars, which stay the only truth.
 
 pub mod archive_tree;
+pub mod capture;
 pub mod exif;
 pub mod favourites;
 pub mod film_group;

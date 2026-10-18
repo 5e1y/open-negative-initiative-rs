@@ -19,6 +19,8 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 use std::time::Instant;
 
+pub mod roll;
+
 type Settings = BTreeMap<String, PipelineSettings>;
 
 /// The host's view of the library: every frame's path, and which decode through the RAW mosaic,

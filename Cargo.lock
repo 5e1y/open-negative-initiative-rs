@@ -4305,6 +4305,7 @@ dependencies = [
  "oni-core",
  "oni-fixtures",
  "oni-graph",
+ "oni-library",
  "oni-pipeline",
  "oni-settings",
  "serde_json",

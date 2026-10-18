@@ -13,4 +13,5 @@ oni-settings.workspace = true
 
 [dev-dependencies]
 oni-fixtures.workspace = true
+oni-library = { path = "../oni-library" }
 serde_json.workspace = true

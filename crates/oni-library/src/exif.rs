@@ -52,8 +52,8 @@ impl Reader {
     }
 }
 
-/// `DateTimeOriginal` as the file stores it (`2026:06:18 14:32:10`), `None` when it carries none.
-pub fn capture_date(path: &Path) -> Option<String> {
+/// The file's EXIF directory, past a JPEG's APP1 or a TIFF-based header.
+fn exif_directory(path: &Path) -> Option<(Reader, u64)> {
     let mut file = File::open(path).ok()?;
     let mut head = [0u8; 4];
     file.read_exact(&mut head).ok()?;
@@ -73,6 +73,12 @@ pub fn capture_date(path: &Path) -> Option<String> {
     let first = u64::from(reader.u32(4)?);
     let (_, _, pointer) = reader.entry(first, EXIF_IFD)?;
     let exif = u64::from(reader.u32(pointer)?);
+    Some((reader, exif))
+}
+
+/// `DateTimeOriginal` as the file stores it (`2026:06:18 14:32:10`), `None` when it carries none.
+pub fn capture_date(path: &Path) -> Option<String> {
+    let (mut reader, exif) = exif_directory(path)?;
     let (kind, count, value) = reader.entry(exif, DATE_TIME_ORIGINAL)?;
     if kind != ASCII || count == 0 || count > 64 {
         return None;
@@ -81,6 +87,37 @@ pub fn capture_date(path: &Path) -> Option<String> {
     let text = raw.split(|&b| b == 0).next().unwrap_or(&[]);
     let text = String::from_utf8_lossy(text).into_owned();
     (!text.is_empty()).then_some(text)
+}
+
+const EXPOSURE_TIME: u16 = 0x829A;
+const F_NUMBER: u16 = 0x829D;
+const ISO_SPEED_RATINGS: u16 = 0x8827;
+const SHORT: u16 = 3;
+const LONG: u16 = 4;
+const RATIONAL: u16 = 5;
+
+/// Shutter in seconds, aperture as its f-number and ISO, as ImageIO hands them as doubles.
+pub fn exposure(path: &Path) -> Option<(f64, f64, f64)> {
+    let (mut reader, exif) = exif_directory(path)?;
+    let mut rational = |tag: u16| -> Option<f64> {
+        let (kind, _, value) = reader.entry(exif, tag)?;
+        if kind != RATIONAL {
+            return None;
+        }
+        // A rational's eight bytes never fit the entry: its value field holds their offset.
+        let at = u64::from(reader.u32(value)?);
+        let (n, d) = (reader.u32(at)?, reader.u32(at + 4)?);
+        (d != 0).then(|| f64::from(n) / f64::from(d))
+    };
+    let shutter = rational(EXPOSURE_TIME)?;
+    let aperture = rational(F_NUMBER)?;
+    let (kind, count, value) = reader.entry(exif, ISO_SPEED_RATINGS)?;
+    let iso = match kind {
+        SHORT if count >= 1 => f64::from(reader.u16(value)?),
+        LONG if count >= 1 => f64::from(reader.u32(value)?),
+        _ => return None,
+    };
+    Some((shutter, aperture, iso))
 }
 
 /// The offset of the TIFF header inside a JPEG's `Exif` APP1 segment.

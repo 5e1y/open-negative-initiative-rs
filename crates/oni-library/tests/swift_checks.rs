@@ -343,3 +343,42 @@ fn no_crate_trashes_or_removes_a_library_member() {
     );
     assert_eq!(member_deletions(&retired), ["&url", "Path::new(&path)"]);
 }
+
+// MARK: - RollSettings.resetReachCheck
+
+/// Two rolls in one folder and a frame on none: a frame picked reaches its whole roll and that
+/// roll's sheet, never the neighbour's; a sheet picked brings its roll and is no frame of it.
+#[test]
+fn a_reset_to_default_reaches_whole_rolls_and_their_sheets_never_a_neighbour() {
+    use oni_library::roll_membership::reset_reach;
+    use oni_settings::cg::Size;
+    use oni_settings::frame::{ContactSheetGrid, RollReference};
+    use std::collections::BTreeSet;
+    let dir = scratch("reset-reach");
+    let roll = || RollReference { id: oni_settings::Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
+    let (a, b) = (roll(), roll());
+    let file = |name: &str, reference: Option<&RollReference>, sheet: bool| -> String {
+        let path = dir.join(name);
+        std::fs::write(&path, b"").unwrap();
+        let mut s = PipelineSettings::default();
+        s.roll_reference = reference.cloned();
+        if sheet {
+            s.sheet = Some(ContactSheetGrid { columns: 2, rows: 1, frames: 2, tile: Size { width: 9.0, height: 6.0 }, margin: 1.0, windows: None });
+        }
+        sidecar::write(&s, &path, WriteOptions::default()).unwrap();
+        path.to_string_lossy().into_owned()
+    };
+    let (a1, a2, sheet_a) = (file("a1.ARW", Some(&a), false), file("a2.ARW", Some(&a), false), file("sheet-a.tif", Some(&a), true));
+    let (b1, loose) = (file("b1.ARW", Some(&b), false), file("loose.ARW", None, false));
+    let library = vec![a1.clone(), a2.clone(), sheet_a.clone(), b1.clone(), loose.clone()];
+    let set = |items: &[&String]| items.iter().map(|s| s.to_string()).collect::<BTreeSet<String>>();
+    let from_frame = reset_reach(std::slice::from_ref(&a1), &library);
+    assert_eq!((from_frame.frames, from_frame.sheets), (set(&[&a1, &a2]), set(&[&sheet_a])));
+    let from_sheet = reset_reach(std::slice::from_ref(&sheet_a), &library);
+    assert_eq!((from_sheet.frames, from_sheet.sheets), (set(&[&a1, &a2]), set(&[&sheet_a])));
+    // Twin, adverse by construction: a frame on no roll reaches itself alone, beside two rolls.
+    let alone = reset_reach(std::slice::from_ref(&loose), &library);
+    assert_eq!(alone.frames, set(&[&loose]));
+    assert!(alone.sheets.is_empty() && alone.references.is_empty());
+    let _ = std::fs::remove_dir_all(&dir);
+}
