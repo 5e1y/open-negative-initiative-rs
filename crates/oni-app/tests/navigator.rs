@@ -122,6 +122,8 @@ fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where
     assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()));
     assert_eq!(n.get_catch_up_left().as_str(), "1 photos of your library are not in it yet:");
     assert_eq!(n.get_catch_up_choose().as_str(), "ADD ANOTHER FOLDER…", "twin: a folder in, the key asks for another");
+    rig.settle();
+    println!("shot {}", rig.shot("roots-catch-up").display());
     assert!(!n.get_welcome_shown(), "a folder opened, the welcome leaves");
     n.invoke_catch_up_done();
     rig.pump();

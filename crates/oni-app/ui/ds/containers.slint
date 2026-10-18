@@ -111,7 +111,7 @@ export component Dialog inherits Rectangle {
     column := VerticalLayout {
         padding: SheetStyle.padding;
         spacing: SheetStyle.gap;
-        if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; }
+        if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; wrap: word-wrap; }
         @children
     }
 }

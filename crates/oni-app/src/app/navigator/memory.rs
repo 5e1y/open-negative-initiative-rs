@@ -106,7 +106,8 @@ impl Ctl {
             if s.nav.favourites.paths.is_empty() && opened.is_none() {
                 s.nav.welcome = roots::suggested(&former, &s.nav.computer.home);
             }
-            s.nav.catching_up = !former.is_empty() && !caught_up;
+            // A bench never meets the sheet, as Swift's `--bench` leaves before it.
+            s.nav.catching_up = !former.is_empty() && !caught_up && crate::bench::requested().is_none();
             s.nav.former = former;
             (height, s.nav.catching_up, failure)
         };

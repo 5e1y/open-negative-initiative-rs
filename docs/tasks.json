@@ -602,5 +602,13 @@
     "status": "done",
     "detail": "panel.slint keeps the tab bar; its globals, its shared pieces and each of the five tabs live in their own file under ui/panel/, each importing only what it uses.",
     "outcome": "The oni-app suite green, the block-order and field-wiring checks reading the split files; the headless editor shot unchanged."
+  },
+  {
+    "id": 86,
+    "type": "fix",
+    "title": "The roots catch-up sheet's title wraps, its steps align, and no bench opens it",
+    "status": "done",
+    "detail": "The sheet's title wrapped instead of cut off; each step's number in a keycap-wide column and its text aligned left, as RootsCatchUp lays them; a bench never meets the sheet, as Swift's --bench leaves before it, so its clicks reach the gallery.",
+    "outcome": "ONI_BENCH=flows green in the real window again; the navigator test shoots the sheet with its title on two lines."
   }
 ]
