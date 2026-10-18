@@ -99,7 +99,7 @@ first on the simplified design system; the real interface work comes after.
 
 ## Interface rules
 
-- **Every screen is built from the design system** (`crates/oni-app/ui/ds/`, tokens generated from
+- **Every screen is built from the design system** (`crates/oni-ui/ui/ds/`, tokens generated from
   `DSTokens.swift`): no literal size, colour or radius outside it, so a change of look is one edit. Simple
   buttons until the design system defines the final components; the exact ONI look comes back last.
 - **Drag is reserved for parameters and for the image** (pan, zoom). Menus, lists, sidebars and every

@@ -127,7 +127,7 @@ mod tests {
 
     #[test]
     fn the_editors_lengths_are_the_design_system_s() {
-        let tokens = include_str!("../../ui/ds/tokens.slint");
+        let tokens = include_str!("../../../oni-ui/ui/ds/tokens.slint");
         for (name, value) in ds::TOKENS {
             let line = tokens.lines().find(|l| l.contains(&format!(" {name}:"))).unwrap_or_else(|| panic!("{name} absent"));
             let written: f64 = line.split(':').nth(1).unwrap().trim().trim_end_matches(';').trim_end_matches("px").parse().unwrap();

@@ -7,7 +7,7 @@ use slint::{ComponentHandle, Timer};
 use std::time::Duration;
 
 /// The pictures shipped, oldest first, each named after the version it opens.
-const PICTURES: [(&str, &str); 2] = [("1.0.0", include_str!("../ui/splash/1.0.0.txt")), ("1.3.0", include_str!("../ui/splash/1.3.0.txt"))];
+const PICTURES: [(&str, &str); 2] = [("1.0.0", include_str!("../../oni-ui/ui/splash/1.0.0.txt")), ("1.3.0", include_str!("../../oni-ui/ui/splash/1.3.0.txt"))];
 /// `DS.Motion.splashMinimum`.
 const MINIMUM: Duration = Duration::from_millis(3330);
 

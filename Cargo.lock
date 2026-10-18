@@ -4156,6 +4156,7 @@ dependencies = [
  "oni-pipeline",
  "oni-render",
  "oni-settings",
+ "oni-ui",
  "png",
  "pollster",
  "qrcode",
@@ -4168,7 +4169,6 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "slint",
- "slint-build",
  "tiff",
  "tokio",
  "url",
@@ -4380,6 +4380,14 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
+]
+
+[[package]]
+name = "oni-ui"
+version = "0.1.0"
+dependencies = [
+ "slint",
+ "slint-build",
 ]
 
 [[package]]

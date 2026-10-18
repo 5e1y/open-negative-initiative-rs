@@ -225,5 +225,5 @@ pub fn scan(ui: &Path) -> Vec<Breach> {
 
 /// The crate's own `ui` folder.
 pub fn ui_dir() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("ui")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui")
 }

@@ -28,6 +28,7 @@ oni-graph = { path = "../oni-graph" }
 oni-library = { path = "../oni-library" }
 oni-link = { path = "../oni-link" }
 oni-measure = { path = "../oni-measure" }
+oni-ui = { path = "../oni-ui" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
@@ -71,5 +72,3 @@ kamadak-exif = "0.6"
 png = "0.18"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 
-[build-dependencies]
-slint-build = "=1.18.1"
