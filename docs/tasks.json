@@ -615,9 +615,9 @@
     "id": 87,
     "type": "build",
     "title": "An iteration loop under a minute: the Slint interface in its own crate, an incremental dev profile",
-    "status": "in progress",
-    "detail": "The interface moves to crates/oni-ui, so a change to the Rust side no longer type-checks and generates Slint's code again; the dev profile is incremental, the workspace at opt-level 1 and every dependency at 3; --release stays the shipped build. The 33 window checks are one binary whose runner starts each in a process of its own, several at once; doc-tests, which no crate has, are off; a guard keeps every source file under 400 lines, the larger ones grandfathered at their size.",
-    "outcome": ""
+    "status": "done",
+    "detail": "The interface moves to crates/oni-ui, so a change to the Rust side no longer type-checks and generates Slint's code again; the dev profile is incremental, the workspace at opt-level 1 and every dependency at 3; --release stays the shipped build. The 33 window checks are one binary whose runner starts each in a process of its own, several at once; doc-tests, which no crate has, are off; a guard keeps every source file under 400 lines, the larger ones grandfathered at their size. scripts/check builds once then runs every test binary at once, each threading its own tests: nextest's process per test costs about 0.6 s each on macOS. The editors check, the longest, is seven checks.",
+    "outcome": "A change to oni-core, rebuilt and checked across the whole workspace: about 30 s, from 15 to 20 minutes; a failing check fails the script (twin: a 401-line file)."
   },
   {
     "id": 88,

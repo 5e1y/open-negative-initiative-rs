@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Every check of the workspace in one build, then every test binary at once, each threading its own
+# tests; prints the failures whole and exits non-zero on any. Usage: scripts/check [cargo test args].
+set -uo pipefail
+cd "$(dirname "$0")/.."
+started=$(date +%s)
+out=$(mktemp -d)
+trap 'rm -rf "$out"' EXIT
+
+cargo test --workspace --no-run --message-format=json "$@" 2>"$out/build.log" \
+    | jq -r 'select(.reason == "compiler-artifact" and .profile.test == true and .executable != null)
+             | "\(.executable)\t\(.manifest_path)"' >"$out/bins"
+if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+    grep -E '^(error|warning: unused)' -A12 "$out/build.log"
+    exit 1
+fi
+
+# One binary: its output into its own log, its verdict into a marker the summary reads.
+run() {
+    local exe=$1 manifest=$2 log
+    log="$out/$(basename "$exe").log"
+    if (cd "$(dirname "$manifest")" && CARGO_MANIFEST_DIR=$(dirname "$manifest") "$exe" -q >"$log" 2>&1); then
+        touch "$log.ok"
+    fi
+}
+export -f run
+export out
+tr '\t' '\n' <"$out/bins" | xargs -n 2 -P "${ONI_BINARIES:-12}" bash -c 'run "$0" "$1"'
+
+failed=0
+while IFS=$'\t' read -r exe _; do
+    log="$out/$(basename "$exe").log"
+    if [ ! -e "$log.ok" ]; then
+        failed=$((failed + 1))
+        echo "=== FAILED $(basename "$exe")"
+        grep -vE '^(test .* \.\.\. ok|running [0-9]+ tests?|\.+)$' "$log" | tail -40
+    fi
+done <"$out/bins"
+echo "$(wc -l <"$out/bins" | tr -d ' ') binaries, $failed failed, $(($(date +%s) - started)) s"
+[ "$failed" -eq 0 ]

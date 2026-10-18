@@ -45,8 +45,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 ## Build
 
-`cargo nextest run --workspace` runs every check (or `cargo test --workspace`); `--release` is the
-shipped build and the benches' only. LibRaw is vendored in `crates/oni-decode/libraw` (0.22.2) and
+`scripts/check` runs every check: one build, then every test binary at once (about 30 s);
+`--release` is the shipped build and the benches' only. LibRaw is vendored in `crates/oni-decode/libraw` (0.22.2) and
 built by `build.rs`, so a new camera arrives by updating that copy, never from the system.
 
 - **The loop stays under a minute, build and checks included.** The dev profile is incremental, the

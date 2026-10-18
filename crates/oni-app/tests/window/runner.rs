@@ -17,13 +17,17 @@ pub fn run(checks: &[(&str, fn())]) {
         return check();
     }
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // None is ignored, so a listing of the ignored ones is empty.
     if args.iter().any(|a| a == "--list") {
-        checks.iter().for_each(|(n, _)| println!("{n}: test"));
+        if !args.iter().any(|a| a == "--ignored") {
+            checks.iter().for_each(|(n, _)| println!("{n}: test"));
+        }
         return;
     }
+    let exact = args.iter().any(|a| a == "--exact");
     let shown = args.iter().any(|a| a == "--nocapture");
     let filters: Vec<&String> = args.iter().filter(|a| !a.starts_with('-')).collect();
-    let chosen: Vec<&str> = checks.iter().map(|(n, _)| *n).filter(|n| filters.is_empty() || filters.iter().any(|f| n.contains(f.as_str()))).collect();
+    let chosen: Vec<&str> = checks.iter().map(|(n, _)| *n).filter(|n| filters.is_empty() || filters.iter().any(|f| if exact { *n == f.as_str() } else { n.contains(f.as_str()) })).collect();
     println!("\nrunning {} tests", chosen.len());
     let me = std::env::current_exe().expect("this binary");
     let next = AtomicUsize::new(0);
