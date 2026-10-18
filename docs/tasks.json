@@ -448,8 +448,9 @@
     "id": 62,
     "type": "feature",
     "title": "Several archive folders and the navigator: favourites, the disk's folders, what is remembered across launches",
-    "status": "doing",
-    "detail": "FolderNavigation and Navigator: Computer (home and volumes), the base and its parent, favourites seeded once from roots.json and kept in favourites.json, a click unfolding and a double click opening, the base, the favourites view and the unfolded rows remembered."
+    "status": "done",
+    "detail": "FolderNavigation and Navigator: Computer (home and volumes), the base and its parent, favourites seeded once from roots.json and kept in favourites.json, a click unfolding and a double click opening, the base, the favourites view and the unfolded rows remembered.",
+    "outcome": "oni-library navigator.rs (Computer, children, clicked, Navigation) with twins of Navigator.selfCheck and FolderNavigation.selfCheck; app/navigator.rs and navigator.slint: Computer read again as volumes come and go, listings off the interface thread, the click count kept as AppKit's, favourites starred and viewed alone, the favourites surveyed behind the opened folder for their rolls, Parent and the pill's folders above, the folder menu (Open, the favourite, Rename… in place, Make a Roll and Back to a Folder, New Folder Inside, Show in Finder), the open photo's folder revealed beside it at a remembered height, RootWelcome and RootsCatchUp, the ONI Trash's rows under Computer, navigatorBase/FavouritesOnly/Unfolded/EditorHeight and rootsCatchUpShown kept; preferences now read the file again before each write. tests/navigator.rs drives it all on a disk of its own, through a relaunch. Left: the favourites' photos reach the index only when opened; SidebarKeys; a roll row's stock icon."
   },
   {
     "id": 63,

@@ -1,5 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
-import { ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
+import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
+export { TrashLine } from "navigator.slint";
+import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -30,20 +32,6 @@ export struct TreeRow {
     expandable: bool,
     expanded: bool,
     selected: bool,
-}
-
-// A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
-export struct TrashLine {
-    title: string,
-    trail: string,
-    count: string,
-    depth: int,
-    foldable: bool,
-    unfolded: bool,
-    picked: bool,
-    opened: bool,
-    present: bool,
-    restore-help: string,
 }
 
 export struct StockCount {
@@ -134,7 +122,10 @@ export global Library {
     callback description-committed(string);
 }
 
+// `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
+// navigator keeps its height over the opened folder's tree with its photos.
 export component Tree inherits Surface {
+    in property <bool> beside-photo;
     property <length> menu-x;
     property <length> menu-y;
     VerticalLayout {
@@ -145,7 +136,24 @@ export component Tree inherits Surface {
             selected <=> Library.surface;
             picked(i) => { Library.surface-picked(i); }
         }
-        if Library.surface == 0: ListView {
+        if Library.surface == 0: NavigatorSection {
+            vertical-stretch: root.beside-photo ? 0 : 1;
+            beside-photo: root.beside-photo;
+            trash-rows: Library.trash-rows;
+            trash-clicked(i) => { Library.trash-row-clicked(i); }
+            trash-double-clicked(i) => { Library.trash-row-double-clicked(i); }
+            trash-restore(i) => { Library.trash-row-restore(i); }
+            trash-menu(i, x, y) => {
+                root.menu-x = x - root.absolute-position.x;
+                root.menu-y = y - root.absolute-position.y;
+                if (Library.trash-row-menu(i)) { menu.show(); }
+            }
+        }
+        if Library.surface == 0 && root.beside-photo: ColumnPill {
+            text: Navigator.opened-title;
+            help: Navigator.opened-help;
+        }
+        if Library.surface == 0 && root.beside-photo: ListView {
             vertical-stretch: 1;
             for row[i] in Library.rows: TreeItem {
                 depth: row.depth;
@@ -157,28 +165,6 @@ export component Tree inherits Surface {
                 selected: row.selected;
                 clicked => { Library.row-clicked(i); }
                 double-clicked => { Library.row-double-clicked(i); }
-            }
-        }
-        if Library.surface == 0: VerticalLayout {
-            for line[i] in Library.trash-rows: TrashRow {
-                title: line.title;
-                trail: line.trail;
-                count: line.count;
-                depth: line.depth;
-                foldable: line.foldable;
-                unfolded: line.unfolded;
-                picked: line.picked;
-                opened: line.opened;
-                present: line.present;
-                restore-help: line.restore-help;
-                clicked => { Library.trash-row-clicked(i); }
-                double-clicked => { Library.trash-row-double-clicked(i); }
-                restore => { Library.trash-row-restore(i); }
-                menu(x, y) => {
-                    root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
-                    root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
-                    if (Library.trash-row-menu(i)) { menu.show(); }
-                }
             }
         }
         if Library.surface == 1: ListView {

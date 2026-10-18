@@ -1,0 +1,239 @@
+// The navigator's controls: a folder's row and its rename field, the header's keys and pill, the
+// pill's list of folders above, and the line dragged to size the rows beside a photograph.
+import { DS } from "tokens.slint";
+import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle } from "theme.slint";
+import { Label, Icon, Tone, Tips } from "base.slint";
+import { TextField } from "controls.slint";
+import { MenuPanel } from "containers.slint";
+import { Icons } from "icons.slint";
+
+export global NavigatorStyle {
+    // `DS.Control.navigatorEditorRest` and `navigatorMaxHeight`: the rows beside a photograph.
+    out property <length> rest: DS.control-navigator-editor-rest;
+    out property <length> max: DS.control-navigator-max-height;
+    out property <length> star: DS.control-icon-size * 0.8;
+    out property <length> key: DS.control-keycap-mini-height;
+    out property <color> favourite: DS.tint-favourite;
+    // `NavigatorRow`'s 0.4 on a folder of a volume not mounted.
+    out property <float> absent: 0.4;
+}
+
+export enum FolderKind { folder, roll, opened }
+
+// `NavigatorRow`: the star lit on a favourite and shown under the pointer on any other; a right click
+// asks for the folder's menu at the pointer.
+export component FolderRow inherits Rectangle {
+    in property <string> title;
+    in property <string> path;
+    in property <int> depth;
+    in property <bool> chevron;
+    in property <bool> unfolded;
+    in property <FolderKind> kind;
+    in property <bool> picked;
+    in property <bool> opened;
+    in property <bool> favourite;
+    in property <bool> present: true;
+    callback clicked();
+    callback starred();
+    callback menu(length, length);
+    height: RowStyle.height;
+    border-radius: Radius.badge;
+    background: root.opened ? Colour.row-selected : root.picked || area.has-hover ? Colour.hover : transparent;
+    opacity: root.present ? 1 : NavigatorStyle.absent;
+    accessible-role: list-item;
+    accessible-label: root.title;
+    area := TouchArea {
+        clicked => { root.clicked(); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                root.menu(self.mouse-x, self.mouse-y);
+            }
+        }
+        changed has-hover => { Tips.hover(self.has-hover, root.path, root.absolute-position.x, root.absolute-position.y + root.height); }
+        HorizontalLayout {
+            padding-left: RowStyle.padding + root.depth * RowStyle.indent;
+            padding-right: RowStyle.padding;
+            spacing: RowStyle.gap;
+            Rectangle {
+                width: RowStyle.chevron-zone;
+                if root.chevron: Icon {
+                    source: root.unfolded ? Icons.chevron-down : Icons.chevron-right;
+                    width: RowStyle.chevron;
+                    height: RowStyle.chevron;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Icon {
+                    source: root.kind == FolderKind.roll ? Icons.film-roll : root.kind == FolderKind.opened ? Icons.folder-open : Icons.folder;
+                    width: RowStyle.icon;
+                    height: RowStyle.icon;
+                }
+            }
+            Label { text: root.title; tone: root.opened || root.picked ? Tone.primary : Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+            if root.favourite || area.has-hover: VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: NavigatorStyle.star;
+                    height: NavigatorStyle.star;
+                    accessible-role: button;
+                    accessible-label: root.favourite ? "Remove from the favourites" : "Add to the favourites";
+                    Icon {
+                        source: Icons.favourite;
+                        ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
+                    }
+                    star := TouchArea {
+                        clicked => { root.starred(); }
+                        changed has-hover => {
+                            Tips.hover(self.has-hover, root.favourite ? "Remove from the favourites" : "Add to the favourites", root.absolute-position.x, root.absolute-position.y + root.height);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// `RenameField`: the row's name typed over it, committed on Return or when the focus leaves, Escape
+// putting the name back untouched.
+export component RenameRow inherits FocusScope {
+    in property <string> text;
+    in property <int> depth;
+    callback committed(string);
+    callback cancelled();
+    property <bool> done;
+    height: RowStyle.height;
+    key-pressed(event) => {
+        if (event.text == Key.Escape) {
+            root.done = true;
+            root.cancelled();
+            return accept;
+        }
+        reject
+    }
+    HorizontalLayout {
+        padding-left: RowStyle.padding + root.depth * RowStyle.indent;
+        padding-right: RowStyle.padding;
+        alignment: center;
+        field := TextField {
+            text: root.text;
+            placeholder: "Name";
+            init => { self.take-focus(); }
+            accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+            left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+        }
+    }
+}
+
+// A square mini key holding one glyph, tinted when it stands for a view held on.
+export component GlyphKey inherits Rectangle {
+    in property <image> icon;
+    in property <string> help;
+    in property <bool> enabled: true;
+    in property <bool> tinted;
+    callback clicked();
+    width: NavigatorStyle.key;
+    height: NavigatorStyle.key;
+    border-radius: ButtonStyle.small-radius;
+    background: touch.pressed ? Colour.raised-pressed : touch.has-hover ? Colour.raised-hover : Colour.raised;
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: button;
+    accessible-label: root.help;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { root.clicked(); }
+    Icon {
+        width: ButtonStyle.small-icon;
+        height: ButtonStyle.small-icon;
+        source: root.icon;
+        ink: root.tinted ? NavigatorStyle.favourite : Colour.ink;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+}
+
+// `ColumnPill`: the name a column's header gives what it lists, a key when it opens something.
+export component ColumnPill inherits Rectangle {
+    in property <string> text;
+    in property <string> help;
+    in property <bool> enabled: true;
+    in property <bool> pressable;
+    callback clicked();
+    height: NavigatorStyle.key;
+    border-radius: Radius.badge;
+    background: root.pressable && root.enabled && touch.has-hover ? Colour.hover : Colour.canvas;
+    accessible-role: button;
+    accessible-label: root.text;
+    HorizontalLayout {
+        padding-left: Space.s;
+        padding-right: Space.s;
+        Label { text: root.text; overflow: elide; horizontal-stretch: 1; }
+    }
+    touch := TouchArea {
+        enabled: root.pressable && root.enabled;
+        clicked => { root.clicked(); }
+        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+}
+
+// One folder of the pill's list: its glyph, its name, a check on the folder the column stands on.
+export struct FolderChoice { title: string, current: bool }
+
+// The pill's popover: the base and each folder above it, Computer last.
+export component FolderMenu inherits PopupWindow {
+    in property <[FolderChoice]> choices;
+    callback chosen(int);
+    close-policy: close-on-click-outside;
+    MenuPanel {
+        for choice[i] in root.choices: Rectangle {
+            height: MenuStyle.row;
+            border-radius: ButtonStyle.small-radius;
+            background: area.has-hover ? Colour.hover : transparent;
+            accessible-role: button;
+            accessible-label: choice.title;
+            HorizontalLayout {
+                padding-left: Space.xs;
+                padding-right: Space.xs;
+                spacing: Space.s;
+                VerticalLayout { alignment: center; Icon { source: Icons.folder; width: RowStyle.icon; height: RowStyle.icon; } }
+                Label { text: choice.title; overflow: elide; horizontal-stretch: 1; }
+                if choice.current: VerticalLayout {
+                    alignment: center;
+                    Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
+                }
+            }
+            area := TouchArea { clicked => { root.chosen(i); } }
+        }
+    }
+}
+
+// `NavigatorDivider`: the line under the rows, dragged to size them from nothing to the ceiling;
+// read in window space, since the line moves with the rows it sizes.
+export component RowsDivider inherits Rectangle {
+    in-out property <length> rows;
+    callback released(length);
+    property <length> start;
+    height: Stroke.line + 2 * Space.xs;
+    Rectangle {
+        height: Stroke.line;
+        background: Colour.separator;
+    }
+    grab := TouchArea {
+        mouse-cursor: MouseCursor.ns-resize;
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                root.start = root.rows - self.absolute-position.y - self.mouse-y;
+            }
+            if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                root.released(root.rows);
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.rows = max(0px, min(NavigatorStyle.max, root.start + self.absolute-position.y + self.mouse-y));
+            }
+        }
+    }
+}

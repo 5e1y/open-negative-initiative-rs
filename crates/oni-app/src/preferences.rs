@@ -26,12 +26,16 @@ impl Preferences {
     /// The support folder's preferences; a missing or unreadable file reads as none set.
     pub fn load(support: &Path) -> Preferences {
         let file = Self::file_path(support);
-        let values = std::fs::read(&file)
+        let values = Self::read(&file);
+        Preferences { file, values }
+    }
+
+    fn read(file: &Path) -> Map<String, Value> {
+        std::fs::read(file)
             .ok()
             .and_then(|data| serde_json::from_slice::<Value>(&data).ok())
             .and_then(|v| v.as_object().cloned())
-            .unwrap_or_default();
-        Preferences { file, values }
+            .unwrap_or_default()
     }
 
     pub fn string(&self, key: &str) -> Option<&str> {
@@ -50,9 +54,12 @@ impl Preferences {
         self.values.get(key)?.as_i64()
     }
 
-    /// Writes the whole file at once, through a sibling so a crash never leaves half a file.
+    /// Writes the whole file at once, through a sibling so a crash never leaves half a file. Read
+    /// again first: another holder may have written a key since this one loaded.
     pub fn set(&mut self, key: &str, value: Value) -> std::io::Result<()> {
-        self.values.insert(key.to_owned(), value);
+        let mut values = Self::read(&self.file);
+        values.insert(key.to_owned(), value);
+        self.values = values;
         if let Some(folder) = self.file.parent() {
             std::fs::create_dir_all(folder)?;
         }
@@ -78,6 +85,13 @@ mod tests {
         let next = Preferences::load(&dir);
         assert_eq!(next.string(OPENED_FOLDER), Some("/Volumes/Scans/Roll 12"));
         assert_eq!(next.bool("soundMuted"), Some(true));
+        // A holder loaded before another wrote keeps that key when it writes its own.
+        let mut early = Preferences::load(&dir);
+        Preferences::load(&dir).set("navigatorBase", Value::from("/Volumes/T7")).unwrap();
+        early.set(OPENED_FOLDER, Value::from("/Volumes/Scans/Roll 13")).unwrap();
+        assert_eq!(Preferences::load(&dir).string("navigatorBase"), Some("/Volumes/T7"));
+        // Twin: the key the early holder wrote is the one read back.
+        assert_eq!(Preferences::load(&dir).string(OPENED_FOLDER), Some("/Volumes/Scans/Roll 13"));
         // Twin: a torn file reads as nothing set rather than failing the launch.
         std::fs::write(Preferences::file_path(&dir), b"{\"openedFolder\": ").unwrap();
         assert_eq!(Preferences::load(&dir).string(OPENED_FOLDER), None);

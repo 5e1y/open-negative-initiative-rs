@@ -12,6 +12,7 @@ pub mod info;
 pub mod index;
 pub mod journal;
 pub mod library;
+pub mod navigator;
 pub mod paths;
 pub mod project;
 pub mod project_tree;

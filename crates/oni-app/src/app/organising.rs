@@ -813,7 +813,7 @@ impl Ctl {
         s.org.trashed = trashed;
     }
 
-    fn publish_trash_rows(&self) {
+    pub(super) fn publish_trash_rows(&self) {
         let Some(w) = self.window() else { return };
         let lines: Vec<TrashLine> = {
             let s = self.state.borrow();
@@ -857,6 +857,7 @@ impl Ctl {
             lines
         };
         w.global::<Library>().set_trash_rows(ModelRc::new(VecModel::from(lines)));
+        self.trash_synced();
     }
 
     fn trash_folder(&self, i: usize) -> Option<(String, usize)> {

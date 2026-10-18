@@ -164,16 +164,16 @@ mod tests {
         let Some(tool) = std::env::var_os("ONI_SEAL_CROSS") else { return eprintln!("ONI_SEAL_CROSS unset: CryptoKit is not consulted") };
         let key = StaticSecret::random_from_rng(OsRng);
         let text = "Rust to CryptoKit ✓\nsecond line";
-        let file = std::env::temp_dir().join(format!("oni-seal-{}.txt", std::process::id()));
-        std::fs::write(&file, seal(text, &PublicKey::from(&key)).unwrap()).unwrap();
+        let sealed_at = std::env::temp_dir().join(format!("oni-seal-{}.txt", std::process::id()));
+        std::fs::write(&sealed_at, seal(text, &PublicKey::from(&key)).unwrap()).unwrap();
         let raw = base64::engine::general_purpose::STANDARD.encode(key.to_bytes());
-        let out = std::process::Command::new(tool).args([raw.as_str(), file.to_str().unwrap(), "CryptoKit to Rust"]).output().unwrap();
+        let out = std::process::Command::new(tool).args([raw.as_str(), sealed_at.to_str().unwrap(), "CryptoKit to Rust"]).output().unwrap();
         let out = String::from_utf8(out.stdout).unwrap();
         let opened: String = out.split("OPENED:").nth(1).unwrap().split("SEALED:").next().unwrap().trim_end().to_string();
         assert_eq!(opened, text, "CryptoKit opens what Rust sealed");
         let sealed = out.split("SEALED:").nth(1).unwrap().trim();
         assert_eq!(open(sealed, &key).as_deref(), Some("CryptoKit to Rust"));
         assert_eq!(open(sealed, &StaticSecret::random_from_rng(OsRng)), None, "twin: not with another key");
-        let _ = std::fs::remove_file(file);
+        let _ = std::fs::remove_file(sealed_at);
     }
 }
