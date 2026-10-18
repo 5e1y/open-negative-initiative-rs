@@ -1,0 +1,27 @@
+// `neutralDecodeNotice`: shown once the library holds a RAW, its bullets what the change means for a photo.
+import { Sheet, Label, Tone, Button } from "ds/ds.slint";
+
+export global Notice {
+    in property <bool> shown;
+    callback close();
+}
+
+export component NoticeSheet inherits Sheet {
+    title: "RAW Color, Recalibrated";
+    dismissed => { Notice.close(); }
+    for line in [
+        "Camera RAW files now render truer color, especially on unusual film stocks.",
+        "Your existing photos have already been nudged to compensate automatically.",
+        "Still looks a touch off? One press of your usual balance button settles it.",
+    ]: Label {
+        text: "•  " + line;
+        wrap: word-wrap;
+    }
+    HorizontalLayout {
+        alignment: end;
+        Button {
+            text: "GOT IT";
+            clicked => { Notice.close(); }
+        }
+    }
+}

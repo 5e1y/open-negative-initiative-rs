@@ -1,0 +1,74 @@
+// `Splash`: a picture per version over the window's corners, the logo, the version line and the
+// photo's credit along its foot, held while the gallery loads underneath.
+import { DS } from "tokens.slint";
+import { Colour } from "theme.slint";
+
+export global SplashStyle {
+    out property <length> width: DS.control-splash-width;
+    out property <length> height: DS.control-splash-height;
+    out property <length> radius: DS.radius-control;
+    out property <length> logo-width: DS.control-splash-logo-width;
+    out property <length> logo-height: DS.control-splash-logo-height;
+    out property <length> inset-leading: DS.space-lg + DS.space-xs;
+    out property <length> inset-trailing: DS.space-lg + DS.space-sm;
+    out property <length> inset-bottom: DS.space-lg + DS.space-xs;
+    out property <length> lines: DS.space-sm + DS.space-xs;
+    out property <length> line-indent: DS.space-xs;
+    out property <duration> minimum: DS.motion-splash-minimum;
+}
+
+export component SplashWindow inherits Window {
+    // 0 the first version's picture, 1 the next: the newest unless the version names one.
+    in property <int> picture;
+    in property <string> line;
+    in property <string> credit;
+    no-frame: true;
+    always-on-top: true;
+    background: transparent;
+    width: SplashStyle.width;
+    height: SplashStyle.height;
+    default-font-family: DS.typo-splash-line-family;
+    Rectangle {
+        border-radius: SplashStyle.radius;
+        clip: true;
+        background: Colour.canvas;
+        Image {
+            width: parent.width;
+            height: parent.height;
+            image-fit: cover;
+            source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
+        }
+        Image {
+            x: SplashStyle.inset-leading;
+            y: parent.height - SplashStyle.inset-bottom - version.preferred-height - SplashStyle.lines - self.height;
+            width: SplashStyle.logo-width;
+            height: SplashStyle.logo-height;
+            source: @image-url("../icons/oni-logo.svg");
+            colorize: DS.palette-selected;
+        }
+        version := Text {
+            x: SplashStyle.inset-leading + SplashStyle.line-indent;
+            y: parent.height - SplashStyle.inset-bottom - self.preferred-height;
+            text: root.line;
+            color: DS.palette-selected;
+            font-size: DS.typo-splash-line-size;
+            font-weight: DS.typo-splash-line-weight;
+        }
+        if root.credit != "": Text {
+            x: parent.width - SplashStyle.inset-trailing - self.preferred-width;
+            y: parent.height - SplashStyle.inset-bottom - credit.preferred-height - DS.space-xxs - self.preferred-height;
+            text: "Photo";
+            color: DS.palette-selected;
+            font-size: DS.typo-splash-caption-size;
+            font-weight: DS.typo-splash-caption-weight;
+        }
+        credit := Text {
+            x: parent.width - SplashStyle.inset-trailing - self.preferred-width;
+            y: parent.height - SplashStyle.inset-bottom - self.preferred-height;
+            text: root.credit;
+            color: DS.palette-selected;
+            font-size: DS.typo-splash-line-size;
+            font-weight: DS.typo-splash-line-weight;
+        }
+    }
+}

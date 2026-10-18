@@ -10,6 +10,7 @@ pub mod paper_source;
 pub mod pcs;
 pub mod profile;
 pub mod proof;
+pub mod source;
 pub mod space;
 pub mod working;
 

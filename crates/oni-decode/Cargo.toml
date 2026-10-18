@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "tiff", "gif", "bmp", "ico", "webp"] }
 
 [build-dependencies]
 cc = "1.8.0"

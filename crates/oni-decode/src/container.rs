@@ -38,6 +38,8 @@ struct Directory {
     black_level: Vec<f64>,
     white_level: Vec<f64>,
     sub_ifds: Vec<u64>,
+    color_matrix: Vec<f64>,
+    illuminant: i64,
 }
 
 /// The file's bytes, in memory for a decode, or read where asked for a header.
@@ -165,6 +167,8 @@ fn read_directory(r: &Reader, at: usize) -> Option<Directory> {
             50712 => d.linearization = v().into_iter().map(|x| x.clamp(0.0, 65535.0) as u16).collect(),
             50714 => d.black_level = v(),
             50717 => d.white_level = v(),
+            50721 => d.color_matrix = v(),
+            50778 => d.illuminant = first(0.0) as i64,
             _ => {}
         }
     }
@@ -256,6 +260,13 @@ pub fn probe(path: &Path) -> Option<Kind> {
 pub fn pixel_size(path: &Path) -> Option<(usize, usize)> {
     let d = main_directory(&of_file(path)?)?;
     Some((d.width, d.height))
+}
+
+/// The main image's ColorMatrix1 (XYZ to its RGB, by rows) and CalibrationIlluminant1, 0 when unnamed;
+/// an empty matrix when the file states none, read as the working space's own.
+pub fn calibration(path: &Path) -> Option<(Vec<f64>, i64)> {
+    let d = main_directory(&of_file(path)?)?;
+    Some((d.color_matrix, d.illuminant))
 }
 
 /// The main image's bits per sample, without reading its samples.

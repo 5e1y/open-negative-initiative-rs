@@ -2,6 +2,7 @@
 //! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
 
 pub mod container;
+pub mod plain;
 
 use std::ffi::CString;
 use std::os::raw::{c_char, c_float, c_int, c_ushort, c_void};

@@ -12,6 +12,7 @@ use oni_settings::cg::Rect as Fraction;
 use oni_settings::frame::Geometry;
 use oni_settings::geometry::{self as geom, Framing as Remembered};
 use crate::phone::{self, Phone};
+use crate::preferences::{self, Preferences};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
 use crate::{App, Bar, Canvas, Heading, Mark, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
@@ -1160,7 +1161,7 @@ impl Ctl {
             };
             let build = (wants_full && full.is_none() && s.building_full.as_deref() != Some(path.as_str())).then(|| {
                 s.building_full = Some(path.clone());
-                (path.clone(), s.store.settings().primaries_converted)
+                (path.clone(), render::Reading::of(s.store.settings()))
             });
             let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
@@ -1196,7 +1197,7 @@ impl Ctl {
         std::thread::spawn(move || {
             let caches = crate::patches::caches();
             let made = (|| -> Result<Vec<(oni_settings::id::Id, bool, (f64, f64))>, String> {
-                let decoded = render::decode_full(Path::new(&path), settings.primaries_converted)?;
+                let decoded = render::decode_full(Path::new(&path), render::Reading::of(&settings))?;
                 let full = engine.lock()?.full(decoded)?;
                 let mut made = Vec::new();
                 for c in &settings.corrections {
@@ -1246,7 +1247,7 @@ impl Ctl {
     }
 
     /// The open frame decoded again at full resolution off this thread, then shown where the view wants it.
-    fn build_full(self: &Rc<Self>, path: String, converted: bool) {
+    fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let built = render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d));
@@ -1648,9 +1649,31 @@ impl Ctl {
         }
         self.relayout();
         self.publish_tree();
+        self.offer_neutral_decode_notice(&order);
         self.read_thumbnails(order.clone());
         if let Some(first) = order.first() {
             self.open_photo(first);
+        }
+    }
+
+    /// `offerNeutralDecodeNotice`: once a library holds a RAW, until it is dismissed once.
+    fn offer_neutral_decode_notice(&self, paths: &[String]) {
+        let Some(w) = self.window() else { return };
+        let seen = Preferences::load(&self.state.borrow().support).bool(preferences::NEUTRAL_DECODE_NOTICE_SHOWN).unwrap_or(false);
+        if seen || crate::bench::requested().is_some() || !paths.iter().any(|p| oni_decode::is_raw(Path::new(p))) {
+            return;
+        }
+        w.global::<crate::Notice>().set_shown(true);
+    }
+
+    /// Marked seen once dismissed, never on asking: a notice under another sheet would be spent unseen.
+    fn neutral_decode_notice_dismissed(&self) {
+        if let Some(w) = self.window() {
+            w.global::<crate::Notice>().set_shown(false);
+        }
+        let support = self.state.borrow().support.clone();
+        if let Err(e) = Preferences::load(&support).set(preferences::NEUTRAL_DECODE_NOTICE_SHOWN, true.into()) {
+            self.say(&format!("The notice cannot be marked seen: {e}"));
         }
     }
 
@@ -1731,7 +1754,7 @@ impl Ctl {
         self.publish_tree();
         let (previews, converted) = {
             let s = self.state.borrow();
-            (s.previews.clone(), s.store.settings().primaries_converted)
+            (s.previews.clone(), render::Reading::of(s.store.settings()))
         };
         let known = previews.lock().expect("previews").get(path);
         if let Some(negative) = known {
@@ -1782,7 +1805,7 @@ impl Ctl {
                         let negative = match known {
                             Some(n) => n,
                             None => {
-                                let n = prepared(&engine, &path, settings.primaries_converted)?;
+                                let n = prepared(&engine, &path, render::Reading::of(&settings))?;
                                 previews.lock().expect("previews").insert(path.clone(), n.clone());
                                 n
                             }
@@ -2319,6 +2342,8 @@ impl Ctl {
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));
         let p = me.clone();
+        window.global::<crate::Notice>().on_close(move || p.neutral_decode_notice_dismissed());
+        let p = me.clone();
         window.global::<PanelState>().on_auto_balance(move || p.act("auto-balance"));
         let p = me.clone();
         window.global::<PanelState>().on_pick(move |what| p.act(&what));
@@ -2523,8 +2548,8 @@ fn picture_view(picture: &Picture) -> Option<wgpu::TextureView> {
 static CLOCK: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 
 /// A frame decoded on the calling thread, the CPU's part, then laid on the GPU as its preview.
-fn prepared(engine: &Shared, path: &str, primaries_converted: bool) -> Result<Arc<Negative>, String> {
-    let decoded = render::decode(Path::new(path), primaries_converted)?;
+fn prepared(engine: &Shared, path: &str, reading: render::Reading) -> Result<Arc<Negative>, String> {
+    let decoded = render::decode(Path::new(path), reading)?;
     let negative = engine.lock().map_err(|_| "the render engine failed earlier")?.prepare(decoded)?;
     Ok(Arc::new(negative))
 }

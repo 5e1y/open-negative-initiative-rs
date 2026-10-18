@@ -81,7 +81,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let _ = slint::quit_event_loop();
         });
     }
-    shell.window.run()?;
+    // Probes and benches drive the window at once, as Swift skips its splash under a probe.
+    if bench::requested().is_none() {
+        let main = shell.window.as_weak();
+        oni_app::splash::show(move || {
+            if let Some(w) = main.upgrade() {
+                let _ = w.show();
+            }
+        })?;
+    } else {
+        shell.window.show()?;
+    }
+    slint::run_event_loop()?;
     oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
     Ok(())

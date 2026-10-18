@@ -1,7 +1,7 @@
 //! Export as a mode of the card, the Swift `Export` and `ExportPanel` without their views: the
 //! targets, each frame's line, the labels that count them, the renders and the write.
 
-use crate::render::{Decoded, Engine, Linear, Negative, Shared};
+use crate::render::{Decoded, Engine, Negative, Shared};
 use oni_export::{ExifMetadata, Failure, Format, Image, Resize, Row, Settings};
 use oni_graph::Image as Recipe;
 use oni_pipeline::{Inputs, Request};
@@ -144,20 +144,8 @@ pub fn typed_size(width: &str, height: &str, shown: (&str, &str), full: (f64, f6
 // MARK: - Renders
 
 /// `RawDecode.linear(source)` at full resolution, the export's own decode.
-pub fn full_decode(path: &Path, primaries_converted: bool) -> Result<Decoded, Failure> {
-    match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => {
-            let d = oni_decode::decode(path, 1.0).map_err(|_| Failure::Decode)?;
-            let full_width = d.width as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
-        }
-        oni_decode::Branch::LinearRgb if !primaries_converted => {
-            let d = oni_decode::container::linear(path, None).ok_or(Failure::Decode)?;
-            let full_width = d.width as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
-        }
-        _ => Err(Failure::Decode),
-    }
+pub fn full_decode(path: &Path, reading: crate::render::Reading) -> Result<Decoded, Failure> {
+    crate::render::decode_full(path, reading).map_err(|_| Failure::Decode)
 }
 
 /// `Pipeline.apply` at full resolution and unproofed, read back in bands of rows.
@@ -203,7 +191,7 @@ pub fn weigh(engine: &Shared, negative: &Negative, full: (f64, f64), settings: &
 /// One frame written: its full render, its file, then its line kept in its sidecar.
 pub fn write_one(engine: &Shared, target: &Target, destination: &Path, export: &Settings, metadata: &ExifMetadata) -> Result<(), Failure> {
     let render = || {
-        let decoded = full_decode(&target.path, target.settings.primaries_converted)?;
+        let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
         let mut engine = engine.lock().map_err(|_| Failure::Render)?;
         render_full(&mut engine, decoded, &target.settings)
     };

@@ -34,9 +34,23 @@ pub struct Decoded {
     pub full_width: f64,
 }
 
+/// How a frame's sidecar asks a file outside the RAW engine to be read.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Reading {
+    /// Its windows were measured on its channels converted to the working primaries.
+    pub primaries_converted: bool,
+    /// The encoding the hand chose for a file naming no profile.
+    pub source_encoding: Option<oni_settings::SourceEncoding>,
+}
+
+impl Reading {
+    pub fn of(s: &oni_settings::PipelineSettings) -> Reading {
+        Reading { primaries_converted: s.primaries_converted, source_encoding: s.source_encoding }
+    }
+}
+
 /// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it.
-/// A linear scan measured on converted primaries and a plain image are refused, never approximated.
-pub fn decode(path: &Path, primaries_converted: bool) -> Result<Decoded, String> {
+pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
         oni_decode::Branch::Mosaic => {
             let d = oni_decode::decode(path, 1.0).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
@@ -44,27 +58,44 @@ pub fn decode(path: &Path, primaries_converted: bool) -> Result<Decoded, String>
             Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
         }
         oni_decode::Branch::LinearRgb => {
-            if primaries_converted {
-                return Err("a linear scan measured on converted primaries is not read yet".into());
-            }
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
-            let d = oni_decode::container::linear(path, Some(PREVIEW_SIDE as f64)).ok_or("its samples are unreadable")?;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width: full as f64 })
+            linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)
         }
-        oni_decode::Branch::Plain => Err("a plain image (JPEG, PNG, RGB TIFF) is not read yet".into()),
+        oni_decode::Branch::Plain => plain(path, Some(PREVIEW_SIDE as f64), reading),
     }
 }
 
 /// The frame's own pixels, unreduced: what a zoom past the preview reads.
-pub fn decode_full(path: &Path, primaries_converted: bool) -> Result<Decoded, String> {
+pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
-        oni_decode::Branch::LinearRgb if !primaries_converted => {
-            let d = oni_decode::container::linear(path, None).ok_or("its samples are unreadable")?;
-            let full_width = d.width as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
-        }
-        _ => decode(path, primaries_converted),
+        oni_decode::Branch::LinearRgb => linear_scan(path, None, reading, 0),
+        oni_decode::Branch::Plain => plain(path, None, reading),
+        oni_decode::Branch::Mosaic => decode(path, reading),
     }
+}
+
+/// The container's own channels, or converted from its ColorMatrix1 when the windows were measured
+/// so; a file naming no matrix is in the working space already. `full` 0 reads the decode's width.
+fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full: usize) -> Result<Decoded, String> {
+    let mut d = oni_decode::container::linear(path, side).ok_or("its samples are unreadable")?;
+    if reading.primaries_converted {
+        let (matrix, illuminant) = oni_decode::container::calibration(path).ok_or("its container is unreadable")?;
+        if let Some(m) = oni_colour::source::calibrated_to_working(&matrix, illuminant) {
+            for p in &mut d.pixels {
+                let v = oni_colour::pcs::mul_f32(&m, [p[0], p[1], p[2]]);
+                p[..3].copy_from_slice(&v);
+            }
+        }
+    }
+    let full_width = if full > 0 { full } else { d.width } as f64;
+    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width })
+}
+
+/// `plainLinear`: the file's curve undone in its profile, else the chosen encoding, else sRGB.
+fn plain(path: &Path, side: Option<f64>, reading: Reading) -> Result<Decoded, String> {
+    let mut e = oni_decode::plain::read(path, side).ok_or("no image reader takes it")?;
+    oni_colour::source::Source::of(e.icc.as_deref(), reading.source_encoding, e.grey).linearise(&mut e.pixels, !reading.primaries_converted);
+    Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64 })
 }
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.
@@ -750,6 +781,28 @@ mod tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::Duration;
+
+    #[test]
+    fn a_plain_image_opens_linearised_on_its_own_primaries_and_reduced_to_the_preview() {
+        let dir = std::env::temp_dir().join(format!("oni-app-plain-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("scan.png");
+        let (w, h) = (3000u32, 10u32);
+        let mut e = png::Encoder::new(std::io::BufWriter::new(std::fs::File::create(&path).unwrap()), w, h);
+        e.set_color(png::ColorType::Rgb);
+        let row: Vec<u8> = (0..w).flat_map(|_| [128u8, 128, 255]).collect();
+        e.write_header().unwrap().write_image_data(&row.repeat(h as usize)).unwrap();
+        let held = decode(&path, Reading::default()).unwrap();
+        assert_eq!((held.linear.width, held.full_width), (PREVIEW_SIDE, 3000.0));
+        let p = held.linear.pixels[held.linear.pixels.len() / 2];
+        // Untagged, the file is sRGB: 128 is 0.216 in light, blue's 255 stays one on its own primaries.
+        assert!((p[0] - 0.2158).abs() < 2e-3 && (p[2] - 1.0).abs() < 1e-4, "{p:?}");
+        // Twin: measured on converted primaries, sRGB's blue mixes into the working red and green.
+        let converted = decode(&path, Reading { primaries_converted: true, ..Reading::default() }).unwrap();
+        let q = converted.linear.pixels[converted.linear.pixels.len() / 2];
+        assert!((q[0] - p[0]).abs() > 1e-2, "{q:?} against {p:?}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// Counts its renders and holds each one long enough for jobs to pile up behind it.
     struct Slow(Arc<Mutex<Vec<u64>>>);

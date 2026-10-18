@@ -16,6 +16,7 @@ pub mod motion;
 pub mod patches;
 pub mod phone;
 pub mod preferences;
+pub mod splash;
 pub mod proof;
 pub mod render;
 pub mod store;

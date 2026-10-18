@@ -1,13 +1,14 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
+import { Notice, NoticeSheet } from "notice.slint";
 
-export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
+export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow }
 export { Editors } from "editors.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
@@ -398,6 +399,13 @@ export component MainWindow inherits AppWindow {
     }
 
     if Pairing.shown: PairingSheet {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+    }
+
+    if Notice.shown: NoticeSheet {
         x: 0;
         y: 0;
         width: root.width;

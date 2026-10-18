@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 /// `EditorScene.openedKey`: the folder the archive showed when the app last opened one.
 pub const OPENED_FOLDER: &str = "openedFolder";
+/// `EditorScene.neutralDecodeNoticeShown`: the recalibration notice was dismissed once.
+pub const NEUTRAL_DECODE_NOTICE_SHOWN: &str = "neutralDecodeNoticeShown";
 
 pub struct Preferences {
     file: PathBuf,
