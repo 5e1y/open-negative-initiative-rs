@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 77 twin, 18 partial, 67 none.
+Of 162 checks: 78 twin, 17 partial, 67 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -90,7 +90,7 @@ Of 162 checks: 77 twin, 18 partial, 67 none.
 | 76 | `RollSettings.selfCheck` | `Checks/Pipeline/RollSettings+Checks.swift:47` | a roll's settings travel field by field onto the frames measured with it | twin | `oni-core/tests/roll8.rs::a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes_byte_for_byte` |
 | 77 | `AutomaticKey.selfCheck` | `Checks/Pipeline/AutomaticKey+Checks.swift:6` | a selection's average gives every frame the mean correction | twin | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
 | 78 | `LookSettings.selfCheck` | `Checks/Pipeline/LookSettings+Checks.swift:6` | a settings paste carries the Color and Details tabs whole, and nothing else | twin | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |
-| 79 | `FilterBalance.selfCheck` | `Checks/Pipeline/FilterBalance+Checks.swift:7` | the balance key greys the frame's sixth-power means with Temperature and Tint | partial | `oni-core/src/balance.rs::the_outcome_is_dosed_by_balance_strength`; no measurement |
+| 79 | `FilterBalance.selfCheck` | `Checks/Pipeline/FilterBalance+Checks.swift:7` | the balance key greys the frame's sixth-power means with Temperature and Tint | twin | `oni-measure/tests/filter_balance.rs::the_press_lands_the_three_means_together_through_the_kernel_and_the_dose_writes_its_share`, `::a_dust_speck_past_white_is_left_out_and_read_it_sends_an_axis_to_its_stop` |
 | 80 | `SourceEncoding.selfCheck` | `Checks/Pipeline/SourceEncoding+Checks.swift:12` | an undeclared file is read as the hand says | twin | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | 81 | `RGBPasses.selfCheck` | `Checks/Pipeline/RGBPasses+Checks.swift:10` | a frame made of RGB passes takes each pass's own channel | partial | `oni-render/tests/kernels.rs::rgb_passes`; no Rust code for the triplet decode, its fit, grouping by capture time, `PassOrder(fitting:)` or shares |
 | 82 | `RGBRegistration.selfCheck` | `Checks/Pipeline/RGBRegistration+Checks.swift:71` | a pass's magnification and shift read back off its edges | none | none |

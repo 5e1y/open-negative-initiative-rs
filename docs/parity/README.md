@@ -40,7 +40,7 @@ keys.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **77 have a Rust twin, 18 a partial one,
+[checks.md](checks.md) lists the 162 checks `--check` runs: **78 have a Rust twin, 17 a partial one,
 67 none.**
 
 ### Pipeline branches against Swift
