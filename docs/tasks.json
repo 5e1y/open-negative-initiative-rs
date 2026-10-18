@@ -283,8 +283,10 @@
     "id": 37,
     "type": "feature",
     "title": "The canvas as Swift's: zoom, pan, full-resolution regions, compare, screen gamut",
-    "status": "doing",
-    "detail": "Viewport.swift and CanvasNavigation.swift ported: the zoom ladder, fit and the 100 % toggle on double-click, wheel and pinch zoom about the pointer, trackpad and drag pan, the clamp; past the preview's ratio the visible region renders at full resolution; Compare Before/After with its split; the screen gamut stripes."
+    "status": "done",
+    "detail": "Viewport.swift and CanvasNavigation.swift ported: the zoom ladder, fit and the 100 % toggle on double-click, wheel and pinch zoom about the pointer, trackpad and drag pan, the clamp; past the preview's ratio the visible region renders at full resolution; Compare Before/After with its split; the screen gamut stripes.",
+    "commit": "fb8fc39",
+    "outcome": "viewport.rs ports Viewport and CanvasEvents (the ladder, fit, the 100 % toggle landing on its number, zoom about the pointer, the clamp, needsFullResolution on the nominal 24 Mpx budget, the wheel's 1.10 a notch and the trackpad's 1.0025 a point). The canvas's TouchArea pans on a drag and toggles 100 % on a double click, the wheel zooms, a precise delta pans unless ⌘, Slint's ScaleRotateGestureHandler zooms about the pinch; ⌘− / ⌘+ walk the ladder in the editor; the status line reads the zoom label. A render covers only the visible region, from the preview reduced once to the scale shown, or past its ratio once the view has settled 150 ms from the frame decoded again at full resolution. Compare Before/After renders the bar's reset frame with the dust kept on the same view, kept while its settings and the view hold, beside a split guide Slint draws. The screen gamut stripes are laid by the display kernel, nine drawable pixels a period, the canvas encoded again thirty times a second while on, ⇧⌘Y. Checks: seven Viewport tests with twins, a GPU view test (100 % reads the canvas's pixels only from the full frame, unsettled stays on a stretched preview, fitted reads the whole preview), the zebra against its CPU reference with a phase twin; on the Mac ONI_BENCH=zoom reached full resolution 1155 ms after the double click and rendered 60 of 60 pan steps (gap p50 9.0 ms), ONI_BENCH=compare rendered one before over a 60-notch drag. Not done: the zoom bubble in the bar, the region cache's 30 % margin (each pan step renders the visible region again), the split's haptic ticker; pinch and wheel not tried by hand."
   },
   {
     "id": 38,
