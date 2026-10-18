@@ -1,8 +1,8 @@
 // Prepare the Roll's pieces: a frame's cell with its marks, the base pick's ring, the loupe on the
-// scan's own pixels and the seal a flagged frame wears.
+// scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, Type, TileStyle } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion } from "theme.slint";
+import { Label, Picture, Ground, TextRole, Tone, StatusLine } from "base.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -15,6 +15,7 @@ export global RollStyle {
     out property <length> ring: Stroke.line + DS.control-guide-grow;
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
+    out property <length> hollow: DS.control-tab-bar-height;
 }
 
 // `DSGoldSealView` flattened: a word on its metal, the red one for a flagged frame.
@@ -26,6 +27,18 @@ export component Seal inherits Rectangle {
     border-radius: Space.xxs;
     background: root.red ? Colour.destructive : Colour.raised;
     word := Label { role: TextRole.caption; tone: root.red ? Tone.on-fill : Tone.primary; text: root.word; centred: true; }
+}
+
+// `DSStatusBar.idle(leading:seal:)`: the status line, and the seal of a frame made of passes at its end.
+export component SealedStatusLine inherits HorizontalLayout {
+    in property <string> text;
+    in property <string> seal;
+    StatusLine { horizontal-stretch: 1; text: root.text; }
+    if root.seal != "": VerticalLayout {
+        alignment: center;
+        padding-right: Space.s;
+        Seal { word: root.seal; }
+    }
 }
 
 // A chip-sized line in the caution ink, as the scrubber's warning reads.
@@ -158,5 +171,78 @@ export component Loupe inherits Rectangle {
         border-radius: Radius.card;
         border-width: Stroke.line;
         border-color: Colour.selected;
+    }
+}
+
+// `DSReorder` over a frame's three passes: each file's picture and name above its slot stay put, a
+// band's chip dragged between two others slides them aside, and the move is said once, on release.
+export component PassReorder inherits VerticalLayout {
+    in property <[string]> letters;
+    // Each slot's band: 0 red, 1 green, 2 blue.
+    in property <[int]> bands;
+    in property <[image]> pictures;
+    in property <[string]> names;
+    callback moved(int, int);
+    property <int> held: -1;
+    property <length> travel;
+    property <length> pitch: (self.width - 2 * Space.xs + Stroke.line) / max(1, root.letters.length);
+    property <int> target: root.held < 0 ? -1 : max(0, min(root.letters.length - 1, Math.round(root.held + root.travel / root.pitch)));
+    // `DSSlots.moved`: where chip `i` stands once the held one is dropped on the target.
+    pure function slot(i: int) -> int {
+        if (root.held < 0 || i == root.held) { return i; }
+        if (root.held < root.target && i > root.held && i <= root.target) { return i - 1; }
+        if (root.target < root.held && i >= root.target && i < root.held) { return i + 1; }
+        return i;
+    }
+    spacing: Space.s;
+    HorizontalLayout {
+        spacing: Stroke.line;
+        padding-left: Space.xs;
+        padding-right: Space.xs;
+        for name[i] in root.names: VerticalLayout {
+            spacing: Space.xxs;
+            Picture { height: self.width * RollStyle.well-ratio; source: root.pictures[i]; ground: Ground.canvas; rounded: true; }
+            Label { role: TextRole.caption; tone: Tone.tertiary; text: name; overflow: elide; centred: true; }
+        }
+    }
+    Rectangle {
+        height: RollStyle.hollow;
+        border-radius: self.height / 2;
+        background: Colour.canvas;
+        for letter[i] in root.letters: Rectangle {
+            x: Space.xs + (i == root.held ? i * root.pitch + root.travel : root.slot(i) * root.pitch);
+            y: Space.xs;
+            width: root.pitch - Stroke.line;
+            height: parent.height - 2 * Space.xs;
+            border-radius: self.height / 2;
+            background: i == root.held ? Colour.selected : Colour.track;
+            animate x { duration: i == root.held ? 0ms : Motion.slide; easing: ease-out; }
+            Text {
+                text: letter;
+                font-family: Type.family;
+                font-size: Type.label;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                color: i == root.held ? Colour.canvas : [Colour.channel-red, Colour.channel-green, Colour.channel-blue][root.bands[i]];
+            }
+        }
+        // One hand over the whole hollow, so the chip moving under it never moves its reading.
+        TouchArea {
+            mouse-cursor: grab;
+            pointer-event(e) => {
+                if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) {
+                    root.held = max(0, min(root.letters.length - 1, Math.floor((self.mouse-x - Space.xs) / root.pitch)));
+                    root.travel = 0;
+                }
+                if (e.kind == PointerEventKind.up && root.held >= 0) {
+                    if (root.target != root.held) { root.moved(root.held, root.target); }
+                    root.held = -1;
+                    root.travel = 0;
+                }
+            }
+            moved => {
+                if (self.pressed && root.held >= 0) { root.travel = self.mouse-x - self.pressed-x; }
+            }
+        }
     }
 }

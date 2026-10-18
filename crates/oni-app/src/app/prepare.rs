@@ -7,7 +7,7 @@ use crate::framing::Handle;
 use crate::roll_previews::{Bitmap, Look, Out, Previews};
 use crate::{App, MenuLine, Preparing, RollCell};
 use oni_library::capture::CaptureExposure;
-use oni_library::roll_membership;
+use oni_library::{rgb_passes, roll_membership};
 use oni_measure::{key, pipette, roll};
 use oni_settings::cg::{Point, Rect};
 use oni_settings::frame::{FlatField, Geometry, PassOrder, RgbPasses};
@@ -21,6 +21,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::time::Instant;
+
+mod passes;
 
 /// `RollStep`, in the order the panel walks them.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -246,6 +248,12 @@ pub(crate) struct Roll {
     pub shown: bool,
     back_to_gallery: bool,
     frames: Vec<Frame>,
+    /// `rollSources`: the files as they came, which a grouping of passes reads.
+    sources: Vec<Frame>,
+    pass_offset: usize,
+    grouping: Option<rgb_passes::Grouping>,
+    pass_pictures: HashMap<String, Image>,
+    passes_asked: u64,
     read: HashMap<String, PipelineSettings>,
     left_out: usize,
     window: Rect,
@@ -289,6 +297,11 @@ impl Default for Roll {
             shown: false,
             back_to_gallery: true,
             frames: Vec::new(),
+            sources: Vec::new(),
+            pass_offset: 0,
+            grouping: None,
+            pass_pictures: HashMap::new(),
+            passes_asked: 0,
             read: HashMap::new(),
             left_out: 0,
             window: oni_measure::window::proposal(&Rect::UNIT, false),
@@ -333,7 +346,21 @@ impl Roll {
 
     /// Every frame's sidecar read, which the bench waits for.
     pub fn read_whole(&self) -> bool {
-        !self.frames.is_empty() && self.read.len() >= self.frames.len()
+        !self.sources.is_empty() && self.read.len() >= self.sources.len()
+    }
+
+    /// `refreshRollPreviews`: every preview dropped and asked again for the frames the roll now has.
+    fn refresh_previews(&mut self) {
+        self.tiles.clear();
+        self.card = None;
+        self.shown_path = None;
+        let Some(p) = &self.previews else { return };
+        p.reset(self.session);
+        for f in &self.frames {
+            if let Some(read) = self.read.get(&f.path) {
+                p.add(&f.path, read);
+            }
+        }
     }
 
     /// `rollFlatField`: none while neutral or on a scanner.
@@ -411,7 +438,7 @@ impl Roll {
 
     /// The draft every frame shares, its own ticked and flagged laid per frame; `None` until it may be written.
     fn drafts(&mut self) -> Option<Vec<(String, RollDraft)>> {
-        if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.frames.is_empty() || self.read.len() < self.frames.len() {
+        if !self.shown || self.progress.is_some() || (self.step == Step::Film && self.draft_id.is_none()) || self.sources.is_empty() || self.read.len() < self.sources.len() {
             return None;
         }
         let id = *self.draft_id.get_or_insert_with(Id::new);
@@ -482,6 +509,7 @@ impl Ctl {
             s.prepare.previews = Some(Previews::start(|session, out| with_shell(move |c| c.preview_landed(session, out))));
         }
         let p = window.global::<Preparing>();
+        Self::wire_passes(me, &p);
         let c = me.clone();
         p.on_step_picked(move |i| c.step_to(Step::ALL.get(usize::try_from(i).unwrap_or(0)).copied().unwrap_or_default()));
         let c = me.clone();
@@ -494,8 +522,7 @@ impl Ctl {
         let c = me.clone();
         p.on_capture_picked(move |i| {
             if let Some(capture) = usize::try_from(i).ok().and_then(|i| Capture::ALL.get(i).copied()) {
-                c.state.borrow_mut().prepare.capture = capture;
-                c.publish_prepare();
+                c.capture_picked(capture);
             }
         });
         let c = me.clone();
@@ -621,6 +648,10 @@ impl Ctl {
                 r.back_to_gallery = gallery;
             }
             r.frames = ordered.iter().map(|(p, f)| Frame::new(p, f)).collect();
+            r.sources = r.frames.clone();
+            (r.pass_offset, r.grouping) = (0, None);
+            r.pass_pictures.clear();
+            rgb_passes::release();
             r.left_out = left_out;
             r.read.clear();
             r.step = Step::Film;
@@ -688,6 +719,13 @@ impl Ctl {
                 return;
             }
             r.read.insert(path.to_string(), read.clone());
+            if let Some(source) = r.sources.iter_mut().find(|f| f.path == path) {
+                source.crop = read.geometry.crop;
+                source.aspect = aspect;
+                if read.rgb_passes.is_some() {
+                    source.passes = read.rgb_passes.clone();
+                }
+            }
             let Some(index) = r.frames.iter().position(|f| f.path == path) else { return };
             let f = &mut r.frames[index];
             if read.rgb_passes.is_some() && f.passes.is_none() {
@@ -732,6 +770,7 @@ impl Ctl {
             let r = &mut s.prepare;
             r.shown = false;
             r.session += 1;
+            rgb_passes::release();
             r.tiles.clear();
             r.card = None;
             r.scan = None;
@@ -1071,6 +1110,9 @@ impl Ctl {
                     _ => 0.0,
                 };
                 let m = crate::measuring::measurer();
+                // RGB passes: each band's magnification read once on the first frames, then each frame's shifts on its own preview.
+                let triplets: Vec<(String, RgbPasses)> = picked.iter().filter(|f| !f.flagged).filter_map(|f| rgb_passes::named_by(&f.path).map(|p| (f.path.clone(), p))).collect();
+                let registrar = crate::passes::Registrar::new(&triplets);
                 let mut jobs: Vec<roll::Job> = Vec::new();
                 let mut frames = Vec::new();
                 for f in &picked {
@@ -1085,7 +1127,12 @@ impl Ctl {
                             _ => continue,
                         }
                     };
-                    let start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
+                    let mut start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
+                    if let Some(passes) = rgb_passes::named_by(&f.path) {
+                        let passes = registrar.registered(&f.path, passes);
+                        rgb_passes::hold_one(&f.path, passes.clone());
+                        start.rgb_passes = Some(passes);
+                    }
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
                     if f.flagged {
                         jobs.push(job);
@@ -1177,8 +1224,15 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }
-        let touched: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
+        let mut touched: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
+        let passes: Vec<String> = written
+            .iter()
+            .filter_map(|(lead, _, now)| now.rgb_passes.as_ref().map(|p| (lead, p)))
+            .flat_map(|(lead, p)| rgb_passes::paths_beside(p, lead).into_iter().filter(move |f| f != lead))
+            .collect();
+        touched.extend(passes.iter().cloned());
         self.landed(&touched);
+        self.index_passes(&written, &passes);
         if open.is_none() || !written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
             let first = written[0].0.clone();
             self.state.borrow_mut().designate(&first);
@@ -1335,7 +1389,7 @@ impl Ctl {
             Some((done, total)) => format!("Measuring {done} of {total}\u{2026}"),
             None => step.title().to_string(),
         };
-        let passes_note = if r.capture == Capture::RgbPasses && frames.iter().all(|f| f.passes.is_some()) {
+        let passes_note = if r.capture == Capture::RgbPasses && r.grouping.is_none() {
             format!("{} frames, grouped when the roll was last measured.", frames.len())
         } else {
             String::new()
@@ -1393,6 +1447,7 @@ impl Ctl {
         p.set_action_title(action.into());
         p.set_action_enabled(step != Step::Window || ticked > flagged);
         p.set_card_picture(card);
+        self.publish_passes(&p);
         self.publish_card();
         self.publish_base();
     }
@@ -1583,7 +1638,8 @@ mod tests {
 
     #[test]
     fn a_draft_resumes_its_step_and_leaves_out_the_frames_of_none() {
-        let mut r = Roll { frames: vec![frame("a"), frame("b"), frame("c")], ..Roll::default() };
+        let frames = vec![frame("a"), frame("b"), frame("c")];
+        let mut r = Roll { sources: frames.clone(), frames, ..Roll::default() };
         let id = Id::new();
         let draft = RollDraft {
             id,

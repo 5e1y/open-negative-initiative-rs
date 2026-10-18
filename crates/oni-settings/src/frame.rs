@@ -209,7 +209,37 @@ pub struct RgbPasses {
     pub registration: Option<Registration>,
 }
 
-/// The order a rig takes its three exposures in.
+impl RgbPasses {
+    pub fn name(&self, channel: Channel) -> &str {
+        match channel {
+            Channel::Red => &self.red,
+            Channel::Green => &self.green,
+            Channel::Blue => &self.blue,
+        }
+    }
+}
+
+/// A pass's band, red, green then blue.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Channel {
+    Red,
+    Green,
+    Blue,
+}
+
+impl Channel {
+    pub const ALL: [Channel; 3] = [Channel::Red, Channel::Green, Channel::Blue];
+
+    pub fn index(self) -> usize {
+        self as usize
+    }
+
+    pub fn letter(self) -> &'static str {
+        ["R", "G", "B"][self.index()]
+    }
+}
+
+/// The order a rig takes its three exposures in: read off the first triplet on a click, moved by the hand.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum PassOrder {
@@ -219,6 +249,47 @@ pub enum PassOrder {
     Grb,
     Rbg,
     Rgb,
+}
+
+impl PassOrder {
+    pub const ALL: [PassOrder; 6] = [PassOrder::Bgr, PassOrder::Brg, PassOrder::Gbr, PassOrder::Grb, PassOrder::Rbg, PassOrder::Rgb];
+
+    /// The bands in capture order.
+    pub fn channels(self) -> [Channel; 3] {
+        use Channel::{Blue as B, Green as G, Red as R};
+        match self {
+            PassOrder::Bgr => [B, G, R],
+            PassOrder::Brg => [B, R, G],
+            PassOrder::Gbr => [G, B, R],
+            PassOrder::Grb => [G, R, B],
+            PassOrder::Rbg => [R, B, G],
+            PassOrder::Rgb => [R, G, B],
+        }
+    }
+
+    /// `label`: the letters spaced, "B G R".
+    pub fn label(self) -> String {
+        self.channels().map(Channel::letter).join(" ")
+    }
+
+    /// `init?(_ channels:)`: `None` for two of one band.
+    pub fn from_channels(channels: &[Channel]) -> Option<PassOrder> {
+        PassOrder::ALL.into_iter().find(|o| o.channels().as_slice() == channels)
+    }
+
+    /// `init?(fitting:)`: the order whose bands carry most of each file's own light, the shares in
+    /// capture order; under narrowband light a pass's band holds most of its signal.
+    pub fn fitting(shares: &[[f64; 3]]) -> Option<PassOrder> {
+        if shares.len() != 3 {
+            return None;
+        }
+        let score = |o: PassOrder| shares.iter().zip(o.channels()).map(|(s, c)| s[c.index()]).sum::<f64>();
+        // `max(by:)` keeps the first of equal scores.
+        PassOrder::ALL.into_iter().fold(None, |best: Option<PassOrder>, o| match best {
+            Some(b) if score(b) >= score(o) => Some(b),
+            _ => Some(o),
+        })
+    }
 }
 
 /// The per-channel window a whole roll was measured on, kept by every frame measured with it.
@@ -253,6 +324,23 @@ mod tests {
         assert_eq!((read.id, &read.stroke), (full.id, &full.stroke));
         // Twin: a radius actually written is not the default.
         assert_ne!(full.radius, Correction::DEFAULT_RADIUS);
+    }
+
+    /// `RGBPasses.selfCheck`'s pass orders.
+    #[test]
+    fn the_pass_order_is_the_one_carrying_most_light_in_capture_order() {
+        let lit = [[0.05, 0.69, 0.26], [0.94, 0.04, 0.02], [0.10, 0.20, 0.70]];
+        assert_eq!(PassOrder::fitting(&lit), Some(PassOrder::Grb));
+        // Two files both leaning red still read as one order, the one carrying the most light.
+        let crossed = [[0.5, 0.4, 0.1], [0.6, 0.3, 0.1], [0.1, 0.2, 0.7]];
+        assert_eq!(PassOrder::fitting(&crossed), Some(PassOrder::Grb));
+        // Twin: the same files taken in another order read as that order.
+        assert_eq!(PassOrder::fitting(&[lit[1], lit[0], lit[2]]), Some(PassOrder::Rgb));
+        assert_eq!(PassOrder::fitting(&lit[..2]), None);
+        assert!(PassOrder::ALL.iter().all(|o| PassOrder::from_channels(&o.channels()) == Some(*o)));
+        assert_eq!(PassOrder::from_channels(&[Channel::Red, Channel::Red, Channel::Blue]), None, "two of one band are no order");
+        assert_eq!(PassOrder::Bgr.label(), "B G R");
+        assert_eq!(serde_json::to_string(&PassOrder::Grb).unwrap(), "\"grb\"");
     }
 
     #[test]

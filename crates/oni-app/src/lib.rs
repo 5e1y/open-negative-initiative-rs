@@ -15,6 +15,7 @@ pub mod library;
 pub mod measuring;
 pub mod motion;
 pub mod organise;
+pub mod passes;
 pub mod patches;
 pub mod phone;
 pub mod picking;

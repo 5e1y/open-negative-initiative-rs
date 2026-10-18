@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
+import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, SealedStatusLine, Stroke } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -69,6 +69,9 @@ export global Library {
     in property <[MenuLine]> menu-lines;
     // The status bar's leading text, what a load or a failure says over it, and its medal picker.
     in property <string> status;
+    // `statusSeal`: RGB for a lone frame made of passes, in the gallery and on the open frame.
+    in property <string> status-seal;
+    in property <string> editor-seal;
     in property <string> loading;
     in property <bool> medal-shown;
     in property <int> medal-current: -1;
@@ -278,9 +281,10 @@ export component Grid inherits Surface {
 
 // `DSStatusBar` under the gallery: what loads, else the selection; the medal picker at its end.
 export component GalleryStatus inherits HorizontalLayout {
-    StatusLine {
+    SealedStatusLine {
         horizontal-stretch: 1;
         text: Library.loading != "" ? Library.loading : Library.status;
+        seal: Library.loading != "" ? "" : Library.status-seal;
     }
     if Library.medal-shown && Library.loading == "": MedalPicker {
         current: Library.medal-current;

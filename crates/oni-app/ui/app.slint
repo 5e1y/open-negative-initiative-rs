@@ -1,5 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, SealedStatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
@@ -534,12 +534,14 @@ export component MainWindow inherits AppWindow {
                         width: parent.width - 2 * CardStyle.inset;
                         height: parent.height - CardStyle.inset - StatusStyle.height;
                     }
-                    StatusLine {
+                    SealedStatusLine {
                         x: CardStyle.inset;
                         y: parent.height - StatusStyle.height;
                         width: parent.width - 2 * CardStyle.inset;
+                        height: StatusStyle.height;
                         visible: !App.gallery || Preparing.shown;
                         text: Preparing.shown ? Preparing.status : Canvas.status;
+                        seal: Preparing.shown ? "" : Library.editor-seal;
                     }
                     if App.gallery && !Preparing.shown: GalleryStatus {
                         x: CardStyle.inset;
