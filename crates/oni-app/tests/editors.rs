@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::editors::{self, Plot};
-use oni_app::{Bar, Editors, MainWindow, PanelState};
+use oni_app::{App, Bar, Editors, MainWindow, PanelState};
 use oni_core::{Archive, EditorStore};
 use oni_settings::spectrogram::{Band, Spectrogram};
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -58,6 +58,8 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     rig.window.set_size(PhysicalSize::new(1280, 2200));
     shell.window.show().unwrap();
+    // The app launches on the gallery; the store's open frame is shown in the editor.
+    shell.window.global::<App>().set_gallery(false);
     let w: &MainWindow = &shell.window;
     let ctl = shell.ctl.clone();
     let g = w.global::<Editors>();
@@ -65,6 +67,8 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     // The Color tab with the Curves block open.
     w.global::<PanelState>().set_tab(2);
     g.set_curves_folded(false);
+    // A drawn frame lays out the panel the editor brings in, as the app's next frame does.
+    rig.shot("editors-opened");
     rig.settle();
     let origin = editors::origin(&ctl, Plot::Curves);
     let size = editors::size(&ctl, Plot::Curves);
@@ -177,8 +181,10 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     let options = Options { support: dir.join("support"), ..Options::default() };
     let second = Shell::new(Box::new(mono), engine, options).unwrap();
     second.window.show().unwrap();
+    second.window.global::<App>().set_gallery(false);
     let g2 = second.window.global::<Editors>();
     g2.set_spectrogram_folded(false);
+    rig.shot("editors-monochrome");
     rig.settle();
     assert!(g2.get_monochrome());
     assert_eq!(editors::size(&second.ctl, Plot::Wheel).w, 0.0, "a monochrome panel laid out the wheel");

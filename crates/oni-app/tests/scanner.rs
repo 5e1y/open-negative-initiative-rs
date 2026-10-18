@@ -3,7 +3,7 @@
 //! face remembered across launches.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{App, Bar, Lab, MainWindow, PanelState};
+use oni_app::{App, Bar, Lab, Library, MainWindow, PanelState};
 use oni_core::{Archive, Command, EditorStore};
 use oni_link::scanner::Letter;
 use oni_settings::scanner::ScannerClicks;
@@ -11,6 +11,7 @@ use oni_settings::{Face, ScannerMachine};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 mod common;
 
@@ -27,6 +28,14 @@ fn finish(w: &MainWindow) -> Vec<String> {
 fn modified(w: &MainWindow) -> Vec<bool> {
     let model = w.global::<Lab>().get_modified();
     (0..model.row_count()).map(|i| model.row_data(i).unwrap()).collect()
+}
+
+/// A folder opens on the gallery, as Swift's does; the first tile opened brings the editor.
+fn open_first(rig: &common::Rig, shell: &Shell) {
+    rig.until("the library read", Duration::from_secs(30), || shell.ctl.state.borrow().read_done());
+    shell.window.global::<Library>().invoke_tile_opened(0);
+    rig.pump();
+    assert!(!shell.window.global::<App>().get_gallery(), "the first tile opens in the editor");
 }
 
 fn shell(gpu: &oni_app::render::Device, support: &Path) -> Shell {
@@ -57,8 +66,9 @@ fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back() 
 
     let first = shell(&gpu, &support);
     first.window.show().unwrap();
-    first.open_folder(&folder);
     let (ctl, w) = (first.ctl.clone(), &first.window);
+    first.open_folder(&folder);
+    open_first(&rig, &first);
     let (lab, bar, panel) = (w.global::<Lab>(), w.global::<Bar>(), w.global::<PanelState>());
     let settings = || ctl.state.borrow().store().settings().clone();
     assert!(!lab.get_shown() && bar.get_face() == 0, "the editor opens on Pro, never asked otherwise");
@@ -174,6 +184,7 @@ fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back() 
     let second = shell(&gpu, &support);
     second.window.show().unwrap();
     second.open_folder(&folder);
+    open_first(&rig, &second);
     let lab = second.window.global::<Lab>();
     assert!(lab.get_shown());
     assert_eq!(second.ctl.state.borrow().store().settings().face, Face::Scanner);
