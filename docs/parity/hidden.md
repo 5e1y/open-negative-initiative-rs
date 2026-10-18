@@ -115,12 +115,12 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Keycap press floor 140 ms before acting | `DesignSystem/Keycap` | `oni-app/ui/ds/` | partial | Flat buttons; no press animation | no check |
 | Roll Settings gesture writes every frame on the reference, one step | `Scene/EditorScene+RollSettings.swift`, `RollSettings.swift:36` | `oni-core/src/store.rs:364` | done | | `oni-core/tests/roll8.rs::a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes_byte_for_byte` |
 | The bar's reset keeps geometry, flat-field, dye family | `Pipeline/Parameters.swift:257` | `oni-core/src/parameters.rs:337` | done | | `oni-core/src/parameters.rs::the_reset_keeps_geometry_flat_field_and_dye_family` |
-| Block reset to the mode's rest | `Pipeline/Parameters.swift:246` `rest(for:)` | `oni-app/src/store.rs:91-92` | partial | Always Negative's rest | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_in_one_write` (negative only) |
-| Dye Separation reset clears family and by-hand | `UI/SettingsPane.swift:74` | `oni-app/src/store.rs:100` | partial | Dose only | no check |
+| Block reset to the mode's rest | `Pipeline/Parameters.swift:246` `rest(for:)` | `oni-app/src/store.rs` `rest` | done | | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_of_the_frames_own_mode` |
+| Dye Separation reset clears family and by-hand | `UI/SettingsPane.swift:74` | `oni-app/src/store.rs` `reset` | done | | `oni-app/src/store.rs::the_dye_separation_reset_clears_the_dose_the_family_and_the_hand` |
 | Mode change carries a block onto the next mode | `Pipeline/Parameters.swift:286` | `oni-core/src/parameters.rs:348` | partial | Core only | no check |
 | Reset to Default reaches whole rolls and sheets, never a neighbour | `Pipeline/RollSettings.swift:114` | none | missing | | no check |
-| Sidecar write delay 400 ms | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs:34` | partial | 500 ms | no check |
-| Thumbnail refresh 2 s, after the sidecar write | `Pipeline/Thumbnails.swift:21` | none | missing | | no check |
+| Sidecar write delay 400 ms | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs` `WRITE_DELAY` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
+| Thumbnail refresh 2 s, after the sidecar write | `Pipeline/Thumbnails.swift:21` | `oni-app/src/app.rs` `schedule_redraw`, `thumbnails.rs` `REFRESH_DELAY` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Histogram throttle 12 ms, 100 ms while held | `Pipeline/Histogram.swift:59-63` | none | missing | | no check |
 | Histogram graduation overshoot 0.35 | `Pipeline/Histogram.swift:20` | `oni-settings/src/axis.rs:105` | done | | `oni-settings/src/axis.rs::the_graduation_reaches_under_the_lowest_density_a_test_film_holds` |
 | Medal keys 0-3 bare, live only outside text | `UI/EditorCommands.swift:183` | `oni-app/src/app.rs:1172-1175` | done | | no check |

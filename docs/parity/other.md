@@ -29,8 +29,8 @@ Statuses are defined in [README.md](README.md).
 | Settings on the system pasteboard, own types | `Pipeline/Propagation.swift:22,96,127` | `oni-core/src/store.rs:496` | partial | In-memory board; nothing crosses apps or relaunches | no check |
 | Paste carries Color and Details whole | `Pipeline/LookSettings.swift:6` | `oni-settings/src/settings.rs:198` | done | Core level | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |
 | Every field in exactly one family | `Pipeline/RollSettings.swift:12`, `LookSettings.swift` | `oni-core/src/fields.rs` | done | | `oni-core/src/fields.rs::every_field_is_the_rolls_the_looks_or_the_frames_and_one_only` |
-| Framing board, measuring window board | `Pipeline/Propagation.swift:96,127` | `oni-core/src/store.rs:554` | partial | Framing only; no fit; no window board | no check |
-| Paste check (what would be overwritten) | `Scene/EditorScene+Paste.swift` | `oni-core/src/store.rs:516` | partial | Core only | no check |
+| Framing board, measuring window board | `Pipeline/Propagation.swift:96,127` | `oni-core/src/store.rs` `copy_framing`, `paste_framing`, `app.rs` `framing_act` | done | Both boards live for the session, as `Propagation`'s; only the open frame is fitted | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Paste check (what would be overwritten) | `Scene/EditorScene+Paste.swift` | `oni-core/src/store.rs` `paste_check`, `app.rs` `confirm` | done | Another roll's look asks on the Another Roll sheet | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 
 ## Windows and sheets
 

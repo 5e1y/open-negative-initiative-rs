@@ -387,6 +387,16 @@ impl EditorStore {
         }
     }
 
+    /// The frames already found naming reference `id`, never scanning: what a menu title may read.
+    pub fn measured_group(&self, id: Id) -> Option<&BTreeSet<String>> {
+        self.measured.get(&id)
+    }
+
+    /// Whether Copy Settings and the framing's Copy have filled the board.
+    pub fn has_copied_settings(&self) -> bool {
+        self.board.settings.is_some()
+    }
+
     /// The frames naming reference `id`, scanned once per reference; the open frame counts by its
     /// settings in memory, its sidecar possibly lagging.
     pub fn measured_with(&mut self, id: Id) -> BTreeSet<String> {
@@ -585,11 +595,19 @@ impl EditorStore {
 
     /// The copied framing on every target, one gallery step; fitting it inside each image is the
     /// host's, which knows the sizes.
-    pub fn paste_framing(&mut self, targets: &[String]) -> usize {
+    /// `pasteFraming(to:)`: only the open frame is fitted, to `open_size`, its own full size.
+    pub fn paste_framing(&mut self, targets: &[String], open_size: Option<(f64, f64)>) -> usize {
         let Some(framing) = self.board.framing else { return 0 };
+        let open = self.path().map(str::to_string);
         self.lay_on(
             targets,
-            |_, s| PipelineSettings { geometry: framing, ..s.clone() },
+            |path, s| {
+                let mut geometry = framing;
+                if let (Some(size), true) = (open_size, open.as_deref() == Some(path)) {
+                    geometry.fit_crop_inside_image(size);
+                }
+                PipelineSettings { geometry, ..s.clone() }
+            },
             |n| if n == 1 { "Paste framing".into() } else { format!("Paste framing to {n} photos") },
         )
     }

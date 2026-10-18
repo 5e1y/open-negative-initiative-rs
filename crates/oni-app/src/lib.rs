@@ -22,6 +22,7 @@ pub mod render;
 pub mod store;
 pub mod strict;
 pub mod system;
+pub mod thumbnails;
 pub mod timing;
 pub mod tokens;
 pub mod track;

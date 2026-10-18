@@ -11,7 +11,11 @@ export global Plots {
 
 export global PanelState {
     in-out property <int> tab: 2;
-    in property <string> film-type: "Color Negative";
+    // `ConversionMode.allCases`' index of the targets' mode.
+    in property <int> film-type;
+    // How many photos a paste reaches.
+    in property <int> targets: 1;
+    callback film-type-picked(int);
     in property <string> dyes: "Generic C-41";
     in property <bool> flat-field-on;
     // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
@@ -105,7 +109,12 @@ component RollPane inherits Pane {
     Block {
         title: "Film Type";
         help: "What the film is: a colour negative, a slide or black and white.";
-        Picker { value: PanelState.film-type; open => { PanelState.pick("film-type"); } }
+        Tabs {
+            tabs: ["Negative", "Positive", "B&W"];
+            marked: [false, false, false];
+            selected: PanelState.film-type;
+            picked(i) => { PanelState.film-type-picked(i); }
+        }
     }
     Block {
         title: "Flat-Field";
@@ -113,6 +122,21 @@ component RollPane inherits Pane {
             label: "Flat-field";
             Toggle { label: "Flat-field"; on: PanelState.flat-field-on; }
         }
+    }
+    Block {
+        title: "Density Ceiling";
+        help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
+        block: 4;
+        modified: Store.density-ceiling-modified;
+        folded: true;
+        StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
+    }
+    EditorBlock {
+        title: "Per-Channel Levels";
+        block: 1;
+        modified: Editors.levels-modified;
+        folded <=> Editors.levels-folded;
+        LevelsEditor { histogram: Plots.levels; }
     }
     if PanelState.separation-shown: Block {
         title: "Dye Separation";
@@ -129,21 +153,6 @@ component RollPane inherits Pane {
         modified: Store.balance-strength-modified;
         folded: true;
         StoreSlider { field: 11; label: "Strength"; fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
-    }
-    Block {
-        title: "Density Ceiling";
-        help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
-        block: 4;
-        modified: Store.density-ceiling-modified;
-        folded: true;
-        StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
-    }
-    EditorBlock {
-        title: "Per-Channel Levels";
-        block: 1;
-        modified: Editors.levels-modified;
-        folded <=> Editors.levels-folded;
-        LevelsEditor { histogram: Plots.levels; }
     }
 }
 
@@ -173,7 +182,7 @@ component CropPane inherits Pane {
         HorizontalLayout {
             spacing: Space.s;
             Button { text: "Copy"; help: "Copies this photo's crop."; clicked => { Framing.act("copy-framing"); } }
-            Button { text: "Paste"; enabled: Framing.can-paste; help: "Pastes the copied crop on this photo."; clicked => { Framing.act("paste-framing"); } }
+            Button { text: "Paste"; enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? "Pastes the copied crop on the " + PanelState.targets + " selected photos." : "Pastes the copied crop on this photo."; clicked => { Framing.act("paste-framing"); } }
             Button { text: "Paste to Roll"; enabled: Framing.can-paste; horizontal-stretch: 1; help: "Pastes the copied crop on every photo measured with this roll."; clicked => { Framing.act("paste-framing-to-roll"); } }
         }
     }

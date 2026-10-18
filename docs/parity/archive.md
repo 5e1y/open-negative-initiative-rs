@@ -7,16 +7,16 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Open a folder from a picker | `UI/RootPicker.swift`, `UI/EditorCommands.swift:109` | `oni-app/src/main.rs` (argv only) | missing | The app opens `argv[1]` or roll #8 | no check |
+| Open a folder from a picker | `UI/RootPicker.swift`, `UI/EditorCommands.swift:109` | `oni-app/src/app.rs` `pick`, `add`, `system.rs` `pick_folder` | done | A folder opens on the gallery, nothing in the editor; a file opens its folder then itself; a folder reached through a link reads on its real path | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once`, `oni-app/src/library.rs::a_folder_reached_through_a_link_lists_the_photos_on_its_real_path` |
 | Several roots, surveyed off the main thread | `Pipeline/Roots.swift` | `oni-library/src/roots.rs` | partial | Crate surveys many; the app holds one folder | `oni-library/src/roots.rs::roots_never_hold_a_photo_twice` |
 | Add Folder… on the empty archive | `UI/RootPicker.swift` | none | missing | | no check |
 | Former library offered per volume (RootsCatchUp) | `UI/RootsCatchUp.swift` | `oni-library/src/roots.rs` | partial | Model only | `oni-library/src/roots.rs::a_former_library_is_offered_per_volume_never_the_home_itself` |
-| SQLite index as a disposable cache | `Pipeline/LibraryIndex.swift` | `oni-library/src/index.rs` | partial | Crate done; the app reads every file each launch | `oni-library/tests/roll8.rs::an_index_rebuilt_from_the_sidecars_finds_every_frame` |
+| SQLite index as a disposable cache | `Pipeline/LibraryIndex.swift` | `oni-library/src/index.rs`, `oni-app/src/library.rs` `read_rows` | done | The index lives in the caches; a second read reads no file again | `oni-app/src/library.rs::a_folder_read_twice_reads_its_files_once_and_drops_a_photo_gone`, `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Library reload, invented and waiting rows | `Pipeline/Library.swift:43-44` | `oni-library/src/library.rs:56-57` | partial | Crate only | `oni-library/src/library.rs::an_invented_row_is_dropped_and_a_waiting_one_kept` |
 | Relink a moved original by fingerprint | `Pipeline/Relink.swift` | `oni-library/src/relink.rs` | partial | Crate only; Recheck Originals unwired | `oni-library/src/relink.rs::two_files_of_one_size_part_on_their_sample_and_a_renamed_one_keeps_its_print` |
-| Read the Folders Again | `UI/EditorCommands.swift:123` | none | missing | | no check |
-| Show the Selected Photo, Show in Finder | `UI/EditorCommands.swift:125`, `UI/GalleryView.swift` | none | missing | | no check |
-| Opened folder remembered across launches | `Scene/EditorScene+Removal.swift:142` `openedFolder` | none | missing | | no check |
+| Read the Folders Again | `UI/EditorCommands.swift:123` | `oni-app/src/app.rs` `read_again` | done | | no check |
+| Show the Selected Photo, Show in Finder | `UI/EditorCommands.swift:125`, `UI/GalleryView.swift` | `oni-app/src/app.rs` `show_selected`, `gallery.rs` `reveal` | partial | Show the Selected Photo done; Show in Finder absent | `oni-app/src/gallery.rs::reveal_moves_the_least_to_show_a_cell_and_not_at_all_when_it_shows` |
+| Opened folder remembered across launches | `Scene/EditorScene+Removal.swift:142` `openedFolder` | `oni-app/src/preferences.rs`, `app.rs` `open_remembered` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Every path from AppFolders, sandboxed under checks | `Pipeline/AppFolders.swift` | `oni-app/src/render.rs:75` | partial | Support folder named; no per-process sandbox for tests | no check |
 
 ## Folder tree (navigator)
@@ -33,7 +33,7 @@ Statuses are defined in [README.md](README.md).
 | ONI Trash row | `UI/FolderNavigator.swift:18` | `oni-library/src/trash.rs` | partial | Crate lists; no row | `oni-library/src/trash.rs::the_trash_lists_its_folders_latest_deletion_first` |
 | A roll row shows its default stock | `UI/TreeRowChrome.swift` | none | missing | | no check |
 | Drop over the tree lands where its strips say | `UI/ListPicking.swift` `TreeDropTarget` | none | missing | Archive moves nothing by hand; project drops only | no check |
-| Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `oni-app/src/app.rs:1128` | partial | No shortcut | no check |
+| Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint` menu bar | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 
 ## Gallery grid
 
@@ -47,9 +47,9 @@ Statuses are defined in [README.md](README.md).
 | Double-click opens in the editor | `UI/GalleryView.swift` | `library.slint` `tile-opened` | done | | no check |
 | ⌘A, arrows, Return, Space | `UI/GalleryEngine.swift:425-439` | none | missing | | no check |
 | Zoom the grid ⌘− ⌘+ | `UI/EditorCommands.swift:138-142` | `oni-app/src/app.rs:1129` | partial | Ladder of two widths, not Swift's | no check |
-| Thumbnails: 320 px, disk cache, render version 11 | `Pipeline/Thumbnails.swift:15-21` | `oni-app/src/app.rs:29` | partial | 480 px, memory only, re-rendered each launch | no check |
+| Thumbnails: 320 px, disk cache, render version 11 | `Pipeline/Thumbnails.swift:15-21` | `oni-app/src/thumbnails.rs`, `app.rs` `paint` | partial | 320 px JPEGs at 0.6 named by fingerprint, drawn only when absent; an unconverted frame renders through the pipeline where Swift shows the embedded scan | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Thumbnails proofed into the export space | `Pipeline/Thumbnails.swift:13` | none | missing | | no check |
-| Thumbnail refresh 2 s after an edit | `Pipeline/Thumbnails.swift:21` | none | missing | | no check |
+| Thumbnail refresh 2 s after an edit | `Pipeline/Thumbnails.swift:21` | `oni-app/src/app.rs` `schedule_redraw` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Triplet of RGB passes shows its lead | `UI/TileLayers.swift:256` | `oni-library/src/index.rs` | partial | Index only | `oni-library/src/index.rs::a_triplet_draws_as_its_lead_and_its_passes_show_once_it_is_gone` |
 | Cell menu: Paste Settings, Reset Settings, Reset to Default… | `UI/GalleryView.swift:354-433` | none | missing | Core gestures exist | no check |
 | Cell menu: medals | `UI/GalleryView.swift:354-433` | keys 0-3 | partial | No context menu | no check |
@@ -65,7 +65,7 @@ Statuses are defined in [README.md](README.md).
 |---|---|---|---|---|---|
 | Medal written to the sidecar alone | `Pipeline/Medal.swift`, `Pipeline/Sidecar.swift` | `oni-app/src/app.rs:932`, `oni-settings/src/sidecar.rs` | done | | `oni-settings/tests/real_files.rs::label_trash_and_draft_touch_nothing_else_and_keep_the_revision` |
 | Medal names and order | `Pipeline/Medal.swift` | `oni-settings/src/modes.rs` | done | | `oni-settings/src/modes.rs::a_medal_is_written_by_name_and_an_unknown_one_refused` |
-| Filter: All / medals, ⌘L | `UI/EditorCommands.swift:187` | `toolbar.slint` filter word | partial | Word shown; cycling unwired | no check |
+| Filter: All / medals, ⌘L | `UI/EditorCommands.swift:187` | `app.rs` `cycle_filter`, `toolbar.slint` filter word | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 
 ## Info sidebar
 
@@ -84,11 +84,11 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Rolls group by reference id, days by local midnight | `Pipeline/Film.swift` | `oni-library/src/film_group.rs` | done | | `oni-library/tests/roll8.rs::roll_membership_reads_the_reference_id_each_sidecar_names` |
-| New Roll from Selection ⇧⌘G (folder on disk, ⌘Z) | `Pipeline/RollFolder.swift`, `Scene/EditorScene+Rolls.swift` | `oni-library/src/roll_folder.rs` | partial | Crate only | `oni-library/src/roll_folder.rs::a_roll_folder_takes_its_photos_and_gives_them_back` |
+| New Roll from Selection ⇧⌘G (folder on disk, ⌘Z) | `Pipeline/RollFolder.swift`, `Scene/EditorScene+Rolls.swift` | `oni-app/src/app.rs` `new_roll`, `followed`, `oni-library/src/roll_folder.rs` | done | The heading is not offered for renaming | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target`, `oni-library/src/roll_folder.rs::a_roll_folder_takes_its_photos_and_gives_them_back` |
 | Ungroup ⌥⇧⌘G | `Scene/EditorScene+Rolls.swift` | none | missing | | no check |
 | Fresh roll takes the lowest free number | `Pipeline/Film.swift:144` | `oni-library/src/film_group.rs` | done | | `oni-library/src/film_group.rs::a_fresh_roll_takes_the_lowest_free_number` |
 | Reset to Default… reaches whole rolls and sheets | `Pipeline/RollSettings.swift:114` `resetReach` | `oni-core/src/store.rs:602` | partial | Resets targets; reach not computed | no check |
-| Paste to Roll writes the whole roll | `Scene/EditorScene+Paste.swift` | `oni-core/src/store.rs:535` | partial | Core only | `oni-core/tests/roll8.rs::paste_to_roll_is_one_editor_step_over_the_whole_roll` |
+| Paste to Roll writes the whole roll | `Scene/EditorScene+Paste.swift` | `oni-app/src/app.rs` `paste_to_roll`, `oni-core/src/store.rs` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target`, `oni-core/tests/roll8.rs::paste_to_roll_is_one_editor_step_over_the_whole_roll` |
 
 ## Prepare the Roll
 
@@ -120,10 +120,10 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Delete marks the sidecar, no file moves | `Pipeline/OniTrash.swift` | `oni-library/src/trash.rs`, `oni-core/src/store.rs:704` | partial | Core only | `oni-library/tests/roll8.rs::the_trash_marks_sidecars_and_never_moves_a_file` |
-| Every listing leaves the trash out | `Pipeline/OniTrash.swift` | `oni-library` listings | partial | Not asserted on the app's grid | no check |
-| A delete hides at once, one gallery step | `Pipeline/OniTrash.swift` `wiringCheck` | `oni-library/src/gallery_history.rs` | partial | Model only | `oni-library/src/gallery_history.rs::a_trash_step_comes_back_whole_and_an_empty_one_opens_none` |
-| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `oni-core/src/store.rs:708` | partial | Core only | no check |
+| Delete marks the sidecar, no file moves | `Pipeline/OniTrash.swift` | `oni-app/src/app.rs` `move_to_trash`, `oni-library/src/trash.rs` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target`, `oni-library/tests/roll8.rs::the_trash_marks_sidecars_and_never_moves_a_file` |
+| Every listing leaves the trash out | `Pipeline/OniTrash.swift` | `oni-app/src/library.rs` `shown_under` | done | | `oni-app/src/library.rs::a_folder_read_twice_reads_its_files_once_and_drops_a_photo_gone`, `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| A delete hides at once, one gallery step | `Pipeline/OniTrash.swift` `wiringCheck` | `oni-app/src/app.rs` `gesture`, `oni-library/src/gallery_history.rs` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `oni-core/src/store.rs:708` | partial | Core and ⌘Z only: no ONI Trash view to select in | no check |
 
 ## Contact sheet
 

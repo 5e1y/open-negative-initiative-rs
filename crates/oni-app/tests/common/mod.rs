@@ -114,6 +114,19 @@ impl Rig {
         self.pump();
     }
 
+    /// Several modifiers held around one key, pressed in order and released in reverse.
+    pub fn chord_with(&self, modifiers: &[slint::platform::Key], text: &str) {
+        let held: Vec<slint::SharedString> = modifiers.iter().map(|m| (*m).into()).collect();
+        for m in &held {
+            self.window.dispatch_event(WindowEvent::KeyPressed { text: m.clone() });
+        }
+        self.key(text);
+        for m in held.iter().rev() {
+            self.window.dispatch_event(WindowEvent::KeyReleased { text: m.clone() });
+        }
+        self.pump();
+    }
+
     pub fn chord(&self, modifier: slint::platform::Key, text: &str) {
         let m: slint::SharedString = modifier.into();
         self.window.dispatch_event(WindowEvent::KeyPressed { text: m.clone() });
@@ -129,4 +142,49 @@ pub fn rig(shots: PathBuf) -> Rig {
     let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
     slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now() })).unwrap();
     Rig { window, queue, shots }
+}
+
+/// A little-endian LinearRaw TIFF, 16-bit RGB in one strip, a smooth ramp scaled by `tone`: the
+/// linear branch decodes it, so a check renders a frame without a camera file.
+pub fn linear_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
+    let samples: Vec<u16> = (0..w * h)
+        .flat_map(|i| {
+            let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
+            [x, y, 0.5].map(|v| (100.0 + 900.0 * (0.1 + 0.8 * v * tone)) as u16)
+        })
+        .collect();
+    let data: Vec<u8> = samples.iter().flat_map(|v| v.to_le_bytes()).collect();
+    let ifd_at = 8 + data.len();
+    let entries: [(u16, u16, u32, u32); 11] = [
+        (256, 4, 1, w as u32),
+        (257, 4, 1, h as u32),
+        (258, 3, 1, 16),
+        (259, 3, 1, 1),
+        (262, 3, 1, 34892),
+        (273, 4, 1, 8),
+        (277, 3, 1, 3),
+        (278, 4, 1, h as u32),
+        (279, 4, 1, data.len() as u32),
+        (50714, 4, 1, 100),
+        (50717, 4, 1, 1000),
+    ];
+    let mut out = b"II".to_vec();
+    out.extend(42u16.to_le_bytes());
+    out.extend((ifd_at as u32).to_le_bytes());
+    out.extend(data);
+    out.extend((entries.len() as u16).to_le_bytes());
+    for (tag, t, n, v) in entries {
+        out.extend(tag.to_le_bytes());
+        out.extend(t.to_le_bytes());
+        out.extend(n.to_le_bytes());
+        if t == 3 {
+            out.extend((v as u16).to_le_bytes());
+            out.extend([0, 0]);
+        } else {
+            out.extend(v.to_le_bytes());
+        }
+    }
+    out.extend(0u32.to_le_bytes());
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(path, out).unwrap();
 }

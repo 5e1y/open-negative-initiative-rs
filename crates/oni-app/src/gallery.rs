@@ -181,6 +181,23 @@ impl Layout {
         }
     }
 
+    /// `reveal(_:from:in:)`: the shortest move that shows a cell, clearing the pinned header too;
+    /// `None` when it is already in view.
+    pub fn reveal(&self, index: usize, top: f32, viewport: f32) -> Option<f32> {
+        let frame = self.frame(index)?;
+        let (gutter, header) = (self.metrics.gutter, self.metrics.header);
+        let wanted = if frame.y - gutter - header < top {
+            let band_top = self.band(index).map_or(0.0, |b| b.top);
+            (frame.y - gutter - header).max(band_top)
+        } else if frame.y + frame.height + gutter > top + viewport {
+            frame.y + frame.height + gutter - viewport
+        } else {
+            return None;
+        };
+        let clamped = wanted.max(0.0).min((self.height - viewport).max(0.0));
+        ((clamped - top).abs() >= 0.5).then_some(clamped)
+    }
+
     /// The scroll offset kept inside the content.
     pub fn clamped(&self, scroll: f32, viewport: f32) -> f32 {
         scroll.clamp(0.0, (self.height - viewport).max(0.0))
@@ -190,6 +207,20 @@ impl Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reveal_moves_the_least_to_show_a_cell_and_not_at_all_when_it_shows() {
+        let l = Layout::new(&roll(60), 6, 1000.0, Metrics::GALLERY);
+        let viewport = 400.0;
+        assert_eq!(l.reveal(0, 0.0, viewport), None, "the first cell is in view at the top");
+        let last = l.frame(59).unwrap();
+        let down = l.reveal(59, 0.0, viewport).unwrap();
+        assert!((down - (last.y + last.height + l.metrics.gutter - viewport)).abs() < 1e-3, "{down}");
+        // Twin: from the bottom, the first cell scrolls back to its band's top, never above zero.
+        let up = l.reveal(0, down, viewport).unwrap();
+        assert!(up >= 0.0 && up <= l.frame(0).unwrap().y, "{up}");
+        assert_eq!(l.reveal(59, down, viewport), None);
+    }
 
     fn roll(count: usize) -> Vec<(String, String, usize)> {
         vec![("Roll #8".into(), String::new(), count)]

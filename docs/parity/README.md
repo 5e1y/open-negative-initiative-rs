@@ -21,18 +21,22 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 68 | 43 | 40 | 86 of 151 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 14 | 32 | 39 | 33 of 85 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 96 | 25 | 30 | 103 of 151 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 26 | 25 | 34 | 41 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 4 | 31 | 3 | 34 of 38 |
-| Presets, windows, help, updates, life cycle | [other.md](other.md) | 7 | 17 | 24 | 15 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 87 | 15 | 26 | 89 of 128 |
-| **All** | | **180** | **138** | **132** | **257 of 450** |
+| Presets, windows, help, updates, life cycle | [other.md](other.md) | 9 | 15 | 24 | 17 of 48 |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 91 | 12 | 25 | 92 of 128 |
+| **All** | | **226** | **108** | **116** | **287 of 450** |
 
-Within the editor: canvas 17 / 2 / 0, main band 2 / 1 / 2, panel tabs 3 / 2 / 3, Roll tab 5 / 7 / 7, Crop tab 7 / 1 / 0, Color tab 7 / 5 / 1, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 6 / 1 / 0, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 3 / 1 / 3, history 2 / 3 / 1 (done / partial / missing).
+Within the editor: canvas 17 / 2 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7,
+Crop tab 8 / 0 / 0, Color tab 7 / 5 / 1, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
+6 / 1 / 0, bar 4 / 5 / 3, menus 22 / 5 / 9, keys 3 / 1 / 3, history 5 / 0 / 1 (done / partial /
+missing).
 
-Nine rows are done with no check, all in the app: ⌘G, bare keys yielding to a text field, ⌘ and ⇧
-selection (twice), double-click to open, the ground behind the frame, Space held for the hand tool,
-the offline `--check` and the bare medal keys.
+Eleven rows are done with no check, all in the app: Recheck Originals and Read the Folders Again
+(three rows), bare keys yielding to a text field, ⌘ and ⇧ selection (twice), double-click to open,
+the ground behind the frame, Space held for the hand tool, the offline `--check` and the bare medal
+keys.
 
 ### Swift self-checks
 
@@ -48,26 +52,19 @@ check only.
 
 ## Values that differ from Swift
 
-| What | Swift | Rust |
-|---|---|---|
-| Sidecar write delay | 400 ms, `Pipeline/Sidecar.swift:7` | 500 ms, `oni-app/src/app.rs:34` |
-| Thumbnail side | 320 px, disk cache, `Pipeline/Thumbnails.swift:15` | 480 px, memory, `oni-app/src/app.rs:29` |
-| Block reset target | the mode's rest, `Pipeline/Parameters.swift:246` | Negative's rest, `oni-app/src/store.rs:92` |
-| Dye Separation reset | dose, family and by-hand, `UI/SettingsPane.swift:74` | dose only |
-| Straighten | re-fits the crop, `Pipeline/Geometry.swift:234` | raw angle, `oni-core/src/knob.rs:242` |
-| Double-click interval | the system's | 500 ms, `oni-app/src/track.rs:12` |
-| Roll tab block order | Measured Roll … Per-Channel Levels, Dye Separation, Balance Strength | Dye Separation and Balance Strength before Density Ceiling |
-| Menu titles | "Compare Before/After", "Hide the Library", "Remove Dust & Scratches", "Mirror Horizontally", "Show What This Screen Cannot Show", "Filter: All", "New Roll from Selection", "New Contact Sheet", "Paste to Roll", "Export…" | "Compare", "Hide Library", "De-dust", "Mirror", "Screen Gamut", "Cycle Filter", "New Roll", "Make a Contact Sheet", "Paste to the Roll", "Export" |
+None of the values listed against Swift remains apart: the sidecar delay, the thumbnail side and
+cache, the block reset's rest, the Dye Separation reset, the slider's double-click interval, the Roll
+tab's block order and the menu titles now read as Swift's.
 
 ## The ten largest gaps, in port order
 
-1. **Opening an archive.** The app opens only `argv[1]`: no Open Folder, no roots, no index, no
-   remembered folder, no thumbnail cache.
+1. **Opening an archive.** Open Folder, the index, the remembered folder and the thumbnail cache
+   work; several roots at once, the navigator and the ONI Trash view do not.
 2. **The canvas.** Zoom, pan, the full-resolution region, Compare and the screen gamut stripes
    work, dust patches and custom flat-field masks reach the render, the crop frame and the brush draw on it.
 3. **Wiring what the core already does.** Copy, paste, paste to roll, framing, film type, trash,
-   restore, reset to default and the gallery history are tested in `oni-core` but answer "not in this
-   build"; most menu shortcuts are unmapped.
+   New Roll and the gallery history are wired with Swift's titles and shortcuts; Restore waits on the
+   ONI Trash view, Ungroup on a film gesture in the core.
 4. **The measurement behind the automatic keys.** `balance::Measure` has no implementation: no Auto
    White Balance, auto levels, pipette, measuring blocks, Classic placement or roll reference.
 5. **The editors' histograms.** The curves, levels, spectrogram and saturation editors work with

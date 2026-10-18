@@ -36,6 +36,16 @@ pub struct Disk {
     pub moves: Vec<Move>,
 }
 
+impl Step {
+    /// Every photo the step writes, marks or moves, at either end of a move.
+    pub fn paths(&self) -> BTreeSet<String> {
+        let mut out: BTreeSet<String> = self.before.keys().chain(self.after.keys()).cloned().collect();
+        out.extend(self.trash.iter().flat_map(|t| t.paths.iter().cloned()));
+        out.extend(self.disk.iter().flat_map(|d| d.moves.iter().flat_map(|m| [m.from.clone(), m.to.clone()])));
+        out
+    }
+}
+
 pub const LIMIT: usize = 100;
 
 #[derive(Debug, Clone, Default)]
@@ -59,6 +69,27 @@ impl GalleryHistory {
 
     pub fn redo_label(&self) -> Option<&str> {
         self.can_redo().then(|| self.steps[self.cursor].label.as_str())
+    }
+
+    /// The photos the next undo would touch, so a host reads their rows and thumbnails again.
+    pub fn undo_paths(&self) -> BTreeSet<String> {
+        self.can_undo().then(|| self.steps[self.cursor - 1].paths()).unwrap_or_default()
+    }
+
+    pub fn redo_paths(&self) -> BTreeSet<String> {
+        self.can_redo().then(|| self.steps[self.cursor].paths()).unwrap_or_default()
+    }
+
+    /// The files the next undo would move, each as the undo moves it, so a host follows them.
+    pub fn undo_moves(&self) -> Vec<Move> {
+        let step = self.can_undo().then(|| &self.steps[self.cursor - 1]);
+        let moves = step.and_then(|s| s.disk.as_ref()).map(|d| d.moves.clone()).unwrap_or_default();
+        moves.into_iter().rev().map(|m| Move { from: m.to, to: m.from }).collect()
+    }
+
+    pub fn redo_moves(&self) -> Vec<Move> {
+        let step = self.can_redo().then(|| &self.steps[self.cursor]);
+        step.and_then(|s| s.disk.as_ref()).map(|d| d.moves.clone()).unwrap_or_default()
     }
 
     /// A new gesture drops the branch that was undone, and the oldest step past the limit.

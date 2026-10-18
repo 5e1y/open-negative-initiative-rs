@@ -255,6 +255,15 @@ impl Field {
         }
     }
 
+    /// Where a double click lands on this frame: the slider's `base`, which the ceiling's reads off
+    /// the frame's mode and decode as `SettingsPane` does.
+    pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
+        match self {
+            Field::DensityCeiling => oni_settings::axis::density_axis::rest(settings.decoded_from_mosaic, settings.mode),
+            _ => self.spec().base,
+        }
+    }
+
     /// The store's knob this slider moves.
     pub fn knob(self) -> Knob {
         match self {
@@ -340,6 +349,64 @@ mod tests {
         // Twin: on a plain file the ceiling's axis is another, which the spec does not claim to follow.
         let plain = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, false);
         assert_ne!(Field::DensityCeiling.knob().range(&plain), Some(Field::DensityCeiling.spec().range));
+    }
+
+    #[test]
+    fn a_double_click_on_the_ceiling_lands_on_the_frames_own_rest() {
+        use oni_settings::{ConversionMode, PipelineSettings};
+        let slide = PipelineSettings::rest(ConversionMode::Positive, true);
+        assert_eq!(Field::DensityCeiling.base(&slide), slide.density_ceiling);
+        let negative = PipelineSettings::rest(ConversionMode::Negative, true);
+        assert_eq!(Field::DensityCeiling.base(&negative), negative.density_ceiling);
+        // Twin: the two rests differ, so a base read for the negative alone fails on the slide.
+        assert_ne!(slide.density_ceiling, Field::DensityCeiling.spec().base);
+        assert_eq!(Field::Exposure.base(&slide), 0.0, "Exposure's base is `Tone.neutral`, never the mode's rest");
+    }
+
+    /// The `title:` of each block in one pane of `panel.slint`, in order.
+    fn pane_titles(panel: &str, pane: &str) -> Vec<String> {
+        let body = &panel[panel.find(&format!("component {pane} ")).expect("the pane")..];
+        let body = &body[..body[1..].find("\ncomponent ").map_or(body.len(), |i| i + 1)];
+        body.lines().filter_map(|l| l.trim().strip_prefix("title: \"")?.split('"').next().map(str::to_string)).collect()
+    }
+
+    /// Whether `shown` keeps `order`'s relative order, every one of its blocks found there.
+    fn follows(shown: &[String], order: &[String]) -> bool {
+        let mut at = 0;
+        shown.iter().all(|t| match order[at..].iter().position(|o| o == t) {
+            Some(i) => {
+                at += i + 1;
+                true
+            }
+            None => false,
+        })
+    }
+
+    /// `SettingsPane.body`'s sections as drawn: `manualBalance` is a property laid where the body
+    /// names it, though its text comes later in the file.
+    fn swift_roll_order(text: &str) -> Vec<String> {
+        let sections = |t: &str| -> Vec<String> { t.split("DSSection(\"").skip(1).filter_map(|t| t.split('"').next().map(str::to_string)).collect() };
+        let body = &text[text.find("var body").expect("body")..text.find("private var rollBlock").expect("rollBlock")];
+        let manual = &text[text.find("private var manualBalance").expect("manualBalance")..text.find("// MARK: - Keys").expect("keys")];
+        let at = body.find("manualBalance\n").expect("the body names manualBalance");
+        [sections(&body[..at]), sections(manual), sections(&body[at..])].concat()
+    }
+
+    #[test]
+    fn the_roll_tab_lays_its_blocks_in_the_swift_order() {
+        // `SettingsPane.body`, read from the Swift source when it is beside this checkout.
+        let swift: Vec<String> = match crate::swift_sources().and_then(|d| std::fs::read_to_string(d.join("UI/SettingsPane.swift")).ok()) {
+            Some(text) => swift_roll_order(&text),
+            None => ["Measured Roll", "Film Type", "Flat-Field", "Source Encoding", "Source Balance", "Density Ceiling", "Per-Channel Levels", "Dye Separation", "Balance Strength"]
+                .map(String::from)
+                .to_vec(),
+        };
+        let shown = pane_titles(include_str!("../ui/panel.slint"), "RollPane");
+        assert!(shown.len() >= 6, "{shown:?}");
+        assert!(follows(&shown, &swift), "the Roll tab shows {shown:?}, Swift lays {swift:?}");
+        // Twin: Dye Separation and Balance Strength ahead of the ceiling break the order.
+        let early: Vec<String> = ["Measured Roll", "Film Type", "Flat-Field", "Dye Separation", "Balance Strength", "Density Ceiling"].map(String::from).to_vec();
+        assert!(!follows(&early, &swift));
     }
 
     #[test]

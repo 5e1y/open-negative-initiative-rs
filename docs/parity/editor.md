@@ -45,21 +45,21 @@ Statuses are defined in [README.md](README.md).
 | De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17` | `panel.slint` `DedustPane` (pane 4, no tab), `app.rs` `toggle_correcting` | done | Entered and left by the bar's key and the menu; leaving lands on the panel the hand was in, never the crop | `ONI_BENCH=dedust` |
 | Scanner face tabs (Lab keypad) | `Scene/EditorScene+Lab.swift:13-27`, `UI/ColorPane.swift:54` | `oni-app/ui/panel.slint` `ColorPane` | done | Machine, Density, Color, Look stand where Color and Lighting stand | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` |
 | Block help bubbles (`help:`) | every `DSSection` | none | missing | | no check |
-| Block reset key, shown off rest | `DSSection(resetting:)` | `oni-app/src/store.rs:94-108` | partial | Nine blocks; rest is always Negative's (`store.rs:92`) | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_in_one_write` |
+| Block reset key, shown off rest | `DSSection(resetting:)` | `oni-app/src/store.rs` `rest`, `is_modified`, `reset` | done | Nine blocks; each lands on the open frame's own mode rest | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_of_the_frames_own_mode`, `a_block_reset_lands_on_the_rest_in_one_write` |
 | Blocks folded by default | `.folded(byDefault: true)` | none | missing | Every block is open | no check |
 | Panel width resizer | `DesignSystem/DSPanel` `DSColumnResizer` | none | missing | | no check |
-| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `oni-app/src/app.rs:1127` | partial | Menu works; the shortcut is not mapped | no check |
+| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint` menu bar, `app.rs` `act` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 
 ## Panel: Roll tab
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Block order | `UI/SettingsPane.swift:28-112` | `oni-app/ui/panel.slint:45-95` | partial | Swift: Measured Roll, Film Type, Flat-Field, Source Encoding, Source Balance, Density Ceiling, Per-Channel Levels, Dye Separation, Balance Strength. Rust puts Dye Separation and Balance Strength third and fourth | no check |
+| Block order | `UI/SettingsPane.swift:28-112` | `oni-app/ui/panel.slint:45-95` | done | | `oni-app/src/fields.rs::the_roll_tab_lays_its_blocks_in_the_swift_order` |
 | Measured Roll: count note, warnings | `UI/SettingsPane.swift:114-140` | `panel.slint:45` | partial | Static text | no check |
 | Prepare the Roll… key | `UI/SettingsPane.swift:117` | none | missing | | no check |
 | Join the Roll / Join the N | `UI/SettingsPane.swift:126` | `oni-core/src/store.rs:680` `join_roll` | partial | Core only | no check |
 | Roll of the N | `UI/SettingsPane.swift:129` | none | missing | | no check |
-| Film Type tabs (negative, slide, B&W) | `UI/SettingsPane.swift:38` | `panel.slint:54`, `oni-core/src/store.rs:610` | partial | Picker unwired | no check |
+| Film Type tabs (negative, slide, B&W) | `UI/SettingsPane.swift:38` | `panel.slint` `Tabs`, `app.rs` `film_type`, `oni-core` `apply_mode` | done | One editor step on the open frame, one gallery step on a selection | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Flat-Field toggle, gear, mask picker | `UI/FlatFieldControls.swift` | `panel.slint:59-63` | partial | Toggle unbound | no check |
 | Use This Photo as Flat-Field, Load…, Rename, Folder | `UI/FlatFieldControls.swift` | none | missing | | no check |
 | Apply to Selection | `UI/FlatFieldControls.swift` | none | missing | | no check |
@@ -69,7 +69,7 @@ Statuses are defined in [README.md](README.md).
 | Density Ceiling slider | `UI/SettingsPane.swift:146` | `panel.slint:87` field 12 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:157-171`, `UI/LevelsView.swift` | `oni-app/src/editors/levels.rs`, `oni-app/src/editors/mod.rs`, `oni-app/ui/editors.slint` `LevelsEditor` | partial | R, G, B tabs lit off their rest, five handles, markers, readouts, reset to the roll's window. The histogram is `Plots.levels`, which nothing fills yet (Swift draws the levels input); no 8-bit source badge; not yet hidden on the Scanner face, which has no panel | `oni-app/src/editors/tests.rs::a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_alone`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 | Dye Separation: family tabs | `UI/SettingsPane.swift:73-84` | `panel.slint:70` | partial | Picker static | no check |
-| Dye Separation dose slider | `UI/SettingsPane.swift:85` | `panel.slint:71` field 13 | done | Reset does not clear family and `byHand` | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Dye Separation dose slider | `UI/SettingsPane.swift:85` | `panel.slint:71` field 13 | done | Reset clears the dose, the family and the hand together | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative`, `oni-app/src/store.rs::the_dye_separation_reset_clears_the_dose_the_family_and_the_hand` |
 | Dye Separation hidden in B&W, RGB passes, Scanner face | `UI/SettingsPane.swift:70` | `oni-app/src/app/lab.rs` `publish_lab`, `panel.slint` `separation-shown` | done | | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` (Scanner face; B&W and RGB passes read off the settings, not asserted) |
 | Balance Strength slider | `UI/SettingsPane.swift:93` | `panel.slint:79` field 11 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Roll-wide write of a Roll gesture | `Scene/EditorScene+RollSettings.swift` | `oni-core` `measured_with`, `tests/roll8.rs` | done | One step over every frame naming the reference | `oni-core/tests/roll8.rs::a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes_byte_for_byte` |
@@ -78,7 +78,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Crop block: Copy, Paste, Paste to Roll framing | `UI/FramePane.swift:21` | `panel.slint` `CropPane`, `app.rs` `framing_act`, `paste_framing` | partial | Wired to the store; the paste fits the crop inside the open frame only, the others keep the copied crop as it is; Paste reads "this photo", never the selection | `ONI_BENCH=crop` (copy not exercised) |
+| Crop block: Copy, Paste, Paste to Roll framing | `UI/FramePane.swift:21` | `panel.slint` `CropPane`, `app.rs` `framing_act`, `paste_framing`, `oni-core` `paste_framing` | done | Paste reaches the selection, else the open photo; Paste to Roll the open frame then every frame measured with its roll; only the open frame is fitted, one gallery step | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Aspect Ratio tabs Free, 3:2, 4:3, 1:1, 6:7, 5:4 | `UI/GeometryPanel.swift:17` | `oni-settings/src/geometry.rs` `apply_ratio`, `app.rs` `choose_framing` | done | The choice is remembered and handed to the next frame as its Crop tab opens | `oni-settings/src/geometry.rs::a_ratio_cuts_the_frame_about_its_anchor_and_holds_the_floor`, `ONI_BENCH=crop` |
 | Vertical toggle | `UI/GeometryPanel.swift:17` | `panel.slint`, `app.rs` `choose_framing` | done | Disabled on Free and 1:1 | `oni-settings/src/geometry.rs::a_ratio_cuts_the_frame_about_its_anchor_and_holds_the_floor` |
 | Straighten Angle slider | `UI/GeometryPanel.swift:27` | `app.rs` `straighten`, `geometry.rs` `straightened` | done | Re-fitted from the gesture's starting frame; a 160 ms pause or a frame moved elsewhere starts a new gesture | `oni-settings/src/geometry.rs::straightening_refits_the_frame_inside_the_turned_photo`, `ONI_BENCH=crop` |
@@ -145,7 +145,7 @@ Statuses are defined in [README.md](README.md).
 | Three zones, one item per zone | `Scene/EditorScene+Bar.swift`, `UI/AppBar.swift` | `oni-app/ui/toolbar.slint` | done | | `oni-app/tests/design_system.rs::screens_use_only_the_design_system` (tokens only) |
 | Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Drawn, unwired | no check |
 | Undo, redo keys with their state | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` | done | Editor surface only | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
-| Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Drawn, unwired; core done | no check |
+| Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` `act` | done | Through the same gestures as the menu, the confirm sheet included | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Correction key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
 | RESET SCAN | `Scene/EditorScene+Bar.swift` | `app.rs:1117` | done | | `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
 | Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | Filter label live; the rest unwired | no check |
@@ -159,42 +159,42 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Open Folder… ⌘O | `UI/EditorCommands.swift:109` | `app.slint:40`, `app.rs` key | missing | "not in this build" | no check |
-| Gallery / Editor ⌘G | `UI/EditorCommands.swift:113` | `app.slint:43`, `app.rs:1118` | done | | no check |
+| Open Folder… ⌘O | `UI/EditorCommands.swift:109` | `app.slint` menu bar, `app.rs` `pick`, `system.rs` `pick_folder` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
+| Gallery / Editor ⌘G | `UI/EditorCommands.swift:113` | `app.slint` menu bar, `app.rs` `toggle_mode` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Export… ⌘E | `UI/EditorCommands.swift:116` | `app.slint:44` | missing | Title lacks the ellipsis and the count | no check |
-| Recheck Originals ⌘R | `UI/EditorCommands.swift:120` | `app.slint:46` | missing | | no check |
-| Read the Folders Again | `UI/EditorCommands.swift:123` | `app.slint:47` | missing | | no check |
-| Show the Selected Photo | `UI/EditorCommands.swift:125` | `app.slint:48` | missing | | no check |
-| Move to ONI Trash ⌘⌫ | `UI/EditorCommands.swift:128` | `app.slint:50`, `oni-core/src/store.rs:704` | partial | Core only | `oni-core/tests/roll8.rs::the_trash_marks_the_sidecar_and_never_moves_the_file` (core only) |
-| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.slint:51`, `store.rs:708` | partial | Core only | no check |
+| Recheck Originals ⌘R | `UI/EditorCommands.swift:120` | `app.slint` menu bar, `app.rs` `read_again` | done | The folder read again, what could not be read retried | no check |
+| Read the Folders Again | `UI/EditorCommands.swift:123` | `app.slint` menu bar, `app.rs` `read_again` | done | | no check |
+| Show the Selected Photo | `UI/EditorCommands.swift:125` | `app.rs` `show_selected`, `gallery.rs` `reveal` | done | | `oni-app/src/gallery.rs::reveal_moves_the_least_to_show_a_cell_and_not_at_all_when_it_shows` |
+| Move to ONI Trash ⌘⌫ | `UI/EditorCommands.swift:128` | `app.rs` `move_to_trash`, `oni-core/src/store.rs` `move_to_trash` | done | Marked in the sidecar, the file untouched, one gallery step | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.slint` menu bar | partial | Title and shortcut as Swift; no ONI Trash view to select in, so the item stays dark and ⌘Z restores | no check |
 | Zoom Out ⌘−, Zoom In ⌘+ | `UI/EditorCommands.swift:138-142` | `app.rs` `act`, `step_zoom` | done | The editor walks the zoom ladder, the gallery its columns | `oni-app/src/viewport.rs::the_ladder_steps_strictly_and_fit_is_its_floor`, `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` |
-| Compare Before/After | `UI/EditorCommands.swift:145` | `app.slint` "Compare", `app.rs` `act` | partial | Works; the title reads "Compare", Swift's "Compare Before/After" | `ONI_BENCH=compare` |
-| Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint:66` "Hide Library" | partial | Works; title differs, no shortcut | no check |
-| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint:67` | partial | Works; title differs, no shortcut | no check |
-| Crop and Straighten ⌘K | `UI/EditorCommands.swift:153` | `app.slint:68` | missing | | no check |
-| Remove Dust & Scratches | `UI/EditorCommands.swift:156` | `app.slint` "De-dust", `app.rs` `act` | partial | Enters and leaves De-dust; the title reads "De-dust" | `ONI_BENCH=dedust` |
-| Bigger Brush ], Smaller Brush [ | `UI/EditorCommands.swift:159-163` | `app.slint:71-72` | missing | Title carries the key as text | no check |
-| Mirror Horizontally ⇧⌘M | `UI/EditorCommands.swift:166` | `app.slint:73` "Mirror" | missing | | no check |
-| Mute Key Clicks | `UI/EditorCommands.swift` `soundTitle` | none | missing | | no check |
-| Show What This Screen Cannot Show ⇧⌘Y | `UI/EditorCommands.swift:171` | `app.slint` "Screen Gamut", `app.rs` `act`, ⇧⌘Y in `key` | partial | Works; the title reads "Screen Gamut" | `oni-app/src/display.rs::the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does` |
-| Labels: None 0, Bronze 1, Silver 2, Gold 3 | `UI/EditorCommands.swift:180-183` | `app.slint:81-84`, `app.rs` `label` | done | | `oni-settings/tests/real_files.rs::label_trash_and_draft_touch_nothing_else_and_keep_the_revision` (sidecar only) |
-| Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint:86` "Cycle Filter" | missing | | no check |
-| New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint:90` | missing | | no check |
+| Compare Before/After | `UI/EditorCommands.swift:145` | `app.slint` menu bar, `app.rs` `toggle_compare` | done | Title follows the split as Swift's | `ONI_BENCH=compare` |
+| Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint` menu bar, `app.rs` `act` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint` menu bar, `app.rs` `act` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Crop and Straighten ⌘K | `UI/EditorCommands.swift:153` | `app.slint` menu bar, `app.rs` `toggle_framing` | done | Into the Crop tab, and out to the panel the hand was in | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Remove Dust & Scratches | `UI/EditorCommands.swift:156` | `app.slint` menu bar, `app.rs` `toggle_correcting` | done | "Done Correcting" while in De-dust | `ONI_BENCH=dedust` |
+| Bigger Brush ], Smaller Brush [ | `UI/EditorCommands.swift:159-163` | `app.slint` menu bar | done | Live only in De-dust; elsewhere the bracket is not claimed | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Mirror Horizontally ⇧⌘M | `UI/EditorCommands.swift:166` | `app.slint` menu bar, `app.rs` `framing_act` | done | "Unmirror" once mirrored | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Mute Key Clicks | `UI/EditorCommands.swift` `soundTitle` | `app.slint` menu bar, `app.rs` `act` | partial | Title and state toggle; this build plays no key clicks | no check |
+| Show What This Screen Cannot Show ⇧⌘Y | `UI/EditorCommands.swift:171` | `app.slint` menu bar, `app.rs` `toggle_screen_gamut` | done | "Hide What This Screen Cannot Show" while shown | `oni-app/src/display.rs::the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does` |
+| Labels: None 0, Bronze 1, Silver 2, Gold 3 | `UI/EditorCommands.swift:180-183` | `app.slint:81-84`, `app.rs` `label` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
+| Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint` menu bar, `app.rs` `cycle_filter` | done | Exactly one medal, never a tier above | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint` menu bar, `app.rs` `new_roll`, `oni-library/src/roll_folder.rs` | done | The folder takes the earliest capture's date; the heading is not offered for renaming | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app.slint:91` | missing | | no check |
 | New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint:93` | missing | | no check |
 | Prepare the Roll… | `UI/EditorCommands.swift:206` | `app.slint:94` | missing | | no check |
 | Reset to Default… | `UI/EditorCommands.swift:208` | `app.slint:95`, `oni-core/src/store.rs:602` | partial | Core only | no check |
-| Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint:99`, `store.rs:496` | partial | Core only, in-memory board | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` (core only) |
-| Paste Settings ⇧⌘V | `UI/EditorCommands.swift:216` | `app.slint:100`, `store.rs:526` | partial | Core only | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` (core only) |
-| Paste to Roll (no shortcut) | `UI/EditorCommands.swift:220` | `app.slint:101`, `store.rs:535` | partial | Core only | `oni-core/tests/roll8.rs::paste_to_roll_is_one_editor_step_over_the_whole_roll` (core only) |
+| Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint` menu bar, `oni-core/src/store.rs` `copy_settings` | partial | In-memory board, as before | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Paste Settings ⇧⌘V | `UI/EditorCommands.swift:216` | `app.slint` menu bar, `app.rs` `paste` | done | Another roll's look asks first, as Swift's sheet | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Paste to Roll (no shortcut) | `UI/EditorCommands.swift:220` | `app.slint` menu bar, `app.rs` `paste_to_roll` | done | Title counts the roll's reach | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Save as, Edit, Import Presets, Paste Preset Code, Show Presets Folder | `UI/EditorCommands.swift:223-231` | `app.slint:103-107` | missing | | no check |
 | Preset list with its parameters | `UI/EditorCommands.swift:238` | none | missing | | no check |
 | Delete a Preset submenu | `UI/EditorCommands.swift:245` | none | missing | | no check |
-| Undo ⌘Z, Redo ⇧⌘Z with action names | `UI/EditorCommands.swift:255-259` | `app.slint:55-56` | partial | Shortcuts work; titles never name the action | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
-| Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint:58` | partial | Menu works; no shortcut | no check |
+| Undo ⌘Z, Redo ⇧⌘Z with action names | `UI/EditorCommands.swift:255-259` | `app.slint` menu bar, `app.rs` `publish_menus` | done | The gallery names its step; the editor says Undo and Redo, as Swift's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint` menu bar, `app.rs` `reset_all` | done | One gallery step over the targets | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint:111-115` | missing | | no check |
 | Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
-| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | undo, redo only | partial | | no check |
+| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules; an item whose gesture this build lacks stays dark | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
 
 ## Keys outside the menus
@@ -214,8 +214,8 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Editor history, coalescing 0.4 s, 200 steps | `Pipeline/History.swift:6-8` | `oni-core/src/history.rs:8-9` | done | | `oni-core/src/history.rs::a_drag_within_the_window_is_one_step`, `the_stack_holds_its_limit` |
-| Gallery history, 100 steps | `Pipeline/GalleryHistory.swift:28` | `oni-library/src/gallery_history.rs:39` | partial | Model done; bar and menu read the editor's only | `oni-library/src/gallery_history.rs::the_stack_keeps_its_last_hundred_steps` (model only) |
-| Undo title names the action | `Scene/EditorScene+History.swift` | `oni-app/ui/toolbar.slint:14` `undo-title` | partial | Property never set: always "Undo" | no check |
+| Gallery history, 100 steps | `Pipeline/GalleryHistory.swift:28` | `oni-library/src/gallery_history.rs`, `app.rs` `gallery_step` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Undo title names the action | `Scene/EditorScene+History.swift` | `app.rs` `publish_menus`, `toolbar.slint` `undo-title` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | A roll write is one step | `Scene/EditorScene+RollSettings.swift` | `oni-core/tests/roll8.rs` | done | | `oni-core/tests/roll8.rs::a_drag_is_one_step_and_one_roll_write` |
-| Sidecar written 400 ms after the last notch | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs:34` | partial | App waits 500 ms; `oni-settings/src/sidecar.rs:65` has 400 unused | `oni-core/src/store.rs::an_untouched_frame_gains_no_sidecar_and_a_rested_edit_writes_one` (no delay asserted) |
+| Sidecar written 400 ms after the last notch | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs` `WRITE_DELAY`, `oni-settings/src/sidecar.rs` `WRITE_DELAY` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Flush on quit and window close | `Pipeline/QuitGuard` | none | missing | Pending writes are lost on close | no check |

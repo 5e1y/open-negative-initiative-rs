@@ -3,7 +3,7 @@
 
 use crate::fields::{Block, Field};
 use oni_core::{Command, EditorStore, Surface};
-use oni_settings::{ConversionMode, Face, PipelineSettings};
+use oni_settings::{Face, PipelineSettings};
 
 pub trait Store {
     /// Opens a frame on its sidecar, writing the previous one first.
@@ -113,15 +113,17 @@ impl Store for EditorStore {
     }
 }
 
-/// What a block's reset key lands on: `Parameters.rest(for:)`, the frame's own decode kept.
+/// What a block's reset key lands on: `Parameters.rest(for:)` in the frame's own mode and decode.
 pub fn rest(settings: &PipelineSettings) -> PipelineSettings {
-    PipelineSettings::rest(ConversionMode::Negative, settings.decoded_from_mosaic)
+    PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic)
 }
 
-/// Whether the block's reset key shows: one of its sliders is off its rest.
+/// Whether the block's reset key shows: its value differs from what its reset writes.
 pub fn is_modified(settings: &PipelineSettings, block: Block) -> bool {
     let rest = rest(settings);
-    block.fields().iter().any(|f| (f.knob().get(settings) - f.knob().get(&rest)).abs() > 1e-6)
+    let off = block.fields().iter().any(|f| (f.knob().get(settings) - f.knob().get(&rest)).abs() > 1e-6);
+    // `SettingsPane.dyes`: the block's value is the dose, the family and the hand's mark together.
+    off || (block == Block::DyeSeparation && (settings.separation_family.is_some() || settings.separation_by_hand))
 }
 
 /// The block's sliders at their rest, as one write so the reset is one undo step.
@@ -131,6 +133,12 @@ pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
     for f in block.fields() {
         next = f.knob().set(&next, f.knob().get(&rest));
     }
+    if block == Block::DyeSeparation {
+        // `Dyes(dose: Separation.base, family: nil, byHand: false)`, which the dose's knob alone would mark by hand.
+        next.separation = rest.separation;
+        next.separation_family = None;
+        next.separation_by_hand = false;
+    }
     Command::Write(Box::new(next))
 }
 
@@ -138,6 +146,8 @@ pub fn reset(settings: &PipelineSettings, block: Block) -> Command {
 pub(crate) mod tests {
     use super::*;
     use oni_core::Archive;
+    use oni_settings::ConversionMode;
+    use oni_settings::blocks::{SeparationFamily, separation};
     use std::path::{Path, PathBuf};
 
     /// A store opened on a frame with no sidecar in a fresh folder, read as a RAW mosaic.
@@ -186,6 +196,57 @@ pub(crate) mod tests {
         s.apply(Command::Undo);
         assert_eq!(s.get(Field::Contrast), 0.5, "the reset is one step, undone whole");
         assert_eq!(s.get(Field::Vignette), -1.0);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_block_reset_lands_on_the_rest_of_the_frames_own_mode() {
+        let (mut s, dir) = fresh("mode-rest");
+        s.apply(Command::Mode(ConversionMode::Positive));
+        s.apply(Command::Set { knob: Field::Exposure.knob(), value: 0.7 });
+        s.apply(Command::Set { knob: Field::DensityCeiling.knob(), value: 2.9 });
+        let command = reset(s.settings(), Block::Lighting);
+        s.apply(command);
+        let command = reset(s.settings(), Block::DensityCeiling);
+        s.apply(command);
+        let slide = PipelineSettings::rest(ConversionMode::Positive, true);
+        assert_eq!(s.get(Field::Exposure), Field::Exposure.knob().get(&slide));
+        assert_eq!(s.get(Field::DensityCeiling), Field::DensityCeiling.knob().get(&slide));
+        assert!(!is_modified(s.settings(), Block::Lighting) && !is_modified(s.settings(), Block::DensityCeiling));
+        // Twin: a negative's rest sits elsewhere on both, so a reset to it would fail above.
+        let negative = PipelineSettings::rest(ConversionMode::Negative, true);
+        assert_ne!(Field::Exposure.knob().get(&negative), Field::Exposure.knob().get(&slide));
+        assert_ne!(Field::DensityCeiling.knob().get(&negative), Field::DensityCeiling.knob().get(&slide));
+        assert!(is_modified(&negative_on(s.settings()), Block::Lighting), "a negative's rest reads as moved on a slide");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The settings with a negative's Lighting and ceiling, everything else kept.
+    fn negative_on(settings: &PipelineSettings) -> PipelineSettings {
+        let negative = PipelineSettings::rest(ConversionMode::Negative, true);
+        PipelineSettings { print: negative.print, density_ceiling: negative.density_ceiling, ..settings.clone() }
+    }
+
+    #[test]
+    fn the_dye_separation_reset_clears_the_dose_the_family_and_the_hand() {
+        let (mut s, dir) = fresh("dyes");
+        let mut picked = s.settings().clone();
+        picked.separation_family = Some(SeparationFamily::KodakC41);
+        s.apply(Command::Write(Box::new(picked)));
+        // The family alone, the dose at its base, still shows the block's reset key.
+        assert_eq!(s.get(Field::DyeSeparation), separation::BASE);
+        assert!(is_modified(s.settings(), Block::DyeSeparation));
+        s.apply(Command::Set { knob: Field::DyeSeparation.knob(), value: 1.1 });
+        assert!(s.settings().separation_by_hand);
+        let command = reset(s.settings(), Block::DyeSeparation);
+        s.apply(command);
+        let after = s.settings();
+        assert_eq!((after.separation, after.separation_family, after.separation_by_hand), (separation::BASE, None, false));
+        assert!(!is_modified(after, Block::DyeSeparation));
+        // Twin: the dose's knob alone lands on the base yet marks it by hand and keeps the family.
+        let by_knob = Field::DyeSeparation.knob().set(&PipelineSettings { separation_family: Some(SeparationFamily::KodakC41), ..after.clone() }, separation::BASE);
+        assert!(by_knob.separation_by_hand && by_knob.separation_family.is_some());
+        assert!(is_modified(&by_knob, Block::DyeSeparation));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

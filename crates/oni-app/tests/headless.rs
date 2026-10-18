@@ -73,7 +73,9 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     println!("rendering on {}", engine.lock().unwrap().adapter());
-    let options = Options { support: folder.parent().unwrap().join("Support"), ..Options::default() };
+    // The app's own folders in the mirror's, so a run never reaches the person's index or thumbnails.
+    let (support, caches) = (folder.parent().unwrap().join("Support"), folder.parent().unwrap().join("Caches"));
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
@@ -81,6 +83,11 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     shell.open_folder(&folder);
     let ctl = shell.ctl.clone();
     let w: &MainWindow = &shell.window;
+    // A folder opens on the gallery and nothing in the editor, until a tile is opened.
+    rig.until("the library read", Duration::from_secs(120), || ctl.state.borrow().read_done());
+    assert!(w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none());
+    w.global::<Library>().invoke_tile_opened(0);
+    assert!(!w.global::<App>().get_gallery());
 
     // The editor on the first frame, once its negative is decoded and rendered.
     rig.until("the first render", Duration::from_secs(300), || ctl.state.borrow().renders() >= 1);

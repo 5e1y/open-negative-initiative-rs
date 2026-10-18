@@ -39,7 +39,7 @@ fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &std::path::Path| true));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support: support.clone(), ..Options::default() };
+    let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
@@ -47,6 +47,8 @@ fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     shell.open_folder(&folder);
     let ctl = shell.ctl.clone();
     let w = &shell.window;
+    rig.until("the library read", Duration::from_secs(20), || ctl.state.borrow().read_done());
+    w.global::<oni_app::Library>().invoke_tile_opened(0);
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("A.NEF"));
     assert!(ctl.state.borrow().phone().is_none(), "nothing listens before the menu is used");
 

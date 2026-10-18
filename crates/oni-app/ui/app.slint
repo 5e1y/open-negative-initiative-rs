@@ -1,5 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
@@ -102,77 +102,175 @@ export global App {
     callback menu(string);
 }
 
+// `EditorMenus`'s titles, which change with the scene.
+export struct MenuTitles {
+    mode: string,
+    export: string,
+    remove: string,
+    restore: string,
+    paste: string,
+    paste-to-roll: string,
+    undo: string,
+    redo: string,
+    smaller: string,
+    larger: string,
+    sound: string,
+    compare: string,
+    library: string,
+    panel: string,
+    correcting: string,
+    mirror: string,
+    filter: string,
+    roll: string,
+    ungroup: string,
+    sheet: string,
+    screen-gamut: string,
+}
+
+// `EditorMenus.live`: the items a gesture can reach now; a gesture this build lacks stays dark.
+export struct MenuLive {
+    open: bool,
+    toggle-mode: bool,
+    export: bool,
+    recheck: bool,
+    read-folders: bool,
+    show-selected: bool,
+    remove: bool,
+    restore: bool,
+    undo: bool,
+    redo: bool,
+    reset: bool,
+    smaller: bool,
+    larger: bool,
+    compare: bool,
+    hide-library: bool,
+    hide-panel: bool,
+    framing: bool,
+    correction: bool,
+    bigger-brush: bool,
+    smaller-brush: bool,
+    mirror: bool,
+    screen-gamut: bool,
+    emulator: bool,
+    medal: bool,
+    cycle-filter: bool,
+    new-roll: bool,
+    ungroup: bool,
+    contact-sheet: bool,
+    measure-roll: bool,
+    reset-to-default: bool,
+    copy-settings: bool,
+    paste-settings: bool,
+    paste-to-roll: bool,
+}
+
+export global Menus {
+    in property <MenuTitles> titles: {
+        mode: "Gallery", export: "Export…", remove: "Move to ONI Trash", restore: "Restore",
+        paste: "Paste Settings", paste-to-roll: "Paste to Roll", undo: "Undo", redo: "Redo",
+        smaller: "Zoom Out", larger: "Zoom In", sound: "Mute Key Clicks", compare: "Compare Before/After",
+        library: "Hide the Library", panel: "Hide the Panel", correcting: "Remove Dust & Scratches",
+        mirror: "Mirror Horizontally", filter: "Filter: All", roll: "New Roll from Selection",
+        ungroup: "Ungroup", sheet: "New Contact Sheet", screen-gamut: "Show What This Screen Cannot Show",
+    };
+    in property <MenuLive> live: { open: true, cycle-filter: true };
+}
+
+// `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
+export global Confirm {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    in property <string> key;
+    callback answered(bool);
+}
+
+component ConfirmSheet inherits Sheet {
+    dismissed => { Confirm.answered(false); }
+    Label { role: TextRole.section; text: Confirm.title; }
+    if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: end;
+        ButtonGroup {
+            Button { text: "CANCEL"; clicked => { Confirm.answered(false); } }
+            Button { text: Confirm.key; kind: ButtonKind.accent; clicked => { Confirm.answered(true); } }
+        }
+    }
+}
+
 export component MainWindow inherits AppWindow {
     title: "Open Negative Initiative";
     out property <bool> keys-focused: keys.has-focus;
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
 
+    // `EditorCommands`: Swift's titles, shortcuts and live rules, read from `Menus`, which Rust fills.
+    // Bare keys are live only while no field holds the keyboard, or the menu would take the digit first.
     MenuBar {
         Menu {
             title: "File";
-            MenuItem { title: "Open Folder…"; activated => { App.menu("open"); } }
+            MenuItem { title: "Open Folder…"; shortcut: @keys(Control + "o"); enabled: Menus.live.open; activated => { App.menu("open"); } }
             MenuItem { title: "Pair Phone…"; activated => { App.menu("pair-phone"); } }
             MenuSeparator { }
-            MenuItem { title: App.gallery ? "Editor" : "Gallery"; activated => { App.menu("toggle-mode"); } }
-            MenuItem { title: "Export"; activated => { App.menu("export"); } }
+            MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu("toggle-mode"); } }
+            MenuItem { title: Menus.titles.export; shortcut: @keys(Control + "e"); enabled: Menus.live.export; activated => { App.menu("export"); } }
             MenuSeparator { }
-            MenuItem { title: "Recheck Originals"; activated => { App.menu("recheck"); } }
-            MenuItem { title: "Read the Folders Again"; activated => { App.menu("read-folders"); } }
-            MenuItem { title: "Show the Selected Photo"; activated => { App.menu("show-selected"); } }
+            MenuItem { title: "Recheck Originals"; shortcut: @keys(Control + "r"); enabled: Menus.live.recheck; activated => { App.menu("recheck"); } }
+            MenuItem { title: "Read the Folders Again"; enabled: Menus.live.read-folders; activated => { App.menu("read-folders"); } }
+            MenuItem { title: "Show the Selected Photo"; enabled: Menus.live.show-selected; activated => { App.menu("show-selected"); } }
             MenuSeparator { }
-            MenuItem { title: "Move to ONI Trash"; activated => { App.menu("remove"); } }
-            MenuItem { title: "Restore"; activated => { App.menu("restore"); } }
+            MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.has-focus; activated => { App.menu("remove"); } }
+            MenuItem { title: Menus.titles.restore; shortcut: @keys(Control + Shift + Backspace); enabled: Menus.live.restore && keys.has-focus; activated => { App.menu("restore"); } }
         }
         Menu {
             title: "Edit";
-            MenuItem { title: Bar.undo-title; enabled: Bar.can-undo; activated => { App.menu("undo"); } }
-            MenuItem { title: Bar.redo-title; enabled: Bar.can-redo; activated => { App.menu("redo"); } }
+            MenuItem { title: Menus.titles.undo; shortcut: @keys(Control + "z"); enabled: Menus.live.undo; activated => { App.menu("undo"); } }
+            MenuItem { title: Menus.titles.redo; shortcut: @keys(Control + Shift + "z"); enabled: Menus.live.redo; activated => { App.menu("redo"); } }
             MenuSeparator { }
-            MenuItem { title: "Reset to Imported State"; activated => { App.menu("reset"); } }
+            MenuItem { title: "Reset to Imported State"; shortcut: @keys(Control + Shift + "r"); enabled: Menus.live.reset; activated => { App.menu("reset"); } }
         }
         Menu {
             title: "View";
-            MenuItem { title: "Zoom Out"; activated => { App.menu("smaller"); } }
-            MenuItem { title: "Zoom In"; activated => { App.menu("larger"); } }
+            MenuItem { title: Menus.titles.smaller; shortcut: @keys(Control + "-"); enabled: Menus.live.smaller; activated => { App.menu("smaller"); } }
+            MenuItem { title: Menus.titles.larger; shortcut: @keys(Control + Shift? + "+"); enabled: Menus.live.larger; activated => { App.menu("larger"); } }
             MenuSeparator { }
-            MenuItem { title: "Compare"; activated => { App.menu("compare"); } }
-            MenuItem { title: App.library-hidden ? "Show Library" : "Hide Library"; activated => { App.menu("hide-library"); } }
-            MenuItem { title: App.panel-hidden ? "Show Panel" : "Hide Panel"; activated => { App.menu("hide-panel"); } }
-            MenuItem { title: "Crop and Straighten"; activated => { App.menu("framing"); } }
-            MenuItem { title: "De-dust"; activated => { App.menu("correction"); } }
-            // Bare keys stay out of `shortcut`: the key monitor routes them, so a field being edited keeps them.
-            MenuItem { title: "Bigger Brush    ]"; activated => { App.menu("bigger-brush"); } }
-            MenuItem { title: "Smaller Brush    ["; activated => { App.menu("smaller-brush"); } }
-            MenuItem { title: "Mirror"; activated => { App.menu("mirror"); } }
+            MenuItem { title: Menus.titles.compare; enabled: Menus.live.compare; activated => { App.menu("compare"); } }
+            MenuItem { title: Menus.titles.library; shortcut: @keys(Control + Alt + "["); enabled: Menus.live.hide-library; activated => { App.menu("hide-library"); } }
+            MenuItem { title: Menus.titles.panel; shortcut: @keys(Control + Alt + "]"); enabled: Menus.live.hide-panel; activated => { App.menu("hide-panel"); } }
+            MenuItem { title: "Crop and Straighten"; shortcut: @keys(Control + "k"); enabled: Menus.live.framing; activated => { App.menu("framing"); } }
+            MenuItem { title: Menus.titles.correcting; enabled: Menus.live.correction; activated => { App.menu("correction"); } }
+            MenuItem { title: "Bigger Brush"; shortcut: @keys("]"); enabled: Menus.live.bigger-brush && keys.has-focus; activated => { App.menu("bigger-brush"); } }
+            MenuItem { title: "Smaller Brush"; shortcut: @keys("["); enabled: Menus.live.smaller-brush && keys.has-focus; activated => { App.menu("smaller-brush"); } }
+            MenuItem { title: Menus.titles.mirror; shortcut: @keys(Control + Shift + "m"); enabled: Menus.live.mirror; activated => { App.menu("mirror"); } }
             MenuSeparator { }
-            MenuItem { title: "Screen Gamut"; activated => { App.menu("screen-gamut"); } }
+            MenuItem { title: Menus.titles.sound; activated => { App.menu("toggle-sound"); } }
+            MenuItem { title: Menus.titles.screen-gamut; shortcut: @keys(Control + Shift + "y"); enabled: Menus.live.screen-gamut; activated => { App.menu("screen-gamut"); } }
             MenuSeparator { }
-            MenuItem { title: "Scanner Emulator"; enabled: Bar.has-photo && Bar.editing; activated => { App.menu("emulator"); } }
+            MenuItem { title: "Scanner Emulator"; enabled: Menus.live.emulator; activated => { App.menu("emulator"); } }
         }
         Menu {
             title: "Labels";
-            MenuItem { title: "None    0"; activated => { App.menu("medal-0"); } }
-            MenuItem { title: "Bronze    1"; activated => { App.menu("medal-1"); } }
-            MenuItem { title: "Silver    2"; activated => { App.menu("medal-2"); } }
-            MenuItem { title: "Gold    3"; activated => { App.menu("medal-3"); } }
+            MenuItem { title: "None"; shortcut: @keys("0"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-0"); } }
+            MenuItem { title: "Bronze"; shortcut: @keys("1"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-1"); } }
+            MenuItem { title: "Silver"; shortcut: @keys("2"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-2"); } }
+            MenuItem { title: "Gold"; shortcut: @keys("3"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-3"); } }
             MenuSeparator { }
-            MenuItem { title: "Cycle Filter"; activated => { App.menu("cycle-filter"); } }
+            MenuItem { title: Menus.titles.filter; shortcut: @keys(Control + "l"); enabled: Menus.live.cycle-filter; activated => { App.menu("cycle-filter"); } }
         }
         Menu {
             title: "Rolls";
-            MenuItem { title: "New Roll"; activated => { App.menu("new-roll"); } }
-            MenuItem { title: "Ungroup"; activated => { App.menu("ungroup"); } }
+            MenuItem { title: Menus.titles.roll; shortcut: @keys(Control + Shift + "g"); enabled: Menus.live.new-roll; activated => { App.menu("new-roll"); } }
+            MenuItem { title: Menus.titles.ungroup; shortcut: @keys(Control + Shift + Alt + "g"); enabled: Menus.live.ungroup; activated => { App.menu("ungroup"); } }
             MenuSeparator { }
-            MenuItem { title: "Make a Contact Sheet"; activated => { App.menu("contact-sheet"); } }
-            MenuItem { title: "Prepare the Roll…"; activated => { App.menu("prepare-roll"); } }
-            MenuItem { title: "Reset to Default…"; activated => { App.menu("reset-to-default"); } }
+            MenuItem { title: Menus.titles.sheet; enabled: Menus.live.contact-sheet; activated => { App.menu("contact-sheet"); } }
+            MenuItem { title: "Prepare the Roll…"; enabled: Menus.live.measure-roll; activated => { App.menu("prepare-roll"); } }
+            MenuItem { title: "Reset to Default…"; enabled: Menus.live.reset-to-default; activated => { App.menu("reset-to-default"); } }
         }
         Menu {
             title: "Settings";
-            MenuItem { title: "Copy Settings"; activated => { App.menu("copy"); } }
-            MenuItem { title: "Paste Settings"; activated => { App.menu("paste"); } }
-            MenuItem { title: "Paste to the Roll"; activated => { App.menu("paste-to-roll"); } }
+            MenuItem { title: "Copy Settings"; shortcut: @keys(Control + Shift + "c"); enabled: Menus.live.copy-settings; activated => { App.menu("copy"); } }
+            MenuItem { title: Menus.titles.paste; shortcut: @keys(Control + Shift + "v"); enabled: Menus.live.paste-settings; activated => { App.menu("paste"); } }
+            MenuItem { title: Menus.titles.paste-to-roll; enabled: Menus.live.paste-to-roll; activated => { App.menu("paste-to-roll"); } }
             MenuSeparator { }
             MenuItem { title: "Save as Preset…"; activated => { App.menu("save-preset"); } }
             MenuItem { title: "Edit Presets…"; activated => { App.menu("edit-presets"); } }
@@ -396,6 +494,13 @@ export component MainWindow inherits AppWindow {
                 if App.gallery: Info { }
             }
         }
+    }
+
+    if Confirm.shown: ConfirmSheet {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
     }
 
     if Pairing.shown: PairingSheet {

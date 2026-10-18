@@ -1,4 +1,4 @@
-//! `oni [folder]` opens a folder of scans, roll #8 by default; `--catalogue` or `ONI_CATALOGUE=1` shows the
+//! `oni [folder or file]` opens a folder of scans, else the one last opened, else roll #8; `--catalogue` or `ONI_CATALOGUE=1` shows the
 //! design system alone; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
 
 use oni_app::app::{Options, Shell};
@@ -52,7 +52,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         e.caches = Some(oni_app::patches::caches());
     }
     let gate = engine.clone();
-    let folder = std::env::args_os().nth(1).map(PathBuf::from).unwrap_or_else(|| oni_fixtures::folder(oni_fixtures::RAW_DIR));
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, canvas, ..Options::default() })?;
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
@@ -74,8 +73,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         EventResult::Propagate
     });
-    shell.open_folder(&folder);
+    match std::env::args_os().nth(1).map(PathBuf::from) {
+        Some(path) => shell.add(&path),
+        None if shell.open_remembered() => {}
+        None => shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR)),
+    }
     if let Some(mode) = bench::requested() {
+        shell.open_first_when_read();
         bench::start(&shell.ctl, mode, |report| {
             timing::line(&report);
             let _ = slint::quit_event_loop();

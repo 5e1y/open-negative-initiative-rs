@@ -5,6 +5,8 @@ use crate::display::{self, Params, Screen};
 use crate::fields::{Block, Field};
 use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
+use crate::preferences::{self, Preferences};
+use crate::thumbnails::{self, Memory};
 use crate::render::{self, Done, Histogram, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
@@ -12,27 +14,32 @@ use oni_settings::cg::Rect as Fraction;
 use oni_settings::frame::Geometry;
 use oni_settings::geometry::{self as geom, Framing as Remembered};
 use crate::phone::{self, Phone};
-use crate::preferences::{self, Preferences};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
-use crate::{App, Bar, Canvas, Heading, Mark, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
-use oni_core::Command;
+use crate::{App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
+use oni_core::{Command, PasteCheck, Surface};
+use oni_settings::ConversionMode;
 use oni_core::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Spring;
-use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
+use crate::system;
+use crate::track::{self, Hand, Offer, TRACKPAD_TRAVEL};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap};
+use oni_library::gallery_history::Move;
+use oni_library::index::LibraryIndex;
+use oni_library::roots::Survey;
+use oni_settings::Medal;
+use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
 use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-/// Long side of a gallery thumbnail, in pixels: a 6-column tile at 2x on a wide window.
-pub const THUMB_SIDE: usize = 480;
+/// Long side of a gallery thumbnail, in pixels: `Thumbnails.side`.
+pub const THUMB_SIDE: usize = thumbnails::SIDE;
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
@@ -41,26 +48,62 @@ const BADGE_MARGIN: f64 = 32.0;
 const BADGE_RISE: f64 = 16.0;
 /// `DSScroll.idleWindow`: a pause this long ends a straightening gesture.
 const STRAIGHTEN_IDLE: Duration = Duration::from_millis(160);
-/// `sidecar.writeDelay`: the hand rests this long before the sidecar is written.
-const WRITE_DELAY: Duration = Duration::from_millis(500);
+/// `Sidecar.writeDelay`: the hand rests this long before the sidecar is written.
+pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 /// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
+/// The folder picker `Open Folder…` shows; a check hands its own.
+pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 
 pub struct Options {
     pub screen: Screen,
     /// The device Slint draws the window with, on which the display kernel writes the canvas;
     /// none on the software renderer.
     pub canvas: Option<(wgpu::Device, wgpu::Queue)>,
-    /// Where the phone link keeps its key and the phones it trusts.
+    /// `AppFolders.support`: the phone link's keys, the preferences, the thumbnails.
     pub support: PathBuf,
+    /// `AppFolders.caches`: the index, which the system may purge.
+    pub caches: PathBuf,
+    pub picker: Picker,
 }
+
+/// `EditorScene.open`'s panel message.
+pub const PICKER_MESSAGE: &str = "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved.";
 
 impl Default for Options {
     fn default() -> Self {
-        Options { screen: Screen::Srgb, canvas: None, support: timing::support() }
+        Options {
+            screen: Screen::Srgb,
+            canvas: None,
+            support: timing::support(),
+            caches: system::caches(),
+            picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
+        }
     }
+}
+
+/// The thumbnails pass and the edits' redraws, one render at a time for the app, a redraw first.
+#[derive(Default)]
+struct Paint {
+    /// An edit's redraws by path, with the fingerprint the index knows.
+    redraws: VecDeque<(String, Option<String>)>,
+    /// The pass a folder asked last, by generation; it replaces the one running.
+    pass: Option<(u64, Vec<(String, String)>)>,
+}
+
+type Painter = Arc<(Mutex<Paint>, Condvar)>;
+
+/// The Crop tab, which ⌘K opens.
+const CROP_TAB: i32 = 1;
+/// `pasteSettings`'s dialog when a look crosses rolls.
+const ANOTHER_ROLL: (&str, &str) = ("Another Roll", "You are trying to apply settings from one roll to another: results may vary.");
+
+/// A gesture held until the confirm sheet's key answers.
+enum Pending {
+    Paste(Vec<String>),
+    PasteToRoll,
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -125,7 +168,40 @@ pub struct State {
     archive: Option<Archive>,
     /// Every photo's path in gallery order.
     order: Vec<String>,
-    open: Option<usize>,
+    /// Each photo's fingerprint, which names its thumbnail's file.
+    fingerprints: HashMap<String, String>,
+    /// `opened`: the folder the archive shows, remembered under `openedFolder`.
+    opened: Option<String>,
+    preferences: Preferences,
+    /// The interface thread's own connection to the index; a read opens its own.
+    index: Option<LibraryIndex>,
+    index_path: PathBuf,
+    survey: Survey,
+    /// Bumped by every folder opened, which stops the previous folder's read and pass.
+    generation: Arc<AtomicU64>,
+    read_done: bool,
+    /// A file to open in the editor once its folder is read, as a dropped file is.
+    opening: Option<String>,
+    filter: Option<Medal>,
+    painter: Painter,
+    disk: mpsc::Sender<String>,
+    /// Thumbnails asked of the folder and not landed yet.
+    asked: HashSet<String>,
+    /// The pass's progress: photos settled, of those the folder holds.
+    painted: (usize, usize),
+    /// The pass's photos not in the folder, drawn of those it found absent: the status line.
+    creating: (usize, usize),
+    /// Fingerprints a render could not draw, until an edit or the next pass.
+    failed: HashSet<String>,
+    /// Redraws asked and not landed.
+    drawing: usize,
+    /// Every row the index shows under the opened folder, before the filter.
+    rows: Vec<oni_library::Entry>,
+    /// The photo the editor holds, which need not be under the opened folder.
+    open: Option<String>,
+    /// What a confirm sheet goes ahead with once its key is pressed.
+    pending: Option<Pending>,
+    muted: bool,
     selection: BTreeSet<usize>,
     anchor: Option<usize>,
     columns: usize,
@@ -133,8 +209,7 @@ pub struct State {
     grid: (f32, f32),
     layout: Layout,
     visible: std::ops::Range<usize>,
-    thumbs: HashMap<String, Image>,
-    loaded: usize,
+    thumbs: Memory<Image>,
     /// The open frame's preview, which the canvas renders; the previews kept besides it.
     negative: Option<(String, Arc<Negative>)>,
     previews: Arc<Mutex<Previews>>,
@@ -204,6 +279,7 @@ pub struct State {
     befores: usize,
     support: PathBuf,
     phone: Option<Phone>,
+    picker: Picker,
 }
 
 impl State {
@@ -221,11 +297,42 @@ impl State {
     }
 
     pub fn open_path(&self) -> Option<&str> {
-        self.open.and_then(|i| self.order.get(i)).map(String::as_str)
+        self.open.as_deref()
     }
 
+    /// The thumbnails of the opened folder settled so far: held in the folder, drawn, or refused.
     pub fn loaded(&self) -> usize {
-        self.loaded
+        self.painted.0
+    }
+
+    /// Whether the opened folder's read has landed whole.
+    pub fn read_done(&self) -> bool {
+        self.read_done
+    }
+
+    pub fn opened(&self) -> Option<&str> {
+        self.opened.as_deref()
+    }
+
+    pub fn filter(&self) -> Option<Medal> {
+        self.filter
+    }
+
+    /// The thumbnails in memory dropped, as a long scroll drops them, so a check sees a tile read
+    /// back from the folder.
+    pub fn forget_tiles(&mut self) {
+        self.thumbs.clear();
+        self.asked.clear();
+    }
+
+    /// The photo's fingerprint as the index holds it, which names its thumbnail's file.
+    pub fn fingerprint(&self, path: &str) -> Option<&str> {
+        self.fingerprints.get(path).map(String::as_str)
+    }
+
+    /// Whether a thumbnail redraw is queued or drawing: an edit's, never the pass's.
+    pub fn drawing(&self) -> bool {
+        self.drawing > 0
     }
 
     /// The photos the open folder holds, which the thumbnails count up to.
@@ -271,6 +378,20 @@ impl State {
         self.phone.as_ref()
     }
 
+    /// `loadBar`: the thumbnails being created, else the library being read, with their counts.
+    pub fn load_bar(&self) -> Option<String> {
+        let (done, total) = self.creating;
+        if done < total {
+            return Some(format!("Creating thumbnails · {done} of {total}"));
+        }
+        if !self.read_done && self.opened.is_some() {
+            let waiting = self.rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
+            let total = self.rows.len();
+            return Some(format!("Reading the library · {} of {total}", total - waiting));
+        }
+        None
+    }
+
     /// The open frame's place in its group, one-based, and the group's count.
     fn place(&self) -> Option<(u16, u16)> {
         let open = self.open_path()?;
@@ -291,6 +412,10 @@ pub struct Ctl {
     settle: Timer,
     stripes: Timer,
     pub(crate) editors: crate::editors::Shell,
+    /// `Thumbnails.refreshDelay` after the sidecar's write, the open photo's thumbnail is redrawn.
+    refresher: Timer,
+    /// Restarted by every change, so the sidecar is written once the hand has rested `WRITE_DELAY`.
+    writer: Timer,
 }
 
 thread_local! {
@@ -400,11 +525,38 @@ impl Shell {
         let window = MainWindow::new()?;
         let worker = Worker::new(Box::new(engine.clone()), options.screen, |done| with_shell(move |c| c.deliver(done)));
         worker.on_gpu.store(options.canvas.is_some(), Ordering::Relaxed);
+        let index_path = LibraryIndex::default_path(&options.caches);
+        let painter: Painter = Arc::default();
+        let previews: Arc<Mutex<Previews>> = Arc::default();
+        let hands: Arc<AtomicUsize> = Arc::default();
+        let generation: Arc<AtomicU64> = Arc::default();
+        paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), generation.clone(), options.support.clone(), options.screen);
+        let disk = read_disk(options.support.clone(), options.screen);
         let state = State {
             store,
             screen: options.screen,
             archive: None,
             order: Vec::new(),
+            fingerprints: HashMap::new(),
+            opened: None,
+            preferences: Preferences::load(&options.support),
+            index: LibraryIndex::open(&index_path),
+            index_path,
+            survey: Survey::default(),
+            generation,
+            read_done: false,
+            opening: None,
+            filter: None,
+            painter,
+            disk,
+            asked: HashSet::new(),
+            painted: (0, 0),
+            creating: (0, 0),
+            failed: HashSet::new(),
+            drawing: 0,
+            rows: Vec::new(),
+            pending: None,
+            muted: false,
             open: None,
             selection: BTreeSet::new(),
             anchor: None,
@@ -413,11 +565,10 @@ impl Shell {
             grid: (0.0, 0.0),
             layout: Layout::new(&[], 6, 0.0, Metrics::GALLERY),
             visible: 0..0,
-            thumbs: HashMap::new(),
-            loaded: 0,
+            thumbs: Memory::new(thumbnails::MEMORY_LIMIT),
             negative: None,
-            previews: Arc::default(),
-            hands: Arc::default(),
+            previews,
+            hands,
             slides: Field::ALL.iter().map(|_| Slide::default()).collect(),
             rendered: 0,
             requested: 0,
@@ -467,6 +618,7 @@ impl Shell {
             before_placed: None,
             support: options.support.clone(),
             phone: None,
+            picker: options.picker,
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -479,9 +631,13 @@ impl Shell {
             settle: Timer::default(),
             stripes: Timer::default(),
             editors: crate::editors::Shell::default(),
+            refresher: Timer::default(),
+            writer: Timer::default(),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
         Ctl::wire(&ctl, &window);
+        // The app opens on the gallery; nothing opens in the editor until a hand asks.
+        window.global::<App>().set_gallery(true);
         ctl.publish(true);
         ctl.publish_bar();
         // A phone paired before finds the desktop listening again; nothing pairs until asked.
@@ -491,9 +647,25 @@ impl Shell {
         Ok(Shell { window, ctl })
     }
 
-    /// Opens a folder: its tree and gallery at once, thumbnails decoded behind, the first photo open.
+    /// `openFolder`: the gallery on the folder, read through the index behind, its thumbnails
+    /// drawn by the pass; nothing opens in the editor until a hand asks.
     pub fn open_folder(&self, folder: &Path) {
         self.ctl.open_folder(folder);
+    }
+
+    /// `add(_:)`: a folder opens; a file opens its folder, then itself in the editor once found.
+    pub fn add(&self, path: &Path) {
+        self.ctl.add(path);
+    }
+
+    /// The launch's folder: the one last opened, else the first root of `roots.json`, else none.
+    pub fn open_remembered(&self) -> bool {
+        self.ctl.open_remembered()
+    }
+
+    /// The opened folder's first photo in the editor once read, for the bench.
+    pub fn open_first_when_read(&self) {
+        self.ctl.state.borrow_mut().opening = Some(String::new());
     }
 
     /// The session's notch renders, for the line printed on exit.
@@ -553,6 +725,7 @@ impl Ctl {
         }
         if !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
+            self.schedule_write();
         }
         self.refresh_phone();
         self.publish_bar();
@@ -565,15 +738,19 @@ impl Ctl {
     /// Every property is read before any is set, so no Slint callback runs under the state's borrow.
     fn publish_bar(&self) {
         let Some(w) = self.window() else { return };
+        self.publish_menus();
         let bar = w.global::<Bar>();
-        let (has_photo, undo, redo, selected) = {
+        let (has_photo, selected) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.store.can_undo(), s.store.can_redo(), s.selection.len())
+            (s.open.is_some(), s.selection.len())
         };
+        let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
-        bar.set_can_undo(has_photo && undo);
-        bar.set_can_redo(has_photo && redo);
-        bar.set_can_reset(has_photo);
+        bar.set_can_undo(live.undo);
+        bar.set_can_redo(live.redo);
+        bar.set_undo_title(titles.undo);
+        bar.set_redo_title(titles.redo);
+        bar.set_can_reset(live.reset);
         bar.set_targets(selected.max(usize::from(has_photo)) as i32);
         bar.set_editing(!w.global::<App>().get_gallery());
         self.publish_lab();
@@ -780,7 +957,7 @@ impl Ctl {
                 }
                 return self.publish_framing();
             }
-            "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll", image),
+            "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll"),
             "window-reset" => g.measure_window = None,
             "window-arm" => {
                 let armed = {
@@ -810,26 +987,15 @@ impl Ctl {
         self.publish_framing();
     }
 
-    /// The copied framing on the open frame, or on every frame of its roll, fitted inside the open one.
-    fn paste_framing(self: &Rc<Self>, roll: bool, image: (f64, f64)) {
-        let targets: Vec<String> = {
-            let s = self.state.borrow();
-            let Some(open) = s.open_path().map(str::to_string) else { return };
-            match (roll, s.store.settings().roll_reference.as_ref().map(|r| r.id)) {
-                (true, Some(id)) => {
-                    let members = oni_library::roll_membership::measured(id, &s.order);
-                    if members.is_empty() { vec![open] } else { members.into_iter().collect() }
-                }
-                _ => vec![open],
-            }
-        };
-        if let Some(e) = self.state.borrow_mut().store.editor() {
-            e.paste_framing(&targets);
+    /// `pasteFraming()` on the selection, else the open photo, or `pasteFramingToRoll()`; one gallery step.
+    fn paste_framing(self: &Rc<Self>, roll: bool) {
+        if roll {
+            self.paste_framing_to_roll();
+        } else {
+            let (targets, size) = (self.targets(), self.image_size());
+            self.gesture(&targets, |store| store.paste_framing(&targets, size));
         }
-        let mut g = self.state.borrow().store.settings().geometry.clone();
-        g.fit_crop_inside_image(image);
-        self.write_geometry(g);
-        self.publish(false);
+        self.publish_framing();
     }
 
     /// The Crop tab opened: the framing the hand last chose is handed to this frame if chosen on another.
@@ -1061,7 +1227,7 @@ impl Ctl {
     /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the default.
     fn brush_press(&self) -> bool {
         let mut s = self.state.borrow_mut();
-        let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < track::DOUBLE_CLICK);
+        let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < system::double_click());
         s.brush_pressed_at = Some(Instant::now());
         if double {
             s.brush = oni_settings::frame::Correction::DEFAULT_RADIUS as f32;
@@ -1578,7 +1744,7 @@ impl Ctl {
     /// The histogram and the load counter, on their own pace so a notch touches neither.
     fn pulse(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
-        let (histogram, loading, flush) = {
+        let (histogram, loading) = {
             let mut s = self.state.borrow_mut();
             if let Some(h) = s.gpu.as_mut().and_then(Gpu::landed) {
                 s.histogram = Some(h);
@@ -1590,10 +1756,7 @@ impl Ctl {
             } else {
                 None
             };
-            let total = s.order.len();
-            let loading = (s.loaded < total).then(|| format!("Reading thumbnails · {} of {total}", s.loaded));
-            let flush = s.last_change.is_some_and(|t| t.elapsed() >= WRITE_DELAY) && s.slides.iter().all(|sl| sl.live.is_none());
-            (histogram, loading, flush)
+            (histogram, s.load_bar())
         };
         if let Some(h) = histogram {
             let (pw, ph) = HISTOGRAM;
@@ -1604,16 +1767,27 @@ impl Ctl {
         {
             w.global::<Canvas>().set_status(text.into());
         }
-        if flush {
+    }
+
+    /// The deferred write, `WRITE_DELAY` after the last change; a hand still on a slider puts it off
+    /// until its release, which asks again.
+    fn schedule_write(self: &Rc<Self>) {
+        let me = Rc::downgrade(self);
+        self.writer.start(TimerMode::SingleShot, WRITE_DELAY, move || {
+            let Some(me) = me.upgrade() else { return };
             let failure = {
-                let mut s = self.state.borrow_mut();
+                let mut s = me.state.borrow_mut();
+                if s.slides.iter().any(|sl| sl.live.is_some()) {
+                    return;
+                }
                 s.last_change = None;
                 s.store.flush()
             };
-            if let Some(message) = failure {
-                self.say(&message);
+            match failure {
+                Some(message) => me.say(&message),
+                None => me.schedule_redraw(),
             }
-        }
+        });
     }
 
     /// Writes the open frame's sidecar now when the disk differs.
@@ -1633,19 +1807,142 @@ impl Ctl {
 
     // MARK: - The archive
 
+    /// `add(_:)`: a folder opens; a file opens its folder, then itself in the editor once found.
+    fn add(self: &Rc<Self>, path: &Path) {
+        let file = !path.is_dir();
+        let folder = if file { path.parent().unwrap_or(path) } else { path };
+        let opening = (file && oni_library::library::is_importable(path)).then(|| oni_library::paths::canonical(path));
+        self.open_folder(folder);
+        self.state.borrow_mut().opening = opening;
+    }
+
+    /// The launch's folder: `openedFolder` if it still exists, else the first root of `roots.json`.
+    fn open_remembered(self: &Rc<Self>) -> bool {
+        let (remembered, support) = {
+            let s = self.state.borrow();
+            (s.preferences.string(preferences::OPENED_FOLDER).map(PathBuf::from), s.support.clone())
+        };
+        let roots = || oni_library::roots::Roots::load(&support).current().map(PathBuf::from);
+        let folder = remembered.filter(|p| p.is_dir()).or_else(roots);
+        match folder {
+            Some(folder) => {
+                self.open_folder(&folder);
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// `open()`: the system's folder picker, then `add`; a cancel leaves everything as it was.
+    fn pick(self: &Rc<Self>) {
+        // Taken out first: a modal panel runs a nested event loop, which may reach the state.
+        let picker = std::mem::replace(&mut self.state.borrow_mut().picker, Box::new(|| None));
+        let chosen = picker();
+        self.state.borrow_mut().picker = picker;
+        if let Some(folder) = chosen {
+            self.add(&folder);
+        } else if !system::HAS_PICKER {
+            self.say("This system has no folder picker: pass the folder on the command line");
+        }
+    }
+
+    /// `openFolder`: the gallery on the folder, read through the index behind, its thumbnails
+    /// drawn once the read is whole; the editor keeps what it holds.
     fn open_folder(self: &Rc<Self>, folder: &Path) {
-        let archive = Archive::load(folder);
-        let order: Vec<String> = archive.entries().iter().map(|e| e.path.clone()).collect();
-        let (title, stock) = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
+        let folder = oni_library::paths::canonical(folder);
+        let (generation, index_path) = {
+            let mut s = self.state.borrow_mut();
+            s.opened = Some(folder.clone());
+            let _ = s.preferences.set(preferences::OPENED_FOLDER, serde_json::Value::String(folder.clone()));
+            s.opening = None;
+            s.read_done = false;
+            s.creating = (0, 0);
+            s.painted = (0, 0);
+            s.painter.0.lock().expect("painter").pass = None;
+            (s.generation.fetch_add(1, Ordering::Relaxed) + 1, s.index_path.clone())
+        };
+        self.read_folder(generation, folder, index_path);
+    }
+
+    /// `rescan`: the opened folder read again, the index trimmed to what the disk holds.
+    fn read_again(self: &Rc<Self>) {
+        let (folder, index_path, generation) = {
+            let mut s = self.state.borrow_mut();
+            let Some(folder) = s.opened.clone() else { return };
+            s.read_done = false;
+            (folder, s.index_path.clone(), s.generation.load(Ordering::Relaxed))
+        };
+        self.read_folder(generation, folder, index_path);
+    }
+
+    /// The read on its own thread and its own connection; each landing comes back to this thread.
+    fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
+        let current = self.state.borrow().generation.clone();
+        std::thread::Builder::new()
+            .name("library".into())
+            .spawn(move || {
+                let Some(index) = LibraryIndex::open(&index_path) else {
+                    return with_shell(|c| c.say("The library index cannot be opened"));
+                };
+                let alive = || current.load(Ordering::Relaxed) == generation;
+                library::read_rows(&folder, &index, &alive, &mut |rows, done, survey| {
+                    let survey = survey.clone();
+                    with_shell(move |c| c.take_rows(generation, rows, done, survey));
+                });
+            })
+            .expect("library thread");
+    }
+
+    /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.
+    fn take_rows(self: &Rc<Self>, generation: u64, rows: Vec<oni_library::Entry>, done: bool, survey: Survey) {
         {
             let mut s = self.state.borrow_mut();
-            s.order = order.clone();
-            s.store.set_archive(order.clone());
-            s.archive = Some(archive);
-            s.selection.clear();
-            s.loaded = 0;
-            s.thumbs.clear();
+            if s.generation.load(Ordering::Relaxed) != generation {
+                return;
+            }
+            s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            s.rows = rows;
+            s.survey = survey;
+            s.read_done = done;
         }
+        self.lay_archive();
+        if done {
+            let order = self.state.borrow().order.clone();
+            self.offer_neutral_decode_notice(&order);
+            self.fill();
+            let opening = self.state.borrow_mut().opening.take();
+            let found = opening.and_then(|o| {
+                let s = self.state.borrow();
+                if o.is_empty() { s.order.first().cloned() } else { s.order.iter().find(|p| **p == o).cloned() }
+            });
+            if let Some(path) = found {
+                self.open_in_editor(&path);
+            }
+        }
+    }
+
+    /// The archive cut again from the rows held, under the filter; what the hand unfolded stays so.
+    fn lay_archive(self: &Rc<Self>) {
+        let (title, stock) = {
+            let mut s = self.state.borrow_mut();
+            let Some(folder) = s.opened.clone() else { return };
+            let selected: HashSet<String> = s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect();
+            let anchor = s.anchor.and_then(|i| s.order.get(i).cloned());
+            let mut archive = Archive::from_rows(&folder, &s.rows, &s.survey, s.filter);
+            if let Some(old) = &s.archive {
+                let folded: HashSet<_> = old.nodes.iter().map(oni_library::archive_tree::Node::id).filter(|id| !old.expanded.contains(id)).collect();
+                archive.expanded.retain(|id| !folded.contains(id));
+            }
+            let order: Vec<String> = archive.entries().iter().map(|e| e.path.clone()).collect();
+            s.selection = order.iter().enumerate().filter(|(_, p)| selected.contains(*p)).map(|(i, _)| i).collect();
+            s.anchor = anchor.and_then(|a| order.iter().position(|p| *p == a));
+            let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
+            s.store.set_archive(every);
+            s.order = order;
+            let first = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
+            s.archive = Some(archive);
+            first
+        };
         if let Some(w) = self.window() {
             let lib = w.global::<Library>();
             lib.set_roll_title(title.into());
@@ -1653,11 +1950,103 @@ impl Ctl {
         }
         self.relayout();
         self.publish_tree();
-        self.offer_neutral_decode_notice(&order);
-        self.read_thumbnails(order.clone());
-        if let Some(first) = order.first() {
-            self.open_photo(first);
+        self.publish_bar();
+    }
+
+    /// `fillOpened`: the pass over the opened folder's rows, which draws those with no file.
+    fn fill(&self) {
+        let s = self.state.borrow();
+        let generation = s.generation.load(Ordering::Relaxed);
+        let rows: Vec<(String, String)> = s
+            .rows
+            .iter()
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING))
+            .map(|e| (e.path.clone(), e.fingerprint.clone()))
+            .collect();
+        let (lock, wake) = &*s.painter;
+        lock.lock().expect("painter").pass = Some((generation, rows));
+        wake.notify_one();
+    }
+
+    /// `invalidate`: the photo's redraw, queued once and drawn before the pass's next photo.
+    fn redraw(&self, path: &str) {
+        let mut s = self.state.borrow_mut();
+        let fingerprint = s.fingerprints.get(path).filter(|f| !f.starts_with(thumbnails::PENDING)).cloned();
+        let painter = s.painter.clone();
+        let (lock, wake) = &*painter;
+        let mut paint = lock.lock().expect("painter");
+        if !paint.redraws.iter().any(|(p, _)| p == path) {
+            paint.redraws.push_back((path.to_string(), fingerprint));
+            s.drawing += 1;
         }
+        wake.notify_one();
+    }
+
+    /// The open photo's thumbnail `REFRESH_DELAY` after its sidecar is written and no hand holds.
+    fn schedule_redraw(self: &Rc<Self>) {
+        let me = Rc::downgrade(self);
+        self.refresher.start(TimerMode::SingleShot, thumbnails::REFRESH_DELAY, move || {
+            let Some(me) = me.upgrade() else { return };
+            let path = {
+                let s = me.state.borrow();
+                let held = s.hands.load(Ordering::Relaxed) > 0 || s.last_change.is_some();
+                s.open.clone().filter(|_| !held)
+            };
+            if let Some(path) = path {
+                me.redraw(&path);
+            }
+        });
+    }
+
+    /// The pass's count once it knows which photos lack a file.
+    fn pass_counted(&self, generation: u64, held: usize, absent: usize) {
+        let mut s = self.state.borrow_mut();
+        if s.generation.load(Ordering::Relaxed) == generation {
+            s.painted = (held, held + absent);
+            s.creating = (0, absent);
+        }
+    }
+
+    /// A drawn thumbnail lands in memory and on every tile holding its photo; a failure says why.
+    fn thumb_landed(&self, pass: Option<u64>, fingerprint: String, drawn: Result<(Vec<u8>, usize, usize), String>, name: String) {
+        let failure = {
+            let mut s = self.state.borrow_mut();
+            match pass {
+                Some(g) if g == s.generation.load(Ordering::Relaxed) => {
+                    s.painted.0 += 1;
+                    s.creating.0 += 1;
+                }
+                Some(_) => {}
+                None => s.drawing = s.drawing.saturating_sub(1),
+            }
+            match drawn {
+                Ok((rgba, w, h)) => {
+                    s.failed.remove(&fingerprint);
+                    s.asked.remove(&fingerprint);
+                    s.thumbs.insert(fingerprint, image(&rgba, w, h));
+                    None
+                }
+                Err(e) => {
+                    s.failed.insert(fingerprint);
+                    Some(format!("{name}: {e}"))
+                }
+            }
+        };
+        if let Some(message) = failure {
+            self.say(&message);
+        }
+        self.publish_tiles();
+    }
+
+    /// A file read from the folder; one absent stays asked, so only a render fills its tile.
+    fn disk_landed(&self, fingerprint: String, read: Option<(Vec<u8>, usize, usize)>) {
+        let Some((rgba, w, h)) = read else { return };
+        {
+            let mut s = self.state.borrow_mut();
+            s.asked.remove(&fingerprint);
+            s.thumbs.insert(fingerprint, image(&rgba, w, h));
+        }
+        self.publish_tiles();
     }
 
     /// `offerNeutralDecodeNotice`: once a library holds a RAW, until it is dismissed once.
@@ -1732,7 +2121,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let flush = s.store.flush();
             let opened = s.store.open(path).err();
-            s.open = s.order.iter().position(|p| p == path);
+            s.open = Some(path.to_string());
             s.opened_at = Instant::now();
             s.rendered = 0;
             s.requested = 0;
@@ -1756,6 +2145,7 @@ impl Ctl {
         }
         self.publish(true);
         self.publish_tree();
+        self.schedule_redraw();
         let (previews, converted) = {
             let s = self.state.borrow();
             (s.previews.clone(), render::Reading::of(s.store.settings()))
@@ -1787,66 +2177,6 @@ impl Ctl {
         });
     }
 
-    /// Every photo's thumbnail through the pipeline on its own sidecar, off this thread, one by one.
-    fn read_thumbnails(&self, order: Vec<String>) {
-        let (previews, hands, screen) = {
-            let s = self.state.borrow();
-            (s.previews.clone(), s.hands.clone(), s.screen)
-        };
-        let engine = self.engine.clone();
-        std::thread::Builder::new()
-            .name("thumbnails".into())
-            .spawn(move || {
-                for (n, path) in order.into_iter().enumerate() {
-                    while hands.load(Ordering::Relaxed) > 0 {
-                        std::thread::sleep(Duration::from_millis(20));
-                    }
-                    let asked = Instant::now();
-                    let thumbnail = (|| -> Result<(Vec<u8>, usize, usize), String> {
-                        let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
-                        let settings = oni_settings::sidecar::read(Path::new(&path), mosaic, true).map_err(|e| e.to_string())?.settings;
-                        let known = previews.lock().expect("previews").get(&path);
-                        let negative = match known {
-                            Some(n) => n,
-                            None => {
-                                let n = prepared(&engine, &path, render::Reading::of(&settings))?;
-                                previews.lock().expect("previews").insert(path.clone(), n.clone());
-                                n
-                            }
-                        };
-                        let mut engine = engine.lock().map_err(|_| "the render engine failed earlier")?;
-                        let started = Instant::now();
-                        let linear = engine.render(&negative, &settings, Some(THUMB_SIDE))?;
-                        let pipeline = started.elapsed();
-                        drop(engine);
-                        let k = Params::new(screen, linear.width as u32, linear.height as u32, n as u32);
-                        let bytes = render::encoded(&linear, &k, 1);
-                        timing::render(Kind::Thumbnail, &stem(&path), pipeline, asked.elapsed());
-                        Ok((bytes, linear.width, linear.height))
-                    })();
-                    // A frame that fails still counts as read, its tile left empty and the reason said.
-                    with_shell(move |c| {
-                        let failure = {
-                            let mut s = c.state.borrow_mut();
-                            s.loaded += 1;
-                            match thumbnail {
-                                Ok((bytes, w, h)) => {
-                                    s.thumbs.insert(path, image(&bytes, w, h));
-                                    None
-                                }
-                                Err(e) => Some(format!("{}: {e}", stem(&path))),
-                            }
-                        };
-                        if let Some(message) = failure {
-                            c.say(&message);
-                        }
-                        c.publish_tiles();
-                    });
-                }
-            })
-            .expect("thumbnail thread");
-    }
-
     // MARK: - The gallery
 
     fn relayout(&self) {
@@ -1874,18 +2204,31 @@ impl Ctl {
             .as_ref()
             .map(|a| a.entries().iter().map(|e| (e.path.clone(), library::medal_index(e.label))).collect())
             .unwrap_or_default();
+        // A cell reads the folder, never renders: a photo with no file waits for the pass or an edit.
+        let mut asking = Vec::new();
+        for i in range.clone() {
+            let Some(fingerprint) = s.order.get(i).and_then(|p| s.fingerprints.get(p)) else { continue };
+            if !fingerprint.starts_with(thumbnails::PENDING) && !s.thumbs.contains(fingerprint) && !s.asked.contains(fingerprint) {
+                asking.push(fingerprint.clone());
+            }
+        }
+        for fingerprint in asking {
+            s.asked.insert(fingerprint.clone());
+            let _ = s.disk.send(fingerprint);
+        }
         let tiles: Vec<Tile> = range
             .clone()
             .filter_map(|i| {
                 let frame = s.layout.frame(i)?;
                 let path = s.order.get(i)?;
+                let picture = s.fingerprints.get(path).and_then(|f| s.thumbs.get(f)).unwrap_or_default();
                 Some(Tile {
                     index: i as i32,
                     x: frame.x,
                     y: frame.y,
                     width: frame.width,
                     height: s.layout.tile.1,
-                    picture: s.thumbs.get(path).cloned().unwrap_or_default(),
+                    picture,
                     caption: stem(path).into(),
                     selected: s.selection.contains(&i),
                     medal: labels.get(path).copied().unwrap_or(0),
@@ -1930,38 +2273,57 @@ impl Ctl {
     fn tile_opened(self: &Rc<Self>, i: usize) {
         let path = self.state.borrow().order.get(i).cloned();
         if let Some(path) = path {
-            self.open_photo(&path);
-            if let Some(w) = self.window() {
-                w.global::<App>().set_gallery(false);
-            }
-            self.publish_bar();
+            self.open_in_editor(&path);
         }
     }
 
-    /// Labels the gallery's selection, or the open photo in the editor, on each sidecar.
+    /// `load(_:)` then `mode = .editor`.
+    fn open_in_editor(self: &Rc<Self>, path: &str) {
+        self.open_photo(path);
+        if let Some(w) = self.window() {
+            w.global::<App>().set_gallery(false);
+        }
+        self.publish_bar();
+        self.publish_tiles();
+    }
+
+    /// `applyMedal`: the selection's sidecars and index rows, in the gallery and the editor alike.
     fn label(self: &Rc<Self>, medal: i32) {
-        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         let targets: Vec<String> = {
             let s = self.state.borrow();
-            if gallery {
-                s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect()
-            } else {
-                s.open_path().map(str::to_string).into_iter().collect()
-            }
+            s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect()
         };
         let label = library::medal_of(medal);
+        let mut written = Vec::new();
         for path in &targets {
             match oni_settings::sidecar::set_label(label, Path::new(path), true) {
-                Ok(()) => {
-                    if let Some(a) = self.state.borrow_mut().archive.as_mut() {
-                        a.set_label(path, label);
-                    }
-                }
+                Ok(()) => written.push(path.clone()),
                 Err(e) => self.say(&e.to_string()),
             }
         }
-        self.publish_tiles();
-        self.publish_tree();
+        self.reread(&written);
+    }
+
+    /// Rows whose sidecar a gesture wrote, read again into the index, then the gallery laid from
+    /// the index, so a photo marked or restored leaves or joins it.
+    fn reread(self: &Rc<Self>, paths: &[String]) {
+        if paths.is_empty() {
+            return;
+        }
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(folder) = s.opened.clone() else { return };
+            let Some(index) = &s.index else { return };
+            library::refresh(index, paths);
+            let mut rows = library::shown_under(index, &folder);
+            let held: HashSet<String> = rows.iter().map(|e| e.path.clone()).collect();
+            let waiting: Vec<oni_library::Entry> =
+                s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
+            rows.extend(waiting);
+            s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            s.rows = rows;
+        }
+        self.lay_archive();
     }
 
     // MARK: - The phone
@@ -2122,22 +2484,11 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let app = w.global::<App>();
         match action {
+            "undo" | "redo" if app.get_gallery() => self.gallery_step(action == "undo"),
             "undo" => self.write(Command::Undo),
             "redo" => self.write(Command::Redo),
-            "reset" => self.write(Command::Reset),
-            "toggle-mode" => {
-                let gallery = !app.get_gallery();
-                if !gallery && self.state.borrow().open.is_none() {
-                    return;
-                }
-                app.set_gallery(gallery);
-                // A mode change drops the split, as Swift's does.
-                if self.state.borrow().split.is_some() {
-                    self.toggle_compare();
-                }
-                self.publish_bar();
-                self.publish_tiles();
-            }
+            "reset" => self.reset_all(),
+            "toggle-mode" => self.toggle_mode(),
             "hide-panel" => app.set_panel_hidden(!app.get_panel_hidden()),
             "hide-library" => app.set_library_hidden(!app.get_library_hidden()),
             "smaller" | "larger" if app.get_gallery() => {
@@ -2161,6 +2512,33 @@ impl Ctl {
             }
             "bigger-brush" | "smaller-brush" => {}
             "correction" if self.state.borrow().open.is_some() => self.toggle_correcting(),
+            "framing" if self.state.borrow().open.is_some() => self.toggle_framing(),
+            "mirror" => self.framing_act("mirror"),
+            "toggle-sound" => {
+                let mut s = self.state.borrow_mut();
+                s.muted = !s.muted;
+            }
+            "cycle-filter" => self.cycle_filter(),
+            "show-selected" => self.show_selected(),
+            "copy" => {
+                if let Some(store) = self.state.borrow_mut().store.editor() {
+                    store.copy_settings();
+                }
+            }
+            "paste" => self.paste(),
+            "paste-to-roll" => self.paste_to_roll(),
+            "copy-framing" => {
+                if let Some(store) = self.state.borrow_mut().store.editor() {
+                    store.copy_framing();
+                }
+                self.publish_framing();
+            }
+            "paste-framing" | "paste-framing-to-roll" => self.paste_framing(action == "paste-framing-to-roll"),
+            "remove" => self.move_to_trash(),
+            "new-roll" if app.get_gallery() => self.new_roll(),
+            "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
+            "open" => self.pick(),
+            "recheck" | "read-folders" => self.read_again(),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -2171,40 +2549,497 @@ impl Ctl {
             a if self.lab_act(a) => {}
             other => self.say(&format!("“{other}” is not in this build yet")),
         }
+        self.publish_bar();
     }
 
-    /// The key monitor: modifier chords always, bare keys only when no field holds the keyboard, which
-    /// is given: a text field consumes its printable keys before they reach this scope.
+    /// The keys no menu item carries: Escape and Return on a sheet, the Lab's and the walk keys, and
+    /// ⌘=, which types apart from the menu's ⌘+; every other shortcut is the menu bar's.
     fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
-        if text == "\u{1b}" && self.window().is_some_and(|w| w.global::<Pairing>().get_shown()) {
+        let Some(w) = self.window() else { return false };
+        if w.global::<Confirm>().get_shown() {
+            match text {
+                "\u{1b}" => self.answered(false),
+                "\r" | "\n" => self.answered(true),
+                _ => {}
+            }
+            return true;
+        }
+        if text == "\u{1b}" && w.global::<Pairing>().get_shown() {
             self.close_pairing();
             return true;
         }
         if self.lab_key(text, bare, repeat) {
             return true;
         }
-        let key = text.to_lowercase();
-        let action = match (command, shift, key.as_str()) {
-            (true, false, "z") => "undo",
-            (true, true, "z") => "redo",
-            (true, false, "g") => "toggle-mode",
-            (true, true, "g") => "new-roll",
-            (true, true, "y") => "screen-gamut",
-            (true, false, "e") => "export",
-            (true, false, "o") => "open",
-            (true, false, "k") => "framing",
-            (true, false, "-") => "smaller",
-            (true, false, "=") | (true, false, "+") => "larger",
-            (false, _, "]") => "bigger-brush",
-            (false, _, "[") => "smaller-brush",
-            (false, false, "0") => "medal-0",
-            (false, false, "1") => "medal-1",
-            (false, false, "2") => "medal-2",
-            (false, false, "3") => "medal-3",
-            _ => return false,
+        // `keyboardShortcut("+")` answers ⌘= too, the key that carries + unshifted.
+        if command && !shift && text == "=" && w.global::<Menus>().get_live().larger {
+            self.act("larger");
+            return true;
+        }
+        false
+    }
+
+    /// `propagationTargets`: the selection, else the open photo; the ONI Trash's never are.
+    fn targets(&self) -> Vec<String> {
+        let s = self.state.borrow();
+        if s.selection.is_empty() {
+            return s.open.clone().into_iter().collect();
+        }
+        s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect()
+    }
+
+    /// A gesture on several photos through the core, then what it wrote read back: the rows, the
+    /// open frame's sliders, the others' thumbnails.
+    fn gesture(self: &Rc<Self>, touched: &[String], run: impl FnOnce(&mut oni_core::EditorStore) -> usize) {
+        let failure = {
+            let mut s = self.state.borrow_mut();
+            let Some(store) = s.store.editor() else { return };
+            run(store);
+            store.failure.take()
         };
-        self.act(action);
-        true
+        if let Some(message) = failure {
+            self.say(&message);
+        }
+        self.landed(touched);
+    }
+
+    fn landed(self: &Rc<Self>, touched: &[String]) {
+        self.closed_if_trashed();
+        self.publish(false);
+        self.reread(touched);
+        let open = self.state.borrow().open.clone();
+        for path in touched.iter().filter(|p| Some(*p) != open.as_ref()) {
+            self.redraw(path);
+        }
+    }
+
+    /// `took(_:at:)`: a trashed open frame leaves the editor, which falls back on the gallery.
+    fn closed_if_trashed(&self) {
+        let closed = {
+            let mut s = self.state.borrow_mut();
+            let held = s.store.editor().map(|e| e.path().map(str::to_string));
+            match held {
+                Some(None) if s.open.is_some() => {
+                    s.open = None;
+                    s.negative = None;
+                    true
+                }
+                _ => false,
+            }
+        };
+        if closed && let Some(w) = self.window() {
+            w.global::<App>().set_gallery(true);
+            w.global::<Canvas>().set_frame(Image::default());
+        }
+    }
+
+    /// `undo()`/`redo()` in the gallery: the gallery's own stack, whichever photos it touched.
+    fn gallery_step(self: &Rc<Self>, undo: bool) {
+        let (touched, moves): (Vec<String>, Vec<Move>) = {
+            let mut s = self.state.borrow_mut();
+            let Some(store) = s.store.editor() else { return };
+            let history = store.gallery_history();
+            let paths = if undo { history.undo_paths() } else { history.redo_paths() };
+            let moves = if undo { history.undo_moves() } else { history.redo_moves() };
+            (paths.into_iter().collect(), moves)
+        };
+        if !moves.is_empty() {
+            // The open frame's pending write lands before its file moves.
+            let failure = self.state.borrow_mut().store.flush();
+            if let Some(message) = failure {
+                self.say(&message);
+            }
+        }
+        self.gesture(&touched, |store| {
+            if undo { store.undo(Surface::Gallery) } else { store.redo(Surface::Gallery) };
+            0
+        });
+        if !moves.is_empty() {
+            let made: Vec<Move> = moves.into_iter().filter(|m| Path::new(&m.to).exists() && !Path::new(&m.from).exists()).collect();
+            self.followed(&made);
+        }
+    }
+
+    /// `rollFolder(from:)`: a dated folder beside the first target, the photos, their passes and
+    /// sidecars moved in, one gallery step that ⌘Z walks back.
+    fn new_roll(self: &Rc<Self>) {
+        let targets: HashSet<String> = self.targets().into_iter().collect();
+        let (ordered, earliest) = {
+            let s = self.state.borrow();
+            let ordered: Vec<String> = s.order.iter().filter(|p| targets.contains(*p)).cloned().collect();
+            let dates = s.rows.iter().filter(|e| targets.contains(&e.path)).filter_map(|e| e.captured_at);
+            (ordered, dates.reduce(|a, b| if b < a { b } else { a }))
+        };
+        let Some(first) = ordered.first() else { return };
+        let parent = oni_library::paths::parent(first);
+        let name = oni_library::roll_folder::name_for(earliest.unwrap_or_else(oni_settings::Date::now), &parent);
+        let film = oni_settings::Film::new(&name);
+        let folder = match oni_library::roll_folder::make(&name, &parent, &film) {
+            Ok(folder) => folder,
+            Err(e) => return self.say(&format!("The roll's folder could not be made: {e}")),
+        };
+        let files = oni_library::rgb_passes::expanded(&ordered);
+        let failure = self.state.borrow_mut().store.flush();
+        if let Some(message) = failure {
+            self.say(&message);
+        }
+        let made = oni_library::roll_folder::move_items(&oni_library::roll_folder::moves(&files, &folder));
+        if made.len() < files.len() {
+            self.say(&format!("{} of the files could not be moved into the roll.", files.len() - made.len()));
+        }
+        if let Some(store) = self.state.borrow_mut().store.editor() {
+            store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+        }
+        self.followed(&made);
+    }
+
+    /// `followed(_:)`: the index rows, the selection and the open frame go where the disk moved
+    /// them, then the folder is read again for its new tree.
+    fn followed(self: &Rc<Self>, moves: &[Move]) {
+        let moved = |path: &str| {
+            moves.iter().find_map(|m| {
+                if path == m.from {
+                    Some(m.to.clone())
+                } else {
+                    oni_library::paths::holds(&m.from, path).then(|| format!("{}{}", m.to, &path[m.from.len()..]))
+                }
+            })
+        };
+        let reopen = {
+            let mut s = self.state.borrow_mut();
+            if let Some(index) = &s.index {
+                for row in index.all() {
+                    if let Some(to) = moved(&row.path) {
+                        let _ = index.remove(&row.path);
+                        let _ = index.upsert(&oni_library::Entry { path: to, ..row });
+                    }
+                }
+            }
+            for row in &mut s.rows {
+                if let Some(to) = moved(&row.path) {
+                    row.path = to;
+                }
+            }
+            let fingerprints = s.rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            s.fingerprints = fingerprints;
+            for path in &mut s.order {
+                if let Some(to) = moved(path) {
+                    *path = to;
+                }
+            }
+            s.open.as_deref().and_then(|p| moved(p))
+        };
+        self.lay_archive();
+        if let Some(to) = reopen {
+            self.open_photo(&to);
+        }
+        self.read_again();
+    }
+
+    /// `resetAll()`: every target back to its imported state, one gallery step.
+    fn reset_all(self: &Rc<Self>) {
+        let targets = self.targets();
+        self.gesture(&targets, |store| store.reset_frames(&targets));
+    }
+
+    /// A mode change drops the split, as Swift's does.
+    fn drop_split(self: &Rc<Self>) {
+        if self.state.borrow().split.is_some() {
+            self.toggle_compare();
+        }
+    }
+
+    /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery.
+    fn toggle_mode(self: &Rc<Self>) {
+        let Some(w) = self.window() else { return };
+        if !w.global::<App>().get_gallery() {
+            self.drop_split();
+            w.global::<App>().set_gallery(true);
+            self.publish_tiles();
+            return;
+        }
+        let ringed = {
+            let s = self.state.borrow();
+            s.anchor.and_then(|i| s.order.get(i).cloned())
+        };
+        let Some(path) = ringed else { return };
+        self.drop_split();
+        if self.state.borrow().open.as_deref() == Some(path.as_str()) {
+            w.global::<App>().set_gallery(false);
+        } else {
+            self.open_in_editor(&path);
+        }
+    }
+
+    /// `toggleFraming()`: into the crop, or out to the last panel the hand was in, never the crop.
+    fn toggle_framing(self: &Rc<Self>) {
+        let Some(w) = self.window() else { return };
+        let panel = w.global::<PanelState>();
+        let tab = panel.get_tab();
+        let next = if tab == CROP_TAB {
+            let last = self.state.borrow().last_panel;
+            if last == CROP_TAB || last == 4 { 2 } else { last }
+        } else {
+            if tab != 4 {
+                self.state.borrow_mut().last_panel = tab;
+            }
+            CROP_TAB
+        };
+        panel.set_tab(next);
+        w.global::<Bar>().set_dedust(false);
+        self.tab_opened(next);
+    }
+
+    /// nil, bronze, silver, gold, then nil again: exactly one medal, never a tier above.
+    fn cycle_filter(self: &Rc<Self>) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.filter = match s.filter {
+                None => Some(Medal::Bronze),
+                Some(Medal::Bronze) => Some(Medal::Silver),
+                Some(Medal::Silver) => Some(Medal::Gold),
+                _ => None,
+            };
+        }
+        self.lay_archive();
+    }
+
+    /// `centreSelected()`: the open photo, else the first selected, scrolled into view.
+    fn show_selected(self: &Rc<Self>) {
+        {
+            let mut s = self.state.borrow_mut();
+            let at = s.open.as_ref().and_then(|p| s.order.iter().position(|o| o == p)).or_else(|| s.selection.first().copied());
+            let Some(at) = at else { return };
+            if let Some(top) = s.layout.reveal(at, s.scroll, s.grid.1) {
+                s.scroll = top;
+            }
+        }
+        self.publish_tiles();
+    }
+
+    /// `pasteSettings(to:)`: one roll's look laid on another asks first.
+    fn paste(self: &Rc<Self>) {
+        let targets = self.targets();
+        let check = {
+            let mut s = self.state.borrow_mut();
+            let Some(store) = s.store.editor() else { return };
+            store.paste_check(&targets)
+        };
+        match check {
+            PasteCheck::Nothing => {}
+            PasteCheck::Ready => self.lay_paste(targets),
+            PasteCheck::AnotherRoll => self.confirm("Paste Settings", Pending::Paste(targets)),
+        }
+    }
+
+    fn lay_paste(self: &Rc<Self>, targets: Vec<String>) {
+        self.gesture(&targets, |store| store.paste_settings(&targets));
+    }
+
+    /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
+    fn paste_to_roll(self: &Rc<Self>) {
+        let check = {
+            let mut s = self.state.borrow_mut();
+            let Some(open) = s.open.clone() else { return };
+            let roll = s.store.settings().roll_reference.is_some();
+            let Some(store) = s.store.editor() else { return };
+            if !store.has_copied_settings() {
+                return;
+            }
+            if roll { store.paste_check(&[open]) } else { PasteCheck::Ready }
+        };
+        match check {
+            PasteCheck::AnotherRoll => self.confirm("Paste to Roll", Pending::PasteToRoll),
+            _ => self.lay_paste_to_roll(),
+        }
+    }
+
+    fn lay_paste_to_roll(self: &Rc<Self>) {
+        let touched: Vec<String> = {
+            let mut s = self.state.borrow_mut();
+            let open = s.open.clone();
+            let id = s.store.settings().roll_reference.as_ref().map(|r| r.id);
+            let Some(store) = s.store.editor() else { return };
+            store.paste_to_roll();
+            let mut touched: Vec<String> = id.and_then(|id| store.measured_group(id)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
+            touched.extend(open);
+            touched
+        };
+        self.gesture(&touched, |_| 0);
+    }
+
+    /// `pasteFramingToRoll()`: the open frame first, then every frame measured with its roll.
+    fn paste_framing_to_roll(self: &Rc<Self>) {
+        let targets: Vec<String> = {
+            let mut s = self.state.borrow_mut();
+            let Some(open) = s.open.clone() else { return };
+            let id = s.store.settings().roll_reference.as_ref().map(|r| r.id);
+            let Some(store) = s.store.editor() else { return };
+            let members = id.map(|id| store.measured_with(id)).unwrap_or_default();
+            std::iter::once(open.clone()).chain(members.into_iter().filter(|m| *m != open)).collect()
+        };
+        let size = self.image_size();
+        self.gesture(&targets, |store| store.paste_framing(&targets, size));
+    }
+
+    /// `moveToOniTrash()`: each target's sidecar marked, its files untouched, one gallery step.
+    fn move_to_trash(self: &Rc<Self>) {
+        let targets = self.targets();
+        if targets.is_empty() {
+            return;
+        }
+        self.gesture(&targets, |store| store.move_to_trash(&targets));
+    }
+
+    /// The film type's tabs: `applyMode` on the selection, else the open photo.
+    fn film_type(self: &Rc<Self>, index: i32) {
+        let Some(mode) = usize::try_from(index).ok().and_then(|i| ConversionMode::ALL.get(i).copied()) else { return };
+        let targets = self.targets();
+        self.gesture(&targets, |store| store.apply_mode(mode, &targets));
+    }
+
+    /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it.
+    fn confirm(&self, key: &str, pending: Pending) {
+        self.state.borrow_mut().pending = Some(pending);
+        if let Some(w) = self.window() {
+            let c = w.global::<Confirm>();
+            c.set_title(ANOTHER_ROLL.0.into());
+            c.set_message(ANOTHER_ROLL.1.into());
+            c.set_key(key.to_uppercase().into());
+            c.set_shown(true);
+        }
+    }
+
+    fn answered(self: &Rc<Self>, go: bool) {
+        if let Some(w) = self.window() {
+            w.global::<Confirm>().set_shown(false);
+        }
+        let pending = self.state.borrow_mut().pending.take();
+        match pending.filter(|_| go) {
+            Some(Pending::Paste(targets)) => self.lay_paste(targets),
+            Some(Pending::PasteToRoll) => self.lay_paste_to_roll(),
+            None => {}
+        }
+        self.publish_bar();
+    }
+
+    /// `menuState`: every item's title and whether a gesture can reach it now, from the state the
+    /// bar reads too, so the two surfaces cannot disagree.
+    fn publish_menus(&self) {
+        let Some(w) = self.window() else { return };
+        let app = w.global::<App>();
+        let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
+        let dedust = w.global::<PanelState>().get_tab() == 4;
+        let (painting, canvas) = (self.painting(), self.canvas_size());
+        let (titles, live, film_type, targets) = {
+            let mut s = self.state.borrow_mut();
+            let open = s.open.is_some();
+            let selected = s.selection.len();
+            let count = if selected > 0 { selected } else { usize::from(open) };
+            let anchor = s.anchor.is_some();
+            let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
+            let (split, screen_gamut, decoded) = (s.split.is_some(), s.screen_gamut, s.negative.is_some());
+            // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
+            let rung = |by: i32| match (s.full_size, canvas) {
+                (Some(full), Some(view)) if !gallery && decoded => Viewport::rung(s.viewport.effective_scale(full, view), s.viewport.is_fitted(), by).is_some(),
+                _ => false,
+            };
+            let (zoom_out, zoom_in) = (rung(-1), rung(1));
+            let settings = s.store.settings().clone();
+            let editor_undo = (s.store.can_undo(), s.store.can_redo());
+            let open_path = s.open.clone();
+            let store = s.store.editor();
+            let gallery_history = store.as_ref().map(|e| {
+                let h = e.gallery_history();
+                (h.can_undo(), h.can_redo(), h.undo_label().map(str::to_string), h.redo_label().map(str::to_string))
+            });
+            let (has_settings, scanner_face) =
+                store.as_ref().map_or((false, false), |e| (e.has_copied_settings(), e.scanner_face));
+            let reach = settings
+                .roll_reference
+                .as_ref()
+                .and_then(|r| store.as_ref().and_then(|e| e.measured_group(r.id)))
+                .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
+            let (can_undo, can_redo, undo_title, redo_title) = match (gallery, gallery_history) {
+                (true, Some((u, r, ul, rl))) => {
+                    (u, r, ul.map_or("Undo".into(), |l| format!("Undo {l}")), rl.map_or("Redo".into(), |l| format!("Redo {l}")))
+                }
+                (true, None) => (false, false, "Undo".to_string(), "Redo".to_string()),
+                (false, _) => (editor_undo.0, editor_undo.1, "Undo".to_string(), "Redo".to_string()),
+            };
+            let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
+            let plural = |n: usize, one: &str, many: String| if n > 1 { many } else { one.to_string() };
+            let titles = MenuTitles {
+                mode: if gallery { "Editor" } else { "Gallery" }.into(),
+                export: plural(selected, "Export…", format!("Export {selected} Photos…")).into(),
+                remove: plural(count, "Move to ONI Trash", format!("Move {count} Photos to ONI Trash")).into(),
+                restore: "Restore".into(),
+                paste: plural(count, "Paste Settings", format!("Paste Settings to {count} Photos")).into(),
+                paste_to_roll: if reach > 0 { format!("Paste to Roll ({} Photos)", reach + 1) } else { "Paste to Roll".into() }.into(),
+                undo: undo_title.into(),
+                redo: redo_title.into(),
+                smaller: if gallery { "Smaller Thumbnails" } else { "Zoom Out" }.into(),
+                larger: if gallery { "Larger Thumbnails" } else { "Zoom In" }.into(),
+                sound: if muted { "Unmute Key Clicks" } else { "Mute Key Clicks" }.into(),
+                compare: if split { "Close Comparison" } else { "Compare Before/After" }.into(),
+                library: if library_hidden { "Show the Library" } else { "Hide the Library" }.into(),
+                panel: if panel_hidden { "Show the Panel" } else { "Hide the Panel" }.into(),
+                correcting: if dedust { "Done Correcting" } else { "Remove Dust & Scratches" }.into(),
+                mirror: if settings.geometry.mirrored { "Unmirror" } else { "Mirror Horizontally" }.into(),
+                filter: filter.map_or("Filter: All".into(), |m| format!("Filter: {}", library::medal(m))).into(),
+                roll: plural(count, "New Roll from Selection", format!("New Roll from {count} Photos")).into(),
+                ungroup: "Ungroup".into(),
+                sheet: plural(selected, "New Contact Sheet", format!("New Contact Sheet from {selected} Photos")).into(),
+                screen_gamut: if screen_gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into(),
+            };
+            // A gesture this build lacks stays dark, whatever Swift's rule would say.
+            let live = MenuLive {
+                open: true,
+                toggle_mode: !gallery || anchor,
+                export: false,
+                recheck: read_done || !opened,
+                read_folders: opened,
+                show_selected: gallery && (open || selected > 0),
+                remove: count > 0,
+                restore: false,
+                undo: can_undo,
+                redo: can_redo,
+                reset: can_reset,
+                smaller: if gallery { gallery::column_step(columns, -1) != columns } else { zoom_out },
+                larger: if gallery { gallery::column_step(columns, 1) != columns } else { zoom_in },
+                compare: !gallery && decoded,
+                hide_library: !gallery,
+                hide_panel: !gallery,
+                framing: open && !gallery,
+                correction: open,
+                bigger_brush: painting,
+                smaller_brush: painting,
+                mirror: open,
+                screen_gamut: true,
+                emulator: false,
+                medal: selected > 0,
+                cycle_filter: true,
+                new_roll: gallery && count > 0,
+                ungroup: false,
+                contact_sheet: false,
+                measure_roll: count > 0,
+                reset_to_default: gallery && count > 0,
+                copy_settings: open,
+                paste_settings: has_settings && count > 0,
+                paste_to_roll: has_settings && open,
+            };
+            let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
+            (titles, live, film_type, count)
+        };
+        let menus = w.global::<Menus>();
+        menus.set_titles(titles);
+        menus.set_live(live.clone());
+        let panel = w.global::<PanelState>();
+        panel.set_film_type(film_type);
+        panel.set_targets(targets as i32);
+        let bar = w.global::<Bar>();
+        bar.set_can_paste(live.paste_settings);
+        bar.set_filter(menus.get_titles().filter.trim_start_matches("Filter: ").to_uppercase().into());
     }
 
     fn wire(me: &Rc<Ctl>, window: &MainWindow) {
@@ -2223,7 +3058,7 @@ impl Ctl {
                 let mut s = p.state.borrow_mut();
                 let slide = &mut s.slides[i];
                 // `DSClick` reads AppKit's click count, which keeps counting past two.
-                let double = slide.last_press.is_some_and(|t| now.duration_since(t) <= DOUBLE_CLICK);
+                let double = slide.last_press.is_some_and(|t| now.duration_since(t) <= system::double_click());
                 slide.last_press = Some(now);
                 slide.resetting = double;
                 slide.start = if double { None } else { Some(slide.shown) };
@@ -2234,7 +3069,8 @@ impl Ctl {
                 double
             };
             if double {
-                p.set(f, f.spec().base);
+                let base = f.base(p.state.borrow().store.settings());
+                p.set(f, base);
             }
             double
         });
@@ -2302,6 +3138,10 @@ impl Ctl {
             }
             p.state.borrow_mut().store.release();
             p.publish(false);
+            p.schedule_redraw();
+            if p.state.borrow().last_change.is_some() {
+                p.schedule_write();
+            }
             // The readout leaves the hand's value for the store's, which a clamp may have moved.
             if let Some(w) = p.window() {
                 let v = p.state.borrow().store.get(f);
@@ -2357,6 +3197,13 @@ impl Ctl {
         window.global::<PanelState>().on_auto_balance(move || p.act("auto-balance"));
         let p = me.clone();
         window.global::<PanelState>().on_pick(move |what| p.act(&what));
+        let p = me.clone();
+        window.global::<PanelState>().on_film_type_picked(move |i| {
+            p.film_type(i);
+            p.publish_bar();
+        });
+        let p = me.clone();
+        window.global::<Confirm>().on_answered(move |go| p.answered(go));
 
         let lib = window.global::<Library>();
         let p = me.clone();
@@ -2562,4 +3409,128 @@ fn prepared(engine: &Shared, path: &str, reading: render::Reading) -> Result<Arc
     let decoded = render::decode(Path::new(path), reading)?;
     let negative = engine.lock().map_err(|_| "the render engine failed earlier")?.prepare(decoded)?;
     Ok(Arc::new(negative))
+}
+
+/// The renderer's thread for thumbnails: an edit's redraw first, then the pass's next photo, each
+/// waiting while a hand holds a control, so a drag never shares the GPU with the gallery.
+fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previews>>, hands: Arc<AtomicUsize>, generation: Arc<AtomicU64>, support: PathBuf, screen: Screen) {
+    enum Next {
+        Redraw(String, Option<String>),
+        Pass(u64, Vec<(String, String)>),
+        Fill(u64, String, String),
+    }
+    std::thread::Builder::new()
+        .name("thumbnails".into())
+        .spawn(move || {
+            let mut current: Option<(u64, VecDeque<(String, String)>)> = None;
+            let mut seed = 0u32;
+            loop {
+                let next = {
+                    let (lock, wake) = &*painter;
+                    let mut paint = lock.lock().expect("painter");
+                    loop {
+                        if let Some((path, known)) = paint.redraws.pop_front() {
+                            break Next::Redraw(path, known);
+                        }
+                        if let Some((g, rows)) = paint.pass.take() {
+                            break Next::Pass(g, rows);
+                        }
+                        if let Some((g, queue)) = current.as_mut()
+                            && let Some((path, fingerprint)) = queue.pop_front()
+                        {
+                            break Next::Fill(*g, path, fingerprint);
+                        }
+                        paint = wake.wait(paint).expect("painter");
+                    }
+                };
+                let (pass, path, fingerprint) = match next {
+                    Next::Pass(g, rows) => {
+                        let (held, absent): (Vec<_>, Vec<_>) = rows.into_iter().partition(|(_, f)| thumbnails::is_held(&support, f));
+                        let counts = (held.len(), absent.len());
+                        current = Some((g, absent.into()));
+                        with_shell(move |c| c.pass_counted(g, counts.0, counts.1));
+                        continue;
+                    }
+                    Next::Fill(g, path, fingerprint) => {
+                        if generation.load(Ordering::Relaxed) != g {
+                            current = None;
+                            continue;
+                        }
+                        (Some(g), path, fingerprint)
+                    }
+                    Next::Redraw(path, known) => {
+                        let Some(fingerprint) = known.or_else(|| oni_library::relink::fingerprint(Path::new(&path))) else {
+                            let name = stem(&path);
+                            with_shell(move |c| c.thumb_landed(None, String::new(), Err("its file is unreachable".into()), name));
+                            continue;
+                        };
+                        (None, path, fingerprint)
+                    }
+                };
+                while hands.load(Ordering::Relaxed) > 0 {
+                    std::thread::sleep(Duration::from_millis(20));
+                }
+                seed = seed.wrapping_add(1);
+                let drawn = drawn(&engine, &previews, &path, screen, seed).and_then(|(jpeg, srgb)| {
+                    thumbnails::persist(&support, &fingerprint, &jpeg).map_err(|e| e.to_string())?;
+                    Ok(srgb)
+                });
+                let name = stem(&path);
+                with_shell(move |c| c.thumb_landed(pass, fingerprint, drawn, name));
+            }
+        })
+        .expect("thumbnail thread");
+}
+
+/// `Thumbnails.render`: the photo's own sidecar through the per-pixel pipeline at `SIDE`, as an sRGB
+/// JPEG, and the tile decoded back from it so a tile drawn and a tile read are the same pixels.
+fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str, screen: Screen, seed: u32) -> Result<(Vec<u8>, (Vec<u8>, usize, usize)), String> {
+    let asked = Instant::now();
+    let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+    let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
+    let known = previews.lock().expect("previews").get(path);
+    let negative = match known {
+        Some(n) => n,
+        None => {
+            let n = prepared(engine, path, render::Reading::of(&settings))?;
+            previews.lock().expect("previews").insert(path.to_string(), n.clone());
+            n
+        }
+    };
+    let mut guard = engine.lock().map_err(|_| "the render engine failed earlier")?;
+    let started = Instant::now();
+    let linear = guard.render(&negative, &settings.per_pixel_only(), Some(thumbnails::SIDE))?;
+    let pipeline = started.elapsed();
+    drop(guard);
+    let (w, h) = (linear.width, linear.height);
+    let srgb = render::encoded(&linear, &Params::new(Screen::Srgb, w as u32, h as u32, seed), 1);
+    let jpeg = thumbnails::jpeg(&srgb, w, h).ok_or("the thumbnail cannot be encoded")?;
+    let tile = thumbnails::decoded(&jpeg, screen).ok_or("the thumbnail cannot be read back")?;
+    timing::render(Kind::Thumbnail, &stem(path), pipeline, asked.elapsed());
+    Ok((jpeg, tile))
+}
+
+/// `Thumbnails.drain`: the folder's files read off this thread, the latest asked first, so a
+/// scroll shows the cells under the eye before those it left.
+fn read_disk(support: PathBuf, screen: Screen) -> mpsc::Sender<String> {
+    let (tx, rx) = mpsc::channel::<String>();
+    std::thread::Builder::new()
+        .name("thumbnail files".into())
+        .spawn(move || {
+            let mut stack: Vec<String> = Vec::new();
+            loop {
+                if stack.is_empty() {
+                    match rx.recv() {
+                        Ok(f) => stack.push(f),
+                        Err(_) => return,
+                    }
+                }
+                stack.extend(rx.try_iter());
+                let Some(fingerprint) = stack.pop() else { continue };
+                let read = thumbnails::load(&support, &fingerprint, screen);
+                with_shell(move |c| c.disk_landed(fingerprint, read));
+            }
+        })
+        .expect("thumbnail files thread");
+    tx
 }
