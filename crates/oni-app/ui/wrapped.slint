@@ -1,0 +1,82 @@
+// "Show My Year on Film": the title, then the deck turned by a click or the arrows; Esc leaves.
+import { Space, WrappedStyle, WrappedGround, WrappedTitle, WrappedCard, WrappedHint } from "ds/ds.slint";
+
+export struct WrappedFace {
+    eyebrow: string,
+    figure: string,
+    caption: string,
+    photos: [image],
+}
+
+export global Wrapped {
+    in property <bool> shown;
+    // Bumped at each showing: a view kept across a quick close and reopen starts over.
+    in property <int> showing;
+    in property <string> year;
+    // The deck is dealt over the title once it has been held, or at the first click.
+    in property <bool> dealt;
+    in property <[WrappedFace]> cards;
+    in property <int> index;
+    // A click, → , Space or Return: the next card, or the deck dealt while the title still shows.
+    callback forward();
+    callback back();
+    callback close();
+}
+
+export component WrappedView inherits WrappedGround {
+    property <bool> revealed;
+    property <int> showing: Wrapped.showing;
+    init => { keys.focus(); }
+    changed showing => {
+        root.revealed = false;
+        keys.focus();
+    }
+    // The title grows in from the frame after it is laid, then holds before the deck is dealt; the
+    // keyboard is taken once the view is in the window, where a focus asked at creation is lost.
+    Timer {
+        interval: WrappedStyle.frame;
+        running: !root.revealed;
+        triggered => {
+            root.revealed = true;
+            keys.focus();
+        }
+    }
+    Timer { interval: WrappedStyle.hold; running: !Wrapped.dealt; triggered => { Wrapped.forward(); } }
+    TouchArea { clicked => { Wrapped.forward(); } }
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Escape) { Wrapped.close(); return accept; }
+            if (event.text == Key.RightArrow || event.text == " " || event.text == Key.Return) { Wrapped.forward(); return accept; }
+            if (event.text == Key.LeftArrow) { Wrapped.back(); return accept; }
+            reject
+        }
+    }
+    if !Wrapped.dealt: WrappedTitle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        year: Wrapped.year;
+        shown: root.revealed;
+    }
+    // The top card and the two under it, each a step smaller and lower; the deepest is drawn first.
+    if Wrapped.dealt: Rectangle {
+        for card[i] in Wrapped.cards: WrappedCard {
+            property <int> from-top: i - Wrapped.index;
+            visible: self.from-top >= 0 && self.from-top < WrappedStyle.deck-depth;
+            eyebrow: card.eyebrow;
+            figure: card.figure;
+            caption: card.caption;
+            photos: card.photos;
+            top: self.from-top == 0;
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2 + max(0, self.from-top) * WrappedStyle.deck-step;
+            transform-scale: 1 - max(0, self.from-top) * WrappedStyle.deck-shrink;
+            z: -self.from-top;
+            animate y, transform-scale { duration: WrappedStyle.settle; easing: ease-out; }
+        }
+    }
+    if Wrapped.dealt: WrappedHint {
+        y: parent.height - self.preferred-height - Space.l;
+        width: parent.width;
+        text: "Click or press → to turn · ← to go back · Esc to leave";
+    }
+}

@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 84 twin, 21 partial, 57 none.
+Of 162 checks: 85 twin, 21 partial, 56 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -148,7 +148,7 @@ Of 162 checks: 84 twin, 21 partial, 57 none.
 | 134 | `Viewport.selfCheck` | `Checks/UI/Viewport+Checks.swift:5` | zoom scale holds | none | none |
 | 135 | `AppBar.selfCheck` | `Checks/UI/AppBar+Checks.swift:5` | top bar holds | partial | `oni-app/src/updates.rs::the_key_and_the_dialogs_say_what_sparkle_says` (UPDATE TO names its version, no export count leaks); the bar's widths and wiring are not |
 | 136 | `Journal.selfCheck` | `Checks/Pipeline/Journal+Checks.swift:6` | the year's journal writes and reads back its records | twin | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
-| 137 | `WrappedYear.selfCheck` | `Checks/Pipeline/Wrapped+Checks.swift:4` | the Wrapped reads a year off the journal | none | none |
+| 137 | `WrappedYear.selfCheck` | `Checks/Pipeline/Wrapped+Checks.swift:4` | the Wrapped reads a year off the journal | twin | `oni-library/src/wrapped.rs::a_years_gestures_read_back_as_its_cards_and_a_year_later_count_for_nothing` |
 | 138 | `Layering.selfCheck` | `Checks/Pipeline/Layering+Checks.swift:38` | the engine names nothing of the interface | twin | Structural: `oni-pipeline` and the engine crates do not depend on `oni-app` |
 | 139 | `SourceFile.sceneListCheck` | `Checks/Pipeline/SourceFile+Checks.swift:47` | the scene is read whole | none | none; a Swift source-layout check with no Rust counterpart |
 | 140 | `DSTextFocus.selfCheck` | `Checks/DesignSystem/DSKeyboard+Checks.swift:59` | a focused text field keeps its bare keys | none | none |

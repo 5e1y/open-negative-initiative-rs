@@ -66,6 +66,7 @@ mod presets;
 mod roll_tab;
 mod rolls;
 mod updates;
+mod year;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
@@ -353,6 +354,7 @@ pub struct State {
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
     pub(crate) updates: updates::Updates,
+    year: year::Year,
 }
 
 impl State {
@@ -751,6 +753,7 @@ impl Shell {
             nav: navigator::Nav::new(options.computer),
             prepare: prepare::Roll::new(options.require_roll),
             updates: updates::Updates::new(options.updates),
+            year: year::Year::default(),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -810,6 +813,11 @@ impl Shell {
         if self.ctl.welcome_due() {
             self.ctl.open_welcome();
         }
+    }
+
+    /// `offerWrapped()` at launch: December's summary, once a year, never under a bench.
+    pub fn offer_wrapped(&self) {
+        self.ctl.offer_wrapped();
     }
 
     /// The open frame's sidecar written as the app ends, whatever ended it; the failure, if any.
@@ -1988,6 +1996,7 @@ impl Ctl {
                 s.last_change = None;
                 s.store.flush()
             };
+            me.journal_settled();
             match failure {
                 Some(message) => me.say(&message),
                 None => me.schedule_redraw(),
@@ -2388,6 +2397,7 @@ impl Ctl {
         self.schedule_redraw();
         self.decode_open(path);
         self.require_roll(path);
+        self.journal_opened(path);
     }
 
     /// The open frame's preview: the one kept, else a decode off this thread by the reading its
@@ -2540,6 +2550,7 @@ impl Ctl {
     }
 
     fn label_paths(self: &Rc<Self>, targets: &[String], label: Medal) {
+        self.journal_medal(targets, label);
         let mut written = Vec::new();
         for path in targets {
             match oni_settings::sidecar::set_label(label, Path::new(path), true) {
@@ -2810,6 +2821,7 @@ impl Ctl {
             "whats-new" => self.show_whats_new_again(),
             "report" => self.open_report(),
             "check-updates" | "update" => self.check_for_updates(true),
+            "wrapped" => self.show_wrapped(oni_library::wrapped::today().0),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -3029,6 +3041,7 @@ impl Ctl {
         if let Some(store) = self.state.borrow_mut().store.editor() {
             store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
         }
+        self.journal_count(oni_library::journal::Kind::Rolled, targets.len());
 
         self.followed(&made);
     }
@@ -3176,6 +3189,7 @@ impl Ctl {
 
     fn lay_paste(self: &Rc<Self>, targets: Vec<String>) {
         self.gesture(&targets, |store| store.paste_settings(&targets));
+        self.journal_count(oni_library::journal::Kind::Pasted, targets.len());
     }
 
     /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
@@ -3207,6 +3221,7 @@ impl Ctl {
             touched.extend(open);
             touched
         };
+        self.journal_count(oni_library::journal::Kind::Pasted, touched.len());
         self.gesture(&touched, |_| 0);
     }
 
@@ -3581,7 +3596,10 @@ impl Ctl {
         let p = me.clone();
         window.global::<crate::Notice>().on_close(move || p.neutral_decode_notice_dismissed());
         let p = me.clone();
-        window.global::<PanelState>().on_auto_balance(move || p.act("auto-balance"));
+        window.global::<PanelState>().on_auto_balance(move || {
+            p.journal_balanced();
+            p.act("auto-balance");
+        });
         let p = me.clone();
         window.global::<PanelState>().on_pick(move |what| p.act(&what));
         let p = me.clone();
@@ -3605,6 +3623,7 @@ impl Ctl {
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);
         Ctl::wire_help(me, window);
+        Ctl::wire_wrapped(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         Ctl::wire_prepare(me, window);

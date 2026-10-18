@@ -34,6 +34,7 @@ pub mod track;
 pub mod updates;
 pub mod viewport;
 pub mod web;
+pub mod wrapped;
 
 use std::path::PathBuf;
 
