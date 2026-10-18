@@ -89,6 +89,10 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let canvas = w.global::<oni_app::Canvas>();
     assert!(canvas.get_status().contains(" × "), "{}", canvas.get_status());
     println!("shot {}", rig.shot("editor-color").display());
+    // The crop-first line over Auto White Balance follows the open frame's own framing.
+    let g = ctl.state.borrow().store().settings().geometry.clone();
+    let uncropped = g.crop == oni_settings::cg::Rect::UNIT && g.measure_window.is_none();
+    assert_eq!(w.global::<PanelState>().get_crop_first(), uncropped, "{:?}", g.crop);
 
     // A drag on Exposure: notches at the hand's pace, one store step, one render at least.
     let g = w.global::<StoreGlobal>();
@@ -148,9 +152,11 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
 
     rig.chord(slint::platform::Key::Control, "g");
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
-    rig.until("ten thumbnails", Duration::from_secs(600), || ctl.state.borrow().loaded() >= 10);
+    // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it.
+    let n = std::fs::read_dir(&folder).unwrap().filter(|e| e.as_ref().unwrap().path().extension().is_some_and(|x| x == "NEF")).count();
+    rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
     let tiles = app::tiles(w);
-    assert_eq!(tiles.len(), 10, "every cell of a ten-photo roll is in view");
+    assert_eq!(tiles.len(), n, "every cell of the roll is laid out");
     // Both faces through the pipeline: every tile drawn, the Scanner face's among them.
     let mut scanner_drawn = 0;
     for t in &tiles {
@@ -159,7 +165,7 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         assert!(t.picture.size().width > 0, "{}: {face:?} left empty", t.caption);
         scanner_drawn += usize::from(face == oni_settings::Face::Scanner);
     }
-    println!("10 of 10 thumbnails drawn, {scanner_drawn} on the Scanner face");
+    println!("{n} of {n} thumbnails drawn, {scanner_drawn} on the Scanner face");
     // Twin: the roll holds Scanner-face frames, so a renderer refusing that face fails above.
     assert!(scanner_drawn > 0);
     w.global::<Library>().invoke_tile_clicked(3, false, false);
@@ -168,7 +174,7 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     println!("shot {}", rig.shot("gallery").display());
 
     // A bare medal key labels the selection; typed into the description field, it stays a character.
-    let fourth = folder.join("DSC_6444.NEF").to_string_lossy().into_owned();
+    let fourth = folder.join(format!("{}.NEF", tiles[3].caption)).to_string_lossy().into_owned();
     assert_ne!(label_of(&fourth), oni_settings::Medal::Silver);
     rig.key("2");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Silver);

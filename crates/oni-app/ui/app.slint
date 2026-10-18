@@ -276,7 +276,7 @@ export component MainWindow inherits AppWindow {
                                     }
                                     moved => { Canvas.dragged(self.mouse-x, self.mouse-y); }
                                     scroll-event(event) => {
-                                        Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.meta) ? EventResult.accept : EventResult.reject
+                                        Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.control) ? EventResult.accept : EventResult.reject
                                     }
                                 }
                             }

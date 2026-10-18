@@ -353,8 +353,8 @@
     "id": 47,
     "type": "feature",
     "title": "The canvas's leftovers: the zoom bubble, Space's hand, the patch's source, the crop's size badge",
-    "status": "doing",
-    "detail": "The zoom bubble above the canvas with the ladder's keys, Space held in De-dust panning instead of painting, the line from each correction to its source and the copied stroke, the kept size above the crop frame while a handle is held, and what else the editor's parity lists missing on the canvas, Crop and De-dust. Then the neutral decode notice, plain images and linear scans on converted primaries opening, the cropping ground, the launch splash, and the crop-first warning over Auto White Balance."
+    "status": "done",
+    "detail": "The zoom bubble above the canvas with the ladder's keys, Space held in De-dust panning instead of painting, the line from each correction to its source and the copied stroke, the kept size above the crop frame while a handle is held, and what else the editor's parity lists missing on the canvas, Crop and De-dust. Then the neutral decode notice, plain images and linear scans on converted primaries opening, the cropping ground, the launch splash, and the crop-first warning over Auto White Balance. On a Mac, Slint hands ⌘ over as control: the editor's ⌘ keys and ⌘-scroll zoom read it so."
   },
   {
     "id": 48,
@@ -362,5 +362,12 @@
     "title": "Every render branch against Swift's own render",
     "status": "done",
     "detail": "The Swift app's render path driven from its sources (built apart, the Swift repository untouched) on adversarial settings for every branch, on a roll #8 frame and a Negs RW2 decoded by Swift; the Rust pipeline on the same decoded input and settings, compared per branch; each branch that differs fixed. Per branch, on the Swift decode: 23 settings sets (21 per pixel, sharpening, chroma denoise and texture through a probe build of a copy of the Swift sources) on two frames, every one within mean 4.4e-4 and p99 2.5e-3 of Swift; the one departure, a vertical crop one pixel wide, was the test's grid (LibRaw's width for Swift's ImageIO one). Balance strength and paper correction left the list: neither is a render branch."
+  },
+  {
+    "id": 50,
+    "type": "feature",
+    "title": "The levels' and curves' input histograms",
+    "status": "todo",
+    "detail": "The levels plot over the levels' input histogram (UI/SettingsPane.swift:157-171) and the curves over the manual curves' input histogram with the channel in focus (Scene/EditorScene+Panel.swift:139, UI/CurveEditorView.swift:113-117), computed on the GPU at the image's cadence like the main histogram, filling Plots.levels and the curves' input."
   }
 ]

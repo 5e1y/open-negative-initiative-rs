@@ -14,6 +14,8 @@ export global PanelState {
     in property <string> film-type: "Color Negative";
     in property <string> dyes: "Generic C-41";
     in property <bool> flat-field-on;
+    // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
+    in property <bool> crop-first;
     callback auto-balance();
     callback pick(string);
     callback tab-picked(int);
@@ -236,6 +238,12 @@ component ColorPane inherits Pane {
         block: 0;
         modified: Store.color-modified;
         help: "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.";
+        if PanelState.crop-first: Label {
+            text: "Crop before using the automatic balance";
+            role: TextRole.section;
+            centred: true;
+            wrap: word-wrap;
+        }
         Button {
             text: "AUTO WHITE BALANCE";
             help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";

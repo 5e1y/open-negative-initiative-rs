@@ -85,7 +85,7 @@ Statuses are defined in [README.md](README.md).
 | Rotate 90°, Mirror horizontally, vertically | `UI/GeometryPanel.swift:37`, `Pipeline/Geometry.swift:39-72` | `geometry.rs` `rotate`, `mirror`, `mirror_vertically`, `app.rs` `framing_act` | done | Rotate is three quarters counter-clockwise, as Swift's key | `oni-settings/src/geometry.rs::four_quarter_turns_return_the_frame_and_one_swaps_its_sides`, `a_mirror_keeps_the_crop_on_its_content`, `ONI_BENCH=crop` |
 | Measuring Window keys | `UI/GeometryPanel.swift:63`, `Geometry.swift:143` | `panel.slint`, `app.rs` `framing_act` | done | Reset, Measuring Window / Apply Window, copy and paste; the copied window lives for the session, as `Propagation`'s | `oni-settings/src/geometry.rs::the_measuring_window_reads_inside_the_crop` |
 | Kept pixels LCD | `UI/GeometryPanel.swift`, `Geometry.swift:163` | `panel.slint`, `geometry.rs` `pixel_label` | done | A value label, not Swift's LCD look | `oni-settings/src/geometry.rs::the_measuring_window_reads_inside_the_crop`, `ONI_BENCH=crop` |
-| Crop-first warning before Auto White Balance | `UI/GeometryPanel.swift:5` | none | missing | | no check |
+| Crop-first warning before Auto White Balance | `UI/GeometryPanel.swift:5`, `UI/ColorPane.swift:238` | `panel.slint` `PanelState.crop-first`, `app.rs` `publish_framing` | done | A line over the key, not inside its plate | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
 
 ## Panel: Color tab
 

@@ -21,14 +21,14 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 57 | 45 | 49 | 76 of 151 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 58 | 45 | 48 | 77 of 151 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 14 | 32 | 39 | 33 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 4 | 31 | 3 | 34 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 7 | 17 | 24 | 15 of 48 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 83 | 16 | 26 | 82 of 125 |
-| **All** | | **165** | **141** | **141** | **240 of 447** |
+| **All** | | **166** | **141** | **140** | **241 of 447** |
 
-Within the editor: canvas 17 / 2 / 0, main band 1 / 1 / 3, panel tabs 2 / 2 / 4, Roll tab 4 / 7 / 8, Crop tab 6 / 1 / 1, Color tab 6 / 5 / 2, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 0 / 4 / 3, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 3 / 0 / 4, history 2 / 3 / 1 (done / partial / missing).
+Within the editor: canvas 17 / 2 / 0, main band 1 / 1 / 3, panel tabs 2 / 2 / 4, Roll tab 4 / 7 / 8, Crop tab 7 / 1 / 0, Color tab 6 / 5 / 2, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 0 / 4 / 3, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 3 / 0 / 4, history 2 / 3 / 1 (done / partial / missing).
 
 Nine rows are done with no check: ⌘G, bare keys yielding to a text field, ⌘ and ⇧
 selection (twice), double-click to open, the offline `--check`, the export sample sizes, the

@@ -706,6 +706,7 @@ impl Ctl {
             let board = s.store.editor_ref().is_some_and(|e| e.board.framing.is_some());
             (s.store.settings().geometry.clone(), s.window_armed, board, s.window_board)
         };
+        w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());
         let f = w.global::<crate::Framing>();
         let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
         f.set_ratio(g.ratio.and_then(|r| ratios.iter().position(|x| *x == r)).map_or(0, |i| i as i32 + 1));
@@ -2335,9 +2336,9 @@ impl Ctl {
         let p = me.clone();
         window.global::<App>().on_menu(move |a| p.act(&a));
         let p = me.clone();
-        window.global::<App>().on_key(move |text, control, meta, shift, option| {
-            let command = if cfg!(target_os = "macos") { meta } else { control };
-            p.key(&text, command, shift, option)
+        window.global::<App>().on_key(move |text, control, _meta, shift, option| {
+            // Slint already hands ⌘ over as `control` on a Mac, and the Control key as `meta`.
+            p.key(&text, control, shift, option)
         });
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));
