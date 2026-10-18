@@ -56,7 +56,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Decode pinned 5000 K, tint 0 | `Pipeline/RawDecode.swift:14-26` | `oni-decode/src/lib.rs:46`, `csrc/pinned.c` | done | LibRaw by design; `CIRAWFilter` knobs (noise 1, sharpness 0, shadow bias 0, version 8) have no LibRaw twin | `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline`, `oni-decode/tests/swift_checks.rs::nothing_the_pinned_decode_hands_out_piles_at_the_resting_ceiling` |
 | An 8-bit source is flagged, never refused (`isLowPrecision`) | `Pipeline/RawDecode.swift:400`, `ContainerRead.swift:198` | `oni-decode/src/lib.rs` `is_low_precision` | partial | Read; no panel shows the warning | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
 | Sort decodes on the bytes, not the extension | `Pipeline/RawDecode.swift` | `oni-decode/src/container.rs` | done | | `oni-decode/src/container.rs::the_bytes_decide_the_branch` |
-| Undeclared file read as the hand says (Source Encoding) | `Pipeline/SourceEncoding.swift` | `oni-settings` field | partial | Field only; no plain-image decode | no check |
+| Undeclared file read as the hand says (Source Encoding) | `Pipeline/SourceEncoding.swift` | `oni-colour/src/source.rs`, `oni-decode/src/plain.rs` | done | | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | DNG container read: illuminants 17, 20, 21, 23 | `Pipeline/ContainerRead.swift:388` | `oni-decode/src/container.rs` | partial | Linear table read; converted primaries refused | `oni-decode/src/container.rs::a_linear_scan_reads_through_its_table_black_and_white` |
 | RGB passes read side 360, registration floor 0.3, 3 frames | `Pipeline/RGBPasses.swift:119`, `RGBRegistration.swift:30-35` | none | missing | | no check |
 
@@ -197,7 +197,7 @@ these two tests moves that branch.
 | Geometry: crop, quarter turns, mirror, angle | `Pipeline/Geometry.swift` | `oni-pipeline/src/geometry.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::rotation_turns_and_strokes_match` |
 | RGB passes | `Pipeline/RGBPasses.swift` | `oni-pipeline` | no | `oni-render/tests/kernels.rs::rgb_passes` |
 | Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs` | no | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
-| Source encoding | `Pipeline/SourceEncoding.swift` | none | no | none |
+| Source encoding | `Pipeline/SourceEncoding.swift` | `oni-colour/src/source.rs` | no | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | Paper correction | `Pipeline/PaperCorrection.swift` | `oni-colour/src/paper.rs` | n/a: laid only on an export into a paper profile | none |
 | Contact-sheet ground | `Pipeline/ContactSheet.swift` | none | no | none |
 | Proof, ICC export legs | `Pipeline/Proof.swift`, `OutputProfile.swift` | `oni-colour` | no | lcms2 oracle in `oni-colour/tests/oracle*.rs` |

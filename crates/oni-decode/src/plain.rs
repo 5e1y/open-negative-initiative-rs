@@ -1,7 +1,7 @@
 //! A file neither LibRaw nor the linear container reads, as ImageIO hands it to Core Image: its
 //! encoded values on [0, 1], upright, its embedded profile, and whether it holds one grey channel.
 
-use image::{DynamicImage, ImageDecoder, ImageReader, imageops::FilterType};
+use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, codecs::tiff::TiffDecoder, imageops::FilterType};
 use std::path::Path;
 
 pub struct Encoded {
@@ -19,8 +19,13 @@ pub struct Encoded {
 /// `plainLinearReduced`'s thumbnail when `longest_side` is given: never past the file's own size,
 /// sampled on its code values as ImageIO reduces before Core Image linearises.
 pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
-    let mut decoder = ImageReader::open(path).ok()?.with_guessed_format().ok()?.into_decoder().ok()?;
-    let icc = decoder.icc_profile().ok().flatten();
+    let reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
+    let tiff = reader.format() == Some(ImageFormat::Tiff);
+    let mut decoder = reader.into_decoder().ok()?;
+    let mut icc = decoder.icc_profile().ok().flatten();
+    if icc.is_none() && tiff {
+        icc = tiff_profile(path);
+    }
     let orientation = decoder.orientation().ok();
     let grey = !decoder.color_type().has_color();
     let mut image = DynamicImage::from_decoder(decoder).ok()?;
@@ -42,6 +47,13 @@ pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
     let (width, height) = (rgba.width() as usize, rgba.height() as usize);
     let pixels = rgba.pixels().map(|p| [p[0], p[1], p[2], 1.0]).collect();
     Some(Encoded { width, height, full, pixels, icc, grey })
+}
+
+/// The reader's limits cap a TIFF tag at the pixels' own byte count, so a profile larger than a small
+/// image's pixels (598 bytes over a 4 × 1 frame) is dropped; a decoder with the default limits reads it.
+fn tiff_profile(path: &Path) -> Option<Vec<u8>> {
+    let file = std::io::BufReader::new(std::fs::File::open(path).ok()?);
+    TiffDecoder::new(file).ok()?.icc_profile().ok().flatten()
 }
 
 #[cfg(test)]

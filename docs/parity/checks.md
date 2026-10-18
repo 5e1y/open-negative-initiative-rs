@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 71 twin, 15 partial, 76 none.
+Of 162 checks: 72 twin, 15 partial, 75 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -91,7 +91,7 @@ Of 162 checks: 71 twin, 15 partial, 76 none.
 | 77 | `AutomaticKey.selfCheck` | `Checks/Pipeline/AutomaticKey+Checks.swift:6` | a selection's average gives every frame the mean correction | twin | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
 | 78 | `LookSettings.selfCheck` | `Checks/Pipeline/LookSettings+Checks.swift:6` | a settings paste carries the Color and Details tabs whole, and nothing else | twin | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |
 | 79 | `FilterBalance.selfCheck` | `Checks/Pipeline/FilterBalance+Checks.swift:7` | the balance key greys the frame's sixth-power means with Temperature and Tint | partial | `oni-core/src/balance.rs::the_outcome_is_dosed_by_balance_strength`; no measurement |
-| 80 | `SourceEncoding.selfCheck` | `Checks/Pipeline/SourceEncoding+Checks.swift:12` | an undeclared file is read as the hand says | none | none; plain images are not read (`oni-app/src/render.rs` refuses them) and no decode reads `sourceEncoding` |
+| 80 | `SourceEncoding.selfCheck` | `Checks/Pipeline/SourceEncoding+Checks.swift:12` | an undeclared file is read as the hand says | twin | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | 81 | `RGBPasses.selfCheck` | `Checks/Pipeline/RGBPasses+Checks.swift:10` | a frame made of RGB passes takes each pass's own channel | partial | `oni-render/tests/kernels.rs::rgb_passes`; no Rust code for the triplet decode, its fit, grouping by capture time, `PassOrder(fitting:)` or shares |
 | 82 | `RGBRegistration.selfCheck` | `Checks/Pipeline/RGBRegistration+Checks.swift:71` | a pass's magnification and shift read back off its edges | none | none; no Rust registration |
 | 83 | `RawDecode.tilingCheck` | `Checks/Pipeline/RawDecode+Checks.swift:66` | full-resolution tiling holds | twin | `oni-graph/tests/graph.rs::a_tiled_source_equals_an_untiled_one` |
