@@ -175,6 +175,8 @@ pub fn publish(ctl: &Rc<Ctl>, jump: bool) {
         ctl.editors.jump.set(true);
     }
     draw(ctl, false);
+    // A channel tab moves the focus the input plots are drawn with.
+    ctl.publish_inputs();
 }
 
 fn draw(ctl: &Rc<Ctl>, force: bool) {

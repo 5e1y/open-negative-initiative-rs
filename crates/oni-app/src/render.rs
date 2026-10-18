@@ -255,6 +255,9 @@ pub struct Engine {
     /// Where the dust patches are kept, and those read so far, `None` while one is not generated.
     pub caches: Option<PathBuf>,
     patches: HashMap<Id, Option<Source>>,
+    /// `Negative.measure` and `measureSmall` of the preview whose id leads: what the input
+    /// histograms read, the small one under the hand.
+    measures: Option<(u64, Source, Source)>,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -354,7 +357,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -362,6 +365,29 @@ impl Engine {
     }
 
     /// The graph and the pipeline, for a render the canvas never shows: an export reads them unproofed.
+    /// `refreshLevelsInput` and `refreshManualCurvesInput`: the distributions in front of the levels
+    /// and of the manual curves, read through the measuring windows, on the small copy while `held`.
+    pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
+        use oni_measure::reader::{Copy, Reader};
+        use oni_measure::truncate::Stage;
+        let id = negative.preview.id();
+        if self.measures.as_ref().is_none_or(|(kept, _, _)| *kept != id) {
+            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline };
+            let measure = r.measuring(&negative.preview)?;
+            // `measureSmall`: a third of the measuring copy's side, as `CILanczosScaleTransform` makes it.
+            let small = self.graph.materialise(&Image::new(&measure).lanczos_anchored(MEASURE_SMALL)).ok()?;
+            self.measures = Some((id, measure, small));
+        }
+        let (_, measure, small) = self.measures.as_ref()?;
+        let source = if held { small.clone() } else { measure.clone() };
+        let copy = || Copy { source: &source, full_width: Some(negative.full_width) };
+        let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline };
+        let levels = r.reading(copy(), settings, Stage::Levels).histogram;
+        let curves = r.reading(copy(), settings, Stage::ManualCurves).histogram;
+        self.graph.purge();
+        Some(InputHistograms { levels, curves })
+    }
+
     pub fn parts(&mut self) -> (&mut Graph, &mut Pipeline) {
         (&mut self.graph, &mut self.pipeline)
     }
@@ -600,6 +626,11 @@ pub struct Placed {
 pub trait Renderer<I>: Send {
     fn render(&mut self, negative: &I, settings: &PipelineSettings) -> Result<Linear, String>;
 
+    /// The levels' and manual curves' input distributions; `None` where nothing measures.
+    fn inputs(&mut self, _negative: &I, _settings: &PipelineSettings, _held: bool) -> Option<InputHistograms> {
+        None
+    }
+
     /// The same render kept on the GPU for the display kernel, the view's region when given; `None`
     /// where only pixels are made.
     fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
@@ -614,6 +645,10 @@ impl Renderer<Negative> for Shared {
 
     fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
         Some(self.lock().and_then(|mut e| e.resident(negative, settings, view)))
+    }
+
+    fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
+        self.lock().ok()?.inputs(negative, settings, held)
     }
 }
 
@@ -661,6 +696,8 @@ pub struct Job<I> {
     pub view: Option<View>,
     /// Compare's before, the bar's reset frame with the dust kept, rendered on the same view.
     pub reference: Option<PipelineSettings>,
+    /// A gesture holds the frame: the input histograms read the small measuring copy.
+    pub held: bool,
 }
 
 /// What a render hands the canvas: a texture the display kernel encodes, or for the software
@@ -684,7 +721,60 @@ pub struct Done {
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
+    /// The levels' and manual curves' input distributions, read at most once an image interval.
+    pub inputs: Option<InputHistograms>,
 }
+
+/// What the levels and the manual curves are drawn over: the distributions in front of each.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct InputHistograms {
+    pub levels: oni_measure::histogram::Histogram,
+    pub curves: oni_measure::histogram::Histogram,
+}
+
+impl InputHistograms {
+    /// `HistogramTraces`: each channel's counts coarsened to the plot's columns, `HistogramScale`'s
+    /// heights (the peak off the two bins at each end, then the 0.42 power), filled at 28 % under an
+    /// 85 % edge, a channel out of focus at a fifth; premultiplied RGBA8 of `w` by `h`.
+    pub fn raster(histogram: &oni_measure::histogram::Histogram, focus: Option<usize>, w: usize, h: usize) -> Vec<u8> {
+        let mut out = vec![[0f32; 4]; w * h];
+        let n = histogram.rgb.len();
+        if n < 2 || w == 0 || h == 0 {
+            return vec![0; w * h * 4];
+        }
+        for c in 0..3 {
+            let counts: Vec<f32> = histogram.rgb.iter().map(|b| b[c].max(0.0)).collect();
+            let interior = if n > 4 { &counts[2..n - 2] } else { &counts[..] };
+            let peak = interior.iter().copied().fold(0.0, f32::max);
+            if peak <= 0.0 {
+                continue;
+            }
+            let column = |x: usize| {
+                let (a, b) = (x * n / w, ((x + 1) * n / w).max(x * n / w + 1).min(n));
+                let mean = counts[a..b].iter().sum::<f32>() / (b - a) as f32;
+                (mean / peak).powf(0.42).min(1.0)
+            };
+            let strength = if focus.is_some_and(|f| f != c) { 0.2 } else { 1.0 };
+            for x in 0..w {
+                let top = h as f32 * (1.0 - column(x));
+                for y in 0..h {
+                    let edge = (y as f32 - top).abs() < 1.0;
+                    let a = if edge { 0.85 } else if y as f32 >= top { 0.28 } else { continue } * strength;
+                    let px = &mut out[y * w + x];
+                    // Source over, premultiplied, in the channel's own primary.
+                    for k in 0..3 {
+                        px[k] = if k == c { a } else { 0.0 } + px[k] * (1.0 - a);
+                    }
+                    px[3] = a + px[3] * (1.0 - a);
+                }
+            }
+        }
+        out.iter().flat_map(|p| p.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8)).collect()
+    }
+}
+
+/// `Negative.measureSmall`'s scale of the measuring copy.
+const MEASURE_SMALL: f64 = 0.35;
 
 struct Slot<I> {
     waiting: Option<Job<I>>,
@@ -710,6 +800,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                 let mut seed = 0u32;
                 // The before is kept while its settings and the view hold, so a notch never renders it again.
                 let mut kept: Option<(PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
+                let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 loop {
                     let job = {
                         let (lock, wake) = &*shared;
@@ -730,7 +821,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None, inputs: None }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -738,7 +829,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(Histogram::of(&rgba8));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None, inputs: None }
                         }),
                     };
                     let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {
@@ -757,7 +848,16 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         }
                         _ => None,
                     };
-                    let done = done.map(|d| Done { before, ..d });
+                    // At the image's own cadence, and always on the last job of a burst, so the hand's
+                    // release lands the full copy's reading.
+                    let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
+                    let inputs = if done.is_ok() && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                        last_inputs = Instant::now();
+                        renderer.inputs(&job.negative, &job.settings, job.held && !quiet)
+                    } else {
+                        None
+                    };
+                    let done = done.map(|d| Done { before, inputs, ..d });
                     deliver(done);
                 }
             })
@@ -916,7 +1016,7 @@ mod tests {
             let mut settings = PipelineSettings::default();
             settings.print.exposure = revision as f32;
             let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
-            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None });
+            worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false });
             std::thread::sleep(Duration::from_millis(2));
         }
         let mut revisions = Vec::new();
@@ -1082,6 +1182,52 @@ mod tests {
     }
 
     /// The real pipeline on a two-pixel frame, on the first adapter wgpu finds.
+    #[test]
+    fn the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_follows() {
+        let Ok(device) = Device::open() else {
+            eprintln!("no adapter: the engine is not exercised");
+            return;
+        };
+        let mut engine = Engine::on(&device);
+        let (w, h) = (300usize, 200usize);
+        let pixels = (0..w * h).map(|i| { let v = 0.02 + 0.6 * (i % w) as f32 / w as f32; [v, v * 0.7, v * 0.5, 1.0] }).collect();
+        let negative = engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: w as f64 }).unwrap();
+        let rest = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+        let before = engine.inputs(&negative, &rest, false).expect("readings");
+        assert!(before.levels.rgb.len() > 2 && before.curves.rgb.len() > 2);
+        // An adversarial manual curve: the output moves, the curves' own input does not.
+        let mut curved = rest.clone();
+        curved.manual_curves.linked.points = vec![oni_settings::cg::Point::new(0.0, 0.0), oni_settings::cg::Point::new(0.3, 0.8), oni_settings::cg::Point::new(1.0, 1.0)];
+        let after = engine.inputs(&negative, &curved, false).expect("readings");
+        assert_eq!(after.curves, before.curves, "the curves' input is read in front of them");
+        let shown = |s: &PipelineSettings, e: &mut Engine| e.render(&negative, s, None).unwrap().pixels;
+        let moved = shown(&rest, &mut engine).iter().zip(shown(&curved, &mut engine)).map(|(a, b)| (a[1] - b[1]).abs()).fold(0.0, f32::max);
+        assert!(moved > 0.05, "the curve reaches the output: {moved}");
+        // Twin: gains, in front of the levels, move the levels' own input.
+        let mut gained = rest.clone();
+        gained.gains.stops = [0.8, 0.0, -0.8];
+        let gained = engine.inputs(&negative, &gained, false).expect("readings");
+        assert_ne!(gained.levels, before.levels, "the levels' input reads the gains");
+        // The small copy under the hand reads a third of the pixels.
+        let small = engine.inputs(&negative, &rest, true).expect("readings");
+        let count = |h: &oni_measure::histogram::Histogram| h.rgb.iter().map(|b| b[0]).sum::<f32>();
+        assert!(count(&small.levels) < 0.2 * count(&before.levels), "{} of {}", count(&small.levels), count(&before.levels));
+    }
+
+    #[test]
+    fn an_input_plot_draws_its_focus_channel_whole_and_the_others_at_a_fifth() {
+        let rgb: Vec<[f32; 3]> = (0..64).map(|i| [i as f32, 32.0, (64 - i) as f32]).collect();
+        let h = oni_measure::histogram::Histogram { rgb, luma: vec![0.0; 64], ends: None };
+        let all = InputHistograms::raster(&h, None, 64, 20);
+        let green = InputHistograms::raster(&h, Some(1), 64, 20);
+        let at = |v: &[u8], x: usize, y: usize, c: usize| v[(y * 64 + x) * 4 + c];
+        // Near the bottom every trace fills: red is dimmed once green holds the focus, green is not.
+        assert!(at(&green, 40, 19, 0) < at(&all, 40, 19, 0) && at(&green, 40, 19, 1) >= at(&all, 40, 19, 1) / 2);
+        // Twin: an empty reading draws nothing at all.
+        let empty = oni_measure::histogram::Histogram::default();
+        assert!(InputHistograms::raster(&empty, None, 8, 8).iter().all(|&b| b == 0));
+    }
+
     #[test]
     fn the_engine_inverts_a_negative_and_keeps_a_positive_in_order() {
         let Ok(device) = Device::open() else {

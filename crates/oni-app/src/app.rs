@@ -223,6 +223,9 @@ pub struct State {
     requested: u64,
     histogram: Option<Histogram>,
     histogram_dirty: bool,
+    /// The levels' and manual curves' input distributions last read, and the focus each was drawn with.
+    inputs: Option<render::InputHistograms>,
+    inputs_drawn: Option<(Option<usize>, Option<usize>)>,
     last_change: Option<Instant>,
     status: String,
     brush: f32,
@@ -582,6 +585,8 @@ impl Shell {
             requested: 0,
             histogram: None,
             histogram_dirty: false,
+            inputs: None,
+            inputs_drawn: None,
             last_change: None,
             status: String::new(),
             brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
@@ -1362,7 +1367,9 @@ impl Ctl {
                 reference.corrections = live.corrections.clone();
                 reference
             });
-            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference }, build, heal)
+            // A notch is the hand at work: the input histograms read the small copy until it stops.
+            let held = kind == Kind::Notch;
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
         };
         self.worker.submit(job);
         if let Some((path, converted)) = build {
@@ -1526,8 +1533,13 @@ impl Ctl {
                 s.histogram = Some(h);
                 s.histogram_dirty = true;
             }
+            if let Some(i) = done.inputs {
+                s.inputs = Some(i);
+                s.inputs_drawn = None;
+            }
             s.gpu.is_some()
         };
+        self.publish_inputs();
         if on_gpu {
             let whole = done.placed.is_none_or(|p| p.whole);
             self.encode(done.picture, shown, whole);
@@ -1780,6 +1792,36 @@ impl Ctl {
             && w.global::<App>().get_gallery()
         {
             w.global::<Canvas>().set_status(text.into());
+        }
+    }
+
+    /// The levels' and the manual curves' plots over their input distributions, each with its own
+    /// channel in focus; drawn again only when a reading lands or a channel tab moves.
+    pub(crate) fn publish_inputs(&self) {
+        let Some(w) = self.window() else { return };
+        let focus = {
+            let g = self.editors.gestures.borrow();
+            (g.levels_channel().histogram_channel(), g.curve_channel().histogram_channel())
+        };
+        let inputs = {
+            let mut s = self.state.borrow_mut();
+            if s.inputs_drawn == Some(focus) {
+                return;
+            }
+            s.inputs_drawn = Some(focus);
+            s.inputs.clone()
+        };
+        let (pw, ph) = HISTOGRAM;
+        let plots = w.global::<Plots>();
+        match inputs {
+            Some(i) => {
+                plots.set_levels(premultiplied(&render::InputHistograms::raster(&i.levels, focus.0, pw, ph), pw, ph));
+                plots.set_curves(premultiplied(&render::InputHistograms::raster(&i.curves, focus.1, pw, ph), pw, ph));
+            }
+            None => {
+                plots.set_levels(Image::default());
+                plots.set_curves(Image::default());
+            }
         }
     }
 
@@ -2137,6 +2179,9 @@ impl Ctl {
             let opened = s.store.open(path).err();
             s.open = Some(path.to_string());
             s.opened_at = Instant::now();
+            // Another photo's distributions never stand under this one's handles.
+            s.inputs = None;
+            s.inputs_drawn = None;
             s.rendered = 0;
             s.requested = 0;
             // Kept, not fitted: walking a roll at 100 % to compare grain needs it.

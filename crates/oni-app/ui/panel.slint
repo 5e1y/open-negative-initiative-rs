@@ -8,6 +8,8 @@ import { Exporting } from "export.slint";
 export global Plots {
     in property <image> output;
     in property <image> levels;
+    // The manual curves' input distribution, the channel in focus drawn whole.
+    in property <image> curves;
 }
 
 export global PanelState {
@@ -423,7 +425,7 @@ component ColorPane inherits Pane {
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
         help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
-        CurvesEditor { histogram: Plots.output; }
+        CurvesEditor { histogram: Plots.curves; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.
     if !Editors.monochrome: EditorBlock {

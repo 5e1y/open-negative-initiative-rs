@@ -97,6 +97,11 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let canvas = w.global::<oni_app::Canvas>();
     assert!(canvas.get_status().contains(" × "), "{}", canvas.get_status());
     println!("shot {}", rig.shot("editor-color").display());
+    // The levels' and curves' plots are drawn over their own input distributions once a render lands.
+    rig.until("the input plots", Duration::from_secs(60), || {
+        let p = w.global::<oni_app::Plots>();
+        p.get_levels().size().width > 0 && p.get_curves().size().width > 0
+    });
     // The crop-first line over Auto White Balance follows the open frame's own framing.
     let g = ctl.state.borrow().store().settings().geometry.clone();
     let uncropped = g.crop == oni_settings::cg::Rect::UNIT && g.measure_window.is_none();

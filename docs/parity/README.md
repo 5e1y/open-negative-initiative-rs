@@ -28,10 +28,7 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 98 | 13 | 19 | 101 of 130 |
 | **All** | | **274** | **78** | **101** | **308 of 453** |
 
-Within the editor: canvas 18 / 1 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7,
-Crop tab 8 / 0 / 0, Color tab 10 / 3 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
-6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 1 / 1 (done / partial /
-missing).
+Within the editor: canvas 18 / 1 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7, Crop tab 8 / 0 / 0, Color tab 10 / 3 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 1 / 1 (done / partial / missing).
 
 Twelve rows are done with no check, all in the app: Recheck Originals and Read the Folders Again
 (three rows), bare keys yielding to a text field, ⌘ and ⇧ selection (twice), double-click to open,

@@ -412,8 +412,8 @@
     "id": 50,
     "type": "feature",
     "title": "The levels' and curves' input histograms",
-    "status": "todo",
-    "detail": "The levels plot over the levels' input histogram (UI/SettingsPane.swift:157-171) and the curves over the manual curves' input histogram with the channel in focus (Scene/EditorScene+Panel.swift:139, UI/CurveEditorView.swift:113-117), computed on the GPU at the image's cadence like the main histogram, filling Plots.levels and the curves' input."
+    "status": "done",
+    "detail": "The levels plot over the levels' input histogram (UI/SettingsPane.swift:157-171) and the curves over the manual curves' input histogram with the channel in focus (Scene/EditorScene+Panel.swift:139, UI/CurveEditorView.swift:113-117), computed on the GPU at the image's cadence like the main histogram, filling Plots.levels and the curves' input. Read in the render thread after a render, at most once an image interval and always on the last job of a burst, on `Negative.measure` (1400 px) or `measureSmall` (0.35 of it) under the hand, through oni-measure's reader; drawn as `HistogramTraces` with each editor's channel in focus."
   },
   {
     "id": 55,
