@@ -109,7 +109,7 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Sharpening: Amount, Radius, Halo limit | `UI/DetailsPane.swift:9`, `UI/SharpenPanel.swift` | `panel.slint:182-187` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
-| Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint:190-194` | partial | Shown in monochrome, which Swift hides (`DetailsPane.swift:15`) | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint` DetailsPane | done | Hidden in monochrome, as `DetailsPane` hides it | oni-app/tests/roll_tab.rs::the_roll_tabs_blocks_write_what_swifts_write |
 | Texture | `UI/DetailsPane.swift:25` | `panel.slint:197-200` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Off on a contact sheet, with its note | `UI/DetailsPane.swift:37` | none | missing | | no check |
 

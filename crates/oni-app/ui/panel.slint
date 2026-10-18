@@ -616,7 +616,8 @@ component DetailsPane inherits Pane {
         StoreSlider { field: 16; label: "Radius"; fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
         StoreSlider { field: 17; label: "Halo limit"; fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
     }
-    Block {
+    // `DetailsPane`: a monochrome frame has no colour noise to smooth.
+    if !PanelState.monochrome: Block {
         title: "Chroma Denoise";
         block: 7;
         modified: Store.chroma-denoise-modified;

@@ -8,6 +8,10 @@ use std::path::{Path, PathBuf};
 pub const OPENED_FOLDER: &str = "openedFolder";
 /// `EditorScene.neutralDecodeNoticeShown`: the recalibration notice was dismissed once.
 pub const NEUTRAL_DECODE_NOTICE_SHOWN: &str = "neutralDecodeNoticeShown";
+/// `@AppStorage("galleryColumns")`: the gallery's tile size, a rung of its ladder.
+pub const GALLERY_COLUMNS: &str = "galleryColumns";
+/// `@AppStorage("soundMuted")`: the key clicks silenced.
+pub const SOUND_MUTED: &str = "soundMuted";
 
 pub struct Preferences {
     file: PathBuf,
@@ -40,6 +44,10 @@ impl Preferences {
 
     pub fn bool(&self, key: &str) -> Option<bool> {
         self.values.get(key)?.as_bool()
+    }
+
+    pub fn int(&self, key: &str) -> Option<i64> {
+        self.values.get(key)?.as_i64()
     }
 
     /// Writes the whole file at once, through a sibling so a crash never leaves half a file.

@@ -90,8 +90,12 @@ fn the_roll_tabs_blocks_write_what_swifts_write() {
     panel.invoke_film_type_picked(1);
     rig.pump();
     assert!(!panel.get_gains_inverted(), "twin: a positive's rows run the other way");
+    panel.invoke_film_type_picked(2);
+    rig.pump();
+    assert!(panel.get_monochrome(), "black and white hides Chroma Denoise and the flat-field's colour pair");
     panel.invoke_film_type_picked(0);
     rig.pump();
+    assert!(!panel.get_monochrome());
 
     // The flat-field: on takes a mask to choose, the sliders wait for it; the picker lists the one loaded.
     assert!(!panel.get_flat_field_on());

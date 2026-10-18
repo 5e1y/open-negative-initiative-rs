@@ -60,7 +60,7 @@ Statuses are defined in [README.md](README.md).
 | Main-thread watchdog, anonymous console log | `Pipeline/Diagnostics.swift` | none | missing | | no check |
 | Cache budget follows the machine | `Pipeline/MemoryBudget.swift` | `oni-app/src/viewport.rs` | partial | The budget formula is ported but always fed 24 Mpx; previews are a fixed four | `oni-app/src/render.rs::previews_keep_the_last_four_used` |
 | Frame-rate meter `--fps` | `Pipeline/FrameRate.swift` | `oni-app/src/timing.rs` (`ONI_BENCH`) | done | | `oni-app/src/timing.rs::the_centiles_read_the_slow_tail_and_the_gaps_between_frames` |
-| Key click sound, Mute Key Clicks | `DesignSystem/Keycap`, `UI/EditorCommands.swift` | `app.rs` `act` | partial | The menu item toggles its title; no click sounds and the choice is not remembered | no check |
+| Key click sound, Mute Key Clicks | `DesignSystem/Keycap`, `UI/EditorCommands.swift` | `app.rs` `act` "toggle-sound" | partial | The choice is remembered under `soundMuted`; this build plays no key clicks | oni-app/tests/session.rs::the_tile_size_and_the_muted_clicks_outlast_the_session |
 | Haptics cadence | `DesignSystem/DSHaptics.swift` | none | missing | | no check |
 | Self-checks `--check` | `Pipeline/SelfCheck.swift` | `cargo test` | partial | See [checks.md](checks.md) | no check |
 | Command-line instruments (`--decoder-pins`, `--scanner-export`, `--autokey`, `--window-chroma`, `--scanner`, report keygen and unseal) | `Pipeline/CommandLineTools.swift` | none | missing | | no check |

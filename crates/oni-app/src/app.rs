@@ -627,7 +627,7 @@ impl Shell {
             drawing: 0,
             rows: Vec::new(),
             pending: None,
-            muted: false,
+            muted: Preferences::load(&options.support).bool(preferences::SOUND_MUTED).unwrap_or(false),
             open: None,
             picks: Default::default(),
             trash_picks: Default::default(),
@@ -635,7 +635,10 @@ impl Shell {
             shelf: Default::default(),
             batch: None,
             org: Default::default(),
-            columns: gallery::COLUMN_STEPS[1],
+            // A stored count off the ladder lands on its nearest rung.
+            columns: Preferences::load(&options.support)
+                .int(preferences::GALLERY_COLUMNS)
+                .map_or(gallery::COLUMN_STEPS[1], |n| gallery::column_step(n.max(1) as usize, 0)),
             scroll: 0.0,
             grid: (0.0, 0.0),
             layout: Layout::new(&[], 6, 0.0, Metrics::GALLERY),
@@ -2662,6 +2665,7 @@ impl Ctl {
                 let by = if action == "larger" { 1 } else { -1 };
                 let columns = gallery::column_step(self.state.borrow().columns, by);
                 self.state.borrow_mut().columns = columns;
+                self.remember(preferences::GALLERY_COLUMNS, columns.into());
                 self.relayout();
             }
             "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
@@ -2685,8 +2689,9 @@ impl Ctl {
             "framing" if self.state.borrow().open.is_some() => self.toggle_framing(),
             "mirror" => self.framing_act("mirror"),
             "toggle-sound" => {
-                let mut s = self.state.borrow_mut();
-                s.muted = !s.muted;
+                let muted = !self.state.borrow().muted;
+                self.state.borrow_mut().muted = muted;
+                self.remember(preferences::SOUND_MUTED, muted.into());
             }
             "cycle-filter" => self.cycle_filter(),
             "show-selected" => self.show_selected(),
@@ -2735,6 +2740,14 @@ impl Ctl {
             other => self.say(&format!("“{other}” is not in this build yet")),
         }
         self.publish_bar();
+    }
+
+    /// A preference written for the next launch; a failed write is said, the session going on.
+    fn remember(&self, key: &str, value: serde_json::Value) {
+        let written = self.state.borrow_mut().preferences.set(key, value);
+        if let Err(e) = written {
+            self.say(&format!("The preference cannot be kept: {e}"));
+        }
     }
 
     /// `QuitGuard.applicationShouldTerminate`: the sidecar written before the window goes; a write

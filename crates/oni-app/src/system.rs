@@ -35,6 +35,11 @@ pub fn reveal(path: &Path) {
     platform::reveal(path);
 }
 
+/// `activateFileViewerSelecting`: one file viewer with every path of `paths` selected.
+pub fn reveal_all(paths: &[PathBuf]) {
+    platform::reveal_all(paths);
+}
+
 /// Opens a web page in the person's browser, as `NSWorkspace.open` does.
 pub fn open_url(url: &str) {
     platform::open_url(url);
@@ -113,6 +118,12 @@ mod platform {
         let _ = std::process::Command::new("/usr/bin/open").arg("-R").arg(path).spawn();
     }
 
+    pub fn reveal_all(paths: &[PathBuf]) {
+        use objc2_foundation::{NSArray, NSString, NSURL};
+        let urls: Vec<_> = paths.iter().map(|p| NSURL::fileURLWithPath(&NSString::from_str(&p.to_string_lossy()))).collect();
+        objc2_app_kit::NSWorkspace::sharedWorkspace().activateFileViewerSelectingURLs(&NSArray::from_retained_slice(&urls));
+    }
+
     pub fn open_url(url: &str) {
         let _ = std::process::Command::new("/usr/bin/open").arg(url).spawn();
     }
@@ -153,6 +164,13 @@ mod platform {
 
     pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
         dialog(message, extensions).set_file_name(suggested_name).save_file()
+    }
+
+    /// Explorer selects one file a call: the first stands for the scope.
+    pub fn reveal_all(paths: &[PathBuf]) {
+        if let Some(first) = paths.first() {
+            reveal(first);
+        }
     }
 
     pub fn reveal(path: &Path) {
@@ -210,6 +228,8 @@ mod platform {
     }
 
     pub fn reveal(_path: &Path) {}
+
+    pub fn reveal_all(_paths: &[PathBuf]) {}
 
     pub fn open_url(_url: &str) {}
 

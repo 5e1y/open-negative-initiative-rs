@@ -497,5 +497,13 @@
     "status": "done",
     "detail": "QuitGuard: the window's close writes the open frame's sidecar at once instead of losing the last 400 ms; a write that fails raises Swift's alert, Cancel the default so Return never discards the work; a quit that never asks the window to close still writes after the event loop.",
     "outcome": "oni-app/tests/quit.rs: a drag then a close writes the value at once (twin: not yet written before the close); a locked folder makes the close ask, and Return keeps the app open."
+  },
+  {
+    "id": 75,
+    "type": "feature",
+    "title": "Small parity gaps: the grid size and muted clicks remembered, Show in Finder on the whole scope, Chroma Denoise hidden in monochrome",
+    "status": "done",
+    "detail": "`galleryColumns` and `soundMuted` kept under Swift's @AppStorage keys and read at launch; Show in Finder selects every photo of its scope in one viewer (NSWorkspace.activateFileViewerSelecting); the Details tab hides Chroma Denoise on a monochrome frame.",
+    "outcome": "oni-app/tests/session.rs checks two sessions and a fresh support folder as twin; the Roll tab test checks the monochrome flag the Details tab reads."
   }
 ]

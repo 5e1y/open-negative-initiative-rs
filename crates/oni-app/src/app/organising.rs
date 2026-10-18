@@ -563,11 +563,7 @@ impl Ctl {
                 self.state.borrow_mut().trash_picks.selection = paths.iter().cloned().collect();
                 self.restore(&paths);
             }
-            Act::Reveal(paths) => {
-                if let Some(first) = paths.first() {
-                    system::reveal(Path::new(first));
-                }
-            }
+            Act::Reveal(paths) => system::reveal_all(&paths.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             Act::OpenTrash => self.open_trash(),
             Act::RestoreAll => self.ask_restore_all(),
         }
@@ -615,11 +611,7 @@ impl Ctl {
                 self.save_projects();
             }
             CellAction::Export => self.act("export"),
-            CellAction::Reveal => {
-                if let Some(first) = line.scope.first() {
-                    system::reveal(Path::new(first));
-                }
-            }
+            CellAction::Reveal => system::reveal_all(&line.scope.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             CellAction::Trash => self.move_paths_to_trash(&line.scope),
             CellAction::AddTo | CellAction::RemoveFrom => {}
         }
