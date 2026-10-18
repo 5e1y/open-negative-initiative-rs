@@ -5,6 +5,7 @@ import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFr
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
 import { ListRow, TreeItem, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
+import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost, TrashRow } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { PlotInkStyle } from "theme.slint";
 import { Key, KeyRow, Keypad, LabScreen } from "keypad.slint";
@@ -306,6 +307,22 @@ export component Catalogue inherits AppWindow {
                             selected: m == 3;
                         }
                     }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        TileView { picture-height: Space.l * 2; width: Space.l * 3; missing: true; }
+                        TileView { picture-height: Space.l * 2; width: Space.l * 3; rgb: true; medal: 2; }
+                        TileGhost { height: Space.l * 2; width: Space.l * 3; }
+                        DropLine { width: Stroke.emphasis; height: Space.l * 2; }
+                    }
+                }
+                Group {
+                    title: "Organising";
+                    MedalPicker { current: 2; }
+                    MedalPicker { current: -1; }
+                    DateFields { month: "4"; day: "15"; year: "2026"; }
+                    TrashRow { title: "ONI Trash"; count: "3"; foldable: true; unfolded: true; restore-help: "Restore every photo in the ONI Trash"; }
+                    TrashRow { title: "Roll #8"; trail: "Negs/"; count: "2"; depth: 1; picked: true; }
+                    EmptyState { title: "No Gold Photos"; detail: "Cycle the filter (⌘L) to see the others."; }
                 }
                 Group {
                     title: "Menu";

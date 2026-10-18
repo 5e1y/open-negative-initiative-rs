@@ -1,6 +1,6 @@
 // The collections' cells: a list row, a tree row, a gallery tile and a band's heading.
 import { ListView as StdListView } from "std-widgets.slint";
-import { Colour, Space, RowStyle, TileStyle } from "theme.slint";
+import { Colour, Space, State, RowStyle, TileStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Look } from "controls.slint";
 import { Icons } from "icons.slint";
@@ -63,19 +63,23 @@ export component TreeItem inherits ListRow {
     }
 }
 
-// A gallery cell: the picture in its well, the medal, the selection ring, the caption under it.
+// A gallery cell: the picture in its well, the medal, the RGB seal, the selection ring, and a
+// caption under it only when one is given. A missing original shows faded.
 export component TileView inherits Rectangle {
     in property <image> picture;
     in property <string> caption;
     in property <bool> selected;
     in property <int> medal;
+    in property <bool> missing;
+    in property <bool> rgb;
     in property <length> picture-height;
-    height: root.picture-height + TileStyle.caption-gap + TileStyle.caption;
+    height: root.caption == "" ? root.picture-height : root.picture-height + TileStyle.caption-gap + TileStyle.caption;
     Picture {
         y: 0;
         height: root.picture-height;
         ground: Ground.well;
         source: root.picture;
+        opacity: root.missing ? State.disabled : 1;
         if root.medal > 0: Rectangle {
             x: parent.width - self.width - TileStyle.badge-inset;
             y: TileStyle.badge-inset;
@@ -84,12 +88,21 @@ export component TileView inherits Rectangle {
             border-radius: self.width / 2;
             background: Colour.medal[root.medal];
         }
+        if root.rgb: Rectangle {
+            x: TileStyle.badge-inset;
+            y: parent.height - self.height - TileStyle.badge-inset;
+            width: seal.preferred-width + 2 * Space.xs;
+            height: TileStyle.caption;
+            border-radius: Space.xxs;
+            background: Colour.raised;
+            seal := Label { role: TextRole.caption; text: "RGB"; centred: true; }
+        }
         Rectangle {
             border-width: root.selected ? TileStyle.selection : 0px;
             border-color: Colour.selected;
         }
     }
-    Label {
+    if root.caption != "": Label {
         y: root.picture-height + TileStyle.caption-gap;
         height: TileStyle.caption;
         width: parent.width;

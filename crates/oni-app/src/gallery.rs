@@ -15,8 +15,9 @@ pub struct Metrics {
 }
 
 impl Metrics {
-    /// The gallery's own, `GalleryView.metrics`.
-    pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 14.0, caption_gap: 4.0 };
+    /// `GalleryEngine.metrics`: no caption reserved, as the sidebar names every photo and text
+    /// layout costs at hundreds of cells.
+    pub const GALLERY: Metrics = Metrics { margin: 24.0, gutter: 8.0, padding: 24.0, header: 37.0, caption: 0.0, caption_gap: 0.0 };
 }
 
 /// `DS.Control.columnSteps`, dense first: zooming in steps right, to fewer and larger tiles.
@@ -147,6 +148,29 @@ impl Layout {
         Some((band.start + band.count - 1).min(band.start + local))
     }
 
+    /// "Before this index", `0..=count`, so the far side of the last cell is a position too.
+    pub fn boundary(&self, x: f32, y: f32) -> Option<usize> {
+        let near = self.index_at(x, y)?;
+        let frame = self.frame(near)?;
+        Some(if x < frame.x + frame.width / 2.0 { near } else { near + 1 })
+    }
+
+    /// The drop line a boundary draws: in the gutter before its cell, or after the last one.
+    pub fn boundary_line(&self, boundary: usize, thickness: f32) -> Option<Rect> {
+        if self.count == 0 {
+            return None;
+        }
+        let clamped = boundary.min(self.count);
+        let r = self.frame(clamped.min(self.count - 1))?;
+        let half = self.metrics.gutter / 2.0;
+        if self.columns == 1 {
+            let y = if clamped == self.count { r.y + r.height + half } else { r.y - half };
+            return Some(Rect { x: r.x, y: y - thickness / 2.0, width: r.width, height: thickness });
+        }
+        let x = if clamped == self.count { r.x + r.width + half } else { r.x - half };
+        Some(Rect { x: x - thickness / 2.0, y: r.y, width: thickness, height: r.height })
+    }
+
     /// The cells between `top` and `top + viewport`, one row of slack either side: one range, since
     /// index order follows the document's.
     pub fn cells(&self, top: f32, viewport: f32) -> Range<usize> {
@@ -220,6 +244,20 @@ mod tests {
         let up = l.reveal(0, down, viewport).unwrap();
         assert!(up >= 0.0 && up <= l.frame(0).unwrap().y, "{up}");
         assert_eq!(l.reveal(59, down, viewport), None);
+    }
+
+    #[test]
+    fn a_drop_lands_before_the_nearer_half_and_past_the_last_cell() {
+        let l = Layout::new(&roll(10), 6, 1000.0, Metrics::GALLERY);
+        let c = l.frame(3).unwrap();
+        assert_eq!(l.boundary(c.x + 1.0, c.y + 1.0), Some(3));
+        assert_eq!(l.boundary(c.x + c.width - 1.0, c.y + 1.0), Some(4));
+        let last = l.frame(9).unwrap();
+        assert_eq!(l.boundary(last.x + last.width - 1.0, last.y + 1.0), Some(10));
+        let line = l.boundary_line(10, 2.0).unwrap();
+        assert_eq!(line.x, last.x + last.width + 4.0 - 1.0);
+        // Twin: the line before a cell sits in the gutter on its left, not its right.
+        assert_eq!(l.boundary_line(3, 2.0).unwrap().x, c.x - 4.0 - 1.0);
     }
 
     fn roll(count: usize) -> Vec<(String, String, usize)> {

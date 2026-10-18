@@ -1,0 +1,170 @@
+// The archive's organising controls: the medal picker, an empty grid's state, a context menu with
+// rules and submenus, the date fields, the drop line and ghost of a reorder, the ONI Trash's row.
+import { DS } from "tokens.slint";
+import { Colour, Space, Stroke, State, Type, MenuStyle, RowStyle, TileStyle, FieldStyle, ButtonStyle } from "theme.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone, Divider } from "base.slint";
+import { Button, ButtonSize, Look } from "controls.slint";
+import { MenuEntry, MenuPanel } from "containers.slint";
+import { Icons } from "icons.slint";
+
+// `DSMedalPicker`: bronze, silver and gold, the current one lit; `current` is -1 for none lit.
+export component MedalPicker inherits HorizontalLayout {
+    in property <int> current: -1;
+    callback picked(int);
+    spacing: Space.xs;
+    alignment: center;
+    for medal[i] in [1, 2, 3]: Rectangle {
+        width: TileStyle.medal + 2 * Space.xxs;
+        height: self.width;
+        accessible-role: button;
+        accessible-label: medal == 1 ? "Bronze" : medal == 2 ? "Silver" : "Gold";
+        Rectangle {
+            width: TileStyle.medal * (touch.pressed ? DS.control-medal-press : 1);
+            height: self.width;
+            border-radius: self.width / 2;
+            background: Colour.medal[medal];
+            opacity: root.current == medal ? 1 : State.idle;
+        }
+        touch := TouchArea { clicked => { root.picked(medal); } }
+    }
+}
+
+// `DSEmptyState`: a title, a line of detail and an optional key, centred in what it fills.
+export component EmptyState inherits VerticalLayout {
+    in property <string> title;
+    in property <string> detail;
+    in property <string> action;
+    callback acted();
+    alignment: center;
+    spacing: Space.s;
+    padding: Space.l;
+    Label { role: TextRole.title; text: root.title; centred: true; }
+    if root.detail != "": Label { tone: Tone.secondary; text: root.detail; centred: true; wrap: word-wrap; }
+    if root.action != "": HorizontalLayout {
+        alignment: center;
+        Button { text: root.action; clicked => { root.acted(); } }
+    }
+}
+
+// One line of a context menu: a rule above it, its word, whether it opens a submenu.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
+
+// A context menu at the pointer; `chosen` names the line's index. A line that opens a submenu is
+// one Rust answers with the submenu's lines, laid in the same panel.
+export component ContextMenu inherits PopupWindow {
+    in property <[MenuLine]> lines;
+    callback chosen(int);
+    close-policy: close-on-click-outside;
+    MenuPanel {
+        for line[i] in root.lines: VerticalLayout {
+            if line.rule: Divider { }
+            MenuEntry {
+                text: line.text;
+                shortcut: line.opens ? "›" : "";
+                enabled: line.enabled;
+                activated => { root.chosen(i); }
+            }
+        }
+    }
+}
+
+// One of the date's boxes: the digits centred, the edge lit while it holds the focus.
+component DateBox inherits Rectangle {
+    in property <string> placeholder;
+    in-out property <string> text <=> input.text;
+    out property <bool> has-focus: input.has-focus;
+    callback accepted();
+    border-radius: FieldStyle.radius;
+    background: Colour.canvas;
+    border-width: input.has-focus ? Stroke.line : Stroke.hairline;
+    border-color: input.has-focus ? Colour.focus : Colour.separator;
+    input := TextInput {
+        width: parent.width;
+        height: parent.height;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        font-family: Type.family;
+        font-size: Type.title;
+        color: Colour.ink;
+        accepted => { root.accepted(); }
+    }
+    if input.text == "" && !input.has-focus: Label { text: root.placeholder; tone: Tone.tertiary; centred: true; }
+}
+
+// `DateFields`: month, day and year typed by hand, committed on Return or when the focus leaves.
+export component DateFields inherits HorizontalLayout {
+    in-out property <string> month;
+    in-out property <string> day;
+    in-out property <string> year;
+    out property <bool> editing: m.has-focus || d.has-focus || y.has-focus;
+    callback committed(string, string, string);
+    spacing: Space.xs;
+    height: FieldStyle.height;
+    m := DateBox { width: DS.control-date-field-width; placeholder: "MM"; text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
+    Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+    d := DateBox { width: DS.control-date-field-width; placeholder: "DD"; text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
+    Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+    y := DateBox { width: DS.control-year-field-width; placeholder: "YYYY"; text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
+    changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
+}
+
+// Where a reorder would land: a line in the selected colour.
+export component DropLine inherits Rectangle {
+    background: Colour.selected;
+}
+
+// The tile a reorder carries under the pointer.
+export component TileGhost inherits Picture {
+    ground: Ground.well;
+    opacity: 0.85;
+}
+
+// The ONI Trash's row and its folders' rows: a count, and a Restore key under the hover.
+export component TrashRow inherits Rectangle {
+    in property <string> title;
+    in property <string> trail;
+    in property <string> count;
+    in property <int> depth;
+    in property <bool> foldable;
+    in property <bool> unfolded;
+    in property <bool> picked;
+    in property <bool> opened;
+    in property <bool> present: true;
+    in property <string> restore-help;
+    callback clicked();
+    callback double-clicked();
+    callback restore();
+    height: RowStyle.height;
+    background: root.opened ? Colour.row-selected : root.picked || area.has-hover ? Colour.hover : transparent;
+    opacity: root.present ? 1 : State.disabled;
+    area := TouchArea {
+        clicked => { root.clicked(); }
+        double-clicked => { root.double-clicked(); }
+    }
+    HorizontalLayout {
+        padding-left: RowStyle.padding + root.depth * RowStyle.indent;
+        padding-right: RowStyle.padding;
+        spacing: RowStyle.gap;
+        Rectangle {
+            width: RowStyle.chevron-zone;
+            if root.foldable: Icon {
+                source: root.unfolded ? Icons.chevron-down : Icons.chevron-right;
+                width: RowStyle.chevron;
+                height: RowStyle.chevron;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Icon { source: root.depth == 0 ? Icons.remove : Icons.folder; width: RowStyle.icon; height: RowStyle.icon; }
+        }
+        if root.trail != "": Label { text: root.trail; tone: Tone.tertiary; overflow: elide; }
+        Label { text: root.title; tone: root.opened || root.picked ? Tone.primary : Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+        Label { text: root.count; role: TextRole.value; tone: Tone.tertiary; }
+        if area.has-hover && root.restore-help != "": Button {
+            text: "RESTORE";
+            size: ButtonSize.small;
+            help: root.restore-help;
+            clicked => { root.restore(); }
+        }
+    }
+}

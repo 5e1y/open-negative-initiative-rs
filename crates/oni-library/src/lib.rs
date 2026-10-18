@@ -8,6 +8,7 @@ pub mod favourites;
 pub mod film_group;
 pub mod folders;
 pub mod gallery_history;
+pub mod info;
 pub mod index;
 pub mod journal;
 pub mod library;

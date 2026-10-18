@@ -351,6 +351,7 @@ export component TextField inherits Rectangle {
     callback edited(string);
     // Return, or the focus leaving the field: what a typed value commits on.
     callback accepted(string);
+    public function take-focus() { input.focus(); }
     height: FieldStyle.height;
     border-radius: FieldStyle.radius;
     background: Colour.canvas;
