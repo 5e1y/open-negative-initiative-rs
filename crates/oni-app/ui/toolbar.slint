@@ -126,13 +126,14 @@ export component Toolbar inherits Surface {
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
         Spacer { }
-        // A hidden copy of the editor's keys holds the zone's width, so the live keys move inside it.
+        // Hidden copies of both sets hold the zone at the wider one's width, so neither spills over.
         Rectangle {
-            width: sizing.preferred-width;
+            width: max(sizing.preferred-width, gallery-sizing.preferred-width);
             sizing := EditorKeys { visible: false; }
-            if Preparing.shown: RollStepKeys { x: (parent.width - self.preferred-width) / 2; }
-            if Bar.editing && !Preparing.shown: EditorKeys { x: (parent.width - self.preferred-width) / 2; }
-            if !Bar.editing && !Preparing.shown: GalleryKeys { x: (parent.width - self.preferred-width) / 2; }
+            gallery-sizing := GalleryKeys { visible: false; }
+            if Preparing.shown: RollStepKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
+            if Bar.editing && !Preparing.shown: EditorKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
+            if !Bar.editing && !Preparing.shown: GalleryKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
         }
         Spacer { }
         Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }

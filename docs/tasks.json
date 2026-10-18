@@ -570,5 +570,13 @@
     "status": "done",
     "detail": "StockPickerSheet with FilmStockCatalog.byBrand, each stock's SVG artwork shipped with the app and decoded once, the picked one marked, a click picking and closing, Done and Escape changing nothing; the roll's info shows the stock's artwork as heroStock does; the export's film field opens the same sheet for its frame alone.",
     "outcome": "oni-app/tests/stocks.rs (Escape and Done twins), stocks.rs's artwork check with an unknown stock as twin; the export window test picks through the new sheet."
+  },
+  {
+    "id": 83,
+    "type": "fix",
+    "title": "The gallery's bar keys overlapped FEEDBACKS",
+    "status": "done",
+    "detail": "Each key set in the bar's centre zone took the zone's whole width while shifted to centre, so the gallery's wider set spilled over FEEDBACKS; each set now keeps its own width, and the zone holds the wider of the editor's and the gallery's.",
+    "outcome": "Headless shots of the gallery bar before and after; the oni-app suite green."
   }
 ]
