@@ -64,6 +64,10 @@ export component Catalogue inherits AppWindow {
     title: "ONI Design System";
     preferred-width: ShellStyle.min-width + ShellStyle.panel-width;
     in-out property <length> scroll <=> page.content-y;
+    // The resting key's centre and whether its cap is down, where a check presses it and reads it.
+    out property <length> key-x: rest-key.absolute-position.x + rest-key.width / 2;
+    out property <length> key-y: rest-key.absolute-position.y + rest-key.height / 2;
+    out property <bool> key-down: rest-key.down;
     property <[Swatch]> swatches: [
         { name: "ground", colour: Colour.ground }, { name: "canvas", colour: Colour.canvas },
         { name: "well", colour: Colour.well }, { name: "raised", colour: Colour.raised },
@@ -239,7 +243,7 @@ export component Catalogue inherits AppWindow {
                     }
                     HorizontalLayout {
                         spacing: Space.s;
-                        Key { legend: "REST"; }
+                        rest-key := Key { legend: "REST"; }
                         Key { legend: "HOVER"; look: Look.hover; }
                         Key { legend: "PRESSED"; look: Look.pressed; }
                         Key { legend: "+3"; fill: ScannerStyle.band-light; }

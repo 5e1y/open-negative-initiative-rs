@@ -23,7 +23,7 @@ use oni_core::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Spring;
 use crate::system;
-use crate::track::{self, Hand, Offer, TRACKPAD_TRAVEL};
+use crate::track::{self, Hand, Offer};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use oni_library::gallery_history::Move;
@@ -56,7 +56,10 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 /// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
 const HISTOGRAM: (usize, usize) = (680, 300);
 
+mod board;
+mod folds;
 mod lab;
+mod loupe;
 mod masks;
 mod navigator;
 mod organising;
@@ -70,6 +73,8 @@ mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
 mod updates;
 mod year;
+mod scroll;
+mod tree_rename;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
@@ -102,6 +107,8 @@ pub struct Options {
     pub require_roll: bool,
     /// The update feed's reader; none looks nowhere, as the checks run.
     pub updates: Option<Updater>,
+    /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
+    pub pasteboard: Box<dyn crate::pasteboard::Board>,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -123,6 +130,7 @@ impl Default for Options {
             computer: oni_library::navigator::Computer::none(),
             require_roll: false,
             updates: None,
+            pasteboard: Box::new(crate::pasteboard::Memory::default()),
         }
     }
 }
@@ -305,6 +313,7 @@ pub struct State {
     /// The open frame's full-resolution pixels once built, and the frame one is being built for.
     full: Option<(String, oni_graph::Source)>,
     building_full: Option<String>,
+    loupe: loupe::Held,
     /// The frame whose dust patches are being generated.
     healing: Option<String>,
     /// The last navigation, which keeps the preview until it settles.
@@ -323,6 +332,10 @@ pub struct State {
     /// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press
     /// and the shown image frame's size in points.
     frame_gesture: Option<(bool, Handle, Fraction, (f64, f64))>,
+    /// Esc put the held frame back: the rest of that drag moves nothing.
+    frame_cancelled: bool,
+    /// A scroll along a track under way, its hand raised until the idle window passes.
+    scrolling: bool,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
     window_armed: bool,
@@ -341,6 +354,12 @@ pub struct State {
     brush_pressed_at: Option<Instant>,
     /// `Propagation`'s copied measuring window.
     window_board: Option<Fraction>,
+    /// `renameRequest`: the folder New Roll made, named in place once its row shows, and the row being named.
+    rename_request: Option<String>,
+    tree_renaming: Option<String>,
+    pasteboard: Box<dyn crate::pasteboard::Board>,
+    /// The board's change count last read, so a menu publication reads only types that moved.
+    board_seen: Option<i64>,
     /// Compare Before/After's split, a fraction of the canvas's width; none while off.
     split: Option<f32>,
     /// `screenGamutWarning`: the pixels this screen cannot show, striped on the canvas.
@@ -518,6 +537,7 @@ pub struct Ctl {
     pulse: Timer,
     settle: Timer,
     stripes: Timer,
+    scroll_idle: Timer,
     pub(crate) editors: crate::editors::Shell,
     /// `Thumbnails.refreshDelay` after the sidecar's write, the open photo's thumbnail is redrawn.
     refresher: Timer,
@@ -726,6 +746,7 @@ impl Shell {
             views: Notches::default(),
             full: None,
             building_full: None,
+            loupe: loupe::Held::default(),
             healing: None,
             navigated_at: None,
             full_size: None,
@@ -737,6 +758,8 @@ impl Shell {
             split: None,
             framing_memory: None,
             frame_gesture: None,
+            frame_cancelled: false,
+            scrolling: false,
             straightening: None,
             window_armed: false,
             last_panel: 2,
@@ -748,6 +771,10 @@ impl Shell {
             brush_start: None,
             brush_pressed_at: None,
             window_board: None,
+            rename_request: None,
+            tree_renaming: None,
+            pasteboard: options.pasteboard,
+            board_seen: None,
             befores: 0,
             screen_gamut: false,
             before_placed: None,
@@ -774,6 +801,7 @@ impl Shell {
             pulse: Timer::default(),
             settle: Timer::default(),
             stripes: Timer::default(),
+            scroll_idle: Timer::default(),
             editors: crate::editors::Shell::default(),
             refresher: Timer::default(),
             writer: Timer::default(),
@@ -1061,6 +1089,7 @@ impl Ctl {
     /// The Crop tab and the canvas's frames from the open frame's geometry.
     fn publish_framing(&self) {
         let Some(w) = self.window() else { return };
+        self.board_in();
         let cropping = self.cropping();
         let image = self.image_size();
         let crop_frame = self.image_frame(true);
@@ -1139,6 +1168,7 @@ impl Ctl {
                 if let Some(e) = self.state.borrow_mut().store.editor() {
                     e.copy_framing();
                 }
+                self.board_out(crate::pasteboard::FRAMING);
                 return self.publish_framing();
             }
             "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll"),
@@ -1156,9 +1186,11 @@ impl Ctl {
             "window-copy" => {
                 let window = g.measure_window;
                 self.state.borrow_mut().window_board = window;
+                self.board_out(crate::pasteboard::MEASURE_WINDOW);
                 return self.publish_framing();
             }
             "window-paste" => {
+                self.board_in();
                 let Some(window) = self.state.borrow().window_board else { return };
                 if g.measure_window == Some(window) {
                     return;
@@ -1173,6 +1205,7 @@ impl Ctl {
 
     /// `pasteFraming()` on the selection, else the open photo, or `pasteFramingToRoll()`; one gallery step.
     fn paste_framing(self: &Rc<Self>, roll: bool) {
+        self.board_in();
         if roll {
             self.paste_framing_to_roll();
         } else {
@@ -1449,7 +1482,7 @@ impl Ctl {
     fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
         let Some(image) = self.image_size() else { return };
         let cropping = self.cropping();
-        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture else { return };
+        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture.filter(|_| !self.state.borrow().frame_cancelled) else { return };
         let proposed = frames::apply(handle, from, frame, (f64::from(dx), f64::from(dy)));
         let g = self.state.borrow().store.settings().geometry.clone();
         let next = if window {
@@ -1461,7 +1494,24 @@ impl Ctl {
         self.publish_framing();
     }
 
+    /// `CropOverlay`'s Esc: the held frame back where the press found it, the drag spent.
+    fn cancel_frame_drag(self: &Rc<Self>) -> bool {
+        let cropping = self.cropping();
+        let (window, from) = {
+            let mut s = self.state.borrow_mut();
+            let Some((window, _, from, _)) = s.frame_gesture.filter(|_| !s.frame_cancelled) else { return false };
+            s.frame_cancelled = true;
+            (window, from)
+        };
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let back = if window { Geometry { measure_window: Some(frames::window_stored(&g, from, cropping)), ..g } } else { Geometry { crop: from, ..g } };
+        self.write_geometry(back);
+        self.publish_framing();
+        true
+    }
+
     fn frame_released(self: &Rc<Self>) {
+        self.state.borrow_mut().frame_cancelled = false;
         let held = self.state.borrow_mut().frame_gesture.take().is_some();
         if held {
             self.state.borrow_mut().store.release();
@@ -1540,6 +1590,7 @@ impl Ctl {
             (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
         };
         self.worker.submit(job);
+        self.request_loupe();
         if let Some((path, converted)) = build {
             self.build_full(path, converted);
         }
@@ -1938,6 +1989,8 @@ impl Ctl {
     /// The histogram and the load counter, on their own pace so a notch touches neither.
     fn pulse(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
+        // A tab opened or a full frame landed reaches the loupe at this pace when no render asks.
+        self.request_loupe();
         let (histogram, loading) = {
             let mut s = self.state.borrow_mut();
             if let Some(h) = s.gpu.as_mut().and_then(Gpu::landed) {
@@ -2295,9 +2348,13 @@ impl Ctl {
 
     fn publish_tree(&self) {
         let Some(w) = self.window() else { return };
-        let mut s = self.state.borrow_mut();
+        let beside_photo = !w.global::<App>().get_gallery();
+        let mut guard = self.state.borrow_mut();
+        let s = &mut *guard;
         let Some(archive) = &s.archive else { return };
         let rows = archive.rows();
+        let ids: Vec<oni_library::archive_tree::NodeId> = rows.iter().map(|r| r.id.clone()).collect();
+        tree_rename::land(&mut s.rename_request, &mut s.tree_renaming, &ids, beside_photo);
         let paths: Vec<Option<String>> = rows
             .iter()
             .map(|r| match &r.id {
@@ -2316,10 +2373,11 @@ impl Ctl {
                 expandable: r.expandable,
                 expanded: r.expanded,
                 selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
+                renaming: matches!(&r.id, oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str())),
             })
             .collect();
         s.tree_paths = paths;
-        drop(s);
+        drop(guard);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
     }
 
@@ -2548,6 +2606,7 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }
+        self.land_tree_request();
         self.publish_bar();
         self.publish_tiles();
     }
@@ -2795,6 +2854,7 @@ impl Ctl {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_settings();
                 }
+                self.board_out(crate::pasteboard::SETTINGS);
             }
             "paste" => self.paste(),
             "paste-to-roll" => self.paste_to_roll(),
@@ -2802,6 +2862,7 @@ impl Ctl {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_framing();
                 }
+                self.board_out(crate::pasteboard::FRAMING);
                 self.publish_framing();
             }
             "paste-framing" | "paste-framing-to-roll" => self.paste_framing(action == "paste-framing-to-roll"),
@@ -2916,6 +2977,9 @@ impl Ctl {
             return true;
         }
         if self.preset_form_key(text) {
+            return true;
+        }
+        if text == "\u{1b}" && self.cancel_frame_drag() {
             return true;
         }
         if text == "\u{1b}" && w.global::<Pairing>().get_shown() {
@@ -3055,8 +3119,16 @@ impl Ctl {
         if made.len() < files.len() {
             self.say(&format!("{} of the files could not be moved into the roll.", files.len() - made.len()));
         }
-        if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(archive) = s.archive.as_mut() {
+                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(parent.clone()));
+                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(folder.clone()));
+            }
+            s.rename_request = Some(folder.clone());
+            if let Some(store) = s.store.editor() {
+                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+            }
         }
         self.journal_count(oni_library::journal::Kind::Rolled, targets.len());
 
@@ -3138,6 +3210,7 @@ impl Ctl {
         self.drop_split();
         if self.state.borrow().open.as_deref() == Some(path.as_str()) {
             w.global::<App>().set_gallery(false);
+            self.land_tree_request();
         } else {
             self.open_in_editor(&path);
         }
@@ -3191,6 +3264,7 @@ impl Ctl {
 
     /// `pasteSettings(to:)`: one roll's look laid on another asks first.
     fn paste(self: &Rc<Self>) {
+        self.board_in();
         let targets = self.targets();
         let check = {
             let mut s = self.state.borrow_mut();
@@ -3211,6 +3285,7 @@ impl Ctl {
 
     /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
     fn paste_to_roll(self: &Rc<Self>) {
+        self.board_in();
         let check = {
             let mut s = self.state.borrow_mut();
             let Some(open) = s.open.clone() else { return };
@@ -3316,6 +3391,7 @@ impl Ctl {
     /// bar reads too, so the two surfaces cannot disagree.
     fn publish_menus(&self) {
         let Some(w) = self.window() else { return };
+        self.board_in();
         let app = w.global::<App>();
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
@@ -3577,7 +3653,8 @@ impl Ctl {
                 return false;
             }
             let from = p.state.borrow().slides[f.index() as usize].shown;
-            let asked = track::clamped(track::asked(from, dx * TRACKPAD_TRAVEL, span, fine));
+            let asked = track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine));
+            p.scroll_kept_alive();
             p.place(f, asked);
             p.set(f, stored_at(f, asked));
             true
@@ -3643,6 +3720,9 @@ impl Ctl {
         Ctl::wire_help(me, window);
         Ctl::wire_stock_picker(me, window);
         Ctl::wire_wrapped(me, window);
+        Ctl::wire_loupe(me, window);
+        Ctl::wire_tree_rename(me, window);
+        Ctl::wire_folds(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         Ctl::wire_prepare(me, window);

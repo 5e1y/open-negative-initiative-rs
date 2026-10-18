@@ -114,8 +114,9 @@ export component RenameRow inherits FocusScope {
     HorizontalLayout {
         padding-left: RowStyle.padding + root.depth * RowStyle.indent;
         padding-right: RowStyle.padding;
-        alignment: center;
+        // Stretched across the row: the field has no width of its own to centre.
         field := TextField {
+            horizontal-stretch: 1;
             text: root.text;
             placeholder: "Name";
             init => { self.take-focus(); }

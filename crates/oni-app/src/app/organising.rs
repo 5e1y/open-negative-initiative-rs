@@ -709,6 +709,7 @@ impl Ctl {
                             expandable: !g.entries.is_empty(),
                             expanded: s.org.project_expanded.contains(&id),
                             selected: ringed,
+                            renaming: false,
                         },
                         Node::Photo { entry, .. } => TreeRow {
                             depth: *depth as i32,
@@ -718,6 +719,7 @@ impl Ctl {
                             expandable: false,
                             expanded: false,
                             selected: ringed || s.picks.selection.contains(&entry.path),
+                            renaming: false,
                         },
                     }
                 })

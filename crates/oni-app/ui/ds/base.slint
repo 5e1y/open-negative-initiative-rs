@@ -9,6 +9,14 @@ export enum Gap { none, xxs, xs, s, m, l }
 export enum Ground { ground, canvas, well, paper, skeleton }
 export enum PlotSize { main, block }
 
+// Where a note lands: its corner and its size, in the window's points.
+export struct TipBox {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+}
+
 // What a hovered control says after the system's tooltip delay, drawn by `TipLayer`.
 export global Tip {
     in-out property <string> text;
@@ -209,13 +217,16 @@ export component AppWindow inherits Window {
     default-font-family: Type.family;
 }
 
-// The tooltip, drawn above everything by the window that holds it.
+// The tooltip, drawn above everything by the window that holds it, held inside it by `Tips.place`.
 export component TipLayer inherits Rectangle {
     in property <length> room;
-    x: min(Tip.x, root.room - self.width - Space.s);
-    y: Tip.y;
-    width: tip-text.preferred-width + 2 * TipStyle.padding-x;
-    height: tip-text.preferred-height + 2 * TipStyle.padding-y;
+    in property <length> room-height;
+    property <TipBox> box: Tips.place(Tip.x, Tip.y, tip-text.width + 2 * TipStyle.padding-x, tip-text.preferred-height + 2 * TipStyle.padding-y, root.room, root.room-height);
+    x: root.box.x;
+    y: root.box.y;
+    width: root.box.width;
+    height: root.box.height;
+    clip: true;
     background: Colour.tip;
     border-radius: TipStyle.radius;
     border-width: Stroke.hairline;
@@ -240,6 +251,16 @@ export component TipLayer inherits Rectangle {
 
 // Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves.
 export global Tips {
+    // `DSHelpPlacement.place`: the note at its anchor, held a margin in from each of the room's four
+    // edges; larger than that room it is cut down to it rather than allowed to leave.
+    public pure function place(x: length, y: length, width: length, height: length, room-width: length, room-height: length) -> TipBox {
+        {
+            x: min(max(x, min(Space.s, room-width / 2)), room-width - min(Space.s, room-width / 2) - min(width, room-width - 2 * min(Space.s, room-width / 2))),
+            y: min(max(y, min(Space.s, room-height / 2)), room-height - min(Space.s, room-height / 2) - min(height, room-height - 2 * min(Space.s, room-height / 2))),
+            width: min(width, room-width - 2 * min(Space.s, room-width / 2)),
+            height: min(height, room-height - 2 * min(Space.s, room-height / 2)),
+        }
+    }
     public function hover(over: bool, text: string, x: length, y: length) {
         if (over && text != "") {
             Tip.text = text;

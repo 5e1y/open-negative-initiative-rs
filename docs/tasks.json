@@ -456,8 +456,8 @@
     "id": 63,
     "type": "feature",
     "title": "New Roll asks for its folder's name, and menu items for features absent from the build stay dark",
-    "status": "doing",
-    "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry."
+    "status": "done",
+    "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry. The request waits for the archive's column beside the photo and names the row in place (#81)."
   },
   {
     "id": 64,
@@ -562,6 +562,14 @@
     "status": "done",
     "detail": "One journal per support folder for the process, so two tables never hand one index to two names. Every Swift call site notes its gesture: opened as a photo loads; edited once per settings row a gesture moved, read against the settings the last settle left when the sidecar write settles; medal per photo with its rank; preset per target with its name; pasted and rolled with the photos reached; the balance key; exported and measured as before. WrappedYear builds the year off the journal in this machine's calendar, the ONI Trash's photos left out, sittings split at 600 s; the deck says Swift's cards in Swift's words. The summary shows the title in Enriqueta over the year's gold seal, deals after DS.Motion.wrappedHold or a click, turns by click, →, Space and Return, ← back, closes past the last card or on Esc; the gold card shows the thumbnails already on disk. December offers it once a year (wrappedShownYear), never under a bench; ONI_WRAPPED_SAMPLE shows the sample year; the Help item is live while it is not shown.",
     "outcome": "oni-library/src/wrapped.rs twins WrappedYear.selfCheck (a year later counts for nothing) and the trash and sitting rules; oni-app/src/wrapped.rs checks every card's wording; oni-app/tests/wrapped.rs drives each gesture into the journal (six notches one record), the deck, its keys, Esc, the trashed photo left out and the December offer."
+  },
+  {
+    "id": 81,
+    "type": "feature",
+    "title": "The editor's leftovers: the Details loupe, the settings pasteboard, New Roll's name, block help and folds, Esc in a crop drag, scroll and keycap timings, help bubbles that fit",
+    "status": "done",
+    "detail": "The Details loupe renders the band's region of the full-resolution frame off the interface thread at 150 % or 200 %; Copy Settings, the framing and the measuring window ride the macOS pasteboard under Swift's own types, the other two laid back after a clear; New Roll from Selection names its folder in the archive's column; Sharpening, Chroma Denoise and Texture carry Swift's help and every panel block remembers its fold under sectionFold.<title>; Esc in a crop or window drag puts the frame back; a slider takes a wheel's lines at 10 points and holds the hand until 0.16 s pass; a keycap stays down 0.14 s; tooltips are held Space.sm inside the window. The pipette's only Swift caller is the base pick, already ported.",
+    "outcome": "oni-app/tests/editor_leftovers.rs on the headless window with twins (the copy crossing a relaunch on a named NSPasteboard), tests/keycap.rs on the catalogue, the loupe's region checked against the exported pixels with a crop-first twin. Real window on roll #8's test copy: ONI_BENCH=loupe, first loupe 1.26 s with the full decode, a Sharpening notch reaches it in 36 ms median; ONI_BENCH=crop, Esc in a drag put the frame back and the roll undid to its start. Left: the screen gamut's stripes on the loupe, a typed pasteboard on Windows, the help bubble's block width."
   },
   {
     "id": 82,
