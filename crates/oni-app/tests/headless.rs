@@ -160,15 +160,17 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
 
     rig.chord(slint::platform::Key::Control, "g");
     assert!(w.global::<App>().get_gallery(), "⌘G opens the gallery");
-    // Ten frames in the shared fixture, the whole roll's 38 where a tester holds it.
-    let n = std::fs::read_dir(&folder).unwrap().filter(|e| e.as_ref().unwrap().path().extension().is_some_and(|x| x == "NEF")).count();
+    // Ten frames in the shared fixture, the whole roll's 38 and its contact sheet where a tester holds it.
+    let n = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).filter(|e| { let n = e.file_name().to_string_lossy().into_owned(); !n.starts_with('.') && !n.ends_with(".json") }).count();
     rig.until("every thumbnail", Duration::from_secs(600), || ctl.state.borrow().loaded() >= n);
     let tiles = app::tiles(w);
     assert_eq!(tiles.len(), n, "every cell of the roll is laid out");
     // Both faces through the pipeline: every tile drawn, the Scanner face's among them.
     let mut scanner_drawn = 0;
     for t in &tiles {
-        let path = folder.join(format!("{}.NEF", t.caption));
+        let path = std::fs::read_dir(&folder).unwrap().filter_map(|e| e.ok()).map(|e| e.path())
+            .find(|p| p.file_stem().is_some_and(|s| *s == *t.caption.as_str()) && p.extension().is_some_and(|x| x != "json"))
+            .unwrap_or_else(|| panic!("no file for {}", t.caption));
         let face = oni_settings::sidecar::read(&path, true, true).unwrap().settings.face;
         assert!(t.picture.size().width > 0, "{}: {face:?} left empty", t.caption);
         scanner_drawn += usize::from(face == oni_settings::Face::Scanner);

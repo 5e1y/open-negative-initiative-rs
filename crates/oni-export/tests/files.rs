@@ -138,7 +138,8 @@ fn a_large_tiff_spans_several_strips_and_reads_back_whole() {
     assert_eq!(Quantised::Sixteen(read), rendered.pixels);
 }
 
-const STRUCTURE: [u16; 12] = [256, 257, 258, 259, 262, 273, 277, 278, 279, 284, 338, 34675];
+/// The layout, and what ImageIO states of every TIFF: fill order, orientation, unit, sample format.
+const STRUCTURE: [u16; 16] = [256, 257, 258, 259, 262, 266, 273, 274, 277, 278, 279, 284, 296, 338, 339, 34675];
 const STATED: [u16; 8] = [
     tag::IMAGE_DESCRIPTION,
     tag::MODEL,
@@ -155,7 +156,8 @@ fn the_tiff_carries_its_structure_and_the_stated_fields_only() {
     let export = settings(Format::Tiff16, Space::DisplayP3);
     let rendered = converted(&frame(64, 40), &export).unwrap();
     let file = encoded(&rendered, &export, Some("2001:02:03 04:05:06"), &typed()).unwrap();
-    let expected: BTreeSet<u16> = STRUCTURE.into_iter().chain(STATED).collect();
+    // With an Exif directory, ImageIO also states the picture's size in it.
+    let expected: BTreeSet<u16> = STRUCTURE.into_iter().chain(STATED).chain([40962, 40963]).collect();
     assert_eq!(tags(&file), expected);
     assert_eq!(text(&file, exif::Tag::Model).as_deref(), Some("Leica M6"));
     assert_eq!(text(&file, exif::Tag::LensModel).as_deref(), Some("Summicron 50"));
