@@ -48,14 +48,14 @@ Statuses are defined in [README.md](README.md).
 | ⌘A, arrows, Return, Space | `UI/GalleryEngine.swift:425-439` | none | missing | | no check |
 | Zoom the grid ⌘− ⌘+ | `UI/EditorCommands.swift:138-142` | `oni-app/src/app.rs:1129` | partial | Ladder of two widths, not Swift's | no check |
 | Thumbnails: 320 px, disk cache, render version 11 | `Pipeline/Thumbnails.swift:15-21` | `oni-app/src/thumbnails.rs`, `app.rs` `paint` | partial | 320 px JPEGs at 0.6 named by fingerprint, drawn only when absent; an unconverted frame renders through the pipeline where Swift shows the embedded scan | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
-| Thumbnails proofed into the export space | `Pipeline/Thumbnails.swift:13` | none | missing | | no check |
+| Thumbnails proofed into the export space | `Pipeline/Thumbnails.swift:13` | `oni-app/src/render.rs` `Engine::render`, the proof stage the canvas lays | done | The same stage as the canvas's; no check of its own | no check |
 | Thumbnail refresh 2 s after an edit | `Pipeline/Thumbnails.swift:21` | `oni-app/src/app.rs` `schedule_redraw` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Triplet of RGB passes shows its lead | `UI/TileLayers.swift:256` | `oni-library/src/index.rs` | partial | Index only | `oni-library/src/index.rs::a_triplet_draws_as_its_lead_and_its_passes_show_once_it_is_gone` |
 | Cell menu: Paste Settings, Reset Settings, Reset to Default… | `UI/GalleryView.swift:354-433` | none | missing | Core gestures exist | no check |
 | Cell menu: medals | `UI/GalleryView.swift:354-433` | keys 0-3 | partial | No context menu | no check |
 | Cell menu: New Roll from, Ungroup | `UI/GalleryView.swift:354-433` | none | missing | | no check |
 | Cell menu: New Project from, Add to, Remove from Project | `UI/GalleryView.swift:354-433` | none | missing | | no check |
-| Cell menu: Export…, Show in Finder, Move to ONI Trash | `UI/GalleryView.swift:354-433` | none | missing | | no check |
+| Cell menu: Export…, Show in Finder, Move to ONI Trash | `UI/GalleryView.swift:354-433` | `oni-app/src/export.rs` `label::context` only | missing | No context menu in the gallery; its export label is written | no check |
 | Empty states | `UI/GalleryView.swift` | none | missing | | no check |
 | Status bar with medal picker | `UI/GalleryView.swift` | none | missing | | no check |
 

@@ -35,6 +35,11 @@ pub fn reveal(path: &Path) {
     platform::reveal(path);
 }
 
+/// Opens a web page in the person's browser, as `NSWorkspace.open` does.
+pub fn open_url(url: &str) {
+    platform::open_url(url);
+}
+
 /// The system Trash, for files the app owns outright (preset files); a library member is never
 /// trashed, it is marked in the ONI Trash.
 pub fn trash(path: &Path) -> io::Result<()> {
@@ -108,6 +113,10 @@ mod platform {
         let _ = std::process::Command::new("/usr/bin/open").arg("-R").arg(path).spawn();
     }
 
+    pub fn open_url(url: &str) {
+        let _ = std::process::Command::new("/usr/bin/open").arg(url).spawn();
+    }
+
     pub fn trash(path: &Path) -> io::Result<()> {
         use objc2_foundation::{NSFileManager, NSString, NSURL};
         let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
@@ -150,6 +159,10 @@ mod platform {
         use std::os::windows::process::CommandExt;
         let line = format!("/select,\"{}\"", path.display());
         let _ = std::process::Command::new("explorer").raw_arg(line).spawn();
+    }
+
+    pub fn open_url(url: &str) {
+        let _ = std::process::Command::new("explorer").arg(url).spawn();
     }
 
     pub fn trash(path: &Path) -> io::Result<()> {
@@ -197,6 +210,8 @@ mod platform {
     }
 
     pub fn reveal(_path: &Path) {}
+
+    pub fn open_url(_url: &str) {}
 
     pub fn trash(_path: &Path) -> io::Result<()> {
         Err(io::Error::new(io::ErrorKind::Unsupported, "no system Trash on this system"))

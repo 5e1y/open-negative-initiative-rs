@@ -10,6 +10,7 @@ export global Bar {
     in property <bool> can-reset;
     in property <bool> dedust;
     in property <int> targets: 1;
+    in property <string> export-title: "EXPORT";
     in property <string> filter: "ALL";
     in property <string> undo-title: "Undo";
     in property <string> redo-title: "Redo";
@@ -126,7 +127,7 @@ export component Toolbar inherits Surface {
         Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }
         Word {
             action: Bar.editing ? "export" : "open";
-            text: Bar.editing ? (Bar.targets > 1 ? "EXPORT " + Bar.targets + " PHOTOS" : "EXPORT") : "ADD FOLDER (⌘+O)";
+            text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";
             kind: ButtonKind.accent;
             fixed-width: ShellStyle.export-width;
             help: Bar.editing ? "" : "Add a folder of scans (⌘O) · export stays on ⌘E";

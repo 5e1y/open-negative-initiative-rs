@@ -34,6 +34,10 @@ impl Preferences {
         self.values.get(key)?.as_str()
     }
 
+    pub fn value(&self, key: &str) -> Option<&Value> {
+        self.values.get(key)
+    }
+
     pub fn bool(&self, key: &str) -> Option<bool> {
         self.values.get(key)?.as_bool()
     }

@@ -38,6 +38,9 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
+#[path = "export_card.rs"]
+pub mod export_card;
+
 /// Long side of a gallery thumbnail, in pixels: `Thumbnails.side`.
 pub const THUMB_SIDE: usize = thumbnails::SIDE;
 const FRAME_TICK: Duration = Duration::from_millis(16);
@@ -416,6 +419,7 @@ pub struct Ctl {
     refresher: Timer,
     /// Restarted by every change, so the sidecar is written once the hand has rested `WRITE_DELAY`.
     writer: Timer,
+    export: RefCell<export_card::Card>,
 }
 
 thread_local! {
@@ -471,6 +475,9 @@ fields! {
     ChromaAmount => set_chroma_amount_fraction, get_chroma_amount_fraction, set_chroma_amount_readout, set_chroma_amount_value;
     ChromaRadius => set_chroma_radius_fraction, get_chroma_radius_fraction, set_chroma_radius_readout, set_chroma_radius_value;
     Texture => set_texture_fraction, get_texture_fraction, set_texture_readout, set_texture_value;
+    PaperRed => set_paper_red_fraction, get_paper_red_fraction, set_paper_red_readout, set_paper_red_value;
+    PaperGreen => set_paper_green_fraction, get_paper_green_fraction, set_paper_green_readout, set_paper_green_value;
+    PaperBlue => set_paper_blue_fraction, get_paper_blue_fraction, set_paper_blue_readout, set_paper_blue_value;
 }
 
 fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
@@ -484,6 +491,7 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
         Block::Sharpening => g.set_sharpening_modified(on),
         Block::ChromaDenoise => g.set_chroma_denoise_modified(on),
         Block::Texture => g.set_texture_modified(on),
+        Block::PaperCorrection => g.set_paper_correction_modified(on),
     }
 }
 
@@ -633,9 +641,13 @@ impl Shell {
             editors: crate::editors::Shell::default(),
             refresher: Timer::default(),
             writer: Timer::default(),
+            export: RefCell::new(export_card::Card::new(&options.support)),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
         Ctl::wire(&ctl, &window);
+        Ctl::wire_export(&ctl, &window);
+        ctl.attach_export();
+        ctl.restore_gamut();
         // The app opens on the gallery; nothing opens in the editor until a hand asks.
         window.global::<App>().set_gallery(true);
         ctl.publish(true);
@@ -752,8 +764,10 @@ impl Ctl {
         bar.set_redo_title(titles.redo);
         bar.set_can_reset(live.reset);
         bar.set_targets(selected.max(usize::from(has_photo)) as i32);
+        bar.set_export_title(crate::export::label::key(selected.max(usize::from(has_photo))).into());
         bar.set_editing(!w.global::<App>().get_gallery());
         self.publish_lab();
+        self.publish_export_menu(selected, has_photo);
     }
 
     fn place(&self, f: Field, at: f32) {
@@ -2488,6 +2502,8 @@ impl Ctl {
             "undo" => self.write(Command::Undo),
             "redo" => self.write(Command::Redo),
             "reset" => self.reset_all(),
+            "toggle-mode" if self.export.borrow().shown => {}
+            "export" => self.export_act(action),
             "toggle-mode" => self.toggle_mode(),
             "hide-panel" => app.set_panel_hidden(!app.get_panel_hidden()),
             "hide-library" => app.set_library_hidden(!app.get_library_hidden()),
@@ -2499,7 +2515,10 @@ impl Ctl {
             }
             "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
             "compare" if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
-            "screen-gamut" => self.toggle_screen_gamut(),
+            "screen-gamut" => {
+                self.toggle_screen_gamut();
+                self.gamut_kept();
+            }
             "bigger-brush" | "smaller-brush" if self.painting() => {
                 // `EditorScene.biggerBrush`: four pixels a key, inside the brush's range.
                 let by = if action == "bigger-brush" { 4.0 } else { -4.0 };
@@ -2560,8 +2579,7 @@ impl Ctl {
         let frames: Vec<(String, oni_settings::PipelineSettings)> = {
             let s = self.state.borrow();
             let open = s.open_path().map(str::to_string);
-            let at = open.as_ref().and_then(|p| s.order.iter().position(|o| o == p));
-            crate::export::targets(&s.order, &s.selection, at)
+            crate::export::targets(&s.order, &s.selection, open.as_deref())
                 .into_iter()
                 .map(|path| {
                     let settings = if Some(&path) == open.as_ref() {
@@ -2611,6 +2629,9 @@ impl Ctl {
         }
         if text == "\u{1b}" && w.global::<Pairing>().get_shown() {
             self.close_pairing();
+            return true;
+        }
+        if text == "\u{1b}" && self.export_escape() {
             return true;
         }
         if self.lab_key(text, bare, repeat) {
@@ -3013,10 +3034,14 @@ impl Ctl {
                 (false, _) => (editor_undo.0, editor_undo.1, "Undo".to_string(), "Redo".to_string()),
             };
             let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
+            let (exporting, writing) = {
+                let c = self.export.borrow();
+                (c.shown.then_some(c.targets.len()), c.exporting)
+            };
             let plural = |n: usize, one: &str, many: String| if n > 1 { many } else { one.to_string() };
             let titles = MenuTitles {
                 mode: if gallery { "Editor" } else { "Gallery" }.into(),
-                export: plural(selected, "Export…", format!("Export {selected} Photos…")).into(),
+                export: crate::export::label::menu(exporting.unwrap_or(selected)).into(),
                 remove: plural(count, "Move to ONI Trash", format!("Move {count} Photos to ONI Trash")).into(),
                 restore: "Restore".into(),
                 paste: plural(count, "Paste Settings", format!("Paste Settings to {count} Photos")).into(),
@@ -3041,7 +3066,8 @@ impl Ctl {
             let live = MenuLive {
                 open: true,
                 toggle_mode: !gallery || anchor,
-                export: false,
+                // On the surface ⌘E confirms; elsewhere it opens on the selection, else the open photo.
+                export: exporting.map_or(open || selected > 0, |n| n > 0 && !writing),
                 recheck: read_done || !opened,
                 read_folders: opened,
                 show_selected: gallery && (open || selected > 0),

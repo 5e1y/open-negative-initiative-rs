@@ -2,9 +2,10 @@
 //! targets, each frame's line, the labels that count them, the renders and the write.
 
 use crate::render::{Decoded, Engine, Negative, Shared};
+use oni_colour::{OutputProfile, Space};
 use oni_export::{ExifMetadata, Failure, Format, Image, Resize, Row, Settings};
 use oni_graph::Image as Recipe;
-use oni_pipeline::{Inputs, Request};
+use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
 use oni_settings::film::{Film, film_stock};
 use std::collections::BTreeSet;
@@ -23,9 +24,9 @@ pub struct Target {
 }
 
 /// `exportNow`: the gallery's selection in the gallery's order, else the open photo.
-pub fn targets(order: &[String], selection: &BTreeSet<usize>, open: Option<usize>) -> Vec<String> {
+pub fn targets(order: &[String], selection: &BTreeSet<usize>, open: Option<&str>) -> Vec<String> {
     if selection.is_empty() {
-        return open.and_then(|i| order.get(i)).cloned().into_iter().collect();
+        return open.map(str::to_owned).into_iter().collect();
     }
     selection.iter().filter_map(|i| order.get(*i)).cloned().collect()
 }
@@ -113,11 +114,6 @@ pub fn low_precision(count: usize, of: usize) -> String {
     }
 }
 
-/// `RawDecode.isLowPrecision`: a linear scan of 8 bits or fewer; a RAW never is.
-pub fn is_low_precision(path: &Path) -> bool {
-    oni_decode::route(path) == oni_decode::Branch::LinearRgb && oni_decode::container::bits_per_sample(path).is_some_and(|b| b <= 8)
-}
-
 /// The two size fields' text: the first target's output size, empty before it is measured.
 pub fn size_texts(full: Option<(f64, f64)>, resize: Resize) -> (String, String) {
     match full {
@@ -141,6 +137,80 @@ pub fn typed_size(width: &str, height: &str, shown: (&str, &str), full: (f64, f6
     None
 }
 
+/// The profiles the picker lists: the installed ones, the chosen one first when it is not among them.
+pub fn listed_profiles(installed: &[OutputProfile], chosen: &OutputProfile) -> Vec<OutputProfile> {
+    if installed.contains(chosen) {
+        return installed.to_vec();
+    }
+    std::iter::once(chosen.clone()).chain(installed.iter().cloned()).collect()
+}
+
+/// `ExportSpaceField.options`: a menu needs distinct titles, so a shared description gains its
+/// file name, and a shared file name its folder.
+pub fn profile_titles(listed: &[OutputProfile]) -> Vec<String> {
+    let file = |p: &OutputProfile| Path::new(&p.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let named = |n: &str| listed.iter().filter(|p| p.name == n).count();
+    let filed = |n: &str, f: &str| listed.iter().filter(|p| p.name == n && file(p) == f).count();
+    listed
+        .iter()
+        .map(|p| {
+            let f = file(p);
+            if named(&p.name) <= 1 {
+                return p.name.clone();
+            }
+            if filed(&p.name, &f) <= 1 {
+                return format!("{} — {f}", p.name);
+            }
+            let folder = Path::new(&p.path).parent().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default();
+            format!("{} — {f} — {folder}", p.name)
+        })
+        .collect()
+}
+
+/// The note under the profile picker, empty when there is nothing to say.
+pub fn profile_note(chosen: &OutputProfile, installed: &[OutputProfile]) -> &'static str {
+    if !chosen.is_usable() {
+        "This profile can no longer be read. Choose another one."
+    } else if installed.is_empty() {
+        "No printer or paper profile is installed yet: load one, or get your paper's below."
+    } else {
+        ""
+    }
+}
+
+/// `loadProfile`'s report, `None` when every file chosen was installed.
+pub fn import_report(installed: usize, refused: usize) -> Option<(String, String)> {
+    if refused == 0 && installed > 0 {
+        return None;
+    }
+    let title = match installed {
+        0 => "No Profile Installed".to_owned(),
+        1 => "1 Profile Installed".to_owned(),
+        n => format!("{n} Profiles Installed"),
+    };
+    let message = if installed == 0 && refused == 0 {
+        "No ICC profile was found in what you chose.".to_owned()
+    } else {
+        format!(
+            "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs."
+        )
+    };
+    Some((title, message))
+}
+
+/// The note under the space when the previews show another space than the one edited in.
+pub fn edited_in_note(edited_in: Option<&Space>, space: &Space, batch: bool) -> String {
+    match edited_in {
+        Some(e) if e != space => format!(
+            "{} edited in {}. The previews show them in {}.",
+            if batch { "These images were" } else { "This image was" },
+            e.title(),
+            space.title()
+        ),
+        _ => String::new(),
+    }
+}
+
 // MARK: - Renders
 
 /// `RawDecode.linear(source)` at full resolution, the export's own decode.
@@ -148,13 +218,14 @@ pub fn full_decode(path: &Path, reading: crate::render::Reading) -> Result<Decod
     crate::render::decode_full(path, reading).map_err(|_| Failure::Decode)
 }
 
-/// `Pipeline.apply` at full resolution and unproofed, read back in bands of rows.
+/// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and patches, read
+/// back in bands of rows.
 pub fn render_full(engine: &mut Engine, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
     let l = decoded.linear;
-    let (graph, pipeline) = engine.parts();
-    let source = graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
+    let source = engine.parts().0.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
     drop(l.pixels);
-    let image = pipeline.image(graph, &source, settings, &Request::default(), &Inputs::default()).map_err(|_| Failure::Render)?;
+    let image = engine.unproofed(&source, settings, &Request::default()).map_err(|_| Failure::Render)?;
+    let (graph, _) = engine.parts();
     let out = read_back(graph, &image);
     drop(source);
     graph.purge();
@@ -177,9 +248,8 @@ pub fn render_reduced(engine: &mut Engine, negative: &Negative, settings: &Pipel
     let (w, h) = negative.size();
     let scale = (side as f64 / w.max(h) as f64).min(1.0);
     let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
-    let (graph, pipeline) = engine.parts();
-    let image = pipeline.image(graph, &negative.preview, settings, &request, &Inputs::default()).map_err(|_| Failure::Render)?;
-    read_back(graph, &image)
+    let image = engine.unproofed(&negative.preview, settings, &request).map_err(|_| Failure::Render)?;
+    read_back(engine.parts().0, &image)
 }
 
 /// `refreshEstimate`: the first target weighed on its 500 px sample, scaled to its pixel count.
@@ -228,15 +298,16 @@ pub fn clash_notice(clashes: usize, of: usize) -> Option<(String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::render::Linear;
 
     #[test]
     fn the_target_is_the_selection_else_the_open_photo() {
         let order: Vec<String> = ["a", "b", "c", "d"].map(String::from).to_vec();
-        assert_eq!(targets(&order, &BTreeSet::new(), Some(2)), ["c"]);
-        assert_eq!(targets(&order, &BTreeSet::from([3, 0]), Some(2)), ["a", "d"], "the gallery's order, not the set's");
+        assert_eq!(targets(&order, &BTreeSet::new(), Some("c")), ["c"]);
+        assert_eq!(targets(&order, &BTreeSet::from([3, 0]), Some("c")), ["a", "d"], "the gallery's order, not the set's");
         assert!(targets(&order, &BTreeSet::new(), None).is_empty());
         // Twin: the open photo outside the selection is not added to it.
-        assert!(!targets(&order, &BTreeSet::from([1]), Some(2)).contains(&"c".to_string()));
+        assert!(!targets(&order, &BTreeSet::from([1]), Some("c")).contains(&"c".to_string()));
     }
 
     #[test]
@@ -298,5 +369,81 @@ mod tests {
         assert_eq!(title, "1 File Already Exists in That Folder");
         assert_eq!(message, "Exporting will replace 1 of the 3 files. The originals are not touched.");
         assert_eq!(clash_notice(3, 3).unwrap().1, "Exporting will replace them. The originals are not touched.");
+    }
+
+    #[test]
+    fn profile_titles_stay_distinct_as_the_menu_needs() {
+        let p = |path: &str, name: &str| OutputProfile { path: path.into(), name: name.into() };
+        let listed = [p("/a/x.icc", "Baryta"), p("/b/x.icc", "Baryta"), p("/a/y.icc", "Baryta"), p("/a/z.icc", "Matte")];
+        assert_eq!(
+            profile_titles(&listed),
+            ["Baryta — x.icc — /a", "Baryta — x.icc — /b", "Baryta — y.icc", "Matte"]
+        );
+        let chosen = p("/gone.icc", "Gone");
+        assert_eq!(listed_profiles(&listed, &chosen)[0], chosen, "a chosen profile no longer installed stays listed, first");
+        assert_eq!(listed_profiles(&listed, &listed[3]).len(), 4);
+        // Twin: unique names are never decorated.
+        assert_eq!(profile_titles(&listed[3..]), ["Matte"]);
+    }
+
+    #[test]
+    fn the_import_report_speaks_only_of_what_was_left_out() {
+        assert_eq!(import_report(2, 0), None);
+        assert_eq!(import_report(0, 0).unwrap(), ("No Profile Installed".into(), "No ICC profile was found in what you chose.".into()));
+        let (title, message) = import_report(1, 2).unwrap();
+        assert_eq!(title, "1 Profile Installed");
+        assert!(message.starts_with("2 left out: Custom takes RGB printer and paper profiles."));
+        assert_eq!(edited_in_note(Some(&Space::Srgb), &Space::DisplayP3, true), "These images were edited in sRGB. The previews show them in Display P3.");
+        // Twin: the same space says nothing.
+        assert_eq!(edited_in_note(Some(&Space::DisplayP3), &Space::DisplayP3, false), "");
+    }
+
+    /// The export renders the frame with the custom mask and the dust patches the canvas lays, so
+    /// the file holds what the canvas shows; a frame naming none renders as without them.
+    #[test]
+    fn the_export_render_lays_the_canvas_s_masks_and_patches() {
+        let Ok(device) = crate::render::Device::open() else {
+            eprintln!("no adapter: the export's inputs are not exercised");
+            return;
+        };
+        let root = std::env::temp_dir().join(format!("oni-export-inputs-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let mut engine = Engine::on(&device);
+        engine.support = Some(root.join("support"));
+        engine.caches = Some(root.join("caches"));
+        let (w, h) = (64usize, 48usize);
+        let decoded = || Decoded { linear: Linear { width: w, height: h, pixels: vec![[0.3, 0.3, 0.3, 1.0]; w * h] }, full_width: w as f64 };
+        let tiff = |path: &Path, pixels: &[f32]| {
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            let out = std::fs::File::create(path).unwrap();
+            tiff::encoder::TiffEncoder::new(out).unwrap().write_image::<tiff::encoder::colortype::RGBA32Float>(w as u32, h as u32, pixels).unwrap();
+        };
+        let rest = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        let plain = render_full(&mut engine, decoded(), &rest).unwrap();
+        let at = |i: &Image, x: usize, y: usize| i.pixels[(y * w + x) * 4 + 1];
+
+        // A mask darker at the left edge: dividing by it lifts the left of the frame.
+        let mask: Vec<f32> = (0..w * h).flat_map(|i| { let v = 0.5 + 0.5 * (i % w) as f32 / w as f32; [v, v, v, 1.0] }).collect();
+        tiff(&crate::flat_fields::folder(root.join("support").as_path()).join("ramp.tiff"), &mask);
+        let mut masked = rest.clone();
+        masked.flat_field.mask = oni_settings::frame::FlatFieldMask::Custom;
+        masked.flat_field.custom = Some("ramp".into());
+        let flat = render_full(&mut engine, decoded(), &masked).unwrap();
+        assert!((at(&flat, 2, h / 2) - at(&plain, 2, h / 2)).abs() > 1e-2, "the mask reaches the export");
+
+        // A bright patch under a stroke at the centre.
+        let id = oni_settings::id::Id::parse("0F2B6E4C-9A1D-4E7B-8C3A-5D6E7F809A1B").unwrap();
+        tiff(&crate::patches::file(root.join("caches").as_path(), id), &vec![0.9f32; w * h * 4]);
+        let mut healed = rest.clone();
+        let point = |x: f64, y: f64| oni_settings::cg::Point { x, y };
+        healed.corrections = vec![oni_settings::frame::Correction { id, stroke: vec![point(0.5, 0.5)], radius: 6.0 }];
+        let patched = render_full(&mut engine, decoded(), &healed).unwrap();
+        assert!((at(&patched, w / 2, h / 2) - at(&plain, w / 2, h / 2)).abs() > 1e-2, "the patch reaches the export");
+        // Twin: far from the stroke the frame is its own, and a mask no file backs changes nothing.
+        assert!((at(&patched, 2, 2) - at(&plain, 2, 2)).abs() < 1e-5);
+        masked.flat_field.custom = Some("gone".into());
+        let missing = render_full(&mut engine, decoded(), &masked).unwrap();
+        assert!(missing.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a - b).abs() < 1e-6));
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

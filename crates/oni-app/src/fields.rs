@@ -1,8 +1,8 @@
 //! Every value the panel draws: its label, travel, rest, readout and the store knob it moves, copied
 //! from the Swift panes (`ColorPane`, `PrintPanel`, `SettingsPane`, `DetailsPane`, …).
 
-use oni_core::knob::{CHROMA_FORCE_RANGE, Knob, SAUCE_RANGE};
-use oni_settings::blocks::{ChromaDenoise, Sharpen, Texture, Vignette, separation};
+use oni_core::knob::{CHROMA_FORCE_RANGE, Channel, Knob, SAUCE_RANGE};
+use oni_settings::blocks::{ChromaDenoise, PaperCorrection, Sharpen, Texture, Vignette, separation};
 use oni_settings::tone::{Print, color_density};
 
 /// One slider's value, its index the `field` the Slint `Store` passes back.
@@ -29,6 +29,9 @@ pub enum Field {
     ChromaAmount,
     ChromaRadius,
     Texture,
+    PaperRed,
+    PaperGreen,
+    PaperBlue,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -43,10 +46,11 @@ pub enum Block {
     Sharpening,
     ChromaDenoise,
     Texture,
+    PaperCorrection,
 }
 
 impl Block {
-    pub const ALL: [Block; 9] = [
+    pub const ALL: [Block; 10] = [
         Block::Color,
         Block::Lighting,
         Block::Effects,
@@ -56,6 +60,7 @@ impl Block {
         Block::Sharpening,
         Block::ChromaDenoise,
         Block::Texture,
+        Block::PaperCorrection,
     ];
 
     pub fn from_index(i: i32) -> Option<Block> {
@@ -74,6 +79,7 @@ impl Block {
             Block::Sharpening => &[SharpenAmount, SharpenRadius, SharpenHalo],
             Block::ChromaDenoise => &[ChromaAmount, ChromaRadius],
             Block::Texture => &[Texture],
+            Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
         }
     }
 }
@@ -141,7 +147,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 21] = [
+    pub const ALL: [Field; 24] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -163,6 +169,9 @@ impl Field {
         Field::ChromaAmount,
         Field::ChromaRadius,
         Field::Texture,
+        Field::PaperRed,
+        Field::PaperGreen,
+        Field::PaperBlue,
     ];
 
     pub fn index(self) -> i32 {
@@ -197,6 +206,9 @@ impl Field {
             Field::ChromaAmount => "chroma-amount",
             Field::ChromaRadius => "chroma-radius",
             Field::Texture => "texture",
+            Field::PaperRed => "paper-red",
+            Field::PaperGreen => "paper-green",
+            Field::PaperBlue => "paper-blue",
         }
     }
 
@@ -252,6 +264,10 @@ impl Field {
                 s("Radius", ChromaDenoise::RADIUS_RANGE, ChromaDenoise::default().radius, Readout::Pixels)
             }
             Field::Texture => s("Texture", Texture::RANGE, 0.0, Readout::SignedTimes),
+            // `GainPanel` titled by its channel alone, as the Paper Correction block names them.
+            Field::PaperRed => s("Red", PaperCorrection::RANGE, 0.0, Readout::Stops),
+            Field::PaperGreen => s("Green", PaperCorrection::RANGE, 0.0, Readout::Stops),
+            Field::PaperBlue => s("Blue", PaperCorrection::RANGE, 0.0, Readout::Stops),
         }
     }
 
@@ -288,6 +304,9 @@ impl Field {
             Field::ChromaAmount => Knob::ChromaForce,
             Field::ChromaRadius => Knob::ChromaRadius,
             Field::Texture => Knob::Texture,
+            Field::PaperRed => Knob::Paper(Channel::Red),
+            Field::PaperGreen => Knob::Paper(Channel::Green),
+            Field::PaperBlue => Knob::Paper(Channel::Blue),
         }
     }
 

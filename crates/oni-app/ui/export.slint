@@ -1,0 +1,528 @@
+// Export as a mode of the card: one line per photo with its preview, the settings column on the right,
+// the space field shared with the Working Space chip, and the dialogs the export raises.
+import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, Menu, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle } from "ds/ds.slint";
+
+// One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
+export struct ExportLine {
+    name: string,
+    camera: string,
+    lens: string,
+    film: string,
+    iso: string,
+    date: string,
+    artist: string,
+    copyright: string,
+    // The line is read off the main thread; until it lands the fields wait, disabled.
+    ready: bool,
+    preview: image,
+    // 0 waits, 1 shows the picture, 2 failed.
+    state: int,
+    caption: string,
+    // Width over height, 0 before it is measured.
+    aspect: float,
+}
+
+// One profile a maker's page offers, titled from its file name.
+export struct PaperRow {
+    title: string,
+    installed: bool,
+    installing: bool,
+}
+
+export global Exporting {
+    in property <bool> shown;
+    // The space is a paper: the Color pane shows Paper Correction.
+    in property <bool> on-paper;
+    in property <[ExportLine]> lines;
+    in property <string> extension: ".jpg";
+    in property <string> subtitle;
+    in property <int> count;
+    in property <int> format: 1;
+    // 0 to 3 the built-in spaces, 4 Custom.
+    in property <int> space-tab: 1;
+    in property <string> purpose;
+    in property <bool> jpeg: true;
+    in property <bool> on-profile;
+    in property <bool> pending;
+    in property <[string]> profiles;
+    in property <int> profile;
+    in property <string> profile-note;
+    in property <string> pending-note;
+    in property <bool> colour-only;
+    in property <string> edited-in;
+    in property <bool> compress: true;
+    in property <float> quality-fraction;
+    in property <string> quality-readout;
+    in property <string> width-text;
+    in property <string> height-text;
+    in property <bool> size-enabled;
+    in property <bool> resized;
+    in property <bool> hdr;
+    in property <string> bits;
+    in property <string> dims;
+    in property <string> weight-label;
+    in property <string> weight;
+    in property <string> low-precision;
+    in property <bool> exporting;
+    in property <bool> can-export: true;
+    in property <string> key-title: "EXPORT";
+    in property <string> menu-title: "Export…";
+    in property <bool> menu-live;
+    in property <string> gamut-title: "Show What This Screen Cannot Show";
+    in property <string> chip-title;
+    in property <string> chip-hint;
+    in property <bool> confirm-shown;
+    in property <string> confirm-title;
+    in property <string> confirm-message;
+    in property <bool> notice-shown;
+    in property <string> notice-title;
+    in property <string> notice-message;
+    in property <bool> stocks-shown;
+    in property <[string]> stocks;
+    in property <int> stock;
+    callback preset(int);
+    callback format-picked(int);
+    callback space-picked(int);
+    callback profile-picked(int);
+    callback pending-picked(int);
+    callback load-profile();
+    callback get-papers();
+    callback colour-only-set(bool);
+    callback compress-set(bool);
+    callback hdr-set(bool);
+    callback quality-press(bool) -> bool;
+    callback quality-drag(length, length, bool);
+    callback quality-release();
+    callback quality-step(int);
+    callback size-typed(string, string);
+    callback full-size();
+    callback edited(int, string, string);
+    callback pick-film(int);
+    callback stock-chosen(int);
+    callback cancel();
+    callback export();
+    callback confirmed(bool);
+    callback notice-closed();
+    callback auto-paper();
+    // The paper profiles sheet: the sources in two groups, the chosen one's card, its offered files.
+    in property <bool> papers-shown;
+    in property <[string]> paper-direct;
+    in property <[string]> paper-browsed;
+    in property <int> paper-direct-count;
+    in property <int> paper-source;
+    in property <string> paper-name;
+    in property <string> paper-note;
+    in property <bool> paper-browser;
+    in property <bool> paper-reading;
+    in property <bool> paper-any;
+    in property <string> paper-filter;
+    in property <bool> paper-busy;
+    in property <string> paper-message;
+    in property <[PaperRow]> paper-rows;
+    callback papers-done();
+    callback paper-picked(int);
+    callback paper-open-page();
+    callback paper-filter-typed(string);
+    callback paper-install(int);
+    callback paper-uninstall(int);
+}
+
+// `FrameFields`: the file name with its extension, then the EXIF the file will carry.
+component FrameFields inherits VerticalLayout {
+    in property <ExportLine> line;
+    in property <int> at;
+    spacing: FormStyle.row-gap;
+    width: FormStyle.fields-width;
+    FormRow {
+        label: "Name";
+        SuffixField {
+            text: root.line.name;
+            suffix: Exporting.extension;
+            enabled: root.line.ready;
+            edited(t) => { Exporting.edited(root.at, "name", t); }
+        }
+    }
+    FormRow {
+        label: "Camera";
+        TextField { text: root.line.camera; placeholder: "Leica M6"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+    }
+    FormRow {
+        label: "Lens";
+        TextField { text: root.line.lens; placeholder: "Summicron 50 mm"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+    }
+    FormRow {
+        label: "Film";
+        Picker {
+            value: root.line.film == "" ? "Pick a film…" : root.line.film;
+            open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
+        }
+    }
+    FormRow {
+        label: "ISO";
+        TextField { text: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+    }
+    FormRow {
+        label: "Date";
+        TextField { text: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+    }
+    FormRow {
+        label: "Artist";
+        TextField { text: root.line.artist; placeholder: "Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+    }
+    FormRow {
+        label: "Copyright";
+        TextField { text: root.line.copyright; placeholder: "© 2026 Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+    }
+    Spacer { }
+}
+
+// `ExportColumn`: the photographs about to be written, fields left and preview right.
+export component ExportColumn inherits Scroller {
+    property <length> room-width: self.width - 2 * Space.l;
+    property <length> room-height: self.height - 2 * Space.l;
+    property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
+    content-height: max(column.preferred-height, self.height);
+    column := VerticalLayout {
+        width: root.width;
+        height: max(self.preferred-height, root.height);
+        padding-top: Space.l;
+        padding-bottom: Space.l;
+        padding-left: Space.l;
+        padding-right: Space.l;
+        spacing: Space.l;
+        // Centres a single frame under one screenful; above that the floor does nothing.
+        alignment: center;
+        for line[i] in Exporting.lines: HorizontalLayout {
+            spacing: Space.l;
+            FrameFields { line: line; at: i; }
+            VerticalLayout {
+                spacing: Space.xs;
+                PreviewSlot {
+                    // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
+                    height: max(FormStyle.preview-floor, min(root.room-height - FormStyle.caption, root.picture-width / (line.aspect > 0 ? line.aspect : 1.5)));
+                    source: line.preview;
+                    state: line.state;
+                }
+                if line.caption != "": Label { text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
+            }
+        }
+    }
+}
+
+// The quality slider, its hand held by Rust like every other slider.
+component QualitySlider inherits Slider {
+    label: "Quality";
+    fraction: Exporting.quality-fraction;
+    readout: Exporting.quality-readout;
+    value-text: Exporting.quality-readout;
+    press(f, fine) => { return Exporting.quality-press(fine); }
+    drag(f, t, s, fine) => { Exporting.quality-drag(t, s, fine); }
+    release(f) => { Exporting.quality-release(); }
+    step(f, d) => { Exporting.quality-step(d); }
+}
+
+// `ExportSpaceField`: four matrix spaces or an installed ICC profile; the chip shows it compact.
+export component SpaceField inherits VerticalLayout {
+    in property <bool> compact;
+    spacing: FormStyle.gap;
+    // Popups cannot be conditional, so both menus sit on the field itself.
+    profiles := Menu {
+        entries: Exporting.profiles;
+        current: Exporting.profile;
+        chosen(i) => { Exporting.profile-picked(i); }
+    }
+    choices := Menu {
+        entries: ["Choose a profile…", "Load a Profile…"];
+        current: 0;
+        chosen(i) => { Exporting.pending-picked(i); }
+    }
+    if !root.compact: Field {
+        label: "Space";
+        help: "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.";
+        Tabs {
+            tabs: ["sRGB", "DP3", "Adobe RGB", "ProPhoto", "Custom"];
+            marked: [false, false, false, false, false];
+            selected: Exporting.space-tab;
+            picked(i) => { Exporting.space-picked(i); }
+        }
+        if Exporting.jpeg && Exporting.space-tab == 3: Note { text: "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."; }
+        Note { text: Exporting.purpose; }
+    }
+    if root.compact: Tabs {
+        tabs: ["sRGB", "DP3", "Adobe RGB", "ProPhoto", "Custom"];
+        marked: [false, false, false, false, false];
+        selected: Exporting.space-tab;
+        picked(i) => { Exporting.space-picked(i); }
+    }
+    if Exporting.on-profile: Field {
+        label: "Profile";
+        Picker {
+            value: Exporting.profiles[Exporting.profile];
+            open => { profiles.show(); }
+        }
+        if Exporting.profile-note != "": Note { text: Exporting.profile-note; }
+    }
+    if Exporting.on-profile && root.compact: LabelledRow {
+        label: "Show only color variation (not recommended)";
+        Toggle {
+            label: "Show only color variation (not recommended)";
+            on: Exporting.colour-only;
+            toggled(on) => { Exporting.colour-only-set(on); }
+        }
+    }
+    if Exporting.pending: Field {
+        label: "Profile";
+        Picker {
+            value: "Choose a profile…";
+            open => { choices.show(); }
+        }
+        Note { text: Exporting.pending-note; }
+    }
+    if !root.compact || Exporting.on-profile || Exporting.pending: HorizontalLayout {
+        spacing: Space.xs;
+        Button { text: "Load a Profile…"; horizontal-stretch: 1; clicked => { Exporting.load-profile(); } }
+        Button { text: "Get Paper Profiles…"; horizontal-stretch: 1; clicked => { Exporting.get-papers(); } }
+    }
+}
+
+// `ExportPanel`: preset plate, rows, what the file will be, the two exits.
+export component ExportPanel inherits Surface {
+    width: FormStyle.panel-width;
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.l;
+        Scroller {
+            vertical-stretch: 1;
+            content-height: fields.preferred-height;
+            fields := VerticalLayout {
+                width: parent.width;
+                alignment: start;
+                spacing: Space.m;
+                VerticalLayout {
+                    spacing: Space.xs;
+                    Label { text: "Export"; role: TextRole.heading; }
+                    Label { text: Exporting.subtitle; role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
+                }
+                // Three keys, one row: a click writes every row below at once and locks none.
+                HorizontalLayout {
+                    spacing: Space.xs;
+                    Button { text: "Instagram"; horizontal-stretch: 1; clicked => { Exporting.preset(0); } }
+                    Button { text: "Display"; horizontal-stretch: 1; clicked => { Exporting.preset(1); } }
+                    Button { text: "Print"; horizontal-stretch: 1; clicked => { Exporting.preset(2); } }
+                }
+                Field {
+                    label: "Format";
+                    Tabs {
+                        tabs: ["TIFF 16-bit", "JPEG"];
+                        marked: [false, false];
+                        selected: Exporting.format;
+                        picked(i) => { Exporting.format-picked(i); }
+                    }
+                }
+                SpaceField { }
+                if Exporting.edited-in != "": Note { text: Exporting.edited-in; }
+                if Exporting.format == 0: Field {
+                    label: "Compression";
+                    LabelledRow {
+                        label: "ZIP, lossless";
+                        Toggle { label: "ZIP, lossless"; on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
+                    }
+                }
+                if Exporting.format == 1: QualitySlider { }
+                Field {
+                    label: "Size";
+                    help: "Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution.";
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        width-box := NumberField {
+                            text: Exporting.width-text;
+                            placeholder: "W";
+                            enabled: Exporting.size-enabled;
+                            accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
+                        }
+                        Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
+                        height-box := NumberField {
+                            text: Exporting.height-text;
+                            placeholder: "H";
+                            enabled: Exporting.size-enabled;
+                            accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
+                        }
+                        if Exporting.resized: IconButton { icon: Icons.reset; help: "Full resolution"; clicked => { Exporting.full-size(); } }
+                    }
+                }
+                Field {
+                    label: "HDR hack";
+                    help: "Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.";
+                    LabelledRow {
+                        label: "Brighter on HDR screens";
+                        Toggle { label: "Brighter on HDR screens"; on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
+                    }
+                }
+                SummaryBox {
+                    HorizontalLayout {
+                        Label { text: Exporting.bits; role: TextRole.value; horizontal-stretch: 1; }
+                        Label { text: Exporting.dims; role: TextRole.value; }
+                    }
+                    HorizontalLayout {
+                        Label { text: Exporting.weight-label; role: TextRole.value; horizontal-stretch: 1; }
+                        Label { text: Exporting.weight; role: TextRole.value; }
+                    }
+                    if Exporting.low-precision != "": Warning { text: Exporting.low-precision; }
+                    Note { text: "EXIF as set beside each photo; nothing of the scanner unless left there"; }
+                }
+            }
+        }
+        // Cancel and Export, the confirm at the right; mid-batch Cancel stops after the current file.
+        HorizontalLayout {
+            spacing: Space.xs;
+            Button { text: Exporting.exporting ? "Stop" : "Cancel"; horizontal-stretch: 1; clicked => { Exporting.cancel(); } }
+            Button {
+                text: Exporting.exporting ? "Exporting…" : Exporting.key-title;
+                kind: ButtonKind.accent;
+                horizontal-stretch: 1;
+                enabled: Exporting.can-export && !Exporting.exporting;
+                clicked => { Exporting.export(); }
+            }
+        }
+    }
+}
+
+// The Working Space chip at the canvas's top edge, opening the compact space field.
+export component SpaceChip inherits Chip {
+    title: Exporting.chip-title;
+    hint: Exporting.chip-hint;
+    help: "The color space the picture is edited and exported in";
+    clicked => { chooser.show(); }
+    chooser := Popover {
+        x: (root.width - FormStyle.panel-width) / 2;
+        y: root.height;
+        Label { text: "Working Space"; role: TextRole.section; }
+        SpaceField { compact: true; }
+    }
+}
+
+// The batch's clash: Return reaches no key, since replacing files is never a stray key's doing.
+export component ConfirmSheet inherits Sheet {
+    title: Exporting.confirm-title;
+    dismissed => { Exporting.confirmed(false); }
+    Label { text: Exporting.confirm-message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: center;
+        spacing: Space.s;
+        Button { text: "Cancel"; clicked => { Exporting.confirmed(false); } }
+        Button { text: "Replace"; kind: ButtonKind.destructive; clicked => { Exporting.confirmed(true); } }
+    }
+}
+
+export component ExportNoticeSheet inherits Sheet {
+    title: Exporting.notice-title;
+    dismissed => { Exporting.notice-closed(); }
+    Label { text: Exporting.notice-message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: center;
+        Button { text: "OK"; clicked => { Exporting.notice-closed(); } }
+    }
+}
+
+// This frame's stock alone: the stock is the frame's, not the roll's.
+export component StockSheet inherits Sheet {
+    title: "Film Stock";
+    dismissed => { Exporting.stock-chosen(-1); }
+    ListView {
+        height: FormStyle.paper-height / 2;
+        for name[i] in Exporting.stocks: ListRow {
+            title: name;
+            selected: i == Exporting.stock;
+            clicked => { Exporting.stock-chosen(i); }
+        }
+    }
+}
+
+// `PaperProfilesSheet`: the makers in a sidebar, what the chosen one offers in a card.
+export component PaperSheet inherits BoardSheet {
+    title: "Paper Profiles";
+    dismissed => { Exporting.papers-done(); }
+    Scroller {
+        width: FormStyle.paper-list;
+        VerticalLayout {
+            padding-left: Space.s;
+            padding-right: Space.s;
+            padding-bottom: Space.m;
+            spacing: Space.m;
+            alignment: start;
+            VerticalLayout {
+                GroupHeading { text: "DOWNLOAD HERE"; }
+                for name[i] in Exporting.paper-direct: ListRow {
+                    title: name;
+                    selected: i == Exporting.paper-source;
+                    clicked => { Exporting.paper-picked(i); }
+                    VerticalLayout {
+                        alignment: center;
+                        Icon { source: Icons.archive; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
+                    }
+                }
+            }
+            VerticalLayout {
+                GroupHeading { text: "ON THE MAKER’S SITE"; }
+                for name[i] in Exporting.paper-browsed: ListRow {
+                    title: name;
+                    selected: i + Exporting.paper-direct-count == Exporting.paper-source;
+                    clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
+                    VerticalLayout {
+                        alignment: center;
+                        Icon { source: Icons.arrow-right; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
+                    }
+                }
+            }
+        }
+    }
+    VerticalLayout {
+        horizontal-stretch: 1;
+        padding-right: CardStyle.inset;
+        padding-bottom: CardStyle.inset;
+        BoardCard {
+            vertical-stretch: 1;
+            Label { text: Exporting.paper-name; role: TextRole.heading; }
+            Note { text: Exporting.paper-note; }
+            HorizontalLayout {
+                alignment: start;
+                Button { text: "Open the Maker’s Page"; clicked => { Exporting.paper-open-page(); } }
+            }
+            if Exporting.paper-browser: Note {
+                text: "Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not.";
+            }
+            if !Exporting.paper-browser && Exporting.paper-reading: Note { text: "Reading the maker’s page…"; }
+            if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Note {
+                text: "The page lists no profile right now. Open it to look by hand.";
+            }
+            if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
+                text: Exporting.paper-filter;
+                placeholder: "Filter, e.g. P900 matte";
+                edited(t) => { Exporting.paper-filter-typed(t); }
+            }
+            if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: ListView {
+                vertical-stretch: 1;
+                for row[i] in Exporting.paper-rows: HorizontalLayout {
+                    spacing: Space.s;
+                    padding-top: Space.xs;
+                    padding-bottom: Space.xs;
+                    Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+                    if row.installing: Note { text: "Installing…"; }
+                    if !row.installing && row.installed: Button {
+                        text: "Uninstall";
+                        kind: ButtonKind.destructive;
+                        enabled: !Exporting.paper-busy;
+                        clicked => { Exporting.paper-uninstall(i); }
+                    }
+                    if !row.installing && !row.installed: Button {
+                        text: "Install";
+                        enabled: !Exporting.paper-busy;
+                        clicked => { Exporting.paper-install(i); }
+                    }
+                }
+            }
+            if Exporting.paper-message != "": Note { text: Exporting.paper-message; }
+        }
+    }
+}

@@ -64,6 +64,15 @@ export global Store {
     in property <float> texture-fraction;
     in property <string> texture-readout;
     in property <string> texture-value;
+    in property <float> paper-red-fraction;
+    in property <string> paper-red-readout;
+    in property <string> paper-red-value;
+    in property <float> paper-green-fraction;
+    in property <string> paper-green-readout;
+    in property <string> paper-green-value;
+    in property <float> paper-blue-fraction;
+    in property <string> paper-blue-readout;
+    in property <string> paper-blue-value;
     in property <bool> color-modified;
     in property <bool> lighting-modified;
     in property <bool> effects-modified;
@@ -73,6 +82,7 @@ export global Store {
     in property <bool> sharpening-modified;
     in property <bool> chroma-denoise-modified;
     in property <bool> texture-modified;
+    in property <bool> paper-correction-modified;
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
     callback release(int);

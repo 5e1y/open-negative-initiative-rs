@@ -32,11 +32,15 @@ oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
 qrcode = { version = "0.14", default-features = false }
+# The paper makers' pages and files, checked against the system's trust store.
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
 tiff = "0.11"
 tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
+url = "2"
 wgpu.workspace = true
 
 # The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
@@ -52,6 +56,8 @@ rfd = { version = "0.17", default-features = false }
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "tiff"] }
 oni-render = { path = "../oni-render" }
+jpeg-decoder = "0.3"
+kamadak-exif = "0.6"
 png = "0.18"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
 

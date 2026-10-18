@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 78 twin, 17 partial, 67 none.
+Of 162 checks: 78 twin, 20 partial, 64 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -98,17 +98,17 @@ Of 162 checks: 78 twin, 17 partial, 67 none.
 | 84 | `GalleryHistory.selfCheck` | `Checks/Pipeline/GalleryHistory+Checks.swift:4` | gallery history holds | twin | `oni-library/src/gallery_history.rs::a_gesture_undoes_and_redoes_whole_and_an_idle_one_opens_no_step` |
 | 85 | `FlatField.selfCheck` | `Checks/Pipeline/FlatField+Checks.swift:5` | flat-field correction holds | twin | `oni-render/tests/kernels.rs::flat_field`, `oni-pipeline/src/flat_field.rs::the_shipped_mask_decodes_whole_with_a_peak_under_one` |
 | 86 | `ContainerRead.selfCheck` | `Checks/Pipeline/ContainerRead+Checks.swift:8` | DNG container read holds | twin | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias`, `oni-decode/src/container.rs::a_linear_scan_reads_through_its_table_black_and_white`; `calibratedSpace` serves the converted decode, which is refused |
-| 87 | `ExportPreviews.selfCheck` | `Checks/Pipeline/ExportPreviews+Checks.swift:6` | export modal previews hold | none | none |
+| 87 | `ExportPreviews.selfCheck` | `Checks/Pipeline/ExportPreviews+Checks.swift:6` | export modal previews hold | partial | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` (previews redone on a space change); the key identity and the paper preview are not asserted |
 | 88 | `Export.selfCheck` | `Checks/Pipeline/Export+Checks.swift:6` | export naming and resizing hold | twin | `oni-export/tests/settings.rs::names_cannot_fabricate_a_path`, `oni-export/src/resize.rs::lanczos_matches_an_independent_lanczos3_inside_the_frame` |
 | 89 | `Export.presetChecks` | `Checks/Pipeline/ExportPresets+Checks.swift:4` | export presets hold | twin | `oni-export/tests/settings.rs::every_key_writes_a_distinct_complete_state` |
 | 90 | `Export.profileChecks` | `Checks/Pipeline/Export+Checks.swift:209` | exported files declare their space's ICC profile | twin | `oni-export/tests/files.rs::every_format_declares_the_profile_of_its_space` |
 | 91 | `OutputProfile.selfCheck` | `Checks/Pipeline/OutputProfile+Checks.swift:127` | ICC output profiles convert, install and report | twin | `oni-colour/tests/oracle.rs::a_matrix_profile_leg_agrees_with_lcms2`, `oni-colour/tests/checks.rs::a_maker_s_zip_installs_its_one_rgb_printer_profile` |
 | 92 | `Proof.selfCheck` | `Checks/Pipeline/Proof+Checks.swift:9` | the soft proof and its gamut warning hold | twin | `oni-colour/tests/checks.rs::the_proof_clips_what_the_export_space_cannot_hold` |
 | 93 | `PaperCorrection.selfCheck` | `Checks/Pipeline/PaperCorrection+Checks.swift:7` | the paper correction lays its gains last, read off the paper alone | twin | `oni-colour/tests/checks.rs::paper_correction_is_laid_on_a_paper_alone` |
-| 94 | `ExportSpaceField.selfCheck` | `Checks/UI/ExportSpaceField+Checks.swift:9` | a profile picked is the profile kept and shown | none | none |
+| 94 | `ExportSpaceField.selfCheck` | `Checks/UI/ExportSpaceField+Checks.swift:9` | a profile picked is the profile kept and shown | partial | `oni-app/src/export.rs::profile_titles_stay_distinct_as_the_menu_needs`, `oni-app/tests/export_paper_window.rs::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone`; the pick of each of seven installed profiles is not looped |
 | 95 | `ScreenGamut.selfCheck` | `Checks/Pipeline/ScreenGamut+Checks.swift:8` | what this screen cannot show is striped, and only that | twin | `oni-colour/tests/checks.rs::the_zebra_stripes_what_the_screen_clips` |
 | 96 | `PaperSource.selfCheck` | `Checks/Pipeline/PaperSource+Checks.swift:6` | paper profile sources read their pages | twin | `oni-colour/src/paper_source.rs::a_page_yields_its_profiles_and_nothing_else` |
-| 97 | `ExportPanel.selfCheck` | `Checks/UI/ExportSurface+Checks.swift:6` | export surface wiring holds | none | none |
+| 97 | `ExportPanel.selfCheck` | `Checks/UI/ExportSurface+Checks.swift:6` | export surface wiring holds | partial | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` (⌘E opens and confirms, the count in the labels); the bar and the panel order are not read |
 | 98 | `GainMap.selfCheck` | `Checks/Pipeline/GainMapContainer+Checks.swift:6` | the HDR gain map container holds | twin | `oni-export/tests/files.rs::an_independent_reader_finds_the_map_through_the_mpf_index` |
 | 99 | `DSIcon.selfCheck` | `Checks/DesignSystem/DSIcon+Checks.swift:5` | Trinil icons present in the bundle | none | none |
 | 100 | `FilmStockIcon.selfCheck` | `Checks/DesignSystem/DSIcon+Checks.swift:18` | every film stock in the catalogue has its own icon in the bundle | none | none |

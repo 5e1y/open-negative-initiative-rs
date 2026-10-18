@@ -502,6 +502,13 @@ impl Engine {
         }
     }
 
+    /// `Pipeline.apply` unproofed, with the masks and patches the canvas reads: an export's render.
+    pub fn unproofed(&mut self, source: &Source, settings: &PipelineSettings, request: &Request) -> Result<Image, String> {
+        self.read_custom(settings);
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        self.pipeline.image(&mut self.graph, source, settings, request, &inputs).map_err(|e| e.to_string())
+    }
+
     /// The custom mask the settings name, read and uploaded once per id.
     fn read_custom(&mut self, settings: &PipelineSettings) {
         self.read_patches(settings);

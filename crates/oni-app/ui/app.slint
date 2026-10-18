@@ -7,8 +7,9 @@ import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
+import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
-export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow }
+export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
@@ -307,10 +308,11 @@ export component MainWindow inherits AppWindow {
             EventResult.reject
         }
         VerticalLayout {
-            Toolbar { }
+            // The export surface hides the bar whole: every gesture there is the panel's.
+            if !Exporting.shown: Toolbar { }
             HorizontalLayout {
                 vertical-stretch: 1;
-                if !App.library-hidden: Tree { width: ShellStyle.library-width; }
+                if !App.library-hidden && !Exporting.shown: Tree { width: ShellStyle.library-width; }
                 Rectangle {
                     horizontal-stretch: 1;
                     // The card, inset by `cardInset` from the panel's ground.
@@ -319,7 +321,7 @@ export component MainWindow inherits AppWindow {
                         y: 0;
                         width: parent.width - 2 * CardStyle.inset;
                         height: parent.height - CardStyle.inset - StatusStyle.height;
-                        visible: !App.gallery;
+                        visible: !App.gallery && !Exporting.shown;
                         changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
                         changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
                         Rectangle {
@@ -461,6 +463,7 @@ export component MainWindow inherits AppWindow {
                                 dragged(at) => { Canvas.split-dragged(self.x + at); }
                             }
                         }
+                        SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
                         HorizontalLayout {
                             x: parent.width - self.preferred-width - CardStyle.padding;
                             y: 0;
@@ -480,8 +483,15 @@ export component MainWindow inherits AppWindow {
                         y: 0;
                         width: parent.width - 2 * CardStyle.inset;
                         height: parent.height - CardStyle.inset - StatusStyle.height;
-                        visible: App.gallery;
+                        visible: App.gallery && !Exporting.shown;
                         Grid { }
+                    }
+                    if Exporting.shown: Card {
+                        x: CardStyle.inset;
+                        y: 0;
+                        width: parent.width - 2 * CardStyle.inset;
+                        height: parent.height - CardStyle.inset - StatusStyle.height;
+                        ExportColumn { width: parent.width; height: parent.height; }
                     }
                     StatusLine {
                         x: CardStyle.inset;
@@ -490,8 +500,9 @@ export component MainWindow inherits AppWindow {
                         text: Canvas.status;
                     }
                 }
-                if !App.panel-hidden && !App.gallery: Panel { }
-                if App.gallery: Info { }
+                if !App.panel-hidden && !App.gallery && !Exporting.shown: Panel { }
+                if App.gallery && !Exporting.shown: Info { }
+                if Exporting.shown: ExportPanel { }
             }
         }
     }
@@ -516,6 +527,10 @@ export component MainWindow inherits AppWindow {
         width: root.width;
         height: root.height;
     }
+    if Exporting.confirm-shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.stocks-shown: StockSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     TipLayer { room: root.width; }
 

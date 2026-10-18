@@ -340,8 +340,11 @@ export component TextField inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <string> placeholder;
     in property <bool> focused-look;
+    in property <bool> enabled: true;
     out property <bool> editing: input.has-focus;
     callback edited(string);
+    // Return, or the focus leaving the field: what a typed value commits on.
+    callback accepted(string);
     height: FieldStyle.height;
     border-radius: FieldStyle.radius;
     background: Colour.canvas;
@@ -355,7 +358,10 @@ export component TextField inherits Rectangle {
         font-family: Type.family;
         font-size: Type.label;
         color: Colour.ink;
+        enabled: root.enabled;
         edited => { root.edited(self.text); }
+        accepted => { root.accepted(self.text); }
+        changed has-focus => { if (!self.has-focus) { root.accepted(self.text); } }
     }
     if input.text == "" && !input.has-focus: Label {
         x: FieldStyle.padding;

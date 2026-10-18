@@ -2,6 +2,7 @@
 import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
+import { Exporting } from "export.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -345,6 +346,31 @@ component ColorPane inherits Pane {
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         StoreSlider { field: 2; label: "Color density (same as saturation)"; fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
+    }
+    // Only on a paper: in any other working space the gains do nothing.
+    if Exporting.on-paper: Block {
+        title: "Paper Correction";
+        block: 9;
+        modified: Store.paper-correction-modified;
+        help: "Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.";
+        Button {
+            text: "Auto Paper Correction";
+            help: "Sets the three gains from the paper profile alone";
+            horizontal-stretch: 1;
+            clicked => { Exporting.auto-paper(); }
+        }
+        StoreSlider {
+            field: 21; label: "Red"; fraction: Store.paper-red-fraction; readout: Store.paper-red-readout; value-text: Store.paper-red-value;
+            fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
+        }
+        StoreSlider {
+            field: 22; label: "Green"; fraction: Store.paper-green-fraction; readout: Store.paper-green-readout; value-text: Store.paper-green-value;
+            fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
+        }
+        StoreSlider {
+            field: 23; label: "Blue"; fraction: Store.paper-blue-fraction; readout: Store.paper-blue-readout; value-text: Store.paper-blue-value;
+            fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
+        }
     }
     if !Lab.shown: Block {
         title: "Lighting";

@@ -46,7 +46,7 @@ Statuses are defined in [README.md](README.md).
 | Year's journal written on each gesture | `Pipeline/Journal.swift` | `oni-library/src/journal.rs` | partial | Format done; the app writes nothing | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | Splash | `UI/Splash.swift` | none | missing | | no check |
 | Stock picker sheet | `UI/StockPickerSheet.swift` | none | missing | | no check |
-| Paper profiles sheet | `UI/PaperProfilesSheet.swift` | none | missing | See [export-colour.md](export-colour.md) | no check |
+| Paper profiles sheet | `UI/PaperProfilesSheet.swift` | `oni-app/src/paper_sheet.rs`, `ui/export.slint` `PaperSheet`; see [export-colour.md](export-colour.md) | done | | `oni-app/tests/paper_sheet_window.rs::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled` |
 | Popovers and dialogs (`dsPopover`, `DSDialog`) | `DesignSystem/DSPopover.swift`, `DSDialog.swift` | `oni-app/ui/ds/` | partial | Pickers open nothing | no check |
 | Help bubbles on a layer above the pane | `DesignSystem/DSHelp.swift` | none | missing | | no check |
 
