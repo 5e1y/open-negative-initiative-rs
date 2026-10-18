@@ -118,7 +118,7 @@ fn a_gesture_on_one_face_never_moves_the_other() {
 }
 
 /// `toggleLab` and `adoptFace`: the switch is one undo step on the open frame; a frame opens on the
-/// face it is opened in, its history starting there.
+/// face it is opened in, a face changed on opening its first undo step.
 #[test]
 fn the_face_is_one_step_and_a_frame_opens_on_the_face_it_is_opened_in() {
     let (mut store, paths, dir) = fresh("face", 2);
@@ -130,12 +130,26 @@ fn the_face_is_one_step_and_a_frame_opens_on_the_face_it_is_opened_in() {
     assert_eq!(store.settings().scanner_machine, ScannerMachine::Frontier);
     store.flush();
 
-    // The next frame opens on the Scanner face, with nothing to undo.
+    // The next frame, stored on Pro, opens on the Scanner face: the adoption is one undo step, which
+    // undoes the face alone and leaves the face in use where it is.
     store.open(&paths[1]).unwrap();
     assert_eq!(store.settings().face, Face::Scanner);
-    assert!(!store.can_undo(Surface::Editor));
-    // Twin: on Pro, the frame its sidecar stores on the Scanner face opens on Pro.
+    assert!(store.can_undo(Surface::Editor), "the adopted face is a step");
+    store.apply(Command::Undo);
+    assert_eq!(store.settings().face, Face::Pro);
+    assert!(!store.can_undo(Surface::Editor) && store.scanner_face);
+    store.apply(Command::Redo);
+    assert_eq!(store.settings().face, Face::Scanner);
+    store.flush();
+    // Twin: a frame stored on the face in use opens with nothing to undo.
+    store.open(&paths[0]).unwrap();
+    assert_eq!(store.settings().face, Face::Scanner);
+    assert!(!store.can_undo(Surface::Editor), "no face changed, no step");
+    // On Pro, the frame its sidecar stores on the Scanner face opens on Pro.
     store.apply(Command::Face(Face::Pro));
+    store.flush();
+    store.open(&paths[1]).unwrap();
+    assert_eq!(store.settings().face, Face::Pro);
     store.open(&paths[0]).unwrap();
     assert_eq!(store.settings().face, Face::Pro);
     assert_eq!(store.settings().scanner_machine, ScannerMachine::Frontier, "the machine is the frame's own");

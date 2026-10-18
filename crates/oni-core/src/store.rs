@@ -192,11 +192,12 @@ impl EditorStore {
             Err(e) => (PipelineSettings::rest(ConversionMode::Negative, self.mosaic(path)), false, None, Err(e)),
         };
         self.open = Some(Open { path: path.to_string(), writable, persisted });
-        // `adoptFace`: the frame renders by the face it opens in, and that is where its history starts.
-        let mut settings = settings;
-        settings.face = self.face();
+        // `adopt` starts the history on the stored settings, then `adoptFace` changes the face, which
+        // the deferred `record` keeps as the first undo step (`EditorScene+Actions.swift:91-95`).
         self.history = History::new(settings.clone());
-        self.replace(settings);
+        let adopted = PipelineSettings { face: self.face(), ..settings };
+        self.history.record(adopted.clone(), f64::NEG_INFINITY);
+        self.replace(adopted);
         self.pending = FieldSet::all();
         self.roll_touched = false;
         self.roll_look = None;
