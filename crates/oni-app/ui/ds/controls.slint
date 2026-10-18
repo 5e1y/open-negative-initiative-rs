@@ -171,6 +171,12 @@ export component Tabs inherits Rectangle {
                 root.selected = i;
                 root.picked(i);
             }
+            // A swatch shows no name, so its tab gives it in the tooltip.
+            changed has-hover => {
+                if root.swatches.length > 0 {
+                    Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                }
+            }
         }
     }
 }

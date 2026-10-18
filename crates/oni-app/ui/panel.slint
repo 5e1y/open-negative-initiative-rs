@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 import { Exporting } from "export.slint";
@@ -132,12 +132,16 @@ component RollPane inherits Pane {
         folded: true;
         StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
-    EditorBlock {
+    if !Editors.scanner-face: EditorBlock {
         title: "Per-Channel Levels";
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;
         LevelsEditor { histogram: Plots.levels; }
+        if Editors.low-precision: HorizontalLayout {
+            alignment: start;
+            WarningBadge { text: "8-bit source — 256 levels per channel"; }
+        }
     }
     if PanelState.separation-shown: Block {
         title: "Dye Separation";

@@ -8,6 +8,7 @@ pub mod print;
 pub mod saturation;
 pub mod shell;
 pub mod spectrogram;
+pub mod sprung;
 
 use crate::store::Store;
 use crate::track::{self, DOUBLE_CLICK, Hand, Offer, TRACKPAD_TRAVEL};
@@ -19,7 +20,7 @@ use oni_settings::levels::{LevelsChannel, LevelsSet};
 use oni_settings::spectrogram::{Band, Spectrogram};
 use std::time::Instant;
 
-pub use shell::{Shell, origin, publish, size, wire, writes};
+pub use shell::{Shell, origin, pressed_anywhere, publish, size, wire, writes};
 
 /// The plots, as the interface numbers them in every callback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -156,6 +157,8 @@ pub struct Gestures {
     /// A band slider's knob under the hand, which stays where the pointer put it.
     pub band_shown: Option<(usize, f32)>,
     saturation: saturation::Presses,
+    /// A scroll moved a knob: the hand drives it, so the next drawing places it unsprung.
+    pub scrolled: bool,
     /// Store writes this session, the cadence's check.
     pub writes: usize,
 }
@@ -171,7 +174,7 @@ pub enum Then {
     Publish,
     /// The editor redraws, and one trailing write is scheduled after this delay.
     Trail(std::time::Duration),
-    /// The press ended: the store took its last value and closed the step.
+    /// The press ended: the store took its last value, the step closing once it rests.
     Released,
 }
 
@@ -235,8 +238,10 @@ impl Gestures {
         self.writes += 1;
     }
 
-    /// One write outside a press: a reset, an arrow, a scroll notch.
+    /// One write outside a press: a reset, an arrow, a scroll notch, its step closing once it
+    /// rests like a press's.
     fn once(&mut self, store: &mut dyn Store, edit: Edit) -> Then {
+        store.defer();
         self.write(store, &edit);
         Then::Publish
     }
@@ -386,7 +391,7 @@ impl Gestures {
         if let Some(edit) = self.live.take() {
             self.write(store, &edit);
         }
-        store.release();
+        store.release_deferred();
         Then::Released
     }
 
@@ -418,6 +423,7 @@ impl Gestures {
         let asked = track::clamped(track::asked(from, dx as f32 * TRACKPAD_TRAVEL, width as f32, fine));
         let mut set = view.levels;
         set.set(channel, levels::moved(grip, &window, asked, channel, view.mode));
+        self.scrolled = true;
         Some(self.once(store, Edit::Levels(set)))
     }
 
@@ -445,6 +451,18 @@ impl Gestures {
         };
         let s = spectrogram::nudge(self.selected, nudge, &self.view(store).spectrogram);
         Some(self.once(store, Edit::Spectrogram(s)))
+    }
+
+    /// `dsReleasesFocus`: a press anywhere in the window off the wheel releases its focus, so its
+    /// point unlights and the arrows go back to the window.
+    pub fn pressed_anywhere(&mut self, at: (f64, f64)) -> bool {
+        let (o, s) = (self.origins[Plot::Wheel as usize], self.sizes[Plot::Wheel as usize]);
+        let inside = (o.0..=o.0 + s.w).contains(&at.0) && (o.1..=o.1 + s.h).contains(&at.1);
+        if !self.focused || inside {
+            return false;
+        }
+        self.focused = false;
+        true
     }
 
     /// A tab of the curves, the levels or the bands.
@@ -522,6 +540,7 @@ impl Gestures {
         let from = track::position(band_value(&s, band, field), &(range.0..=range.1), None);
         let asked = track::clamped(track::asked(from, dx * TRACKPAD_TRAVEL, span, fine));
         let v = track::value(asked, &(range.0..=range.1), None);
+        self.scrolled = true;
         self.once(store, Edit::Spectrogram(with_band_value(&s, band, field, v)));
         true
     }

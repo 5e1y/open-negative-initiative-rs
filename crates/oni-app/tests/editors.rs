@@ -36,6 +36,40 @@ fn release(rig: &common::Rig, at: (f64, f64)) {
     rig.pump();
 }
 
+/// A little-endian LinearRaw TIFF of `w` by `h`, 8-bit RGB in one strip, as a scanner writes it.
+fn linear_raw_8_bit(w: u32, h: u32) -> Vec<u8> {
+    let data = vec![128u8; (w * h * 3) as usize];
+    let entries: [(u16, u16, u32); 9] = [
+        (256, 4, w),
+        (257, 4, h),
+        (258, 3, 8),
+        (259, 3, 1),
+        (262, 3, 34892),
+        (273, 4, 8),
+        (277, 3, 3),
+        (278, 4, h),
+        (279, 4, data.len() as u32),
+    ];
+    let mut out = b"II".to_vec();
+    out.extend(42u16.to_le_bytes());
+    out.extend((8 + data.len() as u32).to_le_bytes());
+    out.extend(&data);
+    out.extend((entries.len() as u16).to_le_bytes());
+    for (tag, kind, value) in entries {
+        out.extend(tag.to_le_bytes());
+        out.extend(kind.to_le_bytes());
+        out.extend(1u32.to_le_bytes());
+        if kind == 3 {
+            out.extend((value as u16).to_le_bytes());
+            out.extend(0u16.to_le_bytes());
+        } else {
+            out.extend(value.to_le_bytes());
+        }
+    }
+    out.extend(0u32.to_le_bytes());
+    out
+}
+
 #[test]
 fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each() {
     let gpu = match oni_app::render::Device::open() {
@@ -116,6 +150,45 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     assert!(curves().is_neutral(), "one step took the whole drag back");
     assert!(!ctl.state.borrow().store().can_undo(), "the drag was a single step");
 
+    // A double click on a point: the second press lands inside the settle delay, so the move the
+    // first made and the removal are one step, and one undo puts the point back where it stood.
+    let undo = || {
+        w.global::<Bar>().invoke_act("undo".into());
+        rig.settle();
+    };
+    press(&rig, start);
+    release(&rig, start);
+    rig.settle();
+    let off = (start.0 + 3.0, start.1);
+    for _ in 0..2 {
+        press(&rig, off);
+        release(&rig, off);
+    }
+    assert!(curves().is_neutral(), "the double click removed the point");
+    rig.settle();
+    undo();
+    assert!((curves().points[1].x - 0.5).abs() < 1e-6, "the move went with the removal: {:?}", curves().points);
+    undo();
+    assert!(curves().is_neutral());
+    // Twin: the delay running out between the two presses leaves the move a step of its own.
+    press(&rig, start);
+    release(&rig, start);
+    rig.settle();
+    press(&rig, off);
+    release(&rig, off);
+    let rest = std::time::Instant::now();
+    rig.until("the settle delay", Duration::from_secs(1), || rest.elapsed() > Duration::from_millis(250));
+    press(&rig, off);
+    release(&rig, off);
+    assert!(curves().is_neutral(), "still a double click at 250 ms");
+    rig.settle();
+    undo();
+    let moved = curves().points[1].x;
+    assert!((moved - (off.0 - origin.0) / size.w).abs() < 1e-3, "the undo stopped at the move: {moved}");
+    undo();
+    undo();
+    assert!(curves().is_neutral());
+
     // Twin: a press on the folded block's place reaches no editor.
     g.set_curves_folded(true);
     rig.settle();
@@ -147,9 +220,17 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     assert!((travel - 40.0).abs() < 0.5, "the white moved by the pointer's travel: {travel}");
     assert_eq!((after.black, after.mid), (before.black, before.mid), "the other handles stay");
     assert!(g.get_levels_modified());
+    let white_x = || f64::from(g.get_levels_knobs().row_data(4).unwrap().x);
+    let x_of = |v: f32| f64::from(position(v)) * size.w;
+    assert!((white_x() - x_of(after.white)).abs() < 1e-3, "the handle let go stands where the hand left it");
+    // The undo is a value from elsewhere: the handle springs back over frames instead of jumping.
     w.global::<Bar>().invoke_act("undo".into());
+    rig.pump();
+    let flying = white_x();
+    assert!((flying - x_of(before.white)).abs() > 1.0, "the handle jumped back: {flying}");
     rig.settle();
     assert_eq!(red(), before, "one undo takes the handle back");
+    assert!((white_x() - x_of(before.white)).abs() < 1e-3, "the spring came to rest on the value");
 
     // The wheel: unfocused, an arrow is the window's; a press selects its point and takes the arrows.
     w.global::<PanelState>().set_tab(2);
@@ -172,6 +253,45 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     let (_, saturation, _) = red();
     assert!((saturation - 0.04).abs() < 1e-6, "the arrow stepped the selected point: {saturation}");
     println!("shot {}", rig.shot("editors-wheel").display());
+    // The band slider follows the wheel by its spring, a value from elsewhere.
+    let knob = || g.get_band_fractions().row_data(1).unwrap();
+    let range = oni_settings::spectrogram::Spectrogram::SATURATION_RANGE;
+    let target = oni_app::track::position(0.04, &(range.0..=range.1), None);
+    rig.settle();
+    assert!((knob() - target).abs() < 1e-5, "the saturation knob rests on the value: {}", knob());
+
+    // A press off the wheel releases it: the point unlights and the arrows go back to the window,
+    // as the window's own press hook sends it before the press lands.
+    let lit = || g.get_wheel_dots().iter().any(|d| d.halo > 0.0);
+    assert!(lit(), "the focused wheel lights its point");
+    editors::pressed_anywhere(&ctl, at);
+    press(&rig, at);
+    release(&rig, at);
+    rig.key(&up);
+    let (_, twice, _) = red();
+    assert!((twice - 0.08).abs() < 1e-6, "twin: a press on the wheel keeps it: {twice}");
+    let outside = (origin.0 - 4.0, origin.1 + size.h / 2.0);
+    editors::pressed_anywhere(&ctl, outside);
+    press(&rig, outside);
+    release(&rig, outside);
+    rig.settle();
+    assert!(!lit(), "a press off the wheel left its point lit");
+    rig.key(&up);
+    assert_eq!(red().1, twice, "the arrow still reached the wheel");
+
+    // A swatch tab names its band in the tooltip; a channel tab already shows its name.
+    let tip = w.global::<oni_app::Tip>();
+    let mut named = None;
+    for dy in 0..80 {
+        let at = LogicalPosition::new((origin.0 + 12.0) as f32, (origin.1 + size.h + dy as f64) as f32);
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: at });
+        rig.pump();
+        if tip.get_shown() {
+            named = Some(tip.get_text().to_string());
+            break;
+        }
+    }
+    assert_eq!(named.as_deref(), Some(Band::ALL[0].label()), "the first swatch named no band");
 
     // A monochrome photo has no grade blocks: the wheel's plot is never laid out.
     let mut mono = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| true));
@@ -183,10 +303,56 @@ fn a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each()
     second.window.show().unwrap();
     second.window.global::<App>().set_gallery(false);
     let g2 = second.window.global::<Editors>();
+    second.window.global::<PanelState>().set_tab(2);
     g2.set_spectrogram_folded(false);
     rig.shot("editors-monochrome");
     rig.settle();
     assert!(g2.get_monochrome());
     assert_eq!(editors::size(&second.ctl, Plot::Wheel).w, 0.0, "a monochrome panel laid out the wheel");
+    assert!(!g.get_low_precision(), "twin: a RAW is never flagged 8-bit");
+
+    // An 8-bit scan is flagged under Per-Channel Levels.
+    let scan = dir.join("scan.tif");
+    std::fs::write(&scan, linear_raw_8_bit(4, 4)).unwrap();
+    let scan = scan.to_string_lossy().into_owned();
+    let mut eight = EditorStore::new(Archive::new(vec![scan.clone()], |_: &Path| false));
+    eight.open(&scan).unwrap();
+    let engine = oni_app::render::Engine::shared(&gpu);
+    let options = Options { support: dir.join("support"), ..Options::default() };
+    let third = Shell::new(Box::new(eight), engine, options).unwrap();
+    third.window.show().unwrap();
+    third.window.global::<App>().set_gallery(false);
+    let g3 = third.window.global::<Editors>();
+    third.window.global::<PanelState>().set_tab(0);
+    g3.set_levels_folded(false);
+    rig.shot("editors-eight-bit");
+    rig.settle();
+    assert!(g3.get_low_precision(), "an 8-bit scan carries no badge");
+    assert!(editors::size(&third.ctl, Plot::Levels).w > 200.0, "the Pro face lays out Per-Channel Levels");
+
+    // The Scanner face has no Per-Channel Levels: the block is never laid out.
+    // The face switch takes a frame opened from the archive, as a hand opens one.
+    let faces = dir.join("faces");
+    std::fs::create_dir_all(&faces).unwrap();
+    let raw = faces.join("frame.NEF");
+    std::fs::write(&raw, b"").unwrap();
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let engine = oni_app::render::Engine::shared(&gpu);
+    let picker: Box<dyn Fn() -> Option<PathBuf>> = Box::new(|| None);
+    let options = Options { support: dir.join("faces-support"), caches: dir.join("faces-caches"), picker, ..Options::default() };
+    let fourth = Shell::new(Box::new(store), engine, options).unwrap();
+    fourth.window.show().unwrap();
+    fourth.add(&raw);
+    rig.until("the frame in the editor", Duration::from_secs(60), || {
+        !fourth.window.global::<App>().get_gallery() && fourth.ctl.state.borrow().open_path().is_some()
+    });
+    fourth.window.global::<Bar>().invoke_act("face-scanner".into());
+    let g4 = fourth.window.global::<Editors>();
+    fourth.window.global::<PanelState>().set_tab(0);
+    g4.set_levels_folded(false);
+    rig.shot("editors-scanner-face");
+    rig.settle();
+    assert!(g4.get_scanner_face());
+    assert_eq!(editors::size(&fourth.ctl, Plot::Levels).w, 0.0, "the Scanner face laid out Per-Channel Levels");
     let _ = std::fs::remove_dir_all(&dir);
 }

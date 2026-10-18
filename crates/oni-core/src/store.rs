@@ -21,6 +21,9 @@ use std::time::Instant;
 
 pub mod roll;
 
+/// Seconds an unheld edit rests before its step is recorded, on the deferred release.
+pub const SETTLE_DELAY: f64 = 0.15;
+
 type Settings = BTreeMap<String, PipelineSettings>;
 
 /// The host's view of the library: every frame's path, and which decode through the RAW mosaic,
@@ -85,6 +88,8 @@ pub struct EditorStore {
     /// keeps Chrome and clears the clicks. Set through `Command::Face`.
     pub scanner_face: bool,
     held: bool,
+    /// When a lifted hand's step is recorded; every change before it moves it on.
+    deferred: Option<f64>,
     /// A hand edit of a Roll Settings field waiting for its step, to write the roll with it.
     roll_touched: bool,
     /// A look laid on the open frame waiting for its step, to lay it on the rest of the roll.
@@ -109,6 +114,7 @@ impl EditorStore {
             board: Board::default(),
             scanner_face: false,
             held: false,
+            deferred: None,
             roll_touched: false,
             roll_look: None,
             measured: HashMap::new(),
@@ -256,17 +262,58 @@ impl EditorStore {
         self.held = true;
     }
 
+    /// The hand lifts and the step is recorded at once, with any step still waiting.
     pub fn release(&mut self) {
-        if std::mem::take(&mut self.held) {
-            let now = self.now();
+        let now = self.now();
+        self.release_at(now);
+    }
+
+    pub fn release_at(&mut self, now: f64) {
+        if std::mem::take(&mut self.held) || self.deferred.is_some() {
             self.settle(now);
         }
     }
 
-    pub fn release_at(&mut self, now: f64) {
+    /// The hand lifts and the step waits `SETTLE_DELAY` past the last change, so a press landing
+    /// sooner, a double click's second, joins it (`EditorScene+Effects.swift:59-62`).
+    pub fn release_deferred(&mut self) {
+        let now = self.now();
+        self.release_deferred_at(now);
+    }
+
+    pub fn release_deferred_at(&mut self, now: f64) {
         if std::mem::take(&mut self.held) {
-            self.settle(now);
+            self.deferred = Some(now + SETTLE_DELAY);
         }
+    }
+
+    /// The next unheld change waits `SETTLE_DELAY` like a lifted hand's; a hand on a control
+    /// records it at its own release.
+    pub fn defer(&mut self) {
+        let now = self.now();
+        self.defer_at(now);
+    }
+
+    pub fn defer_at(&mut self, now: f64) {
+        if !self.held && self.deferred.is_none() {
+            self.deferred = Some(now + SETTLE_DELAY);
+        }
+    }
+
+    /// Records the waiting step once due; how long it still waits, `None` when nothing waits
+    /// unheld, a hand back on a control recording it at its own release.
+    pub fn settle_if_due(&mut self) -> Option<std::time::Duration> {
+        let now = self.now();
+        self.settle_if_due_at(now).map(std::time::Duration::from_secs_f64)
+    }
+
+    pub fn settle_if_due_at(&mut self, now: f64) -> Option<f64> {
+        let due = self.deferred.filter(|_| !self.held)?;
+        if now < due {
+            return Some(due - now);
+        }
+        self.settle(now);
+        None
     }
 
     pub fn apply(&mut self, command: Command) -> Applied {
@@ -299,7 +346,10 @@ impl EditorStore {
         }
         self.last_change = Some(now);
         if !self.held {
-            self.settle(now);
+            match self.deferred {
+                Some(_) => self.deferred = Some(now + SETTLE_DELAY),
+                None => self.settle(now),
+            }
         }
         Applied { changed, walk: None }
     }
@@ -341,6 +391,7 @@ impl EditorStore {
     /// Records the open frame's step, then lays a Roll Settings gesture or a look pasted on the roll
     /// on every other frame naming the same reference, as part of that one step.
     fn settle(&mut self, now: f64) {
+        self.deferred = None;
         let before = self.history.current().clone();
         let touched = std::mem::take(&mut self.roll_touched);
         let look = self.roll_look.take();
@@ -957,6 +1008,56 @@ mod tests {
         assert_eq!(store.revision(), revision + 1);
         store.undo(Surface::Editor);
         assert!(!store.can_undo(Surface::Editor));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Two presses on two settings, the second landing `gap` seconds after the first lifts.
+    fn two_presses(store: &mut EditorStore, gap: f64) {
+        store.hold();
+        store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
+        store.release_deferred_at(0.1);
+        let pressed = 0.1 + gap;
+        let _ = store.settle_if_due_at(pressed);
+        store.hold();
+        store.apply_at(Command::Set { knob: Knob::Texture, value: 0.3 }, pressed);
+        store.release_deferred_at(pressed + 0.05);
+        assert!(store.settle_if_due_at(pressed + 0.05 + SETTLE_DELAY - 0.01).is_some(), "still waiting");
+        assert_eq!(store.settle_if_due_at(pressed + 0.05 + SETTLE_DELAY + 0.01), None);
+    }
+
+    #[test]
+    fn a_press_within_the_settle_delay_joins_the_step_before_it() {
+        let (mut store, dir) = fresh("settle");
+        let rest = (Knob::Vignette.get(store.settings()), Knob::Texture.get(store.settings()));
+        two_presses(&mut store, 0.1);
+        store.undo(Surface::Editor);
+        assert_eq!((Knob::Vignette.get(store.settings()), Knob::Texture.get(store.settings())), rest, "one step for both presses");
+        assert!(!store.can_undo(Surface::Editor));
+        // Twin: the second press after the delay makes a step of its own.
+        let (mut apart, dir2) = fresh("settle-apart");
+        two_presses(&mut apart, SETTLE_DELAY + 0.05);
+        apart.undo(Surface::Editor);
+        assert_eq!((Knob::Vignette.get(apart.settings()), Knob::Texture.get(apart.settings())), (0.5, rest.1));
+        assert!(apart.can_undo(Surface::Editor));
+        let _ = std::fs::remove_dir_all(&dir);
+        let _ = std::fs::remove_dir_all(&dir2);
+    }
+
+    #[test]
+    fn an_unheld_change_moves_the_waiting_step_on_and_a_plain_release_records_it() {
+        let (mut store, dir) = fresh("settle-moved");
+        store.hold();
+        store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
+        store.release_deferred_at(0.0);
+        store.apply_at(Command::Set { knob: Knob::Texture, value: 0.3 }, 0.1);
+        assert!(store.settle_if_due_at(0.2).is_some(), "the key's change restarted the delay");
+        assert!(!store.can_undo(Surface::Editor), "twin: nothing recorded before the delay");
+        // An open or a slider's release records what waits, so it never reaches the next frame.
+        store.release_at(0.2);
+        assert!(store.can_undo(Surface::Editor));
+        assert_eq!(store.settle_if_due_at(1.0), None);
+        store.undo(Surface::Editor);
+        assert!(!store.can_undo(Surface::Editor), "both edits are one step");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

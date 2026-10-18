@@ -1,7 +1,7 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
 import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle } from "theme.slint";
 import { Icons } from "icons.slint";
-import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
+import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
 import { ListRow, TreeItem, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
@@ -247,6 +247,7 @@ export component Catalogue inherits AppWindow {
                     title: "Plot, status, divider";
                     HistogramFrame { size: PlotSize.block; ground: Ground.canvas; }
                     StatusLine { text: "DSC_6432 · 2000 × 1332"; }
+                    HorizontalLayout { alignment: start; WarningBadge { text: "8-bit source — 256 levels per channel"; } }
                     Divider { }
                     HorizontalLayout { spacing: Space.s; alignment: start; HelpMark { note: "The help mark's note."; } Label { text: "Help mark"; tone: Tone.secondary; } }
                 }

@@ -400,6 +400,13 @@
     "detail": "The Swift app's render path driven from its sources (built apart, the Swift repository untouched) on adversarial settings for every branch, on a roll #8 frame and a Negs RW2 decoded by Swift; the Rust pipeline on the same decoded input and settings, compared per branch; each branch that differs fixed. Per branch, on the Swift decode: 23 settings sets (21 per pixel, sharpening, chroma denoise and texture through a probe build of a copy of the Swift sources) on two frames, every one within mean 4.4e-4 and p99 2.5e-3 of Swift; the one departure, a vertical crop one pixel wide, was the test's grid (LibRaw's width for Swift's ImageIO one). Balance strength and paper correction left the list: neither is a render branch. Extended through a probe build to the branches `--render` cannot reach: decodes outside LibRaw, RGB passes, dust patches generated, reduced, placed and feathered, and exports; each departure fixed in the port (area averages inside the image, Core Image's anchored Lanczos, the stroke mask's gamma, alpha carried to the file and the canvas, the maker's crop on a RAW, ImageIO's TIFF tags), the rest named open in hidden.md."
   },
   {
+    "id": 49,
+    "type": "feature",
+    "title": "The editors' leftovers: the 8-bit badge, the wheel's focus release, sprung knobs, swatch names, the deferred step",
+    "status": "doing",
+    "detail": "The 8-bit source badge under Per-Channel Levels, a press outside the spectrogram releasing its lit point, the band sliders' and levels' knobs springing on a change from elsewhere, the swatch tabs' names in a tooltip, and the step closed 150 ms after the hand lifts as Swift records it. Per-Channel Levels hidden on the Scanner face once that face's panel lands."
+  },
+  {
     "id": 50,
     "type": "feature",
     "title": "The levels' and curves' input histograms",

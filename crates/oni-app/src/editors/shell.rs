@@ -2,6 +2,7 @@
 //! the hand's value at once and publishes the store only when it was written.
 
 use super::geometry::{Dot, Drawing, Ink, Line, Size};
+use super::sprung::Sprung;
 use super::{Gestures, Plot, Reset, Then, curve, levels, print, saturation, spectrogram};
 use crate::app::Ctl;
 use crate::{Editors as Global, Ink as PlotInk, MainWindow, PlotDot, PlotKnob, PlotLine, PlotReadout};
@@ -21,7 +22,45 @@ use std::time::Instant;
 pub struct Shell {
     pub gestures: RefCell<Gestures>,
     trailing: Timer,
+    /// Closes a lifted hand's step once the edit has rested.
+    settling: Timer,
     drawn: RefCell<Drawn>,
+    /// The open frame's path and whether it is an 8-bit scan, read once per frame.
+    precision: RefCell<Option<(String, bool)>>,
+    /// The levels handles and the band sliders' knobs, sprung to a value from elsewhere.
+    knobs: RefCell<Knobs>,
+    springing: Timer,
+    /// The next drawing places every knob at once: a photo opened.
+    jump: std::cell::Cell<bool>,
+}
+
+#[derive(Default)]
+struct Knobs {
+    levels: [Sprung; 5],
+    bands: [Sprung; super::BAND_FIELDS],
+    /// The track the handles were placed on: a new width lays them where they stand.
+    levels_on: Option<Size>,
+    /// A spring showed a frame short of its rest, so the next drawing lays the rest itself.
+    levels_flying: bool,
+    bands_flying: bool,
+}
+
+/// `FRAME_TICK`: a sprung knob is redrawn once a frame until it rests.
+const FRAME: std::time::Duration = std::time::Duration::from_millis(16);
+
+impl Shell {
+    fn low_precision(&self, path: Option<&str>) -> bool {
+        let Some(path) = path else { return false };
+        let mut known = self.precision.borrow_mut();
+        match known.as_ref() {
+            Some((p, low)) if p == path => *low,
+            _ => {
+                let low = oni_decode::is_low_precision(std::path::Path::new(path));
+                *known = Some((path.to_string(), low));
+                low
+            }
+        }
+    }
 }
 
 /// What each plot was last drawn from, so a notch elsewhere redraws nothing here.
@@ -118,20 +157,41 @@ fn hue_end(band: Band, offset: f32) -> Color {
     Color::from_rgb_u8(r, g, b)
 }
 
-/// Every editor redrawn from the store and the hand, each only when what it reads moved.
-pub fn publish(ctl: &Ctl) {
+/// A left press anywhere in the window, in logical points, before the window takes it.
+pub fn pressed_anywhere(ctl: &Rc<Ctl>, at: (f64, f64)) {
+    if !ctl.editors.gestures.borrow_mut().pressed_anywhere(at) {
+        return;
+    }
+    draw(ctl, false);
+    if let Some(w) = ctl.window() {
+        w.invoke_refocus();
+    }
+}
+
+/// Every editor redrawn from the store and the hand, each only when what it reads moved; `jump`
+/// places the knobs at once, as opening a photo does.
+pub fn publish(ctl: &Rc<Ctl>, jump: bool) {
+    if jump {
+        ctl.editors.jump.set(true);
+    }
     draw(ctl, false);
 }
 
-fn draw(ctl: &Ctl, force: bool) {
+fn draw(ctl: &Rc<Ctl>, force: bool) {
     let Some(w) = ctl.window() else { return };
     let g = w.global::<Global>();
-    let (view, gestures) = {
+    let now = Instant::now();
+    let (view, gestures, scanner, path, scrolled) = {
         let mut s = ctl.state.borrow_mut();
-        let gestures = ctl.editors.gestures.borrow();
+        let mut gestures = ctl.editors.gestures.borrow_mut();
+        let scrolled = std::mem::take(&mut gestures.scrolled);
         let view = gestures.view(s.store.as_mut());
-        (view, Snapshot::of(&gestures))
+        let open = s.store.editor_ref();
+        let (scanner, path) = (open.is_some_and(|e| e.scanner_face), open.and_then(|e| e.path()).map(str::to_string));
+        (view, Snapshot::of(&gestures), scanner, path, scrolled)
     };
+    let jump = ctl.editors.jump.take() || force;
+    let mut knobs = ctl.editors.knobs.borrow_mut();
     let mut drawn = ctl.editors.drawn.borrow_mut();
     if force {
         *drawn = Drawn::default();
@@ -139,6 +199,8 @@ fn draw(ctl: &Ctl, force: bool) {
     let sizes = gestures.sizes;
     let monochrome = view.mode.is_monochrome();
     g.set_monochrome(monochrome);
+    g.set_scanner_face(scanner);
+    g.set_low_precision(ctl.editors.low_precision(path.as_deref()));
 
     // The curves: the channel's spline, its points and the tabs of the moved channels.
     let channel = gestures.curve_channel;
@@ -169,18 +231,32 @@ fn draw(ctl: &Ctl, force: bool) {
         levels::marked(&view.levels, view.mode, view.density_ceiling),
         modified,
     );
-    if drawn.levels.as_ref() != Some(&key) {
-        let width = key.4.w;
-        let knobs = levels::Grip::ALL
+    let on = Some(key.4);
+    let laid = std::mem::replace(&mut knobs.levels_on, on) != on;
+    let changed = drawn.levels.as_ref() != Some(&key);
+    if changed {
+        for (k, grip) in levels::Grip::ALL.iter().enumerate() {
+            let x = levels::knob_x(*grip, &window, lc, view.mode, key.4.w) as f32;
+            let placed = jump || laid || scrolled || gestures.held_grip == Some(*grip);
+            knobs.levels[k].aim(x, placed, now);
+        }
+    }
+    let flying = knobs.levels.iter().any(|k| k.moving(now));
+    let landing = std::mem::replace(&mut knobs.levels_flying, flying);
+    if changed || flying || landing {
+        let shown = levels::Grip::ALL
             .iter()
-            .map(|grip| PlotKnob {
-                x: levels::knob_x(*grip, &window, lc, view.mode, width) as f32,
+            .zip(knobs.levels)
+            .map(|(grip, k)| PlotKnob {
+                x: k.at(now),
                 ink: ink(grip.tint()),
                 held: gestures.held_grip == Some(*grip),
                 label: grip.label().into(),
             })
             .collect();
-        g.set_levels_knobs(model(knobs));
+        g.set_levels_knobs(model(shown));
+    }
+    if changed {
         g.set_levels_markers(lines(&levels::markers(&window, lc, view.mode, key.5)));
         let readouts = levels::readouts(&window, lc)
             .into_iter()
@@ -204,24 +280,42 @@ fn draw(ctl: &Ctl, force: bool) {
         g.set_band_marked(model(spectrogram::marked(&view.spectrogram)));
         g.set_band(band.index() as i32);
         g.set_spectrogram_modified(view.spectrogram != Spectrogram::default());
-        let mut fractions = Vec::new();
         let mut readouts: Vec<SharedString> = Vec::new();
         for field in 0..super::BAND_FIELDS {
             let v = super::band_value(&view.spectrogram, band, field);
             let range = super::band_range(field, band);
-            let at = match gestures.band_shown {
-                Some((f, at)) if f == field => at,
-                _ => crate::track::position(v, &(range.0..=range.1), None),
+            let (at, held) = match gestures.band_shown {
+                Some((f, at)) if f == field => (at, true),
+                _ => (crate::track::position(v, &(range.0..=range.1), None), false),
             };
-            fractions.push(at);
+            knobs.bands[field].aim(at, jump || scrolled || held, now);
             readouts.push(super::band_readout(field, v).into());
         }
-        g.set_band_fractions(model(fractions));
         g.set_band_readouts(model(readouts));
         let (low, high) = band.hue_range();
         g.set_hue_low(hue_end(band, low));
         g.set_hue_high(hue_end(band, high));
         drawn.wheel = Some(key);
+        knobs.bands_flying = knobs.bands.iter().any(|k| k.moving(now));
+        g.set_band_fractions(model(knobs.bands.iter().map(|k| k.at(now)).collect()));
+    } else {
+        let flying = knobs.bands.iter().any(|k| k.moving(now));
+        let landing = std::mem::replace(&mut knobs.bands_flying, flying);
+        if flying || landing {
+            g.set_band_fractions(model(knobs.bands.iter().map(|k| k.at(now)).collect()));
+        }
+    }
+    let moving = knobs.levels.iter().chain(&knobs.bands).any(|k| k.moving(now));
+    drop(knobs);
+    if !moving {
+        ctl.editors.springing.stop();
+    } else if !ctl.editors.springing.running() {
+        let me = Rc::downgrade(ctl);
+        ctl.editors.springing.start(TimerMode::Repeated, FRAME, move || {
+            if let Some(me) = me.upgrade() {
+                draw(&me, false);
+            }
+        });
     }
 
     let key = (view.saturation.clone(), sizes[Plot::Saturation as usize], gestures.saturation_dragged);
@@ -284,7 +378,25 @@ fn run(ctl: &Rc<Ctl>, f: impl FnOnce(&mut Gestures, &mut dyn crate::store::Store
         }
         _ => {}
     }
+    let wait = s.store.settle_if_due();
+    drop((g, s));
+    if let Some(wait) = wait {
+        settle_after(ctl, wait);
+    }
     then
+}
+
+/// Restarts the settle clock, as each change restarts Swift's recording task.
+fn settle_after(ctl: &Rc<Ctl>, wait: std::time::Duration) {
+    let me = Rc::downgrade(ctl);
+    ctl.editors.settling.start(TimerMode::SingleShot, wait, move || {
+        let Some(me) = me.upgrade() else { return };
+        let wait = me.state.borrow_mut().store.settle_if_due();
+        match wait {
+            Some(wait) => settle_after(&me, wait),
+            None => me.publish(false),
+        }
+    });
 }
 
 fn after(ctl: &Rc<Ctl>, then: Then) {

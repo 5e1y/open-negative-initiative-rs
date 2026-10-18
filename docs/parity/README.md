@@ -21,16 +21,16 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 101 | 22 | 28 | 107 of 151 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 102 | 22 | 28 | 108 of 152 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 27 | 27 | 31 | 43 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 10 | 15 | 23 | 18 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 96 | 13 | 19 | 99 of 128 |
-| **All** | | **271** | **78** | **101** | **305 of 450** |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 98 | 13 | 19 | 101 of 130 |
+| **All** | | **274** | **78** | **101** | **308 of 453** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7,
-Crop tab 8 / 0 / 0, Color tab 9 / 4 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
-6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 0 / 1 (done / partial /
+Crop tab 8 / 0 / 0, Color tab 10 / 3 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
+6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 1 / 1 (done / partial /
 missing).
 
 Twelve rows are done with no check, all in the app: Recheck Originals and Read the Folders Again
@@ -70,6 +70,7 @@ tab's block order and the menu titles now read as Swift's.
    Average dialog, measuring window overlay or Prepare the Roll step calls the rest.
 5. **The editors' histograms.** The curves, levels, spectrogram and saturation editors work with
    their point rules; the levels plot has no input histogram yet and the curves draw over the output.
+   Only the editors record a step 150 ms after the edit rests; the sliders still record at release.
 6. **Geometry.** No crop overlay, ratio, rotate, mirror, straighten re-fit or measuring window.
 7. **Prepare the Roll.** The whole surface and its steps are absent.
 8. **Export.** `oni-export` and `oni-colour` are not dependencies of the app; no export card, no

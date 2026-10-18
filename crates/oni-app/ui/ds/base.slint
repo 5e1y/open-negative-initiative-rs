@@ -61,6 +61,21 @@ export component Label inherits Text {
     horizontal-alignment: root.centred ? center : left;
 }
 
+// `DSBadge(tone: .warning, outline: .capsule)`: a caution in a capsule, its round ends padded wider.
+export component WarningBadge inherits Rectangle {
+    in property <string> text;
+    width: label.preferred-width + 2 * Space.s;
+    height: label.preferred-height + 2 * Space.xs;
+    border-radius: self.height / 2;
+    background: Colour.warning-surface;
+    label := Text {
+        text: root.text;
+        font-family: Type.family;
+        font-size: Type.value;
+        color: Colour.ink-on-warning;
+    }
+}
+
 // A glyph tinted by a tone, square at the size it is given.
 export component Icon inherits Image {
     in property <Tone> tone: Tone.secondary;

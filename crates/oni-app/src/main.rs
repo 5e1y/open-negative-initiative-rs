@@ -8,6 +8,7 @@ use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use oni_app::viewport::{self, Wheel};
 use slint::winit_030::{EventResult, WinitWindowAccessor, winit::event::MouseScrollDelta, winit::event::WindowEvent};
+use slint::winit_030::winit::event::{ElementState, MouseButton};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -54,8 +55,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, canvas, ..Options::default() })?;
+    let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |window, event| {
+        if let WindowEvent::CursorMoved { position, .. } = event {
+            cursor.set((position.x, position.y));
+        }
+        if let WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } = event {
+            let (scale, (x, y)) = (f64::from(window.scale_factor()), cursor.get());
+            oni_app::editors::pressed_anywhere(&pressed, (x / scale, y / scale));
+        }
         if let WindowEvent::MouseWheel { delta, .. } = event {
             let wheel = match *delta {
                 MouseScrollDelta::LineDelta(dx, dy) => Wheel { dx: f64::from(dx), dy: f64::from(dy), precise: false },

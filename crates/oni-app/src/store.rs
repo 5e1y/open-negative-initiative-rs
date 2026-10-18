@@ -18,6 +18,17 @@ pub trait Store {
     /// A hand on a control: its notches land at once, and the step is recorded on `release`.
     fn hold(&mut self);
     fn release(&mut self);
+    /// The hand lifts and the step closes once the edit has rested, a press landing sooner
+    /// joining it; a stand-in closes it at once.
+    fn release_deferred(&mut self) {
+        self.release();
+    }
+    /// The next change outside a press waits like a lifted hand's; nothing while a hand holds.
+    fn defer(&mut self) {}
+    /// Records a waiting step once due; how long it still waits, `None` when nothing does.
+    fn settle_if_due(&mut self) -> Option<std::time::Duration> {
+        None
+    }
     /// The sliders whose store field moved since the last call, drained; a field holds several
     /// sliders, so the shell compares each value with the one it shows.
     fn changed(&mut self) -> Vec<Field>;
@@ -77,6 +88,18 @@ impl Store for EditorStore {
 
     fn release(&mut self) {
         EditorStore::release(self);
+    }
+
+    fn release_deferred(&mut self) {
+        EditorStore::release_deferred(self);
+    }
+
+    fn settle_if_due(&mut self) -> Option<std::time::Duration> {
+        EditorStore::settle_if_due(self)
+    }
+
+    fn defer(&mut self) {
+        EditorStore::defer(self);
     }
 
     fn changed(&mut self) -> Vec<Field> {

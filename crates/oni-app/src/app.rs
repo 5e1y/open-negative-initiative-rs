@@ -743,7 +743,7 @@ impl Ctl {
         self.publish_bar();
         self.publish_framing();
         self.publish_dedust();
-        crate::editors::publish(self);
+        crate::editors::publish(self, jump);
         self.request_render();
     }
 

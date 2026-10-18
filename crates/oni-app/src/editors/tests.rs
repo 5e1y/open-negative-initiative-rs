@@ -52,7 +52,14 @@ impl Clock {
     }
 }
 
+/// The settle delay running out: the window's timer records the step a lifted hand left waiting.
+fn rested(store: &mut EditorStore) {
+    EditorStore::release(store);
+}
+
+/// An undo once the last edit has rested, as a hand reaching for the key does.
 fn undo(store: &mut EditorStore) {
+    rested(store);
     crate::store::Store::apply(store, Command::Undo);
 }
 
@@ -112,19 +119,32 @@ fn a_double_click_on_a_curve_point_removes_it_and_a_slow_one_does_not() {
     let t0 = Instant::now();
     g.press(&mut store, Plot::Curves, (150.0, 150.0), t0);
     g.release(&mut store, Plot::Curves);
+    rested(&mut store);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 3);
     // Two presses on the disc within the double-click interval: the second's release removes it.
+    // The second lands inside the settle delay, so both presses are one step.
     let late = t0 + DOUBLE_CLICK + Duration::from_millis(50);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), late);
     g.release(&mut store, Plot::Curves);
     g.press(&mut store, Plot::Curves, (151.0, 150.0), late + Duration::from_millis(120));
     g.release(&mut store, Plot::Curves);
     assert_eq!(store.settings().manual_curves.linked.points.len(), 2, "the double click removed the point");
-    // One undo brings the point back: the removal is the second press's own step.
     undo(&mut store);
-    assert_eq!(store.settings().manual_curves.linked.points.len(), 3);
+    let points = &store.settings().manual_curves.linked.points;
+    assert_eq!((points.len(), points[1].x), (3, 0.5), "one undo takes back the removal and the first press's move");
+    // Twin: the delay running out between the two presses leaves the move a step of its own.
+    let again = late + Duration::from_secs(2);
+    g.press(&mut store, Plot::Curves, (151.0, 150.0), again);
+    g.release(&mut store, Plot::Curves);
+    rested(&mut store);
+    g.press(&mut store, Plot::Curves, (151.0, 150.0), again + Duration::from_millis(300));
+    g.release(&mut store, Plot::Curves);
+    assert_eq!(store.settings().manual_curves.linked.points.len(), 2);
+    undo(&mut store);
+    let points = &store.settings().manual_curves.linked.points;
+    assert_eq!((points.len(), points[1].x), (3, 151.0 / 300.0), "the undo stops at the first press's move");
     // Twin: the same two presses past the interval only move the point to the pointer.
-    let slow = late + Duration::from_secs(2);
+    let slow = again + Duration::from_secs(2);
     g.press(&mut store, Plot::Curves, (152.0, 150.0), slow);
     g.release(&mut store, Plot::Curves);
     g.press(&mut store, Plot::Curves, (152.0, 150.0), slow + DOUBLE_CLICK + Duration::from_millis(1));
@@ -394,11 +414,53 @@ fn a_block_reset_is_one_write_back_to_neutral() {
     let mut g = gestures();
     g.press(&mut store, Plot::Curves, (150.0, 150.0), Instant::now());
     g.release(&mut store, Plot::Curves);
+    rested(&mut store);
     let writes = g.writes;
     g.reset(&mut store, Reset::Curves);
     assert_eq!(g.writes, writes + 1);
     assert!(store.settings().manual_curves.is_neutral());
     undo(&mut store);
     assert!(!store.settings().manual_curves.is_neutral(), "the reset was one step");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_press_off_the_wheel_releases_its_focus_and_one_on_it_keeps_it() {
+    let (mut store, dir) = fresh("editors-wheel-release");
+    let mut g = gestures();
+    g.origins[Plot::Wheel as usize] = (40.0, 500.0);
+    assert!(!g.pressed_anywhere((0.0, 0.0)), "an unfocused wheel has nothing to release");
+    g.press(&mut store, Plot::Wheel, (154.0, 154.0), Instant::now());
+    g.release(&mut store, Plot::Wheel);
+    assert!(g.active().is_some());
+    // Twin: a press inside the wheel's own bounds, its corners included, keeps the point lit.
+    assert!(!g.pressed_anywhere((40.0 + WHEEL.w, 500.0 + WHEEL.h)));
+    assert!(g.active().is_some());
+    assert!(g.pressed_anywhere((40.0 + WHEEL.w + 1.0, 500.0)));
+    assert_eq!(g.active(), None, "the point unlit");
+    let up: slint::SharedString = slint::platform::Key::UpArrow.into();
+    assert_eq!(g.key(&mut store, &up, false), None, "the arrows went back to the window");
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn notches_inside_the_settle_delay_are_one_step_and_rested_ones_are_two() {
+    let (mut store, dir) = fresh("editors-notches");
+    let mut g = gestures();
+    let rest = store.settings().spectrogram;
+    // Two accessibility steps without a rest between: the spectrogram never coalesces, so only
+    // the delay can make them one step.
+    g.band_step(&mut store, 1, 1);
+    g.band_step(&mut store, 1, 1);
+    assert!(!crate::store::Store::can_undo(&store), "the step waits for the edit to rest");
+    undo(&mut store);
+    assert_eq!(store.settings().spectrogram, rest, "one undo took both notches");
+    // Twin: the delay running out between them leaves two steps.
+    g.band_step(&mut store, 1, 1);
+    rested(&mut store);
+    let one = store.settings().spectrogram;
+    g.band_step(&mut store, 1, 1);
+    undo(&mut store);
+    assert_eq!(store.settings().spectrogram, one);
     let _ = std::fs::remove_dir_all(&dir);
 }
