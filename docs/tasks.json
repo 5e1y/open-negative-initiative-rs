@@ -586,5 +586,13 @@
     "status": "done",
     "detail": "Each key set in the bar's centre zone took the zone's whole width while shifted to centre, so the gallery's wider set spilled over FEEDBACKS; each set now keeps its own width, and the zone holds the wider of the editor's and the gallery's.",
     "outcome": "Headless shots of the gallery bar before and after; the oni-app suite green."
+  },
+  {
+    "id": 84,
+    "type": "refactor",
+    "title": "Split the window's controller into one file per part",
+    "status": "done",
+    "detail": "app.rs (4 052 lines) keeps the shared types; publishing, cropping, de-dusting, rendering, the archive, the gallery, the phone link, actions, keys, gestures, menus, wiring, the background workers, the shell and the state's reads each move to their own file under app/, unchanged.",
+    "outcome": "The oni-app suite green before and after; no behaviour moved."
   }
 ]

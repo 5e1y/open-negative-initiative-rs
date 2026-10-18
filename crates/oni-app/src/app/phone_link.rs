@@ -1,0 +1,151 @@
+//! The phone link: the host's events, pairing, and the commands the phone sends.
+
+use super::*;
+
+impl Ctl {
+    // MARK: - The phone
+
+    /// The link's Host on its own thread, once; its events come back to this thread one by one.
+    pub(super) fn start_phone(self: &Rc<Self>) {
+        if self.state.borrow().phone.is_some() {
+            return;
+        }
+        let support = self.state.borrow().support.clone();
+        match Phone::start(&support, |event| with_shell(move |c| c.phone_said(event))) {
+            Ok(p) => self.state.borrow_mut().phone = Some(p),
+            Err(e) => self.pairing_status(&format!("The phone link cannot start: {e}")),
+        }
+    }
+
+    /// The sheet with a fresh one-time code, once the Host listens.
+    pub(super) fn pair_phone(self: &Rc<Self>) {
+        if let Some(w) = self.window() {
+            let p = w.global::<Pairing>();
+            p.set_code(Image::default());
+            p.set_uri(SharedString::new());
+            p.set_shown(true);
+        }
+        self.pairing_status("Starting the link…");
+        self.start_phone();
+        self.show_code();
+    }
+
+    pub(super) fn show_code(&self) {
+        let Some(w) = self.window() else { return };
+        if !w.global::<Pairing>().get_shown() {
+            return;
+        }
+        let code = self.state.borrow().phone.as_ref().and_then(Phone::open_pairing);
+        let Some(code) = code else { return };
+        if code.addresses.is_empty() {
+            return self.pairing_status("No local network: join the phone's Wi-Fi network, then pair again.");
+        }
+        let uri = code.to_uri();
+        match phone::qr(&uri) {
+            Ok((rgba, side)) => {
+                let p = w.global::<Pairing>();
+                p.set_code(image(&rgba, side, side));
+                p.set_uri(uri.into());
+                let at: Vec<String> = code.addresses.iter().map(ToString::to_string).collect();
+                self.pairing_status(&format!("Scan it from the phone app on the same network. One phone, two minutes · {}", at.join(", ")));
+            }
+            Err(e) => self.pairing_status(&format!("The code cannot be drawn: {e}")),
+        }
+    }
+
+    pub(super) fn close_pairing(&self) {
+        if let Some(p) = self.state.borrow().phone.as_ref() {
+            p.close_pairing();
+        }
+        if let Some(w) = self.window() {
+            w.global::<Pairing>().set_shown(false);
+        }
+    }
+
+    pub(super) fn pairing_status(&self, text: &str) {
+        if let Some(w) = self.window() {
+            w.global::<Pairing>().set_status(text.into());
+        }
+    }
+
+    /// The store's screen to the phone, the open frame's place with it; unchanged, nothing is sent.
+    pub(super) fn refresh_phone(&self) {
+        let s = &mut *self.state.borrow_mut();
+        let place = s.place();
+        let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+        p.link.frame = place;
+        p.link.refresh(store);
+    }
+
+    pub(super) fn phone_said(self: &Rc<Self>, event: phone::Event) {
+        match event {
+            phone::Event::Listening(at) => {
+                timing::line(&format!("phone link listening on {at}"));
+                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
+                    p.listening(at);
+                }
+                self.refresh_phone();
+                self.show_code();
+            }
+            phone::Event::Failed(e) => {
+                timing::line(&format!("phone link failed: {e}"));
+                self.state.borrow_mut().phone = None;
+                self.pairing_status(&format!("The phone link cannot listen: {e}"));
+            }
+            phone::Event::Host(event) => self.phone_event(event),
+        }
+    }
+
+    /// A press lands on the store as one command and one undo step, then the window follows.
+    pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent) {
+        let (out, changed) = {
+            let s = &mut *self.state.borrow_mut();
+            let place = s.place();
+            let revision = s.store.revision();
+            let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+            p.link.frame = place;
+            let out = p.link.handle(store, event);
+            (out, store.revision() != revision)
+        };
+        if changed {
+            self.state.borrow_mut().last_change = Some(Instant::now());
+            self.publish(false);
+        }
+        match out {
+            Some(Outward::Paired { phone, name }) => {
+                let support = self.state.borrow().support.clone();
+                if let Err(e) = phone::trust(&support, phone) {
+                    self.say(&format!("{name} is paired for this session only: {e}"));
+                }
+                self.pairing_status(&format!("Paired with {name}."));
+            }
+            Some(Outward::Connected { name, .. }) => {
+                timing::line(&format!("phone connected: {name}"));
+                self.say(&format!("{name} connected"));
+                self.pairing_status(&format!("{name} is connected."));
+            }
+            Some(Outward::Disconnected { .. }) => {
+                timing::line("phone disconnected");
+                self.say("The phone disconnected");
+            }
+            Some(Outward::Walk(by)) => self.walk(by),
+            None => {}
+        }
+    }
+
+    /// `walk(by:)`: the neighbour in the open frame's group, opened and selected; the ends stop it.
+    pub(super) fn walk(self: &Rc<Self>, by: i8) {
+        let target = {
+            let s = self.state.borrow();
+            let Some((at, count)) = s.place() else { return };
+            let to = (i32::from(at) - 1 + i32::from(by)).clamp(0, i32::from(count) - 1) as usize;
+            let open = s.open_path().unwrap_or_default();
+            let group = s.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
+            group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
+        };
+        let Some(path) = target else { return };
+        self.state.borrow_mut().designate(&path);
+        self.open_photo(&path);
+        self.publish_tiles();
+    }
+}
