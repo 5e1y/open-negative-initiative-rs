@@ -48,7 +48,7 @@ fn a_maker_s_profile_is_listed_installed_chosen_and_uninstalled() {
 
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { screen: Screen::DisplayP3, canvas: None, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None) };
+    let options = Options { screen: Screen::DisplayP3, canvas: None, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(1440, 900));

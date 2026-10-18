@@ -58,8 +58,11 @@ const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
 mod organising;
+mod presets;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
+/// Where a deleted preset file goes: the system's Trash, or a check's own folder.
+pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
 
 pub struct Options {
     pub screen: Screen,
@@ -71,6 +74,7 @@ pub struct Options {
     /// `AppFolders.caches`: the index, which the system may purge.
     pub caches: PathBuf,
     pub picker: Picker,
+    pub discard: Discard,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -84,6 +88,7 @@ impl Default for Options {
             support: timing::support(),
             caches: system::caches(),
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
+            discard: Box::new(system::trash),
         }
     }
 }
@@ -110,6 +115,8 @@ enum Pending {
     PasteToRoll,
     DeleteProject(oni_settings::Id),
     RestoreAll,
+    DeletePreset(oni_settings::Id),
+    UpdatePreset(oni_settings::Id),
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -213,6 +220,7 @@ pub struct State {
     trash_picks: crate::organise::Picks,
     /// The archive tree's rows as published, each photo row's path, so a pick relights them in place.
     tree_paths: Vec<Option<String>>,
+    shelf: presets::Shelf,
     org: organising::Organising,
     columns: usize,
     scroll: f32,
@@ -293,6 +301,7 @@ pub struct State {
     support: PathBuf,
     phone: Option<Phone>,
     picker: Picker,
+    discard: Discard,
 }
 
 impl State {
@@ -311,6 +320,11 @@ impl State {
         self.picks.selection = HashSet::from([path.to_string()]);
         self.picks.anchor = Some(path.to_string());
         self.picks.cursor = Some(path.to_string());
+    }
+
+    /// The settings the canvas was last asked to show, a hovered preset's preview included.
+    pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
+        self.requested_live.as_ref()
     }
 
     pub fn renders(&self) -> usize {
@@ -596,6 +610,7 @@ impl Shell {
             picks: Default::default(),
             trash_picks: Default::default(),
             tree_paths: Vec::new(),
+            shelf: Default::default(),
             org: Default::default(),
             columns: gallery::COLUMN_STEPS[1],
             scroll: 0.0,
@@ -658,6 +673,7 @@ impl Shell {
             support: options.support.clone(),
             phone: None,
             picker: options.picker,
+            discard: options.discard,
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -853,7 +869,7 @@ impl Ctl {
         self.publish(false);
     }
 
-    fn set(self: &Rc<Self>, f: Field, stored: f32) {
+    pub(crate) fn set(self: &Rc<Self>, f: Field, stored: f32) {
         if f == Field::Angle {
             return self.straighten(stored);
         }
@@ -1350,6 +1366,9 @@ impl Ctl {
             }
             // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
             let mut live = s.store.settings().clone();
+            if let Some(previewed) = s.preset_preview(&live) {
+                live = previewed;
+            }
             if cropping {
                 live.geometry = live.geometry.without_crop();
             }
@@ -2227,6 +2246,7 @@ impl Ctl {
             s.opened_at = Instant::now();
             // Another photo's distributions never stand under this one's handles.
             s.inputs = None;
+            s.shelf.hovered = None;
             s.inputs_drawn = None;
             s.rendered = 0;
             s.requested = 0;
@@ -2633,6 +2653,11 @@ impl Ctl {
             "open" => self.pick(),
             "recheck" | "read-folders" => self.read_again(),
             "auto-balance" => self.auto_balance(),
+            "save-preset" => self.save_preset(),
+            "edit-presets" => self.edit_presets(None),
+            "import-presets" => self.import_presets(),
+            "paste-preset-code" => self.paste_preset_code(),
+            "show-presets" => self.show_presets_folder(),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -2699,6 +2724,15 @@ impl Ctl {
                 "\r" | "\n" => self.answered(true),
                 _ => {}
             }
+            return true;
+        }
+        if w.global::<crate::Advice>().get_shown() {
+            if matches!(text, "\u{1b}" | "\r" | "\n") {
+                self.advice_closed();
+            }
+            return true;
+        }
+        if self.preset_form_key(text) {
             return true;
         }
         if text == "\u{1b}" && w.global::<Pairing>().get_shown() {
@@ -2895,6 +2929,8 @@ impl Ctl {
     /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery.
     fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
+        // Leaving the editor takes the deck away with no exit event: the preview goes with it.
+        self.state.borrow_mut().shelf.hovered = None;
         if !w.global::<App>().get_gallery() {
             self.drop_split();
             w.global::<App>().set_gallery(true);
@@ -3068,6 +3104,8 @@ impl Ctl {
             Some(Pending::PasteToRoll) => self.lay_paste_to_roll(),
             Some(Pending::DeleteProject(id)) => self.delete_project(id),
             Some(Pending::RestoreAll) => self.restore_all(),
+            Some(Pending::DeletePreset(id)) => self.delete_preset(id),
+            Some(Pending::UpdatePreset(id)) => self.update_preset(id),
             None => {}
         }
         self.publish_bar();
@@ -3089,6 +3127,9 @@ impl Ctl {
             let restoring = s.trash_picks.selection.len();
             let count = if selected > 0 { selected } else { usize::from(open) };
             let anchor = s.picks.anchor.is_some();
+            // `modalOpen`: the export surface, a preset sheet or a dialog.
+            let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown();
+            let presets = s.shelf.held.len();
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split.is_some(), s.screen_gamut, s.negative.is_some());
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
@@ -3174,7 +3215,7 @@ impl Ctl {
                 mirror: open,
                 screen_gamut: true,
                 emulator: false,
-                medal: selected > 0,
+                medal: selected > 0 && !modal,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
                 ungroup: false,
@@ -3184,6 +3225,12 @@ impl Ctl {
                 copy_settings: open,
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
+                save_preset: open,
+                edit_presets: !modal && presets > 0,
+                import_presets: !modal,
+                show_presets: !modal,
+                paste_preset_code: !modal,
+                apply_preset: count > 0,
             };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
             (titles, live, film_type, count)
@@ -3196,6 +3243,7 @@ impl Ctl {
         panel.set_targets(targets as i32);
         let bar = w.global::<Bar>();
         bar.set_can_paste(live.paste_settings);
+        self.publish_presets();
         bar.set_filter(menus.get_titles().filter.trim_start_matches("Filter: ").to_uppercase().into());
     }
 
@@ -3370,6 +3418,7 @@ impl Ctl {
         let p = me.clone();
         lib.on_tile_opened(move |i| p.tile_opened(i.max(0) as usize));
         Ctl::wire_organising(me, window);
+        Ctl::wire_presets(me, window);
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {

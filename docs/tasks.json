@@ -337,8 +337,9 @@
     "id": 39,
     "type": "feature",
     "title": "Presets in the app: deck, save sheet, editor, apply, share code, import, menu list",
-    "status": "doing",
-    "detail": "Every presets row of docs/parity (other.md, editor.md): the file side, the form's rows, the share code, import, retire, then the deck, sheets, dialogs and the Settings menu wired through the store."
+    "status": "done",
+    "detail": "Every presets row of docs/parity (other.md, editor.md): the file side, the form's rows, the share code, import, retire, then the deck, sheets, dialogs and the Settings menu wired through the store.",
+    "outcome": "The deck on the canvas's bottom edge (peek, rise under the pointer, hint, hover preview with the automatic balance measured off the main thread, click applying to the targets as one gallery step), its right-click menu, the save sheet and the editor (list, form, write after the pause and on leaving a row, Duplicate, Share, Copy Preset Code, Delete), the Settings menu's items, list and Delete a Preset submenu with Swift's live rules, Paste Preset Code and Import with their notices, Show Presets Folder, and the shipped presets retired once. Checked by oni-app/tests/presets.rs on the headless window and ONI_BENCH=presets in the real one. Left: the deck's fade mask at its ends."
   },
   {
     "id": 40,

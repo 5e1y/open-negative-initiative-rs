@@ -7,10 +7,12 @@ import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount, GalleryStatus } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
+import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
 export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
+export { Presets, PresetCard, CarriesLine, Advice }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
@@ -163,6 +165,12 @@ export struct MenuLive {
     copy-settings: bool,
     paste-settings: bool,
     paste-to-roll: bool,
+    save-preset: bool,
+    edit-presets: bool,
+    import-presets: bool,
+    show-presets: bool,
+    paste-preset-code: bool,
+    apply-preset: bool,
 }
 
 export global Menus {
@@ -175,6 +183,12 @@ export global Menus {
         ungroup: "Ungroup", sheet: "New Contact Sheet", screen-gamut: "Show What This Screen Cannot Show",
     };
     in property <MenuLive> live: { open: true, cycle-filter: true };
+    // `menus.presets`: each one's name and what it carries, under the targets' title.
+    in property <string> apply-title: "Apply";
+    in property <[string]> presets;
+    in property <[string]> preset-names;
+    callback apply-preset(int);
+    callback delete-preset(int);
 }
 
 // `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
@@ -273,11 +287,19 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: Menus.titles.paste; shortcut: @keys(Control + Shift + "v"); enabled: Menus.live.paste-settings; activated => { App.menu("paste"); } }
             MenuItem { title: Menus.titles.paste-to-roll; enabled: Menus.live.paste-to-roll; activated => { App.menu("paste-to-roll"); } }
             MenuSeparator { }
-            MenuItem { title: "Save as Preset…"; activated => { App.menu("save-preset"); } }
-            MenuItem { title: "Edit Presets…"; activated => { App.menu("edit-presets"); } }
-            MenuItem { title: "Import Presets…"; activated => { App.menu("import-presets"); } }
-            MenuItem { title: "Paste Preset Code"; activated => { App.menu("paste-preset-code"); } }
-            MenuItem { title: "Show Presets Folder"; activated => { App.menu("show-presets"); } }
+            MenuItem { title: "Save as Preset…"; enabled: Menus.live.save-preset; activated => { App.menu("save-preset"); } }
+            MenuItem { title: "Edit Presets…"; enabled: Menus.live.edit-presets; activated => { App.menu("edit-presets"); } }
+            MenuItem { title: "Import Presets…"; enabled: Menus.live.import-presets; activated => { App.menu("import-presets"); } }
+            MenuItem { title: "Paste Preset Code"; enabled: Menus.live.paste-preset-code; activated => { App.menu("paste-preset-code"); } }
+            MenuItem { title: "Show Presets Folder"; enabled: Menus.live.show-presets; activated => { App.menu("show-presets"); } }
+            MenuSeparator { }
+            if Menus.presets.length == 0: MenuItem { title: "No presets"; enabled: false; }
+            if Menus.presets.length > 0: MenuItem { title: Menus.apply-title; enabled: false; }
+            for line[i] in Menus.presets: MenuItem { title: line; enabled: Menus.live.apply-preset; activated => { Menus.apply-preset(i); } }
+            if Menus.presets.length > 0: Menu {
+                title: "Delete a Preset";
+                for name[i] in Menus.preset-names: MenuItem { title: name; activated => { Menus.delete-preset(i); } }
+            }
         }
         Menu {
             title: "Help";
@@ -463,6 +485,12 @@ export component MainWindow inherits AppWindow {
                                 dragged(at) => { Canvas.split-dragged(self.x + at); }
                             }
                         }
+                        // The deck rises over the picture's bottom edge; Crop's handles use that edge.
+                        if PanelState.tab != 1 && !Lab.shown: PresetDeck {
+                            x: CardStyle.padding;
+                            width: parent.width - 2 * CardStyle.padding;
+                            y: parent.height - CardStyle.padding - self.height;
+                        }
                         SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
                         HorizontalLayout {
                             x: parent.width - self.preferred-width - CardStyle.padding;
@@ -514,6 +542,9 @@ export component MainWindow inherits AppWindow {
         }
     }
 
+    if Presets.saving: PresetSaveSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Presets.editing: PresetEditorSheet { x: 0; y: 0; width: root.width; height: root.height; }
+
     if Confirm.shown: ConfirmSheet {
         x: 0;
         y: 0;
@@ -538,6 +569,8 @@ export component MainWindow inherits AppWindow {
     if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.stocks-shown: StockSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
+
+    if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     TipLayer { room: root.width; }
 

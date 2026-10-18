@@ -31,11 +31,11 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Histogram, morphing between renders | `Pipeline/Histogram.swift`, `DesignSystem/DSHistogram` | `oni-app/src/render.rs` histogram | partial | Counted per channel and drawn; no morph, no throttle (`Histogram.swift:59-63`) | `oni-app/src/render.rs::the_histogram_counts_each_channel_on_its_own` |
+| Histogram, morphing between renders | `Pipeline/Histogram.swift`, `DesignSystem/DSHistogram` | `app.rs` `PULSE`, `display.rs` `histogram` | partial | Counted on the GPU and published at the image cadence; no morph between renders | `oni-app/src/display.rs::the_histogram_kernel_counts_what_the_cpu_counts` |
 | Print curve drawn over the histogram (Color tab) | `UI/PrintPanel.swift:46-85`, `Scene/EditorScene+Panel.swift:35-44` | `oni-app/src/editors/print.rs`, `oni-app/ui/editors.slint` `PrintOverlay`, `oni-app/ui/panel.slint` | done | Moved channels in their tint, the RGB curve and its mirror dashed; none per channel in monochrome | `oni-app/src/editors/print.rs::the_print_draws_its_moved_channels_its_curve_and_the_mirror`, `::the_mirror_is_the_curve_with_its_axes_swapped` |
 | Loupe on the Details tab | `UI/Loupe.swift` | none | missing | | no check |
 | Lab screen on the Scanner face | `UI/Lab/LabScreen.swift`, `Scene/EditorScene+Panel.swift:22` | `oni-app/ui/ds/keypad.slint` `LabScreen`, `oni-app/src/app/lab.rs` `screen` | done | No phosphor glow; the monospaced face is the system's | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back`, `oni-app/src/app/lab.rs::the_screen_spells_every_count_and_finish_as_the_lab_does` |
-| Preset deck (carousel) | `UI/PresetCarousel.swift` | none | missing | See [other.md](other.md) | no check |
+| Preset deck (carousel) | `UI/PresetCarousel.swift` | `oni-app/ui/presets.slint` `PresetDeck`, `oni-app/src/app/presets.rs` | partial | Cards, the peek, the rise under the pointer, the hint, hover preview and click apply; no fade mask at the roll's ends | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does, `ONI_BENCH=presets` |
 
 ## Panel: tabs
 
@@ -44,10 +44,9 @@ Statuses are defined in [README.md](README.md).
 | Tabs Roll, Crop, Color, Details | `UI/PanelTab.swift` | `oni-app/ui/panel.slint` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
 | De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17` | `panel.slint` `DedustPane` (pane 4, no tab), `app.rs` `toggle_correcting` | done | Entered and left by the bar's key and the menu; leaving lands on the panel the hand was in, never the crop | `ONI_BENCH=dedust` |
 | Scanner face tabs (Lab keypad) | `Scene/EditorScene+Lab.swift:13-27`, `UI/ColorPane.swift:54` | `oni-app/ui/panel.slint` `ColorPane` | done | Machine, Density, Color, Look stand where Color and Lighting stand | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` |
-| Block help bubbles (`help:`) | every `DSSection` | none | missing | | no check |
+| Block help bubbles (`help:`) | every `DSSection` | `ui/ds/containers.slint` `Section`, `HelpMark` | partial | Each section draws its help; Flat-Field, Dye Separation, Sharpening, Chroma Denoise and Texture have no text | no check |
 | Block reset key, shown off rest | `DSSection(resetting:)` | `oni-app/src/store.rs` `rest`, `is_modified`, `reset` | done | Nine blocks; each lands on the open frame's own mode rest | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_of_the_frames_own_mode`, `a_block_reset_lands_on_the_rest_in_one_write` |
-| Blocks folded by default | `.folded(byDefault: true)` | none | missing | Every block is open | no check |
-| Panel width resizer | `DesignSystem/DSPanel` `DSColumnResizer` | none | missing | | no check |
+| Blocks folded by default | `.folded(byDefault: true)` | `panel.slint`, `editors.slint` `folded` | partial | Every block Swift folds opens folded except Flat-Field; the fold is not remembered (`sectionFold.<title>`) | no check |
 | Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint` menu bar, `app.rs` `act` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 
 ## Panel: Roll tab
@@ -63,11 +62,11 @@ Statuses are defined in [README.md](README.md).
 | Flat-Field toggle, gear, mask picker | `UI/FlatFieldControls.swift` | `panel.slint:59-63` | partial | Toggle unbound | no check |
 | Use This Photo as Flat-Field, Load…, Rename, Folder | `UI/FlatFieldControls.swift` | none | missing | | no check |
 | Apply to Selection | `UI/FlatFieldControls.swift` | none | missing | | no check |
-| Flat-field Amount, Temperature, Tint | `UI/FlatFieldControls.swift` | none | missing | Model fields exist | no check |
-| Source Encoding (undeclared files) | `UI/SettingsPane.swift:53-66` | none | missing | Model field exists | no check |
-| Source Balance (gains R, G, B) | `UI/SettingsPane.swift:136`, `UI/GainPanel.swift` | none | missing | | no check |
+| Flat-field Amount, Temperature, Tint | `UI/FlatFieldControls.swift` | `oni-pipeline/src/flat_field.rs` | partial | Read from the sidecar and rendered; no sliders | `oni-pipeline/src/flat_field.rs::the_colour_sliders_turn_round_with_the_mode` (crate only) |
+| Source Encoding (undeclared files) | `UI/SettingsPane.swift:53-66` | `oni-app/src/render.rs` `Reading.source_encoding` | partial | Read from the sidecar and rendered; no block in the panel | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` (crate only) |
+| Source Balance (gains R, G, B) | `UI/SettingsPane.swift:136`, `UI/GainPanel.swift` | `oni-pipeline/src/conversion.rs` `gain` | partial | Gains rendered from the sidecar; no block in the panel | no check |
 | Density Ceiling slider | `UI/SettingsPane.swift:146` | `panel.slint:87` field 12 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
-| Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:156-171`, `UI/LevelsView.swift`, `DesignSystem/DSBadge.swift` | `oni-app/src/editors/levels.rs`, `oni-app/src/editors/mod.rs`, `oni-app/src/editors/shell.rs`, `oni-app/ui/editors.slint` `LevelsEditor`, `oni-app/ui/panel.slint` | partial | R, G, B tabs lit off their rest, five handles sprung on a value from elsewhere, markers, readouts, reset to the roll's window, the 8-bit source badge, hidden on the Scanner face (read from `EditorStore.scanner_face`, which the face switch sets), drawn over the levels' input reading on the measuring copy with the tab's channel in focus (`render.rs` `Engine::inputs`) | `oni-app/src/editors/tests.rs::a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_alone`, `oni-app/src/render.rs::the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_follows`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
+| Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:156-171`, `UI/LevelsView.swift`, `DesignSystem/DSBadge.swift` | `oni-app/src/editors/levels.rs`, `oni-app/src/editors/mod.rs`, `oni-app/src/editors/shell.rs`, `oni-app/ui/editors.slint` `LevelsEditor`, `oni-app/ui/panel.slint` | done |  | `oni-app/src/editors/tests.rs::a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_alone`, `oni-app/src/render.rs::the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_follows`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 | Dye Separation: family tabs | `UI/SettingsPane.swift:73-84` | `panel.slint:70` | partial | Picker static | no check |
 | Dye Separation dose slider | `UI/SettingsPane.swift:85` | `panel.slint:71` field 13 | done | Reset clears the dose, the family and the hand together | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative`, `oni-app/src/store.rs::the_dye_separation_reset_clears_the_dose_the_family_and_the_hand` |
 | Dye Separation hidden in B&W, RGB passes, Scanner face | `UI/SettingsPane.swift:70` | `oni-app/src/app/lab.rs` `publish_lab`, `panel.slint` `separation-shown` | done | | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` (Scanner face; B&W and RGB passes read off the settings, not asserted) |
@@ -100,7 +99,7 @@ Statuses are defined in [README.md](README.md).
 | Lighting: Exposure, Highlights, Shadows, White point, Black point | `UI/ColorPane.swift:104`, `UI/PrintPanel.swift` | `panel.slint:147-160` | done | | `oni-app/src/fields.rs::the_black_point_runs_the_other_way`, `each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Effects: Contrast, Vignette, Chrome | `UI/ColorPane.swift:114` | `panel.slint:164-170` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Effects on the Scanner face: CONTRAST, VIGNETTE, CHROME step keys | `UI/ColorPane.swift:121-131`, `UI/Lab/LabKeyboard.swift:153-201` | `oni-app/ui/panel.slint` `EffectRow`, `oni-core/src/store.rs` `scanned` | done | | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back`, `oni-core/tests/scanner.rs::the_keypad_writes_the_scanner_s_clicks_and_nothing_of_pro` |
-| Curves editor: RGB, Luma, R, G, B | `UI/ColorPane.swift:153-166`, `UI/CurveEditorView.swift` | `oni-app/src/editors/curve.rs`, `oni-app/ui/editors.slint` `CurvesEditor` | partial | Every point rule, tabs lit per moved channel, reset, one step per press; drawn over the manual curves' input reading with the channel in focus, at most once an image interval, the small copy under the hand | `oni-app/src/editors/tests.rs::a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step`, `oni-app/src/render.rs::an_input_plot_draws_its_focus_channel_whole_and_the_others_at_a_fifth`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
+| Curves editor: RGB, Luma, R, G, B | `UI/ColorPane.swift:153-166`, `UI/CurveEditorView.swift` | `oni-app/src/editors/curve.rs`, `oni-app/ui/editors.slint` `CurvesEditor` | done |  | `oni-app/src/editors/tests.rs::a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step`, `oni-app/src/render.rs::an_input_plot_draws_its_focus_channel_whole_and_the_others_at_a_fifth`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 | Spectrogram Finishing | `UI/GradePane.swift:10-19`, `UI/SpectrogramPanel.swift`, `UI/SpectrogramBands.swift`, `DesignSystem/DSTabBar.swift:50-85` | `oni-app/src/editors/spectrogram.rs`, `oni-app/src/editors/sprung.rs`, `oni-app/ui/editors.slint` `SpectrogramEditor`, `oni-app/src/main.rs` (press hook) | done | Wheel, eight swatch tabs named in their tooltip, Hue, Saturation, Luminance sliders sprung on a value from elsewhere, reset. A press anywhere off the wheel unlights its point (`dsReleasesFocus`), through the window's winit press hook; the headless test calls the function the hook calls | `oni-app/src/editors/tests.rs::the_wheel_selects_on_a_press_and_moves_by_the_travel_from_where_it_grabbed`, `oni-app/src/editors/tests.rs::a_band_slider_writes_its_axis_and_a_double_click_zeroes_it`, `oni-app/src/editors/tests.rs::a_press_off_the_wheel_releases_its_focus_and_one_on_it_keeps_it`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 | Saturation Curve | `UI/GradePane.swift:20-30`, `UI/SaturationCurveView.swift` | `oni-app/src/editors/saturation.rs`, `oni-app/ui/editors.slint` `SaturationEditor` | done | | `oni-app/src/editors/tests.rs::a_saturation_double_click_puts_its_point_back_on_neutral` |
 | Grade blocks hidden in monochrome | `Scene/EditorScene+Panel.swift:228-233` | `oni-app/ui/panel.slint` `Editors.monochrome` | done | | `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
@@ -110,7 +109,7 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Sharpening: Amount, Radius, Halo limit | `UI/DetailsPane.swift:9`, `UI/SharpenPanel.swift` | `panel.slint:182-187` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
-| Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint:190-194` | done | Not hidden in monochrome | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
+| Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint:190-194` | partial | Shown in monochrome, which Swift hides (`DetailsPane.swift:15`) | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Texture | `UI/DetailsPane.swift:25` | `panel.slint:197-200` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Off on a contact sheet, with its note | `UI/DetailsPane.swift:37` | none | missing | | no check |
 
@@ -143,17 +142,17 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Three zones, one item per zone | `Scene/EditorScene+Bar.swift`, `UI/AppBar.swift` | `oni-app/ui/toolbar.slint` | done | | `oni-app/tests/design_system.rs::screens_use_only_the_design_system` (tokens only) |
-| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Drawn, unwired | no check |
+| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Framing and Compare are wired; the contact-sheet key answers "not in this build" | `ONI_BENCH=compare` |
 | Undo, redo keys with their state | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` | done | Editor surface only | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
 | Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` `act` | done | Through the same gestures as the menu, the confirm sheet included | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| Correction key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
+| Correction key | `Scene/EditorScene+Bar.swift` | `app.rs` `act` "correction" | done |  | `ONI_BENCH=dedust` |
 | RESET SCAN | `Scene/EditorScene+Bar.swift` | `app.rs:1117` | done | | `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
-| Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | Filter label live; the rest unwired | no check |
+| Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | The filter cycles and the trash key marks; PREPARE ROLL is lit and unwired | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand |
 | Roll-step keys (Film, Flat-Field, Base, Flags, Window) | `Scene/EditorScene+Bar.swift`, `UI/RollReferenceSurface.swift` | none | missing | | no check |
 | FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
 | EXPORT / ADD FOLDER key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `Bar.export-title` from `oni-app/src/export.rs` `label::key` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
 | UPDATE key when an update waits | `Scene/EditorScene+Bar.swift`, `Pipeline/Updates.swift` | none | missing | | no check |
-| Traffic lights inset | `Scene/EditorScene+Bar.swift` | `app.rs` | missing | Never set | no check |
+| Traffic lights inset | `Scene/EditorScene+Bar.swift` | `app.rs` | missing | The window keeps a standard title bar; `Bar.traffic-lights` exists but nothing sets it | no check |
 
 ## Menus and shortcuts
 
@@ -166,7 +165,7 @@ Statuses are defined in [README.md](README.md).
 | Read the Folders Again | `UI/EditorCommands.swift:123` | `app.slint` menu bar, `app.rs` `read_again` | done | | no check |
 | Show the Selected Photo | `UI/EditorCommands.swift:125` | `app.rs` `show_selected`, `gallery.rs` `reveal` | done | | `oni-app/src/gallery.rs::reveal_moves_the_least_to_show_a_cell_and_not_at_all_when_it_shows` |
 | Move to ONI Trash ⌘⌫ | `UI/EditorCommands.swift:128` | `app.rs` `move_to_trash`, `oni-core/src/store.rs` `move_to_trash` | done | Marked in the sidecar, the file untouched, one gallery step | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.slint` menu bar | partial | Title and shortcut as Swift; no ONI Trash view to select in, so the item stays dark and ⌘Z restores | no check |
+| Restore ⇧⌘⌫ | `UI/EditorCommands.swift:131` | `app.rs` `act` "restore", `app/organising.rs` `restore` | done |  | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand |
 | Zoom Out ⌘−, Zoom In ⌘+ | `UI/EditorCommands.swift:138-142` | `app.rs` `act`, `step_zoom` | done | The editor walks the zoom ladder, the gallery its columns | `oni-app/src/viewport.rs::the_ladder_steps_strictly_and_fit_is_its_floor`, `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` |
 | Compare Before/After | `UI/EditorCommands.swift:145` | `app.slint` menu bar, `app.rs` `toggle_compare` | done | Title follows the split as Swift's | `ONI_BENCH=compare` |
 | Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint` menu bar, `app.rs` `act` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
@@ -179,32 +178,32 @@ Statuses are defined in [README.md](README.md).
 | Show What This Screen Cannot Show ⇧⌘Y | `UI/EditorCommands.swift:171` | `app.slint` menu bar, `app.rs` `toggle_screen_gamut` | done | "Hide What This Screen Cannot Show" while shown | `oni-app/src/display.rs::the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does` |
 | Labels: None 0, Bronze 1, Silver 2, Gold 3 | `UI/EditorCommands.swift:180-183` | `app.slint:81-84`, `app.rs` `label` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint` menu bar, `app.rs` `cycle_filter` | done | Exactly one medal, never a tier above | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint` menu bar, `app.rs` `new_roll`, `oni-library/src/roll_folder.rs` | done | The folder takes the earliest capture's date; the heading is not offered for renaming | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint` menu bar, `app.rs` `new_roll`, `oni-library/src/roll_folder.rs` | partial | Does not ask for the new folder's name (`renameRequest`) | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app.slint:91` | missing | | no check |
 | New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint:93` | missing | | no check |
-| Prepare the Roll… | `UI/EditorCommands.swift:206` | `app.slint:94` | missing | | no check |
-| Reset to Default… | `UI/EditorCommands.swift:208` | `app.slint:95`, `oni-core/src/store.rs:602` | partial | Core only | no check |
+| Prepare the Roll… | `UI/EditorCommands.swift:206` | `oni-measure/src/roll.rs` `measure_roll`, `app.rs` `publish_menus` | partial | The roll measure exists in the core; the item is lit with targets but has no handler | `oni-measure/tests/roll_prepare.rs::a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoes_byte_for_byte` |
+| Reset to Default… | `UI/EditorCommands.swift:208` | `oni-core/src/store/roll.rs` `reset_to_default` | partial | The core reaches the whole roll; the item and the cell menu are lit in the gallery with no handler | `oni-measure/tests/roll_prepare.rs::reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_byte` |
 | Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint` menu bar, `oni-core/src/store.rs` `copy_settings` | partial | In-memory board, as before | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Paste Settings ⇧⌘V | `UI/EditorCommands.swift:216` | `app.slint` menu bar, `app.rs` `paste` | done | Another roll's look asks first, as Swift's sheet | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Paste to Roll (no shortcut) | `UI/EditorCommands.swift:220` | `app.slint` menu bar, `app.rs` `paste_to_roll` | done | Title counts the roll's reach | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| Save as, Edit, Import Presets, Paste Preset Code, Show Presets Folder | `UI/EditorCommands.swift:223-231` | `app.slint:103-107` | missing | | no check |
-| Preset list with its parameters | `UI/EditorCommands.swift:238` | none | missing | | no check |
-| Delete a Preset submenu | `UI/EditorCommands.swift:245` | none | missing | | no check |
+| Save as, Edit, Import Presets, Paste Preset Code, Show Presets Folder | `UI/EditorCommands.swift:223-231` | `app.slint` Settings menu, `oni-app/src/app/presets.rs` | done | Live as `menuState` says: Save with a photo open, the rest while no sheet or dialog is up | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
+| Preset list with its parameters | `UI/EditorCommands.swift:238` | `app.slint` Settings menu, `presets.rs` `publish_presets` | done | Each preset as "name · what it carries" under the targets' title | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
+| Delete a Preset submenu | `UI/EditorCommands.swift:245` | `app.slint` Settings menu, `presets.rs` `ask_delete_preset` | done | Asks before the file goes to the Trash | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
 | Undo ⌘Z, Redo ⇧⌘Z with action names | `UI/EditorCommands.swift:255-259` | `app.slint` menu bar, `app.rs` `publish_menus` | done | The gallery names its step; the editor says Undo and Redo, as Swift's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint` menu bar, `app.rs` `reset_all` | done | One gallery step over the targets | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint:111-115` | missing | | no check |
 | Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
-| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules; an item whose gesture this build lacks stays dark | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules, the presets' included; Prepare the Roll… and Reset to Default… are lit with no handler, Help has no rule | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
 
 ## Keys outside the menus
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Gallery ⌘A, arrows, Return, Space | `UI/GalleryEngine.swift:425-439` | none | missing | | no check |
+| Gallery ⌘A, arrows, Return, Space | `UI/GalleryEngine.swift:425-439` | `app/organising.rs` `grid_key` | done |  | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand |
 | Bare keys yield to a focused text field | `DesignSystem/DSKeyboard` `DSTextFocus` | `oni-app/src/app.rs:1155` | done | Slint text fields consume their keys first | no check |
-| Exclusive key surfaces | `DSKeyMonitor.exclusiveSurfaces` | none | missing | | no check |
-| Esc closes Lab, Crop, Wrapped | `Scene/EditorScene+Lab.swift`, `UI/CropOverlay.swift`, `UI/WrappedView.swift` | `oni-app/src/app/lab.rs` `lab_key` | partial | The Lab and pairing only | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` (Lab) |
+| Exclusive key surfaces | `DSKeyMonitor.exclusiveSurfaces` | `app.rs` `key` | done | One key path; grid keys are answered only in the gallery | no check |
+| Esc closes Lab, Crop, Wrapped | `Scene/EditorScene+Lab.swift`, `UI/CropOverlay.swift`, `UI/WrappedView.swift` | `app.rs` `key`, `lab.rs` `lab_key` | partial | Esc closes the Lab, pairing, the export surface, the preset sheets and dialogs; Crop does not close and Wrapped does not exist | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` (Lab) |
 | Tab walks spectrogram bands | `UI/SpectrogramPanel.swift:76-84` | `oni-app/src/editors/mod.rs` `Gestures::key` | done | | `oni-app/src/editors/tests.rs::the_wheel_s_keys_step_the_selected_point_and_tab_walks_it_only_while_it_holds_the_focus` |
 | Option on the spectrogram | `UI/SpectrogramPanel.swift:81` | `oni-app/src/editors/spectrogram.rs` `walked` | done | Option-Tab walks anticlockwise | `oni-app/src/editors/tests.rs::the_wheel_s_keys_step_the_selected_point_and_tab_walks_it_only_while_it_holds_the_focus` |
 | Prepare the Roll arrows | `UI/RollReferenceSurface.swift:223` | none | missing | | no check |

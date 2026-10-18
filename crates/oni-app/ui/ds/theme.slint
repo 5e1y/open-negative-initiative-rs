@@ -331,3 +331,21 @@ export global ScannerStyle {
     out property <int> value-weight: 700;
     out property <int> label-weight: 500;
 }
+
+// `PresetCarousel`'s gauge: a card, the strip left showing at rest, the fade at each end, the lift.
+export global PresetStyle {
+    out property <length> card-width: 72px;
+    out property <length> card-height: 104px;
+    out property <length> peek: 16px;
+    out property <length> lift: DS.control-card-lift;
+    out property <length> badge-width: DS.control-preset-badge-width;
+    out property <length> badge-height: DS.control-preset-badge-height;
+    out property <length> swatch: DS.control-swatch-size;
+    out property <length> save-width: DS.control-preset-save-width;
+    out property <length> save-height: DS.control-preset-save-height;
+    out property <length> editor-width: DS.control-preset-editor-width;
+    out property <length> editor-height: DS.control-preset-editor-height;
+    out property <length> editor-list: DS.control-preset-editor-list-width;
+    out property <length> mark: DS.typo-mark-size;
+    out property <duration> rise: Motion.quick;
+}

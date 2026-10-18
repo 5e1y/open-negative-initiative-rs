@@ -133,7 +133,7 @@ fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadat
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     // A Display P3 screen, so a proof narrower than the screen is visible on it.
-    let options = Options { screen: Screen::DisplayP3, canvas: None, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None) };
+    let options = Options { screen: Screen::DisplayP3, canvas: None, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     window.set_size(PhysicalSize::new(1440, 900));

@@ -1,0 +1,332 @@
+// The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
+import { Space, State, PresetStyle, PresetFace, PresetNewFace, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, TextField, Toggle, LabelledRow, Picker, Divider, Scroller, Sheet, Badge, ContextMenu, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
+
+// A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
+export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
+
+// One line of the Carries picker: 0 a block's title, 1 the white balance choice, 2 a box.
+export struct CarriesLine { kind: int, text: string, on: bool }
+
+export global Presets {
+    in property <[PresetCard]> cards;
+    in property <bool> can-apply;
+    in property <bool> can-update;
+    in property <string> hint;
+    in property <int> hovered: -1;
+    callback hover(int);
+    callback apply(int);
+    callback create();
+    // A right click on a card: Rust lays `menu-lines` and answers whether the menu opens.
+    callback card-menu(int) -> bool;
+    in property <[MenuLine]> menu-lines;
+    callback menu-chosen(int);
+    // Where the first card stands in the window, for a hand that aims at it.
+    in-out property <length> first-x;
+    in-out property <length> first-y;
+
+    // The form both sheets show: the draft being saved, or the preset selected in the editor.
+    in property <bool> saving;
+    in property <bool> editing;
+    in property <bool> form-shown;
+    in property <[int]> form-instance;
+    in property <string> form-name;
+    in property <string> form-note;
+    in property <int> form-tint;
+    in property <[color]> tints;
+    in property <[string]> tint-names;
+    in property <[CarriesLine]> form-carries;
+    in property <bool> form-empty;
+    in property <string> carries-help;
+    in property <string> balance-help;
+    in property <string> carries-nothing;
+    in property <[MenuLine]> balance-lines;
+    callback form-named(string);
+    callback form-noted(string);
+    callback form-tinted(int);
+    callback form-ticked(int, bool);
+    callback form-balanced(int);
+    callback save-cancelled();
+    callback save-confirmed();
+
+    // The editor's list and footer.
+    in property <[PresetCard]> rows;
+    in property <int> selected: -1;
+    callback picked(int);
+    callback duplicate();
+    callback share();
+    callback copy-code();
+    callback delete();
+    callback done();
+}
+
+// `DSNotice`: what a gesture tells once it is over, closed by its one key.
+export global Advice {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    callback closed();
+}
+
+export component AdviceSheet inherits Sheet {
+    title: Advice.title;
+    dismissed => { Advice.closed(); }
+    if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: center;
+        Button { text: "OK"; clicked => { Advice.closed(); } }
+    }
+}
+
+// `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
+// the pointer and applies on a click; the rest sits on its right click.
+export component PresetDeck inherits Rectangle {
+    property <length> full: PresetStyle.lift + PresetStyle.card-height + Space.s;
+    property <bool> up: zone.has-hover;
+    property <length> menu-x;
+    property <length> menu-y;
+    height: self.full + Space.l + Space.m;
+    clip: true;
+    if root.up && Presets.cards.length > 0: Badge {
+        x: (root.width - self.width) / 2;
+        y: Space.xs;
+        text: Presets.hint;
+    }
+    zone := TouchArea {
+        y: root.up ? root.height - root.full : root.height - PresetStyle.peek - PresetStyle.lift;
+        height: root.full;
+        animate y { duration: PresetStyle.rise; }
+        HorizontalLayout {
+            padding-left: Space.l;
+            padding-right: Space.l;
+            spacing: Space.s;
+            alignment: start;
+            Rectangle {
+                width: PresetStyle.card-width;
+                height: root.full;
+                PresetNewFace {
+                    y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
+                    lit: plus.has-hover && Presets.can-update;
+                    enabled: Presets.can-update;
+                    animate y { duration: PresetStyle.rise; }
+                    plus := TouchArea {
+                        enabled: Presets.can-update;
+                        clicked => { Presets.create(); }
+                    }
+                }
+            }
+            Scroller {
+                height: root.full;
+                horizontal-stretch: 1;
+                content-width: roll.preferred-width;
+                roll := HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    for card[i] in Presets.cards: Rectangle {
+                        width: PresetStyle.card-width;
+                        height: root.full;
+                        if i == 0: Rectangle {
+                            changed absolute-position => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
+                            init => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
+                        }
+                        PresetFace {
+                            y: PresetStyle.lift - (Presets.hovered == i ? PresetStyle.lift : 0px);
+                            abbreviation: card.abbreviation;
+                            name: card.name;
+                            fill: card.fill;
+                            ink: card.ink;
+                            opacity: Presets.can-apply ? 1 : State.disabled;
+                            animate y { duration: PresetStyle.rise; }
+                        }
+                        TouchArea {
+                            changed has-hover => {
+                                if (self.has-hover && Presets.can-apply) {
+                                    Presets.hover(i);
+                                } else if (Presets.hovered == i) {
+                                    Presets.hover(-1);
+                                }
+                            }
+                            clicked => { if (Presets.can-apply) { Presets.apply(i); } }
+                            pointer-event(event) => {
+                                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                                    root.menu-x = self.absolute-position.x - root.absolute-position.x + self.mouse-x;
+                                    root.menu-y = self.absolute-position.y - root.absolute-position.y + self.mouse-y;
+                                    if (Presets.card-menu(i)) { menu.show(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    menu := ContextMenu {
+        x: root.menu-x;
+        y: root.menu-y;
+        lines: Presets.menu-lines;
+        chosen(i) => { Presets.menu-chosen(i); menu.close(); }
+    }
+}
+
+component TintPicker inherits HorizontalLayout {
+    spacing: Space.xs;
+    alignment: start;
+    for tint[i] in Presets.tints: Swatch {
+        fill: tint;
+        picked: i == Presets.form-tint;
+        name: Presets.tint-names[i];
+        clicked => { Presets.form-tinted(i); }
+    }
+}
+
+// `PresetCarriesPicker`: the blocks' boxes, the white balance a choice of three, and the note
+// when nothing is ticked.
+component CarriesPicker inherits VerticalLayout {
+    spacing: Space.xs;
+    for line[i] in Presets.form-carries: VerticalLayout {
+        if line.kind == 0: Label { text: line.text; role: TextRole.section; }
+        if line.kind == 1: HorizontalLayout {
+            spacing: Space.s;
+            Label { text: "White balance"; }
+            VerticalLayout { alignment: center; HelpMark { note: Presets.balance-help; } }
+        }
+        if line.kind == 1: Picker {
+            value: line.text;
+            open => { balance.show(); }
+        }
+        if line.kind == 2: LabelledRow {
+            label: line.text;
+            Toggle {
+                on: line.on;
+                label: line.text;
+                toggled(on) => { Presets.form-ticked(i, on); }
+            }
+        }
+    }
+    if Presets.form-empty: Note { text: Presets.carries-nothing; }
+    balance := ContextMenu {
+        lines: Presets.balance-lines;
+        chosen(i) => { Presets.form-balanced(i); balance.close(); }
+    }
+}
+
+// The fields of both sheets; the description is the editor's alone.
+component PresetForm inherits VerticalLayout {
+    in property <bool> noted;
+    callback named(string);
+    spacing: Space.l;
+    Field {
+        label: "Name";
+        name := TextField {
+            text: Presets.form-name;
+            placeholder: "Preset name";
+            edited(t) => { Presets.form-named(t); }
+            accepted(t) => { root.named(t); }
+        }
+    }
+    if root.noted: Field {
+        label: "Description";
+        TextField {
+            text: Presets.form-note;
+            placeholder: "What this look is for";
+            edited(t) => { Presets.form-noted(t); }
+        }
+    }
+    Field {
+        label: "Color";
+        TintPicker { }
+    }
+    Field {
+        label: "Carries";
+        help: Presets.carries-help;
+        CarriesPicker { }
+    }
+    public function take-focus() { name.take-focus(); }
+}
+
+// `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name.
+export component PresetSaveSheet inherits PanelSheet {
+    panel-width: PresetStyle.save-width;
+    panel-height: PresetStyle.save-height;
+    dismissed => { Presets.save-cancelled(); }
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.m;
+        Label { text: "Save a Preset"; role: TextRole.title; }
+        Scroller {
+            vertical-stretch: 1;
+            content-height: form.preferred-height;
+            form := PresetForm {
+                width: parent.width;
+                named => { if (Presets.form-name != "") { Presets.save-confirmed(); } }
+            }
+        }
+        Divider { }
+        HorizontalLayout {
+            alignment: end;
+            spacing: Space.s;
+            Button { text: "Cancel"; clicked => { Presets.save-cancelled(); } }
+            Button { text: "Save"; kind: ButtonKind.accent; enabled: Presets.form-name != ""; clicked => { Presets.save-confirmed(); } }
+        }
+    }
+    init => { form.take-focus(); }
+}
+
+// `PresetEditor`: the presets in a list, the selected one's form, and the footer's keys; an edit
+// is written once the hand rests, and at once when another row or Done takes over.
+export component PresetEditorSheet inherits PanelSheet {
+    panel-width: PresetStyle.editor-width;
+    panel-height: PresetStyle.editor-height;
+    dismissed => { Presets.done(); }
+    VerticalLayout {
+        HorizontalLayout {
+            vertical-stretch: 1;
+            Scroller {
+                width: PresetStyle.editor-list;
+                content-height: list.preferred-height;
+                list := VerticalLayout {
+                    padding: Space.s;
+                    spacing: Space.xxs;
+                    alignment: start;
+                    for card[i] in Presets.rows: PresetRow {
+                        abbreviation: card.abbreviation;
+                        name: card.name;
+                        carries: card.carries;
+                        fill: card.fill;
+                        ink: card.ink;
+                        selected: i == Presets.selected;
+                        clicked => { Presets.picked(i); }
+                    }
+                }
+            }
+            VerticalRule { }
+            // One instance per selected preset: its fields start from that preset's values.
+            for instance in Presets.form-instance: Scroller {
+                horizontal-stretch: 1;
+                content-height: form.preferred-height + 2 * Space.l;
+                form := PresetForm {
+                    x: Space.l;
+                    y: Space.l;
+                    width: parent.width - 2 * Space.l;
+                    noted: true;
+                }
+            }
+            if !Presets.form-shown: VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                Label { text: "No preset selected"; role: TextRole.section; centred: true; }
+                Note { text: "Save a photo's settings to create your first preset."; horizontal-alignment: center; }
+            }
+        }
+        Divider { }
+        HorizontalLayout {
+            padding: Space.m;
+            spacing: Space.s;
+            Button { text: "Duplicate"; enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
+            Button { text: "Share…"; enabled: Presets.form-shown; clicked => { Presets.share(); } }
+            Button { text: "Copy Preset Code"; enabled: Presets.form-shown; help: "Copies the preset as one line of text, to paste in a message."; clicked => { Presets.copy-code(); } }
+            Button { text: "Delete"; kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
+            Rectangle { horizontal-stretch: 1; }
+            Button { text: "Done"; clicked => { Presets.done(); } }
+        }
+    }
+}

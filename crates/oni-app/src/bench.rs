@@ -9,6 +9,9 @@
 //! `ONI_BENCH=dedust` paints a stroke in De-dust, waits for its patch, then removes it.
 //! `ONI_BENCH=flows` walks the owner's flow in the real window: the gallery, a click that selects in
 //! the gallery and the sidebar alike, a double click that opens, an edit, three frames over.
+//! `ONI_BENCH=presets` saves a preset, raises the deck under the pointer, previews the card by
+//! hovering it and applies it by a click, all through the window's pointer events; run it with
+//! `ONI_SUPPORT` on a scratch folder, as it writes a preset.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -47,6 +50,7 @@ pub enum Mode {
     Crop,
     Dedust,
     Flows,
+    Presets,
 }
 
 impl Mode {
@@ -71,6 +75,7 @@ pub fn requested() -> Option<Mode> {
         "crop" => Some(Mode::Crop),
         "dedust" => Some(Mode::Dedust),
         "flows" => Some(Mode::Flows),
+        "presets" => Some(Mode::Presets),
         _ => None,
     }
 }
@@ -96,6 +101,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Flows {
         return flows(ctl, done);
+    }
+    if mode == Mode::Presets {
+        return deck(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
@@ -162,7 +170,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
@@ -578,6 +586,111 @@ fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     format!("flows: {} frames picked, double-clicked open and edited through resizes, a click under the rows changed nothing, no failure", FLOW_TILES.len())
                 } else {
                     format!("flows: {}", failed.join("; "))
+                });
+            }
+        }
+    });
+}
+
+#[derive(Clone, Copy)]
+enum Deck {
+    Loading,
+    Saved { at: Instant },
+    Raised { at: Instant },
+    Hovered { at: Instant },
+    Applied,
+}
+
+fn pointer_to(w: &crate::MainWindow, at: slint::LogicalPosition) {
+    w.window().dispatch_event(slint::platform::WindowEvent::PointerMoved { position: at });
+}
+
+fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let phase = Cell::new(Deck::Loading);
+    let done = RefCell::new(Some(done));
+    let started = Instant::now();
+    let saved = Cell::new(0.0f32);
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    timer.start(TimerMode::Repeated, Duration::from_millis(50), move || {
+        let timer = &held;
+        let Some(ctl) = me.upgrade() else { return timer.stop() };
+        let Some(w) = ctl.window() else { return };
+        let presets = w.global::<crate::Presets>();
+        let finish = |text: String| {
+            timer.stop();
+            if let Some(done) = done.borrow_mut().take() {
+                done(text);
+            }
+        };
+        let exposure = || ctl.state.borrow().store().get(Field::Exposure);
+        let shown = || ctl.state.borrow().shown_settings().map(|s| Field::Exposure.knob().get(s));
+        // The card's middle, wherever the deck stands now.
+        let card = || slint::LogicalPosition::new(presets.get_first_x() + 36.0, presets.get_first_y() + 52.0);
+        match phase.get() {
+            Deck::Loading => {
+                if ctl.state.borrow().renders() < 1 {
+                    if started.elapsed() > LOADING {
+                        finish("presets: no frame rendered".into());
+                    }
+                    return;
+                }
+                // The look saved two stops over the frame's own, then the frame back at rest.
+                let rest = exposure();
+                let g = w.global::<StoreGlobal>();
+                g.invoke_press(Field::Exposure.index(), false);
+                g.invoke_drag(Field::Exposure.index(), 30.0, SPAN, false);
+                g.invoke_release(Field::Exposure.index());
+                saved.set(exposure());
+                ctl.act("save-preset");
+                presets.invoke_form_named("Bench".into());
+                presets.invoke_save_confirmed();
+                ctl.set(Field::Exposure, rest);
+                phase.set(Deck::Saved { at: Instant::now() });
+            }
+            Deck::Saved { at } => {
+                if at.elapsed() < Duration::from_millis(300) {
+                    return;
+                }
+                // Onto the strip the deck leaves at rest: the deck rises under the pointer.
+                let bottom = presets.get_first_y() + 8.0;
+                pointer_to(&w, slint::LogicalPosition::new(presets.get_first_x() + 36.0, bottom));
+                phase.set(Deck::Raised { at: Instant::now() });
+            }
+            Deck::Raised { at } => {
+                if at.elapsed() < Duration::from_millis(400) {
+                    return;
+                }
+                pointer_to(&w, card());
+                phase.set(Deck::Hovered { at: Instant::now() });
+            }
+            Deck::Hovered { at } => {
+                let previewing = presets.get_hovered() == 0 && shown().is_some_and(|e| (e - saved.get()).abs() < 1e-4);
+                if previewing && (exposure() - saved.get()).abs() > 1e-3 {
+                    let at = card();
+                    let window = w.window();
+                    window.dispatch_event(slint::platform::WindowEvent::PointerPressed { position: at, button: slint::platform::PointerEventButton::Left });
+                    window.dispatch_event(slint::platform::WindowEvent::PointerReleased { position: at, button: slint::platform::PointerEventButton::Left });
+                    phase.set(Deck::Applied);
+                } else if at.elapsed() > Duration::from_secs(20) {
+                    finish(format!(
+                        "presets: no preview under the pointer (hovered {}, shown {:?}, saved {}, store {})",
+                        presets.get_hovered(),
+                        shown(),
+                        saved.get(),
+                        exposure()
+                    ));
+                }
+            }
+            Deck::Applied => {
+                let applied = (exposure() - saved.get()).abs() < 1e-4;
+                // Taken back, so the test copy's sidecar reads as it did.
+                ctl.act("undo");
+                finish(if applied {
+                    format!("presets: the deck rose, the card previewed {:.2} EV under the pointer and its click applied it, no failure", saved.get())
+                } else {
+                    format!("presets: the click applied nothing (store {}, saved {})", exposure(), saved.get())
                 });
             }
         }

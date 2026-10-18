@@ -1,0 +1,129 @@
+// The presets' pieces: a card on its tint, the card that makes one, a swatch, the editor's row, the
+// sheet's panel over its scrim and the rule that splits it.
+import { Colour, Space, Radius, Stroke, Type, State, SheetStyle, PresetStyle } from "theme.slint";
+import { Label, TextRole, Tone } from "base.slint";
+
+// `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink.
+export component PresetFace inherits Rectangle {
+    in property <string> abbreviation;
+    in property <string> name;
+    in property <color> fill;
+    in property <color> ink;
+    width: PresetStyle.card-width;
+    height: PresetStyle.card-height;
+    border-radius: Radius.card;
+    background: root.fill;
+    VerticalLayout {
+        padding: Space.s;
+        spacing: Space.xxs;
+        Text {
+            text: root.abbreviation;
+            font-family: Type.family;
+            font-size: PresetStyle.mark;
+            color: root.ink;
+            overflow: elide;
+        }
+        Rectangle { vertical-stretch: 1; }
+        Text {
+            text: root.name;
+            font-family: Type.family;
+            font-size: Type.label;
+            color: root.ink;
+            wrap: word-wrap;
+            overflow: elide;
+        }
+    }
+}
+
+// `PresetCarousel.newCard`: a card's gauge in outline, lit under the pointer, dark with no photo.
+export component PresetNewFace inherits Rectangle {
+    in property <bool> lit;
+    in property <bool> enabled: true;
+    width: PresetStyle.card-width;
+    height: PresetStyle.card-height;
+    border-radius: Radius.card;
+    border-width: root.lit ? Stroke.line : Stroke.hairline;
+    border-color: root.lit ? Colour.ink : Colour.handle-idle;
+    opacity: root.enabled ? 1 : State.disabled;
+    Text {
+        text: "+";
+        font-family: Type.family;
+        font-size: PresetStyle.mark;
+        color: root.lit ? Colour.ink : Colour.handle-idle;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// `PresetTintPicker`'s swatch: the picked one ringed in the ink.
+export component Swatch inherits Rectangle {
+    in property <color> fill;
+    in property <bool> picked;
+    in property <string> name;
+    callback clicked();
+    width: PresetStyle.swatch;
+    height: PresetStyle.swatch;
+    border-radius: Radius.badge;
+    background: root.fill;
+    border-width: root.picked ? Stroke.emphasis : 0px;
+    border-color: Colour.ink;
+    accessible-role: button;
+    accessible-label: root.name;
+    TouchArea { clicked => { root.clicked(); } }
+}
+
+// The editor's list row: the monogram badge, the name, what it carries.
+export component PresetRow inherits Rectangle {
+    in property <string> abbreviation;
+    in property <string> name;
+    in property <string> carries;
+    in property <color> fill;
+    in property <color> ink;
+    in property <bool> selected;
+    callback clicked();
+    height: row.preferred-height;
+    border-radius: Radius.badge;
+    background: root.selected ? Colour.row-selected : touch.has-hover ? Colour.hover : Colour.ground.transparentize(1);
+    row := HorizontalLayout {
+        padding: Space.xs;
+        spacing: Space.s;
+        Rectangle {
+            width: PresetStyle.badge-width;
+            height: PresetStyle.badge-height;
+            border-radius: Radius.badge;
+            background: root.fill;
+            Text { text: root.abbreviation; font-family: Type.family; font-size: Type.chip; color: root.ink; }
+        }
+        VerticalLayout {
+            Label { text: root.name; overflow: elide; }
+            Label { text: root.carries; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
+        }
+    }
+    touch := TouchArea { clicked => { root.clicked(); } }
+}
+
+// A sheet at its own gauge over the scrim; a click on the scrim dismisses, one on the panel stays.
+export component PanelSheet inherits Rectangle {
+    in property <length> panel-width;
+    in property <length> panel-height;
+    callback dismissed();
+    background: Colour.scrim;
+    TouchArea { clicked => { root.dismissed(); } }
+    Rectangle {
+        width: root.panel-width;
+        height: min(root.panel-height, root.height - 2 * Space.l);
+        background: Colour.ground;
+        border-radius: SheetStyle.radius;
+        border-width: Stroke.hairline;
+        border-color: Colour.separator;
+        clip: true;
+        TouchArea { }
+        @children
+    }
+}
+
+// The rule between two columns.
+export component VerticalRule inherits Rectangle {
+    width: Stroke.hairline;
+    background: Colour.separator;
+}
