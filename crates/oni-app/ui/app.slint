@@ -1,15 +1,24 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
-import { Panel, Plots, PanelState, Framing } from "panel.slint";
+import { Panel, Plots, PanelState, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 
-export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
+export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
+// A correction's marker on the canvas: its ring's rectangle in points and its number.
+export struct Mark {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    number: int,
+}
+
 export global Canvas {
     in property <image> frame;
     in property <string> status;
@@ -43,6 +52,19 @@ export global Canvas {
     callback frame-grabbed(bool, int);
     callback frame-dragged(bool, int, length, length);
     callback frame-released(bool);
+    // De-dust: painting armed, the brush under the pointer, the stroke being painted, the marks.
+    in property <bool> painting;
+    in property <bool> brush-shown;
+    in property <length> brush-x;
+    in property <length> brush-y;
+    in property <length> brush-diameter;
+    in property <string> stroke;
+    in property <length> stroke-width;
+    in property <[Mark]> marks;
+    callback paint-hover(length, length, bool);
+    callback paint-start(length, length);
+    callback paint-move(length, length);
+    callback paint-end();
     callback resized();
     callback double-clicked();
     callback grabbed(length, length);
@@ -253,6 +275,41 @@ export component MainWindow inherits AppWindow {
                                 grabbed(h) => { Canvas.frame-grabbed(true, h); }
                                 dragged(h, dx, dy) => { Canvas.frame-dragged(true, h, dx, dy); }
                                 released => { Canvas.frame-released(true); }
+                            }
+                            if Canvas.painting: Rectangle {
+                                width: parent.width;
+                                height: parent.height;
+                                for m in Canvas.marks: CorrectionMark {
+                                    x: m.x;
+                                    y: m.y;
+                                    width: m.width;
+                                    height: m.height;
+                                    number: m.number;
+                                }
+                                if Canvas.stroke != "": LiveStroke {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    commands: Canvas.stroke;
+                                    thickness: Canvas.stroke-width;
+                                }
+                                if Canvas.brush-shown: BrushDisc {
+                                    x: Canvas.brush-x - Canvas.brush-diameter / 2;
+                                    y: Canvas.brush-y - Canvas.brush-diameter / 2;
+                                    width: Canvas.brush-diameter;
+                                    height: Canvas.brush-diameter;
+                                }
+                                paint := TouchArea {
+                                    mouse-cursor: none;
+                                    changed has-hover => { Canvas.paint-hover(self.mouse-x, self.mouse-y, self.has-hover); }
+                                    pointer-event(event) => {
+                                        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) { Canvas.paint-start(self.mouse-x, self.mouse-y); }
+                                        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) { Canvas.paint-end(); }
+                                    }
+                                    moved => {
+                                        Canvas.paint-hover(self.mouse-x, self.mouse-y, true);
+                                        if (self.pressed) { Canvas.paint-move(self.mouse-x, self.mouse-y); }
+                                    }
+                                }
                             }
                             if Canvas.split >= 0: SplitGuide {
                                 x: parent.width * Canvas.split - self.width / 2;

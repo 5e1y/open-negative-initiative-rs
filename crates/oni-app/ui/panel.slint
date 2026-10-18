@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller, Well, HelpMark } from "ds/ds.slint";
 import { Store } from "store.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
@@ -171,6 +171,56 @@ component CropPane inherits Pane {
     }
 }
 
+// One correction of the open frame, as `CorrectionsPanel` lists it.
+export struct CorrectionRow {
+    label: string,
+    pending: bool,
+    fallback: bool,
+}
+
+// The De-dust pane's model: the brush, held by Rust as a slider is, and the corrections.
+export global Dedust {
+    in property <float> fraction;
+    in property <string> readout;
+    in property <string> value-text;
+    in property <[CorrectionRow]> rows;
+    callback press(bool) -> bool;
+    callback drag(length, length, bool);
+    callback release();
+    callback remove(int);
+}
+
+component DedustPane inherits Pane {
+    Section {
+        title: "Dust & Scratches";
+        help: "Paint over a defect; the tool duplicates a matching patch of the same photo over it.";
+        separated: false;
+        Slider {
+            field: -1;
+            label: "Brush Size";
+            fraction: Dedust.fraction;
+            readout: Dedust.readout;
+            value-text: Dedust.value-text;
+            press(f, fine) => { return Dedust.press(fine); }
+            drag(f, t, s, fine) => { Dedust.drag(t, s, fine); }
+            release(f) => { Dedust.release(); }
+        }
+        if Dedust.rows.length > 0: Well {
+            VerticalLayout {
+                padding: Space.s;
+                spacing: Space.xs;
+                for row[i] in Dedust.rows: HorizontalLayout {
+                    spacing: Space.s;
+                    Label { text: row.label; horizontal-stretch: 1; }
+                    if row.fallback: HelpMark { note: "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."; }
+                    if row.pending: Label { text: "Generating…"; tone: Tone.secondary; }
+                    IconButton { icon: Icons.remove; help: "Remove this correction"; clicked => { Dedust.remove(i); } }
+                }
+            }
+        }
+    }
+}
+
 component ColorPane inherits Pane {
     Block {
         title: "Color";
@@ -274,6 +324,7 @@ export component Panel inherits Surface {
             CropPane { shown: PanelState.tab == 1; }
             ColorPane { shown: PanelState.tab == 2; }
             DetailsPane { shown: PanelState.tab == 3; }
+            DedustPane { shown: PanelState.tab == 4; }
         }
     }
 }

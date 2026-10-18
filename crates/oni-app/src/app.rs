@@ -14,7 +14,7 @@ use oni_settings::geometry::{self as geom, Framing as Remembered};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
-use crate::{App, Bar, Canvas, Heading, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
+use crate::{App, Bar, Canvas, Heading, Mark, Library, MainWindow, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::Command;
 use oni_core::link::Outward;
 use oni_link::HostEvent;
@@ -174,6 +174,17 @@ pub struct State {
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
     window_armed: bool,
+    /// The panel the hand was in before De-dust, where leaving it lands unless it was the crop.
+    last_panel: i32,
+    /// The stroke being painted, in fractions of the rendered frame, y down.
+    painting_stroke: Vec<(f64, f64)>,
+    /// The number each correction's marker shows, never its row, which a removal shifts.
+    numbers: HashMap<oni_settings::id::Id, usize>,
+    next_number: usize,
+    /// The corrections whose search found no match and laid the tile beside the stroke.
+    fallback: std::collections::HashSet<oni_settings::id::Id>,
+    brush_start: Option<f32>,
+    brush_pressed_at: Option<Instant>,
     /// `Propagation`'s copied measuring window.
     window_board: Option<Fraction>,
     /// Compare Before/After's split, a fraction of the canvas's width; none while off.
@@ -405,7 +416,7 @@ impl Shell {
             histogram_dirty: false,
             last_change: None,
             status: String::new(),
-            brush: 0.0,
+            brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: options.canvas.map(|(device, queue)| {
@@ -433,6 +444,13 @@ impl Shell {
             frame_gesture: None,
             straightening: None,
             window_armed: false,
+            last_panel: 2,
+            painting_stroke: Vec::new(),
+            numbers: HashMap::new(),
+            next_number: 1,
+            fallback: std::collections::HashSet::new(),
+            brush_start: None,
+            brush_pressed_at: None,
             window_board: None,
             befores: 0,
             screen_gamut: false,
@@ -528,6 +546,7 @@ impl Ctl {
         self.refresh_phone();
         self.publish_bar();
         self.publish_framing();
+        self.publish_dedust();
         self.request_render();
     }
 
@@ -812,6 +831,198 @@ impl Ctl {
         self.request_render();
     }
 
+    // MARK: - De-dust
+
+    /// The De-dust pane open on a photo in the editor: a drag on the canvas paints.
+    fn painting(&self) -> bool {
+        let Some(w) = self.window() else { return false };
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().open.is_some()
+    }
+
+    /// `toggleCorrecting`: into the hidden pane, or out to the panel the hand was in, never the crop.
+    fn toggle_correcting(self: &Rc<Self>) {
+        let Some(w) = self.window() else { return };
+        let panel = w.global::<PanelState>();
+        let tab = panel.get_tab();
+        let next = if tab == 4 {
+            let last = self.state.borrow().last_panel;
+            if last == 1 || last == 4 { 2 } else { last }
+        } else {
+            self.state.borrow_mut().last_panel = tab;
+            4
+        };
+        panel.set_tab(next);
+        w.global::<Bar>().set_dedust(next == 4);
+        self.tab_opened(next);
+        self.publish_dedust();
+    }
+
+    /// The brush, the corrections' rows and the canvas's marks from the open frame.
+    fn publish_dedust(&self) {
+        let Some(w) = self.window() else { return };
+        let painting = self.painting();
+        let frame = self.image_frame(false);
+        let caches = crate::patches::caches();
+        let (rows, marks, radius, stroke, rendered) = {
+            let mut s = self.state.borrow_mut();
+            let corrections = s.store.settings().corrections.clone();
+            for c in &corrections {
+                if !s.numbers.contains_key(&c.id) {
+                    let n = s.next_number;
+                    s.numbers.insert(c.id, n);
+                    s.next_number += 1;
+                }
+            }
+            let healing = s.healing.is_some() && s.healing.as_deref() == s.open_path();
+            let rows: Vec<crate::CorrectionRow> = corrections
+                .iter()
+                .map(|c| crate::CorrectionRow {
+                    label: s.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
+                    pending: healing && !crate::patches::file(&caches, c.id).exists(),
+                    fallback: s.fallback.contains(&c.id),
+                })
+                .collect();
+            let rendered = s.full_size;
+            let marks: Vec<(f64, f64, f64, f64, usize)> = match (frame, rendered) {
+                (Some(f), Some(r)) => corrections
+                    .iter()
+                    .filter(|c| !c.stroke.is_empty())
+                    .map(|c| {
+                        // `boundingFraction`: the stroke's extent padded by its radius, in fractions.
+                        let (rx, ry) = (c.radius / r.0, c.radius / r.1);
+                        let (x0, x1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
+                        let (y0, y1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
+                        let (x, y, wd, ht) = (x0 - rx, y0 - ry, x1 - x0 + 2.0 * rx, y1 - y0 + 2.0 * ry);
+                        (f.0 + x * f.2, f.1 + y * f.3, wd * f.2, ht * f.3, s.numbers.get(&c.id).copied().unwrap_or(0))
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            (rows, marks, s.brush, s.painting_stroke.clone(), rendered)
+        };
+        let d = w.global::<crate::Dedust>();
+        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+        d.set_fraction(((f64::from(radius) - low) / (high - low)) as f32);
+        let text: SharedString = format!("{radius:.0} px").into();
+        d.set_readout(text.clone());
+        d.set_value_text(text);
+        d.set_rows(ModelRc::new(VecModel::from(rows)));
+        let c = w.global::<Canvas>();
+        c.set_painting(painting);
+        // `strokeLineWidth`: the radius in full-resolution pixels as a width on the canvas.
+        let width = match (frame, rendered) {
+            (Some(f), Some(r)) => f64::from(radius) * 2.0 * f.2 / r.0.max(1.0),
+            _ => 0.0,
+        };
+        c.set_brush_diameter(width as f32);
+        c.set_stroke_width(width as f32);
+        let commands = match frame {
+            Some(f) if stroke.len() > 1 => stroke
+                .iter()
+                .enumerate()
+                .map(|(i, p)| format!("{} {:.2} {:.2}", if i == 0 { "M" } else { "L" }, f.0 + p.0 * f.2, f.1 + p.1 * f.3))
+                .collect::<Vec<_>>()
+                .join(" "),
+            _ => String::new(),
+        };
+        c.set_stroke(commands.into());
+        let marks: Vec<Mark> = marks
+            .into_iter()
+            .map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 })
+            .collect();
+        c.set_marks(ModelRc::new(VecModel::from(marks)));
+    }
+
+    /// A point of the canvas in fractions of the rendered frame, when it falls on the picture.
+    fn on_picture(&self, x: f32, y: f32) -> Option<(f64, f64)> {
+        let f = self.image_frame(false)?;
+        let (fx, fy) = ((f64::from(x) - f.0) / f.2, (f64::from(y) - f.1) / f.3);
+        ((0.0..=1.0).contains(&fx) && (0.0..=1.0).contains(&fy)).then_some((fx, fy))
+    }
+
+    fn paint_hover(&self, x: f32, y: f32, hover: bool) {
+        let Some(w) = self.window() else { return };
+        let c = w.global::<Canvas>();
+        c.set_brush_shown(hover && self.on_picture(x, y).is_some());
+        c.set_brush_x(x);
+        c.set_brush_y(y);
+    }
+
+    fn paint_at(&self, x: f32, y: f32, start: bool) {
+        let point = self.on_picture(x, y);
+        {
+            let mut s = self.state.borrow_mut();
+            if start {
+                s.painting_stroke.clear();
+            }
+            if let Some(p) = point {
+                s.painting_stroke.push(p);
+            }
+        }
+        self.paint_hover(x, y, true);
+        self.publish_dedust();
+    }
+
+    /// `appendCorrection`: a stroke of two points at least becomes a correction, its patch generated next.
+    fn paint_end(self: &Rc<Self>) {
+        let (stroke, radius) = {
+            let mut s = self.state.borrow_mut();
+            (std::mem::take(&mut s.painting_stroke), s.brush)
+        };
+        if stroke.len() > 1 {
+            let correction = oni_settings::frame::Correction {
+                id: oni_settings::id::Id::new(),
+                stroke: stroke.iter().map(|&(x, y)| oni_settings::cg::Point { x, y }).collect(),
+                radius: f64::from(radius),
+            };
+            let mut next = self.state.borrow().store.settings().clone();
+            next.corrections.push(correction);
+            self.write(Command::Write(Box::new(next)));
+        }
+        self.publish_dedust();
+    }
+
+    /// `deleteCorrection`: gone from the settings, its patch from the cache and the engine.
+    fn remove_correction(self: &Rc<Self>, row: usize) {
+        let mut next = self.state.borrow().store.settings().clone();
+        if row >= next.corrections.len() {
+            return;
+        }
+        let gone = next.corrections.remove(row);
+        let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), gone.id));
+        if let Ok(mut e) = self.engine.lock() {
+            e.forget_patch(gone.id);
+        }
+        self.state.borrow_mut().fallback.remove(&gone.id);
+        self.write(Command::Write(Box::new(next)));
+    }
+
+    /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the default.
+    fn brush_press(&self) -> bool {
+        let mut s = self.state.borrow_mut();
+        let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < track::DOUBLE_CLICK);
+        s.brush_pressed_at = Some(Instant::now());
+        if double {
+            s.brush = oni_settings::frame::Correction::DEFAULT_RADIUS as f32;
+            s.brush_start = None;
+            return true;
+        }
+        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+        s.brush_start = Some(((f64::from(s.brush) - low) / (high - low)) as f32);
+        false
+    }
+
+    fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(start) = s.brush_start else { return };
+            let f = track::clamped(track::asked(start, translation, span, fine));
+            let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+            s.brush = (low + f64::from(f) * (high - low)) as f32;
+        }
+        self.publish_dedust();
+    }
+
     /// A frame on the canvas held, moved and let go: one undo step, constrained on every event.
     fn frame_grabbed(self: &Rc<Self>, window: bool, handle: i32) {
         let Some(handle) = Handle::from_index(handle) else { return };
@@ -918,6 +1129,7 @@ impl Ctl {
         }
         if let Some((path, settings)) = heal {
             self.heal(path, settings);
+            self.publish_dedust();
         }
     }
 
@@ -927,10 +1139,10 @@ impl Ctl {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let caches = crate::patches::caches();
-            let made = (|| -> Result<usize, String> {
+            let made = (|| -> Result<Vec<(oni_settings::id::Id, bool)>, String> {
                 let decoded = render::decode_full(Path::new(&path), settings.primaries_converted)?;
                 let full = engine.lock()?.full(decoded)?;
-                let mut made = 0;
+                let mut made = Vec::new();
                 for c in &settings.corrections {
                     if c.stroke.is_empty() || crate::patches::file(&caches, c.id).exists() {
                         continue;
@@ -939,15 +1151,21 @@ impl Ctl {
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
                     crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
                     engine.lock()?.forget_patch(c.id);
-                    made += 1;
+                    made.push((c.id, patch.fallback));
                 }
                 Ok(made)
             })();
             with_shell(move |c| {
                 c.state.borrow_mut().healing = None;
                 match made {
-                    Ok(0) => {}
-                    Ok(n) => {
+                    Ok(m) if m.is_empty() => {}
+                    Ok(m) => {
+                        let n = m.len();
+                        for (id, fell_back) in m {
+                            if fell_back {
+                                c.state.borrow_mut().fallback.insert(id);
+                            }
+                        }
                         timing::line(&format!("{}: {n} dust patches generated", stem(&path)));
                         if c.state.borrow().open_path() == Some(path.as_str()) {
                             c.state.borrow_mut().requested_view = None;
@@ -956,6 +1174,7 @@ impl Ctl {
                     }
                     Err(e) => timing::line(&format!("{}: dust patches not generated: {e}", stem(&path))),
                 }
+                c.publish_dedust();
             });
         });
     }
@@ -1108,6 +1327,7 @@ impl Ctl {
         c.set_frame_width((rect.2 / scale) as f32);
         c.set_frame_height((rect.3 / scale) as f32);
         self.publish_framing();
+        self.publish_dedust();
     }
 
     /// Compare's before into its own texture, laid where its view puts it.
@@ -1827,15 +2047,18 @@ impl Ctl {
             "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
             "compare" if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
             "screen-gamut" => self.toggle_screen_gamut(),
-            "bigger-brush" | "smaller-brush" => {
-                let by = if action == "bigger-brush" { 1.0 } else { -1.0 };
-                let brush = {
+            "bigger-brush" | "smaller-brush" if self.painting() => {
+                // `EditorScene.biggerBrush`: four pixels a key, inside the brush's range.
+                let by = if action == "bigger-brush" { 4.0 } else { -4.0 };
+                let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+                {
                     let mut s = self.state.borrow_mut();
-                    s.brush += by;
-                    s.brush
-                };
-                self.say(&format!("Brush step {brush:+}: the De-dust brush is not in this build yet"));
+                    s.brush = (f64::from(s.brush) + by).clamp(low, high) as f32;
+                }
+                self.publish_dedust();
             }
+            "bigger-brush" | "smaller-brush" => {}
+            "correction" if self.state.borrow().open.is_some() => self.toggle_correcting(),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -1881,6 +2104,7 @@ impl Ctl {
     fn wire(me: &Rc<Ctl>, window: &MainWindow) {
         Ctl::wire_canvas(me, window);
         Ctl::wire_framing(me, window);
+        Ctl::wire_dedust(me, window);
         let g = window.global::<StoreGlobal>();
 
         let p = me.clone();
@@ -2070,6 +2294,30 @@ impl Ctl {
 }
 
 impl Ctl {
+    fn wire_dedust(me: &Rc<Ctl>, window: &MainWindow) {
+        let d = window.global::<crate::Dedust>();
+        let p = me.clone();
+        d.on_press(move |_| p.brush_press());
+        let p = me.clone();
+        d.on_drag(move |t, span, fine| p.brush_drag(t, span, fine));
+        let p = me.clone();
+        d.on_release(move || {
+            p.state.borrow_mut().brush_start = None;
+            p.publish_dedust();
+        });
+        let p = me.clone();
+        d.on_remove(move |i| p.remove_correction(usize::try_from(i).unwrap_or(usize::MAX)));
+        let c = window.global::<Canvas>();
+        let p = me.clone();
+        c.on_paint_hover(move |x, y, hover| p.paint_hover(x, y, hover));
+        let p = me.clone();
+        c.on_paint_start(move |x, y| p.paint_at(x, y, true));
+        let p = me.clone();
+        c.on_paint_move(move |x, y| p.paint_at(x, y, false));
+        let p = me.clone();
+        c.on_paint_end(move || p.paint_end());
+    }
+
     fn wire_framing(me: &Rc<Ctl>, window: &MainWindow) {
         let f = window.global::<crate::Framing>();
         let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];

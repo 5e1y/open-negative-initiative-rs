@@ -188,7 +188,12 @@ fn lowest(c: &[Candidate]) -> Option<usize> {
 /// `bestSourceRect`'s offset from the tile: a coarse pass over a wide window, then a fine pass at
 /// a pixel's step about its best, refined on the parabola and rounded to whole pixels; y up.
 pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f64, f64) {
-    let Some(f) = frame(c, width, height) else { return fallback(&frame_without_stroke(c, width, height)) };
+    search(src, c, width, height).0
+}
+
+/// The offset, and whether the search found no match and fell back on the tile beside itself.
+fn search(src: &Region, c: &Correction, width: f64, height: f64) -> ((f64, f64), bool) {
+    let Some(f) = frame(c, width, height) else { return (fallback(&frame_without_stroke(c, width, height)), true) };
     let ring = context_ring(f.centre, f.hole, f.extent);
     let half = (ring.w / 2.0, ring.h / 2.0);
     let min_radius = half.0.max(half.1) * 1.2;
@@ -196,7 +201,7 @@ pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f6
     let (coarse_step, coarse_n) = (8.0, 8usize);
     let coarse_size = (coarse_radius * 2.0 / coarse_step).round() as usize + 1;
     let coarse = cost_map(src, &f, half, (-coarse_radius, -coarse_radius), coarse_step, coarse_n, coarse_size, min_radius);
-    let Some(best_coarse) = lowest(&coarse).map(|i| coarse[i]) else { return fallback(&f) };
+    let Some(best_coarse) = lowest(&coarse).map(|i| coarse[i]) else { return (fallback(&f), true) };
 
     let fine_half = edge_clamped_half((30f64.max(f.hole.w * 0.75), 30f64.max(f.hole.h * 0.75)), f.centre, f.extent);
     let fine_n = ((fine_half.0.max(fine_half.1) / 1.25).ceil() as usize).clamp(24, 64);
@@ -206,7 +211,7 @@ pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f6
     let fine_min = fine_half.0.max(fine_half.1) * 1.2;
     let origin = (best_coarse.offset.0 - fine_radius, best_coarse.offset.1 - fine_radius);
     let fine = cost_map(src, &f, fine_half, origin, 1.0, fine_n, fine_size, fine_min);
-    let Some(at) = lowest(&fine) else { return (best_coarse.offset.0.round(), best_coarse.offset.1.round()) };
+    let Some(at) = lowest(&fine) else { return ((best_coarse.offset.0.round(), best_coarse.offset.1.round()), false) };
 
     let mut best = fine[at].offset;
     let (row, col) = (at / fine_size, at % fine_size);
@@ -223,7 +228,7 @@ pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f6
         best.0 = refine(fine[row * fine_size + col - 1], fine[row * fine_size + col + 1], best.0, |o| o.0);
         best.1 = refine(fine[(row - 1) * fine_size + col], fine[(row + 1) * fine_size + col], best.1, |o| o.1);
     }
-    (best.0.round(), best.1.round())
+    ((best.0.round(), best.1.round()), false)
 }
 
 fn frame_without_stroke(c: &Correction, width: f64, height: f64) -> Frame {
@@ -298,12 +303,14 @@ pub struct Patch {
     pub pixels: Vec<[f32; 4]>,
     /// Where the copy was taken, as a fraction of the frame's extent, y down.
     pub offset: (f64, f64),
+    /// No match was found: the patch is the plain tile beside the stroke.
+    pub fallback: bool,
 }
 
 /// `CorrectionRenderer.generate` on a frame `width` × `height` whose region `src` holds the search
 /// window and the patch's source, the framed frame with this correction left out.
 pub fn generate(src: &Region, c: &Correction, width: f64, height: f64) -> Patch {
-    let (dx, dy) = best_offset(src, c, width, height);
+    let ((dx, dy), fell_back) = search(src, c, width, height);
     let extent = [0.0, 0.0, width, height];
     let rect = corrections::patch_rect(c, extent);
     let field = frame(c, width, height).map_or(ToneField::default(), |f| {
@@ -324,7 +331,7 @@ pub fn generate(src: &Region, c: &Correction, width: f64, height: f64) -> Patch 
             pixels.push([s[0] + bias[0], s[1] + bias[1], s[2] + bias[2], s[3]]);
         }
     }
-    Patch { rect, width: w, height: h, pixels, offset: (dx / width, -dy / height) }
+    Patch { rect, width: w, height: h, pixels, offset: (dx / width, -dy / height), fallback: fell_back }
 }
 
 /// The rectangle of the framed frame, y down, a search for `c` reads: every candidate's ring and

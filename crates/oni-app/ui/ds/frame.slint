@@ -196,3 +196,53 @@ export component FrameOverlay inherits Rectangle {
         }
     }
 }
+
+// `CorrectionsPanel`'s list box: dark, rounded, setting per-photo detail apart from the sliders.
+export component Well inherits Rectangle {
+    background: Colour.canvas;
+    border-radius: CropStyle.well-radius;
+}
+
+// The brush's disc under the pointer, its diameter the radius at the canvas's scale.
+export component BrushDisc inherits Rectangle {
+    border-radius: self.width / 2;
+    border-width: CropStyle.hairline + 1px;
+    border-color: Colour.handle-active;
+    drop-shadow-color: Colour.contrast-edge;
+    drop-shadow-blur: 2px;
+}
+
+// The stroke being painted, as a polyline in the canvas's points.
+export component LiveStroke inherits Path {
+    in property <length> thickness;
+    stroke: Colour.stroke-live;
+    stroke-width: root.thickness;
+    stroke-line-cap: round;
+    fill: transparent;
+    // One unit of the commands a point of the canvas.
+    viewbox-width: self.width / 1px;
+    viewbox-height: self.height / 1px;
+}
+
+// A correction on the canvas: its ring and, off the ring's top-right corner, its number.
+export component CorrectionMark inherits Rectangle {
+    in property <int> number;
+    Rectangle {
+        border-radius: self.width / 2;
+        border-width: CropStyle.hairline;
+        border-color: Colour.sharpen;
+    }
+    if root.number > 0: Rectangle {
+        x: parent.width;
+        y: -self.height;
+        width: badge.preferred-width + 6px;
+        height: badge.preferred-height + 2px;
+        background: Colour.contrast-edge;
+        border-radius: 3px;
+        badge := Text {
+            text: root.number;
+            color: Colour.handle-active;
+            font-size: 11px;
+        }
+    }
+}

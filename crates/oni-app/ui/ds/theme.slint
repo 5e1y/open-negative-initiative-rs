@@ -36,6 +36,9 @@ export global Colour {
     out property <color> canvas-cropping: DS.palette-canvas-cropping;
     out property <color> unaligned-balance: DS.tint-unaligned-balance;
     out property <color> contrast-edge-idle: DS.palette-contrast-edge-idle;
+    out property <color> sharpen: DS.tint-sharpen;
+    // `NegativeView`'s live stroke: red at 55 %, the one colour the canvas paints with.
+    out property <color> stroke-live: #ff00008c;
     out property <color> handle-active: DS.palette-handle-active;
     out property <color> contrast-edge: DS.palette-contrast-edge;
     out property <color> hover: DS.palette-hover;
@@ -232,6 +235,7 @@ export global CropStyle {
     out property <length> stroke: DS.control-crop-stroke;
     out property <length> halo: DS.control-crop-halo;
     out property <length> hairline: Stroke.hairline;
+    out property <length> well-radius: Radius.control;
 }
 
 // Compare's split guide: a grab the width of a handle, a line that grows under the hand.

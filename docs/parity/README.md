@@ -21,14 +21,14 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 37 | 44 | 70 | 55 of 151 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 44 | 45 | 62 | 63 of 151 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 14 | 32 | 39 | 33 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 4 | 31 | 3 | 34 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 7 | 17 | 24 | 15 of 48 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 75 | 17 | 33 | 74 of 125 |
-| **All** | | **137** | **141** | **169** | **211 of 447** |
+| **All** | | **144** | **142** | **161** | **219 of 447** |
 
-Within the editor: canvas 10 / 3 / 6, main band 0 / 1 / 4, panel tabs 1 / 2 / 5, Roll tab 4 / 7 / 8, Crop tab 6 / 1 / 1, Color tab 4 / 4 / 5, Details tab 3 / 0 / 1, De-dust 0 / 1 / 6, Scanner face 0 / 3 / 4, bar 3 / 6 / 3, menus 3 / 13 / 20, keys 1 / 0 / 6, history 2 / 3 / 1 (done / partial / missing).
+Within the editor: canvas 10 / 4 / 5, main band 0 / 1 / 4, panel tabs 2 / 2 / 4, Roll tab 4 / 7 / 8, Crop tab 6 / 1 / 1, Color tab 4 / 4 / 5, Details tab 3 / 0 / 1, De-dust 6 / 0 / 1, Scanner face 0 / 3 / 4, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 1 / 0 / 6, history 2 / 3 / 1 (done / partial / missing).
 
 Nine rows are done with no check: ⌘G, bare keys yielding to a text field, ⌘ and ⇧
 selection (twice), double-click to open, the offline `--check`, the export sample sizes, the
@@ -64,7 +64,7 @@ check only.
 1. **Opening an archive.** The app opens only `argv[1]`: no Open Folder, no roots, no index, no
    remembered folder, no thumbnail cache.
 2. **The canvas.** Zoom, pan, the full-resolution region, Compare and the screen gamut stripes
-   work, and dust patches and custom flat-field masks reach the render; no crop overlay or brush.
+   work, dust patches and custom flat-field masks reach the render, the crop frame and the brush draw on it.
 3. **Wiring what the core already does.** Copy, paste, paste to roll, framing, film type, trash,
    restore, reset to default and the gallery history are tested in `oni-core` but answer "not in this
    build"; most menu shortcuts are unmapped.

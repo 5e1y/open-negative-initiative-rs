@@ -19,7 +19,7 @@ Statuses are defined in [README.md](README.md).
 | Custom flat-field mask on the canvas | `Scene/EditorScene+FlatField.swift`, `Pipeline/CustomFlatFields.swift` | `oni-app/src/flat_fields.rs`, `render.rs` `Engine::read_custom` | done | Read from the support folder's `FlatFields/masks.json` and `<id>.tiff` as Swift saved them, once per id, its peaks the mask's maximum, its passes flag from the list; on the canvas and the thumbnails. The export (`export.rs`) still passes no mask, and loading a new mask (Load…, Use This Photo) is not ported | `oni-app/src/render.rs::a_custom_flat_field_reaches_the_render_by_its_id`, `oni-app/src/flat_fields.rs::the_swift_apps_own_masks_read_whole` |
 | Crop overlay: corners, edges, rule of thirds | `UI/CropOverlay.swift` | `oni-app/ui/ds/frame.slint` `FrameOverlay`, `oni-app/src/framing.rs`, `app.rs` `frame_dragged` | done | The scrim outside, the thirds, the brackets and edge bars clamped by the frame shown, the body moving the frame; each move constrained about the corner opposite the hand and fitted under rotation, one undo step a gesture; the canvas shows the straightened frame uncropped while the Crop tab is open. Not ported: the live size badge, the off-view arrow, Esc cancelling a drag | `oni-app/src/framing.rs::a_corner_moves_its_two_sides_and_the_body_moves_all`, `a_locked_ratio_keeps_the_corner_opposite_the_hand`, `ONI_BENCH=crop` |
 | Measuring window overlay | `UI/CropOverlay.swift` `MeasureWindowOverlay` | `ds/frame.slint` (window style), `framing.rs` `window_shown`, `bounded` | done | Drawn while armed, on the upright box while framing and inside the crop otherwise; its body moves only outside framing | `oni-app/src/framing.rs::the_window_is_drawn_inside_the_crop_outside_framing` |
-| Dust brush cursor and strokes | `UI/NegativeView.swift`, `UI/CorrectionsPanel.swift` | none | missing | | no check |
+| Dust brush cursor and strokes | `UI/NegativeView.swift` `paintingLayer`, `correctionMarks` | `oni-app/ui/ds/frame.slint` `BrushDisc`, `LiveStroke`, `CorrectionMark`, `app.rs` `paint_*`, `publish_dedust` | partial | The disc follows the pointer on the picture, the live stroke draws red at 55 %, each correction its ring and number; the dashed line to the patch's source and the source shape are not drawn | `ONI_BENCH=dedust` |
 | Canvas readouts (size, zoom, status) | `UI/NegativeView.swift` | `oni-app/src/app.rs` status line | partial | The status line reads the zoom as `AppBar.zoomLabel` (100%, 25% · preview); Swift shows it in the zoom bubble, which is missing | `oni-app/src/viewport.rs::the_placement_shows_the_part_of_the_image_inside_the_view` |
 | Neutral decode notice | `UI/NegativeView.swift` (NeutralDecodeNotice) | none | missing | | no check |
 | Plain image (JPEG, PNG, RGB TIFF) opens | `Pipeline/RawDecode.swift` | `oni-app/src/render.rs` `decode` | missing | Refused with "not read yet" | no check |
@@ -42,7 +42,7 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Tabs Roll, Crop, Color, Details | `UI/PanelTab.swift` | `oni-app/ui/panel.slint` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
-| De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17` | none | missing | | no check |
+| De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17` | `panel.slint` `DedustPane` (pane 4, no tab), `app.rs` `toggle_correcting` | done | Entered and left by the bar's key and the menu; leaving lands on the panel the hand was in, never the crop | `ONI_BENCH=dedust` |
 | Scanner face tabs (Lab keypad) | `Scene/EditorScene+Lab.swift` | none | missing | | no check |
 | Block help bubbles (`help:`) | every `DSSection` | none | missing | | no check |
 | Block reset key, shown off rest | `DSSection(resetting:)` | `oni-app/src/store.rs:94-108` | partial | Nine blocks; rest is always Negative's (`store.rs:92`) | `oni-app/src/store.rs::a_block_reset_lands_on_the_rest_in_one_write` |
@@ -118,13 +118,13 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Brush Size slider, [ and ] keys | `UI/DedustPane.swift:14`, `UI/EditorCommands.swift:159-163` | `oni-app/src/app.rs:1135` | missing | Keys answer "not in this build" | no check |
-| Stroke painting on the canvas | `UI/NegativeView.swift` | none | missing | | no check |
-| Patch search and generation | `Pipeline/Corrections.swift`, `CorrectionRenderer` | `oni-render` correction kernels, `oni-pipeline/src/corrections.rs` | partial | Kernels and tile geometry tested; no orchestration | `oni-render/tests/kernels.rs::correction_search` (kernel only) |
-| Corrections list, Remove this correction | `UI/CorrectionsPanel.swift` | none | missing | | no check |
-| Generating… note, fallback warning | `UI/CorrectionsPanel.swift` | none | missing | | no check |
-| Space held: hand tool | `UI/NegativeView.swift` | none | missing | | no check |
-| Patch cache | `Pipeline/Corrections.swift` `CorrectionCache` | none | missing | | no check |
+| Brush Size slider, [ and ] keys | `UI/DedustPane.swift:14`, `UI/EditorCommands.swift:159-163` | `panel.slint` `DedustPane`, `app.rs` `brush_*`, `act` | done | 4 to 120 px, 12 by default, four pixels a key, live only in De-dust; a double press resets the slider | `ONI_BENCH=dedust` |
+| Stroke painting on the canvas | `UI/NegativeView.swift` | `app.rs` `paint_at`, `paint_end` | done | Points in fractions of the rendered frame, y down; a stroke of two points at least becomes a correction at the brush's radius, its patch generated next | `ONI_BENCH=dedust` |
+| Patch search and generation | `Pipeline/Corrections.swift`, `CorrectionRenderer` | `oni-app/src/heal.rs`, `app.rs` `heal` | done | On the CPU in Core Image's frame; the fallback is flagged | `oni-app/src/heal.rs::the_search_finds_the_place_the_surroundings_were_copied_from`, `ONI_BENCH=dedust` |
+| Corrections list, Remove this correction | `UI/CorrectionsPanel.swift` | `panel.slint` `DedustPane`, `app.rs` `remove_correction` | done | Numbered by the marker's number, not the row; removal discards the patch from the cache and the engine | `ONI_BENCH=dedust` |
+| Generating… note, fallback warning | `UI/CorrectionsPanel.swift` | `panel.slint` `DedustPane`, `app.rs` `publish_dedust` | done | A help mark, not Swift's warning glyph, carries the fallback's note; no progress spinner | `ONI_BENCH=dedust` |
+| Space held: hand tool | `UI/NegativeView.swift` | none | missing | Slint's key path reports no release for Space, so a held Space is not followed; the wheel and ⌘ still navigate while painting | no check |
+| Patch cache | `Pipeline/Corrections.swift` `CorrectionCache` | `oni-app/src/patches.rs` | done | `Caches/Open Negative Initiative/Corrections/<id>.tiff`, purged at quit | `oni-app/src/patches.rs::a_patch_is_found_under_its_corrections_id_as_swift_names_it` |
 
 ## Scanner face (Lab)
 
@@ -172,7 +172,7 @@ Statuses are defined in [README.md](README.md).
 | Hide the Library ⌥⌘[ | `UI/EditorCommands.swift:147` | `app.slint:66` "Hide Library" | partial | Works; title differs, no shortcut | no check |
 | Hide the Panel ⌥⌘] | `UI/EditorCommands.swift:150` | `app.slint:67` | partial | Works; title differs, no shortcut | no check |
 | Crop and Straighten ⌘K | `UI/EditorCommands.swift:153` | `app.slint:68` | missing | | no check |
-| Remove Dust & Scratches | `UI/EditorCommands.swift:156` | `app.slint:69` "De-dust" | missing | | no check |
+| Remove Dust & Scratches | `UI/EditorCommands.swift:156` | `app.slint` "De-dust", `app.rs` `act` | partial | Enters and leaves De-dust; the title reads "De-dust" | `ONI_BENCH=dedust` |
 | Bigger Brush ], Smaller Brush [ | `UI/EditorCommands.swift:159-163` | `app.slint:71-72` | missing | Title carries the key as text | no check |
 | Mirror Horizontally ⇧⌘M | `UI/EditorCommands.swift:166` | `app.slint:73` "Mirror" | missing | | no check |
 | Mute Key Clicks | `UI/EditorCommands.swift` `soundTitle` | none | missing | | no check |
