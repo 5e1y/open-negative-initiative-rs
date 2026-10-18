@@ -54,10 +54,10 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Block order | `UI/SettingsPane.swift:28-112` | `oni-app/ui/panel.slint:45-95` | done | | `oni-app/src/fields.rs::the_roll_tab_lays_its_blocks_in_the_swift_order` |
-| Measured Roll: count note, warnings | `UI/SettingsPane.swift:114-140` | `panel.slint:45` | partial | Static text | no check |
-| Prepare the Roll… key | `UI/SettingsPane.swift:117` | none | missing | | no check |
-| Join the Roll / Join the N | `UI/SettingsPane.swift:126` | `oni-core/src/store.rs:680` `join_roll` | partial | Core only | no check |
-| Roll of the N | `UI/SettingsPane.swift:129` | none | missing | | no check |
+| Measured Roll: count note, warnings | `UI/SettingsPane.swift:114-140` | `panel.slint` RollPane, `app/rolls.rs` `roll_scope` | done | The roll's count, the folder's frames it missed, and the never-measured warning | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
+| Prepare the Roll… key | `UI/SettingsPane.swift:117` | `panel.slint` RollPane | missing | Drawn dark under the never-measured warning until the surface exists | no check |
+| Join the Roll / Join the N | `UI/SettingsPane.swift:126` | `app/rolls.rs` `join_roll`, `oni-core/src/store.rs` `join_roll` | done | One gallery step, the joined frames counted with the roll | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
+| Roll of the N | `UI/SettingsPane.swift:129` | `app/rolls.rs` `make_roll_of_measured` | done | The measured frames moved into a roll folder of their own | no check |
 | Film Type tabs (negative, slide, B&W) | `UI/SettingsPane.swift:38` | `panel.slint` `Tabs`, `app.rs` `film_type`, `oni-core` `apply_mode` | done | One editor step on the open frame, one gallery step on a selection | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Flat-Field toggle, gear, mask picker | `UI/FlatFieldControls.swift` | `panel.slint:59-63` | partial | Toggle unbound | no check |
 | Use This Photo as Flat-Field, Load…, Rename, Folder | `UI/FlatFieldControls.swift` | none | missing | | no check |
@@ -90,8 +90,8 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Auto White Balance key | `UI/ColorPane.swift:57` | `panel.slint:131`, `oni-app/src/app.rs` `auto_balance`, `oni-app/src/measuring.rs` | partial | Wired, each target balanced for itself; no progress on the key, other frames' thumbnails not refreshed | `oni-app/tests/auto_balance.rs::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back`, `oni-measure/tests/roll8.rs::roll8_auto_white_balance_lands_on_the_filters_swift_wrote` |
-| Batch choice for a selection (AutoBalanceChoice) | `UI/ColorPane.swift:335` | `oni-core/src/balance.rs:98` `averaged`, `oni-measure/src/choice.rs` | partial | Wording and rules ported; no dialog asks, so a selection always balances each | `oni-measure/src/choice.rs::only_the_open_frame_alone_skips_the_run_and_every_wording_carries_the_count`, `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
+| Auto White Balance key | `UI/ColorPane.swift:57` | `panel.slint` Color block, `app/rolls.rs` `run_auto_balance` | done | Progress on the key while a run reads its frames; the others' thumbnails redrawn once it lands | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
+| Batch choice for a selection (AutoBalanceChoice) | `UI/ColorPane.swift:335` | `ui/presets.slint` `ChoiceSheet`, `app/rolls.rs` `auto_balance` | done | Asked over two frames or more, Cancel running nothing | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches, `oni-measure/src/choice.rs::only_the_open_frame_alone_skips_the_run_and_every_wording_carries_the_count` |
 | Temperature, Tint sliders, coloured tracks | `UI/TemperatureTintPanel.swift` | `panel.slint:137-141` | done | Track ends not tinted | `oni-core/src/knob.rs::temperature_and_tint_move_on_axes_that_leave_each_other_alone` |
 | Color density slider | `UI/ColorPane.swift:57` | `panel.slint:144` field 2 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Paper Correction block (paper profile only) | `UI/ColorPane.swift:82` | `ui/panel.slint` block 9 under `Exporting.on-paper`, `oni-app/src/fields.rs` `PaperRed/Green/Blue` | done | | `oni-app/tests/export_paper_window.rs::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone` |
@@ -142,12 +142,12 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Three zones, one item per zone | `Scene/EditorScene+Bar.swift`, `UI/AppBar.swift` | `oni-app/ui/toolbar.slint` | done | | `oni-app/tests/design_system.rs::screens_use_only_the_design_system` (tokens only) |
-| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Framing and Compare are wired; the contact-sheet key answers "not in this build" | `ONI_BENCH=compare` |
+| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Framing and Compare are wired; the contact-sheet key stays dark until the sheet exists | `ONI_BENCH=compare` |
 | Undo, redo keys with their state | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` | done | Editor surface only | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
 | Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` `act` | done | Through the same gestures as the menu, the confirm sheet included | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Correction key | `Scene/EditorScene+Bar.swift` | `app.rs` `act` "correction" | done |  | `ONI_BENCH=dedust` |
 | RESET SCAN | `Scene/EditorScene+Bar.swift` | `app.rs:1117` | done | | `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
-| Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | The filter cycles and the trash key marks; PREPARE ROLL is lit and unwired | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand |
+| Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | partial | The filter cycles and the trash key marks; PREPARE ROLL stays dark until its surface exists | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand |
 | Roll-step keys (Film, Flat-Field, Base, Flags, Window) | `Scene/EditorScene+Bar.swift`, `UI/RollReferenceSurface.swift` | none | missing | | no check |
 | FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
 | EXPORT / ADD FOLDER key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `Bar.export-title` from `oni-app/src/export.rs` `label::key` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
@@ -179,10 +179,10 @@ Statuses are defined in [README.md](README.md).
 | Labels: None 0, Bronze 1, Silver 2, Gold 3 | `UI/EditorCommands.swift:180-183` | `app.slint:81-84`, `app.rs` `label` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
 | Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint` menu bar, `app.rs` `cycle_filter` | done | Exactly one medal, never a tier above | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint` menu bar, `app.rs` `new_roll`, `oni-library/src/roll_folder.rs` | partial | Does not ask for the new folder's name (`renameRequest`) | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app.slint:91` | missing | | no check |
+| Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app/rolls.rs` `ungroup`, `app.rs` `publish_menus` | done | Titled by the targets carrying a roll, live only in the gallery | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
 | New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint:93` | missing | | no check |
-| Prepare the Roll… | `UI/EditorCommands.swift:206` | `oni-measure/src/roll.rs` `measure_roll`, `app.rs` `publish_menus` | partial | The roll measure exists in the core; the item is lit with targets but has no handler | `oni-measure/tests/roll_prepare.rs::a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoes_byte_for_byte` |
-| Reset to Default… | `UI/EditorCommands.swift:208` | `oni-core/src/store/roll.rs` `reset_to_default` | partial | The core reaches the whole roll; the item and the cell menu are lit in the gallery with no handler | `oni-measure/tests/roll_prepare.rs::reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_byte` |
+| Prepare the Roll… | `UI/EditorCommands.swift:206` | `oni-measure/src/roll.rs` `measure_roll` | missing | Dark until the surface exists; the roll measure is in the core | `oni-measure/tests/roll_prepare.rs::a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoes_byte_for_byte` |
+| Reset to Default… | `UI/EditorCommands.swift:208` | `app/rolls.rs` `ask_reset_to_default`, `oni-core/src/store/roll.rs` `reset_to_default` | done | The reach read off the main thread, then a confirm naming it; one gallery step | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
 | Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint` menu bar, `oni-core/src/store.rs` `copy_settings` | partial | In-memory board, as before | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Paste Settings ⇧⌘V | `UI/EditorCommands.swift:216` | `app.slint` menu bar, `app.rs` `paste` | done | Another roll's look asks first, as Swift's sheet | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Paste to Roll (no shortcut) | `UI/EditorCommands.swift:220` | `app.slint` menu bar, `app.rs` `paste_to_roll` | done | Title counts the roll's reach | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
@@ -193,7 +193,7 @@ Statuses are defined in [README.md](README.md).
 | Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint` menu bar, `app.rs` `reset_all` | done | One gallery step over the targets | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint:111-115` | missing | | no check |
 | Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
-| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules, the presets' included; Prepare the Roll… and Reset to Default… are lit with no handler, Help has no rule | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
+| Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules, and every item whose gesture this build lacks dark, save the Help menu's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
 
 ## Keys outside the menus

@@ -10,6 +10,9 @@ export global Bar {
     in property <bool> can-reset;
     in property <bool> dedust;
     in property <int> targets: 1;
+    // The menu's own rule for the two keys, dark while the build lacks their gesture.
+    in property <bool> can-sheet;
+    in property <bool> can-prepare;
     in property <string> export-title: "EXPORT";
     in property <string> filter: "ALL";
     in property <string> undo-title: "Undo";
@@ -82,7 +85,7 @@ component EditorKeys inherits HorizontalLayout {
 
 component GalleryKeys inherits HorizontalLayout {
     spacing: ShellStyle.bar-gap;
-    Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; enabled: Bar.targets > 0; }
+    Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; enabled: Bar.can-sheet; }
     ButtonGroup {
         Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
         Item { action: "redo"; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
@@ -93,7 +96,7 @@ component GalleryKeys inherits HorizontalLayout {
         fixed-width: ShellStyle.filter-width;
         help: Bar.filter == "ALL" ? "Filter: All" : "Filter: " + Bar.filter;
     }
-    Word { action: "prepare-roll"; text: "PREPARE ROLL"; help: "Prepare the Roll"; enabled: Bar.targets > 0; }
+    Word { action: "prepare-roll"; text: "PREPARE ROLL"; help: "Prepare the Roll"; enabled: Bar.can-prepare; }
     ButtonGroup {
         ResetScan { }
         Item { action: "remove"; icon: Icons.remove; help: "Move to ONI Trash"; kind: ButtonKind.destructive; enabled: Bar.targets > 0; }

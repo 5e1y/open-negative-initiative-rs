@@ -86,7 +86,8 @@ export component Section inherits VerticalLayout {
 // The sheet's card alone: a title, the content, a rounded panel; `Sheet` lays it over a scrim.
 export component Dialog inherits Rectangle {
     in property <string> title;
-    width: SheetStyle.width;
+    in property <bool> wide;
+    width: root.wide ? SheetStyle.wide-width : SheetStyle.width;
     height: column.preferred-height;
     background: Colour.ground;
     border-radius: SheetStyle.radius;
@@ -105,11 +106,13 @@ export component Dialog inherits Rectangle {
 // A modal sheet: the scrim over the window, the dialog centred on it; a click on the scrim closes.
 export component Sheet inherits Rectangle {
     in property <string> title;
+    in property <bool> wide;
     callback dismissed();
     background: Colour.scrim;
     TouchArea { clicked => { root.dismissed(); } }
     Dialog {
         title: root.title;
+        wide: root.wide;
         @children
     }
 }

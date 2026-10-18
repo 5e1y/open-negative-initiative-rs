@@ -169,6 +169,11 @@ impl EditorStore {
         &self.archive.paths
     }
 
+    /// `measuredGroups = [:]`: every roll's frames found again on the next ask.
+    pub fn forget_measured(&mut self) {
+        self.measured.clear();
+    }
+
     pub fn set_archive_paths(&mut self, paths: Vec<String>) {
         self.archive.paths = paths;
         self.measured.clear();

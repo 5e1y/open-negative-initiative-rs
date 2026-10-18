@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark, Note, Warning, Progress } from "ds/ds.slint";
 import { Store } from "store.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 import { Exporting } from "export.slint";
@@ -28,6 +28,19 @@ export global PanelState {
     callback auto-balance();
     callback pick(string);
     callback tab-picked(int);
+    // `RollScope`: 0 never measured, 1 measured, 2 its frames still being found.
+    in property <int> roll-state: 1;
+    in property <int> roll-measured;
+    in property <int> roll-unmeasured;
+    in property <bool> can-prepare;
+    callback prepare-roll();
+    callback join-roll();
+    callback make-roll();
+    // `AutoLevels.Batch`: a run under way, and what the key says it acts on before the click.
+    in property <bool> balancing;
+    in property <float> balance-fraction;
+    in property <string> balance-progress;
+    in property <string> balance-note;
 }
 
 // The Scanner face: its screen, its keypad's state, and the keys' presses for Rust.
@@ -103,11 +116,35 @@ component RollPane inherits Pane {
     Block {
         title: "Measured Roll";
         help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it.";
-        Label {
-            text: "Acts on the photos measured with this roll.";
-            tone: Tone.secondary;
-            wrap: word-wrap;
+        if PanelState.roll-state == 0: Warning { text: "This photo was never measured with its roll, so these settings act on it alone."; }
+        if PanelState.roll-state == 0: Button {
+            text: "Prepare the Roll…";
+            horizontal-stretch: 1;
+            enabled: PanelState.can-prepare;
+            clicked => { PanelState.prepare-roll(); }
         }
+        if PanelState.roll-state == 1: Note {
+            text: PanelState.roll-measured == 1 ? "Acts on this photo, the only one measured with its roll." : "Acts on the \{PanelState.roll-measured} photos measured with this roll.";
+        }
+        if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Warning {
+            text: PanelState.roll-unmeasured == 1 ? "1 photo of this folder was not measured with the roll." : "\{PanelState.roll-unmeasured} photos of this folder were not measured with the roll.";
+        }
+        if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: HorizontalLayout {
+            spacing: Space.s;
+            Button {
+                text: PanelState.roll-unmeasured == 1 ? "Join the Roll" : "Join the \{PanelState.roll-unmeasured}";
+                horizontal-stretch: 1;
+                help: "Gives them this roll's measurement and settings, their own look kept.";
+                clicked => { PanelState.join-roll(); }
+            }
+            Button {
+                text: "Roll of the \{PanelState.roll-measured}";
+                horizontal-stretch: 1;
+                help: "Makes the photos measured together a roll of their own.";
+                clicked => { PanelState.make-roll(); }
+            }
+        }
+        if PanelState.roll-state == 2: Note { text: "Finding the photos measured with this roll…"; }
     }
     Block {
         title: "Film Type";
@@ -337,12 +374,18 @@ component ColorPane inherits Pane {
             centred: true;
             wrap: word-wrap;
         }
-        Button {
+        if PanelState.balancing: VerticalLayout {
+            spacing: Space.xs;
+            Progress { fraction: PanelState.balance-fraction; }
+            Note { text: PanelState.balance-progress; }
+        }
+        if !PanelState.balancing: Button {
             text: "AUTO WHITE BALANCE";
             help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
             horizontal-stretch: 1;
             clicked => { PanelState.auto-balance(); }
         }
+        if !PanelState.balancing && PanelState.balance-note != "": Note { text: PanelState.balance-note; }
         StoreSlider {
             field: 0; label: "Temperature"; fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;

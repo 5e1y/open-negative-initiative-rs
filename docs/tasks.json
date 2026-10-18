@@ -473,5 +473,13 @@
     "status": "done",
     "detail": "The canvas's resize under an open frame read the full size through a borrow its own scrutinee held while it wrote the viewport: RefCell already borrowed at app.rs:3428, every time the editor opened (the canvas resizes). Fixed by binding the read first; reproduced in the real window by ONI_BENCH=resize, which panics without the fix and passes with it. The gallery's double-click and the selection shared with the sidebar land from the gallery session. The tree lights a photo row for the gallery's selection or its ring (`TreeEngine.marked`), relit in place on each pick; every load designates the frame (selection, cursor, ring) as Swift's `load` does; the ground clears the ring with the selection; a click under the last row reaches no gesture, as Swift's document ends with its cells.",
     "outcome": "ONI_BENCH=flows in the real window: three frames clicked once (lit alone in the grid and the sidebar), double-clicked open, edited through resizes, back in the gallery still lit, a click under the rows changing nothing; no failure. The gallery test's ring twin fails when the tree drops the ring."
+  },
+  {
+    "id": 70,
+    "type": "feature",
+    "title": "Wire what the core already does: Reset to Default…, Ungroup, Join the Roll, Roll of the N, Each or Average",
+    "status": "done",
+    "detail": "Reset to Default… from the menu and the cell menu (reach read off the main thread, Swift's confirm, one gallery step); Ungroup in the Rolls menu with its title and rule; the Measured Roll block's count, warnings, Join the N and Roll of the N; Auto White Balance over a selection asking Each or Average, with its progress on the key and the others' thumbnails redrawn; Prepare the Roll and the contact sheet kept dark until they exist. Any new state of the open frame now arms its sidecar write, a slider's or not.",
+    "outcome": "oni-app/tests/rolls.rs drives every gesture on the headless window, each with a twin; it found the open frame's reset never written, as no slider had moved. ONI_BENCH=flows and presets pass in the real window."
   }
 ]

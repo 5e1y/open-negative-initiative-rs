@@ -67,6 +67,29 @@ export global Advice {
     callback closed();
 }
 
+// `DSDialogRequest` with option keys: Cancel, then one key per way of going ahead.
+export global Choice {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    in property <[string]> keys;
+    // The key's index, -1 for Cancel.
+    callback chosen(int);
+}
+
+export component ChoiceSheet inherits Sheet {
+    title: Choice.title;
+    wide: true;
+    dismissed => { Choice.chosen(-1); }
+    Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: end;
+        spacing: Space.s;
+        Button { text: "Cancel"; clicked => { Choice.chosen(-1); } }
+        for key[i] in Choice.keys: Button { text: key; kind: ButtonKind.accent; clicked => { Choice.chosen(i); } }
+    }
+}
+
 export component AdviceSheet inherits Sheet {
     title: Advice.title;
     dismissed => { Advice.closed(); }

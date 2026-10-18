@@ -1,7 +1,7 @@
 // The forms of export and colour management: a labelled field, a note, a summary box, a preview slot,
 // a chip that opens a popover, and the panel a popover or a sheet draws on.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, FieldStyle, ButtonStyle, MenuStyle, CardStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
 import { HelpMark } from "containers.slint";
 import { TextField, Button } from "controls.slint";
@@ -224,4 +224,19 @@ export component BoardCard inherits Rectangle {
 export component GroupHeading inherits Label {
     role: TextRole.label;
     tone: Tone.tertiary;
+}
+
+// `DSProgress`: a recessed track lit up to the fraction done.
+export component Progress inherits Rectangle {
+    in property <float> fraction;
+    height: DS.control-track-height;
+    border-radius: Radius.track;
+    background: Colour.track;
+    Rectangle {
+        x: 0;
+        width: parent.width * clamp(root.fraction, 0, 1);
+        border-radius: Radius.track;
+        background: Colour.track-fill;
+        animate width { duration: Motion.quick; }
+    }
 }

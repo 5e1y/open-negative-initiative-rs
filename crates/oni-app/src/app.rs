@@ -59,6 +59,7 @@ const HISTOGRAM: (usize, usize) = (680, 300);
 mod lab;
 mod organising;
 mod presets;
+mod rolls;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 /// Where a deleted preset file goes: the system's Trash, or a check's own folder.
@@ -117,6 +118,7 @@ enum Pending {
     RestoreAll,
     DeletePreset(oni_settings::Id),
     UpdatePreset(oni_settings::Id),
+    ResetToDefault(oni_library::roll_membership::ResetReach),
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -221,6 +223,8 @@ pub struct State {
     /// The archive tree's rows as published, each photo row's path, so a pick relights them in place.
     tree_paths: Vec<Option<String>>,
     shelf: presets::Shelf,
+    /// The balance key's run under way, which the key shows instead of itself.
+    batch: Option<rolls::Batch>,
     org: organising::Organising,
     columns: usize,
     scroll: f32,
@@ -242,6 +246,8 @@ pub struct State {
     inputs: Option<render::InputHistograms>,
     inputs_drawn: Option<(Option<usize>, Option<usize>)>,
     last_change: Option<Instant>,
+    /// The store revision `publish` last saw, so any edit of the open frame arms its write.
+    published_revision: u64,
     status: String,
     brush: f32,
     gpu: Option<Gpu>,
@@ -611,6 +617,7 @@ impl Shell {
             trash_picks: Default::default(),
             tree_paths: Vec::new(),
             shelf: Default::default(),
+            batch: None,
             org: Default::default(),
             columns: gallery::COLUMN_STEPS[1],
             scroll: 0.0,
@@ -629,6 +636,7 @@ impl Shell {
             inputs: None,
             inputs_drawn: None,
             last_change: None,
+            published_revision: 0,
             status: String::new(),
             brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
@@ -745,8 +753,12 @@ impl Ctl {
     pub(crate) fn publish(self: &Rc<Self>, jump: bool) {
         let Some(w) = self.window() else { return };
         let g = w.global::<StoreGlobal>();
-        let moved = {
+        let (moved, edited) = {
             let mut s = self.state.borrow_mut();
+            // Any new state of the open frame is written, a slider's or not: a roll joined or reset moves none.
+            let revision = s.store.revision();
+            let edited = revision != s.published_revision;
+            s.published_revision = revision;
             let mut moved: Vec<Field> = s.store.changed();
             if jump {
                 moved = Field::ALL.to_vec();
@@ -761,7 +773,7 @@ impl Ctl {
                 slide.published = Some(v);
                 out.push((f, v, slide.live.is_some()));
             }
-            out
+            (out, edited)
         };
         for (f, v, held) in &moved {
             let text: SharedString = f.spec().readout.format(*v).into();
@@ -782,7 +794,7 @@ impl Ctl {
         for (b, on) in modified {
             set_modified(&g, b, on);
         }
-        if !moved.is_empty() || jump {
+        if edited || !moved.is_empty() || jump {
             self.state.borrow_mut().last_change = Some(Instant::now());
             self.schedule_write();
         }
@@ -2649,6 +2661,8 @@ impl Ctl {
                 self.restore(&picked);
             }
             "new-roll" if app.get_gallery() => self.new_roll(),
+            "reset-to-default" if app.get_gallery() => self.ask_reset_to_default(),
+            "ungroup" => self.ungroup(),
             "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
             "open" => self.pick(),
             "recheck" | "read-folders" => self.read_again(),
@@ -2671,49 +2685,6 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// Auto White Balance: each target read off this thread, the open frame on its live settings and
-    /// the others on their sidecars, then laid as one undo step; a selection balances each frame.
-    fn auto_balance(self: &Rc<Self>) {
-        static BALANCING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-        let frames: Vec<(String, oni_settings::PipelineSettings)> = {
-            let s = self.state.borrow();
-            let open = s.open_path().map(str::to_string);
-            crate::export::targets(&s.order, &s.selection(), open.as_deref())
-                .into_iter()
-                .map(|path| {
-                    let settings = if Some(&path) == open.as_ref() {
-                        s.store.settings().clone()
-                    } else {
-                        let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
-                        oni_settings::sidecar::read(Path::new(&path), mosaic, true).map(|l| l.settings).unwrap_or_default()
-                    };
-                    (path, settings)
-                })
-                .collect()
-        };
-        if frames.is_empty() || BALANCING.swap(true, Ordering::AcqRel) {
-            return;
-        }
-        std::thread::spawn(move || {
-            let outcomes = crate::measuring::balance_outcomes(&frames);
-            with_shell(move |c| {
-                BALANCING.store(false, Ordering::Release);
-                let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
-                let measure = |path: &str, _: &oni_settings::PipelineSettings| outcomes.get(path).cloned();
-                let failure = {
-                    let mut s = c.state.borrow_mut();
-                    let failure = s.store.editor().and_then(|e| e.auto_balance(&targets, oni_core::balance::Strategy::Each, &measure));
-                    s.last_change = Some(Instant::now());
-                    failure
-                };
-                c.publish(false);
-                if let Some(f) = failure {
-                    c.say(&f);
-                }
-            });
-        });
-    }
-
     /// The keys no menu item carries: Escape and Return on a sheet, the Lab's and the walk keys, and
     /// ⌘=, which types apart from the menu's ⌘+; every other shortcut is the menu bar's.
     fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
@@ -2723,6 +2694,12 @@ impl Ctl {
                 "\u{1b}" => self.answered(false),
                 "\r" | "\n" => self.answered(true),
                 _ => {}
+            }
+            return true;
+        }
+        if w.global::<crate::Choice>().get_shown() {
+            if text == "\u{1b}" {
+                w.global::<crate::Choice>().invoke_chosen(-1);
             }
             return true;
         }
@@ -2841,6 +2818,11 @@ impl Ctl {
     /// sidecars moved in, one gallery step that ⌘Z walks back.
     fn new_roll(self: &Rc<Self>) {
         let targets: HashSet<String> = self.targets().into_iter().collect();
+        self.new_roll_from(&targets);
+    }
+
+    /// `rollFolder(from:)`: the photos moved into a dated roll folder beside the first, one step.
+    fn new_roll_from(self: &Rc<Self>, targets: &HashSet<String>) {
         let (ordered, earliest) = {
             let s = self.state.borrow();
             let ordered: Vec<String> = s.order.iter().filter(|p| targets.contains(*p)).cloned().collect();
@@ -3106,6 +3088,7 @@ impl Ctl {
             Some(Pending::RestoreAll) => self.restore_all(),
             Some(Pending::DeletePreset(id)) => self.delete_preset(id),
             Some(Pending::UpdatePreset(id)) => self.update_preset(id),
+            Some(Pending::ResetToDefault(reach)) => self.reset_to_default(reach),
             None => {}
         }
         self.publish_bar();
@@ -3130,6 +3113,7 @@ impl Ctl {
             // `modalOpen`: the export surface, a preset sheet or a dialog.
             let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown();
             let presets = s.shelf.held.len();
+            let members = s.roll_members(gallery).len();
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split.is_some(), s.screen_gamut, s.negative.is_some());
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
@@ -3185,7 +3169,7 @@ impl Ctl {
                 mirror: if settings.geometry.mirrored { "Unmirror" } else { "Mirror Horizontally" }.into(),
                 filter: filter.map_or("Filter: All".into(), |m| format!("Filter: {}", library::medal(m))).into(),
                 roll: plural(count, "New Roll from Selection", format!("New Roll from {count} Photos")).into(),
-                ungroup: "Ungroup".into(),
+                ungroup: plural(members, "Ungroup", format!("Ungroup {members} Photos")).into(),
                 sheet: plural(selected, "New Contact Sheet", format!("New Contact Sheet from {selected} Photos")).into(),
                 screen_gamut: if screen_gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into(),
             };
@@ -3218,9 +3202,10 @@ impl Ctl {
                 medal: selected > 0 && !modal,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
-                ungroup: false,
+                ungroup: members > 0,
                 contact_sheet: false,
-                measure_roll: count > 0,
+                // Dark until Prepare the Roll carries its surface.
+                measure_roll: false,
                 reset_to_default: gallery && count > 0,
                 copy_settings: open,
                 paste_settings: has_settings && count > 0,
@@ -3243,7 +3228,10 @@ impl Ctl {
         panel.set_targets(targets as i32);
         let bar = w.global::<Bar>();
         bar.set_can_paste(live.paste_settings);
+        bar.set_can_sheet(live.contact_sheet);
+        bar.set_can_prepare(live.measure_roll);
         self.publish_presets();
+        self.publish_rolls();
         bar.set_filter(menus.get_titles().filter.trim_start_matches("Filter: ").to_uppercase().into());
     }
 
@@ -3419,6 +3407,7 @@ impl Ctl {
         lib.on_tile_opened(move |i| p.tile_opened(i.max(0) as usize));
         Ctl::wire_organising(me, window);
         Ctl::wire_presets(me, window);
+        Ctl::wire_rolls(me, window);
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {
