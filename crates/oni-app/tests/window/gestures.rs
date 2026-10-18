@@ -78,6 +78,8 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     let t = menus.get_titles();
     assert_eq!((t.mode.as_str(), t.smaller.as_str(), t.library.as_str()), ("Gallery", "Zoom Out", "Hide the Library"));
     assert!(menus.get_live().copy_settings && menus.get_live().framing && !menus.get_live().paste_settings);
+    // The framing keys act on a decoded frame only.
+    rig.until("the frame decoded", Duration::from_secs(60), || ctl.state.borrow().renders() >= 1);
 
     // ⌥⌘] hides the panel and the title says how to bring it back; ⌘K opens the Crop tab.
     rig.chord_with(&[Key::Control, Key::Alt], "]");

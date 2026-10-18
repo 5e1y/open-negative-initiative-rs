@@ -24,3 +24,6 @@ oni-fixtures.workspace = true
 oni-render.workspace = true
 tiff = "0.11"
 ultrahdr-rs = "0.3"
+
+[lib]
+doctest = false

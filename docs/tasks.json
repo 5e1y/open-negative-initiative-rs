@@ -616,7 +616,15 @@
     "type": "build",
     "title": "An iteration loop under a minute: the Slint interface in its own crate, an incremental dev profile",
     "status": "in progress",
-    "detail": "The interface moves to crates/oni-ui, so a change to the Rust side no longer type-checks and generates Slint's code again; the dev profile is incremental, the workspace at opt-level 1 and every dependency at 3; --release stays the shipped build.",
+    "detail": "The interface moves to crates/oni-ui, so a change to the Rust side no longer type-checks and generates Slint's code again; the dev profile is incremental, the workspace at opt-level 1 and every dependency at 3; --release stays the shipped build. The 33 window checks are one binary whose runner starts each in a process of its own, several at once; doc-tests, which no crate has, are off; a guard keeps every source file under 400 lines, the larger ones grandfathered at their size.",
     "outcome": ""
+  },
+  {
+    "id": 88,
+    "type": "fix",
+    "title": "The gestures check waits for the frame before its framing keys",
+    "status": "done",
+    "detail": "Mirror and rotate act on a decoded frame only; under load the check pressed ⇧⌘M before the decode landed.",
+    "outcome": "Green with 6 and 12 checks at once."
   }
 ]

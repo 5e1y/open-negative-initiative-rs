@@ -14,3 +14,6 @@ wgpu.workspace = true
 oni-decode.workspace = true
 oni-fixtures.workspace = true
 serde_json.workspace = true
+
+[lib]
+doctest = false

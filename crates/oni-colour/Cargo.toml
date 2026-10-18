@@ -20,3 +20,6 @@ oni-decode.workspace = true
 oni-fixtures.workspace = true
 oni-render.workspace = true
 serde_json.workspace = true
+
+[lib]
+doctest = false

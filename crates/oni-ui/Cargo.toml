@@ -11,3 +11,6 @@ slint = { version = "=1.18.1", default-features = false, features = ["std", "com
 
 [build-dependencies]
 slint-build = "=1.18.1"
+
+[lib]
+doctest = false

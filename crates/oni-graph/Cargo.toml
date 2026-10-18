@@ -13,3 +13,6 @@ wgpu.workspace = true
 [dev-dependencies]
 oni-decode.workspace = true
 oni-fixtures.workspace = true
+
+[lib]
+doctest = false

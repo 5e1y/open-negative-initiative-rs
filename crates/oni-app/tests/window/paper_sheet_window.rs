@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::common;
-#[path = "../../oni-colour/tests/common/mod.rs"]
+#[path = "../../../oni-colour/tests/common/mod.rs"]
 mod stand_in;
 
 const LONG: Duration = Duration::from_secs(60);

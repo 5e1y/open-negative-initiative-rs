@@ -18,3 +18,6 @@ png = "0.18"
 
 [build-dependencies]
 slint-build = "=1.18.1"
+
+[lib]
+doctest = false
