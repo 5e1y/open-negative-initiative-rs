@@ -528,7 +528,7 @@ impl Ctl {
         }
     }
 
-    fn advise(&self, title: &str, message: &str) {
+    pub(super) fn advise(&self, title: &str, message: &str) {
         let Some(w) = self.window() else { return };
         let a = w.global::<Advice>();
         a.set_title(title.into());

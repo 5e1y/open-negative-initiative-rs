@@ -1,5 +1,6 @@
 // The top bar in three zones; every key there is a gesture a menu already reaches.
 import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, Spacer, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
+import { Preparing, RollStepKeys } from "prepare.slint";
 
 export global Bar {
     in property <bool> editing;
@@ -111,24 +112,26 @@ export component Toolbar inherits Surface {
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
+        // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
         Word {
-            action: "toggle-mode";
-            text: Bar.editing ? "GALLERY" : "EDITOR";
+            action: Preparing.shown ? "leave-roll" : "toggle-mode";
+            text: Bar.editing || Preparing.shown ? "GALLERY" : "EDITOR";
             widest: "GALLERY";
-            help: Bar.editing ? "Gallery (⌘G)" : "Editor (⌘G)";
-            enabled: Bar.editing || Bar.has-photo;
+            help: Bar.editing || Preparing.shown ? "Gallery (⌘G)" : "Editor (⌘G)";
+            enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
         Spacer { }
         // A hidden copy of the editor's keys holds the zone's width, so the live keys move inside it.
         Rectangle {
             width: sizing.preferred-width;
             sizing := EditorKeys { visible: false; }
-            if Bar.editing: EditorKeys { x: (parent.width - self.preferred-width) / 2; }
-            if !Bar.editing: GalleryKeys { x: (parent.width - self.preferred-width) / 2; }
+            if Preparing.shown: RollStepKeys { x: (parent.width - self.preferred-width) / 2; }
+            if Bar.editing && !Preparing.shown: EditorKeys { x: (parent.width - self.preferred-width) / 2; }
+            if !Bar.editing && !Preparing.shown: GalleryKeys { x: (parent.width - self.preferred-width) / 2; }
         }
         Spacer { }
         Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }
-        Word {
+        if !Preparing.shown: Word {
             action: Bar.editing ? "export" : "open";
             text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";
             kind: ButtonKind.accent;

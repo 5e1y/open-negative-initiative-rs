@@ -20,14 +20,14 @@ const ENCODINGS: [SourceEncoding; 3] = [SourceEncoding::Srgb, SourceEncoding::Li
 
 /// What a line of the mask picker chooses.
 #[derive(Clone, Debug, PartialEq)]
-enum MaskLine {
+pub(super) enum MaskLine {
     None,
     Shipped,
     Custom(String),
 }
 
 /// `FlatFieldBlock.options`: none, the shipped mask while it is the frame's, a missing one, then each loaded.
-fn mask_options(flat: &FlatField, entries: &[crate::flat_fields::Entry]) -> Vec<(MaskLine, String)> {
+pub(super) fn mask_options(flat: &FlatField, entries: &[crate::flat_fields::Entry]) -> Vec<(MaskLine, String)> {
     let mut list = vec![(MaskLine::None, "None selected".to_string())];
     if flat.mask == FlatFieldMask::ValoiEasy35V1 {
         list.push((MaskLine::Shipped, "Valoi 35v1".to_string()));
@@ -38,12 +38,29 @@ fn mask_options(flat: &FlatField, entries: &[crate::flat_fields::Entry]) -> Vec<
     list
 }
 
-fn chosen(flat: &FlatField) -> MaskLine {
+pub(super) fn chosen(flat: &FlatField) -> MaskLine {
     match (flat.mask, &flat.custom) {
         (FlatFieldMask::ValoiEasy35V1, _) => MaskLine::Shipped,
         (_, Some(id)) => MaskLine::Custom(id.clone()),
         _ => MaskLine::None,
     }
+}
+
+/// `FlatFieldBlock.choice`: the shipped mask, none yet chosen, or a loaded one.
+pub(super) fn chose(flat: &FlatField, line: MaskLine) -> FlatField {
+    let mut next = flat.clone();
+    match line {
+        MaskLine::Shipped => next.mask = FlatFieldMask::ValoiEasy35V1,
+        MaskLine::None => {
+            next.mask = FlatFieldMask::Custom;
+            next.custom = None;
+        }
+        MaskLine::Custom(id) => {
+            next.mask = FlatFieldMask::Custom;
+            next.custom = Some(id);
+        }
+    }
+    next
 }
 
 /// `FlatFieldBlock.on`: on takes a custom mask yet to be chosen at the whole amount; off keeps the rest.
@@ -104,17 +121,7 @@ impl Ctl {
             mask_options(&s.store.settings().flat_field, &s.masks)
         };
         let Some((line, _)) = i.and_then(|i| options.get(i)).cloned() else { return };
-        self.write_settings(|s| match line {
-            MaskLine::Shipped => s.flat_field.mask = FlatFieldMask::ValoiEasy35V1,
-            MaskLine::None => {
-                s.flat_field.mask = FlatFieldMask::Custom;
-                s.flat_field.custom = None;
-            }
-            MaskLine::Custom(id) => {
-                s.flat_field.mask = FlatFieldMask::Custom;
-                s.flat_field.custom = Some(id);
-            }
-        });
+        self.write_settings(|s| s.flat_field = chose(&s.flat_field, line));
     }
 
     /// The Roll tab's settings blocks, from the open frame's settings and decode.
