@@ -120,6 +120,7 @@ enum Pending {
     DeletePreset(oni_settings::Id),
     UpdatePreset(oni_settings::Id),
     ResetToDefault(oni_library::roll_membership::ResetReach),
+    QuitAnyway,
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -251,6 +252,8 @@ pub struct State {
     published_revision: u64,
     /// How the open frame's preview was decoded: a sidecar naming another reading decodes it again.
     reading: Option<render::Reading>,
+    /// The window may close: a failed write was answered with Quit Anyway.
+    quitting: bool,
     /// The flat-field masks loaded by hand, read once and again after each change to them.
     masks: Vec<crate::flat_fields::Entry>,
     status: String,
@@ -651,6 +654,7 @@ impl Shell {
             last_change: None,
             published_revision: 0,
             reading: None,
+            quitting: false,
             masks: crate::flat_fields::entries(&options.support),
             status: String::new(),
             brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
@@ -748,6 +752,11 @@ impl Shell {
     /// The opened folder's first photo in the editor once read, for the bench.
     pub fn open_first_when_read(&self) {
         self.ctl.state.borrow_mut().opening = Some(String::new());
+    }
+
+    /// The open frame's sidecar written as the app ends, whatever ended it; the failure, if any.
+    pub fn flush(&self) -> Option<String> {
+        self.ctl.state.borrow_mut().store.flush()
     }
 
     /// The session's notch renders, for the line printed on exit.
@@ -2728,14 +2737,33 @@ impl Ctl {
         self.publish_bar();
     }
 
+    /// `QuitGuard.applicationShouldTerminate`: the sidecar written before the window goes; a write
+    /// that fails asks first, Cancel keeping the app open to free space or reconnect the volume.
+    fn close_requested(self: &Rc<Self>) -> slint::CloseRequestResponse {
+        if self.state.borrow().quitting {
+            return slint::CloseRequestResponse::HideWindow;
+        }
+        let failure = self.state.borrow_mut().store.flush();
+        let Some(message) = failure else { return slint::CloseRequestResponse::HideWindow };
+        self.ask(
+            "Your latest settings could not be saved",
+            &format!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on."),
+            "Quit Anyway",
+            Pending::QuitAnyway,
+        );
+        slint::CloseRequestResponse::KeepWindowShown
+    }
+
     /// The keys no menu item carries: Escape and Return on a sheet, the Lab's and the walk keys, and
     /// ⌘=, which types apart from the menu's ⌘+; every other shortcut is the menu bar's.
     fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
         if w.global::<Confirm>().get_shown() {
+            // Quitting is the one sheet whose default is Cancel: Return never discards unsaved work.
+            let safe = matches!(self.state.borrow().pending, Some(Pending::QuitAnyway));
             match text {
                 "\u{1b}" => self.answered(false),
-                "\r" | "\n" => self.answered(true),
+                "\r" | "\n" => self.answered(!safe),
                 _ => {}
             }
             return true;
@@ -3132,6 +3160,10 @@ impl Ctl {
             Some(Pending::DeletePreset(id)) => self.delete_preset(id),
             Some(Pending::UpdatePreset(id)) => self.update_preset(id),
             Some(Pending::ResetToDefault(reach)) => self.reset_to_default(reach),
+            Some(Pending::QuitAnyway) => {
+                self.state.borrow_mut().quitting = true;
+                let _ = slint::quit_event_loop();
+            }
             None => {}
         }
         self.publish_bar();
@@ -3453,6 +3485,8 @@ impl Ctl {
         Ctl::wire_presets(me, window);
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);
+        let p = me.clone();
+        window.window().on_close_requested(move || p.close_requested());
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {

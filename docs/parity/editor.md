@@ -218,4 +218,4 @@ Statuses are defined in [README.md](README.md).
 | Undo title names the action | `Scene/EditorScene+History.swift` | `app.rs` `publish_menus`, `toolbar.slint` `undo-title` | done | | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | A roll write is one step | `Scene/EditorScene+RollSettings.swift` | `oni-core/tests/roll8.rs` | done | | `oni-core/tests/roll8.rs::a_drag_is_one_step_and_one_roll_write` |
 | Sidecar written 400 ms after the last notch | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs` `WRITE_DELAY`, `oni-settings/src/sidecar.rs` `WRITE_DELAY` | done | | `oni-app/tests/archive.rs::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once` |
-| Flush on quit and window close | `Pipeline/QuitGuard` | none | missing | Pending writes are lost on close | no check |
+| Flush on quit and window close | `Pipeline/QuitGuard` | `app.rs` `close_requested`, `main.rs` | done | The window's close writes the open frame at once; a quit that never closes it writes it after the loop | oni-app/tests/quit.rs::closing_writes_the_last_settings_and_a_failed_write_asks_first |

@@ -106,6 +106,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         shell.window.show()?;
     }
     slint::run_event_loop()?;
+    // A quit that never asked the window to close still writes the open frame's last settings.
+    if let Some(failure) = shell.flush() {
+        timing::line(&format!("the open frame's settings could not be saved: {failure}"));
+    }
     oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
     Ok(())

@@ -54,7 +54,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Quit waits for the sidecar, refuses on a failed write | `Pipeline/QuitGuard.swift:31` | none | missing | | no check |
+| Quit waits for the sidecar, refuses on a failed write | `Pipeline/QuitGuard.swift:31` | `app.rs` `close_requested`, `Pending::QuitAnyway` | done | Asks with Swift's words, Cancel the default | oni-app/tests/quit.rs::closing_writes_the_last_settings_and_a_failed_write_asks_first |
 | A newer sidecar opens read-only | `Pipeline/Sidecar.swift` | `oni-settings` sidecar | done | | `oni-settings/tests/real_files.rs::a_newer_format_opens_read_only_and_is_never_rewritten` |
 | Sidecar batches off the main thread | `Pipeline/SidecarBatch.swift` | none | missing | | no check |
 | Main-thread watchdog, anonymous console log | `Pipeline/Diagnostics.swift` | none | missing | | no check |
