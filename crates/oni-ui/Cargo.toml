@@ -1,0 +1,13 @@
+[package]
+name = "oni-ui"
+description = "The desktop app's Slint interface, compiled apart so a change to the Rust side never rebuilds it"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
+
+[build-dependencies]
+slint-build = "=1.18.1"

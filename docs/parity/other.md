@@ -13,7 +13,7 @@ Statuses are defined in [README.md](README.md).
 | Default name and file stem (64) | `Pipeline/Propagation.swift:189,366` | `oni-core/src/presets.rs:97-110` | done |  | `oni-core/src/presets.rs::names_and_files_are_formed_as_the_shelf_expects`, oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
 | Apply a preset, auto balance row measured | `Scene/EditorScene+Presets.swift` | `oni-core/src/store.rs` `apply_preset`, `app/presets.rs` `apply_preset_at` | done | One gallery step on the targets, then the balance key's own batch for a preset naming it | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
 | Preset tints readable | `Pipeline/PresetTint.swift` | `oni-core/src/presets.rs:28` | done |  | `oni-core/src/presets.rs::every_tint_carries_a_readable_ink` |
-| Preset deck: cards, peek, fade | `UI/PresetCarousel.swift:177-189` | `oni-app/ui/presets.slint` `PresetDeck` | partial | Cards, the peek and the rise under the pointer; no fade mask at the roll's ends | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does, `ONI_BENCH=presets` |
+| Preset deck: cards, peek, fade | `UI/PresetCarousel.swift:177-189` | `oni-ui/ui/presets.slint` `PresetDeck` | partial | Cards, the peek and the rise under the pointer; no fade mask at the roll's ends | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does, `ONI_BENCH=presets` |
 | Deck menu: Edit…, Update with Current Settings, Duplicate, Delete | `Scene/EditorScene+Panel.swift` | `app/presets.rs` `preset_card_menu` | done | Update and Delete ask first, as `PresetDialogs` does | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
 | Share Preset…, Copy Preset Code, Paste Preset Code (`ONI1:`) | `Pipeline/Propagation.swift:295` | `app/presets.rs` `share_preset`, `copy_preset_code`, `adopt_preset_code` | done | Share writes through the save panel; Copy and Paste use the general clipboard | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
 | Save as Preset… sheet | `UI/PresetEditor.swift` | `ui/presets.slint` `PresetSaveSheet`, `app/presets.rs` `save_preset` | done | Opens on the first free name and the rows the photo moved | oni-app/tests/presets.rs::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does |
@@ -36,7 +36,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Editor window, dark appearance pinned | `OpenNegativeApp.swift`, `Pipeline/QuitGuard.swift:12` | `oni-app/ui/app.slint` | done | | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
+| Editor window, dark appearance pinned | `OpenNegativeApp.swift`, `Pipeline/QuitGuard.swift:12` | `oni-ui/ui/app.slint` | done | | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
 | Console window | `UI/ConsoleView.swift`, `Pipeline/Diagnostics.swift` | `ui/help.slint` `ConsoleWindow`, `app/help.rs` `open_console` | partial | The session's log polled every 0.5 s with Copy and Reveal; no watchdog counts blocks, so it always says none | `ONI_BENCH=console` |
 | Design system playground (dev builds) | `DesignSystem/DSPlayground.swift` | `oni-app` `--catalogue` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
 | Welcome sheet with tutorial video | `UI/WelcomeSheet.swift`, `UI/TutorialVideo.swift` | `ui/help.slint` `WelcomeSheet`, `app/help.rs` | partial | Shown once per edition with Swift's text, Website, Feedback and GET STARTED; the picture's caption sits under it, and no tutorial video plays | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts |
@@ -80,7 +80,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Pair Phone… sheet with QR code | none | `oni-app/ui/pairing.slint`, `oni-app/src/phone.rs` | port-only | | `oni-app/src/phone.rs::the_qr_code_draws_its_finder_in_the_corner_inside_a_white_margin` |
+| Pair Phone… sheet with QR code | none | `oni-ui/ui/pairing.slint`, `oni-app/src/phone.rs` | port-only | | `oni-app/src/phone.rs::the_qr_code_draws_its_finder_in_the_corner_inside_a_white_margin` |
 | Trusted phone written once | none | `oni-app/src/phone.rs` | port-only | | `oni-app/src/phone.rs::a_trusted_phone_is_written_once_and_read_back` |
 | Phone steps the open frame | none | `oni-link`, `oni-core/src/command.rs` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
 | LocalSend transfer | none | `oni-localsend` | port-only | | `oni-localsend/tests/transfer.rs::sending_can_run_on_any_runtime_thread` |

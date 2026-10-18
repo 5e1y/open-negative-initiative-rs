@@ -630,7 +630,7 @@ enum DS {
         let tokens = std::fs::read_to_string(root.join("DesignSystem/DSTokens.swift")).unwrap();
         let gamut = std::fs::read_to_string(root.join("Pipeline/ScreenGamut.swift")).unwrap_or_default();
         let fresh = generate(&tokens, &[&gamut]).unwrap();
-        let committed = include_str!("../ui/ds/tokens.slint");
+        let committed = include_str!("../../oni-ui/ui/ds/tokens.slint");
         assert_eq!(fresh, committed, "ui/ds/tokens.slint is stale: run cargo run -p oni-app --bin oni-tokens");
         // Twin: a token moved in the Swift source must make the committed file stale.
         let moved = tokens.replace("static let panelWidth: CGFloat = 340", "static let panelWidth: CGFloat = 341");

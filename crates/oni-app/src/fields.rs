@@ -385,7 +385,7 @@ mod tests {
 
     #[test]
     fn every_field_has_its_place_in_the_slint_store() {
-        let store = include_str!("../ui/store.slint");
+        let store = include_str!("../../oni-ui/ui/store.slint");
         for f in Field::ALL {
             assert_eq!(Field::from_index(f.index()), Some(f));
             for suffix in ["fraction", "readout", "value"] {
@@ -432,14 +432,14 @@ mod tests {
     /// The panel's Slint, its tabs' files after it.
     pub(crate) fn panel_source() -> String {
         [
-            include_str!("../ui/panel.slint"),
-            include_str!("../ui/panel/state.slint"),
-            include_str!("../ui/panel/parts.slint"),
-            include_str!("../ui/panel/roll_tab.slint"),
-            include_str!("../ui/panel/crop_tab.slint"),
-            include_str!("../ui/panel/dedust_tab.slint"),
-            include_str!("../ui/panel/color_tab.slint"),
-            include_str!("../ui/panel/details_tab.slint"),
+            include_str!("../../oni-ui/ui/panel.slint"),
+            include_str!("../../oni-ui/ui/panel/state.slint"),
+            include_str!("../../oni-ui/ui/panel/parts.slint"),
+            include_str!("../../oni-ui/ui/panel/roll_tab.slint"),
+            include_str!("../../oni-ui/ui/panel/crop_tab.slint"),
+            include_str!("../../oni-ui/ui/panel/dedust_tab.slint"),
+            include_str!("../../oni-ui/ui/panel/color_tab.slint"),
+            include_str!("../../oni-ui/ui/panel/details_tab.slint"),
         ]
         .concat()
     }

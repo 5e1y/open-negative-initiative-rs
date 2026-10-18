@@ -42,7 +42,7 @@ pub mod wrapped;
 
 use std::path::PathBuf;
 
-slint::include_modules!();
+pub use oni_ui::*;
 
 /// The Swift app's `Sources/OpenNegative`, which the token generator reads: `ONI_SWIFT_APP`, else
 /// a checkout beside this workspace.
