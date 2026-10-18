@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, computer: oni_library::navigator::Computer::system(), ..Options::default() })?;
+    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), ..Options::default() })?;
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |window, event| {
@@ -97,6 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Probes and benches drive the window at once, as Swift skips its splash under a probe.
     if bench::requested().is_none() {
         shell.welcome_if_due();
+        shell.offer_wrapped();
         let main = shell.window.as_weak();
         oni_app::splash::show(move || {
             if let Some(w) = main.upgrade() {

@@ -318,6 +318,7 @@ impl Ctl {
         if targets.is_empty() {
             return;
         }
+        self.journal_preset(&targets, &preset.name);
         self.gesture(&targets, |store| store.apply_preset(&preset, &targets, None));
         // A preset naming the key measures each target through the balance key's own batch.
         if oni_core::parameters::auto_balances(&preset.parameters) {

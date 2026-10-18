@@ -1,0 +1,134 @@
+// `WrappedView`'s pieces: the black ground, the title over its gold seal, a card of the deck and
+// its photos, and the line saying how to turn the cards.
+import { DS } from "tokens.slint";
+import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
+import { Label, Tone } from "base.slint";
+
+export global WrappedStyle {
+    // `Color.black`, the ground the year is told on, whatever the theme.
+    out property <color> ground: Colour.black;
+    out property <color> title-ink: Colour.selected;
+    out property <length> card-width: DS.control-wrapped-card-width;
+    out property <length> card-height: DS.control-wrapped-card-height;
+    out property <length> photo-side: DS.control-wrapped-photo-side;
+    out property <float> deck-shrink: DS.control-wrapped-deck-shrink;
+    out property <length> deck-step: DS.control-wrapped-deck-step;
+    out property <int> deck-depth: DS.control-wrapped-deck-depth;
+    out property <float> title-start: DS.control-wrapped-title-start;
+    out property <duration> reveal: DS.motion-wrapped-reveal-response * 1s;
+    out property <duration> settle: DS.motion-settle-response * 1s;
+    out property <duration> stagger: DS.motion-wrapped-stagger;
+    out property <duration> hold: DS.motion-wrapped-hold;
+    // One frame at 60 Hz: a value set as the view is laid would not animate.
+    out property <duration> frame: 16ms;
+}
+
+export component WrappedGround inherits Rectangle {
+    background: WrappedStyle.ground;
+}
+
+// "YOUR YEAR / ON FILM" in Enriqueta, over the year on the medal's gold; it grows in as it shows.
+export component WrappedTitle inherits Rectangle {
+    in property <string> year;
+    in property <bool> shown;
+    width: column.preferred-width;
+    height: column.preferred-height;
+    opacity: root.shown ? 1 : 0;
+    animate opacity { duration: WrappedStyle.reveal; easing: ease-out; }
+    column := VerticalLayout {
+        spacing: Space.m;
+        alignment: center;
+        for line in ["YOUR YEAR", "ON FILM"]: Text {
+            text: line;
+            font-family: DS.typo-wrapped-title-family;
+            font-size: DS.typo-wrapped-title-size * (root.shown ? 1 : WrappedStyle.title-start);
+            font-weight: DS.typo-wrapped-title-weight;
+            color: WrappedStyle.title-ink;
+            horizontal-alignment: center;
+            animate font-size { duration: WrappedStyle.reveal; easing: ease-out-back; }
+        }
+        HorizontalLayout {
+            alignment: center;
+            Rectangle {
+                height: DS.control-seal-height * 1px;
+                width: seal.preferred-width + 2 * DS.control-seal-padding * 1px;
+                border-radius: self.height / 2;
+                background: Colour.medal[3];
+                seal := Text {
+                    text: root.year;
+                    font-family: Type.family;
+                    font-size: DS.typo-seal-size;
+                    font-weight: Type.strong;
+                    letter-spacing: DS.control-seal-tracking * 1px;
+                    color: Colour.ink-on-light;
+                }
+            }
+        }
+    }
+}
+
+// One card: the eyebrow in capitals, the figure in Enriqueta, the caption, and its photos.
+export component WrappedCard inherits Rectangle {
+    in property <string> eyebrow;
+    in property <string> figure;
+    in property <string> caption;
+    in property <[image]> photos;
+    // The top card's photos rise in one after the other; those under it wait.
+    in property <bool> top;
+    width: WrappedStyle.card-width;
+    height: WrappedStyle.card-height;
+    background: Colour.ground;
+    border-radius: Radius.card;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    drop-shadow-blur: Space.l;
+    drop-shadow-color: Colour.scrim;
+    property <length> side: root.photos.length == 1 ? WrappedStyle.photo-side * 3 : WrappedStyle.photo-side;
+    property <int> columns: min(root.photos.length, 3);
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.m;
+        alignment: center;
+        Text {
+            text: root.eyebrow;
+            font-family: Type.family;
+            font-size: Type.chip;
+            font-weight: Type.strong;
+            letter-spacing: DS.control-seal-tracking * 1px;
+            color: Colour.ink-secondary;
+            horizontal-alignment: center;
+        }
+        if root.figure != "": Text {
+            text: root.figure;
+            font-family: DS.typo-wrapped-figure-family;
+            font-size: DS.typo-wrapped-figure-size;
+            font-weight: DS.typo-wrapped-figure-weight;
+            color: Colour.ink;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        Label { text: root.caption; tone: Tone.secondary; centred: true; wrap: word-wrap; }
+        if root.photos.length > 0: Rectangle {
+            height: ceil(root.photos.length / 3) * (root.side + Space.s) - Space.s;
+            for photo[i] in root.photos: Rectangle {
+                width: root.side;
+                height: root.side;
+                x: (parent.width - root.columns * (root.side + Space.s) + Space.s) / 2 + mod(i, 3) * (root.side + Space.s);
+                y: floor(i / 3) * (root.side + Space.s);
+                border-radius: Radius.badge;
+                clip: true;
+                background: Colour.canvas;
+                opacity: root.top ? 1 : 0;
+                animate opacity { duration: WrappedStyle.settle; delay: i * WrappedStyle.stagger; }
+                Image { width: parent.width; height: parent.height; source: photo; image-fit: cover; }
+            }
+        }
+    }
+}
+
+export component WrappedHint inherits Text {
+    font-family: Type.family;
+    font-size: Type.chip;
+    color: Colour.ink-secondary;
+    horizontal-alignment: center;
+}

@@ -5,7 +5,7 @@ use oni_settings::Date;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock};
 
 /// Appended only, so a file written before still reads every kind it holds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -70,9 +70,13 @@ pub struct Journal {
 }
 
 impl Journal {
-    /// `<support>/Journal`, the folder the app keeps its journal in.
-    pub fn in_support(support: &Path) -> Journal {
-        Journal::new(support.join("Journal"))
+    /// `<support>/Journal`, one journal per folder for the process: two tables on one file would
+    /// hand the same index to two names.
+    pub fn in_support(support: &Path) -> Arc<Journal> {
+        static SHARED: OnceLock<Mutex<HashMap<PathBuf, Arc<Journal>>>> = OnceLock::new();
+        let folder = support.join("Journal");
+        let Ok(mut shared) = SHARED.get_or_init(Default::default).lock() else { return Arc::new(Journal::new(folder)) };
+        shared.entry(folder.clone()).or_insert_with(|| Arc::new(Journal::new(folder))).clone()
     }
 
     pub fn new(folder: PathBuf) -> Journal {
@@ -231,5 +235,14 @@ mod tests {
         reopened.note(Kind::Exported, Some("/b.RW2"), 0, 0, None, day);
         assert_eq!(reopened.read().0[3].subject, 1);
         assert_eq!(reopened.read().1.len(), 3);
+    }
+
+    #[test]
+    fn one_support_folder_holds_one_journal_for_the_process() {
+        let scratch = Scratch::new("journal-shared");
+        let (a, b) = (Journal::in_support(scratch.path()), Journal::in_support(scratch.path()));
+        assert!(std::sync::Arc::ptr_eq(&a, &b));
+        // Twin: another folder is another journal.
+        assert!(!std::sync::Arc::ptr_eq(&a, &Journal::in_support(&scratch.path().join("other"))));
     }
 }

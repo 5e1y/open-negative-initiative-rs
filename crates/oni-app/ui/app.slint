@@ -10,6 +10,7 @@ import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
 import { Stocks, StockBrand, StockRow, StockCell, StockPickerSheet } from "stocks.slint";
 import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint";
+import { Wrapped, WrappedFace, WrappedView } from "wrapped.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
@@ -17,7 +18,7 @@ import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 
 export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
-export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow }
+export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog }
 export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
@@ -311,12 +312,14 @@ export component MainWindow inherits AppWindow {
         }
         Menu {
             title: "Help";
+            // Slint builds the macOS application menu itself, so the item Swift lays after About is here.
+            MenuItem { title: "Check for Updates…"; activated => { App.menu("check-updates"); } }
+            MenuSeparator { }
             MenuItem { title: "Show Console"; activated => { App.menu("console"); } }
             MenuItem { title: "What's New in ONI 1.1"; activated => { App.menu("welcome"); } }
             MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }
             MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu("report"); } }
-            // Dark until the year's summary exists.
-            MenuItem { title: "Show My Year on Film"; enabled: false; activated => { App.menu("wrapped"); } }
+            MenuItem { title: "Show My Year on Film"; enabled: !Wrapped.shown; activated => { App.menu("wrapped"); } }
         }
     }
 
@@ -594,6 +597,7 @@ export component MainWindow inherits AppWindow {
     if Choice.shown: ChoiceSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
 
     TipLayer { room: root.width; }
 

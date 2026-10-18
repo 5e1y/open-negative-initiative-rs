@@ -22,6 +22,7 @@ pub mod roll_folder;
 pub mod roll_membership;
 pub mod roots;
 pub mod trash;
+pub mod wrapped;
 
 pub use film_group::{FilmGroup, FilmKey};
 pub use index::{Entry, LibraryIndex};

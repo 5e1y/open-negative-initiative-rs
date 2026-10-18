@@ -4161,6 +4161,8 @@ dependencies = [
  "qrcode",
  "reqwest",
  "rfd",
+ "ring",
+ "roxmltree",
  "rustls",
  "serde",
  "serde_json",

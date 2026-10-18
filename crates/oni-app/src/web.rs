@@ -28,6 +28,14 @@ pub fn text(url: &str) -> Result<String, String> {
     })
 }
 
+/// A body read whole, as bytes: the update feed and the archive it names.
+pub fn bytes(url: &str) -> Result<Vec<u8>, String> {
+    run(async {
+        let response = client()?.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
+        response.bytes().await.map(|b| b.to_vec()).map_err(|e| e.to_string())
+    })
+}
+
 /// A JSON body posted with a 30 s limit, as `BugReport.send` posts it; the status code answered.
 pub fn post_json(url: &str, body: String) -> Result<u16, String> {
     run(async {
