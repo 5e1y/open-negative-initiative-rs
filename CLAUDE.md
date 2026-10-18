@@ -25,7 +25,7 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 ## Checks
 
-- **Every GPU kernel has a scalar CPU reference** in `oni-render/src/cpu.rs`, and a test comparing
+- **Every GPU kernel has a scalar CPU reference** beside it in `oni-render/src/kernel/<name>.rs`, and a test comparing
   them on settings that reach every branch.
 - **A check that cannot see the bug is worse than none**: every numeric test carries a twin, a
   deliberately wrong variant asserted to fail.
