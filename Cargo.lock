@@ -4222,6 +4222,7 @@ name = "oni-export"
 version = "0.1.0"
 dependencies = [
  "flate2",
+ "half",
  "image",
  "jpeg-decoder",
  "jpeg-encoder",

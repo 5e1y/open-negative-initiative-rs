@@ -491,6 +491,14 @@
     "outcome": "oni-app/tests/roll_tab.rs drives each block on the headless window with its twins; the block-order check caught a first reorder that broke Swift's (Density Ceiling and the levels belong to manualBalance)."
   },
   {
+    "id": 73,
+    "type": "feature",
+    "title": "The flat-field mask library: Use This Photo as Flat-Field, Load…, Rename, Folder, moving a photo out, the sliders remembered",
+    "status": "done",
+    "detail": "CustomFlatFields.load decodes the file off the interface thread through the photographs' own path (LibRaw, the preview's side, the edge rebuilt) and keeps it as a half-float TIFF in working light under the first 8 bytes of its SHA-256, a triplet's pass names included; rename, forget and isMaskSource as Swift's. The Roll tab's keys are wired with Setting… and Loading…, the notices No Mask Set and No Mask Loaded, Move This Photo Out of the Library? (Library.moveOut into FlatField Presets, the neighbour opened under the same flat-field), a design-system sheet with a field for Rename This Flat-Field Mask, and Folder. The three sliders are kept per machine under flatFieldSliders on a hand's edit and laid on a frame never dialled as it opens, the history starting there. A mask missing from the render cache is asked again, so a mask loaded later reaches the frames naming it.",
+    "outcome": "oni-app/tests/masks.rs drives Load…, the refused file, Rename by Return, Folder, the sliders kept and not kept by an undo, Use This Photo with Keep in Library then Move Out on temporary files; unit twins for the id, the triplet's id, the source test, the move under a free name, the remembered sliders and the adjusted opening."
+  },
+  {
     "id": 74,
     "type": "fix",
     "title": "The open frame's last settings written when the app quits, and a failed write asked about first",

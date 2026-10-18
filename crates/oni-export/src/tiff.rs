@@ -54,6 +54,30 @@ pub fn encoded(
         Quantised::Eight(v) => (8, v.clone()),
         Quantised::Sixteen(v) => (16, v.iter().flat_map(|s| s.to_be_bytes()).collect()),
     };
+    laid_out(width, height, (bits, UNSIGNED), &bytes, compress, icc, primary, exif)
+}
+
+/// A TIFF of half-float RGBA samples, rows top first, as Core Image writes `RGBAh`; no metadata.
+pub fn encoded_half(width: usize, height: usize, pixels: &[[f32; 4]], icc: &[u8]) -> Option<Vec<u8>> {
+    let bytes: Vec<u8> = pixels.iter().flatten().flat_map(|v| half::f16::from_f32(*v).to_be_bytes()).collect();
+    laid_out(width, height, (16, FLOAT), &bytes, false, icc, &Directory::default(), &Directory::default())
+}
+
+/// TIFF's SampleFormat: unsigned integers, IEEE floats.
+const UNSIGNED: u16 = 1;
+const FLOAT: u16 = 3;
+
+#[allow(clippy::too_many_arguments)]
+fn laid_out(
+    width: usize,
+    height: usize,
+    (bits, format): (u16, u16),
+    bytes: &[u8],
+    compress: bool,
+    icc: &[u8],
+    primary: &Directory,
+    exif: &Directory,
+) -> Option<Vec<u8>> {
     let row_bytes = width * 4 * bits as usize / 8;
     if width == 0 || height == 0 || bytes.len() != row_bytes * height {
         return None;
@@ -81,11 +105,11 @@ pub fn encoded(
     ifd.set(tags::ROWS_PER_STRIP, Value::Long(vec![rows_per_strip as u32]));
     ifd.set(tags::STRIP_BYTE_COUNTS, Value::Long(laid.iter().map(|s| s.len() as u32).collect()));
     ifd.set(tags::PLANAR_CONFIGURATION, Value::Short(vec![1]));
-    // What ImageIO states of every TIFF it writes: bits high first, upright, inches, unsigned samples.
+    // What ImageIO states of every TIFF it writes: bits high first, upright, inches.
     ifd.set(tags::FILL_ORDER, Value::Short(vec![1]));
     ifd.set(tags::ORIENTATION, Value::Short(vec![1]));
     ifd.set(tags::RESOLUTION_UNIT, Value::Short(vec![2]));
-    ifd.set(tags::SAMPLE_FORMAT, Value::Short(vec![1; 4]));
+    ifd.set(tags::SAMPLE_FORMAT, Value::Short(vec![format; 4]));
     // Associated alpha: the colours are premultiplied, as ImageIO writes Core Image's render.
     ifd.set(tags::EXTRA_SAMPLES, Value::Short(vec![1]));
     ifd.set(tags::ICC_PROFILE, Value::Undefined(icc.to_vec()));

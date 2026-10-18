@@ -193,10 +193,16 @@ impl EditorStore {
     /// Opens a frame on its sidecar, writing the previous one first; its history starts here, so
     /// an undo never climbs into another photo's.
     pub fn open(&mut self, path: &str) -> Result<(), sidecar::Error> {
+        self.open_adjusted(path, |_| {})
+    }
+
+    /// `open`, the settings read handed to `adjust` before the history starts on them, as Swift
+    /// lays the remembered flat-field sliders (`EditorScene+Actions.swift:71-72`).
+    pub fn open_adjusted(&mut self, path: &str, adjust: impl FnOnce(&mut PipelineSettings)) -> Result<(), sidecar::Error> {
         self.release();
         self.flush();
         let read = sidecar::read(Path::new(path), self.mosaic(path), true);
-        let (settings, writable, persisted, result) = match read {
+        let (mut settings, writable, persisted, result) = match read {
             Ok(loaded) => {
                 let persisted = (!loaded.is_new).then(|| loaded.settings.clone());
                 (loaded.settings, loaded.writable, persisted, Ok(()))
@@ -204,6 +210,7 @@ impl EditorStore {
             // A corrupt sidecar is reported and never overwritten, so it stays repairable by hand.
             Err(e) => (PipelineSettings::rest(ConversionMode::Negative, self.mosaic(path)), false, None, Err(e)),
         };
+        adjust(&mut settings);
         self.open = Some(Open { path: path.to_string(), writable, persisted });
         // `adopt` starts the history on the stored settings, then `adoptFace` changes the face, which
         // the deferred `record` keeps as the first undo step (`EditorScene+Actions.swift:91-95`).
@@ -1081,6 +1088,23 @@ mod tests {
         assert_eq!(store.settle_if_due_at(1.0), None);
         store.undo(Surface::Editor);
         assert!(!store.can_undo(Surface::Editor), "both edits are one step");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// The remembered flat-field sliders are where the history starts, as `History(opened)` does.
+    #[test]
+    fn an_adjusted_opening_starts_the_history_on_the_adjusted_settings() {
+        let (mut store, dir) = fresh("adjusted");
+        let frame = dir.join("frame.tif").to_string_lossy().into_owned();
+        store.open_adjusted(&frame, |s| s.flat_field.temperature = 0.4).unwrap();
+        assert_eq!(store.settings().flat_field.temperature, 0.4);
+        assert!(!store.can_undo(Surface::Editor), "the adjustment is no step of its own");
+        store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
+        store.undo(Surface::Editor);
+        assert_eq!(store.settings().flat_field.temperature, 0.4, "an undo lands on the adjusted opening");
+        // Twin: a plain opening of another frame reads its sidecar as it stands.
+        store.open(&dir.join("other.tif").to_string_lossy()).unwrap();
+        assert_eq!(store.settings().flat_field.temperature, 0.0);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

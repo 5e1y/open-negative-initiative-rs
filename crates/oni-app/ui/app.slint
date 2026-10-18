@@ -8,12 +8,14 @@ import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCoun
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
 import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint";
+import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
 export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow }
+export { MaskDialog }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
@@ -575,6 +577,7 @@ export component MainWindow inherits AppWindow {
     if Help.welcome-shown: WelcomeSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Help.report-shown: ReportSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Choice.shown: ChoiceSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     TipLayer { room: root.width; }

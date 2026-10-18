@@ -57,6 +57,7 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
+mod masks;
 mod organising;
 mod help;
 mod presets;
@@ -68,6 +69,8 @@ pub use help::Reporter;
 
 /// Where a deleted preset file goes: the system's Trash, or a check's own folder.
 pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
+/// Where the Folder key shows a folder: the Finder, or a check's own record.
+pub type Shower = Box<dyn Fn(&Path)>;
 
 pub struct Options {
     pub screen: Screen,
@@ -81,6 +84,9 @@ pub struct Options {
     pub picker: Picker,
     pub discard: Discard,
     pub reporter: Reporter,
+    /// `FlatFieldBlock.load`'s open panel and the Folder key's Finder.
+    pub mask_picker: Picker,
+    pub show_folder: Shower,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -96,6 +102,8 @@ impl Default for Options {
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
             discard: Box::new(system::trash),
             reporter: std::sync::Arc::new(help::post),
+            mask_picker: Box::new(|| system::pick_file(masks::LOAD_MESSAGE, oni_library::library::IMAGE_EXTENSIONS)),
+            show_folder: Box::new(system::show_folder),
         }
     }
 }
@@ -261,6 +269,7 @@ pub struct State {
     quitting: bool,
     /// The flat-field masks loaded by hand, read once and again after each change to them.
     masks: Vec<crate::flat_fields::Entry>,
+    masking: masks::Masking,
     status: String,
     brush: f32,
     gpu: Option<Gpu>,
@@ -669,6 +678,7 @@ impl Shell {
             reading: None,
             quitting: false,
             masks: crate::flat_fields::entries(&options.support),
+            masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
             brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
@@ -931,7 +941,11 @@ impl Ctl {
 
     /// One notch: one store write, then what moved is published and the canvas asked again.
     fn write(self: &Rc<Self>, command: Command) {
+        let (remembers, was) = (masks::remembers(&command), self.state.borrow().store.settings().flat_field.clone());
         self.state.borrow_mut().store.apply(command);
+        if remembers {
+            self.remember_flat_field(&was);
+        }
         self.publish(false);
     }
 
@@ -2304,10 +2318,12 @@ impl Ctl {
 
     /// Opens a photo in the store; the canvas renders once its negative is decoded.
     fn open_photo(self: &Rc<Self>, path: &str) {
+        let kept = self.remembered_flat_field();
         let failure = {
             let mut s = self.state.borrow_mut();
             let flush = s.store.flush();
-            let opened = s.store.open(path).err();
+            // The flat-field sliders last dialled reach a frame that never had its own.
+            let opened = s.store.open_adjusted(path, &|o| o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, kept)).err();
             s.open = Some(path.to_string());
             s.opened_at = Instant::now();
             // Another photo's distributions never stand under this one's handles.
@@ -2826,6 +2842,9 @@ impl Ctl {
             }
             return true;
         }
+        if self.mask_dialog_key(text) {
+            return true;
+        }
         if self.preset_form_key(text) {
             return true;
         }
@@ -3232,7 +3251,7 @@ impl Ctl {
             let count = if selected > 0 { selected } else { usize::from(open) };
             let anchor = s.picks.anchor.is_some();
             // `modalOpen`: the export surface, a preset sheet or a dialog.
-            let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown();
+            let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown() || w.global::<crate::MaskDialog>().get_shown();
             let presets = s.shelf.held.len();
             let members = s.roll_members(gallery).len();
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);

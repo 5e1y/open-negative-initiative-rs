@@ -42,6 +42,9 @@ export global PanelState {
     in property <bool> can-take-mask;
     in property <bool> can-load-mask;
     in property <bool> can-rename-mask;
+    // A mask being set from the photo, or loaded: the key says so and waits.
+    in property <bool> taking-mask;
+    in property <bool> loading-mask;
     callback flat-field-toggled(bool);
     callback mask-chosen(int);
     callback take-mask();
@@ -204,7 +207,7 @@ component RollPane inherits Pane {
         }
         if PanelState.flat-field-on && PanelState.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
         Button {
-            text: "Use This Photo as Flat-Field";
+            text: PanelState.taking-mask ? "Setting…" : "Use This Photo as Flat-Field";
             horizontal-stretch: 1;
             enabled: PanelState.can-take-mask;
             clicked => { PanelState.take-mask(); }
@@ -223,7 +226,7 @@ component RollPane inherits Pane {
         }
         if root.flat-settings: HorizontalLayout {
             spacing: Space.s;
-            Button { text: "Load…"; horizontal-stretch: 1; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { text: PanelState.loading-mask ? "Loading…" : "Load…"; horizontal-stretch: 1; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
             Button { text: "Rename"; horizontal-stretch: 1; enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
             Button { text: "Folder"; horizontal-stretch: 1; clicked => { PanelState.mask-folder(); } }
         }

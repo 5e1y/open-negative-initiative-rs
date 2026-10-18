@@ -417,6 +417,16 @@ impl Engine {
         Ok(Negative { preview, full_width: decoded.full_width, undeclared: decoded.undeclared })
     }
 
+    /// `RawDecode.linear` at the preview's side as pixels: the decode reduced and its edge rebuilt
+    /// as a frame's preview is, read back whole.
+    pub fn preview_pixels(&mut self, decoded: Decoded) -> Result<Linear, String> {
+        let negative = self.prepare(decoded)?;
+        let image = Image::new(&negative.preview);
+        let region = image.extent();
+        let pixels = self.graph.render(&image, region, None).map_err(|e| e.to_string())?;
+        Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
+    }
+
     /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given.
     pub fn render(&mut self, negative: &Negative, settings: &PipelineSettings, side: Option<usize>) -> Result<Linear, String> {
         let (w, h) = negative.size();
@@ -544,7 +554,8 @@ impl Engine {
         self.read_patches(settings);
         let f = &settings.flat_field;
         let (Some(id), Some(support)) = (f.custom.as_ref().filter(|_| f.mask == FlatFieldMask::Custom), self.support.as_ref()) else { return };
-        if self.custom.contains_key(id) {
+        // A miss is asked again, as Swift keeps only hits: a mask loaded later reaches the frames naming it.
+        if self.custom.get(id).is_some_and(Option::is_some) {
             return;
         }
         let read = crate::flat_fields::read(support, id).and_then(|m| {
@@ -1153,6 +1164,10 @@ mod tests {
         settings.flat_field.custom = Some("gone".into());
         let gone = engine.render(&negative, &settings, None).unwrap();
         assert!(gone.pixels.iter().zip(&plain.pixels).all(|(a, b)| (a[1] - b[1]).abs() < 1e-6));
+        // The same id loaded afterwards is read on the next render, the miss not kept.
+        std::fs::copy(crate::flat_fields::folder(&support).join("panel.tiff"), crate::flat_fields::folder(&support).join("gone.tiff")).unwrap();
+        let found = engine.render(&negative, &settings, None).unwrap();
+        assert!((at(&found, w - 3) - at(&divided, w - 3)).abs() < 1e-6, "{} {}", at(&found, w - 3), at(&divided, w - 3));
         let _ = std::fs::remove_dir_all(&support);
     }
 
