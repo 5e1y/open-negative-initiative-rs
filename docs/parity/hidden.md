@@ -58,7 +58,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Sort decodes on the bytes, not the extension | `Pipeline/RawDecode.swift` | `oni-decode/src/container.rs` | done | | `oni-decode/src/container.rs::the_bytes_decide_the_branch` |
 | Undeclared file read as the hand says (Source Encoding) | `Pipeline/SourceEncoding.swift` | `oni-colour/src/source.rs`, `oni-decode/src/plain.rs` | done | | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | DNG container read: illuminants 17, 20, 21, 23 | `Pipeline/ContainerRead.swift:388` | `oni-colour/src/source.rs` `calibrated_to_working`, `oni-app/src/render.rs` | done |  | `oni-app/tests/extended.rs::a_decode_outside_libraw_is_swift_s`, `oni-colour/src/source.rs::a_dng_matrix_converts_its_own_white_to_the_working_white` |
-| RGB passes read side 360, registration floor 0.3, 3 frames | `Pipeline/RGBPasses.swift:119`, `RGBRegistration.swift:30-35` | none | missing | | no check |
+| RGB passes read side 360, registration floor 0.3, 3 frames | `Pipeline/RGBPasses.swift:119`, `RGBRegistration.swift:30-35` | `oni-library/src/rgb_passes.rs` `READ_SIDE`, `oni-measure/src/registration.rs` `FLOOR`, `SHIFT_SIDE`, `MAGNIFICATION_FRAMES` | done | | `oni-measure/src/registration.rs::a_pass_s_magnification_turn_and_shift_read_back_off_its_edges`, `oni-app/tests/rgb_passes.rs::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured` |
 
 ## Measurement behind the automatic keys
 

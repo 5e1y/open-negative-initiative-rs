@@ -160,6 +160,11 @@ pub fn graded_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
     write_tiff(path, w, h, tone, true, |x, y| [x, y, (x + y) / 2.0]);
 }
 
+/// A LinearRaw TIFF whose every pixel the caller gives, each channel from 0 (black) to 1 (white).
+pub fn pixels_tiff(path: &std::path::Path, w: usize, h: usize, value: impl Fn(usize, usize) -> [f32; 3]) {
+    write_tiff(path, w, h, 1.0, true, |x, y| value((x * w as f32).round() as usize, (y * h as f32).round() as usize).map(|v| (v - 0.1) / 0.8));
+}
+
 fn tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw: bool) {
     write_tiff(path, w, h, tone, linear_raw, |x, y| [x, y, 0.5]);
 }

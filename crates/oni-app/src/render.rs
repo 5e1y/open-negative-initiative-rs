@@ -90,6 +90,57 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     }
 }
 
+/// `RawDecode.alone(longestSide:)`: one file, never its passes, no longer than `side` (`None`: whole).
+pub fn decode_alone(path: &Path, side: Option<f64>) -> Result<Decoded, String> {
+    let reading = Reading::default();
+    let mut d = match oni_decode::route(path) {
+        oni_decode::Branch::Mosaic => alone(path, reading)?,
+        oni_decode::Branch::LinearRgb => {
+            let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
+            linear_scan(path, side, reading, full)?
+        }
+        oni_decode::Branch::Plain => plain(path, side, reading)?,
+    };
+    if let Some(side) = side {
+        d.linear = shrunk(&d.linear, side);
+    }
+    Ok(d)
+}
+
+/// The image averaged down to `side` on its long side, each pixel the mean of the source pixels
+/// whose centres it covers; a smaller one is kept.
+pub fn shrunk(l: &Linear, side: f64) -> Linear {
+    let long = l.width.max(l.height) as f64;
+    if long <= side || l.width == 0 || l.height == 0 {
+        return l.clone();
+    }
+    let scale = side / long;
+    let (w, h) = (((l.width as f64 * scale).round() as usize).max(1), ((l.height as f64 * scale).round() as usize).max(1));
+    let span = |i: usize, n: usize, of: usize| {
+        let (a, b) = (i * of / n, ((i + 1) * of / n).max(i * of / n + 1));
+        a..b.min(of)
+    };
+    let mut pixels = Vec::with_capacity(w * h);
+    for row in 0..h {
+        let rows = span(row, h, l.height);
+        for col in 0..w {
+            let cols = span(col, w, l.width);
+            let mut sum = [0.0f64; 4];
+            for y in rows.clone() {
+                for x in cols.clone() {
+                    let p = l.pixels[y * l.width + x];
+                    for c in 0..4 {
+                        sum[c] += f64::from(p[c]);
+                    }
+                }
+            }
+            let n = (rows.len() * cols.len()).max(1) as f64;
+            pixels.push(sum.map(|v| (v / n) as f32));
+        }
+    }
+    Linear { width: w, height: h, pixels }
+}
+
 /// `RGBPasses.composed`: red from the red pass, green from the green, blue from the blue, on the
 /// green pass's extent, the red and blue laid by their registration; a missing pass fails the frame.
 fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl Fn(&Path) -> Result<Decoded, String>) -> Result<Decoded, String> {
@@ -974,6 +1025,19 @@ mod tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::Duration;
+
+    #[test]
+    fn a_pass_shrunk_to_a_side_keeps_its_mean_and_a_smaller_one_is_kept() {
+        let (w, h) = (9usize, 6usize);
+        let l = Linear { width: w, height: h, pixels: (0..w * h).map(|i| [i as f32, 1.0, (i % w) as f32, 1.0]).collect() };
+        let s = shrunk(&l, 3.0);
+        assert_eq!((s.width, s.height), (3, 2));
+        let mean = |l: &Linear, c: usize| l.pixels.iter().map(|p| f64::from(p[c])).sum::<f64>() / l.pixels.len() as f64;
+        assert!((mean(&s, 0) - mean(&l, 0)).abs() < 1e-4 && (mean(&s, 2) - mean(&l, 2)).abs() < 1e-4);
+        assert_eq!(s.pixels[0][2], 1.0, "the first column of three averages columns 0 to 2");
+        // Twin: asked a side past its own, the image is its own.
+        assert_eq!(shrunk(&l, 20.0).pixels, l.pixels);
+    }
 
     #[test]
     fn three_passes_give_each_its_own_channel_and_a_registration_moves_its_pass() {

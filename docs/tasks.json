@@ -540,6 +540,14 @@
     "outcome": "oni-app/tests/contact_sheet.rs drives both gestures, the Details tab and a second measure on the headless window (one photo, a roll never measured and a photograph's live details as twins); oni-measure sheet.rs twins ContactSheet.selfCheck (filling, the gutter, one step past the cap, the copy onto a photograph, the unsanitised name); sheets.rs reads the file back within 2e-5 and under sRGB's profile far off; ONI_BENCH=sheet makes six roll #8 NEFs' sheet in the real window, opened and drawn in 6.9 s."
   },
   {
+    "id": 78,
+    "type": "feature",
+    "title": "Frames scanned as three RGB passes: grouped by threes in Prepare the Roll, the order read off their light, Shift by One File, each triplet registered as measured, the status bar's seal",
+    "status": "done",
+    "detail": "RGBPasses.grouped (three files a frame from the offset, the files left over, the stretched frames said), shares read at 360 px and PassOrder(fitting:) ported with the held triplets every lead's preview and measure consults first. Prepare the Roll groups its files on RGB Passes, reads the first frame's three files off the interface thread for the chips and the order, moves a band by DSReorder's drag, and shifts by one file, with the count and Check the grouping. RGBRegistration ported whole (edges of the log signal, cells at floor 0.3, weighted least squares trimmed at 2.5 medians, the fit's inverse in Core Image's frame): the measure reads each band's magnification at full resolution on the first three triplets and each frame's shift on its preview, then joins the passes to their lead and flags them in the index. The status bar wears the RGB seal of a lone lead, in the gallery and on the open frame.",
+    "outcome": "oni-measure registration twins (Swift's synthetic frame read back, laid back, the identity and the wrong direction as twins), oni-library grouping, shares and held twins, oni-settings pass-order twins; oni-app/tests/rgb_passes.rs drives a seven-file roll of synthetic passes through grouping, the order read, a drag, three shifts, the measure, the gallery's seals and one undo."
+  },
+  {
     "id": 82,
     "type": "feature",
     "title": "Select Roll Type: the stocks by brand with their artwork, for a roll and for an export row",
