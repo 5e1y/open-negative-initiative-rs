@@ -38,7 +38,6 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, mpsc};
 use std::time::{Duration, Instant};
 
-#[path = "export_card.rs"]
 pub mod export_card;
 mod publishing;
 mod cropping;
