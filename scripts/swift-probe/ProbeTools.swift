@@ -123,4 +123,58 @@ enum ProbeTools {
         print("exported \(written) of \(lines(list).count)")
         return written > 0 ? 0 : 1
     }
+
+    /// `--probe-measure <list> <folder>`: each frame's 1400 px measuring copy as `measure/NNNNN.f32`, and
+    /// `measure.json` with what Swift measures on it, the format oni-measure's roll8 harness reads.
+    static func measure(list: String, folder: String) -> Int32 {
+        let out = URL(fileURLWithPath: folder)
+        try? FileManager.default.createDirectory(at: out.appendingPathComponent("measure"), withIntermediateDirectories: true)
+        func doc(_ s: PipelineSettings) -> Any? {
+            (try? SettingsCodec.encode(s)).flatMap { try? JSONSerialization.jsonObject(with: $0) }
+        }
+        func three(_ v: SIMD3<Float>) -> [Double] { [Double(v.x), Double(v.y), Double(v.z)] }
+        var frames: [[String: Any]] = []
+        var measured: [RollReference.Measured] = []
+        var mode = ConversionMode.negative
+        for (i, path) in lines(list).enumerated() {
+            let url = URL(fileURLWithPath: path)
+            guard let settings = try? Sidecar.read(for: url).settings,
+                  let source = RawDecode.measuring(url, held: true) else { print("unread \(path)"); continue }
+            mode = settings.mode
+            let name = String(format: "measure/%05d.f32", i)
+            guard dump(source, to: out.appendingPathComponent(name)) else { continue }
+            let width = RawDecode.pixelSize(of: url)?.width
+            // Prepare the Roll's start: the look at rest, framing, flat-field and corrections kept.
+            var start = Parameters.imported(from: settings)
+            start.corrections = settings.corrections
+            start.captureStops = settings.captureStops
+            start.primariesConverted = false
+            start.geometry = settings.geometry
+            start.flatField = settings.flatField
+            var frame: [String: Any] = ["file": url.lastPathComponent, "dump": name, "fullWidth": width.map { Double($0) } ?? NSNull(),
+                                        "start": doc(start) ?? NSNull(), "settings": doc(settings) ?? NSNull()]
+            if let m = RollReference.measured(path, source: source, settings: start, fullWidth: width) {
+                measured.append(m)
+                frame["measured"] = ["stops": three(m.balance.stops),
+                                     "tails": m.tails.map { [Double($0.x), Double($0.y)] },
+                                     "median": m.median.map(three) ?? NSNull()]
+            }
+            if let b = AutoLevels.placed(on: source, settings: settings, method: .classic, fullWidth: width) {
+                frame["placed"] = ["stops": three(b.stops), "levels": b.levels.map { [Double($0.black), Double($0.white)] }]
+            }
+            if let f = FilterBalance.filters(on: source, settings: settings, fullWidth: width) {
+                frame["filters"] = three(f)
+            }
+            frames.append(frame)
+        }
+        var root: [String: Any] = ["frames": frames]
+        if let roll = RollReference.combined(measured, mode: mode, base: nil) {
+            root["roll"] = ["stops": three(roll.stops), "black": three(roll.black), "white": three(roll.white),
+                            "median": roll.median.map(three) ?? NSNull()]
+        }
+        let json = try? JSONSerialization.data(withJSONObject: root, options: [.prettyPrinted, .sortedKeys])
+        try? json?.write(to: out.appendingPathComponent("measure.json"))
+        print("measured \(frames.count) frames")
+        return frames.isEmpty ? 1 : 0
+    }
 }

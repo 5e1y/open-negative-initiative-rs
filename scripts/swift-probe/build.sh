@@ -22,11 +22,12 @@ edit("RenderDump.swift", "settings: settings.perPixelOnly(),",
 edit("AppFolders.swift", 'private static let cachesStandIn: URL? = isStandingIn ? sandbox("app-caches") : nil',
      'private static let cachesStandIn: URL? = ProcessInfo.processInfo.environment["ONI_PROBE_CACHES"].map { URL(fileURLWithPath: $0) } ?? (isStandingIn ? sandbox("app-caches") : nil)')
 edit("CommandLineTools.swift", '    if args.contains("--report-keygen") { return ReportSeal.generate() }',
-     '''    if args.contains("--probe-decode") || args.contains("--probe-heal") || args.contains("--probe-export") {
+     '''    if args.contains("--probe-decode") || args.contains("--probe-heal") || args.contains("--probe-export") || args.contains("--probe-measure") {
         let given = Array(args.dropFirst().filter { !$0.hasPrefix("--") })
         guard given.count >= 2 else { return 2 }
         if args.contains("--probe-decode") { return ProbeTools.decode(list: given[0], folder: given[1], side: given.count > 2 ? Double(given[2]).map { CGFloat($0) } : nil) }
         if args.contains("--probe-heal") { return ProbeTools.heal(list: given[0], folder: given[1]) }
+        if args.contains("--probe-measure") { return ProbeTools.measure(list: given[0], folder: given[1]) }
         return ProbeTools.export(list: given[0], folder: given[1])
     }
     if args.contains("--report-keygen") { return ReportSeal.generate() }''')
