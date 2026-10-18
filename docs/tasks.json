@@ -505,5 +505,13 @@
     "status": "done",
     "detail": "`galleryColumns` and `soundMuted` kept under Swift's @AppStorage keys and read at launch; Show in Finder selects every photo of its scope in one viewer (NSWorkspace.activateFileViewerSelecting); the Details tab hides Chroma Denoise on a monochrome frame.",
     "outcome": "oni-app/tests/session.rs checks two sessions and a fresh support folder as twin; the Roll tab test checks the monochrome flag the Details tab reads."
+  },
+  {
+    "id": 76,
+    "type": "feature",
+    "title": "The Help menu: Console, What's New and its seals, the welcome sheet, Report a Bug with its sealed log",
+    "status": "done",
+    "detail": "The console window polling the session's log with Copy and Reveal; What's New's six notes as seals on their headings, read on hover and kept until the app quits, Show What's New Again; the welcome sheet once per edition (welcomeSeen 1.2.1) with Website and Feedback; Report a Bug sealing the log to the maintainers' X25519 key (HKDF-SHA256, ChaCha20-Poly1305, raw deflate, cut from its oldest lines to 58 000 characters) and posting it to the site's /report; Show My Year on Film dark until it exists.",
+    "outcome": "oni-app/tests/help.rs over two sessions with an injected reporter (refusal twin); report.rs seals opened by CryptoKit and CryptoKit's opened by Rust (tools/seal_cross.swift, ONI_SEAL_CROSS); ONI_BENCH=console shows the log in the real window."
   }
 ]

@@ -58,11 +58,14 @@ const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
 mod organising;
+mod help;
 mod presets;
 mod roll_tab;
 mod rolls;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
+pub use help::Reporter;
+
 /// Where a deleted preset file goes: the system's Trash, or a check's own folder.
 pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
 
@@ -77,6 +80,7 @@ pub struct Options {
     pub caches: PathBuf,
     pub picker: Picker,
     pub discard: Discard,
+    pub reporter: Reporter,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -91,6 +95,7 @@ impl Default for Options {
             caches: system::caches(),
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
             discard: Box::new(system::trash),
+            reporter: std::sync::Arc::new(help::post),
         }
     }
 }
@@ -316,6 +321,11 @@ pub struct State {
     phone: Option<Phone>,
     picker: Picker,
     discard: Discard,
+    reporter: Reporter,
+    /// The notes read this session, which keep their pill until the app quits.
+    news_kept: HashSet<String>,
+    /// The console window while it is open, and the timer that reads the log into it.
+    console: Option<(crate::ConsoleWindow, Timer)>,
 }
 
 impl State {
@@ -704,6 +714,9 @@ impl Shell {
             phone: None,
             picker: options.picker,
             discard: options.discard,
+            reporter: options.reporter,
+            news_kept: HashSet::new(),
+            console: None,
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -755,6 +768,13 @@ impl Shell {
     /// The opened folder's first photo in the editor once read, for the bench.
     pub fn open_first_when_read(&self) {
         self.ctl.state.borrow_mut().opening = Some(String::new());
+    }
+
+    /// `WelcomeSheet.isDue` at launch: shown once per edition, never under a bench.
+    pub fn welcome_if_due(&self) {
+        if self.ctl.welcome_due() {
+            self.ctl.open_welcome();
+        }
     }
 
     /// The open frame's sidecar written as the app ends, whatever ended it; the failure, if any.
@@ -2729,6 +2749,10 @@ impl Ctl {
             "import-presets" => self.import_presets(),
             "paste-preset-code" => self.paste_preset_code(),
             "show-presets" => self.show_presets_folder(),
+            "console" => self.open_console(),
+            "welcome" => self.open_welcome(),
+            "whats-new" => self.show_whats_new_again(),
+            "report" => self.open_report(),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -2779,6 +2803,15 @@ impl Ctl {
                 "\r" | "\n" => self.answered(!safe),
                 _ => {}
             }
+            return true;
+        }
+        let help = w.global::<crate::Help>();
+        if help.get_welcome_shown() && matches!(text, "\u{1b}" | "\r" | "\n") {
+            help.invoke_welcome_closed();
+            return true;
+        }
+        if help.get_report_shown() && text == "\u{1b}" {
+            help.invoke_report_closed();
             return true;
         }
         if w.global::<crate::Choice>().get_shown() {
@@ -3498,6 +3531,7 @@ impl Ctl {
         Ctl::wire_presets(me, window);
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);
+        Ctl::wire_help(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         let p = me.clone();

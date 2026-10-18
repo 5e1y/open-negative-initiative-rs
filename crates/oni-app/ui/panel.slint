@@ -1,6 +1,7 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
 import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, WarningBadge, TextRole, Tone, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, Scroller, ScannerStyle, KeyRow, Keypad, LabCell, LabScreen, Well, HelpMark, Note, Warning, Progress, Field, ContextMenu, MenuLine } from "ds/ds.slint";
 import { Store } from "store.slint";
+import { News } from "help.slint";
 import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 import { Exporting } from "export.slint";
 
@@ -450,6 +451,9 @@ component ColorPane inherits Pane {
     if Lab.shown: Section {
         title: "Machine";
         separated: false;
+        news: News.machine;
+        news-note: News.machine-note;
+        news-read => { News.read("machine.1.3.1"); }
         Tabs {
             tabs: ["ONI", "Frontier"];
             marked: [false, false];
@@ -460,6 +464,9 @@ component ColorPane inherits Pane {
     if Lab.shown: LabBlock {
         title: "Density";
         block: 0;
+        news: News.keypad;
+        news-note: News.keypad-note;
+        news-read => { News.read("keypad.1.3.1"); }
         Keypad {
             LetterRow { letter: 0; title: "D"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["D −3: toward dark", "D −: toward dark", "", "D +: toward light", "D +3: toward light"]; }
         }
@@ -542,6 +549,9 @@ component ColorPane inherits Pane {
     if !Lab.shown: Block {
         title: "Lighting";
         block: 1;
+        news: News.lighting;
+        news-note: News.lighting-note;
+        news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
         help: "The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself.";
         StoreSlider { field: 3; label: "Exposure"; fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
@@ -568,6 +578,9 @@ component ColorPane inherits Pane {
     // `LabStepKeys`: on the Scanner face its own finishing, a click a step, the title back to rest.
     if Lab.shown: LabBlock {
         title: "Effects";
+        news: News.effects-scanner;
+        news-note: News.effects-scanner-note;
+        news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
         help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
         Keypad {
@@ -583,6 +596,9 @@ component ColorPane inherits Pane {
     EditorBlock {
         title: "Curves";
         block: 0;
+        news: Lab.shown ? News.curves-scanner : "";
+        news-note: News.curves-scanner-note;
+        news-read => { News.read("curves.scanner.1.3.1"); }
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
         help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";

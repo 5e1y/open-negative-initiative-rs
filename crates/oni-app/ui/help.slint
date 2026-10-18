@@ -1,0 +1,137 @@
+// The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
+import { Space, HelpStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Note, Warning, Sheet, Divider, Scroller, TextArea, LogText, Picture, Ground, AppWindow, Badge, Surface } from "ds/ds.slint";
+
+// `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
+export global News {
+    in property <string> machine;
+    in property <string> machine-note;
+    in property <string> keypad;
+    in property <string> keypad-note;
+    in property <string> effects-scanner;
+    in property <string> effects-scanner-note;
+    in property <string> curves-scanner;
+    in property <string> curves-scanner-note;
+    in property <string> lighting;
+    in property <string> lighting-note;
+    in property <string> space;
+    in property <string> space-note;
+    callback read(string);
+}
+
+export global Help {
+    // `WelcomeSheet`
+    in property <bool> welcome-shown;
+    in property <int> welcome-picture;
+    in property <string> welcome-line;
+    in property <string> welcome-credit;
+    callback welcome-closed();
+    callback website();
+    callback feedback();
+    // `ReportSheet`
+    in property <bool> report-shown;
+    in-out property <string> report-message;
+    in-out property <bool> report-log: true;
+    in property <bool> report-sending;
+    in property <bool> report-sent;
+    in property <string> report-failure;
+    callback report-edited(string);
+    callback report-send();
+    callback report-closed();
+    callback community();
+}
+
+component Point inherits VerticalLayout {
+    in property <string> title;
+    in property <string> text;
+    spacing: Space.xs;
+    Label { text: root.title; role: TextRole.section; }
+    Label { text: root.text; tone: Tone.secondary; wrap: word-wrap; }
+}
+
+// `WelcomeSheet`: the version's picture, then what changed, and GET STARTED.
+export component WelcomeSheet inherits Sheet {
+    wide: true;
+    dismissed => { Help.welcome-closed(); }
+    Picture {
+        height: HelpStyle.photo-height;
+        ground: Ground.well;
+        source: Help.welcome-picture == 0 ? @image-url("splash/1.0.0.jpg") : @image-url("splash/1.3.0.jpg");
+    }
+    Label { text: Help.welcome-line + "  " + Help.welcome-credit; role: TextRole.caption; tone: Tone.tertiary; }
+    Label { text: "What's new in ONI 1.2"; role: TextRole.heading; }
+    Label { text: "Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."; tone: Tone.secondary; wrap: word-wrap; }
+    Point { title: "Colours shift slightly"; text: "Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."; }
+    Point { title: "Browse your folders"; text: "The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."; }
+    Point { title: "Prepare the Roll, step by step"; text: "It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."; }
+    Point { title: "Deleting is reversible"; text: "Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."; }
+    Point { title: "Smoother"; text: "Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."; }
+    HorizontalLayout {
+        spacing: Space.s;
+        Button { text: "Website"; clicked => { Help.website(); } }
+        Button { text: "Feedback"; help: "Report a Bug / Give Feedback"; clicked => { Help.feedback(); } }
+        Rectangle { horizontal-stretch: 1; }
+        Button { text: "GET STARTED"; kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
+    }
+}
+
+// `ReportSheet`: the message, the sealed log's tick, and Send; then a thank-you.
+export component ReportSheet inherits Sheet {
+    title: Help.report-sent ? "Thank You" : "Report a Bug or Give Feedback";
+    dismissed => { Help.report-closed(); }
+    if Help.report-sent: Note { text: "Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."; }
+    if !Help.report-sent: Note { text: "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."; }
+    if !Help.report-sent: message := TextArea {
+        text: Help.report-message;
+        edited(t) => { Help.report-edited(t); }
+        init => { self.take-focus(); }
+    }
+    if !Help.report-sent: HorizontalLayout {
+        spacing: Space.s;
+        Label { text: "Encrypted console log, readable by ONI's maintainers only"; horizontal-stretch: 1; wrap: word-wrap; }
+        Toggle { label: "Encrypted console log"; on: Help.report-log; toggled(on) => { Help.report-log = on; } }
+    }
+    if !Help.report-sent && Help.report-failure != "": Warning { text: Help.report-failure; }
+    HorizontalLayout {
+        spacing: Space.s;
+        Button { text: "See Community Feedbacks"; clicked => { Help.community(); } }
+        Rectangle { horizontal-stretch: 1; }
+        if Help.report-sent: Button { text: "Done"; clicked => { Help.report-closed(); } }
+        if !Help.report-sent: Button { text: "Cancel"; clicked => { Help.report-closed(); } }
+        if !Help.report-sent: Button {
+            text: Help.report-sending ? "Sending…" : "Send";
+            kind: ButtonKind.accent;
+            enabled: !Help.report-sending && Help.report-message != "";
+            clicked => { Help.report-send(); }
+        }
+    }
+}
+
+// `ConsoleView`: the diagnostics log, polled; Copy and Reveal Log in Finder.
+export component ConsoleWindow inherits AppWindow {
+    title: "Console";
+    in property <string> log;
+    in property <int> blocks;
+    callback copy();
+    callback reveal();
+    preferred-width: HelpStyle.console-width;
+    preferred-height: HelpStyle.console-height;
+    Surface {
+        VerticalLayout {
+            padding: Space.m;
+            spacing: Space.s;
+            HorizontalLayout {
+                spacing: Space.s;
+                Badge { text: root.blocks == 0 ? "No block recorded" : root.blocks == 1 ? "1 block recorded" : "\{root.blocks} blocks recorded"; }
+                Rectangle { horizontal-stretch: 1; }
+                Button { text: "Copy"; clicked => { root.copy(); } }
+                Button { text: "Reveal Log in Finder"; clicked => { root.reveal(); } }
+            }
+            Scroller {
+                vertical-stretch: 1;
+                content-height: view.preferred-height;
+                view := LogText { width: parent.width; text: root.log == "" ? "Nothing recorded yet." : root.log; }
+            }
+            Note { text: "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."; }
+        }
+    }
+}

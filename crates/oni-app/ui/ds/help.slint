@@ -1,0 +1,75 @@
+// The Help menu's pieces: the gold seal a heading carries while its note is news, a text area for
+// a written message, and the console's monospaced log.
+import { DS } from "tokens.slint";
+import { Colour, Space, Radius, Stroke, Type, FieldStyle } from "theme.slint";
+import { Tips } from "base.slint";
+
+// `DSGoldSealView`: the word in capitals on the medal's gold; hovered, the note shows and is read.
+export component NewsSeal inherits Rectangle {
+    in property <string> word;
+    in property <string> note;
+    callback read();
+    height: DS.control-seal-height * 1px;
+    width: label.preferred-width + 2 * DS.control-seal-padding * 1px;
+    border-radius: self.height / 2;
+    background: Colour.medal[3];
+    label := Text {
+        text: root.word;
+        font-family: Type.family;
+        font-size: DS.typo-seal-size;
+        font-weight: Type.strong;
+        letter-spacing: DS.control-seal-tracking * 1px;
+        color: Colour.ink-on-light;
+    }
+    TouchArea {
+        changed has-hover => {
+            Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
+            if (self.has-hover) { root.read(); }
+        }
+    }
+}
+
+// `TextEditor` in `dsTextField(multiline:)`: several lines, wrapped, the edge lit while it is typed in.
+export component TextArea inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <length> lines-height: DS.control-report-message-height;
+    callback edited(string);
+    public function take-focus() { input.focus(); }
+    height: root.lines-height;
+    border-radius: FieldStyle.radius;
+    background: Colour.canvas;
+    border-width: input.has-focus ? Stroke.line : Stroke.hairline;
+    border-color: input.has-focus ? Colour.focus : Colour.separator;
+    clip: true;
+    input := TextInput {
+        x: FieldStyle.padding;
+        y: FieldStyle.padding;
+        width: parent.width - 2 * FieldStyle.padding;
+        height: parent.height - 2 * FieldStyle.padding;
+        single-line: false;
+        wrap: word-wrap;
+        font-family: Type.family;
+        font-size: Type.label;
+        color: Colour.ink;
+        edited => { root.edited(self.text); }
+    }
+}
+
+// The console's log: monospaced so aligned figures stay in column, selectable, on the panel's ground.
+export component LogText inherits Rectangle {
+    in property <string> text;
+    background: Colour.ground;
+    border-radius: Radius.card;
+    TextInput {
+        x: Space.s;
+        y: Space.s;
+        width: parent.width - 2 * Space.s;
+        text: root.text;
+        read-only: true;
+        single-line: false;
+        wrap: word-wrap;
+        font-family: "Menlo";
+        font-size: Type.chip;
+        color: Colour.ink-secondary;
+    }
+}

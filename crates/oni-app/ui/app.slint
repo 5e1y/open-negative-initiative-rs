@@ -7,12 +7,13 @@ import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount, GalleryStatus } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
+import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
 export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
-export { Presets, PresetCard, CarriesLine, Advice, Choice }
+export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
@@ -307,7 +308,8 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: "What's New in ONI 1.1"; activated => { App.menu("welcome"); } }
             MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }
             MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu("report"); } }
-            MenuItem { title: "Show My Year on Film"; activated => { App.menu("wrapped"); } }
+            // Dark until the year's summary exists.
+            MenuItem { title: "Show My Year on Film"; enabled: false; activated => { App.menu("wrapped"); } }
         }
     }
 
@@ -570,6 +572,8 @@ export component MainWindow inherits AppWindow {
     if Exporting.stocks-shown: StockSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
+    if Help.welcome-shown: WelcomeSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Help.report-shown: ReportSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Choice.shown: ChoiceSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
 

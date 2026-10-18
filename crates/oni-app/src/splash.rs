@@ -16,6 +16,11 @@ pub fn picture(version: &str) -> usize {
     PICTURES.iter().position(|(v, _)| *v == version).unwrap_or(PICTURES.len() - 1)
 }
 
+/// The credit printed along the version's picture.
+pub fn credit(version: &str) -> String {
+    PICTURES[picture(version)].1.trim().to_string()
+}
+
 /// The splash on screen, and `reveal` once it has been held long enough.
 pub fn show(reveal: impl FnOnce() + 'static) -> Result<(), slint::PlatformError> {
     let version = env!("CARGO_PKG_VERSION");

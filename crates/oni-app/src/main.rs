@@ -96,6 +96,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // Probes and benches drive the window at once, as Swift skips its splash under a probe.
     if bench::requested().is_none() {
+        shell.welcome_if_due();
         let main = shell.window.as_weak();
         oni_app::splash::show(move || {
             if let Some(w) = main.upgrade() {

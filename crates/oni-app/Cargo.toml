@@ -32,6 +32,13 @@ oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
 qrcode = { version = "0.14", default-features = false }
+flate2 = "1"
+base64 = "0.22"
+# `ReportSeal`: a report's log sealed to the maintainers' X25519 key, as CryptoKit seals it.
+x25519-dalek = { version = "2", features = ["getrandom", "static_secrets"] }
+hkdf = "0.12"
+sha2 = "0.10"
+chacha20poly1305 = { version = "0.10", default-features = false, features = ["alloc", "getrandom"] }
 # The paper makers' pages and files, checked against the system's trust store.
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }

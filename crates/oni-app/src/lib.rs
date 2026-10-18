@@ -21,6 +21,7 @@ pub mod picking;
 pub mod preferences;
 pub mod splash;
 pub mod proof;
+pub mod report;
 pub mod render;
 pub mod store;
 pub mod strict;

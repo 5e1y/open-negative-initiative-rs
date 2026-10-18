@@ -28,6 +28,21 @@ pub fn text(url: &str) -> Result<String, String> {
     })
 }
 
+/// A JSON body posted with a 30 s limit, as `BugReport.send` posts it; the status code answered.
+pub fn post_json(url: &str, body: String) -> Result<u16, String> {
+    run(async {
+        let response = client()?
+            .post(url)
+            .timeout(Duration::from_secs(30))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(response.status().as_u16())
+    })
+}
+
 /// `URLSession.download(from:)`: the file written into `folder` under the link's own name.
 pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
     let name = url::Url::parse(url)

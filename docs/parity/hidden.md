@@ -155,7 +155,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Journal records: 16 bytes, magic ONIW, epoch 2020-01-02 | `Pipeline/Journal.swift:24-29` | `oni-library/src/journal.rs:56-62` | done | Crate only | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | Project file and untitled stems | `Pipeline/Project.swift:25`, `Film.swift:144` | `oni-library/src/project.rs:42` | done | Crate only | `oni-library/src/project.rs::identity_is_the_id_and_the_free_name_the_lowest_number` |
 | Export settings preference | `Pipeline/Export.swift:428` | `oni-export/src/settings.rs:108` | done | Crate only | `oni-export/tests/settings.rs::an_elder_preference_reads_its_defaults` |
-| Preferences: welcome, what's new, navigator, opened folder | `UI/WelcomeSheet.swift:7`, `WhatsNew.swift:2`, `FolderNavigator.swift:15-22` | `oni-app/src/preferences.rs` | partial | `openedFolder` and `retiredShippedPresets` are kept under Swift's keys; welcome, what's new and the navigator's are not | `oni-app/src/preferences.rs::a_value_written_is_read_back_by_the_next_session` |
+| Preferences: welcome, what's new, navigator, opened folder | `UI/WelcomeSheet.swift:7`, `WhatsNew.swift:2`, `FolderNavigator.swift:15-22` | `oni-app/src/preferences.rs` | partial | `openedFolder`, `retiredShippedPresets`, `welcomeSeen`, `whatsNewSeen`, `galleryColumns` and `soundMuted` kept under Swift's keys; the navigator's are not | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts |
 
 ## Pipeline branches and the Swift comparison
 

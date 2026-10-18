@@ -1,4 +1,5 @@
 // The containers: a block's section, the help mark, the sheet and the menu.
+import { NewsSeal } from "help.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
 import { Button, ButtonSize, Look } from "controls.slint";
@@ -26,6 +27,10 @@ export component HelpMark inherits Rectangle {
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
+    // `DSNewsPill`: the word while the block's note is news, and the note itself.
+    in property <string> news;
+    in property <string> news-note;
+    callback news-read();
     in property <int> block: -1;
     in property <bool> modified;
     in property <bool> separated: true;
@@ -48,6 +53,10 @@ export component Section inherits VerticalLayout {
             if root.help != "": VerticalLayout {
                 alignment: center;
                 HelpMark { note: root.help; }
+            }
+            if root.news != "": VerticalLayout {
+                alignment: center;
+                NewsSeal { word: root.news; note: root.news-note; read => { root.news-read(); } }
             }
             Rectangle { horizontal-stretch: 1; }
             // Always laid out, only invisible, so the row keeps its height on a slider's first touch.

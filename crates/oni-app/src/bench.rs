@@ -12,6 +12,7 @@
 //! `ONI_BENCH=presets` saves a preset, raises the deck under the pointer, previews the card by
 //! hovering it and applies it by a click, all through the window's pointer events; run it with
 //! `ONI_SUPPORT` on a scratch folder, as it writes a preset.
+//! `ONI_BENCH=console` opens the console window and waits for the session's log to show in it.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -51,6 +52,7 @@ pub enum Mode {
     Dedust,
     Flows,
     Presets,
+    Console,
 }
 
 impl Mode {
@@ -76,6 +78,7 @@ pub fn requested() -> Option<Mode> {
         "dedust" => Some(Mode::Dedust),
         "flows" => Some(Mode::Flows),
         "presets" => Some(Mode::Presets),
+        "console" => Some(Mode::Console),
         _ => None,
     }
 }
@@ -104,6 +107,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Presets {
         return deck(ctl, done);
+    }
+    if mode == Mode::Console {
+        return console(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
@@ -170,7 +176,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Console => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
@@ -693,6 +699,28 @@ fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     format!("presets: the click applied nothing (store {}, saved {})", exposure(), saved.get())
                 });
             }
+        }
+    });
+}
+
+fn console(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let done = RefCell::new(Some(done));
+    let started = Instant::now();
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    ctl.act("console");
+    timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
+        let Some(ctl) = me.upgrade() else { return held.stop() };
+        let shown = ctl.console_log();
+        let report = match shown {
+            Some(log) if log.contains("GPU:") => format!("console: the window shows the session's log, {} lines, no failure", log.lines().count()),
+            _ if started.elapsed() > Duration::from_secs(10) => format!("console: the log never showed ({:?} characters)", shown.map(|l| l.len())),
+            _ => return,
+        };
+        held.stop();
+        if let Some(done) = done.borrow_mut().take() {
+            done(report);
         }
     });
 }

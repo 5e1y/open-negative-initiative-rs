@@ -37,11 +37,11 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Editor window, dark appearance pinned | `OpenNegativeApp.swift`, `Pipeline/QuitGuard.swift:12` | `oni-app/ui/app.slint` | done | | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
-| Console window | `UI/ConsoleView.swift`, `Pipeline/Diagnostics.swift` | none | missing | | no check |
+| Console window | `UI/ConsoleView.swift`, `Pipeline/Diagnostics.swift` | `ui/help.slint` `ConsoleWindow`, `app/help.rs` `open_console` | partial | The session's log polled every 0.5 s with Copy and Reveal; no watchdog counts blocks, so it always says none | `ONI_BENCH=console` |
 | Design system playground (dev builds) | `DesignSystem/DSPlayground.swift` | `oni-app` `--catalogue` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
-| Welcome sheet with tutorial video | `UI/WelcomeSheet.swift`, `UI/TutorialVideo.swift` | none | missing | | no check |
-| What's New, shown once per edition | `UI/WhatsNew.swift`, `DesignSystem/DSNews.swift` | none | missing | | no check |
-| Report a Bug sheet, sealed log | `UI/ReportSheet.swift`, `Pipeline/BugReport.swift`, `ReportSeal.swift` | none | missing | | no check |
+| Welcome sheet with tutorial video | `UI/WelcomeSheet.swift`, `UI/TutorialVideo.swift` | `ui/help.slint` `WelcomeSheet`, `app/help.rs` | partial | Shown once per edition with Swift's text, Website, Feedback and GET STARTED; the picture's caption sits under it, and no tutorial video plays | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts |
+| What's New, shown once per edition | `UI/WhatsNew.swift`, `DesignSystem/DSNews.swift` | `ui/ds/help.slint` `NewsSeal`, `app/help.rs` | done | Each note's seal on its heading until hovered, kept until the app quits; Show What's New Again | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts |
+| Report a Bug sheet, sealed log | `UI/ReportSheet.swift`, `Pipeline/BugReport.swift`, `ReportSeal.swift` | `oni-app/src/report.rs`, `ui/help.slint` `ReportSheet` | done | The log sealed as CryptoKit seals it, checked against CryptoKit both ways (`tools/seal_cross.swift`); posted to the site's `/report` | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts, `oni-app/src/report.rs::a_sealed_log_opens_with_the_private_key_alone`, `oni-app/src/report.rs::a_seal_crosses_to_cryptokit_and_back` |
 | Show My Year on Film (Wrapped) | `UI/WrappedView.swift`, `Pipeline/Wrapped.swift` | `oni-library/src/journal.rs` | partial | Journal only | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | Year's journal written on each gesture | `Pipeline/Journal.swift` | `export_card.rs` | partial | Only export writes to the journal | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | Splash | `UI/Splash.swift` | `oni-app/src/splash.rs`, `main.rs` | done | The version's picture, then the window; skipped under a bench | `oni-app/tests/launch.rs::the_splash_names_the_version_and_the_notice_covers_the_window` |
