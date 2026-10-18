@@ -1,0 +1,155 @@
+//! Asking a render: the open frame's settings in the slot, its patches healed, its full-resolution decode.
+
+use super::*;
+
+impl Ctl {
+    /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
+    pub(in crate::app) fn request_render(self: &Rc<Self>) {
+        let size = self.canvas_size();
+        let cropping = self.cropping();
+        let (job, build, heal) = {
+            let mut s = self.state.borrow_mut();
+            let Some(path) = s.open_path().map(str::to_string) else { return };
+            let revision = s.store.revision();
+            let moved_at = s.moved_at.take();
+            let settled = s.navigated_at.is_none_or(|t| t.elapsed() >= viewport::SETTLE);
+            let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
+            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some(), s.split.is_some(), cropping));
+            let moved = revision != s.requested || s.rendered == 0;
+            if !moved && view_key == s.requested_view {
+                return;
+            }
+            // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
+            let mut live = s.store.settings().clone();
+            if let Some(previewed) = s.preset_preview(&live) {
+                live = previewed;
+            }
+            if cropping {
+                live.geometry = live.geometry.without_crop();
+            }
+            if s.rendered != 0 && view_key == s.requested_view && s.requested_live.as_ref() == Some(&live) {
+                s.requested = revision;
+                return;
+            }
+            let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
+            s.requested = revision;
+            s.requested_view = view_key;
+            s.requested_live = Some(live.clone());
+            // Until the frame's first picture is shown, a render is the opening one, timed from the open.
+            let (kind, asked) = if s.rendered == 0 {
+                (Kind::Open, s.opened_at)
+            } else if moved {
+                (Kind::Notch, moved_at.unwrap_or_else(Instant::now))
+            } else {
+                (Kind::View, Instant::now())
+            };
+            // Full resolution is built once the view settles past the preview's ratio, never mid-gesture.
+            let wants_full = match (size, s.full_size) {
+                (Some(size), Some(f)) => settled && s.viewport.needs_full_resolution(negative.size().0 as f64 / negative.full_width, f, size, viewport::NOMINAL_BUDGET),
+                _ => false,
+            };
+            let build = (wants_full && full.is_none() && s.building_full.as_deref() != Some(path.as_str())).then(|| {
+                s.building_full = Some(path.clone());
+                (path.clone(), render::Reading::of(s.store.settings()))
+            });
+            let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
+            // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
+            let caches = crate::patches::caches();
+            let stored = s.store.settings().clone();
+            let unhealed = stored.corrections.iter().any(|c| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists());
+            let heal = (unhealed && s.healing.as_deref() != Some(path.as_str())).then(|| {
+                s.healing = Some(path.clone());
+                (path.clone(), stored)
+            });
+            // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
+            let reference = s.split.map(|_| {
+                let mut reference = oni_core::parameters::imported(&live);
+                reference.corrections = live.corrections.clone();
+                reference
+            });
+            // A notch is the hand at work: the input histograms read the small copy until it stops.
+            let held = kind == Kind::Notch;
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
+        };
+        self.worker.submit(job);
+        self.request_loupe();
+        if let Some((path, converted)) = build {
+            self.build_full(path, converted);
+        }
+        if let Some((path, settings)) = heal {
+            self.heal(path, settings);
+            self.publish_dedust();
+        }
+    }
+
+    /// `ensureGenerated` for each correction of the open frame that has no patch yet, one after the
+    /// other on the full-resolution frame, so each source holds the patches before it healed.
+    pub(in crate::app) fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings) {
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            let caches = crate::patches::caches();
+            let made = (|| -> Result<Vec<(oni_settings::id::Id, bool, (f64, f64))>, String> {
+                let decoded = render::decode_full(Path::new(&path), render::Reading::of(&settings))?;
+                let full = engine.lock()?.full(decoded)?;
+                let mut made = Vec::new();
+                for c in &settings.corrections {
+                    if c.stroke.is_empty() || crate::patches::file(&caches, c.id).exists() {
+                        continue;
+                    }
+                    let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
+                    let patch = crate::heal::generate(&region, c, size.0, size.1);
+                    crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
+                    engine.lock()?.forget_patch(c.id);
+                    made.push((c.id, patch.fallback, patch.offset));
+                }
+                Ok(made)
+            })();
+            with_shell(move |c| {
+                c.state.borrow_mut().healing = None;
+                match made {
+                    Ok(m) if m.is_empty() => {}
+                    Ok(m) => {
+                        let n = m.len();
+                        for (id, fell_back, offset) in m {
+                            let mut s = c.state.borrow_mut();
+                            if fell_back {
+                                s.fallback.insert(id);
+                            }
+                            s.sources.insert(id, offset);
+                        }
+                        timing::line(&format!("{}: {n} dust patches generated", stem(&path)));
+                        if c.state.borrow().open_path() == Some(path.as_str()) {
+                            c.state.borrow_mut().requested_view = None;
+                            c.request_render();
+                        }
+                    }
+                    Err(e) => timing::line(&format!("{}: dust patches not generated: {e}", stem(&path))),
+                }
+                c.publish_dedust();
+            });
+        });
+    }
+
+    /// The open frame decoded again at full resolution off this thread, then shown where the view wants it.
+    pub(in crate::app) fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            let built = render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d));
+            with_shell(move |c| {
+                let open = c.state.borrow().open_path() == Some(path.as_str());
+                {
+                    let mut s = c.state.borrow_mut();
+                    s.building_full = None;
+                    match built {
+                        Ok(full) if open => s.full = Some((path, full)),
+                        Ok(_) => {}
+                        Err(e) => timing::line(&format!("full resolution not built: {e}")),
+                    }
+                }
+                if open {
+                    c.request_render();
+                }
+            });
+        });
+    }
+}
