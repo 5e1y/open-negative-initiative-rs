@@ -222,3 +222,25 @@ fn a_correction_round_trips_and_its_absent_keys_read_their_defaults() {
     let read = codec::decode(serde_json::to_string(&bare).unwrap().as_bytes()).unwrap();
     assert!(read.settings.corrections.is_empty());
 }
+
+// MARK: - ScannerFinish.selfCheck
+
+#[test]
+fn a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros() {
+    let mut settings = PipelineSettings::default();
+    settings.print.contrast = 0.2;
+    settings.secret_sauce = 0.5;
+    let mut on_scanner = settings.as_scanner();
+    on_scanner.print.contrast = -0.3;
+    on_scanner.vignette.stops = 1.0;
+    let stored = settings.storing_scanner_edit(&on_scanner);
+    assert!(stored.scanner_finish.contrast == -0.3 && stored.scanner_finish.vignette.stops == 1.0);
+    assert!(stored.print.contrast == 0.2 && stored.secret_sauce == 0.5 && stored.vignette == settings.vignette);
+    assert!(stored.as_scanner().print.contrast == -0.3 && stored.as_scanner().secret_sauce == 0.0, "the Scanner never saw Pro's Chrome");
+    // Twin: Pro's contrast moved leaves the Scanner's where it was.
+    let mut on_pro = stored.clone();
+    on_pro.print.contrast = 0.4;
+    assert_eq!(on_pro.as_scanner().print.contrast, -0.3);
+    // Twin: an edit stored as Pro's own would carry the Scanner's contrast into Pro.
+    assert_ne!(on_scanner.print.contrast, stored.print.contrast);
+}

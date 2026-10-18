@@ -135,3 +135,31 @@ pub mod graduation {
         window(mode).start() + fraction * span()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The lowest density a test film holds, which the window has to reach in both modes.
+    const TEST_FILM_LOW: f32 = -0.243;
+
+    #[test]
+    fn the_graduation_reaches_under_the_lowest_density_a_test_film_holds() {
+        let negative = graduation::window(ConversionMode::Negative);
+        assert!(negative.contains(&TEST_FILM_LOW));
+        assert!(graduation::OVERSHOOT / -TEST_FILM_LOW > 1.44, "the overshoot clears that film by 44 %");
+        // Stage 6 mirrors the axis on DMAX in positive and stretches nothing.
+        let positive = graduation::window(ConversionMode::Positive);
+        assert!(positive.contains(&(pipeline::DMAX - TEST_FILM_LOW)));
+        for window in [&negative, &positive] {
+            assert!((window.end() - window.start() - graduation::span()).abs() < 1e-6);
+        }
+        for mode in [ConversionMode::Negative, ConversionMode::Positive] {
+            for f in [0.0, 0.37, 1.0] {
+                assert!((graduation::fraction(graduation::value(f, mode), mode) - f).abs() < 1e-6);
+            }
+        }
+        // Twin: a window starting at zero density puts that film's lowest value under bin 0.
+        assert!((TEST_FILM_LOW - 0.0) / graduation::top() < 0.0 && graduation::fraction(TEST_FILM_LOW, ConversionMode::Negative) > 0.0);
+    }
+}

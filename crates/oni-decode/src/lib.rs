@@ -218,6 +218,30 @@ pub fn decodes_via_mosaic(path: &Path) -> bool {
     route(path) == Branch::Mosaic
 }
 
+/// `RawDecode.isLowPrecision`: 8 bits per channel or fewer, a warning and never a refusal, since
+/// the density inversion bands low-code shadows. A RAW name is never low.
+pub fn is_low_precision(path: &Path) -> bool {
+    if container::probe(path) == Some(container::Kind::LinearRgb)
+        && let Some(bits) = container::bits_per_sample(path)
+    {
+        return bits <= 8;
+    }
+    !is_raw(path) && image_depth(path).is_some_and(|bits| bits <= 8)
+}
+
+/// The depth an image reader reports: a TIFF's directory, a PNG's header, 8 for a JPEG.
+fn image_depth(path: &Path) -> Option<usize> {
+    use std::io::Read;
+    let mut head = [0u8; 26];
+    let n = std::fs::File::open(path).ok()?.read(&mut head).ok()?;
+    match &head[..n.min(8)] {
+        [0xFF, 0xD8, 0xFF, ..] => Some(8),
+        [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] if n >= 25 => Some(head[24] as usize),
+        [b'I', b'I', ..] | [b'M', b'M', ..] => container::bits_per_sample(path),
+        _ => None,
+    }
+}
+
 /// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none, used by the linearity check.
 /// Safe to call from several threads at once: every decode owns its LibRaw instance.
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {

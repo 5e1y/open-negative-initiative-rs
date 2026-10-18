@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 65 twin, 18 partial, 79 none.
+Of 162 checks: 71 twin, 15 partial, 76 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -21,14 +21,14 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 7 | `RollFolder.selfCheck` | `Checks/Pipeline/RollFolder+Checks.swift:6` | a roll made on the disk moves its photos in and ⌘Z puts them back | twin | `oni-library/src/roll_folder.rs::a_roll_folder_takes_its_photos_and_gives_them_back` (⌘Z is `take_back`, ⌘⇧Z `lay`), `::a_taken_name_is_numbered_as_the_finder_numbers_a_copy`, `::a_triplet_moves_whole_on_its_names_or_stays_whole` |
 | 8 | `CaptureExposure.selfCheck` | `Checks/Pipeline/CaptureExposure+Checks.swift:7` | a capture's EXIF reads in stops against its roll's common settings | none | none |
 | 9 | `ScannerLook.selfCheck` | `Checks/Pipeline/ScannerLook+Checks.swift:7` | a retired scanner look folds into the photo's curves and Color Density | twin | `oni-settings/src/scanner.rs::a_folded_look_grades_the_curves_as_its_replica_did` |
-| 10 | `ScannerKey.selfCheck` | `Checks/UI/Lab/ScannerKey+Checks.swift:4` | the keypad's keys write the scanner's clicks and nothing of Pro | partial | `oni-core/src/command.rs::every_phone_key_crosses_into_the_store_and_back_unchanged`; Pro left alone not asserted |
+| 10 | `ScannerKey.selfCheck` | `Checks/UI/Lab/ScannerKey+Checks.swift:4` | the keypad's keys write the scanner's clicks and nothing of Pro | partial | `oni-core/tests/swift_checks.rs::every_scanner_key_moves_its_own_count_and_nothing_of_pro`, `oni-core/src/command.rs::every_phone_key_crosses_into_the_store_and_back_unchanged`; the keys' render through the Frontier is the Scanner face wave's, the legend widths oni-app's |
 | 11 | `LightingCatchUp.selfCheck` | `Checks/Pipeline/LightingCatchUp+Checks.swift:8` | a former document opens rendering as it did | twin | `oni-settings/tests/codec_checks.rs::a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not` |
 | 12 | `FilmProbe.axisChecks` | `Pipeline/FilmProbe.swift` | the probe reads the axis the kernel runs | none | none |
 | 13 | `Spectrogram.selfCheck` | `Checks/Pipeline/Spectrogram+Checks.swift:9` | the colour mixer reaches one band and no other | twin | `oni-pipeline/src/finishing.rs::every_band_owns_part_of_its_centre_and_the_packing_divides_by_it` |
 | 14 | `SpectrogramPanel.selfCheck` | `Checks/UI/SpectrogramPanel+Checks.swift:6` | the colour wheel is grabbed, never jumped to | twin | `oni-app/src/editors/spectrogram.rs::the_colour_wheel_is_grabbed_never_jumped_to` |
-| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | none | none |
+| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | none | none; no Rust contact sheet (`laid`, `write`) |
 | 16 | `Pipeline.measureWindowChecks` | `Checks/Pipeline/Pipeline+Checks.swift:9` | measurement window holds | none | none |
-| 17 | `Blocks.selfCheck` | `Checks/Pipeline/Blocks+Checks.swift:8` | the block grid names its cells, drops a speck and keeps an area | none | none |
+| 17 | `Blocks.selfCheck` | `Checks/Pipeline/Blocks+Checks.swift:8` | the block grid names its cells, drops a speck and keeps an area | none | none; the block reading is the measurement wave's |
 | 18 | `Film.selfCheck` | `Checks/Pipeline/Film+Checks.swift:6` | rolls group, and clearing one gives its frames back to their day | twin | `oni-library/tests/swift_checks.rs::rolls_take_their_frames_out_of_the_days_and_clearing_one_gives_them_back`, `::a_roll_is_offered_the_lowest_free_number`, `::the_day_is_computed_once_per_frame`, `::a_hand_placed_frame_reorders_inside_its_roll_and_never_walks_the_roll`, `::a_dragged_roll_leads_the_feed_and_a_day_reads_its_own_start`, `::a_rolls_three_inspector_fields_move_equality_apart_and_round_trip` |
 | 19 | `Roots.selfCheck` | `Checks/Pipeline/Roots+Checks.swift:4` | roots scan their images and never hold a photo twice | twin | `oni-library/src/roots.rs::roots_never_hold_a_photo_twice` |
 | 20 | `Favourites.selfCheck` | `Checks/Pipeline/Favourites+Checks.swift:7` | favourites follow their folders and a folder is surveyed once | twin | `oni-library/src/favourites.rs::surveys_read_each_folder_once_the_opened_one_first` |
@@ -37,7 +37,7 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 23 | `RollPicking.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:36` | a roll's frames are chosen and flagged one click at a time | none | none |
 | 24 | `RollFrameView.selfCheck` | `Checks/UI/RollReferenceSurface+Checks.swift:5` | Prepare the Roll's card shows every frame in its own scan's shape | none | none |
 | 25 | `OniLook.selfCheck` | `Checks/Pipeline/OniLook+Checks.swift:7` | ONI's scanner look is frozen into its cube and its machine sets Lighting at rest | twin | `oni-pipeline/src/oni_look.rs::the_look_lifts_a_mid_grey_and_keeps_it_grey`, `oni-pipeline/src/scanner.rs::the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks` |
-| 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | none | none |
+| 26 | `ScannerFinish.selfCheck` | `Checks/Pipeline/ScannerFinish+Checks.swift:5` | the Scanner face keeps its own finishing, apart from Pro's | twin | `oni-settings/tests/swift_checks.rs::a_scanner_edit_lands_in_its_own_finishing_and_leaves_pros` |
 | 27 | `Navigator.selfCheck` | `Checks/Pipeline/Navigator+Checks.swift:4` | the navigator walks folders one level at a time, up to Computer | none | none |
 | 28 | `Folders.selfCheck` | `Checks/Pipeline/Folders+Checks.swift:4` | the archive follows the disk's folders | twin | `oni-library/src/folders.rs::folders_lay_newest_first_subfolders_before_their_parent` |
 | 29 | `ArchiveTree.selfCheck` | `Checks/Pipeline/ArchiveTree+Checks.swift:6` | the archive tree unfolds its folders | twin | `oni-library/src/archive_tree.rs::a_folder_opens_on_its_subfolders_then_its_photos` |
@@ -50,7 +50,7 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 36 | `TreeDropTarget.selfCheck` | `Checks/UI/ListPicking+Checks.swift:35` | a drop over the tree lands where its strips say | none | none |
 | 37 | `FolderNavigation.selfCheck` | `Checks/UI/FolderNavigator+Checks.swift:5` | a navigator row opens or unfolds as it holds | none | none |
 | 38 | `WhatsNew.selfCheck` | `Checks/UI/WhatsNew+Checks.swift:6` | what's new hangs on its headings | none | none |
-| 39 | `InfoSidebar.selfCheck` | `Checks/UI/InfoSidebar+Checks.swift:4` | a project's stocks are counted by photo, and a typed date clamps | none | none |
+| 39 | `InfoSidebar.selfCheck` | `Checks/UI/InfoSidebar+Checks.swift:4` | a project's stocks are counted by photo, and a typed date clamps | none | none; the sidebar's stock rows and date fields are oni-app's |
 | 40 | `ConversionMode.selfCheck` | `Checks/Pipeline/ConversionMode+Checks.swift:6` | conversion modes hold | partial | `oni-settings/tests/swift_checks.rs::monochrome_inverts_and_rests_like_a_negative_and_a_positive_on_its_own`, `oni-core/tests/swift_checks.rs::a_mode_change_carries_the_handles_at_rest_and_leaves_a_placed_black`, `oni-pipeline/tests/swift_checks.rs::a_monochrome_render_lands_grey_and_a_negative_keeps_its_colour`, `oni-settings/src/modes.rs::an_unknown_mode_reads_negative_and_a_known_one_itself`; the panel tabs a mode leaves (`PanelTab`) are oni-app's |
 | 41 | `Parameters.selfCheck` | `Checks/Pipeline/Parameters+Checks.swift:34` | every setting is answered for | twin | `oni-core/src/parameters.rs::every_field_is_a_rows_or_excluded_and_never_both`, `oni-settings/tests/codec_checks.rs::every_field_lives_in_exactly_one_family` |
 | 42 | `Parameters.resetChecks` | `Checks/Pipeline/Parameters+Checks.swift:156` | a reset keeps what the file IS, and every path asks one place | twin | `oni-core/src/parameters.rs::the_reset_keeps_geometry_flat_field_and_dye_family`, `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
@@ -91,13 +91,13 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 77 | `AutomaticKey.selfCheck` | `Checks/Pipeline/AutomaticKey+Checks.swift:6` | a selection's average gives every frame the mean correction | twin | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
 | 78 | `LookSettings.selfCheck` | `Checks/Pipeline/LookSettings+Checks.swift:6` | a settings paste carries the Color and Details tabs whole, and nothing else | twin | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |
 | 79 | `FilterBalance.selfCheck` | `Checks/Pipeline/FilterBalance+Checks.swift:7` | the balance key greys the frame's sixth-power means with Temperature and Tint | partial | `oni-core/src/balance.rs::the_outcome_is_dosed_by_balance_strength`; no measurement |
-| 80 | `SourceEncoding.selfCheck` | `Checks/Pipeline/SourceEncoding+Checks.swift:12` | an undeclared file is read as the hand says | none | none |
-| 81 | `RGBPasses.selfCheck` | `Checks/Pipeline/RGBPasses+Checks.swift:10` | a frame made of RGB passes takes each pass's own channel | partial | `oni-render/tests/kernels.rs::rgb_passes` |
-| 82 | `RGBRegistration.selfCheck` | `Checks/Pipeline/RGBRegistration+Checks.swift:71` | a pass's magnification and shift read back off its edges | none | none |
+| 80 | `SourceEncoding.selfCheck` | `Checks/Pipeline/SourceEncoding+Checks.swift:12` | an undeclared file is read as the hand says | none | none; plain images are not read (`oni-app/src/render.rs` refuses them) and no decode reads `sourceEncoding` |
+| 81 | `RGBPasses.selfCheck` | `Checks/Pipeline/RGBPasses+Checks.swift:10` | a frame made of RGB passes takes each pass's own channel | partial | `oni-render/tests/kernels.rs::rgb_passes`; no Rust code for the triplet decode, its fit, grouping by capture time, `PassOrder(fitting:)` or shares |
+| 82 | `RGBRegistration.selfCheck` | `Checks/Pipeline/RGBRegistration+Checks.swift:71` | a pass's magnification and shift read back off its edges | none | none; no Rust registration |
 | 83 | `RawDecode.tilingCheck` | `Checks/Pipeline/RawDecode+Checks.swift:66` | full-resolution tiling holds | twin | `oni-graph/tests/graph.rs::a_tiled_source_equals_an_untiled_one` |
 | 84 | `GalleryHistory.selfCheck` | `Checks/Pipeline/GalleryHistory+Checks.swift:4` | gallery history holds | twin | `oni-library/src/gallery_history.rs::a_gesture_undoes_and_redoes_whole_and_an_idle_one_opens_no_step` |
 | 85 | `FlatField.selfCheck` | `Checks/Pipeline/FlatField+Checks.swift:5` | flat-field correction holds | twin | `oni-render/tests/kernels.rs::flat_field`, `oni-pipeline/src/flat_field.rs::the_shipped_mask_decodes_whole_with_a_peak_under_one` |
-| 86 | `ContainerRead.selfCheck` | `Checks/Pipeline/ContainerRead+Checks.swift:8` | DNG container read holds | partial | `oni-decode/src/container.rs::a_linear_scan_reads_through_its_table_black_and_white` |
+| 86 | `ContainerRead.selfCheck` | `Checks/Pipeline/ContainerRead+Checks.swift:8` | DNG container read holds | twin | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias`, `oni-decode/src/container.rs::a_linear_scan_reads_through_its_table_black_and_white`; `calibratedSpace` serves the converted decode, which is refused |
 | 87 | `ExportPreviews.selfCheck` | `Checks/Pipeline/ExportPreviews+Checks.swift:6` | export modal previews hold | none | none |
 | 88 | `Export.selfCheck` | `Checks/Pipeline/Export+Checks.swift:6` | export naming and resizing hold | twin | `oni-export/tests/settings.rs::names_cannot_fabricate_a_path`, `oni-export/src/resize.rs::lanczos_matches_an_independent_lanczos3_inside_the_frame` |
 | 89 | `Export.presetChecks` | `Checks/Pipeline/ExportPresets+Checks.swift:4` | export presets hold | twin | `oni-export/tests/settings.rs::every_key_writes_a_distinct_complete_state` |
@@ -150,18 +150,18 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 136 | `Journal.selfCheck` | `Checks/Pipeline/Journal+Checks.swift:6` | the year's journal writes and reads back its records | twin | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | 137 | `WrappedYear.selfCheck` | `Checks/Pipeline/Wrapped+Checks.swift:4` | the Wrapped reads a year off the journal | none | none |
 | 138 | `Layering.selfCheck` | `Checks/Pipeline/Layering+Checks.swift:38` | the engine names nothing of the interface | twin | Structural: `oni-pipeline` and the engine crates do not depend on `oni-app` |
-| 139 | `SourceFile.sceneListCheck` | `Checks/Pipeline/SourceFile+Checks.swift:47` | the scene is read whole | none | none |
+| 139 | `SourceFile.sceneListCheck` | `Checks/Pipeline/SourceFile+Checks.swift:47` | the scene is read whole | none | none; a Swift source-layout check with no Rust counterpart |
 | 140 | `DSTextFocus.selfCheck` | `Checks/DesignSystem/DSKeyboard+Checks.swift:59` | a focused text field keeps its bare keys | none | none |
 | 141 | `EditorMenus.selfCheck` | `Checks/UI/EditorCommands+Checks.swift:5` | menu shortcuts hold | none | none |
 | 142 | `History.selfCheck` | `Checks/Pipeline/History+Checks.swift:4` | session history holds | twin | `oni-core/src/history.rs::a_drag_within_the_window_is_one_step`, `the_stack_holds_its_limit` |
 | 143 | `Updates.selfCheck` | `Checks/Pipeline/Updates+Checks.swift:13` | distribution and updates hold | none | none |
 | 144 | `FloatInvariant.check` | `Pipeline/FloatInvariant.swift` | float invariant held | twin | `oni-graph/tests/graph.rs::the_judge_sees_nan_and_infinity`; the graph takes only `rgba32float` |
-| 145 | `DensityMigration.selfCheck` (RAW) | `Checks/Pipeline/DensityMigration+Checks.swift:167` | density migration holds on the frame | partial | `oni-settings/tests/real_files.rs::the_version_14_lumix_frames_read_the_migrations_they_are_due` |
+| 145 | `DensityMigration.selfCheck` (RAW) | `Checks/Pipeline/DensityMigration+Checks.swift:451` | density migration holds on the frame | twin | `oni-pipeline/tests/swift_checks.rs::the_migrated_windows_render_the_frozen_kernel_on_a_real_frame` (thumbnail on the GPU, full frame on the scalar reference), `oni-settings/tests/real_files.rs::the_version_14_lumix_frames_read_the_migrations_they_are_due` |
 | 146 | `FilmProbe.ceilingGrain` (RAW) | `Pipeline/FilmProbe.swift` | the ceiling's price measured at full resolution | none | none |
 | 147 | `Library.selfCheck` (RAW) | `Checks/Pipeline/Library+Checks.swift:97` | end-to-end opening holds | partial | `oni-app/tests/headless.rs::the_window_opens_roll_8_and_a_slider_drives_the_canvas` |
 | 148 | `Loupe.selfCheck` (RAW) | `Checks/UI/Loupe+Checks.swift:8` | loupe holds on the file | none | none |
-| 149 | `ChromaDenoise.selfCheck` (RAW) | `Checks/Pipeline/ChromaDenoise+Checks.swift:5` | the chroma radius stops short of smearing | none | none |
-| 150 | `Sharpen.selfCheck` (RAW) | `Checks/Pipeline/Sharpen+Checks.swift:7` | the sharpening radius stops short of halo | none | none |
+| 149 | `ChromaDenoise.selfCheck` (RAW) | `Checks/Pipeline/ChromaDenoise+Checks.swift:5` | the chroma radius stops short of smearing | twin | `oni-pipeline/tests/swift_checks.rs::the_chroma_track_reaches_the_films_dose_and_stops_short_of_smearing` |
+| 150 | `Sharpen.selfCheck` (RAW) | `Checks/Pipeline/Sharpen+Checks.swift:150` | the sharpening radius stops short of halo | twin | `oni-pipeline/tests/swift_checks.rs::the_sharpening_track_reaches_the_films_edge_and_stops_short_of_halo` |
 | 151 | `Pipette.selfCheck` (RAW) | `Checks/Pipeline/Pipette+Checks.swift:37` | the pipette's three constants hold on the frame | none | none |
 | 152 | `AutoLevels.selfCheck` (RAW) | `Checks/Pipeline/AutoLevels+Checks.swift:10` | channel alignment holds | none | none |
 | 153 | `ColorDensity.selfCheck` | `Checks/Pipeline/ColorDensity+Checks.swift:4` | colour density factor and render | twin | `oni-settings/tests/swift_checks.rs::colour_density_keeps_a_neutral_and_raises_a_ratio_to_its_power`, `oni-render/tests/stage47.rs::measured` |
@@ -169,8 +169,8 @@ Of 162 checks: 65 twin, 18 partial, 79 none.
 | 155 | `DS.Typo.selfCheck` | `Checks/DesignSystem/DSPlayground+Checks.swift:6` | type scale complete | partial | `oni-app/src/tokens.rs::the_committed_tokens_are_the_swift_ones` |
 | 156 | `DSKeyMonitor.exclusiveSurfaces` | `Checks/DesignSystem/DSKeyboard+Checks.swift:5` | bare keys reach one surface | none | none |
 | 157 | `RawDecode.isLinear (RAW)` | `Pipeline/SelfCheck.swift:378` | the decode is linear | twin | `oni-decode/tests/linearity.rs::one_stop_doubles_every_channel` |
-| 158 | `RawDecode.pinningCheck (RAW)` | `Checks/Pipeline/RawDecode+Checks.swift:10` | every decode knob pinned | partial | `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline`; LibRaw pins not asserted one by one |
-| 159 | `RawDecode.clippedFraction (RAW)` | `Pipeline/SelfCheck.swift:392` | no clipping at decode | none | none |
-| 160 | `RawDecode.looksFlat (RAW)` | `Pipeline/SelfCheck.swift:398` | the decode carries dynamic range | none | none |
+| 158 | `RawDecode.pinningCheck (RAW)` | `Checks/Pipeline/RawDecode+Checks.swift:10` | every decode knob pinned | twin | `oni-decode/tests/swift_checks.rs::nothing_the_pinned_decode_hands_out_piles_at_the_resting_ceiling`, `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline`; LibRaw keeps what `csrc/pinned.c` writes, so its knobs are not read back |
+| 159 | `RawDecode.clippedFraction (RAW)` | `Pipeline/SelfCheck.swift:392` | no clipping at decode | none | none; runs on a file decoded outside RAW, and the fixtures hold none |
+| 160 | `RawDecode.looksFlat (RAW)` | `Pipeline/SelfCheck.swift:398` | the decode carries dynamic range | none | none; no Rust `looksFlat` (the canvas remark is oni-app's), and the fixtures hold no file decoded outside RAW |
 | 161 | `Thumbnails.selfCheck(source:) (RAW)` | `Pipeline/SelfCheck.swift:434` | thumbnails on the file | none | none |
 | 162 | `Export.selfCheck(source:) (RAW)` | `Pipeline/SelfCheck.swift:438` | export on the file | twin | `oni-export/tests/roll8.rs::a_frame_exports_with_its_date_and_none_of_the_scans_fields` |

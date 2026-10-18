@@ -50,10 +50,11 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Screen gamut tolerance 0.01, period 9, duty 0.34 | `Pipeline/ScreenGamut.swift:14-29` | `oni-colour/src/gamut.rs:11-29` | done | | `oni-colour/tests/checks.rs::the_zebra_stripes_what_the_screen_clips` |
 | Proof cube 33 in Rec. 2020 | `Pipeline/Proof.swift:53-54` | `oni-colour/src/proof.rs:37` | done | | `oni-colour/tests/checks.rs::the_proof_clips_what_the_export_space_cannot_hold` |
 | Gain map lift 4, subsampling 2 | `Pipeline/GainMapContainer.swift:10-12` | `oni-export/src/gain_map.rs:8-10` | done | | `oni-export/tests/files.rs::the_container_says_two_stops_in_both_families` |
-| Export sample 500 px, preview 1600 px | `Pipeline/Export.swift:8-12` | `oni-export/src/lib.rs:24-27` | done | | no check |
+| Export sample 500 px, preview 1600 px | `Pipeline/Export.swift:8-12` | `oni-export/src/lib.rs:24-27` | done | The preview side has no reader outside the export card | `oni-export/tests/roll8.rs::the_estimate_holds_on_roll_8` (the sample side) |
 | Geometry bleed margin 1, angle ±8 | `Pipeline/Geometry.swift:26,401` | `oni-pipeline/src/geometry.rs:11`, `oni-settings/src/frame.rs:74` | done | | `oni-pipeline/src/geometry.rs::the_rotation_keeps_the_centre_and_covers_its_bounding_box` |
 | Raw texture side 16 384 | `Pipeline/RawDecode.swift:181` | `oni-graph/src/graph.rs:16` | done | | `oni-graph/tests/graph.rs::a_tiled_source_equals_an_untiled_one` |
-| Decode pinned 5000 K, tint 0 | `Pipeline/RawDecode.swift:14-26` | `oni-decode/src/lib.rs:46`, `csrc/pinned.c` | done | LibRaw by design; `CIRAWFilter` knobs (noise 1, sharpness 0, shadow bias 0, version 8) have no LibRaw twin | `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline` |
+| Decode pinned 5000 K, tint 0 | `Pipeline/RawDecode.swift:14-26` | `oni-decode/src/lib.rs:46`, `csrc/pinned.c` | done | LibRaw by design; `CIRAWFilter` knobs (noise 1, sharpness 0, shadow bias 0, version 8) have no LibRaw twin | `oni-decode/src/lib.rs::the_5000_k_white_reads_neutral_at_the_baseline`, `oni-decode/tests/swift_checks.rs::nothing_the_pinned_decode_hands_out_piles_at_the_resting_ceiling` |
+| An 8-bit source is flagged, never refused (`isLowPrecision`) | `Pipeline/RawDecode.swift:400`, `ContainerRead.swift:198` | `oni-decode/src/lib.rs` `is_low_precision` | partial | Read; no panel shows the warning | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
 | Sort decodes on the bytes, not the extension | `Pipeline/RawDecode.swift` | `oni-decode/src/container.rs` | done | | `oni-decode/src/container.rs::the_bytes_decide_the_branch` |
 | Undeclared file read as the hand says (Source Encoding) | `Pipeline/SourceEncoding.swift` | `oni-settings` field | partial | Field only; no plain-image decode | no check |
 | DNG container read: illuminants 17, 20, 21, 23 | `Pipeline/ContainerRead.swift:388` | `oni-decode/src/container.rs` | partial | Linear table read; converted primaries refused | `oni-decode/src/container.rs::a_linear_scan_reads_through_its_table_black_and_white` |
@@ -121,7 +122,7 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Sidecar write delay 400 ms | `Pipeline/Sidecar.swift:7` | `oni-app/src/app.rs:34` | partial | 500 ms | no check |
 | Thumbnail refresh 2 s, after the sidecar write | `Pipeline/Thumbnails.swift:21` | none | missing | | no check |
 | Histogram throttle 12 ms, 100 ms while held | `Pipeline/Histogram.swift:59-63` | none | missing | | no check |
-| Histogram graduation overshoot 0.35 | `Pipeline/Histogram.swift:20` | `oni-settings/src/axis.rs:105` | done | | no check |
+| Histogram graduation overshoot 0.35 | `Pipeline/Histogram.swift:20` | `oni-settings/src/axis.rs:105` | done | | `oni-settings/src/axis.rs::the_graduation_reaches_under_the_lowest_density_a_test_film_holds` |
 | Medal keys 0-3 bare, live only outside text | `UI/EditorCommands.swift:183` | `oni-app/src/app.rs:1172-1175` | done | | no check |
 
 ## Codec, sidecar and index
@@ -195,7 +196,7 @@ these two tests moves that branch.
 | Dust corrections | `Pipeline/Corrections.swift` | `oni-pipeline/src/corrections.rs` | no | `oni-render/tests/kernels.rs::correction_search` |
 | Geometry: crop, quarter turns, mirror, angle | `Pipeline/Geometry.swift` | `oni-pipeline/src/geometry.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::rotation_turns_and_strokes_match` |
 | RGB passes | `Pipeline/RGBPasses.swift` | `oni-pipeline` | no | `oni-render/tests/kernels.rs::rgb_passes` |
-| Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs` | no | none |
+| Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs` | no | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
 | Source encoding | `Pipeline/SourceEncoding.swift` | none | no | none |
 | Paper correction | `Pipeline/PaperCorrection.swift` | `oni-colour/src/paper.rs` | n/a: laid only on an export into a paper profile | none |
 | Contact-sheet ground | `Pipeline/ContactSheet.swift` | none | no | none |

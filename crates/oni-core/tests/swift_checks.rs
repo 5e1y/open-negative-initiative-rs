@@ -303,3 +303,76 @@ fn an_import_never_overwrites_and_a_duplicate_says_so() {
     assert!(copy.id != held.id && copy.name == "Gold 200 copy" && copy.settings == held.settings);
     assert!(copy.parameters == held.parameters && copy.tint == held.tint);
 }
+
+// MARK: - ScannerKey.selfCheck
+
+fn opened(name: &str, mode: ConversionMode) -> oni_core::EditorStore {
+    let frame = scratch(name).join("frame.tif");
+    std::fs::write(&frame, [0]).unwrap();
+    let frame = frame.to_string_lossy().into_owned();
+    let mut store = oni_core::EditorStore::new(oni_core::Archive::new(vec![frame.clone()], |_: &Path| false));
+    store.open(&frame).unwrap();
+    if mode != ConversionMode::Negative {
+        store.apply(oni_core::Command::Mode(mode));
+    }
+    store
+}
+
+fn press(store: &mut oni_core::EditorStore, key: oni_link::Command) {
+    store.apply(oni_core::Command::from(key));
+}
+
+#[test]
+fn every_scanner_key_moves_its_own_count_and_nothing_of_pro() {
+    use oni_link::{Command as Key, Effect, Letter};
+    let mut store = opened("scanner-keys", ConversionMode::Negative);
+    let start = store.settings().clone();
+    for _ in 0..3 {
+        press(&mut store, Key::Step { letter: Letter::C, by: 1 });
+    }
+    press(&mut store, Key::Step { letter: Letter::M, by: -2 });
+    press(&mut store, Key::Step { letter: Letter::D, by: 3 });
+    press(&mut store, Key::Step { letter: Letter::W, by: 4 });
+    let s = store.settings().scanner;
+    assert_eq!((s.d, s.c, s.m, s.y, s.w), (3, 3, -2, 0, 4), "every key moves its own count and no other");
+    press(&mut store, Key::Reset { letter: Letter::D });
+    let s = store.settings().scanner;
+    assert_eq!((s.d, s.c, s.m, s.w), (0, 3, -2, 4), "a letter's own key clears that letter alone");
+    for _ in 0..30 {
+        press(&mut store, Key::Step { letter: Letter::Y, by: 3 });
+        press(&mut store, Key::Step { letter: Letter::W, by: -3 });
+    }
+    assert_eq!((store.settings().scanner.y, store.settings().scanner.w), (24, -10), "a key held past its stop stays on it");
+
+    // A Contrast key lands on its 5 % grid and stops at the track's end; a Vignette key on tenths of a stop.
+    let on = |name: &str, mode: ConversionMode, effect: Effect, from: f32, by: i8| {
+        let mut store = opened(name, mode);
+        let mut s = store.settings().clone();
+        match effect {
+            Effect::Vignette => s.scanner_finish.vignette.stops = from,
+            _ => s.scanner_finish.contrast = from,
+        }
+        store.apply(oni_core::Command::Write(Box::new(s)));
+        let before = store.settings().clone();
+        press(&mut store, Key::StepEffect { effect, by });
+        let after = store.settings().clone();
+        assert!(after.print == before.print && after.vignette == before.vignette && after.secret_sauce == before.secret_sauce, "Pro's finishing is untouched");
+        match effect {
+            Effect::Vignette => after.scanner_finish.vignette.stops,
+            _ => after.scanner_finish.contrast,
+        }
+    };
+    assert!((on("contrast-step", ConversionMode::Negative, Effect::Contrast, 0.12, 1) - 0.15).abs() < 1e-6);
+    assert_eq!(on("contrast-held", ConversionMode::Negative, Effect::Contrast, 0.45, 3), 0.5);
+    // Twin: on black and white's wider track the same +3 goes on.
+    assert!((on("contrast-wide", ConversionMode::Monochrome, Effect::Contrast, 0.45, 3) - 0.6).abs() < 1e-6);
+    assert!((on("vignette-step", ConversionMode::Negative, Effect::Vignette, -0.04, -3) + 0.3).abs() < 1e-6);
+
+    // Nothing of Pro moved: the frame with its scanner fields put back is the frame opened.
+    let mut back = store.settings().clone();
+    back.scanner = start.scanner;
+    back.scanner_finish = start.scanner_finish.clone();
+    assert_eq!(back, start);
+    // Twin: the same comparison with the clicks left in sees them.
+    assert_ne!(store.settings(), &start);
+}
