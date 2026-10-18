@@ -65,6 +65,7 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod sheets;
 mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
 /// The folder picker `Open Folder…` shows; a check hands its own.
@@ -351,6 +352,7 @@ pub struct State {
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
+    pub(crate) making_sheet: Option<sheets::Making>,
 }
 
 impl State {
@@ -485,7 +487,7 @@ impl State {
             let total = self.rows.len();
             return Some(format!("Reading the library · {} of {total}", total - waiting));
         }
-        None
+        self.making_sheet.map(|m| m.bar())
     }
 
     /// The open frame's place in its group, one-based, and the group's count.
@@ -749,6 +751,7 @@ impl Shell {
             console: None,
             nav: navigator::Nav::new(options.computer),
             prepare: prepare::Roll::new(options.require_roll),
+            making_sheet: None,
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -2791,6 +2794,7 @@ impl Ctl {
                 self.restore(&picked);
             }
             "new-roll" if app.get_gallery() => self.new_roll(),
+            "contact-sheet" => self.make_contact_sheet(),
             "reset-to-default" if app.get_gallery() => self.ask_reset_to_default(),
             "ungroup" => self.ungroup(),
             "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
@@ -3358,7 +3362,7 @@ impl Ctl {
                 filter: filter.map_or("Filter: All".into(), |m| format!("Filter: {}", library::medal(m))).into(),
                 roll: plural(count, "New Roll from Selection", format!("New Roll from {count} Photos")).into(),
                 ungroup: plural(members, "Ungroup", format!("Ungroup {members} Photos")).into(),
-                sheet: plural(selected, "New Contact Sheet", format!("New Contact Sheet from {selected} Photos")).into(),
+                sheet: sheets::title(s.making_sheet.is_some(), selected).into(),
                 screen_gamut: if screen_gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into(),
             };
             // A gesture this build lacks stays dark, whatever Swift's rule would say.
@@ -3391,7 +3395,7 @@ impl Ctl {
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
                 ungroup: members > 0,
-                contact_sheet: false,
+                contact_sheet: sheets::can_make(s.making_sheet.is_some(), selected),
                 measure_roll: !preparing && count > 0,
                 reset_to_default: gallery && count > 0,
                 copy_settings: open,
@@ -3422,6 +3426,7 @@ impl Ctl {
         let bar = w.global::<Bar>();
         bar.set_can_paste(live.paste_settings);
         bar.set_can_sheet(live.contact_sheet);
+        bar.set_sheet_title(menus.get_titles().sheet);
         bar.set_can_prepare(live.measure_roll);
         panel.set_can_prepare(true);
         self.publish_presets();

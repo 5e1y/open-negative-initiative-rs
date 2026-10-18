@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 84 twin, 19 partial, 59 none.
+Of 162 checks: 86 twin, 19 partial, 57 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -26,7 +26,7 @@ Of 162 checks: 84 twin, 19 partial, 59 none.
 | 12 | `FilmProbe.axisChecks` | `Pipeline/FilmProbe.swift` | the probe reads the axis the kernel runs | none | none |
 | 13 | `Spectrogram.selfCheck` | `Checks/Pipeline/Spectrogram+Checks.swift:9` | the colour mixer reaches one band and no other | twin | `oni-pipeline/src/finishing.rs::every_band_owns_part_of_its_centre_and_the_packing_divides_by_it` |
 | 14 | `SpectrogramPanel.selfCheck` | `Checks/UI/SpectrogramPanel+Checks.swift:6` | the colour wheel is grabbed, never jumped to | twin | `oni-app/src/editors/spectrogram.rs::the_colour_wheel_is_grabbed_never_jumped_to` |
-| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | none | none |
+| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | twin | `oni-measure/src/sheet.rs::the_sheet_lays_six_to_a_row_fitted_on_one_gap_with_nothing_painted_between`, `::the_cap_holds_and_nothing_is_dropped_to_hold_it`, `::a_sheet_stands_on_its_rolls_window_its_frames_flat_field_never_laid_twice`, `::a_sheet_is_named_by_its_roll_or_day_and_lands_in_its_folder_numbered`, `oni-app/src/app/sheets.rs::the_sheet_file_gives_its_pixels_back_in_working_light` |
 | 16 | `Pipeline.measureWindowChecks` | `Checks/Pipeline/Pipeline+Checks.swift:9` | measurement window holds | partial | `oni-measure/src/window.rs::an_untouched_frame_reads_clear_of_its_edges_and_a_drawn_window_where_it_was_drawn`, `::the_window_is_seen_inside_the_crop_and_a_bypassed_crop_reads_the_frame`; asserted on the rectangles, not through a rendered histogram |
 | 17 | `Blocks.selfCheck` | `Checks/Pipeline/Blocks+Checks.swift:8` | the block grid names its cells, drops a speck and keeps an area | twin | `oni-measure/tests/blocks.rs::the_grid_names_its_cells_as_a_sheet_is_read`, `::a_speck_never_votes_and_an_area_places_the_end_on_its_own_value`, `::the_tail_is_a_share_of_the_cell_so_a_hair_falls_and_a_thread_stays`, `::a_window_reads_only_what_it_holds_and_a_roll_reads_through_its_frames` |
 | 18 | `Film.selfCheck` | `Checks/Pipeline/Film+Checks.swift:6` | rolls group, and clearing one gives its frames back to their day | twin | `oni-library/tests/swift_checks.rs::rolls_take_their_frames_out_of_the_days_and_clearing_one_gives_them_back`, `::a_roll_is_offered_the_lowest_free_number`, `::the_day_is_computed_once_per_frame`, `::a_hand_placed_frame_reorders_inside_its_roll_and_never_walks_the_roll`, `::a_dragged_roll_leads_the_feed_and_a_day_reads_its_own_start`, `::a_rolls_three_inspector_fields_move_equality_apart_and_round_trip` |
@@ -86,7 +86,7 @@ Of 162 checks: 84 twin, 19 partial, 59 none.
 | 72 | `ScannerClicks.selfCheck` | `Checks/Pipeline/ScannerClicks+Checks.swift:6` | the scanner's clicks read tolerant, held to their stops, and survive a sidecar | twin | `oni-settings/src/scanner.rs::a_keypad_reads_absent_keys_at_rest_and_clamps_past_its_stops` |
 | 73 | `DSSlots.selfCheck` | `Checks/DesignSystem/DSReorder+Checks.swift:4` | a chip carried across slots lands in the nearest, held inside the row | none | none |
 | 74 | `RollPreviews.selfCheck` | `Checks/UI/RollPreviews+Checks.swift:16` | the roll assistant's pictures are rendered once, where they are made | partial | `oni-app/src/roll_previews.rs::a_negative_reads_as_its_complement_and_a_grey_film_on_its_luma`; the bitmap read once is the encode's own, not checked |
-| 75 | `RollSettings.resetReachCheck` | `Checks/Pipeline/RollSettings+Checks.swift:7` | a reset to default reaches whole rolls and their sheets, never a neighbour | none | none |
+| 75 | `RollSettings.resetReachCheck` | `Checks/Pipeline/RollSettings+Checks.swift:7` | a reset to default reaches whole rolls and their sheets, never a neighbour | twin | `oni-library/tests/swift_checks.rs::a_reset_to_default_reaches_whole_rolls_and_their_sheets_never_a_neighbour` |
 | 76 | `RollSettings.selfCheck` | `Checks/Pipeline/RollSettings+Checks.swift:47` | a roll's settings travel field by field onto the frames measured with it | twin | `oni-core/tests/roll8.rs::a_roll_settings_gesture_writes_every_frame_of_the_roll_as_one_step_and_undoes_byte_for_byte` |
 | 77 | `AutomaticKey.selfCheck` | `Checks/Pipeline/AutomaticKey+Checks.swift:6` | a selection's average gives every frame the mean correction | twin | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
 | 78 | `LookSettings.selfCheck` | `Checks/Pipeline/LookSettings+Checks.swift:6` | a settings paste carries the Color and Details tabs whole, and nothing else | twin | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |

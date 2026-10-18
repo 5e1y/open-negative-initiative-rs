@@ -139,6 +139,7 @@ impl Ctl {
         panel.set_dye_family(FAMILIES.iter().position(|f| *f == family).unwrap_or(2) as i32);
         panel.set_gains_inverted(settings.mode.inverts_gain_sense());
         panel.set_monochrome(settings.mode.is_monochrome());
+        panel.set_sheet(settings.sheet.is_some());
         let flat = &settings.flat_field;
         panel.set_flat_field_on(flat.mask != FlatFieldMask::None);
         panel.set_masked(flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none()));

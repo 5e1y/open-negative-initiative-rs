@@ -111,7 +111,7 @@ Statuses are defined in [README.md](README.md).
 | Sharpening: Amount, Radius, Halo limit | `UI/DetailsPane.swift:9`, `UI/SharpenPanel.swift` | `panel.slint:182-187` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Chroma Denoise: Amount, Radius | `UI/DetailsPane.swift:17` | `panel.slint` DetailsPane | done | Hidden in monochrome, as `DetailsPane` hides it | oni-app/tests/roll_tab.rs::the_roll_tabs_blocks_write_what_swifts_write |
 | Texture | `UI/DetailsPane.swift:25` | `panel.slint:197-200` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
-| Off on a contact sheet, with its note | `UI/DetailsPane.swift:37` | none | missing | | no check |
+| Off on a contact sheet, with its note | `UI/DetailsPane.swift:37` | `ui/panel.slint` `DetailsPane`, `DetailSlider`; `app/roll_tab.rs` `PanelState.sheet` | done | Sharpening and Chroma Denoise sliders dimmed and out of reach, their help mark saying why; the values kept | `oni-app/tests/contact_sheet.rs::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips` |
 
 ## Panel: De-dust
 
@@ -142,7 +142,7 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Three zones, one item per zone | `Scene/EditorScene+Bar.swift`, `UI/AppBar.swift` | `oni-app/ui/toolbar.slint` | done | | `oni-app/tests/design_system.rs::screens_use_only_the_design_system` (tokens only) |
-| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys | partial | Framing and Compare are wired; the contact-sheet key stays dark until the sheet exists | `ONI_BENCH=compare` |
+| Framing, compare, contact sheet keys | `Scene/EditorScene+Bar.swift:66` | `toolbar.slint` EditorKeys, GalleryKeys | done | The contact-sheet key on `canMakeSheet` with `sheetTitle` as its help, in the editor and the gallery | `oni-app/tests/contact_sheet.rs::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips`, `ONI_BENCH=compare` |
 | Undo, redo keys with their state | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` | done | Editor surface only | `oni-app/src/store.rs::a_drag_is_one_undo_step_and_reports_only_its_slider` |
 | Copy, Paste, PASTE TO ROLL keys | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app.rs` `act` | done | Through the same gestures as the menu, the confirm sheet included | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Correction key | `Scene/EditorScene+Bar.swift` | `app.rs` `act` "correction" | done |  | `ONI_BENCH=dedust` |
@@ -180,7 +180,7 @@ Statuses are defined in [README.md](README.md).
 | Filter: All ⌘L | `UI/EditorCommands.swift:187` | `app.slint` menu bar, `app.rs` `cycle_filter` | done | Exactly one medal, never a tier above | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | New Roll from Selection ⇧⌘G | `UI/EditorCommands.swift:194` | `app.slint` menu bar, `app.rs` `new_roll`, `oni-library/src/roll_folder.rs` | partial | Does not ask for the new folder's name (`renameRequest`) | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Ungroup ⌥⇧⌘G | `UI/EditorCommands.swift:198` | `app/rolls.rs` `ungroup`, `app.rs` `publish_menus` | done | Titled by the targets carrying a roll, live only in the gallery | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
-| New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint:93` | missing | | no check |
+| New Contact Sheet | `UI/EditorCommands.swift:204` | `app.slint` Rolls menu, `app/sheets.rs` `make_contact_sheet` | done | Live on two photos or more and not while one is made; New Contact Sheet from N Photos, Making Contact Sheet… | `oni-app/tests/contact_sheet.rs::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips`, `oni-app/src/app/sheets.rs::the_key_needs_two_photos_and_bars_a_second_run` |
 | Prepare the Roll… | `UI/EditorCommands.swift:206`, `Scene/EditorScene+Menus.swift:77` | `app.rs` `publish_menus`, `app/prepare.rs` `prepare_roll` | done | Live in the gallery and the editor on any target | `oni-app/tests/prepare.rs::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step` |
 | Reset to Default… | `UI/EditorCommands.swift:208` | `app/rolls.rs` `ask_reset_to_default`, `oni-core/src/store/roll.rs` `reset_to_default` | done | The reach read off the main thread, then a confirm naming it; one gallery step | oni-app/tests/rolls.rs::the_roll_gestures_reach_what_swift_reaches |
 | Copy Settings ⇧⌘C | `UI/EditorCommands.swift:213` | `app.slint` menu bar, `oni-core/src/store.rs` `copy_settings` | partial | In-memory board, as before | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
