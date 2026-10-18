@@ -84,6 +84,7 @@ export global Stroke {
     out property <length> hairline: DS.stroke-hairline;
     out property <length> line: DS.stroke-line;
     out property <length> emphasis: DS.stroke-emphasis;
+    out property <length> trace: DS.stroke-trace;
 }
 
 export global Type {
@@ -160,6 +161,7 @@ export global TabsStyle {
     out property <length> inset: Space.xxs;
     out property <length> pill-radius: Radius.track;
     out property <length> mark: Space.xs;
+    out property <length> swatch: DS.control-handle-size;
 }
 
 export global ToggleStyle {
@@ -262,4 +264,27 @@ export global ShellStyle {
     out property <length> library-width: DS.control-film-sidebar-width;
     out property <length> panel-width: DS.control-panel-width;
     out property <length> info-width: DS.control-info-sidebar-width;
+}
+
+// The editors' plots: their inks and the sizes they draw handles at.
+export global PlotInkStyle {
+    // `LevelsChannel.tint`'s red: the system red on the dark appearance, which no token holds.
+    out property <color> channel-red: #ff453a;
+    // `LevelsView.Grip.tint`: the three inner handles' greys, `Color(white:)` in the Swift view.
+    out property <color> grey-quarter: #404040;
+    out property <color> grey-half: #808080;
+    out property <color> grey-three-quarters: #bfbfbf;
+    // `SpectrogramPanel.tint`: each band's centre at saturation 0.85 and full brightness.
+    out property <[color]> bands: [#ff2626, #ff9326, #ffff26, #26ff26, #26ffff, #2626ff, #9326ff, #ff26ff];
+    out property <length> histogram: DS.control-histogram-height;
+    out property <length> track: DS.control-track-height;
+    out property <length> knob-width: DS.control-handle-thickness;
+    out property <length> knob-height: DS.control-handle-length;
+    out property <length> grab: DS.control-grab-size;
+    out property <length> radius: Radius.card;
+    out property <color> guide: DS.palette-guide;
+    out property <color> guide-faint: DS.palette-guide-faint;
+    out property <color> marker: DS.palette-marker;
+    out property <color> handle-active: DS.palette-handle-active;
+    out property <color> handle-idle: DS.palette-handle-idle;
 }

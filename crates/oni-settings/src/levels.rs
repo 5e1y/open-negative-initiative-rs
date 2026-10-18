@@ -31,6 +31,41 @@ impl LevelsChannel {
     pub fn is_density(self) -> bool {
         Self::PER_CHANNEL.contains(&self)
     }
+
+    pub fn histogram_channel(self) -> Option<usize> {
+        match self {
+            Self::Red => Some(0),
+            Self::Green => Some(1),
+            Self::Blue => Some(2),
+            Self::Luma | Self::Linked => None,
+        }
+    }
+
+    /// The domain the track expresses: on a density, the graduation window, which begins under zero.
+    pub fn domain(self, mode: ConversionMode) -> (f32, f32) {
+        if self.is_density() {
+            let w = graduation::window(mode);
+            (*w.start(), *w.end())
+        } else {
+            (0.0, 1.0)
+        }
+    }
+
+    /// Where a value sits on the track, 0 to 1: the graduation's own fraction.
+    pub fn position_of_value(self, value: f32, mode: ConversionMode) -> f32 {
+        let (low, high) = self.domain(mode);
+        (value - low) / (high - low)
+    }
+
+    pub fn value_at_position(self, position: f32, mode: ConversionMode) -> f32 {
+        let (low, high) = self.domain(mode);
+        low + position * (high - low)
+    }
+
+    /// Three decimals of density where values are densities, a share of the output otherwise.
+    pub fn readout(self, value: f32) -> String {
+        if self.is_density() { format!("{value:.3}") } else { format!("{:.1}%", value * 100.0) }
+    }
 }
 
 /// One set of levels. The two added points are stored normalised between black and white.
@@ -97,6 +132,37 @@ impl Levels {
         self.shadow_ordinate() == 0.25 && self.highlight_ordinate() == 0.75
     }
 
+    /// Where a normalised position is held before the logarithm, which diverges at both ends.
+    pub const ANCHOR_CLAMP: (f32, f32) = (0.02, 0.98);
+
+    /// The value that renders as mid-grey, not where the median's handle is drawn.
+    pub fn display_mid(&self) -> f32 {
+        self.black + self.mid * (self.white - self.black)
+    }
+
+    pub fn display_shadows(&self) -> f32 {
+        self.black + self.shadows * (self.white - self.black)
+    }
+
+    pub fn display_highlights(&self) -> f32 {
+        self.black + self.highlights * (self.white - self.black)
+    }
+
+    /// The quarter point at a value, held to its travel; a closed window leaves it.
+    pub fn set_display_shadows(&mut self, v: f32) {
+        let span = self.white - self.black;
+        if span > 0.0 {
+            self.shadows = ((v - self.black) / span).max(Self::SHADOW_RANGE.0).min(Self::SHADOW_RANGE.1);
+        }
+    }
+
+    pub fn set_display_highlights(&mut self, v: f32) {
+        let span = self.white - self.black;
+        if span > 0.0 {
+            self.highlights = ((v - self.black) / span).max(Self::HIGHLIGHT_RANGE.0).min(Self::HIGHLIGHT_RANGE.1);
+        }
+    }
+
     pub fn set_black(&mut self, v: f32) {
         self.black = v.min(self.white - Self::EPSILON);
     }
@@ -138,6 +204,17 @@ impl LevelsSet {
             LevelsChannel::Blue => Some(&mut self.blue),
             LevelsChannel::Linked | LevelsChannel::Luma => None,
         }
+    }
+
+    pub fn set(&mut self, channel: LevelsChannel, levels: Levels) {
+        if let Some(window) = self.get_mut(channel) {
+            *window = levels;
+        }
+    }
+
+    /// The per-channel windows a hand moved off their rest.
+    pub fn touched(&self, mode: ConversionMode, ceiling: f32) -> Vec<LevelsChannel> {
+        LevelsChannel::PER_CHANNEL.into_iter().filter(|c| self.get(*c) != Self::resting(*c, mode, ceiling)).collect()
     }
 
     pub fn windows(&self) -> [Levels; 3] {

@@ -117,7 +117,7 @@ impl Gpu {
 }
 
 pub struct State {
-    store: Box<dyn Settings>,
+    pub(crate) store: Box<dyn Settings>,
     screen: Screen,
     archive: Option<Archive>,
     /// Every photo's path in gallery order.
@@ -136,7 +136,7 @@ pub struct State {
     negative: Option<(String, Arc<Negative>)>,
     previews: Arc<Mutex<Previews>>,
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
-    hands: Arc<AtomicUsize>,
+    pub(crate) hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
     rendered: u64,
     requested: u64,
@@ -287,6 +287,7 @@ pub struct Ctl {
     pulse: Timer,
     settle: Timer,
     stripes: Timer,
+    pub(crate) editors: crate::editors::Shell,
 }
 
 thread_local! {
@@ -474,6 +475,7 @@ impl Shell {
             pulse: Timer::default(),
             settle: Timer::default(),
             stripes: Timer::default(),
+            editors: crate::editors::Shell::default(),
         });
         SHELL.with(|s| *s.borrow_mut() = Rc::downgrade(&ctl));
         Ctl::wire(&ctl, &window);
@@ -506,7 +508,7 @@ impl Ctl {
 
     /// Every moved slider's value to the panel; a knob under the hand keeps its place, one moved by
     /// a command springs there, and `jump` places them all at once, as opening a photo does.
-    fn publish(self: &Rc<Self>, jump: bool) {
+    pub(crate) fn publish(self: &Rc<Self>, jump: bool) {
         let Some(w) = self.window() else { return };
         let g = w.global::<StoreGlobal>();
         let moved = {
@@ -553,6 +555,7 @@ impl Ctl {
         self.publish_bar();
         self.publish_framing();
         self.publish_dedust();
+        crate::editors::publish(self);
         self.request_render();
     }
 
@@ -2177,6 +2180,7 @@ impl Ctl {
         Ctl::wire_canvas(me, window);
         Ctl::wire_framing(me, window);
         Ctl::wire_dedust(me, window);
+        crate::editors::wire(me, window);
         let g = window.global::<StoreGlobal>();
 
         let p = me.clone();

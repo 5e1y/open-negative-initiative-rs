@@ -1,0 +1,266 @@
+// The editors' plots: a recessed screen holding a histogram, lines and dots Rust lays out, and the
+// track whose handles a press catches; every gesture is handed to Rust with its place in points.
+import { Colour, Space, Stroke, State, Motion, SliderStyle, PlotInkStyle } from "theme.slint";
+import { Label, Picture, Ground, TextRole, Tone } from "base.slint";
+
+export enum Ink {
+    guide, guide-faint, marker, separator, active, idle, track, primary, canvas, black, white,
+    red, green, blue, grey-quarter, grey-half, grey-three-quarters,
+    band-red, band-orange, band-yellow, band-green, band-aqua, band-blue, band-purple, band-magenta
+}
+
+// A stroked path in the plot's own points.
+export struct PlotLine { commands: string, ink: Ink, width: length, opacity: float }
+// A disc centred at x, y; `halo` is the diameter of a ring drawn around it, 0 for none.
+export struct PlotDot { x: length, y: length, size: length, fill: Ink, edge: Ink, edge-width: length, halo: length }
+// A track handle: its centre along the track, its tint, whether a hand holds it.
+export struct PlotKnob { x: length, ink: Ink, held: bool, label: string }
+
+export global Inks {
+    public pure function of(ink: Ink) -> color {
+        if (ink == Ink.guide) { return PlotInkStyle.guide; }
+        if (ink == Ink.guide-faint) { return PlotInkStyle.guide-faint; }
+        if (ink == Ink.marker) { return PlotInkStyle.marker; }
+        if (ink == Ink.separator) { return Colour.separator; }
+        if (ink == Ink.active) { return PlotInkStyle.handle-active; }
+        if (ink == Ink.idle) { return PlotInkStyle.handle-idle; }
+        if (ink == Ink.track) { return Colour.track; }
+        if (ink == Ink.canvas) { return Colour.canvas; }
+        if (ink == Ink.black) { return Colour.black; }
+        if (ink == Ink.white) { return Colour.white; }
+        if (ink == Ink.red) { return PlotInkStyle.channel-red; }
+        if (ink == Ink.green) { return Colour.channel-green; }
+        if (ink == Ink.blue) { return Colour.channel-blue; }
+        if (ink == Ink.grey-quarter) { return PlotInkStyle.grey-quarter; }
+        if (ink == Ink.grey-half) { return PlotInkStyle.grey-half; }
+        if (ink == Ink.grey-three-quarters) { return PlotInkStyle.grey-three-quarters; }
+        if (ink == Ink.band-red) { return PlotInkStyle.bands[0]; }
+        if (ink == Ink.band-orange) { return PlotInkStyle.bands[1]; }
+        if (ink == Ink.band-yellow) { return PlotInkStyle.bands[2]; }
+        if (ink == Ink.band-green) { return PlotInkStyle.bands[3]; }
+        if (ink == Ink.band-aqua) { return PlotInkStyle.bands[4]; }
+        if (ink == Ink.band-blue) { return PlotInkStyle.bands[5]; }
+        if (ink == Ink.band-purple) { return PlotInkStyle.bands[6]; }
+        if (ink == Ink.band-magenta) { return PlotInkStyle.bands[7]; }
+        Colour.ink
+    }
+}
+
+// `dsPlotScreen`: the canvas floor, quarter lines across it, the histogram, then what Rust draws.
+// `plot` names it in every callback; positions are in the plot's own points.
+export component Plot inherits Rectangle {
+    in property <int> plot;
+    in property <image> histogram;
+    in property <bool> grid: true;
+    in property <bool> screen: true;
+    in property <bool> interactive: true;
+    in property <bool> focusable;
+    in property <[PlotLine]> lines;
+    in property <[PlotDot]> dots;
+    out property <bool> focused: keys.has-focus;
+    out property <length> window-x: self.absolute-position.x;
+    out property <length> window-y: self.absolute-position.y;
+    callback resized(int, length, length);
+    // Where the plot sits in the window, which a pointer check aims at.
+    callback placed(int, length, length);
+    // 0 press, 1 move, 2 release, 3 cancel, 4 hover, 5 leave.
+    callback pointer(int, int, length, length, bool);
+    callback scrolled(int, length, length, length, bool) -> bool;
+    callback key(int, string, bool, bool) -> bool;
+    callback focus-changed(int, bool);
+    background: root.screen ? Colour.canvas : transparent;
+    border-radius: root.screen ? PlotInkStyle.radius : 0px;
+    clip: true;
+    changed width => { root.resized(root.plot, self.width, self.height); }
+    changed height => { root.resized(root.plot, self.width, self.height); }
+    changed window-x => { root.placed(root.plot, self.window-x, self.window-y); }
+    changed window-y => { root.placed(root.plot, self.window-x, self.window-y); }
+    init => { root.resized(root.plot, self.width, self.height); root.placed(root.plot, self.window-x, self.window-y); }
+
+    if root.grid: Rectangle {
+        for k in 3: Rectangle {
+            x: parent.width * (k + 1) / 4;
+            width: Stroke.hairline;
+            background: Colour.separator;
+        }
+        for k in 3: Rectangle {
+            y: parent.height * (k + 1) / 4;
+            height: Stroke.hairline;
+            background: Colour.separator;
+        }
+    }
+    Picture {
+        source: root.histogram;
+        ground: Ground.ground;
+        stretched: true;
+        background: transparent;
+    }
+    for line in root.lines: Path {
+        width: root.width;
+        height: root.height;
+        viewbox-width: root.width / 1px;
+        viewbox-height: root.height / 1px;
+        commands: line.commands;
+        stroke: Inks.of(line.ink);
+        stroke-width: line.width;
+        stroke-line-cap: round;
+        opacity: line.opacity;
+    }
+    for dot in root.dots: Rectangle {
+        x: dot.x - dot.size / 2;
+        y: dot.y - dot.size / 2;
+        width: dot.size;
+        height: dot.size;
+        border-radius: dot.size / 2;
+        background: Inks.of(dot.fill);
+        border-width: dot.edge-width;
+        border-color: Inks.of(dot.edge);
+        if dot.halo > 0: Rectangle {
+            x: (parent.width - dot.halo) / 2;
+            y: (parent.height - dot.halo) / 2;
+            width: dot.halo;
+            height: dot.halo;
+            border-radius: dot.halo / 2;
+            border-width: Stroke.line;
+            border-color: PlotInkStyle.handle-active;
+        }
+    }
+    @children
+    keys := FocusScope {
+        enabled: root.focusable;
+        changed has-focus => { root.focus-changed(root.plot, self.has-focus); }
+        key-pressed(event) => {
+            if (root.key(root.plot, event.text, event.modifiers.alt, event.modifiers.shift)) {
+                return EventResult.accept;
+            }
+            EventResult.reject
+        }
+        area := TouchArea {
+            enabled: root.interactive;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    if (root.focusable) { keys.focus(); }
+                    root.pointer(root.plot, 0, self.mouse-x, self.mouse-y, event.modifiers.alt);
+                } else if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                    root.pointer(root.plot, 2, self.mouse-x, self.mouse-y, event.modifiers.alt);
+                } else if (event.kind == PointerEventKind.cancel) {
+                    root.pointer(root.plot, 3, self.mouse-x, self.mouse-y, event.modifiers.alt);
+                } else if (event.kind == PointerEventKind.move) {
+                    root.pointer(root.plot, self.pressed ? 1 : 4, self.mouse-x, self.mouse-y, event.modifiers.alt);
+                }
+            }
+            changed has-hover => {
+                if (!self.has-hover) { root.pointer(root.plot, 5, self.mouse-x, self.mouse-y, false); }
+            }
+            scroll-event(event) => {
+                if (root.scrolled(root.plot, self.mouse-x, event.delta-x, event.delta-y, event.modifiers.alt)) {
+                    return EventResult.accept;
+                }
+                EventResult.reject
+            }
+        }
+    }
+}
+
+// `DSBarHandle` flattened: the slider's knob, tinted with the value it carries, grown under the hand.
+export component TrackKnob inherits Rectangle {
+    in property <PlotKnob> knob;
+    in property <bool> over;
+    property <float> grow: (root.over || root.knob.held) ? SliderStyle.knob-grow : 1;
+    width: PlotInkStyle.knob-width * self.grow;
+    height: PlotInkStyle.knob-height * self.grow;
+    x: root.knob.x - self.width / 2;
+    y: (PlotInkStyle.knob-height - self.height) / 2;
+    border-radius: SliderStyle.knob-radius;
+    background: Inks.of(root.knob.ink);
+    border-width: Stroke.line;
+    border-color: SliderStyle.knob-edge;
+    accessible-role: slider;
+    accessible-label: root.knob.label;
+    animate grow { duration: Motion.quick; easing: ease-out-back; }
+    HorizontalLayout {
+        alignment: center;
+        spacing: SliderStyle.grip-gap - Stroke.line;
+        padding-top: (parent.height - SliderStyle.grip) / 2;
+        padding-bottom: (parent.height - SliderStyle.grip) / 2;
+        for _ in 2: Rectangle {
+            width: Stroke.line;
+            background: root.knob.ink == Ink.white ? Colour.ink-on-light : Colour.white;
+        }
+    }
+}
+
+// `LevelsView`'s track: the slider's rail, its handles in drawing order, the ends in front; the
+// row is a handle tall, as the handle overhangs the rail.
+export component LevelsTrack inherits Rectangle {
+    in property <int> plot;
+    in property <[PlotKnob]> knobs;
+    out property <length> window-x: self.absolute-position.x;
+    out property <length> window-y: self.absolute-position.y;
+    callback resized(int, length, length);
+    callback placed(int, length, length);
+    callback pointer(int, int, length, length, bool);
+    callback scrolled(int, length, length, length, bool) -> bool;
+    height: PlotInkStyle.knob-height;
+    changed width => { root.resized(root.plot, self.width, self.height); }
+    changed window-x => { root.placed(root.plot, self.window-x, self.window-y); }
+    changed window-y => { root.placed(root.plot, self.window-x, self.window-y); }
+    init => { root.resized(root.plot, self.width, self.height); root.placed(root.plot, self.window-x, self.window-y); }
+    Rectangle {
+        x: -PlotInkStyle.knob-width / 2;
+        width: parent.width + PlotInkStyle.knob-width;
+        y: (parent.height - self.height) / 2;
+        height: PlotInkStyle.track;
+        border-radius: SliderStyle.track-radius;
+        background: Colour.track;
+    }
+    for knob in root.knobs: TrackKnob {
+        knob: knob;
+        over: area.has-hover && abs(area.mouse-x - knob.x) <= PlotInkStyle.grab / 2;
+    }
+    area := TouchArea {
+        x: -PlotInkStyle.knob-width / 2;
+        width: parent.width + PlotInkStyle.knob-width;
+        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.default;
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                root.pointer(root.plot, 0, self.mouse-x + self.x, self.mouse-y, event.modifiers.alt);
+            } else if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                root.pointer(root.plot, 2, self.mouse-x + self.x, self.mouse-y, event.modifiers.alt);
+            } else if (event.kind == PointerEventKind.cancel) {
+                root.pointer(root.plot, 3, self.mouse-x + self.x, self.mouse-y, event.modifiers.alt);
+            } else if (event.kind == PointerEventKind.move && self.pressed) {
+                root.pointer(root.plot, 1, self.mouse-x + self.x, self.mouse-y, event.modifiers.alt);
+            }
+        }
+        scroll-event(event) => {
+            if (root.scrolled(root.plot, self.mouse-x + self.x, event.delta-x, event.delta-y, event.modifiers.alt)) {
+                return EventResult.accept;
+            }
+            EventResult.reject
+        }
+    }
+}
+
+// A row of labelled values under a plot, spread across it: each a caption over its figure.
+export struct PlotReadout { name: string, value: string }
+export component PlotReadouts inherits HorizontalLayout {
+    in property <[PlotReadout]> readouts;
+    spacing: Space.xxs;
+    for r[i] in root.readouts: VerticalLayout {
+        horizontal-stretch: 1;
+        spacing: Space.xxs;
+        Label { text: r.name; role: TextRole.caption; tone: Tone.secondary; horizontal-alignment: i == 0 ? left : i == root.readouts.length - 1 ? right : center; }
+        Label { text: r.value; role: TextRole.value; horizontal-alignment: i == 0 ? left : i == root.readouts.length - 1 ? right : center; }
+    }
+}
+
+// Two captions at the ends of a plot's axis.
+export component AxisCaptions inherits HorizontalLayout {
+    in property <string> start;
+    in property <string> end;
+    in property <Tone> tone: Tone.secondary;
+    Label { text: root.start; role: TextRole.caption; tone: root.tone; }
+    Rectangle { horizontal-stretch: 1; }
+    Label { text: root.end; role: TextRole.caption; tone: root.tone; }
+}

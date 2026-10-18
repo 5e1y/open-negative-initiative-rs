@@ -123,6 +123,8 @@ export component Tabs inherits Rectangle {
     in property <[string]> tabs;
     in-out property <int> selected;
     in property <[bool]> marked;
+    // A colour per tab drawn in place of its name, which stays the tab's accessible label.
+    in property <[color]> swatches;
     callback picked(int);
     height: TabsStyle.height;
     clip: true;
@@ -145,10 +147,16 @@ export component Tabs inherits Rectangle {
         height: parent.height - 2 * TabsStyle.inset;
         accessible-role: tab;
         accessible-label: name;
-        Label {
+        if root.swatches.length == 0: Label {
             text: name;
             centred: true;
             opacity: (i == root.selected || touch.has-hover) ? 1 : State.idle;
+        }
+        if root.swatches.length > 0: Rectangle {
+            width: TabsStyle.swatch;
+            height: TabsStyle.swatch;
+            border-radius: self.width / 2;
+            background: root.swatches[i];
         }
         if root.marked[i]: Rectangle {
             x: parent.width - self.width - Space.xs;

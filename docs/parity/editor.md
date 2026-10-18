@@ -32,7 +32,7 @@ Statuses are defined in [README.md](README.md).
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
 | Histogram, morphing between renders | `Pipeline/Histogram.swift`, `DesignSystem/DSHistogram` | `oni-app/src/render.rs` histogram | partial | Counted per channel and drawn; no morph, no throttle (`Histogram.swift:59-63`) | `oni-app/src/render.rs::the_histogram_counts_each_channel_on_its_own` |
-| Print curve drawn over the histogram (Color tab) | `UI/PrintPanel.swift` | none | missing | | no check |
+| Print curve drawn over the histogram (Color tab) | `UI/PrintPanel.swift:46-85`, `Scene/EditorScene+Panel.swift:35-44` | `oni-app/src/editors/print.rs`, `oni-app/ui/editors.slint` `PrintOverlay`, `oni-app/ui/panel.slint` | done | Moved channels in their tint, the RGB curve and its mirror dashed; none per channel in monochrome | `oni-app/src/editors/print.rs::the_print_draws_its_moved_channels_its_curve_and_the_mirror`, `::the_mirror_is_the_curve_with_its_axes_swapped` |
 | Loupe on the Details tab | `UI/Loupe.swift` | none | missing | | no check |
 | Lab screen on the Scanner face | `UI/Lab/` | none | missing | | no check |
 | Preset deck (carousel) | `UI/PresetCarousel.swift` | none | missing | See [other.md](other.md) | no check |
@@ -67,7 +67,7 @@ Statuses are defined in [README.md](README.md).
 | Source Encoding (undeclared files) | `UI/SettingsPane.swift:53-66` | none | missing | Model field exists | no check |
 | Source Balance (gains R, G, B) | `UI/SettingsPane.swift:136`, `UI/GainPanel.swift` | none | missing | | no check |
 | Density Ceiling slider | `UI/SettingsPane.swift:146` | `panel.slint:87` field 12 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
-| Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:161`, `UI/LevelsView.swift` | `panel.slint:90-95` | partial | Tabs and an empty histogram; no handle, no write | no check |
+| Per-Channel Levels: tabs and handles on the histogram | `UI/SettingsPane.swift:157-171`, `UI/LevelsView.swift` | `oni-app/src/editors/levels.rs`, `oni-app/src/editors/mod.rs`, `oni-app/ui/editors.slint` `LevelsEditor` | partial | R, G, B tabs lit off their rest, five handles, markers, readouts, reset to the roll's window. The histogram is `Plots.levels`, which nothing fills yet (Swift draws the levels input); no 8-bit source badge; not yet hidden on the Scanner face, which has no panel | `oni-app/src/editors/tests.rs::a_levels_handle_moves_by_the_pointer_s_travel_and_a_double_click_resets_it_alone`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 | Dye Separation: family tabs | `UI/SettingsPane.swift:73-84` | `panel.slint:70` | partial | Picker static | no check |
 | Dye Separation dose slider | `UI/SettingsPane.swift:85` | `panel.slint:71` field 13 | done | Reset does not clear family and `byHand` | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Dye Separation hidden in B&W, RGB passes, Scanner face | `UI/SettingsPane.swift:69` | none | missing | Always shown | no check |
@@ -100,10 +100,10 @@ Statuses are defined in [README.md](README.md).
 | Lighting: Exposure, Highlights, Shadows, White point, Black point | `UI/ColorPane.swift:104`, `UI/PrintPanel.swift` | `panel.slint:147-160` | done | | `oni-app/src/fields.rs::the_black_point_runs_the_other_way`, `each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Effects: Contrast, Vignette, Chrome | `UI/ColorPane.swift:114` | `panel.slint:164-170` | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Effects on the Scanner face: CONTRAST, VIGNETTE, CHROME step keys | `UI/ColorPane.swift:121-131` | none | missing | | no check |
-| Curves editor: RGB, Luma, R, G, B | `UI/ColorPane.swift:157`, `UI/CurveEditorView.swift` | `panel.slint:173` | partial | Tabs only; no editor | no check |
-| Spectrogram Finishing | `UI/GradePane.swift:12`, `UI/SpectrogramPanel.swift` | none | missing | Kernel exists | no check |
-| Saturation Curve | `UI/GradePane.swift:22`, `UI/SaturationCurveView.swift` | none | missing | Kernel exists | no check |
-| Grade blocks hidden in monochrome | `UI/GradePane.swift` | none | missing | | no check |
+| Curves editor: RGB, Luma, R, G, B | `UI/ColorPane.swift:153-166`, `UI/CurveEditorView.swift` | `oni-app/src/editors/curve.rs`, `oni-app/ui/editors.slint` `CurvesEditor` | partial | Every point rule, tabs lit per moved channel, reset, one step per press; drawn over the output histogram where Swift draws the manual curves' input with the channel in focus | `oni-app/src/editors/tests.rs::a_curve_drag_writes_at_the_hand_s_pace_and_undoes_in_one_step`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
+| Spectrogram Finishing | `UI/GradePane.swift:10-19`, `UI/SpectrogramPanel.swift`, `UI/SpectrogramBands.swift` | `oni-app/src/editors/spectrogram.rs`, `oni-app/ui/editors.slint` `SpectrogramEditor` | partial | Wheel, eight band tabs, Hue, Saturation, Luminance sliders, reset. A press elsewhere unlights the point only when it lands on another focusable control (`dsReleasesFocus`); the band sliders' knobs jump rather than spring on an outside change | `oni-app/src/editors/tests.rs::the_wheel_selects_on_a_press_and_moves_by_the_travel_from_where_it_grabbed`, `oni-app/src/editors/tests.rs::a_band_slider_writes_its_axis_and_a_double_click_zeroes_it`, `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
+| Saturation Curve | `UI/GradePane.swift:20-30`, `UI/SaturationCurveView.swift` | `oni-app/src/editors/saturation.rs`, `oni-app/ui/editors.slint` `SaturationEditor` | done | | `oni-app/src/editors/tests.rs::a_saturation_double_click_puts_its_point_back_on_neutral` |
+| Grade blocks hidden in monochrome | `Scene/EditorScene+Panel.swift:228-233` | `oni-app/ui/panel.slint` `Editors.monochrome` | done | | `oni-app/tests/editors.rs::a_point_and_a_handle_dragged_in_the_window_reach_the_store_as_one_step_each` |
 
 ## Panel: Details tab
 
@@ -205,8 +205,8 @@ Statuses are defined in [README.md](README.md).
 | Bare keys yield to a focused text field | `DesignSystem/DSKeyboard` `DSTextFocus` | `oni-app/src/app.rs:1155` | done | Slint text fields consume their keys first | no check |
 | Exclusive key surfaces | `DSKeyMonitor.exclusiveSurfaces` | none | missing | | no check |
 | Esc closes Lab, Crop, Wrapped | `Scene/EditorScene+Lab.swift`, `UI/CropOverlay.swift`, `UI/WrappedView.swift` | Esc closes pairing only | missing | | no check |
-| Tab walks spectrogram bands | `UI/SpectrogramPanel.swift` | none | missing | | no check |
-| Option on the spectrogram | `UI/SpectrogramPanel.swift:81` | none | missing | | no check |
+| Tab walks spectrogram bands | `UI/SpectrogramPanel.swift:76-84` | `oni-app/src/editors/mod.rs` `Gestures::key` | done | | `oni-app/src/editors/tests.rs::the_wheel_s_keys_step_the_selected_point_and_tab_walks_it_only_while_it_holds_the_focus` |
+| Option on the spectrogram | `UI/SpectrogramPanel.swift:81` | `oni-app/src/editors/spectrogram.rs` `walked` | done | Option-Tab walks anticlockwise | `oni-app/src/editors/tests.rs::the_wheel_s_keys_step_the_selected_point_and_tab_walks_it_only_while_it_holds_the_focus` |
 | Prepare the Roll arrows | `UI/RollReferenceSurface.swift:223` | none | missing | | no check |
 
 ## History

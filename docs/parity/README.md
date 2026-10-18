@@ -21,14 +21,14 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 47 | 44 | 60 | 64 of 151 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 52 | 45 | 54 | 72 of 151 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 14 | 32 | 39 | 33 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 4 | 31 | 3 | 34 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 7 | 17 | 24 | 15 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 75 | 17 | 33 | 74 of 125 |
-| **All** | | **147** | **141** | **159** | **220 of 447** |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 83 | 16 | 26 | 82 of 125 |
+| **All** | | **160** | **141** | **146** | **236 of 447** |
 
-Within the editor: canvas 12 / 2 / 5, main band 0 / 1 / 4, panel tabs 2 / 2 / 4, Roll tab 4 / 7 / 8, Crop tab 6 / 1 / 1, Color tab 4 / 4 / 5, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 0 / 4 / 3, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 1 / 0 / 6, history 2 / 3 / 1 (done / partial / missing).
+Within the editor: canvas 12 / 2 / 5, main band 1 / 1 / 3, panel tabs 2 / 2 / 4, Roll tab 4 / 7 / 8, Crop tab 6 / 1 / 1, Color tab 6 / 5 / 2, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 0 / 4 / 3, bar 3 / 6 / 3, menus 3 / 14 / 19, keys 3 / 0 / 4, history 2 / 3 / 1 (done / partial / missing).
 
 Nine rows are done with no check: ⌘G, bare keys yielding to a text field, ⌘ and ⇧
 selection (twice), double-click to open, the offline `--check`, the export sample sizes, the
@@ -36,8 +36,8 @@ histogram overshoot and the bare medal keys.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **63 have a Rust twin, 18 a partial one,
-81 none.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **65 have a Rust twin, 18 a partial one,
+79 none.**
 
 ### Pipeline branches against Swift
 
@@ -70,8 +70,8 @@ check only.
    build"; most menu shortcuts are unmapped.
 4. **The measurement behind the automatic keys.** `balance::Measure` has no implementation: no Auto
    White Balance, auto levels, pipette, measuring blocks, Classic placement or roll reference.
-5. **The curve, levels, spectrogram and saturation editors.** The kernels exist; no editor, and none
-   of their point rules.
+5. **The editors' histograms.** The curves, levels, spectrogram and saturation editors work with
+   their point rules; the levels plot has no input histogram yet and the curves draw over the output.
 6. **Geometry.** No crop overlay, ratio, rotate, mirror, straighten re-fit or measuring window.
 7. **Prepare the Roll.** The whole surface and its steps are absent.
 8. **Export.** `oni-export` and `oni-colour` are not dependencies of the app; no export card, no

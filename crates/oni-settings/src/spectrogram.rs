@@ -36,6 +36,15 @@ impl Band {
         (-(down - Spectrogram::HUE_MARGIN), up - Spectrogram::HUE_MARGIN)
     }
 
+    /// Round the wheel as drawn: the centres climb anticlockwise, so a clockwise step is the previous.
+    pub fn clockwise(self) -> Band {
+        Self::ALL[(self.index() + 7) % 8]
+    }
+
+    pub fn anticlockwise(self) -> Band {
+        Self::ALL[(self.index() + 1) % 8]
+    }
+
     pub fn label(self) -> &'static str {
         ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"][self.index()]
     }
@@ -53,6 +62,8 @@ impl Spectrogram {
     pub const SATURATION_RANGE: (f32, f32) = (-1.0, 1.0);
     pub const LUMA_RANGE: (f32, f32) = (-1.0, 1.0);
     pub const BAND_SPREAD: f32 = 1.8;
+    /// The keyboard step, a share of each axis's travel; a preference, in no sidecar.
+    pub const DEFAULT_STEP: f32 = 0.02;
 
     pub fn separation(a: f32, b: f32) -> f32 {
         let turn = (b - a) % 360.0;
@@ -70,6 +81,12 @@ impl Spectrogram {
 
     pub fn is_neutral(&self) -> bool {
         *self == Spectrogram::default()
+    }
+
+    /// One band's hue, saturation and luma offsets.
+    pub fn band(&self, band: Band) -> (f32, f32, f32) {
+        let i = band.index();
+        (self.hue[i], self.saturation[i], self.luma[i])
     }
 }
 

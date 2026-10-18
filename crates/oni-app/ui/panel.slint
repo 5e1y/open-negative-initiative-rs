@@ -1,6 +1,7 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
 import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller, Well, HelpMark } from "ds/ds.slint";
 import { Store } from "store.slint";
+import { Editors, CurvesEditor, LevelsEditor, SpectrogramEditor, SaturationEditor, PrintOverlay } from "editors.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
@@ -28,6 +29,11 @@ component StoreSlider inherits Slider {
 
 component Block inherits Section {
     reset(b) => { Store.reset(b); }
+}
+
+// A block whose reset an editor owns, numbered as `Editors.reset` reads it.
+component EditorBlock inherits Section {
+    reset(b) => { Editors.reset(b); }
 }
 
 component Pane inherits Scroller {
@@ -87,10 +93,12 @@ component RollPane inherits Pane {
         folded: true;
         StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
-    Block {
+    EditorBlock {
         title: "Per-Channel Levels";
-        Tabs { tabs: ["RGB", "R", "G", "B"]; marked: [false, false, false, false]; }
-        HistogramFrame { source: Plots.levels; size: PlotSize.block; }
+        block: 1;
+        modified: Editors.levels-modified;
+        folded <=> Editors.levels-folded;
+        LevelsEditor { histogram: Plots.levels; }
     }
 }
 
@@ -270,11 +278,30 @@ component ColorPane inherits Pane {
         StoreSlider { field: 9; label: "Vignette"; fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
         StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
-    Block {
+    EditorBlock {
         title: "Curves";
-        folded: true;
+        block: 0;
+        modified: Editors.curves-modified;
+        folded <=> Editors.curves-folded;
         help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
-        Tabs { tabs: ["RGB", "Luma", "R", "G", "B"]; marked: [false, false, false, false, false]; }
+        CurvesEditor { histogram: Plots.output; }
+    }
+    // The grade's blocks: a monochrome photo has no colour for them to move.
+    if !Editors.monochrome: EditorBlock {
+        title: "Spectrogram Finishing";
+        block: 2;
+        modified: Editors.spectrogram-modified;
+        folded <=> Editors.spectrogram-folded;
+        help: "Shifts one color range at a time without touching the others: turn a point around the wheel to move that color's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.";
+        SpectrogramEditor { }
+    }
+    if !Editors.monochrome: EditorBlock {
+        title: "Saturation Curve";
+        block: 3;
+        modified: Editors.saturation-modified;
+        folded <=> Editors.saturation-folded;
+        help: "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.";
+        SaturationEditor { histogram: Plots.output; }
     }
 }
 
@@ -305,7 +332,12 @@ component DetailsPane inherits Pane {
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
     VerticalLayout {
-        HistogramFrame { source: Plots.output; size: PlotSize.main; }
+        HistogramFrame {
+            source: Plots.output;
+            size: PlotSize.main;
+            // Lighting's curves over the plot, on the Color tab alone.
+            if PanelState.tab == 2: PrintOverlay { }
+        }
         HorizontalLayout {
             padding-left: Space.m;
             padding-right: Space.m;

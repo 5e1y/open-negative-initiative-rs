@@ -53,8 +53,40 @@ impl Evaluated {
 }
 
 impl Curve {
+    /// How close a dragged point comes to its neighbours along x.
+    pub const MARGIN: f64 = 0.001;
+
     pub fn is_neutral(&self) -> bool {
         *self == Curve::default()
+    }
+
+    /// A point clamped to the unit square, kept in x order; one on an existing x lands after it.
+    pub fn add(&mut self, point: Point) {
+        self.points.push(Self::clamped(point));
+        self.points.sort_by(|a, b| a.x.partial_cmp(&b.x).unwrap_or(std::cmp::Ordering::Equal));
+    }
+
+    /// Moves a point inside the unit square, held `MARGIN` short of its neighbours in x.
+    pub fn move_point(&mut self, index: usize, point: Point) {
+        if index >= self.points.len() {
+            return;
+        }
+        let lower = if index > 0 { self.points[index - 1].x + Self::MARGIN } else { 0.0 };
+        let upper = if index + 1 < self.points.len() { self.points[index + 1].x - Self::MARGIN } else { 1.0 };
+        let mut p = Self::clamped(point);
+        p.x = p.x.max(lower).min(upper);
+        self.points[index] = p;
+    }
+
+    /// Removes an inner point; the two ends stay, and so does a curve of two.
+    pub fn remove(&mut self, index: usize) {
+        if self.points.len() > 2 && index > 0 && index < self.points.len() - 1 {
+            self.points.remove(index);
+        }
+    }
+
+    fn clamped(p: Point) -> Point {
+        Point::new(p.x.max(0.0).min(1.0), p.y.max(0.0).min(1.0))
     }
 
     pub fn evaluated(&self) -> Evaluated {
@@ -227,6 +259,21 @@ impl SaturationCurve {
         self.points.iter().all(|p| p.y == 0.5)
     }
 
+    /// The ends keep their x, an inner point stays `SPACING` inside its neighbours, every y on 0…1.
+    pub fn move_point(&mut self, index: usize, point: Point) {
+        if index >= self.points.len() {
+            return;
+        }
+        let mut p = point;
+        p.y = p.y.max(0.0).min(1.0);
+        if index == 0 || index == self.points.len() - 1 {
+            p.x = self.points[index].x;
+        } else {
+            p.x = p.x.max(self.points[index - 1].x + Self::SPACING).min(self.points[index + 1].x - Self::SPACING);
+        }
+        self.points[index] = p;
+    }
+
     /// The two zones' factor `1 + s·(1 − t) + h·t` on a smoothstep, laid on the resting points.
     pub fn converted(shadows: f32, highlights: f32) -> SaturationCurve {
         let points = Self::resting()
@@ -288,6 +335,51 @@ mod tests {
         assert_eq!(points.points[0].y, 0.1);
         let short: SaturationCurve = serde_json::from_str(r#"{"points":[[0,0.1],[1,0.5]]}"#).unwrap();
         assert!(short.is_neutral());
+    }
+
+    #[test]
+    fn a_curve_point_keeps_its_margin_its_square_and_its_ends() {
+        let mut c = Curve::default();
+        c.add(Point::new(0.5, 1.4));
+        assert_eq!(c.points[1], Point::new(0.5, 1.0), "an added point is clamped into the square");
+        c.add(Point::new(0.25, 0.3));
+        assert_eq!(c.points.iter().map(|p| p.x).collect::<Vec<_>>(), vec![0.0, 0.25, 0.5, 1.0]);
+        // A drag past a neighbour stops a margin short of it.
+        c.move_point(1, Point::new(0.9, -0.2));
+        assert_eq!(c.points[1], Point::new(0.5 - Curve::MARGIN, 0.0));
+        // The ends travel in x too, only never past a neighbour.
+        c.move_point(0, Point::new(0.7, 0.2));
+        assert_eq!(c.points[0], Point::new(0.5 - Curve::MARGIN - Curve::MARGIN, 0.2));
+        c.move_point(3, Point::new(-1.0, 0.5));
+        assert_eq!(c.points[3].x, 0.5 + Curve::MARGIN);
+        // The ends are never removed, an inner point is.
+        c.remove(0);
+        c.remove(3);
+        assert_eq!(c.points.len(), 4);
+        c.remove(1);
+        assert_eq!(c.points.len(), 3);
+        let mut two = Curve::default();
+        two.remove(1);
+        assert_eq!(two.points.len(), 2);
+        // Twin: a point on an existing x lands after it, so the index found by x is the older point.
+        let mut same = Curve::default();
+        same.add(Point::new(0.0, 0.7));
+        assert_eq!(same.points[0], Point::new(0.0, 0.0));
+        assert_eq!(same.points[1], Point::new(0.0, 0.7));
+    }
+
+    #[test]
+    fn a_saturation_point_keeps_its_spacing_and_the_ends_their_light() {
+        let mut s = SaturationCurve::default();
+        s.move_point(0, Point::new(0.3, 1.5));
+        assert_eq!(s.points[0], Point::new(0.0, 1.0));
+        s.move_point(2, Point::new(0.9, -1.0));
+        assert_eq!(s.points[2], Point::new(0.75 - SaturationCurve::SPACING, 0.0));
+        s.move_point(4, Point::new(0.1, 0.4));
+        assert_eq!(s.points[4], Point::new(1.0, 0.4));
+        // Twin: an inner point inside its room moves freely.
+        s.move_point(1, Point::new(0.3, 0.6));
+        assert_eq!(s.points[1], Point::new(0.3, 0.6));
     }
 
     #[test]

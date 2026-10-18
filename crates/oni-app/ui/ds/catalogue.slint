@@ -5,6 +5,8 @@ import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize,
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Tabs, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
 import { ListRow, TreeItem, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
+import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
+import { PlotInkStyle } from "theme.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -175,6 +177,11 @@ export component Catalogue inherits AppWindow {
                 Group {
                     title: "Tabs and toggle";
                     Tabs { tabs: ["Roll", "Crop", "Color", "Details"]; selected: 2; marked: [true, false, false, false]; }
+                    Tabs {
+                        tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
+                        swatches: PlotInkStyle.bands;
+                        marked: [false, true, false, false, false, false, false, false];
+                    }
                     LabelledRow { label: "Toggle off"; Toggle { label: "off"; } }
                     LabelledRow { label: "Toggle on"; Toggle { label: "on"; on: true; } }
                     LabelledRow { label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
@@ -219,6 +226,35 @@ export component Catalogue inherits AppWindow {
                     StatusLine { text: "DSC_6432 · 2000 × 1332"; }
                     Divider { }
                     HorizontalLayout { spacing: Space.s; alignment: start; HelpMark { note: "The help mark's note."; } Label { text: "Help mark"; tone: Tone.secondary; } }
+                }
+                Group {
+                    title: "Editor plot and track";
+                    AxisCaptions { start: "Black point"; end: "White point"; }
+                    Plot {
+                        height: PlotInkStyle.histogram;
+                        lines: [
+                            { commands: "M 0 120 L 320 0", ink: Ink.separator, width: Stroke.hairline, opacity: 1 },
+                            { commands: "M 0 110 L 80 90 L 160 50 L 240 30 L 320 10", ink: Ink.active, width: Stroke.trace, opacity: 1 },
+                        ];
+                        dots: [
+                            { x: 160px, y: 50px, size: 9px, fill: Ink.canvas, edge: Ink.active, edge-width: Stroke.trace, halo: 0px },
+                            { x: 240px, y: 30px, size: 9px, fill: Ink.band-orange, edge: Ink.band-orange, edge-width: 0px, halo: 17px },
+                        ];
+                    }
+                    VerticalLayout {
+                        padding-left: PlotInkStyle.knob-width / 2;
+                        padding-right: PlotInkStyle.knob-width / 2;
+                        LevelsTrack {
+                            knobs: [
+                                { x: 70px, ink: Ink.grey-quarter, held: false, label: "Shadows" },
+                                { x: 140px, ink: Ink.grey-half, held: true, label: "Midpoint" },
+                                { x: 210px, ink: Ink.grey-three-quarters, held: false, label: "Highlights" },
+                                { x: 0px, ink: Ink.black, held: false, label: "Black" },
+                                { x: 280px, ink: Ink.white, held: false, label: "White" },
+                            ];
+                        }
+                    }
+                    PlotReadouts { readouts: [{ name: "Black", value: "0.000" }, { name: "Mid", value: "0.500" }, { name: "White", value: "2.700" }]; }
                 }
             }
 

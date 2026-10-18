@@ -280,6 +280,20 @@
     "status": "doing"
   },
   {
+    "id": 35,
+    "type": "feature",
+    "title": "The manual curves editor and its point rules",
+    "status": "doing",
+    "detail": "Curves editor as a DS plot: natural cubic spline, a press takes the nearest point or adds one, a double-click removes it, drag limits, per channel tabs, one history step per drag through the hand's cadence."
+  },
+  {
+    "id": 36,
+    "type": "feature",
+    "title": "Levels, spectrogram and saturation curve editors, and the print curve overlay",
+    "status": "doing",
+    "detail": "Per-channel levels track and handles, the spectrogram wheel with its band sliders, the saturation curve, the print curve drawn over the histogram; every hidden rule of LevelsView, SpectrogramPanel, SaturationCurveView and PrintCurveView."
+  },
+  {
     "id": 37,
     "type": "feature",
     "title": "The canvas as Swift's: zoom, pan, full-resolution regions, compare, screen gamut",

@@ -1,0 +1,197 @@
+// The panel's editors: the manual curves, the per-channel levels, the spectrogram, the saturation
+// curve and the print curve over the main histogram. Rust lays out every line, dot and handle.
+import { Plot, LevelsTrack, PlotReadouts, AxisCaptions, PlotLine, PlotDot, PlotKnob, PlotReadout, Tabs, Slider, SliderFill, Label, Tone, TextRole, PlotInkStyle, Colour, Space } from "ds/ds.slint";
+
+// The plots' numbers, as `plot` names them in every callback.
+export global Editors {
+    in-out property <int> curve-channel;
+    in property <[bool]> curve-marked;
+    in property <[PlotLine]> curve-lines;
+    in property <[PlotDot]> curve-dots;
+    in property <bool> curves-modified;
+
+    in-out property <int> levels-channel;
+    in property <[bool]> levels-marked;
+    in property <[PlotLine]> levels-markers;
+    in property <[PlotKnob]> levels-knobs;
+    in property <[PlotReadout]> levels-readouts;
+    in property <bool> levels-modified;
+
+    in-out property <int> band;
+    in property <[bool]> band-marked;
+    in property <[PlotLine]> wheel-lines;
+    in property <[PlotDot]> wheel-dots;
+    in property <bool> spectrogram-modified;
+    in property <[float]> band-fractions;
+    in property <[string]> band-readouts;
+    in property <color> hue-low;
+    in property <color> hue-high;
+
+    in property <[PlotLine]> saturation-lines;
+    in property <[PlotDot]> saturation-dots;
+    in property <bool> saturation-modified;
+
+    in property <[PlotLine]> print-lines;
+    in property <bool> monochrome;
+
+    // Each block opens folded, as the panel lays it out the first time.
+    in-out property <bool> curves-folded: true;
+    in-out property <bool> levels-folded: true;
+    in-out property <bool> spectrogram-folded: true;
+    in-out property <bool> saturation-folded: true;
+
+
+    // Raised once the window is wired: every plot then reports its size and place again.
+    in property <int> epoch;
+    callback resized(int, length, length);
+    // Where a plot sits in the window, which a pointer check aims at.
+    callback placed(int, length, length);
+    callback pointer(int, int, length, length, bool);
+    callback scrolled(int, length, length, length, bool) -> bool;
+    callback key(int, string, bool, bool) -> bool;
+    callback focus-changed(int, bool);
+    callback pick(int, int);
+    callback reset(int);
+    callback slider-press(int, bool) -> bool;
+    callback slider-drag(int, length, length, bool);
+    callback slider-release(int);
+    callback slider-scroll(int, length, length, length, bool) -> bool;
+    callback slider-step(int, int);
+}
+
+component EditorPlot inherits Plot {
+    property <int> epoch: Editors.epoch;
+    changed epoch => { Editors.resized(self.plot, self.width, self.height); Editors.placed(self.plot, self.window-x, self.window-y); }
+    resized(p, w, h) => { Editors.resized(p, w, h); }
+    placed(p, x, y) => { Editors.placed(p, x, y); }
+    pointer(p, k, x, y, alt) => { Editors.pointer(p, k, x, y, alt); }
+    scrolled(p, x, dx, dy, alt) => { return Editors.scrolled(p, x, dx, dy, alt); }
+    key(p, text, alt, shift) => { return Editors.key(p, text, alt, shift); }
+    focus-changed(p, on) => { Editors.focus-changed(p, on); }
+}
+
+// `CurveSetEditor`: the channel's tabs over a square plot.
+export component CurvesEditor inherits VerticalLayout {
+    in property <image> histogram;
+    spacing: Space.s;
+    Tabs {
+        tabs: ["RGB", "Luma", "R", "G", "B"];
+        marked: Editors.curve-marked;
+        selected <=> Editors.curve-channel;
+        picked(i) => { Editors.pick(0, i); }
+    }
+    EditorPlot {
+        plot: 0;
+        height: self.width;
+        histogram: root.histogram;
+        lines: Editors.curve-lines;
+        dots: Editors.curve-dots;
+    }
+}
+
+// `LevelsView` on the three per-channel windows: tabs, the histogram and the track inset alike.
+export component LevelsEditor inherits VerticalLayout {
+    in property <image> histogram;
+    spacing: Space.s;
+    Tabs {
+        tabs: ["R", "G", "B"];
+        marked: Editors.levels-marked;
+        selected <=> Editors.levels-channel;
+        picked(i) => { Editors.pick(1, i); }
+    }
+    VerticalLayout {
+        spacing: Space.xxs;
+        padding-left: PlotInkStyle.knob-width / 2;
+        padding-right: PlotInkStyle.knob-width / 2;
+        EditorPlot {
+            plot: 4;
+            height: PlotInkStyle.histogram;
+            interactive: false;
+            histogram: root.histogram;
+            lines: Editors.levels-markers;
+        }
+        track := LevelsTrack {
+            plot: 1;
+            knobs: Editors.levels-knobs;
+            resized(p, w, h) => { Editors.resized(p, w, h); }
+            placed(p, x, y) => { Editors.placed(p, x, y); }
+            pointer(p, k, x, y, alt) => { Editors.pointer(p, k, x, y, alt); }
+            scrolled(p, x, dx, dy, alt) => { return Editors.scrolled(p, x, dx, dy, alt); }
+        }
+    }
+    PlotReadouts { readouts: Editors.levels-readouts; }
+    property <int> epoch: Editors.epoch;
+    changed epoch => { Editors.resized(1, track.width, track.height); Editors.placed(1, track.window-x, track.window-y); }
+}
+
+component BandSlider inherits Slider {
+    press(f, fine) => { return Editors.slider-press(f, fine); }
+    drag(f, t, s, fine) => { Editors.slider-drag(f, t, s, fine); }
+    release(f) => { Editors.slider-release(f); }
+    scroll(f, dx, dy, s, fine) => { return Editors.slider-scroll(f, dx, dy, s, fine); }
+    step(f, d) => { Editors.slider-step(f, d); }
+}
+
+// `SpectrogramPanel` and `SpectrogramBands`: the wheel, the bands' tabs and the chosen band's sliders.
+export component SpectrogramEditor inherits VerticalLayout {
+    spacing: Space.s;
+    EditorPlot {
+        plot: 2;
+        height: self.width;
+        grid: false;
+        focusable: true;
+        lines: Editors.wheel-lines;
+        dots: Editors.wheel-dots;
+    }
+    Tabs {
+        tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
+        marked: Editors.band-marked;
+        swatches: PlotInkStyle.bands;
+        selected <=> Editors.band;
+        picked(i) => { Editors.pick(2, i); }
+    }
+    BandSlider {
+        field: 0; label: "Hue"; fraction: Editors.band-fractions[0]; readout: Editors.band-readouts[0]; value-text: Editors.band-readouts[0];
+        fill: SliderFill.bipolar; low: Editors.hue-low; high: Editors.hue-high;
+    }
+    BandSlider {
+        field: 1; label: "Saturation"; fraction: Editors.band-fractions[1]; readout: Editors.band-readouts[1]; value-text: Editors.band-readouts[1];
+        fill: SliderFill.bipolar; low: PlotInkStyle.grey-half; high: PlotInkStyle.bands[Editors.band];
+    }
+    BandSlider {
+        field: 2; label: "Luminance"; fraction: Editors.band-fractions[2]; readout: Editors.band-readouts[2]; value-text: Editors.band-readouts[2];
+        fill: SliderFill.bipolar; low: Colour.black; high: Colour.white;
+    }
+}
+
+// `SaturationCurveView`: the light's two ends named above an equaliser over the output's histogram.
+export component SaturationEditor inherits VerticalLayout {
+    in property <image> histogram;
+    spacing: Space.xs;
+    AxisCaptions { start: "Black point"; end: "White point"; }
+    EditorPlot {
+        plot: 3;
+        height: PlotInkStyle.histogram;
+        histogram: root.histogram;
+        lines: Editors.saturation-lines;
+        dots: Editors.saturation-dots;
+        VerticalLayout {
+            padding: Space.s;
+            Label { text: "Saturated"; role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
+            Rectangle { vertical-stretch: 1; }
+            Label { text: "Desaturated"; role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
+        }
+    }
+}
+
+// `PrintCurve`: Lighting's curves over the main histogram, out of the hit test.
+export component PrintOverlay inherits Plot {
+    plot: 5;
+    screen: false;
+    grid: false;
+    interactive: false;
+    lines: Editors.print-lines;
+    resized(p, w, h) => { Editors.resized(p, w, h); }
+    property <int> epoch: Editors.epoch;
+    changed epoch => { Editors.resized(self.plot, self.width, self.height); }
+}

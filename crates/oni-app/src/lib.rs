@@ -4,6 +4,7 @@
 pub mod app;
 pub mod bench;
 pub mod display;
+pub mod editors;
 pub mod export;
 pub mod fields;
 pub mod flat_fields;

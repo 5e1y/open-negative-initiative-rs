@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 63 twin, 18 partial, 81 none.
+Of 162 checks: 65 twin, 18 partial, 79 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -25,7 +25,7 @@ Of 162 checks: 63 twin, 18 partial, 81 none.
 | 11 | `LightingCatchUp.selfCheck` | `Checks/Pipeline/LightingCatchUp+Checks.swift:8` | a former document opens rendering as it did | twin | `oni-settings/tests/codec_checks.rs::a_former_document_is_fitted_onto_lighting_and_a_current_one_is_not` |
 | 12 | `FilmProbe.axisChecks` | `Pipeline/FilmProbe.swift` | the probe reads the axis the kernel runs | none | none |
 | 13 | `Spectrogram.selfCheck` | `Checks/Pipeline/Spectrogram+Checks.swift:9` | the colour mixer reaches one band and no other | twin | `oni-pipeline/src/finishing.rs::every_band_owns_part_of_its_centre_and_the_packing_divides_by_it` |
-| 14 | `SpectrogramPanel.selfCheck` | `Checks/UI/SpectrogramPanel+Checks.swift:6` | the colour wheel is grabbed, never jumped to | none | none |
+| 14 | `SpectrogramPanel.selfCheck` | `Checks/UI/SpectrogramPanel+Checks.swift:6` | the colour wheel is grabbed, never jumped to | twin | `oni-app/src/editors/spectrogram.rs::the_colour_wheel_is_grabbed_never_jumped_to` |
 | 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | none | none |
 | 16 | `Pipeline.measureWindowChecks` | `Checks/Pipeline/Pipeline+Checks.swift:9` | measurement window holds | none | none |
 | 17 | `Blocks.selfCheck` | `Checks/Pipeline/Blocks+Checks.swift:8` | the block grid names its cells, drops a speck and keeps an area | none | none |
@@ -137,7 +137,7 @@ Of 162 checks: 63 twin, 18 partial, 81 none.
 | 123 | `AutoLevels.selfCheck` | `Checks/Pipeline/AutoLevels+Checks.swift:10` | automatic placement holds | none | none |
 | 124 | `Pipette.selfCheck` | `Checks/Pipeline/Pipette+Checks.swift:37` | the pipette writes one end and leaves the rest | none | none |
 | 125 | `AutoBalanceChoice.selfCheck` | `Checks/UI/ColorPane+Checks.swift:4` | selection balance question holds | none | none |
-| 126 | `LevelsView.selfCheck` | `Checks/UI/LevelsView+Checks.swift:7` | levels track holds, black reachable under zero | none | none |
+| 126 | `LevelsView.selfCheck` | `Checks/UI/LevelsView+Checks.swift:7` | levels track holds, black reachable under zero | twin | `oni-app/src/editors/levels.rs::the_levels_track_holds_and_its_black_reaches_under_zero` |
 | 127 | `PresetTint.selfCheck` | `Checks/Pipeline/PresetTint+Checks.swift:4` | preset tints readable | partial | `oni-core/tests/swift_checks.rs::an_unknown_tint_is_refused_and_the_default_is_neutral`; the tints' text contrast is the design system's |
 | 128 | `PresetCarousel.selfCheck` | `Checks/UI/PresetCarousel+Checks.swift:4` | preset deck holds | none | none |
 | 129 | `PresetParameters.selfCheck` | `Checks/UI/PresetParameters+Checks.swift:7` | every parameter is shown under an interface name | none | none |

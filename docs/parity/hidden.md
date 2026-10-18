@@ -88,14 +88,14 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Spring on outside changes, none under the hand | `DesignSystem/DSSlider.swift:91` | `oni-app/src/motion.rs` | done | | `oni-app/src/motion.rs::settle_overshoots_slightly_and_travel_not_at_all` |
 | Deferred refresh follows the hand (stale after 1 s) | `DesignSystem/DSGesture.swift:19` | `oni-app/src/track.rs:69-94` | done | | `oni-app/src/track.rs::values_reach_the_settings_thirty_times_a_second` |
 | A burst of notches renders the first and last | `Scene/EditorScene+Stages.swift` | `oni-app/src/render.rs` | done | | `oni-app/src/render.rs::a_burst_of_notches_renders_the_first_and_the_last_only` |
-| Levels: place, single write path, per-handle reset, grips front to back | `UI/LevelsView.swift:162-240` | none | missing | | no check |
-| Levels anchor clamp 0.02…0.98, display shadows and highlights | `Pipeline/Levels.swift:192` | `oni-settings/src/levels.rs:100-104` | partial | `set_black`, `set_white` only | no check |
-| Levels black reachable under zero | `UI/LevelsView.swift` | none | missing | | no check |
-| Curve: drag adds a point outside a 14 pt radius, double-tap removes | `UI/CurveEditorView.swift:67-100` | none | missing | | no check |
-| Curve points: margin 0.001, endpoints undeletable, clamped | `Pipeline/Curves.swift:16-33` | none | missing | | no check |
-| Saturation curve: double-tap to neutral, closest along | `UI/SaturationCurveView.swift` | none | missing | | no check |
-| Spectrogram wheel grabbed, never jumped; step 0.02 | `UI/SpectrogramPanel.swift`, `Pipeline/Spectrogram.swift:86` | none | missing | | no check |
-| Spectrogram luma nudge rest 0.5, reach 0.25; Option | `UI/SpectrogramPanel.swift:81,113-114` | none | missing | | no check |
+| Levels: place, single write path, per-handle reset, grips front to back | `UI/LevelsView.swift:162-240` | `oni-app/src/editors/levels.rs` | done | | `oni-app/src/editors/levels.rs::a_handle_moves_through_one_path_and_resets_alone`, `::a_press_catches_the_front_handle_and_a_scroll_the_nearest`, `oni-app/src/editors/tests.rs::a_scroll_along_the_track_moves_the_nearest_handle_and_one_across_is_left_to_the_panel` |
+| Levels anchor clamp 0.02…0.98, display shadows and highlights | `Pipeline/Levels.swift:192` | `oni-settings/src/levels.rs` `ANCHOR_CLAMP`, `display_*`, `set_display_*` | done | | `oni-app/src/editors/levels.rs::a_handle_moves_through_one_path_and_resets_alone` |
+| Levels black reachable under zero | `UI/LevelsView.swift`, `Checks/UI/LevelsView+Checks.swift:7` | `oni-settings/src/levels.rs` `domain` | done | | `oni-app/src/editors/levels.rs::the_levels_track_holds_and_its_black_reaches_under_zero` |
+| Curve: drag adds a point outside a 14 pt radius, double-tap removes | `UI/CurveEditorView.swift:67-100` | `oni-app/src/editors/curve.rs`, `oni-app/src/editors/mod.rs` | done | | `oni-app/src/editors/curve.rs::a_press_near_a_point_takes_it_to_the_pointer_and_elsewhere_adds_one`, `oni-app/src/editors/tests.rs::a_double_click_on_a_curve_point_removes_it_and_a_slow_one_does_not` |
+| Curve points: margin 0.001, endpoints undeletable, clamped | `Pipeline/Curves.swift:16-33` | `oni-settings/src/curves.rs` | done | | `oni-settings/src/curves.rs::a_curve_point_keeps_its_margin_its_square_and_its_ends` |
+| Saturation curve: double-tap to neutral, closest along | `UI/SaturationCurveView.swift:55-103` | `oni-app/src/editors/saturation.rs` | done | | `oni-app/src/editors/saturation.rs::a_double_click_neutralises_from_before_its_first_press`, `::a_press_takes_the_point_under_it_else_the_closest_along_the_light` |
+| Spectrogram wheel grabbed, never jumped; step 0.02 | `UI/SpectrogramPanel.swift:217-245`, `Pipeline/Spectrogram.swift:86` | `oni-app/src/editors/spectrogram.rs` | done | | `oni-app/src/editors/spectrogram.rs::the_colour_wheel_is_grabbed_never_jumped_to`, `::an_arrow_steps_two_percent_of_the_axis_and_tab_walks_the_wheel` |
+| Spectrogram luma nudge rest 0.5, reach 0.25; Option | `UI/SpectrogramPanel.swift:81,113-114` | `oni-app/src/editors/spectrogram.rs` | done | | `oni-app/src/editors/spectrogram.rs::the_luma_point_reads_along_its_spoke` |
 | Bipolar gain rows name the end the hand reaches | `UI/GainPanel.swift` | none | missing | | no check |
 | Temperature and Tint tracks end on their colours | `UI/TemperatureTintPanel.swift:23-24` | none | missing | | no check |
 | Canvas zoom per wheel notch 1.10, per trackpad point 1.0025 | `UI/CanvasNavigation.swift:8-22` | none | missing | | no check |
