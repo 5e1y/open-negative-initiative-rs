@@ -418,5 +418,26 @@
     "title": "The editor's Roll, Color and Details tabs and its history as Swift's, Esc closing Crop, the spectrogram holding the arrows",
     "status": "doing",
     "detail": "Every partial or missing row of docs/parity/editor.md under Panel: Roll tab, Panel: Color tab, Panel: Details tab and History; Esc leaving Crop; the focused spectrogram taking the arrows from the walk keys; whether adopting the face on open records an undo step, as SwiftUI orders it."
+  },
+  {
+    "id": 61,
+    "type": "feature",
+    "title": "The scan as the file holds it for a frame not yet converted, in the gallery and the editor's column",
+    "status": "doing",
+    "detail": "Thumbnails.produce: a frame whose sidecar is missing or equals Parameters.unconverted shows Thumbnails.scan, the file's embedded preview (ImageIO's FromImageIfAbsent) at 320 px, never the pipeline's render."
+  },
+  {
+    "id": 62,
+    "type": "feature",
+    "title": "Several archive folders and the navigator: favourites, the disk's folders, what is remembered across launches",
+    "status": "doing",
+    "detail": "FolderNavigation and Navigator: Computer (home and volumes), the base and its parent, favourites seeded once from roots.json and kept in favourites.json, a click unfolding and a double click opening, the base, the favourites view and the unfolded rows remembered."
+  },
+  {
+    "id": 63,
+    "type": "feature",
+    "title": "New Roll asks for its folder's name, and menu items for features absent from the build stay dark",
+    "status": "doing",
+    "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry."
   }
 ]
