@@ -1,0 +1,62 @@
+// The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
+// store, the scrolled pane, and the Scanner keypad's rows.
+import { Slider, Section, Scroller, KeyRow } from "../ds/ds.slint";
+import { Store } from "../store.slint";
+import { Editors } from "../editors.slint";
+import { PanelState, Lab } from "state.slint";
+
+export component LabBlock inherits Section {
+    modified: Lab.modified[self.block];
+    reset(b) => { Lab.reset-group(b); }
+}
+
+export component LetterRow inherits KeyRow {
+    in property <int> letter;
+    legends: Lab.legends;
+    stepped(by) => { Lab.press(root.letter, by); }
+    reset => { Lab.clear(root.letter); }
+}
+
+export component EffectRow inherits KeyRow {
+    in property <int> effect;
+    legends: Lab.legends;
+    stepped(by) => { Lab.step-effect(root.effect, by); }
+    reset => { Lab.clear-effect(root.effect); }
+}
+
+export component StoreSlider inherits Slider {
+    press(f, fine) => { return Store.press(f, fine); }
+    drag(f, t, s, fine) => { Store.drag(f, t, s, fine); }
+    release(f) => { Store.release(f); }
+    scroll(f, dx, dy, s, fine) => { return Store.scroll(f, dx, dy, s, fine); }
+    step(f, d) => { Store.step(f, d); }
+}
+
+// A Store block: its fold read from `sectionFold.<title>` when it is laid, written at each toggle.
+export component Block inherits Section {
+    folded: PanelState.folds-read ? PanelState.fold-of(self.title, self.folded-by-default) : self.folded-by-default;
+    reset(b) => { Store.reset(b); }
+    fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
+}
+
+// A block whose reset an editor owns, numbered as `Editors.reset` reads it.
+export component EditorBlock inherits Section {
+    reset(b) => { Editors.reset(b); }
+    fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
+}
+
+export component Pane inherits Scroller {
+    in property <bool> shown;
+    visible: self.shown;
+    content-height: column.preferred-height;
+    column := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        @children
+    }
+}
+
+// `DetailsPane.offOnSheet`: greyed and out of reach on a sheet, the values kept.
+export component DetailSlider inherits StoreSlider {
+    enabled: !PanelState.sheet;
+}

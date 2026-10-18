@@ -1,0 +1,35 @@
+// The De-dust tab: the brush and the corrections list.
+import { Icons, Space, Slider, Section, IconButton, Label, Tone, Well, HelpMark } from "../ds/ds.slint";
+import { Dedust } from "state.slint";
+import { Pane } from "parts.slint";
+
+export component DedustPane inherits Pane {
+    Section {
+        title: "Dust & Scratches";
+        help: "Paint over a defect; the tool duplicates a matching patch of the same photo over it.";
+        separated: false;
+        Slider {
+            field: -1;
+            label: "Brush Size";
+            fraction: Dedust.fraction;
+            readout: Dedust.readout;
+            value-text: Dedust.value-text;
+            press(f, fine) => { return Dedust.press(fine); }
+            drag(f, t, s, fine) => { Dedust.drag(t, s, fine); }
+            release(f) => { Dedust.release(); }
+        }
+        if Dedust.rows.length > 0: Well {
+            VerticalLayout {
+                padding: Space.s;
+                spacing: Space.xs;
+                for row[i] in Dedust.rows: HorizontalLayout {
+                    spacing: Space.s;
+                    Label { text: row.label; horizontal-stretch: 1; }
+                    if row.fallback: HelpMark { note: "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."; }
+                    if row.pending: Label { text: "Generating…"; tone: Tone.secondary; }
+                    IconButton { icon: Icons.remove; help: "Remove this correction"; clicked => { Dedust.remove(i); } }
+                }
+            }
+        }
+    }
+}

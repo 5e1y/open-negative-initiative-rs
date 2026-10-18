@@ -236,7 +236,12 @@ fn slint_help(source: &str, title: &str) -> String {
 #[test]
 fn every_block_says_swifts_own_help() {
     let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
-    let panel = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/panel.slint")).unwrap();
+    // The panel and its tabs' files.
+    let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+    let mut panel = std::fs::read_to_string(ui.join("panel.slint")).unwrap();
+    for f in std::fs::read_dir(ui.join("panel")).unwrap().flatten() {
+        panel.push_str(&std::fs::read_to_string(f.path()).unwrap());
+    }
     for (file, title) in [
         ("UI/SettingsPane.swift", "Flat-Field"),
         ("UI/SettingsPane.swift", "Dye Separation"),

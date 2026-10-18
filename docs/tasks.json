@@ -594,5 +594,13 @@
     "status": "done",
     "detail": "app.rs (4 052 lines) keeps the shared types; publishing, cropping, de-dusting, rendering, the archive, the gallery, the phone link, actions, keys, gestures, menus, wiring, the background workers, the shell and the state's reads each move to their own file under app/, unchanged.",
     "outcome": "The oni-app suite green before and after; no behaviour moved."
+  },
+  {
+    "id": 85,
+    "type": "refactor",
+    "title": "Split the editor's panel into one Slint file per tab",
+    "status": "done",
+    "detail": "panel.slint keeps the tab bar; its globals, its shared pieces and each of the five tabs live in their own file under ui/panel/, each importing only what it uses.",
+    "outcome": "The oni-app suite green, the block-order and field-wiring checks reading the split files; the headless editor shot unchanged."
   }
 ]

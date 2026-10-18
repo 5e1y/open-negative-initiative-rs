@@ -1,0 +1,152 @@
+// The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
+import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
+
+// What changes on its own rhythm, published apart so a tick touches no panel binding.
+export global Plots {
+    in property <image> output;
+    in property <image> levels;
+    // The manual curves' input distribution, the channel in focus drawn whole.
+    in property <image> curves;
+}
+
+export global PanelState {
+    in-out property <int> tab: 2;
+    // `DSSection`'s fold under `sectionFold.<title>`: the stored one, else the block's default.
+    pure callback fold-of(string, bool) -> bool;
+    // Set once Rust answers `fold-of`, so a block laid before reads its fold again.
+    in property <bool> folds-read;
+    callback fold-changed(string, bool);
+    // A contact sheet's frames are reduced copies, so the grain blocks say they are off.
+    in property <bool> sheet;
+    // `DetailsPane.offOnSheet`.
+    out property <string> off-on-sheet: "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.";
+    // `ConversionMode.allCases`' index of the targets' mode.
+    in property <int> film-type;
+    // How many photos a paste reaches.
+    in property <int> targets: 1;
+    callback film-type-picked(int);
+    in property <bool> flat-field-on;
+    // `SettingsPane.separationFamily`: the family the kernel runs, an index of `Separation.Family`.
+    in property <int> dye-family: 2;
+    callback dye-family-picked(int);
+    // `GainPanel`: the inversion swaps each row's ends, the hue then low.
+    in property <bool> gains-inverted: true;
+    // A file naming no profile, read as the hand says; a grey one offers two encodings.
+    in property <bool> undeclared;
+    in property <bool> grey-source;
+    in property <int> encoding;
+    in property <bool> encoding-modified;
+    callback encoding-picked(int);
+    // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
+    in property <bool> monochrome;
+    in property <string> mask-title;
+    in property <[MenuLine]> mask-lines;
+    in property <bool> masks-empty;
+    in property <bool> masked;
+    in property <int> flat-picked;
+    in property <bool> can-take-mask;
+    in property <bool> can-load-mask;
+    in property <bool> can-rename-mask;
+    // A mask being set from the photo, or loaded: the key says so and waits.
+    in property <bool> taking-mask;
+    in property <bool> loading-mask;
+    callback flat-field-toggled(bool);
+    callback mask-chosen(int);
+    callback take-mask();
+    callback load-mask();
+    callback rename-mask();
+    callback mask-folder();
+    callback flat-apply-selection();
+    // `ColorPane.showsCropWarning`: the frame uncropped and no measuring window drawn.
+    in property <bool> crop-first;
+    // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
+    in property <bool> separation-shown: true;
+    callback auto-balance();
+    callback pick(string);
+    callback tab-picked(int);
+    // `RollScope`: 0 never measured, 1 measured, 2 its frames still being found.
+    in property <int> roll-state: 1;
+    in property <int> roll-measured;
+    in property <int> roll-unmeasured;
+    in property <bool> can-prepare;
+    callback prepare-roll();
+    callback join-roll();
+    callback make-roll();
+    // `AutoLevels.Batch`: a run under way, and what the key says it acts on before the click.
+    in property <bool> balancing;
+    in property <float> balance-fraction;
+    in property <string> balance-progress;
+    in property <string> balance-note;
+}
+
+// The Scanner face: its screen, its keypad's state, and the keys' presses for Rust.
+export global Lab {
+    in property <bool> shown;
+    in-out property <int> machine;
+    in property <bool> monochrome;
+    in property <string> frame: "FRAME --/--";
+    in property <string> machine-line;
+    in property <bool> remeasure;
+    in property <[LabCell]> cells;
+    in property <[string]> finish;
+    in property <[string]> legends: ["−3", "−", "+", "+3"];
+    // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
+    in property <[bool]> modified: [false, false, false, false];
+    // A letter by its index in `Letter::ALL` (D, C, M, Y, TEMP), an effect in `Effect`'s order.
+    callback press(int, int);
+    callback clear(int);
+    callback step-effect(int, int);
+    callback clear-effect(int);
+    callback machine-picked(int);
+    callback reset-group(int);
+}
+
+// The Crop tab's model, `FramePane` and `GeometryPanel`: Rust holds the geometry and answers each key.
+export global Framing {
+    in property <int> ratio;
+    in property <bool> portrait;
+    in property <bool> portrait-enabled;
+    in property <string> kept;
+    in property <bool> modified;
+    in property <bool> mirrored;
+    in property <bool> mirrored-vertically;
+    in property <bool> can-paste;
+    in property <bool> armed;
+    in property <bool> has-window;
+    in property <bool> can-paste-window;
+    callback ratio-picked(int);
+    callback portrait-toggled(bool);
+    callback act(string);
+}
+
+// One correction of the open frame, as `CorrectionsPanel` lists it.
+export struct CorrectionRow {
+    label: string,
+    pending: bool,
+    fallback: bool,
+}
+
+// The De-dust pane's model: the brush, held by Rust as a slider is, and the corrections.
+export global Dedust {
+    in property <float> fraction;
+    in property <string> readout;
+    in property <string> value-text;
+    in property <[CorrectionRow]> rows;
+    callback press(bool) -> bool;
+    callback drag(length, length, bool);
+    callback release();
+    callback remove(int);
+}
+
+// `Loupe`'s band under Details: Rust renders the region the canvas centres and says its size in points.
+export global DetailLoupe {
+    in property <image> source;
+    in property <length> shown-width;
+    in property <length> shown-height;
+    in property <string> ratio;
+    in property <bool> ratio-shown;
+    // The band edge to edge across the panel, at the main plot's height.
+    out property <length> band-width: ShellStyle.panel-width;
+    out property <length> band-height: PlotStyle.main;
+    callback toggled();
+}

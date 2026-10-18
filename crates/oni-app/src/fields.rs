@@ -393,7 +393,7 @@ mod tests {
             }
         }
         // The panel passes each slider's own index back.
-        let panel = include_str!("../ui/panel.slint");
+        let panel = panel_source();
         for f in Field::ALL {
             // Source Balance names each row by the ends the mode gives it, so its label is the panel's.
             let named = |l: &str| l.contains(&format!("label: \"{}\";", f.spec().label)) || f.block() == Some(Block::SourceBalance);
@@ -429,10 +429,26 @@ mod tests {
         assert_eq!(Field::Exposure.base(&slide), 0.0, "Exposure's base is `Tone.neutral`, never the mode's rest");
     }
 
-    /// The `title:` of each block in one pane of `panel.slint`, in order.
+    /// The panel's Slint, its tabs' files after it.
+    pub(crate) fn panel_source() -> String {
+        [
+            include_str!("../ui/panel.slint"),
+            include_str!("../ui/panel/state.slint"),
+            include_str!("../ui/panel/parts.slint"),
+            include_str!("../ui/panel/roll_tab.slint"),
+            include_str!("../ui/panel/crop_tab.slint"),
+            include_str!("../ui/panel/dedust_tab.slint"),
+            include_str!("../ui/panel/color_tab.slint"),
+            include_str!("../ui/panel/details_tab.slint"),
+        ]
+        .concat()
+    }
+
+    /// The `title:` of each block in one pane of the panel, in order.
     fn pane_titles(panel: &str, pane: &str) -> Vec<String> {
         let body = &panel[panel.find(&format!("component {pane} ")).expect("the pane")..];
-        let body = &body[..body[1..].find("\ncomponent ").map_or(body.len(), |i| i + 1)];
+        let next = ["\ncomponent ", "\nexport component "].iter().filter_map(|m| body[1..].find(m)).min();
+        let body = &body[..next.map_or(body.len(), |i| i + 1)];
         body.lines().filter_map(|l| l.trim().strip_prefix("title: \"")?.split('"').next().map(str::to_string)).collect()
     }
 
@@ -467,7 +483,7 @@ mod tests {
                 .map(String::from)
                 .to_vec(),
         };
-        let shown = pane_titles(include_str!("../ui/panel.slint"), "RollPane");
+        let shown = pane_titles(&panel_source(), "RollPane");
         assert!(shown.len() >= 6, "{shown:?}");
         assert!(follows(&shown, &swift), "the Roll tab shows {shown:?}, Swift lays {swift:?}");
         // Twin: Dye Separation and Balance Strength ahead of the ceiling break the order.
