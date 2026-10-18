@@ -292,7 +292,7 @@
     "title": "Dust patches and custom flat-field masks reach the render",
     "status": "done",
     "detail": "The pipeline's Inputs carry the frame's dust patches and its custom flat-field mask, loaded as Swift loads them, on the canvas, the thumbnails and the export.",
-    "commit": "pending",
+    "commit": "4416cdb",
     "outcome": "flat_fields.rs reads the custom masks the Swift app keeps in the support folder (masks.json, <id>.tiff in half or single float) with their peaks and passes flag; the engine uploads a frame's mask once per id and hands it to the pipeline on the canvas and the thumbnails. patches.rs finds and writes each correction's patch in Caches/Open Negative Initiative/Corrections/<id>.tiff; heal.rs ports CorrectionRenderer.generate on the CPU in Core Image's frame (coarse 8 px then fine 1 px search with the ring's hole left out, the parabolic refine, the tone field's base and slopes); as a frame with strokes opens, each correction without a patch is generated in turn on the full-resolution frame framed with the others healed, and the cache is purged at quit, as Swift's. Checks: a custom mask divides a flat frame and a gone id leaves the stage out; the Swift app's three masks on this Mac read whole; a cached patch heals its stroke's centre and not the frame's corner; the search finds a block copied 288 px left and 168 px down on smoothed noise and the patch carries its pixels; the tone field lifts a copy by the step between halves. On the Mac: a roll #8 frame given a stroke had its patch generated 1.1 s after opening, decode included. Not ported: the export's inputs (export.rs passes none), Load… and Use This Photo as Flat-Field, the fallback flag and the source markers."
   },
   {
