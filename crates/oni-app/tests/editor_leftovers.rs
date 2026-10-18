@@ -1,11 +1,11 @@
-//! The editor's remaining gestures on the headless window: the Details loupe over the frame's full
-//! resolution and its ratio badge, New Roll naming its folder in the column, Copy Settings on a
-//! system pasteboard under the app's own type.
+//! The editor's last gestures on the headless window: the Details loupe, the blocks' folds and
+//! help, New Roll naming its folder, Copy Settings on a system pasteboard, scroll over a slider.
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
 use oni_app::pasteboard;
-use oni_app::{DetailLoupe, Library, PanelState};
+use oni_app::preferences::Preferences;
+use oni_app::{DetailLoupe, Editors, Library, PanelState};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::{ComponentHandle, Model};
@@ -81,6 +81,28 @@ fn the_editors_last_gestures_behave_as_swifts() {
     band.invoke_toggled();
     assert_eq!(ctl.state.borrow().loupe_magnification(), 1.5);
 
+    // `DSHelpPlacement.place`: a note held Space.sm in from the window's four edges, cut to fit.
+    let tips = w.global::<oni_app::Tips>();
+    let placed = |x: f32, y: f32, width: f32, height: f32| {
+        let b = tips.invoke_place(x, y, width, height, 1280.0, 800.0);
+        (b.x, b.y, b.width, b.height)
+    };
+    assert_eq!(placed(100.0, 120.0, 240.0, 60.0), (100.0, 120.0, 240.0, 60.0), "room enough: where it hangs");
+    assert_eq!(placed(1200.0, 780.0, 240.0, 60.0), (1032.0, 732.0, 240.0, 60.0), "past the right and bottom edges");
+    assert_eq!(placed(-20.0, 2.0, 240.0, 60.0), (8.0, 8.0, 240.0, 60.0), "past the left and top edges");
+    assert_eq!(placed(100.0, 100.0, 2000.0, 900.0), (8.0, 8.0, 1264.0, 784.0), "larger than the room, cut to it");
+    // Twin: the note hung at its anchor alone would leave the window.
+    assert_ne!(placed(1200.0, 780.0, 240.0, 60.0), (1200.0, 780.0, 240.0, 60.0));
+
+    // A block's fold remembered under `sectionFold.<title>`, the editors' folds read from it at launch.
+    assert!(!panel.invoke_fold_of("Texture".into(), false));
+    panel.invoke_fold_changed("Texture".into(), true);
+    assert!(panel.invoke_fold_of("Texture".into(), false), "the hand's fold wins over the default");
+    assert_eq!(Preferences::load(&support).string("sectionFold.Texture"), Some("folded"));
+    assert!(panel.invoke_fold_of("Flat-Field".into(), true) && !panel.invoke_fold_of("Sharpening".into(), false), "twin: another block keeps its default");
+    assert!(w.global::<Editors>().get_curves_folded(), "Curves opens folded");
+    panel.invoke_fold_changed("Curves".into(), false);
+
     // New Roll from Selection: B moved into a dated roll, whose name the column beside the photo asks.
     ctl.act("toggle-mode");
     rig.pump();
@@ -122,6 +144,42 @@ fn the_editors_last_gestures_behave_as_swifts() {
     assert!((Field::Exposure.knob().get(&decoded) - donor).abs() < 1e-6, "the board holds the frame's settings");
     assert_eq!(seen.data(pasteboard::FRAMING), None, "twin: Copy Settings writes no framing");
 
+    // Scroll over a slider: a touch surface's points at a quarter, a wheel's lines at ten points each,
+    // and one undo step for the events that come closer than the idle window.
+    let store = w.global::<oni_app::Store>();
+    let exposure = || oni_app::app::fraction(&store, Field::Exposure);
+    let span = 200.0;
+    // The step before lands first, past its settle delay and its knob's spring, so the scroll's step is its own.
+    rig.settle();
+    let rest = exposure();
+    store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    assert!((exposure() - rest - 2.0 * 8.0 * 0.25 / span as f32).abs() < 1e-5, "{} from {rest}", exposure());
+    oni_app::viewport::note_wheel(oni_app::viewport::Wheel { dx: 1.0, dy: 0.0, precise: false });
+    let before = exposure();
+    store.invoke_scroll(Field::Exposure.index(), 60.0, 0.0, span, false);
+    assert!((exposure() - before - 10.0 / span as f32).abs() < 1e-5, "a wheel line is ten points, not Slint's sixty");
+    std::thread::sleep(Duration::from_millis(250));
+    rig.pump();
+    ctl.act("undo");
+    rig.settle();
+    assert!((exposure() - rest).abs() < 1e-5, "the three events were one step");
+    // The hand stays raised until 0.16 s pass without an event; each event restarts that wait.
+    let held = || ctl.state.borrow().scrolling();
+    store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    std::thread::sleep(Duration::from_millis(110));
+    rig.pump();
+    assert!(held(), "inside the idle window");
+    store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    std::thread::sleep(Duration::from_millis(110));
+    rig.pump();
+    assert!(held(), "twin: the second event restarted the wait, 0.22 s after the first");
+    std::thread::sleep(Duration::from_millis(150));
+    rig.pump();
+    assert!(!held(), "past the idle window");
+    ctl.act("undo");
+    rig.settle();
+
     // A relaunch: a fresh store on the same board pastes the copy onto B.
     #[cfg(target_os = "macos")]
     {
@@ -132,6 +190,7 @@ fn the_editors_last_gestures_behave_as_swifts() {
         shell.window.show().unwrap();
         let ctl = shell.ctl.clone();
         let lib = shell.window.global::<Library>();
+        assert!(!shell.window.global::<Editors>().get_curves_folded(), "Curves opens as the hand left it");
         shell.open_folder(&folder);
         rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
         lib.invoke_tile_clicked(0, false, false);
@@ -151,3 +210,50 @@ fn the_editors_last_gestures_behave_as_swifts() {
         assert!((ctl.state.borrow().store().get(Field::Exposure) - donor).abs() < 1e-6, "the copy crossed the relaunch");
     }
 }
+
+/// The string literals of `text` up to `end`, joined as Swift's `+` joins them.
+fn literals(text: &str) -> String {
+    text.split('"').skip(1).step_by(2).collect()
+}
+
+/// A Swift section's help: the literals between `help:` and the section's content.
+fn swift_help(source: &str, title: &str) -> String {
+    let at = source.find(&format!("DSSection(\"{title}\"")).unwrap_or_else(|| panic!("{title} in Swift"));
+    let from = at + source[at..].find("help:").unwrap();
+    let to = from + source[from..].find(") {").unwrap();
+    literals(source[from..to].split("separated:").next().unwrap())
+}
+
+/// A Slint block's help: the last literal on the `help:` line under its title.
+fn slint_help(source: &str, title: &str) -> String {
+    let at = source.find(&format!("title: \"{title}\";")).unwrap_or_else(|| panic!("{title} in Slint"));
+    let from = at + source[at..].find("help:").unwrap();
+    let line = source[from..].lines().next().unwrap();
+    line.rsplit('"').nth(1).unwrap_or_default().to_string()
+}
+
+/// `DSSection(help:)` on the blocks: each block's note is Swift's own string.
+#[test]
+fn every_block_says_swifts_own_help() {
+    let Some(swift) = oni_app::swift_sources() else { return eprintln!("no Swift checkout: the notes are not compared") };
+    let panel = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/panel.slint")).unwrap();
+    for (file, title) in [
+        ("UI/SettingsPane.swift", "Flat-Field"),
+        ("UI/SettingsPane.swift", "Dye Separation"),
+        ("UI/DetailsPane.swift", "Sharpening"),
+        ("UI/DetailsPane.swift", "Chroma Denoise"),
+        ("UI/DetailsPane.swift", "Texture"),
+    ] {
+        let source = std::fs::read_to_string(swift.join(file)).unwrap();
+        let want = swift_help(&source, title);
+        assert!(want.len() > 20, "{title}: {want}");
+        assert_eq!(slint_help(&panel, title), want, "{title}");
+        // Twin: one word changed in the port is caught.
+        let changed = panel.replacen(&want, &want.replacen(' ', "  ", 1), 1);
+        assert_ne!(slint_help(&changed, title), want, "{title}");
+    }
+    let details = std::fs::read_to_string(swift.join("UI/DetailsPane.swift")).unwrap();
+    let off = literals(details.split("offOnSheet = ").nth(1).unwrap().split('\n').take(2).collect::<Vec<_>>().join("").as_str());
+    assert!(panel.contains(&format!("off-on-sheet: \"{off}\";")), "{off}");
+}
+

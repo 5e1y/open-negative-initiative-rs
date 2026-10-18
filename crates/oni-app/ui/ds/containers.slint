@@ -35,7 +35,11 @@ export component Section inherits VerticalLayout {
     in property <bool> modified;
     in property <bool> separated: true;
     in-out property <bool> folded;
+    // What the block opens as before the hand ever folds it, `.folded(byDefault:)`.
+    in property <bool> folded-by-default;
     callback reset(int);
+    // The hand's fold, which `sectionFold.<title>` remembers.
+    callback fold-toggled(bool);
     if root.separated: Divider { }
     VerticalLayout {
         padding-left: SectionStyle.inset;
@@ -48,7 +52,7 @@ export component Section inherits VerticalLayout {
             Label {
                 role: TextRole.section;
                 text: root.title;
-                TouchArea { clicked => { root.folded = !root.folded; } }
+                TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
@@ -75,7 +79,7 @@ export component Section inherits VerticalLayout {
                 horizontal-stretch: 0;
                 icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
                 help: root.folded ? "Show " + root.title : "Hide " + root.title;
-                clicked => { root.folded = !root.folded; }
+                clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); }
             }
         }
         // Folded, the content keeps its place in the tree at zero height, so its state survives.

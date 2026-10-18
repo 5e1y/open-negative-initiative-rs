@@ -19,7 +19,11 @@ export component Key inherits Rectangle {
     in property <Look> look: Look.live;
     callback clicked();
     property <bool> hovered: touch.has-hover || root.look == Look.hover;
-    property <bool> pressed: touch.pressed || root.look == Look.pressed;
+    // `KeycapPress`: the cap drawn down from the press until `key-hold` has passed, however short the tap.
+    out property <bool> down;
+    property <duration> pressed-at;
+    property <duration> left;
+    property <bool> pressed: root.down || root.look == Look.pressed;
     height: ScannerStyle.key-height;
     min-width: root.wide ? ScannerStyle.wide-key : word.preferred-width + 2 * ScannerStyle.key-padding;
     preferred-width: self.min-width;
@@ -42,6 +46,28 @@ export component Key inherits Rectangle {
     touch := TouchArea {
         clicked => { root.clicked(); }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed pressed => {
+            if (self.pressed) {
+                lift.running = false;
+                root.down = true;
+                root.pressed-at = animation-tick();
+            } else {
+                root.left = ScannerStyle.key-hold - (animation-tick() - root.pressed-at);
+                if (root.left <= 0ms) {
+                    root.down = false;
+                } else {
+                    lift.running = true;
+                }
+            }
+        }
+    }
+    lift := Timer {
+        interval: root.left;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.down = false;
+        }
     }
 }
 

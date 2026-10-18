@@ -303,6 +303,8 @@ export global ScannerStyle {
     out property <length> key-padding: DS.scanner-key-padding-h;
     out property <length> key-radius: Radius.track;
     out property <length> key-gap: Space.xxs;
+    // `KeycapStyle.minHold`: the shortest time a cap stays down, or a tap plays a tenth of the press.
+    out property <duration> key-hold: 140ms;
     out property <length> socket-radius: Radius.badge;
     out property <color> socket: DS.palette-tile;
     // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.

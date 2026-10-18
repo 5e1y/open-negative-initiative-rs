@@ -1,5 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
@@ -14,7 +14,7 @@ import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSh
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 
-export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
+export { DS, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow }
 export { MaskDialog }
@@ -591,7 +591,7 @@ export component MainWindow inherits AppWindow {
     if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
-    TipLayer { room: root.width; }
+    TipLayer { room: root.width; room-height: root.height; }
 
     init => { keys.focus(); }
 }

@@ -13,6 +13,15 @@ pub const HAND_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / 30);
 pub const DOUBLE_CLICK: Duration = Duration::from_millis(500);
 /// `DSScroll.trackpadTravel`: points of travel per point of trackpad glide.
 pub const TRACKPAD_TRAVEL: f32 = 0.25;
+/// `DSScroll.wheelLine`: points of travel per line of a wheel.
+pub const WHEEL_LINE: f32 = 10.0;
+/// `DSScroll.idleWindow`: neither device reports a real end, so this long without an event ends a scroll.
+pub const SCROLL_IDLE: Duration = Duration::from_millis(160);
+
+/// `DSScroll.travel(along:precise:)`: a touch surface's points damped, a wheel's lines spread.
+pub fn scroll_travel(along: f32, precise: bool) -> f32 {
+    along * if precise { TRACKPAD_TRAVEL } else { WHEEL_LINE }
+}
 
 /// `DSSlider.position(of:in:centre:)`: piecewise linear about `centre` when it bends the track.
 pub fn position(value: f32, range: &RangeInclusive<f32>, centre: Option<f32>) -> f32 {
@@ -152,5 +161,36 @@ mod tests {
         let mut spaced = Hand::default();
         let deferred = (0..5).filter(|k| spaced.offer(t0 + *k * HAND_INTERVAL) != Offer::Now).count();
         assert_eq!(deferred, 0);
+    }
+}
+
+#[cfg(test)]
+mod scroll_tests {
+    use super::*;
+
+    #[test]
+    fn a_wheel_line_travels_ten_points_and_a_trackpad_point_a_quarter() {
+        assert_eq!(scroll_travel(1.0, false), 10.0);
+        assert_eq!(scroll_travel(-2.0, false), -20.0);
+        assert_eq!(scroll_travel(8.0, true), 2.0);
+        assert_ne!(scroll_travel(1.0, false), scroll_travel(1.0, true), "twin: the two devices part");
+        assert_eq!(SCROLL_IDLE.as_secs_f64(), 0.16);
+    }
+
+    /// `DSScroll.selfCheck`: the drag follows the pointer point for point, the scroll a quarter of
+    /// it, and a wheel notch is 2 to 5 % of a block's track, `panelWidth - 2 × Space.md`.
+    #[test]
+    fn the_drag_is_not_damped_and_a_notch_is_a_few_percent_of_the_track() {
+        let (glide, width) = (100.0, 260.0);
+        let dragged = asked(0.0, glide, width, false);
+        let scrolled = asked(0.0, scroll_travel(glide, true), width, false);
+        assert!((dragged / scrolled - 1.0 / TRACKPAD_TRAVEL).abs() < 1e-4);
+        assert!((asked(0.0, width, width, false) - 1.0).abs() < 1e-6, "a track's width crosses it whole");
+        let usable = 320.0 - 2.0 * 16.0;
+        let per_notch = scroll_travel(1.0, false) / usable;
+        assert!(per_notch > 0.02 && per_notch < 0.05, "{per_notch}");
+        // Twin: a wheel damped like the trackpad would move under 1 % a notch.
+        assert!(scroll_travel(1.0, false) * TRACKPAD_TRAVEL / usable < 0.02);
+        assert!(FINE < 1.0 && TRACKPAD_TRAVEL * FINE < TRACKPAD_TRAVEL, "⌥ is finer still");
     }
 }

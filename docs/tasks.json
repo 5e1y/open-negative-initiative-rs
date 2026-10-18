@@ -535,7 +535,8 @@
     "id": 81,
     "type": "feature",
     "title": "The editor's leftovers: the Details loupe, the settings pasteboard, New Roll's name, block help and folds, Esc in a crop drag, scroll and keycap timings, help bubbles that fit",
-    "status": "doing",
-    "detail": "The Details loupe renders the band's region of the full-resolution frame off the interface thread at 150 % or 200 %; Copy Settings, the framing and the measuring window ride the macOS pasteboard under Swift's own types; New Roll from Selection names its folder in the archive's column; the pipette's only Swift caller is the base pick, already ported."
+    "status": "done",
+    "detail": "The Details loupe renders the band's region of the full-resolution frame off the interface thread at 150 % or 200 %; Copy Settings, the framing and the measuring window ride the macOS pasteboard under Swift's own types, the other two laid back after a clear; New Roll from Selection names its folder in the archive's column; Sharpening, Chroma Denoise and Texture carry Swift's help and every panel block remembers its fold under sectionFold.<title>; Esc in a crop or window drag puts the frame back; a slider takes a wheel's lines at 10 points and holds the hand until 0.16 s pass; a keycap stays down 0.14 s; tooltips are held Space.sm inside the window. The pipette's only Swift caller is the base pick, already ported.",
+    "outcome": "oni-app/tests/editor_leftovers.rs on the headless window with twins (the copy crossing a relaunch on a named NSPasteboard), tests/keycap.rs on the catalogue, the loupe's region checked against the exported pixels with a crop-first twin. Real window on roll #8's test copy: ONI_BENCH=loupe, first loupe 1.26 s with the full decode, a Sharpening notch reaches it in 36 ms median; ONI_BENCH=crop, Esc in a drag put the frame back and the roll undid to its start. Left: the screen gamut's stripes on the loupe, a typed pasteboard on Windows, the help bubble's block width."
   }
 ]

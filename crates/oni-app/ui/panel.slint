@@ -15,6 +15,15 @@ export global Plots {
 
 export global PanelState {
     in-out property <int> tab: 2;
+    // `DSSection`'s fold under `sectionFold.<title>`: the stored one, else the block's default.
+    pure callback fold-of(string, bool) -> bool;
+    // Set once Rust answers `fold-of`, so a block laid before reads its fold again.
+    in property <bool> folds-read;
+    callback fold-changed(string, bool);
+    // A contact sheet's frames are reduced copies, so the grain blocks say they are off.
+    in property <bool> sheet;
+    // `DetailsPane.offOnSheet`.
+    out property <string> off-on-sheet: "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.";
     // `ConversionMode.allCases`' index of the targets' mode.
     in property <int> film-type;
     // How many photos a paste reaches.
@@ -123,13 +132,17 @@ component StoreSlider inherits Slider {
     step(f, d) => { Store.step(f, d); }
 }
 
+// A Store block: its fold read from `sectionFold.<title>` when it is laid, written at each toggle.
 component Block inherits Section {
+    folded: PanelState.folds-read ? PanelState.fold-of(self.title, self.folded-by-default) : self.folded-by-default;
     reset(b) => { Store.reset(b); }
+    fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
 }
 
 // A block whose reset an editor owns, numbered as `Editors.reset` reads it.
 component EditorBlock inherits Section {
     reset(b) => { Editors.reset(b); }
+    fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
 }
 
 component Pane inherits Scroller {
@@ -193,7 +206,7 @@ component RollPane inherits Pane {
         help: "Evens out uneven lighting from the scanner, whatever you crop to.";
         block: 11;
         modified: Store.flat-field-modified;
-        folded: true;
+        folded-by-default: true;
         HorizontalLayout {
             spacing: Space.s;
             Label { text: "Flat-field"; horizontal-stretch: 1; }
@@ -246,7 +259,7 @@ component RollPane inherits Pane {
         help: "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.";
         block: 12;
         modified: PanelState.encoding-modified;
-        folded: true;
+        folded-by-default: true;
         Field {
             label: "Read as";
             Tabs {
@@ -260,7 +273,7 @@ component RollPane inherits Pane {
         title: "Source Balance";
         block: 10;
         modified: Store.source-balance-modified;
-        folded: true;
+        folded-by-default: true;
         StoreSlider {
             field: 24; label: PanelState.gains-inverted ? "Red ↔ Cyan" : "Cyan ↔ Red"; fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;
@@ -280,7 +293,7 @@ component RollPane inherits Pane {
         help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
         block: 4;
         modified: Store.density-ceiling-modified;
-        folded: true;
+        folded-by-default: true;
         StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
     if !Editors.scanner-face: EditorBlock {
@@ -301,7 +314,7 @@ component RollPane inherits Pane {
         help: "Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.";
         block: 5;
         modified: Store.dye-separation-modified;
-        folded: true;
+        folded-by-default: true;
         Field {
             label: "Dyes";
             Tabs {
@@ -317,7 +330,7 @@ component RollPane inherits Pane {
         help: "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.";
         block: 3;
         modified: Store.balance-strength-modified;
-        folded: true;
+        folded-by-default: true;
         StoreSlider { field: 11; label: "Strength"; fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
     }
 }
@@ -629,6 +642,8 @@ component ColorPane inherits Pane {
 component DetailsPane inherits Pane {
     Block {
         title: "Sharpening";
+        help: PanelState.sheet ? PanelState.off-on-sheet : "Sharpens edges without adding color fringing.";
+        separated: false;
         block: 6;
         modified: Store.sharpening-modified;
         StoreSlider { field: 15; label: "Amount"; fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
@@ -638,6 +653,7 @@ component DetailsPane inherits Pane {
     // `DetailsPane`: a monochrome frame has no colour noise to smooth.
     if !PanelState.monochrome: Block {
         title: "Chroma Denoise";
+        help: PanelState.sheet ? PanelState.off-on-sheet : "Smooths color noise from the scan without touching the film grain.";
         block: 7;
         modified: Store.chroma-denoise-modified;
         StoreSlider { field: 18; label: "Amount"; fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
@@ -645,6 +661,7 @@ component DetailsPane inherits Pane {
     }
     Block {
         title: "Texture";
+        help: "Contrast at the scale of hair and fabric — leaves grain and overall tone alone.";
         block: 8;
         modified: Store.texture-modified;
         StoreSlider { field: 20; label: "Texture"; fraction: Store.texture-fraction; readout: Store.texture-readout; value-text: Store.texture-value; }

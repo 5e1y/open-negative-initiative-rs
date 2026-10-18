@@ -1,6 +1,5 @@
-//! The Details tab's loupe in the window: the band's region of the full-resolution frame rendered
-//! off this thread, one render in flight and the latest asked kept, built once the frame's full
-//! resolution has landed, which opening Details asks for.
+//! The Details loupe in the window: the band's region of the full-resolution frame, which Details
+//! builds, rendered off this thread with one render in flight and the latest asked kept.
 
 use super::{Ctl, with_shell};
 use crate::display::{Params, Screen};
@@ -19,11 +18,13 @@ pub(super) struct Held {
     busy: bool,
     again: bool,
     shown: Option<Key>,
+    /// Renders shown, which a bench counts.
+    count: u64,
 }
 
 impl Default for Held {
     fn default() -> Self {
-        Held { magnification: loupe::REST, busy: false, again: false, shown: None }
+        Held { magnification: loupe::REST, busy: false, again: false, shown: None, count: 0 }
     }
 }
 
@@ -135,7 +136,9 @@ impl Ctl {
         band.set_source(Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w, h)));
         band.set_shown_width((f64::from(w) * m / scale) as f32);
         band.set_shown_height((f64::from(h) * m / scale) as f32);
-        self.state.borrow_mut().loupe.shown = Some(key);
+        let mut s = self.state.borrow_mut();
+        s.loupe.shown = Some(key);
+        s.loupe.count += 1;
     }
 }
 
@@ -148,6 +151,11 @@ impl super::State {
     /// The loupe's ratio, read by the checks.
     pub fn loupe_magnification(&self) -> f64 {
         self.loupe.magnification
+    }
+
+    /// How many loupe renders have been shown.
+    pub fn loupes(&self) -> u64 {
+        self.loupe.count
     }
 
     /// The loupe has shown a render of the open frame's full resolution.

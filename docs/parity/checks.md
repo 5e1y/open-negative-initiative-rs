@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 85 twin, 19 partial, 58 none.
+Of 162 checks: 87 twin, 21 partial, 54 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -113,11 +113,11 @@ Of 162 checks: 85 twin, 19 partial, 58 none.
 | 99 | `DSIcon.selfCheck` | `Checks/DesignSystem/DSIcon+Checks.swift:5` | Trinil icons present in the bundle | none | none |
 | 100 | `FilmStockIcon.selfCheck` | `Checks/DesignSystem/DSIcon+Checks.swift:18` | every film stock in the catalogue has its own icon in the bundle | none | none |
 | 101 | `DSCatalogue.selfCheck` | `Checks/DesignSystem/DSPlayground+Checks.swift:6` | design system catalogs complete | twin | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
-| 102 | `DSHelpBubble.selfCheck` | `Checks/DesignSystem/DSHelp+Checks.swift:161` | help bubbles fit where they hang | none | none |
+| 102 | `DSHelpBubble.selfCheck` | `Checks/DesignSystem/DSHelp+Checks.swift:161` | help bubbles fit where they hang | partial | `oni-app/tests/editor_leftovers.rs::the_editors_last_gestures_behave_as_swifts`; the placement inside four edges, not the bubble's block width nor the smallest viewer |
 | 103 | `HistogramShape.selfCheck` | `Checks/DesignSystem/DSHistogram+Checks.swift:7` | histogram morphing holds | none | none |
 | 104 | `DSTrack.selfCheck` | `Checks/DesignSystem/DSHandle+Checks.swift:4` | track geometry holds | twin | `oni-app/src/track.rs::a_bent_track_is_its_own_inverse` |
 | 105 | `DSHaptics.selfCheck` | `Checks/DesignSystem/DSHaptics+Checks.swift:5` | haptic feedback cadence holds | none | none |
-| 106 | `DSScroll.selfCheck` | `Checks/DesignSystem/DSScrollAdjust+Checks.swift:5` | scroll sensitivity holds | partial | `oni-app/tests/scroll.rs::a_surface_scrolls_by_the_wheel_and_never_by_a_drag`; no sensitivity |
+| 106 | `DSScroll.selfCheck` | `Checks/DesignSystem/DSScrollAdjust+Checks.swift:5` | scroll sensitivity holds | partial | `oni-app/tests/scroll.rs::a_surface_scrolls_by_the_wheel_and_never_by_a_drag`, `oni-app/src/track.rs::the_drag_is_not_damped_and_a_notch_is_a_few_percent_of_the_track`; no haptic cadence |
 | 107 | `DSSwipe.nestingCheck` | `Checks/DesignSystem/DSScrollAdjust+Checks.swift:111` | nested swipe arbitration holds | none | none |
 | 108 | `DSSwipe.selfCheck` | `Checks/DesignSystem/DSScrollAdjust+Checks.swift:136` | swipe arbitration holds | none | none |
 | 109 | `DSPager.selfCheck` | `Checks/DesignSystem/DSPanel+Checks.swift:42` | pane scrolling holds | partial | `oni-app/tests/scroll.rs::a_surface_scrolls_by_the_wheel_and_never_by_a_drag` |

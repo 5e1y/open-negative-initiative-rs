@@ -23,7 +23,7 @@ use oni_core::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Spring;
 use crate::system;
-use crate::track::{self, Hand, Offer, TRACKPAD_TRAVEL};
+use crate::track::{self, Hand, Offer};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
 use oni_library::gallery_history::Move;
@@ -57,6 +57,7 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod board;
+mod folds;
 mod lab;
 mod loupe;
 mod masks;
@@ -67,6 +68,7 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod scroll;
 mod tree_rename;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
@@ -317,6 +319,10 @@ pub struct State {
     /// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press
     /// and the shown image frame's size in points.
     frame_gesture: Option<(bool, Handle, Fraction, (f64, f64))>,
+    /// Esc put the held frame back: the rest of that drag moves nothing.
+    frame_cancelled: bool,
+    /// A scroll along a track under way, its hand raised until the idle window passes.
+    scrolling: bool,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
     window_armed: bool,
@@ -515,6 +521,7 @@ pub struct Ctl {
     pulse: Timer,
     settle: Timer,
     stripes: Timer,
+    scroll_idle: Timer,
     pub(crate) editors: crate::editors::Shell,
     /// `Thumbnails.refreshDelay` after the sidecar's write, the open photo's thumbnail is redrawn.
     refresher: Timer,
@@ -734,6 +741,8 @@ impl Shell {
             split: None,
             framing_memory: None,
             frame_gesture: None,
+            frame_cancelled: false,
+            scrolling: false,
             straightening: None,
             window_armed: false,
             last_panel: 2,
@@ -772,6 +781,7 @@ impl Shell {
             pulse: Timer::default(),
             settle: Timer::default(),
             stripes: Timer::default(),
+            scroll_idle: Timer::default(),
             editors: crate::editors::Shell::default(),
             refresher: Timer::default(),
             writer: Timer::default(),
@@ -1446,7 +1456,7 @@ impl Ctl {
     fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
         let Some(image) = self.image_size() else { return };
         let cropping = self.cropping();
-        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture else { return };
+        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture.filter(|_| !self.state.borrow().frame_cancelled) else { return };
         let proposed = frames::apply(handle, from, frame, (f64::from(dx), f64::from(dy)));
         let g = self.state.borrow().store.settings().geometry.clone();
         let next = if window {
@@ -1458,7 +1468,24 @@ impl Ctl {
         self.publish_framing();
     }
 
+    /// `CropOverlay`'s Esc: the held frame back where the press found it, the drag spent.
+    fn cancel_frame_drag(self: &Rc<Self>) -> bool {
+        let cropping = self.cropping();
+        let (window, from) = {
+            let mut s = self.state.borrow_mut();
+            let Some((window, _, from, _)) = s.frame_gesture.filter(|_| !s.frame_cancelled) else { return false };
+            s.frame_cancelled = true;
+            (window, from)
+        };
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let back = if window { Geometry { measure_window: Some(frames::window_stored(&g, from, cropping)), ..g } } else { Geometry { crop: from, ..g } };
+        self.write_geometry(back);
+        self.publish_framing();
+        true
+    }
+
     fn frame_released(self: &Rc<Self>) {
+        self.state.borrow_mut().frame_cancelled = false;
         let held = self.state.borrow_mut().frame_gesture.take().is_some();
         if held {
             self.state.borrow_mut().store.release();
@@ -2913,6 +2940,9 @@ impl Ctl {
         if self.preset_form_key(text) {
             return true;
         }
+        if text == "\u{1b}" && self.cancel_frame_drag() {
+            return true;
+        }
         if text == "\u{1b}" && w.global::<Pairing>().get_shown() {
             self.close_pairing();
             return true;
@@ -3578,7 +3608,8 @@ impl Ctl {
                 return false;
             }
             let from = p.state.borrow().slides[f.index() as usize].shown;
-            let asked = track::clamped(track::asked(from, dx * TRACKPAD_TRAVEL, span, fine));
+            let asked = track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine));
+            p.scroll_kept_alive();
             p.place(f, asked);
             p.set(f, stored_at(f, asked));
             true
@@ -3641,6 +3672,7 @@ impl Ctl {
         Ctl::wire_help(me, window);
         Ctl::wire_loupe(me, window);
         Ctl::wire_tree_rename(me, window);
+        Ctl::wire_folds(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         Ctl::wire_prepare(me, window);
