@@ -58,19 +58,17 @@ tab's block order and the menu titles now read as Swift's.
 
 ## The ten largest gaps, in port order
 
-1. **Prepare the Roll.** The measure, the reach, RollDraft, the capture stops and the base pipette
-   are in the crates; the surface, its steps, its keys and its menu item are not.
-2. **The pipette.** `oni-measure` reads it at Swift's radius; no canvas gesture calls it.
-3. **The flat-field mask library.** Use This Photo as Flat-Field, Load…, Rename, Folder, moving
-   the frame out of the library, and the sliders remembered per Mac.
-4. **The contact sheet.** Composing a roll on its sheet, its window and its detail note.
-5. **Opening an archive.** Several roots, the navigator, favourites, the folder menu and what is
-   remembered across launches.
-6. **RGB passes.** Files grouped by pass order and the registration measured.
-7. **The application shell.** Help surfaces, updates, the quit guard, the console, the key sound.
-8. **The editors' leftovers.** The Details loupe, help texts, fold memory, the histogram's morph.
-9. **Presets.** Everything but the deck's fade at its ends.
-10. **The canvas by hand.** Wheel, pinch and ⌘ scroll, tried on the Mac.
+1. **The contact sheet.** Composing a roll on its sheet, its window, its sidecar and reference,
+   detail off on a sheet, and Prepare the Roll writing one.
+2. **RGB passes.** Files grouped by pass order, Shift by One File, and the registration measured.
+3. **Updates.** The automatic check, Check for Updates…, the UPDATE key and the signed feed.
+4. **The year on film.** The journal written on each gesture and Show My Year on Film.
+5. **The pipette and the Details loupe.** The readings exist; no canvas gesture or loupe calls them.
+6. **The settings pasteboard.** Copy Settings stays in memory instead of the system pasteboard.
+7. **The editors' leftovers.** Help texts, fold memory, the histogram's morph, the 150 ms step.
+8. **The shell's leftovers.** The traffic lights' inset, the watchdog, key sounds and haptics.
+9. **Stocks.** The stock picker by brand with its icons, a roll row showing its stock.
+10. **The design system's interactions.** The pager, slots, the column resizer, hover fallback.
 
 ## Port order
 
