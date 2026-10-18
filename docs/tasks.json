@@ -530,5 +530,13 @@
     "status": "done",
     "detail": "The console window polling the session's log with Copy and Reveal; What's New's six notes as seals on their headings, read on hover and kept until the app quits, Show What's New Again; the welcome sheet once per edition (welcomeSeen 1.2.1) with Website and Feedback; Report a Bug sealing the log to the maintainers' X25519 key (HKDF-SHA256, ChaCha20-Poly1305, raw deflate, cut from its oldest lines to 58 000 characters) and posting it to the site's /report; Show My Year on Film dark until it exists.",
     "outcome": "oni-app/tests/help.rs over two sessions with an injected reporter (refusal twin); report.rs seals opened by CryptoKit and CryptoKit's opened by Rust (tools/seal_cross.swift, ONI_SEAL_CROSS); ONI_BENCH=console shows the log in the real window."
+  },
+  {
+    "id": 77,
+    "type": "feature",
+    "title": "The contact sheet: New Contact Sheet, the sheet Prepare the Roll lays, its sidecar and reference, detail off on a sheet",
+    "status": "done",
+    "detail": "ContactSheet's grid ported (six to a row, gap 0.04, the 2^24 pixel cap, the roll's tile derived from it, the median aspect, frames fitted, row 0 on top, each frame's window laid as the sheet's reads); New Contact Sheet over the selection in gallery order, live on canMakeSheet with sheetTitle on the menu and both bar keys, refused on a roll never measured, counted per frame then Writing the file, Adding it to the library, Opening it; the file a 16-bit uncompressed TIFF in linear Rec. 2020 beside the first frame, named after the roll or its day and numbered, never over an original; adopted with the roll's settings, its grid and no flat-field, a second before the roll; Prepare the Roll's measure lays the sheet from its measuring copies and writes over the roll's former sheet; the Details tab dims Sharpening and Chroma Denoise on a sheet and says why.",
+    "outcome": "oni-app/tests/contact_sheet.rs drives both gestures, the Details tab and a second measure on the headless window (one photo, a roll never measured and a photograph's live details as twins); oni-measure sheet.rs twins ContactSheet.selfCheck (filling, the gutter, one step past the cap, the copy onto a photograph, the unsanitised name); sheets.rs reads the file back within 2e-5 and under sRGB's profile far off; ONI_BENCH=sheet makes six roll #8 NEFs' sheet in the real window, opened and drawn in 6.9 s."
   }
 ]

@@ -34,6 +34,8 @@ export global PanelState {
     callback encoding-picked(int);
     // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
     in property <bool> monochrome;
+    // The open photo is a contact sheet, whose render skips sharpening and chroma denoise.
+    in property <bool> sheet;
     in property <string> mask-title;
     in property <[MenuLine]> mask-lines;
     in property <bool> masks-empty;
@@ -626,22 +628,30 @@ component ColorPane inherits Pane {
     }
 }
 
+// `DetailsPane.offOnSheet`: greyed and out of reach on a sheet, the values kept.
+component DetailSlider inherits StoreSlider {
+    enabled: !PanelState.sheet;
+}
+
 component DetailsPane inherits Pane {
+    property <string> off-on-sheet: "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.";
     Block {
         title: "Sharpening";
         block: 6;
         modified: Store.sharpening-modified;
-        StoreSlider { field: 15; label: "Amount"; fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
-        StoreSlider { field: 16; label: "Radius"; fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
-        StoreSlider { field: 17; label: "Halo limit"; fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
+        help: PanelState.sheet ? root.off-on-sheet : "Sharpens edges without adding color fringing.";
+        DetailSlider { field: 15; label: "Amount"; fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
+        DetailSlider { field: 16; label: "Radius"; fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
+        DetailSlider { field: 17; label: "Halo limit"; fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
     }
     // `DetailsPane`: a monochrome frame has no colour noise to smooth.
     if !PanelState.monochrome: Block {
         title: "Chroma Denoise";
         block: 7;
         modified: Store.chroma-denoise-modified;
-        StoreSlider { field: 18; label: "Amount"; fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
-        StoreSlider { field: 19; label: "Radius"; fraction: Store.chroma-radius-fraction; readout: Store.chroma-radius-readout; value-text: Store.chroma-radius-value; }
+        help: PanelState.sheet ? root.off-on-sheet : "Smooths color noise from the scan without touching the film grain.";
+        DetailSlider { field: 18; label: "Amount"; fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
+        DetailSlider { field: 19; label: "Radius"; fraction: Store.chroma-radius-fraction; readout: Store.chroma-radius-readout; value-text: Store.chroma-radius-value; }
     }
     Block {
         title: "Texture";

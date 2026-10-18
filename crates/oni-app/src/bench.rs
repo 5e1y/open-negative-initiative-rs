@@ -15,6 +15,8 @@
 //! `ONI_BENCH=console` opens the console window and waits for the session's log to show in it.
 //! `ONI_BENCH=prepare` prepares the open frame's roll from the gallery: the steps by the panel's key,
 //! the base clicked on its scan, a frame flagged on the sheet, the measure landed, then undone.
+//! `ONI_BENCH=sheet` picks the gallery's first six frames and makes their contact sheet, which it
+//! leaves beside them, opened.
 
 use crate::Store as StoreGlobal;
 use crate::app::Ctl;
@@ -56,6 +58,7 @@ pub enum Mode {
     Presets,
     Prepare,
     Console,
+    Sheet,
 }
 
 impl Mode {
@@ -83,6 +86,7 @@ pub fn requested() -> Option<Mode> {
         "presets" => Some(Mode::Presets),
         "prepare" => Some(Mode::Prepare),
         "console" => Some(Mode::Console),
+        "sheet" => Some(Mode::Sheet),
         _ => None,
     }
 }
@@ -117,6 +121,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Prepare {
         return prepare(ctl, done);
+    }
+    if mode == Mode::Sheet {
+        return sheet(ctl, done);
     }
     let timer = Rc::new(Timer::default());
     let phase = Cell::new(Phase::Loading);
@@ -183,7 +190,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
@@ -858,6 +865,58 @@ fn console(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         held.stop();
         if let Some(done) = done.borrow_mut().take() {
             done(report);
+        }
+    });
+}
+
+/// The gallery's first six frames picked by the hand's clicks, then New Contact Sheet from the bar.
+fn sheet(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    let timer = Rc::new(Timer::default());
+    let done = RefCell::new(Some(done));
+    let asked: Cell<Option<(Instant, usize)>> = Cell::new(None);
+    let started = Instant::now();
+    let me = Rc::downgrade(ctl);
+    let held = timer.clone();
+    timer.start(TimerMode::Repeated, Duration::from_millis(50), move || {
+        let Some(ctl) = me.upgrade() else { return held.stop() };
+        let Some(w) = ctl.window() else { return };
+        let finish = |text: String| {
+            held.stop();
+            if let Some(done) = done.borrow_mut().take() {
+                done(format!("bench, sheet: {text}"));
+            }
+        };
+        let advice = w.global::<crate::Advice>();
+        match asked.get() {
+            None => {
+                if ctl.state.borrow().renders() < 1 {
+                    return;
+                }
+                ctl.act("toggle-mode");
+                let lib = w.global::<crate::Library>();
+                let mut tiles = crate::app::tiles(&w);
+                tiles.sort_by_key(|t| t.index);
+                for (i, t) in tiles.iter().filter(|t| !t.caption.contains("contact sheet")).take(6).enumerate() {
+                    lib.invoke_tile_clicked(t.index, i > 0, false);
+                }
+                let title = w.global::<crate::Menus>().get_titles().sheet.to_string();
+                w.global::<crate::Bar>().invoke_act("contact-sheet".into());
+                asked.set(Some((Instant::now(), ctl.state.borrow().renders())));
+                eprintln!("bench, sheet: {title} asked");
+            }
+            Some((at, renders)) => {
+                if advice.get_shown() {
+                    return finish(format!("{}: {}", advice.get_title(), advice.get_message()));
+                }
+                let open = ctl.state.borrow().open_path().map(str::to_string);
+                // Done once the sheet is open and the canvas has drawn since the ask.
+                if let Some(path) = open.filter(|p| p.contains("contact sheet")) && ctl.state.borrow().renders() > renders {
+                    return finish(format!("{path} made, opened and drawn in {:.1} s, no failure", at.elapsed().as_secs_f64()));
+                }
+                if started.elapsed() > LOADING {
+                    finish("no sheet opened".into());
+                }
+            }
         }
     });
 }

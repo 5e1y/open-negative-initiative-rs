@@ -1,6 +1,7 @@
 //! Prepare the Roll (`.roll`): five steps over the roll's frames, a draft in every sidecar, the
 //! measure off this thread with its progress and Stop, landed as one gallery step, then the editor.
 
+use super::sheets::{self, Sheet};
 use super::{Ctl, State, frames, position, stored_at, with_shell};
 use crate::fields::Field;
 use crate::framing::Handle;
@@ -240,6 +241,44 @@ pub struct BasePick {
 type Written = Vec<oni_core::store::roll::WrittenFrame>;
 
 type Job = Box<dyn FnOnce() + Send>;
+
+/// What the measure's sheet is named after and may replace, read off the rows on this thread.
+struct SheetPlan {
+    film: Option<oni_settings::Film>,
+    earliest: oni_settings::Date,
+    /// The gallery group of the first frame: a sheet of the roll's former reference there is rewritten.
+    folder: Vec<String>,
+}
+
+impl SheetPlan {
+    fn of(rows: &[oni_library::Entry], archive: Option<&crate::library::Archive>, picked: &[Frame]) -> SheetPlan {
+        let known: Vec<&oni_library::Entry> = picked.iter().filter_map(|f| rows.iter().find(|e| e.path == f.path)).collect();
+        let film = known.iter().find_map(|e| e.film.clone());
+        let earliest =
+            known.iter().map(|e| oni_library::film_group::capture(e)).reduce(|a, b| if b < a { b } else { a }).unwrap_or_else(oni_settings::Date::now);
+        let first = picked.first().map(|f| f.path.as_str());
+        let folder = archive
+            .and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| Some(e.path.as_str()) == first)))
+            .map(|g| g.entries.iter().map(|e| e.path.clone()).collect())
+            .unwrap_or_default();
+        SheetPlan { film, earliest, folder }
+    }
+
+    /// The sheet laid from the measure's tiles and written over the roll's former sheet, else beside
+    /// the first frame; `None` when nothing lays or the file cannot be written.
+    fn written(&self, paths: &[String], jobs: &[roll::Job], tiles: &[(String, oni_measure::sheet::Picture)], reads: &[Option<Rect>]) -> Option<Sheet> {
+        let (layout, pixels) = sheets::laid(tiles, paths.first()?, oni_measure::sheet::roll_tile(), reads)?;
+        let former: HashSet<Id> = jobs.iter().filter_map(|j| j.before.roll_reference.as_ref().map(|r| r.id)).collect();
+        let replaced = self.folder.iter().find(|p| !paths.contains(p) && roll_membership::sheet_reference(p).is_some_and(|id| former.contains(&id)));
+        let destination = match replaced {
+            Some(p) => std::path::PathBuf::from(p),
+            None => oni_measure::sheet::destination(Path::new(&paths[0]), &sheets::named(self.film.as_ref(), self.earliest), Path::exists),
+        };
+        sheets::write(&layout, &pixels, &destination).ok()?;
+        let mosaic = tiles.iter().all(|(p, _)| oni_decode::decodes_via_mosaic(Path::new(p)));
+        Some(Sheet { path: destination, grid: layout.grid, film: self.film.clone(), stands: sheets::stands(self.earliest), mosaic })
+    }
+}
 
 /// The roll being prepared: `mode == .roll` and every `roll…` value of the scene.
 pub(crate) struct Roll {
@@ -1062,6 +1101,7 @@ impl Ctl {
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.film, r.stop.clone(), r.session);
+            let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked);
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
                 let asked = paths.len();
@@ -1073,6 +1113,9 @@ impl Ctl {
                 let m = crate::measuring::measurer();
                 let mut jobs: Vec<roll::Job> = Vec::new();
                 let mut frames = Vec::new();
+                let side = oni_measure::sheet::roll_tile();
+                let mut tiles: Vec<(String, oni_measure::sheet::Picture)> = Vec::new();
+                let mut reads = Vec::new();
                 for f in &picked {
                     if stop.load(Ordering::Relaxed) {
                         break;
@@ -1087,11 +1130,26 @@ impl Ctl {
                     };
                     let start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
+                    // Every frame of the measure lays its tile, a flagged one too, on the measuring copy.
+                    let start = job.start.clone();
                     if f.flagged {
+                        if let Some(tile) = m.and_then(|m| m.with(&f.path, &start, |r, copy| oni_measure::sheet::tile(r, copy, &start, side))) {
+                            tiles.push((f.path.clone(), tile));
+                            reads.push(oni_measure::window::in_crop(&start.geometry));
+                        }
                         jobs.push(job);
-                    } else if let Some(frame) = m.and_then(|m| m.with(&f.path, &job.start, |r, copy| key::roll_measured(r, copy, &f.path, &job.start))) {
+                    } else if let Some((frame, tile)) = m.and_then(|m| {
+                        m.with(&f.path, &start, |r, copy| {
+                            let frame = key::roll_measured(r, copy, &f.path, &start)?;
+                            Some((frame, oni_measure::sheet::tile(r, copy, &start, side)))
+                        })
+                    }) {
                         frames.push(frame);
                         jobs.push(job);
+                        if let Some(tile) = tile {
+                            tiles.push((f.path.clone(), tile));
+                            reads.push(oni_measure::window::in_crop(&start.geometry));
+                        }
                     }
                     with_shell(move |c| c.measure_progressed(session));
                 }
@@ -1108,7 +1166,8 @@ impl Ctl {
                 let reference = if stopped { None } else { roll::combined(&frames, film, base) };
                 let written: Option<Written> =
                     reference.map(|reference| jobs.iter().map(|j| (j.path.clone(), j.before.clone(), oni_core::balance::written(&reference, &j.start))).collect());
-                with_shell(move |c| c.land_measure(session, written, stopped, asked));
+                let sheet = written.as_ref().and_then(|_| sheet.written(&paths, &jobs, &tiles, &reads));
+                with_shell(move |c| c.land_measure(session, written, sheet, stopped, asked));
             });
             (job, session)
         };
@@ -1133,7 +1192,7 @@ impl Ctl {
 
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as
     /// one gallery step, the drafts dropped, and the editor on the first frame unless the open one landed.
-    fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: usize) {
+    fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, sheet: Option<Sheet>, stopped: bool, asked: usize) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
@@ -1170,6 +1229,10 @@ impl Ctl {
             s.prepare.shown = false;
             (failure, landed)
         };
+        // Adopted, never opened: the editor opens on the roll's first frame below.
+        if let (Some(sheet), Some((_, _, donor))) = (sheet, written.first()) {
+            self.adopt_sheet(&sheet, donor, false);
+        }
         let support = self.state.borrow().support.clone();
         oni_library::journal::Journal::in_support(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| (written.len() < asked).then(|| format!("{} of {asked} frames could not be measured and were left as they were.", asked - written.len())));

@@ -194,7 +194,8 @@ fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_st
     assert!(panel.get_can_prepare());
     panel.invoke_prepare_roll();
     rig.until("the roll from the editor", Duration::from_secs(10), || p.get_shown() && names() == 4);
-    assert_eq!(p.get_left_out().as_str(), "");
+    // The measure's contact sheet still stands on the roll undone, so it counts as another roll's.
+    assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, measured on another roll, is left out.");
     rig.key("\u{1b}");
     assert!(!p.get_shown() && !app.get_gallery(), "Cancel goes back to the editor it came from");
     let _ = std::fs::remove_dir_all(&root);

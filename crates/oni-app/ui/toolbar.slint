@@ -11,8 +11,9 @@ export global Bar {
     in property <bool> can-reset;
     in property <bool> dedust;
     in property <int> targets: 1;
-    // The menu's own rule for the two keys, dark while the build lacks their gesture.
+    // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-sheet;
+    in property <string> sheet-title: "New Contact Sheet";
     in property <bool> can-prepare;
     in property <string> export-title: "EXPORT";
     in property <string> filter: "ALL";
@@ -50,7 +51,7 @@ component EditorKeys inherits HorizontalLayout {
     ButtonGroup {
         Item { action: "framing"; icon: Icons.framing; help: "Crop and Straighten (⌘K)"; enabled: Bar.has-photo; }
         Item { action: "compare"; icon: Icons.compare; help: "Compare"; enabled: Bar.has-photo; }
-        Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; }
+        Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     }
     ButtonGroup {
         Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
@@ -86,7 +87,7 @@ component EditorKeys inherits HorizontalLayout {
 
 component GalleryKeys inherits HorizontalLayout {
     spacing: ShellStyle.bar-gap;
-    Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: "Make a Contact Sheet"; enabled: Bar.can-sheet; }
+    Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     ButtonGroup {
         Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
         Item { action: "redo"; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }

@@ -14,6 +14,7 @@ pub mod pipette;
 pub mod plane;
 pub mod reader;
 pub mod roll;
+pub mod sheet;
 pub mod truncate;
 pub mod window;
 

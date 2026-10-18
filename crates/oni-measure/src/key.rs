@@ -181,6 +181,29 @@ impl Measurer {
         graph.purge();
         out
     }
+
+    /// `RawDecode.linear(longestSide:)`: the file decoded, reduced to `side` with its edge rebuilt,
+    /// then read with `read`.
+    pub fn reduced<T>(&self, path: &str, s: &PipelineSettings, side: f64, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
+        let d = (self.decode)(Path::new(path), s).ok()?;
+        let mut guard = self.engine.lock().ok()?;
+        let (graph, pipeline) = &mut *guard;
+        let uploaded = graph.upload(d.width, d.height, &d.pixels).ok()?;
+        let full_width = Some(d.full_width);
+        let long = f64::from(d.width.max(d.height));
+        drop(d);
+        let source = if long > side {
+            let reduced = graph.materialise(&oni_pipeline::stages::rebuilt_edge(Image::new(&uploaded).lanczos(side / long))).ok()?;
+            drop(uploaded);
+            reduced
+        } else {
+            uploaded
+        };
+        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width });
+        drop(source);
+        graph.purge();
+        out
+    }
 }
 
 impl balance::Measure for Measurer {
