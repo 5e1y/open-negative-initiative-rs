@@ -61,6 +61,7 @@ mod masks;
 mod navigator;
 mod organising;
 mod help;
+mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
@@ -90,6 +91,9 @@ pub struct Options {
     pub show_folder: Shower,
     /// The home folder and the volumes' folder the navigator walks; a check hands a disk of its own.
     pub computer: oni_library::navigator::Computer,
+    /// `requireRoll`: a frame never measured opens on Prepare the Roll; off as under Swift's probes,
+    /// so a check opens bare frames by hand, and on in the app itself.
+    pub require_roll: bool,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -108,6 +112,7 @@ impl Default for Options {
             mask_picker: Box::new(|| system::pick_file(masks::LOAD_MESSAGE, oni_library::library::IMAGE_EXTENSIONS)),
             show_folder: Box::new(system::show_folder),
             computer: oni_library::navigator::Computer::system(),
+            require_roll: false,
         }
     }
 }
@@ -340,6 +345,7 @@ pub struct State {
     /// The console window while it is open, and the timer that reads the log into it.
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,
+    pub(crate) prepare: prepare::Roll,
 }
 
 impl State {
@@ -355,6 +361,9 @@ impl State {
 
     /// `designate(_:)`, which every load runs: the frame opened is the selection, cursor and ring.
     fn designate(&mut self, path: &str) {
+        // Read before the designation narrows it: a frame never measured prepares this selection.
+        let among = self.picks.selection.len() > 1 && self.picks.selection.contains(path);
+        self.prepare.opened_among = if among { self.picks.selection.clone() } else { HashSet::new() };
         self.picks.selection = HashSet::from([path.to_string()]);
         self.picks.anchor = Some(path.to_string());
         self.picks.cursor = Some(path.to_string());
@@ -733,6 +742,7 @@ impl Shell {
             news_kept: HashSet::new(),
             console: None,
             nav: navigator::Nav::new(options.computer),
+            prepare: prepare::Roll::new(options.require_roll),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -2317,6 +2327,9 @@ impl Ctl {
         };
         match path {
             Some(path) => {
+                if !self.take_off_roll() {
+                    return;
+                }
                 self.state.borrow_mut().designate(&path);
                 self.open_photo(&path);
                 self.publish_tiles();
@@ -2365,6 +2378,7 @@ impl Ctl {
         self.publish_tree();
         self.schedule_redraw();
         self.decode_open(path);
+        self.require_roll(path);
     }
 
     /// The open frame's preview: the one kept, else a decode off this thread by the reading its
@@ -2432,6 +2446,10 @@ impl Ctl {
     fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
         self.mark_tree();
+        // A thumbnail landed reaches the roll's cells too, which read the same memory.
+        if self.state.borrow().prepare.shown {
+            self.publish_prepare();
+        }
         let Some(w) = self.window() else { return };
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
@@ -2699,6 +2717,9 @@ impl Ctl {
         let app = w.global::<App>();
         match action {
             "undo" | "redo" if app.get_gallery() => self.gallery_step(action == "undo"),
+            "prepare-roll" => self.prepare_roll(),
+            "leave-roll" => self.leave_roll(),
+            "toggle-mode" if self.state.borrow().prepare.shown => {}
             "undo" => self.write(Command::Undo),
             "redo" => self.write(Command::Redo),
             "reset" => self.reset_all(),
@@ -2864,6 +2885,9 @@ impl Ctl {
         }
         if text == "\u{1b}" && self.export_escape() {
             return true;
+        }
+        if self.state.borrow().prepare.shown {
+            return self.prepare_key(text, command, shift, bare);
         }
         if self.lab_key(text, bare, repeat) {
             return true;
@@ -3264,6 +3288,7 @@ impl Ctl {
             let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown() || w.global::<crate::MaskDialog>().get_shown();
             let presets = s.shelf.held.len();
             let members = s.roll_members(gallery).len();
+            let preparing = s.prepare.shown;
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split.is_some(), s.screen_gamut, s.negative.is_some());
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
@@ -3354,8 +3379,7 @@ impl Ctl {
                 new_roll: gallery && count > 0,
                 ungroup: members > 0,
                 contact_sheet: false,
-                // Dark until Prepare the Roll carries its surface.
-                measure_roll: false,
+                measure_roll: !preparing && count > 0,
                 reset_to_default: gallery && count > 0,
                 copy_settings: open,
                 paste_settings: has_settings && count > 0,
@@ -3366,6 +3390,12 @@ impl Ctl {
                 show_presets: !modal,
                 paste_preset_code: !modal,
                 apply_preset: count > 0,
+            };
+            // `.roll` is neither the gallery nor the editor: their own gestures go dark there.
+            let live = if preparing {
+                MenuLive { toggle_mode: false, new_roll: false, ungroup: false, reset_to_default: false, restore: false, hide_library: false, hide_panel: false, compare: false, ..live }
+            } else {
+                live
             };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
             (titles, live, film_type, count)
@@ -3380,6 +3410,7 @@ impl Ctl {
         bar.set_can_paste(live.paste_settings);
         bar.set_can_sheet(live.contact_sheet);
         bar.set_can_prepare(live.measure_roll);
+        panel.set_can_prepare(true);
         self.publish_presets();
         self.publish_rolls();
         self.publish_roll_tab();
@@ -3564,6 +3595,7 @@ impl Ctl {
         Ctl::wire_help(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
+        Ctl::wire_prepare(me, window);
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {

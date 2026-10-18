@@ -492,6 +492,14 @@
     "outcome": "oni-app/tests/roll_tab.rs drives each block on the headless window with its twins; the block-order check caught a first reorder that broke Swift's (Density Ceiling and the levels belong to manualBalance)."
   },
   {
+    "id": 72,
+    "type": "feature",
+    "title": "Prepare the Roll: its five steps, its draft in the sidecars, the measure off the interface thread landed as one gallery step",
+    "status": "done",
+    "detail": "The .roll mode from the Rolls menu, the gallery's PREPARE ROLL and the Roll tab's key, one frame bringing its folder's own roll (the rest said left out); the panel's Film, Flat-Field, Base, Flags and Window steps with Swift's words, NEXT, SKIP, Back, Cancel and Esc, the bar's step keys and lamps; the frame card in its scan's shape with the measuring window, the flags' sheet, the base's unturned scan with its ring and loupe; the roll's previews rendered at rest on its film and flat-field on a graph of their own; the draft written in every sidecar and resumed; MEASURE N FRAMES read off the interface thread with progress and Stop, landed by the store as one gallery step, then the editor; a frame never measured opened in the editor asks for its roll (requireRoll, on in the app, off for the window checks). Left dark: the contact sheet, a frame taken as a mask and Load…, RGB passes' grouping and registration, tutorial videos.",
+    "outcome": "oni-app/tests/prepare.rs walks the whole flow on the headless window through pointer events and the globals, with twins; it found synthetic frames with one flat channel have no ends to measure, so the check's frames ramp every channel. ONI_BENCH=prepare on roll #8's test copy: 38 frames read in 0.1 s, the base's scan in 2.3 s, 37 frames measured and landed in 52 s, undone to the same settings."
+  },
+  {
     "id": 73,
     "type": "feature",
     "title": "The flat-field mask library: Use This Photo as Flat-Field, Load…, Rename, Folder, moving a photo out, the sliders remembered",

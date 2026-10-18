@@ -155,11 +155,20 @@ pub fn linear_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
     tiff(path, w, h, tone, true);
 }
 
+/// A LinearRaw TIFF whose third channel ramps too, so every channel has two ends to measure.
+pub fn graded_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32) {
+    write_tiff(path, w, h, tone, true, |x, y| [x, y, (x + y) / 2.0]);
+}
+
 fn tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw: bool) {
+    write_tiff(path, w, h, tone, linear_raw, |x, y| [x, y, 0.5]);
+}
+
+fn write_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw: bool, channels: impl Fn(f32, f32) -> [f32; 3]) {
     let samples: Vec<u16> = (0..w * h)
         .flat_map(|i| {
             let (x, y) = ((i % w) as f32 / w as f32, (i / w) as f32 / h as f32);
-            [x, y, 0.5].map(|v| (100.0 + 900.0 * (0.1 + 0.8 * v * tone)) as u16)
+            channels(x, y).map(|v| (100.0 + 900.0 * (0.1 + 0.8 * v * tone)) as u16)
         })
         .collect();
     let data: Vec<u8> = samples.iter().flat_map(|v| v.to_le_bytes()).collect();

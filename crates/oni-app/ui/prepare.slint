@@ -1,0 +1,456 @@
+// Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
+// the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
+import { Colour, Space, ShellStyle, Surface, Card, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, IconButton, Icons, Tabs, Toggle, Picker, ContextMenu, MenuLine, Slider, SliderFill, Field, Note, Warning, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, StatusLine, StatusStyle, CardStyle, RollStyle, RollCellView, Ring, Loupe, CautionNote } from "ds/ds.slint";
+
+// One frame of the roll as a cell shows it.
+export struct RollCell { picture: image, marked: bool, flagged: bool, apart: bool, ticked: bool, rgb: bool }
+
+export global Preparing {
+    in property <bool> shown;
+    in property <bool> measuring;
+    in property <int> step;
+    in property <[bool]> skipped: [false, false, false, false, false];
+    in property <string> heading;
+    in property <string> detail;
+    in property <string> status;
+    in property <string> differ;
+    in property <string> left-out;
+    in property <int> film;
+    in property <int> capture: 1;
+    in property <string> passes-note;
+    in property <bool> flat-on;
+    in property <bool> flat-masked;
+    in property <bool> monochrome;
+    in property <bool> masks-empty;
+    in property <string> mask-title;
+    in property <[MenuLine]> mask-lines;
+    // The sliders' tracks and readouts: Amount, Temperature, Tint, Picker Size, Frame.
+    in property <[float]> fractions: [0, 0, 0, 0, 0];
+    in property <[string]> readouts: ["", "", "", "", ""];
+    in property <string> base-note;
+    in property <bool> has-base;
+    in property <string> flags-note;
+    in property <bool> can-clear-flags;
+    in property <string> frame-name;
+    in property <bool> can-previous;
+    in property <bool> can-next;
+    in property <[RollCell]> cells;
+    in property <bool> back-shown;
+    in property <string> action-title: "NEXT";
+    in property <bool> action-enabled: true;
+    // The card: where the picture and the window stand in it.
+    in-out property <length> card-width;
+    in-out property <length> card-height;
+    in property <image> card-picture;
+    in property <length> picture-x;
+    in property <length> picture-y;
+    in property <length> picture-width;
+    in property <length> picture-height;
+    in property <bool> window-shown;
+    in property <length> window-x;
+    in property <length> window-y;
+    in property <length> window-width;
+    in property <length> window-height;
+    // The base's scan, fitted in the area Rust is told of, its ring and the loupe under the pointer.
+    in property <string> base-name;
+    in property <bool> base-can-previous;
+    in property <bool> base-can-next;
+    in-out property <length> base-width;
+    in-out property <length> base-height;
+    // Where the base's area, the card, the sheet and the panel's footer stand in the window, for a hand that aims.
+    in-out property <length> base-origin-x;
+    in-out property <length> base-origin-y;
+    in-out property <length> card-origin-x;
+    in-out property <length> card-origin-y;
+    in-out property <length> sheet-origin-x;
+    in-out property <length> sheet-origin-y;
+    in-out property <length> sheet-width;
+    in-out property <length> footer-x;
+    in-out property <length> footer-y;
+    in-out property <length> footer-width;
+    in-out property <length> footer-height;
+    in property <bool> scan-ready;
+    in property <image> scan;
+    in property <length> scan-x;
+    in property <length> scan-y;
+    in property <length> scan-width;
+    in property <length> scan-height;
+    in property <bool> ring-shown;
+    in property <length> ring-x;
+    in property <length> ring-y;
+    in property <length> ring-diameter;
+    in property <bool> loupe-shown;
+    in property <length> loupe-x;
+    in property <length> loupe-y;
+    in property <image> loupe-source;
+    in property <[int]> loupe-cut: [0, 0, 0, 0];
+    in property <[length]> loupe-shown-at: [0px, 0px, 0px, 0px];
+    in property <[length]> loupe-rings: [0px, 0px, 0px, 0px, 0px, 0px];
+    in property <bool> loupe-picked;
+    callback step-picked(int);
+    callback film-picked(int);
+    callback capture-picked(int);
+    callback flat-toggled(bool);
+    callback mask-chosen(int);
+    callback press(int, bool) -> bool;
+    callback drag(int, length, length, bool);
+    callback release(int);
+    callback clear-base();
+    callback clear-flags();
+    callback previous();
+    callback next();
+    callback cell-clicked(int);
+    callback sheet-clicked(int);
+    callback cancel();
+    callback back();
+    callback advance();
+    callback card-resized();
+    callback window-grabbed(int);
+    callback window-dragged(int, length, length);
+    callback window-released();
+    callback base-previous();
+    callback base-next();
+    callback base-resized();
+    callback base-hover(length, length, bool);
+    callback base-clicked(length, length);
+}
+
+component RollSlider inherits Slider {
+    fraction: Preparing.fractions[self.field];
+    readout: Preparing.readouts[self.field];
+    value-text: Preparing.readouts[self.field];
+    press(f, fine) => { return Preparing.press(f, fine); }
+    drag(f, t, s, fine) => { Preparing.drag(f, t, s, fine); }
+    release(f) => { Preparing.release(f); }
+    scroll(f, dx, dy, s, fine) => { return false; }
+}
+
+// `RollPanel.frameGrid`: three to a row, the step's own mark on each.
+component FrameGrid inherits VerticalLayout {
+    spacing: Space.s;
+    for row in Math.ceil(Preparing.cells.length / RollStyle.columns): HorizontalLayout {
+        spacing: Space.s;
+        alignment: start;
+        for column in RollStyle.columns: Rectangle {
+            property <int> at: row * RollStyle.columns + column;
+            width: (root.width - (RollStyle.columns - 1) * Space.s) / RollStyle.columns;
+            height: self.width * RollStyle.well-ratio;
+            if self.at < Preparing.cells.length: RollCellView {
+                width: parent.width;
+                picture: Preparing.cells[parent.at].picture;
+                marked: Preparing.cells[parent.at].marked;
+                flagged: Preparing.cells[parent.at].flagged;
+                apart: Preparing.cells[parent.at].apart;
+                rgb: Preparing.cells[parent.at].rgb;
+                clicked => { Preparing.cell-clicked(parent.at); }
+            }
+        }
+    }
+}
+
+component FlatFieldBlock inherits VerticalLayout {
+    property <bool> settings;
+    spacing: Space.s;
+    HorizontalLayout {
+        spacing: Space.s;
+        Label { text: "Flat-field"; horizontal-stretch: 1; }
+        Toggle { label: "Flat-field"; on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } }
+        IconButton { icon: Icons.settings; help: root.settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.settings = !root.settings; } }
+    }
+    if Preparing.flat-on: Picker { label: "Mask"; value: Preparing.mask-title; open => { masks.show(); } }
+    if Preparing.flat-on && Preparing.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
+    // Taking a frame as a mask is the mask library's, which this build lacks.
+    Button { text: "Use This Frame as Flat-Field"; horizontal-stretch: 1; enabled: false; }
+    if root.settings: RollSlider { field: 0; label: "Amount"; enabled: Preparing.flat-masked; }
+    if root.settings && !Preparing.monochrome: RollSlider {
+        field: 1; label: "Temperature"; enabled: Preparing.flat-masked;
+        fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
+    }
+    if root.settings && !Preparing.monochrome: RollSlider {
+        field: 2; label: "Tint"; enabled: Preparing.flat-masked;
+        fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
+    }
+    if root.settings: Button { text: "Load…"; horizontal-stretch: 1; enabled: false; }
+    masks := ContextMenu {
+        lines: Preparing.mask-lines;
+        chosen(i) => { Preparing.mask-chosen(i); masks.close(); }
+    }
+}
+
+// `RollPanel`: the step's title and detail, its body scrolling, then Cancel, Back and the step's key.
+export component RollPanel inherits Surface {
+    width: RollStyle.panel-width;
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.m;
+        VerticalLayout {
+            spacing: Space.s;
+            padding-bottom: Space.s;
+            Label { role: TextRole.heading; text: Preparing.heading; wrap: word-wrap; }
+            if Preparing.detail != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.detail; wrap: word-wrap; }
+        }
+        // In a box of its own, so the body's width never feeds the layout it sits in.
+        Rectangle {
+          vertical-stretch: 1;
+          body := Scroller {
+            width: parent.width;
+            height: parent.height;
+            content-height: column.preferred-height;
+            column := VerticalLayout {
+                width: body.width;
+                alignment: start;
+                spacing: Space.m;
+                if Preparing.differ != "": VerticalLayout {
+                    spacing: Space.xs;
+                    Label { text: "Settings differ across the roll"; }
+                    Warning { text: Preparing.differ; }
+                }
+                if Preparing.step == 0: VerticalLayout {
+                    spacing: Space.m;
+                    if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
+                    Field {
+                        label: "Film";
+                        Tabs {
+                            tabs: ["Negative", "Positive", "B&W"];
+                            marked: [false, false, false];
+                            selected: Preparing.film;
+                            picked(i) => { Preparing.film-picked(i); }
+                        }
+                    }
+                    Field {
+                        label: "Digitised with";
+                        Tabs {
+                            tabs: ["Scanner", "DSLR Scan", "RGB Passes"];
+                            marked: [false, false, false];
+                            selected: Preparing.capture;
+                            picked(i) => { Preparing.capture-picked(i); }
+                        }
+                    }
+                    if Preparing.passes-note != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.passes-note; wrap: word-wrap; }
+                }
+                if Preparing.step == 1: VerticalLayout {
+                    spacing: Space.m;
+                    FlatFieldBlock { }
+                    FrameGrid { }
+                }
+                if Preparing.step == 2: VerticalLayout {
+                    spacing: Space.m;
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
+                        if Preparing.has-base: Button { text: "Clear"; enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
+                    }
+                    RollSlider { field: 3; label: "Picker Size"; enabled: !Preparing.measuring; }
+                    FrameGrid { }
+                }
+                if Preparing.step == 3: HorizontalLayout {
+                    spacing: Space.s;
+                    Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.flags-note; horizontal-stretch: 1; }
+                    Button { text: "Clear Flags"; enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
+                }
+                if Preparing.step == 4: VerticalLayout {
+                    spacing: Space.s;
+                    RollSlider { field: 4; label: "Frame"; enabled: !Preparing.measuring; }
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        Button { text: "Previous"; enabled: Preparing.can-previous && !Preparing.measuring; clicked => { Preparing.previous(); } }
+                        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.frame-name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
+                        Button { text: "Next"; enabled: Preparing.can-next && !Preparing.measuring; clicked => { Preparing.next(); } }
+                    }
+                    CautionNote { text: "EPILEPSY WARNING: scrubbing flashes the frames quickly."; }
+                }
+            }
+          }
+        }
+        footer := HorizontalLayout {
+            spacing: Space.s;
+            function laid() {
+                Preparing.footer-x = self.absolute-position.x;
+                Preparing.footer-y = self.absolute-position.y;
+                Preparing.footer-width = self.width;
+                Preparing.footer-height = self.height;
+            }
+            changed width => { self.laid(); }
+            changed y => { self.laid(); }
+            init => { self.laid(); }
+            Button { text: Preparing.measuring ? "Stop" : "Cancel"; horizontal-stretch: 1; clicked => { Preparing.cancel(); } }
+            if Preparing.back-shown: Button { text: "Back"; horizontal-stretch: 1; clicked => { Preparing.back(); } }
+            Button {
+                text: Preparing.measuring ? "Measuring…" : Preparing.action-title;
+                kind: ButtonKind.accent;
+                horizontal-stretch: 1;
+                enabled: Preparing.action-enabled && !Preparing.measuring;
+                clicked => { Preparing.advance(); }
+            }
+        }
+    }
+}
+
+// `RollFrameSheet`: six to a row, a click flagging a frame, an unticked one dimmed.
+component FlagSheet inherits Scroller {
+    content-height: grid.preferred-height;
+    function laid() {
+        Preparing.sheet-origin-x = self.absolute-position.x;
+        Preparing.sheet-origin-y = self.absolute-position.y;
+        Preparing.sheet-width = self.width;
+    }
+    changed width => { self.laid(); }
+    init => { self.laid(); }
+    grid := VerticalLayout {
+        width: root.width;
+        alignment: start;
+        padding: Space.l;
+        spacing: Space.m;
+        for row in Math.ceil(Preparing.cells.length / RollStyle.sheet-columns): HorizontalLayout {
+            spacing: Space.m;
+            alignment: start;
+            for column in RollStyle.sheet-columns: Rectangle {
+                property <int> at: row * RollStyle.sheet-columns + column;
+                width: (grid.width - 2 * Space.l - (RollStyle.sheet-columns - 1) * Space.m) / RollStyle.sheet-columns;
+                height: self.width * RollStyle.well-ratio;
+                if self.at < Preparing.cells.length: RollCellView {
+                    width: parent.width;
+                    picture: Preparing.cells[parent.at].picture;
+                    flagged: Preparing.cells[parent.at].flagged;
+                    apart: Preparing.cells[parent.at].apart;
+                    rgb: Preparing.cells[parent.at].rgb;
+                    dimmed: !Preparing.cells[parent.at].ticked;
+                    outset: true;
+                    clicked => { Preparing.sheet-clicked(parent.at); }
+                }
+            }
+        }
+    }
+}
+
+// `RollBaseSurface`: Previous, the frame's name, Next, then its whole scan to click the bare film on.
+component BaseSurface inherits VerticalLayout {
+    padding: RollStyle.canvas-padding;
+    spacing: Space.s;
+    HorizontalLayout {
+        spacing: Space.s;
+        alignment: center;
+        Button { text: "Previous"; enabled: Preparing.base-can-previous; clicked => { Preparing.base-previous(); } }
+        Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-name; vertical-alignment: center; }
+        Button { text: "Next"; enabled: Preparing.base-can-next; clicked => { Preparing.base-next(); } }
+    }
+    area := Rectangle {
+        vertical-stretch: 1;
+        function laid() {
+            Preparing.base-width = self.width;
+            Preparing.base-height = self.height;
+            Preparing.base-origin-x = self.absolute-position.x;
+            Preparing.base-origin-y = self.absolute-position.y;
+            Preparing.base-resized();
+        }
+        changed width => { self.laid(); }
+        changed height => { self.laid(); }
+        init => { self.laid(); }
+        if !Preparing.scan-ready: EmptyState {
+            width: parent.width;
+            height: parent.height;
+            title: "Reading the Scan";
+            detail: "The whole scan, its rebate included, shows here.";
+        }
+        if Preparing.scan-ready: Picture {
+            x: Preparing.scan-x;
+            y: Preparing.scan-y;
+            width: Preparing.scan-width;
+            height: Preparing.scan-height;
+            ground: Ground.canvas;
+            stretched: true;
+            source: Preparing.scan;
+        }
+        if Preparing.scan-ready && Preparing.ring-shown: Ring { centre-x: Preparing.ring-x; centre-y: Preparing.ring-y; diameter: Preparing.ring-diameter; }
+        if Preparing.scan-ready: TouchArea {
+            changed has-hover => { Preparing.base-hover(self.mouse-x, self.mouse-y, self.has-hover); }
+            moved => { Preparing.base-hover(self.mouse-x, self.mouse-y, true); }
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.move) { Preparing.base-hover(self.mouse-x, self.mouse-y, true); }
+            }
+            clicked => { Preparing.base-clicked(self.mouse-x, self.mouse-y); }
+        }
+        if Preparing.scan-ready && Preparing.loupe-shown: Loupe {
+            x: Preparing.loupe-x - self.width / 2;
+            y: Preparing.loupe-y - self.height / 2;
+            source: Preparing.loupe-source;
+            cut-x: Preparing.loupe-cut[0];
+            cut-y: Preparing.loupe-cut[1];
+            cut-width: Preparing.loupe-cut[2];
+            cut-height: Preparing.loupe-cut[3];
+            cut-at-x: Preparing.loupe-shown-at[0];
+            cut-at-y: Preparing.loupe-shown-at[1];
+            cut-shown-width: Preparing.loupe-shown-at[2];
+            cut-shown-height: Preparing.loupe-shown-at[3];
+            disc-x: Preparing.loupe-rings[0];
+            disc-y: Preparing.loupe-rings[1];
+            disc: Preparing.loupe-rings[2];
+            picked-shown: Preparing.loupe-picked;
+            picked-x: Preparing.loupe-rings[3];
+            picked-y: Preparing.loupe-rings[4];
+            picked-disc: Preparing.loupe-rings[5];
+        }
+    }
+}
+
+// `RollFrameView`: the frame placed where its crop lies in its own turned scan, the measuring
+// window over the whole scan on the window step.
+component FrameCard inherits Rectangle {
+    function laid() {
+        Preparing.card-width = self.width - 2 * RollStyle.canvas-padding;
+        Preparing.card-height = self.height - 2 * RollStyle.canvas-padding;
+        Preparing.card-origin-x = self.absolute-position.x + RollStyle.canvas-padding;
+        Preparing.card-origin-y = self.absolute-position.y + RollStyle.canvas-padding;
+        Preparing.card-resized();
+    }
+    changed width => { self.laid(); }
+    changed height => { self.laid(); }
+    init => { self.laid(); }
+    Rectangle {
+        x: RollStyle.canvas-padding;
+        y: RollStyle.canvas-padding;
+        width: parent.width - 2 * RollStyle.canvas-padding;
+        height: parent.height - 2 * RollStyle.canvas-padding;
+        Picture {
+            x: Preparing.picture-x;
+            y: Preparing.picture-y;
+            width: Preparing.picture-width;
+            height: Preparing.picture-height;
+            ground: Ground.canvas;
+            stretched: true;
+            source: Preparing.card-picture;
+        }
+        if Preparing.window-shown: FrameOverlay {
+            width: parent.width;
+            height: parent.height;
+            look: FrameStyle.window;
+            frame-x: Preparing.window-x;
+            frame-y: Preparing.window-y;
+            frame-width: Preparing.window-width;
+            frame-height: Preparing.window-height;
+            grabbed(h) => { Preparing.window-grabbed(h); }
+            dragged(h, dx, dy) => { Preparing.window-dragged(h, dx, dy); }
+            released => { Preparing.window-released(); }
+        }
+    }
+}
+
+// `rollFloor`: the flags' sheet, the base's scan, or the frame card.
+export component RollFloor inherits Card {
+    if Preparing.step == 3: FlagSheet { width: parent.width; height: parent.height; }
+    if Preparing.step == 2: BaseSurface { width: parent.width; height: parent.height; }
+    if Preparing.step != 2 && Preparing.step != 3: FrameCard { width: parent.width; height: parent.height; }
+}
+
+// `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
+export component RollStepKeys inherits ButtonGroup {
+    for name[i] in ["FILM", "FLAT-FIELD", "BASE", "FLAGS", "WINDOW"]: Button {
+        text: name;
+        help: ["Select the Film Type", "Set Up the Flat-Field", "Pick the Film Base", "Flag the Frames Left Out", "Place the Measuring Frame"][i];
+        on: Preparing.step == i;
+        enabled: !Preparing.measuring && !Preparing.skipped[i];
+        lamp-shown: true;
+        lamp-lit: i < Preparing.step && !Preparing.skipped[i];
+        clicked => { Preparing.step-picked(i); }
+    }
+}
