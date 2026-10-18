@@ -7,6 +7,10 @@ use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::render::{self, Done, Histogram, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
+use crate::framing::{self as frames, Handle};
+use oni_settings::cg::Rect as Fraction;
+use oni_settings::frame::Geometry;
+use oni_settings::geometry::{self as geom, Framing as Remembered};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
@@ -31,6 +35,8 @@ pub const THUMB_SIDE: usize = 480;
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
+/// `DSScroll.idleWindow`: a pause this long ends a straightening gesture.
+const STRAIGHTEN_IDLE: Duration = Duration::from_millis(160);
 /// `sidecar.writeDelay`: the hand rests this long before the sidecar is written.
 const WRITE_DELAY: Duration = Duration::from_millis(500);
 /// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
@@ -154,10 +160,22 @@ pub struct State {
     /// The displayed image's size in full-resolution pixels, from the last render placed.
     full_size: Option<(f64, f64)>,
     /// What the last render request showed, so a navigation alone asks again.
-    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool)>,
+    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool, bool)>,
+    /// The settings the last render was asked with, so a crop moved while framing renders nothing.
+    requested_live: Option<oni_settings::PipelineSettings>,
     placed: Option<Placed>,
     grab: Option<(f32, f32)>,
     pinch: f32,
+    /// The ratio and orientation last chosen, and the frame chosen on, handed to the next frame framed.
+    framing_memory: Option<(Remembered, String)>,
+    /// A frame held on the canvas: the window's or the crop's, the handle, the frame at the press
+    /// and the shown image frame's size in points.
+    frame_gesture: Option<(bool, Handle, Fraction, (f64, f64))>,
+    /// The frame a straightening gesture set out from, the one it last wrote, and when.
+    straightening: Option<(Geometry, Geometry, Instant)>,
+    window_armed: bool,
+    /// `Propagation`'s copied measuring window.
+    window_board: Option<Fraction>,
     /// Compare Before/After's split, a fraction of the canvas's width; none while off.
     split: Option<f32>,
     /// `screenGamutWarning`: the pixels this screen cannot show, striped on the canvas.
@@ -406,10 +424,16 @@ impl Shell {
             navigated_at: None,
             full_size: None,
             requested_view: None,
+            requested_live: None,
             placed: None,
             grab: None,
             pinch: 1.0,
             split: None,
+            framing_memory: None,
+            frame_gesture: None,
+            straightening: None,
+            window_armed: false,
+            window_board: None,
             befores: 0,
             screen_gamut: false,
             before_placed: None,
@@ -503,6 +527,7 @@ impl Ctl {
         }
         self.refresh_phone();
         self.publish_bar();
+        self.publish_framing();
         self.request_render();
     }
 
@@ -575,7 +600,251 @@ impl Ctl {
     }
 
     fn set(self: &Rc<Self>, f: Field, stored: f32) {
+        if f == Field::Angle {
+            return self.straighten(stored);
+        }
         self.write(Command::Set { knob: f.knob(), value: stored });
+    }
+
+    // MARK: - Framing
+
+    /// The Crop tab open on a photo in the editor: the canvas shows the frame uncropped.
+    fn cropping(&self) -> bool {
+        let Some(w) = self.window() else { return false };
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().open.is_some()
+    }
+
+    /// The open frame's raw size in full-resolution pixels; `Geometry` alone applies the quarter turns.
+    fn image_size(&self) -> Option<(f64, f64)> {
+        let s = self.state.borrow();
+        let (_, n) = s.negative.as_ref()?;
+        let (w, h) = n.size();
+        Some((n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1))))
+    }
+
+    fn write_geometry(self: &Rc<Self>, g: Geometry) {
+        let mut next = self.state.borrow().store.settings().clone();
+        if next.geometry == g {
+            return;
+        }
+        next.geometry = g;
+        self.write(Command::Write(Box::new(next)));
+    }
+
+    /// `GeometryPanel.angleBinding`: re-fitted from the gesture's own starting frame, so the
+    /// intermediate angles leave no ratchet; a pause or a frame moved elsewhere starts a new one.
+    fn straighten(self: &Rc<Self>, angle: f32) {
+        let Some(image) = self.image_size() else { return };
+        let fitted = {
+            let mut s = self.state.borrow_mut();
+            let current = s.store.settings().geometry.clone();
+            let base = match &s.straightening {
+                Some((base, written, at)) if at.elapsed() < STRAIGHTEN_IDLE && *written == current => base.clone(),
+                _ => current,
+            };
+            let fitted = base.straightened(angle, image);
+            s.straightening = Some((base, fitted.clone(), Instant::now()));
+            fitted
+        };
+        self.write_geometry(fitted);
+    }
+
+    /// The image frame the overlays lie on, in points on the canvas: the upright oriented box while
+    /// framing, the rendered picture otherwise, both centred where the viewport puts the render.
+    fn image_frame(&self, framing: bool) -> Option<(f64, f64, f64, f64)> {
+        let w = self.window()?;
+        let backing = f64::from(w.window().scale_factor());
+        let view = self.canvas_size()?;
+        let image = self.image_size()?;
+        let s = self.state.borrow();
+        let rendered = s.full_size?;
+        let full = if framing { s.store.settings().geometry.oriented_size(image) } else { rendered };
+        let scale = s.viewport.effective_scale(rendered, view) / backing;
+        let (cx, cy) = Viewport::centre((view.0 / backing, view.1 / backing), (s.viewport.offset.0 / backing, s.viewport.offset.1 / backing));
+        let size = (full.0 * scale, full.1 * scale);
+        Some((cx - size.0 / 2.0, cy - size.1 / 2.0, size.0, size.1))
+    }
+
+    /// The Crop tab and the canvas's frames from the open frame's geometry.
+    fn publish_framing(&self) {
+        let Some(w) = self.window() else { return };
+        let cropping = self.cropping();
+        let image = self.image_size();
+        let crop_frame = self.image_frame(true);
+        let picture_frame = self.image_frame(cropping);
+        let (g, armed, board, window_board) = {
+            let s = self.state.borrow();
+            let board = s.store.editor_ref().is_some_and(|e| e.board.framing.is_some());
+            (s.store.settings().geometry.clone(), s.window_armed, board, s.window_board)
+        };
+        let f = w.global::<crate::Framing>();
+        let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
+        f.set_ratio(g.ratio.and_then(|r| ratios.iter().position(|x| *x == r)).map_or(0, |i| i as i32 + 1));
+        f.set_portrait(g.portrait);
+        f.set_portrait_enabled(g.ratio.is_some_and(|r| r != oni_settings::frame::AspectRatio::Square));
+        f.set_kept(image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default().into());
+        f.set_modified(g != Geometry::reset_keeping(&g));
+        f.set_mirrored(g.mirrored);
+        f.set_mirrored_vertically(g.mirrored_vertically);
+        f.set_can_paste(board);
+        f.set_armed(armed);
+        f.set_has_window(g.measure_window.is_some());
+        f.set_can_paste_window(window_board.is_some());
+        let c = w.global::<Canvas>();
+        c.set_cropping(cropping && crop_frame.is_some());
+        if let Some(frame) = crop_frame {
+            let (x, y, wd, ht) = frames::shown(g.crop, frame);
+            c.set_crop_x(x as f32);
+            c.set_crop_y(y as f32);
+            c.set_crop_width(wd as f32);
+            c.set_crop_height(ht as f32);
+        }
+        let window_frame = if cropping { crop_frame } else { picture_frame };
+        c.set_window_shown(armed && window_frame.is_some());
+        if let Some(frame) = window_frame {
+            let (x, y, wd, ht) = frames::shown(frames::window_shown(&g, cropping), frame);
+            c.set_window_x(x as f32);
+            c.set_window_y(y as f32);
+            c.set_window_width(wd as f32);
+            c.set_window_height(ht as f32);
+        }
+    }
+
+    /// A ratio or an orientation chosen: the frame cut to it in place and remembered for the next.
+    fn choose_framing(self: &Rc<Self>, change: impl FnOnce(&mut Geometry)) {
+        let Some(image) = self.image_size() else { return };
+        let mut g = self.state.borrow().store.settings().geometry.clone();
+        change(&mut g);
+        g.apply_ratio(image, None, geom::Driving::Width);
+        g.fit_crop_inside_image(image);
+        {
+            let mut s = self.state.borrow_mut();
+            let path = s.open_path().map(str::to_string).unwrap_or_default();
+            s.framing_memory = Remembered::new(g.ratio, g.portrait).map(|r| (r, path));
+        }
+        self.write_geometry(g);
+    }
+
+    fn framing_act(self: &Rc<Self>, action: &str) {
+        let Some(image) = self.image_size() else { return };
+        let mut g = self.state.borrow().store.settings().geometry.clone();
+        match action {
+            // Three quarters counter-clockwise is one clockwise, as the key says: the render turns the other way.
+            "rotate" => g.rotate(3, image),
+            "mirror" => g.mirror(),
+            "mirror-vertically" => g.mirror_vertically(),
+            "reset-crop" => g = Geometry::reset_keeping(&g),
+            "copy-framing" => {
+                if let Some(e) = self.state.borrow_mut().store.editor() {
+                    e.copy_framing();
+                }
+                return self.publish_framing();
+            }
+            "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll", image),
+            "window-reset" => g.measure_window = None,
+            "window-arm" => {
+                let armed = {
+                    let mut s = self.state.borrow_mut();
+                    s.window_armed = !s.window_armed;
+                    s.window_armed
+                };
+                if armed {
+                    g.propose_measure_window(self.state.borrow().store.settings().sheet.is_some());
+                }
+            }
+            "window-copy" => {
+                let window = g.measure_window;
+                self.state.borrow_mut().window_board = window;
+                return self.publish_framing();
+            }
+            "window-paste" => {
+                let Some(window) = self.state.borrow().window_board else { return };
+                if g.measure_window == Some(window) {
+                    return;
+                }
+                g.measure_window = Some(window);
+            }
+            _ => return,
+        }
+        self.write_geometry(g);
+        self.publish_framing();
+    }
+
+    /// The copied framing on the open frame, or on every frame of its roll, fitted inside the open one.
+    fn paste_framing(self: &Rc<Self>, roll: bool, image: (f64, f64)) {
+        let targets: Vec<String> = {
+            let s = self.state.borrow();
+            let Some(open) = s.open_path().map(str::to_string) else { return };
+            match (roll, s.store.settings().roll_reference.as_ref().map(|r| r.id)) {
+                (true, Some(id)) => {
+                    let members = oni_library::roll_membership::measured(id, &s.order);
+                    if members.is_empty() { vec![open] } else { members.into_iter().collect() }
+                }
+                _ => vec![open],
+            }
+        };
+        if let Some(e) = self.state.borrow_mut().store.editor() {
+            e.paste_framing(&targets);
+        }
+        let mut g = self.state.borrow().store.settings().geometry.clone();
+        g.fit_crop_inside_image(image);
+        self.write_geometry(g);
+        self.publish(false);
+    }
+
+    /// The Crop tab opened: the framing the hand last chose is handed to this frame if chosen on another.
+    fn tab_opened(self: &Rc<Self>, tab: i32) {
+        if tab == 1 {
+            let remembered = {
+                let s = self.state.borrow();
+                let open = s.open_path().map(str::to_string);
+                s.framing_memory.as_ref().filter(|(_, on)| Some(on) != open.as_ref()).map(|(r, _)| *r)
+            };
+            if let (Some(r), Some(image)) = (remembered, self.image_size()) {
+                let mut g = self.state.borrow().store.settings().geometry.clone();
+                if (g.ratio, g.portrait) != (Some(r.ratio), r.portrait) {
+                    g.adopt(r, image);
+                    self.write_geometry(g);
+                }
+            }
+        }
+        self.publish_framing();
+        self.request_render();
+    }
+
+    /// A frame on the canvas held, moved and let go: one undo step, constrained on every event.
+    fn frame_grabbed(self: &Rc<Self>, window: bool, handle: i32) {
+        let Some(handle) = Handle::from_index(handle) else { return };
+        let cropping = self.cropping();
+        let Some(frame) = self.image_frame(cropping || !window) else { return };
+        let mut s = self.state.borrow_mut();
+        let g = s.store.settings().geometry.clone();
+        let from = if window { frames::window_shown(&g, cropping) } else { g.crop };
+        s.frame_gesture = Some((window, handle, from, (frame.2, frame.3)));
+        s.store.hold();
+    }
+
+    fn frame_dragged(self: &Rc<Self>, dx: f32, dy: f32) {
+        let Some(image) = self.image_size() else { return };
+        let cropping = self.cropping();
+        let Some((window, handle, from, frame)) = self.state.borrow().frame_gesture else { return };
+        let proposed = frames::apply(handle, from, frame, (f64::from(dx), f64::from(dy)));
+        let g = self.state.borrow().store.settings().geometry.clone();
+        let next = if window {
+            Geometry { measure_window: Some(frames::window_stored(&g, frames::bounded(proposed), cropping)), ..g }
+        } else {
+            frames::constrained_crop(&g, handle, proposed, image)
+        };
+        self.write_geometry(next);
+        self.publish_framing();
+    }
+
+    fn frame_released(self: &Rc<Self>) {
+        let held = self.state.borrow_mut().frame_gesture.take().is_some();
+        if held {
+            self.state.borrow_mut().store.release();
+            self.publish(false);
+        }
     }
 
     // MARK: - Rendering
@@ -583,6 +852,7 @@ impl Ctl {
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
     fn request_render(self: &Rc<Self>) {
         let size = self.canvas_size();
+        let cropping = self.cropping();
         let (job, build, heal) = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
@@ -590,14 +860,24 @@ impl Ctl {
             let moved_at = s.moved_at.take();
             let settled = s.navigated_at.is_none_or(|t| t.elapsed() >= viewport::SETTLE);
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some(), s.split.is_some()));
+            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some(), s.split.is_some(), cropping));
             let moved = revision != s.requested || s.rendered == 0;
             if !moved && view_key == s.requested_view {
+                return;
+            }
+            // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
+            let mut live = s.store.settings().clone();
+            if cropping {
+                live.geometry = live.geometry.without_crop();
+            }
+            if s.rendered != 0 && view_key == s.requested_view && s.requested_live.as_ref() == Some(&live) {
+                s.requested = revision;
                 return;
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
             s.requested = revision;
             s.requested_view = view_key;
+            s.requested_live = Some(live.clone());
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
             let (kind, asked) = if s.rendered == 0 {
                 (Kind::Open, s.opened_at)
@@ -616,13 +896,13 @@ impl Ctl {
                 (path.clone(), s.store.settings().primaries_converted)
             });
             let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
-            let live = s.store.settings().clone();
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
             let caches = crate::patches::caches();
-            let unhealed = live.corrections.iter().any(|c| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists());
+            let stored = s.store.settings().clone();
+            let unhealed = stored.corrections.iter().any(|c| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists());
             let heal = (unhealed && s.healing.as_deref() != Some(path.as_str())).then(|| {
                 s.healing = Some(path.clone());
-                (path.clone(), live.clone())
+                (path.clone(), stored)
             });
             // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
             let reference = s.split.map(|_| {
@@ -827,6 +1107,7 @@ impl Ctl {
         c.set_frame_y((rect.1 / scale) as f32);
         c.set_frame_width((rect.2 / scale) as f32);
         c.set_frame_height((rect.3 / scale) as f32);
+        self.publish_framing();
     }
 
     /// Compare's before into its own texture, laid where its view puts it.
@@ -1599,6 +1880,7 @@ impl Ctl {
 
     fn wire(me: &Rc<Ctl>, window: &MainWindow) {
         Ctl::wire_canvas(me, window);
+        Ctl::wire_framing(me, window);
         let g = window.global::<StoreGlobal>();
 
         let p = me.clone();
@@ -1788,6 +2070,29 @@ impl Ctl {
 }
 
 impl Ctl {
+    fn wire_framing(me: &Rc<Ctl>, window: &MainWindow) {
+        let f = window.global::<crate::Framing>();
+        let ratios = [oni_settings::frame::AspectRatio::ThreeTwo, oni_settings::frame::AspectRatio::FourThree, oni_settings::frame::AspectRatio::Square, oni_settings::frame::AspectRatio::SixSeven, oni_settings::frame::AspectRatio::FiveFour];
+        let p = me.clone();
+        f.on_ratio_picked(move |i| {
+            let ratio = usize::try_from(i - 1).ok().and_then(|k| ratios.get(k).copied());
+            p.choose_framing(|g| g.ratio = ratio);
+        });
+        let p = me.clone();
+        f.on_portrait_toggled(move |on| p.choose_framing(|g| g.portrait = on));
+        let p = me.clone();
+        f.on_act(move |action| p.framing_act(&action));
+        let p = me.clone();
+        window.global::<PanelState>().on_tab_picked(move |tab| p.tab_opened(tab));
+        let c = window.global::<Canvas>();
+        let p = me.clone();
+        c.on_frame_grabbed(move |w, h| p.frame_grabbed(w, h));
+        let p = me.clone();
+        c.on_frame_dragged(move |_, _, dx, dy| p.frame_dragged(dx, dy));
+        let p = me.clone();
+        c.on_frame_released(move |_| p.frame_released());
+    }
+
     /// `NegativeView`'s gestures: a drag pans, a double click toggles 100 %, the wheel zooms about
     /// the pointer, a touch surface pans unless ⌘ is held, a pinch zooms about its centre.
     fn wire_canvas(me: &Rc<Ctl>, window: &MainWindow) {
@@ -1801,6 +2106,7 @@ impl Ctl {
                 p.state.borrow_mut().viewport.clamp(full, size);
             }
             p.request_render();
+            p.publish_framing();
         });
 
         let p = me.clone();

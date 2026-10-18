@@ -1,13 +1,13 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
-import { Panel, Plots, PanelState } from "panel.slint";
+import { Panel, Plots, PanelState, Framing } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 
-export { DS, Tip, Icons, Store, Plots, PanelState, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
+export { DS, Tip, Icons, Store, Plots, PanelState, Framing, Bar, Library, Tile, Heading, TreeRow, Pairing, Catalogue }
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 export global Canvas {
@@ -29,6 +29,20 @@ export global Canvas {
     in property <length> before-width;
     in property <length> before-height;
     callback split-dragged(length);
+    // The crop frame while the Crop tab is open, and the measuring window, on the canvas.
+    in property <bool> cropping;
+    in property <length> crop-x;
+    in property <length> crop-y;
+    in property <length> crop-width;
+    in property <length> crop-height;
+    in property <bool> window-shown;
+    in property <length> window-x;
+    in property <length> window-y;
+    in property <length> window-width;
+    in property <length> window-height;
+    callback frame-grabbed(bool, int);
+    callback frame-dragged(bool, int, length, length);
+    callback frame-released(bool);
     callback resized();
     callback double-clicked();
     callback grabbed(length, length);
@@ -215,6 +229,30 @@ export component MainWindow inherits AppWindow {
                                         Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.meta) ? EventResult.accept : EventResult.reject
                                     }
                                 }
+                            }
+                            if Canvas.cropping: FrameOverlay {
+                                width: parent.width;
+                                height: parent.height;
+                                frame-x: Canvas.crop-x;
+                                frame-y: Canvas.crop-y;
+                                frame-width: Canvas.crop-width;
+                                frame-height: Canvas.crop-height;
+                                grabbed(h) => { Canvas.frame-grabbed(false, h); }
+                                dragged(h, dx, dy) => { Canvas.frame-dragged(false, h, dx, dy); }
+                                released => { Canvas.frame-released(false); }
+                            }
+                            if Canvas.window-shown: FrameOverlay {
+                                width: parent.width;
+                                height: parent.height;
+                                look: FrameStyle.window;
+                                body-moves: !Canvas.cropping;
+                                frame-x: Canvas.window-x;
+                                frame-y: Canvas.window-y;
+                                frame-width: Canvas.window-width;
+                                frame-height: Canvas.window-height;
+                                grabbed(h) => { Canvas.frame-grabbed(true, h); }
+                                dragged(h, dx, dy) => { Canvas.frame-dragged(true, h, dx, dy); }
+                                released => { Canvas.frame-released(true); }
                             }
                             if Canvas.split >= 0: SplitGuide {
                                 x: parent.width * Canvas.split - self.width / 2;

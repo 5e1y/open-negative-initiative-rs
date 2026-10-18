@@ -30,13 +30,18 @@ export global Colour {
     out property <color> confirm: DS.tint-confirm;
     out property <color> separator: DS.palette-separator;
     out property <color> guide: DS.palette-guide;
+    out property <color> guide-faint: DS.palette-guide-faint;
+    out property <color> handle-idle: DS.palette-handle-idle;
+    out property <color> scrim: DS.palette-scrim;
+    out property <color> canvas-cropping: DS.palette-canvas-cropping;
+    out property <color> unaligned-balance: DS.tint-unaligned-balance;
+    out property <color> contrast-edge-idle: DS.palette-contrast-edge-idle;
     out property <color> handle-active: DS.palette-handle-active;
     out property <color> contrast-edge: DS.palette-contrast-edge;
     out property <color> hover: DS.palette-hover;
     out property <color> row-selected: DS.palette-track;
     out property <color> selected: DS.palette-selected;
     out property <color> focus: DS.palette-accent;
-    out property <color> scrim: DS.palette-scrim;
     out property <color> track: DS.palette-track;
     out property <color> track-fill: DS.palette-track-fill;
     out property <color> skeleton: DS.palette-skeleton;
@@ -218,6 +223,15 @@ export global CardStyle {
     out property <length> inset: DS.control-card-inset;
     out property <length> radius: Radius.card;
     out property <length> padding: DS.control-canvas-padding;
+}
+
+// `FrameOverlay`'s brackets, edge bars and the halo under them, clamped by the frame shown.
+export global CropStyle {
+    out property <length> corner: DS.control-crop-corner;
+    out property <length> edge: DS.control-crop-edge;
+    out property <length> stroke: DS.control-crop-stroke;
+    out property <length> halo: DS.control-crop-halo;
+    out property <length> hairline: Stroke.hairline;
 }
 
 // Compare's split guide: a grab the width of a handle, a line that grows under the hand.

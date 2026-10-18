@@ -34,6 +34,10 @@ pub trait Store {
     fn editor(&mut self) -> Option<&mut EditorStore> {
         None
     }
+
+    fn editor_ref(&self) -> Option<&EditorStore> {
+        None
+    }
 }
 
 impl Store for EditorStore {
@@ -83,6 +87,10 @@ impl Store for EditorStore {
     }
 
     fn editor(&mut self) -> Option<&mut EditorStore> {
+        Some(self)
+    }
+
+    fn editor_ref(&self) -> Option<&EditorStore> {
         Some(self)
     }
 }

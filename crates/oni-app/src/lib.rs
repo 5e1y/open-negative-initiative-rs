@@ -7,6 +7,7 @@ pub mod display;
 pub mod export;
 pub mod fields;
 pub mod flat_fields;
+pub mod framing;
 pub mod gallery;
 pub mod heal;
 pub mod library;

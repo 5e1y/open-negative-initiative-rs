@@ -1,5 +1,5 @@
 // The settings panel: the output plot edge to edge, the tab bar, then one pane per tab.
-import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, IconButton, ButtonGroup, Toggle, LabelledRow, Label, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller } from "ds/ds.slint";
+import { Icons, Colour, Space, Slider, SliderFill, Knob, Section, Tabs, Picker, Button, ButtonKind, IconButton, ButtonGroup, Toggle, LabelledRow, Label, TextRole, Tone, HistogramFrame, PlotSize, Surface, ShellStyle, Scroller } from "ds/ds.slint";
 import { Store } from "store.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
@@ -15,6 +15,7 @@ export global PanelState {
     in property <bool> flat-field-on;
     callback auto-balance();
     callback pick(string);
+    callback tab-picked(int);
 }
 
 component StoreSlider inherits Slider {
@@ -93,29 +94,79 @@ component RollPane inherits Pane {
     }
 }
 
+// The Crop tab's model, `FramePane` and `GeometryPanel`: Rust holds the geometry and answers each key.
+export global Framing {
+    in property <int> ratio;
+    in property <bool> portrait;
+    in property <bool> portrait-enabled;
+    in property <string> kept;
+    in property <bool> modified;
+    in property <bool> mirrored;
+    in property <bool> mirrored-vertically;
+    in property <bool> can-paste;
+    in property <bool> armed;
+    in property <bool> has-window;
+    in property <bool> can-paste-window;
+    callback ratio-picked(int);
+    callback portrait-toggled(bool);
+    callback act(string);
+}
+
 component CropPane inherits Pane {
-    Block {
+    Section {
+        title: "Crop";
+        help: "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does.";
+        separated: false;
+        HorizontalLayout {
+            spacing: Space.s;
+            Button { text: "Copy"; help: "Copies this photo's crop."; clicked => { Framing.act("copy-framing"); } }
+            Button { text: "Paste"; enabled: Framing.can-paste; help: "Pastes the copied crop on this photo."; clicked => { Framing.act("paste-framing"); } }
+            Button { text: "Paste to Roll"; enabled: Framing.can-paste; horizontal-stretch: 1; help: "Pastes the copied crop on every photo measured with this roll."; clicked => { Framing.act("paste-framing-to-roll"); } }
+        }
+    }
+    Section {
         title: "Aspect Ratio";
-        Tabs { tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"]; marked: [false, false, false, false, false, false]; }
+        Tabs {
+            tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"];
+            marked: [false, false, false, false, false, false];
+            selected: Framing.ratio;
+            picked(i) => { Framing.ratio-picked(i); }
+        }
         LabelledRow {
             label: "Vertical";
-            Toggle { label: "Vertical"; }
+            Toggle { label: "Vertical"; on: Framing.portrait; enabled: Framing.portrait-enabled; toggled(on) => { Framing.portrait-toggled(on); } }
         }
     }
     Block {
         title: "Straighten";
         StoreSlider { field: 14; label: "Angle"; fraction: Store.angle-fraction; readout: Store.angle-readout; value-text: Store.angle-value; }
     }
-    Block {
+    Section {
         title: "Rotate & Mirror";
         HorizontalLayout {
             spacing: Space.s;
             alignment: start;
-            IconButton { icon: Icons.rotate; help: "Rotate 90° clockwise"; }
+            IconButton { icon: Icons.rotate; help: "Rotate 90° clockwise"; clicked => { Framing.act("rotate"); } }
             ButtonGroup {
-                IconButton { icon: Icons.mirror; help: "Mirror left for right"; }
-                IconButton { icon: Icons.mirror; help: "Mirror top for bottom"; }
+                IconButton { icon: Icons.mirror; help: Framing.mirrored ? "Unmirror left for right" : "Mirror left for right"; on: Framing.mirrored; clicked => { Framing.act("mirror"); } }
+                IconButton { icon: Icons.mirror; help: Framing.mirrored-vertically ? "Unmirror top for bottom" : "Mirror top for bottom"; on: Framing.mirrored-vertically; clicked => { Framing.act("mirror-vertically"); } }
             }
+        }
+    }
+    Section {
+        title: "Measuring Window";
+        help: "Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.";
+        ButtonGroup {
+            Button { text: "Reset"; enabled: Framing.has-window; help: "Reset measure window"; clicked => { Framing.act("window-reset"); } }
+            Button { text: Framing.armed ? "Apply Window" : "Measuring Window"; kind: Framing.armed ? ButtonKind.accent : ButtonKind.plain; clicked => { Framing.act("window-arm"); } }
+            IconButton { icon: Icons.copy; help: "Copy measure window"; enabled: Framing.has-window; clicked => { Framing.act("window-copy"); } }
+            IconButton { icon: Icons.paste; help: "Paste measure window"; enabled: Framing.can-paste-window; clicked => { Framing.act("window-paste"); } }
+        }
+    }
+    Section {
+        LabelledRow {
+            label: "Kept";
+            Label { text: Framing.kept; role: TextRole.value; }
         }
     }
 }
@@ -214,6 +265,7 @@ export component Panel inherits Surface {
                 tabs: ["Roll", "Crop", "Color", "Details"];
                 marked: [false, false, false, false];
                 selected <=> PanelState.tab;
+                picked(i) => { PanelState.tab-picked(i); }
             }
         }
         Rectangle {
