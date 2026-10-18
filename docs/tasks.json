@@ -333,6 +333,24 @@
     "detail": "Every presets row of docs/parity (other.md, editor.md): the file side, the form's rows, the share code, import, retire, then the deck, sheets, dialogs and the Settings menu wired through the store."
   },
   {
+    "id": 40,
+    "type": "feature",
+    "title": "Scanner face: the face switch, the Lab keypad and its machines",
+    "status": "done",
+    "detail": "The Pro/Scanner tab bar and Scanner Emulator menu item, the ONI and Frontier machine picker, the Density, Color and Look keypad blocks with their step and reset keys, the Lab screen, Esc and the walk keys; the desktop keypad and the phone drive the same commands.",
+    "outcome": "Command::Face switches the face in one undo step and a frame opens on the open face (adoptFace); the face is remembered in Support/lastFaceScanner. The Color tab on the Scanner face shows the Machine tabs, Density/Color/Look keypads and Effects step keys, built as ui/ds Key, KeyRow, Keypad and LabScreen; the plot band is the Lab screen; Dye Separation is hidden; Esc leaves the Lab, bare arrows walk, Space goes to the gallery. Verified by oni-core tests/scanner.rs (ScannerKey.selfCheck port with its monochrome twin, face switch and open, bar reset per face), oni-pipeline scanner replica test with twins, oni-app lab unit tests, and the headless window test tests/scanner.rs, which presses the keys through the Lab callbacks and compares with the phone's Command::Step replayed on a second store, plus the catalogue shot. Keys are pressed through the Lab global's callbacks, not by pointer. Space toggles the gallery from Pro's editor only (walkKeys), fixed in d9c45d5 with a twin in the window test.",
+    "commit": "a75a253"
+  },
+  {
+    "id": 41,
+    "type": "feature",
+    "title": "Scanner Finish: the Color tab on the Scanner face edits its own finishing",
+    "status": "done",
+    "detail": "On the Scanner face the Color tab reads and writes ScannerFinish (the Contrast, Vignette and Chrome step keys, curves, spectrogram, saturation), so a gesture on one face never moves the other.",
+    "outcome": "Set and Step go through EditorStore::face_view and store by the open face (storing_scanner_edit); Command::Finish carries structured Color-tab edits the same way, ready for the curve, spectrogram and saturation editors, which do not exist yet. Verified by the ScannerFinish.selfCheck port a_gesture_on_one_face_never_moves_the_other with its Pro twin and a curve-point Finish on both faces; replacing stored_by_face with the identity made two tests fail. The window test checks Effects keys leave Pro's Contrast and a Pro step leaves the Scanner's.",
+    "commit": "a75a253"
+  },
+  {
     "id": 42,
     "type": "perf",
     "title": "The image at a steady 30 fps while a value slides, the interface at the display's rate",
@@ -381,22 +399,18 @@
     "detail": "The levels plot over the levels' input histogram (UI/SettingsPane.swift:157-171) and the curves over the manual curves' input histogram with the channel in focus (Scene/EditorScene+Panel.swift:139, UI/CurveEditorView.swift:113-117), computed on the GPU at the image's cadence like the main histogram, filling Plots.levels and the curves' input."
   },
   {
-    "id": 40,
+    "id": 55,
     "type": "feature",
-    "title": "Scanner face: the face switch, the Lab keypad and its machines",
-    "status": "done",
-    "detail": "The Pro/Scanner tab bar and Scanner Emulator menu item, the ONI and Frontier machine picker, the Density, Color and Look keypad blocks with their step and reset keys, the Lab screen, Esc and the walk keys; the desktop keypad and the phone drive the same commands.",
-    "outcome": "Command::Face switches the face in one undo step and a frame opens on the open face (adoptFace); the face is remembered in Support/lastFaceScanner. The Color tab on the Scanner face shows the Machine tabs, Density/Color/Look keypads and Effects step keys, built as ui/ds Key, KeyRow, Keypad and LabScreen; the plot band is the Lab screen; Dye Separation is hidden; Esc leaves the Lab, bare arrows walk, Space goes to the gallery. Verified by oni-core tests/scanner.rs (ScannerKey.selfCheck port with its monochrome twin, face switch and open, bar reset per face), oni-pipeline scanner replica test with twins, oni-app lab unit tests, and the headless window test tests/scanner.rs, which presses the keys through the Lab callbacks and compares with the phone's Command::Step replayed on a second store, plus the catalogue shot. Keys are pressed through the Lab global's callbacks, not by pointer. Space toggles the gallery from Pro's editor only (walkKeys), fixed in d9c45d5 with a twin in the window test.",
-    "commit": "a75a253"
+    "title": "The gallery surface: views, selection, labels, medals, filters, the info sidebar",
+    "status": "doing",
+    "detail": "GalleryEngine and GalleryView (UI/GalleryEngine.swift, UI/GalleryView.swift): tile sizes, ⌘ and ⇧ selection, double-click and Return/Space to open, arrows and ⌘A, the cell menu, the status bar's medal picker, the medal filter and its empty states, the ONI Trash laid as a grid with Restore, and InfoSidebar (UI/InfoSidebar.swift) with its self-check."
   },
   {
-    "id": 41,
+    "id": 56,
     "type": "feature",
-    "title": "Scanner Finish: the Color tab on the Scanner face edits its own finishing",
-    "status": "done",
-    "detail": "On the Scanner face the Color tab reads and writes ScannerFinish (the Contrast, Vignette and Chrome step keys, curves, spectrogram, saturation), so a gesture on one face never moves the other.",
-    "outcome": "Set and Step go through EditorStore::face_view and store by the open face (storing_scanner_edit); Command::Finish carries structured Color-tab edits the same way, ready for the curve, spectrogram and saturation editors, which do not exist yet. Verified by the ScannerFinish.selfCheck port a_gesture_on_one_face_never_moves_the_other with its Pro twin and a curve-point Finish on both faces; replacing stored_by_face with the identity made two tests fail. The window test checks Effects keys leave Pro's Contrast and a Pro step leaves the Scanner's.",
-    "commit": "a75a253"
+    "title": "Projects and the archive's organisation rules",
+    "status": "doing",
+    "detail": "The Archive / Projects switch, New Project from, Add to and Remove from Project, Delete Project, a project rearranging its own photos (Scene/EditorScene+Rolls.swift:117-303), and the rules that the archive moves nothing by hand and that the ONI Trash marks sidecars and moves no file (Pipeline/OniTrash.swift)."
   },
   {
     "id": 57,

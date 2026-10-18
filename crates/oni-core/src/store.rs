@@ -431,6 +431,16 @@ impl EditorStore {
         paths: &[String],
         transform: impl Fn(&str, &PipelineSettings) -> Option<PipelineSettings>,
     ) -> (Settings, Settings) {
+        self.modify_with(paths, false, transform)
+    }
+
+    /// `modify`, keeping each sidecar's modification date when `preserving` so the thumbnail key holds.
+    fn modify_with(
+        &mut self,
+        paths: &[String],
+        preserving: bool,
+        transform: impl Fn(&str, &PipelineSettings) -> Option<PipelineSettings>,
+    ) -> (Settings, Settings) {
         let mut before = Settings::new();
         let mut after = Settings::new();
         for path in paths {
@@ -447,7 +457,7 @@ impl EditorStore {
             if next == loaded.settings {
                 continue;
             }
-            match sidecar::write(&next, original, WriteOptions::default()) {
+            match sidecar::write(&next, original, WriteOptions { preserving_revision: preserving, ..WriteOptions::default() }) {
                 Ok(()) => {
                     before.insert(path.clone(), loaded.settings);
                     after.insert(path.clone(), next);
@@ -745,6 +755,30 @@ impl EditorStore {
         n
     }
 
+    /// `updateRoll` and `applyFilm`: the roll on every target, the open frame's in memory and
+    /// written at rest, the others' sidecars at once as one gallery step; `None` ungroups.
+    pub fn set_film(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: &str) -> usize {
+        let open = self.path().map(str::to_string);
+        let mut count = 0;
+        if open.as_ref().is_some_and(|p| paths.contains(p)) {
+            let mut next = self.settings.clone();
+            next.film = film.clone();
+            if !self.replace(next).is_empty() {
+                self.last_change = Some(self.now());
+                count += 1;
+            }
+        }
+        let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
+        let (was, now) = self.modify_with(&others, true, |_, s| {
+            let mut next = s.clone();
+            next.film = film.clone();
+            Some(next)
+        });
+        count += was.len();
+        self.gallery.record(&was, &now, label, None);
+        count
+    }
+
     // MARK: - The ONI Trash
 
     /// Marks each frame's sidecar, its files untouched; the open frame among them closes.
@@ -935,6 +969,39 @@ mod tests {
         assert!(!written.exists(), "a hand still moving writes nothing");
         store.flush_if_due(1.0);
         assert!(written.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undoes_as_one_step() {
+        let dir = std::env::temp_dir().join(format!("oni-core-store-film-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
+        for p in [&b, &c] {
+            sidecar::write(&PipelineSettings::default(), Path::new(p), WriteOptions::default()).unwrap();
+        }
+        let stamp = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000_000);
+        std::fs::File::options().write(true).open(sidecar::url_for(Path::new(&b))).unwrap().set_modified(stamp).unwrap();
+        let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone(), c.clone()], |_: &Path| false));
+        store.open(&a).unwrap();
+        let film = oni_settings::Film::new("Roll 3");
+        let read = |p: &str| sidecar::read(Path::new(p), false, true).unwrap().settings.film;
+        assert_eq!(store.set_film(&[a.clone(), b.clone()], Some(film.clone()), "Rename Roll"), 2);
+        assert_eq!(store.settings().film.as_ref(), Some(&film), "the open frame takes it in memory");
+        assert!(!sidecar::url_for(Path::new(&a)).exists(), "and writes it at rest, not at once");
+        assert_eq!(read(&b), Some(film.clone()));
+        let kept = std::fs::metadata(sidecar::url_for(Path::new(&b))).unwrap().modified().unwrap();
+        assert_eq!(kept, stamp, "the revision holds, so the thumbnail key does");
+        assert_eq!(read(&c), None, "twin: a frame not named keeps its roll");
+        assert_eq!(store.gallery_history().undo_label(), Some("Rename Roll"));
+        assert_eq!(store.set_film(&[b.clone()], Some(film.clone()), "Rename Roll"), 0, "an unchanged roll writes nothing");
+        store.undo(Surface::Gallery);
+        assert_eq!(read(&b), None, "one undo takes the others back");
+        // Twin: `None` ungroups.
+        store.set_film(&[b.clone()], Some(film.clone()), "Set Film Stock");
+        store.set_film(&[b.clone()], None, "Ungroup");
+        assert_eq!(read(&b), None);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
