@@ -1,6 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
-import { Colour, CropStyle } from "theme.slint";
+import { Colour, CropStyle, Space } from "theme.slint";
 
 export enum FrameStyle { crop, window }
 
@@ -258,6 +258,35 @@ export component Badge inherits Rectangle {
         text: root.text;
         color: Colour.handle-active;
         font-size: 11px;
+    }
+}
+
+// `Loupe`: the Details band, the render at its own ratio in the middle of the canvas's dark, the
+// ratio's badge in the corner, which swaps rest for close.
+export component LoupeBand inherits Rectangle {
+    in property <image> source;
+    in property <length> shown-width;
+    in property <length> shown-height;
+    in property <string> ratio;
+    in property <bool> ratio-shown;
+    callback toggled();
+    background: Colour.canvas;
+    clip: true;
+    Image {
+        x: (parent.width - root.shown-width) / 2;
+        y: (parent.height - root.shown-height) / 2;
+        width: root.shown-width;
+        height: root.shown-height;
+        source: root.source;
+        image-fit: fill;
+    }
+    if root.ratio-shown: TouchArea {
+        x: parent.width - self.width - Space.s;
+        y: Space.s;
+        width: badge.width;
+        height: badge.height;
+        badge := Badge { text: root.ratio; }
+        clicked => { root.toggled(); }
     }
 }
 

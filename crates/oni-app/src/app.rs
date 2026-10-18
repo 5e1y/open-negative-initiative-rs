@@ -56,7 +56,9 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 /// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
 const HISTOGRAM: (usize, usize) = (680, 300);
 
+mod board;
 mod lab;
+mod loupe;
 mod masks;
 mod navigator;
 mod organising;
@@ -65,6 +67,7 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod tree_rename;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
@@ -94,6 +97,8 @@ pub struct Options {
     /// `requireRoll`: a frame never measured opens on Prepare the Roll; off as under Swift's probes,
     /// so a check opens bare frames by hand, and on in the app itself.
     pub require_roll: bool,
+    /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
+    pub pasteboard: Box<dyn crate::pasteboard::Board>,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -113,6 +118,7 @@ impl Default for Options {
             show_folder: Box::new(system::show_folder),
             computer: oni_library::navigator::Computer::system(),
             require_roll: false,
+            pasteboard: Box::new(crate::pasteboard::Memory::default()),
         }
     }
 }
@@ -292,6 +298,7 @@ pub struct State {
     /// The open frame's full-resolution pixels once built, and the frame one is being built for.
     full: Option<(String, oni_graph::Source)>,
     building_full: Option<String>,
+    loupe: loupe::Held,
     /// The frame whose dust patches are being generated.
     healing: Option<String>,
     /// The last navigation, which keeps the preview until it settles.
@@ -328,6 +335,12 @@ pub struct State {
     brush_pressed_at: Option<Instant>,
     /// `Propagation`'s copied measuring window.
     window_board: Option<Fraction>,
+    /// `renameRequest`: the folder New Roll made, named in place once its row shows, and the row being named.
+    rename_request: Option<String>,
+    tree_renaming: Option<String>,
+    pasteboard: Box<dyn crate::pasteboard::Board>,
+    /// The board's change count last read, so a menu publication reads only types that moved.
+    board_seen: Option<i64>,
     /// Compare Before/After's split, a fraction of the canvas's width; none while off.
     split: Option<f32>,
     /// `screenGamutWarning`: the pixels this screen cannot show, striped on the canvas.
@@ -709,6 +722,7 @@ impl Shell {
             views: Notches::default(),
             full: None,
             building_full: None,
+            loupe: loupe::Held::default(),
             healing: None,
             navigated_at: None,
             full_size: None,
@@ -731,6 +745,10 @@ impl Shell {
             brush_start: None,
             brush_pressed_at: None,
             window_board: None,
+            rename_request: None,
+            tree_renaming: None,
+            pasteboard: options.pasteboard,
+            board_seen: None,
             befores: 0,
             screen_gamut: false,
             before_placed: None,
@@ -1035,6 +1053,7 @@ impl Ctl {
     /// The Crop tab and the canvas's frames from the open frame's geometry.
     fn publish_framing(&self) {
         let Some(w) = self.window() else { return };
+        self.board_in();
         let cropping = self.cropping();
         let image = self.image_size();
         let crop_frame = self.image_frame(true);
@@ -1113,6 +1132,7 @@ impl Ctl {
                 if let Some(e) = self.state.borrow_mut().store.editor() {
                     e.copy_framing();
                 }
+                self.board_out(crate::pasteboard::FRAMING);
                 return self.publish_framing();
             }
             "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll"),
@@ -1130,9 +1150,11 @@ impl Ctl {
             "window-copy" => {
                 let window = g.measure_window;
                 self.state.borrow_mut().window_board = window;
+                self.board_out(crate::pasteboard::MEASURE_WINDOW);
                 return self.publish_framing();
             }
             "window-paste" => {
+                self.board_in();
                 let Some(window) = self.state.borrow().window_board else { return };
                 if g.measure_window == Some(window) {
                     return;
@@ -1147,6 +1169,7 @@ impl Ctl {
 
     /// `pasteFraming()` on the selection, else the open photo, or `pasteFramingToRoll()`; one gallery step.
     fn paste_framing(self: &Rc<Self>, roll: bool) {
+        self.board_in();
         if roll {
             self.paste_framing_to_roll();
         } else {
@@ -1514,6 +1537,7 @@ impl Ctl {
             (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
         };
         self.worker.submit(job);
+        self.request_loupe();
         if let Some((path, converted)) = build {
             self.build_full(path, converted);
         }
@@ -1912,6 +1936,8 @@ impl Ctl {
     /// The histogram and the load counter, on their own pace so a notch touches neither.
     fn pulse(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
+        // A tab opened or a full frame landed reaches the loupe at this pace when no render asks.
+        self.request_loupe();
         let (histogram, loading) = {
             let mut s = self.state.borrow_mut();
             if let Some(h) = s.gpu.as_mut().and_then(Gpu::landed) {
@@ -2268,9 +2294,13 @@ impl Ctl {
 
     fn publish_tree(&self) {
         let Some(w) = self.window() else { return };
-        let mut s = self.state.borrow_mut();
+        let beside_photo = !w.global::<App>().get_gallery();
+        let mut guard = self.state.borrow_mut();
+        let s = &mut *guard;
         let Some(archive) = &s.archive else { return };
         let rows = archive.rows();
+        let ids: Vec<oni_library::archive_tree::NodeId> = rows.iter().map(|r| r.id.clone()).collect();
+        tree_rename::land(&mut s.rename_request, &mut s.tree_renaming, &ids, beside_photo);
         let paths: Vec<Option<String>> = rows
             .iter()
             .map(|r| match &r.id {
@@ -2289,10 +2319,11 @@ impl Ctl {
                 expandable: r.expandable,
                 expanded: r.expanded,
                 selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
+                renaming: matches!(&r.id, oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str())),
             })
             .collect();
         s.tree_paths = paths;
-        drop(s);
+        drop(guard);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
     }
 
@@ -2520,6 +2551,7 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }
+        self.land_tree_request();
         self.publish_bar();
         self.publish_tiles();
     }
@@ -2766,6 +2798,7 @@ impl Ctl {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_settings();
                 }
+                self.board_out(crate::pasteboard::SETTINGS);
             }
             "paste" => self.paste(),
             "paste-to-roll" => self.paste_to_roll(),
@@ -2773,6 +2806,7 @@ impl Ctl {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_framing();
                 }
+                self.board_out(crate::pasteboard::FRAMING);
                 self.publish_framing();
             }
             "paste-framing" | "paste-framing-to-roll" => self.paste_framing(action == "paste-framing-to-roll"),
@@ -3016,8 +3050,16 @@ impl Ctl {
         if made.len() < files.len() {
             self.say(&format!("{} of the files could not be moved into the roll.", files.len() - made.len()));
         }
-        if let Some(store) = self.state.borrow_mut().store.editor() {
-            store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(archive) = s.archive.as_mut() {
+                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(parent.clone()));
+                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(folder.clone()));
+            }
+            s.rename_request = Some(folder.clone());
+            if let Some(store) = s.store.editor() {
+                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+            }
         }
         self.followed(&made);
     }
@@ -3097,6 +3139,7 @@ impl Ctl {
         self.drop_split();
         if self.state.borrow().open.as_deref() == Some(path.as_str()) {
             w.global::<App>().set_gallery(false);
+            self.land_tree_request();
         } else {
             self.open_in_editor(&path);
         }
@@ -3150,6 +3193,7 @@ impl Ctl {
 
     /// `pasteSettings(to:)`: one roll's look laid on another asks first.
     fn paste(self: &Rc<Self>) {
+        self.board_in();
         let targets = self.targets();
         let check = {
             let mut s = self.state.borrow_mut();
@@ -3169,6 +3213,7 @@ impl Ctl {
 
     /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
     fn paste_to_roll(self: &Rc<Self>) {
+        self.board_in();
         let check = {
             let mut s = self.state.borrow_mut();
             let Some(open) = s.open.clone() else { return };
@@ -3272,6 +3317,7 @@ impl Ctl {
     /// bar reads too, so the two surfaces cannot disagree.
     fn publish_menus(&self) {
         let Some(w) = self.window() else { return };
+        self.board_in();
         let app = w.global::<App>();
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
@@ -3593,6 +3639,8 @@ impl Ctl {
         Ctl::wire_rolls(me, window);
         Ctl::wire_roll_tab(me, window);
         Ctl::wire_help(me, window);
+        Ctl::wire_loupe(me, window);
+        Ctl::wire_tree_rename(me, window);
         let p = me.clone();
         window.window().on_close_requested(move || p.close_requested());
         Ctl::wire_prepare(me, window);

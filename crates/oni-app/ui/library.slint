@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
+import { ColumnPill, ListView, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -32,6 +32,8 @@ export struct TreeRow {
     expandable: bool,
     expanded: bool,
     selected: bool,
+    // `TreeEngine.renaming`: the row's name typed over it.
+    renaming: bool,
 }
 
 export struct StockCount {
@@ -91,6 +93,8 @@ export global Library {
     callback surface-picked(int);
     callback row-clicked(int);
     callback row-double-clicked(int);
+    callback row-rename-committed(int, string);
+    callback row-rename-cancelled();
     callback project-row-clicked(int);
     callback project-row-double-clicked(int);
     callback project-row-menu(int) -> bool;
@@ -155,16 +159,24 @@ export component Tree inherits Surface {
         }
         if Library.surface == 0 && root.beside-photo: ListView {
             vertical-stretch: 1;
-            for row[i] in Library.rows: TreeItem {
-                depth: row.depth;
-                title: row.title;
-                caption: row.caption;
-                kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
-                expandable: row.expandable;
-                expanded: row.expanded;
-                selected: row.selected;
-                clicked => { Library.row-clicked(i); }
-                double-clicked => { Library.row-double-clicked(i); }
+            for row[i] in Library.rows: VerticalLayout {
+                if !row.renaming: TreeItem {
+                    depth: row.depth;
+                    title: row.title;
+                    caption: row.caption;
+                    kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
+                    expandable: row.expandable;
+                    expanded: row.expanded;
+                    selected: row.selected;
+                    clicked => { Library.row-clicked(i); }
+                    double-clicked => { Library.row-double-clicked(i); }
+                }
+                if row.renaming: RenameRow {
+                    text: row.title;
+                    depth: row.depth;
+                    committed(t) => { Library.row-rename-committed(i, t); }
+                    cancelled => { Library.row-rename-cancelled(); }
+                }
             }
         }
         if Library.surface == 1: ListView {

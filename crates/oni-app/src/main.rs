@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, ..Options::default() })?;
+    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), ..Options::default() })?;
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |window, event| {

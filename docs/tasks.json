@@ -456,8 +456,8 @@
     "id": 63,
     "type": "feature",
     "title": "New Roll asks for its folder's name, and menu items for features absent from the build stay dark",
-    "status": "doing",
-    "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry."
+    "status": "done",
+    "detail": "rollFolder(from:) sets renameRequest on the new folder, answered by the column's rename field and renameFolder; every menu item reads a live flag computed as menuState does, false for an action this build does not carry. The request waits for the archive's column beside the photo and names the row in place (#81)."
   },
   {
     "id": 64,
@@ -530,5 +530,12 @@
     "status": "done",
     "detail": "The console window polling the session's log with Copy and Reveal; What's New's six notes as seals on their headings, read on hover and kept until the app quits, Show What's New Again; the welcome sheet once per edition (welcomeSeen 1.2.1) with Website and Feedback; Report a Bug sealing the log to the maintainers' X25519 key (HKDF-SHA256, ChaCha20-Poly1305, raw deflate, cut from its oldest lines to 58 000 characters) and posting it to the site's /report; Show My Year on Film dark until it exists.",
     "outcome": "oni-app/tests/help.rs over two sessions with an injected reporter (refusal twin); report.rs seals opened by CryptoKit and CryptoKit's opened by Rust (tools/seal_cross.swift, ONI_SEAL_CROSS); ONI_BENCH=console shows the log in the real window."
+  },
+  {
+    "id": 81,
+    "type": "feature",
+    "title": "The editor's leftovers: the Details loupe, the settings pasteboard, New Roll's name, block help and folds, Esc in a crop drag, scroll and keycap timings, help bubbles that fit",
+    "status": "doing",
+    "detail": "The Details loupe renders the band's region of the full-resolution frame off the interface thread at 150 % or 200 %; Copy Settings, the framing and the measuring window ride the macOS pasteboard under Swift's own types; New Roll from Selection names its folder in the archive's column; the pipette's only Swift caller is the base pick, already ported."
   }
 ]

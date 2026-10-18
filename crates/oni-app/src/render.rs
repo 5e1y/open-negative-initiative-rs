@@ -524,6 +524,18 @@ impl Engine {
         Ok((r, size))
     }
 
+    /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
+    /// the neighbourhood radii index on the incoming extent; `None` on an unlaid band.
+    pub fn loupe(&mut self, full: &Source, settings: &PipelineSettings, viewport: &crate::viewport::Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Linear, Rect)>, String> {
+        self.read_custom(settings);
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let image = self.pipeline.image(&mut self.graph, full, settings, &Request::default(), &inputs).map_err(|e| e.to_string())?;
+        let image = self.proof.laid(&mut self.graph, image, settings)?;
+        let Some(zone) = crate::loupe::region(image.extent(), viewport, drawable, magnification) else { return Ok(None) };
+        let pixels = self.graph.render(&image, zone, None).map_err(|e| e.to_string())?;
+        Ok(Some((Linear { width: zone.w as usize, height: zone.h as usize, pixels }, zone)))
+    }
+
     /// Forgets a correction's patch, so the next render reads it again from the cache.
     pub fn forget_patch(&mut self, id: Id) {
         self.patches.remove(&id);
@@ -1131,6 +1143,40 @@ mod tests {
         let placed = placed.unwrap();
         assert!(placed.whole && !placed.at_full_resolution, "{placed:?}");
         assert!((placed.width - 300.0).abs() < 1.0 && (placed.height - 187.5).abs() < 1.0, "{placed:?}");
+    }
+
+    /// `Loupe.selfCheck`: the loupe shows the exported file's pixels over its region; cropped before
+    /// the pipeline, the blurs read invented rows along the border and the same region diverges.
+    #[test]
+    fn the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not() {
+        let Ok(device) = Device::open() else {
+            eprintln!("no adapter: the loupe is not exercised");
+            return;
+        };
+        let mut engine = Engine::on(&device);
+        let (fw, fh) = (1200usize, 800usize);
+        // Grain to bite on and both neighbourhood stages well above rest, so no arm agrees by luck.
+        let grain = |i: usize| ((i as u32).wrapping_mul(2_654_435_761) >> 8) as f32 / 16_777_216.0;
+        let pixels: Vec<[f32; 4]> = (0..fw * fh).map(|i| [0.1 + 0.6 * grain(i), 0.1 + 0.6 * grain(i + 7), 0.1 + 0.6 * grain(i + 13), 1.0]).collect();
+        let full = engine.full(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None }).unwrap();
+        let mut settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
+        settings.chroma = oni_settings::blocks::ChromaDenoise { radius: 5.0, force: 0.8 };
+        settings.sharpen.radius = 5.0;
+        settings.sharpen.amount = 2.0;
+        let port = crate::viewport::Viewport { scale: Some(1.0), offset: (-137.0, 91.0) };
+        let (seen, zone) = engine.loupe(&full, &settings, &port, (640.0, 360.0), 1.0).unwrap().unwrap();
+        assert_eq!((zone.x, zone.y, zone.w, zone.h), (417, 129, 640, 360));
+        let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs())).fold(0.0f32, f32::max);
+        let negative = engine.prepare(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None }).unwrap();
+        let whole = engine.render(&negative, &settings, None).unwrap();
+        let sliced: Vec<[f32; 4]> = (0..zone.h as usize).flat_map(|r| whole.pixels[(zone.y as usize + r) * fw + zone.x as usize..][..zone.w as usize].to_vec()).collect();
+        let exported = gap(&seen.pixels, &sliced);
+        assert!(exported < 1e-4, "the loupe is the exported file: {exported}");
+        // Twin: the frame cropped to the region before the pipeline diverges along its border.
+        let cut: Vec<[f32; 4]> = (0..zone.h as usize).flat_map(|r| pixels[(zone.y as usize + r) * fw + zone.x as usize..][..zone.w as usize].to_vec()).collect();
+        let cropped = engine.full(Decoded { linear: Linear { width: zone.w as usize, height: zone.h as usize, pixels: cut }, full_width: f64::from(zone.w), undeclared: None }).unwrap();
+        let (first, _) = engine.loupe(&cropped, &settings, &crate::viewport::Viewport::default(), (640.0, 360.0), 1.0).unwrap().unwrap();
+        assert!(gap(&first.pixels, &seen.pixels) > 1e-3, "twin: a crop first reads invented rows");
     }
 
     /// A frame naming a custom flat-field is divided by that mask, read from the support folder;

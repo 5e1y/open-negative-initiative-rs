@@ -26,7 +26,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Settings on the system pasteboard, own types | `Pipeline/Propagation.swift:22,96,127` | `oni-core/src/store.rs:496` | partial | In-memory board; nothing crosses apps or relaunches | no check |
+| Settings on the system pasteboard, own types | `Pipeline/Propagation.swift:22,96,127` | `oni-app/src/pasteboard.rs`, `oni-app/src/app/board.rs`, `oni-core/src/store.rs:496` | partial | Settings, framing and measuring window under Swift's three types on macOS, the other two laid back after a clear; Windows keeps a board of the process's own | `oni-app/src/pasteboard.rs::a_copy_keeps_the_other_two_copies_and_bumps_the_count`, `::the_system_board_holds_the_apps_own_types_and_never_a_text`, `oni-app/tests/editor_leftovers.rs::the_editors_last_gestures_behave_as_swifts` |
 | Paste carries Color and Details whole | `Pipeline/LookSettings.swift:6` | `oni-settings/src/settings.rs:198` | done | Core level | `oni-core/tests/roll8.rs::a_paste_carries_the_color_and_details_tabs_whole_and_undoes_byte_for_byte` |
 | Every field in exactly one family | `Pipeline/RollSettings.swift:12`, `LookSettings.swift` | `oni-core/src/fields.rs` | done | | `oni-core/src/fields.rs::every_field_is_the_rolls_the_looks_or_the_frames_and_one_only` |
 | Framing board, measuring window board | `Pipeline/Propagation.swift:96,127` | `oni-core/src/store.rs` `copy_framing`, `paste_framing`, `app.rs` `framing_act` | done | Both boards live for the session, as `Propagation`'s; only the open frame is fitted | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |

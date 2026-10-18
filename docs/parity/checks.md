@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 84 twin, 19 partial, 59 none.
+Of 162 checks: 85 twin, 19 partial, 58 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -142,7 +142,7 @@ Of 162 checks: 84 twin, 19 partial, 59 none.
 | 128 | `PresetCarousel.selfCheck` | `Checks/UI/PresetCarousel+Checks.swift:4` | preset deck holds | none | none |
 | 129 | `PresetParameters.selfCheck` | `Checks/UI/PresetParameters+Checks.swift:7` | every parameter is shown under an interface name | none | none |
 | 130 | `NegativeView.selfCheck` | `Checks/UI/NegativeView+Checks.swift:6` | canvas readouts hold | none | none |
-| 131 | `Loupe.selfCheck` | `Checks/UI/Loupe+Checks.swift:8` | loupe holds | none | none |
+| 131 | `Loupe.selfCheck` | `Checks/UI/Loupe+Checks.swift:8` | loupe holds | twin | `oni-app/src/render.rs::the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not`, `oni-app/src/loupe.rs::the_region_is_centred_on_what_the_canvas_holds_in_the_middle_and_stays_inside`; the frame cost is timed by no bench |
 | 132 | `Bench.navigationCheck` | `Pipeline/Bench.swift` | navigation frame budget held | none | none |
 | 133 | `CanvasEvents.selfCheck` | `Checks/UI/CanvasNavigation+Checks.swift:7` | canvas navigation gestures hold | none | none |
 | 134 | `Viewport.selfCheck` | `Checks/UI/Viewport+Checks.swift:5` | zoom scale holds | none | none |
