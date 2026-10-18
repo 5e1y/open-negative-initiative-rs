@@ -1,6 +1,5 @@
-//! Roll #8's measurements against what the Swift app wrote: the roll's reference every sidecar
-//! carries and the filters Auto White Balance left on two frames, read off the Swift decode dumps.
-//! `ONI_SWIFT_MEASURE` names a `measure.json` the Mac writes on its own measuring copies; see `harness`.
+//! Roll #8's measurements against what the Swift app wrote, read off its decode dumps; with
+//! `ONI_SWIFT_MEASURE`, against what it measures on its own measuring copies (`FORMAT`).
 
 use oni_graph::{Graph, Source};
 use oni_measure::reader::{Copy, Reader};
@@ -14,9 +13,8 @@ use oni_settings::{ConversionMode, PipelineSettings};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
-/// Measured on the 1000 px dumps against Swift's 1400 px measuring copies: a bound on the gap the
-/// copy's size leaves, not on the code, which the harness checks on Swift's own copies.
-/// The filters part by 0.0053 stop on DSC_6446 (Pro) and 0.0122 on DSC_6464 (Scanner).
+/// The 1000 px dumps against Swift's 1400 px copies part the filters by 0.0053 stop (DSC_6446, Pro)
+/// and 0.0122 (DSC_6464, Scanner): a bound on the copies' gap, the harness judging the code.
 const FILTERS_GAP: f32 = 0.02;
 /// The roll's gains part by 0.0096 stop, its whites by 0.0070, its medians by 0.0019 of window.
 const ROLL_STOPS_GAP: f32 = 0.03;
@@ -275,18 +273,25 @@ fn settings_of(v: &Value) -> PipelineSettings {
     codec::decode_value(v.clone(), &source, false).expect("a sidecar document").settings
 }
 
-/// `measure.json`, written by the Mac beside a `measure/` folder of `RenderDump`s of
-/// `Negative.measure` (the 1400 px measuring copy), one per frame:
-/// `{"frames": [{"file", "dump", "fullWidth", "start", "settings", "measured": {"stops", "tails",
-/// "median"}, "placed": {"stops", "levels": [[black, white] × 3]}, "filters"}], "roll": {"stops",
-/// "black", "white", "median"}}`; `start` and `settings` are sidecar documents (`SettingsCodec`),
-/// `measured` is `RollReference.measured` on `start`, `placed` and `filters` are
-/// `AutoLevels.placed` and `FilterBalance.filters` on `settings`, `roll` is `combined` with no base.
+/// What the Mac writes, beside its `measure/` folder of `RenderDump`s of `Negative.measure`.
+const FORMAT: &str = r#"measure.json: {
+  "frames": [{
+    "file": "DSC_6432.NEF", "dump": "measure/00000.f32" (Negative.measure, the 1400 px copy),
+    "fullWidth": the frame's full width,
+    "start": the sidecar document (SettingsCodec) Prepare the Roll measures the frame from,
+    "settings": the frame's own sidecar document,
+    "measured": RollReference.measured on start: {"stops": [3], "tails": [[low, high] x 3], "median": [3] or null},
+    "placed": AutoLevels.placed on settings: {"stops": [3], "levels": [[black, white] x 3] as fractions},
+    "filters": FilterBalance.filters on settings: [3]
+  }],
+  "roll": RollReference.combined of every measured frame, no base: {"stops", "black", "white", "median"}
+}"#;
+
 #[test]
 fn harness_lands_on_swift_s_own_measurements() {
     let check = "harness_lands_on_swift_s_own_measurements";
     let Some(path) = std::env::var_os("ONI_SWIFT_MEASURE").map(PathBuf::from) else {
-        println!("SKIPPED {check}: ONI_SWIFT_MEASURE names no measure.json (see this test's header)");
+        println!("SKIPPED {check}: ONI_SWIFT_MEASURE names no measure.json, written as\n{FORMAT}");
         return;
     };
     if !oni_fixtures::heavy(check) {

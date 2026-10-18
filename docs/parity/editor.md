@@ -91,8 +91,8 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Auto White Balance key | `UI/ColorPane.swift:57` | `panel.slint:131` | partial | Button unwired; `Measure` has no implementation | no check |
-| Batch choice for a selection (AutoBalanceChoice) | `UI/ColorPane.swift:335` | `oni-core/src/balance.rs:98` `averaged` | partial | Core averaging only | `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
+| Auto White Balance key | `UI/ColorPane.swift:57` | `panel.slint:131`, `oni-app/src/app.rs` `auto_balance`, `oni-app/src/measuring.rs` | partial | Wired, each target balanced for itself; no progress on the key, other frames' thumbnails not refreshed | `oni-app/tests/auto_balance.rs::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back`, `oni-measure/tests/roll8.rs::roll8_auto_white_balance_lands_on_the_filters_swift_wrote` |
+| Batch choice for a selection (AutoBalanceChoice) | `UI/ColorPane.swift:335` | `oni-core/src/balance.rs:98` `averaged`, `oni-measure/src/choice.rs` | partial | Wording and rules ported; no dialog asks, so a selection always balances each | `oni-measure/src/choice.rs::only_the_open_frame_alone_skips_the_run_and_every_wording_carries_the_count`, `oni-core/src/balance.rs::average_gives_every_frame_the_mean_and_an_unreadable_frame_stops_the_run` |
 | Temperature, Tint sliders, coloured tracks | `UI/TemperatureTintPanel.swift` | `panel.slint:137-141` | done | Track ends not tinted | `oni-core/src/knob.rs::temperature_and_tint_move_on_axes_that_leave_each_other_alone` |
 | Color density slider | `UI/ColorPane.swift:57` | `panel.slint:144` field 2 | done | | `oni-app/src/fields.rs::each_slider_spans_its_knobs_range_on_a_mosaic_negative` |
 | Paper Correction block (paper profile only) | `UI/ColorPane.swift:82` | none | missing | Model in `oni-colour/src/paper.rs` | no check |

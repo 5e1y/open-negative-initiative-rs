@@ -21,12 +21,12 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 96 | 25 | 30 | 103 of 151 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 26 | 25 | 34 | 41 of 85 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 96 | 25 | 30 | 104 of 151 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 26 | 27 | 32 | 43 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 4 | 31 | 3 | 34 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 9 | 15 | 24 | 17 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 91 | 12 | 25 | 92 of 128 |
-| **All** | | **226** | **108** | **116** | **287 of 450** |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 96 | 13 | 19 | 99 of 128 |
+| **All** | | **231** | **111** | **108** | **297 of 450** |
 
 Within the editor: canvas 17 / 2 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7,
 Crop tab 8 / 0 / 0, Color tab 7 / 5 / 1, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
@@ -40,8 +40,8 @@ keys.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **73 have a Rust twin, 14 a partial one,
-75 none.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **77 have a Rust twin, 18 a partial one,
+67 none.**
 
 ### Pipeline branches against Swift
 
@@ -65,8 +65,9 @@ tab's block order and the menu titles now read as Swift's.
 3. **Wiring what the core already does.** Copy, paste, paste to roll, framing, film type, trash,
    New Roll and the gallery history are wired with Swift's titles and shortcuts; Restore waits on the
    ONI Trash view, Ungroup on a film gesture in the core.
-4. **The measurement behind the automatic keys.** `balance::Measure` has no implementation: no Auto
-   White Balance, auto levels, pipette, measuring blocks, Classic placement or roll reference.
+4. **The measurement's surfaces.** `oni-measure` reads Auto White Balance, the blocks, Classic's two
+   steps, the pipette and the roll's reference, and the key is wired; no pipette gesture, Each or
+   Average dialog, measuring window overlay or Prepare the Roll step calls the rest.
 5. **The editors' histograms.** The curves, levels, spectrogram and saturation editors work with
    their point rules; the levels plot has no input histogram yet and the curves draw over the output.
 6. **Geometry.** No crop overlay, ratio, rotate, mirror, straighten re-fit or measuring window.

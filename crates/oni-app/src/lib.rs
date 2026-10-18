@@ -12,6 +12,7 @@ pub mod framing;
 pub mod gallery;
 pub mod heal;
 pub mod library;
+pub mod measuring;
 pub mod motion;
 pub mod patches;
 pub mod phone;

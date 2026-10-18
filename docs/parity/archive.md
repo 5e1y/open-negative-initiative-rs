@@ -100,8 +100,8 @@ Statuses are defined in [README.md](README.md).
 | Pick and flag frames one click at a time | `UI/RollReferenceSurface.swift` `RollPicking` | none | missing | | no check |
 | Clear, Clear Flags, Shift by One File, Previous / Next | `UI/RollReferenceSurface.swift` | none | missing | | no check |
 | MEASURE N FRAMES, NEXT / SKIP, Back | `UI/RollReferenceSurface.swift` | none | missing | | no check |
-| Base pipette and its radius | `Pipeline/RollReference.swift:22-24`, `Pipeline/Pipette.swift` | none | missing | | no check |
-| Roll reference measurement (outvotes a bad frame) | `Pipeline/RollReference.swift` | none | missing | Read and applied, never computed | no check |
+| Base pipette and its radius | `Pipeline/RollReference.swift:22-24`, `Pipeline/Pipette.swift` | `oni-measure/src/key.rs:107` `base`, `oni-measure/src/roll.rs:12` | partial | The reading is ported; the Base step that calls it is not | `oni-measure/tests/pipette.rs::the_ring_the_hand_aims_with_is_the_sample_at_every_radius` (crate only) |
+| Roll reference measurement (outvotes a bad frame) | `Pipeline/RollReference.swift` | `oni-measure/src/roll.rs` `measured`, `combined`, `measure_roll` | partial | Computed per frame and combined; no Prepare the Roll surface runs it, and no contact sheet or RGB passes are read | `oni-measure/tests/roll8.rs::roll8_reference_lands_on_the_roll_swift_measured`, `oni-measure/tests/roll.rs::a_picked_base_is_every_channel_s_black_and_reaches_the_roll_s_gains` |
 | Frame written onto its roll's reference | `Pipeline/RollReference.swift` | `oni-core/src/balance.rs:71` `written` | done | | `oni-core/src/balance.rs::a_frame_written_onto_its_roll_takes_the_rolls_gains_and_windows` |
 | Roll previews rendered once | `UI/RollPreviews.swift` | none | missing | | no check |
 | Tutorial video per step | `UI/TutorialVideo.swift` | none | missing | | no check |

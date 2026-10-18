@@ -2539,6 +2539,7 @@ impl Ctl {
             "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
             "open" => self.pick(),
             "recheck" | "read-folders" => self.read_again(),
+            "auto-balance" => self.auto_balance(),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -2550,6 +2551,50 @@ impl Ctl {
             other => self.say(&format!("“{other}” is not in this build yet")),
         }
         self.publish_bar();
+    }
+
+    /// Auto White Balance: each target read off this thread, the open frame on its live settings and
+    /// the others on their sidecars, then laid as one undo step; a selection balances each frame.
+    fn auto_balance(self: &Rc<Self>) {
+        static BALANCING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+        let frames: Vec<(String, oni_settings::PipelineSettings)> = {
+            let s = self.state.borrow();
+            let open = s.open_path().map(str::to_string);
+            let at = open.as_ref().and_then(|p| s.order.iter().position(|o| o == p));
+            crate::export::targets(&s.order, &s.selection, at)
+                .into_iter()
+                .map(|path| {
+                    let settings = if Some(&path) == open.as_ref() {
+                        s.store.settings().clone()
+                    } else {
+                        let mosaic = oni_decode::decodes_via_mosaic(Path::new(&path));
+                        oni_settings::sidecar::read(Path::new(&path), mosaic, true).map(|l| l.settings).unwrap_or_default()
+                    };
+                    (path, settings)
+                })
+                .collect()
+        };
+        if frames.is_empty() || BALANCING.swap(true, Ordering::AcqRel) {
+            return;
+        }
+        std::thread::spawn(move || {
+            let outcomes = crate::measuring::balance_outcomes(&frames);
+            with_shell(move |c| {
+                BALANCING.store(false, Ordering::Release);
+                let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
+                let measure = |path: &str, _: &oni_settings::PipelineSettings| outcomes.get(path).cloned();
+                let failure = {
+                    let mut s = c.state.borrow_mut();
+                    let failure = s.store.editor().and_then(|e| e.auto_balance(&targets, oni_core::balance::Strategy::Each, &measure));
+                    s.last_change = Some(Instant::now());
+                    failure
+                };
+                c.publish(false);
+                if let Some(f) = failure {
+                    c.say(&f);
+                }
+            });
+        });
     }
 
     /// The keys no menu item carries: Escape and Return on a sheet, the Lab's and the walk keys, and

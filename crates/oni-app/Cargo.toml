@@ -27,6 +27,7 @@ oni-fixtures.workspace = true
 oni-graph = { path = "../oni-graph" }
 oni-library = { path = "../oni-library" }
 oni-link = { path = "../oni-link" }
+oni-measure = { path = "../oni-measure" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
 pollster.workspace = true
