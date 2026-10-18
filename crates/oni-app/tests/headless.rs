@@ -102,6 +102,13 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
         let p = w.global::<oni_app::Plots>();
         p.get_levels().size().width > 0 && p.get_curves().size().width > 0
     });
+    // The canvas resized under an open frame, as entering the editor does. The panic of a borrow held
+    // across the resize's read and write needs the full size the GPU path lays, which this software
+    // window never lays: it reproduces in the real window only, where the fix is checked.
+    window.set_size(PhysicalSize::new(2 * 1200, 2 * 760));
+    rig.settle();
+    window.set_size(PhysicalSize::new(2 * 1280, 2 * 800));
+    rig.settle();
     // The crop-first line over Auto White Balance follows the open frame's own framing.
     let g = ctl.state.borrow().store().settings().geometry.clone();
     let uncropped = g.crop == oni_settings::cg::Rect::UNIT && g.measure_window.is_none();

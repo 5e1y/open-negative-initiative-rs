@@ -464,5 +464,12 @@
     "status": "done",
     "detail": "CLAUDE.md gains the goal, definition of done, performance targets, interface rules, working loop and roadmap; docs/research holds the performance and Frontier notes; CLAUDE.local.md is ignored.",
     "outcome": "CLAUDE.md extended, docs/research/ added with its README, .gitignore ignores CLAUDE.local.md. Checked: tasks.json parses, no private detail in the diff (grep for email, user paths, machine names)."
+  },
+  {
+    "id": 69,
+    "type": "fix",
+    "title": "Editing crashed; a gallery double-click and the sidebar's selection",
+    "status": "doing",
+    "detail": "The canvas's resize under an open frame read the full size through a borrow its own scrutinee held while it wrote the viewport: RefCell already borrowed at app.rs:3428, every time the editor opened (the canvas resizes). Fixed by binding the read first; reproduced in the real window by ONI_BENCH=resize, which panics without the fix and passes with it. The gallery's double-click and the selection shared with the sidebar land from the gallery session."
   }
 ]
