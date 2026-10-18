@@ -200,11 +200,17 @@ fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert_ne!(label_of(&fourth), oni_settings::Medal::Silver);
     rig.key("2");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Silver);
+    let fields = || {
+        let lib = w.global::<Library>();
+        [lib.get_month(), lib.get_day(), lib.get_year(), lib.get_camera_body(), lib.get_description()]
+    };
+    let before = fields();
     rig.key("\t");
-    assert!(!w.get_keys_focused(), "Tab moves the keyboard into the description field");
+    assert!(!w.get_keys_focused(), "Tab moves the keyboard into the sidebar's first field");
     rig.key("1");
     assert_eq!(label_of(&fourth), oni_settings::Medal::Silver, "a key typed into a field never labels");
-    assert_eq!(w.global::<Library>().get_description(), "1");
+    let typed: Vec<usize> = (0..5).filter(|&i| fields()[i] != before[i]).collect();
+    assert_eq!(typed.len(), 1, "the key landed in one field: {:?}", fields());
     // Twin: the same key with the key scope focused does label.
     w.invoke_refocus();
     rig.key("1");

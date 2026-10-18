@@ -107,8 +107,8 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Straighten re-fits the crop inside the image | `Pipeline/Geometry.swift:195,234` | `oni-core/src/knob.rs:242` | partial | Raw angle written | no check |
 | Rotate keeps the crop, mirror flips it | `Pipeline/Geometry.swift:39-101` | none | missing | | no check |
 | Framing paste adopts, fits inside the image | `Pipeline/Geometry.swift:101,195` | `oni-core/src/store.rs:560` | partial | No fit | no check |
-| Gallery ⌘ and ⇧ click pick as shown | `UI/ListPicking.swift` | `oni-app/ui/library.slint` | done | | no check |
-| Select all, arrows walk the grid | `UI/GalleryEngine.swift:425-439` | none | missing | | no check |
+| Gallery ⌘ and ⇧ click pick as shown | `UI/ListPicking.swift` | `oni-app/src/picking.rs`, `oni-app/src/organise.rs` | done | | `oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand`, `oni-app/src/picking.rs::a_clicks_command_and_shift_pick_as_shown` |
+| Select all, arrows walk the grid | `UI/GalleryEngine.swift:425-512` | `oni-app/src/organise.rs` `Picks::key` | done | | `oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand`, `oni-app/src/picking.rs::command_a_completes_the_groups_the_selection_touches_else_the_focus_else_the_last` |
 | Column resizer for the filmstrip | `DesignSystem/DSPanel` `DSColumnResizer` | none | missing | | no check |
 | A chip across slots lands in the nearest (DSSlots) | `DesignSystem/DSReorder.swift` | none | missing | | no check |
 | Pager: anchoring, clicked travel, swipe end of course | `DesignSystem/DSPanel.swift` | none | missing | | no check |

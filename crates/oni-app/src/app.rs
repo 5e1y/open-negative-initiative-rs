@@ -30,7 +30,7 @@ use oni_library::gallery_history::Move;
 use oni_library::index::LibraryIndex;
 use oni_library::roots::Survey;
 use oni_settings::Medal;
-use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
@@ -57,6 +57,7 @@ pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
 const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod lab;
+mod organising;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 
@@ -107,6 +108,8 @@ const ANOTHER_ROLL: (&str, &str) = ("Another Roll", "You are trying to apply set
 enum Pending {
     Paste(Vec<String>),
     PasteToRoll,
+    DeleteProject(oni_settings::Id),
+    RestoreAll,
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -205,8 +208,10 @@ pub struct State {
     /// What a confirm sheet goes ahead with once its key is pressed.
     pending: Option<Pending>,
     muted: bool,
-    selection: BTreeSet<usize>,
-    anchor: Option<usize>,
+    /// The gallery's picks, kept by path so a relayout keeps them, and the ONI Trash's own.
+    picks: crate::organise::Picks,
+    trash_picks: crate::organise::Picks,
+    org: organising::Organising,
     columns: usize,
     scroll: f32,
     grid: (f32, f32),
@@ -569,8 +574,9 @@ impl Shell {
             pending: None,
             muted: false,
             open: None,
-            selection: BTreeSet::new(),
-            anchor: None,
+            picks: Default::default(),
+            trash_picks: Default::default(),
+            org: Default::default(),
             columns: gallery::COLUMN_STEPS[1],
             scroll: 0.0,
             grid: (0.0, 0.0),
@@ -759,7 +765,7 @@ impl Ctl {
         let bar = w.global::<Bar>();
         let (has_photo, selected) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.selection.len())
+            (s.open.is_some(), s.picks.selection.len())
         };
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
@@ -1788,10 +1794,8 @@ impl Ctl {
             let (pw, ph) = HISTOGRAM;
             w.global::<Plots>().set_output(premultiplied(&h.raster(pw, ph), pw, ph));
         }
-        if let Some(text) = loading
-            && w.global::<App>().get_gallery()
-        {
-            w.global::<Canvas>().set_status(text.into());
+        if w.global::<App>().get_gallery() {
+            w.global::<Library>().set_loading(loading.unwrap_or_default().into());
         }
     }
 
@@ -1908,6 +1912,8 @@ impl Ctl {
         let folder = oni_library::paths::canonical(folder);
         let (generation, index_path) = {
             let mut s = self.state.borrow_mut();
+            s.org.trash_open = false;
+            s.trash_picks = Default::default();
             s.opened = Some(folder.clone());
             let _ = s.preferences.set(preferences::OPENED_FOLDER, serde_json::Value::String(folder.clone()));
             s.opening = None;
@@ -1982,19 +1988,13 @@ impl Ctl {
         let (title, stock) = {
             let mut s = self.state.borrow_mut();
             let Some(folder) = s.opened.clone() else { return };
-            let selected: HashSet<String> = s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect();
-            let anchor = s.anchor.and_then(|i| s.order.get(i).cloned());
             let mut archive = Archive::from_rows(&folder, &s.rows, &s.survey, s.filter);
             if let Some(old) = &s.archive {
                 let folded: HashSet<_> = old.nodes.iter().map(oni_library::archive_tree::Node::id).filter(|id| !old.expanded.contains(id)).collect();
                 archive.expanded.retain(|id| !folded.contains(id));
             }
-            let order: Vec<String> = archive.entries().iter().map(|e| e.path.clone()).collect();
-            s.selection = order.iter().enumerate().filter(|(_, p)| selected.contains(*p)).map(|(i, _)| i).collect();
-            s.anchor = anchor.and_then(|a| order.iter().position(|p| *p == a));
             let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
             s.store.set_archive(every);
-            s.order = order;
             let first = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
             s.archive = Some(archive);
             first
@@ -2004,7 +2004,8 @@ impl Ctl {
             lib.set_roll_title(title.into());
             lib.set_stock(stock.into());
         }
-        self.relayout();
+        self.read_trashed();
+        self.lay_grid();
         self.publish_tree();
         self.publish_bar();
     }
@@ -2149,6 +2150,10 @@ impl Ctl {
     }
 
     fn row_clicked(self: &Rc<Self>, i: usize) {
+        if self.state.borrow().org.trash_open {
+            self.leave_trash();
+            self.lay_grid();
+        }
         let path = {
             let mut s = self.state.borrow_mut();
             let Some(archive) = s.archive.as_mut() else { return };
@@ -2158,14 +2163,15 @@ impl Ctl {
         match path {
             Some(path) => {
                 // Bound first: an `if let` scrutinee's borrow lives through its block.
-                let index = self.state.borrow().order.iter().position(|p| *p == path);
-                if let Some(index) = index {
+                {
                     let mut s = self.state.borrow_mut();
-                    s.selection = BTreeSet::from([index]);
-                    s.anchor = Some(index);
+                    s.picks.selection = HashSet::from([path.clone()]);
+                    s.picks.anchor = Some(path.clone());
+                    s.picks.cursor = Some(path.clone());
                 }
                 self.open_photo(&path);
                 self.publish_tiles();
+                self.publish_organising();
             }
             None => self.publish_tree(),
         }
@@ -2241,11 +2247,8 @@ impl Ctl {
     fn relayout(&self) {
         {
             let mut s = self.state.borrow_mut();
-            let groups: Vec<(String, String, usize)> = s
-                .archive
-                .as_ref()
-                .map(|a| a.groups.iter().map(|g| (g.title.clone(), g.caption.clone(), g.entries.len())).collect())
-                .unwrap_or_default();
+            let groups: Vec<(String, String, usize)> =
+                s.org.bands.iter().map(|b| (b.title.clone(), b.caption.clone(), b.entries.len())).collect();
             s.layout = Layout::new(&groups, s.columns, s.grid.0, Metrics::GALLERY);
             s.scroll = s.layout.clamped(s.scroll, s.grid.1);
         }
@@ -2258,11 +2261,7 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         let range = s.layout.cells(s.scroll, s.grid.1);
-        let labels: HashMap<String, i32> = s
-            .archive
-            .as_ref()
-            .map(|a| a.entries().iter().map(|e| (e.path.clone(), library::medal_index(e.label))).collect())
-            .unwrap_or_default();
+        let flags = Ctl::tile_flags(&s);
         // A cell reads the folder, never renders: a photo with no file waits for the pass or an edit.
         let mut asking = Vec::new();
         for i in range.clone() {
@@ -2289,8 +2288,10 @@ impl Ctl {
                     height: s.layout.tile.1,
                     picture,
                     caption: stem(path).into(),
-                    selected: s.selection.contains(&i),
-                    medal: labels.get(path).copied().unwrap_or(0),
+                    selected: s.shown_picks().selection.contains(path),
+                    medal: flags.get(path).map_or(0, |f| f.0),
+                    missing: flags.get(path).is_some_and(|f| f.1),
+                    rgb: flags.get(path).is_some_and(|f| f.2),
                 })
             })
             .collect();
@@ -2309,24 +2310,7 @@ impl Ctl {
     }
 
     fn tile_clicked(self: &Rc<Self>, i: usize, toggle: bool, extend: bool) {
-        {
-            let mut s = self.state.borrow_mut();
-            match (toggle, extend, s.anchor) {
-                (_, true, Some(anchor)) => s.selection = (anchor.min(i)..=anchor.max(i)).collect(),
-                (true, _, _) => {
-                    if !s.selection.remove(&i) {
-                        s.selection.insert(i);
-                    }
-                    s.anchor = Some(i);
-                }
-                _ => {
-                    s.selection = BTreeSet::from([i]);
-                    s.anchor = Some(i);
-                }
-            }
-        }
-        self.publish_tiles();
-        self.publish_bar();
+        self.click(i, toggle, extend);
     }
 
     fn tile_opened(self: &Rc<Self>, i: usize) {
@@ -2348,13 +2332,13 @@ impl Ctl {
 
     /// `applyMedal`: the selection's sidecars and index rows, in the gallery and the editor alike.
     fn label(self: &Rc<Self>, medal: i32) {
-        let targets: Vec<String> = {
-            let s = self.state.borrow();
-            s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect()
-        };
-        let label = library::medal_of(medal);
+        let targets = self.state.borrow().selected();
+        self.label_paths(&targets, library::medal_of(medal));
+    }
+
+    fn label_paths(self: &Rc<Self>, targets: &[String], label: Medal) {
         let mut written = Vec::new();
-        for path in &targets {
+        for path in targets {
             match oni_settings::sidecar::set_label(label, Path::new(path), true) {
                 Ok(()) => written.push(path.clone()),
                 Err(e) => self.say(&e.to_string()),
@@ -2526,11 +2510,11 @@ impl Ctl {
             group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
         };
         let Some(path) = target else { return };
-        let index = self.state.borrow().order.iter().position(|p| *p == path);
-        if let Some(index) = index {
+        {
             let mut s = self.state.borrow_mut();
-            s.selection = BTreeSet::from([index]);
-            s.anchor = Some(index);
+            s.picks.selection = HashSet::from([path.clone()]);
+            s.picks.anchor = Some(path.clone());
+            s.picks.cursor = Some(path.clone());
         }
         self.open_photo(&path);
         self.publish_tiles();
@@ -2599,6 +2583,13 @@ impl Ctl {
             }
             "paste-framing" | "paste-framing-to-roll" => self.paste_framing(action == "paste-framing-to-roll"),
             "remove" => self.move_to_trash(),
+            "restore" => {
+                let picked: Vec<String> = {
+                    let s = self.state.borrow();
+                    s.order.iter().filter(|p| s.trash_picks.selection.contains(*p)).cloned().collect()
+                };
+                self.restore(&picked);
+            }
             "new-roll" if app.get_gallery() => self.new_roll(),
             "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
             "open" => self.pick(),
@@ -2682,6 +2673,9 @@ impl Ctl {
         if self.lab_key(text, bare, repeat) {
             return true;
         }
+        if w.global::<App>().get_gallery() && self.grid_key(text, command, shift, bare, repeat) {
+            return true;
+        }
         // `keyboardShortcut("+")` answers ⌘= too, the key that carries + unshifted.
         if command && !shift && text == "=" && w.global::<Menus>().get_live().larger {
             self.act("larger");
@@ -2693,10 +2687,10 @@ impl Ctl {
     /// `propagationTargets`: the selection, else the open photo; the ONI Trash's never are.
     fn targets(&self) -> Vec<String> {
         let s = self.state.borrow();
-        if s.selection.is_empty() {
+        if s.picks.selection.is_empty() {
             return s.open.clone().into_iter().collect();
         }
-        s.selection.iter().filter_map(|i| s.order.get(*i).cloned()).collect()
+        s.selected()
     }
 
     /// A gesture on several photos through the core, then what it wrote read back: the rows, the
@@ -2871,7 +2865,7 @@ impl Ctl {
         }
         let ringed = {
             let s = self.state.borrow();
-            s.anchor.and_then(|i| s.order.get(i).cloned())
+            s.picks.anchor.clone().filter(|_| !s.trash_shown())
         };
         let Some(path) = ringed else { return };
         self.drop_split();
@@ -2919,7 +2913,7 @@ impl Ctl {
     fn show_selected(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            let at = s.open.as_ref().and_then(|p| s.order.iter().position(|o| o == p)).or_else(|| s.selection.first().copied());
+            let at = s.open.as_ref().and_then(|p| s.order.iter().position(|o| o == p)).or_else(|| s.order.iter().position(|o| s.picks.selection.contains(o)));
             let Some(at) = at else { return };
             if let Some(top) = s.layout.reveal(at, s.scroll, s.grid.1) {
                 s.scroll = top;
@@ -2996,6 +2990,11 @@ impl Ctl {
     /// `moveToOniTrash()`: each target's sidecar marked, its files untouched, one gallery step.
     fn move_to_trash(self: &Rc<Self>) {
         let targets = self.targets();
+        self.move_paths_to_trash(&targets);
+    }
+
+    fn move_paths_to_trash(self: &Rc<Self>, targets: &[String]) {
+        let targets = targets.to_vec();
         if targets.is_empty() {
             return;
         }
@@ -3029,6 +3028,8 @@ impl Ctl {
         match pending.filter(|_| go) {
             Some(Pending::Paste(targets)) => self.lay_paste(targets),
             Some(Pending::PasteToRoll) => self.lay_paste_to_roll(),
+            Some(Pending::DeleteProject(id)) => self.delete_project(id),
+            Some(Pending::RestoreAll) => self.restore_all(),
             None => {}
         }
         self.publish_bar();
@@ -3045,9 +3046,11 @@ impl Ctl {
         let (titles, live, film_type, targets) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.is_some();
-            let selected = s.selection.len();
+            let selected = s.picks.selection.len();
+            let trash = s.trash_shown() && gallery;
+            let restoring = s.trash_picks.selection.len();
             let count = if selected > 0 { selected } else { usize::from(open) };
-            let anchor = s.anchor.is_some();
+            let anchor = s.picks.anchor.is_some();
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.split.is_some(), s.screen_gamut, s.negative.is_some());
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
@@ -3088,7 +3091,7 @@ impl Ctl {
                 mode: if gallery { "Editor" } else { "Gallery" }.into(),
                 export: crate::export::label::menu(exporting.unwrap_or(selected)).into(),
                 remove: plural(count, "Move to ONI Trash", format!("Move {count} Photos to ONI Trash")).into(),
-                restore: "Restore".into(),
+                restore: plural(restoring, "Restore", format!("Restore {restoring} Photos")).into(),
                 paste: plural(count, "Paste Settings", format!("Paste Settings to {count} Photos")).into(),
                 paste_to_roll: if reach > 0 { format!("Paste to Roll ({} Photos)", reach + 1) } else { "Paste to Roll".into() }.into(),
                 undo: undo_title.into(),
@@ -3117,7 +3120,7 @@ impl Ctl {
                 read_folders: opened,
                 show_selected: gallery && (open || selected > 0),
                 remove: count > 0,
-                restore: false,
+                restore: trash && restoring > 0,
                 undo: can_undo,
                 redo: can_redo,
                 reset: can_reset,
@@ -3328,6 +3331,7 @@ impl Ctl {
         lib.on_tile_clicked(move |i, toggle, extend| p.tile_clicked(i.max(0) as usize, toggle, extend));
         let p = me.clone();
         lib.on_tile_opened(move |i| p.tile_opened(i.max(0) as usize));
+        Ctl::wire_organising(me, window);
         let p = me.clone();
         lib.on_scrolled(move |by| {
             {

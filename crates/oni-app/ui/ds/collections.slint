@@ -25,6 +25,9 @@ export component ListRow inherits Rectangle {
     in property <Look> look: Look.live;
     in property <length> indent;
     callback clicked();
+    callback double-clicked();
+    // A right click, at the pointer in the row's own coordinates.
+    callback menu(length, length);
     height: RowStyle.height;
     background: root.selected ? Colour.row-selected : (area.has-hover || root.look != Look.live) ? Colour.hover : transparent;
     HorizontalLayout {
@@ -35,7 +38,15 @@ export component ListRow inherits Rectangle {
         Label { text: root.title; overflow: elide; horizontal-stretch: 1; }
         Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
     }
-    area := TouchArea { clicked => { root.clicked(); } }
+    area := TouchArea {
+        clicked => { root.clicked(); }
+        double-clicked => { root.double-clicked(); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                root.menu(self.mouse-x, self.mouse-y);
+            }
+        }
+    }
 }
 
 // The archive's row: indented by depth, a chevron when it opens, a folder or roll glyph.

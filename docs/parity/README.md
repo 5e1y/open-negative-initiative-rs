@@ -21,24 +21,26 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 102 | 22 | 28 | 108 of 152 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 27 | 27 | 31 | 43 of 85 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 101 | 22 | 28 | 107 of 151 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 44 | 23 | 18 | 61 of 85 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 10 | 15 | 23 | 18 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 98 | 13 | 19 | 101 of 130 |
-| **All** | | **274** | **78** | **101** | **308 of 453** |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 97 | 13 | 18 | 101 of 128 |
+| **All** | | **289** | **74** | **87** | **325 of 450** |
 
-Within the editor: canvas 18 / 1 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7, Crop tab 8 / 0 / 0, Color tab 10 / 3 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face 6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 1 / 1 (done / partial / missing).
+Within the editor: canvas 18 / 1 / 0, main band 2 / 1 / 2, panel tabs 5 / 0 / 3, Roll tab 7 / 5 / 7,
+Crop tab 8 / 0 / 0, Color tab 9 / 4 / 0, Details tab 3 / 0 / 1, De-dust 7 / 0 / 0, Scanner face
+6 / 1 / 0, bar 5 / 4 / 3, menus 23 / 5 / 8, keys 3 / 1 / 3, history 5 / 0 / 1 (done / partial /
+missing).
 
-Twelve rows are done with no check, all in the app: Recheck Originals and Read the Folders Again
-(three rows), bare keys yielding to a text field, ⌘ and ⇧ selection (twice), double-click to open,
-the thumbnails' proof, the ground behind the frame, Space held for the hand tool, the offline
-`--check` and the bare medal keys.
+Nine rows are done with no check, all in the app: Recheck Originals and Read the Folders Again
+(three rows), bare keys yielding to a text field, the thumbnails' proof, the ground behind the frame,
+Space held for the hand tool, the offline `--check` and the bare medal keys.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **78 have a Rust twin, 20 a partial one,
-64 none.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **82 have a Rust twin, 19 a partial one,
+61 none.**
 
 ### Pipeline branches against Swift
 
@@ -56,18 +58,17 @@ tab's block order and the menu titles now read as Swift's.
 ## The ten largest gaps, in port order
 
 1. **Opening an archive.** Open Folder, the index, the remembered folder and the thumbnail cache
-   work; several roots at once, the navigator and the ONI Trash view do not.
+   work, the ONI Trash is laid as a grid with Restore; several roots at once and the navigator do not.
 2. **The canvas.** Zoom, pan, the full-resolution region, Compare and the screen gamut stripes
    work, dust patches and custom flat-field masks reach the render, the crop frame and the brush draw on it.
 3. **Wiring what the core already does.** Copy, paste, paste to roll, framing, film type, trash,
-   New Roll and the gallery history are wired with Swift's titles and shortcuts; Restore waits on the
-   ONI Trash view, Ungroup on a film gesture in the core.
+   New Roll, Restore, Ungroup, projects, Export… and the gallery history are wired with Swift's
+   titles and shortcuts; Reset to Default… from the cell menu reaches the menu's own gesture.
 4. **The measurement's surfaces.** `oni-measure` reads Auto White Balance, the blocks, Classic's two
    steps, the pipette and the roll's reference, and the key is wired; no pipette gesture, Each or
    Average dialog, measuring window overlay or Prepare the Roll step calls the rest.
 5. **The editors' histograms.** The curves, levels, spectrogram and saturation editors work with
    their point rules; the levels plot has no input histogram yet and the curves draw over the output.
-   Only the editors record a step 150 ms after the edit rests; the sliders still record at release.
 6. **Geometry.** No crop overlay, ratio, rotate, mirror, straighten re-fit or measuring window.
 7. **Prepare the Roll.** The whole surface and its steps are absent.
 8. **Export.** `oni-export` and `oni-colour` are not dependencies of the app; no export card, no

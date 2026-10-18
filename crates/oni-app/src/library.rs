@@ -34,6 +34,8 @@ pub struct Group {
     pub title: String,
     pub caption: String,
     pub stock: String,
+    /// The roll a folder's marker names, the one a click on the band writes.
+    pub film: Option<oni_settings::Film>,
     pub entries: Vec<Entry>,
 }
 
@@ -80,7 +82,7 @@ impl Archive {
                     .and_then(|f| film_stock(f.stock.as_deref()))
                     .map(|k| k.display_name.to_string())
                     .unwrap_or_default();
-                Group { caption: photos(g.entries.len()), title, stock, entries: g.entries }
+                Group { caption: photos(g.entries.len()), title, stock, film: g.film, entries: g.entries }
             })
             .collect();
         // The opened folder starts unfolded, its photos one click away.

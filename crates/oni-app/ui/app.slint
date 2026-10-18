@@ -1,15 +1,15 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
-import { Tree, Grid, Info, Library, Tile, Heading, TreeRow } from "library.slint";
+import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount, GalleryStatus } from "library.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, StockSheet, PaperSheet, PaperRow } from "export.slint";
 
-export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
+export { DS, Tip, Icons, LabCell, Store, Plots, PanelState, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout } from "ds/ds.slint";
 
@@ -497,7 +497,14 @@ export component MainWindow inherits AppWindow {
                         x: CardStyle.inset;
                         y: parent.height - StatusStyle.height;
                         width: parent.width - 2 * CardStyle.inset;
+                        visible: !App.gallery;
                         text: Canvas.status;
+                    }
+                    if App.gallery: GalleryStatus {
+                        x: CardStyle.inset;
+                        y: parent.height - StatusStyle.height;
+                        width: parent.width - 2 * CardStyle.inset;
+                        height: StatusStyle.height;
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown: Panel { }

@@ -1,5 +1,5 @@
-// The archive tree and the gallery grid; both draw only what is on screen.
-import { ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle } from "ds/ds.slint";
+// The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
+import { ListView, Section, TextField, TreeItem, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, Stroke } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -11,6 +11,8 @@ export struct Tile {
     caption: string,
     selected: bool,
     medal: int,
+    missing: bool,
+    rgb: bool,
 }
 
 export struct Heading {
@@ -30,49 +32,213 @@ export struct TreeRow {
     selected: bool,
 }
 
+// A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
+export struct TrashLine {
+    title: string,
+    trail: string,
+    count: string,
+    depth: int,
+    foldable: bool,
+    unfolded: bool,
+    picked: bool,
+    opened: bool,
+    present: bool,
+    restore-help: string,
+}
+
+export struct StockCount {
+    name: string,
+    count: string,
+}
+
 export global Library {
+    // `GallerySurface`: 0 the archive, 1 the projects.
+    in-out property <int> surface;
     in property <[TreeRow]> rows;
+    in property <[TreeRow]> project-rows;
+    in property <[TrashLine]> trash-rows;
     // Only the tiles in view and one row either side, placed in the grid's own coordinates.
     in property <[Tile]> tiles;
     in property <[Heading]> headings;
     in property <length> content-height;
     in property <length> scroll;
+    in property <string> empty-title;
+    in property <string> empty-detail;
+    in property <string> empty-action;
+    in property <string> projects-empty;
+    // The reorder's ghost under the pointer and the line where it would land.
+    in property <bool> ghost-shown;
+    in property <image> ghost;
+    in property <length> ghost-x;
+    in property <length> ghost-y;
+    in property <length> ghost-width;
+    in property <length> ghost-height;
+    in property <bool> drop-shown;
+    in property <length> drop-x;
+    in property <length> drop-y;
+    in property <length> drop-width;
+    in property <length> drop-height;
+    in property <[MenuLine]> menu-lines;
+    // The status bar's leading text, what a load or a failure says over it, and its medal picker.
+    in property <string> status;
+    in property <string> loading;
+    in property <bool> medal-shown;
+    in property <int> medal-current: -1;
+    // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project.
+    in property <int> info-kind;
+    in property <string> info-empty;
+    in property <string> info-title;
     in property <string> roll-title;
     in property <string> stock;
+    in property <string> stock-note;
+    in-out property <string> month;
+    in-out property <string> day;
+    in-out property <string> year;
+    in property <bool> shot-date-set;
+    in property <bool> shot-date-default;
+    in-out property <string> camera-body;
     in-out property <string> description;
+    in property <[StockCount]> stocks;
+    in property <[image]> stack;
+    callback surface-picked(int);
     callback row-clicked(int);
+    callback row-double-clicked(int);
+    callback project-row-clicked(int);
+    callback project-row-double-clicked(int);
+    callback project-row-menu(int) -> bool;
+    callback trash-row-clicked(int);
+    callback trash-row-double-clicked(int);
+    callback trash-row-restore(int);
+    callback trash-row-menu(int) -> bool;
+    // A click on a cell resolved by index, with ⌘ and ⇧; the pointer's own path is below.
     callback tile-clicked(int, bool, bool);
     callback tile-opened(int);
+    // The grid's pointer in document coordinates: a press, its moves, its release, a right click.
+    callback pointer-down(length, length, bool, bool);
+    callback pointer-moved(length, length);
+    callback pointer-up(length, length, bool, bool);
+    callback context(length, length) -> bool;
+    callback menu-chosen(int) -> bool;
+    callback empty-acted();
     callback scrolled(length);
     callback resized(length, length);
+    // Where the grid sits in the window, which a pointer a check dispatches is placed from.
+    in-out property <length> grid-x;
+    in-out property <length> grid-y;
+    callback medal-picked(int);
+    callback title-committed(string);
+    callback select-roll-type();
+    callback shot-date-committed(string, string, string);
+    callback shot-date-cleared();
+    callback camera-body-committed(string);
+    callback description-committed(string);
 }
 
 export component Tree inherits Surface {
-    ListView {
-        for row[i] in Library.rows: TreeItem {
-            depth: row.depth;
-            title: row.title;
-            caption: row.caption;
-            kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
-            expandable: row.expandable;
-            expanded: row.expanded;
-            selected: row.selected;
-            clicked => { Library.row-clicked(i); }
+    property <length> menu-x;
+    property <length> menu-y;
+    VerticalLayout {
+        padding: Space.s;
+        spacing: Space.s;
+        Tabs {
+            tabs: ["Archive", "Projects"];
+            selected <=> Library.surface;
+            picked(i) => { Library.surface-picked(i); }
         }
+        if Library.surface == 0: ListView {
+            vertical-stretch: 1;
+            for row[i] in Library.rows: TreeItem {
+                depth: row.depth;
+                title: row.title;
+                caption: row.caption;
+                kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
+                expandable: row.expandable;
+                expanded: row.expanded;
+                selected: row.selected;
+                clicked => { Library.row-clicked(i); }
+                double-clicked => { Library.row-double-clicked(i); }
+            }
+        }
+        if Library.surface == 0: VerticalLayout {
+            for line[i] in Library.trash-rows: TrashRow {
+                title: line.title;
+                trail: line.trail;
+                count: line.count;
+                depth: line.depth;
+                foldable: line.foldable;
+                unfolded: line.unfolded;
+                picked: line.picked;
+                opened: line.opened;
+                present: line.present;
+                restore-help: line.restore-help;
+                clicked => { Library.trash-row-clicked(i); }
+                double-clicked => { Library.trash-row-double-clicked(i); }
+                restore => { Library.trash-row-restore(i); }
+                menu(x, y) => {
+                    root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
+                    root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
+                    if (Library.trash-row-menu(i)) { menu.show(); }
+                }
+            }
+        }
+        if Library.surface == 1: ListView {
+            vertical-stretch: 1;
+            for row[i] in Library.project-rows: TreeItem {
+                depth: row.depth;
+                title: row.title;
+                caption: row.caption;
+                kind: row.kind == 1 ? RowKind.roll : RowKind.photo;
+                expandable: row.expandable;
+                expanded: row.expanded;
+                selected: row.selected;
+                clicked => { Library.project-row-clicked(i); }
+                double-clicked => { Library.project-row-double-clicked(i); }
+                menu(x, y) => {
+                    root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
+                    root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
+                    if (Library.project-row-menu(i)) { menu.show(); }
+                }
+            }
+        }
+    }
+    if Library.surface == 1 && Library.projects-empty != "": EmptyState {
+        title: Library.projects-empty;
+        detail: "Right-click photos in the library and choose New Project from them.";
+    }
+    menu := ContextMenu {
+        x: root.menu-x;
+        y: root.menu-y;
+        lines: Library.menu-lines;
+        chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
     }
 }
 
 export component Grid inherits Surface {
     ground: Ground.canvas;
     clip: true;
-    changed width => { Library.resized(self.width, self.height); }
-    changed height => { Library.resized(self.width, self.height); }
-    // The content is the scroll area's child, so a scroll a tile leaves unhandled reaches it.
+    property <length> menu-x;
+    property <length> menu-y;
+    changed width => { Library.grid-x = self.absolute-position.x; Library.grid-y = self.absolute-position.y; Library.resized(self.width, self.height); }
+    changed height => { Library.grid-x = self.absolute-position.x; Library.grid-y = self.absolute-position.y; Library.resized(self.width, self.height); }
+    // One pointer for the whole document, as the cells keep no gesture of their own: Rust resolves
+    // a cell or the ground from the point.
     TouchArea {
         scroll-event(event) => {
             Library.scrolled(-event.delta-y);
             EventResult.accept
         }
+        pointer-event(event) => {
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                Library.pointer-down(self.mouse-x, self.mouse-y + Library.scroll, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
+            } else if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) {
+                Library.pointer-up(self.mouse-x, self.mouse-y + Library.scroll, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
+            } else if (event.button == PointerEventButton.right && event.kind == PointerEventKind.down) {
+                root.menu-x = self.mouse-x;
+                root.menu-y = self.mouse-y;
+                if (Library.context(self.mouse-x, self.mouse-y + Library.scroll)) { menu.show(); }
+            }
+        }
+        moved => { Library.pointer-moved(self.mouse-x, self.mouse-y + Library.scroll); }
         Rectangle {
             y: -Library.scroll;
             width: parent.width;
@@ -90,38 +256,148 @@ export component Grid inherits Surface {
                 width: t.width;
                 picture-height: t.height;
                 picture: t.picture;
-                caption: t.caption;
                 selected: t.selected;
                 medal: t.medal;
-                TouchArea {
-                    pointer-event(event) => {
-                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                            Library.tile-clicked(t.index, event.modifiers.control || event.modifiers.meta, event.modifiers.shift);
-                        }
-                    }
-                    double-clicked => { Library.tile-opened(t.index); }
-                }
+                missing: t.missing;
+                rgb: t.rgb;
+            }
+            if Library.drop-shown: DropLine {
+                x: Library.drop-x;
+                y: Library.drop-y;
+                width: Library.drop-width;
+                height: Library.drop-height;
+            }
+            if Library.ghost-shown: TileGhost {
+                x: Library.ghost-x - self.width / 2;
+                y: Library.ghost-y - self.height / 2;
+                width: Library.ghost-width;
+                height: Library.ghost-height;
+                source: Library.ghost;
             }
         }
     }
+    if Library.empty-title != "": EmptyState {
+        title: Library.empty-title;
+        detail: Library.empty-detail;
+        action: Library.empty-action;
+        acted => { Library.empty-acted(); }
+    }
+    menu := ContextMenu {
+        x: root.menu-x;
+        y: root.menu-y;
+        lines: Library.menu-lines;
+        chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
+    }
 }
 
-// `InfoSidebar`: the selected photo's roll, its stock and a description.
+// `DSStatusBar` under the gallery: what loads, else the selection; the medal picker at its end.
+export component GalleryStatus inherits HorizontalLayout {
+    StatusLine {
+        horizontal-stretch: 1;
+        text: Library.loading != "" ? Library.loading : Library.status;
+    }
+    if Library.medal-shown && Library.loading == "": MedalPicker {
+        current: Library.medal-current;
+        picked(m) => { Library.medal-picked(m); }
+    }
+}
+
+// A title that reads as text until clicked, then commits on Return or when the focus leaves.
+component EditableTitle inherits VerticalLayout {
+    in property <string> text;
+    in property <string> placeholder;
+    property <bool> renaming;
+    if !root.renaming: Label {
+        role: TextRole.title;
+        text: root.text;
+        TouchArea { clicked => { root.renaming = true; } }
+    }
+    if root.renaming: TextField {
+        text: root.text;
+        placeholder: root.placeholder;
+        init => { self.take-focus(); }
+        accepted(t) => { root.renaming = false; Library.title-committed(t); }
+        left(t) => { if (root.renaming) { root.renaming = false; Library.title-committed(t); } }
+    }
+}
+
+// `InfoSidebar`: the roll a selection stands on, or its project.
 export component Info inherits Surface {
     width: ShellStyle.info-width;
     VerticalLayout {
         alignment: start;
-        Section {
-            title: "Roll";
-            separated: false;
-            Label { text: Library.roll-title; }
-            Label { text: Library.stock; role: TextRole.value; tone: Tone.secondary; }
+        if Library.info-kind == 0: VerticalLayout {
+            padding: Space.m;
+            Label { text: Library.info-empty; tone: Tone.secondary; }
         }
-        Section {
-            title: "Description";
-            description := TextField {
-                placeholder: "Add a description";
-                text <=> Library.description;
+        if Library.info-kind == 1: VerticalLayout {
+            Section {
+                title: "Roll";
+                separated: false;
+                EditableTitle { text: Library.info-title; placeholder: "Roll name"; }
+            }
+            Section {
+                title: "Film Stock";
+                help: "What this roll was shot on — never guessed, only ever what a hand picks.";
+                Label { text: Library.stock; role: TextRole.title; }
+                if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; }
+                Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
+            }
+            Section {
+                title: "Shot Date";
+                help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
+                HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    DateFields {
+                        month <=> Library.month;
+                        day <=> Library.day;
+                        year <=> Library.year;
+                        committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
+                    }
+                    if Library.shot-date-set: Button {
+                        text: "CLEAR";
+                        size: ButtonSize.small;
+                        help: "Clear shot date";
+                        clicked => { Library.shot-date-cleared(); }
+                    }
+                }
+                if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
+            }
+            Section {
+                title: "Camera Body";
+                help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
+                TextField {
+                    placeholder: "e.g. Leica M6";
+                    text <=> Library.camera-body;
+                    accepted(t) => { Library.camera-body-committed(t); }
+                    left(t) => { Library.camera-body-committed(t); }
+                }
+            }
+        }
+        if Library.info-kind == 2: VerticalLayout {
+            Section {
+                title: "Project";
+                separated: false;
+                EditableTitle { text: Library.info-title; placeholder: "Project name"; }
+            }
+            CardStack { pictures: Library.stack; }
+            Section {
+                title: "Film Stocks";
+                help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
+                if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
+                for row in Library.stocks: HorizontalLayout {
+                    spacing: Space.s;
+                    Label { text: row.name; horizontal-stretch: 1; }
+                    Label { text: row.count; tone: Tone.secondary; }
+                }
+            }
+            Section {
+                title: "Description";
+                TextField {
+                    text <=> Library.description;
+                    left(t) => { Library.description-committed(t); }
+                }
             }
         }
     }

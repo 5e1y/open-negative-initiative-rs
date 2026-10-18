@@ -134,12 +134,18 @@ export component TrashRow inherits Rectangle {
     callback clicked();
     callback double-clicked();
     callback restore();
+    callback menu(length, length);
     height: RowStyle.height;
     background: root.opened ? Colour.row-selected : root.picked || area.has-hover ? Colour.hover : transparent;
     opacity: root.present ? 1 : State.disabled;
     area := TouchArea {
         clicked => { root.clicked(); }
         double-clicked => { root.double-clicked(); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                root.menu(self.mouse-x, self.mouse-y);
+            }
+        }
     }
     HorizontalLayout {
         padding-left: RowStyle.padding + root.depth * RowStyle.indent;
@@ -166,5 +172,38 @@ export component TrashRow inherits Rectangle {
             help: root.restore-help;
             clicked => { root.restore(); }
         }
+    }
+}
+
+// `InfoSidebar.cardStack`: a project's first three photos fanned behind one another, the first in front.
+export component CardStack inherits Rectangle {
+    in property <[image]> pictures;
+    height: (self.width - 2 * Space.l) * 2 / 3 + Space.s + Space.l;
+    if root.pictures.length > 2: Picture {
+        x: Space.l - Space.xs;
+        y: Space.s + Space.xs;
+        width: root.width - 2 * Space.l;
+        height: self.width * 2 / 3;
+        rounded: true;
+        source: root.pictures[2];
+        opacity: 0.55;
+    }
+    if root.pictures.length > 1: Picture {
+        x: Space.l + Space.xs;
+        y: Space.s + Space.xs / 2;
+        width: root.width - 2 * Space.l;
+        height: self.width * 2 / 3;
+        rounded: true;
+        source: root.pictures[1];
+        opacity: 0.8;
+    }
+    Picture {
+        x: Space.l;
+        y: Space.s;
+        width: root.width - 2 * Space.l;
+        height: self.width * 2 / 3;
+        rounded: true;
+        source: root.pictures.length > 0 ? root.pictures[0] : Icons.film-roll;
+        pixelated: false;
     }
 }
