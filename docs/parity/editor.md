@@ -149,9 +149,9 @@ Statuses are defined in [README.md](README.md).
 | RESET SCAN | `Scene/EditorScene+Bar.swift` | `app.rs:1117` | done | | `oni-core/tests/roll8.rs::the_bars_reset_keeps_framing_flat_field_and_roll` |
 | Gallery keys: filter word, PREPARE ROLL, trash | `Scene/EditorScene+Bar.swift` | `toolbar.slint` GalleryKeys | done | | oni-app/tests/gallery.rs::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand, `oni-app/tests/prepare.rs::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step` |
 | Roll-step keys (Film, Flat-Field, Base, Flags, Window) | `Scene/EditorScene+Bar.swift:168-181` | `ui/prepare.slint` `RollStepKeys`, `toolbar.slint` | partial | The current key lit, a lamp on each step behind, a skipped one dark; GALLERY leaves the roll, the export key hidden; the plate's settle animation is not | `oni-app/tests/prepare.rs::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step` |
-| FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint` | partial | Unwired | no check |
+| FEEDBACKS key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app/help.rs` `open_report` | done | | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
 | EXPORT / ADD FOLDER key | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `Bar.export-title` from `oni-app/src/export.rs` `label::key` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
-| UPDATE key when an update waits | `Scene/EditorScene+Bar.swift`, `Pipeline/Updates.swift` | none | missing | | no check |
+| UPDATE key when an update waits | `Scene/EditorScene+Bar.swift`, `Pipeline/Updates.swift` | `toolbar.slint`, `app/updates.rs` | done | Outranks export and import; the tooltip says Download, as nothing installs | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
 | Traffic lights inset | `Scene/EditorScene+Bar.swift` | `app.rs` | missing | The window keeps a standard title bar; `Bar.traffic-lights` exists but nothing sets it | no check |
 
 ## Menus and shortcuts
@@ -192,7 +192,7 @@ Statuses are defined in [README.md](README.md).
 | Undo ⌘Z, Redo ⇧⌘Z with action names | `UI/EditorCommands.swift:255-259` | `app.slint` menu bar, `app.rs` `publish_menus` | done | The gallery names its step; the editor says Undo and Redo, as Swift's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Reset to Imported State ⇧⌘R | `UI/EditorCommands.swift:262` | `app.slint` menu bar, `app.rs` `reset_all` | done | One gallery step over the targets | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint` Help menu, `app/help.rs` | partial | Console, What's New, Show What's New Again and Report are wired; Show My Year on Film stays dark until it exists | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts |
-| Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
+| Check for Updates… | `UI/EditorCommands.swift:105` | `app.slint` Help menu | done | First in Help, since Slint owns the macOS application menu | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
 | Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules, and every item whose gesture this build lacks dark, save the Help menu's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
 | Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
 

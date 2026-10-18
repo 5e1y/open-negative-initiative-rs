@@ -3,7 +3,7 @@ import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, T
 import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
 import { Icons } from "icons.slint";
 
-export enum ButtonKind { plain, accent, caution, destructive }
+export enum ButtonKind { plain, accent, caution, destructive, update }
 export enum ButtonSize { regular, small }
 // What the catalogue forces a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
@@ -15,6 +15,7 @@ export global ButtonInk {
         if (on) { return hover ? Colour.on-hover : Colour.on; }
         if (kind == ButtonKind.accent) { return pressed ? Colour.accent-pressed : hover ? Colour.accent-hover : Colour.accent; }
         if (kind == ButtonKind.caution) { return pressed ? Colour.caution-pressed : hover ? Colour.caution-hover : Colour.caution; }
+        if (kind == ButtonKind.update) { return pressed ? Colour.update-pressed : hover ? Colour.update-hover : Colour.update; }
         if (kind == ButtonKind.destructive) {
             return pressed ? Colour.destructive-pressed : hover ? Colour.destructive-hover : Colour.destructive;
         }

@@ -70,10 +70,10 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Checks for updates on its own, never installs | `Pipeline/Updates.swift` | none | missing | | no check |
-| Check for Updates… | `UI/EditorCommands.swift:105` | none | missing | | no check |
-| UPDATE key in the bar | `Scene/EditorScene+Bar.swift` | none | missing | | no check |
-| EdDSA feed, signed, notarised builds | `Makefile`, `Pipeline/Updates.swift:90-97` | none | missing | Windows needs its own channel | no check |
+| Checks for updates on its own, never installs | `Pipeline/Updates.swift` | `oni-app/src/updates.rs`, `app/updates.rs` | done | At launch then every 43 200 s from `SULastCheckTime`; a scheduled find shows the key, not Sparkle's alert; a development build (no `ONI_BUILD`) looks only when asked; the install count (`/installed`) is not sent; the feed still serves the Swift app's archives | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded`, `oni-app/src/updates.rs::the_feed_reads_its_items_and_the_newest_runnable_one_is_offered`, `oni-app/src/updates.rs::versions_compare_as_sparkle_compares_them` |
+| Check for Updates… | `UI/EditorCommands.swift:105` | `app.slint` Help menu, `app/updates.rs` `check_for_updates` | done | First in Help: Slint builds the macOS application menu itself; ends on Sparkle's found, up-to-date and error dialogs, without the release notes | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
+| UPDATE key in the bar | `Scene/EditorScene+Bar.swift` | `toolbar.slint`, `app/updates.rs` `publish_update_key` | done | Download keeps the verified archive in Downloads and shows it; nothing installs | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
+| EdDSA feed, signed, notarised builds | `Makefile`, `Pipeline/Updates.swift:90-97` | `oni-app/src/updates.rs` `verify`, `checked` | partial | Every archive checked against `SUPublicEDKey` before it is kept; the Rust app is not yet signed, notarised or published, and Windows needs its own channel (no item runs off macOS) | `oni-app/src/updates.rs::a_signed_archive_verifies_and_a_forged_or_truncated_one_does_not`, `oni-app/src/updates.rs::the_published_archives_verify_against_the_apps_key` (`ONI_RELEASES_DIR`) |
 | `--check` never hits the network | `Pipeline/Updates.swift:51` | n/a | done | No updater to call | no check |
 
 ## Phone link (port only)

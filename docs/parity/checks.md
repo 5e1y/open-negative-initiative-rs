@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 84 twin, 19 partial, 59 none.
+Of 162 checks: 84 twin, 21 partial, 57 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -146,7 +146,7 @@ Of 162 checks: 84 twin, 19 partial, 59 none.
 | 132 | `Bench.navigationCheck` | `Pipeline/Bench.swift` | navigation frame budget held | none | none |
 | 133 | `CanvasEvents.selfCheck` | `Checks/UI/CanvasNavigation+Checks.swift:7` | canvas navigation gestures hold | none | none |
 | 134 | `Viewport.selfCheck` | `Checks/UI/Viewport+Checks.swift:5` | zoom scale holds | none | none |
-| 135 | `AppBar.selfCheck` | `Checks/UI/AppBar+Checks.swift:5` | top bar holds | none | none |
+| 135 | `AppBar.selfCheck` | `Checks/UI/AppBar+Checks.swift:5` | top bar holds | partial | `oni-app/src/updates.rs::the_key_and_the_dialogs_say_what_sparkle_says` (UPDATE TO names its version, no export count leaks); the bar's widths and wiring are not |
 | 136 | `Journal.selfCheck` | `Checks/Pipeline/Journal+Checks.swift:6` | the year's journal writes and reads back its records | twin | `oni-library/src/journal.rs::three_gestures_read_back_whole_and_a_torn_or_foreign_file_does_not` |
 | 137 | `WrappedYear.selfCheck` | `Checks/Pipeline/Wrapped+Checks.swift:4` | the Wrapped reads a year off the journal | none | none |
 | 138 | `Layering.selfCheck` | `Checks/Pipeline/Layering+Checks.swift:38` | the engine names nothing of the interface | twin | Structural: `oni-pipeline` and the engine crates do not depend on `oni-app` |
@@ -154,7 +154,7 @@ Of 162 checks: 84 twin, 19 partial, 59 none.
 | 140 | `DSTextFocus.selfCheck` | `Checks/DesignSystem/DSKeyboard+Checks.swift:59` | a focused text field keeps its bare keys | none | none |
 | 141 | `EditorMenus.selfCheck` | `Checks/UI/EditorCommands+Checks.swift:5` | menu shortcuts hold | none | none |
 | 142 | `History.selfCheck` | `Checks/Pipeline/History+Checks.swift:4` | session history holds | twin | `oni-core/src/history.rs::a_drag_within_the_window_is_one_step`, `the_stack_holds_its_limit` |
-| 143 | `Updates.selfCheck` | `Checks/Pipeline/Updates+Checks.swift:13` | distribution and updates hold | none | none |
+| 143 | `Updates.selfCheck` | `Checks/Pipeline/Updates+Checks.swift:13` | distribution and updates hold | partial | `oni-app/src/updates.rs::the_key_and_the_dialogs_say_what_sparkle_says`, `oni-app/src/updates.rs::a_signed_archive_verifies_and_a_forged_or_truncated_one_does_not`: https feed, a 32-byte key with its truncated twin, the interval, checks without installing; the bundle's build number, manifest and framework have no Rust bundle to read |
 | 144 | `FloatInvariant.check` | `Pipeline/FloatInvariant.swift` | float invariant held | twin | `oni-graph/tests/graph.rs::the_judge_sees_nan_and_infinity`; the graph takes only `rgba32float` |
 | 145 | `DensityMigration.selfCheck` (RAW) | `Checks/Pipeline/DensityMigration+Checks.swift:451` | density migration holds on the frame | twin | `oni-pipeline/tests/swift_checks.rs::the_migrated_windows_render_the_frozen_kernel_on_a_real_frame` (thumbnail on the GPU, full frame on the scalar reference), `oni-settings/tests/real_files.rs::the_version_14_lumix_frames_read_the_migrations_they_are_due` |
 | 146 | `FilmProbe.ceilingGrain` (RAW) | `Pipeline/FilmProbe.swift` | the ceiling's price measured at full resolution | none | none |

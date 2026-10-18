@@ -15,6 +15,10 @@ export global Bar {
     in property <bool> can-sheet;
     in property <bool> can-prepare;
     in property <string> export-title: "EXPORT";
+    // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
+    in property <string> update-title;
+    in property <string> update-help;
+    in property <bool> updating;
     in property <string> filter: "ALL";
     in property <string> undo-title: "Undo";
     in property <string> redo-title: "Redo";
@@ -131,13 +135,21 @@ export component Toolbar inherits Surface {
         }
         Spacer { }
         Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }
-        if !Preparing.shown: Word {
+        if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? "export" : "open";
             text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";
             kind: ButtonKind.accent;
             fixed-width: ShellStyle.export-width;
             help: Bar.editing ? "" : "Add a folder of scans (⌘O) · export stays on ⌘E";
             enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
+        }
+        if !Preparing.shown && Bar.update-title != "": Word {
+            action: "update";
+            text: Bar.updating ? "UPDATING" : Bar.update-title;
+            kind: ButtonKind.update;
+            fixed-width: ShellStyle.export-width;
+            help: Bar.update-help;
+            enabled: !Bar.updating;
         }
     }
 }

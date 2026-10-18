@@ -44,6 +44,9 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls-no-p
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
+# `Updates`: the appcast read, and each archive's EdDSA signature checked before it is kept.
+roxmltree = "0.21"
+ring = "0.17"
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
 tiff = "0.11"
 tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }

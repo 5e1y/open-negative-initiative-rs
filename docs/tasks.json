@@ -530,5 +530,13 @@
     "status": "done",
     "detail": "The console window polling the session's log with Copy and Reveal; What's New's six notes as seals on their headings, read on hover and kept until the app quits, Show What's New Again; the welcome sheet once per edition (welcomeSeen 1.2.1) with Website and Feedback; Report a Bug sealing the log to the maintainers' X25519 key (HKDF-SHA256, ChaCha20-Poly1305, raw deflate, cut from its oldest lines to 58 000 characters) and posting it to the site's /report; Show My Year on Film dark until it exists.",
     "outcome": "oni-app/tests/help.rs over two sessions with an injected reporter (refusal twin); report.rs seals opened by CryptoKit and CryptoKit's opened by Rust (tools/seal_cross.swift, ONI_SEAL_CROSS); ONI_BENCH=console shows the log in the real window."
+  },
+  {
+    "id": 79,
+    "type": "feature",
+    "title": "Updates: the appcast read on its own, the bar's UPDATE key, Check for Updates…, archives verified by EdDSA and only downloaded",
+    "status": "done",
+    "detail": "The feed (SUFeedURL) read at launch and every 43 200 s from SULastCheckTime, off the interface thread through web.rs; its items compared with this build as SUStandardVersionComparator compares them, the newest signed one this system can run offered as UPDATE TO x.y.z in the export slot (orange, outranking export and import); the key and Help > Check for Updates… ask again and end on Sparkle's dialogs (found, up to date, error); Download fetches the archive, checks its length and its sparkle:edSignature against SUPublicEDKey (ring Ed25519), keeps it in Downloads under a free name and shows it in the Finder, never opening or installing it. A development build (no ONI_BUILD stamped) looks only when asked; benches never look. FEEDBACKS opens Report a Bug.",
+    "outcome": "updates.rs unit twins (feed parsing with deltas and the older attribute spelling, version order, a key pair generated in the test with forged, truncated and foreign signatures refused, ONI_RELEASES_DIR verifying every published archive with a one-byte twin); oni-app/tests/updates.rs drives the schedule, the key, the dialogs, a forged then a genuine download and FEEDBACKS through an injected fetcher, never the network."
   }
 ]

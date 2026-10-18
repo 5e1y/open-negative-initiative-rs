@@ -309,6 +309,9 @@ export component MainWindow inherits AppWindow {
         }
         Menu {
             title: "Help";
+            // Slint builds the macOS application menu itself, so the item Swift lays after About is here.
+            MenuItem { title: "Check for Updates…"; activated => { App.menu("check-updates"); } }
+            MenuSeparator { }
             MenuItem { title: "Show Console"; activated => { App.menu("console"); } }
             MenuItem { title: "What's New in ONI 1.1"; activated => { App.menu("welcome"); } }
             MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }

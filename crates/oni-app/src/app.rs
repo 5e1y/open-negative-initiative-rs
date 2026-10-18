@@ -65,9 +65,11 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
+mod updates;
 /// The folder picker `Open Folder…` shows; a check hands its own.
 pub type Picker = Box<dyn Fn() -> Option<PathBuf>>;
 pub use help::Reporter;
+pub use updates::{Fetch, Reveal, Updater};
 
 /// Where a deleted preset file goes: the system's Trash, or a check's own folder.
 pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
@@ -94,6 +96,8 @@ pub struct Options {
     /// `requireRoll`: a frame never measured opens on Prepare the Roll; off as under Swift's probes,
     /// so a check opens bare frames by hand, and on in the app itself.
     pub require_roll: bool,
+    /// The update feed's reader; none looks nowhere, as the checks run.
+    pub updates: Option<Updater>,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -113,6 +117,7 @@ impl Default for Options {
             show_folder: Box::new(system::show_folder),
             computer: oni_library::navigator::Computer::system(),
             require_roll: false,
+            updates: None,
         }
     }
 }
@@ -143,6 +148,7 @@ enum Pending {
     UpdatePreset(oni_settings::Id),
     ResetToDefault(oni_library::roll_membership::ResetReach),
     QuitAnyway,
+    DownloadUpdate,
 }
 
 /// A render on its way to the screen, timed from its ask.
@@ -346,6 +352,7 @@ pub struct State {
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
+    pub(crate) updates: updates::Updates,
 }
 
 impl State {
@@ -743,6 +750,7 @@ impl Shell {
             console: None,
             nav: navigator::Nav::new(options.computer),
             prepare: prepare::Roll::new(options.require_roll),
+            updates: updates::Updates::new(options.updates),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
@@ -768,6 +776,7 @@ impl Shell {
         window.global::<App>().set_gallery(true);
         ctl.publish(true);
         ctl.publish_bar();
+        ctl.start_updates();
         // A phone paired before finds the desktop listening again; nothing pairs until asked.
         if phone::has_trusted(&options.support) {
             ctl.start_phone();
@@ -2800,6 +2809,7 @@ impl Ctl {
             "welcome" => self.open_welcome(),
             "whats-new" => self.show_whats_new_again(),
             "report" => self.open_report(),
+            "check-updates" | "update" => self.check_for_updates(true),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
             a if a.starts_with("medal-") => {
@@ -3019,6 +3029,7 @@ impl Ctl {
         if let Some(store) = self.state.borrow_mut().store.editor() {
             store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
         }
+
         self.followed(&made);
     }
 
@@ -3263,6 +3274,7 @@ impl Ctl {
                 self.state.borrow_mut().quitting = true;
                 let _ = slint::quit_event_loop();
             }
+            Some(Pending::DownloadUpdate) => self.download_update(),
             None => {}
         }
         self.publish_bar();
