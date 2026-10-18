@@ -224,7 +224,8 @@
     "title": "Open an archive as the Swift app does",
     "status": "done",
     "detail": "Open Folder… and the ADD FOLDER key, the folder remembered across launches, the SQLite index as a disposable cache, thumbnails at 320 px in a durable folder named by fingerprint, Read the Folders Again and Recheck Originals.",
-    "outcome": "The app launches on the gallery and opens a folder through the system picker (⌘O), a dropped file opening its folder then itself; the folder is remembered in preferences.json and read behind on its own thread into the SQLite index in the caches, a second read reading no file again; a folder reached through a link (/tmp on macOS) reads on its real path, tested with a symlink on Linux, not yet on the Mac. Thumbnails are 320 px JPEGs at 0.6 named by fingerprint in Thumbnails/, drawn only when absent, read back from the disk latest first, and drawn again 2 s after an edit's sidecar write or the photo's opening. Verified by oni-app/tests/archive.rs (picker, index, preference, files written once, a removed file redrawn alone, the 400 ms write and the 2 s redraw each with a twin) and the library.rs read and link tests, headless on linear TIFFs. Not done: several roots at once, the navigator, the embedded scan shown for an unconverted frame."
+    "outcome": "The app launches on the gallery and opens a folder through the system picker (⌘O), a dropped file opening its folder then itself; the folder is remembered in preferences.json and read behind on its own thread into the SQLite index in the caches, a second read reading no file again; a folder reached through a link (/tmp on macOS) reads on its real path, tested with a symlink on Linux, not yet on the Mac. Thumbnails are 320 px JPEGs at 0.6 named by fingerprint in Thumbnails/, drawn only when absent, read back from the disk latest first, and drawn again 2 s after an edit's sidecar write or the photo's opening. Verified by oni-app/tests/archive.rs (picker, index, preference, files written once, a removed file redrawn alone, the 400 ms write and the 2 s redraw each with a twin) and the library.rs read and link tests, headless on linear TIFFs. Not done: several roots at once, the navigator, the embedded scan shown for an unconverted frame.",
+    "commit": "c72583b"
   },
   {
     "id": 27,
@@ -248,7 +249,8 @@
     "title": "Wire the gestures the core already implements, and the menus as Swift titles them",
     "status": "done",
     "detail": "Copy, paste, paste to roll, framing copy and paste, film type, trash, reset to default, the gallery history; every menu item and shortcut of EditorCommands whose behaviour exists in the core, with Swift's titles, enabled states and undo titles.",
-    "outcome": "The menu bar carries Swift's titles, shortcuts and live rules (EditorScene+Menus.swift), bare keys yielding to a focused field; copy and paste settings, paste to roll with its reach, framing copy and paste on the selection (the open frame fitted), film type, Move to ONI Trash, Reset to Imported State, ⌘K, mirror, the filter cycle, Show the Selected Photo and New Roll from Selection go through the core as one gallery step each, another roll's look asking on the Another Roll sheet, and the gallery's ⌘Z names its step. Verified by oni-app/tests/gestures.rs headless (titles in both modes, Escape then Return on the sheet, undo and redo titles, trash marked never moved, New Roll moved in and walked back, each with a twin). Not done: Restore (no ONI Trash view), Ungroup (no film gesture in the core); items of features absent from this build stay dark."
+    "outcome": "The menu bar carries Swift's titles, shortcuts and live rules (EditorScene+Menus.swift), bare keys yielding to a focused field; copy and paste settings, paste to roll with its reach, framing copy and paste on the selection (the open frame fitted), film type, Move to ONI Trash, Reset to Imported State, ⌘K, mirror, the filter cycle, Show the Selected Photo and New Roll from Selection go through the core as one gallery step each, another roll's look asking on the Another Roll sheet, and the gallery's ⌘Z names its step. Verified by oni-app/tests/gestures.rs headless (titles in both modes, Escape then Return on the sheet, undo and redo titles, trash marked never moved, New Roll moved in and walked back, each with a twin). Not done: Restore (no ONI Trash view), Ungroup (no film gesture in the core); items of features absent from this build stay dark.",
+    "commit": "c72583b"
   },
   {
     "id": 30,
@@ -256,7 +258,8 @@
     "title": "Align the values that differ from Swift",
     "status": "done",
     "detail": "Sidecar write delay 400 ms, a block reset landing on the current mode's rest, Dye Separation reset clearing family and by-hand, the system's double-click interval, the Roll tab block order, straighten re-fitting the crop.",
-    "outcome": "Sidecar write delay 400 ms (Sidecar.writeDelay); a block reset lands on the open frame's own mode rest; Dye Separation reset clears the dose, the family and the hand; a slider's and the brush's double press use the system's double-click interval; the Roll tab lays its blocks in SettingsPane's order, read from the Swift source when present. Verified by store.rs and fields.rs tests with twins and the archive.rs write-delay check. Straighten's re-fit landed with the geometry work (#43), not here."
+    "outcome": "Sidecar write delay 400 ms (Sidecar.writeDelay); a block reset lands on the open frame's own mode rest; Dye Separation reset clears the dose, the family and the hand; a slider's and the brush's double press use the system's double-click interval; the Roll tab lays its blocks in SettingsPane's order, read from the Swift source when present. Verified by store.rs and fields.rs tests with twins and the archive.rs write-delay check. Straighten's re-fit landed with the geometry work (#43), not here.",
+    "commit": "c72583b"
   },
   {
     "id": 31,
