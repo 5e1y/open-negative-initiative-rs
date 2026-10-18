@@ -9,6 +9,8 @@ pub const RAW_DIR: (&str, &str) = ("ONI_RAW_DIR", "/mnt/user-data/uploads/Downlo
 pub const LUMIX_DIR: (&str, &str) = ("ONI_LUMIX_DIR", "/mnt/user-data/uploads/Negs");
 /// The Swift app's `--decode` and `--render` dumps.
 pub const REFERENCE_DIR: (&str, &str) = ("ONI_REFERENCE", "/mnt/user-data/uploads/Downloads/oni-reference");
+/// The Swift app's renders of `oni-pipeline/tests/adversarial/branches.json`, by `scripts/adversarial-dump.sh`.
+pub const ADVERSARIAL_DIR: (&str, &str) = ("ONI_ADVERSARIAL", "/mnt/user-data/uploads/Documents/oni-adversarial");
 
 /// The folder `variable` names, else `default`, whether or not it exists.
 pub fn folder((variable, default): (&str, &str)) -> PathBuf {

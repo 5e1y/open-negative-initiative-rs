@@ -154,12 +154,16 @@ A value said "same" was compared literally against the Swift declaration. A mode
 
 ## Pipeline branches and the Swift comparison
 
-The only test comparing a Rust render with a Swift render is
-`oni-pipeline/tests/roll8.rs::roll8_lands_on_the_swift_render` (two frames by default, every frame with
-`ONI_FULL_ROLL=1`, mean 2e-3, p99 1e-2), plus `oni-ui-poc/tests/reference.rs` on one frame. Both start
-from `per_pixel_only()`, which zeroes sharpening, turns chroma denoise off and rests texture. Every
-other numeric test compares a GPU kernel with its own CPU reference, or a crate with lcms2, never with
-Swift. "Compared" below means a roll #8 sidecar moves that branch away from rest inside the Swift test.
+Two tests compare a Rust render with a Swift render, both fed the Swift decode, mean 2e-3, p99 1e-2.
+`oni-pipeline/tests/roll8.rs::roll8_lands_on_the_swift_render` runs roll #8's own sidecars (two frames
+by default, every frame with `ONI_FULL_ROLL=1`), per pixel only. `oni-pipeline/tests/adversarial.rs`
+runs the settings of `oni-pipeline/tests/adversarial/branches.json` on DSC_6440.NEF and P1072392.RW2,
+each branch also asserted to move Swift's render off the frame at rest (p99 5e-3), so settings that
+reach nothing fail. Its dumps come from `scripts/adversarial-dump.sh` into `ONI_ADVERSARIAL`: the app's
+`--render` for per-pixel branches, and for sharpening, chroma denoise and texture a build of a copy of
+the Swift sources whose `--render` keeps them under `ONI_RENDER_WHOLE`. The crop is quantised on
+Swift's grid, ImageIO's width of the RAW, which LibRaw's need not match. "Compared" below means one of
+these two tests moves that branch.
 
 | Branch | Swift | Rust | Compared to Swift | GPU vs CPU check |
 |---|---|---|---|---|
@@ -173,32 +177,29 @@ Swift. "Compared" below means a roll #8 sidecar moves that branch away from rest
 | Chroma decompression 0.5 | `Pipeline/ChromaDecompression.swift` | `conversion.rs:104` | yes | `oni-render/tests/stage47.rs::measured` |
 | Kodak C-41 separation at 0.6 | `Pipeline/Separation.swift` | `conversion.rs:36` | yes | `oni-render/tests/stage47.rs::measured` |
 | Scanner Finish contrast | `Pipeline/ScannerFinish.swift` | `oni-pipeline` | yes | `oni-render/tests/kernels.rs::scanner` |
-| Lighting shadows | `Pipeline/Print.swift:72` | `oni-settings/src/tone.rs` | no | `oni-render/tests/stage47.rs::measured` |
-| Other dye families: Fuji, generic, ECN-2, E-6 | `Pipeline/Separation.swift:48` | `conversion.rs:36` | no | `oni-pipeline/tests/stages.rs::every_family_renders_finite_and_a_region_is_the_cut_of_the_whole` |
-| Positive (slide) mode | `Pipeline/ConversionMode.swift` | `oni-pipeline` | no | `oni-app/src/render.rs::the_engine_inverts_a_negative_and_keeps_a_positive_in_order` |
-| Monochrome mode, its ranges | `Pipeline/Print.swift:195-196` | `oni-pipeline` | no | `oni-pipeline/src/conversion.rs::a_monochrome_frame_carries_no_hunt_density_or_unmix` |
-| Balance strength off its rest | `Pipeline/FilterBalance.swift` | `oni-core/src/balance.rs` | no | none |
-| Density ceiling off the mosaic rest | `Pipeline/DensityAxis.swift` | `oni-settings/src/axis.rs` | no | `oni-render/tests/stage47.rs::measured` |
-| Manual curves | `Pipeline/Curves.swift` | `oni-pipeline/src/finishing.rs:12` | no | `oni-render/tests/kernels.rs::curves` |
-| Spectrogram | `Pipeline/Spectrogram.swift` | `finishing.rs:118` | no | `oni-render/tests/kernels.rs::spectrogram` |
-| Saturation curve | `Pipeline/SaturationCurve.swift` | `finishing.rs:39` | no | `oni-render/tests/kernels.rs::saturation_curve` |
-| Chrome (secret sauce) | `Pipeline/SaturationCurve.swift:82` | `finishing.rs:59` | no | `oni-render/tests/kernels.rs::saturation_curve` |
-| Vignette, Scanner Finish vignette and chrome | `Pipeline/Vignette.swift`, `ScannerFinish.swift` | `oni-pipeline` | no | `oni-render/tests/kernels.rs::vignette` |
-| Texture | `Pipeline/Texture.swift` | `finishing.rs:150` | no | `oni-render/tests/kernels.rs::texture` |
-| Sharpening | `Pipeline/Sharpen.swift` | `finishing.rs:134` | no | `oni-render/tests/kernels.rs::detail` |
-| Chroma denoise | `Pipeline/ChromaDenoise.swift` | `finishing.rs:134` | no | `oni-render/tests/kernels.rs::detail` |
-| Flat-field (shipped mask) | `Pipeline/FlatField.swift` | `oni-pipeline/src/flat_field.rs` | no | `oni-render/tests/kernels.rs::flat_field` |
+| Lighting shadows | `Pipeline/Print.swift:72` | `oni-settings/src/tone.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/stage47.rs::measured` |
+| Other dye families: Fuji, generic, ECN-2, E-6 | `Pipeline/Separation.swift:48` | `conversion.rs:36` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::every_family_renders_finite_and_a_region_is_the_cut_of_the_whole` |
+| Positive (slide) mode | `Pipeline/ConversionMode.swift` | `oni-pipeline` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-app/src/render.rs::the_engine_inverts_a_negative_and_keeps_a_positive_in_order` |
+| Monochrome mode, its ranges | `Pipeline/Print.swift:195-196` | `oni-pipeline` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/src/conversion.rs::a_monochrome_frame_carries_no_hunt_density_or_unmix` |
+| Balance strength off its rest | `Pipeline/FilterBalance.swift` | `oni-core/src/balance.rs` | n/a: a dose written into the filters, which `print-channels` compares | none |
+| Density ceiling off the mosaic rest | `Pipeline/DensityAxis.swift` | `oni-settings/src/axis.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/stage47.rs::measured` |
+| Manual curves | `Pipeline/Curves.swift` | `oni-pipeline/src/finishing.rs:12` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::curves` |
+| Spectrogram | `Pipeline/Spectrogram.swift` | `finishing.rs:118` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::spectrogram` |
+| Saturation curve | `Pipeline/SaturationCurve.swift` | `finishing.rs:39` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::saturation_curve` |
+| Chrome (secret sauce) | `Pipeline/SaturationCurve.swift:82` | `finishing.rs:59` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::saturation_curve` |
+| Vignette, Scanner Finish vignette and chrome | `Pipeline/Vignette.swift`, `ScannerFinish.swift` | `oni-pipeline` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::vignette` |
+| Texture | `Pipeline/Texture.swift` | `finishing.rs:150` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::texture` |
+| Sharpening | `Pipeline/Sharpen.swift` | `finishing.rs:134` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::detail` |
+| Chroma denoise | `Pipeline/ChromaDenoise.swift` | `finishing.rs:134` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::detail` |
+| Flat-field (shipped mask) | `Pipeline/FlatField.swift` | `oni-pipeline/src/flat_field.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::flat_field` |
 | Dust corrections | `Pipeline/Corrections.swift` | `oni-pipeline/src/corrections.rs` | no | `oni-render/tests/kernels.rs::correction_search` |
-| Geometry: crop, quarter turns, mirror, angle | `Pipeline/Geometry.swift` | `oni-pipeline/src/geometry.rs` | no | `oni-pipeline/tests/stages.rs::rotation_turns_and_strokes_match` |
+| Geometry: crop, quarter turns, mirror, angle | `Pipeline/Geometry.swift` | `oni-pipeline/src/geometry.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::rotation_turns_and_strokes_match` |
 | RGB passes | `Pipeline/RGBPasses.swift` | `oni-pipeline` | no | `oni-render/tests/kernels.rs::rgb_passes` |
 | Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs` | no | none |
 | Source encoding | `Pipeline/SourceEncoding.swift` | none | no | none |
-| Paper correction | `Pipeline/PaperCorrection.swift` | `oni-colour/src/paper.rs` | no | none |
+| Paper correction | `Pipeline/PaperCorrection.swift` | `oni-colour/src/paper.rs` | n/a: laid only on an export into a paper profile | none |
 | Contact-sheet ground | `Pipeline/ContactSheet.swift` | none | no | none |
 | Proof, ICC export legs | `Pipeline/Proof.swift`, `OutputProfile.swift` | `oni-colour` | no | lcms2 oracle in `oni-colour/tests/oracle*.rs` |
 
-Adversarial settings for a second Swift dump, one frame each, would reach every "no" row that has a
-Rust render path: extreme shadows, each dye family, a slide and a monochrome frame, balance strength 0
-and 1, a manual curve with overshoot, every spectrogram band, a saturation curve, Chrome 1.5, vignette
-±2, texture ±, sharpening and chroma at their widest, a flat-field, two corrections, a 3° crop with a
-quarter turn and a mirror, and an RGB triplet.
+Still apart from Swift's own render: dust corrections (their patch is searched per view), RGB passes
+(three files), linear TIFF and DNG decodes, and the export legs.
