@@ -195,14 +195,28 @@ these two tests moves that branch.
 | Sharpening | `Pipeline/Sharpen.swift` | `finishing.rs:134` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::detail` |
 | Chroma denoise | `Pipeline/ChromaDenoise.swift` | `finishing.rs:134` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::detail` |
 | Flat-field (shipped mask) | `Pipeline/FlatField.swift` | `oni-pipeline/src/flat_field.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/kernels.rs::flat_field` |
-| Dust corrections | `Pipeline/Corrections.swift` | `oni-pipeline/src/corrections.rs` | no | `oni-render/tests/kernels.rs::correction_search` |
+| Dust corrections | `Pipeline/Corrections.swift` | `oni-app/src/heal.rs`, `oni-pipeline/src/corrections.rs` | yes, `oni-app/tests/extended.rs` | `oni-render/tests/kernels.rs::correction_search` |
 | Geometry: crop, quarter turns, mirror, angle | `Pipeline/Geometry.swift` | `oni-pipeline/src/geometry.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::rotation_turns_and_strokes_match` |
-| RGB passes | `Pipeline/RGBPasses.swift` | `oni-pipeline` | no | `oni-render/tests/kernels.rs::rgb_passes` |
-| Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs` | no | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
-| Source encoding | `Pipeline/SourceEncoding.swift` | `oni-colour/src/source.rs` | no | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
+| RGB passes | `Pipeline/RGBPasses.swift` | `oni-app/src/render.rs` `composed` | yes, `oni-app/tests/extended.rs` | `oni-render/tests/kernels.rs::rgb_passes` |
+| Linear TIFF and DNG decode | `Pipeline/ContainerRead.swift` | `oni-decode/src/container.rs`, `oni-colour/src/source.rs` | yes, `oni-app/tests/extended.rs` | `oni-decode/tests/swift_checks.rs::a_linear_scan_is_read_through_its_table_and_its_reduction_does_not_alias` |
+| Source encoding | `Pipeline/SourceEncoding.swift` | `oni-colour/src/source.rs` | yes, `oni-app/tests/extended.rs` | `oni-colour/tests/swift_checks.rs::an_undeclared_file_is_read_as_the_hand_says_and_a_profile_as_it_says` |
 | Paper correction | `Pipeline/PaperCorrection.swift` | `oni-colour/src/paper.rs` | n/a: laid only on an export into a paper profile | none |
 | Contact-sheet ground | `Pipeline/ContactSheet.swift` | none | no | none |
-| Proof, ICC export legs | `Pipeline/Proof.swift`, `OutputProfile.swift` | `oni-colour` | no | lcms2 oracle in `oni-colour/tests/oracle*.rs` |
+| Proof, ICC export legs; export files | `Pipeline/Proof.swift`, `OutputProfile.swift`, `Export.swift` | `oni-colour`, `oni-export` | export: yes, `oni-app/tests/extended.rs` | lcms2 oracle in `oni-colour/tests/oracle*.rs` |
 
-Still apart from Swift's own render: dust corrections (their patch is searched per view), RGB passes
-(three files), linear TIFF and DNG decodes, and the export legs.
+`oni-app/tests/extended.rs` reads `ONI_ADVERSARIAL/extended`, written by `scripts/extended-dump.sh`
+through the probe build (`--probe-decode`, `--probe-heal`, `--probe-export`): decodes outside LibRaw
+(a linear DNG held and converted, a 16-bit PNG held, converted and under each chosen encoding, three
+registered RGB passes, plain TIFFs at the preview side), four corrections' patches generated on
+Swift's own source, reduced, placed and feathered, two frames rendered with them, and fifteen
+exports. What it found and the port now follows: `CIAreaAverage` averages the part of a ring inside
+the image; `CILanczosScaleTransform` keeps a partial last pixel at the exact scale, anchored at the
+bottom, clear past the edge; a stroke mask is CoreGraphics' grey coverage read at gamma 2.2; a clear
+pixel stays clear to the file (premultiplied, associated alpha) and shows the canvas's ground; a
+RAW's frame is the maker's crop, `CIRAWFilter`'s 6048 × 4032 of a D750's 6064 × 4040; TIFF writes
+ImageIO's FillOrder, Orientation, ResolutionUnit, SampleFormat and Exif pixel size.
+
+Open: ImageIO's thumbnail filter for a plain file's preview (Catmull-Rom nears it, 0.002 to 0.005);
+`CILanczosScaleTransform` under an eighth (0.0014 on a patch); a one or two pixel stroke's
+antialiasing; the EXIF defaults ImageIO adds to a JPEG, and its encoder's tables (quality 0.85 is
+finer than libjpeg's 85); a reduced contact sheet, whose clear gutters Core Image writes white.

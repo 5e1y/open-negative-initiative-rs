@@ -9,7 +9,7 @@ pub struct Encoded {
     pub height: usize,
     /// The upright file's own size, before any reduction.
     pub full: (usize, usize),
-    /// Row-major RGBA, the file's own code values, alpha 1.
+    /// Row-major RGBA, the file's own code values and its alpha, straight; a file with none reads 1.
     pub pixels: Vec<[f32; 4]>,
     /// The ICC profile the file embeds; `None` names nothing, read as the chosen encoding or sRGB.
     pub icc: Option<Vec<u8>>,
@@ -17,7 +17,8 @@ pub struct Encoded {
 }
 
 /// `plainLinearReduced`'s thumbnail when `longest_side` is given: never past the file's own size,
-/// sampled on its code values as ImageIO reduces before Core Image linearises.
+/// sampled on its code values as ImageIO reduces before Core Image linearises; Catmull-Rom is the
+/// filter nearest ImageIO's, 0.002 to 0.005 off on three scans, where a triangle is 0.002 to 0.006.
 pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
     let reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
     let tiff = reader.format() == Some(ImageFormat::Tiff);
@@ -40,12 +41,12 @@ pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
         let scale = side / w.max(h);
         if scale < 1.0 {
             let (nw, nh) = (((w * scale).round() as u32).max(1), ((h * scale).round() as u32).max(1));
-            image = image.resize_exact(nw, nh, FilterType::Triangle);
+            image = image.resize_exact(nw, nh, FilterType::CatmullRom);
         }
     }
     let rgba = image.into_rgba32f();
     let (width, height) = (rgba.width() as usize, rgba.height() as usize);
-    let pixels = rgba.pixels().map(|p| [p[0], p[1], p[2], 1.0]).collect();
+    let pixels = rgba.pixels().map(|p| [p[0], p[1], p[2], p[3]]).collect();
     Some(Encoded { width, height, full, pixels, icc, grey })
 }
 

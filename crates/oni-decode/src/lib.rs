@@ -25,6 +25,7 @@ struct Decoded {
 unsafe extern "C" {
     fn oni_open(path: *const c_char, exposure_gain: c_float, out: *mut Decoded) -> c_int;
     fn oni_unpack(d: *mut Decoded) -> c_int;
+    fn oni_inset(d: *const Decoded, out: *mut c_int);
     fn oni_process(d: *mut Decoded, mul: *const c_float) -> c_int;
     fn oni_release(d: *mut Decoded);
 }
@@ -244,6 +245,19 @@ fn image_depth(path: &Path) -> Option<usize> {
 
 /// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none, used by the linearity check.
 /// Safe to call from several threads at once: every decode owns its LibRaw instance.
+/// The maker's default crop LibRaw reads, (left, top, width, height) in the visible area; `None`
+/// when the file names none.
+pub fn maker_crop(path: &Path) -> Option<[i32; 4]> {
+    let c_path = CString::new(path.to_string_lossy().as_bytes()).ok()?;
+    let mut s = Session(unsafe { std::mem::zeroed() });
+    if unsafe { oni_open(c_path.as_ptr(), 1.0, &mut s.0) } != 0 {
+        return None;
+    }
+    let mut out = [0 as c_int; 4];
+    unsafe { oni_inset(&s.0, out.as_mut_ptr()) };
+    (out[2] > 0 && out[3] > 0).then_some(out)
+}
+
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
@@ -273,9 +287,15 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
     let d = &s.0;
     let (w, h) = (d.width as usize, d.height as usize);
     let raw = unsafe { std::slice::from_raw_parts(d.pixels, w * h * 3) };
+    // The maker's default crop, the frame `CIRAWFilter` hands out: 6048 × 4032 of a D750's 6064 × 4040,
+    // so a sidecar's fractions fall on the same pixels in either app.
+    let mut inset = [0 as c_int; 4];
+    unsafe { oni_inset(d, inset.as_mut_ptr()) };
+    let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize);
+    let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let m = conv.matrix;
-    let pixels = raw
-        .chunks_exact(3)
+    let pixels = (y0..y0 + h_out)
+        .flat_map(|y| raw[(y * w + x0) * 3..(y * w + x0 + w_out) * 3].chunks_exact(3))
         .map(|p| {
             let cam = [
                 p[0] as f32 / 65535.0,
@@ -293,8 +313,8 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
         );
     }
     Ok(Linear {
-        width: w,
-        height: h,
+        width: w_out,
+        height: h_out,
         pixels,
     })
 }

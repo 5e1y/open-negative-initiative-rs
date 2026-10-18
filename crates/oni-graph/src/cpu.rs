@@ -82,6 +82,35 @@ pub fn lanczos3(t: f32) -> f32 {
     3.0 * x.sin() * (x / 3.0).sin() / (x * x)
 }
 
+/// `AnchoredLanczos` along `axis`, the GPU kernel's arithmetic in f32.
+pub fn lanczos_anchored(input: &Plane, axis: Axis, scale: f64) -> Plane {
+    let e = input.extent;
+    let (origin, from) = if axis == Axis::X { (e.x, e.w) } else { (e.y, e.h) };
+    let stage = crate::stages::AnchoredLanczos { axis, origin, from, scale };
+    let to = stage.to();
+    let extent = if axis == Axis::X { Rect::new(0, e.y, to, e.h) } else { Rect::new(e.x, 0, e.w, to) };
+    let narrow = (scale as f32).min(1.0);
+    let radius = 3.0 / narrow;
+    input.map(extent, |x, y| {
+        let o = if axis == Axis::X { x } else { y };
+        let k = if axis == Axis::Y { to as i32 - 1 - o } else { o } as f32;
+        let up = (k + 0.5) / scale as f32 - 0.5;
+        let centre = origin as f32 + if axis == Axis::Y { from as f32 - 1.0 - up } else { up };
+        let mut sum = [0.0f32; 4];
+        let mut weights = 0.0f32;
+        for i in (centre - radius).ceil() as i32..=(centre + radius).floor() as i32 {
+            let w = lanczos3((i as f32 - centre) * narrow);
+            let held = i >= origin && i < origin + from as i32;
+            let p = if !held { [0.0; 4] } else if axis == Axis::X { input.load(i, y) } else { input.load(x, i) };
+            for c in 0..4 {
+                sum[c] += w * p[c];
+            }
+            weights += w;
+        }
+        sum.map(|s| s / weights)
+    })
+}
+
 /// Lanczos-3 along `axis` to `to` pixels, in f32 and the kernel's own order of operations.
 pub fn lanczos(input: &Plane, axis: Axis, to: u32) -> Plane {
     let e = input.extent;

@@ -4,10 +4,11 @@ mod common;
 
 use std::path::{Path, PathBuf};
 
-/// `CIRAWFilter`'s frame inside LibRaw's, by LibRaw size, measured by correlating the two decodes.
+/// `CIRAWFilter`'s frame inside the decode, which the maker's crop already cuts to its size, by
+/// size, measured by correlating the two decodes.
 const CROPS: &[((usize, usize), [usize; 4])] = &[
-    ((6064, 4040), [8, 4, 6048, 4030]),
-    ((8392, 5620), [14, 20, 8364, 5587]),
+    ((6048, 4032), [0, 0, 6048, 4030]),
+    ((8368, 5584), [2, 0, 8364, 5584]),
 ];
 
 /// Luminance within 0.1 stop; a channel within 0.4, the gap two camera profiles leave on a negative.

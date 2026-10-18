@@ -4114,6 +4114,7 @@ version = "0.1.0"
 dependencies = [
  "arboard",
  "bytemuck",
+ "image",
  "jpeg-decoder",
  "jpeg-encoder",
  "objc2-app-kit 0.3.2",
@@ -4127,6 +4128,7 @@ dependencies = [
  "oni-library",
  "oni-link",
  "oni-pipeline",
+ "oni-render",
  "oni-settings",
  "png",
  "pollster",

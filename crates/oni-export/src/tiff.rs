@@ -10,6 +10,9 @@ use oni_colour::Quantised;
 use crate::ifd::{Directory, Value};
 use crate::metadata::tag;
 
+const PIXEL_X_DIMENSION: u16 = 40962;
+const PIXEL_Y_DIMENSION: u16 = 40963;
+
 pub mod tags {
     pub const IMAGE_WIDTH: u16 = 256;
     pub const IMAGE_LENGTH: u16 = 257;
@@ -21,6 +24,10 @@ pub mod tags {
     pub const ROWS_PER_STRIP: u16 = 278;
     pub const STRIP_BYTE_COUNTS: u16 = 279;
     pub const PLANAR_CONFIGURATION: u16 = 284;
+    pub const FILL_ORDER: u16 = 266;
+    pub const ORIENTATION: u16 = 274;
+    pub const RESOLUTION_UNIT: u16 = 296;
+    pub const SAMPLE_FORMAT: u16 = 339;
     pub const EXTRA_SAMPLES: u16 = 338;
     pub const ICC_PROFILE: u16 = 34675;
 }
@@ -74,8 +81,21 @@ pub fn encoded(
     ifd.set(tags::ROWS_PER_STRIP, Value::Long(vec![rows_per_strip as u32]));
     ifd.set(tags::STRIP_BYTE_COUNTS, Value::Long(laid.iter().map(|s| s.len() as u32).collect()));
     ifd.set(tags::PLANAR_CONFIGURATION, Value::Short(vec![1]));
-    ifd.set(tags::EXTRA_SAMPLES, Value::Short(vec![2]));
+    // What ImageIO states of every TIFF it writes: bits high first, upright, inches, unsigned samples.
+    ifd.set(tags::FILL_ORDER, Value::Short(vec![1]));
+    ifd.set(tags::ORIENTATION, Value::Short(vec![1]));
+    ifd.set(tags::RESOLUTION_UNIT, Value::Short(vec![2]));
+    ifd.set(tags::SAMPLE_FORMAT, Value::Short(vec![1; 4]));
+    // Associated alpha: the colours are premultiplied, as ImageIO writes Core Image's render.
+    ifd.set(tags::EXTRA_SAMPLES, Value::Short(vec![1]));
     ifd.set(tags::ICC_PROFILE, Value::Undefined(icc.to_vec()));
+    // ImageIO states the picture's size in every Exif directory it writes.
+    let mut exif = exif.clone();
+    if !exif.is_empty() {
+        exif.set(PIXEL_X_DIMENSION, Value::Long(vec![width as u32]));
+        exif.set(PIXEL_Y_DIMENSION, Value::Long(vec![height as u32]));
+    }
+    let exif = &exif;
     let exif_at = at + placeholder_len(&ifd, exif);
     if !exif.is_empty() {
         ifd.set(tag::EXIF_IFD, Value::Long(vec![u32::try_from(exif_at).ok()?]));

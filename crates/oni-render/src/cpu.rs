@@ -845,7 +845,8 @@ pub fn stroke_mask(points: &[[f32; 2]], out: (i32, i32, usize, usize), radius: f
         for pair in points.windows(2) {
             d = d.min(segment(c, pair[0], pair[1]));
         }
-        let v = clamp(radius + 0.5 - d, 0.0, 1.0);
+        // The grey bitmap's coverage linearised, gamma 2.2, as Core Image reads Swift's.
+        let v = clamp(radius + 0.5 - d, 0.0, 1.0).powf(2.2);
         [v, v, v, 1.0]
     })
 }

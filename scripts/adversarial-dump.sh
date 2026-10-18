@@ -2,7 +2,7 @@
 # Renders the adversarial settings of crates/oni-pipeline/tests/adversarial/branches.json through the
 # Swift app's own `--render`, on clones of a roll #8 frame and a Lumix frame, into $1 (ONI_ADVERSARIAL).
 # Branches marked `whole` keep the neighbourhood stages, which `--render` drops: they need a build of
-# a copy of the Swift sources whose `--render` honours ONI_RENDER_WHOLE (ONI_SWIFT_WHOLE_BIN).
+# a copy of the Swift sources, `scripts/swift-probe/build.sh`, whose `--render` honours ONI_RENDER_WHOLE.
 # The originals are read, never written; the Swift build is run, never rebuilt.
 set -e
 OUT="${1:?usage: adversarial-dump.sh <output folder>}"

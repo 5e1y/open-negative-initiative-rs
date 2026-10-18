@@ -12,13 +12,18 @@ pub struct Region {
     pub width: usize,
     pub height: usize,
     pub pixels: Vec<[f32; 4]>,
-    /// The framed frame's own height, which turns a row down into Core Image's y up.
+    /// The framed frame's own size; its height turns a row down into Core Image's y up.
+    pub frame_width: f64,
     pub frame_height: f64,
 }
 
 impl Region {
-    /// The pixel whose centre-anchored square holds `(x, y)`, y up, edge-clamped inside the region.
+    /// The pixel whose centre-anchored square holds `(x, y)`, y up, edge-clamped inside the region;
+    /// past the frame it is clear, as Core Image reads an image beyond its extent.
     fn texel(&self, col: i64, row_up: i64) -> [f32; 4] {
+        if col < 0 || row_up < 0 || col as f64 >= self.frame_width || row_up as f64 >= self.frame_height {
+            return [0.0; 4];
+        }
         let row_down = self.frame_height as i64 - 1 - row_up;
         let c = (col - self.x).clamp(0, self.width as i64 - 1) as usize;
         let r = (row_down - self.y).clamp(0, self.height as i64 - 1) as usize;
@@ -38,8 +43,10 @@ impl Region {
         std::array::from_fn(|k| (a[k] * (1.0 - fx) + b[k] * fx) * (1.0 - fy) + (c[k] * (1.0 - fx) + d[k] * fx) * fy)
     }
 
-    /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it.
+    /// `CIAreaAverage` over a rectangle, y up: the pixels whose centres fall inside it and inside the
+    /// frame, so a ring past the edge reads the frame's part alone; zeros there moved a patch by 0.017.
     fn mean(&self, r: Rect) -> Option<[f32; 3]> {
+        let r = r.intersection(Rect { x: 0.0, y: 0.0, w: self.frame_width, h: self.frame_height });
         let (x0, x1) = ((r.x - 0.5).ceil() as i64, (r.x + r.w - 0.5).floor() as i64);
         let (y0, y1) = ((r.y - 0.5).ceil() as i64, (r.y + r.h - 0.5).floor() as i64);
         if x1 < x0 || y1 < y0 {
@@ -397,7 +404,7 @@ mod tests {
                 pixels[y * w + x] = [0.02, 0.02, 0.02, 1.0];
             }
         }
-        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_height: h as f64 };
+        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
         let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0 };
         let (dx, dy) = best_offset(&src, &c, w as f64, h as f64);
         // The offset is y up: a block lower on the frame (y down + 168) is 168 under, −168 up.
@@ -416,7 +423,7 @@ mod tests {
         // The right half a step brighter: a copy taken from the left half is lifted by the base.
         let (w, h) = (400usize, 300usize);
         let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| { let v = if i % w >= 200 { 0.5 } else { 0.4 }; [v, v, v, 1.0] }).collect();
-        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_height: h as f64 };
+        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
         let destination = Rect { x: 250.0, y: 100.0, w: 60.0, h: 60.0 };
         let source = Rect { x: 50.0, ..destination };
         let field = tone_field(&src, destination, source, Rect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 });

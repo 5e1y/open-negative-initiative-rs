@@ -78,7 +78,13 @@ pub struct Params {
     pub duty: f32,
     /// 1 stripes what the screen cannot show, 0 leaves the picture alone.
     pub zebra: f32,
+    /// The canvas's ground in working light, under a texel as clear as its alpha says.
+    pub ground: f32,
+    pub pad: [f32; 3],
 }
+
+/// `DS.Palette.canvas`, 27 of 255 in sRGB, as light: what `MetalImageView` composites the picture over.
+pub const GROUND: f32 = 0.010_960_094;
 
 /// Where the zebra is laid: the texture's place on the canvas, in drawable pixels, and the clock.
 #[derive(Clone, Copy, Debug)]
@@ -108,6 +114,8 @@ impl Params {
             period: oni_colour::gamut::PERIOD,
             duty: oni_colour::gamut::DUTY,
             zebra: 0.0,
+            ground: GROUND,
+            pad: [0.0; 3],
         }
     }
 
@@ -164,12 +172,14 @@ fn transfer(v: f32) -> f32 {
 
 /// One pixel as the kernel writes it: a triangular dither of one step, then the nearest of 256 levels.
 pub fn encode_pixel(p: [f32; 4], x: u32, y: u32, k: &Params) -> [u8; 4] {
+    let alpha = p[3].clamp(0.0, 1.0);
     let p = if k.zebra > 0.5 && beyond(p, k) && on_stripe(x, y, k) { k.tint } else { p };
     let h = pcg(x ^ pcg(y ^ pcg(k.seed)));
     let mut out = [0u8, 0, 0, 255];
     for c in 0..3 {
         let r = k.rows[c];
-        let linear = (r[0] * p[0] + r[1] * p[1] + r[2] * p[2]).clamp(0.0, 1.0);
+        // `composited(over:)` the ground, in light; the rows keep a grey grey.
+        let linear = ((r[0] * p[0] + r[1] * p[1] + r[2] * p[2]) * alpha + k.ground * (1.0 - alpha)).clamp(0.0, 1.0);
         let a = pcg(h.wrapping_add(2 * c as u32));
         let b = pcg(h.wrapping_add(2 * c as u32 + 1));
         let d = (unit(a) + unit(b) - 1.0) * k.dither;
@@ -201,6 +211,10 @@ struct Params {
     period: f32,
     duty: f32,
     zebra: f32,
+    ground: f32,
+    pad0: f32,
+    pad1: f32,
+    pad2: f32,
 };
 
 @group(0) @binding(0) var<uniform> k: Params;
@@ -226,6 +240,7 @@ fn transfer(v: f32) -> f32 {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= k.width || id.y >= k.height) { return; }
     var p = textureLoad(source, vec2<i32>(i32(id.x), i32(id.y)), 0);
+    let alpha = clamp(p.a, 0.0, 1.0);
     if (k.zebra > 0.5) {
         var beyond = false;
         for (var c = 0u; c < 3u; c++) {
@@ -241,7 +256,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var out = vec4<f32>(0.0, 0.0, 0.0, 1.0);
     for (var c = 0u; c < 3u; c++) {
         let r = k.rows[c];
-        let linear = clamp(r.x * p.x + r.y * p.y + r.z * p.z, 0.0, 1.0);
+        let linear = clamp((r.x * p.x + r.y * p.y + r.z * p.z) * alpha + k.ground * (1.0 - alpha), 0.0, 1.0);
         let d = (unit(pcg(h + 2u * c)) + unit(pcg(h + 2u * c + 1u)) - 1.0) * k.dither;
         // Quantised here, so the texture's own conversion only stores an exact level.
         out[c] = clamp(round(transfer(linear) * 255.0 + d), 0.0, 255.0) / 255.0;

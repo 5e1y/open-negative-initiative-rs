@@ -139,8 +139,13 @@ pub fn converted(image: &Image, export: &Settings) -> Result<Rendered, Failure> 
             let mut sixteen = Vec::new();
             for band in image.pixels.chunks(oni_colour::legs::BAND * w * 4) {
                 let mut encoded = space.encoded(band).ok_or(Failure::Render)?;
-                for p in encoded.chunks_exact_mut(4) {
-                    p[3] = 1.0;
+                // Premultiplied, as Core Image renders: a clear pixel, a contact sheet's gutter, writes black.
+                for (p, s) in encoded.chunks_exact_mut(4).zip(band.chunks_exact(4)) {
+                    let a = s[3].clamp(0.0, 1.0);
+                    for v in &mut p[..3] {
+                        *v *= a;
+                    }
+                    p[3] = a;
                 }
                 let quantised = encoded.iter().map(|v| (v.clamp(0.0, 1.0) * scale).round());
                 if bits == 16 {

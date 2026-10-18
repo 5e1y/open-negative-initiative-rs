@@ -75,3 +75,13 @@ int oni_process(oni_decoded *d, const float mul[3])
     d->image = img;
     return 0;
 }
+
+// The maker's default crop inside the visible area, as LibRaw reads it; zero sizes when none.
+void oni_inset(const oni_decoded *d, int out[4])
+{
+    const libraw_raw_inset_crop_t *c = &d->raw->sizes.raw_inset_crops[0];
+    out[0] = c->cleft;
+    out[1] = c->ctop;
+    out[2] = c->cwidth;
+    out[3] = c->cheight;
+}

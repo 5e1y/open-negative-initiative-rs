@@ -376,3 +376,32 @@ fn graphs_on_a_shared_device_render_as_their_own() {
     let other = Image::new(&s).then(Gain([1.31, 0.8, 1.1, 1.0])).then(BoxBlur3).then(Crop(Rect::new(17, 9, 251, 177))).then(BoxBlur3).lanczos(0.37);
     assert_ne!(a.render(&other, other.extent(), None).expect("twin render"), reference);
 }
+
+#[test]
+fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
+    let Some(mut g) = graph("the_anchored_reduction_is_core_image_s_and_its_reference_s") else { return };
+    let (s, pixels) = source(&mut g, 3);
+    let plane = Plane::new(s.extent(), pixels);
+    let scale = 0.1653;
+    let image = Image::new(&s).lanczos_anchored(scale);
+    // 300 × 0.1653 = 49.59 and 200 × 0.1653 = 33.06: the partial pixel is kept, not rounded away.
+    assert_eq!(image.extent(), Rect::new(0, 0, 50, 34));
+    let gpu = g.render(&image, image.extent(), None).expect("render");
+    let reference = cpu::lanczos_anchored(&cpu::lanczos_anchored(&plane, Axis::X, scale), Axis::Y, scale);
+    let e = error(&gpu, &reference.pixels);
+    println!("anchored Lanczos against its reference: {e:.2e}");
+    assert!(e < TOLERANCE, "anchored Lanczos error {e}");
+    for region in regions(image.extent()).into_iter().filter(|r| image.extent().contains(r)) {
+        let part = g.render(&image, region, None).expect("region render");
+        assert_eq!(part, cut(&gpu, image.extent(), region), "{region:?} differs from the full render");
+    }
+    // The top row holds a sixth of a pixel of picture: it fades towards clear, as Core Image's does.
+    let ones = g.upload(W, H, &vec![[1.0; 4]; (W * H) as usize]).expect("upload");
+    let flat = g.render(&Image::new(&ones).lanczos_anchored(scale), image.extent(), None).expect("render");
+    assert!(flat[10][3] < 0.2 && (flat[16 * 50 + 10][3] - 1.0).abs() < 1e-4, "{:?} {:?}", flat[10], flat[16 * 50 + 10]);
+    // Twin: anchored at the top instead, the rows land a fraction of a pixel away.
+    let flipped = Plane::new(plane.extent, (0..200).rev().flat_map(|y| plane.pixels[y * 300..(y + 1) * 300].to_vec()).collect());
+    let top = cpu::lanczos_anchored(&cpu::lanczos_anchored(&flipped, Axis::X, scale), Axis::Y, scale);
+    let top: Vec<[f32; 4]> = (0..34).rev().flat_map(|y| top.pixels[y * 50..(y + 1) * 50].to_vec()).collect();
+    assert!(error(&gpu, &top) > 1e-2, "the anchor went unseen");
+}

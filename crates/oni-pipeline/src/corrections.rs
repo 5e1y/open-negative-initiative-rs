@@ -61,7 +61,8 @@ pub fn patch_rect(c: &Correction, extent: Area) -> Area {
 }
 
 /// Where a patch of `size` full-resolution pixels lands on `framed` at `scale`: a patch cut to the
-/// tile goes on the tile, any other on its patch rectangle; a reduced one on a whole-pixel origin.
+/// tile goes on the tile, any other on its patch rectangle; a reduced one keeps its partial last
+/// pixel, `CILanczosScaleTransform`'s, on an origin rounded in Core Image's y, which counts up.
 pub fn placed(c: &Correction, size: (u32, u32), framed: Rect, scale: f64) -> Rect {
     let full = [f64::from(framed.x) / scale, f64::from(framed.y) / scale, f64::from(framed.w) / scale, f64::from(framed.h) / scale];
     let tile = context_rect(c, full);
@@ -69,8 +70,10 @@ pub fn placed(c: &Correction, size: (u32, u32), framed: Rect, scale: f64) -> Rec
     if scale == 1.0 {
         return Rect::new(at[0] as i32, at[1] as i32, size.0, size.1);
     }
-    let side = |s: u32| ((f64::from(s) * scale).round() as u32).max(1);
-    Rect::new((at[0] * scale).round() as i32, (at[1] * scale).round() as i32, side(size.0), side(size.1))
+    let side = |s: u32| ((f64::from(s) * scale - 1e-9).ceil() as u32).max(1);
+    let (w, h) = (side(size.0), side(size.1));
+    let up = full[1] + full[3] - (at[1] + at[3]);
+    Rect::new((at[0] * scale).round() as i32, framed.y + framed.h as i32 - (up * scale).round() as i32 - h as i32, w, h)
 }
 
 /// The stroke's points on `framed`, in its pixels, as the stroke mask's input row.

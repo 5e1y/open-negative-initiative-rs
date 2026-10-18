@@ -17,6 +17,7 @@ fn stroke_mask_px(p: vec2<i32>) -> vec4<f32> {
     for (var i = 1; i < n; i++) {
         d = min(d, segment_distance(c, load(vec2<i32>(i - 1, 0)).xy, load(vec2<i32>(i, 0)).xy));
     }
-    let v = clamp(P.radius_count.x + 0.5 - d, 0.0, 1.0);
+    // The coverage as Core Image reads Swift's 8-bit grey bitmap: gamma 2.2, linearised.
+    let v = pow(clamp(P.radius_count.x + 0.5 - d, 0.0, 1.0), 2.2);
     return vec4<f32>(v, v, v, 1.0);
 }

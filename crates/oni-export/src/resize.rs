@@ -95,8 +95,27 @@ fn taps(output: usize, scale: f64) -> Vec<Taps> {
 
 /// Applied last, after sharpening: scaling first would double the unsharp mask's effective
 /// radius in the produced file.
+/// Premultiplied while resampled, as Core Image resamples: a clear pixel, whatever colour the
+/// chain gave it, lends a neighbour nothing.
 pub fn resized(image: &Image, scale: f64) -> Image {
-    resampled(image, scale, Border::Clamped)
+    if scale.is_nan() || scale >= 1.0 {
+        return image.clone();
+    }
+    let mut premultiplied = image.clone();
+    for p in premultiplied.pixels.chunks_exact_mut(4) {
+        let a = p[3].clamp(0.0, 1.0);
+        for v in &mut p[..3] {
+            *v *= a;
+        }
+    }
+    let mut out = resampled(&premultiplied, scale, Border::Clamped);
+    for p in out.pixels.chunks_exact_mut(4) {
+        let a = p[3];
+        for v in &mut p[..3] {
+            *v = if a > 1e-6 { *v / a } else { 0.0 };
+        }
+    }
+    out
 }
 
 /// The frame on the uniform `scale`, cropped to the rounded size the sheet announced; output

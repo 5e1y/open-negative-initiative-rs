@@ -35,22 +35,32 @@ pub struct Decoded {
 }
 
 /// How a frame's sidecar asks a file outside the RAW engine to be read.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Reading {
     /// Its windows were measured on its channels converted to the working primaries.
     pub primaries_converted: bool,
     /// The encoding the hand chose for a file naming no profile.
     pub source_encoding: Option<oni_settings::SourceEncoding>,
+    /// The three passes a lead names, decoded and laid as one frame.
+    pub passes: Option<oni_settings::frame::RgbPasses>,
 }
 
 impl Reading {
     pub fn of(s: &oni_settings::PipelineSettings) -> Reading {
-        Reading { primaries_converted: s.primaries_converted, source_encoding: s.source_encoding }
+        Reading { primaries_converted: s.primaries_converted, source_encoding: s.source_encoding, passes: s.rgb_passes.clone() }
+    }
+}
+
+/// `RawDecode.linear` on its preview: a lead's three passes composed, any other file alone.
+pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
+    match reading.passes.clone() {
+        Some(passes) => composed(path, &passes, |p| alone(p, reading.clone())),
+        None => alone(path, reading),
     }
 }
 
 /// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it.
-pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
+fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
         oni_decode::Branch::Mosaic => {
             let d = oni_decode::decode(path, 1.0).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
@@ -67,11 +77,67 @@ pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
 
 /// The frame's own pixels, unreduced: what a zoom past the preview reads.
 pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
-    match oni_decode::route(path) {
-        oni_decode::Branch::LinearRgb => linear_scan(path, None, reading, 0),
-        oni_decode::Branch::Plain => plain(path, None, reading),
-        oni_decode::Branch::Mosaic => decode(path, reading),
+    let one = |p: &Path, r: Reading| match oni_decode::route(p) {
+        oni_decode::Branch::LinearRgb => linear_scan(p, None, r, 0),
+        oni_decode::Branch::Plain => plain(p, None, r),
+        oni_decode::Branch::Mosaic => alone(p, r),
+    };
+    match reading.passes.clone() {
+        Some(passes) => composed(path, &passes, |p| one(p, reading.clone())),
+        None => one(path, reading),
     }
+}
+
+/// `RGBPasses.composed`: red from the red pass, green from the green, blue from the blue, on the
+/// green pass's extent, the red and blue laid by their registration; a missing pass fails the frame.
+fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl Fn(&Path) -> Result<Decoded, String>) -> Result<Decoded, String> {
+    let beside = |name: &str| lead.parent().map_or_else(|| PathBuf::from(name), |f| f.join(name));
+    let green = decode(&beside(&passes.green)).map_err(|e| format!("its green pass: {e}"))?;
+    let red = decode(&beside(&passes.red)).map_err(|e| format!("its red pass: {e}"))?;
+    let blue = decode(&beside(&passes.blue)).map_err(|e| format!("its blue pass: {e}"))?;
+    let fits = passes.registration.clone().unwrap_or_default();
+    let (w, h) = (green.linear.width, green.linear.height);
+    let r = laid(&red.linear, &fits.red, w, h, 0);
+    let b = laid(&blue.linear, &fits.blue, w, h, 2);
+    let pixels = green.linear.pixels.iter().enumerate().map(|(i, g)| [r[i], g[1], b[i], 1.0]).collect();
+    Ok(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: green.full_width })
+}
+
+/// One channel of a pass on a `w` × `h` frame through its fit, sampled bilinearly with the pass's
+/// edge held past it, as `clampedToExtent().transformed(by:)` reads it; y up as Core Image counts.
+fn laid(pass: &Linear, fit: &oni_settings::frame::Fit, w: usize, h: usize, channel: usize) -> Vec<f32> {
+    let identity = *fit == oni_settings::frame::Fit::default();
+    if identity && (pass.width, pass.height) == (w, h) {
+        return pass.pixels.iter().map(|p| p[channel]).collect();
+    }
+    let (fw, fh) = (w as f64, h as f64);
+    let (mx, my) = (fw / 2.0, fh / 2.0);
+    let (cs, sn) = (fit.rotation.cos() * fit.scale, fit.rotation.sin() * fit.scale);
+    let (a, b, c, d) = (cs, sn, -sn, cs);
+    let tx = mx - (a * mx + c * my) + fit.dx * fw;
+    let ty = my - (b * mx + d * my) + fit.dy * fw;
+    let det = a * d - b * c;
+    let texel = |x: i64, y_up: i64| -> f32 {
+        let col = x.clamp(0, pass.width as i64 - 1) as usize;
+        let row = (pass.height as i64 - 1 - y_up).clamp(0, pass.height as i64 - 1) as usize;
+        pass.pixels[row * pass.width + col][channel]
+    };
+    let mut out = Vec::with_capacity(w * h);
+    for row in 0..h {
+        let oy = fh - row as f64 - 0.5;
+        for col in 0..w {
+            let (px, py) = (col as f64 + 0.5 - tx, oy - ty);
+            // The fit's inverse: where in the pass this output point was taken from.
+            let (ix, iy) = ((d * px - c * py) / det - 0.5, (-b * px + a * py) / det - 0.5);
+            let (x0, y0) = (ix.floor(), iy.floor());
+            let (fx, fy) = ((ix - x0) as f32, (iy - y0) as f32);
+            let (x0, y0) = (x0 as i64, y0 as i64);
+            let top = texel(x0, y0) * (1.0 - fx) + texel(x0 + 1, y0) * fx;
+            let up = texel(x0, y0 + 1) * (1.0 - fx) + texel(x0 + 1, y0 + 1) * fx;
+            out.push(top * (1.0 - fy) + up * fy);
+        }
+    }
+    out
 }
 
 /// The container's own channels, or converted from its ColorMatrix1 when the windows were measured
@@ -414,7 +480,7 @@ impl Engine {
         let region = Rect::new(e.x + win[0] as i32, e.y + win[1] as i32, win[2] as u32, win[3] as u32);
         let pixels = self.graph.render(&framed, region, None).map_err(|e| e.to_string())?;
         self.graph.purge();
-        let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_height: size.1 };
+        let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_width: size.0, frame_height: size.1 };
         Ok((r, size))
     }
 
@@ -781,6 +847,24 @@ mod tests {
     use super::*;
     use std::sync::mpsc;
     use std::time::Duration;
+
+    #[test]
+    fn three_passes_give_each_its_own_channel_and_a_registration_moves_its_pass() {
+        let (w, h) = (8usize, 4usize);
+        // Each pass lit only at one column, every channel alike, as a narrowband pass is not.
+        let pass = |col: usize, v: f32| Linear { width: w, height: h, pixels: (0..w * h).map(|i| if i % w == col { [v, v, v, 1.0] } else { [0.0, 0.0, 0.0, 1.0] }).collect() };
+        let fit = oni_settings::frame::Fit::default();
+        let red = laid(&pass(3, 0.5), &fit, w, h, 0);
+        assert_eq!(red[3], 0.5, "identity: the red pass's own column");
+        // Two pixels right, as a fraction of the frame's width.
+        let shifted = oni_settings::frame::Fit { dx: 2.0 / w as f64, ..fit };
+        let moved = laid(&pass(3, 0.5), &shifted, w, h, 0);
+        assert!((moved[5] - 0.5).abs() < 1e-6 && moved[3].abs() < 1e-6, "{moved:?}");
+        // Twin: dy moves along the rows, y up: one pixel up is the row above.
+        let up = oni_settings::frame::Fit { dy: 1.0 / w as f64, ..fit };
+        let rows = laid(&Linear { width: w, height: h, pixels: (0..w * h).map(|i| if i / w == 2 { [1.0; 4] } else { [0.0, 0.0, 0.0, 1.0] }).collect() }, &up, w, h, 0);
+        assert!((rows[w] - 1.0).abs() < 1e-6 && rows[2 * w].abs() < 1e-6, "{rows:?}");
+    }
 
     #[test]
     fn a_plain_image_opens_linearised_on_its_own_primaries_and_reduced_to_the_preview() {

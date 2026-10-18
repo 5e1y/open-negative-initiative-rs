@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use wgpu::util::DeviceExt;
 
 use crate::stage::{AuxFrame, Frame, MAX_AUX, PRELUDE, aux_prelude};
-use crate::stages::{Axis, Lanczos};
+use crate::stages::{AnchoredLanczos, Axis, Lanczos};
 use crate::texture::{BYTES_PER_PIXEL, FloatTexture, Pool};
 use crate::{Rect, Stage};
 
@@ -130,6 +130,14 @@ impl Image {
         let side = |s: u32| ((s as f64 * scale).round() as u32).max(1);
         self.then(Lanczos { axis: Axis::X, origin: e.x, from: e.w, to: side(e.w) })
             .then(Lanczos { axis: Axis::Y, origin: e.y, from: e.h, to: side(e.h) })
+    }
+
+    /// `CILanczosScaleTransform` by `scale`: see `AnchoredLanczos`; the result starts at 0.
+    pub fn lanczos_anchored(self, scale: f64) -> Self {
+        assert!(scale.is_finite() && scale > 0.0, "Lanczos scale {scale}");
+        let e = self.extent();
+        self.then(AnchoredLanczos { axis: Axis::X, origin: e.x, from: e.w, scale })
+            .then(AnchoredLanczos { axis: Axis::Y, origin: e.y, from: e.h, scale })
     }
 
     pub fn extent(&self) -> Rect {
