@@ -25,6 +25,11 @@ pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
     platform::pick_files(message, extensions)
 }
 
+/// `NSOpenPanel` for one file with one of `extensions`; `None` when the hand cancels.
+pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
+    platform::pick_file(message, extensions)
+}
+
 /// `NSSavePanel` opened on `suggested_name`, limited to `extensions`; `None` when the hand cancels.
 pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
     platform::save_file(message, suggested_name, extensions)
@@ -33,6 +38,11 @@ pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Op
 /// Opens the Finder or the Explorer with `path` selected, as Show in Finder does.
 pub fn reveal(path: &Path) {
     platform::reveal(path);
+}
+
+/// Opens a folder in the Finder or the Explorer, as `NSWorkspace.open` does.
+pub fn show_folder(path: &Path) {
+    platform::open_url(&path.to_string_lossy());
 }
 
 /// Opens a web page in the person's browser, as `NSWorkspace.open` does.
@@ -105,6 +115,10 @@ mod platform {
         dialog(message, extensions).pick_files().unwrap_or_default()
     }
 
+    pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
+        dialog(message, extensions).pick_file()
+    }
+
     pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
         dialog(message, extensions).set_file_name(suggested_name).save_file()
     }
@@ -149,6 +163,10 @@ mod platform {
 
     pub fn pick_files(message: &str, extensions: &[&str]) -> Vec<PathBuf> {
         dialog(message, extensions).pick_files().unwrap_or_default()
+    }
+
+    pub fn pick_file(message: &str, extensions: &[&str]) -> Option<PathBuf> {
+        dialog(message, extensions).pick_file()
     }
 
     pub fn save_file(message: &str, suggested_name: &str, extensions: &[&str]) -> Option<PathBuf> {
@@ -203,6 +221,10 @@ mod platform {
 
     pub fn pick_files(_message: &str, _extensions: &[&str]) -> Vec<PathBuf> {
         Vec::new()
+    }
+
+    pub fn pick_file(_message: &str, _extensions: &[&str]) -> Option<PathBuf> {
+        None
     }
 
     pub fn save_file(_message: &str, _suggested_name: &str, _extensions: &[&str]) -> Option<PathBuf> {

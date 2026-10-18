@@ -4140,6 +4140,7 @@ dependencies = [
  "rustls",
  "serde",
  "serde_json",
+ "sha2 0.11.1",
  "slint",
  "slint-build",
  "tiff",
@@ -4196,6 +4197,7 @@ name = "oni-export"
 version = "0.1.0"
 dependencies = [
  "flate2",
+ "half",
  "image",
  "jpeg-decoder",
  "jpeg-encoder",

@@ -8,6 +8,10 @@ use oni_settings::{Face, PipelineSettings};
 pub trait Store {
     /// Opens a frame on its sidecar, writing the previous one first.
     fn open(&mut self, path: &str) -> Result<(), String>;
+    /// `open`, the settings read adjusted before the history starts on them.
+    fn open_adjusted(&mut self, path: &str, _adjust: &dyn Fn(&mut PipelineSettings)) -> Result<(), String> {
+        self.open(path)
+    }
     /// Every frame of the library, which a Roll Settings gesture reaches.
     fn set_archive(&mut self, paths: Vec<String>);
     /// Writes the open frame's sidecar when the disk differs; the failure's message otherwise.
@@ -64,6 +68,10 @@ pub trait Store {
 impl Store for EditorStore {
     fn open(&mut self, path: &str) -> Result<(), String> {
         EditorStore::open(self, path).map_err(|e| e.to_string())
+    }
+
+    fn open_adjusted(&mut self, path: &str, adjust: &dyn Fn(&mut PipelineSettings)) -> Result<(), String> {
+        EditorStore::open_adjusted(self, path, adjust).map_err(|e| e.to_string())
     }
 
     fn set_archive(&mut self, paths: Vec<String>) {

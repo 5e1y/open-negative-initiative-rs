@@ -1,0 +1,33 @@
+// The flat-field mask library's dialog: `DSDialogRequest` with a cancel of its own name and, for a
+// rename, a field opened on the current name.
+import { Sheet, Label, TextRole, Tone, Button, ButtonGroup, ButtonKind, TextField } from "ds/ds.slint";
+
+export global MaskDialog {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    in property <bool> field;
+    // The field's text, which the hand edits in place.
+    in-out property <string> text;
+    in property <string> cancel;
+    in property <string> key;
+    callback answered(bool, string);
+}
+
+export component MaskDialogSheet inherits Sheet {
+    dismissed => { MaskDialog.answered(false, ""); }
+    Label { role: TextRole.section; text: MaskDialog.title; }
+    if MaskDialog.message != "": Label { text: MaskDialog.message; tone: Tone.secondary; wrap: word-wrap; }
+    if MaskDialog.field: TextField {
+        text <=> MaskDialog.text;
+        accepted(typed) => { MaskDialog.answered(true, typed); }
+        init => { self.take-focus(); }
+    }
+    HorizontalLayout {
+        alignment: end;
+        ButtonGroup {
+            Button { text: MaskDialog.cancel; clicked => { MaskDialog.answered(false, ""); } }
+            Button { text: MaskDialog.key; kind: ButtonKind.accent; clicked => { MaskDialog.answered(true, MaskDialog.text); } }
+        }
+    }
+}

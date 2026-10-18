@@ -86,10 +86,11 @@ impl Ctl {
             };
             p.gesture(&picked, |store| store.apply_flat_field(&picked));
         });
+        Ctl::wire_masks(me, window);
     }
 
     /// One structured edit of the open frame, as one undo step.
-    fn write_settings(self: &Rc<Self>, change: impl FnOnce(&mut PipelineSettings)) {
+    pub(super) fn write_settings(self: &Rc<Self>, change: impl FnOnce(&mut PipelineSettings)) {
         let mut next = self.state.borrow().store.settings().clone();
         change(&mut next);
         if &next == self.state.borrow().store.settings() {
@@ -140,6 +141,7 @@ impl Ctl {
         let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, rule: false, opens: false }).collect();
         panel.set_mask_lines(ModelRc::new(VecModel::from(lines)));
         panel.set_masks_empty(entries.is_empty());
+        self.publish_masks(&panel, flat);
         panel.set_flat_picked(picked as i32);
         panel.set_undeclared(undeclared.is_some());
         panel.set_grey_source(undeclared == Some(true));
