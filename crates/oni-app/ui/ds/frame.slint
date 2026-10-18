@@ -246,3 +246,28 @@ export component CorrectionMark inherits Rectangle {
         }
     }
 }
+
+// `DSBadge`: a short readout on the canvas, dark under light text.
+export component Badge inherits Rectangle {
+    in property <string> text;
+    width: label.preferred-width + 10px;
+    height: label.preferred-height + 4px;
+    background: Colour.contrast-edge;
+    border-radius: 4px;
+    label := Text {
+        text: root.text;
+        color: Colour.handle-active;
+        font-size: 11px;
+    }
+}
+
+// A patch's source: the line from the stroke to where it was copied, and the copied stroke's shape.
+export component SourceTrace inherits Path {
+    in property <length> thickness;
+    stroke: Colour.sharpen;
+    stroke-width: root.thickness;
+    stroke-line-cap: round;
+    fill: transparent;
+    viewbox-width: self.width / 1px;
+    viewbox-height: self.height / 1px;
+}

@@ -35,6 +35,9 @@ pub const THUMB_SIDE: usize = 480;
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
+/// `DS.Control.cropHint` and `DS.Space.md`: the crop badge's margin inside the view and its rise above the frame.
+const BADGE_MARGIN: f64 = 32.0;
+const BADGE_RISE: f64 = 16.0;
 /// `DSScroll.idleWindow`: a pause this long ends a straightening gesture.
 const STRAIGHTEN_IDLE: Duration = Duration::from_millis(160);
 /// `sidecar.writeDelay`: the hand rests this long before the sidecar is written.
@@ -181,6 +184,8 @@ pub struct State {
     /// The number each correction's marker shows, never its row, which a removal shifts.
     numbers: HashMap<oni_settings::id::Id, usize>,
     next_number: usize,
+    /// Where each correction's patch was copied from, in fractions of the rendered frame, y down.
+    sources: HashMap<oni_settings::id::Id, (f64, f64)>,
     /// The corrections whose search found no match and laid the tile beside the stroke.
     fallback: std::collections::HashSet<oni_settings::id::Id>,
     brush_start: Option<f32>,
@@ -449,6 +454,7 @@ impl Shell {
             numbers: HashMap::new(),
             next_number: 1,
             fallback: std::collections::HashSet::new(),
+            sources: HashMap::new(),
             brush_start: None,
             brush_pressed_at: None,
             window_board: None,
@@ -717,6 +723,13 @@ impl Ctl {
             c.set_crop_y(y as f32);
             c.set_crop_width(wd as f32);
             c.set_crop_height(ht as f32);
+            // `liveSize`: the kept pixels above the frame while a handle is held, inside the view.
+            let held = self.state.borrow().frame_gesture.is_some_and(|(window, ..)| !window);
+            let view = (f64::from(c.get_width()), f64::from(c.get_height()));
+            let label = if held { image.map(|i| geom::pixel_label(g.cropped_pixel_size(i))).unwrap_or_default() } else { String::new() };
+            c.set_crop_badge(label.into());
+            c.set_crop_badge_x((x + wd / 2.0).clamp(BADGE_MARGIN, (view.0 - BADGE_MARGIN).max(BADGE_MARGIN)) as f32);
+            c.set_crop_badge_y((y - BADGE_RISE).clamp(BADGE_MARGIN / 2.0, (view.1 - BADGE_MARGIN / 2.0).max(BADGE_MARGIN / 2.0)) as f32);
         }
         let window_frame = if cropping { crop_frame } else { picture_frame };
         c.set_window_shown(armed && window_frame.is_some());
@@ -863,7 +876,7 @@ impl Ctl {
         let painting = self.painting();
         let frame = self.image_frame(false);
         let caches = crate::patches::caches();
-        let (rows, marks, radius, stroke, rendered) = {
+        let (rows, marks, radius, stroke, rendered, traces, lines) = {
             let mut s = self.state.borrow_mut();
             let corrections = s.store.settings().corrections.clone();
             for c in &corrections {
@@ -898,7 +911,24 @@ impl Ctl {
                     .collect(),
                 _ => Vec::new(),
             };
-            (rows, marks, s.brush, s.painting_stroke.clone(), rendered)
+            // `correctionMarks`: the line from each stroke to its source, and the copied stroke itself.
+            let traces: Vec<(Vec<(f64, f64)>, f64)> = corrections
+                .iter()
+                .filter_map(|c| {
+                    let o = *s.sources.get(&c.id)?;
+                    Some((c.stroke.iter().map(|p| (p.x + o.0, p.y + o.1)).collect(), c.radius))
+                })
+                .collect();
+            let lines: Vec<((f64, f64), (f64, f64))> = corrections
+                .iter()
+                .filter_map(|c| {
+                    let o = s.sources.get(&c.id)?;
+                    let n = c.stroke.len().max(1) as f64;
+                    let centre = (c.stroke.iter().map(|p| p.x).sum::<f64>() / n, c.stroke.iter().map(|p| p.y).sum::<f64>() / n);
+                    Some((centre, (centre.0 + o.0, centre.1 + o.1)))
+                })
+                .collect();
+            (rows, marks, s.brush, s.painting_stroke.clone(), rendered, traces, lines)
         };
         let d = w.global::<crate::Dedust>();
         let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
@@ -931,6 +961,29 @@ impl Ctl {
             .map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 })
             .collect();
         c.set_marks(ModelRc::new(VecModel::from(marks)));
+        let path = |points: &[(f64, f64)], f: (f64, f64, f64, f64)| {
+            let mut out = String::new();
+            for (i, p) in points.iter().enumerate() {
+                out.push_str(&format!("{} {:.2} {:.2} ", if i == 0 { "M" } else { "L" }, f.0 + p.0 * f.2, f.1 + p.1 * f.3));
+            }
+            if points.len() == 1 {
+                out.push_str(&format!("L {:.2} {:.2}", f.0 + points[0].0 * f.2, f.1 + points[0].1 * f.3));
+            }
+            out
+        };
+        let (shapes, line_commands) = match (frame, rendered) {
+            (Some(f), Some(r)) => (
+                traces
+                    .iter()
+                    .map(|(points, radius)| (path(points, f).into(), (radius * 2.0 * f.2 / r.0.max(1.0)) as f32))
+                    .collect::<Vec<(SharedString, f32)>>(),
+                lines.iter().map(|(a, b)| path(&[*a, *b], f)).collect::<Vec<_>>().join(" "),
+            ),
+            _ => (Vec::new(), String::new()),
+        };
+        c.set_source_shapes(ModelRc::new(VecModel::from(shapes)));
+        c.set_source_lines(line_commands.into());
+        c.set_source_line_width(1.5);
     }
 
     /// A point of the canvas in fractions of the rendered frame, when it falls on the picture.
@@ -1139,7 +1192,7 @@ impl Ctl {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let caches = crate::patches::caches();
-            let made = (|| -> Result<Vec<(oni_settings::id::Id, bool)>, String> {
+            let made = (|| -> Result<Vec<(oni_settings::id::Id, bool, (f64, f64))>, String> {
                 let decoded = render::decode_full(Path::new(&path), settings.primaries_converted)?;
                 let full = engine.lock()?.full(decoded)?;
                 let mut made = Vec::new();
@@ -1151,7 +1204,7 @@ impl Ctl {
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
                     crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
                     engine.lock()?.forget_patch(c.id);
-                    made.push((c.id, patch.fallback));
+                    made.push((c.id, patch.fallback, patch.offset));
                 }
                 Ok(made)
             })();
@@ -1161,10 +1214,12 @@ impl Ctl {
                     Ok(m) if m.is_empty() => {}
                     Ok(m) => {
                         let n = m.len();
-                        for (id, fell_back) in m {
+                        for (id, fell_back, offset) in m {
+                            let mut s = c.state.borrow_mut();
                             if fell_back {
-                                c.state.borrow_mut().fallback.insert(id);
+                                s.fallback.insert(id);
                             }
+                            s.sources.insert(id, offset);
                         }
                         timing::line(&format!("{}: {n} dust patches generated", stem(&path)));
                         if c.state.borrow().open_path() == Some(path.as_str()) {
@@ -1225,8 +1280,10 @@ impl Ctl {
         }
         self.request_render();
         let me = Rc::downgrade(self);
+        // The timer marks the view settled itself: it can fire a hair before the debounce reads as elapsed.
         self.settle.start(TimerMode::SingleShot, viewport::SETTLE, move || {
             if let Some(me) = me.upgrade() {
+                me.state.borrow_mut().navigated_at = None;
                 me.request_render();
             }
         });
@@ -1296,9 +1353,9 @@ impl Ctl {
         let status = {
             let s = self.state.borrow();
             let name = s.open_path().map(stem).unwrap_or_default();
-            match (s.placed, self.canvas_size()) {
-                (Some(p), Some(size)) => format!("{name} · {}", viewport::zoom_label(s.viewport.effective_scale(p.full, size), p.at_full_resolution)),
-                _ => format!("{name} · {width} × {height}"),
+            match s.placed {
+                Some(p) => format!("{name} · {:.0} × {:.0}", p.full.0, p.full.1),
+                None => format!("{name} · {width} × {height}"),
             }
         };
         w.global::<Canvas>().set_busy(false);
@@ -1326,6 +1383,21 @@ impl Ctl {
         c.set_frame_y((rect.1 / scale) as f32);
         c.set_frame_width((rect.2 / scale) as f32);
         c.set_frame_height((rect.3 / scale) as f32);
+        let bubble = {
+            let s = self.state.borrow();
+            match (placed, self.canvas_size()) {
+                (Some(p), Some(size)) => {
+                    let current = s.viewport.effective_scale(p.full, size);
+                    let fitted = s.viewport.is_fitted();
+                    Some((viewport::zoom_label(current, p.at_full_resolution), Viewport::rung(current, fitted, -1).is_some(), Viewport::rung(current, fitted, 1).is_some()))
+                }
+                _ => None,
+            }
+        };
+        let (label, out, inward) = bubble.unwrap_or_default();
+        c.set_zoom_label(label.into());
+        c.set_can_zoom_out(out);
+        c.set_can_zoom_in(inward);
         self.publish_framing();
         self.publish_dedust();
     }

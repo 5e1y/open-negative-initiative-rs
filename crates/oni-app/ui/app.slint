@@ -1,5 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
+import { DS, Tip, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Ground, StatusLine, CardStyle, StatusStyle, ShellStyle } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, Framing, Dedust, CorrectionRow } from "panel.slint";
@@ -61,6 +61,20 @@ export global Canvas {
     in property <string> stroke;
     in property <length> stroke-width;
     in property <[Mark]> marks;
+    // Each patch's source: the lines to them, and the copied strokes with their widths.
+    in property <string> source-lines;
+    in property <length> source-line-width;
+    in property <[{commands: string, width: length}]> source-shapes;
+    // Space held in De-dust: the drag pans instead of painting.
+    in-out property <bool> space-held;
+    // The crop's size while a handle is held, above the frame.
+    in property <string> crop-badge;
+    in property <length> crop-badge-x;
+    in property <length> crop-badge-y;
+    // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
+    in property <string> zoom-label;
+    in property <bool> can-zoom-out;
+    in property <bool> can-zoom-in;
     callback paint-hover(length, length, bool);
     callback paint-start(length, length);
     callback paint-move(length, length);
@@ -175,7 +189,18 @@ export component MainWindow inherits AppWindow {
 
     keys := FocusScope {
         key-pressed(event) => {
+            if (event.text == " " && Canvas.painting) {
+                Canvas.space-held = true;
+                return EventResult.accept;
+            }
             if (App.key(event.text, event.modifiers.control, event.modifiers.meta, event.modifiers.shift, event.modifiers.alt)) {
+                return EventResult.accept;
+            }
+            EventResult.reject
+        }
+        key-released(event) => {
+            if (event.text == " ") {
+                Canvas.space-held = false;
                 return EventResult.accept;
             }
             EventResult.reject
@@ -263,6 +288,11 @@ export component MainWindow inherits AppWindow {
                                 dragged(h, dx, dy) => { Canvas.frame-dragged(false, h, dx, dy); }
                                 released => { Canvas.frame-released(false); }
                             }
+                            if Canvas.cropping && Canvas.crop-badge != "": Badge {
+                                text: Canvas.crop-badge;
+                                x: Canvas.crop-badge-x - self.width / 2;
+                                y: Canvas.crop-badge-y - self.height / 2;
+                            }
                             if Canvas.window-shown: FrameOverlay {
                                 width: parent.width;
                                 height: parent.height;
@@ -279,6 +309,18 @@ export component MainWindow inherits AppWindow {
                             if Canvas.painting: Rectangle {
                                 width: parent.width;
                                 height: parent.height;
+                                for t in Canvas.source-shapes: SourceTrace {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    commands: t.commands;
+                                    thickness: t.width;
+                                }
+                                if Canvas.source-lines != "": SourceTrace {
+                                    width: parent.width;
+                                    height: parent.height;
+                                    commands: Canvas.source-lines;
+                                    thickness: Canvas.source-line-width;
+                                }
                                 for m in Canvas.marks: CorrectionMark {
                                     x: m.x;
                                     y: m.y;
@@ -292,13 +334,14 @@ export component MainWindow inherits AppWindow {
                                     commands: Canvas.stroke;
                                     thickness: Canvas.stroke-width;
                                 }
-                                if Canvas.brush-shown: BrushDisc {
+                                if Canvas.brush-shown && !Canvas.space-held: BrushDisc {
                                     x: Canvas.brush-x - Canvas.brush-diameter / 2;
                                     y: Canvas.brush-y - Canvas.brush-diameter / 2;
                                     width: Canvas.brush-diameter;
                                     height: Canvas.brush-diameter;
                                 }
                                 paint := TouchArea {
+                                    enabled: !Canvas.space-held;
                                     mouse-cursor: none;
                                     changed has-hover => { Canvas.paint-hover(self.mouse-x, self.mouse-y, self.has-hover); }
                                     pointer-event(event) => {
@@ -315,6 +358,19 @@ export component MainWindow inherits AppWindow {
                                 x: parent.width * Canvas.split - self.width / 2;
                                 height: parent.height;
                                 dragged(at) => { Canvas.split-dragged(self.x + at); }
+                            }
+                        }
+                        HorizontalLayout {
+                            x: parent.width - self.preferred-width - CardStyle.padding;
+                            y: 0;
+                            height: CardStyle.padding;
+                            spacing: Space.s;
+                            alignment: center;
+                            Label { text: Canvas.zoom-label; role: TextRole.value; }
+                            ButtonGroup {
+                                alignment: center;
+                                Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { App.menu("smaller"); } }
+                                Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { App.menu("larger"); } }
                             }
                         }
                     }
