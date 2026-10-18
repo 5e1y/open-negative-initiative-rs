@@ -229,11 +229,13 @@ impl Ctl {
         if gallery {
             return false;
         }
+        let dedust = self.window().is_some_and(|w| w.global::<PanelState>().get_tab() == 4);
         match text {
             ESCAPE if self.in_lab() && !repeat => self.set_face(Face::Pro),
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),
-            SPACE if bare && !repeat => self.act("toggle-mode"),
+            // `walkKeys`: Space reaches the gallery from Pro's editor only, never from the Lab or De-dust.
+            SPACE if bare && !repeat && !self.in_lab() && !dedust => self.act("toggle-mode"),
             _ => return false,
         }
         true

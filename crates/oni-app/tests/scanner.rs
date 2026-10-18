@@ -150,11 +150,20 @@ fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back() 
     rig.pump();
     assert!(settings().print.contrast != pro_contrast && settings().scanner_finish.contrast == 0.0);
 
-    // View > Scanner Emulator toggles the face; Space then takes the editor to the gallery.
+    // Space takes Pro's editor to the gallery and back; View > Scanner Emulator toggles the face.
+    rig.key(" ");
+    assert!(w.global::<App>().get_gallery());
+    w.global::<App>().invoke_menu("toggle-mode".into());
+    rig.pump();
+    assert!(!w.global::<App>().get_gallery());
     w.global::<App>().invoke_menu("emulator".into());
     rig.pump();
     assert!(lab.get_shown());
+    // Twin: in the Lab Space is not a walk key, and the editor stays.
     rig.key(" ");
+    assert!(!w.global::<App>().get_gallery() && lab.get_shown(), "Space never leaves the Lab");
+    w.global::<App>().invoke_menu("toggle-mode".into());
+    rig.pump();
     assert!(w.global::<App>().get_gallery() && !lab.get_shown(), "the Lab is not on screen over the gallery");
     w.global::<App>().invoke_menu("emulator".into());
     rig.pump();
