@@ -391,5 +391,12 @@
     "detail": "On the Scanner face the Color tab reads and writes ScannerFinish (the Contrast, Vignette and Chrome step keys, curves, spectrogram, saturation), so a gesture on one face never moves the other.",
     "outcome": "Set and Step go through EditorStore::face_view and store by the open face (storing_scanner_edit); Command::Finish carries structured Color-tab edits the same way, ready for the curve, spectrogram and saturation editors, which do not exist yet. Verified by the ScannerFinish.selfCheck port a_gesture_on_one_face_never_moves_the_other with its Pro twin and a curve-point Finish on both faces; replacing stored_by_face with the identity made two tests fail. The window test checks Effects keys leave Pro's Contrast and a Pro step leaves the Scanner's.",
     "commit": "a75a253"
+  },
+  {
+    "id": 57,
+    "type": "feature",
+    "title": "The editor's Roll, Color and Details tabs and its history as Swift's, Esc closing Crop, the spectrogram holding the arrows",
+    "status": "doing",
+    "detail": "Every partial or missing row of docs/parity/editor.md under Panel: Roll tab, Panel: Color tab, Panel: Details tab and History; Esc leaving Crop; the focused spectrogram taking the arrows from the walk keys; whether adopting the face on open records an undo step, as SwiftUI orders it."
   }
 ]
