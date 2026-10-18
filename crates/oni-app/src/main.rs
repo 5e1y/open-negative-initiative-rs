@@ -82,6 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     }
     shell.window.run()?;
+    oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
     Ok(())
 }

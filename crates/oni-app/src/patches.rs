@@ -24,6 +24,24 @@ pub fn file(caches: &Path, id: Id) -> PathBuf {
     caches.join("Corrections").join(format!("{id}.tiff"))
 }
 
+/// Written where the render looks for it, in single float; the Swift app reads it as its own.
+pub fn write(caches: &Path, id: Id, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<(), String> {
+    let path = file(caches, id);
+    std::fs::create_dir_all(path.parent().expect("a folder")).map_err(|e| e.to_string())?;
+    let partial = path.with_extension("tiff.partial");
+    let out = std::fs::File::create(&partial).map_err(|e| e.to_string())?;
+    let data: &[f32] = bytemuck::cast_slice(pixels);
+    tiff::encoder::TiffEncoder::new(std::io::BufWriter::new(out))
+        .and_then(|mut e| e.write_image::<tiff::encoder::colortype::RGBA32Float>(width, height, data))
+        .map_err(|e| e.to_string())?;
+    std::fs::rename(&partial, &path).map_err(|e| e.to_string())
+}
+
+/// `CorrectionCache.purgeAll`, run at quit: every patch is generated again the next time its frame opens.
+pub fn purge(caches: &Path) {
+    let _ = std::fs::remove_dir_all(caches.join("Corrections"));
+}
+
 /// The patch's pixels and size; `None` while it has not been generated.
 pub fn read(caches: &Path, id: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
     crate::flat_fields::read_tiff(&file(caches, id))

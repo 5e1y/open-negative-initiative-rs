@@ -8,6 +8,7 @@ pub mod export;
 pub mod fields;
 pub mod flat_fields;
 pub mod gallery;
+pub mod heal;
 pub mod library;
 pub mod motion;
 pub mod patches;

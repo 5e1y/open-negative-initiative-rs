@@ -147,6 +147,8 @@ pub struct State {
     /// The open frame's full-resolution pixels once built, and the frame one is being built for.
     full: Option<(String, oni_graph::Source)>,
     building_full: Option<String>,
+    /// The frame whose dust patches are being generated.
+    healing: Option<String>,
     /// The last navigation, which keeps the preview until it settles.
     navigated_at: Option<Instant>,
     /// The displayed image's size in full-resolution pixels, from the last render placed.
@@ -400,6 +402,7 @@ impl Shell {
             views: Notches::default(),
             full: None,
             building_full: None,
+            healing: None,
             navigated_at: None,
             full_size: None,
             requested_view: None,
@@ -580,7 +583,7 @@ impl Ctl {
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
     fn request_render(self: &Rc<Self>) {
         let size = self.canvas_size();
-        let (job, build) = {
+        let (job, build, heal) = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let revision = s.store.revision();
@@ -614,18 +617,67 @@ impl Ctl {
             });
             let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
             let live = s.store.settings().clone();
+            // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
+            let caches = crate::patches::caches();
+            let unhealed = live.corrections.iter().any(|c| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists());
+            let heal = (unhealed && s.healing.as_deref() != Some(path.as_str())).then(|| {
+                s.healing = Some(path.clone());
+                (path.clone(), live.clone())
+            });
             // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
             let reference = s.split.map(|_| {
                 let mut reference = oni_core::parameters::imported(&live);
                 reference.corrections = live.corrections.clone();
                 reference
             });
-            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference }, build)
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference }, build, heal)
         };
         self.worker.submit(job);
         if let Some((path, converted)) = build {
             self.build_full(path, converted);
         }
+        if let Some((path, settings)) = heal {
+            self.heal(path, settings);
+        }
+    }
+
+    /// `ensureGenerated` for each correction of the open frame that has no patch yet, one after the
+    /// other on the full-resolution frame, so each source holds the patches before it healed.
+    fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings) {
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            let caches = crate::patches::caches();
+            let made = (|| -> Result<usize, String> {
+                let decoded = render::decode_full(Path::new(&path), settings.primaries_converted)?;
+                let full = engine.lock()?.full(decoded)?;
+                let mut made = 0;
+                for c in &settings.corrections {
+                    if c.stroke.is_empty() || crate::patches::file(&caches, c.id).exists() {
+                        continue;
+                    }
+                    let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
+                    let patch = crate::heal::generate(&region, c, size.0, size.1);
+                    crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
+                    engine.lock()?.forget_patch(c.id);
+                    made += 1;
+                }
+                Ok(made)
+            })();
+            with_shell(move |c| {
+                c.state.borrow_mut().healing = None;
+                match made {
+                    Ok(0) => {}
+                    Ok(n) => {
+                        timing::line(&format!("{}: {n} dust patches generated", stem(&path)));
+                        if c.state.borrow().open_path() == Some(path.as_str()) {
+                            c.state.borrow_mut().requested_view = None;
+                            c.request_render();
+                        }
+                    }
+                    Err(e) => timing::line(&format!("{}: dust patches not generated: {e}", stem(&path))),
+                }
+            });
+        });
     }
 
     /// The canvas in drawable pixels, once laid out.
