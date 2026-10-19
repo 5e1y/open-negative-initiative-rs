@@ -4152,6 +4152,7 @@ dependencies = [
  "oni-graph",
  "oni-library",
  "oni-link",
+ "oni-link-ffi",
  "oni-measure",
  "oni-pipeline",
  "oni-render",

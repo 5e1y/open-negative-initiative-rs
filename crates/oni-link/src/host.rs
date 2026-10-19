@@ -76,13 +76,33 @@ pub struct HostEvents {
     shared: Arc<Shared>,
 }
 
-impl HostEvents {
-    pub async fn next(&mut self) -> Option<HostEvent> {
-        let (event, taken) = self.rx.recv().await?;
-        if let Some(Taken { connection, seq }) = taken {
+/// A press read but not yet applied; `applied` marks it taken, so a screen published in between,
+/// by another hand, never tells the phone its press is in.
+#[must_use]
+pub struct Receipt {
+    taken: Option<Taken>,
+    shared: Arc<Shared>,
+}
+
+impl Receipt {
+    pub fn applied(self) {
+        if let Some(Taken { connection, seq }) = self.taken {
             self.shared.taken.lock().expect("taken lock").insert(connection, seq);
         }
+    }
+}
+
+impl HostEvents {
+    pub async fn next(&mut self) -> Option<HostEvent> {
+        let (event, receipt) = self.receive().await?;
+        receipt.applied();
         Some(event)
+    }
+
+    /// The next event with its receipt, for an app that applies presses away from this task.
+    pub async fn receive(&mut self) -> Option<(HostEvent, Receipt)> {
+        let (event, taken) = self.rx.recv().await?;
+        Some((event, Receipt { taken, shared: self.shared.clone() }))
     }
 }
 

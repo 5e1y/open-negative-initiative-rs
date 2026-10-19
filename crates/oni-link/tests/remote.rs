@@ -162,6 +162,42 @@ async fn a_reconnected_phone_counts_from_one_again() {
     assert_eq!(shown.state.clicks.m, 5);
 }
 
+/// Another hand publishes while a press is read but not yet applied: the phone keeps showing it.
+#[tokio::test]
+async fn a_press_read_but_not_applied_stays_shown_through_another_hand_s_screen() {
+    // Twin: marking the press taken on read, before it is applied, drops it from the phone.
+    for marked_on_read in [false, true] {
+        let (host, mut events) = Host::new(Identity::generate(), "Studio".into(), []);
+        let addr = host.listen("127.0.0.1:0".parse().unwrap()).await.unwrap();
+        let remote = pair(&host, addr, &Identity::generate()).await.unwrap();
+        remote.press(Command::Step { letter: Letter::D, by: 1 });
+        let receipt = loop {
+            match timeout(WAIT, events.receive()).await.unwrap().unwrap() {
+                (HostEvent::Command { .. }, receipt) => break receipt,
+                (_, receipt) => receipt.applied(),
+            }
+        };
+        let pending = if marked_on_read {
+            receipt.applied();
+            None
+        } else {
+            Some(receipt)
+        };
+        host.publish(State { revision: 1, ..State::default() });
+        let mut display = remote.display();
+        let shown = until(&mut display, |d| d.state.revision == 1).await;
+        assert_eq!(shown.state.clicks.d, if marked_on_read { 0 } else { 1 }, "marked on read: {marked_on_read}");
+        if let Some(receipt) = pending {
+            receipt.applied();
+            let mut applied = State { revision: 2, ..State::default() };
+            applied.clicks.d = 1;
+            host.publish(applied);
+            let settled = until(&mut display, |d| d.state.applied == 1).await;
+            assert_eq!(settled.state.clicks.d, 1, "the press counted once");
+        }
+    }
+}
+
 #[tokio::test]
 async fn revoking_a_phone_cuts_it_at_once() {
     let (host, addr, _log) = desktop().await;

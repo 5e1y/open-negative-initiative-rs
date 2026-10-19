@@ -67,6 +67,8 @@ rfd = { version = "0.17", default-features = false }
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "tiff"] }
 oni-render = { path = "../oni-render" }
+# The phone app's own side of the link, so the window check pairs as the phone does.
+oni-link-ffi = { path = "../oni-link-ffi" }
 jpeg-decoder = "0.3"
 kamadak-exif = "0.6"
 png = "0.18"

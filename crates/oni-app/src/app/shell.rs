@@ -237,3 +237,12 @@ impl Ctl {
         self.state.borrow_mut().store.flush()
     }
 }
+
+impl Drop for Shell {
+    /// The phone link stops with its window: its port is free for the next, and the phones hear it close.
+    fn drop(&mut self) {
+        if let Ok(mut s) = self.ctl.state.try_borrow_mut() {
+            s.phone = None;
+        }
+    }
+}

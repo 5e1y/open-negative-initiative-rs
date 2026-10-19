@@ -158,6 +158,8 @@ impl Ctl {
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));
         let p = me.clone();
+        window.global::<Pairing>().on_forget(move || p.act("forget-phones"));
+        let p = me.clone();
         window.global::<crate::Notice>().on_close(move || p.neutral_decode_notice_dismissed());
         let p = me.clone();
         window.global::<PanelState>().on_auto_balance(move || {

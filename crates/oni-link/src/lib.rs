@@ -8,7 +8,7 @@ pub mod remote;
 pub mod scanner;
 pub mod wire;
 
-pub use host::{Host, HostEvent, HostEvents};
+pub use host::{Host, HostEvent, HostEvents, Receipt};
 pub use noise::{Identity, PublicKey};
 pub use pairing::PairingCode;
 pub use remote::{Display, Remote};
