@@ -89,7 +89,7 @@ impl Ctl {
             let mut made = Vec::new();
             let failed = (|| -> Result<(), String> {
                 let decoded = render::decode_full(Path::new(&path), render::Reading::of(&settings))?;
-                let full = engine.lock()?.full(decoded)?;
+                let full = engine.full(decoded)?;
                 for c in settings.corrections.iter().filter(|c| lacking(c)) {
                     let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
@@ -141,7 +141,19 @@ impl Ctl {
         let ticket = crate::decode_gate::FULL.ask();
         std::thread::spawn(move || {
             let reading = converted.clone();
-            let built = crate::decode_gate::FULL.run(ticket, || render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d)));
+            let built = crate::decode_gate::FULL.run(ticket, || {
+                let started = Instant::now();
+                let decoded = render::decode_full(Path::new(&path), converted)?;
+                let (decoded_in, held) = (started.elapsed(), Instant::now());
+                let full = engine.full(decoded);
+                timing::line(&format!(
+                    "{}: full resolution decoded in {:.0} ms, laid on the GPU in {:.0} ms",
+                    stem(&path),
+                    decoded_in.as_secs_f64() * 1000.0,
+                    held.elapsed().as_secs_f64() * 1000.0
+                ));
+                full
+            });
             with_shell(move |c| {
                 {
                     let mut s = c.state.borrow_mut();

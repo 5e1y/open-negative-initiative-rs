@@ -8,6 +8,6 @@ mod stage;
 pub mod stages;
 mod texture;
 
-pub use graph::{Cache, Error, Graph, Image, Source, Stats, TEXTURE_SIDE};
+pub use graph::{Cache, Error, Graph, Image, Source, Stats, TEXTURE_SIDE, Uploader};
 pub use rect::Rect;
 pub use stage::{MAX_AUX, Stage};

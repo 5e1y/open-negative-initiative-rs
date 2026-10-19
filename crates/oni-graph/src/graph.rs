@@ -12,6 +12,7 @@ use crate::{Rect, Stage};
 
 mod errors;
 mod source;
+pub use source::Uploader;
 mod chain;
 mod plan;
 mod cache;

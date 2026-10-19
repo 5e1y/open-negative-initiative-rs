@@ -102,23 +102,8 @@ impl Pool {
     }
 
     fn create(&mut self, width: u32, height: u32, pooled: bool) -> FloatTexture {
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("oni-graph"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: FORMAT,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING
-                | wgpu::TextureUsages::STORAGE_BINDING
-                | wgpu::TextureUsages::COPY_SRC
-                | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        let view = texture.create_view(&Default::default());
         self.created += 1;
-        self.live.fetch_add((width as u64 * height as u64 * BYTES_PER_PIXEL) as i64, Ordering::Relaxed);
-        FloatTexture(Arc::new(Inner { texture, view, width, height, pooled, live: self.live.clone() }))
+        made(&self.device, &self.live, width, height, pooled)
     }
 
     /// Hands a texture back; one still held elsewhere (a cache, a source) is only let go of here.
@@ -144,4 +129,24 @@ impl Pool {
     pub fn idle(&self) -> usize {
         self.free.len()
     }
+}
+
+/// An rgba32float texture counted in `live`; a pool's when `pooled`, else a source tile's.
+pub(crate) fn made(device: &wgpu::Device, live: &Arc<AtomicI64>, width: u32, height: u32, pooled: bool) -> FloatTexture {
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("oni-graph"),
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: FORMAT,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING
+            | wgpu::TextureUsages::STORAGE_BINDING
+            | wgpu::TextureUsages::COPY_SRC
+            | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    let view = texture.create_view(&Default::default());
+    live.fetch_add((width as u64 * height as u64 * BYTES_PER_PIXEL) as i64, Ordering::Relaxed);
+    FloatTexture(Arc::new(Inner { texture, view, width, height, pooled, live: live.clone() }))
 }

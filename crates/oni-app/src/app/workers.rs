@@ -34,7 +34,7 @@ static CLOCK: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 /// A frame decoded on the calling thread, the CPU's part, then laid on the GPU as its preview.
 pub(super) fn prepared(engine: &Shared, path: &str, reading: render::Reading) -> Result<Arc<Negative>, String> {
     let decoded = render::decode(Path::new(path), reading)?;
-    let negative = engine.lock().map_err(|_| "the render engine failed earlier")?.prepare(decoded)?;
+    let negative = engine.prepare(decoded)?;
     Ok(Arc::new(negative))
 }
 
@@ -119,8 +119,13 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     let negative = match known {
         Some(n) => n,
         None => {
-            let n = prepared(engine, path, render::Reading::of(&settings))?;
-            previews.lock().expect("previews").insert(path.to_string(), n.clone());
+            // A RAW read at half size, a third of the second: kept for the editor only if it reads RAWs so.
+            let decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), render::PREVIEW_SIDE)?;
+            let halved = mosaic && decoded.full_width > decoded.linear.width as f64;
+            let n = Arc::new(engine.prepare(decoded)?);
+            if !halved || render::HALF_SIZE_PREVIEWS.load(Ordering::Relaxed) {
+                previews.lock().expect("previews").insert(path.to_string(), n.clone());
+            }
             n
         }
     };

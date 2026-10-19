@@ -116,6 +116,7 @@ pub(crate) struct Gated {
     engine: Mutex<Engine>,
     gate: Mutex<Gate>,
     turn: Condvar,
+    uploader: oni_graph::Uploader,
 }
 
 #[derive(Default)]
@@ -163,13 +164,7 @@ impl Shared {
     /// Waits while the gate is held, then for the engine.
     pub fn lock(&self) -> Result<EngineGuard<'_>, String> {
         let gated = &*self.0;
-        {
-            let mut g = gated.gate.lock().map_err(|_| "the render gate failed earlier")?;
-            while g.held {
-                g = gated.turn.wait(g).map_err(|_| "the render gate failed earlier")?;
-            }
-            g.inside += 1;
-        }
+        self.enter()?;
         match gated.engine.lock() {
             Ok(engine) => Ok(EngineGuard { engine: Some(engine), gated }),
             Err(_) => {
@@ -177,6 +172,37 @@ impl Shared {
                 Err("the render engine failed earlier".into())
             }
         }
+    }
+
+    fn enter(&self) -> Result<(), String> {
+        let mut g = self.0.gate.lock().map_err(|_| "the render gate failed earlier")?;
+        while g.held {
+            g = self.0.turn.wait(g).map_err(|_| "the render gate failed earlier")?;
+        }
+        g.inside += 1;
+        Ok(())
+    }
+
+    /// The decode laid on the GPU through the gate alone: a 24 MP upload holds the engine about
+    /// 100 ms, which every render asked meanwhile would wait.
+    pub fn upload(&self, l: &Linear) -> Result<Source, String> {
+        self.enter()?;
+        let laid = self.0.uploader.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string());
+        self.0.leave();
+        laid
+    }
+
+    /// `Engine::prepare` with the upload outside the engine.
+    pub fn prepare(&self, decoded: Decoded) -> Result<Negative, String> {
+        let source = self.upload(&decoded.linear)?;
+        let (w, h) = (decoded.linear.width, decoded.linear.height);
+        drop(decoded.linear);
+        self.lock()?.reduce(source, (w, h), decoded.full_width, decoded.undeclared)
+    }
+
+    /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
+    pub fn full(&self, decoded: Decoded) -> Result<Source, String> {
+        self.upload(&decoded.linear)
     }
 
     /// Closes the gate and waits for the threads inside to leave, so nothing submits until `release`.
@@ -208,7 +234,9 @@ impl Engine {
     }
 
     pub fn shared(d: &Device) -> Shared {
-        Shared(Arc::new(Gated { engine: Mutex::new(Engine::on(d)), gate: Mutex::new(Gate::default()), turn: Condvar::new() }))
+        let engine = Engine::on(d);
+        let uploader = engine.graph.uploader();
+        Shared(Arc::new(Gated { engine: Mutex::new(engine), gate: Mutex::new(Gate::default()), turn: Condvar::new(), uploader }))
     }
 
     /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the
@@ -236,15 +264,20 @@ impl Engine {
         let l = decoded.linear;
         let source = self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())?;
         drop(l.pixels);
+        self.reduce(source, (l.width, l.height), decoded.full_width, decoded.undeclared)
+    }
+
+    /// The laid decode of `size` reduced to the preview, its edge rebuilt and rendered once.
+    pub fn reduce(&mut self, source: Source, size: (usize, usize), full_width: f64, undeclared: Option<bool>) -> Result<Negative, String> {
         let mut image = Image::new(&source);
-        let long = l.width.max(l.height);
+        let long = size.0.max(size.1);
         if long > PREVIEW_SIDE {
             image = image.lanczos(PREVIEW_SIDE as f64 / long as f64);
         }
         let preview = self.graph.materialise(&rebuilt_edge(image)).map_err(|e| e.to_string())?;
         drop(source);
         self.graph.purge();
-        Ok(Negative { preview, full_width: decoded.full_width, undeclared: decoded.undeclared })
+        Ok(Negative { preview, full_width, undeclared })
     }
 
     /// `RawDecode.linear` at the preview's side as pixels: the decode reduced and its edge rebuilt
@@ -255,6 +288,12 @@ impl Engine {
         let region = image.extent();
         let pixels = self.graph.render(&image, region, None).map_err(|e| e.to_string())?;
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
+    }
+
+    /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
+    pub fn full(&mut self, decoded: Decoded) -> Result<Source, String> {
+        let l = decoded.linear;
+        self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
     }
 
     /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given.
@@ -270,12 +309,6 @@ impl Engine {
         let region = image.extent();
         let pixels = self.graph.render(&image, region, None).map_err(|e| e.to_string())?;
         Ok(Linear { width: region.w as usize, height: region.h as usize, pixels })
-    }
-
-    /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
-    pub fn full(&mut self, decoded: Decoded) -> Result<Source, String> {
-        let l = decoded.linear;
-        self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
     }
 
     /// `Pipeline.correctionSource` read back where a search for `c` looks: the frame at full

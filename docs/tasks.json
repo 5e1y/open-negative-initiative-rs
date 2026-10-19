@@ -968,5 +968,21 @@
     "title": "The canvas band's keys centred in their 40-point band",
     "status": "done",
     "detail": "The zoom bubble and the library key were laid at the top of the band over the image, against the bar. Each row now takes its own height and sits centred, as Swift's zoomBubble does; canvas_layout checks the panel key's margins by pixel, with a twin on the old top placement."
+  },
+  {
+    "id": 132,
+    "type": "perf",
+    "title": "A decode is laid on the GPU beside the engine, so no render waits on its upload",
+    "status": "done",
+    "detail": "The owner's log showed view renders at 20 to 190 ms in pairs 1.5 to 2.5 s after a frame opened, when its full resolution landed: the 24 MP upload (about 390 MB, 100 ms) held the engine every render locks. oni-graph gains an Uploader that makes a source's textures from any thread; the shared engine uploads through the surface's gate alone, then locks only to reduce. Opening, thumbnails, full resolution and the dust patches' decode go this way. The zoom bench now pans in bursts while full resolution is built, walks the ladder and pinches, at a laptop's full screen, and reports the interface thread's longest tick.",
+    "outcome": "P1073044.RW2 (owner's settings), release, M2 Max: upload 96 to 101 ms off the engine; pans during the build p99 5.5 to 8.1 ms end to end, ladder worst 12.6 ms, pinch worst 7.8 ms. The interface thread still pauses about 40 ms once during the upload (wgpu's queue), unchanged by 8 MB bands. upload_tests checks an upload lands beside a held engine and waits on a closed gate, its twin a lock that waits; a mutant uploading under the lock fails it."
+  },
+  {
+    "id": 133,
+    "type": "perf",
+    "title": "Thumbnails read RAWs at half size, kept for the editor only when it reads them so",
+    "status": "done",
+    "detail": "With the editor's preview whole again (#130), each thumbnail decoded its RAW whole. A thumbnail of 320 px reads it at half size; the preview it makes seeds the editor's cache only when the editor reads RAWs at half size too, so an opened frame is never the softer copy.",
+    "outcome": "Roll #8 (40 frames), release, M2 Max, empty thumbnail cache: every thumbnail made in 14 s instead of 37 s, about 370 ms each instead of 1 s; the frame opened in the editor still decoded whole (1011 ms), so the editor never took the halved copy."
   }
 ]

@@ -3,7 +3,7 @@
 //! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
 //! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
-//! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, and returns to fit;
+//! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, then walks the ladder to fit;
 //! `ONI_BENCH=compare` turns Compare on, drags Exposure and the split, and counts the befores;
 //! `ONI_BENCH=crop` frames through the Crop tab's keys and the canvas's handles, then undoes it all;
 //! `ONI_BENCH=dedust` paints a stroke in De-dust, waits for its patch, then removes it.

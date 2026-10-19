@@ -33,40 +33,68 @@ impl Graph {
 
     /// As `upload`, the pixels covering `extent` wherever it lies.
     pub fn upload_at(&mut self, extent: Rect, pixels: &[[f32; 4]]) -> Result<Source, Error> {
-        if pixels.len() as u64 != extent.area() {
-            return Err(Error::Size { expected: extent.area(), got: pixels.len() });
-        }
-        if extent.is_empty() {
-            return Err(Error::RegionOutside { region: extent, extent });
-        }
-        let bytes: &[u8] = bytemuck::cast_slice(pixels);
-        let row = extent.w as u64 * BYTES_PER_PIXEL;
-        let mut tiles = Vec::new();
-        for ty in (0..extent.h).step_by(self.max_side as usize) {
-            for tx in (0..extent.w).step_by(self.max_side as usize) {
-                let (w, h) = (self.max_side.min(extent.w - tx), self.max_side.min(extent.h - ty));
-                let texture = self.pool.create_owned(w, h);
-                let band = (UPLOAD_BAND_BYTES / (w as u64 * BYTES_PER_PIXEL)).max(1) as u32;
-                for by in (0..h).step_by(band as usize) {
-                    let rows = band.min(h - by);
-                    let start = (ty + by) as u64 * row + tx as u64 * BYTES_PER_PIXEL;
-                    let end = start + (rows as u64 - 1) * row + w as u64 * BYTES_PER_PIXEL;
-                    self.queue.write_texture(
-                        wgpu::TexelCopyTextureInfo {
-                            texture: texture.texture(),
-                            mip_level: 0,
-                            origin: wgpu::Origin3d { x: 0, y: by, z: 0 },
-                            aspect: wgpu::TextureAspect::All,
-                        },
-                        &bytes[start as usize..end as usize],
-                        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row as u32), rows_per_image: None },
-                        wgpu::Extent3d { width: w, height: rows, depth_or_array_layers: 1 },
-                    );
-                }
-                tiles.push((Rect::new(extent.x + tx as i32, extent.y + ty as i32, w, h), texture));
-            }
-        }
-        let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
-        Ok(Source(Arc::new(SourceInner { id, extent, tiles })))
+        let (queue, pool) = (&self.queue, &mut self.pool);
+        laid(queue, self.max_side, extent, pixels, |w, h| pool.create_owned(w, h))
     }
+
+    /// What lays pixels beside the graph, from any thread.
+    pub fn uploader(&self) -> Uploader {
+        Uploader { device: self.device.clone(), queue: self.queue.clone(), max_side: self.max_side, live: self.pool.live.clone() }
+    }
+}
+
+/// Lays pixels on the GPU without the graph, so a decode's upload of a few hundred MB holds no lock
+/// a render waits on; its textures are a source's own, never pooled.
+#[derive(Clone)]
+pub struct Uploader {
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    max_side: u32,
+    live: Arc<std::sync::atomic::AtomicI64>,
+}
+
+impl Uploader {
+    /// As `Graph::upload`.
+    pub fn upload(&self, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<Source, Error> {
+        laid(&self.queue, self.max_side, Rect::new(0, 0, width, height), pixels, |w, h| crate::texture::made(&self.device, &self.live, w, h, false))
+    }
+}
+
+/// `pixels` written over `extent` in tiles of at most `max_side`, each a texture `make` gives.
+fn laid(queue: &wgpu::Queue, max_side: u32, extent: Rect, pixels: &[[f32; 4]], mut make: impl FnMut(u32, u32) -> FloatTexture) -> Result<Source, Error> {
+    if pixels.len() as u64 != extent.area() {
+        return Err(Error::Size { expected: extent.area(), got: pixels.len() });
+    }
+    if extent.is_empty() {
+        return Err(Error::RegionOutside { region: extent, extent });
+    }
+    let bytes: &[u8] = bytemuck::cast_slice(pixels);
+    let row = extent.w as u64 * BYTES_PER_PIXEL;
+    let mut tiles = Vec::new();
+    for ty in (0..extent.h).step_by(max_side as usize) {
+        for tx in (0..extent.w).step_by(max_side as usize) {
+            let (w, h) = (max_side.min(extent.w - tx), max_side.min(extent.h - ty));
+            let texture = make(w, h);
+            let band = (UPLOAD_BAND_BYTES / (w as u64 * BYTES_PER_PIXEL)).max(1) as u32;
+            for by in (0..h).step_by(band as usize) {
+                let rows = band.min(h - by);
+                let start = (ty + by) as u64 * row + tx as u64 * BYTES_PER_PIXEL;
+                let end = start + (rows as u64 - 1) * row + w as u64 * BYTES_PER_PIXEL;
+                queue.write_texture(
+                    wgpu::TexelCopyTextureInfo {
+                        texture: texture.texture(),
+                        mip_level: 0,
+                        origin: wgpu::Origin3d { x: 0, y: by, z: 0 },
+                        aspect: wgpu::TextureAspect::All,
+                    },
+                    &bytes[start as usize..end as usize],
+                    wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row as u32), rows_per_image: None },
+                    wgpu::Extent3d { width: w, height: rows, depth_or_array_layers: 1 },
+                );
+            }
+            tiles.push((Rect::new(extent.x + tx as i32, extent.y + ty as i32, w, h), texture));
+        }
+    }
+    let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
+    Ok(Source(Arc::new(SourceInner { id, extent, tiles })))
 }

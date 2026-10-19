@@ -183,8 +183,14 @@ impl Notches {
 
     /// The centiles of the notch renders recorded since `from`, the index `count` gave.
     pub fn summary(&self, from: usize, title: &str) -> String {
-        let latencies = &self.latencies[from.min(self.latencies.len())..];
-        let gaps: Vec<Duration> = self.gaps.iter().filter(|(i, _)| *i > from).map(|(_, g)| *g).collect();
+        self.summary_between(from, usize::MAX, title)
+    }
+
+    /// As `summary`, over the renders from `from` up to `to`.
+    pub fn summary_between(&self, from: usize, to: usize, title: &str) -> String {
+        let end = to.min(self.latencies.len());
+        let latencies = &self.latencies[from.min(end)..end];
+        let gaps: Vec<Duration> = self.gaps.iter().filter(|(i, _)| *i > from && *i < end).map(|(_, g)| *g).collect();
         let mut out = format!("{title}: {} notch renders", latencies.len());
         if latencies.is_empty() {
             return out;
