@@ -53,6 +53,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         e.support = Some(support.clone());
         e.caches = Some(oni_app::patches::caches());
     }
+    let warming = engine.clone();
+    std::thread::spawn(move || {
+        let started = std::time::Instant::now();
+        if let Ok(mut e) = warming.lock() {
+            e.prewarm();
+        }
+        timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
+    });
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), ..Options::default() })?;

@@ -794,5 +794,13 @@
     "status": "done",
     "detail": "Each canvas render allocated a 43 MB owned texture and copied its last stage into it. The last stage now writes straight into an owned output the pool keeps and takes again once no source holds it (four kept); a fresh texture written by a kernel is cleared by wgpu first, which made the direct write alone slower (2.2 to 3.3 ms). The bench report gains the interface thread's publish centiles.",
     "outcome": "Notch probe, roll #8, M2 Max: a light notch 2.2 to 1.7 ms, Sharpen on a heavy frame 1.9 to 1.6, Texture 2.5 to 2.1. Graph checks green."
+  },
+  {
+    "id": 111,
+    "type": "perf",
+    "title": "Every kernel compiled at launch, off the interface thread",
+    "status": "done",
+    "detail": "Metal builds a compute pipeline at its first dispatch, so the first notch of a stage never used yet waited for its compile (595 ms for Texture's chain). At launch a thread renders a 64 px frame through each face, film and finishing branch (busy Pro, joint detail, monochrome, Scanner on ONI and on Frontier) and their input readings, then lets the pool go.",
+    "outcome": "Real window, ONI_BENCH=1 on Texture, M2 Max: first notch end to end 595 ms before, worst 33 ms after; the warm-up takes 38-55 ms at launch."
   }
 ]
