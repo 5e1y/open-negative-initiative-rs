@@ -17,16 +17,12 @@ impl Graph {
         }
         if let Some(c) = cache.as_deref_mut() {
             let mut nodes = Vec::new();
-            let count = {
-                image.flatten(&mut nodes, &mut HashMap::new());
-                nodes.len()
-            };
-            for texture in c.truncate(count) {
-                self.pool.release(texture);
-            }
+            image.flatten(&mut nodes, &mut HashMap::new());
+            c.begin(&nodes);
         }
         let mut out = vec![[0.0f32; 4]; region.area() as usize];
-        let result = self.render_piece(image, region, region, &mut out, cache);
+        let result = self.render_piece(image, region, region, &mut out, cache.as_deref_mut());
+        self.settle(cache);
         self.pool.end_render();
         result.map(|()| out)
     }
@@ -39,24 +35,41 @@ impl Graph {
 
     /// `region` of `image` evaluated once into a new source covering that region, kept on the GPU.
     pub fn materialise_region(&mut self, image: &Image, region: Rect) -> Result<Source, Error> {
+        self.materialise_cached(image, region, None)
+    }
+
+    /// `materialise_region` starting from what `cache` holds, and leaving in it what it keeps.
+    pub fn materialise_cached(&mut self, image: &Image, region: Rect, mut cache: Option<&mut Cache>) -> Result<Source, Error> {
         let extent = image.extent();
         if region.is_empty() || !extent.contains(&region) {
             return Err(Error::RegionOutside { region, extent });
         }
-        let plan = Plan::new(image, region, None)?;
+        let plan = Plan::new(image, region, cache.as_deref())?;
         if !self.fits(&plan) {
-            let pixels = self.render(image, region, None)?;
+            drop(plan);
+            let pixels = self.render(image, region, cache)?;
             return self.upload_at(region, &pixels);
         }
+        if let Some(c) = cache.as_deref_mut() {
+            c.begin(&plan.nodes);
+        }
         let mut encoder = self.device.create_command_encoder(&Default::default());
-        let (texture, rect) = self.evaluate(&mut encoder, plan, None);
+        let (texture, rect) = self.evaluate(&mut encoder, plan, cache.as_deref_mut());
         let owned = self.pool.create_owned(region.w, region.h);
         self.copy(&mut encoder, &texture, rect, &owned, region, region);
         self.queue.submit([encoder.finish()]);
         self.pool.release(texture);
+        self.settle(cache);
         self.pool.end_render();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
         Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, owned)] })))
+    }
+
+    /// Hands the pool what the cache let go of after a render.
+    fn settle(&mut self, cache: Option<&mut Cache>) {
+        for texture in cache.map(Cache::settle).unwrap_or_default() {
+            self.pool.release(texture);
+        }
     }
 
     pub(super) fn fits(&self, plan: &Plan) -> bool {
@@ -172,7 +185,7 @@ impl Graph {
                         self.dispatch(encoder, *stage, (&main.0, main.1, nodes[*input].extent), &extras, &out, need);
                     }
                     if let Some(c) = cache.as_deref_mut()
-                        && let Some(old) = c.store(i, nodes[i].key, need, out.clone())
+                        && let Some(old) = c.store(nodes[i].key, need, &out)
                     {
                         self.pool.release(old);
                     }

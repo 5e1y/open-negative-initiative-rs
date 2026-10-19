@@ -15,7 +15,7 @@ impl<'a> Plan<'a> {
         for i in (0..n).rev() {
             let Some(need) = rects[i] else { continue };
             let Kind::Stage { stage, input, aux } = &nodes[i].kind else { continue };
-            if let Some(hit) = cache.and_then(|c| c.hit(i, nodes[i].key, need)) {
+            if let Some(hit) = cache.and_then(|c| c.hit(nodes[i].key, need)) {
                 hits[i] = Some(hit);
                 continue;
             }

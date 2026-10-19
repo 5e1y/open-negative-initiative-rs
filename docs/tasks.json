@@ -730,5 +730,13 @@
     "status": "done",
     "detail": "After nearly every notch the render thread read both input histograms on the full 1400 px copy (40 ms, the hand's small copy never used since the slot was always quiet), purging the pool each time. Each stage now keeps its reading while the settings entering it (truncated) and the copy hold; the small copy reads under the hand and the full one once it has rested 150 ms; Blocks' cell medians and tails are found by selection instead of four sorts per cell; no purge.",
     "outcome": "Roll #8 frame, M2 Max release: a gains notch 40 ms to 16 ms on the full copy, 8 to 4 ms on the small one; a slider past the levels (vignette, curves for the levels input) reads nothing. Unit check with a twin: selection equals the sorted cell. Every check green."
+  },
+  {
+    "id": 106,
+    "type": "perf",
+    "title": "The canvas render starts from the stage its slider moves: a frontier cache of the unchanged results a changed stage reads",
+    "status": "done",
+    "detail": "The graph's cache was index-addressed, kept every stage (about a gigabyte at the canvas's size) and was never passed by the app, so every notch re-ran the whole chain from the preview. The cache is now addressed by node key; its frontier mode keeps only the unchanged results a changed node reads, measured against the last render, so from the second notch of a hand on a slider only that stage and what follows run. The engine's canvas render holds one, cleared when the editor is left.",
+    "outcome": "Roll #8 frame, 2000 px, M2 Max release, GPU waited: a Texture notch on a heavy frame 10.4 to 2.6 ms, Sharpen 10.5 to 2.2 ms, Exposure at rest 4.7 to 2.4 ms, the CPU side 1.2-2.5 to 0.3-0.7 ms. A graph check counts the dispatches notch by notch, its twin an early change rerunning all."
   }
 ]

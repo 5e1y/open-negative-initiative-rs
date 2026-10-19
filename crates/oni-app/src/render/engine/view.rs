@@ -62,11 +62,8 @@ impl Engine {
     }
 
     pub(super) fn one_texture(&mut self, image: &Image, region: Option<Rect>) -> Result<Source, String> {
-        let source = match region {
-            Some(r) if r != image.extent() => self.graph.materialise_region(image, r),
-            _ => self.graph.materialise(image),
-        }
-        .map_err(|e| e.to_string())?;
+        let region = region.unwrap_or_else(|| image.extent());
+        let source = self.graph.materialise_cached(image, region, Some(&mut self.cache)).map_err(|e| e.to_string())?;
         if source.view().is_none() {
             return Err("the render is wider than one texture".into());
         }

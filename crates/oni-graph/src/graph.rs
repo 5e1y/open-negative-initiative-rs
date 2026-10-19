@@ -1,6 +1,6 @@
 //! Sources, chains, and their evaluation by region on the GPU.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -96,16 +96,20 @@ struct Plan<'a> {
 }
 
 struct Entry {
-    key: u64,
     rect: Rect,
     texture: FloatTexture,
 }
 
-/// Each stage's last result, held for the next render: a change on a late stage reruns only what follows it.
-/// One cache serves one view of one graph; dropping it frees its textures.
+/// Stage results held for the next render by node key: a change on a late stage reruns only what
+/// follows it. One cache serves one view of one graph; dropping it frees its textures.
 #[derive(Default)]
 pub struct Cache {
-    entries: Vec<Option<Entry>>,
+    entries: HashMap<u64, Entry>,
+    /// Holds only the results a changed node reads, see `Cache::frontier`.
+    frontier: bool,
+    /// The last render's node keys, and the ones it keeps; `None` keeps them all.
+    seen: HashSet<u64>,
+    keep: Option<HashSet<u64>>,
 }
 
 /// A layout for each count of auxiliary inputs.

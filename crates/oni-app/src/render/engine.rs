@@ -102,6 +102,8 @@ pub struct Engine {
     measures: Option<(u64, Source, Source)>,
     /// The last levels and curves readings, kept while what enters each stage holds.
     read: [Option<inputs::Read>; 2],
+    /// The canvas render's stage results the next notch starts from.
+    cache: oni_graph::Cache,
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -201,7 +203,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None] }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -214,6 +216,7 @@ impl Engine {
         self.fitted = None;
         self.measures = None;
         self.read = [None, None];
+        self.cache.clear();
         self.graph.purge();
     }
 
