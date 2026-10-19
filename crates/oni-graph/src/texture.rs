@@ -7,6 +7,9 @@ use std::sync::atomic::{AtomicI64, Ordering};
 pub(crate) const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba32Float;
 pub(crate) const BYTES_PER_PIXEL: u64 = 16;
 
+/// Owned outputs kept for reuse: the shown picture, the one in flight, Compare's before.
+const OUTPUTS: usize = 4;
+
 struct Inner {
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -41,6 +44,11 @@ impl FloatTexture {
     pub fn size(&self) -> (u32, u32) {
         (self.0.width, self.0.height)
     }
+
+    /// Owned textures are never written once made: a source may share one with another.
+    pub fn owned(&self) -> bool {
+        !self.0.pooled
+    }
 }
 
 struct Free {
@@ -51,6 +59,9 @@ struct Free {
 pub(crate) struct Pool {
     device: wgpu::Device,
     free: Vec<Free>,
+    /// The renders' owned outputs, taken again once nothing else holds them: a fresh texture written
+    /// by a kernel is cleared first, a 43 MB pass at the canvas's size.
+    outputs: Vec<FloatTexture>,
     generation: u64,
     pub created: u64,
     pub live: Arc<AtomicI64>,
@@ -58,7 +69,7 @@ pub(crate) struct Pool {
 
 impl Pool {
     pub fn new(device: wgpu::Device) -> Self {
-        Self { device, free: Vec::new(), generation: 0, created: 0, live: Arc::new(AtomicI64::new(0)) }
+        Self { device, free: Vec::new(), outputs: Vec::new(), generation: 0, created: 0, live: Arc::new(AtomicI64::new(0)) }
     }
 
     /// A texture of exactly this size, recycled when one is free.
@@ -72,6 +83,22 @@ impl Pool {
     /// A source tile: same format and usages, never recycled.
     pub fn create_owned(&mut self, width: u32, height: u32) -> FloatTexture {
         self.create(width, height, false)
+    }
+
+    /// A render's owned output: one no source holds any more when there is one of this size, else a
+    /// new one; outputs nothing holds past the last `OUTPUTS` are let go.
+    pub fn output(&mut self, width: u32, height: u32) -> FloatTexture {
+        let idle = |t: &FloatTexture| Arc::strong_count(&t.0) == 1;
+        if let Some(t) = self.outputs.iter().find(|t| idle(t) && t.size() == (width, height)) {
+            return t.clone();
+        }
+        let t = self.create(width, height, false);
+        self.outputs.push(t.clone());
+        while self.outputs.len() > OUTPUTS {
+            let Some(i) = self.outputs.iter().position(idle) else { break };
+            self.outputs.remove(i);
+        }
+        t
     }
 
     fn create(&mut self, width: u32, height: u32, pooled: bool) -> FloatTexture {
@@ -111,6 +138,7 @@ impl Pool {
     /// Frees every idle texture, for a system short of memory.
     pub fn purge(&mut self) {
         self.free.clear();
+        self.outputs.retain(|t| Arc::strong_count(&t.0) > 1);
     }
 
     pub fn idle(&self) -> usize {

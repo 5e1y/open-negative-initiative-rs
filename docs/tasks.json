@@ -786,5 +786,13 @@
     "status": "done",
     "detail": "From the adversarial review of #102 and #104. set_label, set_exif and set_roll_draft read the sidecar with .ok(), so a broken one was replaced by default settings around the one field: they now return the read error. Cmd+Q ends AppKit's loop without closing the window, skipping every close-time write: a winit exiting hook now writes the roll's draft and the open frame's settings. A draft write first flushes the store, so it cannot read back older settings of the open frame. A heal that failed is tried again when its photo is reopened.",
     "outcome": "oni-settings check: a broken sidecar is left byte for byte and set_label errs; twin: a readable one takes the label with its settings kept. The exit hook and the flush order were read, not driven: Cmd+Q is to be tried in the real app."
+  },
+  {
+    "id": 110,
+    "type": "perf",
+    "title": "The last stage writes into a reused output texture; publish timed in the bench",
+    "status": "done",
+    "detail": "Each canvas render allocated a 43 MB owned texture and copied its last stage into it. The last stage now writes straight into an owned output the pool keeps and takes again once no source holds it (four kept); a fresh texture written by a kernel is cleared by wgpu first, which made the direct write alone slower (2.2 to 3.3 ms). The bench report gains the interface thread's publish centiles.",
+    "outcome": "Notch probe, roll #8, M2 Max: a light notch 2.2 to 1.7 ms, Sharpen on a heavy frame 1.9 to 1.6, Texture 2.5 to 2.1. Graph checks green."
   }
 ]

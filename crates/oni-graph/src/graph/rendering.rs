@@ -54,11 +54,17 @@ impl Graph {
             c.begin(&plan.nodes);
         }
         let mut encoder = self.device.create_command_encoder(&Default::default());
-        let (texture, rect) = self.evaluate(&mut encoder, plan, cache.as_deref_mut());
-        let owned = self.pool.create_owned(region.w, region.h);
-        self.copy(&mut encoder, &texture, rect, &owned, region, region);
+        let (texture, rect) = self.evaluate(&mut encoder, plan, cache.as_deref_mut(), true);
+        // The last stage wrote straight into a texture of its own; a pooled one is copied out.
+        let owned = if texture.owned() && rect == region {
+            texture
+        } else {
+            let owned = self.pool.output(region.w, region.h);
+            self.copy(&mut encoder, &texture, rect, &owned, region, region);
+            self.pool.release(texture);
+            owned
+        };
         self.queue.submit([encoder.finish()]);
-        self.pool.release(texture);
         self.settle(cache);
         self.pool.end_render();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
@@ -109,7 +115,7 @@ impl Graph {
             return self.render_piece(image, whole, b, out, cache);
         }
         let mut encoder = self.device.create_command_encoder(&Default::default());
-        let (texture, rect) = self.evaluate(&mut encoder, plan, cache);
+        let (texture, rect) = self.evaluate(&mut encoder, plan, cache, false);
         let row = padded_row(piece.w);
         let readback = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("readback"),
@@ -150,8 +156,9 @@ impl Graph {
     }
 
     /// Records every node the cache cannot skip, producers first, each texture handed back to the pool
-    /// once its last reader has run; returns the last node's result and the rectangle it covers.
-    pub(super) fn evaluate(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan, mut cache: Option<&mut Cache>) -> (FloatTexture, Rect) {
+    /// once its last reader has run; returns the last node's result and the rectangle it covers, in a
+    /// texture of its own when `owned_last` asks it.
+    pub(super) fn evaluate(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan, mut cache: Option<&mut Cache>, owned_last: bool) -> (FloatTexture, Rect) {
         let Plan { nodes, last, rects, hits } = plan;
         let n = nodes.len();
         let mut pending = vec![0usize; n];
@@ -172,7 +179,7 @@ impl Graph {
             match &nodes[i].kind {
                 Kind::Source(source) => results[i] = Some(self.assemble(encoder, source, need)),
                 Kind::Stage { stage, input, aux } => {
-                    let out = self.pool.acquire(need.w, need.h);
+                    let out = if owned_last && i == last { self.pool.output(need.w, need.h) } else { self.pool.acquire(need.w, need.h) };
                     {
                         let main = results[*input].as_ref().expect("the input is evaluated first");
                         let extras: Vec<(&FloatTexture, Rect, Rect)> = aux

@@ -8,6 +8,12 @@ impl Ctl {
     /// Every moved slider's value to the panel; a knob under the hand keeps its place, one moved by
     /// a command springs there, and `jump` places them all at once, as opening a photo does.
     pub(crate) fn publish(self: &Rc<Self>, jump: bool) {
+        let started = Instant::now();
+        self.publish_store(jump);
+        self.state.borrow_mut().notches.record_publish(started.elapsed());
+    }
+
+    fn publish_store(self: &Rc<Self>, jump: bool) {
         let Some(w) = self.window() else { return };
         let g = w.global::<StoreGlobal>();
         let (moved, edited) = {

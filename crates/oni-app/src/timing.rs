@@ -119,11 +119,26 @@ pub struct Notches {
     reported: usize,
     /// From a frame's encode to its histogram on the panel, each.
     histograms: Vec<Duration>,
+    /// Each store publish's time on the interface thread.
+    publishes: Vec<Duration>,
 }
 
 impl Notches {
     pub fn record_histogram(&mut self, lag: Duration) {
         self.histograms.push(lag);
+    }
+
+    pub fn record_publish(&mut self, took: Duration) {
+        self.publishes.push(took);
+    }
+
+    /// The interface thread's publish of each edit over the run, the bench's line.
+    pub fn publishes(&self) -> String {
+        if self.publishes.is_empty() {
+            return "publish: none".into();
+        }
+        let c = Centiles::of(&self.publishes);
+        format!("publish: {} on the interface thread, p50 {:.2} ms, p99 {:.2} ms, worst {:.2} ms", self.publishes.len(), ms(c.p50), ms(c.p99), ms(c.worst))
     }
 
     /// The histograms' lag behind their frames over the run, the bench's line.
