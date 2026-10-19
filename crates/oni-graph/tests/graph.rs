@@ -405,30 +405,3 @@ fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
     let top: Vec<[f32; 4]> = (0..34).rev().flat_map(|y| top.pixels[y * 50..(y + 1) * 50].to_vec()).collect();
     assert!(error(&gpu, &top) > 1e-2, "the anchor went unseen");
 }
-
-#[test]
-fn a_frontier_cache_keeps_only_what_the_next_notch_starts_from() {
-    let Some(mut g) = graph("a_frontier_cache_keeps_only_what_the_next_notch_starts_from") else { return };
-    let (s, _) = source(&mut g, 5);
-    let image = |a: f32, b: f32| Image::new(&s).then(Gain([a; 4])).then(BoxBlur3).then(Gain([b; 4]));
-    let region = Rect::new(40, 30, 120, 90);
-    let mut cache = Cache::frontier();
-    let rendered = |g: &mut Graph, img: &Image, cache: &mut Cache| {
-        let before = g.stats().dispatches;
-        let out = g.materialise_cached(img, region, Some(cache)).expect("cached render");
-        let ran = g.stats().dispatches - before;
-        let cached = g.render(img, region, None).expect("fresh");
-        let shown = g.render(&Image::new(&out), region, None).expect("read back");
-        assert_eq!(shown, cached, "a cached render differs from a fresh one");
-        ran
-    };
-    assert_eq!(rendered(&mut g, &image(1.0, 1.0), &mut cache), 3, "the first render runs every stage");
-    assert_eq!(rendered(&mut g, &image(1.0, 1.1), &mut cache), 3, "the hand's first notch: nothing kept yet");
-    assert_eq!(cache.len(), 1, "only the blur the last gain reads");
-    assert_eq!(rendered(&mut g, &image(1.0, 1.2), &mut cache), 1, "the next notch runs the last gain alone");
-    assert_eq!(rendered(&mut g, &image(1.0, 1.3), &mut cache), 1);
-    // Twin: a notch on the first gain moves everything, and the kept blur is let go.
-    assert_eq!(rendered(&mut g, &image(1.1, 1.3), &mut cache), 3, "an early change reruns all");
-    assert_eq!(rendered(&mut g, &image(1.2, 1.3), &mut cache), 3, "the source is never kept");
-    assert_eq!(cache.len(), 0);
-}

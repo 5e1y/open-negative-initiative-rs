@@ -44,7 +44,8 @@ pub struct Done {
 /// What the render thread hands back: a render as soon as it is drawn, then, at most once an image
 /// interval, the levels' and curves' input distributions, which wait on the GPU for 25 ms or so.
 pub enum Delivery {
-    Render(Result<Done, String>),
+    /// A failure names its frame, so one that lands after the frame was left is dropped.
+    Render(Result<Done, (PathBuf, String)>),
     Inputs { path: PathBuf, inputs: InputHistograms },
 }
 
@@ -150,7 +151,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         _ => None,
                     };
                     let drawn = done.is_ok();
-                    deliver(Delivery::Render(done.map(|d| Done { before, ..d })));
+                    deliver(Delivery::Render(done.map(|d| Done { before, ..d }).map_err(|e| (job.path.clone(), e))));
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);

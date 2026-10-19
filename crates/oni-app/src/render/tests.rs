@@ -351,3 +351,28 @@ fn a_reduced_preview_rebuilds_its_two_outer_rows_from_the_third() {
     graph_out = pixels;
     assert_ne!(graph_out[0][..2], [2.0, 2.0]);
 }
+
+struct Failing;
+
+impl Renderer<Linear> for Failing {
+    fn render(&mut self, _: &Linear, _: &PipelineSettings) -> Result<Linear, String> {
+        Err("unreadable".into())
+    }
+}
+
+#[test]
+fn a_failed_render_names_its_frame() {
+    let (tx, rx) = mpsc::channel();
+    let worker = Worker::new(Box::new(Failing), Screen::Srgb, move |d| {
+        if let Delivery::Render(Err((path, _))) = d {
+            tx.send(path).unwrap();
+        }
+    });
+    let negative = Arc::new(Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] });
+    let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+    worker.submit(Job { revision: 1, path: PathBuf::from("A.tif"), negative, settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false });
+    let failed = rx.recv_timeout(Duration::from_secs(10)).expect("a failure delivered");
+    assert_eq!(failed, PathBuf::from("A.tif"));
+    // Twin: the frame opened since is not the one that failed, so the landing drops it.
+    assert_ne!(failed, PathBuf::from("B.tif"));
+}

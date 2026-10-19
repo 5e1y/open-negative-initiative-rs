@@ -13,7 +13,10 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let done = match done {
             Ok(d) => d,
-            Err(e) => {
+            Err((path, e)) => {
+                if self.state.borrow().open_path().map(PathBuf::from) != Some(path) {
+                    return;
+                }
                 // The canvas never keeps another photo's picture under this one's name.
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
