@@ -39,8 +39,13 @@ pub struct Done {
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
-    /// The levels' and manual curves' input distributions, read at most once an image interval.
-    pub inputs: Option<InputHistograms>,
+}
+
+/// What the render thread hands back: a render as soon as it is drawn, then, at most once an image
+/// interval, the levels' and curves' input distributions, which wait on the GPU for 25 ms or so.
+pub enum Delivery {
+    Render(Result<Done, String>),
+    Inputs { path: PathBuf, inputs: InputHistograms },
 }
 
 /// What the levels and the manual curves are drawn over: the distributions in front of each.
@@ -107,7 +112,7 @@ pub struct Worker<I> {
 }
 
 impl<I: Send + Sync + 'static> Worker<I> {
-    pub fn new(mut renderer: Box<dyn Renderer<I>>, screen: Screen, deliver: impl Fn(Result<Done, String>) + Send + 'static) -> Worker<I> {
+    pub fn new(mut renderer: Box<dyn Renderer<I>>, screen: Screen, deliver: impl Fn(Delivery) + Send + 'static) -> Worker<I> {
         let slot = Arc::new((Mutex::new(Slot { waiting: None, closed: false }), Condvar::new()));
         let shared = slot.clone();
         let on_gpu = Arc::new(AtomicBool::new(false));
@@ -139,7 +144,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None, inputs: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -147,7 +152,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(Histogram::of(&rgba8));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None, inputs: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
                         }),
                     };
                     let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {
@@ -166,17 +171,17 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         }
                         _ => None,
                     };
+                    let drawn = done.is_ok();
+                    deliver(Delivery::Render(done.map(|d| Done { before, ..d })));
                     // At the image's own cadence, and always on the last job of a burst, so the hand's
                     // release lands the full copy's reading.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
-                    let inputs = if done.is_ok() && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    if drawn && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_inputs = Instant::now();
-                        renderer.inputs(&job.negative, &job.settings, job.held && !quiet)
-                    } else {
-                        None
-                    };
-                    let done = done.map(|d| Done { before, inputs, ..d });
-                    deliver(done);
+                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held && !quiet) {
+                            deliver(Delivery::Inputs { path: job.path.clone(), inputs });
+                        }
+                    }
                 }
             })
             .expect("render thread");

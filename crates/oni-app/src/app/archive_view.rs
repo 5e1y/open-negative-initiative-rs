@@ -417,7 +417,7 @@ impl Ctl {
                 }
                 Err(e) => {
                     if c.state.borrow().open_path() == Some(path.as_str()) {
-                        c.deliver(Err(format!("{}: {e}", stem(&path))));
+                        c.deliver(Delivery::Render(Err(format!("{}: {e}", stem(&path)))));
                     }
                 }
             });

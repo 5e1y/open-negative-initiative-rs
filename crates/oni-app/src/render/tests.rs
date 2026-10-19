@@ -71,7 +71,11 @@ impl Renderer<Linear> for Slow {
 fn a_burst_of_notches_renders_the_first_and_the_last_only() {
     let seen = Arc::new(Mutex::new(Vec::new()));
     let (tx, rx) = mpsc::channel();
-    let worker = Worker::new(Box::new(Slow(seen.clone())), Screen::Srgb, move |d| tx.send(d.map(|d| d.revision)).unwrap());
+    let worker = Worker::new(Box::new(Slow(seen.clone())), Screen::Srgb, move |d| {
+        if let Delivery::Render(d) = d {
+            tx.send(d.map(|d| d.revision)).unwrap();
+        }
+    });
     let negative = Arc::new(Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] });
     for revision in 1..=20u64 {
         let mut settings = PipelineSettings::default();

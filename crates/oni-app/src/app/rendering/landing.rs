@@ -5,7 +5,11 @@ use super::*;
 impl Ctl {
     /// A render arrived: stale ones are dropped, the GPU path encodes its texture into the canvas,
     /// the software renderer shows the bytes encoded on the render thread.
-    pub(in crate::app) fn deliver(self: &Rc<Self>, done: Result<Done, String>) {
+    pub(in crate::app) fn deliver(self: &Rc<Self>, delivery: Delivery) {
+        let done = match delivery {
+            Delivery::Render(done) => done,
+            Delivery::Inputs { path, inputs } => return self.inputs_landed(&path, inputs),
+        };
         let Some(w) = self.window() else { return };
         let done = match done {
             Ok(d) => d,
@@ -40,13 +44,8 @@ impl Ctl {
                 s.histogram = Some(h);
                 s.histogram_dirty = true;
             }
-            if let Some(i) = done.inputs {
-                s.inputs = Some(i);
-                s.inputs_drawn = None;
-            }
             s.gpu.is_some()
         };
-        self.publish_inputs();
         if on_gpu {
             let whole = done.placed.is_none_or(|p| p.whole);
             self.encode(done.picture, shown, whole);
@@ -67,6 +66,19 @@ impl Ctl {
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
+    }
+
+    /// The input distributions of a render already shown; another photo's are dropped.
+    fn inputs_landed(&self, path: &Path, inputs: InputHistograms) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.open_path().map(Path::new) != Some(path) {
+                return;
+            }
+            s.inputs = Some(inputs);
+            s.inputs_drawn = None;
+        }
+        self.publish_inputs();
     }
 
     /// Lays the render where the viewport puts it; a render with no place fills the canvas, fitted.

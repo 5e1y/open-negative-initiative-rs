@@ -7,7 +7,7 @@ use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::preferences::{self, Preferences};
 use crate::thumbnails::{self, Memory};
-use crate::render::{self, Done, Histogram, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
+use crate::render::{self, Delivery, Histogram, InputHistograms, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
 use oni_settings::cg::Rect as Fraction;
