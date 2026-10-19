@@ -191,6 +191,10 @@ impl Ctl {
 
     /// `saveRollDraft`: each frame's draft written on the serial thread, after the writes before it.
     pub(in crate::app) fn save_draft(&self) {
+        // The open frame on disk first: a draft write reads its settings back, and must not revive older ones.
+        if let Some(failure) = self.state.borrow_mut().store.flush() {
+            crate::timing::line(&format!("the open frame's settings could not be saved: {failure}"));
+        }
         let job = {
             let r = &mut self.state.borrow_mut().prepare;
             let Some(drafts) = r.drafts() else { return };

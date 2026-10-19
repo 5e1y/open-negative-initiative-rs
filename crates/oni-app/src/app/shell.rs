@@ -216,8 +216,21 @@ impl Shell {
         self.ctl.state.borrow_mut().store.flush()
     }
 
+    /// What closing the window writes, for a quit that never closes it.
+    pub fn last_writes(&self) -> Option<String> {
+        self.ctl.last_writes()
+    }
+
     /// The session's notch renders, for the line printed on exit.
     pub fn summary(&self) -> String {
         self.ctl.state.borrow().notches.summary(0, "session")
+    }
+}
+
+impl Ctl {
+    /// The roll's draft, then the open frame's settings, as closing the window writes them.
+    pub fn last_writes(&self) -> Option<String> {
+        self.flush_drafts();
+        self.state.borrow_mut().store.flush()
     }
 }

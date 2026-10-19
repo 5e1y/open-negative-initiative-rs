@@ -5,6 +5,16 @@ use crate::editors::Plot;
 use crate::histogram::PlotSize;
 use oni_measure::histogram::Histogram;
 
+/// `histogram` traced `w` by `h` points at `scale`, on any thread; nothing for a plot not laid out.
+pub(super) fn pixels(histogram: &Histogram, w: f64, h: f64, scale: f32) -> Option<SharedPixelBuffer<Rgba8Pixel>> {
+    if w < 1.0 || h < 1.0 {
+        return None;
+    }
+    let size = PlotSize::of(w as f32, h as f32, scale);
+    let bytes = crate::histogram::raster(histogram, None, size);
+    Some(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(&bytes, size.width as u32, size.height as u32))
+}
+
 impl Ctl {
     /// `histogram` traced `w` by `h` points at the window's scale; nothing while the plot is not laid out.
     pub(crate) fn traced(&self, histogram: &Histogram, focus: Option<usize>, w: f64, h: f64) -> Image {

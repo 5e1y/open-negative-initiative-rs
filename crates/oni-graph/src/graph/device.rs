@@ -33,6 +33,16 @@ impl Graph {
     /// follow the device's own texture limit, which the caller chose when it requested the device.
     pub fn from_device(device: wgpu::Device, queue: wgpu::Queue, adapter: String, max_side: u32) -> Self {
         let limits = device.limits();
+        let uniforms = Uniforms {
+            buffer: device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("uniforms"),
+                size: UNIFORM_RING,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            }),
+            at: 0,
+            align: u64::from(limits.min_uniform_buffer_offset_alignment).max(16),
+        };
         Self {
             pool: Pool::new(device.clone()),
             device,
@@ -43,6 +53,7 @@ impl Graph {
             max_buffer: limits.max_buffer_size,
             dispatches: 0,
             copies: 0,
+            uniforms,
             adapter,
         }
     }

@@ -214,16 +214,17 @@ pub fn update(original: &Path, mosaic: bool, transform: impl FnOnce(&PipelineSet
 
 /// Sets a label without touching the settings or the revision.
 pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Error> {
-    let existing = read(original, mosaic, true).ok();
-    if existing.as_ref().is_some_and(|e| !e.writable) {
+    // An unreadable sidecar is an error, never rewritten as defaults around the one field.
+    let existing = read(original, mosaic, true)?;
+    if !existing.writable {
         return Ok(());
     }
-    let settings = existing.as_ref().map(|e| e.settings.clone()).unwrap_or_default();
+    let settings = existing.settings.clone();
     write(
         &settings,
         original,
         WriteOptions {
-            imported_at: existing.as_ref().and_then(|e| e.imported_at),
+            imported_at: existing.imported_at,
             label: Some(label),
             preserving_revision: true,
             ..WriteOptions::default()
@@ -233,17 +234,18 @@ pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Erro
 
 /// Sets the frame's EXIF, the settings and the revision untouched.
 pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(), Error> {
-    let existing = read(original, mosaic, true).ok();
-    if existing.as_ref().is_some_and(|e| !e.writable) {
+    // An unreadable sidecar is an error, never rewritten as defaults around the one field.
+    let existing = read(original, mosaic, true)?;
+    if !existing.writable {
         return Ok(());
     }
-    let settings = existing.as_ref().map(|e| e.settings.clone()).unwrap_or_default();
+    let settings = existing.settings.clone();
     write(
         &settings,
         original,
         WriteOptions {
-            imported_at: existing.as_ref().and_then(|e| e.imported_at),
-            label: existing.as_ref().map(|e| e.label),
+            imported_at: existing.imported_at,
+            label: Some(existing.label),
             exif: Some(exif),
             preserving_revision: true,
             ..WriteOptions::default()
@@ -253,21 +255,21 @@ pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(),
 
 /// Sets or clears the roll a frame is prepared in; a frame never touched gains no sidecar for a clear.
 pub fn set_roll_draft(draft: Option<RollDraft>, original: &Path, mosaic: bool) -> Result<(), Error> {
-    let existing = read(original, mosaic, true).ok();
-    if existing.as_ref().is_some_and(|e| !e.writable) || existing.as_ref().and_then(|e| e.roll_draft.as_ref()) == draft.as_ref()
-    {
+    // An unreadable sidecar is an error, never rewritten as defaults around the draft.
+    let existing = read(original, mosaic, true)?;
+    if !existing.writable || existing.roll_draft.as_ref() == draft.as_ref() {
         return Ok(());
     }
-    if draft.is_none() && existing.as_ref().map(|e| e.is_new) != Some(false) {
+    if draft.is_none() && existing.is_new {
         return Ok(());
     }
-    let settings = existing.as_ref().map(|e| e.settings.clone()).unwrap_or_default();
+    let settings = existing.settings.clone();
     write(
         &settings,
         original,
         WriteOptions {
-            imported_at: existing.as_ref().and_then(|e| e.imported_at),
-            label: existing.as_ref().map(|e| e.label),
+            imported_at: existing.imported_at,
+            label: Some(existing.label),
             roll_draft: Some(draft),
             preserving_revision: true,
             ..WriteOptions::default()

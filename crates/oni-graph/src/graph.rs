@@ -5,8 +5,6 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use wgpu::util::DeviceExt;
-
 use crate::stage::{AuxFrame, Frame, MAX_AUX, PRELUDE, aux_prelude};
 use crate::stages::{AnchoredLanczos, Axis, Lanczos};
 use crate::texture::{BYTES_PER_PIXEL, FloatTexture, Pool};
@@ -129,7 +127,18 @@ pub struct Graph {
     max_buffer: u64,
     dispatches: u64,
     copies: u64,
+    uniforms: Uniforms,
     pub adapter: String,
 }
+
+/// Every dispatch's uniforms written in turn into one buffer, so no stage creates buffers of its own.
+struct Uniforms {
+    buffer: wgpu::Buffer,
+    at: u64,
+    align: u64,
+}
+
+/// The ring's size: a render writes about a kilobyte a stage, so one never wraps onto itself.
+const UNIFORM_RING: u64 = 4 << 20;
 
 static SOURCE_IDS: AtomicU64 = AtomicU64::new(1);

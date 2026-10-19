@@ -47,35 +47,23 @@ impl Graph {
         let mut params = stage.params();
         // A uniform binding holds at least 16 bytes, in 16-byte steps.
         params.resize(params.len().div_ceil(16).max(1) * 16, 0);
-        let frame = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("frame"),
-            contents: bytemuck::bytes_of(&frame),
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
-        let params = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("params"),
-            contents: &params,
-            usage: wgpu::BufferUsages::UNIFORM,
-        });
+        let frame = self.uniform(bytemuck::bytes_of(&frame));
+        let params = self.uniform(&params);
         let mut frames = [AuxFrame::default(); MAX_AUX];
         for (f, (_, rect, extent)) in frames.iter_mut().zip(aux) {
             *f = AuxFrame { in_origin: [rect.x, rect.y], in_min: [extent.x, extent.y], in_max: [extent.right(), extent.bottom()], pad: [0; 2] };
         }
-        let frames = (!aux.is_empty()).then(|| {
-            self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("aux frames"),
-                contents: bytemuck::bytes_of(&frames),
-                usage: wgpu::BufferUsages::UNIFORM,
-            })
-        });
+        let frames = (!aux.is_empty()).then(|| self.uniform(bytemuck::bytes_of(&frames)));
+        let buffer = &self.uniforms.buffer.clone();
+        let bound = |(offset, size): (u64, u64)| wgpu::BindingResource::Buffer(wgpu::BufferBinding { buffer, offset, size: wgpu::BufferSize::new(size) });
         let mut entries = vec![
-            wgpu::BindGroupEntry { binding: 0, resource: frame.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 0, resource: bound(frame) },
             wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(texture.view()) },
             wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(output.view()) },
-            wgpu::BindGroupEntry { binding: 3, resource: params.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: bound(params) },
         ];
-        if let Some(frames) = &frames {
-            entries.push(wgpu::BindGroupEntry { binding: 4, resource: frames.as_entire_binding() });
+        if let Some(frames) = frames {
+            entries.push(wgpu::BindGroupEntry { binding: 4, resource: bound(frames) });
             for (k, (t, _, _)) in aux.iter().enumerate() {
                 entries.push(wgpu::BindGroupEntry { binding: 5 + k as u32, resource: wgpu::BindingResource::TextureView(t.view()) });
             }
@@ -91,6 +79,21 @@ impl Graph {
         pass.set_bind_group(0, &group, &[]);
         pass.dispatch_workgroups(output_rect.w.div_ceil(8), output_rect.h.div_ceil(8), 1);
         self.dispatches += 1;
+    }
+
+    /// `bytes` written at the ring's next aligned place; its offset and size there.
+    fn uniform(&mut self, bytes: &[u8]) -> (u64, u64) {
+        let u = &mut self.uniforms;
+        let size = (bytes.len() as u64).div_ceil(16).max(1) * 16;
+        if u.at + size > UNIFORM_RING {
+            u.at = 0;
+        }
+        let at = u.at;
+        let mut padded = bytes.to_vec();
+        padded.resize(size as usize, 0);
+        self.queue.write_buffer(&u.buffer, at, &padded);
+        u.at = (at + size).div_ceil(u.align) * u.align;
+        (at, size)
     }
 
     pub(super) fn layout(&mut self, arity: usize) -> &Layout {

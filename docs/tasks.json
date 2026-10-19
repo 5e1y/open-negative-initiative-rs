@@ -770,5 +770,21 @@
     "status": "done",
     "detail": "The worker delivered a bare error string, so a failure of frame A landing once B was open blanked B's canvas and said Not rendered. The error now carries its path and the landing drops it unless that frame is open.",
     "outcome": "Unit check on the worker: the failure carries the job's path; the landing compares it to the open frame."
+  },
+  {
+    "id": 108,
+    "type": "perf",
+    "title": "One uniform ring for every dispatch; the histogram traced off the interface thread",
+    "status": "done",
+    "detail": "Each stage created two or three uniform buffers per render; they are now written in turn into one 4 MB ring at the device's offset alignment. The picture's and the saturation plot's traces (1.5 ms each at 640 x 280) run on a worker thread, a trace overtaken by a later one dropped, the latency recorded when it lands.",
+    "outcome": "Notch probe, roll #8, M2 Max: the CPU side of a notch 0.3-0.7 to 0.2-0.5 ms; the interface thread no longer traces (3 ms a histogram before). Per-feature GPU cost measured on the 2000 px preview: bare chain 1.6 ms, Texture +2.6, sharpen +0.25, chroma +0.2, vignette and Chrome under 0.1. Graph checks and the window checks green."
+  },
+  {
+    "id": 109,
+    "type": "fix",
+    "title": "An unreadable sidecar never rewritten as defaults; Cmd+Q writes the draft and the open frame; heals retried on reopen",
+    "status": "done",
+    "detail": "From the adversarial review of #102 and #104. set_label, set_exif and set_roll_draft read the sidecar with .ok(), so a broken one was replaced by default settings around the one field: they now return the read error. Cmd+Q ends AppKit's loop without closing the window, skipping every close-time write: a winit exiting hook now writes the roll's draft and the open frame's settings. A draft write first flushes the store, so it cannot read back older settings of the open frame. A heal that failed is tried again when its photo is reopened.",
+    "outcome": "oni-settings check: a broken sidecar is left byte for byte and set_label errs; twin: a readable one takes the label with its settings kept. The exit hook and the flush order were read, not driven: Cmd+Q is to be tried in the real app."
   }
 ]

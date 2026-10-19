@@ -19,6 +19,8 @@ impl Ctl {
             s.next_number = 1;
             s.sources.clear();
             s.fallback.clear();
+            // A heal that failed (a drive asleep) is tried again when its photo is opened again.
+            s.unhealable.clear();
             // Another photo's distributions never stand under this one's handles.
             s.inputs = None;
             s.shelf.hovered = None;

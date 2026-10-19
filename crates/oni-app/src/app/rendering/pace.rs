@@ -1,6 +1,10 @@
 //! What runs on its own pace beside the renders: the histogram, the load counter, the deferred write, the status line.
 
 use super::*;
+use std::sync::atomic::AtomicU64;
+
+/// The last histogram trace asked, so an older one landing after it is dropped.
+static TRACES: AtomicU64 = AtomicU64::new(0);
 
 impl Ctl {
     /// The load counter on its own pace, and the histogram should a count have waited for it.
@@ -50,12 +54,26 @@ impl Ctl {
         };
         if let Some(h) = histogram {
             let plots = w.global::<Plots>();
-            plots.set_output(self.traced(&h, None, f64::from(plots.get_output_width()), f64::from(plots.get_output_height())));
+            let scale = w.window().scale_factor();
             let under = crate::editors::size(self, crate::editors::Plot::Saturation);
-            plots.set_saturation(self.traced(&h, None, under.w, under.h));
-        }
-        if let Some(at) = counted {
-            self.state.borrow_mut().notches.record_histogram(at.elapsed());
+            let sizes = [(f64::from(plots.get_output_width()), f64::from(plots.get_output_height())), (under.w, under.h)];
+            // Traced off this thread, 1.5 ms a plot; a trace overtaken by a later one is dropped.
+            let ticket = TRACES.fetch_add(1, Ordering::SeqCst) + 1;
+            std::thread::spawn(move || {
+                let [output, saturation] = sizes.map(|(pw, ph)| super::plots::pixels(&h, pw, ph, scale));
+                with_shell(move |c| {
+                    if TRACES.load(Ordering::SeqCst) != ticket {
+                        return;
+                    }
+                    let Some(w) = c.window() else { return };
+                    let plots = w.global::<Plots>();
+                    plots.set_output(output.map(Image::from_rgba8_premultiplied).unwrap_or_default());
+                    plots.set_saturation(saturation.map(Image::from_rgba8_premultiplied).unwrap_or_default());
+                    if let Some(at) = counted {
+                        c.state.borrow_mut().notches.record_histogram(at.elapsed());
+                    }
+                });
+            });
         }
     }
 

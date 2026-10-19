@@ -35,6 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             device: gpu.device.clone(),
             queue: gpu.queue.clone(),
         })
+        .with_winit_custom_application_handler(Quitting)
         .select();
     let canvas = match wgpu {
         Ok(()) => {
@@ -55,6 +56,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), ..Options::default() })?;
+    let quitting = shell.ctl.clone();
+    ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |window, event| {
@@ -109,10 +112,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     slint::run_event_loop()?;
     // A quit that never asked the window to close still writes the open frame's last settings.
-    if let Some(failure) = shell.flush() {
+    if let Some(failure) = shell.last_writes() {
         timing::line(&format!("the open frame's settings could not be saved: {failure}"));
     }
     oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
     Ok(())
+}
+
+thread_local! {
+    /// What a quit writes, set once the shell stands; ⌘Q ends AppKit's loop without closing the window.
+    static ON_EXIT: std::cell::RefCell<Option<Box<dyn Fn() -> Option<String>>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// The application's exit, seen before AppKit ends the process, so ⌘Q loses no settings.
+struct Quitting;
+
+impl slint::winit_030::CustomApplicationHandler for Quitting {
+    fn exiting(&mut self, _: &slint::winit_030::winit::event_loop::ActiveEventLoop) -> EventResult {
+        if let Some(failure) = ON_EXIT.with(|e| e.borrow().as_ref().and_then(|write| write())) {
+            timing::line(&format!("the open frame's settings could not be saved: {failure}"));
+        }
+        EventResult::Propagate
+    }
 }
