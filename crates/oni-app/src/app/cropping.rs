@@ -194,6 +194,8 @@ impl Ctl {
     /// The Crop tab opened: the framing the hand last chose is handed to this frame if chosen on another.
     pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
         if tab == 1 {
+            // Crop's handles take the deck's edge, and the deck with its preview.
+            self.clear_hover();
             let remembered = {
                 let s = self.state.borrow();
                 let open = s.open_path().map(str::to_string);

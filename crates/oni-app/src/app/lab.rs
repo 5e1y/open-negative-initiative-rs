@@ -188,6 +188,10 @@ impl Ctl {
             return self.publish_bar();
         }
         remember(&support, face);
+        // The Lab's screen takes the deck, and the deck its preview.
+        if face == Face::Scanner {
+            self.clear_hover();
+        }
         self.write(Command::Face(face));
     }
 

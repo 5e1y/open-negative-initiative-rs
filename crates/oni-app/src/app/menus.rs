@@ -120,7 +120,7 @@ impl Ctl {
                 copy_settings: open,
                 paste_settings: has_settings && count > 0,
                 paste_to_roll: has_settings && open,
-                save_preset: open,
+                save_preset: open && !modal,
                 edit_presets: !modal && presets > 0,
                 import_presets: !modal,
                 show_presets: !modal,

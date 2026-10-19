@@ -205,7 +205,7 @@ impl Ctl {
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
         // Leaving the editor takes the deck away with no exit event: the preview goes with it.
-        self.state.borrow_mut().shelf.hovered = None;
+        self.clear_hover();
         if !w.global::<App>().get_gallery() {
             self.drop_split();
             w.global::<App>().set_gallery(true);

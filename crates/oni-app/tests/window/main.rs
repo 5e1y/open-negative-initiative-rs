@@ -24,6 +24,7 @@ mod navigator;
 mod paper_sheet_window;
 mod phone;
 mod prepare;
+mod preset_deck;
 mod presets;
 mod quit;
 mod rgb_passes;
@@ -72,6 +73,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled", paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled),
     ("phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame", phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
+    ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),

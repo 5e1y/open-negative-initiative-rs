@@ -1,7 +1,7 @@
 // The presets' pieces: a card on its tint, the card that makes one, a swatch, the editor's row, the
 // sheet's panel over its scrim and the rule that splits it.
 import { Colour, Space, Radius, Stroke, Type, State, SheetStyle, PresetStyle } from "theme.slint";
-import { Label, TextRole, Tone } from "base.slint";
+import { Label, TextRole, Tone, Tips } from "base.slint";
 
 // `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink.
 export component PresetFace inherits Rectangle {
@@ -55,21 +55,25 @@ export component PresetNewFace inherits Rectangle {
     }
 }
 
-// `PresetTintPicker`'s swatch: the picked one ringed in the ink.
+// `PresetTintPicker`'s swatch: the picked one ringed in its own ink, which no near tint hides.
 export component Swatch inherits Rectangle {
     in property <color> fill;
     in property <bool> picked;
     in property <string> name;
+    in property <color> ink: Colour.ink;
     callback clicked();
     width: PresetStyle.swatch;
     height: PresetStyle.swatch;
     border-radius: Radius.badge;
     background: root.fill;
     border-width: root.picked ? Stroke.emphasis : 0px;
-    border-color: Colour.ink;
+    border-color: root.ink;
     accessible-role: button;
     accessible-label: root.name;
-    TouchArea { clicked => { root.clicked(); } }
+    TouchArea {
+        clicked => { root.clicked(); }
+        changed has-hover => { Tips.hover(self.has-hover, root.name, self.absolute-position.x, self.absolute-position.y + self.height); }
+    }
 }
 
 // The editor's list row: the monogram badge, the name, what it carries.
