@@ -626,5 +626,13 @@
     "status": "done",
     "detail": "Mirror and rotate act on a decoded frame only; under load the check pressed ⇧⌘M before the decode landed.",
     "outcome": "Green with 6 and 12 checks at once."
+  },
+  {
+    "id": 89,
+    "type": "perf",
+    "title": "Dye Separation, optimised end to end",
+    "status": "in progress",
+    "detail": "The separation has its own file (oni-pipeline/src/conversion/separation.rs); the POC crate's copy of its rows leaves with the crate, whose pieces oni-app carries; ONI_BENCH_FIELD drags any parameter in the real window, dye-separation included.",
+    "outcome": ""
   }
 ]

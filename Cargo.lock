@@ -4391,19 +4391,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "oni-ui-poc"
-version = "0.1.0"
-dependencies = [
- "oni-decode",
- "oni-fixtures",
- "oni-render",
- "png",
- "serde_json",
- "slint",
- "slint-build",
-]
-
-[[package]]
 name = "opaque-debug"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

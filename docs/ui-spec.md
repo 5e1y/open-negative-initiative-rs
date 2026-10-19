@@ -5,8 +5,8 @@ item, each with the Slint construct it maps to and what makes it hard. The targe
 of the current interface: same layout, same tokens, same gestures, same timings. The Swift code is the
 reference; where this document and the Swift code disagree, the Swift code wins.
 
-`crates/oni-ui-poc/` is the proof of concept that tested the riskiest pieces: a keycap slider driving one
-`Stage47` field, on a real roll #8 frame, rendered headlessly. Its results are in section 7.
+A proof of concept tested the riskiest pieces first: a keycap slider driving one `Stage47` field, on a
+real roll #8 frame, rendered headlessly. `oni-app` now carries each of them; the findings are in section 7.
 
 Sections:
 
@@ -16,7 +16,7 @@ Sections:
 4. [Inventory](#4-inventory)
 5. [Design system: tokens, components, keycaps](#5-design-system)
 6. [Risk register](#6-risk-register)
-7. [Proof of concept](#7-proof-of-concept-cratesoni-ui-poc)
+7. [Proof of concept](#7-proof-of-concept)
 8. [Decisions](#8-decisions)
 9. [Not ported](#9-not-ported)
 
@@ -543,9 +543,9 @@ Ordered by cost to an identical copy.
 
 ---
 
-## 7. Proof of concept (`crates/oni-ui-poc/`)
+## 7. Proof of concept
 
-A workspace crate, `oni-ui-poc`, that depends on `oni-render` and `oni-decode`.
+A workspace crate that depended on `oni-render` and `oni-decode` only.
 
 **What it does.**
 - Opens roll #8's `DSC_6440.NEF` (the reference roll, well exposed and well scanned):
@@ -563,30 +563,8 @@ A workspace crate, `oni-ui-poc`, that depends on `oni-render` and `oni-decode`.
   readout `%+.2f EV`.
 - The slider writes `Stage47::print_stops`, and the canvas is re-rendered from the float buffer.
 
-**Files.**
-
-| File | Content |
-|---|---|
-| `ui/poc.slint` | `DS` tokens; `Separator`; `Readout`; `Rail` (track, fill, recess, border, rim); `Slider` (`DSSlider` behaviour, accessibility); `Section`; `MainWindow` |
-| `src/lib.rs` | State and callbacks: press (double click on press), relative drag with Option fine, 30 Hz hand-off with a trailing timer, release, scroll, accessibility step, the settle spring for arriving values |
-| `src/keycap.rs` | Frustum light and the knob raster (walls, dished face, edge, grip lines) |
-| `src/track.rs` | `DSSlider` arithmetic: bent track, relative drag, the hand-off clock |
-| `src/motion.rs` | `DS.Motion.Spec.value` evaluated analytically |
-| `src/frame.rs` | Decode, float reduction, sidecar → `Stage47`, display encoding |
-| `tests/headless.rs` | Slint `MinimalSoftwareWindow` as the platform; real pointer, key and scroll events |
-| `tests/reference.rs` | The mapping fed the Swift app's own decode of DSC_6440 against the Swift app's own render of it; the LibRaw decode against `CIRAWFilter`'s |
-| `frame.png`, written by `tests/headless.rs` into Cargo's test temporary folder (`target/tmp`) | The window as first rendered (2200 × 1360, scale 2) |
-| `frame-dragged.png`, beside it | After a drag to +3.50 EV |
-
-**Run.**
-
-```sh
-cargo test --release -p oni-ui-poc -- --nocapture
-cargo run --release -p oni-ui-poc   # needs a display
-```
-
-`ONI_RAW_DIR` points at another copy of roll #8 and `ONI_REFERENCE` at the Swift dumps; without
-them the tests print that they are skipped.
+Its pieces now live in `oni-app` (`track.rs`, `motion.rs`, the keycap raster) and the pipeline in
+`oni-pipeline`; the crate left the workspace once they did.
 
 **Measured results** (`cargo test --release`: 15 tests pass, 0 fail; `cargo clippy --release
 --all-targets` reports no warnings).

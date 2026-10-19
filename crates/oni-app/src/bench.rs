@@ -1,4 +1,4 @@
-//! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on Exposure at a
+//! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on {on} at a
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
 //! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
@@ -38,6 +38,12 @@ mod loupe;
 use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, sheet::*, loupe::*};
 
 pub const NOTCHES: usize = 60;
+
+/// `ONI_BENCH_FIELD` names the dragged parameter by its Slint stem (`dye-separation`); Exposure else.
+pub(crate) fn drag_field() -> Field {
+    let named = std::env::var("ONI_BENCH_FIELD").ok();
+    named.and_then(|n| Field::ALL.into_iter().find(|f| f.slint_name() == n)).unwrap_or(Field::Exposure)
+}
 /// Ten seconds at the trackpad's pace, a tenth of a point a notch: one way, so no turn hands the
 /// same value twice, and inside the range.
 const LONG: usize = 1200;
@@ -155,7 +161,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         let Some(ctl) = me.upgrade() else { return timer.stop() };
         let Some(w) = ctl.window() else { return };
         let g = w.global::<StoreGlobal>();
-        let field = Field::Exposure.index();
+        let field = drag_field().index();
         let finish = |text: String| {
             timer.stop();
             if let Some(done) = done.borrow_mut().take() {
@@ -202,12 +208,13 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 if ctl.state.borrow().rendered() < revision {
                     return;
                 }
+                let on = drag_field().slint_name();
                 let title = match mode {
-                    Mode::Drag => format!("bench, {NOTCHES} notches dragged on Exposure"),
-                    Mode::Resize => format!("bench, {NOTCHES} notches dragged on Exposure, the window resized on each"),
-                    Mode::Settled => format!("bench, {NOTCHES} notches dragged on Exposure, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet | Mode::Loupe => format!("bench, {LONG} notches dragged on Exposure for ten seconds"),
-                    Mode::Compare => format!("bench, {NOTCHES} notches dragged on Exposure beside Compare's before"),
+                    Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
+                    Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
+                    Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet | Mode::Loupe => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
+                    Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
                 let mut report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
