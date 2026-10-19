@@ -690,5 +690,13 @@
     "status": "done",
     "detail": "LibRaw's half_size, set only for a copy no longer than half the sensor: each 2x2 block one pixel, no demosaic. The roll's tiles (360 px), its card and base scan (1400) and every measuring copy (2000, the auto keys' and the roll's measure) are read so; the base loupe and the editor keep the full demosaic, so no render moves.",
     "outcome": "DSC_6440.NEF (24 Mpx): 980 ms to 345 ms a decode, channel means within 0.01 %; checked against the full decode with a twin (a longer copy reads whole)."
+  },
+  {
+    "id": 97,
+    "type": "perf",
+    "title": "Memory: the editor's full frame and copies let go in the gallery, Compare's before with Compare off, the console read only while shown",
+    "status": "done",
+    "detail": "From the RAM reviewers' findings, each checked in the code: back in the gallery the full-resolution source, the fitted copy, the measuring copies and the pool's idle textures are dropped (up to 1.6 GB on a 24 MP frame); Compare off drops its before texture; the console window's timer no longer reads the whole log every half second once closed.",
+    "outcome": "Every check green; measuring resident memory before and after is the next step."
   }
 ]

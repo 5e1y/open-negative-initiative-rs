@@ -50,6 +50,12 @@ impl Ctl {
         let split = {
             let mut s = self.state.borrow_mut();
             s.split = if s.split.is_some() { None } else { Some(0.5) };
+            // The before is a texture the size of the view: Compare off lets it go.
+            if s.split.is_none()
+                && let Some(g) = s.gpu.as_mut()
+            {
+                g.before = None;
+            }
             s.split
         };
         if let Some(w) = self.window() {

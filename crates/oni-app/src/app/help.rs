@@ -223,8 +223,9 @@ impl Ctl {
                 console.on_reveal(move || system::reveal(&revealed));
                 let timer = Timer::default();
                 let weak = console.as_weak();
+                // Read only while the window is up: closed, it costs nothing.
                 timer.start(TimerMode::Repeated, CONSOLE_REFRESH, move || {
-                    if let Some(c) = weak.upgrade() {
+                    if let Some(c) = weak.upgrade().filter(|c| c.window().is_visible()) {
                         c.set_log(std::fs::read_to_string(&log).unwrap_or_default().into());
                     }
                 });

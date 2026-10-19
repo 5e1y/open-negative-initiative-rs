@@ -188,6 +188,19 @@ impl Ctl {
         }
     }
 
+    /// Back in the gallery, the editor's full-resolution frame and its copies are let go: up to 1.6 GB
+    /// on a 24 MP frame; the view builds it again once it asks.
+    fn leave_editor_memory(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.full = None;
+            s.building_full = None;
+        }
+        if let Ok(mut engine) = self.engine.lock() {
+            engine.trim();
+        }
+    }
+
     /// `toggleMode()`: the editor on the gallery's ringed photo, or back to the gallery.
     pub(super) fn toggle_mode(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
@@ -196,6 +209,7 @@ impl Ctl {
         if !w.global::<App>().get_gallery() {
             self.drop_split();
             w.global::<App>().set_gallery(true);
+            self.leave_editor_memory();
             self.publish_tiles();
             return;
         }
