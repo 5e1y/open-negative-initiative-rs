@@ -241,6 +241,10 @@ impl Ctl {
         let p = me.clone();
         lib.on_row_double_clicked(move |i| p.row_double_clicked(index(i)));
         let p = me.clone();
+        lib.on_row_folded(move |i| p.row_folded(index(i)));
+        let p = me.clone();
+        lib.on_project_row_folded(move |i| p.project_row_folded(index(i)));
+        let p = me.clone();
         lib.on_project_row_clicked(move |i| p.project_row_clicked(index(i)));
         let p = me.clone();
         lib.on_project_row_double_clicked(move |i| p.project_row_double_clicked(index(i)));
@@ -248,6 +252,8 @@ impl Ctl {
         lib.on_project_row_menu(move |i| p.project_row_menu(index(i)));
         let p = me.clone();
         lib.on_project_fold_all(move || p.project_fold_all());
+        let p = me.clone();
+        lib.on_project_centre(move || p.project_centre_key());
         let p = me.clone();
         lib.on_trash_row_clicked(move |i| p.trash_row_clicked(index(i)));
         let p = me.clone();

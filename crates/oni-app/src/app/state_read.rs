@@ -50,6 +50,11 @@ impl State {
         self.open.as_deref()
     }
 
+    /// The library column's height, which a check places a row in view against.
+    pub fn tree_height(&self) -> f32 {
+        self.tree_size.1
+    }
+
     /// The thumbnails of the opened folder settled so far: held in the folder, drawn, or refused.
     pub fn loaded(&self) -> usize {
         self.painted.0

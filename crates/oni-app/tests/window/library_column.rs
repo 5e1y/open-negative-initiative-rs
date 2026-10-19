@@ -1,6 +1,5 @@
-//! The library column beside a photo: centred when the open photo or the screen changes, never on
-//! an edit; a resize keeps its rows and its scroll; a redrawn thumbnail reaches its row; a double
-//! click opens a photo once and folds a group once.
+//! The library column beside a photo: centred when the screen or the photo opened elsewhere changes, never on an
+//! edit or a click in it; a resize keeps rows and scroll; a redrawn thumbnail reaches its row; a double click acts once.
 
 use oni_app::app::{Options, Shell};
 use oni_app::fields::Field;
@@ -66,10 +65,13 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     rig.until("every row's thumbnail", Duration::from_secs(60), || rows(&lib).iter().all(|r| r.kind != 2 || r.picture.size().width > 0));
     rig.settle();
 
-    // A row clicked opens its photo and centres the column on it.
+    // A row clicked opens its photo and leaves the column where the hand is; the key centres it.
+    let before = lib.get_tree_viewport_y();
     lib.invoke_row_clicked(photo_row(&lib, "P20") as i32);
     rig.pump();
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("P20.tif"));
+    assert_eq!(lib.get_tree_viewport_y(), before, "a click in the column never scrolls it");
+    lib.invoke_tree_centre();
     let centred = lib.get_tree_viewport_y();
     assert!(centred < 0.0, "the column is taller than its view, so P20 sits below its top: {centred}");
 
@@ -129,18 +131,23 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     lib.invoke_tree_layout_next();
     assert!(lib.get_rows() != model, "twin: a new layout lays new rows");
 
-    // A double click on a group row folds it once.
+    // The chevron folds a group; a double click on its name types over it, the folder's own name.
     let group = rows(&lib).iter().position(|r| r.kind != 2 && r.expandable).expect("a group row") as i32;
     let unfolded = rows(&lib)[group as usize].expanded;
+    lib.invoke_row_folded(group);
+    assert_eq!(rows(&lib)[group as usize].expanded, !unfolded, "the chevron folds the group");
+    lib.invoke_row_folded(group);
+    assert_eq!(rows(&lib)[group as usize].expanded, unfolded, "twin: a second click unfolds it");
     rest(&rig);
     lib.invoke_row_clicked(group);
     lib.invoke_row_clicked(group);
     lib.invoke_row_double_clicked(group);
     rig.pump();
-    assert_eq!(rows(&lib)[group as usize].expanded, !unfolded, "a double click folds the group once");
-    rest(&rig);
-    lib.invoke_row_clicked(group);
-    assert_eq!(rows(&lib)[group as usize].expanded, unfolded, "twin: a single click folds it back");
+    let renamed = rows(&lib)[group as usize].clone();
+    assert!(renamed.renaming && renamed.title == "Scans", "a double click types over the folder's name: {}", renamed.title);
+    assert_eq!(renamed.expanded, unfolded, "and folds nothing");
+    lib.invoke_row_rename_cancelled();
+    assert!(!rows(&lib)[group as usize].renaming, "twin: Escape leaves the name as it was");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

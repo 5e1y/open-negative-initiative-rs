@@ -120,7 +120,7 @@ impl Ctl {
     }
 
     /// The photo the column follows: the open one, else the first picked.
-    fn tree_target(&self) -> Option<String> {
+    pub(super) fn tree_target(&self) -> Option<String> {
         let s = self.state.borrow();
         s.open.clone().or_else(|| s.picks.anchor.clone())
     }
@@ -128,6 +128,9 @@ impl Ctl {
     /// `TreeEngine.reveal`: the column centred on the photo it follows.
     pub(super) fn centre_tree(&self) {
         let Some(w) = self.window() else { return };
+        if self.unfold_archive() {
+            self.publish_tree();
+        }
         let target = self.tree_target();
         let mut s = self.state.borrow_mut();
         s.tree_centred = target.clone();
@@ -181,12 +184,12 @@ impl Ctl {
             c.remember(LAYOUT_KEY, serde_json::Value::from(next.key()));
             c.publish_tree();
             // A new layout moves every row: the selection comes back to the middle.
-            c.centre_tree();
+            c.centre_key();
         });
         let me = Rc::downgrade(self);
         lib.on_tree_centre(move || {
             if let Some(c) = me.upgrade() {
-                c.centre_tree();
+                c.centre_key();
             }
         });
         let me = Rc::downgrade(self);

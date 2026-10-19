@@ -54,6 +54,7 @@ impl Ctl {
             s.org.trash_open = false;
             s.trash_picks = Default::default();
             s.opened = Some(folder.clone());
+            s.reveal.fresh = true;
             let _ = s.preferences.set(preferences::OPENED_FOLDER, serde_json::Value::String(folder.clone()));
             s.opening = None;
             s.read_done = false;
@@ -124,13 +125,15 @@ impl Ctl {
         }
     }
 
-    /// The archive cut again from the rows held, under the filter; what the hand unfolded stays so.
+    /// The archive cut again from the rows held, under the filter; what the hand folded stays so,
+    /// except in a folder just opened.
     pub(super) fn lay_archive(self: &Rc<Self>) {
         let (title, stock) = {
             let mut s = self.state.borrow_mut();
             let Some(folder) = s.opened.clone() else { return };
             let mut archive = Archive::from_rows(&folder, &s.rows, &s.survey, s.filter);
-            if let Some(old) = &s.archive {
+            let fresh = std::mem::take(&mut s.reveal.fresh);
+            if let Some(old) = s.archive.as_ref().filter(|_| !fresh) {
                 let folded: HashSet<_> = old.nodes.iter().map(oni_library::archive_tree::Node::id).filter(|id| !old.expanded.contains(id)).collect();
                 archive.expanded.retain(|id| !folded.contains(id));
             }
@@ -270,6 +273,7 @@ impl Ctl {
 
     pub(super) fn publish_tree(&self) {
         let Some(w) = self.window() else { return };
+        self.unfold_archive();
         let beside_photo = !w.global::<App>().get_gallery();
         let mut guard = self.state.borrow_mut();
         let s = &mut *guard;
@@ -287,16 +291,23 @@ impl Ctl {
         let mut rows: Vec<TreeRow> = rows
             .into_iter()
             .zip(&paths)
-            .map(|(r, path)| TreeRow {
-                depth: r.depth as i32,
-                title: r.title.into(),
-                caption: r.caption.into(),
-                kind: r.kind,
-                expandable: r.expandable,
-                expanded: r.expanded,
-                selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
-                renaming: matches!(&r.id, oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str())),
-                ..TreeRow::default()
+            .map(|(r, path)| {
+                let renamed = match &r.id {
+                    oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str()) => Some(oni_library::paths::name(p)),
+                    _ => None,
+                };
+                TreeRow {
+                    depth: r.depth as i32,
+                    // `explicitName`: a name typed over is the folder's own, never its roll's.
+                    renaming: renamed.is_some(),
+                    title: renamed.unwrap_or(r.title).into(),
+                    caption: r.caption.into(),
+                    kind: r.kind,
+                    expandable: r.expandable,
+                    expanded: r.expanded,
+                    selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
+                    ..TreeRow::default()
+                }
             })
             .collect();
         s.tree_paths = paths;
@@ -321,37 +332,6 @@ impl Ctl {
                 row.selected = marked;
                 model.set_row_data(i, row);
             }
-        }
-    }
-
-    pub(super) fn row_clicked(self: &Rc<Self>, i: usize) {
-        if self.state.borrow_mut().second_click(organising::Column::Archive, i) {
-            return;
-        }
-        if self.state.borrow().org.trash_open {
-            self.leave_trash();
-            self.lay_grid();
-        }
-        let path = {
-            let mut s = self.state.borrow_mut();
-            let Some(archive) = s.archive.as_mut() else { return };
-            let Some(row) = archive.rows().get(i).cloned() else { return };
-            archive.toggle(&row.id)
-        };
-        match path {
-            Some(path) => {
-                if !self.take_off_roll() {
-                    return;
-                }
-                let reopened = self.state.borrow().open.as_deref() == Some(path.as_str());
-                self.state.borrow_mut().designate(&path);
-                if !reopened {
-                    self.open_photo(&path);
-                }
-                self.publish_tiles();
-                self.publish_organising();
-            }
-            None => self.publish_tree(),
         }
     }
 }
