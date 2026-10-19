@@ -229,7 +229,7 @@ Risk tags:
 | Swift | What it is | Slint | Risk |
 |---|---|---|---|
 | `WindowGroup("Open Negative Initiative")` | Editor window: unified toolbar, hidden title, minimum 1100 × 680 | `MainWindow inherits Window` with `min-width: 1100px; min-height: 680px`, title bar transparent and full-size content via winit macOS attributes, the toolbar drawn in-window | `[native]` The traffic lights sit over our content: reserve their 78 pt at the left of the bar, read from `NSWindow.standardWindowButton` frames (via `objc2`), not guessed. Window tabbing and full-screen behaviour need checking. |
-| Console window (`ConsoleView`) | The diagnostics log, 620 × 420 | Second `Window` with a `ScrollView` of `Text` rows, `font-family: mono` | Low. |
+| Console window (`ConsoleView`) | The diagnostics log, 620 × 420 | Second `Window` with the ds `Scroller` of `Text` rows, `font-family: mono` | Low. |
 | Design System playground (`DSPlayground`) | Every token and component, in a window built only with `ONI_DEV` | A `Window` behind a Cargo feature `dev` | Low; its catalogue checks become Rust tests. |
 | `Splash` | A new picture per version, held `DS.Motion.splashMinimum` while the gallery loads | Overlay `Rectangle` + `Image` in `MainWindow`, removed in the same turn as the windows show | Low. |
 | `WrappedView` ("My Year on Film") | Year summary in Enriqueta 56/44 | Overlay component | `[text]` Large Enriqueta needs checking against Core Text metrics. |
@@ -241,7 +241,7 @@ Risk tags:
 |---|---|---|---|
 | Library column (`FolderNavigator`, `InfoSidebar`, `SidebarLayout`) | Left column: folders, rolls, projects, then photos as names, two thumbnails a line, or one | `VerticalLayout` with a resizable width (`DSColumnResizer`) | See 4.6 for the tree. |
 | Canvas card (`EditorScene+Card`, `NegativeView`) | The photo on the canvas colour, radius `card` 12, padded, with overlays | `Rectangle { border-radius: 12px; clip: true }` holding the canvas `Image` and overlay components | `[draw]` The rounded clip is ignored by the software renderer (fine on GPU). The squircle (`.continuous`) is not drawn by Slint (section 5). |
-| Settings panel (`EditorScene+Panel`, `DSPanel`) | Right column, tabs Roll/Crop/Color/Details, pager between panes | `VerticalLayout` with `DSTabBar` and a `Flickable` per pane, the pager's slide animated by `x` | `DSPanel` keeps each pane's scroll offset and measures the outline (`DSPanelSkeleton`); a `Flickable`'s `viewport-y` must be saved per pane in Rust. |
+| Settings panel (`EditorScene+Panel`, `DSPanel`) | Right column, tabs Roll/Crop/Color/Details, pager between panes | `VerticalLayout` with `DSTabBar` and a ds `Scroller` per pane (`Pane`), the pager's slide animated by `x` | `DSPanel` keeps each pane's scroll offset and measures the outline (`DSPanelSkeleton`); a `Scroller`'s `content-y` must be saved per pane in Rust. |
 | Status bar (`DSStatusBar`) | One bar under the viewer: busy state or a line of facts | `HorizontalLayout` with the progress rail | Low. |
 | Preset deck (`PresetCarousel`) | Hidden below the bottom edge, rising as the pointer nears it | `ui/presets.slint` `PresetDeck`: the deck's own `TouchArea`, only its strip showing at rest, raises it on `has-hover`; each card reports its hover to Rust, which renders the preview | Done. The first move into a window only enters it, so a check moves the pointer in before aiming at the strip. |
 | Column resizer (`DSColumnResizer`) | Drag handle between panes | `TouchArea` with `mouse-cursor: col-resize` | Low. |
@@ -331,10 +331,10 @@ reset is a callback that reads Rust state when called, so that trap disappears.
 
 | Swift | What it is | Slint | Risk |
 |---|---|---|---|
-| `GalleryView`, `GalleryEngine`, `GalleryLayout`, `TileLayers`, `LayerHostView` | A grid of thousands of tiles drawn as `CALayer`s under one scroll view, since one view per cell re-checks every cell (~5 ms each at twelve columns) | `ListView` of rows, each a `HorizontalLayout` of tiles from a `VecModel`, virtualised | `[perf]` Slint's `ListView` virtualises rows (only visible rows are instantiated), the closest match. Measure landing cost against Swift's count of realised cells; if it fails, draw the grid as one texture per visible band. |
+| `GalleryView`, `GalleryEngine`, `GalleryLayout`, `TileLayers`, `LayerHostView` | A grid of thousands of tiles drawn as `CALayer`s under one scroll view, since one view per cell re-checks every cell (~5 ms each at twelve columns) | Rust lays and scrolls the document (`Library.scroll`, `content-height`) and hands Slint only the visible tiles; a ds `ScrollKnob` floats over the edge | `[perf]` Measure landing cost against Swift's count of realised cells; if it fails, draw the grid as one texture per visible band. |
 | `RollPreviews`, `RollReferenceSurface` | The roll's frames, one decode at a time per kind, superseded requests never start | Image models fed by a Rust decode queue | `[perf]` |
-| `FolderNavigator`, `TreeEngine`, `TreeLayers`, `TreeRows`, `TreeRowChrome` | The folder tree, rows as layers; chevrons drawn, tabular figures in captions | `ListView` with indentation per row | `[perf]` `[text]` tabular figures. |
-| `InfoSidebar` | Roll, Film Stock(s), Camera Body, Shot Date, Description, Project | `DSSection`s with `DSTextField` and pickers | |
+| `FolderNavigator`, `TreeEngine`, `TreeLayers`, `TreeRows`, `TreeRowChrome` | The folder tree, rows as layers; chevrons drawn, tabular figures in captions | Rust-laid rows in the ds `Scroller`; the Projects tree a ds `ListView` (virtualised) with indentation per row | `[perf]` `[text]` tabular figures. |
+| `InfoSidebar` | Roll, Film Stock(s), Camera Body, Shot Date, Description, Project | `DSSection`s with `DSTextField` and pickers, in a ds `Scroller` as Swift's `ScrollView` | |
 | `ListPicking` | Click, ⌘-click, ⇧-click selection | Rust, from `pointer-event.modifiers` | |
 | `DSMedalPicker`, `DSFoil` | Bronze/silver/gold medals as foil rasters lit per pixel | `Image` from the same Rust raster (the Swift code is a CPU raster already) | `[draw]` Port `DSFoil.render` as is. |
 | No drag-and-drop reorganisation (product rule) | | Nothing | Keep it absent. |
@@ -343,7 +343,7 @@ reset is a callback that reads Rust state when called, so that trap disappears.
 
 | Swift | Slint | Risk |
 |---|---|---|
-| Export is a mode of the card: one row per photo, fields left, preview right; the count is in the label in all four places | Mode branch in `MainWindow`, `ListView` of rows | |
+| Export is a mode of the card: one row per photo, fields left, preview right; the count is in the label in all four places | Mode branch in `MainWindow`, rows in the ds `Scroller` (`ExportColumn`) | |
 | Space field: four matrix spaces or an installed ICC profile; JPEG dims spaces needing 16 bits | `DSPicker` | `[menu]` `[native]` Enumerating installed ICC profiles: ColorSync on macOS, `WcsEnumColorProfiles` on Windows. |
 | `NSSavePanel` / `NSOpenPanel` | `rfd::AsyncFileDialog` | `[native]` rfd uses the native panels on both systems. |
 
@@ -489,6 +489,7 @@ hand. The website does the same with `sync-app-tokens.mjs`, which refuses name c
 | `DSGesture` | Count of hands on controls | Rust counter (section 3) | |
 | `DSHaptics` | One tick per step at constant felt cadence | objc2 on macOS | `[native]` |
 | `DSScrollAdjust` | Wheel and trackpad travel on a control | `scroll-event` | `[input]` no wheel/trackpad distinction. |
+| `ScrollView`, `List` (default `.automatic` indicators; the preset carousel `.never`) | AppKit's overlay scroller: a knob over the edge only while the content overflows, shown while scrolling, a moment after and on edge hover, no gutter | ds `Scroller` / `ListView` with `ScrollKnob` (`ScrollStyle`); the knob takes no click, a vertical surface never slides sideways; `knob: false` for the deck | Done. The legacy style ("Always show scroll bars") is not followed. |
 | `DSKeyboard` | Key monitor | 4.10 | |
 | `DSHistogram` | Scaled histogram plot (compression exponent shared with the bench) | Rust raster → `Image`, or `Path` | `[draw]` |
 | `DSPlotScreen` | A plot behind glass: canvas floor, engraved quarter lines | `Rectangle` + `Path` | |

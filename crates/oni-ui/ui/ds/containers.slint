@@ -113,8 +113,7 @@ export component Dialog inherits Rectangle {
     // A click on the card stays on it, so only the scrim closes the sheet.
     TouchArea { }
     Scroller {
-        viewport-width: self.width;
-        viewport-height: column.preferred-height;
+        content-height: column.preferred-height;
         column := VerticalLayout {
             width: root.width;
             padding: SheetStyle.padding;

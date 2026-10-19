@@ -70,6 +70,8 @@ export global Colour {
     out property <[color]> medal: [transparent, #b08d57, #c0c0c0, #e6c200];
     // The system tooltip's ground, opaque enough to read over a photo.
     out property <color> tip: #2c2c2cf2;
+    // AppKit's overlay scroller knob on a dark panel.
+    out property <color> knob: DS.palette-marker;
 }
 
 export global Space {
@@ -119,6 +121,19 @@ export global Motion {
     out property <duration> slide: DS.motion-reveal-response * 1s;
     // The system tooltip's delay before it shows.
     out property <duration> tip-delay: 1000ms;
+}
+
+// The overlay scroller AppKit draws for every Swift scroll view: a knob over the edge, no gutter.
+export global ScrollStyle {
+    out property <length> knob: 6px;
+    out property <length> inset: 3px;
+    out property <length> knob-min: 24px;
+    // The edge strip whose hover lights the knob: the width of AppKit's overlay track.
+    out property <length> reach: 16px;
+    // Layout rounding leaves a fraction of a pixel of travel: below one, nothing overflows.
+    out property <length> slack: 1px;
+    out property <duration> linger: 800ms;
+    out property <duration> fade: 250ms;
 }
 
 export global ButtonStyle {

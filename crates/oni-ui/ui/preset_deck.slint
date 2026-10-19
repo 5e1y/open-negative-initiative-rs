@@ -57,6 +57,8 @@ export component PresetDeck inherits Rectangle {
                     }
                 }
                 roll-view := Scroller {
+                    horizontal: true;
+                    knob: false;
                     height: root.full;
                     horizontal-stretch: 1;
                     content-width: roll.preferred-width;

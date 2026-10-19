@@ -31,7 +31,7 @@ To check the result, run `cargo run --release -p oni-app --bin oni -- --catalogu
 ## The rule: screens use only the design system
 
 A screen imports from `ds/ds.slint` and nowhere else. It may lay things out with layouts, `Rectangle`
-as a plain box, `TouchArea`, `Flickable` and tokens. It never writes a literal value, and never styles
+as a plain box, `TouchArea`, `Scroller` and tokens. It never writes a literal value, and never styles
 a primitive itself.
 
 `tests/design_system.rs` enforces this, using `src/strict.rs`. It reads every `.slint` file outside
@@ -42,9 +42,18 @@ a primitive itself.
 - typography: `font-size`, `font-weight`, `font-family`, `letter-spacing` and the window's `default-font-*`;
 - styling: `background`, `color`, `colorize`, `border-*`, `drop-shadow-*`;
 - an `opacity` written as a number other than 0 or 1;
-- the primitives the design system wraps: `Text`, `TextInput`, `Image`, `PopupWindow`, `Path`, `Window`
-  (use `Label`, `TextField`, `Icon`/`Picture`, `Menu`, `AppWindow`);
-- importing `std-widgets.slint` (the design system re-exports what it uses, such as `ListView`).
+- the primitives the design system wraps: `Text`, `TextInput`, `Image`, `PopupWindow`, `Path`, `Window`,
+  `Flickable`, `ScrollView` (use `Label`, `TextField`, `Icon`/`Picture`, `Menu`, `AppWindow`, `Scroller`);
+- importing `std-widgets.slint`: the design system draws its own widgets, none from the std styles.
+
+## Scrolled surfaces
+
+Every surface that scrolls is a `Scroller` (or a `ListView`, the same with its `for` rows virtualised).
+It scrolls by the wheel and the trackpad only, and its `ScrollKnob` copies AppKit's overlay scroller:
+no gutter, drawn only while the content overflows, lit while it scrolls, `ScrollStyle.linger` after and
+while the pointer is on the edge strip, never taking a click. Set `content-height` at every site (the
+alias drops the Flickable's own default); `horizontal: true` reads `content-width` instead, and
+`knob: false` hides the knob as Swift's `.scrollIndicators(.never)`.
 
 Each refusal has a twin. The same text planted in a copy of a screen must fail the check, and the
 same text planted in `ui/ds/` must pass it. `strict::ALLOW` is the list of exceptions. It is empty;
