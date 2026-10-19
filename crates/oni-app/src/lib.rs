@@ -29,6 +29,7 @@ pub mod proof;
 pub mod report;
 pub mod render;
 pub mod roll_previews;
+pub mod sidebar;
 pub mod stocks;
 pub mod store;
 pub mod strict;

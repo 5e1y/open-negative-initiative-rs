@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -34,6 +34,15 @@ export struct TreeRow {
     selected: bool,
     // `TreeEngine.renaming`: the row's name typed over it.
     renaming: bool,
+    // Its place in the column, a photo drawn as a thumbnail when `thumb`.
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    thumb: bool,
+    picture: image,
+    medal: int,
+    missing: bool,
 }
 
 export struct StockCount {
@@ -42,6 +51,16 @@ export struct StockCount {
 }
 
 export global Library {
+    // `SidebarLayout`: 0 names only, 1 two thumbnails a line, 2 one; its key's name says the next.
+    in property <int> tree-layout;
+    in property <string> tree-layout-help;
+    in property <length> tree-content-height;
+    // The column's scroll, both ways: Rust centres the selection, the wheel moves it.
+    in-out property <length> tree-viewport-y;
+    callback tree-resized(length, length);
+    callback tree-layout-next();
+    callback tree-centre();
+    callback tree-reload();
     // `GallerySurface`: 0 the archive, 1 the projects.
     in-out property <int> surface;
     in property <[TreeRow]> rows;
@@ -132,91 +151,6 @@ export global Library {
     callback shot-date-cleared();
     callback camera-body-committed(string);
     callback description-committed(string);
-}
-
-// `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
-// navigator keeps its height over the opened folder's tree with its photos.
-export component Tree inherits Surface {
-    in property <bool> beside-photo;
-    property <length> menu-x;
-    property <length> menu-y;
-    VerticalLayout {
-        padding: Space.s;
-        spacing: Space.s;
-        Tabs {
-            tabs: ["Archive", "Projects"];
-            selected <=> Library.surface;
-            picked(i) => { Library.surface-picked(i); }
-        }
-        if Library.surface == 0: NavigatorSection {
-            vertical-stretch: root.beside-photo ? 0 : 1;
-            beside-photo: root.beside-photo;
-            trash-rows: Library.trash-rows;
-            trash-clicked(i) => { Library.trash-row-clicked(i); }
-            trash-double-clicked(i) => { Library.trash-row-double-clicked(i); }
-            trash-restore(i) => { Library.trash-row-restore(i); }
-            trash-menu(i, x, y) => {
-                root.menu-x = x - root.absolute-position.x;
-                root.menu-y = y - root.absolute-position.y;
-                if (Library.trash-row-menu(i)) { menu.show(); }
-            }
-        }
-        if Library.surface == 0 && root.beside-photo: ColumnPill {
-            text: Navigator.opened-title;
-            help: Navigator.opened-help;
-        }
-        if Library.surface == 0 && root.beside-photo: ListView {
-            vertical-stretch: 1;
-            for row[i] in Library.rows: VerticalLayout {
-                if !row.renaming: TreeItem {
-                    depth: row.depth;
-                    title: row.title;
-                    caption: row.caption;
-                    kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
-                    expandable: row.expandable;
-                    expanded: row.expanded;
-                    selected: row.selected;
-                    clicked => { Library.row-clicked(i); }
-                    double-clicked => { Library.row-double-clicked(i); }
-                }
-                if row.renaming: RenameRow {
-                    text: row.title;
-                    depth: row.depth;
-                    committed(t) => { Library.row-rename-committed(i, t); }
-                    cancelled => { Library.row-rename-cancelled(); }
-                }
-            }
-        }
-        if Library.surface == 1: ListView {
-            vertical-stretch: 1;
-            for row[i] in Library.project-rows: TreeItem {
-                depth: row.depth;
-                title: row.title;
-                caption: row.caption;
-                kind: row.kind == 1 ? RowKind.roll : RowKind.photo;
-                expandable: row.expandable;
-                expanded: row.expanded;
-                selected: row.selected;
-                clicked => { Library.project-row-clicked(i); }
-                double-clicked => { Library.project-row-double-clicked(i); }
-                menu(x, y) => {
-                    root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
-                    root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
-                    if (Library.project-row-menu(i)) { menu.show(); }
-                }
-            }
-        }
-    }
-    if Library.surface == 1 && Library.projects-empty != "": EmptyState {
-        title: Library.projects-empty;
-        detail: "Right-click photos in the library and choose New Project from them.";
-    }
-    menu := ContextMenu {
-        x: root.menu-x;
-        y: root.menu-y;
-        lines: Library.menu-lines;
-        chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
-    }
 }
 
 export component Grid inherits Surface {

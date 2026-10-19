@@ -55,6 +55,7 @@ mod workers;
 mod shell;
 mod canvas_gpu;
 mod opening;
+mod sidebar_tree;
 mod state_read;
 use state_read::LoadBar;
 pub use workers::tiles;
@@ -269,6 +270,10 @@ pub struct State {
     trash_picks: crate::organise::Picks,
     /// The archive tree's rows as published, each photo row's path, so a pick relights them in place.
     tree_paths: Vec<Option<String>>,
+    /// The library column's size in points, each row's place in it and its whole height.
+    tree_size: (f32, f32),
+    tree_frames: Vec<crate::sidebar::Frame>,
+    tree_total: f32,
     shelf: presets::Shelf,
     /// The balance key's run under way, which the key shows instead of itself.
     batch: Option<rolls::Batch>,

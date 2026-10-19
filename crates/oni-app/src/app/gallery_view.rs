@@ -20,6 +20,7 @@ impl Ctl {
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
         self.mark_tree();
+        self.fill_tree_thumbnails();
         // A thumbnail landed reaches the roll's cells too, which read the same memory.
         if self.state.borrow().prepare.shown {
             self.publish_prepare();

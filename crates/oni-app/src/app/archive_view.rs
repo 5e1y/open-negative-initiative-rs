@@ -284,7 +284,7 @@ impl Ctl {
                 _ => None,
             })
             .collect();
-        let rows: Vec<TreeRow> = rows
+        let mut rows: Vec<TreeRow> = rows
             .into_iter()
             .zip(&paths)
             .map(|(r, path)| TreeRow {
@@ -296,10 +296,12 @@ impl Ctl {
                 expanded: r.expanded,
                 selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
                 renaming: matches!(&r.id, oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str())),
+                ..TreeRow::default()
             })
             .collect();
         s.tree_paths = paths;
         drop(guard);
+        self.lay_tree(&mut rows);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
     }
 

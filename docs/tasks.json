@@ -674,5 +674,13 @@
     "status": "done",
     "detail": "Compare: the before's clip had no place, so Slint centred it, and its guide followed a hovering pointer; the kept before is keyed on the photo too. Report a Bug: typing replaced the message's one-way binding, so Send never lit. Every icon-only key held a gap for its empty word, two points left of centre. Tabs bound one way (the export space and format, the crop ratio, the roll's film, capture, film type, encoding and dye family) lost their binding at the first click; they are two-way now. A label written on a TIFF or JPEG read its sidecar as a RAW mosaic's.",
     "outcome": "Every check green; to be seen in the real window."
+  },
+  {
+    "id": 95,
+    "type": "feature",
+    "title": "The library column's thumbnails, its layout key, and the column re-centred on every edit",
+    "status": "done",
+    "detail": "SidebarLayout and TreeEngineLayout: beside a photo the column lays its photos as names, two thumbnails a line (the default) or one, the layout stored under sidebarLayout.editor; a key cycles them, another reads the folders again, a third shows the selected photo. Every edit, frame switch and layout change brings the open photo back to the column's middle (TreeEngine.reveal). Rows are laid by Rust and drawn at their places in a wheel-only scroller.",
+    "outcome": "Layout and centring checked by unit tests with twins; the headless editor shot shows two thumbnails a line under the three keys."
   }
 ]
