@@ -4,8 +4,8 @@ import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Look } from "controls.slint";
 import { Icons } from "icons.slint";
 
-// AppKit's overlay knob over a surface's edge: drawn only while the content overflows, lit while it
-// moves, `linger` after, or while the pointer is on the edge; it never takes a click or a drag.
+// AppKit's overlay scroller over a surface's edge: drawn only while the content overflows, lit while
+// it moves, `linger` after, or while the pointer is on the edge, where it widens and takes the pointer.
 export component ScrollKnob {
     in property <bool> horizontal;
     // Along the scrolled axis: the length shown, the content's, and how far it has scrolled.
@@ -15,36 +15,115 @@ export component ScrollKnob {
     in property <bool> hovered;
     // The pointer across the scrolled axis, so only the edge strip lights the knob.
     in property <length> across;
+    // The offset a drag of the knob or a press on its track asks for, within the content.
+    callback dragged(length);
     out property <bool> overflows: root.whole - root.page >= ScrollStyle.slack;
-    out property <bool> lit: root.overflows && (root.moving || (root.hovered && root.across >= (root.horizontal ? root.height : root.width) - ScrollStyle.reach));
+    out property <bool> wide: root.overflows && (strip.has-hover || strip.pressed);
+    out property <bool> lit: root.overflows && (root.moving || root.wide || (root.hovered && root.across >= (root.horizontal ? root.height : root.width) - ScrollStyle.reach));
     property <bool> moving;
+    property <length> room: root.page - 2 * ScrollStyle.inset;
+    property <length> span: min(self.room, max(ScrollStyle.knob-min, self.room * root.page / root.whole));
+    property <length> along: ScrollStyle.inset + (self.room - self.span) * clamp(root.offset / (root.whole - root.page), 0, 1);
+    property <length> thick: root.wide ? ScrollStyle.knob-wide : ScrollStyle.knob;
+    animate thick { duration: ScrollStyle.fade; }
+    // The pointer along the track, where the knob is held from while dragged, and the way a held
+    // press on the track pages (-1 or 1, 0 when none).
+    property <length> pointer;
+    property <length> grip;
+    property <bool> dragging;
+    property <int> paging;
+    property <bool> repeating;
     // Every user scroll calls it.
     public function stir() {
         root.moving = true;
         linger.restart();
+    }
+    // The offset that lays the knob's leading end at `at`, the knob's travel standing for the content's.
+    function seek(at: length) {
+        root.dragged(clamp((at - ScrollStyle.inset) / max(root.room - root.span, ScrollStyle.slack), 0, 1) * (root.whole - root.page));
+        root.stir();
+    }
+    // A page toward the pointer, until the knob stands under it.
+    function step() {
+        if ((root.paging < 0 && root.pointer >= root.along) || (root.paging > 0 && root.pointer <= root.along + root.span)) {
+            root.paging = 0;
+            return;
+        }
+        root.dragged(clamp(root.offset + root.paging * (root.page - ScrollStyle.page-keep), 0, root.whole - root.page));
+        root.stir();
     }
     linger := Timer {
         interval: ScrollStyle.linger;
         running: root.moving;
         triggered => { root.moving = false; }
     }
+    Timer {
+        interval: root.repeating ? ScrollStyle.repeat : ScrollStyle.repeat-delay;
+        running: root.paging != 0;
+        triggered => {
+            root.repeating = true;
+            root.step();
+        }
+    }
     if root.overflows: Rectangle {
-        property <length> room: root.page - 2 * ScrollStyle.inset;
-        property <length> span: min(self.room, max(ScrollStyle.knob-min, self.room * root.page / root.whole));
-        property <length> along: ScrollStyle.inset + (self.room - self.span) * clamp(root.offset / (root.whole - root.page), 0, 1);
-        x: root.horizontal ? self.along : root.width - ScrollStyle.inset - ScrollStyle.knob;
-        y: root.horizontal ? root.height - ScrollStyle.inset - ScrollStyle.knob : self.along;
-        width: root.horizontal ? self.span : ScrollStyle.knob;
-        height: root.horizontal ? ScrollStyle.knob : self.span;
-        border-radius: ScrollStyle.knob / 2;
+        x: root.horizontal ? 0 : root.width - ScrollStyle.reach;
+        y: root.horizontal ? root.height - ScrollStyle.reach : 0;
+        width: root.horizontal ? root.width : ScrollStyle.reach;
+        height: root.horizontal ? ScrollStyle.reach : root.height;
+        background: ScrollStyle.track;
+        opacity: root.wide ? 1 : 0;
+        animate opacity { duration: ScrollStyle.fade; }
+    }
+    if root.overflows: Rectangle {
+        x: root.horizontal ? root.along : root.width - ScrollStyle.inset - root.thick;
+        y: root.horizontal ? root.height - ScrollStyle.inset - root.thick : root.along;
+        width: root.horizontal ? root.span : root.thick;
+        height: root.horizontal ? root.thick : root.span;
+        border-radius: root.thick / 2;
         background: Colour.knob;
         opacity: root.lit ? 1 : 0;
         animate opacity { duration: ScrollStyle.fade; }
     }
+    // AppKit's default press: on the knob it grabs it, on the track it pages toward the pointer and
+    // repeats while held; with Option it jumps to the spot and grabs the knob by its middle.
+    strip := TouchArea {
+        x: root.horizontal ? 0 : root.width - ScrollStyle.reach;
+        y: root.horizontal ? root.height - ScrollStyle.reach : 0;
+        width: root.horizontal ? root.width : ScrollStyle.reach;
+        height: root.horizontal ? ScrollStyle.reach : root.height;
+        enabled: root.overflows && root.visible;
+        pointer-event(event) => {
+            root.pointer = root.horizontal ? self.mouse-x : self.mouse-y;
+            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                if (event.modifiers.alt) {
+                    root.grip = root.span / 2;
+                    root.dragging = true;
+                    root.seek(root.pointer - root.grip);
+                } else if (root.pointer >= root.along && root.pointer <= root.along + root.span) {
+                    root.grip = root.pointer - root.along;
+                    root.dragging = true;
+                    root.stir();
+                } else {
+                    root.repeating = false;
+                    root.paging = root.pointer < root.along ? -1 : 1;
+                    root.step();
+                }
+            } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                root.dragging = false;
+                root.paging = 0;
+            }
+        }
+        moved => {
+            root.pointer = root.horizontal ? self.mouse-x : self.mouse-y;
+            if (root.dragging) {
+                root.seek(root.pointer - root.grip);
+            }
+        }
+    }
 }
 
-// Scrolled by the wheel and the trackpad only, as drag belongs to the parameters and the image.
-// `content-height` must be set: aliasing it drops the Flickable's own default.
+// Scrolled by the wheel, the trackpad and its knob, never by a drag of the content: drag is the
+// parameters' and the image's. `content-height` must be set: aliasing it drops the Flickable's default.
 export component Scroller {
     // Sideways, as the preset deck's roll.
     in property <bool> horizontal;
@@ -62,7 +141,7 @@ export component Scroller {
     // Fills its parent outside a layout, as the Flickable it wraps; in one, the content's size.
     preferred-width: 100%;
     preferred-height: 100%;
-    // Its hover only lights the knob: every press and drag reaches the content first.
+    // Its hover only lights the knob: every press and drag off the knob's strip reaches the content.
     hover := TouchArea {
         flick := Flickable {
             mouse-drag-pan-enabled: false;
@@ -87,6 +166,13 @@ export component Scroller {
         offset: root.horizontal ? -flick.content-x : -flick.content-y;
         hovered: hover.has-hover;
         across: root.horizontal ? hover.mouse-y : hover.mouse-x;
+        dragged(to) => {
+            if (root.horizontal) {
+                flick.content-x = -to;
+            } else {
+                flick.content-y = -to;
+            }
+        }
     }
 }
 

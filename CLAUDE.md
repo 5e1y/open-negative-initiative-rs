@@ -111,7 +111,8 @@ first on the simplified design system; the real interface work comes after.
   `DSTokens.swift`): no literal size, colour or radius outside it, so a change of look is one edit. Simple
   buttons until the design system defines the final components; the exact ONI look comes back last.
 - **Drag is reserved for parameters and for the image** (pan, zoom). Menus, lists, sidebars and every
-  other surface scroll by wheel or trackpad only, never by grab-dragging (`mouse-drag-pan-enabled: false`).
+  other surface scroll by wheel or trackpad only, never by grab-dragging (`mouse-drag-pan-enabled: false`);
+  the one exception is the scroll knob on the edge, which drags and pages as AppKit's scroller.
 - `docs/ui-spec.md` maps every Swift interface item to its Slint construct.
 
 ## Working loop

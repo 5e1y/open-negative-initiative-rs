@@ -132,8 +132,16 @@ export global ScrollStyle {
     out property <length> knob: 6px;
     out property <length> inset: 3px;
     out property <length> knob-min: 24px;
-    // The edge strip whose hover lights the knob: the width of AppKit's overlay track.
-    out property <length> reach: 16px;
+    // The knob under the pointer or held, over its track, as AppKit's expanded overlay scroller.
+    out property <length> knob-wide: 10px;
+    out property <color> track: Colour.hover;
+    // The edge strip that lights the knob and takes its press: `NSScroller.scrollerWidth`, 17 pt.
+    out property <length> reach: 17px;
+    // `NSScrollView.verticalPageScroll`: what a page jump keeps of the page it leaves.
+    out property <length> page-keep: 10px;
+    // `NSCell.getPeriodicDelay`: a press held on the track pages again after 0.4 s, then every 75 ms.
+    out property <duration> repeat-delay: 400ms;
+    out property <duration> repeat: 75ms;
     // Layout rounding leaves a fraction of a pixel of travel: below one, nothing overflows.
     out property <length> slack: 1px;
     out property <duration> linger: 800ms;

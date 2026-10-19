@@ -78,7 +78,7 @@ export global Navigator {
     callback catch-up-done();
 }
 
-// The folders, then the ONI Trash's rows under Computer; scrolled by the wheel alone.
+// The folders, then the ONI Trash's rows under Computer; scrolled by the wheel and the knob alone.
 component Rows inherits Scroller {
     in property <[TrashLine]> trash-rows;
     callback trash-clicked(int);

@@ -80,6 +80,8 @@ export component Catalogue inherits AppWindow {
     out property <bool> page-overflows: page.overflows;
     out property <bool> page-lit: page.lit;
     out property <length> page-x: page.content-x;
+    out property <length> page-whole: page.content-height;
+    out property <length> page-shown: page.visible-height;
     out property <bool> short-overflows: short.overflows;
     out property <bool> short-lit: short.lit;
     out property <length> short-x: short.absolute-position.x + short.width / 2;
