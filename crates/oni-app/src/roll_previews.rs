@@ -223,6 +223,7 @@ impl Previews {
 }
 
 fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
+    crate::decode_gate::in_background();
     let mut engine: Option<(Graph, Pipeline)> = None;
     let mut seed = 0u32;
     loop {

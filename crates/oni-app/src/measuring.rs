@@ -40,6 +40,7 @@ pub fn prepare(path: &str, s: &PipelineSettings) {
     let (path, s) = (path.to_string(), s.clone());
     let ticket = crate::decode_gate::MEASURE.ask();
     std::thread::spawn(move || {
+        crate::decode_gate::in_background();
         crate::decode_gate::MEASURE.run(ticket, || measurer().map(|m| m.prepare(&path, &s)));
     });
 }

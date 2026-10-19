@@ -49,6 +49,7 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
     std::thread::Builder::new()
         .name("thumbnails".into())
         .spawn(move || {
+            crate::decode_gate::in_background();
             let mut current: Option<(u64, VecDeque<(String, String)>)> = None;
             let mut seed = 0u32;
             loop {

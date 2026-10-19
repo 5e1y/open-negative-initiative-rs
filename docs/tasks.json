@@ -879,9 +879,9 @@
     "id": 120,
     "type": "todo",
     "title": "One gate for every full decode, the thumbnail painter, the heal and the export included",
-    "status": "todo",
+    "status": "done",
     "detail": "The decode peak of an open during a thumbnail pass reaches about 3.2 GB at 24 MP; weigh the open's latency against an 8 GB Mac before choosing the order.",
-    "outcome": ""
+    "outcome": "Every decode (LibRaw, linear scan, plain file) takes a place among DECODES = 2; the threads of background work (thumbnails, roll tiles, measuring copies, dust patches) mark themselves and take at most one, and wait while the hand's decode waits, so an open, a zoom's full resolution, an export or a mask never queues behind them. A decode that waits over 5 ms says so in the log. Roll #8, ONI_BENCH=1 on DSC_6432 with an empty thumbnail cache, machine loaded by builds: the hand's decode never waited (0 of 5 runs), background ones waited up to 717 ms; peak memory footprint 3.16 and 3.31 GB before, 2.37 to 3.13 GB after (median 3.1): in this flow the peak is one whole 24 MP decode and its upload, not decodes stacked. decode_gate's check runs its own slots: one background decode leaves the hand a place, a second waits, a waiting hand goes first; a mutant without the reserved place fails it."
   },
   {
     "id": 121,

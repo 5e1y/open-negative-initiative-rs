@@ -84,6 +84,7 @@ impl Ctl {
     pub(in crate::app) fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings) {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
+            crate::decode_gate::in_background();
             let caches = crate::patches::caches();
             let lacking = |c: &oni_settings::frame::Correction| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists();
             let mut made = Vec::new();
