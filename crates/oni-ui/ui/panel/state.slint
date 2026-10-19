@@ -4,6 +4,11 @@ import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
 export global Plots {
     in property <image> output;
+    // The main plot's size, which its trace is drawn at.
+    in-out property <length> output-width;
+    in-out property <length> output-height;
+    // The picture's histogram under the saturation curve, traced at that plot's size.
+    in property <image> saturation;
     in property <image> levels;
     // The manual curves' input distribution, the channel in focus drawn whole.
     in property <image> curves;

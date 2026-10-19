@@ -7,7 +7,7 @@ use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::preferences::{self, Preferences};
 use crate::thumbnails::{self, Memory};
-use crate::render::{self, Delivery, Histogram, InputHistograms, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
+use crate::render::{self, Delivery, InputHistograms, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
 use oni_settings::cg::Rect as Fraction;
@@ -69,8 +69,6 @@ const BADGE_RISE: f64 = 16.0;
 const STRAIGHTEN_IDLE: Duration = Duration::from_millis(160);
 /// `Sidecar.writeDelay`: the hand rests this long before the sidecar is written.
 pub const WRITE_DELAY: Duration = oni_settings::sidecar::WRITE_DELAY;
-/// `DSHistogram`'s raster: the panel's width at 2x by the plot's height at 2x.
-const HISTOGRAM: (usize, usize) = (680, 300);
 
 mod board;
 mod folds;
@@ -218,17 +216,19 @@ struct Gpu {
     /// A frame was encoded since the histogram last counted one.
     uncounted: bool,
     seed: u32,
+    screen: display::Screen,
 }
 
 impl Gpu {
     /// The histogram counted on a frame already shown, once its readback has landed; then the
     /// newest frame is counted, so the GPU counts at the pulse's pace and never on a notch.
-    fn landed(&mut self) -> Option<Histogram> {
+    fn landed(&mut self) -> Option<oni_measure::histogram::Histogram> {
         let _ = self.device.poll(wgpu::PollType::Poll);
         let landed = self.kernel.histogram();
         if self.uncounted
-            && let Some(target) = &self.target
-            && self.kernel.count(&self.device, &self.queue, target)
+            && let Some(Picture::Resident(picture)) = &self.current
+            && let Some(view) = picture.view()
+            && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen)
         {
             self.uncounted = false;
         }
@@ -299,7 +299,7 @@ pub struct State {
     slides: Vec<Slide>,
     rendered: u64,
     requested: u64,
-    histogram: Option<Histogram>,
+    histogram: Option<oni_measure::histogram::Histogram>,
     histogram_dirty: bool,
     /// The levels' and manual curves' input distributions last read, and the focus each was drawn with.
     inputs: Option<render::InputHistograms>,

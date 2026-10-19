@@ -79,7 +79,7 @@ impl Shell {
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: options.canvas.map(|(device, queue)| {
                 let kernel = display::Gpu::new(&device);
-                Gpu { device, queue, kernel, target: None, before: None, current: None, uncounted: false, seed: 0 }
+                Gpu { device, queue, kernel, target: None, before: None, current: None, uncounted: false, seed: 0, screen: options.screen }
             }),
             renders: 0,
             opened_at: Instant::now(),

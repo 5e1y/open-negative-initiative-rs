@@ -11,6 +11,7 @@ pub mod flat_fields;
 pub mod framing;
 pub mod gallery;
 pub mod heal;
+pub mod histogram;
 pub mod library;
 pub mod loupe;
 pub mod measuring;

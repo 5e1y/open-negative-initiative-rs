@@ -23,8 +23,11 @@ impl Ctl {
             (histogram, s.load_bar())
         };
         if let Some(h) = histogram {
-            let (pw, ph) = HISTOGRAM;
-            w.global::<Plots>().set_output(premultiplied(&h.raster(pw, ph), pw, ph));
+            let plots = w.global::<Plots>();
+            let main = self.traced(&h, None, f64::from(plots.get_output_width()), f64::from(plots.get_output_height()));
+            plots.set_output(main);
+            let under = crate::editors::size(self, crate::editors::Plot::Saturation);
+            plots.set_saturation(self.traced(&h, None, under.w, under.h));
         }
         if w.global::<App>().get_gallery() {
             w.global::<Library>().set_loading(loading.unwrap_or_default().into());

@@ -49,4 +49,13 @@ impl Screen {
         };
         mul(&inverse(&to_xyz(target)), &to_xyz(&REC2020)).map(|r| r.map(|v| v as f32))
     }
+
+    /// This screen's linear primaries back to linear Rec. 2020.
+    pub fn back(self) -> [[f32; 3]; 3] {
+        let target = match self {
+            Screen::Srgb => &SRGB,
+            Screen::DisplayP3 => &P3,
+        };
+        mul(&inverse(&to_xyz(&REC2020)), &to_xyz(target)).map(|r| r.map(|v| v as f32))
+    }
 }

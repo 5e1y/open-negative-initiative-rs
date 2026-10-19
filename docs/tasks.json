@@ -634,5 +634,13 @@
     "status": "in progress",
     "detail": "The separation has its own file (oni-pipeline/src/conversion/separation.rs); the POC crate's copy of its rows leaves with the crate, whose pieces oni-app carries; ONI_BENCH_FIELD drags any parameter in the real window, dye-separation included. A Dye Separation gesture ends by laying the dose on every other frame of the roll, read and written on the interface thread: each sidecar write flushed through sync_all, F_FULLFSYNC on macOS, 3.6 ms a file. The write now flushes with a plain fsync, still handing the bytes to the drive before the rename, where Swift's .atomic flushes nothing. Each notch's render waited on the render thread for the levels' and curves' input distributions, a GPU readback of 24 to 32 ms, before reaching the canvas; the render is now delivered first and the distributions after it.",
     "outcome": "Real window, 60 notches on roll #8 (38 frames), three runs: the gesture's last frame came 206 to 253 ms after the one before, now 41 to 59 ms (Exposure: 35 to 41 ms). 38 sidecar writes: 117 ms, now 13. Left: about 20 ms of reading and writing the roll on the interface thread at the release. Notch to screen, p50: 33 ms, now 4 to 9 ms on Dye Separation and Exposure, the cadence held at 33 ms."
+  },
+  {
+    "id": 90,
+    "type": "fix",
+    "title": "The histograms measured and traced as Swift's: zoom-proof, at the plot's own size",
+    "status": "done",
+    "detail": "The panel's histogram counted the canvas, dithered 8-bit levels of whatever the zoom showed, in 256 bins, and drew them linearly at a fixed 680 by 300. It now counts the picture rendered, point-sampled to 640 on its long side, clipped to the screen's gamut and counted in linear Rec. 2020 in 1024 bins with its luminance (MetalImageView.encodeMeasure), and every plot (main, saturation, levels, curves) is traced as HistogramTraces: the luminance as a grey backdrop, the channels added, the 0.42 power off the ends, one column per point of the plot's width, drawn at its size in pixels. The editors' shell splits into ink, drawing, running and wiring; scripts/check stops a binary past 120 s.",
+    "outcome": "GPU count against its CPU reference within 0.2 % (twin: a P3 screen's count differs past 1 %); the headless shot shows the trace."
   }
 ]

@@ -110,16 +110,6 @@ fn the_parallel_encode_writes_what_the_reference_writes() {
 }
 
 #[test]
-fn the_histogram_counts_each_channel_on_its_own() {
-    let h = Histogram::of(&[10, 20, 30, 255, 10, 10, 10, 255]);
-    assert_eq!(h.bins[10], [2, 1, 1]);
-    assert_eq!(h.bins[20], [0, 1, 0]);
-    let raster = h.raster(256, 10);
-    // Bin 10 is the tallest red: its column is red to the top, its neighbour empty.
-    assert!(raster[10 * 4] > 0 && raster[11 * 4 + 3] == 0);
-}
-
-#[test]
 fn previews_keep_the_last_four_used() {
     let Ok(device) = Device::open() else {
         eprintln!("no adapter: the previews are not exercised");
@@ -315,20 +305,6 @@ fn the_input_plots_read_in_front_of_their_stage_and_a_curve_moves_only_what_foll
     let small = engine.inputs(&negative, &rest, true).expect("readings");
     let count = |h: &oni_measure::histogram::Histogram| h.rgb.iter().map(|b| b[0]).sum::<f32>();
     assert!(count(&small.levels) < 0.2 * count(&before.levels), "{} of {}", count(&small.levels), count(&before.levels));
-}
-
-#[test]
-fn an_input_plot_draws_its_focus_channel_whole_and_the_others_at_a_fifth() {
-    let rgb: Vec<[f32; 3]> = (0..64).map(|i| [i as f32, 32.0, (64 - i) as f32]).collect();
-    let h = oni_measure::histogram::Histogram { rgb, luma: vec![0.0; 64], ends: None };
-    let all = InputHistograms::raster(&h, None, 64, 20);
-    let green = InputHistograms::raster(&h, Some(1), 64, 20);
-    let at = |v: &[u8], x: usize, y: usize, c: usize| v[(y * 64 + x) * 4 + c];
-    // Near the bottom every trace fills: red is dimmed once green holds the focus, green is not.
-    assert!(at(&green, 40, 19, 0) < at(&all, 40, 19, 0) && at(&green, 40, 19, 1) >= at(&all, 40, 19, 1) / 2);
-    // Twin: an empty reading draws nothing at all.
-    let empty = oni_measure::histogram::Histogram::default();
-    assert!(InputHistograms::raster(&empty, None, 8, 8).iter().all(|&b| b == 0));
 }
 
 #[test]

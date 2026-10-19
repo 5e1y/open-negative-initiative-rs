@@ -96,34 +96,36 @@ fn the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does() {
     assert_ne!(moved, want);
 }
 
-/// The GPU count against `Histogram::of` on the same shown bytes, sampled on every second row and column.
+/// The GPU count against `histogram::measure` on the same picture, sampled down to its copy.
 #[test]
-fn the_histogram_kernel_counts_what_the_cpu_counts() {
+fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
     let instance = wgpu::Instance::default();
     let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
         eprintln!("no adapter: the histogram kernel is not exercised");
         return;
     };
     let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
-    let (w, h) = (37u32, 23u32);
-    let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32 / w as f32, (i / w) as f32 / h as f32, 0.4, 1.0]).collect();
+    let (w, h) = (1300u32, 700u32);
+    // Ramps past both ends and a green no sRGB screen shows, so the clip and the end bins are read.
+    let pixels: Vec<[f32; 4]> =
+        (0..w * h).map(|i| [(i % w) as f32 / w as f32 * 1.2 - 0.1, 0.9 * (i / w) as f32 / h as f32, 0.4, 1.0]).collect();
     let gpu = Gpu::new(&device);
-    let source = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
-    let target = Gpu::target(&device, w, h);
-    gpu.run(&device, &queue, &source, &Params::new(Screen::Srgb, w, h, 9), &target);
-    assert!(gpu.count(&device, &queue, &target));
-    assert!(!gpu.count(&device, &queue, &target), "a second count waits for the first to be read");
+    let picture = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
+    assert!(gpu.count(&device, &queue, &picture, w, h, Screen::Srgb));
+    assert!(!gpu.count(&device, &queue, &picture, w, h, Screen::Srgb), "a second count waits for the first to be read");
     device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
     let counted = gpu.histogram().expect("the count landed");
-    let shown = read_back(&device, &queue, &target, w, h);
-    let sampled: Vec<u8> = (0..h as usize)
-        .step_by(2)
-        .flat_map(|y| (0..w as usize).step_by(2).map(move |x| (y * w as usize + x) * 4))
-        .flat_map(|i| shown[i..i + 4].to_vec())
-        .collect();
-    assert_eq!(counted, crate::render::Histogram::of(&sampled));
-    // Twin: every pixel counted is another histogram, so a kernel that skips no row would be seen.
-    assert_ne!(counted, crate::render::Histogram::of(&shown));
+    let close = |a: &oni_measure::histogram::Histogram, b: &oni_measure::histogram::Histogram| {
+        let total: f32 = b.luma.iter().sum();
+        let apart: f32 = a.rgb.iter().zip(&b.rgb).map(|(x, y)| (0..3).map(|c| (x[c] - y[c]).abs()).sum::<f32>()).sum();
+        apart / total
+    };
+    let want = crate::histogram::measure(&pixels, w as usize, h as usize, Screen::Srgb);
+    assert_eq!(counted.luma.iter().sum::<f32>(), (640 * 345) as f32, "the copy is 640 by 345");
+    assert!(close(&counted, &want) < 2e-3, "{}", close(&counted, &want));
+    // Twin: the same picture counted for a P3 screen clips less and is another histogram.
+    let p3 = crate::histogram::measure(&pixels, w as usize, h as usize, Screen::DisplayP3);
+    assert!(close(&counted, &p3) > 1e-2, "{}", close(&counted, &p3));
 }
 
 fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32) -> Vec<u8> {

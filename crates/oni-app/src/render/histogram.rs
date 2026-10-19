@@ -1,4 +1,4 @@
-//! The picture encoded for the screen, and the histogram counted off it.
+//! The picture encoded for the screen on the CPU, the software path's canvas.
 
 use super::*;
 
@@ -24,45 +24,4 @@ pub fn encoded(linear: &Linear, k: &Params, step: usize) -> Vec<u8> {
         }
     });
     out
-}
-
-/// The shown image's three channels in 256 bins each.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Histogram {
-    pub bins: Vec<[u32; 3]>,
-}
-
-impl Histogram {
-    pub fn of(rgba8: &[u8]) -> Histogram {
-        let mut bins = vec![[0u32; 3]; 256];
-        for p in rgba8.chunks_exact(4) {
-            for c in 0..3 {
-                bins[p[c] as usize][c] += 1;
-            }
-        }
-        Histogram { bins }
-    }
-
-    /// `DSHistogram`: each channel's bins as a filled curve, red, green and blue added where they
-    /// overlap, the tallest bin at the top; premultiplied RGBA8 of `w` by `h`.
-    pub fn raster(&self, w: usize, h: usize) -> Vec<u8> {
-        let mut out = vec![0u8; w * h * 4];
-        if self.bins.is_empty() || w == 0 || h == 0 {
-            return out;
-        }
-        // The two ends hold every clipped pixel; scaling by them would flatten the rest.
-        let top = self.bins[1..255].iter().flat_map(|b| b.iter().copied()).max().unwrap_or(1).max(1) as f32;
-        for x in 0..w {
-            let bin = (x * 256 / w).min(255);
-            for c in 0..3 {
-                let tall = ((self.bins[bin][c] as f32 / top).min(1.0) * h as f32).round() as usize;
-                for y in h - tall..h {
-                    let px = &mut out[(y * w + x) * 4..(y * w + x) * 4 + 4];
-                    px[c] = px[c].saturating_add(150);
-                    px[3] = px[3].max(150);
-                }
-            }
-        }
-        out
-    }
 }

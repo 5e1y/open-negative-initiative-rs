@@ -180,6 +180,6 @@ export component ColorPane inherits Pane {
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
         help: "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.";
-        SaturationEditor { histogram: Plots.output; }
+        SaturationEditor { histogram: Plots.saturation; }
     }
 }

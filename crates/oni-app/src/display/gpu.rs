@@ -4,10 +4,19 @@ use super::*;
 
 pub const KERNEL: &str = include_str!("encode.wgsl");
 
-/// Counts the shown levels of every second row and column, the sample the CPU histogram reads.
+/// Counts the picture as `histogram::measure` does, its CPU reference.
 pub const HISTOGRAM_KERNEL: &str = include_str!("histogram.wgsl");
 
-pub(super) const BINS: u64 = 256 * 3 * 4;
+pub(super) const BINS: u64 = crate::histogram::BINS as u64 * 4 * 4;
+
+/// The kernel's arguments: the screen's matrices there and back, the copy's grid and the picture's size.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct Measure {
+    to: [[f32; 4]; 3],
+    back: [[f32; 4]; 3],
+    grid: [u32; 4],
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Mapping {
@@ -116,8 +125,9 @@ impl Gpu {
         queue.submit([encoder.finish()]);
     }
 
-    /// Counts the levels `target` holds, unless the last count is still being read; says whether it did.
-    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, target: &wgpu::Texture) -> bool {
+    /// Counts `picture`, `width` by `height`, unless the last count is still being read; says whether it did.
+    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, width: u32, height: u32, screen: Screen) -> bool {
+        use wgpu::util::DeviceExt;
         {
             let mut m = self.mapping.lock().expect("histogram mapping");
             if *m != Mapping::Idle {
@@ -125,13 +135,17 @@ impl Gpu {
             }
             *m = Mapping::Waiting;
         }
-        let view = target.create_view(&Default::default());
+        let (gw, gh) = crate::histogram::grid(width as usize, height as usize);
+        let row = |r: [f32; 3]| [r[0], r[1], r[2], 0.0];
+        let k = Measure { to: screen.matrix().map(row), back: screen.back().map(row), grid: [gw as u32, gh as u32, width, height] };
+        let block = device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("histogram params"), contents: bytemuck::bytes_of(&k), usage: wgpu::BufferUsages::UNIFORM });
         let counting = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("histogram"),
             layout: &self.histogram.get_bind_group_layout(0),
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
-                wgpu::BindGroupEntry { binding: 1, resource: self.counts.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 0, resource: block.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(picture) },
+                wgpu::BindGroupEntry { binding: 2, resource: self.counts.as_entire_binding() },
             ],
         });
         let mut encoder = device.create_command_encoder(&Default::default());
@@ -140,7 +154,7 @@ impl Gpu {
             let mut pass = encoder.begin_compute_pass(&Default::default());
             pass.set_pipeline(&self.histogram);
             pass.set_bind_group(0, &counting, &[]);
-            pass.dispatch_workgroups(target.width().div_ceil(2).div_ceil(8), target.height().div_ceil(2).div_ceil(8), 1);
+            pass.dispatch_workgroups((gw as u32).div_ceil(8), (gh as u32).div_ceil(8), 1);
         }
         encoder.copy_buffer_to_buffer(&self.counts, 0, &self.staging, 0, BINS);
         queue.submit([encoder.finish()]);
@@ -152,18 +166,20 @@ impl Gpu {
     }
 
     /// The last count once its readback has landed, which a `device.poll` delivers; none before.
-    pub fn histogram(&self) -> Option<crate::render::Histogram> {
+    pub fn histogram(&self) -> Option<oni_measure::histogram::Histogram> {
         let mut m = self.mapping.lock().expect("histogram mapping");
         if *m != Mapping::Mapped {
             return None;
         }
         let bins = {
             let range = self.staging.slice(..).get_mapped_range().ok()?;
-            bytemuck::cast_slice::<u8, [u32; 3]>(&range).to_vec()
+            bytemuck::cast_slice::<u8, [u32; 4]>(&range).to_vec()
         };
         self.staging.unmap();
         *m = Mapping::Idle;
-        Some(crate::render::Histogram { bins })
+        let rgb = bins.iter().map(|b| [b[0] as f32, b[1] as f32, b[2] as f32]).collect();
+        let luma = bins.iter().map(|b| b[3] as f32).collect();
+        Some(oni_measure::histogram::Histogram { rgb, luma, ends: None })
     }
 }
 

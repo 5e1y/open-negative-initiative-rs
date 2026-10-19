@@ -32,7 +32,7 @@ pub struct Done {
     pub picture: Picture,
     pub width: usize,
     pub height: usize,
-    pub histogram: Option<Histogram>,
+    pub histogram: Option<oni_measure::histogram::Histogram>,
     pub kind: crate::timing::Kind,
     pub asked: Instant,
     pub pipeline: Duration,
@@ -53,47 +53,6 @@ pub enum Delivery {
 pub struct InputHistograms {
     pub levels: oni_measure::histogram::Histogram,
     pub curves: oni_measure::histogram::Histogram,
-}
-
-impl InputHistograms {
-    /// `HistogramTraces`: each channel's counts coarsened to the plot's columns, `HistogramScale`'s
-    /// heights (the peak off the two bins at each end, then the 0.42 power), filled at 28 % under an
-    /// 85 % edge, a channel out of focus at a fifth; premultiplied RGBA8 of `w` by `h`.
-    pub fn raster(histogram: &oni_measure::histogram::Histogram, focus: Option<usize>, w: usize, h: usize) -> Vec<u8> {
-        let mut out = vec![[0f32; 4]; w * h];
-        let n = histogram.rgb.len();
-        if n < 2 || w == 0 || h == 0 {
-            return vec![0; w * h * 4];
-        }
-        for c in 0..3 {
-            let counts: Vec<f32> = histogram.rgb.iter().map(|b| b[c].max(0.0)).collect();
-            let interior = if n > 4 { &counts[2..n - 2] } else { &counts[..] };
-            let peak = interior.iter().copied().fold(0.0, f32::max);
-            if peak <= 0.0 {
-                continue;
-            }
-            let column = |x: usize| {
-                let (a, b) = (x * n / w, ((x + 1) * n / w).max(x * n / w + 1).min(n));
-                let mean = counts[a..b].iter().sum::<f32>() / (b - a) as f32;
-                (mean / peak).powf(0.42).min(1.0)
-            };
-            let strength = if focus.is_some_and(|f| f != c) { 0.2 } else { 1.0 };
-            for x in 0..w {
-                let top = h as f32 * (1.0 - column(x));
-                for y in 0..h {
-                    let edge = (y as f32 - top).abs() < 1.0;
-                    let a = if edge { 0.85 } else if y as f32 >= top { 0.28 } else { continue } * strength;
-                    let px = &mut out[y * w + x];
-                    // Source over, premultiplied, in the channel's own primary.
-                    for k in 0..3 {
-                        px[k] = if k == c { a } else { 0.0 } + px[k] * (1.0 - a);
-                    }
-                    px[3] = a + px[3] * (1.0 - a);
-                }
-            }
-        }
-        out.iter().flat_map(|p| p.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8)).collect()
-    }
 }
 
 /// `Negative.measureSmall`'s scale of the measuring copy.
@@ -149,7 +108,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
                             let rgba8 = encoded(&linear, &Params::new(screen, linear.width as u32, linear.height as u32, seed), 1);
-                            let histogram = Some(Histogram::of(&rgba8));
+                            let histogram = Some(crate::histogram::measure(&linear.pixels, linear.width, linear.height, screen));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
                             Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }

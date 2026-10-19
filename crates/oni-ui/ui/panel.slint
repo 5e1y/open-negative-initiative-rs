@@ -16,6 +16,9 @@ export component Panel inherits Surface {
         if !Lab.shown && PanelState.tab != 3: HistogramFrame {
             source: Plots.output;
             size: PlotSize.main;
+            init => { Plots.output-width = self.width; Plots.output-height = self.height; }
+            changed width => { Plots.output-width = self.width; }
+            changed height => { Plots.output-height = self.height; }
             // Lighting's curves over the plot, on the Color tab alone.
             if PanelState.tab == 2: PrintOverlay { }
         }
