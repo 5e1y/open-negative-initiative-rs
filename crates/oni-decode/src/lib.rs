@@ -23,6 +23,7 @@ struct Decoded {
     raw: *mut c_void,
     half: c_int,
     inset: [c_int; 4],
+    flip: c_int,
 }
 
 unsafe extern "C" {
@@ -291,7 +292,8 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
     let factor = if d.half != 0 { 2 } else { 1 };
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
-    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), &conv.matrix);
+    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &conv.matrix);
+    let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
         eprintln!(
             "mul {:?} baseline {} cam_xyz {:?}\nmatrix {:?}",

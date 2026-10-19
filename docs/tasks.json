@@ -906,5 +906,21 @@
     "status": "done",
     "detail": "Owner's report: EXPORT and ADD FOLDER stretched with the window. A worded key took a stretch of one, so a row's spare room went into it. A key now keeps its own width unless it fills; a row of keys none of which fills still shares its room out, as Slint grows every item when none stretches, so a filling KeyPlate is unchanged.",
     "outcome": "Window check toolbar.rs: at 1280 and 1700 px the last key, the gap and FEEDBACKS keep their widths while the room before them grows (twin); with the old default ADD FOLDER went 150 to 255 px and the check failed."
+  },
+  {
+    "id": 127,
+    "type": "fix",
+    "title": "A RAW held in portrait opens upright, as CIRAWFilter hands it out",
+    "status": "done",
+    "detail": "Owner's decision. LibRaw ran with user_flip 0, so the file's orientation was ignored: a portrait RAW opened sideways and a Swift sidecar's crop fractions fell elsewhere. LibRaw still hands out the unturned image; the camera-to-linear conversion now reads it turned by the file's flip (flip_index's arithmetic), so no extra copy is made, the default crop turning with it. Renders of turned RAWs move; the owner's test-build edits do not matter.",
+    "outcome": "oni-decode linear tests: every flip against LibRaw's flip_index on a numbered window, twin the two quarter turns differ. tests/orientation.rs on a roll #8 NEF copy whose Orientation tag reads 6 and 8: sides swapped, corners where a turn puts them, twin the two turns differ; with the flip forced to 0 the check fails. No RAW on the owner's disks carries a turn today."
+  },
+  {
+    "id": 128,
+    "type": "perf",
+    "title": "The editor's preview and the thumbnails read RAWs at half size",
+    "status": "done",
+    "detail": "Owner's decision. A RAW at least twice the preview's 2000 px is read by LibRaw at half size, one pixel per 2x2 block without demosaic, then reduced to the preview: about 0.35 s instead of 1 s for a 24 MP NEF, and a quarter of the memory. Full resolution (zoom, export, roll previews) still decodes whole.",
+    "outcome": "Preview and thumbnails share render::decode's `alone`, now `mosaic(path, PREVIEW_SIDE)`; decode_full stays whole. Every check green."
   }
 ]

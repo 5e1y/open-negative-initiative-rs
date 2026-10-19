@@ -47,14 +47,11 @@ pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
     }
 }
 
-/// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it.
+/// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it. A
+/// RAW twice the preview's side is read at half size, a third of a full decode's second.
 pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => {
-            let d = oni_decode::decode(path, 1.0).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
-            let full_width = d.width as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
-        }
+        oni_decode::Branch::Mosaic => mosaic(path, PREVIEW_SIDE),
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
             linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)
@@ -67,11 +64,7 @@ pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
 /// long, which skips the demosaic; the measuring copies and the roll's previews never need more.
 pub fn decode_for(path: &Path, reading: Reading, side: usize) -> Result<Decoded, String> {
     let one = |p: &Path, r: Reading| match oni_decode::route(p) {
-        oni_decode::Branch::Mosaic => {
-            let (d, factor) = oni_decode::decode_for(p, 1.0, side).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
-            let full_width = (d.width * factor) as f64;
-            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
-        }
+        oni_decode::Branch::Mosaic => mosaic(p, side),
         _ => alone(p, r),
     };
     match reading.passes.clone() {
@@ -85,7 +78,7 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     let one = |p: &Path, r: Reading| match oni_decode::route(p) {
         oni_decode::Branch::LinearRgb => linear_scan(p, None, r, 0),
         oni_decode::Branch::Plain => plain(p, None, r),
-        oni_decode::Branch::Mosaic => alone(p, r),
+        oni_decode::Branch::Mosaic => mosaic(p, 0),
     };
     match reading.passes.clone() {
         Some(passes) => composed(path, &passes, |p| one(p, reading.clone())),
@@ -93,11 +86,18 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     }
 }
 
+/// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor.
+fn mosaic(path: &Path, side: usize) -> Result<Decoded, String> {
+    let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
+    let full_width = (d.width * factor) as f64;
+    Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
+}
+
 /// `RawDecode.alone(longestSide:)`: one file, never its passes, no longer than `side` (`None`: whole).
 pub fn decode_alone(path: &Path, side: Option<f64>) -> Result<Decoded, String> {
     let reading = Reading::default();
     let mut d = match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => alone(path, reading)?,
+        oni_decode::Branch::Mosaic => mosaic(path, side.map_or(0, |s| s.ceil() as usize))?,
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
             linear_scan(path, side, reading, full)?

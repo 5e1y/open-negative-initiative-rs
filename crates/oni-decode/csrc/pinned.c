@@ -14,6 +14,8 @@ typedef struct {
     int half;
     // The maker's default crop, kept once LibRaw's own buffers are let go.
     int inset[4];
+    // The file's orientation, LibRaw's `flip`; the pixels come out unturned and Rust turns them.
+    int flip;
 } oni_decoded;
 
 void oni_release(oni_decoded *d)
@@ -59,6 +61,7 @@ int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *o
         p->half_size = 1;
         out->half = 1;
     }
+    out->flip = lr->sizes.flip;
     out->colors = lr->idata.colors;
     out->dng = lr->idata.dng_version != 0;
     memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
