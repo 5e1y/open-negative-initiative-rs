@@ -31,7 +31,6 @@ use oni_library::index::LibraryIndex;
 use oni_library::roots::Survey;
 use oni_settings::Medal;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::ops::RangeInclusive;
 use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -55,6 +54,7 @@ mod workers;
 mod shell;
 mod canvas_gpu;
 mod opening;
+use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
 mod state_read;
 use state_read::LoadBar;
@@ -492,21 +492,6 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
         Block::SourceBalance => g.set_source_balance_modified(on),
         Block::FlatField => g.set_flat_field_modified(on),
     }
-}
-
-fn track_range(f: Field) -> RangeInclusive<f32> {
-    let (low, high) = f.track();
-    low..=high
-}
-
-/// Where a stored value sits on its track.
-fn position(f: Field, stored: f32) -> f32 {
-    track::position(f.shown(stored), &track_range(f), f.spec().centre)
-}
-
-/// The stored value at a track position: the exact inverse of `position`.
-fn stored_at(f: Field, at: f32) -> f32 {
-    f.shown(track::value(at, &track_range(f), f.spec().centre))
 }
 
 fn image(bytes: &[u8], w: usize, h: usize) -> Image {

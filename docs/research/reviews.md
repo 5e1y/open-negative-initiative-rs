@@ -43,19 +43,16 @@ and what is left, most noticed first.
 
 ### Editor behaviour (Swift wins)
 
-1. Black point readout sign flipped; Dye Separation reads 0.60 instead of 60 %.
-2. Source Balance double-click goes to the roll's stops instead of 0.
-3. B&W frames keep the colour ranges on Contrast, White and Black points; the density ceiling's track is
-   the RAW range on every file.
-4. A never-balanced frame does not open with its measuring window proposed; the window is never
+1. (Done, #98: readouts, the gains' double click, the B&W and plain-file tracks.)
+2. A never-balanced frame does not open with its measuring window proposed; the window is never
    disarmed (leaving Crop, auto balance, Return).
-5. Return does nothing in Crop; ⌘K toggles instead of opening Crop; the last panel is recorded in
+3. Return does nothing in Crop; ⌘K toggles instead of opening Crop; the last panel is recorded in
    fewer places.
-6. De-dust does not leave the Scanner face; correction numbers never restart per photo; the brush
+4. De-dust does not leave the Scanner face; correction numbers never restart per photo; the brush
    size is not remembered.
-7. Space does not leave the Lab; ⌘A does nothing in the editor; the Scanner Emulator menu item is
+5. Space does not leave the Lab; ⌘A does nothing in the editor; the Scanner Emulator menu item is
    always dark.
-8. A preset with automatic balance asks the strategy question Swift never asks.
+6. A preset with automatic balance asks the strategy question Swift never asks.
 
 ### Gallery and column
 

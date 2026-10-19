@@ -33,14 +33,15 @@ impl Ctl {
             (out, edited)
         };
         for (f, v, held) in &moved {
-            let text: SharedString = f.spec().readout.format(*v).into();
+            let text: SharedString = f.readout(*v).into();
             set_value(&g, *f, text.clone());
             if !held {
                 set_readout(&g, *f, text);
+                let at = position_on(*f, *v, &track_on(*f, self.state.borrow().store.settings()));
                 if jump {
-                    self.place(*f, position(*f, *v));
+                    self.place(*f, at);
                 } else {
-                    self.spring(*f, position(*f, *v));
+                    self.spring(*f, at);
                 }
             }
         }

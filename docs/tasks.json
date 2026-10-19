@@ -698,5 +698,13 @@
     "status": "done",
     "detail": "From the RAM reviewers' findings, each checked in the code: back in the gallery the full-resolution source, the fitted copy, the measuring copies and the pool's idle textures are dropped (up to 1.6 GB on a 24 MP frame); Compare off drops its before texture; the console window's timer no longer reads the whole log every half second once closed.",
     "outcome": "Every check green; measuring resident memory before and after is the next step."
+  },
+  {
+    "id": 98,
+    "type": "fix",
+    "title": "Readouts in the slider's sense, Dye Separation in percent, a gain's double click at zero, tracks on the frame's own ranges",
+    "status": "done",
+    "detail": "From the Swift-parity reviewers: the Black point read the stored value's sign, not the slider's (DSSlider formats the shown value); Dye Separation read 0.60 where Swift reads 60 %; a Source Balance double click landed on the roll's stops instead of Gains.base, the block reset keeping the stops; a B&W frame's Contrast and points, and a plain file's density ceiling, slid on the colour RAW range instead of Knob::range.",
+    "outcome": "Unit tests with twins on the readout sign, the double-click base and the monochrome track; every check green."
   }
 ]

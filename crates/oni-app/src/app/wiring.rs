@@ -30,7 +30,7 @@ impl Ctl {
                 double
             };
             if double {
-                let base = f.base(p.state.borrow().store.settings());
+                let base = f.double_click_base(p.state.borrow().store.settings());
                 p.set(f, base);
             }
             double
@@ -42,10 +42,11 @@ impl Ctl {
             let i = f.index() as usize;
             let (asked, live, offer) = {
                 let mut s = p.state.borrow_mut();
+                let range = track_on(f, s.store.settings());
                 let slide = &mut s.slides[i];
                 let (false, Some(start)) = (slide.resetting, slide.start) else { return };
                 let asked = track::clamped(track::asked(start, translation, span, fine));
-                let live = stored_at(f, asked);
+                let live = stored_on(f, asked, &range);
                 let now = Instant::now();
                 slide.live = Some(live);
                 slide.moved_at = Some(now);
@@ -57,7 +58,7 @@ impl Ctl {
             };
             p.place(f, asked);
             if let Some(w) = p.window() {
-                set_readout(&w.global::<StoreGlobal>(), f, f.spec().readout.format(live).into());
+                set_readout(&w.global::<StoreGlobal>(), f, f.readout(live).into());
             }
             match offer {
                 Offer::Now => p.set(f, live),
@@ -106,7 +107,7 @@ impl Ctl {
             // The readout leaves the hand's value for the store's, which a clamp may have moved.
             if let Some(w) = p.window() {
                 let v = p.state.borrow().store.get(f);
-                set_readout(&w.global::<StoreGlobal>(), f, f.spec().readout.format(v).into());
+                set_readout(&w.global::<StoreGlobal>(), f, f.readout(v).into());
             }
         });
 
@@ -121,7 +122,8 @@ impl Ctl {
             let asked = track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine));
             p.scroll_kept_alive();
             p.place(f, asked);
-            p.set(f, stored_at(f, asked));
+            let range = track_on(f, p.state.borrow().store.settings());
+            p.set(f, stored_on(f, asked, &range));
             true
         });
 
