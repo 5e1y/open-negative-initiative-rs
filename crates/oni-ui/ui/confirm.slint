@@ -1,23 +1,35 @@
 // `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
-import { Sheet, Label, TextRole, Tone, Button, ButtonGroup, ButtonKind } from "ds/ds.slint";
+import { Sheet, Label, Tone, Button, SheetKeys, ButtonKind } from "ds/ds.slint";
 
 export global Confirm {
     in property <bool> shown;
     in property <string> title;
     in property <string> message;
     in property <string> key;
+    // Red and deaf to Return, so no stray key confirms what cannot be taken back.
+    in property <bool> destructive;
+    // `QuitGuard`'s alert: Cancel the default on the right, the key that goes ahead to its left.
+    in property <bool> cancel-default;
     callback answered(bool);
 }
 
 export component ConfirmSheet inherits Sheet {
+    title: Confirm.title;
+    question: true;
     dismissed => { Confirm.answered(false); }
-    Label { role: TextRole.section; text: Confirm.title; }
     if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: end;
-        ButtonGroup {
-            Button { text: "CANCEL"; clicked => { Confirm.answered(false); } }
-            Button { text: Confirm.key; kind: ButtonKind.accent; clicked => { Confirm.answered(true); } }
+    // Quitting's alert lays the key that goes ahead first, Cancel last as its default.
+    SheetKeys {
+        if Confirm.cancel-default: Button { text: Confirm.key; clicked => { Confirm.answered(true); } }
+        Button {
+            text: "CANCEL";
+            kind: Confirm.cancel-default ? ButtonKind.accent : ButtonKind.plain;
+            clicked => { Confirm.answered(false); }
+        }
+        if !Confirm.cancel-default: Button {
+            text: Confirm.key;
+            kind: Confirm.destructive ? ButtonKind.destructive : ButtonKind.accent;
+            clicked => { Confirm.answered(true); }
         }
     }
 }

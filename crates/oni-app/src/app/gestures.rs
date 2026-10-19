@@ -365,7 +365,7 @@ impl Ctl {
 
     /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it.
     pub(super) fn confirm(&self, key: &str, pending: Pending) {
-        self.ask(ANOTHER_ROLL.0, ANOTHER_ROLL.1, key, pending);
+        self.ask(ANOTHER_ROLL.0, ANOTHER_ROLL.1, key, false, pending);
     }
 
     pub(super) fn answered(self: &Rc<Self>, go: bool) {

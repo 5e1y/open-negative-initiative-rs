@@ -1,7 +1,7 @@
 // The forms of export and colour management: a labelled field, a note, a summary box, a preview slot,
 // a chip that opens a popover, and the panel a popover or a sheet draws on.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
 import { HelpMark } from "containers.slint";
 import { TextField, Button } from "controls.slint";
@@ -153,18 +153,18 @@ export component Chip inherits Rectangle {
     }
 }
 
-// `dsPopover`'s body: a raised panel at the export panel's width.
+// `dsPopover`'s body: the panel's ground at the export panel's width, its padding inside it.
 export component PopoverPanel inherits Rectangle {
     width: FormStyle.panel-width;
     height: column.preferred-height;
-    background: Colour.raised;
+    background: Colour.ground;
     border-radius: Radius.card;
     border-width: Stroke.hairline;
     border-color: Colour.separator;
     // A click inside stays inside, so only a click outside closes the popover.
     TouchArea { }
     column := VerticalLayout {
-        padding: Space.l;
+        padding: Space.m;
         spacing: Space.m;
         @children
     }
@@ -181,32 +181,47 @@ export component Popover inherits PopupWindow {
     }
 }
 
-// A board on the scrim, laid out as the app is: a title bar with its exit, then a sidebar and a card.
+// A board laid out as the app is: a title bar with its exit, then a sidebar and a card; modal as
+// `Sheet`, hung from the window's top at most the window's height, Escape its exit.
 export component BoardSheet inherits Rectangle {
     in property <string> title;
     in property <string> exit: "Done";
     callback dismissed();
-    background: Colour.scrim;
-    TouchArea { clicked => { root.dismissed(); } }
-    Rectangle {
-        width: FormStyle.paper-width;
-        height: FormStyle.paper-height;
-        background: Colour.ground;
-        border-radius: Radius.card;
-        border-width: Stroke.hairline;
-        border-color: Colour.separator;
-        clip: true;
-        TouchArea { }
-        VerticalLayout {
-            HorizontalLayout {
-                padding: Space.m;
-                Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                Button { text: root.exit; clicked => { root.dismissed(); } }
+    TouchArea { }
+    FocusScope {
+        width: 100%;
+        height: 100%;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
             }
-            Divider { }
-            HorizontalLayout {
-                vertical-stretch: 1;
-                @children
+            reject
+        }
+        Rectangle {
+            y: SheetStyle.margin;
+            width: FormStyle.paper-width;
+            height: min(FormStyle.paper-height, root.height - 2 * SheetStyle.margin);
+            background: Colour.ground;
+            border-radius: Radius.card;
+            border-width: Stroke.hairline;
+            border-color: Colour.separator;
+            drop-shadow-blur: SheetStyle.shadow;
+            drop-shadow-color: Colour.scrim;
+            clip: true;
+            TouchArea { }
+            VerticalLayout {
+                HorizontalLayout {
+                    padding: Space.m;
+                    Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
+                    Button { text: root.exit; clicked => { root.dismissed(); } }
+                }
+                Divider { }
+                HorizontalLayout {
+                    vertical-stretch: 1;
+                    @children
+                }
             }
         }
     }

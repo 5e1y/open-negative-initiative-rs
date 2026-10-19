@@ -7,12 +7,14 @@ impl Ctl {
     /// ⌘=, which types apart from the menu's ⌘+; every other shortcut is the menu bar's.
     pub(super) fn key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let Some(w) = self.window() else { return false };
-        if w.global::<Confirm>().get_shown() {
-            // Quitting is the one sheet whose default is Cancel: Return never discards unsaved work.
-            let safe = matches!(self.state.borrow().pending, Some(Pending::QuitAnyway));
+        let confirm = w.global::<Confirm>();
+        if confirm.get_shown() {
+            // Quitting's default is Cancel, so Return never discards unsaved work; a destructive key
+            // takes no Return at all, so no stray key confirms it.
             match text {
                 "\u{1b}" => self.answered(false),
-                "\r" | "\n" => self.answered(!safe),
+                "\r" | "\n" if confirm.get_cancel_default() => self.answered(false),
+                "\r" | "\n" if !confirm.get_destructive() => self.answered(true),
                 _ => {}
             }
             return true;
@@ -59,8 +61,10 @@ impl Ctl {
         }
         // A sheet is modal: Escape closes the ones no branch above reads, and no key reaches behind it.
         if w.get_sheet_shown() {
-            if text == "\u{1b}" {
-                self.escape_sheet(&w);
+            match text {
+                "\u{1b}" => self.escape_sheet(&w),
+                "\r" | "\n" => self.return_sheet(&w),
+                _ => {}
             }
             return true;
         }
@@ -82,6 +86,19 @@ impl Ctl {
             return true;
         }
         false
+    }
+
+    /// `.defaultAction`: Return presses the one key a notice offers; the export's clash, whose key
+    /// replaces files, takes none.
+    fn return_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
+        let e = w.global::<crate::Exporting>();
+        if e.get_notice_shown() {
+            e.invoke_notice_closed();
+        } else if w.global::<crate::Notice>().get_shown() {
+            w.global::<crate::Notice>().invoke_close();
+        } else if w.global::<crate::Navigator>().get_catch_up_shown() {
+            w.global::<crate::Navigator>().invoke_catch_up_done();
+        }
     }
 
     fn escape_sheet(self: &Rc<Self>, w: &crate::MainWindow) {

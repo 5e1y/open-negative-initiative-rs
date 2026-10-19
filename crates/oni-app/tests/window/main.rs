@@ -36,6 +36,7 @@ mod rolls;
 mod scanner;
 mod scroll;
 mod session;
+mod sheet_layout;
 mod sheets;
 mod space_chip;
 mod stocks;
@@ -91,6 +92,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag", scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
+    ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),

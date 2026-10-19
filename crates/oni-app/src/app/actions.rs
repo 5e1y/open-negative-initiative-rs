@@ -135,6 +135,7 @@ impl Ctl {
             "Your latest settings could not be saved",
             &format!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on."),
             "Quit Anyway",
+            false,
             Pending::QuitAnyway,
         );
         slint::CloseRequestResponse::KeepWindowShown

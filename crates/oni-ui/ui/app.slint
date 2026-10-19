@@ -295,6 +295,7 @@ export component MainWindow inherits AppWindow {
             if Menus.presets.length == 0: MenuItem { title: "No presets"; enabled: false; }
             if Menus.presets.length > 0: MenuItem { title: Menus.apply-title; enabled: false; }
             for line[i] in Menus.presets: MenuItem { title: line; enabled: Menus.live.apply-preset; activated => { Menus.apply-preset(i); } }
+            if Menus.presets.length > 0: MenuSeparator { }
             if Menus.presets.length > 0: Menu {
                 title: "Delete a Preset";
                 for name[i] in Menus.preset-names: MenuItem { title: name; activated => { Menus.delete-preset(i); } }
@@ -553,13 +554,6 @@ export component MainWindow inherits AppWindow {
     if Presets.saving: PresetSaveSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Presets.editing: PresetEditorSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
-    if Confirm.shown: ConfirmSheet {
-        x: 0;
-        y: 0;
-        width: root.width;
-        height: root.height;
-    }
-
     if Pairing.shown: PairingSheet {
         x: 0;
         y: 0;
@@ -585,6 +579,8 @@ export component MainWindow inherits AppWindow {
     if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
+    // Last, so a question asked over another sheet, as quitting's, is drawn over it.
+    if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     TipLayer { room: root.width; room-height: root.height; }
 

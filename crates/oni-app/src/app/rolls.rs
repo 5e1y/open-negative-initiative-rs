@@ -161,7 +161,7 @@ impl Ctl {
             if sheets { "both back." } else { "the settings back." }
         );
         let key = if count > 1 { format!("Reset {count} Photos") } else { "Reset Photo".to_string() };
-        self.ask(&title, &message, &key, Pending::ResetToDefault(reach));
+        self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
     }
 
     pub(super) fn reset_to_default(self: &Rc<Self>, reach: ResetReach) {

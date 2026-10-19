@@ -114,6 +114,7 @@ impl Ctl {
             &format!("Replace \u{201c}{}\u{201d} with This Photo\u{2019}s Settings?", p.name),
             "The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are.",
             "Replace",
+            true,
             Pending::UpdatePreset(id),
         );
     }
@@ -124,6 +125,7 @@ impl Ctl {
             &format!("Delete the Preset \u{201c}{}\u{201d}?", p.name),
             "Its file goes to the Trash, where it can be put back. Photos it was applied to keep their settings.",
             "Delete",
+            true,
             Pending::DeletePreset(id),
         );
     }

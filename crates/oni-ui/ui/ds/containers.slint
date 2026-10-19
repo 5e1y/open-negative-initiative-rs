@@ -2,7 +2,7 @@
 import { NewsSeal } from "help.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
-import { Button, ButtonSize, Look } from "controls.slint";
+import { Button, ButtonSize, Look, KeyPlate } from "controls.slint";
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 
@@ -97,43 +97,56 @@ export component Section inherits VerticalLayout {
     }
 }
 
-// The sheet's card alone: a title, the content, a rounded panel; `Sheet` lays it over a scrim.
+// The sheet's card: a leading title, the content, a rounded panel; `Sheet` hangs it in the window.
 // `WelcomeSheet`'s fit: as tall as its content, never past `room`, the content scrolling beyond.
 export component Dialog inherits Rectangle {
     in property <string> title;
+    // `DSDialogPanel`'s question: its title in the section face, a full sheet's in the title face.
+    in property <bool> question;
     in property <bool> wide;
+    // A gauge of its own, as the notices' and the catch-up's; zero takes the plain or wide one.
+    in property <length> card-width;
     in property <length> room: 1000000px;
-    width: root.wide ? SheetStyle.wide-width : SheetStyle.width;
+    // Edge to edge: the content carries its own padding, as the welcome's photo touches the card.
+    in property <bool> bleed;
+    width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
     height: min(column.preferred-height, root.room);
     background: Colour.ground;
     border-radius: SheetStyle.radius;
     border-width: Stroke.hairline;
     border-color: Colour.separator;
+    drop-shadow-blur: SheetStyle.shadow;
+    drop-shadow-color: Colour.scrim;
     clip: true;
-    // A click on the card stays on it, so only the scrim closes the sheet.
+    // A click on the card stays on it.
     TouchArea { }
     Scroller {
-        viewport-width: self.width;
-        viewport-height: column.preferred-height;
+        content-width: self.width;
+        content-height: column.preferred-height;
         column := VerticalLayout {
             width: root.width;
-            padding: SheetStyle.padding;
-            spacing: SheetStyle.gap;
-            if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; wrap: word-wrap; }
+            padding: root.bleed ? 0px : SheetStyle.padding;
+            spacing: root.bleed ? 0px : SheetStyle.gap;
+            if root.title != "": Label {
+                role: root.question ? TextRole.section : TextRole.title;
+                text: root.title;
+                wrap: word-wrap;
+            }
             @children
         }
     }
 }
 
-// A modal sheet: the scrim over the window, the dialog centred on it; Escape closes it.
+// A window-modal sheet hung from the window's top; no scrim is drawn, yet a click beside the card
+// reaches nothing, as Swift's sheet ignores it. Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
+    in property <bool> question;
     in property <bool> wide;
-    // A click on the scrim closes only a sheet with nothing to lose, as a modal sheet ignores it.
-    in property <bool> scrim-dismisses;
+    in property <length> card-width;
+    in property <bool> bleed;
     callback dismissed();
-    background: Colour.scrim;
-    TouchArea { clicked => { if (root.scrim-dismisses) { root.dismissed(); } } }
+    TouchArea { }
     // A field's Escape bubbles here: the window's key monitor is the sheet's sibling, never its parent.
     FocusScope {
         width: 100%;
@@ -147,12 +160,22 @@ export component Sheet inherits Rectangle {
             reject
         }
         Dialog {
+            y: SheetStyle.margin;
             title: root.title;
+            question: root.question;
             wide: root.wide;
+            card-width: root.card-width;
+            bleed: root.bleed;
             room: root.height - 2 * SheetStyle.margin;
             @children
         }
     }
+}
+
+// `DSDialogPanel`'s key row: the keys on one plate at the card's trailing edge, the default last.
+export component SheetKeys inherits HorizontalLayout {
+    alignment: end;
+    KeyPlate { @children }
 }
 
 // One line of a menu: its word, its shortcut, a hover band.

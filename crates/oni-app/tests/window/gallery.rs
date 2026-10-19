@@ -293,7 +293,10 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(confirm.get_title().as_str(), "Delete \u{201c}Coast trip\u{201d}?");
     assert_eq!(confirm.get_key().as_str(), "DELETE PROJECT");
     rig.key(&ret);
-    assert!(oni_library::project::load(&support).projects.is_empty());
+    assert!(confirm.get_shown(), "the red key takes no Return");
+    confirm.invoke_answered(true);
+    rig.pump();
+    assert!(oni_library::project::load(&support).projects.is_empty(), "twin: its click deletes");
     assert_eq!(lib.get_empty_title().as_str(), "No Photos in a Project");
     assert_eq!(lib.get_projects_empty().as_str(), "No Projects");
     lib.invoke_surface_picked(0);

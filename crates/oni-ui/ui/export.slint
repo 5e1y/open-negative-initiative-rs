@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
+import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, SheetKeys, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
 
 // One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
 export struct ExportLine {
@@ -407,23 +407,23 @@ export component SpaceChip inherits Chip {
 // The batch's clash: Return reaches no key, since replacing files is never a stray key's doing.
 export component ExportConfirmSheet inherits Sheet {
     title: Exporting.confirm-title;
+    question: true;
     dismissed => { Exporting.confirmed(false); }
-    Label { text: Exporting.confirm-message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: center;
-        spacing: Space.s;
+    if Exporting.confirm-message != "": Label { text: Exporting.confirm-message; tone: Tone.secondary; wrap: word-wrap; }
+    SheetKeys {
         Button { text: "Cancel"; clicked => { Exporting.confirmed(false); } }
         Button { text: "Replace"; kind: ButtonKind.destructive; clicked => { Exporting.confirmed(true); } }
     }
 }
 
+// `DSDialogRequest.notice`: its one key the default, Return included.
 export component ExportNoticeSheet inherits Sheet {
     title: Exporting.notice-title;
+    question: true;
     dismissed => { Exporting.notice-closed(); }
-    Label { text: Exporting.notice-message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: center;
-        Button { text: "OK"; clicked => { Exporting.notice-closed(); } }
+    if Exporting.notice-message != "": Label { text: Exporting.notice-message; tone: Tone.secondary; wrap: word-wrap; }
+    SheetKeys {
+        Button { text: "OK"; kind: ButtonKind.accent; clicked => { Exporting.notice-closed(); } }
     }
 }
 
