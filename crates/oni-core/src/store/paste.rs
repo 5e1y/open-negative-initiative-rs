@@ -35,9 +35,12 @@ impl EditorStore {
     /// Lays the copied Color and Details tabs, whole, on every target, one gallery step.
     pub fn paste_settings(&mut self, targets: &[String]) -> usize {
         let Some(donor) = self.paste_source() else { return 0 };
-        self.lay_on(targets, |_, s| look_settings::copied(&donor, s), |n| {
+        // `before.count`: Swift counts the open frame among the targets whether or not the paste moved it.
+        let open_unmoved = self.path().is_some_and(|p| targets.iter().any(|t| t == p)) && look_settings::copied(&donor, &self.settings) == self.settings;
+        let laid = self.lay_on(targets, |_, s| look_settings::copied(&donor, s), |n| {
             if n == 1 { "Paste settings".into() } else { format!("Paste settings to {n} photos") }
-        })
+        });
+        laid + usize::from(open_unmoved)
     }
 
     /// The open frame in memory, then every other frame of its roll as part of that one step; a

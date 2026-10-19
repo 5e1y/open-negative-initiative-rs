@@ -855,9 +855,9 @@
     "id": 117,
     "type": "todo",
     "title": "ONI Wrapped measures at Swift's level",
-    "status": "todo",
+    "status": "done",
     "detail": "From the #115 audit: journal writes off the interface thread (Swift's utility queue, Journal.swift:34-35); offer_wrapped after the library and the index are read (EditorScene+Stages.swift:76-83); paste-to-roll counts the open frame once and a paste counts only the photos changed (EditorScene+Paste.swift:47, 65, 92-95); the export subject's path canonical (EditorScene+Export.swift:155).",
-    "outcome": ""
+    "outcome": "The journal writes on its own thread (Journal.swift's utility queue): a gesture is handed over and the read waits for every write handed before it, and quitting waits for it too; the check holds the thread and sees the caller wrote nothing, then reads all 51. The launch's Wrapped offer waits for the opened folder's rows, at once when none is read. Paste to Roll counts the open frame once (rollReach + 1). A paste counts as Swift's before.count does: every target rewritten, the open frame whether or not the paste moved it (the audit's 'only the photos changed' misread SidecarBatch, whose paste transform never returns nil). The exported photo is noted under its canonical path."
   },
   {
     "id": 118,

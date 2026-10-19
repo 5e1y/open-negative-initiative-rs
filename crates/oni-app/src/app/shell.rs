@@ -211,7 +211,7 @@ impl Shell {
 
     /// `offerWrapped()` at launch: December's summary, once a year, never under a bench.
     pub fn offer_wrapped(&self) {
-        self.ctl.offer_wrapped();
+        self.ctl.offer_wrapped_when_read();
     }
 
     /// The open frame's sidecar written as the app ends, whatever ended it; the failure, if any.
@@ -234,6 +234,8 @@ impl Ctl {
     /// The roll's draft, then the open frame's settings, as closing the window writes them.
     pub fn last_writes(&self) -> Option<String> {
         self.flush_drafts();
+        // The journal's thread writes what it was handed before the process ends.
+        let _ = year::journal_in(&self.state.borrow().support).read();
         self.state.borrow_mut().store.flush()
     }
 }

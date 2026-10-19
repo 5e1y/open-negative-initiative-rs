@@ -89,7 +89,7 @@ impl Ctl {
                     }
                     match export::write_one(&engine, &target, &destination, &export, &metadata) {
                         Ok(()) => {
-                            let subject = target.path.to_string_lossy().into_owned();
+                            let subject = oni_library::paths::canonical(&target.path);
                             journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
                             with_shell(|c| {
                                 c.export.borrow_mut().progress += 1;

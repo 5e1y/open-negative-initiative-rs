@@ -289,9 +289,14 @@ impl Ctl {
         }
     }
 
+    /// The journal counts the photos the paste changed, as Swift's `before.count`.
     pub(super) fn lay_paste(self: &Rc<Self>, targets: Vec<String>) {
-        self.gesture(&targets, |store| store.paste_settings(&targets));
-        self.journal_count(oni_library::journal::Kind::Pasted, targets.len());
+        let changed = std::cell::Cell::new(0);
+        self.gesture(&targets, |store| {
+            changed.set(store.paste_settings(&targets));
+            changed.get()
+        });
+        self.journal_count(oni_library::journal::Kind::Pasted, changed.get());
     }
 
     /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
@@ -321,6 +326,8 @@ impl Ctl {
             let Some(store) = s.store.editor() else { return };
             store.paste_to_roll();
             let mut touched: Vec<String> = id.and_then(|id| store.measured_group(id)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
+            // `rollReach + 1`: the open frame counted once, whether or not its roll lists it.
+            touched.retain(|p| Some(p) != open.as_ref());
             touched.extend(open);
             touched
         };

@@ -22,6 +22,8 @@ pub struct Year {
     last: HashMap<String, PipelineSettings>,
     /// The summary while it shows: its cards, the one on top, and whether the deck is dealt.
     deck: Option<(Vec<Card>, usize, bool)>,
+    /// The launch's offer, waiting for the opened folder's rows as Swift's waits for `fillOpened`.
+    offer_due: bool,
 }
 
 fn medal_rank(medal: Medal) -> u16 {
@@ -111,6 +113,27 @@ impl Ctl {
     }
 
     /// `offerWrapped()`: in December, once a year, never under a bench.
+    /// `offerWrapped()` once the opened folder is read, at once when none is being read.
+    pub fn offer_wrapped_when_read(self: &Rc<Self>) {
+        let reading = {
+            let s = self.state.borrow();
+            s.opened.is_some() && !s.read_done
+        };
+        if reading {
+            self.state.borrow_mut().year.offer_due = true;
+        } else {
+            self.offer_wrapped();
+        }
+    }
+
+    /// The launch's offer made now if it waited for the rows just read.
+    pub(super) fn wrapped_after_read(self: &Rc<Self>) {
+        let due = std::mem::take(&mut self.state.borrow_mut().year.offer_due);
+        if due {
+            self.offer_wrapped();
+        }
+    }
+
     pub fn offer_wrapped(self: &Rc<Self>) {
         let (year, month) = today();
         let shown = self.state.borrow().preferences.value(SHOWN_YEAR_KEY).and_then(serde_json::Value::as_i64).unwrap_or(0);

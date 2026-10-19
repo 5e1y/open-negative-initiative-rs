@@ -5,7 +5,7 @@ use oni_settings::Date;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock, mpsc};
 
 /// Appended only, so a file written before still reads every kind it holds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -64,9 +64,20 @@ pub fn epoch() -> Date {
 }
 
 pub struct Journal {
+    /// Every file touch happens on the journal's own thread, so the interface thread only hands a
+    /// gesture over, as Swift's utility queue does.
+    queue: Mutex<mpsc::Sender<Job>>,
+}
+
+enum Job {
+    Note { record: Record, subject: Option<String>, name: Option<String> },
+    Read(mpsc::SyncSender<(Vec<Record>, Vec<String>)>),
+}
+
+/// The thread's side: the folder and the name table's indices, read once and then kept.
+struct Writer {
     folder: PathBuf,
-    /// The name table's indices, read once and then kept; every file touch happens under this lock.
-    indices: Mutex<Option<HashMap<String, u32>>>,
+    indices: Option<HashMap<String, u32>>,
 }
 
 impl Journal {
@@ -80,15 +91,28 @@ impl Journal {
     }
 
     pub fn new(folder: PathBuf) -> Journal {
-        Journal { folder, indices: Mutex::new(None) }
-    }
-
-    fn events(&self) -> PathBuf {
-        self.folder.join("events.bin")
-    }
-
-    fn names(&self) -> PathBuf {
-        self.folder.join("names.txt")
+        let (tx, rx) = mpsc::channel::<Job>();
+        let mut writer = Writer { folder, indices: None };
+        let _ = std::thread::Builder::new().name("journal".into()).spawn(move || {
+            for job in rx {
+                match job {
+                    Job::Note { mut record, subject, name } => {
+                        if let Some(subject) = subject {
+                            record.subject = writer.index(&subject);
+                        }
+                        if let Some(name) = name {
+                            record.value = writer.index(&name);
+                        }
+                        writer.write(&encode(&record), &writer.events(), Some(&header()));
+                    }
+                    Job::Read(reply) => {
+                        let records = decode(&std::fs::read(writer.events()).unwrap_or_default());
+                        let _ = reply.send((records, writer.lines()));
+                    }
+                }
+            }
+        });
+        Journal { queue: Mutex::new(tx) }
     }
 
     /// Appends one gesture; `subject` and `name` enter the table the first time they are seen.
@@ -101,19 +125,36 @@ impl Journal {
         } else {
             elapsed as u32
         };
-        let Ok(mut held) = self.indices.lock() else { return };
-        let mut record = Record { kind, detail, time: seconds, subject: NOTHING, value };
-        if let Some(subject) = subject {
-            record.subject = self.index(&mut held, subject);
+        let record = Record { kind, detail, time: seconds, subject: NOTHING, value };
+        if let Ok(queue) = self.queue.lock() {
+            let _ = queue.send(Job::Note { record, subject: subject.map(str::to_owned), name: name.map(str::to_owned) });
         }
-        if let Some(name) = name {
-            record.value = self.index(&mut held, name);
-        }
-        self.write(&encode(&record), &self.events(), Some(&header()));
     }
 
-    fn index(&self, held: &mut Option<HashMap<String, u32>>, name: &str) -> u32 {
-        let table = held.get_or_insert_with(|| self.load_indices());
+    /// Every gesture handed over before, read once the thread has written them.
+    pub fn read(&self) -> (Vec<Record>, Vec<String>) {
+        let (tx, rx) = mpsc::sync_channel(1);
+        if let Ok(queue) = self.queue.lock() {
+            let _ = queue.send(Job::Read(tx));
+        }
+        rx.recv().unwrap_or_default()
+    }
+}
+
+impl Writer {
+    fn events(&self) -> PathBuf {
+        self.folder.join("events.bin")
+    }
+
+    fn names(&self) -> PathBuf {
+        self.folder.join("names.txt")
+    }
+
+    fn index(&mut self, name: &str) -> u32 {
+        if self.indices.is_none() {
+            self.indices = Some(self.load_indices());
+        }
+        let table = self.indices.as_mut().expect("loaded above");
         if let Some(known) = table.get(name) {
             return *known;
         }
@@ -148,12 +189,6 @@ impl Journal {
         if let Ok(mut file) = std::fs::OpenOptions::new().append(true).open(path) {
             let _ = file.write_all(data);
         }
-    }
-
-    pub fn read(&self) -> (Vec<Record>, Vec<String>) {
-        let _held = self.indices.lock();
-        let records = decode(&std::fs::read(self.events()).unwrap_or_default());
-        (records, self.lines())
     }
 }
 
@@ -235,6 +270,27 @@ mod tests {
         reopened.note(Kind::Exported, Some("/b.RW2"), 0, 0, None, day);
         assert_eq!(reopened.read().0[3].subject, 1);
         assert_eq!(reopened.read().1.len(), 3);
+    }
+
+    /// A gesture handed over returns at once, its write left to the journal's thread; a read waits
+    /// for every write handed before it.
+    #[test]
+    fn a_gesture_is_written_off_the_caller_s_thread() {
+        let scratch = Scratch::new("journal-thread");
+        let journal = Journal::new(scratch.path().to_path_buf());
+        let day = Date::since_reference_date(812_000_000.0);
+        journal.note(Kind::Opened, Some("/first.RW2"), 0, 0, None, day);
+        // The thread held on a reply nobody takes yet: what is handed over now waits behind it.
+        let (tx, held) = mpsc::sync_channel(0);
+        journal.queue.lock().unwrap().send(Job::Read(tx)).unwrap();
+        for i in 0..50 {
+            journal.note(Kind::Edited, Some(&format!("/f{i}.RW2")), 1, 0, None, day);
+        }
+        let written = || decode(&std::fs::read(scratch.path().join("events.bin")).unwrap_or_default()).len();
+        assert!(written() <= 1, "twin: the caller wrote nothing itself");
+        let _ = held.recv();
+        assert_eq!(journal.read().0.len(), 51, "the read sees every gesture handed before it");
+        assert_eq!(written(), 51);
     }
 
     #[test]

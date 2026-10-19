@@ -121,6 +121,7 @@ impl Ctl {
             if let Some(path) = found {
                 self.open_in_editor(&path);
             }
+            self.wrapped_after_read();
         }
     }
 
