@@ -850,5 +850,37 @@
     "status": "done",
     "detail": "Owner's requests. Short of room for every word (measured on hidden copies, so the window's width never loops through the choice), RESET SCAN becomes a square key with the reset glyph and FEEDBACKS one with Trinil's chat glyph, their names kept as tooltips. Report a Bug takes the wide dialog, so its row of keys stays inside the card. A folder row's star was an unsized image inside its 12.8 px key, so it drew at the file's 24 px: it now fills its key, as Swift's DSIcon(size: iconSize * 0.8).",
     "outcome": "Window shots at 1280, 1100 and 980 px: words at 1280, glyphs at 1100; the report sheet's keys inside its card. No binding loop left in the build. Every check green."
+  },
+  {
+    "id": 117,
+    "type": "todo",
+    "title": "ONI Wrapped measures at Swift's level",
+    "status": "todo",
+    "detail": "From the #115 audit: journal writes off the interface thread (Swift's utility queue, Journal.swift:34-35); offer_wrapped after the library and the index are read (EditorScene+Stages.swift:76-83); paste-to-roll counts the open frame once and a paste counts only the photos changed (EditorScene+Paste.swift:47, 65, 92-95); the export subject's path canonical (EditorScene+Export.swift:155).",
+    "outcome": ""
+  },
+  {
+    "id": 118,
+    "type": "todo",
+    "title": "The release stamps ONI_VERSION and ONI_BUILD; a Swift user's last version seeds the install ping",
+    "status": "todo",
+    "detail": "The install ping (#115) fires only on a stamped build, and a copy moving from the Swift app would be counted as a first installation since Swift's UserDefaults are not read. Both settle with the release script, which needs the owner's word.",
+    "outcome": ""
+  },
+  {
+    "id": 119,
+    "type": "todo",
+    "title": "Fewer passes for the M1: Texture's ten to seven, per-pixel runs fused",
+    "status": "todo",
+    "detail": "Measured on the M2 Max (#108): bare chain 1.6 ms, Texture +2.6 ms on the 2000 px preview; an 8 GB M1 has about a sixth of the bandwidth. Fold luma into the narrow blur's prologue, moments and coefficients into the blurs' epilogues, then fuse the per-pixel stages after the curves, each with its CPU reference and a GPU-vs-CPU check.",
+    "outcome": ""
+  },
+  {
+    "id": 120,
+    "type": "todo",
+    "title": "One gate for every full decode, the thumbnail painter, the heal and the export included",
+    "status": "todo",
+    "detail": "The decode peak of an open during a thumbnail pass reaches about 3.2 GB at 24 MP; weigh the open's latency against an 8 GB Mac before choosing the order.",
+    "outcome": ""
   }
 ]
