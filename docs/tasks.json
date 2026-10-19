@@ -632,7 +632,7 @@
     "type": "perf",
     "title": "Dye Separation, optimised end to end",
     "status": "in progress",
-    "detail": "The separation has its own file (oni-pipeline/src/conversion/separation.rs); the POC crate's copy of its rows leaves with the crate, whose pieces oni-app carries; ONI_BENCH_FIELD drags any parameter in the real window, dye-separation included.",
-    "outcome": ""
+    "detail": "The separation has its own file (oni-pipeline/src/conversion/separation.rs); the POC crate's copy of its rows leaves with the crate, whose pieces oni-app carries; ONI_BENCH_FIELD drags any parameter in the real window, dye-separation included. A Dye Separation gesture ends by laying the dose on every other frame of the roll, read and written on the interface thread: each sidecar write flushed through sync_all, F_FULLFSYNC on macOS, 3.6 ms a file. The write now flushes with a plain fsync, still handing the bytes to the drive before the rename, where Swift's .atomic flushes nothing.",
+    "outcome": "Real window, 60 notches on roll #8 (38 frames), three runs: the gesture's last frame came 206 to 253 ms after the one before, now 41 to 59 ms (Exposure: 35 to 41 ms). 38 sidecar writes: 117 ms, now 13. Left: about 20 ms of reading and writing the roll on the interface thread at the release."
   }
 ]

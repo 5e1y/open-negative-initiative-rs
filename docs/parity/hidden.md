@@ -17,13 +17,13 @@ A value said "same" was compared literally against the Swift declaration. A mode
 | Hunt absent in monochrome | `Pipeline/Print.swift:314` | `oni-pipeline/src/conversion.rs` | done | | `oni-pipeline/src/conversion.rs::a_monochrome_frame_carries_no_hunt_density_or_unmix` |
 | White and black points' saturation compensation (gain 2.25) | `Pipeline/Print.swift:198-221` | `oni-settings/src/tone.rs:285`, `oni-pipeline/src/finishing.rs:76` | done | | `oni-pipeline/src/finishing.rs::the_points_lay_a_line_of_saturation` |
 | Points held to a minimum span 0.02, inward moves first | `Pipeline/Print.swift:211-220` | `oni-settings/src/tone.rs:284` | done | | `oni-ui-poc/src/frame.rs::the_points_hold_a_minimum_span` |
-| Points reach into each window; bypassed print leaves them | `Pipeline/Print.swift:241` | `oni-pipeline/src/conversion.rs:18` | done | | `oni-pipeline/src/conversion.rs::the_points_reach_into_each_window_and_a_bypassed_print_leaves_them` |
+| Points reach into each window; bypassed print leaves them | `Pipeline/Print.swift:241` | `oni-pipeline/src/conversion/points.rs` | done | | `oni-pipeline/src/conversion/points.rs::the_points_reach_into_each_window_and_a_bypassed_print_leaves_them` |
 | Print tone: toe, push (0.35, 0.15), quarters, contrast pivot 0.4587, steepness 15.2 | `Pipeline/Print.swift:47-82,190`, `Contrast.swift:8-12` | `oni-settings/src/tone.rs:14-15,117-118,279` | done | | `oni-settings/src/tone.rs::contrast_is_monotone_pinned_and_inverted_by_its_opposite` |
 | Resting exposure 1.5 negative, 0 slide | `Pipeline/Print.swift:224-225` | `oni-settings/src/tone.rs:288` | done | | `oni-settings/tests/codec_checks.rs::the_rest_is_the_import_state_of_each_mode` |
 | Temperature and Tint axes `(½, 0, −½)`, `(⅓, −⅔, ⅓)` | `Pipeline/Print.swift:176-177` | `oni-settings/src/tone.rs:269-270` | done | | `oni-core/src/knob.rs::temperature_and_tint_move_on_axes_that_leave_each_other_alone` |
 | Colour filters reach no gain | `Pipeline/Curves.swift` `colourFilterChecks` | `oni-core/src/parameters.rs` | done | | `oni-core/src/parameters.rs::lighting_leaves_the_filters_and_color_carries_them` |
-| Dye separation: 3×3 on balanced densities, rows sum to one, five families | `Pipeline/Separation.swift:41-151` | `oni-pipeline/src/conversion.rs:36-86` | done | Rows literal, not derived from the 55 nm band (`validatedStrength 0.407` unchecked) | `oni-pipeline/src/conversion.rs::the_separation_keeps_greys_and_the_mean_saturation` |
-| Separation chroma kept | `Pipeline/Separation.swift:109-119` | `oni-pipeline/src/conversion.rs:66` | done | | `oni-pipeline/src/conversion.rs::the_separation_keeps_greys_and_the_mean_saturation` |
+| Dye separation: 3×3 on balanced densities, rows sum to one, five families | `Pipeline/Separation.swift:41-151` | `oni-pipeline/src/conversion/separation.rs` | done | Rows literal, not derived from the 55 nm band (`validatedStrength 0.407` unchecked) | `oni-pipeline/src/conversion/separation.rs::the_separation_keeps_greys_and_the_mean_saturation` |
+| Separation chroma kept | `Pipeline/Separation.swift:109-119` | `oni-pipeline/src/conversion/separation.rs` `chroma_kept` | done | | `oni-pipeline/src/conversion/separation.rs::the_separation_keeps_greys_and_the_mean_saturation` |
 | Chroma decompression: colour follows the windows by its dose (0.5) | `Pipeline/ChromaDecompression.swift:9-54` | `oni-pipeline/src/conversion.rs:104-119` | done | | `oni-pipeline/tests/roll8.rs::roll8_lands_on_the_swift_render` |
 | Color density factor `2^travel` | `Pipeline/ColorDensity.swift:6-17` | `oni-settings/src/tone.rs:49-51`, `conversion.rs:91` | done | | `oni-render/tests/stage47.rs::measured` |
 | Gains (stage 4) opposite to the Lighting filters in negative | `Pipeline/Gains.swift:7-9` | `oni-settings/src/blocks.rs:15` | done | | `oni-pipeline/tests/roll8.rs::roll8_lands_on_the_swift_render` |
@@ -179,11 +179,11 @@ these two tests moves that branch.
 | Contrast (0 and 0.40) | `Pipeline/Contrast.swift` | `oni-settings/src/tone.rs` | yes | `oni-render/tests/stage47.rs::measured` |
 | Temperature and Tint filters | `Pipeline/Print.swift:169` | `oni-settings/src/tone.rs` | yes | `oni-render/tests/stage47.rs::measured` |
 | Colour density (small values) | `Pipeline/ColorDensity.swift` | `conversion.rs:91` | yes | `oni-render/tests/stage47.rs::measured` |
-| Chroma decompression 0.5 | `Pipeline/ChromaDecompression.swift` | `conversion.rs:104` | yes | `oni-render/tests/stage47.rs::measured` |
-| Kodak C-41 separation at 0.6 | `Pipeline/Separation.swift` | `conversion.rs:36` | yes | `oni-render/tests/stage47.rs::measured` |
+| Chroma decompression 0.5 | `Pipeline/ChromaDecompression.swift` | `conversion/decompression.rs` | yes | `oni-render/tests/stage47.rs::measured` |
+| Kodak C-41 separation at 0.6 | `Pipeline/Separation.swift` | `conversion/separation.rs` | yes | `oni-render/tests/stage47.rs::measured` |
 | Scanner Finish contrast | `Pipeline/ScannerFinish.swift` | `oni-pipeline` | yes | `oni-render/tests/kernels.rs::scanner` |
 | Lighting shadows | `Pipeline/Print.swift:72` | `oni-settings/src/tone.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-render/tests/stage47.rs::measured` |
-| Other dye families: Fuji, generic, ECN-2, E-6 | `Pipeline/Separation.swift:48` | `conversion.rs:36` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::every_family_renders_finite_and_a_region_is_the_cut_of_the_whole` |
+| Other dye families: Fuji, generic, ECN-2, E-6 | `Pipeline/Separation.swift:48` | `conversion/separation.rs` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/tests/stages.rs::every_family_renders_finite_and_a_region_is_the_cut_of_the_whole` |
 | Positive (slide) mode | `Pipeline/ConversionMode.swift` | `oni-pipeline` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-app/src/render.rs::the_engine_inverts_a_negative_and_keeps_a_positive_in_order` |
 | Monochrome mode, its ranges | `Pipeline/Print.swift:195-196` | `oni-pipeline` | yes, `oni-pipeline/tests/adversarial.rs` | `oni-pipeline/src/conversion.rs::a_monochrome_frame_carries_no_hunt_density_or_unmix` |
 | Balance strength off its rest | `Pipeline/FilterBalance.swift` | `oni-core/src/balance.rs` | n/a: a dose written into the filters, which `print-channels` compares | none |
