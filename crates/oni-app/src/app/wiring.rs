@@ -211,6 +211,7 @@ impl Ctl {
                 p.publish_tiles();
             } else if let Some(w) = p.window() {
                 w.global::<Library>().set_scroll(scroll);
+                p.publish_pinned();
             }
         });
         let p = me.clone();

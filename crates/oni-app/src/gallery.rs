@@ -222,6 +222,18 @@ impl Layout {
         ((clamped - top).abs() >= 0.5).then_some(clamped)
     }
 
+    /// `header(at:)` with `pin(of:at:)`: the band under the top edge and where its header is held
+    /// until the band's end pushes it off; `None` while the band's own header shows in place.
+    pub fn pinned(&self, top: f32) -> Option<(usize, f32)> {
+        if self.metrics.header <= 0.0 {
+            return None;
+        }
+        let index = self.bands.iter().rposition(|b| b.top <= top).unwrap_or(0);
+        let band = self.bands.get(index)?;
+        let y = band.top.max(top).min(band.bottom - self.metrics.header);
+        (y > band.top).then_some((index, y))
+    }
+
     /// The scroll offset kept inside the content.
     pub fn clamped(&self, scroll: f32, viewport: f32) -> f32 {
         scroll.clamp(0.0, (self.height - viewport).max(0.0))
@@ -258,6 +270,20 @@ mod tests {
         assert_eq!(line.x, last.x + last.width + 4.0 - 1.0);
         // Twin: the line before a cell sits in the gutter on its left, not its right.
         assert_eq!(l.boundary_line(3, 2.0).unwrap().x, c.x - 4.0 - 1.0);
+    }
+
+    #[test]
+    fn a_band_s_header_is_held_at_the_top_until_its_end_pushes_it_off() {
+        let groups = vec![("A".to_string(), String::new(), 30), ("B".to_string(), String::new(), 30)];
+        let l = Layout::new(&groups, 6, 1000.0, Metrics::GALLERY);
+        let (a, b) = (&l.bands[0], &l.bands[1]);
+        assert_eq!(l.pinned(0.0), None, "the first header shows in place at the top");
+        assert_eq!(l.pinned(a.top + 100.0), Some((0, a.top + 100.0)), "held at the top edge");
+        let pushed = a.bottom - 10.0;
+        assert_eq!(l.pinned(pushed), Some((0, a.bottom - Metrics::GALLERY.header)), "the band's end pushes it up");
+        // Twin: past the second band's top the second header is the one held, never the first.
+        assert_eq!(l.pinned(b.top + 50.0), Some((1, b.top + 50.0)));
+        assert_eq!(l.pinned(b.top), None, "the second header in place");
     }
 
     fn roll(count: usize) -> Vec<(String, String, usize)> {

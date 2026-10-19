@@ -112,10 +112,6 @@ pub struct Organising {
     info_loaded: Option<String>,
 }
 
-fn photos(n: usize) -> String {
-    if n == 1 { "1 photo".into() } else { format!("{n} photos") }
-}
-
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
 fn uptime() -> f64 {
     static START: OnceLock<Instant> = OnceLock::new();
@@ -178,7 +174,7 @@ impl State {
             return project::grouped(&self.org.projects, &self.rows)
                 .into_iter()
                 .filter(|g| !g.entries.is_empty())
-                .map(|g| Band { key: g.id.to_string(), title: g.project.name.clone(), caption: photos(g.entries.len()), entries: g.entries })
+                .map(|g| Band { key: g.id.to_string(), title: g.project.name.clone(), caption: String::new(), entries: g.entries })
                 .collect();
         }
         if self.org.trash_open {
@@ -187,8 +183,8 @@ impl State {
                 .into_iter()
                 .map(|g| Band {
                     key: g.heading.clone().unwrap_or_default(),
-                    title: g.heading.clone().unwrap_or_default(),
-                    caption: photos(g.entries.len()),
+                    title: g.heading_title(),
+                    caption: g.trail().unwrap_or_default(),
                     entries: g.entries,
                 })
                 .collect();
@@ -199,7 +195,7 @@ impl State {
                 a.groups
                     .iter()
                     .enumerate()
-                    .map(|(i, g)| Band { key: format!("{i}:{}", g.title), title: g.title.clone(), caption: g.caption.clone(), entries: g.entries.clone() })
+                    .map(|(i, g)| Band { key: format!("{i}:{}", g.title), title: g.header.clone(), caption: g.caption.clone(), entries: g.entries.clone() })
                     .collect()
             })
             .unwrap_or_default()
