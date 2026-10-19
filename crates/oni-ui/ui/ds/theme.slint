@@ -129,6 +129,9 @@ export global ButtonStyle {
     out property <length> padding: Space.m;
     out property <length> small-padding: Space.s;
     out property <length> group-gap: Space.xxs;
+    // `KeycapPlate`'s socket: the base keys sit flush on, a hairline showing between them.
+    out property <color> socket: DS.palette-tile;
+    out property <length> plate-inset: Stroke.hairline;
     out property <length> icon: DS.control-icon-size;
     out property <length> small-icon: DS.control-toggle-glyph;
     out property <length> label: Type.chip;
@@ -209,6 +212,8 @@ export global SheetStyle {
     out property <length> radius: Radius.card;
     out property <length> padding: Space.l;
     out property <length> gap: Space.m;
+    // Room a sheet leaves above and below it in the window.
+    out property <length> margin: Space.l;
     // The pairing code's side, wide enough for a phone's camera across a desk.
     out property <length> code: 240px;
 }

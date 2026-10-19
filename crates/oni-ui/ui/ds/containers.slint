@@ -3,6 +3,7 @@ import { NewsSeal } from "help.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
 import { Button, ButtonSize, Look } from "controls.slint";
+import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 
 // The "?" beside a block's title; its note shows as the tooltip.
@@ -97,22 +98,30 @@ export component Section inherits VerticalLayout {
 }
 
 // The sheet's card alone: a title, the content, a rounded panel; `Sheet` lays it over a scrim.
+// `WelcomeSheet`'s fit: as tall as its content, never past `room`, the content scrolling beyond.
 export component Dialog inherits Rectangle {
     in property <string> title;
     in property <bool> wide;
+    in property <length> room: 1000000px;
     width: root.wide ? SheetStyle.wide-width : SheetStyle.width;
-    height: column.preferred-height;
+    height: min(column.preferred-height, root.room);
     background: Colour.ground;
     border-radius: SheetStyle.radius;
     border-width: Stroke.hairline;
     border-color: Colour.separator;
+    clip: true;
     // A click on the card stays on it, so only the scrim closes the sheet.
     TouchArea { }
-    column := VerticalLayout {
-        padding: SheetStyle.padding;
-        spacing: SheetStyle.gap;
-        if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; wrap: word-wrap; }
-        @children
+    Scroller {
+        viewport-width: self.width;
+        viewport-height: column.preferred-height;
+        column := VerticalLayout {
+            width: root.width;
+            padding: SheetStyle.padding;
+            spacing: SheetStyle.gap;
+            if root.title != "": Label { role: TextRole.heading; text: root.title; centred: true; wrap: word-wrap; }
+            @children
+        }
     }
 }
 
@@ -140,6 +149,7 @@ export component Sheet inherits Rectangle {
         Dialog {
             title: root.title;
             wide: root.wide;
+            room: root.height - 2 * SheetStyle.margin;
             @children
         }
     }

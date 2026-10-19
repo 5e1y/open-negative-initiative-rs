@@ -122,11 +122,12 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// Reads the mounted volumes again whenever the names under the volumes' folder change.
+    /// Reads the mounted volumes again whenever the names under the volumes' folder change, and the
+    /// folders the disk refused once it answers: a drive waking or access granted lists them.
     pub(super) fn watch_volumes(me: &Rc<Ctl>) {
-        let (token, computer) = {
+        let (token, computer, refused) = {
             let s = me.state.borrow();
-            (s.nav.watcher.clone(), s.nav.computer.clone())
+            (s.nav.watcher.clone(), s.nav.computer.clone(), s.nav.refused.clone())
         };
         let names = |folder: &str| -> BTreeSet<String> {
             std::fs::read_dir(folder)
@@ -139,6 +140,11 @@ impl Ctl {
                 std::thread::sleep(MOUNTS);
                 if Arc::strong_count(&token) <= 1 {
                     return;
+                }
+                let answering: Vec<String> = refused.lock().expect("refused").iter().filter(|f| std::fs::read_dir(f).is_ok()).cloned().collect();
+                if !answering.is_empty() {
+                    refused.lock().expect("refused").retain(|f| !answering.contains(f));
+                    with_shell(move |c| c.answering(&answering));
                 }
                 let now = names(&computer.volumes);
                 if now != seen {

@@ -62,6 +62,9 @@ impl Ctl {
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
             let opened_pill = (s.opened.as_deref().map(paths::name).unwrap_or_default(), s.opened.clone().unwrap_or_default());
             s.nav.rows = rows.into_iter().map(|(p, _)| p).collect();
+            let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
+            refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
+            *s.nav.refused.lock().expect("refused") = refused;
             s.remember();
             (lines, choices, header, welcome, welcome_shown, opened_pill)
         };
@@ -93,7 +96,7 @@ impl Ctl {
         for chunk in wanted.chunks(share) {
             let chunk = chunk.to_vec();
             let _ = std::thread::Builder::new().name("navigator".into()).spawn(move || {
-                let listed: Vec<(String, Vec<String>)> = chunk.into_iter().map(|f| {
+                let listed: Vec<(String, Option<Vec<String>>)> = chunk.into_iter().map(|f| {
                     let children = walk::children(&f);
                     (f, children)
                 }).collect();
@@ -102,18 +105,26 @@ impl Ctl {
         }
     }
 
-    pub(super) fn listed(self: &Rc<Self>, listed: Vec<(String, Vec<String>)>) {
-        let opening: Vec<String> = {
+    pub(super) fn listed(self: &Rc<Self>, listed: Vec<(String, Option<Vec<String>>)>) {
+        let (opening, moved) = {
             let mut s = self.state.borrow_mut();
-            listed
-                .into_iter()
-                .filter_map(|(folder, children)| match s.nav.model.listed(&folder, children) {
-                    Landed::Open(folder) => Some(folder),
-                    _ => None,
-                })
-                .collect()
+            let mut moved = false;
+            let mut opening = Vec::new();
+            for (folder, children) in listed {
+                let landed = match children {
+                    Some(children) => s.nav.model.listed(&folder, children),
+                    None => s.nav.model.refused(&folder),
+                };
+                moved |= landed != Landed::Same;
+                if let Landed::Open(folder) = landed {
+                    opening.push(folder);
+                }
+            }
+            (opening, moved)
         };
-        self.publish_navigator();
+        if moved {
+            self.publish_navigator();
+        }
         for folder in opening {
             self.open_folder(Path::new(&folder));
         }

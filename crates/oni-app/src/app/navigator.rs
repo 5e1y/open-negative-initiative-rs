@@ -79,6 +79,8 @@ pub(super) struct Nav {
     roll_edits: HashMap<String, bool>,
     /// Held by the mounts' reader, which ends once the window's state is gone.
     watcher: Arc<()>,
+    /// The folders the disk refused, the opened one among them, which the mounts' reader tries.
+    refused: Arc<std::sync::Mutex<Vec<String>>>,
 }
 
 impl Nav {
@@ -105,6 +107,7 @@ impl Nav {
             area_rolls: HashSet::new(),
             roll_edits: HashMap::new(),
             watcher: Arc::new(()),
+            refused: Arc::default(),
         }
     }
 

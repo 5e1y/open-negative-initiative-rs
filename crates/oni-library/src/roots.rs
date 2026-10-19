@@ -116,6 +116,14 @@ pub(crate) fn is_hidden(path: &Path, metadata: &std::fs::Metadata) -> bool {
             return true;
         }
     }
+    // `.skipsHiddenFiles` also skips what the Finder hides by its flag: `UF_HIDDEN`, 0x8000.
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::macos::fs::MetadataExt;
+        if metadata.st_flags() & 0x8000 != 0 {
+            return true;
+        }
+    }
     let _ = metadata;
     dotted
 }
@@ -258,6 +266,23 @@ mod tests {
         // Twin: a root that is not there is unreadable, never an empty folder.
         let gone = paths::join(&root, "gone");
         assert_eq!(survey(std::slice::from_ref(&gone), &|| true).unreadable, [gone]);
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn a_folder_the_finder_hides_by_its_flag_is_left_out() {
+        let scratch = Scratch::new("roots-flagged");
+        for relative in ["Recovery/a.RW2", "Film/b.RW2"] {
+            let path = scratch.path().join(relative);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(&path, [0u8]).unwrap();
+        }
+        let root = scratch.path().to_string_lossy().into_owned();
+        assert_eq!(scan(std::slice::from_ref(&root)).len(), 2, "twin: unflagged, both folders count");
+        let flagged = std::process::Command::new("/usr/bin/chflags").arg("hidden").arg(scratch.path().join("Recovery")).status();
+        assert!(flagged.is_ok_and(|s| s.success()));
+        assert_eq!(scan(std::slice::from_ref(&root)), [paths::join(&root, "Film/b.RW2")]);
+        assert_eq!(crate::navigator::children(&root), Some(vec![paths::join(&root, "Film")]));
     }
 
     #[test]

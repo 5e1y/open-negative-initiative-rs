@@ -28,6 +28,19 @@ impl Ctl {
         self.publish_navigator();
     }
 
+    /// Folders the disk refused now answer: listed again, and the opened one read again.
+    pub(super) fn answering(self: &Rc<Self>, folders: &[String]) {
+        let reopen = {
+            let mut s = self.state.borrow_mut();
+            s.nav.model.retry();
+            s.opened.clone().filter(|o| folders.contains(o) && s.survey.unreadable.contains(o))
+        };
+        self.list_wanted();
+        if let Some(folder) = reopen {
+            self.open_folder(Path::new(&folder));
+        }
+    }
+
     pub(super) fn start_pass(&self) {
         self.state.borrow_mut().nav.tried.clear();
         self.survey_favourites();
