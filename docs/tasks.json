@@ -890,5 +890,13 @@
     "status": "done",
     "detail": "Owner's report: on the T7 (exFAT) the Scans folder showed as a dead end and the editor's column held no photo. A listing the disk refused (a drive still waking, access to removable volumes not granted yet) was kept as an empty folder for the whole session, and the opened folder stayed unread. Now a refusal leaves the folder unlisted with its chevron; a click reads it again, and the mounts' reader tries every refused folder each second, listing it and reading the opened folder again once the disk answers. Folders the Finder hides by their flag (Recovery, System Volume Information) are left out as Swift's .skipsHiddenFiles does. FEEDBACKS was stretched by its zone: it keeps its own width. Every sheet stops at the window's height less its margins and scrolls past it, WelcomeSheet's fit. KeyPlate, Swift's KeycapPlate, joins the design system with Button.fills.",
     "outcome": ""
+  },
+  {
+    "id": 126,
+    "type": "fix",
+    "title": "The bar's worded keys keep their widths as the window widens",
+    "status": "done",
+    "detail": "Owner's report: EXPORT and ADD FOLDER stretched with the window. A worded key took a stretch of one, so a row's spare room went into it. A key now keeps its own width unless it fills; a row of keys none of which fills still shares its room out, as Slint grows every item when none stretches, so a filling KeyPlate is unchanged.",
+    "outcome": "Window check toolbar.rs: at 1280 and 1700 px the last key, the gap and FEEDBACKS keep their widths while the room before them grows (twin); with the old default ADD FOLDER went 150 to 255 px and the check failed."
   }
 ]

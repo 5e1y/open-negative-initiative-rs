@@ -39,6 +39,7 @@ mod session;
 mod sheets;
 mod space_chip;
 mod stocks;
+mod toolbar;
 mod updates;
 mod wrapped;
 
@@ -94,6 +95,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
+    ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded", updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded),
     ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
 ];

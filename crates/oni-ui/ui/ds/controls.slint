@@ -43,8 +43,9 @@ export component Button inherits Rectangle {
     in property <bool> lamp-shown;
     in property <bool> lamp-lit;
     in property <Look> look: Look.live;
-    // `DSPanelButton.fills`: a worded key takes its share of a filling plate; a glyph key stays square.
-    in property <bool> fills: root.text != "";
+    // `DSPanelButton.fills`: the key takes its share of the room; else it keeps its own width, though
+    // a row of keys none of which fills still shares its room out, as a filling `KeyPlate` does.
+    in property <bool> fills;
     callback clicked();
     property <bool> small: root.size == ButtonSize.small;
     property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
