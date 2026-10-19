@@ -149,6 +149,7 @@ impl Ctl {
                     c.set_message(message.into());
                     c.set_key("DOWNLOAD".into());
                     c.set_shown(true);
+                    w.invoke_refocus();
                 }
             }
             Ok(None) => {

@@ -50,7 +50,10 @@ impl Ctl {
         let c = me.clone();
         p.on_drag(move |i, t, span, fine| c.slider_drag(usize::try_from(i).unwrap_or(usize::MAX), t, span, fine));
         let c = me.clone();
-        p.on_release(move |_| c.state.borrow_mut().prepare.slide = None);
+        p.on_release(move |_| {
+            c.state.borrow_mut().prepare.slide = None;
+            c.keep_picker();
+        });
         let c = me.clone();
         p.on_clear_base(move || {
             c.state.borrow_mut().prepare.base = None;

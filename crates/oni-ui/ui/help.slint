@@ -19,8 +19,9 @@ export global News {
 }
 
 export global Help {
-    // `WelcomeSheet`
+    // `WelcomeSheet`; the release its edition belongs to, which the menu and the heading both name.
     in property <bool> welcome-shown;
+    in property <string> release;
     in property <int> welcome-picture;
     in property <string> welcome-line;
     in property <string> welcome-credit;
@@ -51,6 +52,7 @@ component Point inherits VerticalLayout {
 // `WelcomeSheet`: the version's picture, then what changed, and GET STARTED.
 export component WelcomeSheet inherits Sheet {
     wide: true;
+    scrim-dismisses: true;
     dismissed => { Help.welcome-closed(); }
     Picture {
         height: HelpStyle.photo-height;
@@ -58,7 +60,7 @@ export component WelcomeSheet inherits Sheet {
         source: Help.welcome-picture == 0 ? @image-url("splash/1.0.0.jpg") : @image-url("splash/1.3.0.jpg");
     }
     Label { text: Help.welcome-line + "  " + Help.welcome-credit; role: TextRole.caption; tone: Tone.tertiary; }
-    Label { text: "What's new in ONI 1.2"; role: TextRole.heading; }
+    Label { text: "What's new in ONI " + Help.release; role: TextRole.heading; }
     Label { text: "Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."; tone: Tone.secondary; wrap: word-wrap; }
     Point { title: "Colours shift slightly"; text: "Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."; }
     Point { title: "Browse your folders"; text: "The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."; }

@@ -365,14 +365,7 @@ impl Ctl {
 
     /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it.
     pub(super) fn confirm(&self, key: &str, pending: Pending) {
-        self.state.borrow_mut().pending = Some(pending);
-        if let Some(w) = self.window() {
-            let c = w.global::<Confirm>();
-            c.set_title(ANOTHER_ROLL.0.into());
-            c.set_message(ANOTHER_ROLL.1.into());
-            c.set_key(key.to_uppercase().into());
-            c.set_shown(true);
-        }
+        self.ask(ANOTHER_ROLL.0, ANOTHER_ROLL.1, key, pending);
     }
 
     pub(super) fn answered(self: &Rc<Self>, go: bool) {

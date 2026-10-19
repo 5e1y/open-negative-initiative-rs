@@ -147,6 +147,8 @@ impl Ctl {
         let p = me.clone();
         window.global::<App>().on_menu(move |a| p.act(&a));
         let p = me.clone();
+        window.global::<App>().on_sheet_changed(move || p.publish_menus());
+        let p = me.clone();
         window.global::<App>().on_key(move |text, control, meta, shift, option, repeat| {
             // Slint already hands ⌘ over as `control` on a Mac, and the Control key as `meta`.
             p.key(&text, control, shift, !(control || meta || shift || option), repeat)

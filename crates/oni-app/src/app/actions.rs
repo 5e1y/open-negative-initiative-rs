@@ -124,6 +124,8 @@ impl Ctl {
     /// `QuitGuard.applicationShouldTerminate`: the sidecar written before the window goes; a write
     /// that fails asks first, Cancel keeping the app open to free space or reconnect the volume.
     pub(super) fn close_requested(self: &Rc<Self>) -> slint::CloseRequestResponse {
+        // A roll in preparation keeps its current step, which otherwise only a step change writes.
+        self.flush_drafts();
         if self.state.borrow().quitting {
             return slint::CloseRequestResponse::HideWindow;
         }

@@ -57,6 +57,13 @@ impl Ctl {
             self.close_pairing();
             return true;
         }
+        // A sheet is modal: Escape closes the ones no branch above reads, and no key reaches behind it.
+        if w.get_sheet_shown() {
+            if text == "\u{1b}" {
+                self.escape_sheet(&w);
+            }
+            return true;
+        }
         if text == "\u{1b}" && self.export_escape() {
             return true;
         }
@@ -75,5 +82,18 @@ impl Ctl {
             return true;
         }
         false
+    }
+
+    fn escape_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
+        let e = w.global::<crate::Exporting>();
+        if e.get_confirm_shown() || e.get_notice_shown() || e.get_papers_shown() {
+            self.export_escape();
+        } else if w.global::<crate::Notice>().get_shown() {
+            w.global::<crate::Notice>().invoke_close();
+        } else if w.global::<crate::Navigator>().get_catch_up_shown() {
+            w.global::<crate::Navigator>().invoke_catch_up_done();
+        } else if w.global::<crate::Wrapped>().get_shown() {
+            w.global::<crate::Wrapped>().invoke_close();
+        }
     }
 }

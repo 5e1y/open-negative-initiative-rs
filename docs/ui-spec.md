@@ -386,7 +386,7 @@ Roll…, Save as Preset…, …) are not listed.
 | ⌘Z / ⇧⌘Z | Undo / Redo |
 | ⇧⌘R | Reset to Imported State |
 
-The other menus are Help (Show Console, What's New in ONI 1.1, Show What's New Again, Report a Bug /
+The other menus are Help (Show Console, What's New in ONI 1.2, its release read from `help::EDITION`, Show What's New Again, Report a Bug /
 Give Feedback…, Show My Year on Film), View, Labels, Rolls, and Settings (the preset list, with a
 Delete a Preset submenu); Check for Updates… is an item after the application menu's About.
 

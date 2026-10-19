@@ -8,6 +8,7 @@ export global Notice {
 
 export component NoticeSheet inherits Sheet {
     title: "RAW Color, Recalibrated";
+    scrim-dismisses: true;
     dismissed => { Notice.close(); }
     for line in [
         "Camera RAW files now render truer color, especially on unusual film stocks.",

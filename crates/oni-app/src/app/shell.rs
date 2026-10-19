@@ -136,6 +136,7 @@ impl Shell {
             discard: options.discard,
             reporter: options.reporter,
             news_kept: HashSet::new(),
+            report_round: 0,
             console: None,
             nav: navigator::Nav::new(options.computer),
             prepare: prepare::Roll::new(options.require_roll),

@@ -393,6 +393,8 @@ pub struct State {
     reporter: Reporter,
     /// The notes read this session, which keep their pill until the app quits.
     news_kept: HashSet<String>,
+    /// Bumped at each opening of Report a Bug, so a post answering a sheet closed since lands nowhere.
+    report_round: u64,
     /// The console window while it is open, and the timer that reads the log into it.
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,

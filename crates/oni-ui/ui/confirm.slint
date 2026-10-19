@@ -1,0 +1,23 @@
+// `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
+import { Sheet, Label, TextRole, Tone, Button, ButtonGroup, ButtonKind } from "ds/ds.slint";
+
+export global Confirm {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    in property <string> key;
+    callback answered(bool);
+}
+
+export component ConfirmSheet inherits Sheet {
+    dismissed => { Confirm.answered(false); }
+    Label { role: TextRole.section; text: Confirm.title; }
+    if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
+    HorizontalLayout {
+        alignment: end;
+        ButtonGroup {
+            Button { text: "CANCEL"; clicked => { Confirm.answered(false); } }
+            Button { text: Confirm.key; kind: ButtonKind.accent; clicked => { Confirm.answered(true); } }
+        }
+    }
+}
