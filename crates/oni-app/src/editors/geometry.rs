@@ -103,11 +103,6 @@ pub fn dashed(points: &[(f64, f64)], on: f64) -> String {
     dashes.iter().map(|d| polyline(d)).collect::<Vec<_>>().join(" ")
 }
 
-/// A circle as path data, for rings drawn as lines.
-pub fn circle(centre: (f64, f64), radius: f64) -> String {
-    polyline(&ring(centre, radius, 96))
-}
-
 fn ring(centre: (f64, f64), radius: f64, steps: usize) -> Vec<(f64, f64)> {
     (0..=steps)
         .map(|i| {

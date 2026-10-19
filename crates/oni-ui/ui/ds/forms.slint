@@ -1,7 +1,7 @@
 // The forms of export and colour management: a labelled field, a note, a summary box, a preview slot,
 // a chip that opens a popover, and the panel a popover or a sheet draws on.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
 import { HelpMark } from "containers.slint";
 import { TextField, Button } from "controls.slint";
@@ -226,17 +226,61 @@ export component GroupHeading inherits Label {
     tone: Tone.tertiary;
 }
 
-// `DSProgress`: a recessed track lit up to the fraction done.
+// `DSProgress`: a recessed track lit up to the fraction done; below zero, no total, a lit segment
+// sweeps it, so a wait that cannot be counted still reads as moving.
 export component Progress inherits Rectangle {
     in property <float> fraction;
+    property <bool> counted: root.fraction >= 0;
+    // Read only while sweeping, so a counted bar asks no frame of its own.
+    property <float> swing: root.counted ? 0 : Math.mod(animation-tick() / DS.motion-sweep-duration, 2);
+    property <float> eased: (1 - cos((root.swing < 1 ? root.swing : 2 - root.swing) * 180deg)) / 2;
     height: DS.control-track-height;
     border-radius: Radius.track;
     background: Colour.track;
     Rectangle {
-        x: 0;
-        width: parent.width * clamp(root.fraction, 0, 1);
+        x: root.counted ? 0 : (parent.width - self.width) * root.eased;
+        width: root.counted ? parent.width * clamp(root.fraction, 0, 1) : parent.width * DS.control-progress-segment;
         border-radius: Radius.track;
-        background: Colour.track-fill;
+        background: Colour.selected;
+        drop-shadow-color: Colour.selected;
+        drop-shadow-blur: DS.scanner-phosphor-glow;
         animate width { duration: Motion.quick; }
+    }
+}
+
+// `DSLCD`: a count on the scanner's glass.
+export component LcdReadout inherits Rectangle {
+    in property <string> text;
+    background: ScannerStyle.glass;
+    border-radius: Radius.track;
+    width: readout.preferred-width + 2 * Space.s;
+    height: readout.preferred-height + 2 * Space.xxs;
+    readout := Label {
+        text: root.text;
+        role: TextRole.value;
+        color: ScannerStyle.lcd-ink;
+    }
+}
+
+// `DSStatusBar`'s busy row: what loads, its count on the glass, its progress across the rest.
+export component LoadBar inherits Rectangle {
+    in property <string> title;
+    in property <string> count;
+    in property <float> fraction: -1;
+    height: StatusStyle.height;
+    HorizontalLayout {
+        padding-left: Space.s;
+        padding-right: Space.s;
+        spacing: Space.s;
+        Label { text: root.title; role: TextRole.label; vertical-alignment: center; overflow: elide; }
+        if root.count != "": VerticalLayout {
+            alignment: center;
+            LcdReadout { text: root.count; }
+        }
+        VerticalLayout {
+            alignment: center;
+            horizontal-stretch: 1;
+            Progress { fraction: root.fraction; }
+        }
     }
 }

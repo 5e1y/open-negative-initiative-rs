@@ -161,10 +161,6 @@ impl Navigation {
         std::mem::take(&mut self.wanted)
     }
 
-    pub fn is_listing(&self, folder: &str) -> bool {
-        self.listing.contains(folder) || self.deciding.contains(folder)
-    }
-
     /// Lists a folder once, or again when `fresh`.
     pub fn list(&mut self, folder: &str, fresh: bool) {
         if (fresh || !self.listings.contains_key(folder)) && self.listing.insert(folder.to_owned()) {

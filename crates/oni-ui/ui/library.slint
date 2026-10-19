@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, MedalPicker, StatusLine, SealedStatusLine, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -75,6 +75,9 @@ export global Library {
     in property <string> status-seal;
     in property <string> editor-seal;
     in property <string> loading;
+    // `loadBar`'s count on the glass, and its fraction done, below zero when nothing counts.
+    in property <string> loading-count;
+    in property <float> loading-fraction: -1;
     in property <bool> medal-shown;
     in property <int> medal-current: -1;
     // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project.
@@ -290,19 +293,6 @@ export component Grid inherits Surface {
         y: root.menu-y;
         lines: Library.menu-lines;
         chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
-    }
-}
-
-// `DSStatusBar` under the gallery: what loads, else the selection; the medal picker at its end.
-export component GalleryStatus inherits HorizontalLayout {
-    SealedStatusLine {
-        horizontal-stretch: 1;
-        text: Library.loading != "" ? Library.loading : Library.status;
-        seal: Library.loading != "" ? "" : Library.status-seal;
-    }
-    if Library.medal-shown && Library.loading == "": MedalPicker {
-        current: Library.medal-current;
-        picked(m) => { Library.medal-picked(m); }
     }
 }
 

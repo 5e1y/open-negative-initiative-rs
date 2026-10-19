@@ -45,10 +45,6 @@ pub fn load(support: &Path) -> LibraryFile {
     std::fs::read(file_path(support)).ok().and_then(|data| serde_json::from_slice(&data).ok()).unwrap_or_default()
 }
 
-pub fn missing_paths(known: &[Entry]) -> HashSet<String> {
-    known.iter().map(|e| e.path.clone()).filter(|p| !Path::new(p).exists()).collect()
-}
-
 pub use crate::paths::canonical;
 
 /// What an older build wrote in place of a fingerprint it could not compute: those rows are

@@ -3,7 +3,7 @@
 
 use crate::balance::{self, Measure, Strategy};
 use crate::command::{Command, Scan};
-use crate::fields::{Family, Field, FieldSet};
+use crate::fields::{Family, FieldSet};
 use crate::history::{Companion, History};
 use crate::parameters;
 use crate::presets::Preset;
@@ -175,10 +175,6 @@ impl EditorStore {
         &self.gallery
     }
 
-    pub fn archive_paths(&self) -> &[String] {
-        &self.archive.paths
-    }
-
     /// `measuredGroups = [:]`: every roll's frames found again on the next ask.
     pub fn forget_measured(&mut self) {
         self.measured.clear();
@@ -200,11 +196,6 @@ impl EditorStore {
 
     pub fn record_disk(&mut self, disk: Disk, label: &str) {
         self.gallery.record_disk(disk, label);
-    }
-
-    /// Whether a field of the open frame belongs to its roll, which a hand edit writes roll-wide.
-    pub fn is_roll_field(field: Field) -> bool {
-        field.family() == Some(Family::Roll)
     }
 }
 

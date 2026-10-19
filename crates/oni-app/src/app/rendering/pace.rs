@@ -29,9 +29,10 @@ impl Ctl {
             let under = crate::editors::size(self, crate::editors::Plot::Saturation);
             plots.set_saturation(self.traced(&h, None, under.w, under.h));
         }
-        if w.global::<App>().get_gallery() {
-            w.global::<Library>().set_loading(loading.unwrap_or_default().into());
-        }
+        let lib = w.global::<Library>();
+        lib.set_loading(loading.as_ref().map(|b| b.title.clone()).unwrap_or_default().into());
+        lib.set_loading_count(loading.as_ref().map(LoadBar::count).unwrap_or_default().into());
+        lib.set_loading_fraction(loading.as_ref().map_or(-1.0, LoadBar::fraction));
     }
 
     /// The deferred write, `WRITE_DELAY` after the last change; a hand still on a slider puts it off

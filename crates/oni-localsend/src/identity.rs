@@ -54,14 +54,6 @@ impl Identity {
         &self.fingerprint
     }
 
-    pub fn cert_pem(&self) -> &str {
-        &self.cert_pem
-    }
-
-    pub fn key_pem(&self) -> &str {
-        &self.key_pem
-    }
-
     pub(crate) fn cert_der(&self) -> CertificateDer<'static> {
         self.cert.clone()
     }

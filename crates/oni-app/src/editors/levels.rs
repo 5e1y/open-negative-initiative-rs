@@ -82,20 +82,6 @@ pub fn resting(channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> Le
     LevelsSet::resting(channel, mode, ceiling)
 }
 
-/// The grip's rest, the haptic landmark: inner points at their quarter of the window as it stands.
-pub fn resting_position(grip: Grip, levels: &Levels, channel: LevelsChannel, mode: ConversionMode, ceiling: f32) -> f32 {
-    let rest = resting(channel, mode, ceiling);
-    let mut rested = *levels;
-    rested.mid = rest.mid;
-    rested.shadows = rest.shadows;
-    rested.highlights = rest.highlights;
-    match grip {
-        Grip::Mid | Grip::Shadows | Grip::Highlights => place(grip, &rested, channel, mode),
-        Grip::Black => channel.position_of_value(rest.black, mode),
-        Grip::White => channel.position_of_value(rest.white, mode),
-    }
-}
-
 /// The single write path: a drag and a scroll both land here, on the channel's own domain.
 pub fn moved(grip: Grip, levels: &Levels, position: f32, channel: LevelsChannel, mode: ConversionMode) -> Levels {
     let asked = channel.value_at_position(position, mode);

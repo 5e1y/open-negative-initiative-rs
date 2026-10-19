@@ -124,11 +124,6 @@ impl Discovery {
         Ok(Self { inner, task })
     }
 
-    /// Asks every device on the network to make itself known.
-    pub async fn announce(&self) -> io::Result<()> {
-        self.inner.send(true).await
-    }
-
     pub fn peers(&self) -> &Peers {
         &self.inner.peers
     }

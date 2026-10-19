@@ -40,7 +40,7 @@ pub const NONE: u16 = 1;
 /// strips among every core.
 const STRIP_BYTES: usize = 1 << 20;
 
-/// A TIFF of `width` × `height` RGBA samples, rows top first, alpha unassociated.
+/// A TIFF of `width` × `height` RGBA samples, rows top first, alpha associated.
 pub fn encoded(
     width: usize,
     height: usize,

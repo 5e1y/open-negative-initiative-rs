@@ -21,13 +21,6 @@ pub(crate) struct Making {
     pub step: &'static str,
 }
 
-impl Making {
-    /// `loadBar`'s sheet line: only the decode counts frames, every later step is opaque.
-    pub fn bar(&self) -> String {
-        if self.step.is_empty() { format!("Making the contact sheet · {} of {}", self.done, self.total) } else { self.step.to_string() }
-    }
-}
-
 /// `canMakeSheet`.
 pub fn can_make(making: bool, selected: usize) -> bool {
     !making && selected > 1
@@ -254,8 +247,6 @@ mod tests {
         assert_eq!(title(false, 1), "New Contact Sheet");
         assert_eq!(title(false, 12), "New Contact Sheet from 12 Photos");
         assert_eq!(title(true, 12), "Making Contact Sheet…");
-        assert_eq!(Making { done: 3, total: 8, step: "" }.bar(), "Making the contact sheet · 3 of 8");
-        assert_eq!(Making { done: 8, total: 8, step: WRITING }.bar(), "Writing the file");
         let day = Date::since_reference_date(800_000_000.0);
         assert_eq!(stands(day).time_interval_since_reference_date(), 799_999_999.0);
         assert!(named(None, day).starts_with("2026-05-") && named(None, day).ends_with(" — contact sheet"));

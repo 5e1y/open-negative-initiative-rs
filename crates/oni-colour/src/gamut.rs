@@ -82,10 +82,6 @@ impl Display {
     pub fn beyond_xyz(&self, xyz: [f32; 3]) -> bool {
         self.beyond_linear(pcs::mul_f32(&self.from_pcs, xyz))
     }
-
-    pub fn beyond_working(&self, rgb: [f32; 3]) -> bool {
-        self.beyond_linear(pcs::mul_f32(&self.from_working(), rgb))
-    }
 }
 
 /// True where the stripe's tint falls; `x` and `y` are drawable pixel centres, y up.

@@ -243,21 +243,8 @@ fn image_depth(path: &Path) -> Option<usize> {
     }
 }
 
-/// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none, used by the linearity check.
-/// Safe to call from several threads at once: every decode owns its LibRaw instance.
-/// The maker's default crop LibRaw reads, (left, top, width, height) in the visible area; `None`
-/// when the file names none.
-pub fn maker_crop(path: &Path) -> Option<[i32; 4]> {
-    let c_path = CString::new(path.to_string_lossy().as_bytes()).ok()?;
-    let mut s = Session(unsafe { std::mem::zeroed() });
-    if unsafe { oni_open(c_path.as_ptr(), 1.0, &mut s.0) } != 0 {
-        return None;
-    }
-    let mut out = [0 as c_int; 4];
-    unsafe { oni_inset(&s.0, out.as_mut_ptr()) };
-    (out[2] > 0 && out[3] > 0).then_some(out)
-}
-
+/// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none. Safe from several
+/// threads at once: every decode owns its LibRaw instance.
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });

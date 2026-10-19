@@ -113,17 +113,6 @@ impl Geometry {
         (self.crop.width * s.0, self.crop.height * s.1)
     }
 
-    /// The straightened image's bounding box, the void corners included: what a crop gesture shows.
-    pub fn rotated_bounding_size(&self, image: Size) -> Size {
-        let s = self.oriented_size(image);
-        if self.angle == 0.0 {
-            return s;
-        }
-        let t = f64::from(self.angle).abs().to_radians();
-        let (c, sn) = (t.cos(), t.sin());
-        (s.0 * c + s.1 * sn, s.0 * sn + s.1 * c)
-    }
-
     /// The frame kept inside the rotated photo with no void: under the threshold only the position
     /// clamps, past it both sides scale by one factor.
     pub fn fit_crop_inside_image(&mut self, image: Size) {

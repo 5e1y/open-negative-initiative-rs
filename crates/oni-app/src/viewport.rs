@@ -103,12 +103,6 @@ impl Viewport {
         self.clamp(full, view);
     }
 
-    /// How far past fit this stands.
-    pub fn zoom_over_fit(&self, full: Size, view: Size) -> f64 {
-        let fitted = Viewport::default().effective_scale(full, view);
-        if fitted <= 0.0 { 1.0 } else { self.effective_scale(full, view) / fitted }
-    }
-
     /// The scale is in full-resolution pixels so it survives a change of frame; a pan does not.
     pub fn recentre(&mut self) {
         self.offset = (0.0, 0.0);

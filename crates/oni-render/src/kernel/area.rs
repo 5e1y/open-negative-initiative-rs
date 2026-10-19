@@ -84,14 +84,6 @@ impl Gpu {
         (out[0], out[1])
     }
 
-    pub fn area_average(&self, image: &Image, rect: Rect) -> [f32; 4] {
-        self.area_average_and_maximum(image, rect).0
-    }
-
-    pub fn area_maximum(&self, image: &Image, rect: Rect) -> [f32; 4] {
-        self.area_average_and_maximum(image, rect).1
-    }
-
     /// `CIAreaHistogram` over `rect`: `k.count` texels, each channel's share of the pixels.
     pub fn area_histogram(&self, image: &Image, rect: Rect, k: &AreaHistogram) -> Vec<[f32; 4]> {
         check_rect(image, rect);

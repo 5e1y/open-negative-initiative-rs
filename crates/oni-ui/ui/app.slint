@@ -4,7 +4,8 @@ import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
-import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount, GalleryStatus } from "library.slint";
+import { Tree, Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount } from "library.slint";
+import { CardStatus } from "card_status.slint";
 import { Navigator, FolderLine, WelcomeLine, CatchUpLine, RootsCatchUpSheet } from "navigator.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { Notice, NoticeSheet } from "notice.slint";
@@ -539,20 +540,13 @@ export component MainWindow inherits AppWindow {
                         width: parent.width - 2 * CardStyle.inset;
                         height: parent.height - CardStyle.inset - StatusStyle.height;
                     }
-                    SealedStatusLine {
+                    CardStatus {
                         x: CardStyle.inset;
                         y: parent.height - StatusStyle.height;
                         width: parent.width - 2 * CardStyle.inset;
                         height: StatusStyle.height;
-                        visible: !App.gallery || Preparing.shown;
-                        text: Preparing.shown ? Preparing.status : Canvas.status;
-                        seal: Preparing.shown ? "" : Library.editor-seal;
-                    }
-                    if App.gallery && !Preparing.shown: GalleryStatus {
-                        x: CardStyle.inset;
-                        y: parent.height - StatusStyle.height;
-                        width: parent.width - 2 * CardStyle.inset;
-                        height: StatusStyle.height;
+                        gallery: App.gallery;
+                        editor-line: Canvas.status;
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { }

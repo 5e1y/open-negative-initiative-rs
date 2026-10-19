@@ -642,5 +642,21 @@
     "status": "done",
     "detail": "The panel's histogram counted the canvas, dithered 8-bit levels of whatever the zoom showed, in 256 bins, and drew them linearly at a fixed 680 by 300. It now counts the picture rendered, point-sampled to 640 on its long side, clipped to the screen's gamut and counted in linear Rec. 2020 in 1024 bins with its luminance (MetalImageView.encodeMeasure), and every plot (main, saturation, levels, curves) is traced as HistogramTraces: the luminance as a grey backdrop, the channels added, the 0.42 power off the ends, one column per point of the plot's width, drawn at its size in pixels. The editors' shell splits into ink, drawing, running and wiring; scripts/check stops a binary past 120 s.",
     "outcome": "GPU count against its CPU reference within 0.2 % (twin: a P3 screen's count differs past 1 %); the headless shot shows the trace."
+  },
+  {
+    "id": 91,
+    "type": "feature",
+    "title": "A frame switched to shows its thumbnail at once; one load bar under the card in every mode; the base loupe at full resolution sooner",
+    "status": "done",
+    "detail": "Opening a photo lays its gallery thumbnail on the canvas until its render lands. DSStatusBar's busy row (title, count on the LCD glass, a rail lit to the fraction or a swept segment) is one CardStatus under the card in the gallery, the editor and Prepare the Roll, fed by loadBar's sources (thumbnails, reading the library, the contact sheet, full resolution). The base step's full scan decodes on its own thread once the hand rests instead of waiting behind every roll tile.",
+    "outcome": "Every check green."
+  },
+  {
+    "id": 92,
+    "type": "refactor",
+    "title": "Slop hunt: twelve reviewers' findings checked, the confirmed dead code removed",
+    "status": "in progress",
+    "detail": "Twelve read-only reviewers covered the workspace; each finding sampled was checked by grep before acting. Removed: max_params, THUMB_SIDE, zoom_over_fit, resting_position, circle, archive_paths, is_roll_field, the Gpu area_average/area_maximum wrappers, missing_paths, is_listing, maker_crop, tab_title, beyond_working, rotated_bounding_size, ANCHOR_CLAMP, HUNT_REACH, Discovery::announce, cert_pem/key_pem, Surveys::covering; the TIFF doc now says associated alpha.",
+    "outcome": ""
   }
 ]

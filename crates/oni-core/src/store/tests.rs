@@ -1,4 +1,5 @@
 use super::*;
+use crate::fields::Field;
 use crate::knob::Knob;
 
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {

@@ -287,7 +287,6 @@ impl Print {
     /// A negative's exposure at rest: the roll's window holds its brightest frame. A slide rests at 0.
     pub const RESTING_EXPOSURE: f32 = 1.5;
     pub const HUNT_EXPONENT: f32 = 0.19;
-    pub const HUNT_REACH: f32 = 4.0;
     pub const FOLLOW: f32 = 0.0;
     pub const CONTRAST_STEP: f32 = 0.05;
 

@@ -132,9 +132,6 @@ impl Levels {
         self.shadow_ordinate() == 0.25 && self.highlight_ordinate() == 0.75
     }
 
-    /// Where a normalised position is held before the logarithm, which diverges at both ends.
-    pub const ANCHOR_CLAMP: (f32, f32) = (0.02, 0.98);
-
     /// The value that renders as mid-grey, not where the median's handle is drawn.
     pub fn display_mid(&self) -> f32 {
         self.black + self.mid * (self.white - self.black)

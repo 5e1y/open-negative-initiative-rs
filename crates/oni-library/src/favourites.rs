@@ -138,10 +138,6 @@ pub struct Surveys {
 }
 
 impl Surveys {
-    /// The surveyed area holding `path`, the outermost when several do.
-    pub fn covering(&self, path: &str) -> Option<&str> {
-        self.areas.keys().filter(|a| holds(a, path)).min_by_key(|a| a.len()).map(String::as_str)
-    }
 
     pub fn store(&mut self, area: Area, root: &str) {
         // A folder read again inside an area held is laid into it, so one area answers for each photo.

@@ -53,12 +53,12 @@ mod menus;
 mod wiring;
 mod workers;
 mod shell;
+mod opening;
 mod state_read;
+use state_read::LoadBar;
 pub use workers::tiles;
 use workers::{paint, picture_view, prepared, read_disk, zebra};
 
-/// Long side of a gallery thumbnail, in pixels: `Thumbnails.side`.
-pub const THUMB_SIDE: usize = thumbnails::SIDE;
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
@@ -399,7 +399,6 @@ pub struct State {
     year: year::Year,
 }
 
-
 pub struct Ctl {
     window: slint::Weak<MainWindow>,
     pub state: RefCell<State>,
@@ -532,10 +531,8 @@ pub struct Shell {
     pub ctl: Rc<Ctl>,
 }
 
-
 impl Ctl {
     pub(crate) fn window(&self) -> Option<MainWindow> {
         self.window.upgrade()
     }
-
 }

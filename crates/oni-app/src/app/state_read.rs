@@ -123,18 +123,21 @@ impl State {
         self.phone.as_ref()
     }
 
-    /// `loadBar`: the thumbnails being created, else the library being read, with their counts.
-    pub fn load_bar(&self) -> Option<String> {
+    /// `loadBar`: what the bar under the card shows loading, in every mode but export.
+    pub fn load_bar(&self) -> Option<LoadBar> {
         let (done, total) = self.creating;
         if done < total {
-            return Some(format!("Creating thumbnails · {done} of {total}"));
+            return Some(LoadBar::counted("Creating thumbnails", done, total));
         }
         if !self.read_done && self.opened.is_some() {
             let waiting = self.rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
-            let total = self.rows.len();
-            return Some(format!("Reading the library · {} of {total}", total - waiting));
+            return Some(LoadBar::counted("Reading the library", self.rows.len() - waiting, self.rows.len()));
         }
-        self.making_sheet.map(|m| m.bar())
+        if let Some(m) = self.making_sheet {
+            // Only the decode counts frames; writing, adopting and opening are opaque, so the bar goes busy.
+            return Some(if m.step.is_empty() { LoadBar::counted("Making the contact sheet", m.done, m.total) } else { LoadBar::busy(m.step) });
+        }
+        self.building_full.as_ref().map(|_| LoadBar::busy("Loading full resolution"))
     }
 
     /// The open frame's place in its group, one-based, and the group's count.
@@ -143,5 +146,47 @@ impl State {
         let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open))?;
         let at = group.entries.iter().position(|e| e.path == open)?;
         Some((at as u16 + 1, group.entries.len() as u16))
+    }
+}
+
+/// A line of the load bar: what loads, and its count when the work has one.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoadBar {
+    pub title: String,
+    pub progress: Option<(usize, usize)>,
+}
+
+impl LoadBar {
+    fn counted(title: &str, done: usize, total: usize) -> LoadBar {
+        LoadBar { title: title.into(), progress: Some((done, total)) }
+    }
+
+    fn busy(title: &str) -> LoadBar {
+        LoadBar { title: title.into(), progress: None }
+    }
+
+    /// The count on the glass, `3/38`; nothing when the work does not count.
+    pub fn count(&self) -> String {
+        self.progress.map(|(done, total)| format!("{done}/{total}")).unwrap_or_default()
+    }
+
+    /// The fraction done, below zero when the bar sweeps.
+    pub fn fraction(&self) -> f32 {
+        self.progress.map_or(-1.0, |(done, total)| done as f32 / total.max(1) as f32)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LoadBar;
+
+    #[test]
+    fn a_counted_load_reads_its_count_and_fraction_and_a_busy_one_sweeps() {
+        let counted = LoadBar::counted("Making the contact sheet", 3, 8);
+        assert_eq!((counted.count(), counted.fraction()), ("3/8".to_string(), 0.375));
+        let busy = LoadBar::busy("Writing the file");
+        // Twin: a busy bar never reads as a bar stalled at nothing done.
+        assert_eq!((busy.count(), busy.fraction()), (String::new(), -1.0));
+        assert_eq!(LoadBar::counted("Reading the library", 0, 0).fraction(), 0.0, "no work is not a sweep");
     }
 }

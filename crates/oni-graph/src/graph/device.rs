@@ -51,11 +51,6 @@ impl Graph {
         self.max_side
     }
 
-    /// The largest parameter block one stage may bind.
-    pub fn max_params(&self) -> u64 {
-        self.device.limits().max_uniform_buffer_binding_size
-    }
-
     pub fn stats(&self) -> Stats {
         Stats {
             dispatches: self.dispatches,

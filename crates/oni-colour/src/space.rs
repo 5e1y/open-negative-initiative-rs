@@ -35,11 +35,6 @@ pub enum Space {
 impl Space {
     pub const BUILT_IN: [Space; 4] = [Space::Srgb, Space::DisplayP3, Space::AdobeRgb, Space::ProPhoto];
 
-    /// The name on the space's tab, where five share a panel's width.
-    pub fn tab_title(&self) -> String {
-        if *self == Space::DisplayP3 { "DP3".into() } else { self.title() }
-    }
-
     /// So wide that one 8-bit step is a visible band: written in TIFF 16-bit only.
     pub fn needs_sixteen_bits(&self) -> bool {
         *self == Space::ProPhoto
