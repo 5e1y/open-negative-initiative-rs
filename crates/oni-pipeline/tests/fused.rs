@@ -97,3 +97,32 @@ fn texture_in_seven_passes_is_texture_in_ten() {
         judge(&format!("Texture at {w} px, narrow {narrow:.2}"), &fused, &ten, &off);
     }
 }
+
+/// Kernels laid as one pass against the same kernels one pass each, a kernel twice among them; the
+/// twin runs them in another order. A kernel reading an auxiliary image breaks the run.
+#[test]
+fn kernels_in_one_pass_are_the_kernels_one_after_the_other() {
+    let Ok(mut g) = Graph::new() else { return println!("SKIPPED: no adapter") };
+    let extent = Rect::new(-3, 5, 64, 40);
+    let pixels = noise(extent.w, extent.h, 23, 0.0, 1.3);
+    let input = g.upload_at(extent, &pixels).unwrap();
+    let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
+    s.spectrogram.saturation[2] = 0.4;
+    s.spectrogram.hue[5] = -0.3;
+    let kernels = || {
+        vec![
+            stages::spectrogram(&finishing::spectrogram(&s.spectrogram).unwrap()),
+            stages::saturation(&finishing::saturation(&finishing::sauce(0.8)).unwrap()),
+            stages::vignette(extent, -0.6, 0.5),
+            stages::exposure(0.3),
+            stages::saturation(&finishing::saturation(&finishing::sauce(1.4)).unwrap()),
+            stages::luma_only(),
+            stages::output_clip(),
+        ]
+    };
+    let one_by_one = |order: Vec<stages::PerPixel>| order.into_iter().fold(Image::new(&input), |i, k| i.then(k));
+    let fused = whole(&mut g, &stages::laid(Image::new(&input), kernels()));
+    let mut swapped = kernels();
+    swapped.swap(0, 3);
+    judge("seven kernels in one pass", &fused, &whole(&mut g, &one_by_one(kernels())), &whole(&mut g, &one_by_one(swapped)));
+}

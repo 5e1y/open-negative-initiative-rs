@@ -271,38 +271,38 @@ impl Pipeline {
         let sheet = s.sheet.is_some();
         let mono = s.mode.is_monochrome();
         let graded = self.curves(graph, toned, &s.manual_curves)?;
-        let mixed = match finishing::spectrogram(&s.spectrogram) {
-            Some(k) => graded.then(stages::spectrogram(&k)),
-            None => graded,
-        };
-        let held = if mono || !points { mixed } else { saturation(mixed, &finishing::points_curve(&s.print)) };
-        let saturated = saturation(held, &s.saturation);
-        let vignetted = if s.vignette.stops != 0.0 {
-            let extent = saturated.extent();
-            saturated.then(stages::vignette(extent, s.vignette.stops, if mono { 0.0 } else { Print::HUNT_EXPONENT }))
-        } else {
-            saturated
-        };
+        // The spectrogram, the points' saturation, the saturation and the vignette in one pass.
+        let extent = graded.extent();
+        let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
+        if !mono && points {
+            run.extend(saturation(&finishing::points_curve(&s.print)));
+        }
+        run.extend(saturation(&s.saturation));
+        if s.vignette.stops != 0.0 {
+            run.push(stages::vignette(extent, s.vignette.stops, if mono { 0.0 } else { Print::HUNT_EXPONENT }));
+        }
+        let vignetted = stages::laid(graded, run);
         // One two-pass stage when Texture rests between them, else denoise and sharpening on either side.
         let joint = s.texture.amount == 0.0;
         let cleaned = if sheet { vignetted } else { detail(vignetted, finishing::detail(Some(&s.chroma), joint.then_some(&s.sharpen), scale)) };
         let textured = texture(cleaned, s, reference);
         let sharpened = if sheet || joint { textured } else { detail(textured, finishing::detail(None, Some(&s.sharpen), scale)) };
-        let finished = saturation(sharpened, &finishing::sauce(s.secret_sauce.min(finishing::SAUCE_TOP)));
-        let shown = if mono { finished.then(stages::luma_only()) } else { finished };
-        if measuring {
-            return Ok(shown);
+        // The sauce, the monochrome luma and the output clip in one pass.
+        let mut run: Vec<_> = saturation(&finishing::sauce(s.secret_sauce.min(finishing::SAUCE_TOP))).into_iter().collect();
+        if mono {
+            run.push(stages::luma_only());
         }
-        let clipped = shown.then(stages::output_clip());
+        if measuring {
+            return Ok(stages::laid(sharpened, run));
+        }
+        run.push(stages::output_clip());
+        let clipped = stages::laid(sharpened, run);
         Ok(if sheet { clipped.then(OnGround) } else { clipped })
     }
 }
 
-fn saturation(image: Image, curve: &SaturationCurve) -> Image {
-    match finishing::saturation(curve) {
-        Some(k) => image.then(stages::saturation(&k)),
-        None => image,
-    }
+fn saturation(curve: &SaturationCurve) -> Option<stages::PerPixel> {
+    finishing::saturation(curve).map(|k| stages::saturation(&k))
 }
 
 /// `Pipeline.applyDetail`: the rows pass, then the columns reading it beside the source.

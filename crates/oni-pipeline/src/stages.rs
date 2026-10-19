@@ -26,9 +26,22 @@ macro_rules! shader {
     };
 }
 
+macro_rules! kernel {
+    ($name:ident, $part:expr, call $call:literal) => {
+        static $name: Kernel = Kernel {
+            shader: LazyLock::new(|| compose(&[$part], concat!("fn pixel(p: vec2<i32>) -> vec4<f32> { let v = load(p); return ", $call, "; }"))),
+            alone: Some(($part, $call)),
+        };
+    };
+    ($name:ident, [$($part:expr),*], $wrapper:expr) => {
+        static $name: Kernel = Kernel { shader: LazyLock::new(|| compose(&[$($part),*], $wrapper)), alone: None };
+    };
+}
+
 const HEAD: [u32; 4] = [0; 4];
 
 mod per_pixel;
+mod fused;
 mod tabled;
 mod detail;
 mod resampling;
@@ -37,6 +50,7 @@ mod plain;
 mod patch;
 
 pub use per_pixel::*;
+pub use fused::{Fused, laid};
 pub use tabled::*;
 pub use detail::*;
 pub use resampling::*;
