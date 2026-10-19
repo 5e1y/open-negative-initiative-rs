@@ -5,6 +5,7 @@ mod common;
 mod runner;
 mod archive;
 mod auto_balance;
+mod canvas_switch;
 mod catalogue;
 mod contact_sheet;
 mod design_system;
@@ -19,6 +20,7 @@ mod headless;
 mod help;
 mod keycap;
 mod launch;
+mod library_column;
 mod masks;
 mod navigator;
 mod paper_sheet_window;
@@ -41,6 +43,7 @@ mod wrapped;
 const CHECKS: &[(&str, fn())] = &[
     ("archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once", archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once),
     ("auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back", auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back),
+    ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("catalogue::the_catalogue_shows_every_component", catalogue::the_catalogue_shows_every_component),
     ("contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips", contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
@@ -67,6 +70,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("help::the_help_menus_surfaces_behave_as_swifts", help::the_help_menus_surfaces_behave_as_swifts),
     ("keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once", keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once),
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
+    ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
     ("paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled", paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled),

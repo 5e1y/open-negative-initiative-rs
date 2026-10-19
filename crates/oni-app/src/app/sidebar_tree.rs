@@ -54,6 +54,7 @@ impl Ctl {
             s.asked.insert(fingerprint.clone());
             let _ = s.disk.send(fingerprint);
         }
+        s.tree_pictures = rows.iter().map(|r| r.thumb.then(|| r.picture.clone())).collect();
         s.tree_frames = frames;
         s.tree_total = total;
         let lib = w.global::<Library>();
@@ -62,39 +63,115 @@ impl Ctl {
         lib.set_tree_layout_help(format!("{} — next: {}", layout.name(), layout.next().name()).into());
     }
 
-    /// A thumbnail landed after the rows were laid reaches its row in place.
+    /// A thumbnail landed or drawn again after the rows were laid reaches its row in place; only
+    /// the rows whose picture changed are read from the model.
     pub(super) fn fill_tree_thumbnails(&self) {
         let Some(w) = self.window() else { return };
+        let changed: Vec<(usize, Image)> = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            let mut changed = Vec::new();
+            for (i, (path, shown)) in s.tree_paths.iter().zip(s.tree_pictures.iter_mut()).enumerate() {
+                let Some(shown) = shown else { continue };
+                let Some(picture) = path.as_ref().and_then(|p| s.fingerprints.get(p)).and_then(|f| s.thumbs.get(f)) else { continue };
+                if *shown != picture {
+                    *shown = picture.clone();
+                    changed.push((i, picture));
+                }
+            }
+            changed
+        };
         let model = w.global::<Library>().get_rows();
-        let s = self.state.borrow();
-        for (i, path) in s.tree_paths.iter().enumerate() {
-            let Some(mut row) = model.row_data(i).filter(|r| r.thumb && r.picture.size().width == 0) else { continue };
-            let Some(picture) = path.as_ref().and_then(|p| s.fingerprints.get(p)).and_then(|f| s.thumbs.get(f)) else { continue };
-            row.picture = picture;
-            model.set_row_data(i, row);
+        for (i, picture) in changed {
+            if let Some(mut row) = model.row_data(i) {
+                row.picture = picture;
+                model.set_row_data(i, row);
+            }
         }
     }
 
-    /// `TreeEngine.reveal`: the column centred on the open photo, else the first picked.
+    /// The rows laid again at the column's width in place, so no row is rebuilt and the scroll stays.
+    fn relay_tree(&self) {
+        let Some(w) = self.window() else { return };
+        let model = w.global::<Library>().get_rows();
+        if model.row_count() != self.state.borrow().tree_paths.len() {
+            return self.publish_tree();
+        }
+        let old: Vec<TreeRow> = model.iter().collect();
+        let mut rows = old.clone();
+        self.lay_tree(&mut rows);
+        for (i, (row, was)) in rows.into_iter().zip(&old).enumerate() {
+            if row != *was {
+                model.set_row_data(i, row);
+            }
+        }
+    }
+
+    /// The scroll kept within the content, which a taller column or a narrower layout shortens.
+    fn clamp_tree(&self) {
+        let Some(w) = self.window() else { return };
+        let lib = w.global::<Library>();
+        let (height, total) = {
+            let s = self.state.borrow();
+            (s.tree_size.1, s.tree_total)
+        };
+        let offset = (-lib.get_tree_viewport_y()).clamp(0.0, (total - height).max(0.0));
+        lib.set_tree_viewport_y(-offset);
+    }
+
+    /// The photo the column follows: the open one, else the first picked.
+    fn tree_target(&self) -> Option<String> {
+        let s = self.state.borrow();
+        s.open.clone().or_else(|| s.picks.anchor.clone())
+    }
+
+    /// `TreeEngine.reveal`: the column centred on the photo it follows.
     pub(super) fn centre_tree(&self) {
         let Some(w) = self.window() else { return };
-        let s = self.state.borrow();
-        let target = s.open.clone().or_else(|| s.picks.anchor.clone());
+        let target = self.tree_target();
+        let mut s = self.state.borrow_mut();
+        s.tree_centred = target.clone();
         let Some(i) = target.and_then(|t| s.tree_paths.iter().position(|p| p.as_deref() == Some(t.as_str()))) else { return };
         let Some(frame) = s.tree_frames.get(i).copied() else { return };
         let offset = sidebar::centred(frame, s.tree_size.1, s.tree_total);
+        drop(s);
         w.global::<Library>().set_tree_viewport_y(-offset);
+    }
+
+    /// Centres the column once the photo it follows changes, never on an edit, so a scroll by
+    /// the wheel stays while the photo is worked on.
+    pub(super) fn follow_tree(&self) {
+        if self.state.borrow().tree_centred != self.tree_target() {
+            self.centre_tree();
+        }
     }
 
     pub(super) fn wire_tree(self: &Rc<Self>, lib: &Library) {
         let me = Rc::downgrade(self);
         lib.on_tree_resized(move |width, height| {
             let Some(c) = me.upgrade() else { return };
-            if c.state.borrow().tree_size == (width, height) {
+            let was = std::mem::replace(&mut c.state.borrow_mut().tree_size, (width, height));
+            if was == (width, height) {
                 return;
             }
-            c.state.borrow_mut().tree_size = (width, height);
-            c.publish_tree();
+            // A column first given its size centres on the photo; a resize keeps the scroll.
+            if was.0 <= 0.0 || was.1 <= 0.0 {
+                c.state.borrow_mut().tree_centred = None;
+            }
+            if was.0 != width {
+                c.relay_tree();
+            }
+            c.clamp_tree();
+            c.follow_tree();
+        });
+        // The column shown again, beside a photo or back on the archive: centred on the photo.
+        let me = Rc::downgrade(self);
+        lib.on_tree_shown(move |width, height| {
+            let Some(c) = me.upgrade() else { return };
+            let was = std::mem::replace(&mut c.state.borrow_mut().tree_size, (width, height));
+            if was.0 != width {
+                c.relay_tree();
+            }
             c.centre_tree();
         });
         let me = Rc::downgrade(self);

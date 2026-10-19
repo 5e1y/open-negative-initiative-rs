@@ -13,6 +13,12 @@ impl Ctl {
             let opened = s.store.open_adjusted(path, &|o| o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, kept)).err();
             s.open = Some(path.to_string());
             s.opened_at = Instant::now();
+            s.opens += 1;
+            // `load(_:)`: numbering restarts per photo, and another photo's patch sources never show.
+            s.numbers.clear();
+            s.next_number = 1;
+            s.sources.clear();
+            s.fallback.clear();
             // Another photo's distributions never stand under this one's handles.
             s.inputs = None;
             s.shelf.hovered = None;
@@ -98,6 +104,7 @@ impl Ctl {
             s.previews.lock().expect("previews").remove(&path);
             s.negative = None;
             s.full = None;
+            s.full_failed.remove(&path);
         }
         self.decode_open(&path);
     }

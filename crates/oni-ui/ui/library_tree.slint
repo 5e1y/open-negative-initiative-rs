@@ -51,7 +51,7 @@ export component Tree inherits Surface {
             vertical-stretch: 1;
             content-height: Library.tree-content-height;
             content-y <=> Library.tree-viewport-y;
-            init => { Library.tree-resized(self.width, self.height); }
+            init => { Library.tree-shown(self.width, self.height); }
             changed width => { Library.tree-resized(self.width, self.height); }
             changed height => { Library.tree-resized(self.width, self.height); }
             for row[i] in Library.rows: Rectangle {

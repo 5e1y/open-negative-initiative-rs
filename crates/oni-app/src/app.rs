@@ -274,6 +274,9 @@ pub struct State {
     tree_size: (f32, f32),
     tree_frames: Vec<crate::sidebar::Frame>,
     tree_total: f32,
+    /// What each row shows as its thumbnail, none for a name, and the photo the column last centred on.
+    tree_pictures: Vec<Option<Image>>,
+    tree_centred: Option<String>,
     shelf: presets::Shelf,
     /// The balance key's run under way, which the key shows instead of itself.
     batch: Option<rolls::Batch>,
@@ -313,6 +316,8 @@ pub struct State {
     brush: f32,
     gpu: Option<Gpu>,
     renders: usize,
+    /// How many times a photo was opened, which the checks count.
+    opens: usize,
     opened_at: Instant,
     notches: Notches,
     /// When the hand moved the value the next render shows; `None` times a render from its ask.
@@ -322,9 +327,14 @@ pub struct State {
     /// The open frame's full-resolution pixels once built, and the frame one is being built for.
     full: Option<(String, oni_graph::Source)>,
     building_full: Option<String>,
+    /// The frames whose full-resolution decode failed under their current reading.
+    full_failed: HashSet<String>,
     loupe: loupe::Held,
-    /// The frame whose dust patches are being generated.
-    healing: Option<String>,
+    /// The frames whose dust patches are being generated; the corrections whose patch is on disk,
+    /// and those whose generation failed, neither looked for again.
+    healing: HashSet<String>,
+    patched: HashSet<oni_settings::id::Id>,
+    unhealable: HashSet<oni_settings::id::Id>,
     /// The last navigation, which keeps the preview until it settles.
     navigated_at: Option<Instant>,
     /// The displayed image's size in full-resolution pixels, from the last render placed.

@@ -110,6 +110,9 @@ impl Ctl {
     /// `selectProject`: a project row rings it and clears the photos, a photo row selects it; in
     /// the editor a photo row opens it.
     pub(in crate::app) fn project_row_clicked(self: &Rc<Self>, i: usize) {
+        if self.state.borrow_mut().second_click(Column::Projects, i) {
+            return;
+        }
         let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         let open = {
             let mut s = self.state.borrow_mut();
@@ -127,7 +130,7 @@ impl Ctl {
                     s.picks.selection = HashSet::from([path.clone()]);
                     s.picks.cursor = Some(path.clone());
                     s.picks.anchor = Some(path.clone());
-                    (!gallery).then(|| path.clone())
+                    (!gallery && s.open.as_deref() != Some(path.as_str())).then(|| path.clone())
                 }
             };
             s.org.project_ring = Some(id);

@@ -53,7 +53,7 @@ impl Ctl {
         };
         if closed && let Some(w) = self.window() {
             w.global::<App>().set_gallery(true);
-            w.global::<Canvas>().set_frame(Image::default());
+            self.blank_canvas();
         }
     }
 

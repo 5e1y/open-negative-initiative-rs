@@ -303,6 +303,7 @@ impl Ctl {
         drop(guard);
         self.lay_tree(&mut rows);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
+        self.follow_tree();
     }
 
     /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
@@ -324,6 +325,9 @@ impl Ctl {
     }
 
     pub(super) fn row_clicked(self: &Rc<Self>, i: usize) {
+        if self.state.borrow_mut().second_click(organising::Column::Archive, i) {
+            return;
+        }
         if self.state.borrow().org.trash_open {
             self.leave_trash();
             self.lay_grid();
@@ -339,8 +343,11 @@ impl Ctl {
                 if !self.take_off_roll() {
                     return;
                 }
+                let reopened = self.state.borrow().open.as_deref() == Some(path.as_str());
                 self.state.borrow_mut().designate(&path);
-                self.open_photo(&path);
+                if !reopened {
+                    self.open_photo(&path);
+                }
                 self.publish_tiles();
                 self.publish_organising();
             }

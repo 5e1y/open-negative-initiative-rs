@@ -15,7 +15,7 @@ impl Ctl {
             Ok(d) => d,
             Err(e) => {
                 // The canvas never keeps another photo's picture under this one's name.
-                w.global::<Canvas>().set_frame(Image::default());
+                self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
                 w.global::<Plots>().set_output(Image::default());
                 self.state.borrow_mut().histogram_dirty = false;

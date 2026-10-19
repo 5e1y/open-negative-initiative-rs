@@ -191,8 +191,12 @@ impl Ctl {
         self.publish_framing();
     }
 
-    /// The Crop tab opened: the framing the hand last chose is handed to this frame if chosen on another.
+    /// A tab opened: the toolbar's De-dust key lit on De-dust alone, and on Crop the framing the
+    /// hand last chose is handed to this frame if chosen on another.
     pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
+        if let Some(w) = self.window() {
+            w.global::<Bar>().set_dedust(tab == 4);
+        }
         if tab == 1 {
             let remembered = {
                 let s = self.state.borrow();

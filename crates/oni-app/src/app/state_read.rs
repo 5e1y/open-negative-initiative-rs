@@ -32,6 +32,11 @@ impl State {
         self.renders
     }
 
+    /// How many times a photo was opened in the editor.
+    pub fn opens(&self) -> usize {
+        self.opens
+    }
+
     /// The store revision the canvas last showed.
     pub fn rendered(&self) -> u64 {
         self.rendered

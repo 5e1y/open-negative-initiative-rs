@@ -67,6 +67,9 @@ impl Ctl {
 
     /// `onClick(1)`: the trash row folds, a folder row is picked.
     pub(in crate::app) fn trash_row_clicked(self: &Rc<Self>, i: usize) {
+        if self.state.borrow_mut().second_click(Column::Trash, i) {
+            return;
+        }
         {
             let folder = self.trash_folder(i);
             let mut s = self.state.borrow_mut();
@@ -84,14 +87,8 @@ impl Ctl {
         self.publish_trash_rows();
     }
 
-    /// `onClick(2)`: the second click opens the ONI Trash; the fold the first click turned is put back.
-    pub(in crate::app) fn trash_row_double_clicked(self: &Rc<Self>, i: usize) {
-        if i == 0 {
-            let mut s = self.state.borrow_mut();
-            if !s.org.trashed.is_empty() {
-                s.org.trash_unfolded = !s.org.trash_unfolded;
-            }
-        }
+    /// `onClick(2)`: the second click opens the ONI Trash, the fold the first click turned kept.
+    pub(in crate::app) fn trash_row_double_clicked(self: &Rc<Self>, _: usize) {
         self.open_trash();
     }
 

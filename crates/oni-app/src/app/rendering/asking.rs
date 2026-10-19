@@ -48,18 +48,15 @@ impl Ctl {
                 (Some(size), Some(f)) => settled && s.viewport.needs_full_resolution(negative.size().0 as f64 / negative.full_width, f, size, viewport::NOMINAL_BUDGET),
                 _ => false,
             };
-            let build = (wants_full && full.is_none() && s.building_full.is_none()).then(|| {
+            let build = (wants_full && full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });
             let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
-            let caches = crate::patches::caches();
-            let stored = s.store.settings().clone();
-            let unhealed = stored.corrections.iter().any(|c| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists());
-            let heal = (unhealed && s.healing.as_deref() != Some(path.as_str())).then(|| {
-                s.healing = Some(path.clone());
-                (path.clone(), stored)
+            let heal = (!s.healing.contains(&path) && s.unhealed()).then(|| {
+                s.healing.insert(path.clone());
+                (path.clone(), s.store.settings().clone())
             });
             // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
             let reference = s.split.map(|_| {
@@ -88,65 +85,78 @@ impl Ctl {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let caches = crate::patches::caches();
-            let made = (|| -> Result<Vec<(oni_settings::id::Id, bool, (f64, f64))>, String> {
+            let lacking = |c: &oni_settings::frame::Correction| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists();
+            let mut made = Vec::new();
+            let failed = (|| -> Result<(), String> {
                 let decoded = render::decode_full(Path::new(&path), render::Reading::of(&settings))?;
                 let full = engine.lock()?.full(decoded)?;
-                let mut made = Vec::new();
-                for c in &settings.corrections {
-                    if c.stroke.is_empty() || crate::patches::file(&caches, c.id).exists() {
-                        continue;
-                    }
+                for c in settings.corrections.iter().filter(|c| lacking(c)) {
                     let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
                     crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
                     engine.lock()?.forget_patch(c.id);
                     made.push((c.id, patch.fallback, patch.offset));
                 }
-                Ok(made)
-            })();
+                Ok(())
+            })()
+            .err();
+            // A correction left without its patch by a failure is not generated again on every render.
+            let unhealable: Vec<oni_settings::id::Id> =
+                if failed.is_some() { settings.corrections.iter().filter(|c| lacking(c)).map(|c| c.id).collect() } else { Vec::new() };
             with_shell(move |c| {
-                c.state.borrow_mut().healing = None;
-                match made {
-                    Ok(m) if m.is_empty() => {}
-                    Ok(m) => {
-                        let n = m.len();
-                        for (id, fell_back, offset) in m {
-                            let mut s = c.state.borrow_mut();
+                let open = c.state.borrow().open_path() == Some(path.as_str());
+                {
+                    let mut s = c.state.borrow_mut();
+                    s.healing.remove(&path);
+                    s.unhealable.extend(unhealable);
+                    for &(id, fell_back, offset) in &made {
+                        s.patched.insert(id);
+                        if open {
                             if fell_back {
                                 s.fallback.insert(id);
                             }
                             s.sources.insert(id, offset);
                         }
-                        timing::line(&format!("{}: {n} dust patches generated", stem(&path)));
-                        if c.state.borrow().open_path() == Some(path.as_str()) {
-                            c.state.borrow_mut().requested_view = None;
-                            c.request_render();
-                        }
                     }
-                    Err(e) => timing::line(&format!("{}: dust patches not generated: {e}", stem(&path))),
+                }
+                if !made.is_empty() {
+                    timing::line(&format!("{}: {} dust patches generated", stem(&path), made.len()));
+                    if open {
+                        c.state.borrow_mut().requested_view = None;
+                        c.request_render();
+                    }
+                }
+                if let Some(e) = failed {
+                    timing::line(&format!("{}: dust patches not generated: {e}", stem(&path)));
                 }
                 c.publish_dedust();
             });
         });
     }
 
-    /// The open frame decoded again at full resolution off this thread, then shown where the view wants it.
+    /// The open frame decoded again at full resolution off this thread, then shown where the view
+    /// wants it; one decoded under a reading the frame has since left is dropped.
     pub(in crate::app) fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
         let engine = self.engine.clone();
         let ticket = crate::decode_gate::FULL.ask();
         std::thread::spawn(move || {
-            let built = crate::decode_gate::FULL
-                .run(ticket, || render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d)))
-                .unwrap_or_else(|| Err("superseded".into()));
+            let reading = converted.clone();
+            let built = crate::decode_gate::FULL.run(ticket, || render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d)));
             with_shell(move |c| {
-                let open = c.state.borrow().open_path() == Some(path.as_str());
                 {
                     let mut s = c.state.borrow_mut();
-                    s.building_full = None;
+                    // Another frame's build may hold the mark: only this one's is cleared.
+                    if s.building_full.as_deref() == Some(path.as_str()) {
+                        s.building_full = None;
+                    }
+                    let current = s.open_path() == Some(path.as_str()) && s.reading.as_ref() == Some(&reading);
                     match built {
-                        Ok(full) if open => s.full = Some((path, full)),
-                        Ok(_) => {}
-                        Err(e) => timing::line(&format!("full resolution not built: {e}")),
+                        Some(Ok(full)) if current => s.full = Some((path, full)),
+                        Some(Ok(_)) | None => {}
+                        Some(Err(e)) => {
+                            timing::line(&format!("full resolution not built: {e}"));
+                            s.full_failed.insert(path);
+                        }
                     }
                 }
                 // Another frame opened meanwhile asks its own full resolution now that this one is done.

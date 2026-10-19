@@ -69,8 +69,6 @@ impl Ctl {
         self.publish_dedust();
         crate::editors::publish(self, jump);
         self.request_render();
-        // Every edit brings the library column back onto the photo it acts on.
-        self.centre_tree();
     }
 
     /// Every property is read before any is set, so no Slint callback runs under the state's borrow.

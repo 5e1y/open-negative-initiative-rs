@@ -724,6 +724,14 @@
     "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
   },
   {
+    "id": 104,
+    "type": "fix",
+    "title": "The library column keeps the wheel's scroll and its rows, opens on a double click once; a switched photo shows nothing of the last",
+    "status": "done",
+    "detail": "From the review of the library column and the canvas. The column centres when the photo it follows changes, when it is shown again and on its key, never on a notch; a resize relays its rows in place and clamps the scroll; a thumbnail drawn again reaches its row; a double click's second click does nothing by itself, so a photo opens once and a group folds once, and opening the photo already open loads nothing (Swift's takeOff). Opening a photo restarts the correction numbers and clears the patch sources; with no thumbnail the canvas empties with its texture and Compare's before; a full-resolution build clears only its own mark, is dropped under a reading left since and is not retried after a failure; a failed heal is not retried on every render and heals are kept per frame; the patch stats and the De-dust lists are no longer renewed on every notch; the tab bar leaving De-dust darkens its key; a brush double press shows the reset at once. Not done: a render error carrying its path needs render/worker.rs. The trash highlighting finding is unreachable, the archive's rows showing only beside a photo.",
+    "outcome": "Two window checks (library_column, canvas_switch) and a unit test, each fix reverted in turn makes them fail (12 mutations); the gallery, archive, headless, masks, gestures and editor checks stay green."
+  },
+  {
     "id": 105,
     "type": "perf",
     "title": "The levels and curves inputs read only when what enters them moves, on the small copy under the hand, cells read by selection",
