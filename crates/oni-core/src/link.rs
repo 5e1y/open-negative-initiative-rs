@@ -3,7 +3,7 @@
 
 use crate::command::Command;
 use crate::store::{EditorStore, Surface, channel, machine_for};
-use oni_link::{Host, HostEvent, HostEvents, PublicKey, State};
+use oni_link::{Host, HostEvent, HostEvents, PublicKey, Receipt, State};
 use std::sync::Mutex;
 
 /// The scanner's screen as the store holds it; `frame` is the open frame's place in its group.
@@ -66,8 +66,8 @@ impl Link {
         }
     }
 
-    /// One event: a press lands on the store as one command, then the screen goes out.
-    pub fn handle(&mut self, store: &mut EditorStore, event: HostEvent) -> Option<Outward> {
+    /// One event: a press lands on the store as one command, is marked taken, then the screen goes out.
+    pub fn handle(&mut self, store: &mut EditorStore, event: HostEvent, receipt: Receipt) -> Option<Outward> {
         let out = match event {
             HostEvent::Command { command, .. } => {
                 store.apply(Command::from(command)).walk.map(Outward::Walk)
@@ -76,6 +76,7 @@ impl Link {
             HostEvent::Connected { phone, name } => Some(Outward::Connected { phone, name }),
             HostEvent::Disconnected { phone } => Some(Outward::Disconnected { phone }),
         };
+        receipt.applied();
         // Published after every press, changed or not, so the phone learns its press was taken.
         self.published = None;
         self.refresh(store);
@@ -91,10 +92,10 @@ pub async fn drive(
     store: &Mutex<EditorStore>,
     mut outward: impl FnMut(Outward),
 ) {
-    while let Some(event) = events.next().await {
+    while let Some((event, receipt)) = events.receive().await {
         let done = {
             let mut store = store.lock().expect("store lock");
-            link.lock().expect("link lock").handle(&mut store, event)
+            link.lock().expect("link lock").handle(&mut store, event, receipt)
         };
         if let Some(out) = done {
             outward(out);

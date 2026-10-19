@@ -109,6 +109,7 @@ impl Ctl {
             "wrapped" => self.show_wrapped(oni_library::wrapped::today().0),
             "pair-phone" => self.pair_phone(),
             "close-pairing" => self.close_pairing(),
+            "forget-phones" => self.forget_phones(),
             a if a.starts_with("medal-") => {
                 if let Ok(m) = a[6..].parse::<i32>() {
                     self.label(m);

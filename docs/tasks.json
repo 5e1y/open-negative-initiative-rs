@@ -993,6 +993,14 @@
     "detail": "The Windows CI built every crate but failed to compile oni-library's swift_checks, which made a symbolic link with std::os::unix. The link half of that check runs on Unix only (a link needs a privilege on Windows); the quit guard's failed write is now caused by a folder standing where the sidecar goes, which fails on both systems, instead of Unix permissions. The Windows run now cancels a run of the same branch a newer push supersedes, and caches the cargo build between runs (Swatinem/rust-cache), as a cold build took about 40 minutes."
   },
   {
+    "id": 137,
+    "type": "feature",
+    "title": "The phone pairs with the desktop end to end: the QR's link through the phone's own FFI, reconnection after a restart, Forget Phones",
+    "status": "done",
+    "detail": "Audit of the path the Android app takes (zxing reads an oni-link:// payload, parse_pairing_code, RemoteSession.pair, then RemoteSession.connect with the stored key and addresses) against the desktop's Host. The protocol, the URI and the Kotlin bindings already lined up (bindings regenerated from this branch are byte-identical to the app's). Fixed: a press was marked taken when the link thread read it, before the interface thread applied it, so a screen published in between by another hand dropped it from the phone; HostEvents::receive now hands a Receipt that Link::handle marks between the store's apply and the publish. The port a code names is kept in <support>/Link/port.txt and a later launch listens there first, so a phone paired while 53318 was taken still finds the desktop. The link stops with its Shell. The sheet names the phones connected (or how many are paired) and carries FORGET PHONES, which revokes and cuts every paired phone, as the phone app's Forget Desktop tells the owner to do on the desktop.",
+    "outcome": "tests/window/phone.rs drives oni-link-ffi, the phone app's own code, against the real window: the sheet's pixels are its URI's QR (twin: another URI's are not), a wrong secret pairs nothing (twin of the pairing), the phone pairs, Step D +3 moves the store and the phone reads it, its undo returns it, Walk opens B and stops at the end, the closed sheet's code refuses a late phone; after a restart the trusted phone reconnects without a code on the same port and steps the frame, a stranger is refused, and FORGET PHONES cuts it and refuses it again. oni-link remote.rs: a press read but not applied stays shown through another hand's screen, its twin marking on read loses it. phone.rs: the link listens on the port the last code named, its twin an unreadable file naming none. Not tried with a real phone."
+  },
+  {
     "id": 138,
     "type": "perf",
     "title": "The texture pool keeps an idle texture for eight renders, so a notch never makes its chain's textures again",

@@ -1,6 +1,7 @@
 //! The phone link: the host's events, pairing, and the commands the phone sends.
 
 use super::*;
+use oni_link::Receipt;
 
 impl Ctl {
     // MARK: - The phone
@@ -28,6 +29,38 @@ impl Ctl {
         self.pairing_status("Starting the link…");
         self.start_phone();
         self.show_code();
+        self.show_phones();
+    }
+
+    /// The sheet's line on the phones: those connected now, else how many are paired.
+    pub(super) fn show_phones(&self) {
+        let Some(w) = self.window() else { return };
+        let (names, paired) = {
+            let s = self.state.borrow();
+            (s.phone.as_ref().map(Phone::names).unwrap_or_default(), phone::trusted(&s.support).len())
+        };
+        let line = match (names.len(), paired) {
+            (0, 0) => String::new(),
+            (0, 1) => "One phone paired, none connected.".to_string(),
+            (0, n) => format!("{n} phones paired, none connected."),
+            _ => format!("Connected: {}.", names.join(", ")),
+        };
+        let p = w.global::<Pairing>();
+        p.set_phones(line.into());
+        p.set_can_forget(paired > 0);
+    }
+
+    /// Forget Phones: every paired phone cut and forgotten; the sheet's code still pairs a new one.
+    pub(super) fn forget_phones(&self) {
+        let support = self.state.borrow().support.clone();
+        let done = match self.state.borrow_mut().phone.as_mut() {
+            Some(p) => p.forget_all(),
+            None => phone::forget(&support),
+        };
+        if let Err(e) = done {
+            self.pairing_status(&format!("The paired phones cannot be forgotten: {e}"));
+        }
+        self.show_phones();
     }
 
     pub(super) fn show_code(&self) {
@@ -92,19 +125,19 @@ impl Ctl {
                 self.state.borrow_mut().phone = None;
                 self.pairing_status(&format!("The phone link cannot listen: {e}"));
             }
-            phone::Event::Host(event) => self.phone_event(event),
+            phone::Event::Host(event, receipt) => self.phone_event(event, receipt),
         }
     }
 
     /// A press lands on the store as one command and one undo step, then the window follows.
-    pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent) {
+    pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent, receipt: Receipt) {
         let (out, changed) = {
             let s = &mut *self.state.borrow_mut();
             let place = s.place();
             let revision = s.store.revision();
-            let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
+            let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return receipt.applied() };
             p.link.frame = place;
-            let out = p.link.handle(store, event);
+            let out = p.link.handle(store, event, receipt);
             (out, store.revision() != revision)
         };
         if changed {
@@ -119,14 +152,21 @@ impl Ctl {
                 }
                 self.pairing_status(&format!("Paired with {name}."));
             }
-            Some(Outward::Connected { name, .. }) => {
+            Some(Outward::Connected { phone, name }) => {
                 timing::line(&format!("phone connected: {name}"));
                 self.say(&format!("{name} connected"));
-                self.pairing_status(&format!("{name} is connected."));
+                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
+                    p.connected(phone, name);
+                }
+                self.show_phones();
             }
-            Some(Outward::Disconnected { .. }) => {
+            Some(Outward::Disconnected { phone }) => {
                 timing::line("phone disconnected");
                 self.say("The phone disconnected");
+                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
+                    p.disconnected(phone);
+                }
+                self.show_phones();
             }
             Some(Outward::Walk(by)) => self.walk(by),
             None => {}
