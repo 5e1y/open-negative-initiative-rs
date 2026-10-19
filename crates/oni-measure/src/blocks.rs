@@ -109,8 +109,25 @@ pub fn tail(sorted: &[f32], low: bool) -> f32 {
     if low { sorted[depth] } else { sorted[sorted.len() - 1 - depth] }
 }
 
-fn sort(values: &mut [f32]) {
-    values.sort_unstable_by(|a, b| a.total_cmp(b));
+/// The low tail, the median and the high tail `tail` and `median` read on the sorted values, found
+/// by selection: three ranks of a cell, never the whole cell sorted.
+pub fn ranked(values: &mut [f32]) -> (f32, f32, f32) {
+    let n = values.len();
+    if n == 0 {
+        return (0.0, 0.0, 0.0);
+    }
+    let depth = ((TAIL * n as f32) as usize).min(n - 1);
+    let mid = n / 2;
+    let (left, m, right) = values.select_nth_unstable_by(mid, f32::total_cmp);
+    let m = *m;
+    let mut at = |rank: usize| match rank.cmp(&mid) {
+        std::cmp::Ordering::Less => *left.select_nth_unstable_by(rank, f32::total_cmp).1,
+        std::cmp::Ordering::Equal => m,
+        std::cmp::Ordering::Greater => *right.select_nth_unstable_by(rank - mid - 1, f32::total_cmp).1,
+    };
+    let low = at(depth);
+    let high = at(n - 1 - depth);
+    (low, m, high)
 }
 
 /// `Blocks.medians`: the window's box read once, then each row of cells on its own core.
@@ -144,16 +161,12 @@ pub fn medians(counted: &Plane, grid: &Grid) -> Cells {
                         y.push(p[0] * w[0] + p[1] * w[1] + p[2] * w[2]);
                     }
                 }
-                sort(&mut r);
-                sort(&mut g);
-                sort(&mut b);
-                sort(&mut y);
-                (
-                    [median(&r), median(&g), median(&b)],
-                    median(&y),
-                    [tail(&r, true), tail(&g, true), tail(&b, true)],
-                    [tail(&r, false), tail(&g, false), tail(&b, false)],
-                )
+                let (rl, rm, rh) = ranked(&mut r);
+                let (gl, gm, gh) = ranked(&mut g);
+                let (bl, bm, bh) = ranked(&mut b);
+                let mid = y.len() / 2;
+                let luma = if y.is_empty() { 0.0 } else { *y.select_nth_unstable_by(mid, f32::total_cmp).1 };
+                ([rm, gm, bm], luma, [rl, gl, bl], [rh, gh, bh])
             })
             .collect()
     };
@@ -253,5 +266,27 @@ mod tests {
         // Twin: a cell of 12 keeps its extremes, 0.96 truncating to none.
         let short: Vec<f32> = (0..12).map(|i| i as f32).collect();
         assert_eq!((tail(&short, true), tail(&short, false)), (0.0, 11.0));
+    }
+
+    #[test]
+    fn a_cell_read_by_selection_reads_what_the_sorted_cell_reads() {
+        let mut seed = 7u32;
+        for n in 1..60 {
+            let values: Vec<f32> = (0..n)
+                .map(|_| {
+                    seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+                    // Repeats on purpose: a cell of a flat area holds many equal values.
+                    (seed >> 28) as f32 / 4.0
+                })
+                .collect();
+            let mut sorted = values.clone();
+            sorted.sort_unstable_by(f32::total_cmp);
+            let mut scrambled = values.clone();
+            assert_eq!(ranked(&mut scrambled), (tail(&sorted, true), median(&sorted), tail(&sorted, false)), "{n} values");
+            // Twin: the lower of two middles is not what a cell reads.
+            if n % 2 == 0 && sorted[n / 2 - 1] != sorted[n / 2] {
+                assert_ne!(ranked(&mut values.clone()).1, sorted[n / 2 - 1]);
+            }
+        }
     }
 }

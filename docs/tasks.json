@@ -722,5 +722,13 @@
     "status": "done",
     "detail": "Each press decoded the file again (355 ms of 420). The measurer keeps the last two measuring copies by path and reading, and the open frame's copy is made off the interface thread once its preview stands, through a latest-wins gate.",
     "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
+  },
+  {
+    "id": 105,
+    "type": "perf",
+    "title": "The levels and curves inputs read only when what enters them moves, on the small copy under the hand, cells read by selection",
+    "status": "done",
+    "detail": "After nearly every notch the render thread read both input histograms on the full 1400 px copy (40 ms, the hand's small copy never used since the slot was always quiet), purging the pool each time. Each stage now keeps its reading while the settings entering it (truncated) and the copy hold; the small copy reads under the hand and the full one once it has rested 150 ms; Blocks' cell medians and tails are found by selection instead of four sorts per cell; no purge.",
+    "outcome": "Roll #8 frame, M2 Max release: a gains notch 40 ms to 16 ms on the full copy, 8 to 4 ms on the small one; a slider past the levels (vignette, curves for the levels input) reads nothing. Unit check with a twin: selection equals the sorted cell. Every check green."
   }
 ]

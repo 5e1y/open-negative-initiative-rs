@@ -2,6 +2,7 @@
 
 use super::*;
 
+mod inputs;
 mod view;
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.
@@ -99,6 +100,8 @@ pub struct Engine {
     /// `Negative.measure` and `measureSmall` of the preview whose id leads: what the input
     /// histograms read, the small one under the hand.
     measures: Option<(u64, Source, Source)>,
+    /// The last levels and curves readings, kept while what enters each stage holds.
+    read: [Option<inputs::Read>; 2],
 }
 
 /// The engine every thread shares, behind a gate the interface thread closes while the window's
@@ -198,35 +201,11 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None] }
     }
 
     pub fn shared(d: &Device) -> Shared {
         Shared(Arc::new(Gated { engine: Mutex::new(Engine::on(d)), gate: Mutex::new(Gate::default()), turn: Condvar::new() }))
-    }
-
-    /// The graph and the pipeline, for a render the canvas never shows: an export reads them unproofed.
-    /// `refreshLevelsInput` and `refreshManualCurvesInput`: the distributions in front of the levels
-    /// and of the manual curves, read through the measuring windows, on the small copy while `held`.
-    pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
-        use oni_measure::reader::{Copy, Reader};
-        use oni_measure::truncate::Stage;
-        let id = negative.preview.id();
-        if self.measures.as_ref().is_none_or(|(kept, _, _)| *kept != id) {
-            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline };
-            let measure = r.measuring(&negative.preview)?;
-            // `measureSmall`: a third of the measuring copy's side, as `CILanczosScaleTransform` makes it.
-            let small = self.graph.materialise(&Image::new(&measure).lanczos_anchored(MEASURE_SMALL)).ok()?;
-            self.measures = Some((id, measure, small));
-        }
-        let (_, measure, small) = self.measures.as_ref()?;
-        let source = if held { small.clone() } else { measure.clone() };
-        let copy = || Copy { source: &source, full_width: Some(negative.full_width) };
-        let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline };
-        let levels = r.reading(copy(), settings, Stage::Levels).histogram;
-        let curves = r.reading(copy(), settings, Stage::ManualCurves).histogram;
-        self.graph.purge();
-        Some(InputHistograms { levels, curves })
     }
 
     /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the
@@ -234,9 +213,11 @@ impl Engine {
     pub fn trim(&mut self) {
         self.fitted = None;
         self.measures = None;
+        self.read = [None, None];
         self.graph.purge();
     }
 
+    /// The graph and the pipeline, for a render the canvas never shows: an export reads them unproofed.
     pub fn parts(&mut self) -> (&mut Graph, &mut Pipeline) {
         (&mut self.graph, &mut self.pipeline)
     }

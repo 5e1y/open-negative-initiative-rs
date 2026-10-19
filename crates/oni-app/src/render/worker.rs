@@ -55,6 +55,9 @@ pub struct InputHistograms {
     pub curves: oni_measure::histogram::Histogram,
 }
 
+/// How long the hand rests before the input histograms are read on the full measuring copy.
+const REST: Duration = Duration::from_millis(150);
+
 /// `Negative.measureSmall`'s scale of the measuring copy.
 pub(crate) const MEASURE_SMALL: f64 = 0.35;
 
@@ -83,12 +86,28 @@ impl<I: Send + Sync + 'static> Worker<I> {
                 // The before is kept while its settings and the view hold, so a notch never renders it again.
                 let mut kept: Option<(PathBuf, PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
+                // The last job read on the small copy, read again on the full one once the hand rests.
+                let mut resting: Option<(PathBuf, Arc<I>, PipelineSettings)> = None;
                 loop {
                     let job = {
                         let (lock, wake) = &*shared;
                         let mut s = lock.lock().expect("render slot");
                         while s.waiting.is_none() && !s.closed {
-                            s = wake.wait(s).expect("render slot");
+                            if resting.is_none() {
+                                s = wake.wait(s).expect("render slot");
+                                continue;
+                            }
+                            let (next, waited) = wake.wait_timeout(s, REST).expect("render slot");
+                            s = next;
+                            if waited.timed_out() && s.waiting.is_none() && !s.closed {
+                                drop(s);
+                                if let Some((path, negative, settings)) = resting.take()
+                                    && let Some(inputs) = renderer.inputs(&negative, &settings, false)
+                                {
+                                    deliver(Delivery::Inputs { path, inputs });
+                                }
+                                s = lock.lock().expect("render slot");
+                            }
                         }
                         if s.closed {
                             return;
@@ -132,14 +151,15 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     };
                     let drawn = done.is_ok();
                     deliver(Delivery::Render(done.map(|d| Done { before, ..d })));
-                    // At the image's own cadence, and always on the last job of a burst, so the hand's
-                    // release lands the full copy's reading.
+                    // At the image's own cadence, and always on the last job of a burst; under the hand on
+                    // the small copy, the full one read once the hand has rested.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
                     if drawn && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_inputs = Instant::now();
-                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held && !quiet) {
+                        if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held) {
                             deliver(Delivery::Inputs { path: job.path.clone(), inputs });
                         }
+                        resting = job.held.then(|| (job.path.clone(), job.negative.clone(), job.settings.clone()));
                     }
                 }
             })
