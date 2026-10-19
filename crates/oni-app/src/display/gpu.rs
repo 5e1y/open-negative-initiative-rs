@@ -165,6 +165,11 @@ impl Gpu {
         true
     }
 
+    /// A count is on the GPU or waits to be read.
+    pub fn counting(&self) -> bool {
+        *self.mapping.lock().expect("histogram mapping") != Mapping::Idle
+    }
+
     /// The last count once its readback has landed, which a `device.poll` delivers; none before.
     pub fn histogram(&self) -> Option<oni_measure::histogram::Histogram> {
         let mut m = self.mapping.lock().expect("histogram mapping");

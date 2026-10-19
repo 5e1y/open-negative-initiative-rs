@@ -217,7 +217,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);
-                let mut report = format!("{notches}\n{}", ctl.state.borrow().notches().cadence(from));
+                let mut report = format!("{notches}\n{}\n{}", ctl.state.borrow().notches().cadence(from), ctl.state.borrow().notches().histograms());
                 if mode == Mode::Compare {
                     let s = ctl.state.borrow();
                     report.push_str(&format!("\ncompare: {} before rendered over the drag, split at {:.2}", s.befores(), s.split().unwrap_or(-1.0)));

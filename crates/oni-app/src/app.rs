@@ -53,6 +53,7 @@ mod menus;
 mod wiring;
 mod workers;
 mod shell;
+mod canvas_gpu;
 mod opening;
 mod state_read;
 use state_read::LoadBar;
@@ -62,6 +63,8 @@ use workers::{paint, picture_view, prepared, read_disk, zebra};
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
+/// How often a histogram under way is looked for: its count takes well under a millisecond.
+const HISTOGRAM_POLL: Duration = Duration::from_millis(2);
 /// `DS.Control.cropHint` and `DS.Space.md`: the crop badge's margin inside the view and its rise above the frame.
 const BADGE_MARGIN: f64 = 32.0;
 const BADGE_RISE: f64 = 16.0;
@@ -217,23 +220,8 @@ struct Gpu {
     uncounted: bool,
     seed: u32,
     screen: display::Screen,
-}
-
-impl Gpu {
-    /// The histogram counted on a frame already shown, once its readback has landed; then the
-    /// newest frame is counted, so the GPU counts at the pulse's pace and never on a notch.
-    fn landed(&mut self) -> Option<oni_measure::histogram::Histogram> {
-        let _ = self.device.poll(wgpu::PollType::Poll);
-        let landed = self.kernel.histogram();
-        if self.uncounted
-            && let Some(Picture::Resident(picture)) = &self.current
-            && let Some(view) = picture.view()
-            && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen)
-        {
-            self.uncounted = false;
-        }
-        landed
-    }
+    /// When the last count started, which holds the counts to the image's cadence.
+    counted_at: Option<Instant>,
 }
 
 pub struct State {
@@ -407,6 +395,8 @@ pub struct Ctl {
     trailing: Vec<Timer>,
     arrivals: Vec<Timer>,
     pulse: Timer,
+    /// Polls the histogram's readback while one is under way, so it lands within a frame.
+    histogram_watch: Timer,
     settle: Timer,
     stripes: Timer,
     scroll_idle: Timer,

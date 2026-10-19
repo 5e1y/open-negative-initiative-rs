@@ -3,6 +3,7 @@
 
 pub mod app;
 pub mod bench;
+pub mod decode_gate;
 pub mod display;
 pub mod editors;
 pub mod export;

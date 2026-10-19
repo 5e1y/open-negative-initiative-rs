@@ -117,9 +117,30 @@ pub struct Notches {
     gaps: Vec<(usize, Duration)>,
     last_shown: Option<Instant>,
     reported: usize,
+    /// From a frame's encode to its histogram on the panel, each.
+    histograms: Vec<Duration>,
 }
 
 impl Notches {
+    pub fn record_histogram(&mut self, lag: Duration) {
+        self.histograms.push(lag);
+    }
+
+    /// The histograms' lag behind their frames over the run, the bench's line.
+    pub fn histograms(&self) -> String {
+        if self.histograms.is_empty() {
+            return "histogram: none drawn".into();
+        }
+        let c = Centiles::of(&self.histograms);
+        format!(
+            "histogram: {} drawn, frame to panel p50 {:.1} ms, p99 {:.1} ms, worst {:.1} ms",
+            self.histograms.len(),
+            ms(c.p50),
+            ms(c.p99),
+            ms(c.worst)
+        )
+    }
+
     pub fn record(&mut self, end_to_end: Duration, shown: Instant) {
         self.latencies.push(end_to_end);
         if let Some(last) = self.last_shown {

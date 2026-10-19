@@ -48,7 +48,7 @@ impl Ctl {
                 (Some(size), Some(f)) => settled && s.viewport.needs_full_resolution(negative.size().0 as f64 / negative.full_width, f, size, viewport::NOMINAL_BUDGET),
                 _ => false,
             };
-            let build = (wants_full && full.is_none() && s.building_full.as_deref() != Some(path.as_str())).then(|| {
+            let build = (wants_full && full.is_none() && s.building_full.is_none()).then(|| {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });
@@ -133,8 +133,11 @@ impl Ctl {
     /// The open frame decoded again at full resolution off this thread, then shown where the view wants it.
     pub(in crate::app) fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
         let engine = self.engine.clone();
+        let ticket = crate::decode_gate::FULL.ask();
         std::thread::spawn(move || {
-            let built = render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d));
+            let built = crate::decode_gate::FULL
+                .run(ticket, || render::decode_full(Path::new(&path), converted).and_then(|d| engine.lock()?.full(d)))
+                .unwrap_or_else(|| Err("superseded".into()));
             with_shell(move |c| {
                 let open = c.state.borrow().open_path() == Some(path.as_str());
                 {
@@ -146,9 +149,8 @@ impl Ctl {
                         Err(e) => timing::line(&format!("full resolution not built: {e}")),
                     }
                 }
-                if open {
-                    c.request_render();
-                }
+                // Another frame opened meanwhile asks its own full resolution now that this one is done.
+                c.request_render();
             });
         });
     }

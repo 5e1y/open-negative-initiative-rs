@@ -158,8 +158,10 @@ impl Ctl {
             g.current = Some(picture);
             // A region is not the picture: its histogram would describe what the zoom shows.
             g.uncounted = whole;
+            g.count_due();
             (imported, shown)
         };
+        self.watch_histogram();
         if let (Some(image), _) = &image {
             w.global::<Canvas>().set_frame(image.clone());
         }

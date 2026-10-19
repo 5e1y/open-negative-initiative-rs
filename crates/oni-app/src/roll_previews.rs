@@ -263,8 +263,10 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
             }
             Work::Full(path) => {
                 let (queue, post) = (queue.clone(), post.clone());
+                let ticket = crate::decode_gate::ROLL_FULL.ask();
                 std::thread::spawn(move || {
-                    let full = render::decode_full(Path::new(&path), reading(&path)).ok().map(|d| encoded(&d.linear, seed));
+                    let decode = || render::decode_full(Path::new(&path), reading(&path)).ok().map(|d| encoded(&d.linear, seed));
+                    let Some(full) = crate::decode_gate::ROLL_FULL.run(ticket, decode) else { return };
                     let (lock, _) = &*queue;
                     let still = { let q = lock.lock().expect("roll previews"); q.session == session && q.scan.is_none() && q.full_at.is_none() };
                     if still && let Some(b) = full {

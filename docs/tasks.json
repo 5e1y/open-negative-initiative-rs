@@ -658,5 +658,13 @@
     "status": "in progress",
     "detail": "Twelve read-only reviewers covered the workspace; each finding sampled was checked by grep before acting. Removed: max_params, THUMB_SIDE, zoom_over_fit, resting_position, circle, archive_paths, is_roll_field, the Gpu area_average/area_maximum wrappers, missing_paths, is_listing, maker_crop, tab_title, beyond_working, rotated_bounding_size, ANCHOR_CLAMP, HUNT_REACH, Discovery::announce, cert_pem/key_pem, Surveys::covering; the TIFF doc now says associated alpha.",
     "outcome": ""
+  },
+  {
+    "id": 93,
+    "type": "perf",
+    "title": "The histogram follows each frame within a few milliseconds; full decodes one at a time, the latest winning",
+    "status": "done",
+    "detail": "The histogram was counted and read at the 100 ms pulse, so it trailed the picture by 100 to 200 ms. It is now counted right after each frame is encoded, at most once an image interval (30 Hz), and its readback is polled every 2 ms while one is under way, then traced at once. The open frame's preview, its full resolution and Prepare the Roll's full scan each go through a gate: one decode at a time, a decode superseded before its turn never runs (a quick walk piled one 0.4 to 0.7 GB decode per frame).",
+    "outcome": "Real window, 60 notches: frame to histogram on the panel p50 5.9 to 7.3 ms, p99 20 to 36 ms (the input distributions' readback on the same GPU); every check green."
   }
 ]

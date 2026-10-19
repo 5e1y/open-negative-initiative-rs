@@ -62,8 +62,9 @@ impl Ctl {
         self.state.borrow_mut().negative = None;
         let path = path.to_string();
         let engine = self.engine.clone();
+        let ticket = crate::decode_gate::PREVIEW.ask();
         std::thread::spawn(move || {
-            let prepared = prepared(&engine, &path, converted);
+            let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared(&engine, &path, converted)) else { return };
             with_shell(move |c| match prepared {
                 Ok(negative) => {
                     c.state.borrow().previews.lock().expect("previews").insert(path.clone(), negative.clone());
