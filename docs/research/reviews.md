@@ -25,7 +25,7 @@ and what is left, most noticed first.
 - `render::Previews` "unused": it is the open frames' preview cache, imported by `app.rs`.
 - `track::DOUBLE_CLICK` "dead": the editors and the export card use it.
 - `Levels::resting_mid` returning 0.67 in both arms: a faithful copy of Swift's `restingMid`.
-- The thumbnail cap of 2,500 tiles: Swift's `memoryLimit`; bounded, not a leak (see the plan for bytes).
+- The thumbnail cap: bounded; held to 1,000 tiles (about 270 MB) with recency on use (#114).
 - `Notches` growing: about 4 MB an hour of continuous dragging.
 
 ## Left, by how much a user notices

@@ -826,5 +826,13 @@
     "status": "done",
     "detail": "Owner's report: the cards came out of nowhere 30-40 px above the canvas's edge. The deck was laid a card padding above the canvas's bottom and narrowed by it on each side; Swift overlays PresetCarousel on NegativeView's bottom edge across its width. The presets bench aimed at the lift's band the photo now keeps, and is aimed at the strip.",
     "outcome": "Window checks presets and preset_deck green; the real-window presets bench raises the deck, previews 2.30 EV under the pointer and applies it on the click."
+  },
+  {
+    "id": 114,
+    "type": "perf",
+    "title": "The tile memory held to about 270 MB, the least recently shown dropped first",
+    "status": "done",
+    "detail": "Swift's memoryLimit of 2,500 tiles is about 680 MB of RGBA at 320 x 213, too much beside an editor on an 8 GB Mac, and its eviction dropped the oldest inserted even when on screen. The cap is 1,000 tiles and each read notes its use, so the least recently shown half goes; a dropped tile is read again from its JPEG.",
+    "outcome": "Unit check: past the ceiling half remains, the newest kept; a tile read again outlives newer ones (twin of the insertion order). Steady memory of a 2,000-photo library about 410 MB lower."
   }
 ]

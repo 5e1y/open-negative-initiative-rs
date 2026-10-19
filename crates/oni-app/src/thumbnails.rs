@@ -3,7 +3,8 @@
 //! only in the thumbnails pass, for a photo with no file, or after an edit.
 
 use crate::display::Screen;
-use std::collections::{HashMap, VecDeque};
+use std::cell::Cell;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -16,8 +17,9 @@ pub const RENDER_VERSION: u32 = 11;
 pub const REFRESH_DELAY: Duration = Duration::from_millis(2000);
 /// `Thumbnails.compression`: not told from 0.8 at a tile's size, and 37 % lighter.
 pub const COMPRESSION: f64 = 0.6;
-/// `memoryLimit`: about 0.4 MB a tile, so a large library holds under 1 GB.
-pub const MEMORY_LIMIT: usize = 2500;
+/// Tiles held in memory: 273 KB each at 320 x 213, so about 270 MB, which an 8 GB Mac can spare;
+/// one past it is read again from its JPEG.
+pub const MEMORY_LIMIT: usize = 1000;
 /// `Library.waitingMark`'s photos are not read yet and have no file.
 pub const PENDING: &str = oni_library::library::WAITING_MARK;
 
@@ -109,21 +111,29 @@ pub fn to_screen(mut rgba: Vec<u8>, screen: Screen) -> Vec<u8> {
     rgba
 }
 
-/// The tiles in memory by photo path, the oldest half dropped past `MEMORY_LIMIT`, never what just
-/// arrived, which a scroll would fetch again.
+/// The tiles in memory by photo path, the least recently shown half dropped past `MEMORY_LIMIT`,
+/// never what just arrived, which a scroll would fetch again.
 pub struct Memory<T> {
-    held: HashMap<String, T>,
-    order: VecDeque<String>,
+    held: HashMap<String, (T, Cell<u64>)>,
+    clock: Cell<u64>,
     limit: usize,
 }
 
 impl<T: Clone> Memory<T> {
     pub fn new(limit: usize) -> Memory<T> {
-        Memory { held: HashMap::new(), order: VecDeque::new(), limit }
+        Memory { held: HashMap::new(), clock: Cell::new(0), limit }
     }
 
+    fn tick(&self) -> u64 {
+        self.clock.set(self.clock.get() + 1);
+        self.clock.get()
+    }
+
+    /// The tile, its use noted so a tile on screen outlives one scrolled past.
     pub fn get(&self, path: &str) -> Option<T> {
-        self.held.get(path).cloned()
+        let (tile, used) = self.held.get(path)?;
+        used.set(self.tick());
+        Some(tile.clone())
     }
 
     pub fn contains(&self, path: &str) -> bool {
@@ -139,27 +149,25 @@ impl<T: Clone> Memory<T> {
     }
 
     pub fn insert(&mut self, path: String, tile: T) {
-        if self.held.insert(path.clone(), tile).is_none() {
-            self.order.push_back(path);
-        }
+        let used = Cell::new(self.tick());
+        self.held.insert(path, (tile, used));
         if self.held.len() <= self.limit {
             return;
         }
+        let mut uses: Vec<(u64, String)> = self.held.iter().map(|(p, (_, u))| (u.get(), p.clone())).collect();
+        uses.sort_unstable();
         let stale = self.held.len() - self.limit / 2;
-        for old in self.order.drain(..stale) {
+        for (_, old) in uses.into_iter().take(stale) {
             self.held.remove(&old);
         }
     }
 
     pub fn remove(&mut self, path: &str) {
-        if self.held.remove(path).is_some() {
-            self.order.retain(|p| p != path);
-        }
+        self.held.remove(path);
     }
 
     pub fn clear(&mut self) {
         self.held.clear();
-        self.order.clear();
     }
 }
 
@@ -224,6 +232,14 @@ mod tests {
         }
         assert_eq!(m.len(), 2, "past the ceiling the oldest go down to half");
         assert!(m.contains("p4") && m.contains("p3"));
+        // A tile shown again outlives newer ones scrolled past.
+        let mut r = Memory::new(4);
+        for i in 0..4 {
+            r.insert(format!("p{i}"), i);
+        }
+        r.get("p0");
+        r.insert("p4".to_string(), 4);
+        assert!(r.contains("p0") && r.contains("p4") && !r.contains("p1"), "the shown tile is kept");
         // Twin: a re-insert does not count twice towards the ceiling.
         let mut n = Memory::new(4);
         for _ in 0..10 {
