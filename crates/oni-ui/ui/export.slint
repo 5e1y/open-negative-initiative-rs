@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, Menu, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
+import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
 
 // One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
 export struct ExportLine {
@@ -134,7 +134,7 @@ component FrameFields inherits VerticalLayout {
     FormRow {
         label: "Name";
         SuffixField {
-            text: root.line.name;
+            value: root.line.name;
             suffix: Exporting.extension;
             enabled: root.line.ready;
             edited(t) => { Exporting.edited(root.at, "name", t); }
@@ -142,11 +142,11 @@ component FrameFields inherits VerticalLayout {
     }
     FormRow {
         label: "Camera";
-        TextField { text: root.line.camera; placeholder: "Leica M6"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
+        TextField { value: root.line.camera; placeholder: "Leica M6"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
     }
     FormRow {
         label: "Lens";
-        TextField { text: root.line.lens; placeholder: "Summicron 50 mm"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
+        TextField { value: root.line.lens; placeholder: "Summicron 50 mm"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
     }
     FormRow {
         label: "Film";
@@ -157,19 +157,19 @@ component FrameFields inherits VerticalLayout {
     }
     FormRow {
         label: "ISO";
-        TextField { text: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
+        TextField { value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
     }
     FormRow {
         label: "Date";
-        TextField { text: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
+        TextField { value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
     }
     FormRow {
         label: "Artist";
-        TextField { text: root.line.artist; placeholder: "Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
+        TextField { value: root.line.artist; placeholder: "Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
     }
     FormRow {
         label: "Copyright";
-        TextField { text: root.line.copyright; placeholder: "© 2026 Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
+        TextField { value: root.line.copyright; placeholder: "© 2026 Your name"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
     }
     Spacer { }
 }
@@ -222,18 +222,9 @@ component QualitySlider inherits Slider {
 // `ExportSpaceField`: four matrix spaces or an installed ICC profile; the chip shows it compact.
 export component SpaceField inherits VerticalLayout {
     in property <bool> compact;
+    // Asked before a key opens a window of its own, so a popover holding the field closes first.
+    callback dismiss();
     spacing: FormStyle.gap;
-    // Popups cannot be conditional, so both menus sit on the field itself.
-    profiles := Menu {
-        entries: Exporting.profiles;
-        current: Exporting.profile;
-        chosen(i) => { Exporting.profile-picked(i); }
-    }
-    choices := Menu {
-        entries: ["Choose a profile…", "Load a Profile…"];
-        current: 0;
-        chosen(i) => { Exporting.pending-picked(i); }
-    }
     if !root.compact: HorizontalLayout {
         alignment: start;
         if News.space != "": NewsSeal { word: News.space; note: News.space-note; read => { News.read("space.1.3.1"); } }
@@ -258,9 +249,11 @@ export component SpaceField inherits VerticalLayout {
     }
     if Exporting.on-profile: Field {
         label: "Profile";
-        Picker {
+        MenuPicker {
             value: Exporting.profiles[Exporting.profile];
-            open => { profiles.show(); }
+            entries: Exporting.profiles;
+            current: Exporting.profile;
+            chosen(i) => { Exporting.profile-picked(i); }
         }
         if Exporting.profile-note != "": Note { text: Exporting.profile-note; }
     }
@@ -274,16 +267,21 @@ export component SpaceField inherits VerticalLayout {
     }
     if Exporting.pending: Field {
         label: "Profile";
-        Picker {
+        MenuPicker {
             value: "Choose a profile…";
-            open => { choices.show(); }
+            entries: ["Choose a profile…", "Load a Profile…"];
+            current: 0;
+            chosen(i) => {
+                if (i == 1) { root.dismiss(); }
+                Exporting.pending-picked(i);
+            }
         }
         Note { text: Exporting.pending-note; }
     }
     if !root.compact || Exporting.on-profile || Exporting.pending: HorizontalLayout {
         spacing: Space.xs;
-        Button { text: "Load a Profile…"; horizontal-stretch: 1; clicked => { Exporting.load-profile(); } }
-        Button { text: "Get Paper Profiles…"; horizontal-stretch: 1; clicked => { Exporting.get-papers(); } }
+        Button { text: "Load a Profile…"; horizontal-stretch: 1; clicked => { root.dismiss(); Exporting.load-profile(); } }
+        Button { text: "Get Paper Profiles…"; horizontal-stretch: 1; clicked => { root.dismiss(); Exporting.get-papers(); } }
     }
 }
 
@@ -338,7 +336,7 @@ export component ExportPanel inherits Surface {
                         spacing: Space.s;
                         alignment: start;
                         width-box := NumberField {
-                            text: Exporting.width-text;
+                            value: Exporting.width-text;
                             placeholder: "W";
                             enabled: Exporting.size-enabled;
                             accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
@@ -346,7 +344,7 @@ export component ExportPanel inherits Surface {
                         }
                         Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
                         height-box := NumberField {
-                            text: Exporting.height-text;
+                            value: Exporting.height-text;
                             placeholder: "H";
                             enabled: Exporting.size-enabled;
                             accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
@@ -402,7 +400,7 @@ export component SpaceChip inherits Chip {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
         Label { text: "Working Space"; role: TextRole.section; }
-        SpaceField { compact: true; }
+        SpaceField { compact: true; dismiss => { chooser.close(); } }
     }
 }
 
@@ -487,7 +485,7 @@ export component PaperSheet inherits BoardSheet {
                 text: "The page lists no profile right now. Open it to look by hand.";
             }
             if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
-                text: Exporting.paper-filter;
+                value: Exporting.paper-filter;
                 placeholder: "Filter, e.g. P900 matte";
                 edited(t) => { Exporting.paper-filter-typed(t); }
             }

@@ -3,8 +3,8 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, Stroke, State, Type, MenuStyle, RowStyle, TileStyle, FieldStyle, ButtonStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Divider } from "base.slint";
-import { Button, ButtonSize, Look } from "controls.slint";
-import { MenuEntry, MenuPanel } from "containers.slint";
+import { Button, ButtonSize, Look, Picker } from "controls.slint";
+import { MenuEntry, MenuPanel, Menu } from "containers.slint";
 import { Icons } from "icons.slint";
 
 // `DSMedalPicker`: bronze, silver and gold, the current one lit; `current` is -1 for none lit.
@@ -55,7 +55,9 @@ export component ContextMenu inherits PopupWindow {
     in property <[MenuLine]> lines;
     callback chosen(int);
     close-policy: close-on-click-outside;
-    MenuPanel {
+    width: panel.width;
+    height: panel.height;
+    panel := MenuPanel {
         for line[i] in root.lines: VerticalLayout {
             if line.rule: Divider { }
             MenuEntry {
@@ -65,6 +67,34 @@ export component ContextMenu inherits PopupWindow {
                 activated => { root.chosen(i); }
             }
         }
+    }
+}
+
+// A picker dropping its words under its field, the chosen index back through `chosen`.
+export component MenuPicker inherits Picker {
+    in property <[string]> entries;
+    in property <int> current: -1;
+    callback chosen(int);
+    open => { menu.show(); }
+    menu := Menu {
+        x: root.field-x;
+        y: root.height;
+        entries: root.entries;
+        current: root.current;
+        chosen(i) => { root.chosen(i); }
+    }
+}
+
+// A picker dropping a context menu's lines under its field.
+export component LinesPicker inherits Picker {
+    in property <[MenuLine]> lines;
+    callback chosen(int);
+    open => { menu.show(); }
+    menu := ContextMenu {
+        x: root.field-x;
+        y: root.height;
+        lines: root.lines;
+        chosen(i) => { root.chosen(i); menu.close(); }
     }
 }
 

@@ -196,7 +196,10 @@ export component Menu inherits PopupWindow {
     in property <[string]> entries;
     in property <int> current: -1;
     callback chosen(int);
-    MenuPanel {
+    // Sized as its panel, so a window's edge pushes it no further than its own width.
+    width: panel.width;
+    height: panel.height;
+    panel := MenuPanel {
         for word[i] in root.entries: MenuEntry {
             text: word;
             checked: i == root.current;

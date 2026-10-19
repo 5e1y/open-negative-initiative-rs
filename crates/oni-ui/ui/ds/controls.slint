@@ -120,9 +120,10 @@ export component ButtonGroup inherits HorizontalLayout {
     alignment: start;
 }
 
-// A switch: a thumb that slides to the lit side.
+// A switch: a thumb that slides to the lit side. Its owner holds the state: a click only asks,
+// so an undo or another photo moves the thumb as much as the hand does.
 export component Toggle inherits Rectangle {
-    in-out property <bool> on;
+    in property <bool> on;
     in property <string> label;
     in property <bool> enabled: true;
     callback toggled(bool);
@@ -146,10 +147,7 @@ export component Toggle inherits Rectangle {
     }
     TouchArea {
         enabled: root.enabled;
-        clicked => {
-            root.on = !root.on;
-            root.toggled(root.on);
-        }
+        clicked => { root.toggled(!root.on); }
     }
 }
 
@@ -283,6 +281,8 @@ export component Slider inherits VerticalLayout {
 // `DSTextField`: the field on the canvas's dark, its edge lit while it holds the focus.
 export component TextField inherits Rectangle {
     in-out property <string> text <=> input.text;
+    // The owner's text, pushed in at each change: a binding on `text` dies at the first key typed.
+    in property <string> value;
     in property <string> placeholder;
     in property <bool> focused-look;
     in property <bool> enabled: true;
@@ -293,6 +293,8 @@ export component TextField inherits Rectangle {
     callback left(string);
     public function take-focus() { input.focus(); }
     public function take-focus-selecting() { input.focus(); input.select-all(); }
+    init => { if (root.value != "") { input.text = root.value; } }
+    changed value => { input.text = root.value; }
     height: FieldStyle.height;
     border-radius: FieldStyle.radius;
     background: Colour.canvas;
@@ -327,11 +329,13 @@ export component TextField inherits Rectangle {
 export component Picker inherits HorizontalLayout {
     in property <string> label;
     in property <string> value;
+    // Where the field starts, which a menu dropped under it aligns on.
+    out property <length> field-x: field.x;
     callback open();
     spacing: Space.s;
     height: FieldStyle.height;
     if root.label != "": Label { text: root.label; }
-    Rectangle {
+    field := Rectangle {
         horizontal-stretch: 1;
         border-radius: FieldStyle.radius;
         background: area.has-hover ? Colour.raised : Colour.canvas;

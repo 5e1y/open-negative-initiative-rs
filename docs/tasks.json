@@ -724,6 +724,14 @@
     "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
   },
   {
+    "id": 101,
+    "type": "fix",
+    "title": "Panel controls follow their owner: switches after an undo, Crop and Source Encoding resets, menus under their picker, size boxes after typing",
+    "status": "done",
+    "detail": "From the panel reviewers' findings, each confirmed in the code: Toggle assigned its own `on` on click, so every bound switch (flat-field, Vertical, export, Prepare, presets, report log) stopped following undo or another photo; it now only asks and the owner republishes. Source Encoding's RESET sent block 12, past Block::ALL, and did nothing; it now writes no encoding as Swift's `resetting: $settings.sourceEncoding, to: nil`. The Crop section gained Swift's RESET (Geometry.reset(keeping:)). The flat-field mask and export profile menus opened at their block's corner: MenuPicker and LinesPicker drop them under the field, and Menu and ContextMenu are sized as their panel. The chip's popover closes before Load a Profile… and Get Paper Profiles… open their window. TextField gained `value`, pushed in on change, so Full resolution or a preset reaches a size or EXIF box once typed in.",
+    "outcome": "Two window checks by the pointer (panel_bindings): each fails with its fix reverted (switch after undo, Crop reset, encoding reset, menu line under the picker, W box after Full resolution, popover after Load a Profile…)."
+  },
+  {
     "id": 102,
     "type": "fix",
     "title": "Sheets are modal: Escape from a sheet's field, no scrim dismissal of typed work, nothing behind a sheet or Prepare the Roll moves, the export's Replace prompt answers",

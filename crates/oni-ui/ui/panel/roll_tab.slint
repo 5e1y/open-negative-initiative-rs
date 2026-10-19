@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Picker, Button, IconButton, Toggle, Label, WarningBadge, Note, Warning, Field, ContextMenu } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, IconButton, Toggle, Label, WarningBadge, Note, Warning, Field, LinesPicker } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -62,10 +62,11 @@ export component RollPane inherits Pane {
             Toggle { label: "Flat-field"; on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
             IconButton { icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
         }
-        if PanelState.flat-field-on: Picker {
+        if PanelState.flat-field-on: LinesPicker {
             label: "Mask";
             value: PanelState.mask-title;
-            open => { masks.show(); }
+            lines: PanelState.mask-lines;
+            chosen(i) => { PanelState.mask-chosen(i); }
         }
         if PanelState.flat-field-on && PanelState.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
         Button {
@@ -98,16 +99,14 @@ export component RollPane inherits Pane {
             enabled: PanelState.flat-picked > 0;
             clicked => { PanelState.flat-apply-selection(); }
         }
-        masks := ContextMenu {
-            lines: PanelState.mask-lines;
-            chosen(i) => { PanelState.mask-chosen(i); masks.close(); }
-        }
     }
     if PanelState.undeclared: Block {
         title: "Source Encoding";
         help: "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.";
-        block: 12;
+        // No store block: the key writes no encoding, so any index only shows it.
+        block: 0;
         modified: PanelState.encoding-modified;
+        reset(b) => { PanelState.encoding-reset(); }
         folded-by-default: true;
         Field {
             label: "Read as";

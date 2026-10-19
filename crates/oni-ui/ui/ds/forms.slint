@@ -78,6 +78,7 @@ export component FormRow inherits HorizontalLayout {
 // A text field with a fixed word after the typing, as a file name takes its extension.
 export component SuffixField inherits HorizontalLayout {
     in-out property <string> text <=> field.text;
+    in property <string> value;
     in property <string> placeholder;
     in property <string> suffix;
     in property <bool> enabled: true;
@@ -86,6 +87,7 @@ export component SuffixField inherits HorizontalLayout {
     opacity: root.enabled ? 1 : State.disabled;
     field := TextField {
         horizontal-stretch: 1;
+        value: root.value;
         placeholder: root.placeholder;
         enabled: root.enabled;
         edited(t) => { root.edited(t); }
