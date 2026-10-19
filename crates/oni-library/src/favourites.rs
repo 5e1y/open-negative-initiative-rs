@@ -28,8 +28,7 @@ impl Favourites {
 
     /// `None` while the file was never written, which is what seeds it from the roots once.
     pub fn load(support: &Path) -> Option<Favourites> {
-        let data = std::fs::read(Self::file_path(support)).ok()?;
-        serde_json::from_slice(&data).ok()
+        crate::read_json(&Self::file_path(support))
     }
 
     /// A plain `JSONEncoder`'s text: compact, keys in declaration order.
@@ -412,4 +411,23 @@ mod tests {
         let (waited, gave) = timed(false);
         assert!(waited >= 0.9 && gave, "waited {waited:.2} s");
     }
+
+    /// A favourites file that stays unreadable is set aside whole before the seeded one is written;
+    /// the twin, a file that reads, stays where it is.
+    #[test]
+    fn an_unreadable_favourites_file_is_set_aside_never_written_over() {
+        let scratch = Scratch::new("favourites-unreadable");
+        let file = Favourites::file_path(scratch.path());
+        let torn = b"{\"version\": 1, \"paths\": [\"/Volumes/T7/Scans\"";
+        std::fs::write(&file, torn).unwrap();
+        assert_eq!(Favourites::load(scratch.path()), None);
+        assert!(!file.exists(), "the torn file left its place");
+        let aside: Vec<_> = std::fs::read_dir(scratch.path()).unwrap().flatten().filter(|e| e.file_name().to_string_lossy().starts_with("favourites.json.unreadable-")).collect();
+        assert_eq!(aside.len(), 1);
+        assert_eq!(std::fs::read(aside[0].path()).unwrap(), torn);
+        std::fs::write(&file, b"{\"version\": 1, \"paths\": [\"/Volumes/T7/Scans\"]}").unwrap();
+        assert_eq!(Favourites::load(scratch.path()).map(|f| f.paths), Some(vec!["/Volumes/T7/Scans".to_string()]));
+        assert!(file.exists(), "twin: a file that reads stays");
+    }
 }
+

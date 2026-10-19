@@ -41,12 +41,21 @@ pub fn move_items(moves: &[Move]) -> Vec<Move> {
         .iter()
         .filter(|m| {
             let (from, to) = (Path::new(&m.from), Path::new(&m.to));
-            if to.exists() || std::fs::rename(from, to).is_err() {
+            let (side_from, side_to) = (sidecar::url_for(from), sidecar::url_for(to));
+            if to.exists() {
                 return false;
             }
-            let side = sidecar::url_for(from);
-            if side.exists() {
-                let _ = std::fs::rename(&side, sidecar::url_for(to));
+            // The settings go first and come back if the photo cannot follow, so a photo never
+            // lands without them.
+            let carries = side_from.exists();
+            if carries && std::fs::rename(&side_from, &side_to).is_err() {
+                return false;
+            }
+            if std::fs::rename(from, to).is_err() {
+                if carries {
+                    let _ = std::fs::rename(&side_to, &side_from);
+                }
+                return false;
             }
             true
         })
@@ -238,5 +247,28 @@ mod tests {
         // Twin: with every name free, the three move on their own names.
         let clear = moves(&triplet, &p("Clear"));
         assert_eq!(clear.iter().map(|m| name(&m.to)).collect::<Vec<_>>(), ["b.ARW", "g.ARW", "r.ARW"]);
+    }
+
+    /// A photo whose settings cannot follow it stays with them; the old order moved the photo first
+    /// and left it without its settings. A stale file in the settings' place is replaced, as before.
+    #[test]
+    fn a_photo_never_lands_without_its_settings() {
+        let scratch = Scratch::new("roll-folder-sidecars");
+        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
+        let (a, b) = (paths::join(&root, "a.RW2"), paths::join(&root, "b.RW2"));
+        for (p, settings) in [(&a, &b"{\"a\": 1}"[..]), (&b, &b"{\"b\": 1}"[..])] {
+            touch(p, b"frame");
+            touch(&side(p), settings);
+        }
+        let into = paths::join(&root, "Roll");
+        // A folder where a's settings would go, which no rename may replace; a stale file where b's go.
+        std::fs::create_dir_all(side(&paths::join(&into, "a.RW2"))).unwrap();
+        touch(&side(&paths::join(&into, "b.RW2")), b"{\"stale\": 1}");
+        let asked = [Move { from: a.clone(), to: paths::join(&into, "a.RW2") }, Move { from: b.clone(), to: paths::join(&into, "b.RW2") }];
+        let done = move_items(&asked);
+        assert!(exists(&a) && std::fs::read(side(&a)).unwrap() == b"{\"a\": 1}", "a stayed with its settings");
+        assert!(!exists(&paths::join(&into, "a.RW2")), "twin: a never landed without them");
+        assert_eq!(done.len(), 1);
+        assert_eq!(std::fs::read(side(&paths::join(&into, "b.RW2"))).unwrap(), b"{\"b\": 1}", "b took its settings");
     }
 }

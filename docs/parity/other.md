@@ -56,7 +56,7 @@ Statuses are defined in [README.md](README.md).
 |---|---|---|---|---|---|
 | Quit waits for the sidecar, refuses on a failed write | `Pipeline/QuitGuard.swift:31` | `app.rs` `close_requested`, `Pending::QuitAnyway` | done | Asks with Swift's words, Cancel the default | oni-app/tests/quit.rs::closing_writes_the_last_settings_and_a_failed_write_asks_first |
 | A newer sidecar opens read-only | `Pipeline/Sidecar.swift` | `oni-settings` sidecar | done | | `oni-settings/tests/real_files.rs::a_newer_format_opens_read_only_and_is_never_rewritten` |
-| Sidecar batches off the main thread | `Pipeline/SidecarBatch.swift` | none | missing | | no check |
+| Sidecar batches off the main thread | `Pipeline/SidecarBatch.swift` | `oni-core/src/store/commands.rs` `modify_with` | partial | A batch's sidecars are read side by side and written side by side on a few threads, the transforms on the interface thread, which still waits for the batch (14 ms for a roll of 38) | no check |
 | Main-thread watchdog, anonymous console log | `Pipeline/Diagnostics.swift` | none | missing | | no check |
 | Cache budget follows the machine | `Pipeline/MemoryBudget.swift` | `oni-app/src/viewport.rs` | partial | The budget formula is ported but always fed 24 Mpx; previews are a fixed four | `oni-app/src/render.rs::previews_keep_the_last_four_used` |
 | Frame-rate meter `--fps` | `Pipeline/FrameRate.swift` | `oni-app/src/timing.rs` (`ONI_BENCH`) | done | | `oni-app/src/timing.rs::the_centiles_read_the_slow_tail_and_the_gaps_between_frames` |

@@ -21,19 +21,19 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 140 | 10 | 1 | 142 of 151 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 142 | 9 | 0 | 142 of 151 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 79 | 9 | 2 | 86 of 90 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
-| Presets, windows, help, updates, life cycle | [other.md](other.md) | 33 | 11 | 4 | 38 of 48 |
+| Presets, windows, help, updates, life cycle | [other.md](other.md) | 33 | 12 | 3 | 38 of 48 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 122 | 3 | 5 | 121 of 130 |
-| **All** | | **411** | **34** | **12** | **425 of 457** |
+| **All** | | **413** | **34** | **10** | **425 of 457** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face
-6 / 1 / 0, bar 10 / 1 / 1, menus 33 / 3 / 0, keys 7 / 0 / 0, history 6 / 1 / 0 (done / partial /
+7 / 0 / 0, bar 11 / 1 / 0, menus 33 / 3 / 0, keys 7 / 0 / 0, history 6 / 1 / 0 (done / partial /
 missing).
 
-Thirteen rows are done with no check: Recheck Originals and Read the Folders Again (three rows), bare
+Fourteen rows are done with no check: the traffic lights' inset, Recheck Originals and Read the Folders Again (three rows), bare
 keys yielding to a text field, the exclusive key surfaces, the thumbnails' proof, the ground behind
 the frame, Space held for the hand tool, the offline `--check`, the bare medal keys, the Temperature
 and Tint track ends, Show Presets Folder and Roll of the N.
@@ -58,17 +58,20 @@ tab's block order and the menu titles now read as Swift's.
 
 ## The ten largest gaps, in port order
 
-1. **The contact sheet.** Composing a roll on its sheet, its window, its sidecar and reference,
-   detail off on a sheet, and Prepare the Roll writing one.
-2. **RGB passes.** Files grouped by pass order, Shift by One File, and the registration measured.
-3. **Updates.** The automatic check, Check for Updates…, the UPDATE key and the signed feed.
-4. **The year on film.** The journal written on each gesture and Show My Year on Film.
-5. **The pipette and the Details loupe.** The readings exist; no canvas gesture or loupe calls them.
-6. **The settings pasteboard.** Copy Settings stays in memory instead of the system pasteboard.
-7. **The editors' leftovers.** Help texts, fold memory, the histogram's morph, the 150 ms step.
-8. **The shell's leftovers.** The traffic lights' inset, the watchdog, key sounds and haptics.
-9. **Stocks.** The stock picker by brand with its icons, a roll row showing its stock.
-10. **The design system's interactions.** The pager, slots, the column resizer, hover fallback.
+1. **A frame not yet converted.** Its thumbnail and column picture are the pipeline's render where
+   Swift shows the file's embedded preview (#61).
+2. **Windows' own surfaces.** The settings on the system clipboard under the app's types, a signed
+   build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which European layouts take for AltGr.
+3. **Sound and touch.** No key click plays and no haptic answers; the choice to mute is kept.
+4. **The watchdog.** No count of the interface thread's blocks, so the console always says none.
+5. **Prepare the Roll's leftovers.** The plate's settle animation, a custom flat-field mask on the
+   roll's tiles, the tutorial videos.
+6. **Pickers.** The Dyes picker and Select Roll Type open nothing; a roll row shows no stock.
+7. **The archive tree's hand.** No context menu, no ⌘/⇧ selection, no drop on the project tree.
+8. **The design system's interactions.** The pager, slots, the column resizer, nested swipes and
+   the hover fallback.
+9. **Sidecar batches.** Read and written side by side, but the interface thread still waits for them.
+10. **The instruments.** Swift's command-line tools and 48 of its 162 self-checks have no twin.
 
 ## Port order
 

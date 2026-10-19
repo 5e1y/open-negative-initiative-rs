@@ -56,13 +56,15 @@ pub fn presets(support: &Path) -> PathBuf {
     support.join("FlatField Presets")
 }
 
-/// The list as the Swift app wrote it; empty when there is none or it does not read.
+/// The list as the Swift app wrote it; empty when there is none or it does not read, one that does
+/// not read set aside before the next write.
 pub fn entries(support: &Path) -> Vec<Entry> {
-    std::fs::read(index(support)).ok().and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default()
+    oni_library::read_json(&index(support)).unwrap_or_default()
 }
 
+/// Through a sibling and a rename, so a reader never meets half a list.
 fn write_entries(support: &Path, list: &[Entry]) -> bool {
-    serde_json::to_vec(list).is_ok_and(|data| std::fs::write(index(support), data).is_ok())
+    serde_json::to_vec(list).is_ok_and(|data| oni_library::write_atomically(&index(support), &data).is_ok())
 }
 
 fn stem(path: &Path) -> String {

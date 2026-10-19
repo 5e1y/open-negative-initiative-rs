@@ -338,9 +338,7 @@ pub fn file_path(support: &Path) -> PathBuf {
 }
 
 pub fn load(support: &Path) -> ProjectsFile {
-    let Some(mut file) =
-        std::fs::read(file_path(support)).ok().and_then(|data| serde_json::from_slice::<ProjectsFile>(&data).ok())
-    else {
+    let Some(mut file) = crate::read_json::<ProjectsFile>(&file_path(support)) else {
         return ProjectsFile::default();
     };
     file.projects = exclusive(&file.projects);

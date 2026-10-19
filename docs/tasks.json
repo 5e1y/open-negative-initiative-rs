@@ -1037,5 +1037,20 @@
     "title": "The flows bench says a roll was never prepared instead of waiting",
     "status": "done",
     "detail": "On a roll never prepared, requireRoll opens every frame on Prepare the Roll, which holds the editor; ONI_BENCH=flows waited forever for the gallery. It now ends at once naming the cause. Real flow on roll #8 after the night's merges: 3 frames picked, double-clicked open and edited through resizes, no failure."
+  },
+  {
+    "id": 141,
+    "type": "data",
+    "title": "An unreadable support file is set aside, never written over; a photo never moves without its settings",
+    "status": "done",
+    "detail": "From the reviews' data list. Favourites, projects and the flat-field index read through read_json: a file that does not parse is read again after 100 ms (the Swift app writes its mask list in place) and, still the same and still unreadable, renamed <name>.unreadable-<nanoseconds> before anything writes it; roots.json, which neither app writes, is only read. The flat-field index is written through a sibling and a rename. roll_folder::move_items moves a photo's sidecar first and brings it back if the photo cannot follow, where the photo moved first and could land without its settings. set_label, set_exif and set_roll_draft already refused an unreadable sidecar.",
+    "outcome": "Adversarial review twice: the first pass's refusal of a move onto an existing sidecar could split a roll on undo and was dropped; the torn-read race with the Swift app is covered by the second read. Checks: an unreadable favourites file set aside whole and its twin kept; a photo whose settings cannot follow stays with them, its twin the old order landing it bare; a stale sidecar at the destination replaced as before."
+  },
+  {
+    "id": 142,
+    "type": "docs",
+    "title": "The parity counts and the ten largest gaps as they stand",
+    "status": "done",
+    "detail": "The zoom bubble's column key and the traffic lights' inset are done (#125, #131); sidecar batches are partial (#89). The ten largest gaps rewritten from the partial and missing rows: an unconverted frame's embedded preview, Windows' own surfaces, sound and touch, the watchdog, Prepare the Roll's leftovers, pickers, the archive tree's hand, the design system's interactions, sidecar batches, the instruments."
   }
 ]

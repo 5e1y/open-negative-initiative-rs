@@ -46,7 +46,7 @@ pub fn later(date: Date, by: f64) -> Date {
 }
 
 /// Writes beside the target, then renames: a reader never sees half a file.
-pub(crate) fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+pub fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
     let directory = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(std::path::Path::new("."));
     let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
@@ -62,6 +62,27 @@ pub(crate) fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io:
         let _ = std::fs::remove_file(&temporary);
     }
     result
+}
+
+/// A JSON file of the support folder, `None` when absent or unreadable; one that stays unreadable,
+/// read again after another app's write would have landed, is set aside before anything writes it.
+pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Option<T> {
+    let data = std::fs::read(path).ok()?;
+    if let Ok(value) = serde_json::from_slice(&data) {
+        return Some(value);
+    }
+    // The Swift app writes its mask list in place: a torn read is retried once before it counts.
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    let again = std::fs::read(path).ok()?;
+    if let Ok(value) = serde_json::from_slice(&again) {
+        return Some(value);
+    }
+    if again == data {
+        let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
+        let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let _ = std::fs::rename(path, path.with_file_name(format!("{name}.unreadable-{stamp}")));
+    }
+    None
 }
 
 /// `Date` as a plain `JSONEncoder` writes a required one: seconds since 2001-01-01.
