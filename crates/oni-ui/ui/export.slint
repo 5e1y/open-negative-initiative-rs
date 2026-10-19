@@ -433,7 +433,8 @@ export component PaperSheet inherits BoardSheet {
     dismissed => { Exporting.papers-done(); }
     Scroller {
         width: FormStyle.paper-list;
-        VerticalLayout {
+        content-height: makers.preferred-height;
+        makers := VerticalLayout {
             padding-left: Space.s;
             padding-right: Space.s;
             padding-bottom: Space.m;

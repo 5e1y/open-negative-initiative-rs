@@ -1,5 +1,5 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
-import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
@@ -76,6 +76,15 @@ export component Catalogue inherits AppWindow {
     out property <length> key-x: rest-key.absolute-position.x + rest-key.width / 2;
     out property <length> key-y: rest-key.absolute-position.y + rest-key.height / 2;
     out property <bool> key-down: rest-key.down;
+    // The page's knob and a scroller whose content fits, where the scroll checks read them.
+    out property <bool> page-overflows: page.overflows;
+    out property <bool> page-lit: page.lit;
+    out property <length> page-x: page.content-x;
+    out property <bool> short-overflows: short.overflows;
+    out property <bool> short-lit: short.lit;
+    out property <length> short-x: short.absolute-position.x + short.width / 2;
+    out property <length> short-y: short.absolute-position.y + short.height / 2;
+    out property <length> short-right: short.absolute-position.x + short.width;
     property <[Swatch]> swatches: [
         { name: "ground", colour: Colour.ground }, { name: "canvas", colour: Colour.canvas },
         { name: "well", colour: Colour.well }, { name: "raised", colour: Colour.raised },
@@ -307,6 +316,17 @@ export component Catalogue inherits AppWindow {
                     TreeItem { title: "Folder"; caption: "2"; kind: RowKind.folder; expandable: true; expanded: true; }
                     TreeItem { title: "Roll #8"; caption: "10"; depth: 1; kind: RowKind.roll; expandable: true; }
                     TreeItem { title: "DSC_6432"; depth: 2; kind: RowKind.photo; selected: true; }
+                }
+                Group {
+                    title: "Scroller";
+                    short := Scroller {
+                        height: 3 * RowStyle.height;
+                        content-height: fits.preferred-height;
+                        fits := VerticalLayout {
+                            width: parent.width;
+                            ListRow { title: "Content that fits: no knob"; }
+                        }
+                    }
                 }
                 Group {
                     title: "Tiles";

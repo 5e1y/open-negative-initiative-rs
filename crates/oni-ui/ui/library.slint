@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, ScrollKnob, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -164,9 +164,10 @@ export component Grid inherits Surface {
     changed height => { Library.grid-x = self.absolute-position.x; Library.grid-y = self.absolute-position.y; Library.resized(self.width, self.height); }
     // One pointer for the whole document, as the cells keep no gesture of their own: Rust resolves
     // a cell or the ground from the point.
-    TouchArea {
+    pointer := TouchArea {
         scroll-event(event) => {
             Library.scrolled(-event.delta-y);
+            knob.stir();
             EventResult.accept
         }
         pointer-event(event) => {
@@ -218,6 +219,18 @@ export component Grid inherits Surface {
             }
         }
     }
+    // `GalleryEngine`'s ScrollView knob, over the document Rust scrolls.
+    knob := ScrollKnob {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        page: root.height;
+        whole: Library.content-height;
+        offset: Library.scroll;
+        hovered: pointer.has-hover;
+        across: pointer.mouse-x;
+    }
     if Library.empty-title != "": EmptyState {
         title: Library.empty-title;
         detail: Library.empty-detail;
@@ -254,84 +267,89 @@ component EditableTitle inherits VerticalLayout {
 // `InfoSidebar`: the roll a selection stands on, or its project.
 export component Info inherits Surface {
     width: ShellStyle.info-width;
-    VerticalLayout {
-        alignment: start;
-        if Library.info-kind == 0: VerticalLayout {
-            padding: Space.m;
-            Label { text: Library.info-empty; tone: Tone.secondary; }
-        }
-        if Library.info-kind == 1: VerticalLayout {
-            Section {
-                title: "Roll";
-                separated: false;
-                EditableTitle { text: Library.info-title; placeholder: "Roll name"; }
+    // `InfoSidebar`'s ScrollView: a tall roll scrolls under the column instead of clipping.
+    Scroller {
+        content-height: body.preferred-height;
+        body := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            if Library.info-kind == 0: VerticalLayout {
+                padding: Space.m;
+                Label { text: Library.info-empty; tone: Tone.secondary; }
             }
-            Section {
-                title: "Film Stock";
-                help: "What this roll was shot on — never guessed, only ever what a hand picks.";
-                // `heroStock`: the artwork, the name, and where a default came from.
-                HorizontalLayout {
-                    alignment: center;
-                    StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
+            if Library.info-kind == 1: VerticalLayout {
+                Section {
+                    title: "Roll";
+                    separated: false;
+                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; }
                 }
-                if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
-                if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
-                Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
-            }
-            Section {
-                title: "Shot Date";
-                help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
-                HorizontalLayout {
-                    spacing: Space.s;
-                    alignment: start;
-                    DateFields {
-                        month <=> Library.month;
-                        day <=> Library.day;
-                        year <=> Library.year;
-                        committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
+                Section {
+                    title: "Film Stock";
+                    help: "What this roll was shot on — never guessed, only ever what a hand picks.";
+                    // `heroStock`: the artwork, the name, and where a default came from.
+                    HorizontalLayout {
+                        alignment: center;
+                        StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
                     }
-                    if Library.shot-date-set: Button {
-                        text: "CLEAR";
-                        size: ButtonSize.small;
-                        help: "Clear shot date";
-                        clicked => { Library.shot-date-cleared(); }
+                    if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
+                    if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
+                    Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
+                }
+                Section {
+                    title: "Shot Date";
+                    help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        DateFields {
+                            month <=> Library.month;
+                            day <=> Library.day;
+                            year <=> Library.year;
+                            committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
+                        }
+                        if Library.shot-date-set: Button {
+                            text: "CLEAR";
+                            size: ButtonSize.small;
+                            help: "Clear shot date";
+                            clicked => { Library.shot-date-cleared(); }
+                        }
+                    }
+                    if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
+                }
+                Section {
+                    title: "Camera Body";
+                    help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
+                    TextField {
+                        placeholder: "e.g. Leica M6";
+                        text <=> Library.camera-body;
+                        accepted(t) => { Library.camera-body-committed(t); }
+                        left(t) => { Library.camera-body-committed(t); }
                     }
                 }
-                if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
             }
-            Section {
-                title: "Camera Body";
-                help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
-                TextField {
-                    placeholder: "e.g. Leica M6";
-                    text <=> Library.camera-body;
-                    accepted(t) => { Library.camera-body-committed(t); }
-                    left(t) => { Library.camera-body-committed(t); }
+            if Library.info-kind == 2: VerticalLayout {
+                Section {
+                    title: "Project";
+                    separated: false;
+                    EditableTitle { text: Library.info-title; placeholder: "Project name"; }
                 }
-            }
-        }
-        if Library.info-kind == 2: VerticalLayout {
-            Section {
-                title: "Project";
-                separated: false;
-                EditableTitle { text: Library.info-title; placeholder: "Project name"; }
-            }
-            CardStack { pictures: Library.stack; }
-            Section {
-                title: "Film Stocks";
-                help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
-                if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
-                for row in Library.stocks: HorizontalLayout {
-                    spacing: Space.s;
-                    Label { text: row.name; horizontal-stretch: 1; }
-                    Label { text: row.count; tone: Tone.secondary; }
+                CardStack { pictures: Library.stack; }
+                Section {
+                    title: "Film Stocks";
+                    help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
+                    if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
+                    for row in Library.stocks: HorizontalLayout {
+                        spacing: Space.s;
+                        Label { text: row.name; horizontal-stretch: 1; }
+                        Label { text: row.count; tone: Tone.secondary; }
+                    }
                 }
-            }
-            Section {
-                title: "Description";
-                TextField {
-                    text <=> Library.description;
-                    left(t) => { Library.description-committed(t); }
+                Section {
+                    title: "Description";
+                    TextField {
+                        text <=> Library.description;
+                        left(t) => { Library.description-committed(t); }
+                    }
                 }
             }
         }

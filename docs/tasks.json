@@ -892,6 +892,14 @@
     "outcome": ""
   },
   {
+    "id": 122,
+    "type": "feature",
+    "title": "Scroll knobs only where a surface overflows, as AppKit's overlay scrollers",
+    "status": "done",
+    "detail": "Owner's ask: scroll bars only where something scrolls. Every Swift ScrollView and List keeps the default automatic indicators, the macOS overlay knob. The design system's one Scroller now draws a ScrollKnob over the edge, only while the content overflows, lit while it scrolls, 0.8 s after and while the pointer is on the edge strip, fading out; it reserves no gutter and takes no click. ListView is the same Scroller, its rows still virtualised, so the fluent list's permanent thumb and its 14 px hit strip over the paper rows' Install buttons are gone, with the phantom sideways bar: a vertical surface pins its content width and never slides under a diagonal swipe. The preset deck keeps no knob (.scrollIndicators(.never)); the paper sidebar sets its content height; the Info sidebar scrolls as InfoSidebar's ScrollView; the gallery grid, scrolled by Rust, shows the same knob. ScrollStyle and Colour.knob hold the values.",
+    "outcome": "Window check scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves: the catalogue's knob lights on a wheel and goes out after its linger, lights on the edge strip only; its twins, a scroller whose content fits, stays dark under the same wheel and edge hover, and a diagonal swipe never moves the page sideways."
+  },
+  {
     "id": 126,
     "type": "fix",
     "title": "The bar's worded keys keep their widths as the window widens",

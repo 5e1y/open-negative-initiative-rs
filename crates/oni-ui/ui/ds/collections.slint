@@ -1,19 +1,98 @@
-// The collections' cells: a list row, a tree row, a gallery tile and a band's heading.
-import { ListView as StdListView } from "std-widgets.slint";
-import { Colour, Space, State, RowStyle, TileStyle } from "theme.slint";
+// The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
+import { Colour, Space, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Look } from "controls.slint";
 import { Icons } from "icons.slint";
 
-// A list scrolled by the wheel and the trackpad only: dragging is kept for the sliders and the image.
-export component ListView inherits StdListView {
-    mouse-drag-pan-enabled: false;
+// AppKit's overlay knob over a surface's edge: drawn only while the content overflows, lit while it
+// moves, `linger` after, or while the pointer is on the edge; it never takes a click or a drag.
+export component ScrollKnob {
+    in property <bool> horizontal;
+    // Along the scrolled axis: the length shown, the content's, and how far it has scrolled.
+    in property <length> page;
+    in property <length> whole;
+    in property <length> offset;
+    in property <bool> hovered;
+    // The pointer across the scrolled axis, so only the edge strip lights the knob.
+    in property <length> across;
+    out property <bool> overflows: root.whole - root.page >= ScrollStyle.slack;
+    out property <bool> lit: root.overflows && (root.moving || (root.hovered && root.across >= (root.horizontal ? root.height : root.width) - ScrollStyle.reach));
+    property <bool> moving;
+    // Every user scroll calls it.
+    public function stir() {
+        root.moving = true;
+        linger.restart();
+    }
+    linger := Timer {
+        interval: ScrollStyle.linger;
+        running: root.moving;
+        triggered => { root.moving = false; }
+    }
+    if root.overflows: Rectangle {
+        property <length> room: root.page - 2 * ScrollStyle.inset;
+        property <length> span: min(self.room, max(ScrollStyle.knob-min, self.room * root.page / root.whole));
+        property <length> along: ScrollStyle.inset + (self.room - self.span) * clamp(root.offset / (root.whole - root.page), 0, 1);
+        x: root.horizontal ? self.along : root.width - ScrollStyle.inset - ScrollStyle.knob;
+        y: root.horizontal ? root.height - ScrollStyle.inset - ScrollStyle.knob : self.along;
+        width: root.horizontal ? self.span : ScrollStyle.knob;
+        height: root.horizontal ? ScrollStyle.knob : self.span;
+        border-radius: ScrollStyle.knob / 2;
+        background: Colour.knob;
+        opacity: root.lit ? 1 : 0;
+        animate opacity { duration: ScrollStyle.fade; }
+    }
 }
 
-// A scrolled surface under the same rule as `ListView`.
-export component Scroller inherits Flickable {
-    mouse-drag-pan-enabled: false;
+// Scrolled by the wheel and the trackpad only, as drag belongs to the parameters and the image.
+// `content-height` must be set: aliasing it drops the Flickable's own default.
+export component Scroller {
+    // Sideways, as the preset deck's roll.
+    in property <bool> horizontal;
+    // `.scrollIndicators(.never)`: the deck's fade stands in for the knob.
+    in property <bool> knob: true;
+    in-out property <length> content-x <=> flick.content-x;
+    in-out property <length> content-y <=> flick.content-y;
+    in-out property <length> content-height <=> flick.content-height;
+    // Read only when sideways, so a row wider than a vertical surface never slides it.
+    in-out property <length> content-width;
+    out property <length> visible-width <=> flick.width;
+    out property <length> visible-height <=> flick.height;
+    out property <bool> overflows: bar.overflows;
+    out property <bool> lit: root.knob && bar.lit;
+    // Fills its parent outside a layout, as the Flickable it wraps; in one, the content's size.
+    preferred-width: 100%;
+    preferred-height: 100%;
+    // Its hover only lights the knob: every press and drag reaches the content first.
+    hover := TouchArea {
+        flick := Flickable {
+            mouse-drag-pan-enabled: false;
+            content-width: root.horizontal ? root.content-width : self.width;
+            flicked => {
+                if (root.knob) {
+                    bar.stir();
+                }
+            }
+            @children
+        }
+    }
+    bar := ScrollKnob {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        visible: root.knob;
+        horizontal: root.horizontal;
+        page: root.horizontal ? flick.width : flick.height;
+        whole: root.horizontal ? flick.content-width : flick.content-height;
+        offset: root.horizontal ? -flick.content-x : -flick.content-y;
+        hovered: hover.has-hover;
+        across: root.horizontal ? hover.mouse-y : hover.mouse-x;
+    }
 }
+
+// The same surface whose rows are made only while they show: Slint virtualises a `for` placed
+// directly in an element named `ListView` that carries the content and visible lengths.
+export component ListView inherits Scroller { }
 
 export enum RowKind { folder, roll, photo }
 
