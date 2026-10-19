@@ -78,7 +78,10 @@ export component FolderRow inherits Rectangle {
                     height: NavigatorStyle.star;
                     accessible-role: button;
                     accessible-label: root.favourite ? "Remove from the favourites" : "Add to the favourites";
+                    // Sized to its key: an image left unsized draws at its file's 24 px.
                     Icon {
+                        width: parent.width;
+                        height: parent.height;
                         source: Icons.favourite;
                         ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
                     }

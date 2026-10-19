@@ -42,15 +42,20 @@ component Word inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
+// Short of room the word gives way to its glyph, a square key.
 component ResetScan inherits Word {
+    in property <bool> compact;
     action: "reset";
-    text: "RESET SCAN";
+    text: root.compact ? "" : "RESET SCAN";
+    has-icon: root.compact;
+    icon: Icons.reset;
     help: "Reset to Imported State";
     kind: ButtonKind.caution;
     enabled: Bar.can-reset;
 }
 
 component EditorKeys inherits HorizontalLayout {
+    in property <bool> compact;
     spacing: ShellStyle.bar-gap;
     ButtonGroup {
         Item { action: "framing"; icon: Icons.framing; help: "Crop and Straighten (⌘K)"; enabled: Bar.has-photo; }
@@ -86,10 +91,11 @@ component EditorKeys inherits HorizontalLayout {
         on: Bar.dedust;
         enabled: Bar.has-photo;
     }
-    ResetScan { }
+    ResetScan { compact: root.compact; }
 }
 
 component GalleryKeys inherits HorizontalLayout {
+    in property <bool> compact;
     spacing: ShellStyle.bar-gap;
     Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     ButtonGroup {
@@ -104,13 +110,18 @@ component GalleryKeys inherits HorizontalLayout {
     }
     Word { action: "prepare-roll"; text: "PREPARE ROLL"; help: "Prepare the Roll"; enabled: Bar.can-prepare; }
     ButtonGroup {
-        ResetScan { }
+        ResetScan { compact: root.compact; }
         Item { action: "remove"; icon: Icons.remove; help: "Move to ONI Trash"; kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }
 }
 
 export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
+    // The bar's width with every word, read off hidden copies: the layout's widths never depend on
+    // which face shows, or the window's width would loop through it.
+    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + ShellStyle.export-width + 5 * ShellStyle.bar-gap;
+    property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
+    property <bool> compact: root.width < root.full;
     HorizontalLayout {
         padding-left: ShellStyle.bar-padding + Bar.traffic-lights;
         padding-right: ShellStyle.bar-padding;
@@ -118,7 +129,7 @@ export component Toolbar inherits Surface {
         padding-bottom: ShellStyle.bar-padding;
         spacing: ShellStyle.bar-gap;
         // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
-        Word {
+        mode := Word {
             action: Preparing.shown ? "leave-roll" : "toggle-mode";
             text: Bar.editing || Preparing.shown ? "GALLERY" : "EDITOR";
             widest: "GALLERY";
@@ -128,15 +139,31 @@ export component Toolbar inherits Surface {
         Spacer { }
         // Hidden copies of both sets hold the zone at the wider one's width, so neither spills over.
         Rectangle {
-            width: max(sizing.preferred-width, gallery-sizing.preferred-width);
+            min-width: max(compact-sizing.preferred-width, compact-gallery-sizing.preferred-width);
+            preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width);
             sizing := EditorKeys { visible: false; }
             gallery-sizing := GalleryKeys { visible: false; }
+            compact-sizing := EditorKeys { visible: false; compact: true; }
+            compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
+            feedback-sizing := Word { visible: false; text: "FEEDBACKS"; }
+            glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
             if Preparing.shown: RollStepKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
-            if Bar.editing && !Preparing.shown: EditorKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
-            if !Bar.editing && !Preparing.shown: GalleryKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
+            if Bar.editing && !Preparing.shown: EditorKeys { compact: root.compact; x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
+            if !Bar.editing && !Preparing.shown: GalleryKeys { compact: root.compact; x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
         }
         Spacer { }
-        Word { action: "report"; text: "FEEDBACKS"; help: "Report a Bug / Give Feedback"; }
+        Rectangle {
+            min-width: glyph-sizing.preferred-width;
+            preferred-width: feedback-sizing.preferred-width;
+            Word {
+                x: parent.width - self.width;
+                action: "report";
+                text: root.compact ? "" : "FEEDBACKS";
+                has-icon: root.compact;
+                icon: Icons.chat;
+                help: "Report a Bug / Give Feedback";
+            }
+        }
         if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? "export" : "open";
             text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";

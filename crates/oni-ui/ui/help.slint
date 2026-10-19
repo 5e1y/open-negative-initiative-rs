@@ -79,6 +79,8 @@ export component WelcomeSheet inherits Sheet {
 // `ReportSheet`: the message, the sealed log's tick, and Send; then a thank-you.
 export component ReportSheet inherits Sheet {
     title: Help.report-sent ? "Thank You" : "Report a Bug or Give Feedback";
+    // Wide, so the row of keys holds inside the card.
+    wide: true;
     dismissed => { Help.report-closed(); }
     if Help.report-sent: Note { text: "Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."; }
     if !Help.report-sent: Note { text: "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."; }

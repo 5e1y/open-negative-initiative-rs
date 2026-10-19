@@ -842,5 +842,13 @@
     "status": "done",
     "detail": "Ported from Swift's Updates.reportInstall: GET /installed?v=<version>[&from=<previous>] once per version on a published (stamped) build, the version remembered only once the recorder answers 2xx so an offline launch retries, from=inconnue when the copy had checked before without a remembered version. Every request now carries OpenNegative/<version> Sparkle-compatible, so the recorder counts Rust copies and their version as it does Sparkle's, and learns nothing of the Mac. Options::default() (the checks') takes a scratch support folder and a reporter that sends nothing; ONI_BENCH runs note their gestures in a scratch journal; the app passes the online reporter itself.",
     "outcome": "Window check updates: the first launch asks the feed and /installed?v=… with no from, remembers the version; the next launch asks nothing. Unit check on the URL and the agent, twin on the Mac's name. Open: a user moving from the Swift app is counted as a first installation, since its UserDefaults are not read; the displayed version comes from ONI_VERSION, which no release script stamps yet."
+  },
+  {
+    "id": 116,
+    "type": "fix",
+    "title": "A narrow bar folds RESET SCAN and FEEDBACKS into glyph keys; the report sheet wide; the folder star sized to its key",
+    "status": "done",
+    "detail": "Owner's requests. Short of room for every word (measured on hidden copies, so the window's width never loops through the choice), RESET SCAN becomes a square key with the reset glyph and FEEDBACKS one with Trinil's chat glyph, their names kept as tooltips. Report a Bug takes the wide dialog, so its row of keys stays inside the card. A folder row's star was an unsized image inside its 12.8 px key, so it drew at the file's 24 px: it now fills its key, as Swift's DSIcon(size: iconSize * 0.8).",
+    "outcome": "Window shots at 1280, 1100 and 980 px: words at 1280, glyphs at 1100; the report sheet's keys inside its card. No binding loop left in the build. Every check green."
   }
 ]
