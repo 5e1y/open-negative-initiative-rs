@@ -1,4 +1,4 @@
-//! What a launch shows before the editor: the splash, then the recalibration notice over the window;
+//! What a launch shows before the editor: the splash, then the recalibration notice hung in the window;
 //! both shot to `ONI_SHOTS` on the headless window.
 
 use oni_app::{MainWindow, Notice, SplashWindow};
@@ -38,10 +38,20 @@ pub(crate) fn the_splash_names_the_version_and_the_notice_covers_the_window() {
         rig.window.dispatch_event(WindowEvent::PointerReleased { position, button: slint::platform::PointerEventButton::Left });
         rig.pump();
     };
-    // Twin: a click on the card's text stays on the card.
-    click(720.0, 450.0);
-    assert!(!closed.get(), "the card keeps its own clicks");
-    // A click on the scrim, far from the card, dismisses it as Got It does.
+    // Modal as Swift's sheet: a click beside the card leaves it open.
     click(40.0, 450.0);
-    assert!(closed.get(), "the scrim closes the notice");
+    assert!(!closed.get(), "a click beside the notice leaves it open");
+    // GOT IT sits at the card's right, under its bullets: the sweep finds it right of the middle.
+    let mut found = None;
+    'sweep: for y in (24..400).step_by(4) {
+        for x in (720 - 210..720 + 210).step_by(6) {
+            click(x as f32, y as f32);
+            if closed.get() {
+                found = Some(x);
+                break 'sweep;
+            }
+        }
+    }
+    let x = found.expect("GOT IT closes the notice");
+    assert!(x > 720 + 60, "twin: GOT IT is not under the card's middle but at its right, x {x}");
 }

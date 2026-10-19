@@ -1,8 +1,8 @@
 // The Help menu's pieces: the gold seal a heading carries while its note is news, a text area for
-// a written message, and the console's monospaced log.
+// a written message, the console's monospaced log, and the notices' bullets and step numbers.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, FieldStyle } from "theme.slint";
-import { Tips } from "base.slint";
+import { Tips, Tones, Tone, Label } from "base.slint";
 
 // `DSGoldSealView`: the word in capitals on the medal's gold; hovered, the note shows and is read.
 export component NewsSeal inherits Rectangle {
@@ -72,4 +72,31 @@ export component LogText inherits Rectangle {
         font-size: Type.chip;
         color: Colour.ink-secondary;
     }
+}
+
+// `notice(_:)`'s line: a small dot level with the first line, the text wrapping beside it.
+export component BulletLine inherits HorizontalLayout {
+    in property <string> text;
+    spacing: Space.s;
+    Rectangle {
+        width: Space.xs;
+        Rectangle {
+            y: Space.xs + Space.xxs;
+            width: Space.xs;
+            height: Space.xs;
+            border-radius: self.width / 2;
+            background: Tones.ink(Tone.primary);
+        }
+    }
+    Label { text: root.text; wrap: word-wrap; horizontal-stretch: 1; }
+}
+
+// `RootsCatchUp`'s step number: the digit on a keycap-grey disc.
+export component StepNumber inherits Rectangle {
+    in property <int> number;
+    width: DS.control-keycap-mini-height;
+    height: self.width;
+    border-radius: self.width / 2;
+    background: Colour.raised;
+    Label { text: root.number; centred: true; }
 }

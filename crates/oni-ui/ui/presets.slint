@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, FieldStyle, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
+import { Space, PresetStyle, FieldStyle, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, SheetKeys, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -82,27 +82,26 @@ export global Choice {
     callback chosen(int);
 }
 
+// Option keys stay neutral and deaf to Return, so no choice is made by reflex.
 export component ChoiceSheet inherits Sheet {
     title: Choice.title;
+    question: true;
     wide: true;
     dismissed => { Choice.chosen(-1); }
-    Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: end;
-        spacing: Space.s;
+    if Choice.message != "": Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
+    SheetKeys {
         Button { text: "Cancel"; clicked => { Choice.chosen(-1); } }
-        for key[i] in Choice.keys: Button { text: key; kind: ButtonKind.accent; clicked => { Choice.chosen(i); } }
+        for key[i] in Choice.keys: Button { text: key; clicked => { Choice.chosen(i); } }
     }
 }
 
 export component AdviceSheet inherits Sheet {
     title: Advice.title;
-    scrim-dismisses: true;
+    question: true;
     dismissed => { Advice.closed(); }
-    if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: center;
-        Button { text: "OK"; clicked => { Advice.closed(); } }
+    if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; wrap: word-wrap; }
+    SheetKeys {
+        Button { text: "OK"; kind: ButtonKind.accent; clicked => { Advice.closed(); } }
     }
 }
 

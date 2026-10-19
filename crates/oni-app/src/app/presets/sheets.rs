@@ -145,7 +145,7 @@ impl Ctl {
         }
     }
 
-    /// Done, Cancel or the scrim: the editor writes what it holds first.
+    /// Done, Cancel or Escape: the editor writes what it holds first.
     pub(super) fn close_preset_form(self: &Rc<Self>) {
         if matches!(self.state.borrow().shelf.form, Some(Form::Editing { .. })) {
             self.settle_selected();

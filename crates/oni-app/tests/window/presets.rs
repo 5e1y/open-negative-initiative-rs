@@ -216,7 +216,10 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     rig.key("\u{1b}");
     assert_eq!(oni_core::presets::files(&shelf).len(), 2, "twin: Cancel deletes nothing");
     menus.invoke_delete_preset(1);
+    assert!(w.global::<Confirm>().get_destructive(), "Delete is the red key");
     rig.key("\r");
+    assert_eq!(oni_core::presets::files(&shelf).len(), 2, "a destructive key takes no Return");
+    w.global::<Confirm>().invoke_answered(true);
     rig.pump();
     assert_eq!(oni_core::presets::files(&shelf).len(), 1);
     assert_eq!(std::fs::read_dir(&trash).unwrap().count(), 1, "the file went to the Trash, not away");

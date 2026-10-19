@@ -36,7 +36,7 @@ impl Ctl {
     pub(super) fn ask_delete_project(self: &Rc<Self>, id: Id) {
         let prompt = self.state.borrow().org.projects.iter().find(|p| p.id == id).map(project::delete_prompt);
         if let Some((title, message, key)) = prompt {
-            self.ask(&title, &message, key, Pending::DeleteProject(id));
+            self.ask(&title, &message, key, true, Pending::DeleteProject(id));
         }
     }
 

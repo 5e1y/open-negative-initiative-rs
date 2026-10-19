@@ -72,6 +72,7 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     let confirm = w.global::<Confirm>();
     let shown = confirm.get_shown();
     let title = confirm.get_title().to_string();
+    assert!(confirm.get_cancel_default() && !confirm.get_destructive(), "Cancel is the alert's default");
     rig.key("\r");
     std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o755)).unwrap();
     assert!(shown, "a failed write asks before quitting");

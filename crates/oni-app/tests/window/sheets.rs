@@ -80,20 +80,22 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.key("x");
     assert_eq!(help.get_report_message().as_str(), "x", "typing reaches the field");
 
-    // A stray click on the scrim keeps the typed report; Escape from the field closes the sheet.
+    // A stray click beside the card keeps the typed report; Escape from the field closes the sheet.
     click(&rig, 12.0, 400.0);
-    assert!(help.get_report_shown() && help.get_report_message() == "x", "a modal sheet ignores the scrim");
+    assert!(help.get_report_shown() && help.get_report_message() == "x", "a modal sheet ignores a click beside it");
     rig.key("\u{1b}");
     assert!(!help.get_report_shown(), "Escape from the field reaches the sheet");
     rig.pump();
     assert!(w.get_keys_focused() && menus.get_live().remove, "closed, the keys and the menus come back");
 
-    // The welcome sheet loses nothing on a click beside it, so the scrim closes it.
+    // The welcome is as modal as Swift's sheet: a click beside it leaves it, Return closes it.
     ctl.act("welcome");
     rig.pump();
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
-    assert!(!help.get_welcome_shown(), "twin: a sheet with nothing to lose closes on the scrim");
+    assert!(help.get_welcome_shown(), "a click beside the welcome leaves it open");
+    rig.key("\r");
+    assert!(!help.get_welcome_shown(), "twin: its default key closes it");
 
     // A post answered after its sheet closed and opened again does not thank the new report.
     hold.store(true, Ordering::Relaxed);
@@ -179,10 +181,13 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     assert!(e.get_confirm_shown(), "the clash asks");
     rig.settle();
     println!("shot {}", rig.shot("export-replace").display());
-    // The prompt's keys sit below the window's middle: the pointer sweeps them, Cancel asked again.
+    // The prompt hangs from the window's top, its keys at its right: the pointer sweeps them, Cancel
+    // asked again; Return replaces nothing, as the key is destructive.
+    rig.key("\r");
+    assert!(e.get_confirm_shown(), "Return does not replace files");
     let (mut cancelled, mut replaced) = (0, false);
-    'sweep: for y in (400..560).step_by(4) {
-        for x in (440..840).step_by(8) {
+    'sweep: for y in (24..400).step_by(4) {
+        for x in (640..840).step_by(8) {
             click(&rig, x as f32, y as f32);
             if !e.get_confirm_shown() {
                 if export_card::card(&ctl).exporting || !e.get_shown() {

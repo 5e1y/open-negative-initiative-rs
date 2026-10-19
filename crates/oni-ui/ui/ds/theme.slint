@@ -229,6 +229,11 @@ export global SheetStyle {
     out property <length> gap: Space.m;
     // Room a sheet leaves above and below it in the window.
     out property <length> margin: Space.l;
+    // `noticeWidth` and `exportPanelWidth`: the notices' and the catch-up's gauges.
+    out property <length> notice-width: DS.control-notice-width;
+    out property <length> panel-width: DS.control-export-panel-width;
+    // The card's lift off the window, with no scrim under it.
+    out property <length> shadow: Space.l;
     // The pairing code's side, wide enough for a phone's camera across a desk.
     out property <length> code: 240px;
 }
@@ -383,7 +388,6 @@ export global PresetStyle {
 export global HelpStyle {
     out property <length> console-width: DS.control-console-window-width;
     out property <length> console-height: DS.control-console-window-height;
-    out property <length> photo-height: DS.control-dialog-wide-width * 2 / 3;
 }
 
 // `StockPickerSheet` and `FilmStockIcon`: the sheet's gauge, a cell's artwork and the hero's.

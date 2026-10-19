@@ -15,6 +15,76 @@ export global SplashStyle {
     out property <length> lines: DS.space-sm + DS.space-xs;
     out property <length> line-indent: DS.space-xs;
     out property <duration> minimum: DS.motion-splash-minimum;
+    // `welcomeCaptionScale` and `welcomePhotoAspect`: the welcome's photo carries a smaller caption.
+    out property <float> welcome-scale: DS.control-welcome-caption-scale / 1px;
+    out property <float> welcome-aspect: DS.control-welcome-photo-aspect / 1px;
+}
+
+// `SplashCaption`: the logo over the version line at the foot's leading corner, "Photo" over the
+// credit at its trailing one, every inset and size times `scale`.
+export component SplashCaption inherits Rectangle {
+    in property <string> line;
+    in property <string> credit;
+    in property <float> scale: 1;
+    Image {
+        x: SplashStyle.inset-leading * root.scale;
+        y: root.height - SplashStyle.inset-bottom * root.scale - version.preferred-height - SplashStyle.lines * root.scale - self.height;
+        width: SplashStyle.logo-width * root.scale;
+        height: SplashStyle.logo-height * root.scale;
+        source: @image-url("../icons/oni-logo.svg");
+        colorize: DS.palette-selected;
+    }
+    version := Text {
+        x: (SplashStyle.inset-leading + SplashStyle.line-indent) * root.scale;
+        y: root.height - SplashStyle.inset-bottom * root.scale - self.preferred-height;
+        text: root.line;
+        color: DS.palette-selected;
+        font-family: DS.typo-splash-line-family;
+        font-size: DS.typo-splash-line-size * root.scale;
+        font-weight: DS.typo-splash-line-weight;
+    }
+    if root.credit != "": Text {
+        x: root.width - SplashStyle.inset-trailing * root.scale - self.preferred-width;
+        y: root.height - SplashStyle.inset-bottom * root.scale - credit.preferred-height - DS.space-xxs * root.scale - self.preferred-height;
+        text: "Photo";
+        color: DS.palette-selected;
+        font-family: DS.typo-splash-caption-family;
+        font-size: DS.typo-splash-caption-size * root.scale;
+        font-weight: DS.typo-splash-caption-weight;
+    }
+    credit := Text {
+        x: root.width - SplashStyle.inset-trailing * root.scale - self.preferred-width;
+        y: root.height - SplashStyle.inset-bottom * root.scale - self.preferred-height;
+        text: root.credit;
+        color: DS.palette-selected;
+        font-family: DS.typo-splash-line-family;
+        font-size: DS.typo-splash-line-size * root.scale;
+        font-weight: DS.typo-splash-line-weight;
+    }
+}
+
+// The welcome sheet's photo: edge to edge at 3:2 on the wide sheet, cropped to fill, the splash's
+// caption over its foot at the welcome's scale.
+export component WelcomePhoto inherits Rectangle {
+    in property <int> picture;
+    in property <string> line;
+    in property <string> credit;
+    height: DS.control-dialog-wide-width / SplashStyle.welcome-aspect;
+    clip: true;
+    background: Colour.canvas;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        image-fit: cover;
+        source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
+    }
+    SplashCaption {
+        width: parent.width;
+        height: parent.height;
+        line: root.line;
+        credit: root.credit;
+        scale: SplashStyle.welcome-scale;
+    }
 }
 
 export component SplashWindow inherits Window {
@@ -38,37 +108,11 @@ export component SplashWindow inherits Window {
             image-fit: cover;
             source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
         }
-        Image {
-            x: SplashStyle.inset-leading;
-            y: parent.height - SplashStyle.inset-bottom - version.preferred-height - SplashStyle.lines - self.height;
-            width: SplashStyle.logo-width;
-            height: SplashStyle.logo-height;
-            source: @image-url("../icons/oni-logo.svg");
-            colorize: DS.palette-selected;
-        }
-        version := Text {
-            x: SplashStyle.inset-leading + SplashStyle.line-indent;
-            y: parent.height - SplashStyle.inset-bottom - self.preferred-height;
-            text: root.line;
-            color: DS.palette-selected;
-            font-size: DS.typo-splash-line-size;
-            font-weight: DS.typo-splash-line-weight;
-        }
-        if root.credit != "": Text {
-            x: parent.width - SplashStyle.inset-trailing - self.preferred-width;
-            y: parent.height - SplashStyle.inset-bottom - credit.preferred-height - DS.space-xxs - self.preferred-height;
-            text: "Photo";
-            color: DS.palette-selected;
-            font-size: DS.typo-splash-caption-size;
-            font-weight: DS.typo-splash-caption-weight;
-        }
-        credit := Text {
-            x: parent.width - SplashStyle.inset-trailing - self.preferred-width;
-            y: parent.height - SplashStyle.inset-bottom - self.preferred-height;
-            text: root.credit;
-            color: DS.palette-selected;
-            font-size: DS.typo-splash-line-size;
-            font-weight: DS.typo-splash-line-weight;
+        SplashCaption {
+            width: parent.width;
+            height: parent.height;
+            line: root.line;
+            credit: root.credit;
         }
     }
 }

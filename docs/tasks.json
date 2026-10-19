@@ -861,11 +861,11 @@
   },
   {
     "id": 118,
-    "type": "feature",
-    "title": "The release build stamps ONI_VERSION and ONI_BUILD; a Swift user's last version seeds the installation ping",
-    "status": "done",
-    "detail": "Owner's decision: the script is prepared, never run without the owner. scripts/release-build <version> refuses a dirty tree and builds the shipped binary with ONI_VERSION and ONI_BUILD = 10000 + the commit count, above every Swift build (its feed's numbers are its own commit count, 1523 at 1.3.1), so the feed never offers a Swift item over a Rust build. The installation ping's `from` reads our own mark, else the Swift app's lastLaunchedVersion from its defaults domain, so a move from Swift counts as an update; the reader is injected, so no check reads the person's preferences. Bundling, signing and the feed are not in it yet.",
-    "outcome": "updates::prior unit test: from Swift's 1.3.1, our mark first, a first installation, inconnue, reported once; twin without Swift's mark. The window check updates.rs runs with the Swift reader injected empty. The script was not run."
+    "type": "todo",
+    "title": "The release stamps ONI_VERSION and ONI_BUILD; a Swift user's last version seeds the install ping",
+    "status": "todo",
+    "detail": "The install ping (#115) fires only on a stamped build, and a copy moving from the Swift app would be counted as a first installation since Swift's UserDefaults are not read. Both settle with the release script, which needs the owner's word.",
+    "outcome": ""
   },
   {
     "id": 119,
@@ -898,6 +898,14 @@
     "status": "done",
     "detail": "Owner's ask: scroll bars only where something scrolls. Every Swift ScrollView and List keeps the default automatic indicators, the macOS overlay knob. The design system's one Scroller now draws a ScrollKnob over the edge, only while the content overflows, lit while it scrolls, 0.8 s after and while the pointer is on the edge strip, fading out; it reserves no gutter and takes no click. ListView is the same Scroller, its rows still virtualised, so the fluent list's permanent thumb and its 14 px hit strip over the paper rows' Install buttons are gone, with the phantom sideways bar: a vertical surface pins its content width and never slides under a diagonal swipe. The preset deck keeps no knob (.scrollIndicators(.never)); the paper sidebar sets its content height; the Info sidebar scrolls as InfoSidebar's ScrollView; the gallery grid, scrolled by Rust, shows the same knob. ScrollStyle and Colour.knob hold the values.",
     "outcome": "Window check scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves: the catalogue's knob lights on a wheel and goes out after its linger, lights on the edge strip only; its twins, a scroller whose content fits, stays dark under the same wheel and edge hover, and a diagonal swipe never moves the page sideways."
+  },
+  {
+    "id": 123,
+    "type": "fix",
+    "title": "Sheets, notices and popovers laid out as Swift's: hung from the top, no scrim, leading titles, keys on the right",
+    "status": "done",
+    "detail": "Owner's words: the What's new sheet must be responsive like Swift's, as tall as the window allows and scrolled, and every sheet, modal, popover and menu laid out as in Swift. Every sheet hangs from the window's top a margin down, draws no scrim yet ignores a click beside it (Swift's sheets are modal: the welcome, RAW notice and notices no longer close on one), and stops a margin above the window's foot, scrolling inside. Titles are leading: the title face for full sheets, the section face for DSDialog questions. The welcome bleeds its 3:2 photo edge to edge, cropped to fill, under the splash caption at 0.8 (SplashCaption, shared with the splash), with Swift's 24/8/4 groups in one scrolled column. Confirms, choices, notices and the export's clash and notice put their keys right-aligned in one KeyPlate; Delete Project, Delete/Replace Preset and Reset to Default are red and take no Return; option keys are neutral. Return presses Got It, OK and Done. The quit alert keeps Swift's order, Quit Anyway then Cancel as the default, drawn over every other sheet. Report at 420 with the switch before its words and Cancel/Send on a plate; RAW notice at 420 with dotted bullets; Roots catch-up at 400 with numbered discs; the paper board and preset panels capped to the window, the board closed by Escape and modal; the popover on the panel's ground at 16 padding; a rule before Delete a Preset.",
+    "outcome": "Window check sheet_layout: GET STARTED reached unscrolled in a tall window and only after the wheel in a short one (twin), a notice's OK at the card's right and nowhere in its left half (twin); launch, sheets, presets, rolls and quit checks follow the modal sheets and the destructive keys."
   },
   {
     "id": 126,

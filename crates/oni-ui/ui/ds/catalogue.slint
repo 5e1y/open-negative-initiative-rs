@@ -376,8 +376,8 @@ export component Catalogue inherits AppWindow {
                         dialog := Dialog {
                             width: parent.width - 2 * Space.l;
                             title: "Sheet";
-                            Label { text: "A dialog's content, over a scrim in the window."; tone: Tone.secondary; wrap: word-wrap; centred: true; }
-                            HorizontalLayout { alignment: center; Button { text: "DONE"; } }
+                            Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
+                            HorizontalLayout { alignment: end; Button { text: "Done"; } }
                         }
                     }
                 }

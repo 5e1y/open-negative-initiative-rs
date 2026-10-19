@@ -115,6 +115,8 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     ctl.act("reset-to-default");
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
     rig.key("\r");
+    assert!(w.global::<Confirm>().get_shown(), "Reset is destructive: Return does not reach it");
+    w.global::<Confirm>().invoke_answered(true);
     rig.pump();
     // A, still open behind the gallery, is written once its edit rests, as every open frame is.
     for name in ["A.tif", "B.tif"] {

@@ -1,5 +1,5 @@
 // `neutralDecodeNotice`: shown once the library holds a RAW, its bullets what the change means for a photo.
-import { Sheet, Label, Tone, Button } from "ds/ds.slint";
+import { Sheet, SheetStyle, Space, Label, TextRole, Button, BulletLine } from "ds/ds.slint";
 
 export global Notice {
     in property <bool> shown;
@@ -7,22 +7,23 @@ export global Notice {
 }
 
 export component NoticeSheet inherits Sheet {
-    title: "RAW Color, Recalibrated";
-    scrim-dismisses: true;
+    card-width: SheetStyle.notice-width;
     dismissed => { Notice.close(); }
-    for line in [
-        "Camera RAW files now render truer color, especially on unusual film stocks.",
-        "Your existing photos have already been nudged to compensate automatically.",
-        "Still looks a touch off? One press of your usual balance button settles it.",
-    ]: Label {
-        text: "•  " + line;
-        wrap: word-wrap;
-    }
-    HorizontalLayout {
-        alignment: end;
-        Button {
-            text: "GOT IT";
-            clicked => { Notice.close(); }
+    // Its groups a wider step apart than a plain sheet's lines.
+    VerticalLayout {
+        spacing: Space.l;
+        Label { text: "RAW Color, Recalibrated"; role: TextRole.title; wrap: word-wrap; }
+        VerticalLayout {
+            spacing: Space.s;
+            for line in [
+                "Camera RAW files now render truer color, especially on unusual film stocks.",
+                "Your existing photos have already been nudged to compensate automatically.",
+                "Still looks a touch off? One press of your usual balance button settles it.",
+            ]: BulletLine { text: line; }
+        }
+        HorizontalLayout {
+            alignment: end;
+            Button { text: "GOT IT"; clicked => { Notice.close(); } }
         }
     }
 }

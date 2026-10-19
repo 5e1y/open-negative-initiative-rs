@@ -173,7 +173,7 @@ impl Ctl {
         }
         let (title, key) =
             if count > 1 { (format!("Restore {count} Photos?"), format!("Restore {count} Photos")) } else { ("Restore This Photo?".into(), "Restore Photo".into()) };
-        self.ask(&title, "Every photo in the ONI Trash goes back to its folder, roll and project.", &key, Pending::RestoreAll);
+        self.ask(&title, "Every photo in the ONI Trash goes back to its folder, roll and project.", &key, false, Pending::RestoreAll);
     }
 
     pub(in crate::app) fn restore_all(self: &Rc<Self>) {
@@ -181,14 +181,18 @@ impl Ctl {
         self.restore(&all);
     }
 
-    /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it.
-    pub(in crate::app) fn ask(&self, title: &str, message: &str, key: &str, pending: Pending) {
+    /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it; a destructive key
+    /// is red and takes no Return, and quitting's alert keeps Cancel the default.
+    pub(in crate::app) fn ask(&self, title: &str, message: &str, key: &str, destructive: bool, pending: Pending) {
+        let quitting = matches!(pending, Pending::QuitAnyway);
         self.state.borrow_mut().pending = Some(pending);
         if let Some(w) = self.window() {
             let c = w.global::<Confirm>();
             c.set_title(title.into());
             c.set_message(message.into());
             c.set_key(key.to_uppercase().into());
+            c.set_destructive(destructive);
+            c.set_cancel_default(quitting);
             c.set_shown(true);
             // A field behind the sheet would keep the keys its Return and typing are meant for.
             w.invoke_refocus();
