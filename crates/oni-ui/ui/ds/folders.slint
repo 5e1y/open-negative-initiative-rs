@@ -175,9 +175,10 @@ export component ColumnPill inherits Rectangle {
         padding-right: Space.s;
         Label { text: root.text; overflow: elide; horizontal-stretch: 1; }
     }
+    // Hovered even when it opens nothing, so the path it names still shows as its note.
     touch := TouchArea {
-        enabled: root.pressable && root.enabled;
-        clicked => { root.clicked(); }
+        enabled: root.enabled;
+        clicked => { if (root.pressable) { root.clicked(); } }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
     }
 }

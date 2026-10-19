@@ -239,7 +239,7 @@ Risk tags:
 
 | Swift | What it is | Slint | Risk |
 |---|---|---|---|
-| Library column (`FolderNavigator`, `InfoSidebar`, `SidebarLayout`) | Left column: folders, rolls, projects, then photos as names, two thumbnails a line, or one | `VerticalLayout` with a resizable width (`DSColumnResizer`) | See 4.6 for the tree. |
+| Library column (`FolderNavigator`, `InfoSidebar`, `SidebarLayout`) | Left column: the tab bar, the navigator's header (parent and favourites on one mini plate, then the pill), then beside a photo or on the projects one row of `SidebarKeys` on a mini plate followed by the pill; folders, rolls, projects, then photos as names, two thumbnails a line, or one | `VerticalLayout` with a resizable width (`DSColumnResizer`), `KeyPlate { mini }` of `GlyphKey`s | See 4.6 for the tree. |
 | Canvas card (`EditorScene+Card`, `NegativeView`) | The photo on the canvas colour, radius `card` 12, padded, with overlays | `Rectangle { border-radius: 12px; clip: true }` holding the canvas `Image` and overlay components | `[draw]` The rounded clip is ignored by the software renderer (fine on GPU). The squircle (`.continuous`) is not drawn by Slint (section 5). |
 | Settings panel (`EditorScene+Panel`, `DSPanel`) | Right column, tabs Roll/Crop/Color/Details, pager between panes | `VerticalLayout` with `DSTabBar` and a ds `Scroller` per pane (`Pane`), the pager's slide animated by `x` | `DSPanel` keeps each pane's scroll offset and measures the outline (`DSPanelSkeleton`); a `Scroller`'s `content-y` must be saved per pane in Rust. |
 | Status bar (`DSStatusBar`) | One bar under the viewer: busy state or a line of facts | `HorizontalLayout` with the progress rail | Low. |
@@ -270,21 +270,21 @@ controls. Every slider is `DSSlider` (4.4.1). The labels below are exact strings
 |---|---|---|---|---|
 | Roll (`SettingsPane`) | Film Type | Mode picker | `DSPicker` | `[menu]` |
 | | Source Encoding | "Read as" picker | `DSPicker` | `[menu]` |
-| | Measured Roll | Join the Roll, roll previews (`RollPreviews`) | `DSPanelButton`, `Image` row | Previews render through oni-render. |
+| | Measured Roll | `DSWarning` bands, PREPARE THE ROLL…, JOIN / ROLL OF on one filling plate, roll previews (`RollPreviews`) | `WarningBand`, `KeyPlate { fills }`, `Image` row | Previews render through oni-render. |
 | | Source Balance / Balance Strength | Strength slider | `DSSlider` | |
 | | Density Ceiling | Ceiling slider | `DSSlider` | |
 | | Per-Channel Levels | `LevelsView`: histogram, five handles, RGB/R/G/B tabs | `DSTabBar` + histogram `Image` + `DSHandle`s | `[draw]` The histogram is a `Canvas` path in Swift: render it as an RGBA buffer in Rust or as a Slint `Path` from `commands` built in Rust. Path rebuilds cost on the software renderer only. |
 | | Dye Separation | Dyes picker, Dye separation slider | `DSPicker`, `DSSlider` | |
-| | Flat-Field (`FlatFieldControls`) | On/off, mask list, "Use This Photo as Flat-Field", gear revealing Amount, Temperature, Tint | `DSToggle`, `DSPicker`, sliders | |
-| Crop (`FramePane`, `GeometryPanel`) | Crop / Aspect Ratio | Ratio chips (Free, Kept, …), Vertical | `DSTabBar` | |
+| | Flat-Field (`FlatFieldControls`) | Switch then its word at the left, gear at the far right; Mask label above its picker; USE THIS PHOTO AS FLAT-FIELD; the gear reveals Amount, Temperature, Tint, then LOAD / RENAME / FOLDER on one filling plate | `ToggleRow`, `GlyphKey`, `Field` over `LinesPicker`, sliders, `KeyPlate { fills }` | |
+| Crop (`FramePane`, `GeometryPanel`) | Crop / Aspect Ratio | COPY, PASTE hugging and PASTE TO ROLL filling one plate; ratio chips (Free, 3:2, …), then the Vertical switch before its word | `KeyPlate { fills }`, `DSTabBar`, `ToggleRow` | |
 | | Straighten | Angle slider | `DSSlider` (bipolar) | |
-| | Rotate & Mirror | Quarter turns, mirror keys (left/right, top/bottom) | Icon `Keycap`s | |
-| | Measuring Window | Window keys, block grid (`MeasureGridOverlay`) | Overlay `Path` grid | `[draw]` |
+| | Rotate & Mirror | The rotate key, then both mirrors on one plate, the second glyph turned 90°; none ever lit | `IconButton`, `KeyPlate` with `turned` | |
+| | Measuring Window | One filling plate: reset glyph, MEASURING WINDOW / APPLY WINDOW (confirm green, the section's note as its tooltip), copy, paste; block grid (`MeasureGridOverlay`) | `KeyPlate { fills }`, overlay `Path` grid | `[draw]` |
 | Color (`ColorPane`) | Lighting (`PrintPanel`) | Exposure, Contrast, Shadows, Highlights, Black point, White point; the RGB curve plot | `DSSlider` ×6; plot as `Image` | `[draw]` The `Canvas` plot. |
 | | Color | Temperature, Tint (`TemperatureTintPanel`); gains (`GainPanel`: Cyan–Red, Magenta–Green, Yellow–Blue); Color density | Bipolar `DSSlider` with hue tracks (gradient fills) | `[draw]` Track gradients between a hue and its complement: `@linear-gradient`. |
 | | Curves (`CurveEditorView`) | Spline over histogram, RGB/R/G/B/luma tabs; drag empty space adds, double-tap removes | Plot `Image` + `TouchArea` + `DSHandle` discs | `[draw]` `[input]` Spline drawn as a `Path` from Rust-built commands. The double-tap must be detected on press (see 4.10). |
 | | Effects | Contrast, CHROME, VIGNETTE (`VignettePanel`) | `DSSlider`s, word keys | |
-| | Paper Correction | Auto Paper Correction, profile chooser | `DSPanelButton`, `DSPicker` | `[native]` ICC proofing via ColorSync stays on the Rust side (lcms2 or ColorSync through objc2). |
+| | Paper Correction | AUTO PAPER CORRECTION on a filling plate, profile chooser | `KeyPlate { fills }`, `DSPicker` | `[native]` ICC proofing via ColorSync stays on the Rust side (lcms2 or ColorSync through objc2). |
 | | Saturation Curve / Spectrogram Finishing (`GradePane`, `SaturationCurveView`, `SpectrogramPanel`, `SpectrogramBands`) | Equaliser over the output histogram; colour wheel with one point per band; band tabs with Hue, Saturation, Luminance sliders; Tab key cycles bands | Plot `Image`, wheel as `Path`s + `@conic-gradient`, `DSSlider`s | `[draw]` `[a11y]` Wheel points need focus (`FocusScope`) since "focus is the point's active state". |
 | Details (`DetailsPane`) | Chroma Denoise (`ChromaPanel`) | Radius, Amount | Twin `DSSlider`s | |
 | | Sharpening (`SharpenPanel`) | Amount, Radius, Halo limit | `DSSlider`s | |
@@ -334,7 +334,7 @@ reset is a callback that reads Rust state when called, so that trap disappears.
 | `GalleryView`, `GalleryEngine`, `GalleryLayout`, `TileLayers`, `LayerHostView` | A grid of thousands of tiles drawn as `CALayer`s under one scroll view, since one view per cell re-checks every cell (~5 ms each at twelve columns) | Rust lays and scrolls the document (`Library.scroll`, `content-height`) and hands Slint only the visible tiles; a ds `ScrollKnob` floats over the edge | `[perf]` Measure landing cost against Swift's count of realised cells; if it fails, draw the grid as one texture per visible band. |
 | `RollPreviews`, `RollReferenceSurface` | The roll's frames, one decode at a time per kind, superseded requests never start | Image models fed by a Rust decode queue | `[perf]` |
 | `FolderNavigator`, `TreeEngine`, `TreeLayers`, `TreeRows`, `TreeRowChrome` | The folder tree, rows as layers; chevrons drawn, tabular figures in captions | Rust-laid rows in the ds `Scroller`; the Projects tree a ds `ListView` (virtualised) with indentation per row | `[perf]` `[text]` tabular figures. |
-| `InfoSidebar` | Roll, Film Stock(s), Camera Body, Shot Date, Description, Project | `DSSection`s with `DSTextField` and pickers, in a ds `Scroller` as Swift's `ScrollView` | |
+| `InfoSidebar` | Roll, Film Stock(s) (each count row led by its stock's icon), Camera Body, Shot Date (cleared by a reset glyph key), Description (a fixed-height multi-line box), Project | `DSSection`s with `DSTextField`, `TextArea`, `StockIcon` and pickers, in a ds `Scroller` as Swift's `ScrollView` | |
 | `ListPicking` | Click, ⌘-click, ⇧-click selection | Rust, from `pointer-event.modifiers` | |
 | `DSMedalPicker`, `DSFoil` | Bronze/silver/gold medals as foil rasters lit per pixel | `Image` from the same Rust raster (the Swift code is a CPU raster already) | `[draw]` Port `DSFoil.render` as is. |
 | No drag-and-drop reorganisation (product rule) | | Nothing | Keep it absent. |

@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, IconButton, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, Tabs, EmptyState, ContextMenu } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, GlyphKey, KeyPlate, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 // `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
@@ -9,13 +9,18 @@ export component Tree inherits Surface {
     in property <bool> beside-photo;
     property <length> menu-x;
     property <length> menu-y;
+    // Each part pads itself, as Swift's column does: the tab bar, the navigator's header, the tree.
     VerticalLayout {
-        padding: Space.s;
-        spacing: Space.s;
-        Tabs {
-            tabs: ["Archive", "Projects"];
-            selected <=> Library.surface;
-            picked(i) => { Library.surface-picked(i); }
+        HorizontalLayout {
+            padding-left: Space.m;
+            padding-right: Space.m;
+            padding-top: Space.s;
+            padding-bottom: Space.s;
+            Tabs {
+                tabs: ["Archive", "Projects"];
+                selected <=> Library.surface;
+                picked(i) => { Library.surface-picked(i); }
+            }
         }
         if Library.surface == 0: NavigatorSection {
             vertical-stretch: root.beside-photo ? 0 : 1;
@@ -30,85 +35,107 @@ export component Tree inherits Surface {
                 if (Library.trash-row-menu(i)) { menu.show(); }
             }
         }
-        if Library.surface == 0 && root.beside-photo: ColumnPill {
-            text: Navigator.opened-title;
-            help: Navigator.opened-help;
-        }
-        // `SidebarKeys`: read the folders again, show the selected photo, the next layout.
-        if Library.surface == 0 && root.beside-photo: HorizontalLayout {
-            alignment: end;
-            spacing: Space.xs;
-            IconButton { icon: Icons.reset; help: "Read the folders again"; clicked => { Library.tree-reload(); } }
-            IconButton { icon: Icons.target; help: "Show the selected photo"; clicked => { Library.tree-centre(); } }
-            IconButton {
-                icon: Library.tree-layout == 0 ? Icons.list : Library.tree-layout == 1 ? Icons.gallery : Icons.single;
-                help: Library.tree-layout-help;
-                clicked => { Library.tree-layout-next(); }
+        // `SidebarKeys` on a mini plate, then the pill naming what the column lists; on the projects
+        // in both modes, beside a photo alone on the archive. Under the tab bar its padding stands above.
+        if Library.surface == 1 || root.beside-photo: HorizontalLayout {
+            padding-left: Space.m;
+            padding-right: Space.m;
+            padding-top: Library.surface == 1 ? 0 : Space.s;
+            padding-bottom: Space.s;
+            spacing: Space.s;
+            KeyPlate {
+                mini: true;
+                if Library.surface == 0: GlyphKey { icon: Icons.target; help: "Show the selected photo"; clicked => { Library.tree-centre(); } }
+                if Library.surface == 1: GlyphKey {
+                    icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
+                    help: Library.projects-any-open ? "Fold every folder" : "Open every folder";
+                    clicked => { Library.project-fold-all(); }
+                }
+                if Library.surface == 0: GlyphKey {
+                    icon: Library.tree-layout == 0 ? Icons.list : Library.tree-layout == 1 ? Icons.gallery : Icons.single;
+                    help: Library.tree-layout-help;
+                    clicked => { Library.tree-layout-next(); }
+                }
+            }
+            ColumnPill {
+                horizontal-stretch: 1;
+                text: Library.surface == 1 ? "ONI Projects" : Navigator.opened-title;
+                help: Library.surface == 1 ? "" : Navigator.opened-help;
             }
         }
         // `TreeEngine`: Rust lays every row, a photo as a name or a thumbnail, and scrolls to the selection.
-        if Library.surface == 0 && root.beside-photo: Scroller {
+        if Library.surface == 0 && root.beside-photo: HorizontalLayout {
             vertical-stretch: 1;
-            content-height: Library.tree-content-height;
-            content-y <=> Library.tree-viewport-y;
-            init => { Library.tree-shown(self.width, self.height); }
-            changed width => { Library.tree-resized(self.width, self.height); }
-            changed height => { Library.tree-resized(self.width, self.height); }
-            for row[i] in Library.rows: Rectangle {
-                x: row.x;
-                y: row.y;
-                width: row.width;
-                height: row.height;
-                if !row.thumb && !row.renaming: TreeItem {
-                    width: parent.width;
-                    depth: row.depth;
-                    title: row.title;
-                    caption: row.caption;
-                    kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
-                    expandable: row.expandable;
-                    expanded: row.expanded;
-                    selected: row.selected;
-                    clicked => { Library.row-clicked(i); }
-                    double-clicked => { Library.row-double-clicked(i); }
-                }
-                if row.thumb: TileView {
-                    width: parent.width;
-                    picture-height: parent.width * 2 / 3;
-                    picture: row.picture;
-                    caption: row.title;
-                    selected: row.selected;
-                    medal: row.medal;
-                    missing: row.missing;
-                }
-                if row.thumb: TouchArea {
-                    clicked => { Library.row-clicked(i); }
-                    double-clicked => { Library.row-double-clicked(i); }
-                }
-                if row.renaming: RenameRow {
-                    width: parent.width;
-                    text: row.title;
-                    depth: row.depth;
-                    committed(t) => { Library.row-rename-committed(i, t); }
-                    cancelled => { Library.row-rename-cancelled(); }
+            padding-left: CardStyle.inset;
+            padding-right: CardStyle.inset;
+            Scroller {
+                vertical-stretch: 1;
+                content-height: Library.tree-content-height;
+                content-y <=> Library.tree-viewport-y;
+                init => { Library.tree-shown(self.width, self.height); }
+                changed width => { Library.tree-resized(self.width, self.height); }
+                changed height => { Library.tree-resized(self.width, self.height); }
+                for row[i] in Library.rows: Rectangle {
+                    x: row.x;
+                    y: row.y;
+                    width: row.width;
+                    height: row.height;
+                    if !row.thumb && !row.renaming: TreeItem {
+                        width: parent.width;
+                        depth: row.depth;
+                        title: row.title;
+                        caption: row.caption;
+                        kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
+                        expandable: row.expandable;
+                        expanded: row.expanded;
+                        selected: row.selected;
+                        clicked => { Library.row-clicked(i); }
+                        double-clicked => { Library.row-double-clicked(i); }
+                    }
+                    if row.thumb: TileView {
+                        width: parent.width;
+                        picture-height: parent.width * 2 / 3;
+                        picture: row.picture;
+                        caption: row.title;
+                        selected: row.selected;
+                        medal: row.medal;
+                        missing: row.missing;
+                    }
+                    if row.thumb: TouchArea {
+                        clicked => { Library.row-clicked(i); }
+                        double-clicked => { Library.row-double-clicked(i); }
+                    }
+                    if row.renaming: RenameRow {
+                        width: parent.width;
+                        text: row.title;
+                        depth: row.depth;
+                        committed(t) => { Library.row-rename-committed(i, t); }
+                        cancelled => { Library.row-rename-cancelled(); }
+                    }
                 }
             }
         }
-        if Library.surface == 1: ListView {
+        if Library.surface == 1: HorizontalLayout {
             vertical-stretch: 1;
-            for row[i] in Library.project-rows: TreeItem {
-                depth: row.depth;
-                title: row.title;
-                caption: row.caption;
-                kind: row.kind == 1 ? RowKind.roll : RowKind.photo;
-                expandable: row.expandable;
-                expanded: row.expanded;
-                selected: row.selected;
-                clicked => { Library.project-row-clicked(i); }
-                double-clicked => { Library.project-row-double-clicked(i); }
-                menu(x, y) => {
-                    root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
-                    root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
-                    if (Library.project-row-menu(i)) { menu.show(); }
+            padding-left: CardStyle.inset;
+            padding-right: CardStyle.inset;
+            ListView {
+                vertical-stretch: 1;
+                for row[i] in Library.project-rows: TreeItem {
+                    depth: row.depth;
+                    title: row.title;
+                    caption: row.caption;
+                    kind: row.kind == 1 ? RowKind.project : RowKind.photo;
+                    expandable: row.expandable;
+                    expanded: row.expanded;
+                    selected: row.selected;
+                    clicked => { Library.project-row-clicked(i); }
+                    double-clicked => { Library.project-row-double-clicked(i); }
+                    menu(x, y) => {
+                        root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
+                        root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
+                        if (Library.project-row-menu(i)) { menu.show(); }
+                    }
                 }
             }
         }

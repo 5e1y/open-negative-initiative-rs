@@ -18,6 +18,8 @@ export global Colour {
     out property <color> ink-on-light: DS.palette-text-on-light;
     out property <color> warning-surface: DS.palette-warning-surface;
     out property <color> ink-on-warning: DS.palette-text-on-warning;
+    // `DSWarning`'s band, under the on-warning ink.
+    out property <color> warning-soft: DS.palette-warning-soft;
     out property <color> accent: DS.palette-accent;
     out property <color> accent-hover: DS.palette-accent.brighter(0.15);
     out property <color> accent-pressed: DS.palette-accent.darker(0.2);
@@ -30,6 +32,8 @@ export global Colour {
     out property <color> destructive-hover: DS.tint-destructive.brighter(0.15);
     out property <color> destructive-pressed: DS.tint-destructive.darker(0.2);
     out property <color> confirm: DS.tint-confirm;
+    out property <color> confirm-hover: DS.tint-confirm.brighter(0.15);
+    out property <color> confirm-pressed: DS.tint-confirm.darker(0.2);
     // `DS.Tint.update`: the export slot's face while an update waits.
     out property <color> update: DS.tint-update;
     out property <color> update-hover: DS.tint-update.brighter(0.15);
@@ -298,6 +302,7 @@ export global ShellStyle {
     out property <length> library-width: DS.control-film-sidebar-width;
     out property <length> panel-width: DS.control-panel-width;
     out property <length> info-width: DS.control-info-sidebar-width;
+    out property <length> info-description: DS.control-project-description-height;
 }
 
 // The editors' plots: their inks and the sizes they draw handles at.
@@ -394,6 +399,8 @@ export global HelpStyle {
 export global StockStyle {
     out property <length> icon: DS.control-film-stock-icon-size;
     out property <length> hero: DS.control-film-stock-hero-size;
+    // `InfoSidebar`'s count rows: the stock at the icon's size.
+    out property <length> row: DS.control-icon-size;
     out property <length> width: DS.control-stock-sheet-width;
     out property <length> height: DS.control-stock-sheet-height;
     out property <float> grow: DS.control-thumb-grow;

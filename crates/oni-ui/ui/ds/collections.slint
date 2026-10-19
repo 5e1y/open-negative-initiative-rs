@@ -94,7 +94,7 @@ export component Scroller {
 // directly in an element named `ListView` that carries the content and visible lengths.
 export component ListView inherits Scroller { }
 
-export enum RowKind { folder, roll, photo }
+export enum RowKind { folder, roll, photo, project }
 
 // A line of a list: a title, a caption at the end, the hover and selection bands.
 export component ListRow inherits Rectangle {
@@ -128,7 +128,7 @@ export component ListRow inherits Rectangle {
     }
 }
 
-// The archive's row: indented by depth, a chevron when it opens, a folder or roll glyph.
+// The archive's row: indented by depth, a chevron when it opens, then its glyph, a photo's included.
 export component TreeItem inherits ListRow {
     in property <int> depth;
     in property <RowKind> kind;
@@ -143,10 +143,11 @@ export component TreeItem inherits ListRow {
             height: RowStyle.chevron;
         }
     }
-    if root.kind != RowKind.photo: VerticalLayout {
+    VerticalLayout {
         alignment: center;
         Icon {
-            source: root.kind == RowKind.roll ? Icons.film-roll : root.expanded ? Icons.folder-open : Icons.folder;
+            source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note
+                : root.kind == RowKind.roll ? Icons.film-roll : root.expanded ? Icons.folder-open : Icons.folder;
             width: RowStyle.icon;
             height: RowStyle.icon;
         }

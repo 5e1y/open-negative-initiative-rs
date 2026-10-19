@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, IconButton, Toggle, Label, WarningBadge, Note, Warning, Field, LinesPicker } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, KeyPlate, GlyphKey, ToggleRow, WarningBadge, Note, WarningBand, Field, LinesPicker } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -9,36 +9,40 @@ export component RollPane inherits Pane {
     property <bool> flat-settings;
     Block {
         title: "Measured Roll";
-        help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it.";
-        if PanelState.roll-state == 0: Warning { text: "This photo was never measured with its roll, so these settings act on it alone."; }
-        if PanelState.roll-state == 0: Button {
-            text: "Prepare the Roll…";
-            horizontal-stretch: 1;
-            enabled: PanelState.can-prepare;
-            clicked => { PanelState.prepare-roll(); }
-        }
-        if PanelState.roll-state == 1: Note {
-            text: PanelState.roll-measured == 1 ? "Acts on this photo, the only one measured with its roll." : "Acts on the \{PanelState.roll-measured} photos measured with this roll.";
-        }
-        if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: Warning {
-            text: PanelState.roll-unmeasured == 1 ? "1 photo of this folder was not measured with the roll." : "\{PanelState.roll-unmeasured} photos of this folder were not measured with the roll.";
-        }
-        if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: HorizontalLayout {
+        help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.";
+        separated: false;
+        // `rollBlock`: the rows a small gap apart, as Swift stacks them.
+        VerticalLayout {
             spacing: Space.s;
-            Button {
-                text: PanelState.roll-unmeasured == 1 ? "Join the Roll" : "Join the \{PanelState.roll-unmeasured}";
-                horizontal-stretch: 1;
-                help: "Gives them this roll's measurement and settings, their own look kept.";
-                clicked => { PanelState.join-roll(); }
+            if PanelState.roll-state == 0: WarningBand { text: "This photo was never measured with its roll, so these settings act on it alone."; }
+            if PanelState.roll-state == 0: Button {
+                text: "PREPARE THE ROLL…";
+                enabled: PanelState.can-prepare;
+                clicked => { PanelState.prepare-roll(); }
             }
-            Button {
-                text: "Roll of the \{PanelState.roll-measured}";
-                horizontal-stretch: 1;
-                help: "Makes the photos measured together a roll of their own.";
-                clicked => { PanelState.make-roll(); }
+            if PanelState.roll-state == 1: Note {
+                text: PanelState.roll-measured == 1 ? "Acts on this photo, the only one measured with its roll." : "Acts on the \{PanelState.roll-measured} photos measured with this roll.";
             }
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: WarningBand {
+                text: PanelState.roll-unmeasured == 1 ? "1 photo of this folder was not measured with the roll." : "\{PanelState.roll-unmeasured} photos of this folder were not measured with the roll.";
+            }
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: KeyPlate {
+                fills: true;
+                Button {
+                    fills: true;
+                    text: PanelState.roll-unmeasured == 1 ? "JOIN THE ROLL" : "JOIN THE \{PanelState.roll-unmeasured}";
+                    help: "Gives them this roll's measurement and settings, their own look kept.";
+                    clicked => { PanelState.join-roll(); }
+                }
+                Button {
+                    fills: true;
+                    text: "ROLL OF THE \{PanelState.roll-measured}";
+                    help: "Makes the photos measured together a roll of their own.";
+                    clicked => { PanelState.make-roll(); }
+                }
+            }
+            if PanelState.roll-state == 2: Note { text: "Finding the photos measured with this roll…"; }
         }
-        if PanelState.roll-state == 2: Note { text: "Finding the photos measured with this roll…"; }
     }
     Block {
         title: "Film Type";
@@ -56,22 +60,27 @@ export component RollPane inherits Pane {
         block: 11;
         modified: Store.flat-field-modified;
         folded-by-default: true;
+        // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
         HorizontalLayout {
             spacing: Space.s;
-            Label { text: "Flat-field"; horizontal-stretch: 1; }
-            Toggle { label: "Flat-field"; on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
-            IconButton { icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
+            ToggleRow { label: "Flat-field"; on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
+            Rectangle { horizontal-stretch: 1; }
+            VerticalLayout {
+                alignment: center;
+                GlyphKey { icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
+            }
         }
-        if PanelState.flat-field-on: LinesPicker {
+        if PanelState.flat-field-on: Field {
             label: "Mask";
-            value: PanelState.mask-title;
-            lines: PanelState.mask-lines;
-            chosen(i) => { PanelState.mask-chosen(i); }
+            LinesPicker {
+                value: PanelState.mask-title;
+                lines: PanelState.mask-lines;
+                chosen(i) => { PanelState.mask-chosen(i); }
+            }
         }
         if PanelState.flat-field-on && PanelState.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
         Button {
-            text: PanelState.taking-mask ? "Setting…" : "Use This Photo as Flat-Field";
-            horizontal-stretch: 1;
+            text: PanelState.taking-mask ? "SETTING…" : "USE THIS PHOTO AS FLAT-FIELD";
             enabled: PanelState.can-take-mask;
             clicked => { PanelState.take-mask(); }
         }
@@ -87,15 +96,14 @@ export component RollPane inherits Pane {
             field: 29; label: "Tint"; fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        if root.flat-settings: HorizontalLayout {
-            spacing: Space.s;
-            Button { text: PanelState.loading-mask ? "Loading…" : "Load…"; horizontal-stretch: 1; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
-            Button { text: "Rename"; horizontal-stretch: 1; enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
-            Button { text: "Folder"; horizontal-stretch: 1; clicked => { PanelState.mask-folder(); } }
+        if root.flat-settings: KeyPlate {
+            fills: true;
+            Button { fills: true; text: PanelState.loading-mask ? "LOADING…" : "LOAD…"; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { fills: true; text: "RENAME"; enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { fills: true; text: "FOLDER"; clicked => { PanelState.mask-folder(); } }
         }
         if root.flat-settings: Button {
-            text: "Apply to Selection";
-            horizontal-stretch: 1;
+            text: "APPLY TO SELECTION";
             enabled: PanelState.flat-picked > 0;
             clicked => { PanelState.flat-apply-selection(); }
         }

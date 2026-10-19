@@ -1,5 +1,5 @@
 // The editor's panel: the tab bar and its five tabs, each in its own file under `panel/`.
-import { Space, Tabs, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
+import { Space, Tabs, Divider, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
 import { PrintOverlay } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { RollPane } from "panel/roll_tab.slint";
@@ -53,6 +53,8 @@ export component Panel inherits Surface {
                 picked(i) => { PanelState.tab-picked(i); }
             }
         }
+        // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.
+        Divider { }
         Rectangle {
             vertical-stretch: 1;
             RollPane { shown: PanelState.tab == 0; }
