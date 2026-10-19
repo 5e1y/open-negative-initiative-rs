@@ -73,8 +73,25 @@ impl Ctl {
         drop(s);
         lib.set_tiles(ModelRc::new(VecModel::from(tiles)));
         lib.set_headings(ModelRc::new(VecModel::from(headings)));
+        self.publish_pinned();
         lib.set_content_height(height);
         lib.set_scroll(scroll);
+    }
+
+    /// The heading held at the grid's top, which follows every scroll, the offset's alone too.
+    pub(super) fn publish_pinned(&self) {
+        let Some(w) = self.window() else { return };
+        let pinned = {
+            let s = self.state.borrow();
+            s.layout.pinned(s.scroll).map(|(i, y)| (y, s.layout.bands[i].title.clone(), s.layout.bands[i].caption.clone()))
+        };
+        let lib = w.global::<Library>();
+        lib.set_pinned_shown(pinned.is_some());
+        if let Some((y, title, caption)) = pinned {
+            lib.set_pinned_y(y);
+            lib.set_pinned_title(title.into());
+            lib.set_pinned_caption(caption.into());
+        }
     }
 
     pub(super) fn tile_clicked(self: &Rc<Self>, i: usize, toggle: bool, extend: bool) {

@@ -5,6 +5,7 @@ mod common;
 mod runner;
 mod archive;
 mod auto_balance;
+mod canvas_layout;
 mod canvas_switch;
 mod catalogue;
 mod contact_sheet;
@@ -46,6 +47,7 @@ mod wrapped;
 const CHECKS: &[(&str, fn())] = &[
     ("archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once", archive::a_folder_opens_on_the_gallery_and_its_thumbnails_are_drawn_once),
     ("auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back", auto_balance::the_key_balances_the_open_frame_off_the_interface_thread_and_one_undo_takes_it_back),
+    ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("catalogue::the_catalogue_shows_every_component", catalogue::the_catalogue_shows_every_component),
     ("contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips", contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips),

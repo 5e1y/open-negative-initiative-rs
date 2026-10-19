@@ -1,0 +1,311 @@
+// The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
+import { DS, Card, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
+import { PanelState, Lab } from "panel.slint";
+import { PresetDeck } from "preset_deck.slint";
+import { SpaceChip } from "export.slint";
+
+// The canvas: the photo the display kernel wrote, and the facts the status bar carries.
+// A correction's marker on the canvas: its ring's rectangle in points and its number.
+export struct Mark {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    number: int,
+}
+
+export global Canvas {
+    in property <image> frame;
+    in property <string> status;
+    in property <bool> busy;
+    // The open frame's sidecar cannot be written, and what a frame that failed to decode says.
+    in property <bool> read-only;
+    in property <string> failure;
+    in-out property <length> width;
+    in-out property <length> height;
+    // Where the render sits on the canvas, which shows only the viewport's part of the image.
+    in property <length> frame-x;
+    in property <length> frame-y;
+    in property <length> frame-width;
+    in property <length> frame-height;
+    // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
+    in property <float> split: -1;
+    in property <image> before;
+    in property <length> before-x;
+    in property <length> before-y;
+    in property <length> before-width;
+    in property <length> before-height;
+    callback split-dragged(length);
+    // The crop frame while the Crop tab is open, and the measuring window, on the canvas.
+    in property <bool> cropping;
+    in property <length> crop-x;
+    in property <length> crop-y;
+    in property <length> crop-width;
+    in property <length> crop-height;
+    in property <bool> window-shown;
+    in property <length> window-x;
+    in property <length> window-y;
+    in property <length> window-width;
+    in property <length> window-height;
+    callback frame-grabbed(bool, int);
+    callback frame-dragged(bool, int, length, length);
+    callback frame-released(bool);
+    // De-dust: painting armed, the brush under the pointer, the stroke being painted, the marks.
+    in property <bool> painting;
+    in property <bool> brush-shown;
+    in property <length> brush-x;
+    in property <length> brush-y;
+    in property <length> brush-diameter;
+    in property <string> stroke;
+    in property <length> stroke-width;
+    in property <[Mark]> marks;
+    // Each patch's source: the lines to them, and the copied strokes with their widths.
+    in property <string> source-lines;
+    in property <length> source-line-width;
+    in property <[{commands: string, width: length}]> source-shapes;
+    // Space held in De-dust: the drag pans instead of painting.
+    in-out property <bool> space-held;
+    // The crop's size while a handle is held, above the frame.
+    in property <string> crop-badge;
+    in property <length> crop-badge-x;
+    in property <length> crop-badge-y;
+    // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
+    in property <string> zoom-label;
+    in property <bool> can-zoom-out;
+    in property <bool> can-zoom-in;
+    callback paint-hover(length, length, bool);
+    callback paint-start(length, length);
+    callback paint-move(length, length);
+    callback paint-end();
+    callback resized();
+    callback double-clicked();
+    callback grabbed(length, length);
+    callback dragged(length, length);
+    // The wheel's delta, the pointer, and whether ⌘ is held; answers whether the canvas took it.
+    callback scrolled(length, length, length, length, bool) -> bool;
+    callback pinch-started();
+    callback pinched(float, length, length);
+}
+
+export component CanvasCard inherits Card {
+    in property <bool> library-hidden;
+    in property <bool> panel-hidden;
+    callback menu(string);
+    callback refocused();
+    // A column key pressed: true for the Library's, so the shell drops that column's reveal.
+    callback column-toggled(bool);
+    dimmed: Canvas.cropping;
+    changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
+    changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
+    Rectangle {
+        x: CardStyle.padding;
+        y: CardStyle.padding;
+        width: parent.width - 2 * CardStyle.padding;
+        height: parent.height - 2 * CardStyle.padding;
+        clip: true;
+        Picture {
+            width: parent.width;
+            height: parent.height;
+            ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
+        }
+        Picture {
+            x: Canvas.frame-x;
+            y: Canvas.frame-y;
+            width: Canvas.frame-width;
+            height: Canvas.frame-height;
+            ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
+            stretched: true;
+            source: Canvas.frame;
+        }
+        // Held at the left edge: an element with no place is centred in its parent.
+        if Canvas.split >= 0: Rectangle {
+            x: 0;
+            y: 0;
+            width: parent.width * Canvas.split;
+            height: parent.height;
+            clip: true;
+            Picture {
+                x: Canvas.before-x;
+                y: Canvas.before-y;
+                width: Canvas.before-width;
+                height: Canvas.before-height;
+                ground: Ground.canvas;
+                stretched: true;
+                source: Canvas.before;
+            }
+        }
+        // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
+        ScaleRotateGestureHandler {
+            width: parent.width;
+            height: parent.height;
+            started => { Canvas.pinch-started(); }
+            updated => { Canvas.pinched(self.scale, self.center.x, self.center.y); }
+            navigation := TouchArea {
+                width: parent.width;
+                height: parent.height;
+                clicked => { root.refocused(); }
+                double-clicked => { Canvas.double-clicked(); }
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                        Canvas.grabbed(self.mouse-x, self.mouse-y);
+                    }
+                }
+                moved => { Canvas.dragged(self.mouse-x, self.mouse-y); }
+                scroll-event(event) => {
+                    Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.control) ? EventResult.accept : EventResult.reject
+                }
+            }
+        }
+        if Canvas.cropping: FrameOverlay {
+            width: parent.width;
+            height: parent.height;
+            frame-x: Canvas.crop-x;
+            frame-y: Canvas.crop-y;
+            frame-width: Canvas.crop-width;
+            frame-height: Canvas.crop-height;
+            grabbed(h) => { Canvas.frame-grabbed(false, h); }
+            dragged(h, dx, dy) => { Canvas.frame-dragged(false, h, dx, dy); }
+            released => { Canvas.frame-released(false); }
+        }
+        if Canvas.cropping && Canvas.crop-badge != "": Badge {
+            text: Canvas.crop-badge;
+            x: Canvas.crop-badge-x - self.width / 2;
+            y: Canvas.crop-badge-y - self.height / 2;
+        }
+        if Canvas.window-shown: FrameOverlay {
+            width: parent.width;
+            height: parent.height;
+            look: FrameStyle.window;
+            body-moves: !Canvas.cropping;
+            frame-x: Canvas.window-x;
+            frame-y: Canvas.window-y;
+            frame-width: Canvas.window-width;
+            frame-height: Canvas.window-height;
+            grabbed(h) => { Canvas.frame-grabbed(true, h); }
+            dragged(h, dx, dy) => { Canvas.frame-dragged(true, h, dx, dy); }
+            released => { Canvas.frame-released(true); }
+        }
+        if Canvas.painting: Rectangle {
+            width: parent.width;
+            height: parent.height;
+            for t in Canvas.source-shapes: SourceTrace {
+                width: parent.width;
+                height: parent.height;
+                commands: t.commands;
+                thickness: t.width;
+            }
+            if Canvas.source-lines != "": SourceTrace {
+                width: parent.width;
+                height: parent.height;
+                commands: Canvas.source-lines;
+                thickness: Canvas.source-line-width;
+            }
+            for m in Canvas.marks: CorrectionMark {
+                x: m.x;
+                y: m.y;
+                width: m.width;
+                height: m.height;
+                number: m.number;
+            }
+            if Canvas.stroke != "": LiveStroke {
+                width: parent.width;
+                height: parent.height;
+                commands: Canvas.stroke;
+                thickness: Canvas.stroke-width;
+            }
+            if Canvas.brush-shown && !Canvas.space-held: BrushDisc {
+                x: Canvas.brush-x - Canvas.brush-diameter / 2;
+                y: Canvas.brush-y - Canvas.brush-diameter / 2;
+                width: Canvas.brush-diameter;
+                height: Canvas.brush-diameter;
+            }
+            paint := TouchArea {
+                enabled: !Canvas.space-held;
+                mouse-cursor: none;
+                changed has-hover => { Canvas.paint-hover(self.mouse-x, self.mouse-y, self.has-hover); }
+                pointer-event(event) => {
+                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) { Canvas.paint-start(self.mouse-x, self.mouse-y); }
+                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) { Canvas.paint-end(); }
+                }
+                moved => {
+                    Canvas.paint-hover(self.mouse-x, self.mouse-y, true);
+                    if (self.pressed) { Canvas.paint-move(self.mouse-x, self.mouse-y); }
+                }
+            }
+        }
+        if Canvas.split >= 0: SplitGuide {
+            x: parent.width * Canvas.split - self.width / 2;
+            height: parent.height;
+            dragged(at) => { Canvas.split-dragged(self.x + at); }
+        }
+        // `readOnlyBanner`: the frame's settings will not be kept, at the top centre.
+        if Canvas.read-only: WarningBadge {
+            x: (parent.width - self.width) / 2;
+            y: Space.s;
+            text: "Read-only: settings will not be saved";
+        }
+    }
+    // A frame decoding with no thumbnail standing in, then one that never decoded.
+    if Canvas.busy && Canvas.frame.width == 0 && Canvas.failure == "": Progress {
+        fraction: -1;
+        width: DS.control-decode-progress-width;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+    }
+    if Canvas.failure != "": Warning {
+        text: Canvas.failure;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        wrap: no-wrap;
+    }
+    // The deck rises over the picture's bottom edge; Crop's handles use that edge.
+    // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.
+    if PanelState.tab != 1 && !Lab.shown: PresetDeck {
+        x: 0;
+        width: parent.width;
+        y: parent.height - self.height;
+    }
+    SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
+    // `columnKey(.leading)`: the Library's key in the canvas's top-left band.
+    HorizontalLayout {
+        x: CardStyle.padding;
+        y: 0;
+        width: self.preferred-width;
+        height: CardStyle.padding;
+        alignment: center;
+        IconButton {
+            size: ButtonSize.small;
+            icon: Icons.menu-left;
+            help: root.library-hidden ? "Show the Library (⌥⌘[)" : "Hide the Library (⌥⌘[)";
+            clicked => {
+                root.column-toggled(true);
+                root.menu("hide-library");
+            }
+        }
+    }
+    HorizontalLayout {
+        // Its own width: a layout left unsized spans the card and centres its keys off it.
+        x: parent.width - self.preferred-width - CardStyle.padding;
+        y: 0;
+        width: self.preferred-width;
+        height: CardStyle.padding;
+        spacing: Space.s;
+        alignment: center;
+        Label { text: Canvas.zoom-label; role: TextRole.value; }
+        ButtonGroup {
+            alignment: center;
+            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { root.menu("smaller"); } }
+            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { root.menu("larger"); } }
+        }
+        // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
+        IconButton {
+            size: ButtonSize.small;
+            icon: Icons.menu-right;
+            help: root.panel-hidden ? "Show the Panel (⌥⌘])" : "Hide the Panel (⌥⌘])";
+            clicked => {
+                root.column-toggled(false);
+                root.menu("hide-panel");
+            }
+        }
+    }
+}

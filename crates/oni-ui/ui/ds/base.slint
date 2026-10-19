@@ -1,12 +1,13 @@
 // The primitives every screen composes: text, glyphs, pictures, surfaces, rules and stacks.
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
+import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
 
 export enum TextRole { label, value, caption, title, section, heading, button }
 export enum Tone { primary, secondary, tertiary, on-fill, on-light }
 export enum Gap { none, xxs, xs, s, m, l }
-export enum Ground { ground, canvas, well, paper, skeleton }
+export enum Ground { ground, canvas, canvas-cropping, well, paper, skeleton }
 export enum PlotSize { main, block }
 
 // Where a note lands: its corner and its size, in the window's points.
@@ -43,6 +44,7 @@ export global Tones {
     }
     public pure function ground(ground: Ground) -> color {
         if (ground == Ground.canvas) { return Colour.canvas; }
+        if (ground == Ground.canvas-cropping) { return Colour.canvas-cropping; }
         if (ground == Ground.well) { return Colour.well; }
         if (ground == Ground.paper) { return Colour.paper; }
         if (ground == Ground.skeleton) { return Colour.skeleton; }
@@ -185,18 +187,32 @@ export component Surface inherits Rectangle {
     background: Tones.ground(root.ground);
 }
 
-// The canvas card: inset from the panel's ground, rounded, its content clipped.
+// The canvas card: rounded, its content clipped, darker while a frame is cropped.
 export component Card inherits Rectangle {
-    background: Colour.canvas;
+    in property <bool> dimmed;
+    background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
     border-radius: CardStyle.radius;
     clip: true;
+}
+
+// `floating(_:)`: a hidden column slid over the card, rounded and raised by its shade.
+export component FloatingColumn inherits Rectangle {
+    background: Colour.ground;
+    border-radius: CardStyle.radius;
+    clip: true;
+    drop-shadow-color: DS.scanner-raise-shade;
+    drop-shadow-blur: DS.control-hollow-blur * 1px;
+    drop-shadow-offset-y: DS.control-hollow-drop * 1px;
 }
 
 // `DSStatusBar`: one line under the viewer.
 export component StatusLine inherits Rectangle {
     in property <string> text;
     height: StatusStyle.height;
-    Label {
+    // As wide as its words, eliding once the row is short of room.
+    min-width: 0;
+    preferred-width: line.preferred-width + 2 * Space.s;
+    line := Label {
         x: Space.s;
         width: parent.width - 2 * Space.s;
         height: parent.height;

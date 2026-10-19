@@ -36,6 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             queue: gpu.queue.clone(),
         })
         .with_winit_custom_application_handler(Quitting)
+        .with_winit_window_attributes_hook(oni_app::chrome::attributes)
         .select();
     let canvas = match wgpu {
         Ok(()) => {
@@ -63,10 +64,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), ..Options::default() })?;
+    // The window's adapter is made here, while the hook still knows the main window is the one built.
+    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), ..Options::default() }).inspect(|s| {
+        s.window.window();
+    }))?;
+    let room = shell.window.as_weak();
+    shell.window.global::<oni_app::Bar>().on_room_pressed(move || {
+        if let Some(w) = room.upgrade() {
+            oni_app::chrome::room_pressed(w.window());
+        }
+    });
     let quitting = shell.ctl.clone();
     ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
+    let lit = shell.window.as_weak();
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
     shell.window.window().on_winit_window_event(move |window, event| {
         if let WindowEvent::CursorMoved { position, .. } = event {
@@ -87,6 +98,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             viewport::note_wheel(wheel);
         }
         if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
+            if let Some(w) = lit.upgrade() {
+                lights(&w);
+            }
             gate.hold();
             let open = gate.clone();
             let _ = slint::invoke_from_event_loop(move || open.release());
@@ -113,10 +127,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         oni_app::splash::show(move || {
             if let Some(w) = main.upgrade() {
                 let _ = w.show();
+                lights(&w);
             }
         })?;
     } else {
         shell.window.show()?;
+        lights(&shell.window);
     }
     slint::run_event_loop()?;
     // A quit that never asked the window to close still writes the open frame's last settings.
@@ -126,6 +142,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
     Ok(())
+}
+
+/// The bar makes room for the traffic lights wherever they show: none in full screen.
+fn lights(w: &oni_app::MainWindow) {
+    let bar = w.global::<oni_app::Bar>();
+    bar.set_traffic_lights(oni_app::chrome::traffic_lights(w.window(), bar.get_height()));
 }
 
 thread_local! {

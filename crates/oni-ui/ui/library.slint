@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, PinnedHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -71,6 +71,11 @@ export global Library {
     // Only the tiles in view and one row either side, placed in the grid's own coordinates.
     in property <[Tile]> tiles;
     in property <[Heading]> headings;
+    // The band under the grid's top edge, its heading held there until the band's end pushes it off.
+    in property <bool> pinned-shown;
+    in property <length> pinned-y;
+    in property <string> pinned-title;
+    in property <string> pinned-caption;
     in property <length> content-height;
     in property <length> scroll;
     in property <string> empty-title;
@@ -101,6 +106,9 @@ export global Library {
     in property <float> loading-fraction: -1;
     in property <bool> medal-shown;
     in property <int> medal-current: -1;
+    // The picker beside the open frame: the frame itself while nothing is selected.
+    in property <bool> editor-medal-shown;
+    in property <int> editor-medal-current: -1;
     // The info sidebar: 0 nothing resolved, 1 a roll, 2 a project.
     in property <int> info-kind;
     in property <string> info-empty;
@@ -216,6 +224,12 @@ export component Grid inherits Surface {
                 height: Library.ghost-height;
                 source: Library.ghost;
             }
+        }
+        if Library.pinned-shown: PinnedHeading {
+            y: Library.pinned-y - Library.scroll;
+            width: parent.width;
+            title: Library.pinned-title;
+            caption: Library.pinned-caption;
         }
     }
     if Library.empty-title != "": EmptyState {

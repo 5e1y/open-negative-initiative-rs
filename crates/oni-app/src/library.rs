@@ -32,7 +32,9 @@ pub struct Row {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Group {
     pub title: String,
+    /// The heading's trail, the folders above it, and the name its band is headed by.
     pub caption: String,
+    pub header: String,
     pub stock: String,
     /// The roll a folder's marker names, the one a click on the band writes.
     pub film: Option<oni_settings::Film>,
@@ -49,10 +51,6 @@ pub struct Archive {
 
 fn stem(path: &str) -> String {
     Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-}
-
-fn photos(n: usize) -> String {
-    if n == 1 { "1 photo".into() } else { format!("{n} photos") }
 }
 
 impl Archive {
@@ -82,7 +80,9 @@ impl Archive {
                     .and_then(|f| film_stock(f.stock.as_deref()))
                     .map(|k| k.display_name.to_string())
                     .unwrap_or_default();
-                Group { caption: photos(g.entries.len()), title, stock, film: g.film, entries: g.entries }
+                // `RollHeaderContent`: the folders above the roll, then its own name.
+                let (caption, header) = (g.trail().unwrap_or_default(), g.heading_title());
+                Group { caption, header, title, stock, film: g.film, entries: g.entries }
             })
             .collect();
         // The opened folder starts unfolded, its photos one click away.

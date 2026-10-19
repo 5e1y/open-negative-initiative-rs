@@ -890,5 +890,13 @@
     "status": "done",
     "detail": "Owner's report: on the T7 (exFAT) the Scans folder showed as a dead end and the editor's column held no photo. A listing the disk refused (a drive still waking, access to removable volumes not granted yet) was kept as an empty folder for the whole session, and the opened folder stayed unread. Now a refusal leaves the folder unlisted with its chevron; a click reads it again, and the mounts' reader tries every refused folder each second, listing it and reading the opened folder again once the disk answers. Folders the Finder hides by their flag (Recovery, System Volume Information) are left out as Swift's .skipsHiddenFiles does. FEEDBACKS was stretched by its zone: it keeps its own width. Every sheet stops at the window's height less its margins and scrolls past it, WelcomeSheet's fit. KeyPlate, Swift's KeycapPlate, joins the design system with Button.fills.",
     "outcome": ""
+  },
+  {
+    "id": 125,
+    "type": "fix",
+    "title": "One unified bar on macOS; the card flush; a hidden column back by its key or its edge; roll headers with their trail and pinned; medals and seals in Swift's corners",
+    "status": "done",
+    "detail": "The main window's title bar is transparent, untitled and under the content (winit's macOS attributes through the backend's hook, the main window only), the traffic lights centred in the bar with their room read from AppKit; the bar's empty room drags the window and a double press does the system's title-bar action. The gallery always lists the library; beside a photo the canvas carries Swift's column keys (menu-left at the top left, menu-right last in the zoom bubble, which was laid off the card and never showed) and a hidden column slides over the card from its edge while hovered. The card is flush with its columns and the status bar, inset on four sides only on export, where the status bar leaves. Roll headers read 'trail / title' with no count and stay pinned while their band scrolls. Tiles wear the medal bottom-left and the RGB seal bottom-right, Space.sm in. The status bar sets the seal after the name, the medal picker at the end, and shows the picker beside a photo too. The bar's centre keys sit on the window's centre when there is room. The canvas shows the read-only badge, the decode progress with no stand-in, '<file>: could not be decoded', and turns darker while cropping.",
+    "outcome": "Window check canvas_layout (twins for each piece); the real app's content view measured at the window's full frame, the lights at 9-69 pt centred in the 48-point bar, the bar's room hit-testing to the content view."
   }
 ]

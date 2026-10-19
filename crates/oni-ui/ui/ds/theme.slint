@@ -201,7 +201,8 @@ export global TileStyle {
     out property <length> caption: DS.control-caption-height;
     out property <length> caption-gap: Space.xs;
     out property <length> medal: DS.control-medal-size;
-    out property <length> badge-inset: DS.control-badge-padding;
+    // `Space.sm` in from the corners, as `TileLayers` sets the medal and the seal.
+    out property <length> badge-inset: Space.s;
     out property <length> selection: Stroke.emphasis;
     out property <length> heading: DS.control-roll-header-height;
 }

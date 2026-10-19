@@ -14,12 +14,14 @@ impl Ctl {
         let done = match done {
             Ok(d) => d,
             Err((path, e)) => {
+                let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                 if self.state.borrow().open_path().map(PathBuf::from) != Some(path) {
                     return;
                 }
                 // The canvas never keeps another photo's picture under this one's name.
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
+                w.global::<Canvas>().set_failure(format!("{name}: could not be decoded").into());
                 w.global::<Plots>().set_output(Image::default());
                 self.state.borrow_mut().histogram_dirty = false;
                 self.say(&format!("Not rendered: {e}"));

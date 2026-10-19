@@ -91,16 +91,17 @@ export component TileView inherits Rectangle {
         ground: Ground.well;
         source: root.picture;
         opacity: root.missing ? State.disabled : 1;
+        // `TileLayers`: the medal at the bottom-left corner, the RGB seal at the bottom-right.
         if root.medal > 0: Rectangle {
-            x: parent.width - self.width - TileStyle.badge-inset;
-            y: TileStyle.badge-inset;
+            x: TileStyle.badge-inset;
+            y: parent.height - self.height - TileStyle.badge-inset;
             width: TileStyle.medal;
             height: TileStyle.medal;
             border-radius: self.width / 2;
             background: Colour.medal[root.medal];
         }
         if root.rgb: Rectangle {
-            x: TileStyle.badge-inset;
+            x: parent.width - self.width - TileStyle.badge-inset;
             y: parent.height - self.height - TileStyle.badge-inset;
             width: seal.preferred-width + 2 * Space.xs;
             height: TileStyle.caption;
@@ -125,12 +126,26 @@ export component TileView inherits Rectangle {
     }
 }
 
-// A band's heading over its tiles: the roll's title and its caption.
+// `RollHeaderContent`: a band's title over its tiles, the folders above it first, in secondary.
 export component TileHeading inherits HorizontalLayout {
     in property <string> title;
     in property <string> caption;
     height: TileStyle.heading;
-    spacing: Space.s;
-    Label { role: TextRole.title; text: root.title; }
-    Label { role: TextRole.value; tone: Tone.secondary; text: root.caption; horizontal-stretch: 1; }
+    if root.caption != "": Label { role: TextRole.title; tone: Tone.secondary; text: root.caption + " / "; }
+    Label { role: TextRole.title; text: root.title; overflow: elide; }
+    Rectangle { horizontal-stretch: 1; }
+}
+
+// `PinnedGalleryHeader`: the band's heading held at the grid's top, on the canvas the tiles pass under.
+export component PinnedHeading inherits Rectangle {
+    in property <string> title;
+    in property <string> caption;
+    background: Colour.canvas;
+    height: TileStyle.heading;
+    TileHeading {
+        x: Space.l;
+        width: parent.width - 2 * Space.l;
+        title: root.title;
+        caption: root.caption;
+    }
 }

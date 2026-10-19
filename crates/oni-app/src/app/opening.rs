@@ -42,11 +42,15 @@ impl Ctl {
         if let Some(message) = failure {
             self.say(&message);
         }
+        let read_only = self.state.borrow_mut().store.editor().is_some_and(|e| !e.writable());
         if let Some(w) = self.window() {
+            w.global::<Canvas>().set_read_only(read_only);
+            w.global::<Canvas>().set_failure("".into());
             w.global::<Canvas>().set_busy(true);
             w.global::<Canvas>().set_status(format!("{} · decoding", stem(path)).into());
         }
         self.show_thumbnail(path);
+        self.publish_status();
         self.publish(true);
         self.publish_tree();
         self.schedule_redraw();

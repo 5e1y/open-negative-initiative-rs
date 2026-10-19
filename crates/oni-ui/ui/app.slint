@@ -1,11 +1,12 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
-import { DS, SplashWindow, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, ButtonKind, Label, TextRole, Tone, Sheet, Space, Ground, StatusLine, SealedStatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
+import { DS, SplashWindow, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, ButtonKind, Label, WarningBadge, Warning, Progress, FloatingColumn, Motion, TextRole, Tone, Sheet, Space, Ground, StatusLine, SealedStatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
 import { Grid, Info, Library, Tile, Heading, TreeRow, TrashLine, StockCount } from "library.slint";
 import { CardStatus } from "card_status.slint";
+import { Canvas, Mark, CanvasCard } from "canvas.slint";
 import { Tree } from "library_tree.slint";
 import { Navigator, FolderLine, WelcomeLine, CatchUpLine, RootsCatchUpSheet } from "navigator.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
@@ -26,87 +27,8 @@ export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWi
 export { MaskDialog, Confirm }
 export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
+export { Canvas, Mark }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/ds.slint";
-
-// The canvas: the photo the display kernel wrote, and the facts the status bar carries.
-// A correction's marker on the canvas: its ring's rectangle in points and its number.
-export struct Mark {
-    x: length,
-    y: length,
-    width: length,
-    height: length,
-    number: int,
-}
-
-export global Canvas {
-    in property <image> frame;
-    in property <string> status;
-    in property <bool> busy;
-    in-out property <length> width;
-    in-out property <length> height;
-    // Where the render sits on the canvas, which shows only the viewport's part of the image.
-    in property <length> frame-x;
-    in property <length> frame-y;
-    in property <length> frame-width;
-    in property <length> frame-height;
-    // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
-    in property <float> split: -1;
-    in property <image> before;
-    in property <length> before-x;
-    in property <length> before-y;
-    in property <length> before-width;
-    in property <length> before-height;
-    callback split-dragged(length);
-    // The crop frame while the Crop tab is open, and the measuring window, on the canvas.
-    in property <bool> cropping;
-    in property <length> crop-x;
-    in property <length> crop-y;
-    in property <length> crop-width;
-    in property <length> crop-height;
-    in property <bool> window-shown;
-    in property <length> window-x;
-    in property <length> window-y;
-    in property <length> window-width;
-    in property <length> window-height;
-    callback frame-grabbed(bool, int);
-    callback frame-dragged(bool, int, length, length);
-    callback frame-released(bool);
-    // De-dust: painting armed, the brush under the pointer, the stroke being painted, the marks.
-    in property <bool> painting;
-    in property <bool> brush-shown;
-    in property <length> brush-x;
-    in property <length> brush-y;
-    in property <length> brush-diameter;
-    in property <string> stroke;
-    in property <length> stroke-width;
-    in property <[Mark]> marks;
-    // Each patch's source: the lines to them, and the copied strokes with their widths.
-    in property <string> source-lines;
-    in property <length> source-line-width;
-    in property <[{commands: string, width: length}]> source-shapes;
-    // Space held in De-dust: the drag pans instead of painting.
-    in-out property <bool> space-held;
-    // The crop's size while a handle is held, above the frame.
-    in property <string> crop-badge;
-    in property <length> crop-badge-x;
-    in property <length> crop-badge-y;
-    // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
-    in property <string> zoom-label;
-    in property <bool> can-zoom-out;
-    in property <bool> can-zoom-in;
-    callback paint-hover(length, length, bool);
-    callback paint-start(length, length);
-    callback paint-move(length, length);
-    callback paint-end();
-    callback resized();
-    callback double-clicked();
-    callback grabbed(length, length);
-    callback dragged(length, length);
-    // The wheel's delta, the pointer, and whether ⌘ is held; answers whether the canvas took it.
-    callback scrolled(length, length, length, length, bool) -> bool;
-    callback pinch-started();
-    callback pinched(float, length, length);
-}
 
 export global App {
     in-out property <bool> gallery;
@@ -209,6 +131,10 @@ export global Menus {
 export component MainWindow inherits AppWindow {
     title: "Open Negative Initiative";
     out property <bool> keys-focused: keys.has-focus;
+    // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
+    property <bool> revealed-library;
+    property <bool> revealed-panel;
+    property <bool> beside-photo: !App.gallery && !Exporting.shown && !Preparing.shown;
     // Any sheet over the window, every flag that lays one below.
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
@@ -336,210 +262,102 @@ export component MainWindow inherits AppWindow {
             if !Exporting.shown: Toolbar { }
             HorizontalLayout {
                 vertical-stretch: 1;
-                if !App.library-hidden && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; }
+                // The gallery always lists the library; beside a photo the column can be hidden.
+                if (App.gallery || !App.library-hidden) && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; }
                 Rectangle {
                     horizontal-stretch: 1;
-                    // The card, inset by `cardInset` from the panel's ground.
-                    card := Card {
-                        x: CardStyle.inset;
+                    // `card`: flush with the columns and the status bar, inset on all four sides only on export.
+                    property <length> status: StatusStyle.height + 2 * Space.s;
+                    card := CanvasCard {
+                        x: 0;
                         y: 0;
-                        width: parent.width - 2 * CardStyle.inset;
-                        height: parent.height - CardStyle.inset - StatusStyle.height;
-                        visible: !App.gallery && !Exporting.shown && !Preparing.shown;
-                        changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
-                        changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
-                        Rectangle {
-                            x: CardStyle.padding;
-                            y: CardStyle.padding;
-                            width: parent.width - 2 * CardStyle.padding;
-                            height: parent.height - 2 * CardStyle.padding;
-                            clip: true;
-                            Picture {
-                                width: parent.width;
-                                height: parent.height;
-                                ground: Ground.canvas;
-                            }
-                            Picture {
-                                x: Canvas.frame-x;
-                                y: Canvas.frame-y;
-                                width: Canvas.frame-width;
-                                height: Canvas.frame-height;
-                                ground: Ground.canvas;
-                                stretched: true;
-                                source: Canvas.frame;
-                            }
-                            // Held at the left edge: an element with no place is centred in its parent.
-                            if Canvas.split >= 0: Rectangle {
-                                x: 0;
-                                y: 0;
-                                width: parent.width * Canvas.split;
-                                height: parent.height;
-                                clip: true;
-                                Picture {
-                                    x: Canvas.before-x;
-                                    y: Canvas.before-y;
-                                    width: Canvas.before-width;
-                                    height: Canvas.before-height;
-                                    ground: Ground.canvas;
-                                    stretched: true;
-                                    source: Canvas.before;
-                                }
-                            }
-                            // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
-                            ScaleRotateGestureHandler {
-                                width: parent.width;
-                                height: parent.height;
-                                started => { Canvas.pinch-started(); }
-                                updated => { Canvas.pinched(self.scale, self.center.x, self.center.y); }
-                                navigation := TouchArea {
-                                    width: parent.width;
-                                    height: parent.height;
-                                    clicked => { root.refocus(); }
-                                    double-clicked => { Canvas.double-clicked(); }
-                                    pointer-event(event) => {
-                                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                                            Canvas.grabbed(self.mouse-x, self.mouse-y);
-                                        }
-                                    }
-                                    moved => { Canvas.dragged(self.mouse-x, self.mouse-y); }
-                                    scroll-event(event) => {
-                                        Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.control) ? EventResult.accept : EventResult.reject
-                                    }
-                                }
-                            }
-                            if Canvas.cropping: FrameOverlay {
-                                width: parent.width;
-                                height: parent.height;
-                                frame-x: Canvas.crop-x;
-                                frame-y: Canvas.crop-y;
-                                frame-width: Canvas.crop-width;
-                                frame-height: Canvas.crop-height;
-                                grabbed(h) => { Canvas.frame-grabbed(false, h); }
-                                dragged(h, dx, dy) => { Canvas.frame-dragged(false, h, dx, dy); }
-                                released => { Canvas.frame-released(false); }
-                            }
-                            if Canvas.cropping && Canvas.crop-badge != "": Badge {
-                                text: Canvas.crop-badge;
-                                x: Canvas.crop-badge-x - self.width / 2;
-                                y: Canvas.crop-badge-y - self.height / 2;
-                            }
-                            if Canvas.window-shown: FrameOverlay {
-                                width: parent.width;
-                                height: parent.height;
-                                look: FrameStyle.window;
-                                body-moves: !Canvas.cropping;
-                                frame-x: Canvas.window-x;
-                                frame-y: Canvas.window-y;
-                                frame-width: Canvas.window-width;
-                                frame-height: Canvas.window-height;
-                                grabbed(h) => { Canvas.frame-grabbed(true, h); }
-                                dragged(h, dx, dy) => { Canvas.frame-dragged(true, h, dx, dy); }
-                                released => { Canvas.frame-released(true); }
-                            }
-                            if Canvas.painting: Rectangle {
-                                width: parent.width;
-                                height: parent.height;
-                                for t in Canvas.source-shapes: SourceTrace {
-                                    width: parent.width;
-                                    height: parent.height;
-                                    commands: t.commands;
-                                    thickness: t.width;
-                                }
-                                if Canvas.source-lines != "": SourceTrace {
-                                    width: parent.width;
-                                    height: parent.height;
-                                    commands: Canvas.source-lines;
-                                    thickness: Canvas.source-line-width;
-                                }
-                                for m in Canvas.marks: CorrectionMark {
-                                    x: m.x;
-                                    y: m.y;
-                                    width: m.width;
-                                    height: m.height;
-                                    number: m.number;
-                                }
-                                if Canvas.stroke != "": LiveStroke {
-                                    width: parent.width;
-                                    height: parent.height;
-                                    commands: Canvas.stroke;
-                                    thickness: Canvas.stroke-width;
-                                }
-                                if Canvas.brush-shown && !Canvas.space-held: BrushDisc {
-                                    x: Canvas.brush-x - Canvas.brush-diameter / 2;
-                                    y: Canvas.brush-y - Canvas.brush-diameter / 2;
-                                    width: Canvas.brush-diameter;
-                                    height: Canvas.brush-diameter;
-                                }
-                                paint := TouchArea {
-                                    enabled: !Canvas.space-held;
-                                    mouse-cursor: none;
-                                    changed has-hover => { Canvas.paint-hover(self.mouse-x, self.mouse-y, self.has-hover); }
-                                    pointer-event(event) => {
-                                        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) { Canvas.paint-start(self.mouse-x, self.mouse-y); }
-                                        if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) { Canvas.paint-end(); }
-                                    }
-                                    moved => {
-                                        Canvas.paint-hover(self.mouse-x, self.mouse-y, true);
-                                        if (self.pressed) { Canvas.paint-move(self.mouse-x, self.mouse-y); }
-                                    }
-                                }
-                            }
-                            if Canvas.split >= 0: SplitGuide {
-                                x: parent.width * Canvas.split - self.width / 2;
-                                height: parent.height;
-                                dragged(at) => { Canvas.split-dragged(self.x + at); }
-                            }
-                        }
-                        // The deck rises over the picture's bottom edge; Crop's handles use that edge.
-                        // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.
-                        if PanelState.tab != 1 && !Lab.shown: PresetDeck {
-                            x: 0;
-                            width: parent.width;
-                            y: parent.height - self.height;
-                        }
-                        SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
-                        HorizontalLayout {
-                            x: parent.width - self.preferred-width - CardStyle.padding;
-                            y: 0;
-                            height: CardStyle.padding;
-                            spacing: Space.s;
-                            alignment: center;
-                            Label { text: Canvas.zoom-label; role: TextRole.value; }
-                            ButtonGroup {
-                                alignment: center;
-                                Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { App.menu("smaller"); } }
-                                Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { App.menu("larger"); } }
-                            }
+                        width: parent.width;
+                        height: parent.height - parent.status;
+                        visible: root.beside-photo;
+                        library-hidden: App.library-hidden;
+                        panel-hidden: App.panel-hidden;
+                        menu(m) => { App.menu(m); }
+                        refocused => { root.refocus(); }
+                        column-toggled(leading) => {
+                            if (leading) { root.revealed-library = false; } else { root.revealed-panel = false; }
                         }
                     }
                     Card {
-                        x: CardStyle.inset;
+                        x: 0;
                         y: 0;
-                        width: parent.width - 2 * CardStyle.inset;
-                        height: parent.height - CardStyle.inset - StatusStyle.height;
+                        width: parent.width;
+                        height: parent.height - parent.status;
                         visible: App.gallery && !Exporting.shown && !Preparing.shown;
                         Grid { }
                     }
+                    // On export the card floats in the ground, all four corners showing, with no status bar.
                     if Exporting.shown: Card {
                         x: CardStyle.inset;
-                        y: 0;
+                        y: CardStyle.inset;
                         width: parent.width - 2 * CardStyle.inset;
-                        height: parent.height - CardStyle.inset - StatusStyle.height;
+                        height: parent.height - 2 * CardStyle.inset;
                         ExportColumn { width: parent.width; height: parent.height; }
                     }
                     if Preparing.shown: RollFloor {
-                        x: CardStyle.inset;
+                        x: 0;
                         y: 0;
-                        width: parent.width - 2 * CardStyle.inset;
-                        height: parent.height - CardStyle.inset - StatusStyle.height;
+                        width: parent.width;
+                        height: parent.height - parent.status;
                     }
-                    CardStatus {
-                        x: CardStyle.inset;
-                        y: parent.height - StatusStyle.height;
-                        width: parent.width - 2 * CardStyle.inset;
-                        height: StatusStyle.height;
+                    if !Exporting.shown: CardStatus {
+                        x: 0;
+                        y: parent.height - parent.status;
+                        width: parent.width;
+                        height: parent.status;
                         gallery: App.gallery;
                         editor-line: Canvas.status;
+                    }
+                    // `floating(_:)`: a hidden column's edge strip slides it over the card while hovered.
+                    if root.beside-photo && App.library-hidden: TouchArea {
+                        y: 0;
+                        x: 0;
+                        width: Space.m;
+                        height: card.height;
+                        changed has-hover => { if (self.has-hover) { root.revealed-library = true; } }
+                    }
+                    if root.beside-photo && App.panel-hidden: TouchArea {
+                        y: 0;
+                        x: parent.width - self.width;
+                        width: Space.m;
+                        height: card.height;
+                        changed has-hover => { if (self.has-hover) { root.revealed-panel = true; } }
+                    }
+                    if root.beside-photo && App.library-hidden: TouchArea {
+                        y: 0;
+                        width: ShellStyle.library-width + 2 * Space.s;
+                        height: card.height;
+                        x: root.revealed-library ? 0 : -self.width;
+                        visible: root.revealed-library || self.x > -self.width;
+                        animate x { duration: root.revealed-library ? Motion.slide : 0ms; }
+                        changed has-hover => { if (!self.has-hover) { root.revealed-library = false; } }
+                        FloatingColumn {
+                            x: Space.s;
+                            y: Space.s;
+                            width: parent.width - 2 * Space.s;
+                            height: parent.height - 2 * Space.s;
+                            Tree { width: parent.width; height: parent.height; beside-photo: true; }
+                        }
+                    }
+                    if root.beside-photo && App.panel-hidden: TouchArea {
+                        y: 0;
+                        width: ShellStyle.panel-width + 2 * Space.s;
+                        height: card.height;
+                        x: root.revealed-panel ? parent.width - self.width : parent.width;
+                        visible: root.revealed-panel || self.x < parent.width;
+                        animate x { duration: root.revealed-panel ? Motion.slide : 0ms; }
+                        changed has-hover => { if (!self.has-hover) { root.revealed-panel = false; } }
+                        FloatingColumn {
+                            x: Space.s;
+                            y: Space.s;
+                            width: parent.width - 2 * Space.s;
+                            height: parent.height - 2 * Space.s;
+                            Panel { height: parent.height; }
+                        }
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { }

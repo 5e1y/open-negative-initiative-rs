@@ -1,5 +1,5 @@
 // The top bar in three zones; every key there is a gesture a menu already reaches.
-import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, Spacer, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
+import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
 import { Preparing, RollStepKeys } from "prepare.slint";
 
 export global Bar {
@@ -27,7 +27,11 @@ export global Bar {
     in-out property <int> face;
     // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
     in property <length> traffic-lights;
+    // The bar's height, which the traffic lights are centred in.
+    out property <length> height: ShellStyle.bar-height;
     callback act(string);
+    // A press on the bar's empty room: on macOS it stands for the title bar.
+    callback room-pressed();
 }
 
 // `AppBar.item`: a glyph key that names its gesture.
@@ -122,6 +126,12 @@ export component Toolbar inherits Surface {
     property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + ShellStyle.export-width + 5 * ShellStyle.bar-gap;
     property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
     property <bool> compact: root.width < root.full;
+    // Under the keys, so only the room between them reaches it.
+    TouchArea {
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { Bar.room-pressed(); }
+        }
+    }
     HorizontalLayout {
         padding-left: ShellStyle.bar-padding + Bar.traffic-lights;
         padding-right: ShellStyle.bar-padding;
@@ -136,9 +146,10 @@ export component Toolbar inherits Surface {
             help: Bar.editing || Preparing.shown ? "Gallery (⌘G)" : "Editor (⌘G)";
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
-        Spacer { }
-        // Hidden copies of both sets hold the zone at the wider one's width, so neither spills over.
+        // Hidden copies of both sets hold the zone at the wider one's width, so neither spills over;
+        // the zone takes the room between the sides and its keys sit on the window's centre if they can.
         Rectangle {
+            horizontal-stretch: 1;
             min-width: max(compact-sizing.preferred-width, compact-gallery-sizing.preferred-width);
             preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width);
             sizing := EditorKeys { visible: false; }
@@ -147,11 +158,10 @@ export component Toolbar inherits Surface {
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
             feedback-sizing := Word { visible: false; text: "FEEDBACKS"; }
             glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
-            if Preparing.shown: RollStepKeys { x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
-            if Bar.editing && !Preparing.shown: EditorKeys { compact: root.compact; x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
-            if !Bar.editing && !Preparing.shown: GalleryKeys { compact: root.compact; x: (parent.width - self.preferred-width) / 2; width: self.preferred-width; }
+            if Preparing.shown: RollStepKeys { x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
+            if Bar.editing && !Preparing.shown: EditorKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
+            if !Bar.editing && !Preparing.shown: GalleryKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
         }
-        Spacer { }
         // The key keeps its own width; only the room around it gives way.
         Rectangle {
             min-width: glyph-sizing.preferred-width;

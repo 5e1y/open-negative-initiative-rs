@@ -1,10 +1,13 @@
 // `DSStatusBar`, the one bar under the card in every mode: what loads, else the mode's own line.
-import { SealedStatusLine, LoadBar, MedalPicker } from "ds/ds.slint";
+import { SealedStatusLine, LoadBar, MedalPicker, Space } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { Preparing } from "prepare.slint";
 
 export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
+    padding-top: Space.s;
+    padding-bottom: Space.s;
+    padding-right: Space.s;
     // The editor's line, the open frame and its size.
     in property <string> editor-line;
     property <bool> loading: Library.loading != "" && !Preparing.shown;
@@ -19,8 +22,10 @@ export component CardStatus inherits HorizontalLayout {
         text: Preparing.shown ? Preparing.status : root.gallery ? Library.status : root.editor-line;
         seal: Preparing.shown ? "" : root.gallery ? Library.status-seal : Library.editor-seal;
     }
-    if !root.loading && root.gallery && !Preparing.shown && Library.medal-shown: MedalPicker {
-        current: Library.medal-current;
+    // `statusMedalTarget`: beside a photo with nothing selected, the open frame takes the medal.
+    if !root.loading && !Preparing.shown && (root.gallery ? Library.medal-shown : Library.editor-medal-shown): MedalPicker {
+        horizontal-stretch: 0;
+        current: root.gallery ? Library.medal-current : Library.editor-medal-current;
         picked(m) => { Library.medal-picked(m); }
     }
 }
