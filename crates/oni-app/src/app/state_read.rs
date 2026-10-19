@@ -65,6 +65,11 @@ impl State {
         self.read_done
     }
 
+    /// Whether Prepare the Roll is shown.
+    pub fn preparing(&self) -> bool {
+        self.prepare.shown
+    }
+
     pub fn opened(&self) -> Option<&str> {
         self.opened.as_deref()
     }

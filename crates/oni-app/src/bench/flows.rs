@@ -75,7 +75,10 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         };
         match phase.get() {
             Flow::Loading => {
-                if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
+                if ctl.state.borrow().preparing() {
+                    // `requireRoll`: a roll never prepared opens every frame on Prepare the Roll.
+                    finish("flows: the roll was never prepared, so each frame opens on Prepare the Roll; run the flow on a prepared roll".into());
+                } else if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
                     ctl.act("toggle-mode");
                     phase.set(Flow::Gallery { frame: 0 });
                 } else if started.elapsed() > LOADING {

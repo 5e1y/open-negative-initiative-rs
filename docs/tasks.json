@@ -1030,5 +1030,12 @@
     "title": "The day key counted once per frame by its count, not by a ratio of timings",
     "status": "done",
     "detail": "swift_checks' the_day_is_computed_once_per_frame compared two timings and failed under a loaded machine. film_group counts the keys its thread computes; the check asserts one per frame for the cut and two for the twin keyed twice."
+  },
+  {
+    "id": 140,
+    "type": "bench",
+    "title": "The flows bench says a roll was never prepared instead of waiting",
+    "status": "done",
+    "detail": "On a roll never prepared, requireRoll opens every frame on Prepare the Roll, which holds the editor; ONI_BENCH=flows waited forever for the gallery. It now ends at once naming the cause. Real flow on roll #8 after the night's merges: 3 frames picked, double-clicked open and edited through resizes, no failure."
   }
 ]
