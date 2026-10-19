@@ -2,6 +2,8 @@
 //! against the EdDSA key before it is kept. It looks on its own and never installs.
 
 use base64::Engine as _;
+
+pub mod prior;
 use std::cmp::Ordering;
 use std::time::Duration;
 

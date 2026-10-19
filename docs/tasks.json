@@ -861,11 +861,11 @@
   },
   {
     "id": 118,
-    "type": "todo",
-    "title": "The release stamps ONI_VERSION and ONI_BUILD; a Swift user's last version seeds the install ping",
-    "status": "todo",
-    "detail": "The install ping (#115) fires only on a stamped build, and a copy moving from the Swift app would be counted as a first installation since Swift's UserDefaults are not read. Both settle with the release script, which needs the owner's word.",
-    "outcome": ""
+    "type": "feature",
+    "title": "The release build stamps ONI_VERSION and ONI_BUILD; a Swift user's last version seeds the installation ping",
+    "status": "done",
+    "detail": "Owner's decision: the script is prepared, never run without the owner. scripts/release-build <version> refuses a dirty tree and builds the shipped binary with ONI_VERSION and ONI_BUILD = 10000 + the commit count, above every Swift build (its feed's numbers are its own commit count, 1523 at 1.3.1), so the feed never offers a Swift item over a Rust build. The installation ping's `from` reads our own mark, else the Swift app's lastLaunchedVersion from its defaults domain, so a move from Swift counts as an update; the reader is injected, so no check reads the person's preferences. Bundling, signing and the feed are not in it yet.",
+    "outcome": "updates::prior unit test: from Swift's 1.3.1, our mark first, a first installation, inconnue, reported once; twin without Swift's mark. The window check updates.rs runs with the Swift reader injected empty. The script was not run."
   },
   {
     "id": 119,
@@ -922,5 +922,13 @@
     "status": "done",
     "detail": "Owner's decision. A RAW at least twice the preview's 2000 px is read by LibRaw at half size, one pixel per 2x2 block without demosaic, then reduced to the preview: about 0.35 s instead of 1 s for a 24 MP NEF, and a quarter of the memory. Full resolution (zoom, export, roll previews) still decodes whole.",
     "outcome": "Preview and thumbnails share render::decode's `alone`, now `mosaic(path, PREVIEW_SIDE)`; decode_full stays whole. Every check green."
+  },
+  {
+    "id": 129,
+    "type": "perf",
+    "title": "A slid value reaches the image at each render's landing, not on a 30 Hz clock",
+    "status": "done",
+    "detail": "Owner's decision. The hand handed a dragged value to the store at most every 1/30 s, so an image waited up to 33 ms for its tick. It now hands at most once a 120 Hz frame and the render slot (one in flight, the latest waiting) paces the image. The histogram still counts at 30 fps.",
+    "outcome": "Real-window drag bench on DSC_6432, release, M2 Max: exposure 13 renders for 60 notches, cadence p50 33.4 ms, to 41 renders at p50 10.1 ms; contrast 18 at 32.9 ms to 52 at 9.9 ms; a notch's handed-to-shown p50 6.1 to 3.2 ms. track.rs test restated on the interval, its twins kept."
   }
 ]

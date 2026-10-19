@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 
 /// `DSTrack.fineFactor`: travel per point while Option is held.
 pub const FINE: f32 = 0.2;
-/// The image's cadence while a value slides, `DS.Motion.recomputedInterval`: one store write and
-/// render every 1/30 s, so no cache renews faster; the knob and its label follow every event.
-pub const HAND_INTERVAL: Duration = Duration::from_nanos(1_000_000_000 / 30);
+/// The fastest a dragged value reaches the store, one display frame at 120 Hz: the render slot,
+/// one render in flight and the latest waiting, paces the image by each render's landing.
+pub const HAND_INTERVAL: Duration = Duration::from_micros(8_333);
 /// Slint's and AppKit's default double-click interval.
 pub const DOUBLE_CLICK: Duration = Duration::from_millis(500);
 /// `DSScroll.trackpadTravel`: points of travel per point of trackpad glide.
@@ -137,13 +137,13 @@ mod tests {
     }
 
     #[test]
-    fn values_reach_the_settings_thirty_times_a_second() {
+    fn values_reach_the_settings_at_most_once_a_frame() {
         let t0 = Instant::now();
         let mut hand = Hand::default();
         assert_eq!(hand.offer(t0), Offer::Now);
-        let early = t0 + Duration::from_millis(10);
-        assert_eq!(hand.offer(early), Offer::After(HAND_INTERVAL - Duration::from_millis(10)));
-        assert_eq!(hand.offer(early + Duration::from_millis(5)), Offer::Wait);
+        let early = t0 + HAND_INTERVAL / 3;
+        assert_eq!(hand.offer(early), Offer::After(HAND_INTERVAL - HAND_INTERVAL / 3));
+        assert_eq!(hand.offer(early + HAND_INTERVAL / 6), Offer::Wait);
         hand.trailed(t0 + HAND_INTERVAL);
         assert_eq!(hand.offer(t0 + 2 * HAND_INTERVAL), Offer::Now);
         // A release drops the pending hand-off: the next drag's early value schedules its own.
@@ -151,12 +151,12 @@ mod tests {
         held.offer(t0);
         held.offer(early);
         held.released();
-        assert!(matches!(held.offer(early + Duration::from_millis(1)), Offer::After(_)));
+        assert!(matches!(held.offer(early + HAND_INTERVAL / 8), Offer::After(_)));
         // Twin: without the release the stale flag leaves that value waiting on a timer that was stopped.
         let mut stale = Hand::default();
         stale.offer(t0);
         stale.offer(early);
-        assert_eq!(stale.offer(early + Duration::from_millis(1)), Offer::Wait);
+        assert_eq!(stale.offer(early + HAND_INTERVAL / 8), Offer::Wait);
         // Twin: offers a full interval apart are each handed at once, never deferred.
         let mut spaced = Hand::default();
         let deferred = (0..5).filter(|k| spaced.offer(t0 + *k * HAND_INTERVAL) != Offer::Now).count();

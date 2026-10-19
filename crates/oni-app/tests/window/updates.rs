@@ -69,6 +69,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
             system: Some("15.6".into()),
             public_key: b64(pair.public_key().as_ref()),
             automatic,
+            swift_prior: Arc::new(|| None),
         }
     };
     let shell = |updater: Option<Updater>| {

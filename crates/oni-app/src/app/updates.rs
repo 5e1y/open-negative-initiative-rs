@@ -27,6 +27,8 @@ pub struct Updater {
     pub public_key: String,
     /// `SUEnableAutomaticChecks`: on for a published build; a development build looks only when asked.
     pub automatic: bool,
+    /// The Swift app's last launched version on this Mac, read only when ours has none.
+    pub swift_prior: Arc<dyn Fn() -> Option<String> + Send + Sync>,
 }
 
 impl Updater {
@@ -40,6 +42,7 @@ impl Updater {
             system: feed::system(),
             public_key: feed::PUBLIC_KEY.to_string(),
             automatic: feed::stamped(),
+            swift_prior: Arc::new(feed::prior::swift),
         }
     }
 }
@@ -87,18 +90,21 @@ impl Ctl {
     /// once the recorder answers, so an offline launch tries again at the next.
     fn report_install(self: &Rc<Self>) {
         let version = feed::version().to_string();
-        let (fetch, from) = {
+        let (fetch, swift, ours, checked) = {
             let s = self.state.borrow();
             let Some(updater) = s.updates.updater.as_ref() else { return };
-            let previous = s.preferences.string(feed::LAST_LAUNCHED_KEY).map(str::to_string);
-            if previous.as_deref() == Some(version.as_str()) {
+            let ours = s.preferences.string(feed::LAST_LAUNCHED_KEY).map(str::to_string);
+            if ours.as_deref() == Some(version.as_str()) {
                 return;
             }
-            let checked = s.preferences.string(feed::LAST_CHECK_KEY).is_some();
-            (updater.fetch.clone(), previous.or_else(|| checked.then(|| feed::UNKNOWN_PRIOR.to_string())))
+            (updater.fetch.clone(), updater.swift_prior.clone(), ours, s.preferences.string(feed::LAST_CHECK_KEY).is_some())
         };
-        let url = feed::installed_url(&version, from.as_deref());
         std::thread::spawn(move || {
+            let swift = if ours.is_none() { swift() } else { None };
+            let Some(from) = feed::prior::from(&version, ours, swift, checked) else {
+                return with_shell(move |c| c.remember(feed::LAST_LAUNCHED_KEY, version.into()));
+            };
+            let url = feed::installed_url(&version, from.as_deref());
             if fetch(&url).is_ok() {
                 with_shell(move |c| c.remember(feed::LAST_LAUNCHED_KEY, version.into()));
             }

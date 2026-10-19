@@ -90,8 +90,9 @@ first on the simplified design system; the real interface work comes after.
 
 ## Performance targets
 
-- **While a parameter slides**, the image texture and the histogram update at a sustained, throttled
-  30 fps (Swift's `DS.Motion.recomputedInterval`, 1/30 s), so fast-renewing caches never flood RAM or GPU.
+- **While a parameter slides**, the image follows each render's landing (one in flight, the latest
+  waiting, at most one a 120 Hz frame) and the histogram counts at 30 fps (Swift's
+  `DS.Motion.recomputedInterval`), so fast-renewing caches never flood RAM or GPU (owner's call).
 - **The rest of the interface** (knob, labels, hovers, scrolling) runs as fast as it can, 120 fps at
   least on Apple silicon.
 - **Responsiveness beats frame rate**: a constant 60 fps with very low input-to-photon latency is

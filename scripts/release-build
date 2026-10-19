@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# The shipped binary, stamped: ONI_VERSION is what the dialogs and the installation ping name,
+# ONI_BUILD what the update feed compares. Builds only; publishing stays the owner's step.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+version="${1:?usage: scripts/release-build <version, e.g. 1.4.0>}"
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "FAIL: a version reads like 1.4.0" >&2; exit 1; }
+[[ -z "$(git status --porcelain)" ]] || { echo "FAIL: commit first, so the build number names this tree" >&2; exit 1; }
+# Above every Swift build (its feed's numbers are its own commit count, 1523 at 1.3.1), so the feed
+# never offers a Swift item over a Rust build.
+build=$((10000 + $(git rev-list --count HEAD)))
+ONI_VERSION="$version" ONI_BUILD="$build" cargo build --release -p oni-app --bin oni
+echo "$version (build $build): target/release/oni"
