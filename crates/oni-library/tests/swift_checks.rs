@@ -7,7 +7,6 @@ use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{Date, Film, PipelineSettings, roll_folder};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::time::Instant;
 
 fn scratch(name: &str) -> PathBuf {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("oni-library-swift-{name}-{}", std::process::id()));
@@ -100,19 +99,14 @@ fn the_day_is_computed_once_per_frame() {
         }
         buckets
     };
-    let best = |f: &dyn Fn()| {
-        (0..9)
-            .map(|_| {
-                let start = Instant::now();
-                f();
-                start.elapsed().as_secs_f64()
-            })
-            .fold(f64::MAX, f64::min)
+    // Counted, not timed: a ratio of two timings fails on a loaded machine.
+    let keys = |f: &dyn Fn()| {
+        let before = film_group::keyed();
+        f();
+        film_group::keyed() - before
     };
-    let once = best(&|| drop(film_group::grouped(&many)));
-    let doubled = best(&|| drop(twice(&many)));
-    println!("grouped {:.2} ms, keyed twice {:.2} ms, {:.2}x", once * 1e3, doubled * 1e3, doubled / once);
-    assert!(doubled / once.max(1e-9) >= 1.3, "keying twice costs only {:.2}x the cut", doubled / once);
+    assert_eq!(keys(&|| drop(film_group::grouped(&many))), many.len(), "one key per frame");
+    assert_eq!(keys(&|| drop(twice(&many))), 2 * many.len(), "twin: the cut keyed twice is counted twice");
 }
 
 #[test]

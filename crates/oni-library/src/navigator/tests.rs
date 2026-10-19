@@ -188,3 +188,17 @@ fn a_folder_opened_elsewhere_is_picked_where_it_shows_else_the_base_moves() {
     assert_eq!(nav.selected.as_deref(), Some(TRASH_ROW));
     assert!(nav.unfolded.contains(TRASH_ROW));
 }
+
+/// Windows mounts no disk in one folder: each drive's root is a volume, its parent Computer, and a
+/// drive other than the home's comes and goes.
+#[test]
+fn on_windows_each_drive_is_a_volume() {
+    let c = Computer { home: r"C:\Users\someone".into(), volumes: DRIVES.into() };
+    assert!(c.is_volume_root(r"D:\") && c.is_volume_root("e:/"));
+    assert!(!c.is_volume_root(r"D:\Scans"), "twin: a folder on the drive is not its root");
+    assert!(c.is_on_volume(r"D:\Scans\Roll 8") && !c.is_on_volume(r"C:\Scans"));
+    assert_eq!(c.parent(r"D:\"), None);
+    // Twin: `/Volumes` reads none of them as a volume.
+    assert!(!mac().is_volume_root(r"D:\"));
+}
+

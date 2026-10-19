@@ -97,7 +97,17 @@ pub fn day_label(day: Date) -> String {
     local(day).format("%A, %B %-d, %Y").to_string()
 }
 
+thread_local! {
+    static KEYED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// The keys this thread has computed, so a check counts the work instead of timing it.
+pub fn keyed() -> usize {
+    KEYED.with(std::cell::Cell::get)
+}
+
 pub fn key(entry: &Entry) -> FilmKey {
+    KEYED.with(|k| k.set(k.get() + 1));
     match &entry.film {
         Some(film) => FilmKey::Roll(film.id),
         None => FilmKey::Day(day_start(entry).unix_seconds() as i64),

@@ -15,11 +15,21 @@ pub struct Computer {
     pub volumes: String,
 }
 
+/// `volumes` on Windows, which mounts no disk in one folder: each drive's root is a volume.
+pub const DRIVES: &str = "*";
+
+/// Whether `path` names a drive's root, `C:\` or `C:/`.
+pub fn is_drive_root(path: &str) -> bool {
+    let b = path.as_bytes();
+    b.len() == 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/')
+}
+
 impl Computer {
-    /// This machine's: `NSHomeDirectory()` resolved, and `/Volumes`.
+    /// This machine's: `NSHomeDirectory()` resolved, and `/Volumes`, or the drives on Windows.
     pub fn system() -> Computer {
         let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).unwrap_or_default();
-        Computer { home: paths::canonical(Path::new(&home)), volumes: "/Volumes".into() }
+        let volumes = if cfg!(windows) { DRIVES } else { "/Volumes" };
+        Computer { home: paths::canonical(Path::new(&home)), volumes: volumes.into() }
     }
 
     /// No disk at all: what a check gets unless it hands one, so no test reads the person's folders.
@@ -29,6 +39,10 @@ impl Computer {
 
     /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk.
     pub fn computer(&self) -> Vec<String> {
+        if self.volumes == DRIVES {
+            let drives = (b'A'..=b'Z').map(|l| format!("{}:\\", l as char)).filter(|d| Path::new(d).is_dir());
+            return Some(self.home.clone()).filter(|h| !h.is_empty()).into_iter().chain(drives).collect();
+        }
         let mut mounted: Vec<String> = std::fs::read_dir(&self.volumes)
             .map(|listing| {
                 listing
@@ -47,10 +61,18 @@ impl Computer {
     }
 
     pub fn is_volume_root(&self, path: &str) -> bool {
+        if self.volumes == DRIVES {
+            return is_drive_root(path);
+        }
         paths::parent(path) == self.volumes
     }
 
+    /// On a disk that may come and go: under `/Volumes`, or on Windows a drive other than the home's.
     pub fn is_on_volume(&self, path: &str) -> bool {
+        if self.volumes == DRIVES {
+            let drive = |p: &str| p.get(..2).map(str::to_ascii_uppercase);
+            return path.as_bytes().get(1) == Some(&b':') && drive(path) != drive(&self.home);
+        }
         path.strip_prefix(self.volumes.as_str()).is_some_and(|rest| rest.starts_with('/'))
     }
 
