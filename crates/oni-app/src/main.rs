@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let gate = engine.clone();
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), ..Options::default() })?;
+    let shell = Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), ..Options::default() })?;
     let quitting = shell.ctl.clone();
     ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));

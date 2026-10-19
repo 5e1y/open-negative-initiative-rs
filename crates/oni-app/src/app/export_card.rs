@@ -11,7 +11,7 @@ use crate::track::{self, DOUBLE_CLICK};
 use crate::{App, ExportLine, Exporting, MainWindow};
 use oni_colour::{OutputProfile, Proof, Space};
 use oni_export::{ExifMetadata, Format, PREVIEW_SIDE, Preset, Resize, Row, Settings};
-use oni_library::journal::{Journal, Kind as Gesture};
+use oni_library::journal::Kind as Gesture;
 use oni_settings::film::FILM_STOCKS;
 use serde_json::Value;
 use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};

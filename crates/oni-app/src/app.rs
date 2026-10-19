@@ -132,16 +132,24 @@ pub struct Options {
 /// `EditorScene.open`'s panel message.
 pub const PICKER_MESSAGE: &str = "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved.";
 
+impl Options {
+    /// The bug reporter the app ships with, posting to the site.
+    pub fn online_reporter() -> help::Reporter {
+        std::sync::Arc::new(help::post)
+    }
+}
+
 impl Default for Options {
     fn default() -> Self {
         Options {
             screen: Screen::Srgb,
             canvas: None,
-            support: timing::support(),
+            // A check's own folder and no reporter: it never writes the owner's journal nor opens an issue.
+            support: std::env::temp_dir().join(format!("oni-support-{}", std::process::id())),
             caches: system::caches(),
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
             discard: Box::new(system::trash),
-            reporter: std::sync::Arc::new(help::post),
+            reporter: std::sync::Arc::new(|_: &str, _: Option<String>| Err("no reporter in a check".to_string())),
             mask_picker: Box::new(|| system::pick_file(masks::LOAD_MESSAGE, oni_library::library::IMAGE_EXTENSIONS)),
             show_folder: Box::new(system::show_folder),
             // The app hands this machine's; a check gets none unless it hands its own.

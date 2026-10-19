@@ -834,5 +834,13 @@
     "status": "done",
     "detail": "Swift's memoryLimit of 2,500 tiles is about 680 MB of RGBA at 320 x 213, too much beside an editor on an 8 GB Mac, and its eviction dropped the oldest inserted even when on screen. The cap is 1,000 tiles and each read notes its use, so the least recently shown half goes; a dropped tile is read again from its JPEG.",
     "outcome": "Unit check: past the ceiling half remains, the newest kept; a tile read again outlives newer ones (twin of the insertion order). Steady memory of a 2,000-photo library about 410 MB lower."
+  },
+  {
+    "id": 115,
+    "type": "feat",
+    "title": "The installation and update ping to the recorder, a generic User-Agent; checks and benches kept out of the owner's journal",
+    "status": "done",
+    "detail": "Ported from Swift's Updates.reportInstall: GET /installed?v=<version>[&from=<previous>] once per version on a published (stamped) build, the version remembered only once the recorder answers 2xx so an offline launch retries, from=inconnue when the copy had checked before without a remembered version. Every request now carries OpenNegative/<version> Sparkle-compatible, so the recorder counts Rust copies and their version as it does Sparkle's, and learns nothing of the Mac. Options::default() (the checks') takes a scratch support folder and a reporter that sends nothing; ONI_BENCH runs note their gestures in a scratch journal; the app passes the online reporter itself.",
+    "outcome": "Window check updates: the first launch asks the feed and /installed?v=… with no from, remembers the version; the next launch asks nothing. Unit check on the URL and the agent, twin on the Mac's name. Open: a user moving from the Swift app is counted as a first installation, since its UserDefaults are not read; the displayed version comes from ONI_VERSION, which no release script stamps yet."
   }
 ]

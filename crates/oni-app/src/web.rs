@@ -13,7 +13,7 @@ fn client() -> Result<reqwest::Client, String> {
     PROVIDER.call_once(|| {
         let _ = rustls::crypto::ring::default_provider().install_default();
     });
-    reqwest::Client::builder().timeout(TIMEOUT).build().map_err(|e| e.to_string())
+    reqwest::Client::builder().timeout(TIMEOUT).user_agent(crate::updates::user_agent()).build().map_err(|e| e.to_string())
 }
 
 fn run<T>(work: impl std::future::Future<Output = Result<T, String>>) -> Result<T, String> {

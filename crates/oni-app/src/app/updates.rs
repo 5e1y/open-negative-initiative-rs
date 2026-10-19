@@ -78,8 +78,31 @@ impl Ctl {
     pub(super) fn start_updates(self: &Rc<Self>) {
         let automatic = self.state.borrow().updates.updater.as_ref().is_some_and(|u| u.automatic);
         if automatic && self.state.borrow().updates.timer.is_none() {
+            self.report_install();
             self.schedule_update_check();
         }
+    }
+
+    /// `reportInstall`: an installation or an update reported once per version, remembered only
+    /// once the recorder answers, so an offline launch tries again at the next.
+    fn report_install(self: &Rc<Self>) {
+        let version = feed::version().to_string();
+        let (fetch, from) = {
+            let s = self.state.borrow();
+            let Some(updater) = s.updates.updater.as_ref() else { return };
+            let previous = s.preferences.string(feed::LAST_LAUNCHED_KEY).map(str::to_string);
+            if previous.as_deref() == Some(version.as_str()) {
+                return;
+            }
+            let checked = s.preferences.string(feed::LAST_CHECK_KEY).is_some();
+            (updater.fetch.clone(), previous.or_else(|| checked.then(|| feed::UNKNOWN_PRIOR.to_string())))
+        };
+        let url = feed::installed_url(&version, from.as_deref());
+        std::thread::spawn(move || {
+            if fetch(&url).is_ok() {
+                with_shell(move |c| c.remember(feed::LAST_LAUNCHED_KEY, version.into()));
+            }
+        });
     }
 
     /// `scheduleNextUpdateCheck`: the interval since the last check, a clock gone back counting none.

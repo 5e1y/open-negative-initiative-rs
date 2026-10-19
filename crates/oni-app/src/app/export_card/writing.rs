@@ -72,7 +72,7 @@ impl Ctl {
         };
         self.publish_export();
         let engine: Shared = self.engine.clone();
-        let journal = Journal::in_support(&self.export.borrow().support);
+        let journal = crate::app::year::journal_in(&self.export.borrow().support);
         std::thread::Builder::new()
             .name("export".into())
             .spawn(move || {

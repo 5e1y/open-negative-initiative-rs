@@ -161,7 +161,7 @@ impl Ctl {
             self.adopt_sheet(&sheet, donor, false);
         }
         let support = self.state.borrow().support.clone();
-        oni_library::journal::Journal::in_support(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
+        crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| (written.len() < asked).then(|| format!("{} of {asked} frames could not be measured and were left as they were.", asked - written.len())));
         let open = self.state.borrow().open.clone();
         if let Some(w) = self.window() {

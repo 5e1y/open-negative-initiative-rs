@@ -87,7 +87,13 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     rig.until("the scheduled check", Duration::from_secs(10), || bar.get_update_title() != "");
     assert_eq!(bar.get_update_title().as_str(), "UPDATE TO 9.1.0");
     assert_eq!(bar.get_update_help().as_str(), "Download version 9.1.0 · export stays on ⌘E");
-    assert_eq!(*asked.lock().unwrap(), [oni_app::updates::FEED]);
+    // A copy never reported names its version alone, a first installation, and keeps it once answered.
+    let installed = oni_app::updates::installed_url(oni_app::updates::version(), None);
+    rig.until("the installation reported", Duration::from_secs(10), || Preferences::load(&support).string("lastLaunchedVersion").is_some());
+    let mut seen = asked.lock().unwrap().clone();
+    seen.sort();
+    assert_eq!(seen, [oni_app::updates::FEED.to_string(), installed]);
+    assert_eq!(Preferences::load(&support).string("lastLaunchedVersion"), Some(oni_app::updates::version()));
     assert!(!first.window.global::<Confirm>().get_shown(), "a check on its own opens no dialog");
     assert!(Preferences::load(&support).string("SULastCheckTime").is_some());
     println!("shot {}", rig.shot("updates-key").display());
@@ -149,7 +155,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     let asked_before = asked.lock().unwrap().len();
     let second = shell(Some(updater(true)));
     rig.settle();
-    assert_eq!(asked.lock().unwrap().len(), asked_before, "twin: a check not due reads nothing");
+    assert_eq!(asked.lock().unwrap().len(), asked_before, "twin: a check not due and a version reported read nothing");
     drop(second);
     // A development build looks only when asked; with no updater, a check asked for fails offline.
     std::fs::remove_file(support.join("preferences.json")).unwrap();

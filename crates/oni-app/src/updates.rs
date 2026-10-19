@@ -20,9 +20,31 @@ pub const INSTALLS_AUTOMATICALLY: bool = false;
 const SPARKLE: &str = "http://www.andymatuschak.org/xml-namespaces/sparkle";
 const APP: &str = "Open Negative Initiative";
 
-/// `CFBundleShortVersionString`, what the dialogs name.
+/// `CFBundleShortVersionString`, what the dialogs name: the release stamps it, else the crate's.
 pub fn version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
+    option_env!("ONI_VERSION").unwrap_or(env!("CARGO_PKG_VERSION"))
+}
+
+/// What every request names itself: the app and its version alone, as Sparkle's agent reads, so
+/// the recorder counts a running copy and learns nothing of the Mac.
+pub fn user_agent() -> String {
+    format!("OpenNegative/{} Sparkle-compatible", version())
+}
+
+/// `Updates.reportInstall`'s address on the feed's host, and the version last reported from here.
+pub const INSTALLED: &str = "https://open-negative-initiative.com/installed";
+pub const LAST_LAUNCHED_KEY: &str = "lastLaunchedVersion";
+/// The prior version of a copy that checked before it ever reported: unknown, never guessed.
+pub const UNKNOWN_PRIOR: &str = "inconnue";
+
+/// `/installed?v=…[&from=…]`: no `from` is a first installation, one is an update carried out.
+pub fn installed_url(version: &str, from: Option<&str>) -> String {
+    let mut url = url::Url::parse(INSTALLED).expect("the recorder's address");
+    url.query_pairs_mut().append_pair("v", version);
+    if let Some(from) = from {
+        url.query_pairs_mut().append_pair("from", from);
+    }
+    url.into()
 }
 
 /// `CFBundleVersion`, what the feed is compared with: the release build stamps it, else the
@@ -278,6 +300,16 @@ mod tests {
         assert_eq!(newest(&items, "1523", Some("15.6")), None);
         assert_eq!(newest(&items, "0", None), None);
         assert!(parse("<rss><channel><item>").is_err(), "a torn feed is an error, not an empty one");
+    }
+
+    #[test]
+    fn the_recorder_hears_a_version_and_nothing_of_the_mac() {
+        assert_eq!(installed_url("1.3.0", None), "https://open-negative-initiative.com/installed?v=1.3.0");
+        assert_eq!(installed_url("1.3.0", Some("1.2.1")), "https://open-negative-initiative.com/installed?v=1.3.0&from=1.2.1");
+        assert_eq!(user_agent(), format!("OpenNegative/{} Sparkle-compatible", version()));
+        // Twin: the recorder's pattern reads the version back, and the system's name is never in it.
+        assert!(user_agent().starts_with(&format!("OpenNegative/{} ", version())));
+        assert!(!user_agent().contains("Mac") && !user_agent().contains(std::env::consts::OS));
     }
 
     #[test]

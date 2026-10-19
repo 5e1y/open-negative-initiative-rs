@@ -33,9 +33,18 @@ fn medal_rank(medal: Medal) -> u16 {
     }
 }
 
+/// The year's journal in `support`; a bench drags the owner's real roll, so its gestures go to a
+/// scratch journal instead, as Swift's checks write under a stand-in folder.
+pub(super) fn journal_in(support: &std::path::Path) -> std::sync::Arc<Journal> {
+    if crate::bench::requested().is_some() {
+        return Journal::in_support(&std::env::temp_dir().join(format!("oni-bench-journal-{}", std::process::id())));
+    }
+    Journal::in_support(support)
+}
+
 impl Ctl {
     fn journal(&self) -> std::sync::Arc<Journal> {
-        Journal::in_support(&self.state.borrow().support)
+        journal_in(&self.state.borrow().support)
     }
 
     fn note(&self, kind: Kind, subject: Option<&str>, detail: u16, value: u32, name: Option<&str>) {
