@@ -185,15 +185,19 @@ fn a_rolls_three_inspector_fields_move_equality_apart_and_round_trip() {
 fn a_disk_that_is_away_invents_nothing_and_plugging_it_back_is_the_repair() {
     let sandbox = scratch("library");
     let now = Date::since_reference_date(800_000_000.0);
-    let real = sandbox.join("real");
-    std::fs::create_dir_all(&real).unwrap();
-    let link = sandbox.join("link");
-    std::os::unix::fs::symlink(&real, &link).unwrap();
-    std::fs::write(real.join("f.RW2"), [1]).unwrap();
-    let (through, direct) = (link.join("f.RW2"), real.join("f.RW2"));
-    assert_eq!(library::canonical(&through), library::canonical(&direct), "a link and its real path name one photo");
-    // Twin: the two paths as written differ.
-    assert_ne!(through, direct);
+    // A link needs a privilege on Windows: the canonical path is checked where one can be made.
+    #[cfg(unix)]
+    {
+        let real = sandbox.join("real");
+        std::fs::create_dir_all(&real).unwrap();
+        let link = sandbox.join("link");
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        std::fs::write(real.join("f.RW2"), [1]).unwrap();
+        let (through, direct) = (link.join("f.RW2"), real.join("f.RW2"));
+        assert_eq!(library::canonical(&through), library::canonical(&direct), "a link and its real path name one photo");
+        // Twin: the two paths as written differ.
+        assert_ne!(through, direct);
+    }
 
     let raw = sandbox.join("P1072392.RW2");
     std::fs::write(&raw, vec![0x42; 4096]).unwrap();

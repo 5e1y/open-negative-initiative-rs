@@ -7,7 +7,6 @@ use oni_app::{Confirm, Library, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
 use slint::platform::WindowEvent;
 use slint::ComponentHandle;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -64,9 +63,12 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     assert!((written_exposure(&a).unwrap() - moved).abs() < 1e-4, "closing wrote the last value");
     assert!(!w.global::<Confirm>().get_shown());
 
-    // The folder locked, a new value cannot be written: the close asks, and Return keeps the app open.
+    // A folder standing where the sidecar goes, a new value cannot be written on either system: the
+    // close asks, and Return keeps the app open.
     let again = drag(60.0);
-    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o555)).unwrap();
+    let sidecar = oni_settings::sidecar::url_for(&a);
+    std::fs::remove_file(&sidecar).unwrap();
+    std::fs::create_dir(&sidecar).unwrap();
     rig.window.dispatch_event(WindowEvent::CloseRequested);
     rig.pump();
     let confirm = w.global::<Confirm>();
@@ -74,7 +76,7 @@ pub(crate) fn closing_writes_the_last_settings_and_a_failed_write_asks_first() {
     let title = confirm.get_title().to_string();
     assert!(confirm.get_cancel_default() && !confirm.get_destructive(), "Cancel is the alert's default");
     rig.key("\r");
-    std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::remove_dir(&sidecar).unwrap();
     assert!(shown, "a failed write asks before quitting");
     assert_eq!(title, "Your latest settings could not be saved");
     assert!(!confirm.get_shown(), "Return chose Cancel");
