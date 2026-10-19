@@ -189,8 +189,11 @@ export component ListRow inherits Rectangle {
     in property <bool> selected;
     in property <Look> look: Look.live;
     in property <length> indent;
+    // `chevronZone`: the width after the indent where a click folds instead of clicking.
+    in property <length> fold-zone;
     callback clicked();
     callback double-clicked();
+    callback folded();
     // A right click, at the pointer in the row's own coordinates.
     callback menu(length, length);
     height: RowStyle.height;
@@ -204,8 +207,19 @@ export component ListRow inherits Rectangle {
         Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
     }
     area := TouchArea {
-        clicked => { root.clicked(); }
-        double-clicked => { root.double-clicked(); }
+        property <bool> folds: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
+        clicked => {
+            if (self.folds) {
+                root.folded();
+            } else {
+                root.clicked();
+            }
+        }
+        double-clicked => {
+            if (!self.folds) {
+                root.double-clicked();
+            }
+        }
         pointer-event(event) => {
             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
                 root.menu(self.mouse-x, self.mouse-y);
@@ -221,6 +235,7 @@ export component TreeItem inherits ListRow {
     in property <bool> expandable;
     in property <bool> expanded;
     indent: root.depth * RowStyle.indent;
+    fold-zone: root.expandable ? RowStyle.chevron-zone : 0;
     Rectangle {
         width: RowStyle.chevron-zone;
         if root.expandable: Icon {

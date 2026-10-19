@@ -56,6 +56,8 @@ mod canvas_gpu;
 mod opening;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
+mod tree_reveal;
+mod tree_clicks;
 mod state_read;
 use state_read::LoadBar;
 pub use workers::tiles;
@@ -285,6 +287,7 @@ pub struct State {
     /// What each row shows as its thumbnail, none for a name, and the photo the column last centred on.
     tree_pictures: Vec<Option<Image>>,
     tree_centred: Option<String>,
+    reveal: tree_reveal::Reveal,
     shelf: presets::Shelf,
     /// The balance key's run under way, which the key shows instead of itself.
     batch: Option<rolls::Batch>,

@@ -51,6 +51,7 @@ impl Shell {
             tree_total: 0.0,
             tree_pictures: Vec::new(),
             tree_centred: None,
+            reveal: Default::default(),
             shelf: Default::default(),
             batch: None,
             org: Default::default(),

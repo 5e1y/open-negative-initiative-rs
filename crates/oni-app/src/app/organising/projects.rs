@@ -66,7 +66,7 @@ impl Ctl {
         self.publish_bar();
     }
 
-    pub(super) fn publish_projects(&self) {
+    pub(in crate::app) fn publish_projects(&self) {
         let Some(w) = self.window() else { return };
         let rows: Vec<TreeRow> = {
             let mut s = self.state.borrow_mut();
@@ -121,68 +121,6 @@ impl Ctl {
             }
         }
         self.publish_projects();
-    }
-
-    /// `selectProject`: a project row rings it and clears the photos, a photo row selects it; in
-    /// the editor a photo row opens it.
-    pub(in crate::app) fn project_row_clicked(self: &Rc<Self>, i: usize) {
-        if self.state.borrow_mut().second_click(Column::Projects, i) {
-            return;
-        }
-        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
-        let open = {
-            let mut s = self.state.borrow_mut();
-            let Some(id) = s.org.project_nodes.get(i).cloned() else { return };
-            let open = match &id {
-                NodeId::Project(_) => {
-                    if !s.org.project_expanded.remove(&id) {
-                        s.org.project_expanded.insert(id.clone());
-                    }
-                    s.picks.selection.clear();
-                    s.picks.cursor = None;
-                    None
-                }
-                NodeId::Photo { path, .. } => {
-                    s.picks.selection = HashSet::from([path.clone()]);
-                    s.picks.cursor = Some(path.clone());
-                    s.picks.anchor = Some(path.clone());
-                    (!gallery && s.open.as_deref() != Some(path.as_str())).then(|| path.clone())
-                }
-            };
-            s.org.project_ring = Some(id);
-            open
-        };
-        if let Some(path) = open {
-            self.open_photo(&path);
-        }
-        self.publish_tiles();
-        self.publish_organising();
-        self.publish_bar();
-    }
-
-    /// `takeOff` from the archive's tree: a photo row's double click opens it in the editor.
-    pub(in crate::app) fn row_double_clicked(self: &Rc<Self>, i: usize) {
-        let path = {
-            let s = self.state.borrow();
-            s.archive.as_ref().and_then(|a| a.rows().get(i).cloned()).and_then(|r| match r.id {
-                oni_library::archive_tree::NodeId::Photo(p) => Some(p),
-                _ => None,
-            })
-        };
-        if let Some(path) = path {
-            self.open_in_editor(&path);
-        }
-    }
-
-    /// `takeOff`: a photo row's double click opens it in the editor.
-    pub(in crate::app) fn project_row_double_clicked(self: &Rc<Self>, i: usize) {
-        let path = match self.state.borrow().org.project_nodes.get(i) {
-            Some(NodeId::Photo { path, .. }) => Some(path.clone()),
-            _ => None,
-        };
-        if let Some(path) = path {
-            self.open_in_editor(&path);
-        }
     }
 
     /// `projectContextMenu`: Delete Project on a project, Edit then the cell menu on a photo.

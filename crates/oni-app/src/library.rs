@@ -85,9 +85,26 @@ impl Archive {
                 Group { caption, header, title, stock, film: g.film, entries: g.entries }
             })
             .collect();
-        // The opened folder starts unfolded, its photos one click away.
-        let expanded = nodes.iter().map(Node::id).collect();
+        // `openFolder`: every folder under the opened one starts unfolded, the opened one included.
+        let mut expanded = HashSet::new();
+        folder_ids(&nodes, &mut expanded);
         Archive { root, nodes, groups, expanded }
+    }
+
+    /// `expandAncestors`: every folder above `path` up to the opened one unfolds; answers whether
+    /// a row was added.
+    pub fn unfold_to(&mut self, path: &str) -> bool {
+        let mut added = false;
+        let mut folder = paths::parent(path);
+        while folder != self.root && paths::holds(&self.root, &folder) {
+            added |= self.expanded.insert(NodeId::Folder(folder.clone()));
+            let up = paths::parent(&folder);
+            if up == folder {
+                break;
+            }
+            folder = up;
+        }
+        added
     }
 
     /// Every photo in gallery order.
@@ -153,6 +170,15 @@ impl Archive {
         walk(&mut self.nodes, path, label);
         for e in self.groups.iter_mut().flat_map(|g| g.entries.iter_mut()).filter(|e| e.path == path) {
             e.label = label;
+        }
+    }
+}
+
+fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {
+    for node in nodes {
+        if let Node::Folder { children, .. } = node {
+            out.insert(node.id());
+            folder_ids(children, out);
         }
     }
 }

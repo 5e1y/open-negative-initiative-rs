@@ -81,6 +81,7 @@ impl Ctl {
     pub(super) fn publish_bar(&self) {
         let Some(w) = self.window() else { return };
         self.follow_open_photo();
+        self.reveal_project();
         self.publish_menus();
         let bar = w.global::<Bar>();
         let (has_photo, selected) = {

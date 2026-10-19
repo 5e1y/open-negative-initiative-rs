@@ -132,6 +132,9 @@ export global Library {
     callback surface-picked(int);
     callback row-clicked(int);
     callback row-double-clicked(int);
+    // `toggleExpand`: a click in the chevron's zone, which only folds.
+    callback row-folded(int);
+    callback project-row-folded(int);
     callback row-rename-committed(int, string);
     callback row-rename-cancelled();
     callback project-row-clicked(int);
@@ -140,6 +143,11 @@ export global Library {
     // `SidebarKeys` on the projects: whether a row is open, and the key folding or opening them all.
     in property <bool> projects-any-open;
     callback project-fold-all();
+    callback project-centre();
+    // The projects' scroll, and the row it centres each time Rust moves the serial.
+    in-out property <length> project-viewport-y;
+    in property <int> project-reveal-row: -1;
+    in property <int> project-reveal-serial;
     callback trash-row-clicked(int);
     callback trash-row-double-clicked(int);
     callback trash-row-restore(int);

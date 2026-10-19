@@ -993,6 +993,14 @@
     "detail": "The Windows CI built every crate but failed to compile oni-library's swift_checks, which made a symbolic link with std::os::unix. The link half of that check runs on Unix only (a link needs a privilege on Windows); the quit guard's failed write is now caused by a folder standing where the sidecar goes, which fails on both systems, instead of Unix permissions. The Windows run now cancels a run of the same branch a newer push supersedes, and caches the cargo build between runs (Swatinem/rust-cache), as a cold build took about 40 minutes. Windows mounts no disk in one folder: Computer::system names the drives (DRIVES), each drive's root a volume, Computer's rows the home then every drive present, a drive other than the home's one that comes and goes; the mounts watcher compares Computer's rows, so it reads drives as it reads /Volumes."
   },
   {
+    "id": 135,
+    "type": "ui",
+    "title": "The library column follows the photo opened: its folders unfold, its row comes into view, and a click reads as Swift's",
+    "status": "done",
+    "detail": "Ported from Swift's revealInTree, expandAncestors on the ring's move, centreSelected and TreeEngine.reveal/anchoredHere: each time the photo the column follows changes (grid double click, the column, an arrow walking the roll, a file opened at launch), the folders above it unfold once and its row is centred, held inside the column, with no animation; a fold made by hand afterwards stays until the photo changes, and the centre key unfolds again. Opening a folder unfolds every folder under it (openFolder). On the Projects tab the photo rings under the first project holding it, which unfolds, and the list centres it; the centre key is on that tab too. A click in a tree never scrolls it. The click itself follows TreeEngine.click: the chevron's zone folds and nothing else, a folder or project row beside a photo opens the first photo it holds (openFromTree), and a double click on a folder types over its own name.",
+    "outcome": "A window check (sidebar_reveal) opens a photo in a hand-folded roll from the grid, walks with the arrow, clicks rows and chevrons, presses the centre key and opens a project's photo, asserting folds, rings and the row in view with a twin each; the library_column check now asserts a click leaves the scroll and the chevron folds; unit tests for unfold_to, find and first_path. Disabling the archive unfold, the project reveal or anchoredHere each makes the window check fail."
+  },
+  {
     "id": 136,
     "type": "ui",
     "title": "The scroll knobs grabbable: a drag, a page per track press, Option to the spot, as AppKit's scroller",

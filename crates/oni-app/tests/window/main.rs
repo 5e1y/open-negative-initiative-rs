@@ -39,6 +39,7 @@ mod scroll;
 mod session;
 mod sheet_layout;
 mod sheets;
+mod sidebar_reveal;
 mod sidebars;
 mod space_chip;
 mod stocks;
@@ -93,6 +94,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
+    ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
     ("sidebars::the_sidebars_lay_their_keys_on_plates_as_swift", sidebars::the_sidebars_lay_their_keys_on_plates_as_swift),
     ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag", scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag),

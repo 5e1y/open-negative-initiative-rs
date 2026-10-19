@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, GlyphKey, KeyPlate, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, GlyphKey, KeyPlate, Icons, TreeItem, RenameRow, RowKind, RowStyle, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 // `librarySidebar`: in the gallery the navigator takes the archive's column; beside a photo the
@@ -45,7 +45,7 @@ export component Tree inherits Surface {
             spacing: Space.s;
             KeyPlate {
                 mini: true;
-                if Library.surface == 0: GlyphKey { icon: Icons.target; help: "Show the selected photo"; clicked => { Library.tree-centre(); } }
+                GlyphKey { icon: Icons.target; help: "Show the selected photo"; clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
                 if Library.surface == 1: GlyphKey {
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
                     help: Library.projects-any-open ? "Fold every folder" : "Open every folder";
@@ -91,6 +91,7 @@ export component Tree inherits Surface {
                         selected: row.selected;
                         clicked => { Library.row-clicked(i); }
                         double-clicked => { Library.row-double-clicked(i); }
+                        folded => { Library.row-folded(i); }
                     }
                     if row.thumb: TileView {
                         width: parent.width;
@@ -121,6 +122,12 @@ export component Tree inherits Surface {
             padding-right: CardStyle.inset;
             ListView {
                 vertical-stretch: 1;
+                content-y <=> Library.project-viewport-y;
+                // `TreeEngine.reveal`: the row centred, held inside the list; on its creation too.
+                property <int> serial: Library.project-reveal-serial;
+                property <length> centred: min(0px, max(self.visible-height - Library.project-rows.length * RowStyle.height, self.visible-height / 2 - (Library.project-reveal-row + 0.5) * RowStyle.height));
+                changed serial => { if (Library.project-reveal-row >= 0) { self.content-y = self.centred; } }
+                init => { if (Library.project-reveal-row >= 0 && self.visible-height > 0) { self.content-y = self.centred; } }
                 for row[i] in Library.project-rows: TreeItem {
                     depth: row.depth;
                     title: row.title;
@@ -131,6 +138,7 @@ export component Tree inherits Surface {
                     selected: row.selected;
                     clicked => { Library.project-row-clicked(i); }
                     double-clicked => { Library.project-row-double-clicked(i); }
+                    folded => { Library.project-row-folded(i); }
                     menu(x, y) => {
                         root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
                         root.menu-y = self.absolute-position.y - root.absolute-position.y + y;

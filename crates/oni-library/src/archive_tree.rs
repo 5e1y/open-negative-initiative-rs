@@ -56,6 +56,26 @@ impl Node {
     }
 }
 
+/// The group or folder node `id` names, searched through every folder; a photo in a group has none.
+pub fn find<'a>(nodes: &'a [Node], id: &NodeId) -> Option<&'a Node> {
+    nodes.iter().find_map(|node| match node {
+        _ if node.id() == *id => Some(node),
+        Node::Folder { children, .. } => find(children, id),
+        _ => None,
+    })
+}
+
+/// `firstPath`: a photo itself, a group's first photo, a folder's own first before its children's.
+pub fn first_path(node: &Node) -> Option<&str> {
+    match node {
+        Node::Photo(entry) => Some(&entry.path),
+        Node::Roll { group, .. } | Node::Day { group, .. } => group.entries.first().map(|e| e.path.as_str()),
+        Node::Folder { group, children, .. } => {
+            group.as_ref().and_then(|g| g.entries.first()).map(|e| e.path.as_str()).or_else(|| children.iter().find_map(first_path))
+        }
+    }
+}
+
 /// Laid flat with each node's depth: a roll or day opens into its photos, a folder into its
 /// children then its own photos.
 pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<(Node, usize)> {
@@ -138,5 +158,18 @@ mod tests {
         // Twin: a closed subfolder hides the photo it holds.
         assert!(!open.iter().any(|(n, _)| n.id() == NodeId::Photo("/r/trip/day2/c".into())));
         assert_eq!((outer.count(), outer.entries().len()), (3, 3));
+    }
+
+    #[test]
+    fn a_folder_s_first_photo_is_its_own_before_its_subfolders() {
+        let inner = Node::Folder { path: "/r/trip/day2".into(), group: Some(group("/r/trip/day2", &["/r/trip/day2/c"])), children: vec![] };
+        let outer = Node::Folder { path: "/r/trip".into(), group: Some(group("/r/trip", &["/r/trip/a"])), children: vec![inner.clone()] };
+        assert_eq!(first_path(&outer), Some("/r/trip/a"));
+        let bare = Node::Folder { path: "/r/trip".into(), group: None, children: vec![inner] };
+        assert_eq!(first_path(&bare), Some("/r/trip/day2/c"), "a folder of folders opens its first child's photo");
+        let nodes = [outer];
+        let found = find(&nodes, &NodeId::Folder("/r/trip/day2".into())).map(Node::id);
+        assert_eq!(found, Some(NodeId::Folder("/r/trip/day2".into())), "a nested folder is found");
+        assert!(find(&nodes, &NodeId::Folder("/r/elsewhere".into())).is_none(), "twin: a folder absent is not");
     }
 }
