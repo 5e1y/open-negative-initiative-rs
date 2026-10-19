@@ -97,6 +97,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag", scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag),
     ("scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves", scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves),
+    ("scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s", scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s),
+    ("scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way", scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),

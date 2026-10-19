@@ -94,6 +94,11 @@ impl State {
         self.visible.clone()
     }
 
+    /// The gallery grid's width and height, as Slint last laid it.
+    pub fn grid(&self) -> (f32, f32) {
+        self.grid
+    }
+
     pub fn brush(&self) -> f32 {
         self.brush
     }

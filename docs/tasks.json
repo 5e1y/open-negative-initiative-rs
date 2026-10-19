@@ -993,6 +993,14 @@
     "detail": "The Windows CI built every crate but failed to compile oni-library's swift_checks, which made a symbolic link with std::os::unix. The link half of that check runs on Unix only (a link needs a privilege on Windows); the quit guard's failed write is now caused by a folder standing where the sidecar goes, which fails on both systems, instead of Unix permissions. The Windows run now cancels a run of the same branch a newer push supersedes, and caches the cargo build between runs (Swatinem/rust-cache), as a cold build took about 40 minutes."
   },
   {
+    "id": 136,
+    "type": "ui",
+    "title": "The scroll knobs grabbable: a drag, a page per track press, Option to the spot, as AppKit's scroller",
+    "status": "done",
+    "detail": "Every ScrollKnob takes the pointer on a 17 pt edge strip (NSScroller.scrollerWidth) where it widens to 10 pt over a faint track: a press on the knob drags the content by the knob's travel scaled to the content's; a press on the track jumps a page less NSScrollView's 10 pt verticalPageScroll toward the pointer and, held, repeats after 0.4 s every 75 ms (NSCell's periodic delay) until the knob stands under the pointer, the system's default 'Jump to the next page' (AppleScrollerPagingBehavior unset); Option inverts it and jumps the knob's middle to the spot. A Scroller writes its Flickable's offset; the gallery's knob calls Library.scrolled, the wheel's own way, so tiles, the pinned heading and thumbnails follow. The content itself still never drags.",
+    "outcome": "scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s (catalogue): a 120 pt knob drag moves the content 120 × its ratio within 1 pt (twin: not one for one), clamps at both ends, a click pages 440 pt, a held press stops after exactly two pages, Option lands at a quarter, the wheel still scrolls over the strip and a content drag does not. scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way on 1200 photos: the grid follows within 1 pt, the visible tiles, pinned heading and thumbnails follow, the slowest knob move 1.2 ms (dev build), a track click pages, a drag on the tiles scrolls nothing. Mutants: the page jump without page-keep and the gallery knob without its handler each fail them."
+  },
+  {
     "id": 137,
     "type": "feature",
     "title": "The phone pairs with the desktop end to end: the QR's link through the phone's own FFI, reconnection after a restart, Forget Phones",

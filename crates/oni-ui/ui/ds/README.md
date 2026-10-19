@@ -49,9 +49,10 @@ a primitive itself.
 ## Scrolled surfaces
 
 Every surface that scrolls is a `Scroller` (or a `ListView`, the same with its `for` rows virtualised).
-It scrolls by the wheel and the trackpad only, and its `ScrollKnob` copies AppKit's overlay scroller:
-no gutter, drawn only while the content overflows, lit while it scrolls, `ScrollStyle.linger` after and
-while the pointer is on the edge strip, never taking a click. Set `content-height` at every site (the
+It scrolls by the wheel, the trackpad and its knob, never by a drag of the content, and its `ScrollKnob`
+copies AppKit's overlay scroller: no gutter, drawn only while the content overflows, lit while it
+scrolls, `ScrollStyle.linger` after and while the pointer is on the edge strip, where it widens, drags,
+pages a press on the track and jumps to the spot with Option. Set `content-height` at every site (the
 alias drops the Flickable's own default); `horizontal: true` reads `content-width` instead, and
 `knob: false` hides the knob as Swift's `.scrollIndicators(.never)`.
 
