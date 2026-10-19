@@ -3,7 +3,7 @@ import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, T
 import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
 import { Icons } from "icons.slint";
 
-export enum ButtonKind { plain, accent, caution, destructive, update }
+export enum ButtonKind { plain, accent, caution, destructive, update, confirm }
 export enum ButtonSize { regular, small }
 // What the catalogue forces a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
@@ -15,6 +15,7 @@ export global ButtonInk {
         if (on) { return hover ? Colour.on-hover : Colour.on; }
         if (kind == ButtonKind.accent) { return pressed ? Colour.accent-pressed : hover ? Colour.accent-hover : Colour.accent; }
         if (kind == ButtonKind.caution) { return pressed ? Colour.caution-pressed : hover ? Colour.caution-hover : Colour.caution; }
+        if (kind == ButtonKind.confirm) { return pressed ? Colour.confirm-pressed : hover ? Colour.confirm-hover : Colour.confirm; }
         if (kind == ButtonKind.update) { return pressed ? Colour.update-pressed : hover ? Colour.update-hover : Colour.update; }
         if (kind == ButtonKind.destructive) {
             return pressed ? Colour.destructive-pressed : hover ? Colour.destructive-hover : Colour.destructive;
@@ -44,7 +45,9 @@ export component Button inherits Rectangle {
     in property <bool> lamp-lit;
     in property <Look> look: Look.live;
     // `DSPanelButton.fills`: a worded key takes its share of a filling plate; a glyph key stays square.
-    in property <bool> fills: root.text != "";
+    in property <bool> fills;
+    // `DSPanelButton.rotated`: the glyph turned a quarter for a gesture whose twin the icon bank lacks.
+    in property <bool> turned;
     callback clicked();
     property <bool> small: root.size == ButtonSize.small;
     property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
@@ -84,6 +87,7 @@ export component Button inherits Rectangle {
                 source: root.icon;
                 width: root.glyph;
                 height: root.glyph;
+                transform-rotation: root.turned ? 90deg : 0deg;
                 tone: ButtonInk.ink(root.kind, root.on);
             }
         }
@@ -127,13 +131,15 @@ export component ButtonGroup inherits HorizontalLayout {
 // worded keys sharing the width and its glyph keys square, else the plate hugs its keys.
 export component KeyPlate inherits Rectangle {
     in property <bool> fills;
+    // `.mini`: the radius of the small keys it holds.
+    in property <bool> mini;
     horizontal-stretch: root.fills ? 1 : 0;
     min-width: row.min-width;
     preferred-width: row.preferred-width;
     min-height: row.min-height;
     max-height: row.max-height;
     background: ButtonStyle.socket;
-    border-radius: ButtonStyle.radius + ButtonStyle.plate-inset;
+    border-radius: (root.mini ? ButtonStyle.small-radius : ButtonStyle.radius) + ButtonStyle.plate-inset;
     row := HorizontalLayout {
         padding: ButtonStyle.plate-inset;
         spacing: ButtonStyle.plate-inset;
@@ -170,6 +176,25 @@ export component Toggle inherits Rectangle {
     TouchArea {
         enabled: root.enabled;
         clicked => { root.toggled(!root.on); }
+    }
+}
+
+// `DSToggle`: the switch, then its label at its right, both flipping it; nothing stretches between.
+export component ToggleRow inherits HorizontalLayout {
+    in property <bool> on;
+    in property <string> label;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+    alignment: start;
+    spacing: Space.s;
+    VerticalLayout {
+        alignment: center;
+        Toggle { label: root.label; on: root.on; enabled: root.enabled; toggled(v) => { root.toggled(v); } }
+    }
+    Label {
+        text: root.label;
+        tone: root.enabled ? Tone.primary : Tone.secondary;
+        TouchArea { enabled: root.enabled; clicked => { root.toggled(!root.on); } }
     }
 }
 

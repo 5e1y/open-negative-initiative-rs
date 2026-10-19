@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, TextArea, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -48,6 +48,8 @@ export struct TreeRow {
 export struct StockCount {
     name: string,
     count: string,
+    artwork: image,
+    has-artwork: bool,
 }
 
 export global Library {
@@ -127,6 +129,9 @@ export global Library {
     callback project-row-clicked(int);
     callback project-row-double-clicked(int);
     callback project-row-menu(int) -> bool;
+    // `SidebarKeys` on the projects: whether a row is open, and the key folding or opening them all.
+    in property <bool> projects-any-open;
+    callback project-fold-all();
     callback trash-row-clicked(int);
     callback trash-row-double-clicked(int);
     callback trash-row-restore(int);
@@ -290,9 +295,8 @@ export component Info inherits Surface {
                         year <=> Library.year;
                         committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
                     }
-                    if Library.shot-date-set: Button {
-                        text: "CLEAR";
-                        size: ButtonSize.small;
+                    if Library.shot-date-set: IconButton {
+                        icon: Icons.reset;
                         help: "Clear shot date";
                         clicked => { Library.shot-date-cleared(); }
                     }
@@ -323,13 +327,15 @@ export component Info inherits Surface {
                 if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
                 for row in Library.stocks: HorizontalLayout {
                     spacing: Space.s;
+                    StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }
                     Label { text: row.name; horizontal-stretch: 1; }
                     Label { text: row.count; tone: Tone.secondary; }
                 }
             }
             Section {
                 title: "Description";
-                TextField {
+                TextArea {
+                    lines-height: ShellStyle.info-description;
                     text <=> Library.description;
                     left(t) => { Library.description-committed(t); }
                 }

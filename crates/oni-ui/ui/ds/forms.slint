@@ -56,6 +56,22 @@ export component Warning inherits Text {
     wrap: word-wrap;
 }
 
+// `DSWarning`: a triangle, then the sentence under it, on a pale orange band.
+export component WarningBand inherits Rectangle {
+    in property <string> text;
+    background: Colour.warning-soft;
+    border-radius: Radius.badge;
+    VerticalLayout {
+        padding: Space.s;
+        spacing: Space.xs;
+        HorizontalLayout {
+            alignment: start;
+            Icon { source: Icons.warning; width: ButtonStyle.icon; height: ButtonStyle.icon; ink: Colour.ink-on-warning; }
+        }
+        Label { text: root.text; wrap: word-wrap; color: Colour.ink-on-warning; }
+    }
+}
+
 // The summary box: the canvas's dark under value lines.
 export component SummaryBox inherits Rectangle {
     background: Colour.canvas;

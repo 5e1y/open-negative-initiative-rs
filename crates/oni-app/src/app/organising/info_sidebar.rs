@@ -18,7 +18,15 @@ impl Ctl {
             lib.set_info_title(group.project.name.clone().into());
             let stocks: Vec<StockCount> = oni_library::info::stocks(&group.entries)
                 .into_iter()
-                .map(|(k, n)| StockCount { name: k.display_name.into(), count: n.to_string().into() })
+                .map(|(k, n)| {
+                    let artwork = crate::stocks::icon(k.icon_name);
+                    StockCount {
+                        name: k.display_name.into(),
+                        count: n.to_string().into(),
+                        has_artwork: artwork.is_some(),
+                        artwork: artwork.unwrap_or_default(),
+                    }
+                })
                 .collect();
             lib.set_stocks(ModelRc::new(VecModel::from(stocks)));
             let stack: Vec<Image> = group

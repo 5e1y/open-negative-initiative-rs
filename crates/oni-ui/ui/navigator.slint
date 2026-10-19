@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, FolderRow, FolderKind, RenameRow, GlyphKey, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, FolderRow, FolderKind, RenameRow, GlyphKey, KeyPlate, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -179,17 +179,21 @@ export component NavigatorSection inherits Rectangle {
             padding-right: Space.m;
             padding-bottom: Space.s;
             spacing: Space.s;
-            GlyphKey {
-                icon: Icons.parent;
-                help: "Parent folder";
-                enabled: Navigator.can-go-up;
-                clicked => { Navigator.go-up(); }
-            }
-            GlyphKey {
-                icon: Icons.favourite;
-                help: Navigator.favourites-only ? "Show every folder" : "Show the favourites alone";
-                tinted: Navigator.favourites-only;
-                clicked => { Navigator.favourites-toggled(); }
+            // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.
+            KeyPlate {
+                mini: true;
+                GlyphKey {
+                    icon: Icons.parent;
+                    help: "Parent folder";
+                    enabled: Navigator.can-go-up;
+                    clicked => { Navigator.go-up(); }
+                }
+                GlyphKey {
+                    icon: Icons.favourite;
+                    help: Navigator.favourites-only ? "Show every folder" : "Show the favourites alone";
+                    tinted: Navigator.favourites-only;
+                    clicked => { Navigator.favourites-toggled(); }
+                }
             }
             pill := ColumnPill {
                 horizontal-stretch: 1;

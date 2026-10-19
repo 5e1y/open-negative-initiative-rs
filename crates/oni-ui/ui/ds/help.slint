@@ -34,6 +34,8 @@ export component TextArea inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <length> lines-height: DS.control-report-message-height;
     callback edited(string);
+    // The focus leaving the box, which a typed text commits on.
+    callback left(string);
     public function take-focus() { input.focus(); }
     height: root.lines-height;
     border-radius: FieldStyle.radius;
@@ -52,6 +54,7 @@ export component TextArea inherits Rectangle {
         font-size: Type.label;
         color: Colour.ink;
         edited => { root.edited(self.text); }
+        changed has-focus => { if (!self.has-focus) { root.left(self.text); } }
     }
 }
 

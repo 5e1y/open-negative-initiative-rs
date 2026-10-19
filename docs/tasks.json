@@ -890,5 +890,13 @@
     "status": "done",
     "detail": "Owner's report: on the T7 (exFAT) the Scans folder showed as a dead end and the editor's column held no photo. A listing the disk refused (a drive still waking, access to removable volumes not granted yet) was kept as an empty folder for the whole session, and the opened folder stayed unread. Now a refusal leaves the folder unlisted with its chevron; a click reads it again, and the mounts' reader tries every refused folder each second, listing it and reading the opened folder again once the disk answers. Folders the Finder hides by their flag (Recovery, System Volume Information) are left out as Swift's .skipsHiddenFiles does. FEEDBACKS was stretched by its zone: it keeps its own width. Every sheet stops at the window's height less its margins and scrolls past it, WelcomeSheet's fit. KeyPlate, Swift's KeycapPlate, joins the design system with Button.fills.",
     "outcome": ""
+  },
+  {
+    "id": 124,
+    "type": "fix",
+    "title": "The sidebars' keys laid as Swift lays them: keycap plates, switches before their words, the panel's rule, the warning band",
+    "status": "done",
+    "detail": "Owner's report: the keys of the sidebars sat apart, reversed and right-aligned against Swift's. Every group Swift lays on a KeycapPlate now sits on a KeyPlate, words in capitals: Measured Roll's JOIN / ROLL OF, the flat-field's LOAD / RENAME / FOLDER, the Crop's COPY / PASTE / PASTE TO ROLL, the Measuring Window's reset, word (confirm green when armed, the note as its tooltip), copy and paste, the mirror pair (the second glyph turned 90°, never lit), Auto White Balance with the crop warning inside its plate, Auto Paper Correction. Beside a photo the column shows one row, Swift's SidebarKeys: target and layout on a mini plate at the left, then the folder's pill, without the reload key Swift never shows; the navigator's Parent and Favourites share a mini plate; the Projects surface gets its row: fold or open every project, then the ONI Projects pill. Each column part pads itself as Swift's does. Switches lead their words (Vertical, Flat-field), the Mask label stands above its picker, warnings are DSWarning's band with its triangle, one rule closes the panel's pinned header, a black and white photo hides the Color block and Chrome (ColorPane's isMonochrome), Kept reads on the LCD, tree photo rows carry the film glyph and projects the sticky note, and the Info sidebar's stock rows lead with their icon, its date clears by a reset glyph and its description is a fixed-height multi-line box.",
+    "outcome": ""
   }
 ]

@@ -104,7 +104,23 @@ impl Ctl {
                 })
                 .collect()
         };
-        w.global::<Library>().set_project_rows(ModelRc::new(VecModel::from(rows)));
+        let lib = w.global::<Library>();
+        lib.set_project_rows(ModelRc::new(VecModel::from(rows)));
+        lib.set_projects_any_open(!self.state.borrow().org.project_expanded.is_empty());
+    }
+
+    /// `foldOrOpenEveryRow` on the projects: any row open folds them all, else every project opens.
+    pub(in crate::app) fn project_fold_all(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.org.project_expanded.is_empty() {
+                let all: HashSet<NodeId> = s.org.projects.iter().map(|p| NodeId::Project(p.id.clone())).collect();
+                s.org.project_expanded = all;
+            } else {
+                s.org.project_expanded.clear();
+            }
+        }
+        self.publish_projects();
     }
 
     /// `selectProject`: a project row rings it and clears the photos, a photo row selects it; in
