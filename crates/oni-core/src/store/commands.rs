@@ -240,11 +240,15 @@ impl EditorStore {
         preserving: bool,
         transform: impl Fn(&str, &PipelineSettings) -> Option<PipelineSettings>,
     ) -> (Settings, Settings) {
-        let mut before = Settings::new();
-        let mut after = Settings::new();
-        for path in paths {
-            let original = Path::new(path);
-            let loaded = match sidecar::read(original, self.mosaic(path), true) {
+        // One thread per file: a path twice would have two threads write one sidecar.
+        let mut seen = std::collections::HashSet::new();
+        let paths: Vec<String> = paths.iter().filter(|p| seen.insert(p.as_str())).cloned().collect();
+        let paths = &paths[..];
+        let mosaics: Vec<bool> = paths.iter().map(|p| self.mosaic(p)).collect();
+        let loaded = in_parallel(paths, |i, path| sidecar::read(Path::new(path), mosaics[i], true));
+        let mut writes = Vec::new();
+        for (path, loaded) in paths.iter().zip(loaded) {
+            let loaded = match loaded {
                 Ok(loaded) if loaded.writable => loaded,
                 Ok(_) => continue,
                 Err(e) => {
@@ -253,19 +257,44 @@ impl EditorStore {
                 }
             };
             let Some(next) = transform(path, &loaded.settings) else { continue };
-            if next == loaded.settings {
-                continue;
+            if next != loaded.settings {
+                writes.push((path.clone(), loaded.settings, next));
             }
-            match sidecar::write(&next, original, WriteOptions { preserving_revision: preserving, ..WriteOptions::default() }) {
+        }
+        let options = WriteOptions { preserving_revision: preserving, ..WriteOptions::default() };
+        let written = in_parallel(&writes, |_, (path, _, next)| sidecar::write(next, Path::new(path), options.clone()));
+        let mut before = Settings::new();
+        let mut after = Settings::new();
+        for ((path, was, next), result) in writes.into_iter().zip(written) {
+            match result {
                 Ok(()) => {
-                    before.insert(path.clone(), loaded.settings);
-                    after.insert(path.clone(), next);
+                    before.insert(path.clone(), was);
+                    after.insert(path, next);
                 }
                 Err(e) => self.failure = Some(e.to_string()),
             }
         }
         (before, after)
     }
+}
+
+/// `work` on each item, a few threads at once, the results in the items' order: a roll's sidecars
+/// read and written side by side, each file its own, as Swift's batch moves them off the main thread.
+fn in_parallel<T: Sync, R: Send>(items: &[T], work: impl Fn(usize, &T) -> R + Sync) -> Vec<R> {
+    const THREADS: usize = 8;
+    if items.len() < 2 {
+        return items.iter().enumerate().map(|(i, t)| work(i, t)).collect();
+    }
+    let chunk = items.len().div_ceil(THREADS);
+    std::thread::scope(|s| {
+        let work = &work;
+        let handles: Vec<_> = items
+            .chunks(chunk)
+            .enumerate()
+            .map(|(c, part)| s.spawn(move || part.iter().enumerate().map(|(j, t)| work(c * chunk + j, t)).collect::<Vec<R>>()))
+            .collect();
+        handles.into_iter().flat_map(|h| h.join().expect("a sidecar thread")).collect()
+    })
 }
 
 /// A mode flip carries the axis and the windows still at one mode's rest onto the other's.

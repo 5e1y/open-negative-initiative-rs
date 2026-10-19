@@ -98,7 +98,12 @@ impl Ctl {
             if let Some(live) = live {
                 p.state.borrow_mut().store.apply(Command::Set { knob: f.knob(), value: live });
             }
+            let released = std::time::Instant::now();
             p.state.borrow_mut().store.release();
+            // The step's record and any roll it reaches, read and written on this thread.
+            if released.elapsed() > std::time::Duration::from_millis(5) {
+                timing::line(&format!("a release recorded its step in {:.1} ms", released.elapsed().as_secs_f64() * 1000.0));
+            }
             p.publish(false);
             p.schedule_redraw();
             if p.state.borrow().last_change.is_some() {
