@@ -12,6 +12,8 @@ typedef struct {
     libraw_data_t *raw;
     // 1 when LibRaw handed out half the sensor's sides, each pixel one 2x2 block, no demosaic.
     int half;
+    // The maker's default crop, kept once LibRaw's own buffers are let go.
+    int inset[4];
 } oni_decoded;
 
 void oni_release(oni_decoded *d)
@@ -81,15 +83,18 @@ int oni_process(oni_decoded *d, const float mul[3])
     d->height = img->height;
     d->pixels = (unsigned short *)img->data;
     d->image = img;
+    const libraw_raw_inset_crop_t *c = &lr->sizes.raw_inset_crops[0];
+    d->inset[0] = c->cleft;
+    d->inset[1] = c->ctop;
+    d->inset[2] = c->cwidth;
+    d->inset[3] = c->cheight;
+    // The raw and working buffers, 245 MB at 24 MP, go before the caller's float copy is made.
+    libraw_recycle(lr);
     return 0;
 }
 
 // The maker's default crop inside the visible area, as LibRaw reads it; zero sizes when none.
 void oni_inset(const oni_decoded *d, int out[4])
 {
-    const libraw_raw_inset_crop_t *c = &d->raw->sizes.raw_inset_crops[0];
-    out[0] = c->cleft;
-    out[1] = c->ctop;
-    out[2] = c->cwidth;
-    out[3] = c->cheight;
+    memcpy(out, d->inset, sizeof d->inset);
 }

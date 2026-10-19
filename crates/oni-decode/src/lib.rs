@@ -21,6 +21,7 @@ struct Decoded {
     image: *mut c_void,
     raw: *mut c_void,
     half: c_int,
+    inset: [c_int; 4],
 }
 
 unsafe extern "C" {
@@ -290,18 +291,28 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let m = conv.matrix;
-    let pixels = (y0..y0 + h_out)
-        .flat_map(|y| raw[(y * w + x0) * 3..(y * w + x0 + w_out) * 3].chunks_exact(3))
-        .map(|p| {
-            let cam = [
-                p[0] as f32 / 65535.0,
-                p[1] as f32 / 65535.0,
-                p[2] as f32 / 65535.0,
-            ];
-            let t = |r: usize| m[r][0] * cam[0] + m[r][1] * cam[1] + m[r][2] * cam[2];
-            [t(0), t(1), t(2), 1.0]
-        })
-        .collect();
+    let linear = |p: &[c_ushort]| {
+        let cam = [p[0] as f32 / 65535.0, p[1] as f32 / 65535.0, p[2] as f32 / 65535.0];
+        let t = |r: usize| m[r][0] * cam[0] + m[r][1] * cam[1] + m[r][2] * cam[2];
+        [t(0), t(1), t(2), 1.0]
+    };
+    // Bands of rows on every core: 24 M pixels in one loop took a third of a second.
+    let mut pixels = vec![[0.0f32; 4]; w_out * h_out];
+    let threads = std::thread::available_parallelism().map_or(1, |n| n.get()).min(h_out.max(1));
+    let band = h_out.div_ceil(threads).max(1);
+    std::thread::scope(|scope| {
+        for (i, rows) in pixels.chunks_mut(band * w_out.max(1)).enumerate() {
+            let linear = &linear;
+            scope.spawn(move || {
+                for (r, row) in rows.chunks_mut(w_out.max(1)).enumerate() {
+                    let y = y0 + i * band + r;
+                    for (out, p) in row.iter_mut().zip(raw[(y * w + x0) * 3..(y * w + x0 + w_out) * 3].chunks_exact(3)) {
+                        *out = linear(p);
+                    }
+                }
+            });
+        }
+    });
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
         eprintln!(
             "mul {:?} baseline {} cam_xyz {:?}\nmatrix {:?}",
