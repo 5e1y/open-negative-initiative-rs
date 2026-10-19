@@ -268,10 +268,11 @@ export component CanvasCard inherits Card {
     SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
     // `columnKey(.leading)`: the Library's key in the canvas's top-left band.
     HorizontalLayout {
+        // Centred in the band over the image: a row stretched to it lays its keys at its top.
         x: CardStyle.padding;
-        y: 0;
+        y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
-        height: CardStyle.padding;
+        height: self.preferred-height;
         alignment: center;
         IconButton {
             size: ButtonSize.small;
@@ -286,9 +287,9 @@ export component CanvasCard inherits Card {
     HorizontalLayout {
         // Its own width: a layout left unsized spans the card and centres its keys off it.
         x: parent.width - self.preferred-width - CardStyle.padding;
-        y: 0;
+        y: (CardStyle.padding - self.height) / 2;
         width: self.preferred-width;
-        height: CardStyle.padding;
+        height: self.preferred-height;
         spacing: Space.s;
         alignment: center;
         Label { text: Canvas.zoom-label; role: TextRole.value; }

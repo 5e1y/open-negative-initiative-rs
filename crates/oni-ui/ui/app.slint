@@ -65,6 +65,7 @@ export struct MenuTitles {
     ungroup: string,
     sheet: string,
     screen-gamut: string,
+    half-size: string,
 }
 
 // `EditorMenus.live`: the items a gesture can reach now; a gesture this build lacks stays dark.
@@ -118,6 +119,7 @@ export global Menus {
         library: "Hide the Library", panel: "Hide the Panel", correcting: "Remove Dust & Scratches",
         mirror: "Mirror Horizontally", filter: "Filter: All", roll: "New Roll from Selection",
         ungroup: "Ungroup", sheet: "New Contact Sheet", screen-gamut: "Show What This Screen Cannot Show",
+        half-size: "Read RAW Previews at Half Size",
     };
     in property <MenuLive> live: { open: true, cycle-filter: true };
     // `menus.presets`: each one's name and what it carries, under the targets' title.
@@ -184,6 +186,7 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: Menus.titles.mirror; shortcut: @keys(Control + Shift + "m"); enabled: Menus.live.mirror; activated => { App.menu("mirror"); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.sound; activated => { App.menu("toggle-sound"); } }
+            MenuItem { title: Menus.titles.half-size; activated => { App.menu("half-size"); } }
             MenuItem { title: Menus.titles.screen-gamut; shortcut: @keys(Control + Shift + "y"); enabled: Menus.live.screen-gamut; activated => { App.menu("screen-gamut"); } }
             MenuSeparator { }
             MenuItem { title: "Scanner Emulator"; enabled: Menus.live.emulator; activated => { App.menu("emulator"); } }

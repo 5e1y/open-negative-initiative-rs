@@ -54,6 +54,13 @@ impl Ctl {
                 self.state.borrow_mut().muted = muted;
                 self.remember(preferences::SOUND_MUTED, muted.into());
             }
+            "half-size" => {
+                let half = !crate::render::HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed);
+                crate::render::HALF_SIZE_PREVIEWS.store(half, std::sync::atomic::Ordering::Relaxed);
+                self.remember(preferences::HALF_SIZE_PREVIEWS, half.into());
+                self.state.borrow().previews.lock().expect("previews").clear();
+                self.redecode();
+            }
             "cycle-filter" => self.cycle_filter(),
             "show-selected" => self.show_selected(),
             "copy" => {

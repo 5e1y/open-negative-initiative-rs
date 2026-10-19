@@ -102,6 +102,14 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     rig.settle();
 
     rig.shot("layout-editor");
+    // `zoomBubble`: its keys centred in the band over the image, clear of the bar above.
+    let (pw, px) = rig.drawn();
+    let x = (WIDTH - 340.0 - 40.0 - 12.0) as usize;
+    let ground = px[(CARD_TOP as usize + 1) * pw + x].0;
+    let key: Vec<usize> = (CARD_TOP as usize..CARD_TOP as usize + 40).filter(|&y| px[y * pw + x].0 != ground).collect();
+    let (above, below) = (key[0] - CARD_TOP as usize, CARD_TOP as usize + 40 - 1 - key[key.len() - 1]);
+    assert!(above.abs_diff(below) <= 1, "the panel key centred in the band: {above} above, {below} below");
+    assert!(above >= 6, "twin: not hung at the band's top edge: {above}");
     // `card`: flush with the library and the panel, so the canvas is the column less its padding.
     let flush = WIDTH - 260.0 - 340.0 - 2.0 * 40.0;
     assert_eq!(canvas.get_width(), flush, "the card spans the column, no gutter");

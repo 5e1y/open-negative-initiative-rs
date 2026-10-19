@@ -12,6 +12,8 @@ pub const NEUTRAL_DECODE_NOTICE_SHOWN: &str = "neutralDecodeNoticeShown";
 pub const GALLERY_COLUMNS: &str = "galleryColumns";
 /// `@AppStorage("soundMuted")`: the key clicks silenced.
 pub const SOUND_MUTED: &str = "soundMuted";
+/// The RAW previews read at half size, a choice this build adds to compare speed and grain.
+pub const HALF_SIZE_PREVIEWS: &str = "halfSizePreviews";
 
 pub struct Preferences {
     file: PathBuf,

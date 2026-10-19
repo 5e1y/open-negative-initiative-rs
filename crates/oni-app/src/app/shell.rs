@@ -15,6 +15,8 @@ impl Shell {
         let generation: Arc<AtomicU64> = Arc::default();
         paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), generation.clone(), options.support.clone(), options.screen);
         let disk = read_disk(options.support.clone(), options.screen);
+        let half = Preferences::load(&options.support).bool(preferences::HALF_SIZE_PREVIEWS).unwrap_or(false);
+        crate::render::HALF_SIZE_PREVIEWS.store(half, Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,
@@ -194,9 +196,10 @@ impl Shell {
         self.ctl.open_remembered()
     }
 
-    /// The opened folder's first photo in the editor once read, for the bench.
+    /// The opened folder's first photo in the editor once read, for the bench; a file named at
+    /// launch keeps its own opening.
     pub fn open_first_when_read(&self) {
-        self.ctl.state.borrow_mut().opening = Some(String::new());
+        self.ctl.state.borrow_mut().opening.get_or_insert_with(String::new);
     }
 
     /// `WelcomeSheet.isDue` at launch: shown once per edition, never under a bench.

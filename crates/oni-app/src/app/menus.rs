@@ -83,6 +83,12 @@ impl Ctl {
                 roll: plural(count, "New Roll from Selection", format!("New Roll from {count} Photos")).into(),
                 ungroup: plural(members, "Ungroup", format!("Ungroup {members} Photos")).into(),
                 sheet: sheets::title(s.making_sheet.is_some(), selected).into(),
+                half_size: if crate::render::HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed) {
+                    "Read RAW Previews Whole"
+                } else {
+                    "Read RAW Previews at Half Size"
+                }
+                .into(),
                 screen_gamut: if screen_gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into(),
             };
             // A gesture this build lacks stays dark, whatever Swift's rule would say.

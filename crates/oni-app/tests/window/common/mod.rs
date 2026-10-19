@@ -81,7 +81,8 @@ impl Rig {
         }
     }
 
-    pub fn shot(&self, name: &str) -> PathBuf {
+    /// The window drawn now, as its width and rows of RGB565 pixels.
+    pub fn drawn(&self) -> (usize, Vec<Rgb565Pixel>) {
         self.window.request_redraw();
         let size = self.window.size();
         let (w, h) = (size.width as usize, size.height as usize);
@@ -89,6 +90,12 @@ impl Rig {
         self.window.draw_if_needed(|r| {
             r.render(&mut buffer, w);
         });
+        (w, buffer)
+    }
+
+    pub fn shot(&self, name: &str) -> PathBuf {
+        let (w, buffer) = self.drawn();
+        let h = buffer.len() / w;
         let path = self.shots.join(format!("{name}.png"));
         let file = std::fs::File::create(&path).unwrap();
         let mut encoder = png::Encoder::new(std::io::BufWriter::new(file), w as u32, h as u32);

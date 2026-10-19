@@ -954,5 +954,19 @@
     "status": "done",
     "detail": "Owner's decision. The hand handed a dragged value to the store at most every 1/30 s, so an image waited up to 33 ms for its tick. It now hands at most once a 120 Hz frame and the render slot (one in flight, the latest waiting) paces the image. The histogram still counts at 30 fps.",
     "outcome": "Real-window drag bench on DSC_6432, release, M2 Max: exposure 13 renders for 60 notches, cadence p50 33.4 ms, to 41 renders at p50 10.1 ms; contrast 18 at 32.9 ms to 52 at 9.9 ms; a notch's handed-to-shown p50 6.1 to 3.2 ms. track.rs test restated on the interval, its twins kept."
+  },
+  {
+    "id": 130,
+    "type": "ui",
+    "title": "The RAW preview read whole again, half size a choice in the View menu",
+    "status": "done",
+    "detail": "Owner judged the half-size preview visibly softer. The editor's preview reads a RAW whole by default; View > Read RAW Previews at Half Size switches to the half-size read (kept in preferences as halfSizePreviews) and re-reads the open frame so the two can be compared. The measuring copies and Prepare the Roll stay at half size."
+  },
+  {
+    "id": 131,
+    "type": "ui",
+    "title": "The canvas band's keys centred in their 40-point band",
+    "status": "done",
+    "detail": "The zoom bubble and the library key were laid at the top of the band over the image, against the bar. Each row now takes its own height and sits centred, as Swift's zoomBubble does; canvas_layout checks the panel key's margins by pixel, with a twin on the old top placement."
   }
 ]

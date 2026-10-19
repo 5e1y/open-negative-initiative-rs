@@ -22,6 +22,11 @@ impl Previews {
         self.kept.retain(|(p, _)| p != path);
     }
 
+    /// Forgets every preview, which another way of reading the files makes stale.
+    pub fn clear(&mut self) {
+        self.kept.clear();
+    }
+
     pub fn get(&mut self, path: &str) -> Option<Arc<Negative>> {
         let i = self.kept.iter().position(|(p, _)| p == path)?;
         let entry = self.kept.remove(i).expect("found above");
