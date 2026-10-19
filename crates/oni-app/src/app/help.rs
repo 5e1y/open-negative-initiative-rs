@@ -30,6 +30,11 @@ pub const NOTES: [(&str, &str, &str); 6] = [
     ("space.1.3.1", "New", "ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips."),
 ];
 
+/// `1.2` of `1.2.1`: the release an edition belongs to, as the menu and the sheet's heading name it.
+pub fn release(edition: &str) -> &str {
+    edition.match_indices('.').nth(1).map_or(edition, |(at, _)| &edition[..at])
+}
+
 /// The default reporter: a JSON post to the site's `/report`, as `BugReport.send` makes it.
 pub fn post(message: &str, log: Option<String>) -> Result<(), String> {
     let body = report::body(message, env!("CARGO_PKG_VERSION"), log.as_deref());
@@ -40,6 +45,7 @@ pub fn post(message: &str, log: Option<String>) -> Result<(), String> {
 impl Ctl {
     pub(super) fn wire_help(me: &Rc<Ctl>, window: &crate::MainWindow) {
         me.publish_news();
+        window.global::<Help>().set_release(release(EDITION).into());
         let news = window.global::<News>();
         let p = me.clone();
         news.on_read(move |id| p.news_read(&id));
@@ -158,6 +164,7 @@ impl Ctl {
 
     pub(super) fn open_report(&self) {
         let Some(w) = self.window() else { return };
+        self.state.borrow_mut().report_round += 1;
         let h = w.global::<Help>();
         h.set_report_message(Default::default());
         h.set_report_log(true);
@@ -185,15 +192,18 @@ impl Ctl {
         let with_log = h.get_report_log();
         h.set_report_sending(true);
         h.set_report_failure(Default::default());
-        let (reporter, log) = {
+        let (reporter, log, round) = {
             let s = self.state.borrow();
-            (s.reporter.clone(), crate::timing::log_path(&s.support))
+            (s.reporter.clone(), crate::timing::log_path(&s.support), s.report_round)
         };
         std::thread::spawn(move || {
             let sealed = with_log.then(|| report::sealed_log(&log)).flatten();
             let outcome = reporter(&message, sealed);
             with_shell(move |c| {
                 let Some(w) = c.window() else { return };
+                if c.state.borrow().report_round != round {
+                    return;
+                }
                 let h = w.global::<Help>();
                 h.set_report_sending(false);
                 match outcome {
@@ -252,5 +262,15 @@ mod tests {
         unique.dedup();
         assert_eq!(unique.len(), ids.len());
         assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.2.1"));
+    }
+
+    #[test]
+    fn the_menu_and_the_heading_name_the_editions_release() {
+        assert_eq!(release(EDITION), "1.2");
+        assert_eq!(release("1.3"), "1.3");
+        assert_eq!(release("2.0.4.1"), "2.0");
+        // Twin: the edition itself, or the menu's former 1.1, is not what both name.
+        assert_ne!(release(EDITION), EDITION);
+        assert_ne!(release(EDITION), "1.1");
     }
 }

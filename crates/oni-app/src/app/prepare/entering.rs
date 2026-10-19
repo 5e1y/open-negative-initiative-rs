@@ -167,6 +167,7 @@ impl Ctl {
             }
         }
         self.save_draft();
+        self.keep_picker();
         let back = {
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;

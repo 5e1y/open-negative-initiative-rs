@@ -193,6 +193,8 @@ impl Ctl {
             c.set_message(message.into());
             c.set_key(key.to_uppercase().into());
             c.set_shown(true);
+            // A field behind the sheet would keep the keys its Return and typing are meant for.
+            w.invoke_refocus();
         }
     }
 }

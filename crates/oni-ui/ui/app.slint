@@ -15,13 +15,14 @@ import { Help, News, WelcomeSheet, ReportSheet, ConsoleWindow } from "help.slint
 import { Wrapped, WrappedFace, WrappedView } from "wrapped.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetDeck, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
-import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
+import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
+import { Confirm, ConfirmSheet } from "confirm.slint";
 
 export { DS, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
-export { MaskDialog }
+export { MaskDialog, Confirm }
 export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/ds.slint";
@@ -114,6 +115,8 @@ export global App {
     // macOS, control elsewhere, and answers whether the key was claimed.
     callback key(string, bool, bool, bool, bool, bool) -> bool;
     callback menu(string);
+    // A sheet shown or closed, so the menus go dark behind it or come back.
+    callback sheet-changed();
 }
 
 // `EditorMenus`'s titles, which change with the scene.
@@ -202,31 +205,15 @@ export global Menus {
     callback delete-preset(int);
 }
 
-// `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
-export global Confirm {
-    in property <bool> shown;
-    in property <string> title;
-    in property <string> message;
-    in property <string> key;
-    callback answered(bool);
-}
-
-component ConfirmSheet inherits Sheet {
-    dismissed => { Confirm.answered(false); }
-    Label { role: TextRole.section; text: Confirm.title; }
-    if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
-    HorizontalLayout {
-        alignment: end;
-        ButtonGroup {
-            Button { text: "CANCEL"; clicked => { Confirm.answered(false); } }
-            Button { text: Confirm.key; kind: ButtonKind.accent; clicked => { Confirm.answered(true); } }
-        }
-    }
-}
-
 export component MainWindow inherits AppWindow {
     title: "Open Negative Initiative";
     out property <bool> keys-focused: keys.has-focus;
+    // Any sheet over the window, every flag that lays one below.
+    out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || Notice.shown
+        || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
+        || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
+        || Advice.shown || Wrapped.shown;
+    changed sheet-shown => { App.sheet-changed(); }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
 
@@ -318,7 +305,7 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: "Check for Updates…"; activated => { App.menu("check-updates"); } }
             MenuSeparator { }
             MenuItem { title: "Show Console"; activated => { App.menu("console"); } }
-            MenuItem { title: "What's New in ONI 1.1"; activated => { App.menu("welcome"); } }
+            MenuItem { title: "What's New in ONI " + Help.release; activated => { App.menu("welcome"); } }
             MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }
             MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu("report"); } }
             MenuItem { title: "Show My Year on Film"; enabled: !Wrapped.shown; activated => { App.menu("wrapped"); } }
@@ -585,7 +572,7 @@ export component MainWindow inherits AppWindow {
         height: root.height;
     }
     if Navigator.catch-up-shown: RootsCatchUpSheet { x: 0; y: 0; width: root.width; height: root.height; }
-    if Exporting.confirm-shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Exporting.confirm-shown: ExportConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.notice-shown: ExportNoticeSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Stocks.shown: StockPickerSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Exporting.papers-shown: PaperSheet { x: 0; y: 0; width: root.width; height: root.height; }

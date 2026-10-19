@@ -407,7 +407,7 @@ export component SpaceChip inherits Chip {
 }
 
 // The batch's clash: Return reaches no key, since replacing files is never a stray key's doing.
-export component ConfirmSheet inherits Sheet {
+export component ExportConfirmSheet inherits Sheet {
     title: Exporting.confirm-title;
     dismissed => { Exporting.confirmed(false); }
     Label { text: Exporting.confirm-message; tone: Tone.secondary; centred: true; wrap: word-wrap; }

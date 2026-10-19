@@ -47,7 +47,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
+    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), require_roll: true, ..Options::default() };
+    let radius = || oni_app::preferences::Preferences::load(&support).value(oni_measure::roll::BASE_RADIUS_KEY).and_then(serde_json::Value::as_f64);
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
@@ -71,6 +72,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
     assert!(menus.get_live().measure_roll && w.global::<Bar>().get_can_prepare());
+    assert!(menus.get_live().export && menus.get_live().medal, "twin: in the gallery the selection's items are live");
     w.global::<Bar>().invoke_act("prepare-roll".into());
     rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && names() == 3);
     rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
@@ -78,6 +80,10 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(p.get_heading().as_str(), "Select the Film Type");
     assert!(p.get_skipped().row_data(1).unwrap(), "a scanner's roll skips the flat-field");
     assert!(!menus.get_live().toggle_mode && !menus.get_live().measure_roll, "⌘G and the item itself stay dark meanwhile");
+    let live = menus.get_live();
+    let behind = [live.export, live.framing, live.correction, live.mirror, live.smaller, live.larger, live.remove, live.undo, live.redo, live.reset];
+    let more = [live.copy_settings, live.paste_settings, live.paste_to_roll, live.medal, live.new_roll, live.contact_sheet, live.save_preset, live.apply_preset];
+    assert!(behind.iter().chain(more.iter()).all(|on| !on), "nothing reaches the editor the roll hides: {live:?}");
     assert!(loaded(&canonical("B.tif")).roll_draft.is_none(), "twin: the film step writes no draft");
     rig.settle();
     println!("shot {}", rig.shot("prepare-film").display());
@@ -89,6 +95,17 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.until("the drafts written", Duration::from_secs(10), || ["A.tif", "B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_some_and(|d| d.step == "base")));
     assert!(loaded(&canonical("D.tif")).roll_draft.is_none(), "the frame left out carries no draft");
     assert_eq!((p.get_base_note().as_str(), p.get_action_title().as_str()), ("No base picked yet.", "SKIP"));
+
+    // Picker Size: held in memory while it slides, written once let go.
+    let before = radius();
+    assert!(!p.invoke_press(3, false));
+    for t in [10.0, 20.0, 30.0] {
+        p.invoke_drag(3, t, 200.0, false);
+    }
+    rig.pump();
+    assert_eq!(radius(), before, "a drag writes no preference at each notch");
+    p.invoke_release(3);
+    assert!(radius().is_some_and(|r| Some(r) != before), "the release writes the size: {:?}", radius());
 
     // A click on the scan picks the bare film there and moves on to the flags.
     rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
@@ -113,6 +130,13 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(p.get_flags_note().as_str(), "3 measured, 0 flagged", "twin: the flag is the click's, not the sheet's");
     click(&rig, x, y);
     assert!(p.get_cells().row_data(2).unwrap().flagged);
+    // The flag rides in the draft only at a step change, so closing the window writes it.
+    rig.until("the flags step's drafts", Duration::from_secs(10), || loaded(&canonical("C.tif")).roll_draft.is_some_and(|d| d.step == "flags"));
+    assert!(!loaded(&canonical("C.tif")).roll_draft.unwrap().flagged, "twin: the click alone writes nothing");
+    rig.window.dispatch_event(WindowEvent::CloseRequested);
+    rig.pump();
+    assert!(loaded(&canonical("C.tif")).roll_draft.unwrap().flagged, "closing wrote the step as it stands");
+    assert!(p.get_shown());
     rig.settle();
     println!("shot {}", rig.shot("prepare-flags").display());
 

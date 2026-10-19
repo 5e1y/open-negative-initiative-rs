@@ -47,8 +47,15 @@ impl Ctl {
                 _ => 0.0,
             };
             self.slider_set(i, base);
+            self.keep_picker();
         }
         double
+    }
+
+    /// The Picker Size let go: written once, not at every notch of the drag.
+    pub(in crate::app) fn keep_picker(&self) {
+        let Some(value) = self.state.borrow_mut().prepare.picker.take() else { return };
+        self.remember(roll::BASE_RADIUS_KEY, serde_json::Value::from(f64::from(value)));
     }
 
     pub(in crate::app) fn slider_drag(self: &Rc<Self>, i: usize, translation: f32, span: f32, fine: bool) {
@@ -75,10 +82,7 @@ impl Ctl {
                 AMOUNT => s.prepare.flat.amount = value,
                 TEMPERATURE => s.prepare.flat.temperature = value,
                 TINT => s.prepare.flat.tint = value,
-                PICKER => {
-                    let mut prefs = crate::preferences::Preferences::load(&s.support);
-                    let _ = prefs.set(roll::BASE_RADIUS_KEY, serde_json::Value::from(f64::from(value)));
-                }
+                PICKER => s.prepare.picker = Some(value),
                 SCRUBBER => {
                     let r = &mut s.prepare;
                     let last = measured(&r.frames).len().saturating_sub(1);

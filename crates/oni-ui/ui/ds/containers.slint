@@ -116,17 +116,32 @@ export component Dialog inherits Rectangle {
     }
 }
 
-// A modal sheet: the scrim over the window, the dialog centred on it; a click on the scrim closes.
+// A modal sheet: the scrim over the window, the dialog centred on it; Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
     in property <bool> wide;
+    // A click on the scrim closes only a sheet with nothing to lose, as a modal sheet ignores it.
+    in property <bool> scrim-dismisses;
     callback dismissed();
     background: Colour.scrim;
-    TouchArea { clicked => { root.dismissed(); } }
-    Dialog {
-        title: root.title;
-        wide: root.wide;
-        @children
+    TouchArea { clicked => { if (root.scrim-dismisses) { root.dismissed(); } } }
+    // A field's Escape bubbles here: the window's key monitor is the sheet's sibling, never its parent.
+    FocusScope {
+        width: 100%;
+        height: 100%;
+        focus-on-click: false;
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                root.dismissed();
+                return accept;
+            }
+            reject
+        }
+        Dialog {
+            title: root.title;
+            wide: root.wide;
+            @children
+        }
     }
 }
 

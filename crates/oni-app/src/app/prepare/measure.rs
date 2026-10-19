@@ -203,4 +203,19 @@ impl Ctl {
         };
         self.state.borrow().prepare.post(job);
     }
+
+    /// As the window closes: the step's draft written and every queued write waited for, since the
+    /// app may quit next; at most `DRAFT_FLUSH`, and never behind a measure, which lands on this thread.
+    pub(in crate::app) fn flush_drafts(&self) {
+        self.keep_picker();
+        if self.state.borrow().prepare.progress.is_some() {
+            return;
+        }
+        self.save_draft();
+        let (done, waited) = mpsc::channel::<()>();
+        self.state.borrow().prepare.post(Box::new(move || {
+            let _ = done.send(());
+        }));
+        let _ = waited.recv_timeout(DRAFT_FLUSH);
+    }
 }

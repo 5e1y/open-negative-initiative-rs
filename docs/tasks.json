@@ -722,5 +722,13 @@
     "status": "done",
     "detail": "Each press decoded the file again (355 ms of 420). The measurer keeps the last two measuring copies by path and reading, and the open frame's copy is made off the interface thread once its preview stands, through a latest-wins gate.",
     "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
+  },
+  {
+    "id": 102,
+    "type": "fix",
+    "title": "Sheets are modal: Escape from a sheet's field, no scrim dismissal of typed work, nothing behind a sheet or Prepare the Roll moves, the export's Replace prompt answers",
+    "status": "done",
+    "detail": "From the sheets review, each checked in the code: Esc never left a sheet's text field, the sheets being siblings of the key monitor (a FocusScope in Sheet and PanelSheet turns it into dismissed()); a stray click on the scrim dropped a typed report, the preset Save sheet or a mask rename (scrim-dismisses, true only on the welcome, notice and advice sheets); menu shortcuts and bare keys reached the library behind every sheet (one sheet-shown flag republishes the menus and stops keys.rs); during Prepare the Roll ⌘E, framing, zoom, undo, labels and the rest acted on the hidden editor; a report's late answer thanked the next one; the What's New menu said 1.1; app.slint's own ConfirmSheet shadowed the export's, so the batch clash showed a blank generic prompt whose Replace exported nothing (Confirm moved to confirm.slint, the export's renamed ExportConfirmSheet); a roll's current step was lost on closing the window (the draft written and waited for in close_requested, Swift's step-change cadence kept otherwise); Picker Size wrote the preferences at every notch and every publish read them back (held in memory, written on release).",
+    "outcome": "Window checks sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field and sheets::the_exports_replace_prompt_answers_the_export, each failing on the old code (Escape scope removed; the generic sheet restored); prepare's check asserts the menus dark in the roll, the draft written by a close and not before, and the preference written only on release; a unit test with a twin on the release; the touched window checks green."
   }
 ]

@@ -92,6 +92,7 @@ export component ChoiceSheet inherits Sheet {
 
 export component AdviceSheet inherits Sheet {
     title: Advice.title;
+    scrim-dismisses: true;
     dismissed => { Advice.closed(); }
     if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; centred: true; wrap: word-wrap; }
     HorizontalLayout {

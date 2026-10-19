@@ -48,6 +48,9 @@ type Written = Vec<oni_core::store::roll::WrittenFrame>;
 
 type Job = Box<dyn FnOnce() + Send>;
 
+/// The longest a close waits for the drafts: a roll's sidecars take milliseconds each on a sound drive.
+const DRAFT_FLUSH: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// What the measure's sheet is named after and may replace, read off the rows on this thread.
 struct SheetPlan {
     film: Option<oni_settings::Film>,
@@ -127,6 +130,8 @@ pub(crate) struct Roll {
     shown_path: Option<String>,
     window_gesture: Option<(Handle, Rect, (f64, f64))>,
     slide: Option<(usize, f32)>,
+    /// The Picker Size the hand holds, written to the preferences once the slider is let go.
+    picker: Option<f32>,
     last_press: Option<(usize, Instant)>,
     asked: HashSet<String>,
     /// `work.openedAmong`: the selection a load narrowed, when it held the frame opened.
@@ -174,6 +179,7 @@ impl Default for Roll {
             shown_path: None,
             window_gesture: None,
             slide: None,
+            picker: None,
             last_press: None,
             asked: HashSet::new(),
             opened_among: HashSet::new(),
@@ -314,9 +320,10 @@ fn picture(b: &Bitmap) -> Image {
     Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(&b.rgba, b.width as u32, b.height as u32))
 }
 
-/// The radius the base step's Picker Size is remembered at, `Pipette.radius` of the stored value.
+/// The radius the base step's Picker Size is remembered at, `Pipette.radius` of the stored value;
+/// the value a drag holds first, from memory, as every publish reads it.
 fn base_radius(s: &State) -> f64 {
-    let stored = crate::preferences::Preferences::load(&s.support).value(roll::BASE_RADIUS_KEY).and_then(serde_json::Value::as_f64);
+    let stored = s.prepare.picker.map(f64::from).or_else(|| s.preferences.value(roll::BASE_RADIUS_KEY).and_then(serde_json::Value::as_f64));
     pipette::radius(stored.unwrap_or(roll::BASE_RADIUS))
 }
 

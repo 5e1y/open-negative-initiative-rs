@@ -187,6 +187,7 @@ impl Ctl {
         c.set_message(wording.detail.into());
         c.set_keys(ModelRc::new(VecModel::from(wording.options.iter().map(|(_, t)| SharedString::from(t.as_str())).collect::<Vec<_>>())));
         c.set_shown(true);
+        w.invoke_refocus();
         self.publish_bar();
     }
 

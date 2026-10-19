@@ -20,8 +20,9 @@ impl Ctl {
             let restoring = s.trash_picks.selection.len();
             let count = if selected > 0 { selected } else { usize::from(open) };
             let anchor = s.picks.anchor.is_some();
-            // `modalOpen`: the export surface, a preset sheet or a dialog.
-            let modal = self.export.borrow().shown || s.shelf_form_open() || w.global::<Confirm>().get_shown() || w.global::<crate::Advice>().get_shown() || w.global::<crate::MaskDialog>().get_shown();
+            // `modalOpen`: the export surface or any sheet, Report a Bug and the year's deck included.
+            let sheet = w.get_sheet_shown() || s.shelf_form_open();
+            let modal = self.export.borrow().shown || sheet;
             let presets = s.shelf.held.len();
             let members = s.roll_members(gallery).len();
             let preparing = s.prepare.shown;
@@ -127,12 +128,26 @@ impl Ctl {
                 paste_preset_code: !modal,
                 apply_preset: count > 0,
             };
-            // `.roll` is neither the gallery nor the editor: their own gestures go dark there.
+            // `.roll` is neither the gallery nor the editor: their own gestures, and those on the editor it
+            // hides, go dark there.
             let live = if preparing {
-                MenuLive { toggle_mode: false, new_roll: false, ungroup: false, reset_to_default: false, restore: false, hide_library: false, hide_panel: false, compare: false, ..live }
+                MenuLive {
+                    open: live.open,
+                    recheck: live.recheck,
+                    read_folders: live.read_folders,
+                    screen_gamut: live.screen_gamut,
+                    cycle_filter: live.cycle_filter,
+                    edit_presets: live.edit_presets,
+                    import_presets: live.import_presets,
+                    show_presets: live.show_presets,
+                    paste_preset_code: live.paste_preset_code,
+                    ..MenuLive::default()
+                }
             } else {
                 live
             };
+            // A sheet is modal: nothing behind it moves until it closes.
+            let live = if sheet { MenuLive::default() } else { live };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
             (titles, live, film_type, count)
         };
