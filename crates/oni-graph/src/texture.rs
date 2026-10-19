@@ -10,6 +10,10 @@ pub(crate) const BYTES_PER_PIXEL: u64 = 16;
 /// Owned outputs kept for reuse: the shown picture, the one in flight, Compare's before.
 const OUTPUTS: usize = 4;
 
+/// Renders an idle texture waits for reuse: a notch's own reads (histograms, loupe) sit between two of
+/// its renders, and a 43 MB texture made again costs about 1.5 ms.
+pub const IDLE_RENDERS: u64 = 8;
+
 struct Inner {
     texture: wgpu::Texture,
     view: wgpu::TextureView,
@@ -113,10 +117,11 @@ impl Pool {
         }
     }
 
-    /// Ends a render: what was retired before this render and not reused by it is freed.
+    /// Ends a render: what no render reused since `IDLE_RENDERS` renders is freed, so a small read
+    /// between two renders of one chain never costs its textures a new allocation and clear.
     pub fn end_render(&mut self) {
         let generation = self.generation;
-        self.free.retain(|f| f.generation >= generation);
+        self.free.retain(|f| f.generation + IDLE_RENDERS > generation);
         self.generation += 1;
     }
 

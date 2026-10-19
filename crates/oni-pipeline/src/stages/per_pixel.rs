@@ -30,8 +30,8 @@ shader!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { r
 shader!(SATURATION, [wgsl::SATURATION_CURVE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return saturation_curve_px(load(p)); }");
 shader!(SPECTROGRAM, [wgsl::SPECTROGRAM], "fn pixel(p: vec2<i32>) -> vec4<f32> { return spectrogram_px(load(p)); }");
 shader!(MATRIX, [wgsl::COLOR_MATRIX], "fn pixel(p: vec2<i32>) -> vec4<f32> { return color_matrix_px(load(p)); }");
-shader!(MOMENTS, [wgsl::TEXTURE_MOMENTS], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_moments_px(load(p)); }");
-shader!(COEFF, [wgsl::TEXTURE_COEFF], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_coeff_px(load(p)); }");
+shader!(MOMENTS, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_MOMENTS], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_moments_px(load(p)); }");
+shader!(COEFF, [wgsl::TEXTURE_MATH, wgsl::TEXTURE_COEFF], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_coeff_px(load(p)); }");
 shader!(TEXTURE, [wgsl::TEXTURE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return texture_px(load(p), load1(p), load2(p)); }");
 shader!(SCANNER_DENSITY, [wgsl::SCANNER_DENSITY], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_density_px(load(p)); }");
 shader!(SCANNER_ENCODE, [wgsl::SCANNER_ENCODE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return scanner_encode_px(load(p)); }");

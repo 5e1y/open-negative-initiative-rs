@@ -28,9 +28,11 @@ pub const COLOR_MATRIX: &str = include_str!("wgsl/color_matrix.wgsl");
 pub const COLOR_CUBE: &str = include_str!("wgsl/color_cube.wgsl");
 /// `blend_with_mask_px(picture, background, mask)`.
 pub const BLEND_WITH_MASK: &str = include_str!("wgsl/blend_with_mask.wgsl");
-/// `texture_moments_px(luma)`.
+/// `texture_moments_of` and `texture_coeff_of`, pure, for a pass or a blur's taps.
+pub const TEXTURE_MATH: &str = include_str!("wgsl/texture_math.wgsl");
+/// `texture_moments_px(luma)`; needs `TEXTURE_MATH`.
 pub const TEXTURE_MOMENTS: &str = include_str!("wgsl/texture_moments.wgsl");
-/// `texture_coeff_px(moments)`.
+/// `texture_coeff_px(moments)`; needs `TEXTURE_MATH`.
 pub const TEXTURE_COEFF: &str = include_str!("wgsl/texture_coeff.wgsl");
 /// `texture_px(s, narrow, coeff)`.
 pub const TEXTURE: &str = include_str!("wgsl/texture.wgsl");

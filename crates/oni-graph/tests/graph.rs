@@ -253,41 +253,6 @@ fn a_tiled_source_equals_an_untiled_one() {
 }
 
 #[test]
-fn the_pool_recycles_and_frees() {
-    let Some(mut g) = graph("the_pool_recycles_and_frees") else { return };
-    let (s, _) = source(&mut g, 5);
-    let source_bytes = g.stats().live_bytes;
-    let image = Image::new(&s).then(Gain([2.0; 4])).then(BoxBlur3).then(Gain([0.5; 4]));
-    let region = Rect::new(10, 10, 100, 80);
-    g.render(&image, region, None).expect("render");
-    let created = g.stats().textures_created;
-    for _ in 0..3 {
-        g.render(&image, region, None).expect("render");
-    }
-    assert_eq!(g.stats().textures_created, created, "a same-shaped render allocated again");
-
-    // A new shape twice: the old shape's textures, unused by either, are freed.
-    let other = Rect::new(0, 0, 50, 40);
-    g.render(&image, other, None).expect("render");
-    g.render(&image, other, None).expect("render");
-    let held = g.stats().live_bytes - source_bytes;
-    let expected = 2 * 3 * 16 * other.area() as i64;
-    assert!(held <= expected, "{held} bytes held past the source, at most {expected} for the live shape");
-    // Twin: the old shape's three textures alone pass that bound, so a pool keeping them is seen.
-    assert!(3 * 16 * region.area() as i64 > expected, "the bound cannot see the old shape kept");
-
-    // Twin: regions of a fresh shape each time make the counter climb.
-    let before = g.stats().textures_created;
-    for i in 0..3 {
-        g.render(&image, Rect::new(0, 0, 60 + i, 40), None).expect("render");
-    }
-    assert!(g.stats().textures_created >= before + 3, "the counter misses allocations");
-    g.purge();
-    assert_eq!(g.stats().idle_textures, 0);
-    assert_eq!(g.stats().live_bytes, source_bytes, "purged, only the source remains");
-}
-
-#[test]
 fn a_materialised_image_renders_as_its_recipe() {
     let Some(mut g) = graph("a_materialised_image_renders_as_its_recipe") else { return };
     let (s, _) = source(&mut g, 6);

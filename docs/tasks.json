@@ -871,9 +871,9 @@
     "id": 119,
     "type": "todo",
     "title": "Fewer passes for the M1: Texture's ten to seven, per-pixel runs fused",
-    "status": "todo",
+    "status": "in progress",
     "detail": "Measured on the M2 Max (#108): bare chain 1.6 ms, Texture +2.6 ms on the 2000 px preview; an 8 GB M1 has about a sixth of the bandwidth. Fold luma into the narrow blur's prologue, moments and coefficients into the blurs' epilogues, then fuse the per-pixel stages after the curves, each with its CPU reference and a GPU-vs-CPU check.",
-    "outcome": ""
+    "outcome": "Texture in seven passes: luma, moments and coefficients are read through the next blur's taps (BlurOf, Before::{Luma, Moments, Coeff}), their math in texture_math.wgsl shared by the passes and the folds. fused.rs checks each fold against the step then the CPU blur, and the seven-pass chain against the ten at 780 px (narrow blur under its floor) and 4000 px, error 1.5e-7, twins at 6e-3. cost.rs (ONI_BENCH_COST=1), interleaved medians on 2000 px: ten passes 7.48 ms, seven 6.81 ms once #138 is in. The per-pixel stages after the curves are left to fuse."
   },
   {
     "id": 120,
@@ -991,5 +991,13 @@
     "title": "The Windows run green: checks that need Unix links or modes run everywhere or only where they can",
     "status": "doing",
     "detail": "The Windows CI built every crate but failed to compile oni-library's swift_checks, which made a symbolic link with std::os::unix. The link half of that check runs on Unix only (a link needs a privilege on Windows); the quit guard's failed write is now caused by a folder standing where the sidecar goes, which fails on both systems, instead of Unix permissions."
+  },
+  {
+    "id": 138,
+    "type": "perf",
+    "title": "The texture pool keeps an idle texture for eight renders, so a notch never makes its chain's textures again",
+    "status": "done",
+    "detail": "The pool freed every texture not reused by the very next render. A notch's own small reads (the input histograms, the loupe, a one-pixel read) sit between two of its renders, so each render allocated and cleared its whole chain again, about 1.5 ms per 43 MB texture on the M2 Max. An idle texture now waits IDLE_RENDERS (8) renders before it is freed; purge() still frees everything at once under memory pressure.",
+    "outcome": "cost.rs on 2000 px: Texture's chain 11.0 to 7.5 ms (ten passes), 6.8 ms (seven); two chained per-pixel passes 2.40 to 1.44 ms; 41 textures made over 41 runs to 0. Real-window drag on DSC_6432 (Exposure, thumbnails read, machine loaded by builds): notch end to end p99 23.2 ms to 5.7-6.3 ms on two of three runs. The pool check (now tests/pool.rs) adds a small read between renders of a chain, its twin the old one-render policy failing with 12 textures made."
   }
 ]

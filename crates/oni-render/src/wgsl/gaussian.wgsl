@@ -1,11 +1,12 @@
 // `CIGaussianBlur` along one axis, a stage of the render graph: deviation `sigma`, each tap integrated
 // over its pixel and truncated at `reach`; past the extent the edge repeats, or is transparent.
+// Each tap goes through `gaussian_pre`, a per-pixel step the composing stage folds into the read.
 
 struct Params { sigma_reach: vec4<f32>, axis_edge: vec4<u32> }
 
 fn gaussian_read(q: vec2<i32>) -> vec4<f32> {
     if (P.axis_edge.y == 1u && !inside(q)) { return vec4<f32>(0.0); }
-    return load(q);
+    return gaussian_pre(load(q));
 }
 
 fn gaussian_px(p: vec2<i32>) -> vec4<f32> {

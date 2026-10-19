@@ -11,14 +11,14 @@ pub mod scanner;
 pub mod stages;
 
 use oni_graph::{Cache, Graph, Image, Rect, Source};
-use oni_render::{ColorCube, TextureCoeff};
+use oni_render::ColorCube;
 use oni_settings::axis::pipeline::BLUR_FLOOR;
 use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
 use oni_settings::PipelineSettings;
-use stages::{DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
+use stages::{Before, DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
 use std::collections::HashMap;
 
 /// What a render is asked for.
@@ -312,11 +312,13 @@ fn detail(image: Image, k: Option<oni_render::Detail>) -> Image {
     image.then_reading(DetailColumns(k), &[rows])
 }
 
-/// `Pipeline.applyTexture`: three blurs and three kernels on the luma.
-fn texture(image: Image, s: &PipelineSettings, reference: f64) -> Image {
+/// `Pipeline.applyTexture`: three blurs and three kernels on the luma, each kernel but the last read
+/// by the next blur's taps, so seven passes instead of ten.
+pub fn texture(image: Image, s: &PipelineSettings, reference: f64) -> Image {
     let Some((narrow, wide, gain)) = finishing::texture(&s.texture, reference) else { return image };
-    let narrowed = blurred(image.clone().then(stages::luma_only()), narrow, false);
-    let moments = narrowed.clone().then(stages::texture_moments());
-    let coeff = blurred(moments, wide, false).then(stages::texture_coeff(&TextureCoeff { relative: finishing::texture::EDGE_CONTRAST }));
-    image.then_reading(stages::texture(gain), &[narrowed, blurred(coeff, wide, false)])
+    let narrowed = if narrow <= BLUR_FLOOR { image.clone().then(stages::luma_only()) } else { stages::blurred_of(image.clone(), narrow, Before::Luma) };
+    // `finishing::texture` rests under `MINIMUM_BASE`, so the wide blurs always run.
+    let moments = stages::blurred_of(narrowed.clone(), wide, Before::Moments);
+    let based = stages::blurred_of(moments, wide, Before::Coeff(finishing::texture::EDGE_CONTRAST));
+    image.then_reading(stages::texture(gain), &[narrowed, based])
 }

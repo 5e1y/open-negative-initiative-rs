@@ -35,9 +35,9 @@ pub fn texture(s: V4, narrow_luma: V4, coeff: V4, k: &Texture) -> V4 {
     with_alpha(map(rgb(s), |_, c| shaped.max(0.0) + (c - y)), s[3])
 }
 
-const TEXTURE_MOMENTS: Shader = shader!("texture_moments");
+const TEXTURE_MOMENTS: Shader = shader!("texture_moments", crate::wgsl::TEXTURE_MATH);
 
-const TEXTURE_COEFF: Shader = shader!("texture_coeff");
+const TEXTURE_COEFF: Shader = shader!("texture_coeff", crate::wgsl::TEXTURE_MATH);
 
 const TEXTURE: Shader = shader!("texture");
 

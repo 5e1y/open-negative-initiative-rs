@@ -7,6 +7,7 @@ mod rect;
 mod stage;
 pub mod stages;
 mod texture;
+pub use texture::IDLE_RENDERS;
 
 pub use graph::{Cache, Error, Graph, Image, Source, Stats, TEXTURE_SIDE, Uploader};
 pub use rect::Rect;

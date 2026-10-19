@@ -2,7 +2,11 @@
 
 use super::*;
 
-shader!(GAUSSIAN, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], "fn pixel(p: vec2<i32>) -> vec4<f32> { return gaussian_px(p); }");
+const BLUR_PIXEL: &str = "fn pixel(p: vec2<i32>) -> vec4<f32> { return gaussian_px(p); }";
+shader!(GAUSSIAN, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return v; }}\n{BLUR_PIXEL}"));
+shader!(GAUSSIAN_LUMA, [wgsl::DETAIL_TAPS, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ let y = dot(v.rgb, LUMA); return vec4<f32>(y, y, y, v.a); }}\n{BLUR_PIXEL}"));
+shader!(GAUSSIAN_MOMENTS, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_moments_of(v); }}\n{BLUR_PIXEL}"));
+shader!(GAUSSIAN_COEFF, [wgsl::DETAIL_TAPS, wgsl::TEXTURE_MATH, wgsl::GAUSSIAN], &format!("fn gaussian_pre(v: vec4<f32>) -> vec4<f32> {{ return texture_coeff_of(v, P.sigma_reach.z); }}\n{BLUR_PIXEL}"));
 shader!(AFFINE, [wgsl::AFFINE], "fn pixel(p: vec2<i32>) -> vec4<f32> { return affine_px(p); }");
 shader!(ORIENT, [wgsl::ORIENT], "fn pixel(p: vec2<i32>) -> vec4<f32> { return orient_px(p); }");
 
@@ -28,10 +32,61 @@ impl Stage for Blur {
     }
 }
 
+/// A per-pixel step a blur applies to each tap it reads, so the step costs no pass of its own.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Before {
+    /// `luma_only`.
+    Luma,
+    /// `texture_moments`.
+    Moments,
+    /// `texture_coeff` at its `relative` edge contrast.
+    Coeff(f32),
+}
+
+/// The rows' axis of `CIGaussianBlur` reading its input through `Before`, edges repeated.
+pub struct BlurOf(pub Gaussian, pub Before);
+
+impl Stage for BlurOf {
+    fn name(&self) -> &'static str {
+        match self.1 {
+            Before::Luma => "gaussian-luma",
+            Before::Moments => "gaussian-moments",
+            Before::Coeff(_) => "gaussian-coeff",
+        }
+    }
+
+    fn shader(&self) -> &'static str {
+        match self.1 {
+            Before::Luma => GAUSSIAN_LUMA.as_str(),
+            Before::Moments => GAUSSIAN_MOMENTS.as_str(),
+            Before::Coeff(_) => GAUSSIAN_COEFF.as_str(),
+        }
+    }
+
+    fn params(&self) -> Vec<u8> {
+        let mut bytes = self.0.bytes();
+        if let Before::Coeff(relative) = self.1 {
+            bytes[8..12].copy_from_slice(&relative.to_ne_bytes());
+        }
+        bytes
+    }
+
+    fn input_region(&self, output: Rect) -> Rect {
+        let r = self.0.reach();
+        if self.0.vertical { output.outset(0, r) } else { output.outset(r, 0) }
+    }
+}
+
 /// Both axes of `CIGaussianBlur`, edges repeated or transparent.
 pub fn blurred(image: oni_graph::Image, sigma: f64, transparent: bool) -> oni_graph::Image {
     let k = |vertical| Gaussian { sigma: sigma as f32, vertical, transparent };
     image.then(Blur(k(false))).then(Blur(k(true)))
+}
+
+/// Both axes of `CIGaussianBlur`, edges repeated, of `before` applied to the image.
+pub fn blurred_of(image: oni_graph::Image, sigma: f64, before: Before) -> oni_graph::Image {
+    let k = |vertical| Gaussian { sigma: sigma as f32, vertical, transparent: false };
+    image.then(BlurOf(k(false), before)).then(Blur(k(true)))
 }
 
 /// The bounding box of `rect`'s pixel area mapped through `m`, outset by `margin` whole pixels.
