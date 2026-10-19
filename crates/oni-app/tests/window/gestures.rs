@@ -82,10 +82,12 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.until("the frame decoded", Duration::from_secs(60), || ctl.state.borrow().renders() >= 1);
 
     // ⌥⌘] hides the panel and the title says how to bring it back; ⌘K opens the Crop tab.
-    rig.chord_with(&[Key::Control, Key::Alt], "]");
+    // Windows reads a bare Ctrl+Alt as AltGr when the event names no unmodified text, as this rig's do.
+    let hide_panel = || if cfg!(windows) { ctl.act("hide-panel") } else { rig.chord_with(&[Key::Control, Key::Alt], "]") };
+    hide_panel();
     assert!(w.global::<App>().get_panel_hidden());
     assert_eq!(menus.get_titles().panel.as_str(), "Show the Panel");
-    rig.chord_with(&[Key::Control, Key::Alt], "]");
+    hide_panel();
     w.global::<PanelState>().set_tab(2);
     rig.chord(Key::Control, "k");
     assert_eq!(w.global::<PanelState>().get_tab(), 1);

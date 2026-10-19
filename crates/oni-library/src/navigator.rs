@@ -40,7 +40,7 @@ impl Computer {
     /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk.
     pub fn computer(&self) -> Vec<String> {
         if self.volumes == DRIVES {
-            let drives = (b'A'..=b'Z').map(|l| format!("{}:\\", l as char)).filter(|d| Path::new(d).is_dir());
+            let drives = (b'A'..=b'Z').map(|l| format!("{}:/", l as char)).filter(|d| Path::new(d).is_dir());
             return Some(self.home.clone()).filter(|h| !h.is_empty()).into_iter().chain(drives).collect();
         }
         let mut mounted: Vec<String> = std::fs::read_dir(&self.volumes)

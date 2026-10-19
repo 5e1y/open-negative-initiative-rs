@@ -254,7 +254,7 @@ mod tests {
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
             std::fs::write(&path, [0u8]).unwrap();
         }
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let scanned: BTreeSet<String> =
             scan(std::slice::from_ref(&root)).into_iter().map(|p| p[root.len() + 1..].to_owned()).collect();
         assert_eq!(scanned, BTreeSet::from(["a.RW2", "Roll 1/b.tif", "Roll 1/Deep/c.jpg"].map(String::from)));
@@ -277,7 +277,7 @@ mod tests {
             std::fs::create_dir_all(path.parent().unwrap()).unwrap();
             std::fs::write(&path, [0u8]).unwrap();
         }
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
         assert_eq!(scan(std::slice::from_ref(&root)).len(), 2, "twin: unflagged, both folders count");
         let flagged = std::process::Command::new("/usr/bin/chflags").arg("hidden").arg(scratch.path().join("Recovery")).status();
         assert!(flagged.is_ok_and(|s| s.success()));
@@ -289,7 +289,7 @@ mod tests {
     fn a_stopped_survey_still_names_every_root_the_disk_refuses() {
         let scratch = Scratch::new("roots-stopped");
         std::fs::write(scratch.path().join("a.RW2"), [0u8]).unwrap();
-        let here = scratch.path().to_string_lossy().into_owned();
+        let here = paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let gone = paths::join(&here, "gone");
         let both = [here.clone(), gone.clone()];
         let stopped = survey(&both, &|| false);

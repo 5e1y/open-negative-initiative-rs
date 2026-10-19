@@ -66,7 +66,7 @@ impl Archive {
     /// folders and rolls on the disk, so a folder made in the app shows before it holds a photo.
     /// `filter` keeps exactly one medal in the gallery, never a tier above, and leaves the tree whole.
     pub fn from_rows(folder: &str, entries: &[Entry], survey: &Survey, filter: Option<Medal>) -> Archive {
-        let root = Path::new(folder).parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or_else(|| folder.to_string());
+        let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
         let rolls = folders::rolls(&survey.images);
         let nodes = folders::tree(&root, entries, &rolls, &survey.folders, &survey.made);
         let filtered: Vec<Entry> = entries.iter().filter(|e| filter.is_none_or(|m| e.label == m)).cloned().collect();

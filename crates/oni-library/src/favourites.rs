@@ -373,7 +373,7 @@ mod tests {
         let scratch = Scratch::new("surveys");
         std::fs::write(scratch.path().join("a.RW2"), [0u8]).unwrap();
         std::fs::create_dir(scratch.path().join("empty")).unwrap();
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let quiet = Stop::default();
         assert_eq!(read(&crate::paths::join(&root, "gone"), &quiet), None);
         let photo = read(&root, &quiet).and_then(|a| a.images.first().and_then(|i| a.sizes.get(i).copied()));

@@ -32,11 +32,13 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     let engine = oni_app::render::Engine::shared(&gpu);
     // A named system board on the Mac, so the copy crosses a relaunch without touching the clipboard.
     let board_name = format!("oni-leftovers-{}", std::process::id());
+    #[cfg(not(target_os = "macos"))]
+    let shared = pasteboard::Shared::default();
     let board = || -> Box<dyn pasteboard::Board> {
         #[cfg(target_os = "macos")]
         return pasteboard::named(&board_name);
         #[cfg(not(target_os = "macos"))]
-        Box::new(pasteboard::Memory::default())
+        Box::new(shared.clone())
     };
     let options = Options { support: support.clone(), caches: caches.clone(), picker: Box::new(|| None), pasteboard: board(), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();

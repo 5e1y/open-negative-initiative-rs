@@ -161,7 +161,7 @@ pub fn profile_titles(listed: &[OutputProfile]) -> Vec<String> {
             if filed(&p.name, &f) <= 1 {
                 return format!("{} — {f}", p.name);
             }
-            let folder = Path::new(&p.path).parent().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default();
+            let folder = oni_library::paths::parent(&p.path);
             format!("{} — {f} — {folder}", p.name)
         })
         .collect()

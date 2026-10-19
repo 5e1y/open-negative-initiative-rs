@@ -13,7 +13,7 @@ impl Ctl {
                 .targets
                 .iter()
                 .map(|t| {
-                    let path = t.path.to_string_lossy();
+                    let path = oni_library::paths::normal(&t.path.to_string_lossy()).into_owned();
                     s.archive.as_ref().and_then(|a| a.entries().into_iter().find(|e| e.path == path).and_then(|e| e.film.clone()))
                 })
                 .collect();
@@ -50,7 +50,7 @@ impl Ctl {
                     if !live() {
                         return;
                     }
-                    let path = target.path.to_string_lossy().into_owned();
+                    let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
                     let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
                     let negative = match known {
                         Some(n) => Ok(n),
@@ -106,7 +106,7 @@ impl Ctl {
             if weighing.load(Ordering::Relaxed) != generation {
                 return;
             }
-            let path = target.path.to_string_lossy().into_owned();
+            let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
             let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
             let negative = known.or_else(|| prepared(&engine, &path, crate::render::Reading::of(&target.settings)).ok());
             let weighed = negative.and_then(|n| export::weigh(&engine, &n, full, &target.settings, &export));

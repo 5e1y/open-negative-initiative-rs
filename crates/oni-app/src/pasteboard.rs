@@ -56,6 +56,33 @@ impl Board for Memory {
     }
 }
 
+/// One board in memory shared by every holder of a clone, where the system has no typed board a
+/// check may name: what one holder sets, another reads.
+#[derive(Clone, Default)]
+pub struct Shared(std::sync::Arc<std::sync::Mutex<Memory>>);
+
+impl Board for Shared {
+    fn change_count(&self) -> i64 {
+        self.0.lock().map_or(0, |m| m.change_count())
+    }
+
+    fn data(&self, kind: &str) -> Option<Vec<u8>> {
+        self.0.lock().ok()?.data(kind)
+    }
+
+    fn clear(&mut self) {
+        if let Ok(mut m) = self.0.lock() {
+            m.clear();
+        }
+    }
+
+    fn set(&mut self, kind: &str, data: &[u8]) {
+        if let Ok(mut m) = self.0.lock() {
+            m.set(kind, data);
+        }
+    }
+}
+
 /// The system's general pasteboard; a process-wide one where the system has no typed board.
 pub fn general() -> Box<dyn Board> {
     #[cfg(target_os = "macos")]

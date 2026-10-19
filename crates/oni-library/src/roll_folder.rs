@@ -31,7 +31,7 @@ pub fn dated(date: Date) -> String {
 
 /// The folder made and marked a roll; an error when the disk refuses, leaving nothing behind.
 pub fn make(name: &str, parent: &str, film: &Film) -> std::io::Result<String> {
-    roll_folder::make(name, Path::new(parent), film).map(|p| p.to_string_lossy().into_owned())
+    roll_folder::make(name, Path::new(parent), film).map(|p| crate::paths::normal(&p.to_string_lossy()).into_owned())
 }
 
 /// Each photo to its new path with its sidecar; a path already taken keeps that photo where it
@@ -139,13 +139,13 @@ mod tests {
     }
 
     fn side(path: &str) -> String {
-        sidecar::url_for(Path::new(path)).to_string_lossy().into_owned()
+        crate::paths::normal(&sidecar::url_for(Path::new(path)).to_string_lossy()).into_owned()
     }
 
     #[test]
     fn a_roll_folder_takes_its_photos_and_gives_them_back() {
         let scratch = Scratch::new("roll-folder");
-        let parent = scratch.path().to_string_lossy().into_owned();
+        let parent = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let photos: Vec<String> = ["a.RW2", "b.tif"].iter().map(|n| paths::join(&parent, n)).collect();
         for p in &photos {
             touch(p, p.as_bytes());
@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn a_taken_name_is_numbered_as_the_finder_numbers_a_copy() {
         let scratch = Scratch::new("roll-folder-names");
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let p = |r: &str| paths::join(&root, r);
         for dir in ["Dest/Trip", "Elsewhere", "Other", "Trip"] {
             std::fs::create_dir_all(p(dir)).unwrap();
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn a_triplet_moves_whole_on_its_names_or_stays_whole() {
         let scratch = Scratch::new("roll-folder-passes");
-        let root = scratch.path().to_string_lossy().into_owned();
+        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
         let p = |r: &str| paths::join(&root, r);
         for dir in ["Passes", "Clear", "Dest"] {
             std::fs::create_dir_all(p(dir)).unwrap();

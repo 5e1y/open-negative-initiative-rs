@@ -164,7 +164,7 @@ mod tests {
         let away = scratch.path().join("Away");
         std::fs::create_dir(&away).unwrap();
         std::fs::write(away.join("x.RW2"), b"other").unwrap();
-        let path = original.to_string_lossy().into_owned();
+        let path = crate::paths::normal(&original.to_string_lossy()).into_owned();
         let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
         index.upsert(&Entry::new(&path, Date::since_reference_date(8e8), "5-no-date-1")).unwrap();
 
