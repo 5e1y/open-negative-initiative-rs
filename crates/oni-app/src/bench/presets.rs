@@ -63,8 +63,8 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if at.elapsed() < Duration::from_millis(300) {
                     return;
                 }
-                // Onto the strip the deck leaves at rest: the deck rises under the pointer.
-                let bottom = presets.get_first_y() + 8.0;
+                // Onto the strip the deck leaves at rest, under the lift's band the photo keeps.
+                let bottom = presets.get_first_y() + w.global::<crate::DS>().get_control_card_lift() + 8.0;
                 pointer_to(&w, slint::LogicalPosition::new(presets.get_first_x() + 36.0, bottom));
                 phase.set(Deck::Raised { at: Instant::now() });
             }

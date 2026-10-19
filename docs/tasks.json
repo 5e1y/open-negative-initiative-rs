@@ -818,5 +818,13 @@
     "status": "done",
     "detail": "LibRaw's raw and working images (about 245 MB at 24 MP) stayed alive while the 390 MB float copy was built. The inset is now kept in the decoded struct and libraw_recycle frees them right after the processed image is made. The conversion to linear Rec. 2020 runs in bands of rows on every core, the same arithmetic per pixel.",
     "outcome": "DSC_6440.NEF, M2 Max release: full decode 1.00 s to 0.90 s, the same checksum over the frame; decode peak about 245 MB lower. oni-decode checks green, the concurrency check included."
+  },
+  {
+    "id": 113,
+    "type": "fix",
+    "title": "The preset deck rises from the canvas's own bottom edge, full width, as Swift's overlay",
+    "status": "done",
+    "detail": "Owner's report: the cards came out of nowhere 30-40 px above the canvas's edge. The deck was laid a card padding above the canvas's bottom and narrowed by it on each side; Swift overlays PresetCarousel on NegativeView's bottom edge across its width. The presets bench aimed at the lift's band the photo now keeps, and is aimed at the strip.",
+    "outcome": "Window checks presets and preset_deck green; the real-window presets bench raises the deck, previews 2.30 EV under the pointer and applies it on the click."
   }
 ]

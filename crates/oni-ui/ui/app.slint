@@ -491,10 +491,11 @@ export component MainWindow inherits AppWindow {
                             }
                         }
                         // The deck rises over the picture's bottom edge; Crop's handles use that edge.
+                        // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.
                         if PanelState.tab != 1 && !Lab.shown: PresetDeck {
-                            x: CardStyle.padding;
-                            width: parent.width - 2 * CardStyle.padding;
-                            y: parent.height - CardStyle.padding - self.height;
+                            x: 0;
+                            width: parent.width;
+                            y: parent.height - self.height;
                         }
                         SpaceChip { x: (parent.width - self.width) / 2; y: 0; }
                         HorizontalLayout {
