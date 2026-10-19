@@ -109,7 +109,7 @@ impl Ctl {
         self.journal_medal(targets, label);
         let mut written = Vec::new();
         for path in targets {
-            match oni_settings::sidecar::set_label(label, Path::new(path), true) {
+            match oni_settings::sidecar::set_label(label, Path::new(path), oni_decode::decodes_via_mosaic(Path::new(path))) {
                 Ok(()) => written.push(path.clone()),
                 Err(e) => self.say(&e.to_string()),
             }

@@ -21,7 +21,7 @@ export component CropPane inherits Pane {
         Tabs {
             tabs: ["Free", "3:2", "4:3", "1:1", "6:7", "5:4"];
             marked: [false, false, false, false, false, false];
-            selected: Framing.ratio;
+            selected <=> Framing.ratio;
             picked(i) => { Framing.ratio-picked(i); }
         }
         LabelledRow {

@@ -81,7 +81,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
             .spawn(move || {
                 let mut seed = 0u32;
                 // The before is kept while its settings and the view hold, so a notch never renders it again.
-                let mut kept: Option<(PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
+                let mut kept: Option<(PathBuf, PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 loop {
                     let job = {
@@ -118,10 +118,10 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         (Some(reference), true) => {
                             let key = job.view.as_ref().map(View::key);
                             match &kept {
-                                Some((s, k, source, placed)) if s == reference && *k == key => Some((source.clone(), *placed)),
+                                Some((p, s, k, source, placed)) if *p == job.path && s == reference && *k == key => Some((source.clone(), *placed)),
                                 _ => match renderer.resident(&job.negative, reference, job.view.as_ref()) {
                                     Some(Ok((source, placed))) => {
-                                        kept = Some((reference.clone(), key, source.clone(), placed));
+                                        kept = Some((job.path.clone(), reference.clone(), key, source.clone(), placed));
                                         Some((source, placed))
                                     }
                                     _ => None,

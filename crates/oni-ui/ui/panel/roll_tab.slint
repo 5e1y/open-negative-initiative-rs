@@ -46,7 +46,7 @@ export component RollPane inherits Pane {
         Tabs {
             tabs: ["Negative", "Positive", "B&W"];
             marked: [false, false, false];
-            selected: PanelState.film-type;
+            selected <=> PanelState.film-type;
             picked(i) => { PanelState.film-type-picked(i); }
         }
     }
@@ -113,7 +113,7 @@ export component RollPane inherits Pane {
             label: "Read as";
             Tabs {
                 tabs: PanelState.grey-source ? ["sRGB", "Linear"] : ["sRGB", "Linear", "Display P3"];
-                selected: PanelState.encoding;
+                selected <=> PanelState.encoding;
                 picked(i) => { PanelState.encoding-picked(i); }
             }
         }
@@ -168,7 +168,7 @@ export component RollPane inherits Pane {
             label: "Dyes";
             Tabs {
                 tabs: ["Kodak", "Fuji", "Generic", "ECN-2", "E-6"];
-                selected: PanelState.dye-family;
+                selected <=> PanelState.dye-family;
                 picked(i) => { PanelState.dye-family-picked(i); }
             }
         }

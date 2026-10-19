@@ -151,7 +151,7 @@ export component SplitGuide inherits Rectangle {
     }
     grab := TouchArea {
         mouse-cursor: ew-resize;
-        moved => { root.dragged(self.mouse-x); }
+        moved => { if (self.pressed) { root.dragged(self.mouse-x); } }
         pointer-event(event) => {
             if (event.kind == PointerEventKind.down) {
                 root.dragged(self.mouse-x);

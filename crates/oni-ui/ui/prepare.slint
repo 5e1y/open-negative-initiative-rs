@@ -15,8 +15,8 @@ export global Preparing {
     in property <string> status;
     in property <string> differ;
     in property <string> left-out;
-    in property <int> film;
-    in property <int> capture: 1;
+    in-out property <int> film;
+    in-out property <int> capture: 1;
     in property <string> passes-note;
     // RGB Passes grouped: the first frame's files under their bands, the count, and what to check.
     in property <bool> grouped;
@@ -223,7 +223,7 @@ export component RollPanel inherits Surface {
                         Tabs {
                             tabs: ["Negative", "Positive", "B&W"];
                             marked: [false, false, false];
-                            selected: Preparing.film;
+                            selected <=> Preparing.film;
                             picked(i) => { Preparing.film-picked(i); }
                         }
                     }
@@ -232,7 +232,7 @@ export component RollPanel inherits Surface {
                         Tabs {
                             tabs: ["Scanner", "DSLR Scan", "RGB Passes"];
                             marked: [false, false, false];
-                            selected: Preparing.capture;
+                            selected <=> Preparing.capture;
                             picked(i) => { Preparing.capture-picked(i); }
                         }
                     }

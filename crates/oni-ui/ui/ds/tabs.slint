@@ -1,0 +1,66 @@
+// `DSTabBar`, the segmented tabs.
+import { Colour, Space, State, Motion, TabsStyle } from "theme.slint";
+import { Label, Tips } from "base.slint";
+
+// `DSTabBar` as a segmented control: one raised pill under the selection.
+export component Tabs inherits Rectangle {
+    in property <[string]> tabs;
+    in-out property <int> selected;
+    in property <[bool]> marked;
+    // A colour per tab drawn in place of its name, which stays the tab's accessible label.
+    in property <[color]> swatches;
+    callback picked(int);
+    height: TabsStyle.height;
+    clip: true;
+    border-radius: TabsStyle.radius;
+    background: Colour.canvas;
+    property <length> pitch: (self.width - 2 * TabsStyle.inset) / max(1, root.tabs.length);
+    Rectangle {
+        x: TabsStyle.inset + root.selected * root.pitch;
+        y: TabsStyle.inset;
+        width: root.pitch;
+        height: parent.height - 2 * TabsStyle.inset;
+        border-radius: TabsStyle.pill-radius;
+        background: Colour.raised;
+        animate x { duration: Motion.slide; easing: ease-out; }
+    }
+    for name[i] in root.tabs: Rectangle {
+        x: TabsStyle.inset + i * root.pitch;
+        y: TabsStyle.inset;
+        width: root.pitch;
+        height: parent.height - 2 * TabsStyle.inset;
+        accessible-role: tab;
+        accessible-label: name;
+        if root.swatches.length == 0: Label {
+            text: name;
+            centred: true;
+            opacity: (i == root.selected || touch.has-hover) ? 1 : State.idle;
+        }
+        if root.swatches.length > 0: Rectangle {
+            width: TabsStyle.swatch;
+            height: TabsStyle.swatch;
+            border-radius: self.width / 2;
+            background: root.swatches[i];
+        }
+        if root.marked[i]: Rectangle {
+            x: parent.width - self.width - Space.xs;
+            y: Space.xs;
+            width: TabsStyle.mark;
+            height: TabsStyle.mark;
+            border-radius: self.width / 2;
+            background: Colour.accent;
+        }
+        touch := TouchArea {
+            clicked => {
+                root.selected = i;
+                root.picked(i);
+            }
+            // A swatch shows no name, so its tab gives it in the tooltip.
+            changed has-hover => {
+                if root.swatches.length > 0 {
+                    Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                }
+            }
+        }
+    }
+}

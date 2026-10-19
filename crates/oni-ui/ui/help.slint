@@ -80,8 +80,9 @@ export component ReportSheet inherits Sheet {
     dismissed => { Help.report-closed(); }
     if Help.report-sent: Note { text: "Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."; }
     if !Help.report-sent: Note { text: "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."; }
+    // Both ways: typing reaches Send's gate, and Rust's cut at the site's limit reaches the field.
     if !Help.report-sent: message := TextArea {
-        text: Help.report-message;
+        text <=> Help.report-message;
         edited(t) => { Help.report-edited(t); }
         init => { self.take-focus(); }
     }

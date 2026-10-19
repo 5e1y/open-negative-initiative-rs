@@ -1,4 +1,4 @@
-// The controls: buttons, the segmented tabs, the toggle, the slider, the field and the picker.
+// The controls: buttons, the toggle, the slider, the field and the picker; the tabs are `tabs.slint`.
 import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
 import { Icons } from "icons.slint";
@@ -73,7 +73,8 @@ export component Button inherits Rectangle {
     }
     HorizontalLayout {
         alignment: center;
-        spacing: Space.xs;
+        // No gap beside an empty word, which would push a lone icon off the key's centre.
+        spacing: root.worded && root.has-icon ? Space.xs : 0;
         if root.has-icon: VerticalLayout {
             alignment: center;
             Icon {
@@ -117,69 +118,6 @@ export component IconButton inherits Button {
 export component ButtonGroup inherits HorizontalLayout {
     spacing: ButtonStyle.group-gap;
     alignment: start;
-}
-
-// `DSTabBar` as a segmented control: one raised pill under the selection.
-export component Tabs inherits Rectangle {
-    in property <[string]> tabs;
-    in-out property <int> selected;
-    in property <[bool]> marked;
-    // A colour per tab drawn in place of its name, which stays the tab's accessible label.
-    in property <[color]> swatches;
-    callback picked(int);
-    height: TabsStyle.height;
-    clip: true;
-    border-radius: TabsStyle.radius;
-    background: Colour.canvas;
-    property <length> pitch: (self.width - 2 * TabsStyle.inset) / max(1, root.tabs.length);
-    Rectangle {
-        x: TabsStyle.inset + root.selected * root.pitch;
-        y: TabsStyle.inset;
-        width: root.pitch;
-        height: parent.height - 2 * TabsStyle.inset;
-        border-radius: TabsStyle.pill-radius;
-        background: Colour.raised;
-        animate x { duration: Motion.slide; easing: ease-out; }
-    }
-    for name[i] in root.tabs: Rectangle {
-        x: TabsStyle.inset + i * root.pitch;
-        y: TabsStyle.inset;
-        width: root.pitch;
-        height: parent.height - 2 * TabsStyle.inset;
-        accessible-role: tab;
-        accessible-label: name;
-        if root.swatches.length == 0: Label {
-            text: name;
-            centred: true;
-            opacity: (i == root.selected || touch.has-hover) ? 1 : State.idle;
-        }
-        if root.swatches.length > 0: Rectangle {
-            width: TabsStyle.swatch;
-            height: TabsStyle.swatch;
-            border-radius: self.width / 2;
-            background: root.swatches[i];
-        }
-        if root.marked[i]: Rectangle {
-            x: parent.width - self.width - Space.xs;
-            y: Space.xs;
-            width: TabsStyle.mark;
-            height: TabsStyle.mark;
-            border-radius: self.width / 2;
-            background: Colour.accent;
-        }
-        touch := TouchArea {
-            clicked => {
-                root.selected = i;
-                root.picked(i);
-            }
-            // A swatch shows no name, so its tab gives it in the tooltip.
-            changed has-hover => {
-                if root.swatches.length > 0 {
-                    Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
-                }
-            }
-        }
-    }
 }
 
 // A switch: a thumb that slides to the lit side.

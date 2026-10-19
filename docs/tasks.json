@@ -666,5 +666,13 @@
     "status": "done",
     "detail": "The histogram was counted and read at the 100 ms pulse, so it trailed the picture by 100 to 200 ms. It is now counted right after each frame is encoded, at most once an image interval (30 Hz), and its readback is polled every 2 ms while one is under way, then traced at once. The open frame's preview, its full resolution and Prepare the Roll's full scan each go through a gate: one decode at a time, a decode superseded before its turn never runs (a quick walk piled one 0.4 to 0.7 GB decode per frame).",
     "outcome": "Real window, 60 notches: frame to histogram on the panel p50 5.9 to 7.3 ms, p99 20 to 36 ms (the input distributions' readback on the same GPU); every check green."
+  },
+  {
+    "id": 94,
+    "type": "fix",
+    "title": "Compare's before laid from the left edge, the feedback form sends, icons centred, tabs that follow Rust after a click, labels read files as what they are",
+    "status": "done",
+    "detail": "Compare: the before's clip had no place, so Slint centred it, and its guide followed a hovering pointer; the kept before is keyed on the photo too. Report a Bug: typing replaced the message's one-way binding, so Send never lit. Every icon-only key held a gap for its empty word, two points left of centre. Tabs bound one way (the export space and format, the crop ratio, the roll's film, capture, film type, encoding and dye family) lost their binding at the first click; they are two-way now. A label written on a TIFF or JPEG read its sidecar as a RAW mosaic's.",
+    "outcome": "Every check green; to be seen in the real window."
   }
 ]

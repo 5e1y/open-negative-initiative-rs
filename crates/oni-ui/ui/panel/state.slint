@@ -26,20 +26,20 @@ export global PanelState {
     // `DetailsPane.offOnSheet`.
     out property <string> off-on-sheet: "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.";
     // `ConversionMode.allCases`' index of the targets' mode.
-    in property <int> film-type;
+    in-out property <int> film-type;
     // How many photos a paste reaches.
     in property <int> targets: 1;
     callback film-type-picked(int);
     in property <bool> flat-field-on;
     // `SettingsPane.separationFamily`: the family the kernel runs, an index of `Separation.Family`.
-    in property <int> dye-family: 2;
+    in-out property <int> dye-family: 2;
     callback dye-family-picked(int);
     // `GainPanel`: the inversion swaps each row's ends, the hue then low.
     in property <bool> gains-inverted: true;
     // A file naming no profile, read as the hand says; a grey one offers two encodings.
     in property <bool> undeclared;
     in property <bool> grey-source;
-    in property <int> encoding;
+    in-out property <int> encoding;
     in property <bool> encoding-modified;
     callback encoding-picked(int);
     // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
@@ -108,7 +108,7 @@ export global Lab {
 
 // The Crop tab's model, `FramePane` and `GeometryPanel`: Rust holds the geometry and answers each key.
 export global Framing {
-    in property <int> ratio;
+    in-out property <int> ratio;
     in property <bool> portrait;
     in property <bool> portrait-enabled;
     in property <string> kept;

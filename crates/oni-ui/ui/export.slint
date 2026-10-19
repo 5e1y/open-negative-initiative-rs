@@ -38,9 +38,9 @@ export global Exporting {
     in property <string> extension: ".jpg";
     in property <string> subtitle;
     in property <int> count;
-    in property <int> format: 1;
+    in-out property <int> format: 1;
     // 0 to 3 the built-in spaces, 4 Custom.
-    in property <int> space-tab: 1;
+    in-out property <int> space-tab: 1;
     in property <string> purpose;
     in property <bool> jpeg: true;
     in property <bool> on-profile;
@@ -244,7 +244,7 @@ export component SpaceField inherits VerticalLayout {
         Tabs {
             tabs: ["sRGB", "DP3", "Adobe RGB", "ProPhoto", "Custom"];
             marked: [false, false, false, false, false];
-            selected: Exporting.space-tab;
+            selected <=> Exporting.space-tab;
             picked(i) => { Exporting.space-picked(i); }
         }
         if Exporting.jpeg && Exporting.space-tab == 3: Note { text: "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."; }
@@ -253,7 +253,7 @@ export component SpaceField inherits VerticalLayout {
     if root.compact: Tabs {
         tabs: ["sRGB", "DP3", "Adobe RGB", "ProPhoto", "Custom"];
         marked: [false, false, false, false, false];
-        selected: Exporting.space-tab;
+        selected <=> Exporting.space-tab;
         picked(i) => { Exporting.space-picked(i); }
     }
     if Exporting.on-profile: Field {
@@ -317,7 +317,7 @@ export component ExportPanel inherits Surface {
                     Tabs {
                         tabs: ["TIFF 16-bit", "JPEG"];
                         marked: [false, false];
-                        selected: Exporting.format;
+                        selected <=> Exporting.format;
                         picked(i) => { Exporting.format-picked(i); }
                     }
                 }
