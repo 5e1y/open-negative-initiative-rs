@@ -682,5 +682,13 @@
     "status": "done",
     "detail": "SidebarLayout and TreeEngineLayout: beside a photo the column lays its photos as names, two thumbnails a line (the default) or one, the layout stored under sidebarLayout.editor; a key cycles them, another reads the folders again, a third shows the selected photo. Every edit, frame switch and layout change brings the open photo back to the column's middle (TreeEngine.reveal). Rows are laid by Rust and drawn at their places in a wheel-only scroller.",
     "outcome": "Layout and centring checked by unit tests with twins; the headless editor shot shows two thumbnails a line under the three keys."
+  },
+  {
+    "id": 96,
+    "type": "perf",
+    "title": "Prepare the Roll and the measuring copies read RAWs at half size",
+    "status": "done",
+    "detail": "LibRaw's half_size, set only for a copy no longer than half the sensor: each 2x2 block one pixel, no demosaic. The roll's tiles (360 px), its card and base scan (1400) and every measuring copy (2000, the auto keys' and the roll's measure) are read so; the base loupe and the editor keep the full demosaic, so no render moves.",
+    "outcome": "DSC_6440.NEF (24 Mpx): 980 ms to 345 ms a decode, channel means within 0.01 %; checked against the full decode with a twin (a longer copy reads whole)."
   }
 ]

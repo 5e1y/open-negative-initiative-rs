@@ -322,7 +322,7 @@ fn reading(path: &str) -> Reading {
 
 /// `RawDecode.linear(longestSide:)`, or the measuring copy: the decode reduced to `side`, its edge rebuilt.
 fn reduced(graph: &mut Graph, path: &str, side: f64) -> Option<Source> {
-    let decoded = render::decode(Path::new(path), reading(path)).ok()?;
+    let decoded = render::decode_for(Path::new(path), reading(path), side.ceil() as usize).ok()?;
     let l = decoded.linear;
     let uploaded = graph.upload(l.width as u32, l.height as u32, &l.pixels).ok()?;
     drop(l.pixels);

@@ -10,6 +10,8 @@ typedef struct {
     unsigned short *pixels;
     libraw_processed_image_t *image;
     libraw_data_t *raw;
+    // 1 when LibRaw handed out half the sensor's sides, each pixel one 2x2 block, no demosaic.
+    int half;
 } oni_decoded;
 
 void oni_release(oni_decoded *d)
@@ -19,8 +21,9 @@ void oni_release(oni_decoded *d)
     memset(d, 0, sizeof *d);
 }
 
-// Opens and identifies: the colour metadata is read before any multiplier is chosen.
-int oni_open(const char *path, float exposure_gain, oni_decoded *out)
+// Opens and identifies: the colour metadata is read before any multiplier is chosen. A copy no
+// longer than `min_side` (0: the whole frame) is read at half size when the sensor allows it.
+int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *out)
 {
     memset(out, 0, sizeof *out);
     libraw_data_t *lr = libraw_init(0);
@@ -49,6 +52,11 @@ int oni_open(const char *path, float exposure_gain, oni_decoded *out)
     out->raw = lr;
     int rc = libraw_open_file(lr, path);
     if (rc != LIBRAW_SUCCESS) { oni_release(out); return rc; }
+    int longest = lr->sizes.width > lr->sizes.height ? lr->sizes.width : lr->sizes.height;
+    if (min_side > 0 && longest >= 2 * min_side) {
+        p->half_size = 1;
+        out->half = 1;
+    }
     out->colors = lr->idata.colors;
     out->dng = lr->idata.dng_version != 0;
     memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);

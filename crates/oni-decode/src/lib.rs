@@ -20,10 +20,11 @@ struct Decoded {
     pixels: *const c_ushort,
     image: *mut c_void,
     raw: *mut c_void,
+    half: c_int,
 }
 
 unsafe extern "C" {
-    fn oni_open(path: *const c_char, exposure_gain: c_float, out: *mut Decoded) -> c_int;
+    fn oni_open(path: *const c_char, exposure_gain: c_float, min_side: c_int, out: *mut Decoded) -> c_int;
     fn oni_unpack(d: *mut Decoded) -> c_int;
     fn oni_inset(d: *const Decoded, out: *mut c_int);
     fn oni_process(d: *mut Decoded, mul: *const c_float) -> c_int;
@@ -246,9 +247,16 @@ fn image_depth(path: &Path) -> Option<usize> {
 /// Decodes `path`; `exposure_gain` is LibRaw's linear exposure shift, 1 for none. Safe from several
 /// threads at once: every decode owns its LibRaw instance.
 pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
+    decode_for(path, exposure_gain, 0).map(|(linear, _)| linear)
+}
+
+/// `decode` for a copy no longer than `side`: read at half size, a sensor pixel per 2x2 block with
+/// no demosaic, when the sensor is twice as long; the factor back to the full frame beside it.
+pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
-    let rc = unsafe { oni_open(c_path.as_ptr(), exposure_gain, &mut s.0) };
+    let min_side = c_int::try_from(side).unwrap_or(0);
+    let rc = unsafe { oni_open(c_path.as_ptr(), exposure_gain, min_side, &mut s.0) };
     if rc != 0 {
         return Err(DecodeError(rc));
     }
@@ -278,7 +286,8 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
     // so a sidecar's fractions fall on the same pixels in either app.
     let mut inset = [0 as c_int; 4];
     unsafe { oni_inset(d, inset.as_mut_ptr()) };
-    let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize);
+    let factor = if d.half != 0 { 2 } else { 1 };
+    let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let m = conv.matrix;
     let pixels = (y0..y0 + h_out)
@@ -299,11 +308,7 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
             conv.mul, d.baseline_exposure, d.cam_xyz, m
         );
     }
-    Ok(Linear {
-        width: w_out,
-        height: h_out,
-        pixels,
-    })
+    Ok((Linear { width: w_out, height: h_out, pixels }, factor))
 }
 
 #[cfg(test)]

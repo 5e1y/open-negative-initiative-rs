@@ -18,7 +18,7 @@ pub fn measurer() -> Option<&'static Measurer> {
             Some(Measurer::new(
                 graph,
                 Box::new(|path: &Path, s: &PipelineSettings| {
-                    let d = render::decode(path, render::Reading::of(s))?;
+                    let d = render::decode_for(path, render::Reading::of(s), render::PREVIEW_SIDE)?;
                     Ok(Decoded { width: d.linear.width as u32, height: d.linear.height as u32, pixels: d.linear.pixels, full_width: d.full_width })
                 }),
             ))

@@ -63,6 +63,23 @@ pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     }
 }
 
+/// `decode` for a copy no longer than `side`: a RAW is read at half size when its sensor is twice as
+/// long, which skips the demosaic; the measuring copies and the roll's previews never need more.
+pub fn decode_for(path: &Path, reading: Reading, side: usize) -> Result<Decoded, String> {
+    let one = |p: &Path, r: Reading| match oni_decode::route(p) {
+        oni_decode::Branch::Mosaic => {
+            let (d, factor) = oni_decode::decode_for(p, 1.0, side).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
+            let full_width = (d.width * factor) as f64;
+            Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
+        }
+        _ => alone(p, r),
+    };
+    match reading.passes.clone() {
+        Some(passes) => composed(path, &passes, |p| one(p, reading.clone())),
+        None => one(path, reading),
+    }
+}
+
 /// The frame's own pixels, unreduced: what a zoom past the preview reads.
 pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     let one = |p: &Path, r: Reading| match oni_decode::route(p) {
