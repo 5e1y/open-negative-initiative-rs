@@ -138,6 +138,9 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.settle();
     println!("shot {}", rig.shot("scanner-face").display());
 
+    // The RAW notice is modal: closed first, so the keys reach the Lab.
+    w.global::<oni_app::Notice>().invoke_close();
+    rig.pump();
     // A bare arrow walks the group on the Scanner face, which the next frame opens on.
     rig.key("\u{F703}");
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("B.NEF"));
