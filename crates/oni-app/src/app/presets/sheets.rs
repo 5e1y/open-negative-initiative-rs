@@ -3,17 +3,18 @@
 use super::*;
 
 impl Ctl {
-    /// `savePreset`: the sheet opens on the first free name and the rows the photo moved.
+    /// `savePreset`: the sheet opens on the first free name and the rows the photo moved; never
+    /// over an open sheet, whose edit it would drop.
     pub(in crate::app) fn save_preset(self: &Rc<Self>) {
+        if self.state.borrow().open.is_none() || self.state.borrow().shelf_form_open() {
+            return;
+        }
+        self.clear_hover();
         {
             let mut s = self.state.borrow_mut();
-            if s.open.is_none() {
-                return;
-            }
             let names: Vec<&str> = s.shelf.held.iter().map(|p| p.name.as_str()).collect();
             let settings = s.store.settings().clone();
             let draft = Preset::new(&presets::default_name(&names), carries::proposed(&settings), Tint::default(), settings);
-            s.shelf.hovered = None;
             s.shelf.form = Some(Form::Saving(draft));
         }
         self.publish_form(true);
@@ -44,6 +45,7 @@ impl Ctl {
 
     /// `editingPresets`: the editor on a copy of the shelf, selecting `initial` or the first.
     pub(in crate::app) fn edit_presets(self: &Rc<Self>, initial: Option<Id>) {
+        self.clear_hover();
         {
             let mut s = self.state.borrow_mut();
             let working = s.shelf.held.clone();
@@ -190,7 +192,9 @@ impl Ctl {
         g.set_saving(saving);
         g.set_editing(editing);
         if let Some(Form::Editing { working, selected }) = s.shelf.form.as_ref() {
-            g.set_rows(ModelRc::new(VecModel::from(working.iter().map(card).collect::<Vec<_>>())));
+            if let Some(fresh) = refreshed(&g.get_rows(), working.iter().map(card).collect()) {
+                g.set_rows(fresh);
+            }
             g.set_selected(selected.map_or(-1, |i| i as i32));
         }
         let current = s.shelf.form.as_mut().and_then(|f| f.current()).cloned();
@@ -204,12 +208,30 @@ impl Ctl {
             return;
         };
         g.set_form_name(p.name.clone().into());
+        g.set_form_valid(!p.name.trim().is_empty());
         g.set_form_note(p.note.clone().into());
         g.set_form_tint(Tint::ALL.iter().position(|t| *t == p.tint).unwrap_or(0) as i32);
-        g.set_form_carries(ModelRc::new(VecModel::from(carries_lines(&p.parameters))));
+        if let Some(fresh) = refreshed(&g.get_form_carries(), carries_lines(&p.parameters)) {
+            g.set_form_carries(fresh);
+        }
+        g.set_form_balance(WhiteBalance::ALL.iter().position(|b| *b == carries::white_balance(&p.parameters)).unwrap_or(0) as i32);
         g.set_form_empty(p.parameters.is_empty());
         if fresh {
             g.set_form_instance(ModelRc::new(VecModel::from(vec![s.shelf.serial as i32])));
         }
     }
+}
+
+/// A list laid again row by row when its length holds, so a keystroke keeps the rows' hover and
+/// scroll; a new model, returned, only when rows come or go.
+fn refreshed<T: Clone + PartialEq + 'static>(model: &ModelRc<T>, rows: Vec<T>) -> Option<ModelRc<T>> {
+    if model.row_count() != rows.len() {
+        return Some(ModelRc::new(VecModel::from(rows)));
+    }
+    for (i, row) in rows.into_iter().enumerate() {
+        if model.row_data(i).as_ref() != Some(&row) {
+            model.set_row_data(i, row);
+        }
+    }
+    None
 }

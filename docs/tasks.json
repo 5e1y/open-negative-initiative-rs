@@ -724,6 +724,14 @@
     "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
   },
   {
+    "id": 103,
+    "type": "fix",
+    "title": "The preset deck and its sheets answer as Swift's: the strip, the \"+\" card, the wheel, the preview, the form",
+    "status": "done",
+    "detail": "At rest the deck answered 6 pt above its strip and swallowed canvas clicks there; the \"+\" card's hit rose with its face and flickered in its bottom band; a wheel over the deck dropped it and its hover, and a vertical wheel did not scroll it; two automatic cards in a row left the second unmeasured; the preview stayed under Crop, the Lab and the sheets; Save as Preset… stayed lit over an open sheet and dropped the editor's pending edit; Save stayed lit on blanks; the proposed name was not selected; the balance menu opened at the block's corner, unticked; the picked swatch ringed in the window's ink; each keystroke rebuilt the editor's rows; the cards' notes never showed; the description was one line; Return in an editor field did nothing; the Carries blocks stood at their rows' gap.",
+    "outcome": "A window check drives the deck by the pointer and the sheets by their fields, each step with a twin; the strip, \"+\" card, wheel, Crop, Save as Preset… and in-place steps fail on the earlier code. The fade at the roll's ends and the dashed \"+\" edge stay open: Slint has no mask nor dashed stroke."
+  },
+  {
     "id": 104,
     "type": "fix",
     "title": "The library column keeps the wheel's scroll and its rows, opens on a double click once; a switched photo shows nothing of the last",

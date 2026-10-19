@@ -1,0 +1,126 @@
+// The presets' deck on the canvas's bottom edge.
+import { Space, State, PresetStyle, PresetFace, PresetNewFace, Badge, ContextMenu, Scroller, Tips } from "ds/ds.slint";
+import { Presets } from "presets.slint";
+
+// `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
+// the pointer and applies on a click; the rest sits on its right click.
+export component PresetDeck inherits Rectangle {
+    property <length> full: PresetStyle.lift + PresetStyle.card-height + Space.s;
+    property <bool> up: zone.has-hover;
+    property <length> menu-x;
+    property <length> menu-y;
+    // The deck's top, and the top of what answers the pointer: at rest the strip shown alone, so
+    // the lift's band above it stays the photo's.
+    property <length> top: root.up ? root.height - root.full : root.height - PresetStyle.peek - PresetStyle.lift;
+    property <length> reach: root.up ? 0px : root.height - PresetStyle.peek;
+    animate top, reach { duration: PresetStyle.rise; }
+    height: self.full + Space.l + Space.m;
+    clip: true;
+    if root.up && Presets.cards.length > 0: Badge {
+        x: (root.width - self.width) / 2;
+        y: root.top - Space.l;
+        text: Presets.hint;
+    }
+    Rectangle {
+        y: root.reach;
+        height: root.height - root.reach;
+        clip: true;
+        zone := TouchArea {
+            y: root.top - root.reach;
+            height: root.full;
+            // Every wheel is the deck's, or it would drop it.
+            scroll-event(event) => {
+                root.roll-by(abs(event.delta-y) > abs(event.delta-x) ? event.delta-y : event.delta-x);
+                accept
+            }
+            HorizontalLayout {
+                padding-left: Space.l;
+                padding-right: Space.l;
+                spacing: Space.s;
+                alignment: start;
+                Rectangle {
+                    width: PresetStyle.card-width;
+                    height: root.full;
+                    PresetNewFace {
+                        y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
+                        lit: plus.has-hover && Presets.can-update;
+                        enabled: Presets.can-update;
+                        animate y { duration: PresetStyle.rise; }
+                    }
+                    // On the cell, not the face: the face rises off the pointer it lifts under.
+                    plus := TouchArea {
+                        y: 0;
+                        height: PresetStyle.lift + PresetStyle.card-height;
+                        enabled: Presets.can-update;
+                        clicked => { Presets.create(); }
+                        changed has-hover => { Tips.hover(self.has-hover, "Save this photo’s settings as a preset…", self.absolute-position.x, self.absolute-position.y + self.height); }
+                    }
+                }
+                roll-view := Scroller {
+                    height: root.full;
+                    horizontal-stretch: 1;
+                    content-width: roll.preferred-width;
+                    roll := HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        for card[i] in Presets.cards: Rectangle {
+                            width: PresetStyle.card-width;
+                            height: root.full;
+                            if i == 0: Rectangle {
+                                changed absolute-position => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
+                                init => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
+                            }
+                            PresetFace {
+                                y: PresetStyle.lift - (Presets.hovered == i ? PresetStyle.lift : 0px);
+                                abbreviation: card.abbreviation;
+                                name: card.name;
+                                fill: card.fill;
+                                ink: card.ink;
+                                opacity: Presets.can-apply ? 1 : State.disabled;
+                                animate y { duration: PresetStyle.rise; }
+                            }
+                            TouchArea {
+                                y: 0;
+                                height: PresetStyle.lift + PresetStyle.card-height;
+                                changed has-hover => {
+                                    if (self.has-hover && Presets.can-apply) {
+                                        Presets.hover(i);
+                                    } else if (Presets.hovered == i) {
+                                        Presets.hover(-1);
+                                    }
+                                    Tips.hover(self.has-hover, card.help, self.absolute-position.x, self.absolute-position.y + self.height);
+                                }
+                                clicked => { if (Presets.can-apply) { Presets.apply(i); } }
+                                // Kept, or the card would lose its hover; a sideways one is the roll's own.
+                                scroll-event(event) => {
+                                    if (abs(event.delta-y) > abs(event.delta-x)) {
+                                        root.roll-by(event.delta-y);
+                                        return accept;
+                                    }
+                                    reject
+                                }
+                                pointer-event(event) => {
+                                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                                        root.menu-x = self.absolute-position.x - root.absolute-position.x + self.mouse-x;
+                                        root.menu-y = self.absolute-position.y - root.absolute-position.y + self.mouse-y;
+                                        if (Presets.card-menu(i)) { menu.show(); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // `ScrollView(.horizontal)`: a vertical wheel scrolls the roll sideways, held to its ends.
+    function roll-by(by: length) {
+        roll-view.content-x = max(min(roll-view.content-x + by, 0px), min(0px, roll-view.width - roll-view.content-width));
+    }
+    menu := ContextMenu {
+        x: root.menu-x;
+        y: root.menu-y;
+        lines: Presets.menu-lines;
+        chosen(i) => { Presets.menu-chosen(i); menu.close(); }
+    }
+}

@@ -9,7 +9,7 @@ use oni_core::balance::{self, Outcome};
 use oni_core::preset_parameters::{self as carries, WhiteBalance};
 use oni_core::presets::{self, Preset, Tint};
 use oni_settings::{Id, PipelineSettings};
-use slint::{Color, ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -23,8 +23,8 @@ pub(super) struct Shelf {
     pub held: Vec<Preset>,
     /// The card under the pointer: kept out of the settings, so a hover never writes one.
     pub hovered: Option<Id>,
-    /// What the hovered automatic preset measures, with the settings it was measured on.
-    hover_balance: Option<(Id, PipelineSettings, Outcome)>,
+    /// What an automatic preset previews: the open photo's balance, measured on the settings it had.
+    hover_balance: Option<(String, PipelineSettings, Outcome)>,
     measuring: bool,
     menu: Option<Id>,
     form: Option<Form>,
@@ -73,6 +73,11 @@ fn colour(c: [f64; 3]) -> Color {
     Color::from_rgb_u8(byte(c[0]), byte(c[1]), byte(c[2]))
 }
 
+/// `PresetTint.ink`: black on the light tints, white on the dark.
+fn ink(tint: Tint) -> Color {
+    if tint.wants_dark_ink() { Color::from_rgb_u8(0, 0, 0) } else { Color::from_rgb_u8(255, 255, 255) }
+}
+
 fn card(p: &Preset) -> PresetCard {
     PresetCard {
         abbreviation: p.abbreviation().into(),
@@ -80,7 +85,7 @@ fn card(p: &Preset) -> PresetCard {
         help: p.help().into(),
         carries: carries::label(&p.parameters).into(),
         fill: colour(p.tint.components()),
-        ink: if p.tint.wants_dark_ink() { Color::from_rgb_u8(0, 0, 0) } else { Color::from_rgb_u8(255, 255, 255) },
+        ink: ink(p.tint),
     }
 }
 
@@ -135,7 +140,7 @@ impl super::State {
         let preset = self.shelf.hovered.and_then(|id| self.shelf.held.iter().find(|p| p.id == id))?;
         let laid = presets::previewed(Some(preset), settings);
         match &self.shelf.hover_balance {
-            Some((id, through, outcome)) if *id == preset.id && through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
+            Some((on, through, outcome)) if self.open.as_ref() == Some(on) && through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
                 Some(balance::applied_outcome(outcome, &laid))
             }
             _ => Some(laid),

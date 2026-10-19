@@ -6,7 +6,7 @@ impl Ctl {
     /// `dsHovered`: the card under the pointer previews; one naming the key measures the frame
     /// off this thread first, so the hover shows the balance the click writes.
     pub(super) fn hover_preset(self: &Rc<Self>, i: Option<usize>) {
-        let measure = {
+        {
             let mut s = self.state.borrow_mut();
             let id = i.and_then(|i| s.shelf.held.get(i)).map(|p| p.id);
             if s.shelf.hovered == id {
@@ -15,42 +15,62 @@ impl Ctl {
             s.shelf.hovered = id;
             // A new card asks the canvas again, whatever else stands still.
             s.requested_view = None;
-            let automatic = id.filter(|id| s.shelf.held.iter().any(|p| p.id == *id && oni_core::parameters::auto_balances(&p.parameters)));
-            let stale = |id: Id| s.shelf.hover_balance.as_ref().is_none_or(|(h, through, _)| *h != id || through != s.store.settings());
-            match (automatic, s.open.clone()) {
-                (Some(id), Some(path)) if !s.shelf.measuring && stale(id) => {
-                    let through = s.store.settings().clone();
-                    s.shelf.measuring = true;
-                    Some((id, path, through))
-                }
-                _ => None,
-            }
-        };
-        if let Some((id, path, through)) = measure {
-            std::thread::spawn(move || {
-                let outcome = crate::measuring::balance_outcomes(&[(path.clone(), through.clone())]).remove(&path);
-                crate::app::with_shell(move |c| {
-                    let landed = {
-                        let mut s = c.state.borrow_mut();
-                        s.shelf.measuring = false;
-                        // Dropped if a slider moved meanwhile: it would show a balance of settings gone.
-                        match outcome.filter(|_| s.store.settings() == &through) {
-                            Some(o) => {
-                                s.shelf.hover_balance = Some((id, through, o));
-                                s.requested_view = None;
-                                s.shelf.hovered == Some(id)
-                            }
-                            None => false,
-                        }
-                    };
-                    if landed {
-                        c.request_render();
-                    }
-                });
-            });
         }
+        self.measure_hover_balance();
         self.publish_presets();
         self.request_render();
+    }
+
+    /// The preview gone with the deck or under a sheet: no exit event reaches a card no longer shown.
+    pub(in crate::app) fn clear_hover(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.shelf.hovered.is_none() {
+                return;
+            }
+            s.shelf.hovered = None;
+            s.requested_view = None;
+        }
+        self.publish_presets();
+        // Asked from the loop, as a shelf write reaches here without the shell's handle.
+        crate::app::with_shell(|c| c.request_render());
+    }
+
+    /// `measureHoverBalance`: the frame measured once on its settings, which no card changes, so
+    /// every automatic card shares it; checked again as it lands, so the newest hover always wins.
+    fn measure_hover_balance(self: &Rc<Self>) {
+        let (path, through) = {
+            let mut s = self.state.borrow_mut();
+            let automatic = s.shelf.hovered.is_some_and(|id| s.shelf.held.iter().any(|p| p.id == id && oni_core::parameters::auto_balances(&p.parameters)));
+            let Some(path) = s.open.clone().filter(|_| automatic && !s.shelf.measuring) else { return };
+            let fresh = s.shelf.hover_balance.as_ref().is_some_and(|(on, through, _)| *on == path && through == s.store.settings());
+            if fresh {
+                return;
+            }
+            s.shelf.measuring = true;
+            (path, s.store.settings().clone())
+        };
+        std::thread::spawn(move || {
+            let outcome = crate::measuring::balance_outcomes(&[(path.clone(), through.clone())]).remove(&path);
+            crate::app::with_shell(move |c| {
+                let moved = {
+                    let mut s = c.state.borrow_mut();
+                    s.shelf.measuring = false;
+                    // Dropped if a slider or the photo moved meanwhile: it would show a balance of settings gone.
+                    let moved = s.store.settings() != &through || s.open.as_deref() != Some(path.as_str());
+                    if let Some(o) = outcome.filter(|_| !moved) {
+                        s.shelf.hover_balance = Some((path, through, o));
+                        s.requested_view = None;
+                    }
+                    moved
+                };
+                // A frame that cannot be measured is not asked again until the hover moves.
+                if moved {
+                    c.measure_hover_balance();
+                }
+                c.request_render();
+            });
+        });
     }
 
     pub(super) fn apply_preset_at(self: &Rc<Self>, i: Option<usize>) {

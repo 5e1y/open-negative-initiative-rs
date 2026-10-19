@@ -198,6 +198,8 @@ impl Ctl {
             w.global::<Bar>().set_dedust(tab == 4);
         }
         if tab == 1 {
+            // Crop's handles take the deck's edge, and the deck with its preview.
+            self.clear_hover();
             let remembered = {
                 let s = self.state.borrow();
                 let open = s.open_path().map(str::to_string);

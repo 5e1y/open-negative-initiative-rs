@@ -27,7 +27,7 @@ impl Ctl {
     pub(super) fn remove_preset(&self, id: Id) {
         let Some(preset) = self.held(id) else { return };
         if self.state.borrow().shelf.hovered == Some(id) {
-            self.state.borrow_mut().shelf.hovered = None;
+            self.clear_hover();
         }
         let folder = self.presets_folder();
         let s = self.state.borrow();

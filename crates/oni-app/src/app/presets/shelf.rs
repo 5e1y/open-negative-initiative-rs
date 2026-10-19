@@ -8,11 +8,12 @@ impl Ctl {
         me.reload_presets();
         let g = window.global::<Presets>();
         g.set_tints(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| colour(t.components())).collect::<Vec<_>>())));
+        g.set_tint_inks(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| ink(*t)).collect::<Vec<_>>())));
         g.set_tint_names(ModelRc::new(VecModel::from(Tint::ALL.iter().map(|t| SharedString::from(t.label())).collect::<Vec<_>>())));
         g.set_carries_help(carries::CARRIES_HELP.into());
         g.set_balance_help(carries::WHITE_BALANCE_HELP.into());
         g.set_carries_nothing(carries::CARRIES_NOTHING.into());
-        g.set_balance_lines(ModelRc::new(VecModel::from(WhiteBalance::ALL.iter().map(|b| line(b.label(), true, false)).collect::<Vec<_>>())));
+        g.set_balance_names(ModelRc::new(VecModel::from(WhiteBalance::ALL.iter().map(|b| SharedString::from(b.label())).collect::<Vec<_>>())));
         let index = |i: i32| usize::try_from(i).ok();
         let p = me.clone();
         g.on_hover(move |i| p.hover_preset(index(i)));
@@ -97,14 +98,10 @@ impl Ctl {
     pub(in crate::app) fn reload_presets(&self) {
         let support = self.state.borrow().support.clone();
         let held = presets::load_shelf(&support);
-        {
-            let mut s = self.state.borrow_mut();
-            let shelf = &mut s.shelf;
-            if shelf.hovered.is_some_and(|id| !held.iter().any(|p| p.id == id)) {
-                shelf.hovered = None;
-            }
-            shelf.held = held;
+        if self.state.borrow().shelf.hovered.is_some_and(|id| !held.iter().any(|p| p.id == id)) {
+            self.clear_hover();
         }
+        self.state.borrow_mut().shelf.held = held;
         self.publish_presets();
     }
 

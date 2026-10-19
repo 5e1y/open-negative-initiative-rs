@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, State, PresetStyle, PresetFace, PresetNewFace, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, TextField, Toggle, LabelledRow, Picker, Divider, Scroller, Sheet, Badge, ContextMenu, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
+import { Space, PresetStyle, FieldStyle, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -34,12 +34,17 @@ export global Presets {
     in property <int> form-tint;
     in property <[color]> tints;
     in property <[string]> tint-names;
+    // Each tint's own ink, which rings the picked swatch.
+    in property <[color]> tint-inks;
     in property <[CarriesLine]> form-carries;
     in property <bool> form-empty;
+    // A name with more than blanks, the only one Save takes.
+    in property <bool> form-valid;
+    in property <int> form-balance;
     in property <string> carries-help;
     in property <string> balance-help;
     in property <string> carries-nothing;
-    in property <[MenuLine]> balance-lines;
+    in property <[string]> balance-names;
     callback form-named(string);
     callback form-noted(string);
     callback form-tinted(int);
@@ -100,96 +105,6 @@ export component AdviceSheet inherits Sheet {
     }
 }
 
-// `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
-// the pointer and applies on a click; the rest sits on its right click.
-export component PresetDeck inherits Rectangle {
-    property <length> full: PresetStyle.lift + PresetStyle.card-height + Space.s;
-    property <bool> up: zone.has-hover;
-    property <length> menu-x;
-    property <length> menu-y;
-    height: self.full + Space.l + Space.m;
-    clip: true;
-    if root.up && Presets.cards.length > 0: Badge {
-        x: (root.width - self.width) / 2;
-        y: Space.xs;
-        text: Presets.hint;
-    }
-    zone := TouchArea {
-        y: root.up ? root.height - root.full : root.height - PresetStyle.peek - PresetStyle.lift;
-        height: root.full;
-        animate y { duration: PresetStyle.rise; }
-        HorizontalLayout {
-            padding-left: Space.l;
-            padding-right: Space.l;
-            spacing: Space.s;
-            alignment: start;
-            Rectangle {
-                width: PresetStyle.card-width;
-                height: root.full;
-                PresetNewFace {
-                    y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
-                    lit: plus.has-hover && Presets.can-update;
-                    enabled: Presets.can-update;
-                    animate y { duration: PresetStyle.rise; }
-                    plus := TouchArea {
-                        enabled: Presets.can-update;
-                        clicked => { Presets.create(); }
-                    }
-                }
-            }
-            Scroller {
-                height: root.full;
-                horizontal-stretch: 1;
-                content-width: roll.preferred-width;
-                roll := HorizontalLayout {
-                    spacing: Space.s;
-                    alignment: start;
-                    for card[i] in Presets.cards: Rectangle {
-                        width: PresetStyle.card-width;
-                        height: root.full;
-                        if i == 0: Rectangle {
-                            changed absolute-position => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
-                            init => { Presets.first-x = self.absolute-position.x; Presets.first-y = self.absolute-position.y; }
-                        }
-                        PresetFace {
-                            y: PresetStyle.lift - (Presets.hovered == i ? PresetStyle.lift : 0px);
-                            abbreviation: card.abbreviation;
-                            name: card.name;
-                            fill: card.fill;
-                            ink: card.ink;
-                            opacity: Presets.can-apply ? 1 : State.disabled;
-                            animate y { duration: PresetStyle.rise; }
-                        }
-                        TouchArea {
-                            changed has-hover => {
-                                if (self.has-hover && Presets.can-apply) {
-                                    Presets.hover(i);
-                                } else if (Presets.hovered == i) {
-                                    Presets.hover(-1);
-                                }
-                            }
-                            clicked => { if (Presets.can-apply) { Presets.apply(i); } }
-                            pointer-event(event) => {
-                                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
-                                    root.menu-x = self.absolute-position.x - root.absolute-position.x + self.mouse-x;
-                                    root.menu-y = self.absolute-position.y - root.absolute-position.y + self.mouse-y;
-                                    if (Presets.card-menu(i)) { menu.show(); }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    menu := ContextMenu {
-        x: root.menu-x;
-        y: root.menu-y;
-        lines: Presets.menu-lines;
-        chosen(i) => { Presets.menu-chosen(i); menu.close(); }
-    }
-}
-
 component TintPicker inherits HorizontalLayout {
     spacing: Space.xs;
     alignment: start;
@@ -197,25 +112,45 @@ component TintPicker inherits HorizontalLayout {
         fill: tint;
         picked: i == Presets.form-tint;
         name: Presets.tint-names[i];
+        ink: Presets.tint-inks[i];
         clicked => { Presets.form-tinted(i); }
     }
 }
 
 // `PresetCarriesPicker`: the blocks' boxes, the white balance a choice of three, and the note
 // when nothing is ticked.
+// `DSPicker` for the white balance: its menu drops under the field, the current choice ticked.
+component BalancePicker inherits Rectangle {
+    in property <string> value;
+    height: FieldStyle.height;
+    Picker {
+        width: parent.width;
+        height: parent.height;
+        value: root.value;
+        open => { menu.show(); }
+    }
+    menu := Menu {
+        x: 0;
+        y: root.height;
+        entries: Presets.balance-names;
+        current: Presets.form-balance;
+        chosen(i) => { Presets.form-balanced(i); }
+    }
+}
+
 component CarriesPicker inherits VerticalLayout {
     spacing: Space.xs;
     for line[i] in Presets.form-carries: VerticalLayout {
+        spacing: Space.xs;
+        // The blocks stand a step further apart than their rows.
+        if line.kind == 0 && i > 0: Rectangle { height: Space.m - 2 * Space.xs; }
         if line.kind == 0: Label { text: line.text; role: TextRole.section; }
         if line.kind == 1: HorizontalLayout {
             spacing: Space.s;
             Label { text: "White balance"; }
             VerticalLayout { alignment: center; HelpMark { note: Presets.balance-help; } }
         }
-        if line.kind == 1: Picker {
-            value: line.text;
-            open => { balance.show(); }
-        }
+        if line.kind == 1: BalancePicker { value: line.text; }
         if line.kind == 2: LabelledRow {
             label: line.text;
             Toggle {
@@ -226,10 +161,6 @@ component CarriesPicker inherits VerticalLayout {
         }
     }
     if Presets.form-empty: Note { text: Presets.carries-nothing; }
-    balance := ContextMenu {
-        lines: Presets.balance-lines;
-        chosen(i) => { Presets.form-balanced(i); balance.close(); }
-    }
 }
 
 // The fields of both sheets; the description is the editor's alone.
@@ -246,12 +177,23 @@ component PresetForm inherits VerticalLayout {
             accepted(t) => { root.named(t); }
         }
     }
+    // Three lines, wrapped, as `lineLimit(3, reservesSpace: true)`.
     if root.noted: Field {
         label: "Description";
-        TextField {
-            text: Presets.form-note;
-            placeholder: "What this look is for";
-            edited(t) => { Presets.form-noted(t); }
+        Rectangle {
+            height: PresetStyle.note-height;
+            note := TextArea {
+                width: parent.width;
+                lines-height: parent.height;
+                text: Presets.form-note;
+                edited(t) => { Presets.form-noted(t); }
+            }
+            if note.text == "": Label {
+                x: FieldStyle.padding;
+                y: FieldStyle.padding;
+                text: "What this look is for";
+                tone: Tone.tertiary;
+            }
         }
     }
     Field {
@@ -263,7 +205,8 @@ component PresetForm inherits VerticalLayout {
         help: Presets.carries-help;
         CarriesPicker { }
     }
-    public function take-focus() { name.take-focus(); }
+    // The proposed name selected, so typing replaces it.
+    public function take-focus() { name.take-focus-selecting(); }
 }
 
 // `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name.
@@ -280,7 +223,7 @@ export component PresetSaveSheet inherits PanelSheet {
             content-height: form.preferred-height;
             form := PresetForm {
                 width: parent.width;
-                named => { if (Presets.form-name != "") { Presets.save-confirmed(); } }
+                named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
             }
         }
         Divider { }
@@ -288,7 +231,7 @@ export component PresetSaveSheet inherits PanelSheet {
             alignment: end;
             spacing: Space.s;
             Button { text: "Cancel"; clicked => { Presets.save-cancelled(); } }
-            Button { text: "Save"; kind: ButtonKind.accent; enabled: Presets.form-name != ""; clicked => { Presets.save-confirmed(); } }
+            Button { text: "Save"; kind: ButtonKind.accent; enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
         }
     }
     init => { form.take-focus(); }
@@ -331,6 +274,7 @@ export component PresetEditorSheet inherits PanelSheet {
                     y: Space.l;
                     width: parent.width - 2 * Space.l;
                     noted: true;
+                    named => { Presets.done(); }
                 }
             }
             if !Presets.form-shown: VerticalLayout {
