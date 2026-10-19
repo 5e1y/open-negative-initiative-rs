@@ -9,9 +9,10 @@ pub struct Gate {
     running: Mutex<()>,
 }
 
-/// The open frame's preview, its full resolution, and Prepare the Roll's full scan.
+/// The open frame's preview, its full resolution, its measuring copy, and Prepare the Roll's full scan.
 pub static PREVIEW: Gate = Gate::new();
 pub static FULL: Gate = Gate::new();
+pub static MEASURE: Gate = Gate::new();
 pub static ROLL_FULL: Gate = Gate::new();
 
 impl Gate {

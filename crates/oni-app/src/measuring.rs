@@ -21,6 +21,7 @@ pub fn measurer() -> Option<&'static Measurer> {
                     let d = render::decode_for(path, render::Reading::of(s), render::PREVIEW_SIDE)?;
                     Ok(Decoded { width: d.linear.width as u32, height: d.linear.height as u32, pixels: d.linear.pixels, full_width: d.full_width })
                 }),
+                Box::new(|s: &PipelineSettings| format!("{:?}", render::Reading::of(s))),
             ))
         })
         .as_ref()
@@ -31,4 +32,14 @@ pub fn measurer() -> Option<&'static Measurer> {
 pub fn balance_outcomes(frames: &[(String, PipelineSettings)]) -> HashMap<String, Outcome> {
     let Some(m) = measurer() else { return HashMap::new() };
     frames.iter().filter_map(|(path, s)| m.balance(path, s).map(|o| (path.clone(), o))).collect()
+}
+
+/// The open frame's measuring copy made off the interface thread once its preview stands, so Auto
+/// White Balance reads at once; the latest frame asked wins a walk.
+pub fn prepare(path: &str, s: &PipelineSettings) {
+    let (path, s) = (path.to_string(), s.clone());
+    let ticket = crate::decode_gate::MEASURE.ask();
+    std::thread::spawn(move || {
+        crate::decode_gate::MEASURE.run(ticket, || measurer().map(|m| m.prepare(&path, &s)));
+    });
 }

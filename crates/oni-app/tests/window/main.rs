@@ -32,6 +32,7 @@ mod rolls;
 mod scanner;
 mod scroll;
 mod session;
+mod space_chip;
 mod stocks;
 mod updates;
 mod wrapped;
@@ -77,6 +78,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
+    ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag", scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),

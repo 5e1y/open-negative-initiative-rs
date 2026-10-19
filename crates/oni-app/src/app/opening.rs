@@ -57,6 +57,7 @@ impl Ctl {
         let known = previews.lock().expect("previews").get(path);
         if let Some(negative) = known {
             self.state.borrow_mut().negative = Some((path.to_string(), negative));
+            self.prepare_measure(path);
             return self.request_render();
         }
         self.state.borrow_mut().negative = None;
@@ -69,9 +70,10 @@ impl Ctl {
                 Ok(negative) => {
                     c.state.borrow().previews.lock().expect("previews").insert(path.clone(), negative.clone());
                     if c.state.borrow().open_path() == Some(path.as_str()) {
-                        c.state.borrow_mut().negative = Some((path, negative));
+                        c.state.borrow_mut().negative = Some((path.clone(), negative));
                         c.request_render();
                         c.publish_roll_tab();
+                        c.prepare_measure(&path);
                     }
                 }
                 Err(e) => {
@@ -81,6 +83,10 @@ impl Ctl {
                 }
             });
         });
+    }
+
+    fn prepare_measure(&self, path: &str) {
+        crate::measuring::prepare(path, self.state.borrow().store.settings());
     }
 
     /// `redecode()`: the open frame read again once its sidecar names another reading.

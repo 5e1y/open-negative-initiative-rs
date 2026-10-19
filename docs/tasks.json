@@ -706,5 +706,21 @@
     "status": "done",
     "detail": "From the Swift-parity reviewers: the Black point read the stored value's sign, not the slider's (DSSlider formats the shown value); Dye Separation read 0.60 where Swift reads 60 %; a Source Balance double click landed on the roll's stops instead of Gains.base, the block reset keeping the stops; a B&W frame's Contrast and points, and a plain file's density ceiling, slid on the colour RAW range instead of Knob::range.",
     "outcome": "Unit tests with twins on the readout sign, the double-click base and the monochrome track; every check green."
+  },
+  {
+    "id": 99,
+    "type": "fix",
+    "title": "The working-space popover's tabs pick the tab under the pointer",
+    "status": "done",
+    "detail": "The Popover (a PopupWindow) had no size, so its content was hit at another width than drawn: a click on sRGB from Display P3 picked Adobe RGB, and Custom could not be reached.",
+    "outcome": "A window check clicks the chip, then sRGB, Custom and DP3 by the pointer; without the size it picks Adobe RGB and fails."
+  },
+  {
+    "id": 100,
+    "type": "perf",
+    "title": "Auto White Balance reads at once: the measuring copy kept and made when a frame opens",
+    "status": "done",
+    "detail": "Each press decoded the file again (355 ms of 420). The measurer keeps the last two measuring copies by path and reading, and the open frame's copy is made off the interface thread once its preview stands, through a latest-wins gate.",
+    "outcome": "Roll #8 frame, M2 Max release: 420 ms a press before, 40 ms once prepared. A unit check with a twin counts the decodes."
   }
 ]

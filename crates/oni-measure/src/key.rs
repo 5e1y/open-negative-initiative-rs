@@ -141,16 +141,30 @@ pub type Decode = dyn Fn(&Path, &PipelineSettings) -> Result<Decoded, String> + 
 /// `Negative.previewSide`, the copy the measuring one is reduced from.
 pub const PREVIEW_SIDE: f64 = 2000.0;
 
+/// What a decode depends on besides the path, so a measuring copy is reused only for the same read.
+pub type Reading = dyn Fn(&PipelineSettings) -> String + Send + Sync;
+
+/// Measuring copies kept: the open frame and the one before, 21 MB each at 1400 px.
+const KEPT: usize = 2;
+
 /// The key on files: each decoded as the app decodes it, reduced to its preview then to the
 /// measuring side, then read on a graph of its own.
 pub struct Measurer {
-    engine: Mutex<(Graph, Pipeline)>,
+    engine: Mutex<Engine>,
     decode: Box<Decode>,
+    reading: Box<Reading>,
+}
+
+struct Engine {
+    graph: Graph,
+    pipeline: Pipeline,
+    /// The last copies made, keyed by path and reading, newest last.
+    kept: Vec<(String, std::sync::Arc<Source>, f64)>,
 }
 
 impl Measurer {
-    pub fn new(graph: Graph, decode: Box<Decode>) -> Measurer {
-        Measurer { engine: Mutex::new((graph, Pipeline::new())), decode }
+    pub fn new(graph: Graph, decode: Box<Decode>, reading: Box<Reading>) -> Measurer {
+        Measurer { engine: Mutex::new(Engine { graph, pipeline: Pipeline::new(), kept: Vec::new() }), decode, reading }
     }
 
     /// `RawDecode.measuring(url)`: the preview, then the measuring copy, each edge rebuilt.
@@ -168,16 +182,35 @@ impl Measurer {
         measuring
     }
 
-    /// Reads one frame with `read`, on its measuring copy; `None` where the file reads nothing.
-    pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
+    /// The frame's measuring copy, the kept one when the same file was read the same way.
+    fn kept(&self, path: &str, s: &PipelineSettings) -> Option<(std::sync::Arc<Source>, f64)> {
+        let key = format!("{path}\u{0}{}", (self.reading)(s));
+        if let Some(found) = self.engine.lock().ok()?.kept.iter().find(|k| k.0 == key) {
+            return Some((found.1.clone(), found.2));
+        }
         let d = (self.decode)(Path::new(path), s).ok()?;
         let mut guard = self.engine.lock().ok()?;
-        let (graph, pipeline) = &mut *guard;
-        let source = Self::copy(graph, pipeline, &d)?;
-        let full_width = Some(d.full_width);
-        drop(d);
-        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width });
-        drop(source);
+        let e = &mut *guard;
+        let source = std::sync::Arc::new(Self::copy(&mut e.graph, &mut e.pipeline, &d)?);
+        e.kept.retain(|k| k.0 != key);
+        if e.kept.len() >= KEPT {
+            e.kept.remove(0);
+        }
+        e.kept.push((key, source.clone(), d.full_width));
+        Some((source, d.full_width))
+    }
+
+    /// Makes the frame's measuring copy ahead of a press, so the press reads at once.
+    pub fn prepare(&self, path: &str, s: &PipelineSettings) {
+        self.kept(path, s);
+    }
+
+    /// Reads one frame with `read`, on its measuring copy; `None` where the file reads nothing.
+    pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
+        let (source, full_width) = self.kept(path, s)?;
+        let mut guard = self.engine.lock().ok()?;
+        let Engine { graph, pipeline, .. } = &mut *guard;
+        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width: Some(full_width) });
         graph.purge();
         out
     }
@@ -187,7 +220,7 @@ impl Measurer {
     pub fn reduced<T>(&self, path: &str, s: &PipelineSettings, side: f64, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
         let d = (self.decode)(Path::new(path), s).ok()?;
         let mut guard = self.engine.lock().ok()?;
-        let (graph, pipeline) = &mut *guard;
+        let Engine { graph, pipeline, .. } = &mut *guard;
         let uploaded = graph.upload(d.width, d.height, &d.pixels).ok()?;
         let full_width = Some(d.full_width);
         let long = f64::from(d.width.max(d.height));

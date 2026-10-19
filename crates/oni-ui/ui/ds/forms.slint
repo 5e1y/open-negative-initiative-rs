@@ -168,10 +168,13 @@ export component PopoverPanel inherits Rectangle {
     }
 }
 
-// A popover anchored under the control that opened it, closed by a click outside.
+// A popover anchored under the control that opened it, closed by a click outside. Sized as its
+// panel: unsized, its content is hit at another width than drawn and a tab picks its neighbour.
 export component Popover inherits PopupWindow {
     close-policy: close-on-click-outside;
-    PopoverPanel {
+    width: panel.width;
+    height: panel.height;
+    panel := PopoverPanel {
         @children
     }
 }
