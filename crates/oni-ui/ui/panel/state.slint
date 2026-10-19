@@ -42,6 +42,7 @@ export global PanelState {
     in-out property <int> encoding;
     in property <bool> encoding-modified;
     callback encoding-picked(int);
+    callback encoding-reset();
     // `FlatFieldBlock`: its mask picker, the sliders acting once a mask is chosen.
     in property <bool> monochrome;
     in property <string> mask-title;

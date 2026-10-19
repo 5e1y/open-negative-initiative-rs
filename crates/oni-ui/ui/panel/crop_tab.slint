@@ -9,6 +9,10 @@ export component CropPane inherits Pane {
         title: "Crop";
         help: "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does.";
         separated: false;
+        // All of the geometry but the measuring window, which has its own reset.
+        block: 0;
+        modified: Framing.modified;
+        reset(b) => { Framing.act("reset-crop"); }
         HorizontalLayout {
             spacing: Space.s;
             Button { text: "Copy"; help: "Copies this photo's crop."; clicked => { Framing.act("copy-framing"); } }

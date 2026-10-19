@@ -92,6 +92,8 @@ impl Ctl {
             }
         });
         let p = me.clone();
+        panel.on_encoding_reset(move || p.write_settings(|s| s.source_encoding = None));
+        let p = me.clone();
         panel.on_flat_field_toggled(move |on| p.write_settings(|s| s.flat_field = toggled(&s.flat_field, on)));
         let p = me.clone();
         panel.on_mask_chosen(move |i| p.mask_chosen(usize::try_from(i).ok()));

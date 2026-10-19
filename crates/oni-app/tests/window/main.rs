@@ -21,6 +21,7 @@ mod keycap;
 mod launch;
 mod masks;
 mod navigator;
+mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
 mod prepare;
@@ -69,6 +70,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
+    ("panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset", panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset),
+    ("panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window", panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window),
     ("paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled", paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled),
     ("phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame", phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),

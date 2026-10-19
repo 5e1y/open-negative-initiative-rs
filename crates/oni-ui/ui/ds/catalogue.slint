@@ -61,6 +61,13 @@ component Demo inherits Slider {
     scroll(f, dx, dy, s, fine) => { false }
 }
 
+// A switch holding its own state, where the screens' switches read their owner's.
+component DemoToggle inherits HorizontalLayout {
+    in property <string> label;
+    in-out property <bool> on;
+    Toggle { label: root.label; on: root.on; toggled(v) => { root.on = v; } }
+}
+
 export component Catalogue inherits AppWindow {
     title: "ONI Design System";
     preferred-width: ShellStyle.min-width + ShellStyle.panel-width;
@@ -190,8 +197,8 @@ export component Catalogue inherits AppWindow {
                         swatches: PlotInkStyle.bands;
                         marked: [false, true, false, false, false, false, false, false];
                     }
-                    LabelledRow { label: "Toggle off"; Toggle { label: "off"; } }
-                    LabelledRow { label: "Toggle on"; Toggle { label: "on"; on: true; } }
+                    LabelledRow { label: "Toggle off"; DemoToggle { label: "off"; } }
+                    LabelledRow { label: "Toggle on"; DemoToggle { label: "on"; on: true; } }
                     LabelledRow { label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
                 }
                 Group {
