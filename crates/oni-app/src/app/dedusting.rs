@@ -34,7 +34,6 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let painting = self.painting();
         let frame = self.image_frame(false);
-        let caches = crate::patches::caches();
         let (rows, marks, radius, stroke, rendered, traces, lines) = {
             let mut s = self.state.borrow_mut();
             let corrections = s.store.settings().corrections.clone();
@@ -45,12 +44,12 @@ impl Ctl {
                     s.next_number += 1;
                 }
             }
-            let healing = s.healing.is_some() && s.healing.as_deref() == s.open_path();
+            let healing = s.open_path().is_some_and(|p| s.healing.contains(p));
             let rows: Vec<crate::CorrectionRow> = corrections
                 .iter()
                 .map(|c| crate::CorrectionRow {
                     label: s.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
-                    pending: healing && !crate::patches::file(&caches, c.id).exists(),
+                    pending: healing && !s.patched.contains(&c.id) && !s.unhealable.contains(&c.id),
                     fallback: s.fallback.contains(&c.id),
                 })
                 .collect();
@@ -95,7 +94,9 @@ impl Ctl {
         let text: SharedString = format!("{radius:.0} px").into();
         d.set_readout(text.clone());
         d.set_value_text(text);
-        d.set_rows(ModelRc::new(VecModel::from(rows)));
+        if let Some(rows) = renewed(&d.get_rows(), rows) {
+            d.set_rows(rows);
+        }
         let c = w.global::<Canvas>();
         c.set_painting(painting);
         // `strokeLineWidth`: the radius in full-resolution pixels as a width on the canvas.
@@ -119,7 +120,9 @@ impl Ctl {
             .into_iter()
             .map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 })
             .collect();
-        c.set_marks(ModelRc::new(VecModel::from(marks)));
+        if let Some(marks) = renewed(&c.get_marks(), marks) {
+            c.set_marks(marks);
+        }
         let path = |points: &[(f64, f64)], f: (f64, f64, f64, f64)| {
             let mut out = String::new();
             for (i, p) in points.iter().enumerate() {
@@ -140,7 +143,9 @@ impl Ctl {
             ),
             _ => (Vec::new(), String::new()),
         };
-        c.set_source_shapes(ModelRc::new(VecModel::from(shapes)));
+        if let Some(shapes) = renewed(&c.get_source_shapes(), shapes) {
+            c.set_source_shapes(shapes);
+        }
         c.set_source_lines(line_commands.into());
         c.set_source_line_width(1.5);
     }
@@ -205,23 +210,34 @@ impl Ctl {
         if let Ok(mut e) = self.engine.lock() {
             e.forget_patch(gone.id);
         }
-        self.state.borrow_mut().fallback.remove(&gone.id);
+        {
+            let mut s = self.state.borrow_mut();
+            s.fallback.remove(&gone.id);
+            s.patched.remove(&gone.id);
+        }
         self.write(Command::Write(Box::new(next)));
     }
 
-    /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the default.
+    /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the
+    /// default, shown at once rather than on release.
     pub(super) fn brush_press(&self) -> bool {
-        let mut s = self.state.borrow_mut();
-        let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < system::double_click());
-        s.brush_pressed_at = Some(Instant::now());
+        let double = {
+            let mut s = self.state.borrow_mut();
+            let double = s.brush_pressed_at.is_some_and(|t| t.elapsed() < system::double_click());
+            s.brush_pressed_at = Some(Instant::now());
+            if double {
+                s.brush = oni_settings::frame::Correction::DEFAULT_RADIUS as f32;
+                s.brush_start = None;
+            } else {
+                let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+                s.brush_start = Some(((f64::from(s.brush) - low) / (high - low)) as f32);
+            }
+            double
+        };
         if double {
-            s.brush = oni_settings::frame::Correction::DEFAULT_RADIUS as f32;
-            s.brush_start = None;
-            return true;
+            self.publish_dedust();
         }
-        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
-        s.brush_start = Some(((f64::from(s.brush) - low) / (high - low)) as f32);
-        false
+        double
     }
 
     pub(super) fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
@@ -285,5 +301,49 @@ impl Ctl {
             self.state.borrow_mut().store.release();
             self.publish(false);
         }
+    }
+}
+
+impl State {
+    /// A correction of the open frame with no patch on disk nor a failed generation; a patch seen
+    /// once is not looked for again, so a notch stats no file.
+    pub(super) fn unhealed(&mut self) -> bool {
+        let lacking: Vec<oni_settings::id::Id> = self
+            .store
+            .settings()
+            .corrections
+            .iter()
+            .filter(|c| !c.stroke.is_empty() && !self.patched.contains(&c.id) && !self.unhealable.contains(&c.id))
+            .map(|c| c.id)
+            .collect();
+        let mut caches = None;
+        for id in lacking {
+            if !crate::patches::file(caches.get_or_insert_with(crate::patches::caches), id).exists() {
+                return true;
+            }
+            self.patched.insert(id);
+        }
+        false
+    }
+}
+
+/// `items` as a new model unless `model` holds them already, so a repeater is not rebuilt on a notch.
+fn renewed<T: Clone + PartialEq + 'static>(model: &ModelRc<T>, items: Vec<T>) -> Option<ModelRc<T>> {
+    let same = model.row_count() == items.len() && items.iter().enumerate().all(|(i, item)| model.row_data(i).as_ref() == Some(item));
+    (!same).then(|| ModelRc::new(VecModel::from(items)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::renewed;
+    use slint::{Model, ModelRc, VecModel};
+
+    #[test]
+    fn a_model_holding_the_items_is_kept_and_another_renewed() {
+        let model = ModelRc::new(VecModel::from(vec![1, 2]));
+        assert!(renewed(&model, vec![1, 2]).is_none());
+        let next = renewed(&model, vec![1, 3]).expect("twin: a changed item renews the model");
+        assert_eq!(next.row_data(1), Some(3));
+        assert!(renewed(&model, vec![1]).is_some(), "twin: a shorter list renews it");
     }
 }

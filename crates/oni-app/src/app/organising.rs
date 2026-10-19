@@ -79,6 +79,14 @@ struct Roll {
     first: Option<Entry>,
 }
 
+/// The lists of the library column a click lands on.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Column {
+    Archive,
+    Projects,
+    Trash,
+}
+
 #[derive(Default)]
 pub struct Organising {
     pub projects_surface: bool,
@@ -98,6 +106,8 @@ pub struct Organising {
     menu_lists: (Vec<(Id, String)>, Vec<(Id, String)>),
     press: Option<(f32, f32)>,
     reorder: Option<Reorder>,
+    /// The library column's last row clicked, its list and when, which tells a double click's second.
+    row_click: Option<(Column, usize, Instant)>,
     /// What the sidebar's fields were last loaded from, so a refresh never overwrites typing.
     info_loaded: Option<String>,
 }
@@ -128,6 +138,15 @@ impl State {
 
     fn shown_picks_mut(&mut self) -> &mut Picks {
         if self.trash_shown() { &mut self.trash_picks } else { &mut self.picks }
+    }
+
+    /// Slint sends a double click as two clicks then `double-clicked`: the second click, on the row
+    /// the first hit within the interval, is the double click's own and does nothing by itself.
+    pub(super) fn second_click(&mut self, column: Column, row: usize) -> bool {
+        let now = Instant::now();
+        let second = self.org.row_click.is_some_and(|(c, r, at)| (c, r) == (column, row) && now - at < system::double_click());
+        self.org.row_click = if second { None } else { Some((column, row, now)) };
+        second
     }
 
     /// `case .library where trashOpen`: the trash is the archive's, never the projects'.

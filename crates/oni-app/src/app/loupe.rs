@@ -77,9 +77,10 @@ impl Ctl {
                         band.set_source(Image::default());
                     }
                     let decoded = s.negative.as_ref().is_some_and(|(p, _)| *p == path);
-                    if decoded && s.building_full.as_deref() != Some(path.as_str()) {
+                    // A frame whose decode failed is not asked again on every pulse.
+                    if decoded && s.building_full.as_deref() != Some(path.as_str()) && !s.full_failed.contains(&path) {
                         s.building_full = Some(path.clone());
-                        build = Some((path, Reading::of(&settings)));
+                        build = Some((path, Reading::of(s.store.settings())));
                     }
                     None
                 }

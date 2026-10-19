@@ -88,10 +88,13 @@ impl Ctl {
         }
     }
 
-    /// `load(_:)` then `mode = .editor`.
+    /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`.
     pub(super) fn open_in_editor(self: &Rc<Self>, path: &str) {
+        let reopened = self.state.borrow().open.as_deref() == Some(path);
         self.state.borrow_mut().designate(path);
-        self.open_photo(path);
+        if !reopened {
+            self.open_photo(path);
+        }
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }

@@ -57,6 +57,8 @@ export global Library {
     in property <length> tree-content-height;
     // The column's scroll, both ways: Rust centres the selection, the wheel moves it.
     in-out property <length> tree-viewport-y;
+    // The column created at its size, then each later size; only its creation re-centres it.
+    callback tree-shown(length, length);
     callback tree-resized(length, length);
     callback tree-layout-next();
     callback tree-centre();

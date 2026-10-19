@@ -4,7 +4,7 @@
 use super::{Ctl, Picker, Shower, with_shell};
 use crate::flat_fields::{self, Entry, Failure, Picture};
 use crate::render::{self, Shared};
-use crate::{App, Canvas, MaskDialog, PanelState};
+use crate::{App, MaskDialog, PanelState};
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
 use oni_settings::sidecar;
@@ -234,8 +234,8 @@ impl Ctl {
             None => {
                 if let Some(w) = self.window() {
                     w.global::<App>().set_gallery(true);
-                    w.global::<Canvas>().set_frame(slint::Image::default());
                 }
+                self.blank_canvas();
                 self.publish(true);
                 self.publish_tiles();
             }
