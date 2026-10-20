@@ -1480,5 +1480,12 @@
     "title": "The Frontier is the ONI machine's render with the Lab's look in place of ONI's",
     "status": "done",
     "detail": "The owner's words: duplicate the Scanner face's ONI render and replace only its look table by the Lab's. Pro's print is no longer bypassed: the Frontier runs the ONI machine's conversion whole (print curve at rest included) and its look table reads that render in display code where ONI's reads its square root."
+  },
+  {
+    "id": 203,
+    "type": "revert",
+    "title": "Back to 8fed395 at the owner's word",
+    "status": "done",
+    "detail": "The owner asked to stop and return to the version running before raw0016's burnt whites were reported, the only one that still suited them: the tree is set back to 8fed395 (#199), which undoes #200 to #202 (the Frontier on the ONI machine's path, the Lab's curve removed, Frontier 2's plumbing); the uncommitted work (Frontier 2's paper from Fujifilm's datasheets, the Lab's CurveSet) is kept aside as a patch, outside the repository."
   }
 ]

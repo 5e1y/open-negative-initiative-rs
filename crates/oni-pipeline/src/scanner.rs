@@ -135,7 +135,7 @@ impl Machine {
 
 /// `ScannerRender.renders`: the face, the machine; the resources ship inside the crate.
 pub fn renders(s: &PipelineSettings) -> bool {
-    s.face == Face::Scanner && s.scanner_machine == ScannerMachine::Frontier && s.scanner_print && crate::frontier_table::current().is_none()
+    s.face == Face::Scanner && s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none()
 }
 
 /// Where the table prints its grey black (under 0.3 %) and white (over 98.5 %), as green density along
@@ -231,10 +231,9 @@ pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
 /// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's
 /// filters and the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    // The Frontier reads ONI's inversion, window, print and clicks alike, its look in place of ONI's;
-    // Frontier 2 alone prints from density.
-    let frontier = s.scanner_machine == ScannerMachine::Frontier && (!s.scanner_print || crate::frontier_table::current().is_some());
-    if s.face != Face::Scanner || (s.scanner_machine != ScannerMachine::Oni && !frontier) {
+    // A hand's Frontier look reads ONI's inversion, as ONI's own look does.
+    let hand_frontier = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_some();
+    if s.face != Face::Scanner || (s.scanner_machine != ScannerMachine::Oni && !hand_frontier) {
         return None;
     }
     let mut out = s.as_scanner();
@@ -368,13 +367,8 @@ mod tests {
         let oni = on_oni_machine(&s).unwrap();
         assert_eq!((oni.print.exposure, oni.print.contrast, oni.density), (0.0, 0.2, 0.0));
         assert!(oni.gains.stops[0] < 0.0, "more density is less light on a negative");
-        // The Frontier takes the same conversion, its print bypassed for its own look.
+        // Twin: the Frontier machine and Pro both leave the settings alone.
         s.scanner_machine = ScannerMachine::Frontier;
-        let frontier = on_oni_machine(&s).unwrap();
-        assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, ..oni.clone() }, "the ONI machine's conversion whole");
-        // Twin: Frontier 2 prints from density, and Pro leaves the settings alone.
-        assert!(on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).is_none());
-        assert!(renders(&PipelineSettings { scanner_print: true, ..s.clone() }));
-        assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
+        assert!(on_oni_machine(&s).is_none() && renders(&s));
     }
 }

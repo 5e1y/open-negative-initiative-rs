@@ -14,6 +14,9 @@ use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
+#[path = "look_lab_paper.rs"]
+mod paper;
+
 /// The sliders, numbered as the panel names them.
 pub const SLIDERS: usize = 17;
 
@@ -63,6 +66,7 @@ pub fn machine(v: LabValue) -> f32 {
         LabValue::GreyA(i) => f.grey_a[i],
         LabValue::GreyB(i) => f.grey_b[i],
         LabValue::Character => f.character,
+        LabValue::Paper(_) => 0.0,
     }) as f32
 }
 
@@ -98,6 +102,9 @@ fn fraction(v: LabValue, effect: f32) -> f32 {
     track::position(effect, &(low..=high), None)
 }
 
+/// The curve's block, after colours, dyes, paper, greys and character.
+pub const CURVE: usize = 5;
+
 /// Which of colours, dyes, paper, greys and character a slider belongs to.
 fn section(i: usize) -> usize {
     match i {
@@ -117,6 +124,9 @@ pub fn rested(lab: &FrontierLab, section: usize) -> FrontierLab {
             let all = if matches!(i, 0..=2) { SECTORS } else if matches!(i, 14 | 15) { GREYS } else { 1 };
             (0..all).for_each(|k| out.set(value(i, k, k), 0.0));
         }
+    }
+    if section == CURVE {
+        out.paper = Default::default();
     }
     out
 }
@@ -139,7 +149,7 @@ impl Ctl {
         let fractions: Vec<f32> = values.iter().map(|v| fraction(*v, shown(*v, &lab))).collect();
         let readouts: Vec<SharedString> = values.iter().map(|v| readout(*v, shown(*v, &lab)).into()).collect();
         let marked = |n: usize, at: fn(usize) -> [LabValue; 3]| -> Vec<bool> { (0..n).map(|k| at(k).iter().any(|v| lab.get(*v) != 0.0)).collect() };
-        let modified: Vec<bool> = (0..5).map(|s| rested(&lab, s) != lab).collect();
+        let modified: Vec<bool> = (0..=CURVE).map(|s| rested(&lab, s) != lab).collect();
         g.set_fractions(ModelRc::new(VecModel::from(fractions)));
         g.set_readouts(ModelRc::new(VecModel::from(readouts)));
         g.set_sector_marked(ModelRc::new(VecModel::from(marked(SECTORS, |k| [LabValue::Hue(k), LabValue::Twist(k), LabValue::Chroma(k)]))));
@@ -147,6 +157,7 @@ impl Ctl {
         g.set_modified(ModelRc::new(VecModel::from(modified)));
         g.set_sector(sector as i32);
         g.set_tone(grey as i32);
+        self.publish_look_lab_paper(&lab);
     }
 
     /// One edit of the frame's Lab, written as the whole settings like the editors write theirs.
@@ -247,6 +258,7 @@ impl Ctl {
     pub(in crate::app) fn wire_look_lab(me: &Rc<Ctl>, window: &MainWindow) {
         let g = window.global::<LookLab>();
         g.set_swatches(ModelRc::new(VecModel::from((0..SECTORS).map(swatch).collect::<Vec<_>>())));
+        Ctl::wire_look_lab_paper(me, window);
         let slider = |i: i32| usize::try_from(i).ok().filter(|i| *i < SLIDERS);
         let p = me.clone();
         g.on_press(move |i, _fine| slider(i).is_some_and(|i| p.look_lab_press(i)));

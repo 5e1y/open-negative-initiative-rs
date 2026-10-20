@@ -1,6 +1,6 @@
 // The Frontier Look Lab: the measured table's named values, each slider opening on the machine's own
 // effect over a zero that is no effect, so the hand sees what each value does to the render.
-import { Section, Tabs, Slider, SliderFill, PlotInkStyle, ScannerStyle, Space } from "../ds/ds.slint";
+import { Section, Tabs, Slider, SliderFill, PlotInkStyle, ScannerStyle, Space, Plot, PlotLine, PlotDot, AxisCaptions } from "../ds/ds.slint";
 import { PanelState } from "state.slint";
 
 export global LookLab {
@@ -12,7 +12,7 @@ export global LookLab {
     in property <[bool]> sector-marked;
     in property <[bool]> tone-marked;
     in property <[color]> swatches;
-    // Colours, dyes, paper, greys, character.
+    // Colours, dyes, paper, greys, character, curve.
     in property <[bool]> modified;
     callback pick-sector(int);
     callback pick-tone(int);
@@ -22,6 +22,11 @@ export global LookLab {
     callback release(int);
     callback scroll(int, length, length, length, bool) -> bool;
     callback step(int, int);
+    // The paper curve: the machine's, the neutral one and the frame's, its nodes dragged up and down.
+    in property <[PlotLine]> paper-lines;
+    in property <[PlotDot]> paper-dots;
+    callback paper-resized(length, length);
+    callback paper-pointer(int, length, length);
 }
 
 component LabSlider inherits Slider {
@@ -62,6 +67,20 @@ export component LookLabBlocks inherits VerticalLayout {
         LabSlider { field: 1; label: "Twist"; low: LookLab.swatches[mod(root.s + 11, 12)]; high: LookLab.swatches[mod(root.s + 1, 12)]; }
         LabSlider { field: 2; label: "Chroma"; high: LookLab.swatches[root.s]; }
         LabSlider { field: 3; label: "Saturation by lightness"; }
+    }
+    LabSection {
+        title: "Lab Curve";
+        block: 5;
+        help: "The Frontier prints on a straight paper, in grey, from the negative's blacks on the left to its whites on the right; this curve bends it. The machine's measured paper is the faint line. Drag a point up or down; a double click puts it back on the straight line.";
+        Plot {
+            plot: 7;
+            height: self.width * 3 / 4;
+            lines: LookLab.paper-lines;
+            dots: LookLab.paper-dots;
+            resized(p, w, h) => { LookLab.paper-resized(w, h); }
+            pointer(p, kind, x, y, alt) => { LookLab.paper-pointer(kind, x, y); }
+        }
+        AxisCaptions { start: "Blacks"; end: "Whites"; }
     }
     LabSection {
         title: "Lab Dyes";
