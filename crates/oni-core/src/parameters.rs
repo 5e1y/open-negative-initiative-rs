@@ -182,7 +182,7 @@ pub fn all() -> &'static [Row] {
             },
             Row {
                 id: "scanner",
-                covers: &["scanner", "scannerFinish", "scannerMachine", "frontierLab"],
+                covers: &["scanner", "scannerFinish", "scannerMachine", "scannerProto", "frontierLab"],
                 sliders: vec![
                     slider("scanner.d", carry!(scanner.d)),
                     slider("scanner.c", carry!(scanner.c)),
@@ -193,7 +193,7 @@ pub fn all() -> &'static [Row] {
                 carry: |from, to| {
                     to.scanner = from.scanner;
                     (to.scanner_finish, to.scanner_machine) = (from.scanner_finish.clone(), from.scanner_machine);
-                    to.frontier_lab = from.frontier_lab;
+                    (to.frontier_lab, to.scanner_proto) = (from.frontier_lab, from.scanner_proto);
                 },
             },
             // Travels with a preset, so one saved off the scanner opens on it.

@@ -1403,5 +1403,12 @@
     "title": "The Frontier unmixes at the frame's own Dye Separation, not a fixed 0.6",
     "status": "done",
     "detail": "The owner asked for the Frontier-mode mapping faults the study of the synthetic checker found to be fixed. Measured in the study's harness: the machine's fixed 0.6 dose unmixes a crosstalk-free negative it should leave alone; reading the frame's own Dye Separation (0.6 at rest, so every frame at rest renders as before) brings the chart's p90 from 4.97 to 3.53 against the virtual Frontier with the grey anchored. The chart's large median gap (9.9) is its roll median sitting 0.11 D above its grey, a click under rule 1, not code. The scale and pedestal changes help only together and with the roll measured on the same pedestal-free axis, on scanner TIFFs only: not taken."
+  },
+  {
+    "id": 191,
+    "type": "feature",
+    "title": "Proto, a third Scanner machine: ONI's inversion then the virtual Frontier's look fitted on the synthetic checker",
+    "status": "done",
+    "detail": "The owner's call after the checker study: the look is what the virtual Frontier does after a faithful inversion. The owner converted the synthetic negative in ONI; a 33³ table from that export (display sRGB code) to the virtual Frontier's Base render was fitted on 2 235 pairs (the 507 patches and both gamut bands), greys weighted onto the Frontier's grey curve and monotone, smoothing chosen by 5-fold cross-validation: median ΔE 0.24 / p90 1.29 on held-out patches, 0.12 over the whole chart against 13.5 for the export alone. The worst patches are saturated reds and magentas that ONI's export already clips to the sRGB edge. The ONI machine's path reads it in plain display code (resources/scanner/proto.cube). Stored as `scannerProto` beside `scannerMachine: oni`, so the Swift app reads a Proto frame as ONI; picking ONI or Frontier leaves Proto; the phone's protocol keeps its two machines."
   }
 ]

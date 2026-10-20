@@ -327,7 +327,8 @@ fn scanned(s: &PipelineSettings, scan: Scan) -> PipelineSettings {
                 *value = 0.0;
             }
         }
-        Scan::Machine(machine) => out.scanner_machine = machine_of(machine),
+        // A machine picked leaves Proto, which only the window's third tab sets.
+        Scan::Machine(machine) => (out.scanner_machine, out.scanner_proto) = (machine_of(machine), false),
         Scan::Walk { .. } => {}
     }
     out

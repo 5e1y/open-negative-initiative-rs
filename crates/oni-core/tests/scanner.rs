@@ -178,3 +178,22 @@ fn the_bar_s_reset_clears_the_edit_of_the_face_it_is_pressed_on() {
     assert_eq!((store.settings().scanner.d, store.settings().secret_sauce), (3, 0.0));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// Proto rides on the ONI machine: its sidecar names the machine `oni`, so the Swift app reads ONI,
+/// and either machine picked leaves it.
+#[test]
+fn proto_is_written_apart_from_the_machine_and_a_machine_picked_leaves_it() {
+    let (mut store, paths, dir) = fresh("proto", 1);
+    let proto = PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner_proto: true, ..store.settings().clone() };
+    store.apply(Command::Write(Box::new(proto)));
+    store.flush();
+    let text = std::fs::read_to_string(oni_settings::sidecar::url_for(Path::new(&paths[0]))).unwrap();
+    assert!(text.contains("\"scannerProto\" : true") && text.contains("\"scannerMachine\" : \"oni\""), "{text}");
+    store.apply(Command::Scan(Scan::Machine(Machine::Frontier)));
+    assert!(!store.settings().scanner_proto && store.settings().scanner_machine == ScannerMachine::Frontier);
+    store.flush();
+    // Twin: off Proto the key is not written, so a frame never on it keeps the Swift app's document.
+    let text = std::fs::read_to_string(oni_settings::sidecar::url_for(Path::new(&paths[0]))).unwrap();
+    assert!(!text.contains("scannerProto"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

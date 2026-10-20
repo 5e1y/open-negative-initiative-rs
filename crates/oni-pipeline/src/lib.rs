@@ -9,6 +9,7 @@ pub mod frontier_table;
 pub mod geometry;
 pub mod look_lab;
 pub mod oni_look;
+pub mod proto_look;
 pub mod resident;
 pub mod scanner;
 pub mod stages;
@@ -114,7 +115,7 @@ impl Pipeline {
             return self.finishing(graph, scanned, &s.as_scanner(), false, scale, reference, request.measuring);
         }
         let out = framed.then(stages::stage47(&conversion::stage47(s)));
-        let looked = if oni.is_some() { self.oni_finish(graph, out, s, settings.scanner_machine)? } else { out };
+        let looked = if oni.is_some() { self.oni_finish(graph, out, s, settings)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, request.measuring)
     }
 
@@ -251,10 +252,12 @@ impl Pipeline {
         Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, s.scanner_finish.contrast), &[warmth]))
     }
 
-    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
-    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, machine: ScannerMachine) -> Result<Image> {
-        let hand = (machine == ScannerMachine::Frontier).then(frontier_table::current).flatten();
-        let code = image.then(stages::scanner_encode(if hand.is_some() { 1.0 } else { oni_look::ROOT }));
+    /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look; the
+    /// hand's Frontier and Proto read plain display code, ONI's look its square root.
+    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
+        let hand = (frame.scanner_machine == ScannerMachine::Frontier).then(frontier_table::current).flatten();
+        let proto = hand.is_none() && frame.scanner_proto;
+        let code = image.then(stages::scanner_encode(if hand.is_some() || proto { 1.0 } else { oni_look::ROOT }));
         let (table, n) = match hand {
             Some((generation, cube)) => {
                 if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
@@ -263,6 +266,7 @@ impl Pipeline {
                 let (_, source, n) = self.hand.as_ref().expect("uploaded above");
                 (Image::new(source), *n)
             }
+            None if proto => self.cube(graph, "proto", &proto_look::CUBE)?,
             None => self.cube(graph, "oni-look", &oni_look::CUBE)?,
         };
         let looked = code.then_reading(stages::color_cube(n), &[table]);
