@@ -1326,5 +1326,12 @@
     "title": "Swift against LibRaw per camera: the hue gap depends on the hardware",
     "status": "done",
     "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged."
+  },
+  {
+    "id": 181,
+    "type": "research",
+    "title": "Sensor colours: the decode without the camera matrix, prototyped and measured",
+    "status": "done",
+    "detail": "oni-decode gains Colours (Matrix, the app's only path; Sensor, the 5000 K multipliers as a diagonal; SensorUnbalanced) and decode_in, tested with twins; oni-measure/examples/sensor_colours re-measures a roll as Prepare the Roll does in each colours (base pick found again in the rebate band) and renders both faces; scripts/sensor-colours compares with the Swift app's --render. docs/research/sensor-colours.md: neutrals closer to Swift on the S1R (2.9 to 1.7 dE x100), about equal on the Z f; foliage yellower and duller (-35 deg, x0.70), sky chroma x0.51, skin redder; blacks unchanged; fewer pixels outside sRGB; the 5000 K diagonal chosen over no balance (same once prepared, same rest look). Proposed: a Settings default for new rolls and a per-roll choice in Prepare the Roll, the transition skipping sensor rolls. No app behaviour changed."
   }
 ]

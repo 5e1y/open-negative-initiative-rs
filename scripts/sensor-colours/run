@@ -1,0 +1,39 @@
+#!/bin/zsh
+# Each roll copy (RAWs and Swift sidecars) measured again and rendered in the decode's three colours beside
+# the Swift app's own render, into $1, the strips into $2.
+set -e
+WORK="${1:?usage: run <work> <strips> <zf roll> <zf frames,> <s1r roll> <s1r frames,>}"
+STRIPS="${2:?}"
+REPO="${0:A:h:h:h}"
+SWIFT="${ONI_SWIFT_BIN:-$HOME/Documents/open-negative-initiative/build/Open Negative Initiative.app/Contents/MacOS/OpenNegative}"
+TC="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+SDK="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+mkdir -p "$WORK/apple"
+"$TC/swiftc" -O -sdk "$SDK" "$REPO/scripts/decoder-gap/apple-decode.swift" -o "$WORK/apple/apple-decode"
+for cam roll frames in zf "$3" "$4" s1r "$5" "$6"; do
+    list=(${(s:,:)frames})
+    for face in pro frontier; do
+        D="$WORK/swift/$cam/$face"
+        mkdir -p "$D/sources"
+        : >"$D/list.txt"
+        for f in $list; do
+            cp -c "$roll/$f" "$D/sources/$f"
+            python3 -I -c 'import json, sys
+doc = json.load(open(sys.argv[1]))
+if sys.argv[3] == "pro": doc["settings"]["face"] = "pro"
+else: doc["settings"].update(face="scanner", scannerMachine="frontier")
+json.dump(doc, open(sys.argv[2], "w"), indent=2)' "$roll/$f.json" "$D/sources/$f.json" $face
+            echo "$D/sources/$f" >>"$D/list.txt"
+        done
+        "$SWIFT" --render "$D/list.txt" "$D/render" 1000
+        i=0
+        for f in $list; do
+            mv "$D/render/$(printf %05d $i).f32" "$D/$f.f32"
+            i=$((i + 1))
+        done
+        rm -rf "$D/sources" "$D/render"
+    done
+    "$WORK/apple/apple-decode" "$WORK/apple" 8 0 ${list/#/$roll/}
+    (cd "$REPO" && cargo run -q -p oni-measure --example sensor_colours -- "$roll" "$WORK/rust/$cam" $list)
+done
+python3 -P "${0:A:h}/analyse.py" "$WORK" "$STRIPS" | tee "$WORK/analysis.txt"

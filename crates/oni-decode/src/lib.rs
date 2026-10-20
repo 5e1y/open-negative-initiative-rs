@@ -153,9 +153,22 @@ fn bradford(from: [f64; 3], to: [f64; 3]) -> M3 {
     )
 }
 
+/// How a RAW's channels reach the working space: LibRaw demosaics on the same multipliers in each,
+/// only the matrix after it differs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Colours {
+    /// Through the camera's matrix to XYZ, Bradford to D65, then Rec. 2020.
+    #[default]
+    Matrix,
+    /// The sensor's own channels, each scaled by the 5000 K balance alone: no channel feeds another.
+    Sensor,
+    /// The sensor's own channels as the photosites counted them, no balance at all.
+    SensorUnbalanced,
+}
+
 /// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
 /// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
-fn conversion(cam_xyz: &M3, stops: f64) -> Option<Conversion> {
+fn converted_by(cam_xyz: &M3, stops: f64, colours: Colours) -> Option<Conversion> {
     let white = neutral_xyz();
     let n = apply(cam_xyz, white);
     if n.iter().any(|v| !v.is_finite() || *v <= 0.0) {
@@ -169,7 +182,14 @@ fn conversion(cam_xyz: &M3, stops: f64) -> Option<Conversion> {
     let undo = [0, 1, 2].map(|c| hi * n[c] / lo * stops.exp2());
     let to_2020 = mul(&rec2020_from_xyz(), &bradford(white, xyz(D65_XY)));
     let m = mul(&to_2020, &inverse(cam_xyz)?);
-    let matrix = [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32));
+    let diagonal = |gain: [f64; 3]| [0, 1, 2].map(|r| [0, 1, 2].map(|c| if r == c { gain[c] as f32 } else { 0.0 }));
+    let matrix = match colours {
+        Colours::Matrix => [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),
+        // The neutral reads (1, 1, 1) at the white level, as through the matrix, so grey keeps its level.
+        Colours::Sensor => diagonal([hi / lo * stops.exp2(); 3]),
+        // The most sensitive channel reads 1 at the white level; the others read their share of it.
+        Colours::SensorUnbalanced => diagonal(undo.map(|u| u / hi)),
+    };
     Some(Conversion {
         mul: n.map(|v| (1.0 / v) as f32),
         matrix,
@@ -257,6 +277,11 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
 /// `decode` for a copy no longer than `side`: read at half size, a sensor pixel per 2x2 block with
 /// no demosaic, when the sensor is twice as long; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
+    decode_in(path, exposure_gain, side, Colours::Matrix)
+}
+
+/// `decode_for` in the given colours.
+pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours) -> Result<(Linear, usize), DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
     let min_side = c_int::try_from(side).unwrap_or(0);
@@ -276,7 +301,7 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
     let d = &s.0;
     let cam_xyz: M3 = [0, 1, 2].map(|r| d.cam_xyz[r].map(f64::from));
     let conv = (d.colors == 3)
-        .then(|| conversion(&cam_xyz, baseline(d.baseline_exposure)))
+        .then(|| converted_by(&cam_xyz, baseline(d.baseline_exposure), colours))
         .flatten();
     let conv = conv.ok_or(DecodeError(NO_COLOUR_MATRIX))?;
     let rc = unsafe { oni_process(&mut s.0, conv.mul.as_ptr()) };
@@ -327,7 +352,7 @@ mod tests {
 
     #[test]
     fn the_5000_k_white_reads_neutral_at_the_baseline() {
-        let conv = conversion(&Z_F, DEFAULT_BASELINE_EV).unwrap();
+        let conv = converted_by(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix).unwrap();
         let level = DEFAULT_BASELINE_EV.exp2();
         let out = rendered(&conv, neutral_xyz());
         for v in out {
@@ -390,10 +415,53 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
     }
 
+    /// The camera channels LibRaw hands out for XYZ `w` scaled so its brightest channel sits at `top`.
+    fn handed(conv: &Conversion, w: [f64; 3], top: f64) -> [f64; 3] {
+        let n = apply(&Z_F, w);
+        let hi = n.iter().cloned().fold(0.0, f64::max);
+        let most = conv.mul.iter().cloned().fold(0.0, f32::max) as f64;
+        let o = [0, 1, 2].map(|c| n[c] / hi * top * conv.mul[c] as f64 / most);
+        apply(&conv.matrix.map(|r| r.map(f64::from)), o)
+    }
+
+    #[test]
+    fn the_sensor_s_channels_mix_nothing_and_its_neutral_keeps_the_matrix_s_level() {
+        let stops = DEFAULT_BASELINE_EV;
+        let (matrix, sensor) = (converted_by(&Z_F, stops, Colours::Matrix).unwrap(), converted_by(&Z_F, stops, Colours::Sensor).unwrap());
+        assert_eq!(sensor.mul, matrix.mul, "LibRaw demosaics on the same multipliers");
+        for r in 0..3 {
+            for c in (0..3).filter(|&c| c != r) {
+                assert_eq!(sensor.matrix[r][c], 0.0, "{:?}", sensor.matrix);
+            }
+        }
+        let (a, b) = (handed(&matrix, neutral_xyz(), 1.0), handed(&sensor, neutral_xyz(), 1.0));
+        for c in 0..3 {
+            assert!((b[c] - stops.exp2()).abs() < 1e-5 && (a[c] - b[c]).abs() < 1e-5, "{a:?} {b:?}");
+        }
+        // Twin: a colour the matrix pushes apart; through it the red leaks into another channel.
+        let red = handed(&matrix, xyz((0.5, 0.3)), 0.5);
+        let red_sensor = handed(&sensor, xyz((0.5, 0.3)), 0.5);
+        assert!(red.iter().zip(red_sensor).any(|(m, s)| (m - s).abs() > 0.05), "{red:?} {red_sensor:?}");
+    }
+
+    #[test]
+    fn the_unbalanced_sensor_reads_the_photosites_share_of_the_white_level() {
+        let conv = converted_by(&Z_F, 0.0, Colours::SensorUnbalanced).unwrap();
+        let n = apply(&Z_F, neutral_xyz());
+        let hi = n.iter().cloned().fold(0.0, f64::max);
+        let out = handed(&conv, neutral_xyz(), 1.0);
+        for c in 0..3 {
+            assert!((out[c] - n[c] / hi).abs() < 1e-5, "{out:?} for {n:?}");
+        }
+        // Twin: unbalanced, the 5000 K neutral is not grey.
+        let spread = out.iter().cloned().fold(0.0, f64::max) - out.iter().cloned().fold(f64::MAX, f64::min);
+        assert!(spread > 0.2, "{out:?}");
+    }
+
     #[test]
     fn a_singular_matrix_is_refused() {
-        assert!(conversion(&[[0.0; 3]; 3], 0.0).is_none());
+        assert!(converted_by(&[[0.0; 3]; 3], 0.0, Colours::Sensor).is_none());
         // Twin: the Z f matrix is accepted.
-        assert!(conversion(&Z_F, 0.0).is_some());
+        assert!(converted_by(&Z_F, 0.0, Colours::Sensor).is_some());
     }
 }

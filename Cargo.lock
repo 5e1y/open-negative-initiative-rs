@@ -4340,6 +4340,7 @@ name = "oni-measure"
 version = "0.1.0"
 dependencies = [
  "oni-core",
+ "oni-decode",
  "oni-fixtures",
  "oni-graph",
  "oni-library",
