@@ -1347,5 +1347,12 @@
     "title": "A roll's row in the tree draws its stock",
     "status": "done",
     "detail": "TreeRowChrome.defaultStock: the stock a hand picked for the roll, else its first photo's mode's generic stock, drawn as its artwork in a slot the size of Swift's mini canister (22 px), so glyphs and canisters share a starting edge. Folders holding no roll keep their glyph."
+  },
+  {
+    "id": 184,
+    "type": "windows",
+    "title": "A stranger phone reads as refused on Windows too",
+    "status": "done",
+    "detail": "Windows CI: the window check's unpaired phone was not refused, as Windows reports a desktop's hang-up during the handshake as an aborted connection, which the phone took for a slow desktop and dialled again. ConnectionAborted now reads as a refusal like a reset or an end of stream; a timeout still dials again (unit test with its twin)."
   }
 ]

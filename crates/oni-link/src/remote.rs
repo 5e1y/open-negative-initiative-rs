@@ -96,11 +96,11 @@ impl Pending {
 }
 
 /// A desktop that hangs up after the handshake refused the phone; one that is slow or cut off did
-/// not, and is dialled again.
+/// not, and is dialled again. Windows reports the same hang-up as an aborted connection.
 fn refusal(error: Error) -> Error {
-    use std::io::ErrorKind::{BrokenPipe, ConnectionReset, UnexpectedEof};
+    use std::io::ErrorKind::{BrokenPipe, ConnectionAborted, ConnectionReset, UnexpectedEof};
     match error {
-        Error::Io(e) if matches!(e.kind(), UnexpectedEof | BrokenPipe | ConnectionReset) => Error::Refused,
+        Error::Io(e) if matches!(e.kind(), UnexpectedEof | BrokenPipe | ConnectionReset | ConnectionAborted) => Error::Refused,
         Error::Io(_) => Error::Unreachable,
         _ => Error::Refused,
     }
@@ -291,5 +291,20 @@ impl Remote {
     /// Where and how to send photos to this desktop, when it receives them.
     pub fn import(&self) -> Option<&Import> {
         self.import.as_ref()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::{Error as Io, ErrorKind};
+
+    #[test]
+    fn a_hang_up_reads_as_a_refusal_on_every_system() {
+        for kind in [ErrorKind::UnexpectedEof, ErrorKind::BrokenPipe, ErrorKind::ConnectionReset, ErrorKind::ConnectionAborted] {
+            assert!(matches!(refusal(Error::Io(Io::from(kind))), Error::Refused), "{kind:?}");
+        }
+        // Twin: a desktop slow to answer is dialled again, never taken for a refusal.
+        assert!(matches!(refusal(Error::Io(Io::from(ErrorKind::TimedOut))), Error::Unreachable));
     }
 }
