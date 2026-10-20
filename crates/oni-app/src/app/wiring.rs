@@ -159,6 +159,7 @@ impl Ctl {
             p.key(&text, control, shift, !(control || meta || shift || option), repeat)
         });
         Ctl::wire_lab(me, window);
+        Ctl::wire_look_lab(me, window);
         Ctl::wire_settings(me, window);
         me.adopt_remembered_face();
         me.adopt_frontier_look();

@@ -6,6 +6,7 @@ import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../e
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, Lab } from "state.slint";
 import { LabBlock, LetterRow, EffectRow, StoreSlider, Block, EditorBlock, Pane } from "parts.slint";
+import { LookLabBlocks } from "look_lab.slint";
 
 export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
@@ -22,6 +23,7 @@ export component ColorPane inherits Pane {
             picked(i) => { Lab.machine-picked(i); }
         }
     }
+    if Lab.shown && Lab.machine == 1: LookLabBlocks { }
     if Lab.shown: LabBlock {
         title: "Density";
         block: 0;

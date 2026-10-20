@@ -208,6 +208,11 @@ That is 73 values. The sector values are seeds until the step 2 refit. Left out 
 
 ## 8. Storage
 
+**As built (#186):** `frontierLab` stores each value's distance from the shipped Frontier set, not the
+value itself, and is written only when an edit moved it. Every slider rests on 0, the measured render
+(the 27³ bake at 0 equals `frontier.cube` within 1e-5), and a refit keeps each edit's meaning. The paper
+curve is not stored until its graph ships. The rest of this section is the original design.
+
 - **Settings**: `PipelineSettings.frontier_lab: Option<FrontierLab>`, serialised as `"frontierLab"`
   (camelCase like every Swift key). Absent, it renders the measured table, as in Swift.
 - **Sidecar keys**: `matrix` [6], `paper` [15], `paperGain` [2], `paperOffset` [2], `hue` [12],

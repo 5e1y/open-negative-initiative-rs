@@ -20,6 +20,7 @@ use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
+use oni_settings::frontier_lab::FrontierLab;
 use oni_settings::{PipelineSettings, ScannerMachine};
 use stages::{Before, DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
 use std::collections::HashMap;
@@ -66,6 +67,8 @@ pub struct Pipeline {
     cubes: HashMap<&'static str, (Source, usize)>,
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
+    /// The frame's Look Lab table and the edits it was baked from.
+    lab: Option<(FrontierLab, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     strokes: Vec<(Vec<[f32; 4]>, Source)>,
 }
@@ -216,6 +219,16 @@ impl Pipeline {
         Ok((Image::new(source), *n))
     }
 
+    /// The frame's edited Frontier, baked and uploaded once per edit.
+    fn lab(&mut self, graph: &mut Graph, edits: &FrontierLab) -> Result<(Image, usize)> {
+        if self.lab.as_ref().is_none_or(|(e, _, _)| e != edits) {
+            let cube = look_lab::edits::table(edits);
+            self.lab = Some((*edits, upload_cube(graph, &cube)?, cube.cube_dimension));
+        }
+        let (_, source, n) = self.lab.as_ref().expect("baked above");
+        Ok((Image::new(source), *n))
+    }
+
     /// The warmth look's move on a rendered code and its share, the code itself at a count of zero.
     fn warmed(&mut self, graph: &mut Graph, code: &Image, count: i64) -> Result<(Image, f32)> {
         let machine = &*scanner::MACHINE;
@@ -228,7 +241,11 @@ impl Pipeline {
     /// `ScannerRender.apply`: the Frontier's table from density, then its warmth look.
     fn frontier(&mut self, graph: &mut Graph, framed: Image, s: &PipelineSettings) -> Result<Image> {
         let density = framed.then(stages::scanner_density(&scanner::density(s)));
-        let (table, n) = self.cube(graph, "frontier", &scanner::MACHINE.render)?;
+        let (table, n) = if s.frontier_lab.is_neutral() {
+            self.cube(graph, "frontier", &scanner::MACHINE.render)?
+        } else {
+            self.lab(graph, &s.frontier_lab)?
+        };
         let code = density.then_reading(stages::color_cube(n), &[table]);
         let (warmth, share) = self.warmed(graph, &code, s.scanner.w)?;
         Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, s.scanner_finish.contrast), &[warmth]))

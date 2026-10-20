@@ -12,6 +12,9 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
+#[path = "look_lab.rs"]
+mod look_lab;
+
 /// `@AppStorage("lastFaceScanner")`: the face the editor opens on, kept across launches.
 const REMEMBERED: &str = "lastFaceScanner";
 const ESCAPE: &str = "\u{1b}";
@@ -283,6 +286,7 @@ impl Ctl {
         if !same(&lab.get_modified(), &modified) {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
         }
+        self.publish_look_lab(&settings.frontier_lab);
         let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !shown;
         w.global::<PanelState>().set_separation_shown(separation);
     }

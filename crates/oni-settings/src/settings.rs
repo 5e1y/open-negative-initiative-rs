@@ -8,6 +8,7 @@ use crate::blocks::{
 };
 use crate::curves::{CurveSet, SaturationCurve};
 use crate::film::Film;
+use crate::frontier_lab::FrontierLab;
 use crate::frame::{ContactSheetGrid, Correction, FlatField, Geometry, RgbPasses, RollReference};
 use crate::levels::LevelsSet;
 use crate::modes::{ConversionMode, Face, ScannerMachine, SourceEncoding};
@@ -86,6 +87,9 @@ pub struct PipelineSettings {
     pub scanner_machine: ScannerMachine,
     #[serde(rename = "scannerFinish")]
     pub scanner_finish: ScannerFinish,
+    /// The Look Lab's edits of the Frontier, absent when the frame renders the measured table.
+    #[serde(rename = "frontierLab", skip_serializing_if = "FrontierLab::is_neutral", default)]
+    pub frontier_lab: FrontierLab,
     pub texture: Texture,
     pub sharpen: Sharpen,
 }
@@ -133,6 +137,7 @@ impl Default for PipelineSettings {
             scanner: ScannerClicks::default(),
             scanner_machine: ScannerMachine::Oni,
             scanner_finish: ScannerFinish::default(),
+            frontier_lab: FrontierLab::default(),
             texture: Texture::default(),
             sharpen: Sharpen::default(),
         }
@@ -195,7 +200,7 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 15] = [
+    pub const FIELDS: [&str; 16] = [
         "balanceFilters",
         "print",
         "density",
@@ -211,6 +216,7 @@ pub mod look_settings {
         "scanner",
         "scannerFinish",
         "scannerMachine",
+        "frontierLab",
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
@@ -249,6 +255,7 @@ pub mod look_settings {
         out.scanner = donor.scanner;
         out.scanner_finish = donor.scanner_finish.clone();
         out.scanner_machine = donor.scanner_machine;
+        out.frontier_lab = donor.frontier_lab;
         out
     }
 }

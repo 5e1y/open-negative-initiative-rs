@@ -2,6 +2,7 @@
 //! curve, a colour stage, the table's own residual), baked on the CPU into a cube like the measured one.
 
 pub mod colour;
+pub mod edits;
 pub mod fit;
 pub mod measure;
 #[cfg(test)]
@@ -108,15 +109,25 @@ impl Chain {
     }
 }
 
-/// The chain on an `n`³ lattice of the machine's domain, red fastest, as `CIColorCube` reads it.
+/// The chain on an `n`³ lattice of the machine's domain, red fastest, as `CIColorCube` reads it; one
+/// blue plane a worker, as a slider notch bakes it under a frame's time.
 pub fn bake(p: &LabParams, n: usize) -> ColorCube {
     let chain = Chain::new(p);
-    let cube_data = (0..n * n * n)
-        .map(|i| {
-            let x = [i % n, (i / n) % n, i / (n * n)].map(|k| node(k, n));
-            let c = chain.code(x);
-            [c[0] as f32, c[1] as f32, c[2] as f32, 1.0]
-        })
-        .collect();
+    let plane = |b: usize| -> Vec<[f32; 4]> {
+        (0..n * n)
+            .map(|i| {
+                let c = chain.code([i % n, i / n, b].map(|k| node(k, n)));
+                [c[0] as f32, c[1] as f32, c[2] as f32, 1.0]
+            })
+            .collect()
+    };
+    let workers = std::thread::available_parallelism().map_or(4, |w| w.get()).min(n);
+    let cube_data = std::thread::scope(|scope| {
+        let chain = &plane;
+        let handles: Vec<_> = (0..workers).map(|w| scope.spawn(move || (w..n).step_by(workers).map(|b| (b, chain(b))).collect::<Vec<_>>())).collect();
+        let mut planes: Vec<(usize, Vec<[f32; 4]>)> = handles.into_iter().flat_map(|h| h.join().expect("a bake worker")).collect();
+        planes.sort_by_key(|(b, _)| *b);
+        planes.into_iter().flat_map(|(_, p)| p).collect()
+    });
     ColorCube { cube_dimension: n, cube_data }
 }

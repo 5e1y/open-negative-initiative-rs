@@ -1368,5 +1368,12 @@
     "title": "The transition's review: a camera that cannot be matched is remembered, a failed naming thread misnames no file, a failed search frees the thumbnails",
     "status": "done",
     "detail": "cameras.json gains `unmatched` (serde default, same version): a camera whose frames all stayed reachable but would not match is not measured again at every launch behind the blocking sheet. survey::named keeps one answer per file when a worker panics, so no file takes its neighbour's camera. The app's search runs under catch_unwind, so a panic there releases the thumbnails' pass instead of holding it for the session."
+  },
+  {
+    "id": 186,
+    "type": "feature",
+    "title": "The Frontier Look Lab in the app: the measured table edited live from the Scanner face, every value a distance from the machine",
+    "status": "done",
+    "detail": "Steps 5 to 8 of docs/research/frontier/lab-plan.md, with one change: the sidecar's `frontierLab` stores each value's distance from the shipped Frontier set, so every slider rests on the measured render (the bake at zero equals frontier.cube) and a later refit keeps each edit's meaning. Settings: oni-settings FrontierLab (tolerant reader, clamped), in the look family so paste, roll sync and presets carry it with the Scanner keypad. Render: Pipeline::frontier bakes the Lab at 27³ when the frame has edits and keeps the measured cube otherwise. Panel: a Look Lab section on the Scanner face under Machine when Frontier is picked: twelve sector tabs with hue, twist and chroma, the matrix, the paper's gains and offsets, the grey cast by lightness, saturation by lightness and the character; each slider rests at 0 = Frontier, a double click returns it there."
   }
 ]
