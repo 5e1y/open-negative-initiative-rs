@@ -1176,5 +1176,12 @@
     "title": "The window checks under a whole run: limits that wait for a loaded machine",
     "status": "done",
     "detail": "With 66 window checks in parallel processes the window binary takes about 125 s, past scripts/check's 120 s stop, and the contact sheet's 10 s waits timed out under that load while it passes alone in 5 s. The stop is 240 s by default (ONI_CHECK_LIMIT still overrides it) and the contact sheet's waits 60 s; a wait returns as soon as its condition holds."
+  },
+  {
+    "id": 165,
+    "type": "research",
+    "title": "Apple's decoder against LibRaw, and a recovery strategy for rolls prepared in the Swift app",
+    "status": "done",
+    "detail": "scripts/decoder-gap/run decodes RAWs with CIRAWFilter set as RawDecode.configured (apple-decode.swift) and with oni_decode (examples/blocks.rs) on one 8-pixel grid, fits gains and a 3x3 matrix (examples/decoder_fit.rs) and renders the frames through their Swift sidecars (oni-pipeline examples/decoder_gap.rs). Roll #8 leans +0.11 stop red, -0.10 blue against the Swift render; gains recover about three quarters, a per-camera matrix all but the demosaic noise. docs/research/decoder-apple-vs-libraw.md weighs a matrix at decode, a sidecar migration and a decoder marker; no app behaviour changes."
   }
 ]

@@ -1,0 +1,20 @@
+#!/bin/zsh
+# Measures LibRaw's decode against the Swift app's CIRAWFilter on RAWs, read and never written, into $1:
+# both decodes averaged over 8-pixel squares, the fit, then the renders through sidecars of folder $2.
+set -e
+OUT="${1:?usage: run <output folder> <sidecar folder or -> <raw>...}"
+SIDECARS="${2:?usage: run <output folder> <sidecar folder or -> <raw>...}"
+shift 2
+REPO="${0:A:h:h:h}"
+TC="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+SDK="$(xcode-select -p)/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+mkdir -p "$OUT"
+"$TC/swiftc" -O -sdk "$SDK" "${0:A:h}/apple-decode.swift" -o "$OUT/apple-decode"
+"$OUT/apple-decode" "$OUT/dumps" 8 0 "$@"
+cd "$REPO"
+cargo run --release -q -p oni-decode --example blocks -- "$OUT/dumps" 8 "$@"
+cargo run --release -q -p oni-decode --example decoder_fit -- "$OUT/dumps" | tee "$OUT/fit.txt"
+[[ "$SIDECARS" == "-" ]] && exit 0
+GAINS=$(sed -n 's/^gains, stops: //p' "$OUT/fit.txt")
+MATRIX=$(sed -n 's/^matrix, rows: //p' "$OUT/fit.txt")
+cargo run --release -q -p oni-pipeline --example decoder_gap -- "$OUT/dumps" "$SIDECARS" "$GAINS" "$MATRIX" | tee "$OUT/gap.txt"

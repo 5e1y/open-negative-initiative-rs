@@ -11,3 +11,5 @@ tagged where the note says so: measured on our files, said by a cited source, or
   taken apart (input curves, matrix, paper curve, hue and chroma), with its figures.
 - [frontier/neutre-et-frontier.md](frontier/neutre-et-frontier.md): for each Look Lab parameter, its
   "neutral" value (close to ONI's plain inversion) and its "Frontier" value.
+- [decoder-apple-vs-libraw.md](decoder-apple-vs-libraw.md): `CIRAWFilter` against LibRaw on roll #8, the
+  S1R and a RAF, the per-camera matrix between them, and how rolls prepared in the Swift app recover.
