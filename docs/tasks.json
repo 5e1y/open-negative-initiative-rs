@@ -1061,5 +1061,12 @@
     "status": "done",
     "detail": "Diagnostics.startWatchdog's rule: the interface thread beats every 0.1 s with what the window shows, a thread of its own writes BLOCKED past 0.35 s of silence and recovered when it answers, each with the process's footprint (proc_pid_rusage on macOS, GetProcessMemoryInfo on Windows), one block however long it lasts; the console shows the count. The blocked thread's stack, read through Mach on the Mac, is not ported.",
     "outcome": "The check drives one silence of 0.9 s as one block and its end, its twin 0.2 s as none. Roll #8's real flow under the release build wrote no block."
+  },
+  {
+    "id": 147,
+    "type": "robustness",
+    "title": "A canvas texture Slint refuses is tried again and said once, never a silent blank",
+    "status": "done",
+    "detail": "The canvas's texture was kept for its size even when Slint refused to import it, so every later render of that size drew into a texture nothing showed. It is kept only once imported; a refusal is logged and said once in the session."
   }
 ]

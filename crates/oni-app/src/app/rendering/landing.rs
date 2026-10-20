@@ -130,6 +130,7 @@ impl Ctl {
     pub(in crate::app) fn encode(&self, picture: Picture, shown: Shown, whole: bool) {
         let Some(w) = self.window() else { return };
         let canvas = self.canvas_size();
+        let mut refused: Option<String> = None;
         let image = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
@@ -146,13 +147,22 @@ impl Ctl {
                     (uploaded.create_view(&Default::default()), w, h)
                 }
             };
-            // The texture is imported once per size; a new render only rewrites its texels.
+            // The texture is imported once per size; a new render only rewrites its texels. One Slint
+            // refuses is not kept, so the next render tries again rather than drawing nowhere.
             let (target, imported) = match &g.target {
                 Some(t) if t.width() == wd && t.height() == ht => (t.clone(), None),
                 _ => {
                     let t = display::Gpu::target(&g.device, wd, ht);
-                    g.target = Some(t.clone());
-                    (t.clone(), Image::try_from(t).ok())
+                    match Image::try_from(t.clone()) {
+                        Ok(image) => {
+                            g.target = Some(t.clone());
+                            (t, Some(image))
+                        }
+                        Err(e) => {
+                            refused = Some(e.to_string());
+                            (t, None)
+                        }
+                    }
                 }
             };
             g.seed = g.seed.wrapping_add(1);
@@ -169,6 +179,13 @@ impl Ctl {
         self.watch_histogram();
         if let (Some(image), _) = &image {
             w.global::<Canvas>().set_frame(image.clone());
+        }
+        if let Some(e) = refused {
+            timing::line(&format!("the canvas cannot take the render's texture: {e}"));
+            static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+            if !SAID.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                self.say("The picture cannot be shown on this graphics card; the log names why.");
+            }
         }
         self.shown(image.1);
     }
