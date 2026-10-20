@@ -152,7 +152,7 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     assert!(curves().is_neutral(), "the gesture was one step");
     // Frontier 2's paper, drawn as the Curves block draws, its three layers.
     g.invoke_paper_resized(200.0, 200.0);
-    assert!(g.get_paper_lines().row_count() >= 2 && g.get_paper_dots().row_count() == 11);
+    assert!(g.get_paper_lines().row_count() >= 2 && g.get_paper_dots().row_count() == 33);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

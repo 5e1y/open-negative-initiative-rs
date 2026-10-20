@@ -92,7 +92,7 @@ fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     let frontier = on_oni_machine(&s).unwrap();
     let at_rest = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: resting_clicks(&s), ..s.clone() }).unwrap();
     assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, scanner: s.scanner, ..at_rest }, "the ONI machine's conversion whole");
-    // Frontier 2 takes it with Pro's print bypassed for its paper; twin: Pro leaves the settings alone.
-    assert!(on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).unwrap().print.bypassed);
+    // Frontier 2 takes it whole too, Pro's print included; twin: Pro leaves the settings alone.
+    assert!(!on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).unwrap().print.bypassed);
     assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
 }

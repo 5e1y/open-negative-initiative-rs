@@ -231,8 +231,9 @@ impl Pipeline {
         let hand = frontier.then(frontier_table::current).flatten();
         let lab = frontier && hand.is_none();
         if lab && frame.scanner_print {
-            // Frontier 2: each channel's share of ONI's window printed through the paper's own curves.
-            let printed = self.curves(graph, image, &paper_look::CURVES)?;
+            // Frontier 2: the ONI machine's render in display code, the ONI look's tone then the paper's.
+            let code = image.then(stages::scanner_encode(1.0));
+            let printed = self.curves(graph, code, &paper_look::CURVES)?;
             let (warmth, share) = self.warmed(graph, &printed, s.scanner.w)?;
             return Ok(printed.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]));
         }

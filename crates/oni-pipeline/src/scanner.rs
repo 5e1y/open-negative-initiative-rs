@@ -247,7 +247,6 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     }
     let mut out = s.as_scanner();
     out.print = Print { contrast: s.scanner_finish.contrast, ..Print::default() };
-    out.print.bypassed = s.scanner_print && s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none();
     if let Some(full) = s.balance_filters {
         out.print.set_filters(full.map(|f| f * s.balance_strength));
     }
