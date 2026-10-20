@@ -226,10 +226,23 @@ app: `crates/oni-transition`, behind a blocking sheet at launch (#175).
 - **What moves.** `gains.stops` and `rollReference.stops`, by the shift, clamped to the gains' range.
   Every density (levels, the reference's black, white, base and median), the print's filters and the
   pedestal stand at the gains, so they stay.
-- **Roll #8.** The three frames picked (DSC_6441, 6454, 6466) give +0.064 / -0.025 / -0.124 stop; the
-  38 frames +0.064 / -0.026 / -0.124; this study +0.063 / -0.026 / -0.126. Rendered through the
-  pipeline with the corrected sidecars, LibRaw's output lands 0.0051 (mean worst channel) from the
-  Swift render, against 0.0182 before: the gains-only figure above (0.0052).
+- **Measured against both studies.** The three frames the transition picks per camera, then the
+  render of every Swift-prepared frame through the pipeline with the corrected sidecar against the
+  Swift render (mean worst-channel gap). Relative to green, the transition's shift lands on
+  `decoder-per-camera.md`'s decode figures and within 0.01 to 0.03 stop of its render-solved cure.
+
+  | Camera | Transition R / G / B | R − G, B − G | Per camera, decode | Per camera, render cure | Gap before → after |
+  |---|---|---|---|---|---|
+  | Z f, roll #8 (DSC_6441, 6454, 6466) | +0.064 / −0.025 / −0.124 | +0.089, −0.099 | +0.089, −0.097 | +0.083, −0.086 | 0.0182 → 0.0051 |
+  | Z f, its 38 frames | +0.064 / −0.026 / −0.124 | +0.090, −0.098 | | | |
+  | S1R, the ColorPlus roll (P1071952, 965, 977) | +0.013 / −0.030 / −0.285 | +0.043, −0.255 | +0.043, −0.274 | +0.040, −0.292 | 0.0462 → 0.0119 |
+  | S1R, its 38 frames | +0.014 / −0.027 / −0.290 | +0.041, −0.263 | | | |
+
+  The Z f's after-gap is this study's gains-only figure (0.0052); the S1R's is its single frame's
+  (0.0093) on a whole roll whose blue spreads 0.034 stop between frames.
+- **What stays.** Gains move the balance alone. The deeper blacks (6.1 % of pixels under L 0.03 on the
+  Z f against Swift's 3.4 %) and the S1R's skin and sky hues come from Apple's matrix, which a gain
+  cannot carry: they stay until a per-camera matrix, option (a), is decided.
 - **Safety.** Each sidecar is backed up under `<support>/Transition/backup/` (named by its digest,
   `manifest.jsonl` mapping it to its path) before it is written through the sidecar writer; every
   outcome goes on `ledger.jsonl` with the digests before and after, so nothing is corrected twice and a

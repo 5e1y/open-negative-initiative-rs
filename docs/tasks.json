@@ -1325,11 +1325,13 @@
     "type": "research",
     "title": "Swift against LibRaw per camera: the hue gap depends on the hardware",
     "status": "done",
-    "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged.",
+    "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged."
+  },
+  {
     "id": 175,
     "type": "data-safety",
     "title": "The transition: RAW settings prepared in the Swift app corrected once per camera for LibRaw's decode",
-    "status": "in-progress",
-    "detail": "oni-transition measures, once per camera (LibRaw's make and model), Apple's CIRAWFilter set as RawDecode.configured against LibRaw on up to three frames spread over the camera's earlier frames (median of 8-pixel squares off floor and clip, aligned to the pixel), then shifts gains.stops and rollReference.stops of every RAW sidecar written before the transition's install by that shift, after a backup, through the sidecar writer, each outcome on a ledger so nothing is corrected twice. Roll #8: +0.064 / -0.025 / -0.124 stop against the study's +0.063 / -0.026 / -0.126; LibRaw's render against the Swift render falls from 0.0182 to 0.0051 mean worst-channel gap (study's gains-only 0.0052)."
+    "status": "done",
+    "detail": "oni-transition measures, once per camera (LibRaw's make and model), Apple's CIRAWFilter set as RawDecode.configured (in process through objc2) against LibRaw on up to three frames spread over the camera's earlier frames (median of 8-pixel squares off floor and clip, aligned to the pixel), then shifts gains.stops and rollReference.stops of every RAW sidecar written before the transition's install by that shift, after a backup under <support>/Transition/backup, through the sidecar writer, each outcome on an append-only ledger so nothing is corrected twice; a run resumes after a quit. The app searches each folder opened (every root the first time) off the interface thread and corrects behind a blocking sheet with each camera's shift, progress and a summary; the open frame is read again. Z f roll #8: +0.064 / -0.025 / -0.124 stop (render gap to Swift 0.0182 -> 0.0051); S1R ColorPlus roll: +0.013 / -0.030 / -0.285 (0.0462 -> 0.0119), on #180's per-camera figures. Gains only: the deeper blacks come from the matrix and stay."
   }
 ]

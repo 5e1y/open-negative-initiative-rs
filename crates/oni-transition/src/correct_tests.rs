@@ -59,7 +59,8 @@ fn a_sidecar_is_backed_up_corrected_and_restored_to_its_bytes() {
     assert_eq!(std::fs::read(kept).unwrap(), found);
     let mut ledger = Ledger::default();
     ledger.record(support.path(), e).unwrap();
-    let restored = restore(support.path());
+    assert!(restore(support.path(), Some(Path::new("/elsewhere"))).restored.is_empty(), "a folder restores its own sidecars alone");
+    let restored = restore(support.path(), Some(roll.path()));
     assert_eq!(restored.restored.len(), 1);
     assert_eq!(std::fs::read(sidecar::url_for(&raw)).unwrap(), found);
     // Twin: a sidecar edited after its correction is kept, never overwritten by the backup.
@@ -68,7 +69,7 @@ fn a_sidecar_is_backed_up_corrected_and_restored_to_its_bytes() {
     let mut edited = sidecar::read(&other, true, true).unwrap().settings;
     edited.density = 0.3;
     sidecar::write(&edited, &other, sidecar::WriteOptions::default()).unwrap();
-    let again = restore(support.path());
+    let again = restore(support.path(), None);
     assert_eq!(again.kept.iter().filter(|(p, _)| p.contains("DSC_0002")).count(), 1);
     assert_eq!(sidecar::read(&other, true, true).unwrap().settings.density, 0.3);
 }

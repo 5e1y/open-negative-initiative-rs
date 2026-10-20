@@ -78,11 +78,13 @@ pub struct Restored {
     pub kept: Vec<(String, String)>,
 }
 
-/// Every corrected sidecar back to the bytes it was found with, unless it changed since.
-pub fn restore(support: &Path) -> Restored {
+/// Every corrected sidecar under `under` (all with none) back to the bytes it was found with,
+/// unless it changed since: a roll this version prepared before the install is undone alone.
+pub fn restore(support: &Path, under: Option<&Path>) -> Restored {
     let ledger = Ledger::load(support);
     let mut out = Restored::default();
-    let mut corrected: Vec<&Entry> = ledger.entries.values().filter(|e| e.outcome == Outcome::Corrected).collect();
+    let inside = |e: &&Entry| under.is_none_or(|folder| Path::new(&e.sidecar).starts_with(folder));
+    let mut corrected: Vec<&Entry> = ledger.entries.values().filter(|e| e.outcome == Outcome::Corrected).filter(inside).collect();
     corrected.sort_by(|a, b| a.sidecar.cmp(&b.sidecar));
     for e in corrected {
         let now = std::fs::read(&e.sidecar).map(|b| records::digest(&b)).ok();
