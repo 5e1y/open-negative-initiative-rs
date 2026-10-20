@@ -320,3 +320,23 @@ export component LoadBar inherits Rectangle {
         }
     }
 }
+
+// A title that reads as text until clicked, then commits on Return or when the focus leaves.
+export component EditableTitle inherits VerticalLayout {
+    in property <string> text;
+    in property <string> placeholder;
+    callback committed(string);
+    property <bool> renaming;
+    if !root.renaming: Label {
+        role: TextRole.title;
+        text: root.text;
+        TouchArea { clicked => { root.renaming = true; } }
+    }
+    if root.renaming: TextField {
+        text: root.text;
+        placeholder: root.placeholder;
+        init => { self.take-focus(); }
+        accepted(t) => { root.renaming = false; root.committed(t); }
+        left(t) => { if (root.renaming) { root.renaming = false; root.committed(t); } }
+    }
+}

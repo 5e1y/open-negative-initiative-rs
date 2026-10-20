@@ -222,6 +222,13 @@ impl Layout {
         ((clamped - top).abs() >= 0.5).then_some(clamped)
     }
 
+    /// `offset(landing:in:)`: the cell's middle at the viewport's, clamped to the content; the top
+    /// when no cell is named.
+    pub fn landing(&self, index: Option<usize>, viewport: f32) -> f32 {
+        let Some(frame) = index.and_then(|i| self.frame(i)) else { return 0.0 };
+        (frame.y + frame.height / 2.0 - viewport / 2.0).max(0.0).min((self.height - viewport).max(0.0))
+    }
+
     /// `header(at:)` with `pin(of:at:)`: the band under the top edge and where its header is held
     /// until the band's end pushes it off; `None` while the band's own header shows in place.
     pub fn pinned(&self, top: f32) -> Option<(usize, f32)> {
@@ -256,6 +263,21 @@ mod tests {
         let up = l.reveal(0, down, viewport).unwrap();
         assert!(up >= 0.0 && up <= l.frame(0).unwrap().y, "{up}");
         assert_eq!(l.reveal(59, down, viewport), None);
+    }
+
+    #[test]
+    fn a_landing_centres_its_cell_within_the_content_and_tops_without_one() {
+        let l = Layout::new(&roll(120), 6, 1000.0, Metrics::GALLERY);
+        let viewport = 400.0;
+        let middle = l.frame(60).unwrap();
+        let landed = l.landing(Some(60), viewport);
+        assert!((landed + viewport / 2.0 - (middle.y + middle.height / 2.0)).abs() < 1e-3, "{landed}");
+        assert_eq!(l.landing(Some(119), viewport), l.height - viewport, "the last row clamps to the end");
+        assert_eq!(l.landing(Some(0), viewport), 0.0, "the first row clamps to the top");
+        assert_eq!(l.landing(None, viewport), 0.0);
+        // Twin: the reveal's shortest move leaves the middle cell at the viewport's edge, not centred.
+        let revealed = l.reveal(60, 0.0, viewport).unwrap();
+        assert!((revealed - landed).abs() > 1.0, "{revealed} {landed}");
     }
 
     #[test]

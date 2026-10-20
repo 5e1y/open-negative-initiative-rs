@@ -19,6 +19,7 @@ and what is left, most noticed first.
 | The editor's full frame, fitted copy and measures held in the gallery; Compare's before never freed; the console read the log forever | #97 |
 | The base loupe's full scan waited behind every roll tile | #91 |
 | The library column had no thumbnails, no layout key, never re-centred | #95 |
+| The gallery did not land on the open photo coming back from the editor; band headings could not be renamed in place; a Finder drop did nothing; Prepare the Roll neither applied nor kept the remembered flat-field sliders | #145 |
 
 ## False or not worth it
 
@@ -27,6 +28,9 @@ and what is left, most noticed first.
 - `Levels::resting_mid` returning 0.67 in both arms: a faithful copy of Swift's `restingMid`.
 - The thumbnail cap: bounded; held to 1,000 tiles (about 270 MB) with recency on use (#114).
 - `Notches` growing: about 4 MB an hour of continuous dragging.
+- "A flagged frame that fails to decode is still written": so is Swift's, its job queued before the
+  decode (`EditorScene+RollReference.swift:375-376`); only an unreadable sidecar is refused (`:357`).
+  Pinned by a check (#145).
 
 ## Left, by how much a user notices
 
@@ -58,16 +62,13 @@ and what is left, most noticed first.
 
 1. A click on a folder, roll or project row folds it instead of opening its first photo; no
    chevron-only fold target, no rename in place, no tree context menu, no pinned header.
-2. The gallery does not land centred on the open photo when coming back from the editor.
-3. Band headers cannot be renamed in place.
-4. Dropping files from the Finder onto the gallery does nothing.
+2. (Done, #145: the landing on the open photo, band headings renamed in place, the Finder drop.)
 
 ### Prepare the Roll
 
 1. "Use This Frame as Flat-Field" and "Load…" are disabled.
 2. The measure and the previews skip a custom flat-field mask and the dust corrections.
-3. The remembered flat-field sliders are neither applied nor kept.
-4. A flagged frame that fails to decode is still written.
+3. (Done, #145: the remembered flat-field sliders applied and kept; the flagged frame is Swift's rule.)
 
 ### Proofing and export
 

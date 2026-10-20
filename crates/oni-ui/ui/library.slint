@@ -1,7 +1,7 @@
 // The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, ScrollKnob, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, PinnedHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, TextArea, CardStack, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ColumnPill, ListView, Scroller, ScrollKnob, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, PinnedHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, TextArea, CardStack, EditableTitle, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -21,6 +21,7 @@ export struct Heading {
     y: length,
     title: string,
     caption: string,
+    renaming: bool,
 }
 
 export struct TreeRow {
@@ -78,6 +79,12 @@ export global Library {
     in property <length> pinned-y;
     in property <string> pinned-title;
     in property <string> pinned-caption;
+    in property <bool> pinned-renaming;
+    // `GalleryEngine.draft`: what a heading's field opens on; its edits, Return and Escape.
+    in property <string> heading-draft;
+    callback heading-edited(string);
+    callback heading-committed(string);
+    callback heading-cancelled();
     in property <length> content-height;
     in property <length> scroll;
     in property <string> empty-title;
@@ -164,6 +171,7 @@ export global Library {
     callback empty-acted();
     callback scrolled(length);
     callback resized(length, length);
+    callback gallery-shown();
     // Where the grid sits in the window, which a pointer a check dispatches is placed from.
     in-out property <length> grid-x;
     in-out property <length> grid-y;
@@ -213,6 +221,11 @@ export component Grid inherits Surface {
                 width: root.width - 2 * Space.l;
                 title: h.title;
                 caption: h.caption;
+                renaming: h.renaming;
+                draft: Library.heading-draft;
+                edited(t) => { Library.heading-edited(t); }
+                committed(t) => { Library.heading-committed(t); }
+                cancelled => { Library.heading-cancelled(); }
             }
             for t in Library.tiles: TileView {
                 x: t.x;
@@ -244,6 +257,11 @@ export component Grid inherits Surface {
             width: parent.width;
             title: Library.pinned-title;
             caption: Library.pinned-caption;
+            renaming: Library.pinned-renaming;
+            draft: Library.heading-draft;
+            edited(t) => { Library.heading-edited(t); }
+            committed(t) => { Library.heading-committed(t); }
+            cancelled => { Library.heading-cancelled(); }
         }
     }
     // `GalleryEngine`'s ScrollView knob, over the document Rust scrolls: its drag takes the wheel's way.
@@ -273,25 +291,6 @@ export component Grid inherits Surface {
     }
 }
 
-// A title that reads as text until clicked, then commits on Return or when the focus leaves.
-component EditableTitle inherits VerticalLayout {
-    in property <string> text;
-    in property <string> placeholder;
-    property <bool> renaming;
-    if !root.renaming: Label {
-        role: TextRole.title;
-        text: root.text;
-        TouchArea { clicked => { root.renaming = true; } }
-    }
-    if root.renaming: TextField {
-        text: root.text;
-        placeholder: root.placeholder;
-        init => { self.take-focus(); }
-        accepted(t) => { root.renaming = false; Library.title-committed(t); }
-        left(t) => { if (root.renaming) { root.renaming = false; Library.title-committed(t); } }
-    }
-}
-
 // `InfoSidebar`: the roll a selection stands on, or its project.
 export component Info inherits Surface {
     width: ShellStyle.info-width;
@@ -309,7 +308,7 @@ export component Info inherits Surface {
                 Section {
                     title: "Roll";
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; }
+                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; committed(t) => { Library.title-committed(t); } }
                 }
                 Section {
                     title: "Film Stock";
@@ -358,7 +357,7 @@ export component Info inherits Surface {
                 Section {
                     title: "Project";
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Project name"; }
+                    EditableTitle { text: Library.info-title; placeholder: "Project name"; committed(t) => { Library.title-committed(t); } }
                 }
                 CardStack { pictures: Library.stack; }
                 Section {

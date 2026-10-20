@@ -188,7 +188,7 @@ impl Shell {
 
     /// `add(_:)`: a folder opens; a file opens its folder, then itself in the editor once found.
     pub fn add(&self, path: &Path) {
-        self.ctl.add(path);
+        self.ctl.add(&[path.to_path_buf()]);
     }
 
     /// The launch's folder: the one last opened, else the first root of `roots.json`, else none.

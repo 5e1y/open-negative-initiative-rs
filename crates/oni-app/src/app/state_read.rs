@@ -108,6 +108,11 @@ impl State {
         self.order.len()
     }
 
+    /// The photos in the grid's order, which a tile's index counts in.
+    pub fn order(&self) -> &[String] {
+        &self.order
+    }
+
     pub fn visible(&self) -> std::ops::Range<usize> {
         self.visible.clone()
     }

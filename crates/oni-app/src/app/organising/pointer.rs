@@ -53,6 +53,12 @@ impl Ctl {
         if (x - px).hypot(y - py) >= DRAG_DISTANCE || y >= self.state.borrow().layout.height {
             return;
         }
+        // `RollHeaderContent` lies over the document: a release on it reaches no cell.
+        let heading = self.state.borrow().heading_at(y);
+        if let Some(i) = heading {
+            return self.heading_clicked(i);
+        }
+        self.exit_heading();
         let index = self.state.borrow().layout.index_at(x, y);
         match index {
             Some(i) => self.click(i, command, shift),

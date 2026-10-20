@@ -57,7 +57,7 @@ impl Ctl {
         n.on_welcome_added(move |i| {
             let folder = p.state.borrow().nav.welcome.get(index(i)).cloned();
             if let Some(folder) = folder {
-                p.add(Path::new(&folder));
+                p.add(&[std::path::PathBuf::from(&folder)]);
             }
         });
         let p = me.clone();

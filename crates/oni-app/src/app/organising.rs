@@ -25,6 +25,7 @@ mod projects;
 mod oni_trash;
 mod status_bar;
 mod info_sidebar;
+mod band_rename;
 
 /// `DragGesture(minimumDistance: 4)`: a press moved this far is a drag, never a click.
 pub const DRAG_DISTANCE: f32 = 4.0;
@@ -38,6 +39,17 @@ pub struct Band {
     pub title: String,
     pub caption: String,
     pub entries: Vec<Entry>,
+    /// What renaming the heading renames, `None` where a heading takes no name.
+    pub naming: Option<Naming>,
+    /// `explicitName`: the name the field opens on, empty for a folder no roll names.
+    pub explicit: String,
+}
+
+/// `GalleryGroup.id` as a rename reaches it: a folder on the disk, or a project.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Naming {
+    Folder(String),
+    Project(Id),
 }
 
 /// What a line of the open context menu does.
@@ -110,6 +122,12 @@ pub struct Organising {
     row_click: Option<(Column, usize, Instant)>,
     /// What the sidebar's fields were last loaded from, so a refresh never overwrites typing.
     info_loaded: Option<String>,
+    /// The surface last laid: 0 the archive, 1 the projects, 2 the ONI Trash.
+    laid_surface: Option<u8>,
+    /// `renaming` and `draft`: the heading typed over, and what its field holds now.
+    renaming: Option<(Naming, String)>,
+    /// The heading last clicked and when, which tells a double click's second.
+    heading_click: Option<(usize, Instant)>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -174,7 +192,14 @@ impl State {
             return project::grouped(&self.org.projects, &self.rows)
                 .into_iter()
                 .filter(|g| !g.entries.is_empty())
-                .map(|g| Band { key: g.id.to_string(), title: g.project.name.clone(), caption: String::new(), entries: g.entries })
+                .map(|g| Band {
+                    key: g.id.to_string(),
+                    title: g.project.name.clone(),
+                    caption: String::new(),
+                    entries: g.entries,
+                    naming: Some(Naming::Project(g.id)),
+                    explicit: g.project.name.clone(),
+                })
                 .collect();
         }
         if self.org.trash_open {
@@ -186,6 +211,8 @@ impl State {
                     title: g.heading_title(),
                     caption: g.trail().unwrap_or_default(),
                     entries: g.entries,
+                    naming: None,
+                    explicit: String::new(),
                 })
                 .collect();
         }
@@ -195,7 +222,14 @@ impl State {
                 a.groups
                     .iter()
                     .enumerate()
-                    .map(|(i, g)| Band { key: format!("{i}:{}", g.title), title: g.header.clone(), caption: g.caption.clone(), entries: g.entries.clone() })
+                    .map(|(i, g)| Band {
+                        key: format!("{i}:{}", g.title),
+                        title: g.header.clone(),
+                        caption: g.caption.clone(),
+                        entries: g.entries.clone(),
+                        naming: g.folder.clone().map(Naming::Folder),
+                        explicit: g.film.as_ref().map(|f| f.name.clone()).unwrap_or_default(),
+                    })
                     .collect()
             })
             .unwrap_or_default()
@@ -238,6 +272,9 @@ impl Ctl {
         let index = |i: i32| i.max(0) as usize;
         let p = me.clone();
         lib.on_surface_picked(move |i| p.surface_picked(i));
+        let p = me.clone();
+        lib.on_gallery_shown(move || p.land_gallery());
+        Ctl::wire_band_rename(me, &lib);
         let p = me.clone();
         lib.on_row_double_clicked(move |i| p.row_double_clicked(index(i)));
         let p = me.clone();

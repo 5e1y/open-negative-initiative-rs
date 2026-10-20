@@ -211,7 +211,7 @@ impl Ctl {
             }
             let (moved, scroll) = {
                 let s = p.state.borrow();
-                (s.layout.cells(s.scroll, s.grid.1) != s.visible, s.scroll)
+                (s.layout.cells(s.scroll, s.grid.1) != s.visible || s.renaming_heading(), s.scroll)
             };
             // Only a change of the visible range rebuilds the tiles; the offset alone moves them.
             if moved {

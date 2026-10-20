@@ -22,11 +22,11 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
 | Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 143 | 9 | 0 | 143 of 152 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 79 | 9 | 2 | 86 of 90 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 82 | 9 | 2 | 89 of 93 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 35 | 11 | 2 | 40 of 48 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 122 | 3 | 5 | 121 of 130 |
-| **All** | | **416** | **33** | **9** | **428 of 458** |
+| **All** | | **419** | **33** | **9** | **431 of 461** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face

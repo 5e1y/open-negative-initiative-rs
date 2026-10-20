@@ -5,14 +5,26 @@ use super::*;
 impl Ctl {
     // MARK: - The archive
 
-    /// `add(_:)`: a folder opens; a file opens its folder, then itself in the editor once found.
-    pub(super) fn add(self: &Rc<Self>, path: &Path) {
-        let file = !path.is_dir();
-        let folder = if file { path.parent().unwrap_or(path) } else { path };
-        let opening = (file && oni_library::library::is_importable(path)).then(|| oni_library::paths::canonical(path));
+    /// `add(_:)`: the first item's folder opens, the item itself when a folder; the first photo
+    /// among them then opens in the editor once found. Nothing is copied or moved.
+    pub(super) fn add(self: &Rc<Self>, paths: &[PathBuf]) {
+        let Some(first) = paths.first() else { return };
+        let folder = if first.is_dir() { first.as_path() } else { first.parent().unwrap_or(first) };
+        let opening = paths.iter().find(|p| !p.is_dir() && oni_library::library::is_importable(p)).map(|p| oni_library::paths::canonical(p));
         self.navigator_reveal(folder);
         self.open_folder(folder);
         self.state.borrow_mut().opening = opening;
+    }
+
+    /// `dropDestination`: files from the Finder are taken in the gallery alone, as ⌘O takes them;
+    /// whether they were.
+    pub fn dropped(self: &Rc<Self>, paths: &[PathBuf]) -> bool {
+        let shown = self.window().is_some_and(|w| w.get_grid_shown());
+        if !shown || paths.is_empty() {
+            return false;
+        }
+        self.add(paths);
+        true
     }
 
     /// The launch's folder: `openedFolder` if it still exists, else the first root of `roots.json`.
@@ -39,7 +51,7 @@ impl Ctl {
         let chosen = picker();
         self.state.borrow_mut().picker = picker;
         if let Some(folder) = chosen {
-            self.add(&folder);
+            self.add(&[folder]);
         } else if !system::HAS_PICKER {
             self.say("This system has no folder picker: pass the folder on the command line");
         }
