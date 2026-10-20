@@ -1,8 +1,9 @@
-//! ONI Link: the scanner keypad of Open Negative Initiative, pressed from a phone.
+//! ONI Link: the editor of Open Negative Initiative, its panel and scanner keypad, pressed from a phone.
 //! One protocol over any byte stream (TCP on the local network, a Bluetooth channel), encrypted by Noise.
 
 pub mod host;
 pub mod noise;
+pub mod panel;
 pub mod pairing;
 pub mod remote;
 pub mod scanner;
@@ -11,6 +12,7 @@ pub mod wire;
 pub use host::{Host, HostEvent, HostEvents, Receipt};
 pub use noise::{Identity, PublicKey};
 pub use pairing::PairingCode;
+pub use panel::{Face, Panel, Param, Row, Tab};
 pub use remote::{Display, Remote};
 pub use scanner::{Channel, Clicks, Command, Effect, Letter, Machine, State};
 pub use wire::Import;

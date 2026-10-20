@@ -98,7 +98,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     std::fs::create_dir_all(&twin_dir).unwrap();
     phone.open(&twin_dir.join("A.NEF").to_string_lossy()).unwrap();
     for (letter, by) in presses {
-        phone.apply(Command::from(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }));
+        phone.apply(Command::try_from(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }).unwrap());
     }
     assert_eq!(phone.settings().scanner, settings().scanner, "the phone's presses and the desktop's keys are one command");
     assert_eq!(cells(w), ["+3", "+3", "−2", "0", "+4"], "the Lab screen reads every letter back");

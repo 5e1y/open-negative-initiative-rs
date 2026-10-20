@@ -24,11 +24,24 @@ impl DisplayListener for Recorder {
 fn desk(host: Host, mut events: HostEvents) -> mpsc::UnboundedReceiver<HostEvent> {
     let (seen, heard) = mpsc::unbounded_channel();
     tokio::spawn(async move {
-        let mut state = State { frame: Some((7, 36)), chrome: Some(0.0), ..State::default() };
+        let row = oni_link::Row {
+            param: oni_link::Param::Exposure,
+            tab: oni_link::Tab::Color,
+            block: "Lighting".into(),
+            label: "Exposure".into(),
+            value: "+0.00 EV".into(),
+            position: 0.5,
+            modified: false,
+        };
+        let panel = oni_link::Panel { face: oni_link::Face::Pro, rows: vec![row] };
+        let mut state = State { frame: Some((7, 36)), chrome: Some(0.0), panel, ..State::default() };
         host.publish(state.clone());
         while let Some(event) = events.next().await {
             if let HostEvent::Command { command, .. } = &event {
                 state = state.predicted(*command);
+                if let oni_link::Command::StepParam { by, .. } = command {
+                    state.panel.rows[0].value = format!("{:+.2} EV", f32::from(*by) / 10.0);
+                }
                 if let oni_link::Command::Walk { by } = command {
                     state.frame =
                         state.frame.map(|(index, count)| (index.saturating_add_signed(i16::from(*by)), count));
@@ -230,4 +243,50 @@ async fn sends_scans_to_the_desktop_and_a_strangers_pin_is_refused() {
     let stranger = RemoteSession::pair(stranger_code.to_uri(), generate_identity(), "Thief".into()).await.unwrap();
     assert!(matches!(stranger.send_files(paths).await, Err(LinkError::ImportRefused)));
     assert_eq!(std::fs::read_dir(inbox.path()).unwrap().count(), 2, "nothing more landed");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn the_panel_reaches_the_phone_and_its_keys_reach_the_desktop() {
+    let (_host, code, mut heard) = start().await;
+    let session = RemoteSession::pair(code.to_uri(), generate_identity(), "Phone".into()).await.unwrap();
+    let (tx, mut shown) = mpsc::unbounded_channel();
+    session.set_listener(Box::new(Recorder(tx)));
+    let first = until(&mut shown, |d| !d.panel.rows.is_empty()).await;
+    let row = &first.panel.rows[0];
+    assert_eq!((first.panel.face, row.param, row.tab), (Face::Pro, Param::Exposure, PanelTab::Color));
+    assert_eq!((row.block.as_str(), row.label.as_str(), row.value.as_str()), ("Lighting", "Exposure", "+0.00 EV"));
+
+    session.press(Command::SetFace { face: Face::Scanner });
+    assert_eq!(session.current().panel.face, Face::Scanner, "the face shows before the desktop answers");
+    session.press(Command::StepParam { param: Param::Exposure, by: 3 });
+    session.press(Command::ResetParam { param: Param::Texture });
+    let settled = until(&mut shown, |d| d.state.applied == 3).await;
+    assert_eq!((settled.panel.face, settled.panel.rows[0].value.as_str()), (Face::Scanner, "+0.30 EV"));
+    let commands: Vec<oni_link::Command> = [
+        until(&mut heard, |e| matches!(e, HostEvent::Command { .. })).await,
+        until(&mut heard, |e| matches!(e, HostEvent::Command { .. })).await,
+        until(&mut heard, |e| matches!(e, HostEvent::Command { .. })).await,
+    ]
+    .into_iter()
+    .filter_map(|e| if let HostEvent::Command { command, .. } = e { Some(command) } else { None })
+    .collect();
+    assert_eq!(
+        commands,
+        [
+            oni_link::Command::Face(oni_link::Face::Scanner),
+            oni_link::Command::StepParam { param: oni_link::Param::Exposure, by: 3 },
+            oni_link::Command::ResetParam { param: oni_link::Param::Texture },
+        ]
+    );
+}
+
+#[test]
+fn every_slider_crosses_the_bindings_under_its_own_name() {
+    for param in oni_link::Param::ALL {
+        let mirrored = Param::from(param);
+        assert_eq!(oni_link::Param::from(mirrored), param);
+        assert_eq!(format!("{mirrored:?}"), format!("{param:?}"));
+    }
+    // Twin: a neighbour's name is another slider's, so the check tells two of them apart.
+    assert_ne!(format!("{:?}", Param::from(oni_link::Param::GainRed)), format!("{:?}", oni_link::Param::GainGreen));
 }

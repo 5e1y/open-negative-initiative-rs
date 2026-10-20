@@ -319,7 +319,7 @@ fn opened(name: &str, mode: ConversionMode) -> oni_core::EditorStore {
 }
 
 fn press(store: &mut oni_core::EditorStore, key: oni_link::Command) {
-    store.apply(oni_core::Command::from(key));
+    store.apply(oni_core::Command::try_from(key).expect("a scanner key"));
 }
 
 #[test]

@@ -3,7 +3,7 @@
 
 use oni_core::link::{Link, Outward, drive};
 use oni_core::{Archive, EditorStore, Surface};
-use oni_link::{Command, Display, Effect, Host, Identity, Letter, Machine, PairingCode, Remote};
+use oni_link::{Command, Display, Effect, Face, Host, Identity, Letter, Machine, PairingCode, Param, Remote, Tab};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -89,5 +89,83 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     let store = store.lock().unwrap();
     assert_eq!(store.settings(), &start);
     assert!(!store.can_undo(Surface::Editor));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Exposure as a host app lays it out: one row, a tenth of a stop a step, reset to zero.
+struct Exposure;
+
+impl oni_core::link::Sliders for Exposure {
+    fn rows(&self, store: &EditorStore) -> Vec<oni_link::Row> {
+        let value = format!("{:+.2} EV", store.settings().print.exposure);
+        let row = oni_link::Row { param: Param::Exposure, tab: Tab::Color, block: "Lighting".into(), label: "Exposure".into(), value, position: 0.5, modified: false };
+        vec![row]
+    }
+
+    fn command(&self, _: &EditorStore, param: Param, by: Option<i8>) -> Option<oni_core::Command> {
+        (param == Param::Exposure).then(|| match by {
+            Some(by) => oni_core::Command::Step { knob: oni_core::Knob::Exposure, by: f32::from(by) * 0.1 },
+            None => oni_core::Command::Set { knob: oni_core::Knob::Exposure, value: 0.0 },
+        })
+    }
+}
+
+#[tokio::test]
+async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
+    let dir = std::env::temp_dir().join(format!("oni-core-link-panel-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let frame = dir.join("frame.tif");
+    std::fs::write(&frame, [0]).unwrap();
+    let frame = frame.to_string_lossy().into_owned();
+    let mut store = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| false));
+    store.open(&frame).unwrap();
+    let start = store.settings().print.exposure;
+    let ev = |v: f32| format!("{v:+.2} EV");
+    let store = Arc::new(Mutex::new(store));
+
+    let (host, events) = Host::new(Identity::generate(), "Studio".into(), []);
+    let addr = host.listen("127.0.0.1:0".parse().unwrap()).await.unwrap();
+    let mut link = Link::new(host.clone());
+    link.sliders = Box::new(Exposure);
+    link.refresh(&store.lock().unwrap());
+    let link = Arc::new(Mutex::new(link));
+    let faces = Arc::new(Mutex::new(Vec::new()));
+    let (l, s, f) = (link.clone(), store.clone(), faces.clone());
+    tokio::spawn(async move {
+        drive(events, &l, &s, |out| {
+            if let Outward::Face(face) = out {
+                f.lock().unwrap().push(face);
+            }
+        })
+        .await
+    });
+
+    let code = PairingCode::parse(&host.open_pairing(vec![addr]).to_uri()).unwrap();
+    let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &Identity::generate(), &code, "Phone")
+        .await
+        .unwrap();
+    let mut display = remote.display();
+    let first = until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
+    assert_eq!((first.state.panel.face, first.state.panel.rows[0].value.clone()), (Face::Pro, ev(start)));
+
+    remote.press(Command::Face(Face::Scanner));
+    remote.press(Command::Face(Face::Scanner));
+    remote.press(Command::StepParam { param: Param::Exposure, by: 3 });
+    let shown = until(&mut display, |d| d.state.applied == 3).await;
+    assert_eq!((shown.state.panel.face, shown.state.panel.rows[0].value.clone()), (Face::Scanner, ev(start + 0.3)));
+    {
+        let store = store.lock().unwrap();
+        assert_eq!(store.settings().face, oni_settings::Face::Scanner, "the face is the sidecar's field");
+        assert!((store.settings().print.exposure - start - 0.3).abs() < 1e-6);
+    }
+    // Twin: the face already on is not switched again, so the host remembers one switch.
+    assert_eq!(*faces.lock().unwrap(), vec![Face::Scanner]);
+
+    remote.press(Command::Undo);
+    let undone = until(&mut display, |d| d.state.applied == 4).await;
+    assert_eq!(undone.state.panel.rows[0].value, ev(start), "the step was one undo step");
+    remote.press(Command::ResetParam { param: Param::Texture });
+    let ignored = until(&mut display, |d| d.state.applied == 5).await;
+    assert_eq!(ignored.state.revision, undone.state.revision, "a slider the host does not resolve moves nothing");
     let _ = std::fs::remove_dir_all(&dir);
 }

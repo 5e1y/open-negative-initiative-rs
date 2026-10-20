@@ -4,10 +4,13 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::Error;
+use crate::panel::Panel;
 use crate::scanner::{Command, State};
 
-/// Raised on any change of meaning; a peer speaking another version is refused at `Hello`.
-pub const PROTOCOL: u16 = 1;
+/// Raised on any change of meaning. A desktop answers every phone from `OLDEST` on in the phone's
+/// own version; a phone wants the desktop's to be its own.
+pub const PROTOCOL: u16 = 2;
+pub const OLDEST: u16 = 1;
 
 /// A Noise message is at most 65 535 bytes, its tag 16 of them.
 pub const MAX_PLAINTEXT: usize = 65_535 - 16;
@@ -34,6 +37,11 @@ pub enum ToPhone {
     },
     Pong {
         sent: u64,
+    },
+    /// The screen with the panel, which replaces `State` from protocol 2 on.
+    Screen {
+        state: State,
+        panel: Panel,
     },
 }
 

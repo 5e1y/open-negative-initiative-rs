@@ -134,6 +134,13 @@ impl Remote {
         let (reading, screen) = (shared.clone(), display.clone());
         let read_task = tokio::spawn(async move {
             while let Ok(message) = reader.recv::<ToPhone>().await {
+                let message = match message {
+                    ToPhone::Screen { mut state, panel } => {
+                        state.panel = panel;
+                        ToPhone::State(state)
+                    }
+                    other => other,
+                };
                 match message {
                     ToPhone::State(state) => {
                         let shown = {
@@ -151,7 +158,7 @@ impl Remote {
                     ToPhone::Preview { jpeg, .. } => {
                         screen.send_modify(|display| display.preview = Some(Arc::new(jpeg)));
                     }
-                    ToPhone::Welcome { .. } => {}
+                    ToPhone::Welcome { .. } | ToPhone::Screen { .. } => {}
                 }
             }
             screen.send_modify(|display| display.connected = false);

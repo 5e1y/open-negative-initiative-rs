@@ -17,7 +17,7 @@ use crate::Error;
 use crate::noise::{self, Identity, Mode, PublicKey};
 use crate::pairing::PairingCode;
 use crate::scanner::{Command, State};
-use crate::wire::{Import, PROTOCOL, ToHost, ToPhone};
+use crate::wire::{Import, OLDEST, PROTOCOL, ToHost, ToPhone};
 
 /// A QR code stays valid this long, and for one phone only.
 const PAIRING_WINDOW: Duration = Duration::from_secs(120);
@@ -174,7 +174,7 @@ impl Host {
         trusted.iter().any(|phone| self.shared.import_pin(phone) == pin)
     }
 
-    /// The scanner's screen after a change, from whatever hand; every phone receives it.
+    /// The screen after a change, from whatever hand; every phone receives it, the panel from protocol 2 on.
     pub fn publish(&self, mut state: State) {
         state.applied = 0;
         let taken = self.shared.taken.lock().expect("taken lock").clone();
@@ -233,13 +233,14 @@ where
         return;
     };
     // A second phone on the same code finds it spent and hears no Welcome, so it reads a refusal.
-    if protocol == PROTOCOL && mode == Mode::Pairing && !shared.take_window(secret) {
+    if protocol >= OLDEST && mode == Mode::Pairing && !shared.take_window(secret) {
         return;
     }
     let import = shared.import.lock().expect("import lock").clone();
     let import = import.map(|(fingerprint, port)| Import { fingerprint, port, pin: shared.import_pin(&phone) });
-    if writer.send(&ToPhone::Welcome { protocol: PROTOCOL, name: shared.name.clone(), import }).await.is_err()
-        || protocol != PROTOCOL
+    let spoken = if protocol >= OLDEST { protocol.min(PROTOCOL) } else { PROTOCOL };
+    if writer.send(&ToPhone::Welcome { protocol: spoken, name: shared.name.clone(), import }).await.is_err()
+        || protocol < OLDEST
     {
         return;
     }
@@ -277,7 +278,11 @@ where
                 if changed.is_err() { break }
                 let (mut state, taken) = screen.borrow_and_update().clone();
                 state.applied = taken.get(&connection).copied().unwrap_or(0);
-                if writer.send(&ToPhone::State(state)).await.is_err() { break }
+                let message = match spoken {
+                    1 => ToPhone::State(state),
+                    _ => ToPhone::Screen { panel: state.panel.clone(), state },
+                };
+                if writer.send(&message).await.is_err() { break }
             }
             _ = revoked.changed() => {
                 if !shared.trusts(&phone) { break }
