@@ -51,9 +51,7 @@ pub struct Archive {
     pub expanded: HashSet<NodeId>,
 }
 
-fn stem(path: &str) -> String {
-    Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-}
+use oni_library::paths::stem;
 
 impl Archive {
     /// Surveys `folder` alone and reads every photo off its own files, through an index in memory.

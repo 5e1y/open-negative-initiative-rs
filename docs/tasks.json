@@ -658,7 +658,7 @@
     "title": "Slop hunt: twelve reviewers' findings checked, the confirmed dead code removed",
     "status": "in progress",
     "detail": "Twelve read-only reviewers covered the workspace; each finding sampled was checked by grep before acting. Removed: max_params, THUMB_SIDE, zoom_over_fit, resting_position, circle, archive_paths, is_roll_field, the Gpu area_average/area_maximum wrappers, missing_paths, is_listing, maker_crop, tab_title, beyond_working, rotated_bounding_size, ANCHOR_CLAMP, HUNT_REACH, Discovery::announce, cert_pem/key_pem, Surveys::covering; the TIFF doc now says associated alpha.",
-    "outcome": ""
+    "outcome": "Then the app shell's two copies of the file-stem helper read oni_library::paths::stem."
   },
   {
     "id": 93,

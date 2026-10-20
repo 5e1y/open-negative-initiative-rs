@@ -523,9 +523,7 @@ fn premultiplied(bytes: &[u8], w: usize, h: usize) -> Image {
     Image::from_rgba8_premultiplied(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32))
 }
 
-fn stem(path: &str) -> String {
-    Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-}
+use oni_library::paths::stem;
 
 pub struct Shell {
     pub window: MainWindow,
