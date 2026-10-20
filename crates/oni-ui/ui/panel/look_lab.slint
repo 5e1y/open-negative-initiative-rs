@@ -1,5 +1,5 @@
-// The Frontier Look Lab: the measured table's named values, each slider resting on the machine's own
-// render, so the image moves only by what the hand changes.
+// The Frontier Look Lab: the measured table's named values, each slider opening on the machine's own
+// effect over a zero that is no effect, so the hand sees what each value does to the render.
 import { Section, Tabs, Slider, SliderFill, PlotInkStyle, ScannerStyle, Space } from "../ds/ds.slint";
 import { PanelState } from "state.slint";
 
@@ -50,7 +50,7 @@ export component LookLabBlocks inherits VerticalLayout {
     LabSection {
         title: "Lab Colours";
         block: 0;
-        help: "Each colour of the Frontier's render by its hue: Hue turns it, Twist turns it more as it grows more vivid, Chroma makes it more or less vivid. At zero every slider is the measured machine.";
+        help: "Each colour of the Frontier's render by its hue: Hue turns it, Twist turns it more as it grows more vivid, Chroma makes it more or less vivid. Each slider opens on what the Frontier does; zero takes that effect away, a double click puts it back.";
         Tabs {
             tabs: ["Pink", "Red", "Orange", "Yellow", "Lime", "Green", "Teal", "Cyan", "Blue", "Indigo", "Violet", "Magenta"];
             marked: LookLab.sector-marked;

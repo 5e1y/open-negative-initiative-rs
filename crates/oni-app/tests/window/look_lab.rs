@@ -114,8 +114,9 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     g.invoke_release(0);
     rig.pump();
     let turned = lab().hue[8];
-    assert!((turned + 8.0).abs() < 0.05, "60 px of 300 on ±20° is −8°: {turned}");
-    assert_eq!(g.get_readouts().row_data(0).unwrap(), "-8.0°");
+    assert!((turned + 12.0).abs() < 0.05, "60 px of 300 on ±30° is −12°: {turned}");
+    let effect = oni_pipeline::look_lab::FITTED.frontier.hue[8] as f32 + turned;
+    assert_eq!(g.get_readouts().row_data(0).unwrap(), format!("{effect:+.1}°"), "the machine's effect, moved");
     assert!(g.get_sector_marked().row_data(8).unwrap() && g.get_modified().row_data(0).unwrap());
     rig.until("the edited render", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
     rig.settle();

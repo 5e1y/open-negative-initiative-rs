@@ -49,20 +49,53 @@ pub fn value(i: usize, sector: usize, grey: usize) -> LabValue {
     }
 }
 
-/// The distance as the panel reads it: degrees, a share of chroma, density, or the character whole.
+/// The Frontier's own effect on a value, measured from no effect: a gain's distance from one.
+pub fn machine(v: LabValue) -> f32 {
+    let f = &oni_pipeline::look_lab::FITTED.frontier;
+    (match v {
+        LabValue::Hue(i) => f.hue[i],
+        LabValue::Twist(i) => f.twist[i],
+        LabValue::Chroma(i) => f.chroma[i] - 1.0,
+        LabValue::SaturationByL => f.saturation_by_l,
+        LabValue::Matrix(i) => f.matrix[i],
+        LabValue::PaperGain(i) => f.paper_gain[i] - 1.0,
+        LabValue::PaperOffset(i) => f.paper_offset[i],
+        LabValue::GreyA(i) => f.grey_a[i],
+        LabValue::GreyB(i) => f.grey_b[i],
+        LabValue::Character => f.character,
+    }) as f32
+}
+
+/// A slider's travel, no effect at its zero, wide enough for every value the machine was fitted to.
+pub fn span(v: LabValue) -> (f32, f32) {
+    if v == LabValue::Character { (0.0, 1.0) } else { v.range() }
+}
+
+/// The effect a slider shows: the machine's plus the frame's edit.
+fn shown(v: LabValue, lab: &FrontierLab) -> f32 {
+    machine(v) + lab.get(v)
+}
+
+/// The edit that shows `effect`, held inside the slider's travel.
+fn edit_for(v: LabValue, effect: f32) -> f32 {
+    let (low, high) = span(v);
+    effect.clamp(low, high) - machine(v)
+}
+
+/// The effect as the panel reads it: degrees, a share of chroma or gain, density, or the character.
 pub fn readout(v: LabValue, x: f32) -> String {
     match v {
         LabValue::Hue(_) | LabValue::Twist(_) => format!("{x:+.1}°"),
-        LabValue::Chroma(_) => format!("{:+.0} %", x * 100.0),
+        LabValue::Chroma(_) | LabValue::PaperGain(_) => format!("{:+.0} %", x * 100.0),
         LabValue::GreyA(_) | LabValue::GreyB(_) => format!("{:+.1}", x * 1000.0),
-        LabValue::Character => format!("{:.0} %", (1.0 + x) * 100.0),
+        LabValue::Character => format!("{:.0} %", x * 100.0),
         _ => format!("{x:+.3}"),
     }
 }
 
-fn fraction(v: LabValue, x: f32) -> f32 {
-    let (low, high) = v.range();
-    track::position(x, &(low..=high), None)
+fn fraction(v: LabValue, effect: f32) -> f32 {
+    let (low, high) = span(v);
+    track::position(effect, &(low..=high), None)
 }
 
 /// Which of colours, dyes, paper, greys and character a slider belongs to.
@@ -103,8 +136,8 @@ impl Ctl {
         let (live, sector, grey) = GESTURE.with_borrow(|s| (s.live, s.sector, s.grey));
         let lab = live.unwrap_or(*stored);
         let values: Vec<LabValue> = (0..SLIDERS).map(|i| value(i, sector, grey)).collect();
-        let fractions: Vec<f32> = values.iter().map(|v| fraction(*v, lab.get(*v))).collect();
-        let readouts: Vec<SharedString> = values.iter().map(|v| readout(*v, lab.get(*v)).into()).collect();
+        let fractions: Vec<f32> = values.iter().map(|v| fraction(*v, shown(*v, &lab))).collect();
+        let readouts: Vec<SharedString> = values.iter().map(|v| readout(*v, shown(*v, &lab)).into()).collect();
         let marked = |n: usize, at: fn(usize) -> [LabValue; 3]| -> Vec<bool> { (0..n).map(|k| at(k).iter().any(|v| lab.get(*v) != 0.0)).collect() };
         let modified: Vec<bool> = (0..5).map(|s| rested(&lab, s) != lab).collect();
         g.set_fractions(ModelRc::new(VecModel::from(fractions)));
@@ -136,7 +169,7 @@ impl Ctl {
             s.presses[i] = Some(now);
             let v = value(i, s.sector, s.grey);
             if !double {
-                s.held = Some((i, fraction(v, lab.get(v))));
+                s.held = Some((i, fraction(v, shown(v, &lab))));
                 s.live = Some(lab);
             }
             (double, v)
@@ -161,8 +194,8 @@ impl Ctl {
                 return None;
             }
             let v = value(i, s.sector, s.grey);
-            let (low, high) = v.range();
-            lab.set(v, track::value(track::clamped(track::asked(start, translation, span, fine)), &(low..=high), None));
+            let (low, high) = self::span(v);
+            lab.set(v, edit_for(v, track::value(track::clamped(track::asked(start, translation, span, fine)), &(low..=high), None)));
             s.live = Some(lab);
             Some((lab, s.hand.offer(now)))
         });
@@ -207,7 +240,7 @@ impl Ctl {
     fn look_lab_nudge(self: &Rc<Self>, i: usize, by: impl Fn(LabValue, f32) -> f32) {
         let mut lab = self.state.borrow().store.settings().frontier_lab;
         let v = GESTURE.with_borrow(|s| value(i, s.sector, s.grey));
-        lab.set(v, by(v, lab.get(v)));
+        lab.set(v, edit_for(v, by(v, shown(v, &lab))));
         self.look_lab_once(lab);
     }
 
@@ -230,7 +263,7 @@ impl Ctl {
             let Some(i) = slider(i).filter(|_| dx != 0.0 && dx.abs() > dy.abs()) else { return false };
             p.scroll_kept_alive();
             p.look_lab_nudge(i, |v, x| {
-                let (low, high) = v.range();
+                let (low, high) = self::span(v);
                 let from = fraction(v, x);
                 track::value(track::clamped(track::asked(from, Ctl::scroll_travel(dx), span, fine)), &(low..=high), None)
             });
@@ -239,7 +272,7 @@ impl Ctl {
         let p = me.clone();
         g.on_step(move |i, direction| {
             if let Some(i) = slider(i) {
-                p.look_lab_nudge(i, |v, x| x + direction as f32 * (v.range().1 - v.range().0) / 100.0);
+                p.look_lab_nudge(i, |v, x| x + direction as f32 * (span(v).1 - span(v).0) / 100.0);
             }
         });
         let p = me.clone();
@@ -274,8 +307,12 @@ mod tests {
         lab.set(LabValue::Matrix(2), 0.05);
         let rest = rested(&lab, 0);
         assert_eq!((rest.hue[8], rest.matrix[2]), (0.0, 0.05), "the colours rest, the dyes stay");
-        assert_eq!(fraction(LabValue::Hue(0), 0.0), 0.5, "zero, the machine, sits mid-track");
-        assert_eq!(readout(LabValue::Character, -0.25), "75 %");
+        assert_eq!(fraction(LabValue::Hue(0), 0.0), 0.5, "no effect sits mid-track");
+        assert_eq!(readout(LabValue::Character, 0.75), "75 %");
+        // An unedited slider shows the machine's own effect, and the edit for no effect undoes it.
+        let blue = LabValue::Hue(8);
+        assert_eq!(shown(blue, &FrontierLab::default()), machine(blue));
+        assert!(machine(blue).abs() > 1.0 && (machine(blue) + edit_for(blue, 0.0)).abs() < 1e-6);
         // Twin: resting the dyes leaves the colours' edit.
         assert_eq!(rested(&lab, 1).hue[8], -8.0);
     }

@@ -41,18 +41,25 @@ pub enum LabValue {
 }
 
 impl LabValue {
-    /// The distance each value may travel from the machine's: the plan's ranges, centred on Frontier.
+    /// The plan's travel of each value's effect, which a stored distance from the machine's may span
+    /// twice over, so an edit reaches every effect from any value the machine was fitted to.
     pub fn range(self) -> (f32, f32) {
-        match self {
-            LabValue::Hue(_) => (-20.0, 20.0),
-            LabValue::Twist(_) => (-15.0, 15.0),
-            LabValue::Chroma(_) => (-0.5, 0.5),
-            LabValue::SaturationByL => (-0.3, 0.3),
-            LabValue::Matrix(_) => (-0.3, 0.3),
-            LabValue::PaperGain(_) | LabValue::PaperOffset(_) => (-0.2, 0.2),
-            LabValue::GreyA(_) | LabValue::GreyB(_) => (-0.03, 0.03),
-            LabValue::Character => (-1.0, 0.0),
-        }
+        let half = match self {
+            LabValue::Hue(_) => 30.0,
+            LabValue::Twist(_) => 20.0,
+            LabValue::Chroma(_) => 0.5,
+            LabValue::SaturationByL | LabValue::Matrix(_) => 0.3,
+            LabValue::PaperGain(_) | LabValue::PaperOffset(_) => 0.2,
+            LabValue::GreyA(_) | LabValue::GreyB(_) => 0.03,
+            LabValue::Character => return (-1.0, 0.0),
+        };
+        (-half, half)
+    }
+
+    /// The span a stored distance is held in.
+    pub fn stored(self) -> (f32, f32) {
+        let (low, high) = self.range();
+        if self == LabValue::Character { (low, high) } else { (2.0 * low, 2.0 * high) }
     }
 }
 
@@ -78,7 +85,7 @@ impl FrontierLab {
 
     /// One value set through its range; a value that is not a number leaves it at the machine's.
     pub fn set(&mut self, v: LabValue, value: f32) {
-        let (low, high) = v.range();
+        let (low, high) = v.stored();
         let value = if value.is_finite() { value.clamp(low, high) } else { 0.0 };
         let slot = match v {
             LabValue::Hue(i) => &mut self.hue[i],
@@ -143,7 +150,7 @@ mod tests {
         assert_eq!((torn.twist, torn.character), ([0.0; SECTORS], -0.25));
         // Twin: a value past its range lands on its stop rather than passing.
         let far: FrontierLab = serde_json::from_str(r#"{"hue":[90,0,0,0,0,0,0,0,0,0,0,0],"character":2}"#).unwrap();
-        assert_eq!((far.hue[0], far.character), (20.0, 0.0));
+        assert_eq!((far.hue[0], far.character), (60.0, 0.0));
         assert!(serde_json::from_str::<FrontierLab>("[1]").is_err());
     }
 }
