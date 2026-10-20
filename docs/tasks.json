@@ -1068,5 +1068,12 @@
     "title": "A canvas texture Slint refuses is tried again and said once, never a silent blank",
     "status": "done",
     "detail": "The canvas's texture was kept for its size even when Slint refused to import it, so every later render of that size drew into a texture nothing showed. It is kept only once imported; a refusal is logged and said once in the session."
+  },
+  {
+    "id": 148,
+    "type": "windows",
+    "title": "Copy Settings on the Windows clipboard under the app's own formats",
+    "status": "done",
+    "detail": "On Windows the board was the process's memory, so a copy never crossed windows or relaunches. It is the system clipboard under formats registered by the types' names (app.opennegative.settings, .framing, .measure-window), opened for each operation with a few tries while another program holds it, through clipboard-win (already in the tree under arboard). A Windows check writes the settings and reads them back, its twin a text that leaves no settings; a runner whose clipboard will not open skips it."
   }
 ]

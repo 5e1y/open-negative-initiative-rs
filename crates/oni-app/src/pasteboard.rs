@@ -87,8 +87,57 @@ impl Board for Shared {
 pub fn general() -> Box<dyn Board> {
     #[cfg(target_os = "macos")]
     return Box::new(mac::Pasteboard(None));
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    return Box::new(win::Clipboard);
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     Box::new(Memory::default())
+}
+
+/// The Windows clipboard under formats registered by the types' names, as the Mac's pasteboard
+/// takes them, so a copy crosses windows and relaunches there too.
+#[cfg(target_os = "windows")]
+mod win {
+    use clipboard_win::raw;
+
+    pub struct Clipboard;
+
+    fn format(kind: &str) -> Option<u32> {
+        raw::register_format(kind).map(|f| f.get())
+    }
+
+    /// The clipboard opened for one operation, a few tries while another program holds it.
+    fn opened() -> Option<clipboard_win::Clipboard> {
+        clipboard_win::Clipboard::new_attempts(10).ok()
+    }
+
+    impl super::Board for Clipboard {
+        fn change_count(&self) -> i64 {
+            raw::seq_num().map_or(0, |n| i64::from(n.get()))
+        }
+
+        fn data(&self, kind: &str) -> Option<Vec<u8>> {
+            let f = format(kind)?;
+            let _open = opened()?;
+            if !raw::is_format_avail(f) {
+                return None;
+            }
+            let mut out = Vec::new();
+            raw::get_vec(f, &mut out).ok()?;
+            Some(out)
+        }
+
+        fn clear(&mut self) {
+            if let Some(_open) = opened() {
+                let _ = raw::empty();
+            }
+        }
+
+        fn set(&mut self, kind: &str, data: &[u8]) {
+            if let (Some(f), Some(_open)) = (format(kind), opened()) {
+                let _ = raw::set_without_clear(f, data);
+            }
+        }
+    }
 }
 
 /// A named system pasteboard, shared by every process asking that name: a check's own, which
@@ -169,4 +218,21 @@ mod tests {
         board.set("public.utf8-plain-text", b"{\"version\":1}");
         assert_eq!(again.data(SETTINGS), None);
     }
+
+    /// The Windows clipboard holds the app's own formats and never takes a text for settings; a
+    /// runner whose clipboard will not open says so and checks nothing.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn the_windows_clipboard_holds_the_apps_own_formats() {
+        if clipboard_win::Clipboard::new_attempts(10).is_err() {
+            return eprintln!("SKIPPED: the clipboard does not open here");
+        }
+        let mut board = general();
+        write(&mut *board, SETTINGS, b"{\"version\":1}");
+        assert_eq!(board.data(SETTINGS).as_deref(), Some(&b"{\"version\":1}"[..]));
+        // Twin: a text put on the clipboard leaves no settings there.
+        let _ = clipboard_win::set_clipboard_string("{\"version\":1}");
+        assert_eq!(board.data(SETTINGS), None);
+    }
 }
+
