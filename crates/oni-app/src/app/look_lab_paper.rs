@@ -1,4 +1,4 @@
-//! The Look Lab's paper curve on its plot: the machine's, a print without its look, and the frame's,
+//! The Look Lab's paper curve on its plot: ONI's, which the Frontier prints on, the measured machine's, and the frame's,
 //! whose five handles follow the hand up and down between their neighbours, one undo step a press.
 
 use crate::app::Ctl;

@@ -219,7 +219,7 @@ impl Pipeline {
         Ok((Image::new(source), *n))
     }
 
-    /// The frame's edited Frontier, baked and uploaded once per edit.
+    /// The frame's Frontier on ONI's paper with its Lab edits, baked and uploaded once per edit.
     fn lab(&mut self, graph: &mut Graph, edits: &FrontierLab) -> Result<(Image, usize)> {
         if self.lab.as_ref().is_none_or(|(e, _, _)| e != edits) {
             let cube = look_lab::edits::table(edits);
@@ -241,11 +241,7 @@ impl Pipeline {
     /// `ScannerRender.apply`: the Frontier's table from density, then its warmth look.
     fn frontier(&mut self, graph: &mut Graph, framed: Image, s: &PipelineSettings) -> Result<Image> {
         let density = framed.then(stages::scanner_density(&scanner::density(s)));
-        let (table, n) = if s.frontier_lab.is_neutral() {
-            self.cube(graph, "frontier", &scanner::MACHINE.render)?
-        } else {
-            self.lab(graph, &s.frontier_lab)?
-        };
+        let (table, n) = self.lab(graph, &s.frontier_lab)?;
         let code = density.then_reading(stages::color_cube(n), &[table]);
         let (warmth, share) = self.warmed(graph, &code, s.scanner.w)?;
         Ok(code.then_reading(stages::scanner_output(share, scanner::LIFT, s.scanner_finish.contrast), &[warmth]))

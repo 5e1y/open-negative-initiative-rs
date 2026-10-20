@@ -30,7 +30,8 @@ pub fn paper_shift(handles: &[f32; PAPER], d: f64) -> f64 {
     (2.0 * t3 - 3.0 * t2 + 1.0) * v[k] + (t3 - 2.0 * t2 + t) * h * slope(k) + (-2.0 * t3 + 3.0 * t2) * v[k + 1] + (t3 - t2) * h * slope(k + 1)
 }
 
-/// The shipped Frontier values moved by the frame's edits.
+/// The shipped Frontier values moved by the frame's edits, printed on ONI's paper curve (the owner's
+/// call), which the handles move.
 pub fn edited(lab: &FrontierLab) -> LabParams {
     let mut p = FITTED.frontier.clone();
     let add = |values: &mut [f64], by: &[f32]| values.iter_mut().zip(by).for_each(|(v, d)| *v += f64::from(*d));
@@ -42,6 +43,7 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     add(&mut p.paper_offset, &lab.paper_offset);
     add(&mut p.grey_a, &lab.grey_a);
     add(&mut p.grey_b, &lab.grey_b);
+    p.paper = FITTED.neutral.paper;
     p.paper.iter_mut().enumerate().for_each(|(i, v)| *v += paper_shift(&lab.paper, super::paper::density(i)));
     // A curve held inside the code and climbing, as its spline needs.
     let mut floor = 0.0f64;
@@ -75,10 +77,12 @@ mod tests {
     }
 
     #[test]
-    fn at_rest_the_lab_is_the_measured_table_and_an_edit_moves_its_colours_only() {
+    fn at_rest_the_lab_is_the_machine_on_onis_paper_and_an_edit_moves_its_colours_only() {
         let rest = table(&FrontierLab::default());
-        assert_eq!(rest.cube_dimension, MACHINE.render.cube_dimension);
-        assert!(moved(&rest, &MACHINE.render, |_| true) < 1e-5, "the sliders at zero render the machine");
+        let on_onis_paper = LabParams { paper: FITTED.neutral.paper, ..FITTED.frontier.clone() };
+        assert!(moved(&rest, &bake(&on_onis_paper, SIDE), |_| true) < 1e-5, "the sliders at zero: the machine on ONI's paper");
+        // Twin: the machine's own paper prints another table.
+        assert!(moved(&rest, &MACHINE.render, |_| true) > 0.05);
         let mut lab = FrontierLab::default();
         (7..=9).for_each(|i| lab.set(LabValue::Hue(i), -10.0));
         let turned = table(&lab);
@@ -93,13 +97,14 @@ mod tests {
         let mut lab = FrontierLab::default();
         lab.set(LabValue::Paper(0), 0.08);
         let p = edited(&lab);
-        assert!((p.paper[0] - FITTED.frontier.paper[0] - 0.08).abs() < 1e-6 && (p.paper[1] - FITTED.frontier.paper[1] - 0.08).abs() < 1e-6 && p.paper[2] > FITTED.frontier.paper[2], "the whole toe lifts: {:?}", &p.paper[..5]);
-        assert!((p.paper[14] - FITTED.frontier.paper[14]).abs() < 1e-9, "the whites stay");
+        let oni = FITTED.neutral.paper;
+        assert!((p.paper[0] - oni[0] - 0.08).abs() < 1e-6 && (p.paper[1] - oni[1] - 0.08).abs() < 1e-6 && p.paper[2] > oni[2], "the whole toe lifts: {:?}", &p.paper[..5]);
+        assert!((p.paper[14] - oni[14]).abs() < 1e-9, "the whites stay");
         assert!(p.paper.windows(2).all(|w| w[1] >= w[0]), "{:?}", p.paper);
         // Twin: the whites pulled far down are held level with the highlights, never under them.
         let mut dip = FrontierLab::default();
         dip.set(LabValue::Paper(4), -0.9);
         let q = edited(&dip);
-        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < 0.9 && q.paper[14] == q.paper[13], "{:?}", q.paper);
+        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < FITTED.neutral.paper[14] - 0.03 && q.paper[14] == q.paper[13], "{:?}", q.paper);
     }
 }

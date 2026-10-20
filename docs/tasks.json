@@ -1438,5 +1438,12 @@
     "title": "The Frontier prints Pro's black black: the roll's grey on the machine's neutral, Pro's black on the table's",
     "status": "done",
     "detail": "The owner saw lifted blacks the paper curve could not reach. Measured on DSC_6442 and DSC_6432: the Frontier stretched density by 1.3 over the roll's green window about its median (Swift's densityGain), which laid the frames between 0.26 and 1.1 D of the table, whose grey prints black under about 0.14 D and white over about 1.54 D: blacks came out at code 0.06-0.07, whites at 0.80-0.85. Laying the whole window on the table's ends (the owner's first ask) blacked the blacks but darkened the mid-tones (median 0.25), as the table is steeper than Pro's print. Chosen with the owner on renders: the roll's median stays on the machine's neutral and the density where Pro prints its grey black (its window, print exposure and curve included) lands on the table's black: blacks 0.002, median 0.43 as before, whites 0.90, clipping as the Frontier does. scanner::fitted_density keeps the old stretch for the Look Lab's fits."
+  },
+  {
+    "id": 196,
+    "type": "feature",
+    "title": "The Frontier prints on ONI's paper curve",
+    "status": "done",
+    "detail": "The owner's call: the Frontier's paper curve is ONI's (the neutral set's, fitted to Pro at rest), not the measured machine's S; the five handles move it, a double click returns a handle to ONI's. Every Frontier frame now renders through the Lab's bake (once per set of edits, about a millisecond), so a frame with no edit prints on ONI's paper too; the measured curve stays drawn faint for reference."
   }
 ]
