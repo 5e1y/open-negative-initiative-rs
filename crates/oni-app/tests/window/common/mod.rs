@@ -145,6 +145,11 @@ impl Rig {
 
 /// The headless platform installed for this process, and the rig that drives it.
 pub fn rig(shots: PathBuf) -> Rig {
+    // `AppFolders`: a check writes its dust patches in a folder of its own, never the machine's caches.
+    if std::env::var_os("ONI_CACHES").is_none() {
+        // SAFETY: set before the shell or any worker thread of this process starts.
+        unsafe { std::env::set_var("ONI_CACHES", std::env::temp_dir().join(format!("oni-window-caches-{}", std::process::id()))) };
+    }
     let window = MinimalSoftwareWindow::new(slint::platform::software_renderer::RepaintBufferType::NewBuffer);
     let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
     slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now() })).unwrap();

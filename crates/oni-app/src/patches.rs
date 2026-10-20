@@ -4,20 +4,9 @@
 use oni_settings::id::Id;
 use std::path::{Path, PathBuf};
 
-/// The app's caches folder: `ONI_CACHES`, else the platform's own, under the app's name.
+/// The app's caches folder, `AppFolders.caches`'s one route.
 pub fn caches() -> PathBuf {
-    if let Some(dir) = std::env::var_os("ONI_CACHES") {
-        return PathBuf::from(dir);
-    }
-    let home = || std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
-    let base = if cfg!(target_os = "macos") {
-        home().join("Library/Caches")
-    } else if cfg!(windows) {
-        std::env::var_os("LOCALAPPDATA").map(PathBuf::from).unwrap_or_else(home)
-    } else {
-        std::env::var_os("XDG_CACHE_HOME").map(PathBuf::from).unwrap_or_else(|| home().join(".cache"))
-    };
-    base.join(crate::timing::FOLDER)
+    crate::system::caches()
 }
 
 pub fn file(caches: &Path, id: Id) -> PathBuf {

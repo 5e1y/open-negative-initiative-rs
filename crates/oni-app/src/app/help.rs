@@ -275,4 +275,30 @@ mod tests {
         assert_ne!(release(EDITION), EDITION);
         assert_ne!(release(EDITION), "1.1");
     }
+
+    /// `WhatsNew.selfCheck`: every note hangs on a heading the interface draws, and every heading's
+    /// id has its note, or a note is never seen and a heading draws nothing.
+    #[test]
+    fn every_note_hangs_on_a_heading_and_every_heading_has_its_note() {
+        fn walk(dir: &std::path::Path, hung: &mut std::collections::BTreeSet<String>) {
+            for entry in std::fs::read_dir(dir).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    walk(&path, hung);
+                } else if path.extension().is_some_and(|e| e == "slint") {
+                    let text = std::fs::read_to_string(&path).unwrap();
+                    hung.extend(text.split("News.read(\"").skip(1).filter_map(|rest| rest.split('"').next().map(String::from)));
+                }
+            }
+        }
+        let mut hung = std::collections::BTreeSet::new();
+        walk(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui"), &mut hung);
+        let noted: std::collections::BTreeSet<String> = NOTES.iter().map(|(i, _, _)| (*i).to_string()).collect();
+        assert!(!hung.is_empty());
+        assert_eq!(hung, noted, "each note on a heading, each heading's id noted");
+        // Twin: a note named nowhere is caught.
+        let mut ghost = noted.clone();
+        ghost.insert("ghost.1.3.1".into());
+        assert_eq!(ghost.difference(&hung).collect::<Vec<_>>(), ["ghost.1.3.1"]);
+    }
 }

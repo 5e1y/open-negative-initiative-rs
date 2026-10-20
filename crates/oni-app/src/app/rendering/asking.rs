@@ -58,12 +58,7 @@ impl Ctl {
                 s.healing.insert(path.clone());
                 (path.clone(), s.store.settings().clone())
             });
-            // `NegativeView.referenceSettings`: the bar's reset frame, the dust still healed.
-            let reference = s.split.map(|_| {
-                let mut reference = oni_core::parameters::imported(&live);
-                reference.corrections = live.corrections.clone();
-                reference
-            });
+            let reference = s.split.map(|_| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
             (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)

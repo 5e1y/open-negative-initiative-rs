@@ -96,4 +96,38 @@ mod tests {
         moved.print.exposure += 0.5;
         assert!(is_converted(&moved), "twin: an edit converts it");
     }
+
+    /// `Thumbnails.scanChecks`: a frame measured on its roll shows the render, reset it shows its
+    /// scan again, and a crop alone converts nothing.
+    #[test]
+    fn a_measured_frame_shows_the_render_and_a_crop_alone_its_scan() {
+        use oni_settings::frame::RollReference;
+        let mut measured = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
+        let id = oni_settings::id::Id::new();
+        measured.roll_reference = Some(RollReference { id, stops: [0.4, 0.0, -0.3], black: [0.12, 0.14, 0.18], white: [0.61, 0.66, 0.7], base: None, median: None });
+        assert!(is_converted(&measured));
+        let mut framed = oni_core::parameters::unconverted(&measured);
+        assert!(!is_converted(&framed), "reset to default it shows its scan again");
+        framed.geometry.crop = oni_settings::cg::Rect { x: 0.1, y: 0.1, width: 0.8, height: 0.8 };
+        assert!(!is_converted(&framed), "a crop is a fact of the frame");
+        // Twin: a look moved converts it.
+        framed.print.exposure += 0.5;
+        assert!(is_converted(&framed));
+    }
+
+    /// A file carrying no preview is read and reduced to the tile's side; one that is no image gives none.
+    #[test]
+    fn a_file_without_a_preview_is_reduced_to_the_tile_and_a_non_image_gives_none() {
+        let dir = std::env::temp_dir().join(format!("oni-app-scans-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("scan.tif");
+        image::RgbImage::from_pixel(1200, 600, image::Rgb([230, 128, 51])).save(&file).unwrap();
+        let tile = scan(&file).and_then(|j| image::load_from_memory(&j).ok()).map(|i| (i.width() as usize, i.height() as usize));
+        assert_eq!(tile, Some((SIDE, SIDE / 2)));
+        // Twin: a file that is no image gives none.
+        let text = dir.join("notes.tif");
+        std::fs::write(&text, b"not an image").unwrap();
+        assert!(scan(&text).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

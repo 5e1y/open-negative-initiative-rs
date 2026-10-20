@@ -151,7 +151,7 @@ impl Default for Options {
             canvas: None,
             // A check's own folder and no reporter: it never writes the owner's journal nor opens an issue.
             support: std::env::temp_dir().join(format!("oni-support-{}", std::process::id())),
-            caches: system::caches(),
+            caches: std::env::temp_dir().join(format!("oni-caches-{}", std::process::id())),
             picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
             discard: Box::new(system::trash),
             reporter: std::sync::Arc::new(|_: &str, _: Option<String>| Err("no reporter in a check".to_string())),

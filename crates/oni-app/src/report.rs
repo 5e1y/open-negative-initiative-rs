@@ -123,6 +123,7 @@ mod tests {
         let blob = seal(text, &public).unwrap();
         assert!(blob.starts_with(PREFIX));
         assert_eq!(open(&blob, &key).as_deref(), Some(text));
+        assert!(!blob.contains("line"), "the blob carries no readable word");
         // Twins: another key reads nothing, and a blob changed on the way fails as a whole.
         assert_eq!(open(&blob, &StaticSecret::random_from_rng(OsRng)), None);
         let mut bytes = blob.into_bytes();
