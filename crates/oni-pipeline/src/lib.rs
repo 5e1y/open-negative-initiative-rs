@@ -69,6 +69,8 @@ pub struct Pipeline {
     hand: Option<(u64, Source, usize)>,
     /// The frame's Look Lab table and the edits it was baked from.
     lab: Option<(FrontierLab, Source, usize)>,
+    /// The frame's Frontier look on ONI's display code, as the ONI machine's look reads.
+    lab_code: Option<(FrontierLab, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     strokes: Vec<(Vec<[f32; 4]>, Source)>,
 }
@@ -249,14 +251,24 @@ impl Pipeline {
 
     /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
     fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, machine: ScannerMachine) -> Result<Image> {
-        let hand = (machine == ScannerMachine::Frontier).then(frontier_table::current).flatten();
-        let code = image.then(stages::scanner_encode(if hand.is_some() { 1.0 } else { oni_look::ROOT }));
+        let frontier = machine == ScannerMachine::Frontier;
+        let hand = frontier.then(frontier_table::current).flatten();
+        // The Frontier's look reads each channel's share of ONI's window as it stands, unprinted.
+        let code = if frontier && hand.is_none() { image } else { image.then(stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT })) };
         let (table, n) = match hand {
             Some((generation, cube)) => {
                 if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
                     self.hand = Some((generation, upload_cube(graph, &cube)?, cube.cube_dimension));
                 }
                 let (_, source, n) = self.hand.as_ref().expect("uploaded above");
+                (Image::new(source), *n)
+            }
+            None if frontier => {
+                if self.lab_code.as_ref().is_none_or(|(e, _, _)| *e != s.frontier_lab) {
+                    let cube = look_lab::edits::table_on_code(&s.frontier_lab);
+                    self.lab_code = Some((s.frontier_lab, upload_cube(graph, &cube)?, cube.cube_dimension));
+                }
+                let (_, source, n) = self.lab_code.as_ref().expect("baked above");
                 (Image::new(source), *n)
             }
             None => self.cube(graph, "oni-look", &oni_look::CUBE)?,

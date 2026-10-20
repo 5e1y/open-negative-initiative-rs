@@ -178,3 +178,22 @@ fn the_bar_s_reset_clears_the_edit_of_the_face_it_is_pressed_on() {
     assert_eq!((store.settings().scanner.d, store.settings().secret_sauce), (3, 0.0));
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// Frontier 2 rides on the Frontier machine: its sidecar names the machine `frontier`, so the Swift app
+/// reads the Frontier, and either machine picked leaves it.
+#[test]
+fn frontier_2_is_written_apart_from_the_machine_and_a_machine_picked_leaves_it() {
+    let (mut store, paths, dir) = fresh("print", 1);
+    let print = PipelineSettings { scanner_machine: ScannerMachine::Frontier, scanner_print: true, ..store.settings().clone() };
+    store.apply(Command::Write(Box::new(print)));
+    store.flush();
+    let text = std::fs::read_to_string(oni_settings::sidecar::url_for(Path::new(&paths[0]))).unwrap();
+    assert!(text.contains("\"scannerPrint\" : true") && text.contains("\"scannerMachine\" : \"frontier\""), "{text}");
+    store.apply(Command::Scan(Scan::Machine(Machine::Oni)));
+    assert!(!store.settings().scanner_print && store.settings().scanner_machine == ScannerMachine::Oni);
+    store.flush();
+    // Twin: off Frontier 2 the key is not written, so a frame never on it keeps the Swift app's document.
+    let text = std::fs::read_to_string(oni_settings::sidecar::url_for(Path::new(&paths[0]))).unwrap();
+    assert!(!text.contains("scannerPrint"), "{text}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

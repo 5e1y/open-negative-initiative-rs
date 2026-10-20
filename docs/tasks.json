@@ -1466,5 +1466,12 @@
     "title": "The Lab's curve acts on the image it is given, black and white in the corners",
     "status": "done",
     "detail": "The owner did not understand the flats at both ends of the graph: its x axis ran over the table's whole density domain while the straight paper spans only the table's window (black 0.14 D, white 1.54 D), so the black and white handles sat on the clipped flats. The curve is now drawn and applied over the image the straight paper gives (0 to 1): the diagonal at rest, handles at 0, 1/4, 1/2, 3/4 and 1, the corners black and white; the measured machine's paper is drawn over the same axis, faint."
+  },
+  {
+    "id": 200,
+    "type": "fix",
+    "title": "The Frontier takes ONI's conversion whole, its print bypassed for its look; the Lab's curve gives way to the Curves block",
+    "status": "done",
+    "detail": "The owner found the Frontier burning raw0021 (its export: median luminance 223 against ONI's 147, 36.7 % of pixels with a channel at 255, against 0.3 %) and asked for every stage identical to the ONI machine but its clicks, print curve, look and output. The Frontier now runs on_oni_machine like the ONI machine: Pro's conversion with the same density, per-channel window, stretch and separation, the same gains and clicks; Pro's print is bypassed, and the Frontier's look (the Lab chain, baked on 33 nodes over each channel's share of the window, read as the table's density from its black to its white, on a straight paper) takes its place, then the warmth and the output. The B anchor of #195 no longer drives it (it remains for Frontier 2's density path). The Lab's five-handle curve is removed: the Scanner face's Curves block, the app's own editor, shapes the tone."
   }
 ]
