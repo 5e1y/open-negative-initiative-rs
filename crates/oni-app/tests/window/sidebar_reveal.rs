@@ -150,7 +150,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     let (_, b16) = photo(&lib, "B16").expect("B16 has a row");
     assert!(in_view(&lib, height, &b16), "B16 is in view to be clicked");
     rest(&rig);
-    lib.invoke_row_clicked(photo(&lib, "B16").unwrap().0 as i32);
+    lib.invoke_row_clicked(photo(&lib, "B16").unwrap().0 as i32, false, false);
     rig.pump();
     assert_eq!(open_name(&ctl), "B16");
     assert_eq!(lib.get_tree_viewport_y(), scrolled, "a click in the column never scrolls it");
@@ -170,7 +170,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     assert_eq!(open_name(&ctl), "B16", "twin: the chevron opens nothing");
     let still = lib.get_tree_viewport_y();
     rest(&rig);
-    lib.invoke_row_clicked(folder(&lib, "Roll A").0 as i32);
+    lib.invoke_row_clicked(folder(&lib, "Roll A").0 as i32, false, false);
     rig.pump();
     assert!(open_name(&ctl).starts_with('A'), "the roll's first photo opens: {}", open_name(&ctl));
     assert!(folder(&lib, "Roll A").1.expanded, "its roll unfolds");
@@ -191,7 +191,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     rig.pump();
     let at = trip();
     assert!(project_rows()[at].expanded, "opening B05 unfolds Trip");
-    assert!(project_rows()[at + 1].title == "B05" && project_rows()[at + 1].selected, "B05 is ringed under Trip");
+    assert!(project_rows()[at + 1].title == "B05.tif" && project_rows()[at + 1].selected, "B05 is ringed under Trip, named in full");
     let row = w.global::<oni_app::DS>().get_control_film_sidebar_row_height();
     let offset = -lib.get_project_viewport_y();
     assert!(offset > 0.0, "Trip's photo sits below the list's first screen, so it scrolls");
@@ -201,7 +201,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
 
     // A photo row clicked in the projects opens it and leaves the list where it is.
     rest(&rig);
-    lib.invoke_project_row_clicked(at as i32 + 2);
+    lib.invoke_project_row_clicked(at as i32 + 2, false, false);
     rig.pump();
     rig.drawn();
     assert_eq!(open_name(&ctl), "B06");

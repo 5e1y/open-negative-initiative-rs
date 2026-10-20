@@ -110,6 +110,11 @@ impl Ctl {
             Act::Reveal(paths) => system::reveal_all(&paths.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             Act::OpenTrash => self.open_trash(),
             Act::RestoreAll => self.ask_restore_all(),
+            Act::RenameFolder(path) => self.rename_in_tree(path),
+            Act::Roll(path, make) => self.make_roll(&path, make),
+            Act::NewFolder(path) => {
+                self.new_folder(&path, false);
+            }
         }
         self.publish_bar();
         false

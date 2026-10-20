@@ -9,7 +9,7 @@ impl Ctl {
     }
 
     /// `saveProjects`: every member's path written down, then the one file.
-    pub(super) fn save_projects(&self) {
+    pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
             let located = project::located(&s.org.projects, &s.rows);
@@ -59,6 +59,12 @@ impl Ctl {
             s.org.reorder = None;
             s.org.renaming = None;
             s.org.info_loaded = None;
+            // Each tab's tree is made anew, its own picks and fields with it.
+            s.org.tree_pick = TreePick::default();
+            s.org.project_pick = TreePick::default();
+            s.org.project_renaming = None;
+            s.tree_renaming = None;
+            s.org.tree_draft = None;
         }
         if let Some(w) = self.window() {
             w.global::<Library>().set_surface(i);
@@ -77,7 +83,7 @@ impl Ctl {
                 .iter()
                 .map(|(node, depth)| {
                     let id = node.id();
-                    let ringed = s.org.project_ring.as_ref() == Some(&id);
+                    let ringed = s.org.project_ring.as_ref() == Some(&id) || s.org.project_pick.selection.contains(&id);
                     match node {
                         Node::Project(g) => TreeRow {
                             depth: *depth as i32,
@@ -87,12 +93,13 @@ impl Ctl {
                             expandable: !g.entries.is_empty(),
                             expanded: s.org.project_expanded.contains(&id),
                             selected: ringed,
-                            renaming: false,
+                            renaming: s.org.project_renaming == Some(g.id),
                             ..TreeRow::default()
                         },
                         Node::Photo { entry, .. } => TreeRow {
                             depth: *depth as i32,
-                            title: stem(&entry.path).into(),
+                            // `ProjectRow.title`: the photo's whole file name.
+                            title: oni_library::paths::name(&entry.path).into(),
                             caption: library::medal(entry.label).into(),
                             kind: 2,
                             expandable: false,
@@ -122,26 +129,5 @@ impl Ctl {
             }
         }
         self.publish_projects();
-    }
-
-    /// `projectContextMenu`: Delete Project on a project, Edit then the cell menu on a photo.
-    pub(in crate::app) fn project_row_menu(self: &Rc<Self>, i: usize) -> bool {
-        let id = self.state.borrow().org.project_nodes.get(i).cloned();
-        match id {
-            Some(NodeId::Project(id)) => {
-                let item = Item { line: menu_line("Delete Project", true, false, false), act: Act::DeleteProject(id) };
-                self.open_menu(vec![item], None)
-            }
-            Some(NodeId::Photo { path, .. }) => {
-                let can_paste = self.can_paste();
-                let items = {
-                    let s = self.state.borrow();
-                    let scope = organise::cell_scope(&path, &s.picks.selection);
-                    self.cell_items(&s, &path, &scope, true, can_paste)
-                };
-                self.open_menu(items, Some(path))
-            }
-            None => false,
-        }
     }
 }

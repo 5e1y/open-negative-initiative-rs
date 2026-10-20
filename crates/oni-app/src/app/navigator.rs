@@ -112,7 +112,7 @@ impl Nav {
     }
 
     /// `rollFolders`: the opened folder's rolls and the favourites', with the hand's edits on top.
-    fn rolls(&self) -> HashSet<String> {
+    pub(super) fn rolls(&self) -> HashSet<String> {
         let mut out: HashSet<String> = self.opened_rolls.union(&self.area_rolls).cloned().collect();
         for (folder, roll) in &self.roll_edits {
             if *roll {

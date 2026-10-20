@@ -82,7 +82,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     ctl.state.borrow_mut().forget_tiles();
     let renders = ctl.state.borrow().renders();
     let b = lib.get_rows().iter().position(|r| r.kind == 2 && r.title == "B").expect("B's row");
-    lib.invoke_row_clicked(b as i32);
+    lib.invoke_row_clicked(b as i32, false, false);
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("B.tif"));
     assert_eq!(c.get_frame().size().width, 0, "nothing of A's picture stands under B's name");
     assert_eq!(c.get_before().size().width, 0, "nor A's before");

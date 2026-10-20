@@ -295,7 +295,12 @@ impl Ctl {
         let Some(archive) = &s.archive else { return };
         let rows = archive.rows();
         let ids: Vec<oni_library::archive_tree::NodeId> = rows.iter().map(|r| r.id.clone()).collect();
+        let waiting = s.rename_request.is_some();
         tree_rename::land(&mut s.rename_request, &mut s.tree_renaming, &ids, beside_photo);
+        // `requestLanded` reveals the row it types over.
+        let landed = (waiting && s.rename_request.is_none())
+            .then(|| ids.iter().position(|id| matches!(id, oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str()))))
+            .flatten();
         let paths: Vec<Option<String>> = rows
             .iter()
             .map(|r| match &r.id {
@@ -320,16 +325,20 @@ impl Ctl {
                     kind: r.kind,
                     expandable: r.expandable,
                     expanded: r.expanded,
-                    selected: path.as_deref().is_some_and(|p| s.tree_marks(p)),
+                    selected: path.as_deref().is_some_and(|p| s.tree_marks(p)) || s.org.tree_pick.selection.contains(&r.id),
                     ..TreeRow::default()
                 }
             })
             .collect();
         s.tree_paths = paths;
+        s.org.tree_ids = ids;
         drop(guard);
         self.lay_tree(&mut rows);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
         self.follow_tree();
+        if let Some(i) = landed {
+            self.centre_row(&w, i);
+        }
     }
 
     /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
@@ -342,7 +351,8 @@ impl Ctl {
             return self.publish_tree();
         }
         for (i, path) in s.tree_paths.iter().enumerate() {
-            let marked = path.as_deref().is_some_and(|p| s.tree_marks(p));
+            let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
+            let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
             if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
                 row.selected = marked;
                 model.set_row_data(i, row);

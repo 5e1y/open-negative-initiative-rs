@@ -42,6 +42,7 @@ pub mod thumbnails;
 pub mod timing;
 pub mod tokens;
 pub mod track;
+pub mod tree_pick;
 pub mod updates;
 pub mod viewport;
 pub mod web;

@@ -47,6 +47,7 @@ mod sidebars;
 mod space_chip;
 mod stocks;
 mod toolbar;
+mod tree_hand;
 mod updates;
 mod wrapped;
 
@@ -113,6 +114,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
+    ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded", updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded),
     ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
 ];

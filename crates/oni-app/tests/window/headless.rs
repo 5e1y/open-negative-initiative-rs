@@ -224,7 +224,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     let row = (0..slint::Model::row_count(&rows))
         .find(|&i| slint::Model::row_data(&rows, i).is_some_and(|r| r.kind == 2 && r.title.contains("DSC_6440")))
         .expect("the list holds DSC_6440's row");
-    w.global::<Library>().invoke_row_clicked(row as i32);
+    w.global::<Library>().invoke_row_clicked(row as i32, false, false);
     rig.pump();
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("DSC_6440.NEF"));
     let selected: Vec<i32> = app::tiles(w).iter().filter(|t| t.selected).map(|t| t.index).collect();

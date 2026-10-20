@@ -137,15 +137,22 @@ export global Library {
     in property <[StockCount]> stocks;
     in property <[image]> stack;
     callback surface-picked(int);
-    callback row-clicked(int);
+    // A row's click with ⌘ and ⇧, its right click answering whether a menu opens, a click on no row.
+    callback row-clicked(int, bool, bool);
+    callback row-menu(int) -> bool;
+    callback tree-empty-clicked();
     callback row-double-clicked(int);
     // `toggleExpand`: a click in the chevron's zone, which only folds.
     callback row-folded(int);
     callback project-row-folded(int);
     callback row-rename-committed(int, string);
     callback row-rename-cancelled();
-    callback project-row-clicked(int);
+    // What a row's field holds now, in either tree.
+    callback row-rename-edited(string);
+    callback project-row-clicked(int, bool, bool);
     callback project-row-double-clicked(int);
+    callback project-row-rename-committed(int, string);
+    callback project-row-rename-cancelled();
     callback project-row-menu(int) -> bool;
     // `SidebarKeys` on the projects: whether a row is open, and the key folding or opening them all.
     in property <bool> projects-any-open;

@@ -183,7 +183,7 @@ impl Ctl {
 
         let lib = window.global::<Library>();
         let p = me.clone();
-        lib.on_row_clicked(move |i| p.row_clicked(i.max(0) as usize));
+        lib.on_row_clicked(move |i, command, shift| p.row_clicked(i.max(0) as usize, command, shift));
         me.wire_tree(&lib);
         let p = me.clone();
         lib.on_tile_clicked(move |i, toggle, extend| p.tile_clicked(i.max(0) as usize, toggle, extend));

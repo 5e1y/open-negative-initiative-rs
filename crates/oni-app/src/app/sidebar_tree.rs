@@ -43,6 +43,8 @@ impl Ctl {
             if !row.thumb {
                 continue;
             }
+            // `TreeLayers.caption`: a thumbnail is captioned by its stem, a name row by the whole name.
+            row.title = stem(&path).into();
             let fingerprint = s.fingerprints.get(&path).cloned();
             row.picture = fingerprint.as_ref().and_then(|f| s.thumbs.get(f)).unwrap_or_default();
             (row.medal, row.missing) = flags.get(&path).map_or((0, false), |f| (f.0, f.1));
@@ -132,9 +134,19 @@ impl Ctl {
             self.publish_tree();
         }
         let target = self.tree_target();
-        let mut s = self.state.borrow_mut();
-        s.tree_centred = target.clone();
-        let Some(i) = target.and_then(|t| s.tree_paths.iter().position(|p| p.as_deref() == Some(t.as_str()))) else { return };
+        let row = {
+            let mut s = self.state.borrow_mut();
+            s.tree_centred = target.clone();
+            target.and_then(|t| s.tree_paths.iter().position(|p| p.as_deref() == Some(t.as_str())))
+        };
+        if let Some(i) = row {
+            self.centre_row(&w, i);
+        }
+    }
+
+    /// `TreeEngine.reveal(_:)`: the row's middle at the column's, held inside the content.
+    pub(super) fn centre_row(&self, w: &MainWindow, i: usize) {
+        let s = self.state.borrow();
         let Some(frame) = s.tree_frames.get(i).copied() else { return };
         let offset = sidebar::centred(frame, s.tree_size.1, s.tree_total);
         drop(s);

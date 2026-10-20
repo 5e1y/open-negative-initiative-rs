@@ -51,10 +51,6 @@ pub struct Archive {
     pub expanded: HashSet<NodeId>,
 }
 
-fn stem(path: &str) -> String {
-    Path::new(path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-}
-
 impl Archive {
     /// Surveys `folder` alone and reads every photo off its own files, through an index in memory.
     pub fn load(folder: &Path) -> Archive {
@@ -125,11 +121,12 @@ impl Archive {
                 let id = node.id();
                 let expanded = self.expanded.contains(&id);
                 let count = node.count();
+                // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
                 match &node {
-                    Node::Photo(e) => Row { id, depth, title: stem(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded },
+                    Node::Photo(e) => Row { id, depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded },
                     Node::Folder { path, group, .. } => {
                         let roll = group.as_ref().and_then(|g| g.film.as_ref());
-                        let title = roll.map(|f| f.name.clone()).unwrap_or_else(|| stem(path));
+                        let title = roll.map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
                         Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded }
                     }
                     Node::Roll { group, .. } | Node::Day { group, .. } => {

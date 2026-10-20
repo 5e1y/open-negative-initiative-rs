@@ -272,7 +272,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(hand.selected(), ["A"]);
 
     // The project's info: its name, its stocks counted by photo, a description kept on blur.
-    lib.invoke_project_row_clicked(0);
+    lib.invoke_project_row_clicked(0, false, false);
     rig.pump();
     assert_eq!((lib.get_info_kind(), lib.get_info_title().as_str()), (2, "Project 1"));
     assert_eq!(lib.get_stocks().row_count(), 0, "no stock set yet");
@@ -333,7 +333,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert!(row(&canonical("C.tif")).trashed_at.is_none() && Path::new(&canonical("C.tif")).exists());
     assert_eq!(lib.get_empty_title().as_str(), "ONI Trash Is Empty");
     assert!(!menus.get_live().restore, "twin: nothing left to restore");
-    lib.invoke_row_clicked(0);
+    lib.invoke_row_clicked(0, false, false);
     rig.pump();
     assert_eq!(hand.shown().len(), 4, "a row of the archive leaves the ONI Trash");
 
