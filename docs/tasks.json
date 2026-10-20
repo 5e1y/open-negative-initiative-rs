@@ -1106,5 +1106,12 @@
     "title": "A help mark's note shows at once, a tooltip after the system's delay",
     "status": "done",
     "detail": "Both drew on the one tip layer after the tooltip delay; Swift's dsHelpBubble shows at once. Tips.note raises Tip.at-once, which a state without delay reads; Tips.hover lowers it. The sidebars check hovers a key (not at once, the twin) and notes a help mark (at once)."
+  },
+  {
+    "id": 152,
+    "type": "parity",
+    "title": "Presets and printer profiles sort as localizedCaseInsensitiveCompare",
+    "status": "done",
+    "detail": "Both lists sorted by lowercased bytes, which put an accented name after Z. oni_settings::collation::case_insensitive orders by base letters (Latin accents folded, æ œ ß spelt out), the accents only where the letters tie, never the case; the preset shelf and the printer profiles use it. The check sorts Élan and émulsion among the E's, its twin the byte order putting Élan after Zeiss."
   }
 ]

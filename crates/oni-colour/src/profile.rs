@@ -210,7 +210,7 @@ impl OutputProfile {
             .filter(|p| Self::is_printer_at(Path::new(p)))
             .map(OutputProfile::new)
             .collect();
-        listed.sort_by_key(|p| p.name.to_lowercase());
+        listed.sort_by(|a, b| oni_settings::collation::case_insensitive(&a.name, &b.name));
         if remember {
             *HELD.lock().unwrap() = listed.clone();
         }

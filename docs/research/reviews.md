@@ -74,7 +74,7 @@ and what is left, most noticed first.
 
 1. The Custom space lists only profiles found by walking folders, not ColorSync's: it may land on
    "pending" on a Mac whose printer profiles live elsewhere.
-2. Preset and profile lists sort accented names after "Z".
+2. (Done, #152: preset and profile lists sort as `localizedCaseInsensitiveCompare`, accented names among their letter.)
 
 ### The phone
 

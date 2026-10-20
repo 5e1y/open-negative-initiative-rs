@@ -34,7 +34,7 @@ pub fn load_shelf(support: &Path) -> Vec<Preset> {
 /// Every readable preset, sorted by name then id; unreadable files are skipped.
 pub fn load(directory: &Path) -> Vec<Preset> {
     let mut out: Vec<Preset> = files(directory).iter().filter_map(|f| decode(&std::fs::read(f).ok()?)).collect();
-    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()).then(a.id.to_string().cmp(&b.id.to_string())));
+    out.sort_by(|a, b| oni_settings::collation::case_insensitive(&a.name, &b.name).then(a.id.to_string().cmp(&b.id.to_string())));
     out
 }
 

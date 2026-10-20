@@ -1,6 +1,7 @@
 //! Every serialised settings type of Open Negative Initiative, the sidecar codec with each migration
 //! a stored version still needs, and the roll marker, written as the Swift app writes them.
 
+pub mod collation;
 pub mod axis;
 pub mod blocks;
 pub mod cg;
