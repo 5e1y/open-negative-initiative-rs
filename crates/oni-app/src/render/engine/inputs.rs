@@ -20,7 +20,7 @@ impl Engine {
     pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
         let id = negative.preview.id();
         if self.measures.as_ref().is_none_or(|(kept, _, _)| *kept != id) {
-            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline };
+            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, resident: None };
             let measure = r.measuring(&negative.preview)?;
             // `measureSmall`: a third of the measuring copy's side, as `CILanczosScaleTransform` makes it.
             let small = self.graph.materialise(&Image::new(&measure).lanczos_anchored(MEASURE_SMALL)).ok()?;
@@ -38,7 +38,7 @@ impl Engine {
                 return r.histogram.clone();
             }
             let copy = Copy { source: &source, full_width: Some(negative.full_width) };
-            let histogram = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline }.reading(copy, settings, stage).histogram;
+            let histogram = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, resident: None }.reading(copy, settings, stage).histogram;
             self.read[slot] = Some(Read { preview: id, held, entering, histogram: histogram.clone() });
             histogram
         };

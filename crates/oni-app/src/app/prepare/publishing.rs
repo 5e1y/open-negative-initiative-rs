@@ -19,6 +19,7 @@ impl Ctl {
         Self::ask_thumbnails(&mut s);
         let radius = base_radius(&s);
         let masks = s.masks.clone();
+        let (taking, picked, loading) = (s.masking.setting, s.prepare.flat_pick.is_some(), s.prepare.loading_mask);
         let settled = s.prepare.frames.iter().filter(|f| s.thumbs.contains(&f.fingerprint) || s.failed.contains(&f.fingerprint)).count();
         let frames = s.prepare.frames.clone();
         let mut pictures = Vec::with_capacity(frames.len());
@@ -133,6 +134,9 @@ impl Ctl {
         p.set_masks_empty(masks.is_empty());
         p.set_mask_title(mask_title.into());
         p.set_mask_lines(ModelRc::new(VecModel::from(lines)));
+        p.set_can_take_flat(picked);
+        p.set_taking_flat(taking);
+        p.set_loading_flat(loading);
         p.set_fractions(ModelRc::new(VecModel::from(fractions)));
         p.set_readouts(ModelRc::new(VecModel::from(readouts)));
         p.set_base_note(base_note.into());

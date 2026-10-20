@@ -31,6 +31,7 @@ mod paper_sheet_window;
 mod phone;
 mod prepare;
 mod prepare_leftovers;
+mod prepare_masks;
 mod preset_deck;
 mod presets;
 mod quit;
@@ -93,6 +94,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame", phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
     ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
+    ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),

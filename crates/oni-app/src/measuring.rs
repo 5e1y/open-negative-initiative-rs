@@ -5,9 +5,41 @@ use crate::render;
 use oni_core::balance::{Measure, Outcome};
 use oni_measure::key::{Decoded, Measurer};
 use oni_settings::PipelineSettings;
+use oni_pipeline::flat_field::Mask;
+use oni_pipeline::resident::Files;
+use oni_settings::id::Id;
 use std::collections::HashMap;
-use std::path::Path;
-use std::sync::OnceLock;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, OnceLock, RwLock};
+
+/// The support folder the custom masks are kept in and the caches the dust patches are kept in,
+/// as the canvas's engine reads them; set as the window is made.
+static FOLDERS: RwLock<(Option<PathBuf>, Option<PathBuf>)> = RwLock::new((None, None));
+
+pub fn set_folders(support: &Path, caches: Option<PathBuf>) {
+    if let Ok(mut f) = FOLDERS.write() {
+        *f = (Some(support.to_path_buf()), caches);
+    }
+}
+
+/// The images a measure or a roll preview lays, read where the canvas reads them.
+pub struct Folders;
+
+impl Files for Folders {
+    fn mask(&self, id: &str) -> Option<Mask> {
+        let support = FOLDERS.read().ok()?.0.clone()?;
+        crate::flat_fields::read(&support, id)
+    }
+
+    fn patch(&self, id: Id) -> Option<(u32, u32, Vec<[f32; 4]>)> {
+        let caches = FOLDERS.read().ok()?.1.clone()?;
+        crate::patches::read(&caches, id)
+    }
+}
+
+pub fn folders() -> Arc<dyn Files> {
+    Arc::new(Folders)
+}
 
 /// The reader, or `None` where no GPU adapter answers; it decodes each file as the canvas does.
 pub fn measurer() -> Option<&'static Measurer> {
@@ -22,7 +54,8 @@ pub fn measurer() -> Option<&'static Measurer> {
                     Ok(Decoded { width: d.linear.width as u32, height: d.linear.height as u32, pixels: d.linear.pixels, full_width: d.full_width })
                 }),
                 Box::new(|s: &PipelineSettings| format!("{:?}", render::Reading::of(s))),
-            ))
+            )
+            .laying(folders()))
         })
         .as_ref()
 }

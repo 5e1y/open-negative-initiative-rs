@@ -1106,5 +1106,12 @@
     "title": "A help mark's note shows at once, a tooltip after the system's delay",
     "status": "done",
     "detail": "Both drew on the one tip layer after the tooltip delay; Swift's dsHelpBubble shows at once. Tips.note raises Tip.at-once, which a state without delay reads; Tips.hover lowers it. The sidebars check hovers a key (not at once, the twin) and notes a help mark (at once)."
+  },
+  {
+    "id": 151,
+    "type": "parity",
+    "title": "Prepare the Roll takes a frame and loads a picture as its mask; the measure and the roll's previews lay the custom mask and dust patches",
+    "status": "done",
+    "detail": "Use This Frame as Flat-Field (EditorScene+RollReference.swift:278-297) decodes the picked frame through the mask library at the whole Amount and unticks it, Setting… meanwhile, No Mask Set on a failure, no offer to move it out; Load… (FlatFieldControls.swift:106-127) names the chosen picture as the roll's mask with its Amount kept, Loading… meanwhile, No Mask Loaded on a failure. Swift's Pipeline.framed lays a frame's custom mask and cached dust patches in front of every reading, roll preview and sheet tile (Pipeline.swift:254-266, RollPreviews.swift:124-135, EditorScene+RollReference.swift:359-373); oni-pipeline's Resident reads them from the support folder and the caches onto the measurer's and the previews' graphs, the mask kept by id, each patch read afresh per reading, one missing left out. Checks: oni-measure/tests/laying.rs (mask and patch reach a reading; twins: files gone, no files, another id) and the window check prepare_masks (Load… and the take with their failures and Amount rules, a preview through the mask and back without it, the measure on the panel apart from the bare roll, the same mask measuring the same as twin); each check fails with its half of the change taken out. Auto White Balance and New Contact Sheet share the measurer, so they lay them too, as Swift's do. Left: the editor's input histograms read without them."
   }
 ]

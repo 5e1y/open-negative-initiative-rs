@@ -8,7 +8,8 @@ use crate::truncate::{Stage, truncated};
 use crate::window::{integral, intersection, measurement_windows, union};
 use oni_graph::stages::{Axis, Crop, Lanczos};
 use oni_graph::{Graph, Image, Rect, Source};
-use oni_pipeline::{Inputs, Pipeline, Request};
+use oni_pipeline::resident::Resident;
+use oni_pipeline::{Pipeline, Request};
 use oni_settings::cg;
 use oni_settings::PipelineSettings;
 
@@ -25,6 +26,8 @@ pub struct Copy<'s> {
 pub struct Reader<'a> {
     pub graph: &'a mut Graph,
     pub pipeline: &'a mut Pipeline,
+    /// The custom mask and dust patches the frame names, as `Pipeline.framed` lays them; `None` lays none.
+    pub resident: Option<&'a mut Resident>,
 }
 
 /// A Core Image rectangle over `extent`'s own lower-left origin, as the graph's y-down pixels.
@@ -37,7 +40,21 @@ impl Reader<'_> {
     /// `Pipeline.measured`: the recipe in front of `before`, output clip and ground left off.
     pub fn image(&mut self, copy: Copy, s: &PipelineSettings, before: Stage) -> Option<Image> {
         let request = Request { full_width: copy.full_width, measuring: true, ..Request::default() };
-        self.pipeline.image(self.graph, copy.source, &truncated(s, before), &request, &Inputs::default()).ok()
+        let t = truncated(s, before);
+        if let Some(r) = self.resident.as_deref_mut() {
+            r.read(self.graph, &t);
+        }
+        let inputs = self.resident.as_deref().map(|r| r.inputs(&t)).unwrap_or_default();
+        self.pipeline.image(self.graph, copy.source, &t, &request, &inputs).ok()
+    }
+
+    /// `Pipeline.framed`: the head of the chain, with the mask and patches the frame names.
+    pub fn framed(&mut self, source: &Source, s: &PipelineSettings, scale: f64) -> Option<Image> {
+        if let Some(r) = self.resident.as_deref_mut() {
+            r.read(self.graph, s);
+        }
+        let inputs = self.resident.as_deref().map(|r| r.inputs(s)).unwrap_or_default();
+        self.pipeline.framed(self.graph, Image::new(source), s, scale, &inputs).ok()
     }
 
     /// The recipe rendered whole and read back.

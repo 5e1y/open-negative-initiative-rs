@@ -73,7 +73,7 @@ fn the_press_lands_the_three_means_together_through_the_kernel_and_the_dose_writ
     // A negative printing warm: a dark corner, a deeper one and a bright wall, all leaning the same way.
     let source = scene(&mut graph, &[(0, 96, [0.088, 0.11, 0.147]), (32, 64, [0.0071, 0.0091, 0.0123]), (0, 32, [0.027, 0.034, 0.046])], None);
     let copy = Copy { source: &source, full_width: None };
-    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
     let s = settings(2.3);
     let found = key::filters(&mut r, copy, &s, printable).expect("the cast frame reads");
     let balanced = key::shades(&mut r, copy, &unlit(&s), found, printable).unwrap();
@@ -118,7 +118,7 @@ fn a_dust_speck_past_white_is_left_out_and_read_it_sends_an_axis_to_its_stop() {
     let mut pipeline = Pipeline::new();
     let source = scene(&mut graph, &[(0, 96, [0.12, 0.14, 0.17])], Some((44, 28, 8, 8, [0.012, 0.025, 0.04])));
     let copy = Copy { source: &source, full_width: None };
-    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+    let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
     let narrow = settings(1.2);
     let kept = key::filters(&mut r, copy, &narrow, printable).unwrap();
     let blinded = key::filters(&mut r, copy, &narrow, finite).unwrap();

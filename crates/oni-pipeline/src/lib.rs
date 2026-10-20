@@ -7,6 +7,7 @@ pub mod finishing;
 pub mod flat_field;
 pub mod geometry;
 pub mod oni_look;
+pub mod resident;
 pub mod scanner;
 pub mod stages;
 

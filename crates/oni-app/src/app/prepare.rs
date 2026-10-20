@@ -33,6 +33,7 @@ mod card;
 mod measure;
 mod previews;
 mod publishing;
+mod flat_masks;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
@@ -112,6 +113,8 @@ pub(crate) struct Roll {
     step: Step,
     at: usize,
     flat_pick: Option<String>,
+    /// `FlatFieldBlock.loading`: a picture chosen by Load… being decoded as a mask.
+    loading_mask: bool,
     base_frame: usize,
     progress: Option<(usize, usize)>,
     stop: Arc<AtomicBool>,
@@ -162,6 +165,7 @@ impl Default for Roll {
             step: Step::Film,
             at: 0,
             flat_pick: None,
+            loading_mask: false,
             base_frame: 0,
             progress: None,
             stop: Arc::default(),
@@ -191,6 +195,11 @@ impl Default for Roll {
 impl Roll {
     pub(super) fn new(require: bool) -> Roll {
         Roll { require, ..Roll::default() }
+    }
+
+    /// The frames whose preview has landed, which a check waits for before reading one.
+    pub fn previewed(&self) -> usize {
+        self.tiles.len()
     }
 
     /// Every frame's sidecar read, which the bench waits for.
