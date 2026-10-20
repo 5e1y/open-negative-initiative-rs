@@ -143,6 +143,11 @@ fn same_item(a: &str, b: &str) -> bool {
             return x.dev() == y.dev() && x.ino() == y.ino();
         }
     }
+    // Off Unix both paths resolve to the one spelling on disk when they name one item.
+    #[cfg(not(unix))]
+    if let (Ok(x), Ok(y)) = (std::fs::canonicalize(a), std::fs::canonicalize(b)) {
+        return x == y;
+    }
     let _ = (a, b);
     false
 }
