@@ -1,0 +1,19 @@
+#!/bin/zsh
+# Builds render_pairs.rs against the workspace's release libraries, kept out of the crates, then runs it
+# with the arguments given: `render-pairs <dumps> <swift sidecars> <rust sidecars> <out> [dr,db,dc,dy]`.
+set -e
+REPO="${0:A:h:h:h}"
+BIN="$REPO/target/release/render_pairs"
+cd "$REPO"
+artifacts=$(cargo build --release -q -p oni-pipeline --example decoder_gap --message-format=json)
+rlib() { print -r -- "$artifacts" | python3 -I -c 'import json, sys
+for line in sys.stdin:
+    a = json.loads(line)
+    if a.get("reason") == "compiler-artifact" and a["target"]["name"] == sys.argv[1]:
+        print(next(f for f in a["filenames"] if f.endswith(".rlib")))' "$1"; }
+if [[ ! -x "$BIN" || "${0:A:h}/render_pairs.rs" -nt "$BIN" || "$(rlib oni_pipeline)" -nt "$BIN" ]]; then
+    rustc --edition 2024 -C opt-level=3 -C linker="${CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER:-cc}" --crate-type bin --crate-name render_pairs "${0:A:h}/render_pairs.rs" -o "$BIN" \
+        -L dependency="$REPO/target/release/deps" \
+        --extern oni_pipeline="$(rlib oni_pipeline)" --extern oni_graph="$(rlib oni_graph)" --extern oni_settings="$(rlib oni_settings)"
+fi
+"$BIN" "$@"

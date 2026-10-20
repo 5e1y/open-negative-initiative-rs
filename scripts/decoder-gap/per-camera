@@ -1,0 +1,19 @@
+#!/bin/zsh
+# One camera's Rust (LibRaw) against Swift (Apple) render in Oklab, into $1: the decodes and fit (`run`),
+# the renders through the sidecars of $2, then again with the gains that cancel the neutral cast.
+set -e
+OUT="${1:?usage: per-camera <output folder> <sidecar folder> <raw>...}"
+SIDECARS="${2:?usage: per-camera <output folder> <sidecar folder> <raw>...}"
+shift 2
+HERE="${0:A:h}"
+"$HERE/run" "$OUT" - "$@"
+export DECODER_GAINS=$(sed -n 's/^gains, stops: //p' "$OUT/fit.txt")
+export DECODER_MATRIX=$(sed -n 's/^matrix, rows: //p' "$OUT/fit.txt")
+"$HERE/render-pairs" "$OUT/dumps" "$SIDECARS" "$SIDECARS" "$OUT/renders"
+python3 -P "$HERE/analyse.py" "$OUT/renders" "$SIDECARS" >"$OUT/first.txt"
+FIX=$(python3 -c 'import json, math, sys, statistics as s
+a = [v["gains"] for v in json.load(open(sys.argv[1])).values() if v["mode"] == "negative" and not math.isnan(sum(v.get("gains", [math.nan])))]
+print(f"{s.median(g[0] for g in a):.3f},{s.median(g[1] for g in a):.3f},0,0")' "$OUT/renders/analysis.json")
+"$HERE/render-pairs" "$OUT/dumps" "$SIDECARS" "$SIDECARS" "$OUT/renders" "$FIX"
+python3 -P "$HERE/analyse.py" "$OUT/renders" "$SIDECARS" | tee "$OUT/analysis.txt"
+echo "median gains that cancel the cast (red, blue stops): $FIX"
