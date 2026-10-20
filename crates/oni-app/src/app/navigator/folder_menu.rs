@@ -45,7 +45,7 @@ impl Ctl {
                 self.publish_navigator();
             }
             Act::Roll(make) => self.make_roll(&path, make),
-            Act::NewFolder => self.new_folder(&path),
+            Act::NewFolder => self.new_folder(&path, true),
             Act::Reveal => crate::system::reveal(Path::new(&path)),
         }
     }
@@ -138,9 +138,9 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// `newFolder(in:)` then `made`: "New Folder", numbered as the Finder numbers one taken; its
-    /// row is picked and named at once.
-    pub(in crate::app) fn new_folder(self: &Rc<Self>, folder: &str) {
+    /// `newFolder(in:)`: "New Folder", numbered as the Finder numbers one taken; from the navigator
+    /// `made` then picks its row and names it at once, from the archive tree nothing does.
+    pub(in crate::app) fn new_folder(self: &Rc<Self>, folder: &str, named: bool) {
         let mut name = "New Folder".to_string();
         let mut rank = 2;
         while Path::new(&paths::join(folder, &name)).exists() {
@@ -161,7 +161,9 @@ impl Ctl {
                     archive.expanded.insert(NodeId::Folder(folder.to_owned()));
                 }
             }
-            s.nav.model.made(&made);
+            if named {
+                s.nav.model.made(&made);
+            }
             inside
         };
         if inside {

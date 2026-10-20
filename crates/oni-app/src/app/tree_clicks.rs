@@ -13,7 +13,8 @@ impl Ctl {
     }
 
     /// `toggleExpand`: the chevron's zone folds or unfolds the row and nothing else.
-    pub(super) fn row_folded(&self, i: usize) {
+    pub(super) fn row_folded(self: &Rc<Self>, i: usize) {
+        self.exit_tree_editing();
         {
             let mut s = self.state.borrow_mut();
             let Some(archive) = s.archive.as_mut() else { return };
@@ -24,10 +25,29 @@ impl Ctl {
     }
 
     /// `click` then `openFromTree` (`EditorScene+Lab.swift:110`): a photo row opens its photo, a
-    /// group's row beside a photo its first one; the column stays where the hand is.
-    pub(super) fn row_clicked(self: &Rc<Self>, i: usize) {
-        if self.state.borrow_mut().second_click(Column::Archive, i) {
-            return;
+    /// group's row beside a photo its first one; the column stays where the hand is. With ⌘ or ⇧
+    /// the row joins the tree's pick, whose photos become the selection (`pickInColumn`).
+    pub(super) fn row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
+        self.exit_tree_editing();
+        let picked = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            // A double click's second does a picking click's work again, as Swift's tracker lets it.
+            if s.second_click(Column::Archive, i) && !command && !shift {
+                return;
+            }
+            let Some(id) = s.org.tree_ids.get(i).cloned() else { return };
+            if !s.org.tree_pick.click(&id, &s.org.tree_ids, command, shift) {
+                false
+            } else {
+                s.picks.selection = crate::tree_pick::picked_photos(&s.org.tree_pick.selection, &s.survey.images);
+                true
+            }
+        };
+        if picked {
+            self.publish_tiles();
+            self.publish_organising();
+            return self.publish_bar();
         }
         if self.state.borrow().org.trash_open {
             self.leave_trash();
@@ -65,6 +85,7 @@ impl Ctl {
         match id {
             Some(NodeId::Photo(path)) => self.open_in_editor(&path),
             Some(NodeId::Folder(path)) => {
+                self.exit_tree_editing();
                 self.state.borrow_mut().tree_renaming = Some(path);
                 self.publish_tree();
             }
@@ -72,7 +93,23 @@ impl Ctl {
         }
     }
 
-    pub(super) fn project_row_folded(&self, i: usize) {
+    /// `clickEmpty` (`TreeEngine.swift:427`, `EditorScene+Removal.swift:581`): a click on no row
+    /// drops the tree's pick, the selection and the ring; the photo open stays open.
+    pub(super) fn tree_empty_clicked(self: &Rc<Self>) {
+        self.exit_tree_editing();
+        {
+            let mut s = self.state.borrow_mut();
+            s.org.tree_pick.clear();
+            s.picks.selection.clear();
+            s.picks.anchor = None;
+        }
+        self.publish_tiles();
+        self.publish_organising();
+        self.publish_bar();
+    }
+
+    pub(super) fn project_row_folded(self: &Rc<Self>, i: usize) {
+        self.exit_tree_editing();
         {
             let mut s = self.state.borrow_mut();
             let Some(id) = s.org.project_nodes.get(i).cloned().filter(|id| matches!(id, ProjectNode::Project(_))) else { return };
@@ -84,10 +121,29 @@ impl Ctl {
     }
 
     /// `selectProject`, then `openFromTree(project:)` beside a photo: a project row rings it and
-    /// clears the photos, a photo row selects it; beside a photo either opens its photo.
-    pub(super) fn project_row_clicked(self: &Rc<Self>, i: usize) {
-        if self.state.borrow_mut().second_click(Column::Projects, i) {
-            return;
+    /// clears the photos, a photo row selects it; beside a photo either opens its photo. With ⌘
+    /// or ⇧ the row joins the tree's pick, whose photos become the selection.
+    pub(super) fn project_row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
+        self.exit_tree_editing();
+        let picked = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            if s.second_click(Column::Projects, i) && !command && !shift {
+                return;
+            }
+            let Some(id) = s.org.project_nodes.get(i).cloned() else { return };
+            if !s.org.project_pick.click(&id, &s.org.project_nodes, command, shift) {
+                false
+            } else {
+                let pick = &s.org.project_pick.selection;
+                s.picks.selection = pick.iter().filter_map(|n| if let ProjectNode::Photo { path, .. } = n { Some(path.clone()) } else { None }).collect();
+                true
+            }
+        };
+        if picked {
+            self.publish_tiles();
+            self.publish_organising();
+            return self.publish_bar();
         }
         let beside = self.beside_photo();
         let open = {
@@ -128,14 +184,17 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `takeOff`: a photo row's double click opens it in the editor.
+    /// `takeOff` on a photo row's double click; on a project's, `rename` types over its name.
     pub(super) fn project_row_double_clicked(self: &Rc<Self>, i: usize) {
-        let path = match self.state.borrow().org.project_nodes.get(i) {
-            Some(ProjectNode::Photo { path, .. }) => Some(path.clone()),
-            _ => None,
-        };
-        if let Some(path) = path {
-            self.open_in_editor(&path);
+        let id = self.state.borrow().org.project_nodes.get(i).cloned();
+        match id {
+            Some(ProjectNode::Photo { path, .. }) => self.open_in_editor(&path),
+            Some(ProjectNode::Project(project)) => {
+                self.exit_tree_editing();
+                self.state.borrow_mut().org.project_renaming = Some(project);
+                self.publish_projects();
+            }
+            None => {}
         }
     }
 }

@@ -21,6 +21,8 @@ impl Ctl {
     pub(super) fn land_gallery(&self) {
         {
             let mut s = self.state.borrow_mut();
+            // The archive's tree beside the photo is gone, and its pick with it.
+            s.org.tree_pick = crate::tree_pick::TreePick::default();
             let open = s.open.clone().filter(|_| !s.trash_shown());
             let at = open.and_then(|p| s.order.iter().position(|o| *o == p));
             s.scroll = s.layout.landing(at, s.grid.1);

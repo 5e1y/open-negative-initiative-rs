@@ -196,6 +196,9 @@ export component ListRow inherits Rectangle {
     callback folded();
     // A right click, at the pointer in the row's own coordinates.
     callback menu(length, length);
+    // What the last left press held, ⌘ (or Ctrl) and ⇧, for `clicked` to read.
+    out property <bool> command;
+    out property <bool> shift;
     height: RowStyle.height;
     background: root.selected ? Colour.row-selected : (area.has-hover || root.look != Look.live) ? Colour.hover : transparent;
     HorizontalLayout {
@@ -221,6 +224,10 @@ export component ListRow inherits Rectangle {
             }
         }
         pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                root.command = event.modifiers.control || event.modifiers.meta;
+                root.shift = event.modifiers.shift;
+            }
             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
                 root.menu(self.mouse-x, self.mouse-y);
             }

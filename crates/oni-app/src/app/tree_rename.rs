@@ -1,10 +1,11 @@
-//! `renameRequest` in the archive's column: the folder New Roll made is named in place once its row
-//! shows beside the photo, committed through `renameFolder`; an empty or unchanged name keeps it.
+//! `TreeEngine.rename` in the column's trees: a folder typed over commits through `renameFolder`,
+//! a project through `renameProject`; the request New Roll or Rename… makes lands once its row
+//! shows beside the photo. An empty or unchanged name keeps the old one.
 
 use super::Ctl;
 use crate::Library;
 use oni_library::archive_tree::NodeId;
-use oni_library::paths;
+use oni_library::{paths, project};
 use slint::ComponentHandle;
 use std::rc::Rc;
 
@@ -20,10 +21,58 @@ impl Ctl {
         let c = Rc::downgrade(me);
         lib.on_row_rename_cancelled(move || {
             if let Some(c) = c.upgrade() {
-                c.state.borrow_mut().tree_renaming = None;
+                let mut s = c.state.borrow_mut();
+                s.tree_renaming = None;
+                s.org.tree_draft = None;
+                drop(s);
                 c.publish_tree();
             }
         });
+        let c = Rc::downgrade(me);
+        lib.on_row_rename_edited(move |draft| {
+            if let Some(c) = c.upgrade() {
+                c.state.borrow_mut().org.tree_draft = Some(draft.to_string());
+            }
+        });
+        let c = Rc::downgrade(me);
+        lib.on_project_row_rename_committed(move |_, draft| {
+            if let Some(c) = c.upgrade() {
+                c.project_rename_committed(&draft);
+            }
+        });
+        let c = Rc::downgrade(me);
+        lib.on_project_row_rename_cancelled(move || {
+            if let Some(c) = c.upgrade() {
+                let mut s = c.state.borrow_mut();
+                s.org.project_renaming = None;
+                s.org.tree_draft = None;
+                drop(s);
+                c.publish_projects();
+            }
+        });
+    }
+
+    /// `renameRequest = .folder(folder)` from the tree's menu: the row typed over in place.
+    pub(super) fn rename_in_tree(self: &Rc<Self>, folder: String) {
+        self.exit_tree_editing();
+        self.state.borrow_mut().rename_request = Some(folder);
+        self.publish_tree();
+    }
+
+    /// `exitEditing()`: a click, a fold or another rename in a tree commits what the field holds.
+    pub(super) fn exit_tree_editing(self: &Rc<Self>) {
+        let (archive, project, draft) = {
+            let s = self.state.borrow();
+            (s.tree_renaming.is_some(), s.org.project_renaming.is_some(), s.org.tree_draft.clone())
+        };
+        // A field never typed in holds the name it opened on, which renames nothing.
+        let draft = draft.unwrap_or_default();
+        if archive {
+            self.tree_rename_committed(&draft);
+        }
+        if project {
+            self.project_rename_committed(&draft);
+        }
     }
 
     /// The column beside the photo has just shown: a waiting request may land on its rows.
@@ -36,9 +85,27 @@ impl Ctl {
     /// `commit`: `GalleryView.named` keeps the folder on an empty or unchanged name.
     fn tree_rename_committed(self: &Rc<Self>, draft: &str) {
         let Some(path) = self.state.borrow_mut().tree_renaming.take() else { return };
+        self.state.borrow_mut().org.tree_draft = None;
         self.publish_tree();
         if let Some(name) = named(draft, &paths::name(&path)) {
             self.rename_folder(&path, name);
+        }
+    }
+
+    /// `renameProject`: the name written to the projects' file; a project gone meanwhile keeps none.
+    fn project_rename_committed(self: &Rc<Self>, draft: &str) {
+        let was = {
+            let mut s = self.state.borrow_mut();
+            s.org.tree_draft = None;
+            let Some(id) = s.org.project_renaming.take() else { return };
+            s.org.projects.iter().find(|p| p.id == id).map(|p| (id, p.name.clone()))
+        };
+        self.publish_projects();
+        let Some((id, name)) = was.and_then(|(id, was)| named(draft, &was).map(|n| (id, n.to_owned()))) else { return };
+        if project::rename(&mut self.state.borrow_mut().org.projects, id, &name) {
+            self.save_projects();
+            self.lay_grid();
+            self.publish_projects();
         }
     }
 }

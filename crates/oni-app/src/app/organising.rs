@@ -1,10 +1,11 @@
 //! The gallery's organising in the window (`GalleryEngine`, `CellMenu`, `InfoSidebar`): picks, the
 //! cell menu, Archive and Projects, the ONI Trash laid as a grid, the medals and the info sidebar.
 
-use super::{Ctl, Pending, State, stem};
+use super::{Ctl, Pending, State};
 use crate::organise::{self, CellAction, CellFacts, CellLine, GridKey, Outcome, Picks, Shown};
 use crate::{App, Confirm, Library, MenuLine, StockCount, TrashLine, TreeRow};
 use crate::{library, picking, system};
+use crate::tree_pick::TreePick;
 use oni_library::Entry;
 use oni_library::project::{self, Project, ProjectsFile};
 use oni_library::project_tree::{self, Node, NodeId};
@@ -26,6 +27,7 @@ mod oni_trash;
 mod status_bar;
 mod info_sidebar;
 mod band_rename;
+mod tree_menu;
 
 /// `DragGesture(minimumDistance: 4)`: a press moved this far is a drag, never a click.
 pub const DRAG_DISTANCE: f32 = 4.0;
@@ -62,6 +64,9 @@ enum Act {
     Reveal(Vec<String>),
     OpenTrash,
     RestoreAll,
+    RenameFolder(String),
+    Roll(String, bool),
+    NewFolder(String),
 }
 
 #[derive(Clone, Debug)]
@@ -128,6 +133,14 @@ pub struct Organising {
     pub(in crate::app) renaming: Option<(Naming, String)>,
     /// The heading last clicked and when, which tells a double click's second.
     heading_click: Option<(usize, Instant)>,
+    /// `TreeEngine`'s own picks on the archive and on the projects, apart from the ring.
+    pub(in crate::app) tree_pick: TreePick<oni_library::archive_tree::NodeId>,
+    pub(in crate::app) project_pick: TreePick<NodeId>,
+    /// The archive tree's rows as published, which a pick and its menu read.
+    pub(in crate::app) tree_ids: Vec<oni_library::archive_tree::NodeId>,
+    /// What the row typed over holds now, and the project typed over in the projects' tree.
+    pub(in crate::app) tree_draft: Option<String>,
+    pub(in crate::app) project_renaming: Option<Id>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -282,7 +295,11 @@ impl Ctl {
         let p = me.clone();
         lib.on_project_row_folded(move |i| p.project_row_folded(index(i)));
         let p = me.clone();
-        lib.on_project_row_clicked(move |i| p.project_row_clicked(index(i)));
+        lib.on_project_row_clicked(move |i, command, shift| p.project_row_clicked(index(i), command, shift));
+        let p = me.clone();
+        lib.on_row_menu(move |i| p.row_menu(index(i)));
+        let p = me.clone();
+        lib.on_tree_empty_clicked(move || p.tree_empty_clicked());
         let p = me.clone();
         lib.on_project_row_double_clicked(move |i| p.project_row_double_clicked(index(i)));
         let p = me.clone();

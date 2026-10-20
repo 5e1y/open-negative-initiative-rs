@@ -104,6 +104,8 @@ export component RenameRow inherits FocusScope {
     in property <int> depth;
     callback committed(string);
     callback cancelled();
+    // Each keystroke's text, so a click elsewhere can commit what the field holds.
+    callback edited(string);
     property <bool> done;
     height: RowStyle.height;
     key-pressed(event) => {
@@ -123,6 +125,7 @@ export component RenameRow inherits FocusScope {
             text: root.text;
             placeholder: "Name";
             init => { self.take-focus(); }
+            edited(t) => { root.edited(t); }
             accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
             left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
         }

@@ -67,7 +67,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // A row clicked opens its photo and leaves the column where the hand is; the key centres it.
     let before = lib.get_tree_viewport_y();
-    lib.invoke_row_clicked(photo_row(&lib, "P20") as i32);
+    lib.invoke_row_clicked(photo_row(&lib, "P20") as i32, false, false);
     rig.pump();
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("P20.tif"));
     assert_eq!(lib.get_tree_viewport_y(), before, "a click in the column never scrolls it");
@@ -104,14 +104,14 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     rest(&rig);
     let opens = ctl.state.borrow().opens();
     let p10 = photo_row(&lib, "P10") as i32;
-    lib.invoke_row_clicked(p10);
-    lib.invoke_row_clicked(p10);
+    lib.invoke_row_clicked(p10, false, false);
+    lib.invoke_row_clicked(p10, false, false);
     lib.invoke_row_double_clicked(p10);
     rig.pump();
     assert!(ctl.state.borrow().open_path().unwrap().ends_with("P10.tif"));
     assert_eq!(ctl.state.borrow().opens(), opens + 1, "two clicks and a double click open the photo once");
     rest(&rig);
-    lib.invoke_row_clicked(photo_row(&lib, "P12") as i32);
+    lib.invoke_row_clicked(photo_row(&lib, "P12") as i32, false, false);
     assert_eq!(ctl.state.borrow().opens(), opens + 2, "twin: a single click opens");
 
     // A resize lays the same rows in place and keeps the scroll within the content.
@@ -139,8 +139,8 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     lib.invoke_row_folded(group);
     assert_eq!(rows(&lib)[group as usize].expanded, unfolded, "twin: a second click unfolds it");
     rest(&rig);
-    lib.invoke_row_clicked(group);
-    lib.invoke_row_clicked(group);
+    lib.invoke_row_clicked(group, false, false);
+    lib.invoke_row_clicked(group, false, false);
     lib.invoke_row_double_clicked(group);
     rig.pump();
     let renamed = rows(&lib)[group as usize].clone();

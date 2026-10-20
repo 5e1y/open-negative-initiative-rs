@@ -75,6 +75,12 @@ export component Tree inherits Surface {
                 init => { Library.tree-shown(self.width, self.height); }
                 changed width => { Library.tree-resized(self.width, self.height); }
                 changed height => { Library.tree-resized(self.width, self.height); }
+                // `clickEmpty`: the content under no row, its gaps included, drops the picks and the ring.
+                TouchArea {
+                    width: parent.width;
+                    height: Library.tree-content-height;
+                    clicked => { Library.tree-empty-clicked(); }
+                }
                 for row[i] in Library.rows: Rectangle {
                     x: row.x;
                     y: row.y;
@@ -89,9 +95,12 @@ export component Tree inherits Surface {
                         expandable: row.expandable;
                         expanded: row.expanded;
                         selected: row.selected;
-                        clicked => { Library.row-clicked(i); }
+                        clicked => { Library.row-clicked(i, self.command, self.shift); }
                         double-clicked => { Library.row-double-clicked(i); }
                         folded => { Library.row-folded(i); }
+                        menu(x, y) => {
+                            if (Library.row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                        }
                     }
                     if row.thumb: TileView {
                         width: parent.width;
@@ -103,7 +112,18 @@ export component Tree inherits Surface {
                         missing: row.missing;
                     }
                     if row.thumb: TouchArea {
-                        clicked => { Library.row-clicked(i); }
+                        property <bool> command;
+                        property <bool> shift;
+                        pointer-event(event) => {
+                            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                                self.command = event.modifiers.control || event.modifiers.meta;
+                                self.shift = event.modifiers.shift;
+                            }
+                            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && Library.row-menu(i)) {
+                                root.open-menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                            }
+                        }
+                        clicked => { Library.row-clicked(i, self.command, self.shift); }
                         double-clicked => { Library.row-double-clicked(i); }
                     }
                     if row.renaming: RenameRow {
@@ -112,6 +132,7 @@ export component Tree inherits Surface {
                         depth: row.depth;
                         committed(t) => { Library.row-rename-committed(i, t); }
                         cancelled => { Library.row-rename-cancelled(); }
+                        edited(t) => { Library.row-rename-edited(t); }
                     }
                 }
             }
@@ -128,21 +149,32 @@ export component Tree inherits Surface {
                 property <length> centred: min(0px, max(self.visible-height - Library.project-rows.length * RowStyle.height, self.visible-height / 2 - (Library.project-reveal-row + 0.5) * RowStyle.height));
                 changed serial => { if (Library.project-reveal-row >= 0) { self.content-y = self.centred; } }
                 init => { if (Library.project-reveal-row >= 0 && self.visible-height > 0) { self.content-y = self.centred; } }
-                for row[i] in Library.project-rows: TreeItem {
-                    depth: row.depth;
-                    title: row.title;
-                    caption: row.caption;
-                    kind: row.kind == 1 ? RowKind.project : RowKind.photo;
-                    expandable: row.expandable;
-                    expanded: row.expanded;
-                    selected: row.selected;
-                    clicked => { Library.project-row-clicked(i); }
-                    double-clicked => { Library.project-row-double-clicked(i); }
-                    folded => { Library.project-row-folded(i); }
-                    menu(x, y) => {
-                        root.menu-x = self.absolute-position.x - root.absolute-position.x + x;
-                        root.menu-y = self.absolute-position.y - root.absolute-position.y + y;
-                        if (Library.project-row-menu(i)) { menu.show(); }
+                for row[i] in Library.project-rows: Rectangle {
+                    height: RowStyle.height;
+                    if !row.renaming: TreeItem {
+                        width: parent.width;
+                        depth: row.depth;
+                        title: row.title;
+                        caption: row.caption;
+                        kind: row.kind == 1 ? RowKind.project : RowKind.photo;
+                        expandable: row.expandable;
+                        expanded: row.expanded;
+                        selected: row.selected;
+                        clicked => { Library.project-row-clicked(i, self.command, self.shift); }
+                        double-clicked => { Library.project-row-double-clicked(i); }
+                        folded => { Library.project-row-folded(i); }
+                        menu(x, y) => {
+                            if (Library.project-row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                        }
+                    }
+                    // `rename`: a project's double click types over its name.
+                    if row.renaming: RenameRow {
+                        width: parent.width;
+                        text: row.title;
+                        depth: row.depth;
+                        committed(t) => { Library.project-row-rename-committed(i, t); }
+                        cancelled => { Library.project-row-rename-cancelled(); }
+                        edited(t) => { Library.row-rename-edited(t); }
                     }
                 }
             }
@@ -151,6 +183,12 @@ export component Tree inherits Surface {
     if Library.surface == 1 && Library.projects-empty != "": EmptyState {
         title: Library.projects-empty;
         detail: "Right-click photos in the library and choose New Project from them.";
+    }
+    // The menu at a point in window coordinates.
+    function open-menu(x: length, y: length) {
+        root.menu-x = x - root.absolute-position.x;
+        root.menu-y = y - root.absolute-position.y;
+        menu.show();
     }
     menu := ContextMenu {
         x: root.menu-x;
