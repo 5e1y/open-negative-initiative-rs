@@ -108,12 +108,12 @@ mod tests {
 
     #[test]
     fn the_scrub_leaves_no_path_and_keeps_the_numbers() {
-        let log = "[    0.001] log: /Users/someone/Library/Application Support/ONI/Logs/oni.log\n\
+        let log = "[    0.001] log: /Users/someone/Support Folder/ONI/Logs/oni.log\n\
                    [    1.200] DSC_0001: dust not generated: cannot read /Volumes/Archive Perso/Décembre secret.tif: denied (os 13)\n\
                    [    2.000] read at 1/8, p50/p99 3.1/4.0 ms, \"C:\\Users\\someone\\Pictures\\Mariage.NEF\" refused\n\
                    [    3.000] ~/Documents/Roll #8 · gone";
         let clean = scrubbed(log, "/Users/someone");
-        for leak in ["someone", "Archive", "Décembre", "Mariage", "Roll #8", "Library"] {
+        for leak in ["someone", "Archive", "Décembre", "Mariage", "Roll #8", "Support Folder"] {
             assert!(!clean.contains(leak), "{leak} leaked: {clean}");
         }
         assert!(clean.contains("read at 1/8, p50/p99 3.1/4.0 ms"), "{clean}");
