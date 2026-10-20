@@ -1,0 +1,30 @@
+[package]
+name = "oni-transition"
+description = "Each camera matched once to the Swift app's Apple decode by a 3x3 that every LibRaw decode of it folds"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+oni-decode.workspace = true
+oni-library = { path = "../oni-library" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-core-foundation = { version = "0.3", default-features = false, features = ["std", "CFCGTypes", "CFString"] }
+objc2-core-graphics = { version = "0.3", default-features = false, features = ["std", "CGColorSpace"] }
+objc2-core-image = { version = "0.3", default-features = false, features = ["std", "CIContext", "CIFilter", "CIImage", "CIRAWFilter", "objc2-core-foundation", "objc2-core-graphics"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSString", "NSURL", "NSDictionary", "NSValue", "NSArray", "NSEnumerator"] }
+
+[dev-dependencies]
+oni-fixtures.workspace = true
+oni-settings.workspace = true
+# The residual check renders through the real pipeline.
+oni-graph = { path = "../oni-graph" }
+oni-pipeline = { path = "../oni-pipeline" }
+
+[lib]
+doctest = false

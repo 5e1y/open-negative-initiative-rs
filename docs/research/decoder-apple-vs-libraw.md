@@ -208,6 +208,47 @@ become "matches it for the cameras in the table". The owner decides.
 - **Unchanged decodes.** Linear TIFF, DNG and plain images decode byte for byte as before.
 - **Sidecars untouched.** A Swift-prepared sidecar opened and closed without an edit keeps its bytes.
 
+## Transition
+
+The owner chose strategy (a), once a 3×3 proved quick to measure in the app: `crates/oni-transition`,
+behind a blocking sheet on macOS (#175). No sidecar is read to decide anything, and none is written.
+
+- **Per camera.** LibRaw's make and model. `CIRAWFilter` runs in the process through `objc2`, set as
+  `RawDecode.configured`. Both decodes are averaged over 8-pixel squares and aligned to the pixel (the
+  best correlation of log luminance within 8 pixels of the frames' size difference). The squares off
+  floor and clip of three frames spread over the camera's RAWs are pooled, and the 3×3 is fitted on
+  their relative error, as `decoder_fit` does.
+- **The table.** `<support>/Transition/cameras.json` holds, per camera, the matrix, its frames and its
+  residual, written atomically. `oni-decode/src/rendition.rs` folds the camera's matrix after
+  `conversion()`'s, before `linear::converted`, in one place that `decode_native` skips. DNGs, linear
+  scans and cameras absent from the table decode as before.
+- **When.** At launch and whenever a folder opens, the library's RAWs are named off the interface thread
+  (`seen.json` remembers each file by size and date). A camera the table lacks is measured behind the
+  sheet, from any three reachable frames, while the thumbnails' pass waits. Its frames' previews and
+  thumbnails are then dropped and drawn again, and the open frame is read again.
+- **Windows.** There is no Apple decoder, so no table: RAWs decode in LibRaw's own colours.
+- **Rolls prepared in Rust test builds** were balanced on LibRaw's colours and shift once. The owner
+  accepted this.
+
+Measured on the test copy of roll #8 and on the S1R ColorPlus roll, read only:
+
+| | Z f | S1R |
+|---|---|---|
+| Measure, three frames (both decodes) | 4.2 s | 7.0 s |
+| Fitting the matrix | 32 ms | 63 ms |
+| Density residual R / G / B | 0.0007 / 0.0007 / 0.0036 | 0.0044 / 0.0036 / 0.0194 |
+| Render gap to Swift: none / gains / matrix | 0.0182 / 0.0051 / 0.0016 | 0.0462 / 0.0119 / 0.0095 |
+| Pro face, pixels under L 0.03: Swift / LibRaw × gains / matrix | 6.64 / 7.51 / 6.62 % | |
+| Pro face, darkest 5 % L ×100: Swift / gains / matrix | 3.4 / 2.9 / 3.4 | 23.1 / 22.9 / 23.2 |
+
+- **Blacks.** The matrix brings them back to Swift's, where gains alone deepen them on the Z f.
+- **S1R.** The blue curvature stays (0.0095): a matrix cannot carry it.
+- **Fit on one frame.** A matrix fitted on a single frame holds on the Z f (0.0018). On the S1R one frame
+  of three gave an outlier, so the three frames are pooled.
+- **Blacks against #180.** These percentages come from `render-pairs` and `analyse.py` on this branch.
+  Their absolute level differs from `decoder-per-camera.md`'s table, though the order of the arms is
+  the measure's.
+
 ## Reproduce
 
 ```
@@ -219,3 +260,6 @@ The script works on Macs whose Xcode licence is unaccepted, once the toolchain e
 toolchain's `swiftc`, writes `<out>/dumps`, then prints the fit to `<out>/fit.txt` and the renders to
 `<out>/gap.txt`. The sidecar folder holds `<name>.json` copies, so the originals are only read. The
 whole roll takes about 70 s.
+
+The transition's own measure, a camera's matrix from its frames with each step timed:
+`cargo run --release -p oni-transition --example measure -- <raw>...`.

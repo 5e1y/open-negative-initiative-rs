@@ -16,6 +16,8 @@ typedef struct {
     int inset[4];
     // The file's orientation, LibRaw's `flip`; the pixels come out unturned and Rust turns them.
     int flip;
+    // The camera as `oni_identify` names it, which keys its rendition matrix.
+    char make[64], model[64];
 } oni_decoded;
 
 void oni_release(oni_decoded *d)
@@ -68,6 +70,8 @@ int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *o
     out->dng = lr->idata.dng_version != 0;
     memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
     out->baseline_exposure = lr->color.dng_levels.baseline_exposure;
+    strncpy(out->make, lr->idata.make, 63);
+    strncpy(out->model, lr->idata.model, 63);
     return 0;
 }
 
@@ -141,4 +145,21 @@ int oni_thumbnail(const char *path, oni_thumb *out)
     out->size = img->data_size;
     out->data = img->data;
     return 0;
+}
+
+// The maker and model LibRaw names from the file's metadata, and whether it is a DNG; nothing decoded.
+int oni_identify(const char *path, char make[64], char model[64], int *dng)
+{
+    libraw_data_t *lr = libraw_init(0);
+    if (!lr) return -1;
+    int rc = libraw_open_file(lr, path);
+    if (rc == LIBRAW_SUCCESS) {
+        strncpy(make, lr->idata.make, 63);
+        make[63] = 0;
+        strncpy(model, lr->idata.model, 63);
+        model[63] = 0;
+        *dng = lr->idata.dng_version != 0;
+    }
+    libraw_close(lr);
+    return rc;
 }

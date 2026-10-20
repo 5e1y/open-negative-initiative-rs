@@ -1354,5 +1354,19 @@
     "title": "A stranger phone reads as refused on Windows too",
     "status": "done",
     "detail": "Windows CI: the window check's unpaired phone was not refused, as Windows reports a desktop's hang-up during the handshake as an aborted connection, which the phone took for a slow desktop and dialled again. ConnectionAborted now reads as a refusal like a reset or an end of stream; a timeout still dials again (unit test with its twin)."
+  },
+  {
+    "id": 175,
+    "type": "data-safety",
+    "title": "The transition: each camera matched once to Apple's decode by a 3x3 folded into LibRaw's conversion",
+    "status": "done",
+    "detail": "oni-transition fits, once per camera (LibRaw's make and model), the 3x3 from LibRaw's Rec. 2020 to Apple's CIRAWFilter set as RawDecode.configured (in process through objc2), on the pooled clear squares of three frames spread over the camera's RAWs, aligned to the pixel; <support>/Transition/cameras.json keeps matrix, frames and residual, written atomically; oni-decode/src/rendition.rs folds it after conversion() for every decode of that camera (DNG, linear scans and absent cameras untouched; decode_native skips it). At launch and on each folder opened (macOS only) the library's RAWs are named off the interface thread, a camera the table lacks is matched behind a blocking sheet while the thumbnails' pass waits, then its frames' previews and thumbnails are drawn again. No sidecar is read or written. Z f roll #8: 4.2 s, render gap to Swift 0.0182 -> 0.0016 (gains 0.0051), blacks back to Swift's; S1R ColorPlus roll: 7.0 s, 0.0462 -> 0.0095. Windows has no table."
+  },
+  {
+    "id": 185,
+    "type": "data-safety",
+    "title": "The transition's review: a camera that cannot be matched is remembered, a failed naming thread misnames no file, a failed search frees the thumbnails",
+    "status": "done",
+    "detail": "cameras.json gains `unmatched` (serde default, same version): a camera whose frames all stayed reachable but would not match is not measured again at every launch behind the blocking sheet. survey::named keeps one answer per file when a worker panics, so no file takes its neighbour's camera. The app's search runs under catch_unwind, so a panic there releases the thumbnails' pass instead of holding it for the session."
   }
 ]
