@@ -2,8 +2,9 @@
 //! face, written by the panel's own specs, and a step or reset landing as the panel's own command.
 
 use crate::fields::Field;
-use crate::slider_track::{position_on, track_on};
-use oni_core::link::Sliders;
+use crate::slider_track::{position_on, stored_on, track_on};
+use crate::track;
+use oni_core::link::{Move, Sliders};
 use oni_core::{Command, EditorStore};
 use oni_link::{Param, Row, Tab};
 use oni_settings::frame::FlatFieldMask;
@@ -108,16 +109,18 @@ fn label(f: Field, inverted: bool) -> String {
 }
 
 /// A step moves the knob a hundredth of its track to the right per click, the shown sense, so a
-/// black point's plus lifts it as the knob goes; a reset is the double click's.
-pub fn command(s: &PipelineSettings, param: Param, by: Option<i8>) -> Command {
+/// black point's plus lifts it as the knob goes; a reset is the double click's; a place on the track
+/// is the panel's drag, on the frame's own track.
+pub fn command(s: &PipelineSettings, param: Param, by: Move) -> Command {
     let f = field(param);
     let value = match by {
-        Some(by) => {
+        Move::Step(by) => {
             let (low, high) = f.spec().range;
             let sense = if f.spec().inverted { -1.0 } else { 1.0 };
             f.knob().get(s) + sense * f32::from(by) * (high - low) / 100.0
         }
-        None => f.double_click_base(s),
+        Move::Reset => f.double_click_base(s),
+        Move::To(at) => stored_on(f, track::clamped(at), &track_on(f, s)),
     };
     Command::Set { knob: f.knob(), value }
 }
@@ -131,7 +134,7 @@ impl Sliders for PhoneSliders {
     }
 
     /// Only a slider the panel shows now moves, as a hand finds only those.
-    fn command(&self, store: &EditorStore, param: Param, by: Option<i8>) -> Option<Command> {
+    fn command(&self, store: &EditorStore, param: Param, by: Move) -> Option<Command> {
         let shown = self.rows(store).iter().any(|r| r.param == param);
         shown.then(|| command(store.settings(), param, by))
     }
@@ -180,18 +183,37 @@ mod tests {
     fn a_step_is_a_hundredth_of_the_track_rightward_and_a_reset_the_double_click() {
         let s = PipelineSettings::rest(ConversionMode::Negative, true);
         let (low, high) = Field::Exposure.spec().range;
-        let Command::Set { value, .. } = command(&s, Param::Exposure, Some(3)) else { panic!() };
+        let Command::Set { value, .. } = command(&s, Param::Exposure, Move::Step(3)) else { panic!() };
         assert!((value - s.print.exposure - 3.0 * (high - low) / 100.0).abs() < 1e-6);
         // The black point's track runs the other way: its plus lowers the stored value.
-        let Command::Set { value, .. } = command(&s, Param::BlackPoint, Some(1)) else { panic!() };
+        let Command::Set { value, .. } = command(&s, Param::BlackPoint, Move::Step(1)) else { panic!() };
         assert!(value < s.print.black_point);
         let mut moved = s.clone();
         moved.print.exposure = 0.7;
-        let Command::Set { value, .. } = command(&moved, Param::Exposure, None) else { panic!() };
+        let Command::Set { value, .. } = command(&moved, Param::Exposure, Move::Reset) else { panic!() };
         assert_eq!(value, Field::Exposure.double_click_base(&moved));
         // Twin: a step on another slider leaves Exposure's knob, so the check reads the right one.
-        let Command::Set { knob, .. } = command(&s, Param::Texture, Some(1)) else { panic!() };
+        let Command::Set { knob, .. } = command(&s, Param::Texture, Move::Step(1)) else { panic!() };
         assert_ne!(knob, Field::Exposure.knob());
+    }
+
+    #[test]
+    fn a_place_on_the_track_is_where_the_panel_s_drag_puts_the_knob() {
+        let mono = PipelineSettings::rest(ConversionMode::Monochrome, true);
+        for (s, param) in [(&mono, Param::Contrast), (&mono, Param::BlackPoint), (&mono, Param::Exposure)] {
+            let f = field(param);
+            let Command::Set { knob, value } = command(s, param, Move::To(0.8)) else { panic!() };
+            assert_eq!(knob, f.knob());
+            assert!((position_on(f, value, &track_on(f, s)) - 0.8).abs() < 1e-4, "{param:?}");
+        }
+        // Twin: a monochrome frame's contrast spans its own track, so the fixed range's place is another value.
+        let Command::Set { value, .. } = command(&mono, Param::Contrast, Move::To(0.8)) else { panic!() };
+        assert!((value - crate::slider_track::stored_at(Field::Contrast, 0.8)).abs() > 1e-3);
+        let at = |p| match command(&mono, Param::Exposure, Move::To(p)) {
+            Command::Set { value, .. } => value,
+            _ => panic!(),
+        };
+        assert_eq!(at(1.7), at(1.0), "past the end, the end");
     }
 
     #[test]

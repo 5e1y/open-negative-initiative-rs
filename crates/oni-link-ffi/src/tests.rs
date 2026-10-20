@@ -280,6 +280,41 @@ async fn the_panel_reaches_the_phone_and_its_keys_reach_the_desktop() {
     );
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn a_drag_shows_the_knob_at_once_and_reaches_the_desktop_before_its_release() {
+    let (_host, code, mut heard) = start().await;
+    let session = RemoteSession::pair(code.to_uri(), generate_identity(), "Phone".into()).await.unwrap();
+    let (tx, mut shown) = mpsc::unbounded_channel();
+    session.set_listener(Box::new(Recorder(tx)));
+    until(&mut shown, |d| !d.panel.rows.is_empty()).await;
+    for at in [0.6, 0.7, 0.9] {
+        session.slide(Param::Exposure, at);
+    }
+    assert_eq!(session.current().panel.rows[0].position, 0.9, "the knob stands where the hand is");
+    session.let_go(Param::Exposure);
+    let mut places = Vec::new();
+    loop {
+        let HostEvent::Command { command, .. } = until(&mut heard, |e| matches!(e, HostEvent::Command { .. })).await
+        else {
+            unreachable!()
+        };
+        match command {
+            oni_link::Command::SetParam { param: oni_link::Param::Exposure, position } => places.push(position),
+            oni_link::Command::ReleaseParam { param: oni_link::Param::Exposure } => break,
+            other => panic!("{other:?}"),
+        }
+    }
+    assert_eq!((places.first(), places.last()), (Some(&0.6), Some(&0.9)), "{places:?}");
+    until(&mut shown, |d| d.panel.rows[0].position == 0.9 && d.state.applied as usize == places.len() + 1).await;
+
+    // Twin: a hung-up session's drag reaches no desktop.
+    session.hang_up();
+    until(&mut heard, |e| matches!(e, HostEvent::Disconnected { .. })).await;
+    session.slide(Param::Exposure, 0.1);
+    session.let_go(Param::Exposure);
+    assert!(timeout(Duration::from_millis(300), heard.recv()).await.is_err());
+}
+
 #[test]
 fn every_slider_crosses_the_bindings_under_its_own_name() {
     for param in oni_link::Param::ALL {

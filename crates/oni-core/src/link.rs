@@ -7,12 +7,20 @@ use oni_link::{Face, Host, HostEvent, HostEvents, Panel, Param, PublicKey, Recei
 use oni_settings::Face as SettingsFace;
 use std::sync::Mutex;
 
+/// How a phone moves a slider: by hundredths of its track, back to rest, or to a place on its track.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Move {
+    Step(i8),
+    Reset,
+    To(f32),
+}
+
 /// The panel's sliders, which the host app lays out and formats: the store knows values, not sliders.
 pub trait Sliders: Send {
     /// The rows the panel shows now on the open face, in its order.
     fn rows(&self, store: &EditorStore) -> Vec<Row>;
-    /// The command a slider's step, or its reset when `by` is `None`, lands as.
-    fn command(&self, store: &EditorStore, param: Param, by: Option<i8>) -> Option<Command>;
+    /// The command a slider's move lands as.
+    fn command(&self, store: &EditorStore, param: Param, by: Move) -> Option<Command>;
 }
 
 /// No sliders: the phone's tabs stay empty.
@@ -23,7 +31,7 @@ impl Sliders for NoSliders {
         Vec::new()
     }
 
-    fn command(&self, _: &EditorStore, _: Param, _: Option<i8>) -> Option<Command> {
+    fn command(&self, _: &EditorStore, _: Param, _: Move) -> Option<Command> {
         None
     }
 }
@@ -76,11 +84,13 @@ pub struct Link {
     pub frame: Option<(u16, u16)>,
     pub sliders: Box<dyn Sliders>,
     published: Option<State>,
+    /// The slider a phone's hand holds: the store records its moves as one step on release.
+    held: Option<Param>,
 }
 
 impl Link {
     pub fn new(host: Host) -> Link {
-        Link { host, frame: None, sliders: Box::new(NoSliders), published: None }
+        Link { host, frame: None, sliders: Box::new(NoSliders), published: None, held: None }
     }
 
     /// Publishes the store's screen when it differs from the last one sent.
@@ -99,7 +109,10 @@ impl Link {
             HostEvent::Command { command, .. } => self.command(store, command),
             HostEvent::Paired { phone, name } => Some(Outward::Paired { phone, name }),
             HostEvent::Connected { phone, name } => Some(Outward::Connected { phone, name }),
-            HostEvent::Disconnected { phone } => Some(Outward::Disconnected { phone }),
+            HostEvent::Disconnected { phone } => {
+                self.let_go(store);
+                Some(Outward::Disconnected { phone })
+            }
         };
         receipt.applied();
         // Published after every press, changed or not, so the phone learns its press was taken.
@@ -108,10 +121,31 @@ impl Link {
         out
     }
 
-    fn command(&self, store: &mut EditorStore, command: oni_link::Command) -> Option<Outward> {
+    /// The phone's hand off its slider, which records the drag as one step.
+    pub fn let_go(&mut self, store: &mut EditorStore) {
+        if self.held.take().is_some() {
+            store.release();
+        }
+    }
+
+    fn command(&mut self, store: &mut EditorStore, command: oni_link::Command) -> Option<Outward> {
+        // `DSSlider`'s drag: the first place holds the store, every later one lands under that hold.
+        if let oni_link::Command::SetParam { param, position } = command {
+            let set = self.sliders.command(store, param, Move::To(position))?;
+            if self.held != Some(param) {
+                self.let_go(store);
+                store.hold();
+                self.held = Some(param);
+            }
+            store.apply(set);
+            return None;
+        }
+        // Any other key ends a drag a lost release left open, so it never joins the drag's step.
+        self.let_go(store);
         let resolved = match command {
-            oni_link::Command::StepParam { param, by } => self.sliders.command(store, param, Some(by)),
-            oni_link::Command::ResetParam { param } => self.sliders.command(store, param, None),
+            oni_link::Command::StepParam { param, by } => self.sliders.command(store, param, Move::Step(by)),
+            oni_link::Command::ResetParam { param } => self.sliders.command(store, param, Move::Reset),
+            oni_link::Command::SetParam { .. } | oni_link::Command::ReleaseParam { .. } => return None,
             // `toggleLab`: the Scanner face needs a photograph; the face already on is left alone.
             oni_link::Command::Face(face) => {
                 let wanted = face_of(face);

@@ -94,6 +94,11 @@ pub enum Command {
     StepParam { param: Param, by: i8 },
     /// A panel slider back where a double click returns it.
     ResetParam { param: Param },
+    /// A panel slider's knob placed at `position` on its track, 0 to 1, by a hand holding it until
+    /// `ReleaseParam`; protocol 3 onward, as `ReleaseParam`.
+    SetParam { param: Param, position: f32 },
+    /// The hand off the slider: its moves since its first `SetParam` make one step of the history.
+    ReleaseParam { param: Param },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -174,8 +179,14 @@ impl State {
             }
             Command::Machine(machine) => next.machine = machine,
             Command::Face(face) => next.panel.face = face,
-            // A slider's readout is the desktop's to write, so a step waits for its screen.
-            Command::StepParam { .. } | Command::ResetParam { .. } => {}
+            // The knob follows the hand at once; its readout is the desktop's to write.
+            Command::SetParam { param, position } => {
+                if let Some(row) = next.panel.rows.iter_mut().find(|row| row.param == param) {
+                    row.position = position.clamp(0.0, 1.0);
+                }
+            }
+            // A step's knob and readout are the desktop's to place, so a step waits for its screen.
+            Command::StepParam { .. } | Command::ResetParam { .. } | Command::ReleaseParam { .. } => {}
             Command::Walk { .. } | Command::Undo | Command::Redo => {}
         }
         next

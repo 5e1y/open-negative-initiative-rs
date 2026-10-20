@@ -140,7 +140,7 @@ impl Ctl {
     /// A press lands on the store as one command and one undo step, then the window follows.
     pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent, receipt: Receipt) {
         use oni_link::Command as Key;
-        let slider = matches!(&event, HostEvent::Command { command: Key::StepParam { .. } | Key::ResetParam { .. }, .. });
+        let slider = matches!(&event, HostEvent::Command { command: Key::StepParam { .. } | Key::ResetParam { .. } | Key::SetParam { .. }, .. });
         let sliders = self.phone_sliders();
         let was = self.state.borrow().store.settings().flat_field.clone();
         let (out, changed) = {
@@ -160,6 +160,9 @@ impl Ctl {
         if changed {
             self.state.borrow_mut().last_change = Some(Instant::now());
             self.publish(false);
+        } else {
+            // A drag's release records its step without a change: the bar's undo follows it.
+            self.publish_bar();
         }
         match out {
             Some(Outward::Paired { phone, name }) => {

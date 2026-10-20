@@ -91,6 +91,8 @@ pub struct DisplayState {
     pub round_trip_ms: Option<f64>,
     /// The open photo's face and the sliders of the panel's tabs on it.
     pub panel: Panel,
+    /// A press sent and not yet answered: what the screen shows of it is the phone's guess.
+    pub unanswered: bool,
 }
 
 impl From<Letter> for oni_link::Letter {
@@ -193,6 +195,7 @@ impl From<&oni_link::Display> for DisplayState {
             connected: d.connected,
             round_trip_ms: d.round_trip.map(|trip| trip.as_secs_f64() * 1000.0),
             panel: (&d.state.panel).into(),
+            unanswered: d.unanswered,
         }
     }
 }

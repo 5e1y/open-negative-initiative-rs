@@ -11,7 +11,7 @@ pub(crate) fn track_range(f: Field) -> RangeInclusive<f32> {
 
 /// The track a field spans on these settings: `Knob::range`, a monochrome frame's or a plain file's
 /// own, in the shown sense.
-pub(crate) fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> RangeInclusive<f32> {
+pub fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> RangeInclusive<f32> {
     let (low, high) = f.knob().range(s).unwrap_or(f.spec().range);
     if f.spec().inverted { -high..=-low } else { low..=high }
 }
@@ -21,7 +21,7 @@ pub(crate) fn position_on(f: Field, stored: f32, track: &RangeInclusive<f32>) ->
     track::position(f.shown(stored), track, f.spec().centre)
 }
 
-pub(crate) fn stored_on(f: Field, at: f32, track: &RangeInclusive<f32>) -> f32 {
+pub fn stored_on(f: Field, at: f32, track: &RangeInclusive<f32>) -> f32 {
     f.shown(track::value(at, track, f.spec().centre))
 }
 

@@ -29,6 +29,7 @@ mod navigator;
 mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
+mod phone_canvas;
 mod phone_tabs;
 mod prepare;
 mod prepare_leftovers;
@@ -114,6 +115,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves", scroll::the_knob_shows_only_where_the_content_overflows_and_only_while_it_moves),
     ("scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s", scroll::the_knob_drags_the_content_and_its_track_pages_as_appkit_s),
     ("scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way", scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way),
+    ("phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded", phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),

@@ -41,6 +41,8 @@ int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *o
     p->gamm[0] = 1.0;
     p->gamm[1] = 1.0;
     p->no_auto_bright = 1;
+    // Left at 0.75, LibRaw lowers the white level to a bright frame's own peak: a choice per frame.
+    p->adjust_maximum_thr = 0.0f;
     // Mode 1 normalises the multipliers on the largest, so no channel is scaled past the ceiling.
     p->highlight = 1;
     p->user_qual = 3;

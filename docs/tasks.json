@@ -1285,6 +1285,47 @@
     "detail": "With the roll's disk unplugged, the sidecar's absence read as a new photo: rest settings, writable, Prepare the Roll opened on it (its base step decoding nothing) and every settle tried to write a sidecar for it, which a reconnected disk would have taken over the Swift roll's own. The store now checks the original first: absent, the frame opens read-only on the rest settings with a message saying its disk may be disconnected, nothing is written and Prepare the Roll is not offered. Beyond Swift, whose read has the same gap. Test fixtures that opened imaginary originals now create them."
   },
   {
+    "id": 174,
+    "type": "feature",
+    "title": "The phone's sliders drag as the desktop's, in the desktop's simplified design system, and a dropped link is seen and redialled",
+    "status": "done",
+    "detail": "oni-link protocol 3, additive: Command::SetParam { param, position } places a panel slider's knob on its own track (0 to 1, the desktop mapping it by track_on and stored_on as the panel's drag does) and Command::ReleaseParam ends the drag; a protocol 2 phone is still answered with the panel. Remote::slide keeps one place on the wire, the latest parked behind it, and Remote::let_go sends the last place then the release; the knob is predicted at once, its readout stays the desktop's. oni-core link::Link holds the store on a phone's first place and releases it on ReleaseParam, any other key or the phone's disconnection, so a drag is one undo step even past the history's coalescing window; link::Move replaces Option<i8> in Sliders::command. The link's liveness: Remote now ends a session the desktop has not answered for QUIET (6 s, three pings), where a Wi-Fi drop leaves TCP half open and the phone believed itself connected while its presses fell into the socket; a dropped session shows the desktop's last answered screen, never an unanswered guess, and takes no press; Display.unanswered flags a guess; a desktop that is slow or cut off during the handshake now reads Unreachable, only a hang-up Refused. oni-link-ffi: RemoteSession.slide and let_go, DisplayState.unanswered. Android (open-negative-initiative-mobile, branch rs-sliders): the keycap components are gone; ds/ holds one Kotlin file per desktop component (Label, Button and IconButton, KeyPlate, Slider, Tabs, Section and Divider, Surface, Keypad with Key, KeyRow and LabScreen, WarningBand, StatusLine, Progress, TextField, Dialog, Icon with the Trinil glyphs) on a DS theme mirroring theme.slint, with Inter and Enriqueta bundled; every screen rebuilt from them; every panel slider a Slider (label, readout, rail with its fill, relative drag, double tap to reset); the link's state on top, a status line while the desktop answers, a warning band while redialling or down, every control out of reach meanwhile; the session survives five seconds off the screen, so turning the phone or a notification no longer hangs up, and redials on its own with backoff while in front, never giving up.",
+    "outcome": "Likely causes of the drops, found in the code (no phone attached to measure them): every configuration change (the phone turned, the screen resized) recreated the activity, whose onStop hung up and onStart dialled again 0.15 to 0.3 s later; a link cut by the network was never noticed by the phone, which pinged without checking for answers, so it stayed 'connected' while the desktop had dropped it, and its dial loop gave up for good on a handshake timeout read as a refusal. Checks: oni-link tests/liveness.rs (two idle minutes on a paused clock keep the link, twin a silent cut is seen by the phone within QUIET and by the desktop, the unanswered press unshown; a silent desktop is Unreachable, twin a hang-up Refused), tests/panel.rs (one place in flight, the latest after, the release last; twin presses all fly; protocol 2 still served), oni-link-ffi drag test (twin a hung-up session sends nothing), oni-core tests/link.rs (a drag past the coalescing window is one undo step, twin two steps are two; a drag cut by a key or a lost phone still records), phone_link::panel unit test (a place lands where the panel's drag puts it on the frame's own track, twin the fixed range's place differs), window check phone_tabs (a phone drag lands, one undo, the readout the panel's, twin). Android: DesignSystemTest (no styled primitive, Material or keycap in a screen, twin the old lines are refused), ShadeTest, SliderLooksTest, LinkStatusTest, TokensTest; APK built. Not run on a phone; the iPhone app's Swift bindings were not regenerated."
+  },
+  {
+    "id": 176,
+    "type": "research",
+    "title": "What LibRaw lets us tune, against the Swift app's CIRAWFilter",
+    "status": "done",
+    "detail": "docs/research/libraw-knobs.md: Swift sets colour noise reduction to 1 and turns luminance NR, sharpening, moire and lens correction off; LibRaw's AHD leaves 4.9 to 6.7 times the fine colour detail; no LibRaw knob matches Apple's colour NR, a fixed chroma blur of about 1.25 px in log space would; adjust_maximum_thr is still automatic (0.75)."
+  },
+  {
+    "id": 177,
+    "type": "tests",
+    "title": "A phone's step reaches the canvas with the panel folded",
+    "status": "done",
+    "detail": "A window check pairs a phone over loopback and steps Exposure with the panel shown then folded, each step rendered; ONI_BENCH=folded does the same in the real window and counts each step drawn, on Pro and on the Scanner face's keypad. Both pass: the owner's missed presses came from a link that dropped and never came back (no established connection, log ends on 'phone disconnected'), handed to #174."
+  },
+  {
+    "id": 178,
+    "type": "bug",
+    "title": "The canvas follows every render with the panel folded",
+    "status": "done",
+    "detail": "The canvas card's rounded clip makes the renderer draw its children into a cached layer, redrawn only when a property inside changes; a render rewrites the canvas texture in place, so the layer kept the old texels whenever nothing else on the card moved, as with the panel folded and the phone or a key driving. Canvas.frame-revision and before-revision, read by Picture.revision, are bumped on every write. ONI_BENCH=folded now compares the drawn screen per step: before, the folded steps moved 0.00 on the Scanner face; after, 4.1 and 4.0 on Scanner, 4.2 and 4.2 on Pro. Only these two textures are rewritten in place; every other picture is a new Image."
+  },
+  {
+    "id": 179,
+    "type": "decode",
+    "title": "LibRaw's white level stays the camera's: adjust_maximum_thr pinned to 0",
+    "status": "done",
+    "detail": "Left at 0.75, LibRaw lowered a frame's white level to its own brightest pixel when that passed 0.75 of white, up to +0.41 stop on a brightly exposed scan and different per frame (docs/research/libraw-knobs.md); roll #8 peaks at 0.56 so it never moved there. Owner's call. A test reads pinned.c for every automatic knob, its twin a copy without this pin."
+  },
+  {
+    "id": 180,
+    "type": "research",
+    "title": "Swift against LibRaw per camera: the hue gap depends on the hardware",
+    "status": "done",
+    "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged.",
     "id": 175,
     "type": "data-safety",
     "title": "The transition: RAW settings prepared in the Swift app corrected once per camera for LibRaw's decode",
