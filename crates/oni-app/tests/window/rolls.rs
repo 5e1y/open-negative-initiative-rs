@@ -152,3 +152,41 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     assert!(w.global::<oni_app::Canvas>().get_status().contains("nothing to balance"), "{}", w.global::<oni_app::Canvas>().get_status());
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// `TreeRowChrome`: a roll's row draws its stock, its mode's generic one while none is picked.
+pub(crate) fn a_rolls_row_draws_its_stock() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the tree is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-roll-stock-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (rolled, loose) = (root.join("Rolled"), root.join("Loose"));
+    for (folder, name) in [(&rolled, "A.tif"), (&rolled, "B.tif"), (&loose, "C.tif")] {
+        common::linear_tiff(&folder.join(name), 96, 64, 0.5);
+    }
+    // A folder made a roll carries it in its marker, the stock never picked.
+    oni_settings::film::roll_folder::set_roll(Some(&Film::new("Roll 9")), &rolled).unwrap();
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    shell.open_folder(&root);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    rig.settle();
+    let rows = shell.window.global::<Library>().get_rows();
+    let listed: Vec<(i32, String, bool)> = rows.iter().map(|r| (r.kind, r.title.to_string(), r.has_stock)).collect();
+    assert!(rows.iter().any(|r| r.kind == 1 && r.title == "Roll 9" && r.has_stock), "the roll draws its stock: {listed:?}");
+    // Twin: the folder holding no roll keeps its glyph.
+    assert!(rows.iter().any(|r| r.kind == 0 && r.title == "Loose" && !r.has_stock), "{listed:?}");
+    println!("shot {}", rig.shot("rolls-stock-row").display());
+    drop(ctl);
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}

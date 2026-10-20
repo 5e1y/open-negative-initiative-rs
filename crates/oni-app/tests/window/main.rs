@@ -107,6 +107,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
+    ("rolls::a_rolls_row_draws_its_stock", rolls::a_rolls_row_draws_its_stock),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),

@@ -1340,5 +1340,12 @@
     "title": "The Frontier as the hand's own LUT on ONI's inversion, edited in any LUT tool",
     "status": "done",
     "detail": "Owner's call: the parametric Lab's strips were rejected; the Frontier goes through ONI's inversion first, then a LUT the owner edits. Settings > Frontier look: EXPORT writes the look in use, else ONI's own scanner look re-laid on display sRGB code (33 nodes), as a standard .cube; USE A FILE reads one and stands it in for the measured table on the Scanner face's Frontier machine, the file read again within a second of each save, a broken save keeping the last; MEASURED returns to the measured table. The path is ONI's: Pro's render, encoded to sRGB code, the hand's cube, then the warmth look. Kept in preferences (frontierLook), no sidecar field. Gallery thumbnails of Frontier frames refresh on their next render."
+  },
+  {
+    "id": 183,
+    "type": "parity",
+    "title": "A roll's row in the tree draws its stock",
+    "status": "done",
+    "detail": "TreeRowChrome.defaultStock: the stock a hand picked for the roll, else its first photo's mode's generic stock, drawn as its artwork in a slot the size of Swift's mini canister (22 px), so glyphs and canisters share a starting edge. Folders holding no roll keep their glyph."
   }
 ]

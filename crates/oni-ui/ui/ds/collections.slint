@@ -248,6 +248,9 @@ export component TreeItem inherits ListRow {
     in property <RowKind> kind;
     in property <bool> expandable;
     in property <bool> expanded;
+    // `TreeRowChrome.RowIcon.stock`: a roll's stock artwork in place of its glyph.
+    in property <image> stock;
+    in property <bool> has-stock;
     indent: root.depth * RowStyle.indent;
     fold-zone: root.expandable ? RowStyle.chevron-zone : 0;
     Rectangle {
@@ -258,9 +261,14 @@ export component TreeItem inherits ListRow {
             height: RowStyle.chevron;
         }
     }
-    VerticalLayout {
-        alignment: center;
-        Icon {
+    Rectangle {
+        width: RowStyle.slot;
+        if root.has-stock: Image {
+            source: root.stock;
+            width: RowStyle.slot;
+            height: RowStyle.slot;
+        }
+        if !root.has-stock: Icon {
             source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note
                 : root.kind == RowKind.roll ? Icons.film-roll : root.expanded ? Icons.folder-open : Icons.folder;
             width: RowStyle.icon;
