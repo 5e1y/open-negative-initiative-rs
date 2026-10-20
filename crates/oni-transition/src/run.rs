@@ -40,15 +40,23 @@ pub struct Summary {
     pub unreachable: Vec<String>,
 }
 
-/// How many frames a run would correct now: the launch asks before showing anything.
+/// The roots asked for and those unreachable at the last run, which may have come back.
+fn with_deferred(roots: &[String], state: &State) -> Vec<String> {
+    let mut all: Vec<String> = roots.iter().chain(&state.deferred).cloned().collect();
+    all.sort();
+    all.dedup();
+    all
+}
+
+/// How many frames a run would correct now; the first call installs the transition, so a sidecar
+/// written by this version from then on is never taken for the earlier one's. Zero on any doubt.
 pub fn pending(support: &Path, roots: &[String]) -> usize {
-    let state = State::load(support);
-    if state.as_ref().is_some_and(|s| s.version > records::VERSION) {
+    let Ok(state) = State::begin(support) else { return 0 };
+    if state.version > records::VERSION {
         return 0;
     }
-    let installed_at = state.map_or_else(records::now, |s| s.installed_at);
     let ledger = Ledger::load(support);
-    let found = survey::survey(roots, installed_at, &ledger);
+    let found = survey::survey(&with_deferred(roots, &state), state.installed_at, &ledger);
     found.raws.iter().filter(|r| !ledger.entries.contains_key(&*oni_settings::sidecar::url_for(r).to_string_lossy())).count()
 }
 
@@ -138,7 +146,7 @@ pub fn run(support: &Path, roots: &[String], apple: &dyn AppleDecode, progress: 
         return Ok(Summary::default());
     }
     let mut ledger = Ledger::load(support);
-    let found = survey::survey(roots, state.installed_at, &ledger);
+    let found = survey::survey(&with_deferred(roots, &state), state.installed_at, &ledger);
     state.deferred = found.unreachable.clone();
     state.save(support)?;
     let mut summary = Summary { unreachable: found.unreachable, ..Summary::default() };

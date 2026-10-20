@@ -1,0 +1,67 @@
+// The transition from the earlier version: a blocking sheet while each camera is measured and its
+// photos corrected, then what was done and CONTINUE. Rust fills every line.
+import { Sheet, SheetStyle, Space, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress, Note } from "ds/ds.slint";
+
+export struct TransitionLine { camera: string, detail: string }
+
+export global Transition {
+    in property <bool> shown;
+    in property <bool> done;
+    // Negative while the work cannot be counted yet: the bar sweeps.
+    in property <float> progress: -1;
+    in property <string> stage;
+    in property <[TransitionLine]> cameras;
+    in property <string> summary;
+    in property <[string]> left;
+    callback continue-pressed();
+}
+
+export component TransitionSheet inherits Sheet {
+    card-width: SheetStyle.notice-width;
+    // Escape closes it only once the work is done: until then it holds the window.
+    dismissed => {
+        if Transition.done {
+            Transition.continue-pressed();
+        }
+    }
+    VerticalLayout {
+        spacing: Space.l;
+        Label { text: "Photos From the Earlier Version"; role: TextRole.title; wrap: word-wrap; }
+        VerticalLayout {
+            spacing: Space.s;
+            for line in [
+                "ONI now reads RAW files with a different decoder, which sees each camera's colours a little differently.",
+                "Photos prepared in the earlier version are corrected once, camera by camera, so they keep their colours.",
+                "A backup of their settings is kept. Opened in the earlier version afterwards, they would look slightly cooler.",
+            ]: BulletLine { text: line; }
+        }
+        VerticalLayout {
+            spacing: Space.s;
+            Progress { fraction: Transition.done ? 1 : Transition.progress; }
+            Label { text: Transition.stage; tone: Tone.secondary; wrap: word-wrap; }
+        }
+        if Transition.cameras.length > 0: VerticalLayout {
+            spacing: Space.xs;
+            for line in Transition.cameras: HorizontalLayout {
+                spacing: Space.s;
+                Label { text: line.camera; overflow: elide; horizontal-stretch: 1; }
+                Label { text: line.detail; tone: Tone.secondary; }
+            }
+        }
+        if Transition.done: VerticalLayout {
+            spacing: Space.xs;
+            Label { text: Transition.summary; wrap: word-wrap; }
+            for line in Transition.left: Label { text: line; role: TextRole.caption; tone: Tone.tertiary; wrap: word-wrap; }
+        }
+        if !Transition.done: Note { text: "Quitting now is safe: the work resumes at the next launch."; }
+        HorizontalLayout {
+            alignment: end;
+            Button {
+                text: "CONTINUE";
+                kind: ButtonKind.accent;
+                enabled: Transition.done;
+                clicked => { Transition.continue-pressed(); }
+            }
+        }
+    }
+}

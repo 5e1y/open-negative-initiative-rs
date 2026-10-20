@@ -4172,6 +4172,7 @@ dependencies = [
  "oni-pipeline",
  "oni-render",
  "oni-settings",
+ "oni-transition",
  "oni-ui",
  "png",
  "pollster",

@@ -95,6 +95,7 @@ mod rolls;
 mod sheets;
 mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
+mod transition;
 mod updates;
 mod year;
 mod scroll;
@@ -133,6 +134,8 @@ pub struct Options {
     pub updates: Option<Updater>,
     /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
     pub pasteboard: Box<dyn crate::pasteboard::Board>,
+    /// Apple's decode, which turns the transition from the earlier version on; none in the checks.
+    pub transition: Option<Arc<dyn oni_transition::AppleDecode>>,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -163,6 +166,7 @@ impl Default for Options {
             require_roll: false,
             updates: None,
             pasteboard: Box::new(crate::pasteboard::Memory::default()),
+            transition: None,
         }
     }
 }
@@ -409,6 +413,7 @@ pub struct State {
     pub(crate) making_sheet: Option<sheets::Making>,
     pub(crate) updates: updates::Updates,
     year: year::Year,
+    transition: transition::Transition,
 }
 
 pub struct Ctl {

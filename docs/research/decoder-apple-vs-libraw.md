@@ -208,6 +208,37 @@ become "matches it for the cameras in the table". The owner decides.
 - **Unchanged decodes.** Linear TIFF, DNG and plain images decode byte for byte as before.
 - **Sidecars untouched.** A Swift-prepared sidecar opened and closed without an edit keeps its bytes.
 
+## Transition
+
+The owner chose a one-time, explained migration (strategy (b), gains only) for the users of the Swift
+app: `crates/oni-transition`, behind a blocking sheet at launch (#175).
+
+- **Which sidecars.** No field or layout tells the two apps' sidecars apart: same `version`, same key
+  order and number format, same envelope. The rule is time: a RAW's sidecar (not a DNG, not a scan, no
+  RGB passes) last written before the transition's install instant, kept in
+  `<support>/Transition/state.json` from the first search on, and not yet on the ledger.
+- **Per camera.** LibRaw's make and model. `CIRAWFilter` runs in the process through `objc2`, set as
+  `RawDecode.configured`; both decodes are averaged over 8-pixel squares, aligned to the pixel (the
+  best correlation of log luminance within 8 pixels of the frames' size difference), and each channel's
+  shift is the median of log2 ratios over squares off floor and clip. Three frames spread over the
+  camera's earlier frames, the median of each channel; the shift is kept and reused for every later
+  frame of that camera.
+- **What moves.** `gains.stops` and `rollReference.stops`, by the shift, clamped to the gains' range.
+  Every density (levels, the reference's black, white, base and median), the print's filters and the
+  pedestal stand at the gains, so they stay.
+- **Roll #8.** The three frames picked (DSC_6441, 6454, 6466) give +0.064 / -0.025 / -0.124 stop; the
+  38 frames +0.064 / -0.026 / -0.124; this study +0.063 / -0.026 / -0.126. Rendered through the
+  pipeline with the corrected sidecars, LibRaw's output lands 0.0051 (mean worst channel) from the
+  Swift render, against 0.0182 before: the gains-only figure above (0.0052).
+- **Safety.** Each sidecar is backed up under `<support>/Transition/backup/` (named by its digest,
+  `manifest.jsonl` mapping it to its path) before it is written through the sidecar writer; every
+  outcome goes on `ledger.jsonl` with the digests before and after, so nothing is corrected twice and a
+  run stopped anywhere resumes. `oni_transition::correct::restore` puts back every backup whose sidecar
+  has not changed since.
+- **Limits.** A roll prepared in this app before the transition was installed is taken for the
+  earlier app's; a roll prepared in the Swift app after it is not corrected. A roll moved after its
+  correction keeps a later date and is left alone. Frames of RGB passes and DNGs keep their settings.
+
 ## Reproduce
 
 ```
@@ -219,3 +250,6 @@ The script works on Macs whose Xcode licence is unaccepted, once the toolchain e
 toolchain's `swiftc`, writes `<out>/dumps`, then prints the fit to `<out>/fit.txt` and the renders to
 `<out>/gap.txt`. The sidecar folder holds `<name>.json` copies, so the originals are only read. The
 whole roll takes about 70 s.
+
+The transition's own measure and residual: `cargo run --release -p oni-transition --example measure --
+<raw>...` and `--example residual -- <out>/dumps <sidecar folder> <r,g,b stops>`.

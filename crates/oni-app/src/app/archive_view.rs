@@ -78,6 +78,7 @@ impl Ctl {
             (s.generation.fetch_add(1, Ordering::Relaxed) + 1, s.index_path.clone())
         };
         self.navigator_opened(&folder);
+        self.transition_check(&folder);
         self.read_folder(generation, folder, index_path);
     }
 

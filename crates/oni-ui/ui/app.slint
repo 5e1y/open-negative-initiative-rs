@@ -22,11 +22,12 @@ import { PresetDeck } from "preset_deck.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 import { Confirm, ConfirmSheet } from "confirm.slint";
+import { Transition, TransitionLine, TransitionSheet } from "transition.slint";
 
 export { DS, Clicks, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, Catalogue, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
-export { MaskDialog, Confirm }
+export { MaskDialog, Confirm, Transition, TransitionLine }
 export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
 export { Canvas, Mark }
@@ -147,7 +148,7 @@ export component MainWindow inherits AppWindow {
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
-        || Advice.shown || Wrapped.shown;
+        || Advice.shown || Wrapped.shown || Transition.shown;
     changed sheet-shown => { App.sheet-changed(); }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
@@ -409,6 +410,7 @@ export component MainWindow inherits AppWindow {
     if MaskDialog.shown: MaskDialogSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Advice.shown: AdviceSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
+    if Transition.shown: TransitionSheet { x: 0; y: 0; width: root.width; height: root.height; }
     // Last, so a question asked over another sheet, as quitting's, is drawn over it.
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 

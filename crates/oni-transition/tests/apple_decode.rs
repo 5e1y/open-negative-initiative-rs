@@ -1,5 +1,5 @@
 //! Apple's decode in-process against `scripts/decoder-gap` on roll #8: DSC_6440 reads +0.063,
-//! -0.025, -0.125 stop in `scripts/decoder-gap`, the roll's median +0.063, -0.026, -0.126.
+//! -0.025, -0.125 stop there, the roll's median +0.063, -0.026, -0.126.
 
 #[cfg(target_os = "macos")]
 #[test]

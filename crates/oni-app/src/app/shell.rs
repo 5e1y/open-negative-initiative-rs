@@ -144,6 +144,7 @@ impl Shell {
             making_sheet: None,
             updates: updates::Updates::new(options.updates),
             year: year::Year::default(),
+            transition: transition::Transition::new(options.transition),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),
