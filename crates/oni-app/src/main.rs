@@ -68,6 +68,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), ..Options::default() }).inspect(|s| {
         s.window.window();
     }))?;
+    // `Diagnostics.startWatchdog`: the interface thread beats, a thread of its own watches it.
+    let beat = slint::Timer::default();
+    let watched = shell.ctl.clone();
+    beat.start(slint::TimerMode::Repeated, oni_app::watchdog::BEAT, move || {
+        let witness = watched.state.borrow().witness();
+        oni_app::watchdog::beat(std::time::Instant::now(), witness);
+    });
+    oni_app::watchdog::start();
     let room = shell.window.as_weak();
     shell.window.global::<oni_app::Bar>().on_room_pressed(move || {
         if let Some(w) = room.upgrade() {

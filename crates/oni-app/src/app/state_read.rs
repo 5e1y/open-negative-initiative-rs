@@ -46,6 +46,14 @@ impl State {
         self.store.as_ref()
     }
 
+    /// `Diagnostics.witness`: what the window showed, written beside a block.
+    pub fn witness(&self) -> String {
+        match self.open_path() {
+            Some(path) => format!("editing {}", oni_library::paths::name(path)),
+            None => "the gallery".into(),
+        }
+    }
+
     pub fn open_path(&self) -> Option<&str> {
         self.open.as_deref()
     }

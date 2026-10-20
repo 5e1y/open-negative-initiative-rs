@@ -4142,6 +4142,7 @@ dependencies = [
  "jpeg-decoder",
  "jpeg-encoder",
  "kamadak-exif",
+ "libc",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
  "oni-colour",

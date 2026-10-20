@@ -237,6 +237,7 @@ impl Ctl {
                 timer.start(TimerMode::Repeated, CONSOLE_REFRESH, move || {
                     if let Some(c) = weak.upgrade().filter(|c| c.window().is_visible()) {
                         c.set_log(std::fs::read_to_string(&log).unwrap_or_default().into());
+                        c.set_blocks(crate::watchdog::blocks() as i32);
                     }
                 });
                 self.state.borrow_mut().console = Some((console.clone_strong(), timer));
@@ -245,6 +246,7 @@ impl Ctl {
         };
         let log = crate::timing::log_path(&self.state.borrow().support);
         console.set_log(std::fs::read_to_string(log).unwrap_or_default().into());
+        console.set_blocks(crate::watchdog::blocks() as i32);
         let _ = console.show();
     }
 }
