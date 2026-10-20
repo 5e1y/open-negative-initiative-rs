@@ -218,14 +218,19 @@ pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
 
 /// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
 pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
-    let offset = MACHINE.offset(&resting_clicks(s));
+    let clicks = MACHINE.offset(&resting_clicks(s));
+    let one_d = MACHINE.offset(&ScannerClicks::new(1, 0, 0, 0, 0));
+    let half = if resting_clicks(s) != s.scanner { FRONTIER_REST_D } else { 0.0 };
+    let offset: [f32; 3] = std::array::from_fn(|c| clicks[c] + half * one_d[c]);
     let sign = if s.mode.invert_flag() > 0.5 { -1.0 } else { 1.0 };
     offset.map(|o| sign * o / 2f32.log10())
 }
 
-/// Where the Frontier's keypad rests, the owner's own neutral for its look: one D lighter, three M,
-/// three Y toward blue; the screen still reads zero.
-pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 1, c: 0, m: 3, y: -3, w: 0 };
+/// Where the Frontier's keypad rests, the owner's own neutral for its look: half a D lighter, two M, two
+/// Y toward blue; the screen still reads zero.
+pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 0, c: 0, m: 2, y: -2, w: 0 };
+/// The rest's D, half a click, which no keypad count holds.
+pub const FRONTIER_REST_D: f32 = 0.5;
 
 /// The frame's clicks from the machine's rest: the Frontier look's own, the others' (a hand's look among
 /// them) at zero.

@@ -1508,5 +1508,12 @@
     "title": "Frontier 2 is the ONI machine's render with the ONI look's tone then the paper in place of the look",
     "status": "done",
     "detail": "The owner found Frontier 2 far underexposed and asked for ONI's pipe with the look replaced by the paper curves plus the ONI look's exposure. Frontier 2 no longer bypasses Pro's print: it runs the ONI machine's conversion whole, then, where the ONI look stands, the ONI look's tone (its grey axis, the brightness it lends) and the Crystal Archive layer curves, composed into one 33-point curve a channel, which the Frontier 2 Paper block draws as it is applied."
+  },
+  {
+    "id": 207,
+    "type": "feature",
+    "title": "The Frontier rests on D+0.5 M+2 Y-2",
+    "status": "done",
+    "detail": "The owner's revised neutral for the Frontier's look: two M, two Y toward blue and half a D, where #205 had D+1 M+3 Y-3. The half D, which no keypad count holds, is half of one D click's measured offset added to the rest's (scanner::FRONTIER_REST_D)."
   }
 ]

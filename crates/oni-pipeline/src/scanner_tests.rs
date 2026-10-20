@@ -68,8 +68,12 @@ fn the_frontier_rests_on_its_own_neutral_and_the_others_on_zero() {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     (s.face, s.scanner_machine) = (Face::Scanner, ScannerMachine::Frontier);
     let frontier = on_oni_machine(&s).unwrap();
-    let oni = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: FRONTIER_REST, ..s.clone() }).unwrap();
-    assert_eq!(frontier.gains, oni.gains, "the Frontier at zero is ONI at D+1 M+3 Y-3");
+    let at = |d: i64| on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: ScannerClicks::new(d, 0, 2, -2, 0), ..s.clone() }).unwrap().gains.stops;
+    let (no_d, one_d) = (at(0), at(1));
+    for c in 0..3 {
+        let half = (no_d[c] + one_d[c]) / 2.0;
+        assert!((frontier.gains.stops[c] - half).abs() < 1e-5, "the Frontier at zero is ONI at D+0.5 M+2 Y-2: {:?}", frontier.gains.stops);
+    }
     // Twin: the ONI machine and Frontier 2 rest on zero.
     let plain = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, ..s.clone() }).unwrap();
     assert_ne!(plain.gains, frontier.gains);
@@ -91,7 +95,8 @@ fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     s.scanner_machine = ScannerMachine::Frontier;
     let frontier = on_oni_machine(&s).unwrap();
     let at_rest = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: resting_clicks(&s), ..s.clone() }).unwrap();
-    assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, scanner: s.scanner, ..at_rest }, "the ONI machine's conversion whole");
+    // Its gains carry the rest's half D, which the test above checks.
+    assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, scanner: s.scanner, gains: frontier.gains, ..at_rest }, "the ONI machine's conversion whole");
     // Frontier 2 takes it whole too, Pro's print included; twin: Pro leaves the settings alone.
     assert!(!on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).unwrap().print.bypassed);
     assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
