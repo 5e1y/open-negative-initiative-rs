@@ -159,6 +159,21 @@ async fn a_tampered_secret_is_refused() {
     until(&mut heard, |e| matches!(e, HostEvent::Paired { .. })).await;
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn a_spent_code_tells_the_phone_it_is_not_paired() {
+    let (_host, code, mut heard) = start().await;
+    let first = RemoteSession::pair(code.to_uri(), generate_identity(), "Phone".into()).await.unwrap();
+    until(&mut heard, |e| matches!(e, HostEvent::Paired { .. })).await;
+    let again = RemoteSession::pair(code.to_uri(), generate_identity(), "Second".into()).await;
+    let spent = oni_link::Error::Spent.to_string();
+    assert!(matches!(&again, Err(LinkError::Failed { reason }) if *reason == spent), "{:?}", again.err());
+
+    // Twin: a stranger dialing by key is still `Refused`, so only a pairing reads as a spent code.
+    let addresses = vec![code.addresses[0].to_string()];
+    let stranger = RemoteSession::connect(addresses, first.host_key(), generate_identity(), "Other".into()).await;
+    assert!(matches!(stranger, Err(LinkError::Refused)));
+}
+
 /// The desktop's receiver policy: files pass when their pin is a trusted phone's, and only then.
 struct PinPolicy(Host);
 

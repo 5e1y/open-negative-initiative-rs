@@ -232,6 +232,10 @@ where
     let Ok(Ok(ToHost::Hello { protocol, name })) = timeout(HANDSHAKE, reader.recv::<ToHost>()).await else {
         return;
     };
+    // A second phone on the same code finds it spent and hears no Welcome, so it reads a refusal.
+    if protocol == PROTOCOL && mode == Mode::Pairing && !shared.take_window(secret) {
+        return;
+    }
     let import = shared.import.lock().expect("import lock").clone();
     let import = import.map(|(fingerprint, port)| Import { fingerprint, port, pin: shared.import_pin(&phone) });
     if writer.send(&ToPhone::Welcome { protocol: PROTOCOL, name: shared.name.clone(), import }).await.is_err()
@@ -240,10 +244,6 @@ where
         return;
     }
     if mode == Mode::Pairing {
-        // The secret was proven by decrypting Hello; a second phone on the same code finds it spent.
-        if !shared.take_window(secret) {
-            return;
-        }
         shared.trusted.lock().expect("trusted lock").insert(phone);
         shared.emit(HostEvent::Paired { phone, name: name.clone() }, None);
     }

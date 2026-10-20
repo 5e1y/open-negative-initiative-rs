@@ -70,8 +70,7 @@ pub fn trust(support: &Path, phone: PublicKey) -> Result<(), String> {
     }
     keys.push(phone);
     let text: String = keys.iter().map(|k| format!("{}\n", k.to_base64())).collect();
-    std::fs::create_dir_all(folder(support)).map_err(|e| e.to_string())?;
-    std::fs::write(trusted_path(support), text).map_err(|e| e.to_string())
+    write_private(&trusted_path(support), text.as_bytes()).map_err(|e| e.to_string())
 }
 
 /// No phone trusted any more; a missing list is already that.
@@ -86,12 +85,51 @@ pub fn forget(support: &Path) -> Result<(), String> {
 fn identity(support: &Path) -> Result<Identity, String> {
     let path = folder(support).join("host.key");
     if let Ok(bytes) = std::fs::read(&path) {
+        owner_only(&path);
         return Identity::from_bytes(&bytes).map_err(|e| format!("{}: {e}", path.display()));
     }
     let me = Identity::generate();
-    std::fs::create_dir_all(folder(support)).map_err(|e| e.to_string())?;
-    std::fs::write(&path, me.to_bytes()).map_err(|e| e.to_string())?;
+    write_private(&path, &me.to_bytes()).map_err(|e| e.to_string())?;
     Ok(me)
+}
+
+fn sibling(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_owned();
+    name.push(".tmp");
+    PathBuf::from(name)
+}
+
+/// Written through a sibling then renamed, so a crash never leaves half a file; owner-only on Unix.
+/// On Windows the support folder sits in the user's profile, whose ACL already keeps others out.
+fn write_private(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::Write;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let temporary = sibling(path);
+    let _ = std::fs::remove_file(&temporary);
+    let mut options = std::fs::OpenOptions::new();
+    options.write(true).create_new(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+    let mut file = options.open(&temporary)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    drop(file);
+    std::fs::rename(&temporary, path)
+}
+
+/// A key written readable by others before is closed to them; elsewhere the profile's ACL holds.
+fn owner_only(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if std::fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o077 != 0) {
+            let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = path;
 }
 
 /// The name the phone shows for this computer.
@@ -169,7 +207,7 @@ impl Phone {
         let port = self.bound?.port();
         let addresses: Vec<SocketAddr> = lan_address().map(|ip| SocketAddr::new(ip, port)).into_iter().collect();
         if !addresses.is_empty() && given_port(&self.support) != Some(port) {
-            let _ = std::fs::create_dir_all(folder(&self.support)).and_then(|_| std::fs::write(port_path(&self.support), format!("{port}\n")));
+            let _ = write_private(&port_path(&self.support), format!("{port}\n").as_bytes());
         }
         Some(self.host.open_pairing(addresses))
     }
@@ -277,6 +315,44 @@ mod tests {
         std::fs::write(port_path(&dir), "53318x").unwrap();
         assert_eq!(given_port(&dir), None);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_key_and_the_trusted_phones_are_written_whole_and_owner_only() {
+        let dir = std::env::temp_dir().join(format!("oni-app-phone-private-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let first = Identity::generate().public();
+        trust(&dir, first).unwrap();
+        identity(&dir).unwrap();
+        for path in [trusted_path(&dir), folder(&dir).join("host.key")] {
+            assert!(!sibling(&path).exists(), "no sibling stays behind {}", path.display());
+            #[cfg(unix)]
+            assert_eq!(mode(&path), 0o600, "{}", path.display());
+        }
+        // A write that cannot finish leaves the list as it was, never half of it.
+        std::fs::create_dir_all(sibling(&trusted_path(&dir)).join("blocked")).unwrap();
+        assert!(trust(&dir, Identity::generate().public()).is_err());
+        assert_eq!(trusted(&dir), vec![first]);
+        std::fs::remove_dir_all(sibling(&trusted_path(&dir))).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let key = folder(&dir).join("host.key");
+            std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o644)).unwrap();
+            identity(&dir).unwrap();
+            assert_eq!(mode(&key), 0o600, "a key left readable by others is closed on the next start");
+            // Twin: a plain write, as the key was written before, is readable by others.
+            let plain = folder(&dir).join("plain");
+            std::fs::write(&plain, b"key").unwrap();
+            assert_ne!(mode(&plain), 0o600);
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[cfg(unix)]
+    fn mode(path: &Path) -> u32 {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::metadata(path).unwrap().permissions().mode() & 0o777
     }
 
     #[test]
