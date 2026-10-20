@@ -1,6 +1,7 @@
 //! The desktop shell of Open Negative Initiative: the window, the bar, the panel, the canvas and the
 //! gallery, drawn by Slint and driven by the editing model of `oni-core`.
 
+pub mod anonymity;
 pub mod app;
 pub mod bench;
 pub mod chrome;

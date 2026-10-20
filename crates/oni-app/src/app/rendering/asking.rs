@@ -116,14 +116,14 @@ impl Ctl {
                     }
                 }
                 if !made.is_empty() {
-                    timing::line(&format!("{}: {} dust patches generated", stem(&path), made.len()));
+                    timing::line(&format!("{}: {} dust patches generated", crate::anonymity::token(&path), made.len()));
                     if open {
                         c.state.borrow_mut().requested_view = None;
                         c.request_render();
                     }
                 }
                 if let Some(e) = failed {
-                    timing::line(&format!("{}: dust patches not generated: {e}", stem(&path)));
+                    timing::line(&format!("{}: dust patches not generated: {e}", crate::anonymity::token(&path)));
                 }
                 c.publish_dedust();
             });
@@ -144,7 +144,7 @@ impl Ctl {
                 let full = engine.full(decoded);
                 timing::line(&format!(
                     "{}: full resolution decoded in {:.0} ms, laid on the GPU in {:.0} ms",
-                    stem(&path),
+                    crate::anonymity::token(&path),
                     decoded_in.as_secs_f64() * 1000.0,
                     held.elapsed().as_secs_f64() * 1000.0
                 ));

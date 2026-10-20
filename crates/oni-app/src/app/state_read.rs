@@ -49,7 +49,7 @@ impl State {
     /// `Diagnostics.witness`: what the window showed, written beside a block.
     pub fn witness(&self) -> String {
         match self.open_path() {
-            Some(path) => format!("editing {}", oni_library::paths::name(path)),
+            Some(path) => format!("editing photo {}", crate::anonymity::token(path)),
             None => "the gallery".into(),
         }
     }

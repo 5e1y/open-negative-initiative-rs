@@ -54,11 +54,13 @@ fn sink() -> &'static Sink {
     SINK.get_or_init(|| Sink { start: Instant::now(), file: Mutex::new(None) })
 }
 
-/// Opens the log file for the rest of the run; without it, lines go to stderr alone.
+/// Opens a fresh log file for the rest of the run, the last run's kept beside it as `oni.previous.log`
+/// and never sent: a report seals this run alone. Without it, lines go to stderr alone.
 pub fn open_file(path: &Path) -> Result<(), String> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     }
+    let _ = std::fs::rename(path, path.with_file_name("oni.previous.log"));
     let file = std::fs::OpenOptions::new().create(true).append(true).open(path).map_err(|e| e.to_string())?;
     *sink().file.lock().map_err(|_| "the log failed earlier")? = Some(file);
     Ok(())

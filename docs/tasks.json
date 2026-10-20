@@ -1176,5 +1176,12 @@
     "title": "The window checks under a whole run: limits that wait for a loaded machine",
     "status": "done",
     "detail": "With 66 window checks in parallel processes the window binary takes about 125 s, past scripts/check's 120 s stop, and the contact sheet's 10 s waits timed out under that load while it passes alone in 5 s. The stop is 240 s by default (ONI_CHECK_LIMIT still overrides it) and the contact sheet's waits 60 s; a wait returns as soon as its condition holds."
+  },
+  {
+    "id": 161,
+    "type": "privacy",
+    "title": "The log names no person: session tokens for photos, every path scrubbed from a sealed report",
+    "status": "done",
+    "detail": "Swift's Diagnostics.token: a photo or folder is written to the log as # and six hex digits of SHA-256 over a per-run salt, the same all run and unreadable back. Render, thumbnail, dust and full-resolution lines and the watchdog's witness use it; the phone's name and the log's own path are no longer written. The sealed log is this run's alone (the last run is kept beside it as oni.previous.log, never sent) and passes a scrub turning the home into ~ and every remaining path into <path>. A source scan fails when a log call takes a stem, a name or a displayed path."
   }
 ]

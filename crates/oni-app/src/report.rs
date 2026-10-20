@@ -64,11 +64,6 @@ pub fn open(blob: &str, key: &StaticSecret) -> Option<String> {
     Some(text)
 }
 
-/// The home folder masked, so a path names no person.
-pub fn masked(text: &str, home: &str) -> String {
-    if home.is_empty() { text.to_string() } else { text.replace(home, "~") }
-}
-
 /// Cut from its oldest end, a quarter of the lines at a time, until the seal fits.
 pub fn fitted(text: &str, recipient: &PublicKey) -> Result<String, String> {
     let mut lines: Vec<&str> = text.split('\n').collect();
@@ -85,11 +80,11 @@ pub fn fitted(text: &str, recipient: &PublicKey) -> Result<String, String> {
     }
 }
 
-/// The session's console, home masked and sealed; `None` when it cannot be read or sealed.
+/// The session's console with no path left in it, sealed; `None` when it cannot be read or sealed.
 pub fn sealed_log(log: &std::path::Path) -> Option<String> {
     let text = std::fs::read_to_string(log).ok()?;
-    let home = std::env::var("HOME").unwrap_or_default();
-    fitted(&masked(&text, &home), &recipient(PUBLIC_KEY)?).ok()
+    let home = std::env::var(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).unwrap_or_default();
+    fitted(&crate::anonymity::scrubbed(&text, &home), &recipient(PUBLIC_KEY)?).ok()
 }
 
 /// `BugReport.Failure`'s words.
@@ -147,12 +142,11 @@ mod tests {
     }
 
     #[test]
-    fn the_message_is_cut_to_the_sites_bound_and_the_home_masked() {
+    fn the_message_is_cut_to_the_sites_bound() {
         let long = "é".repeat(MESSAGE_LIMIT + 10);
         let sent: serde_json::Value = serde_json::from_str(&body(&long, "0.1.0", None)).unwrap();
         assert_eq!(sent["message"].as_str().unwrap().chars().count(), MESSAGE_LIMIT);
         assert!(sent.get("log").is_none(), "an unticked log is absent, not empty");
-        assert_eq!(masked("/Users/someone/Roll", "/Users/someone"), "~/Roll");
         assert_eq!(recipient(PUBLIC_KEY).map(|k| k.to_bytes().len()), Some(32));
         assert_eq!(failure(429), "Too many reports right now. Try again in an hour.");
         assert_eq!(failure(500), "The report was not accepted (500). Try again later.");

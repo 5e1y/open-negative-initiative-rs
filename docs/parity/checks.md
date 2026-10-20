@@ -9,7 +9,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **none**: no Rust test asserts it. Each is a gap.
 - **blocked**: the check guards a behaviour the port does not have yet, named beside it.
 
-Of 162 checks: 105 twin, 33 partial, 11 none, 13 blocked.
+Of 162 checks: 106 twin, 33 partial, 10 none, 13 blocked.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -63,7 +63,7 @@ Of 162 checks: 105 twin, 33 partial, 11 none, 13 blocked.
 | 48 | `Medal.selfCheck` | `Checks/Pipeline/Medal+Checks.swift:4` | medal labels hold | twin | `oni-settings/src/modes.rs::a_medal_is_written_by_name_and_an_unknown_one_refused` |
 | 49 | `AppFolders.selfCheck` | `Checks/Pipeline/AppFolders+Checks.swift:6` | folders isolated: no control reaches a real one | partial | `oni-app/src/system.rs::a_checks_folders_are_its_own_and_the_platforms_have_one_route`: a check's support and caches are stand-ins named after its run, and only `system.rs` and `timing.rs` name a platform folder; the window rig gives its dust patches a caches folder of its own. No sweep of a dead run's folders |
 | 50 | `Diagnostics.selfCheck` | `Checks/Pipeline/Diagnostics+Checks.swift:155` | the watchdog sees a blocked main thread | partial | `oni-app/src/watchdog.rs::a_silence_past_the_floor_counts_one_block`, on a clock, not a blocked thread; no stack is sampled |
-| 51 | `Diagnostics.anonymityChecks` | `Checks/Pipeline/Diagnostics+Checks.swift:87` | the console log names no path, file or disk | none | none; divergence: the log names frame stems (`timing::render`, the dust patches' lines) and the log's own path, which Swift's tokens never do |
+| 51 | `Diagnostics.anonymityChecks` | `Checks/Pipeline/Diagnostics+Checks.swift:87` | the console log names no path, file or disk | twin | `oni-app/src/anonymity.rs::a_path_is_a_short_token_the_same_each_time`, `::no_line_of_the_log_names_a_file`, `::the_scrub_leaves_no_path_and_keeps_the_numbers` |
 | 52 | `MemoryBudget.selfCheck` | `Checks/Pipeline/MemoryBudget+Checks.swift:7` | the cache budget follows the machine | partial | `oni-app/src/viewport/checks.rs::the_budget_follows_the_machine_and_stops_at_its_ceiling`; no memory-pressure relief to register |
 | 53 | `Thumbnails.selfCheck` | `Checks/Pipeline/Thumbnails+Checks.swift:9` | thumbnails hold | partial | `oni-app/src/thumbnails.rs::a_thumbnails_file_is_its_photos_fingerprint_and_nothing_else`, `oni-app/src/scans.rs::a_measured_frame_shows_the_render_and_a_crop_alone_its_scan`, `::a_file_without_a_preview_is_reduced_to_the_tile_and_a_non_image_gives_none`, `oni-app/src/thumbnails/criterion.rs::a_thumbnail_runs_opposite_to_its_negative_on_a_thin_and_a_dense_one_and_a_plate_is_refused`; blocked: no thumbnail sweep and no former cache to adopt, and the render slot shared with edits is the workers' own |
 | 54 | `LibraryLoad.selfCheck` | `Checks/Pipeline/Library+Checks.swift:39` | the library's reload holds | partial | `oni-library/src/library.rs::an_invented_row_is_dropped_and_a_waiting_one_kept`, `oni-app/src/library/tests.rs::a_folder_read_twice_reads_its_files_once_and_drops_a_photo_gone` (the first landing is the index's rows, the unread as waiting rows, before any original is opened); an unreadable member is read again on every reload rather than filtered |

@@ -153,7 +153,7 @@ impl Ctl {
                 self.pairing_status(&format!("Paired with {name}."));
             }
             Some(Outward::Connected { phone, name }) => {
-                timing::line(&format!("phone connected: {name}"));
+                timing::line("phone connected");
                 self.say(&format!("{name} connected"));
                 if let Some(p) = self.state.borrow_mut().phone.as_mut() {
                     p.connected(phone, name);

@@ -20,8 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let support = timing::support();
     let log = timing::log_path(&support);
     match timing::open_file(&log) {
-        Ok(()) => timing::line(&format!("log: {}", log.display())),
-        Err(e) => timing::line(&format!("no log file at {} ({e}); stderr only", log.display())),
+        Ok(()) => timing::line("log: oni.log, in the app's support folder"),
+        Err(e) => timing::line(&format!("no log file ({e}); stderr only")),
     }
     // One device for the pipeline, the display kernel and the window, so the canvas texture is shared.
     let gpu = Device::open()?;

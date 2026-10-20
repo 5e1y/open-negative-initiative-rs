@@ -35,7 +35,7 @@ impl Ctl {
                 return;
             }
         }
-        let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: stem(&done.path.to_string_lossy()) };
+        let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: crate::anonymity::token(&done.path.to_string_lossy()) };
         let (width, height) = (done.width, done.height);
         self.lay(done.placed, (width, height));
         if let Some((before, placed)) = done.before {

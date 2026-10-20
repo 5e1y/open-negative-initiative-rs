@@ -40,8 +40,8 @@ and Tint track ends, Show Presets Folder and Roll of the N.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **105 have a Rust twin, 33 a partial one,
-11 none, and 13 are blocked on a behaviour the port lacks.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **106 have a Rust twin, 33 a partial one,
+10 none, and 13 are blocked on a behaviour the port lacks.**
 
 ### Pipeline branches against Swift
 
@@ -67,7 +67,7 @@ tab's block order and the menu titles now read as Swift's.
 6. **The design system's interactions.** The pager, slots, the column resizer, nested swipes and
    the hover fallback.
 7. **Sidecar batches.** Read and written side by side, but the interface thread still waits for them.
-8. **The instruments.** Swift's command-line tools and 11 of its 162 self-checks have no twin, 13 more
+8. **The instruments.** Swift's command-line tools and 10 of its 162 self-checks have no twin, 13 more
    blocked on a behaviour the port lacks.
 
 ## Port order

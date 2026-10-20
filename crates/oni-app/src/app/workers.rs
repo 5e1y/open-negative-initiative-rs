@@ -121,7 +121,7 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
         && let Some(jpeg) = crate::scans::scan(Path::new(path))
     {
         let tile = thumbnails::decoded(&jpeg, screen).ok_or("the scan cannot be read back")?;
-        timing::render(Kind::Thumbnail, &stem(path), Duration::ZERO, asked.elapsed());
+        timing::render(Kind::Thumbnail, &crate::anonymity::token(path), Duration::ZERO, asked.elapsed());
         return Ok((jpeg, tile));
     }
     let known = previews.lock().expect("previews").get(path);
@@ -147,7 +147,7 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     let srgb = render::encoded(&linear, &Params::new(Screen::Srgb, w as u32, h as u32, seed), 1);
     let jpeg = thumbnails::jpeg(&srgb, w, h).ok_or("the thumbnail cannot be encoded")?;
     let tile = thumbnails::decoded(&jpeg, screen).ok_or("the thumbnail cannot be read back")?;
-    timing::render(Kind::Thumbnail, &stem(path), pipeline, asked.elapsed());
+    timing::render(Kind::Thumbnail, &crate::anonymity::token(path), pipeline, asked.elapsed());
     Ok((jpeg, tile))
 }
 
