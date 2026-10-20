@@ -46,6 +46,10 @@ impl Ctl {
         let c = me.clone();
         p.on_mask_chosen(move |i| c.roll_mask_chosen(usize::try_from(i).ok()));
         let c = me.clone();
+        p.on_take_flat(move || c.take_roll_mask());
+        let c = me.clone();
+        p.on_load_flat(move || c.load_roll_mask());
+        let c = me.clone();
         p.on_press(move |i, _| c.slider_press(usize::try_from(i).unwrap_or(usize::MAX)));
         let c = me.clone();
         p.on_drag(move |i, t, span, fine| c.slider_drag(usize::try_from(i).unwrap_or(usize::MAX), t, span, fine));

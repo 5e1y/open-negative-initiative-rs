@@ -3,8 +3,6 @@
 
 use crate::reader::{Copy, Reader};
 use crate::window::MEASURE_WINDOW_INSET;
-use oni_graph::Image;
-use oni_pipeline::Inputs;
 use oni_settings::cg::{Rect, Size};
 use oni_settings::frame::ContactSheetGrid;
 use oni_settings::settings::roll_settings::{self, Field};
@@ -182,7 +180,7 @@ pub fn tile(r: &mut Reader, copy: Copy, s: &PipelineSettings, side: f64) -> Opti
     let e = copy.source.extent();
     let full = copy.full_width.unwrap_or(f64::from(e.w));
     let scale = if full > 0.0 { f64::from(e.w) / full } else { 1.0 };
-    let mut framed = r.pipeline.framed(r.graph, Image::new(copy.source), s, scale, &Inputs::default()).ok()?;
+    let mut framed = r.framed(copy.source, s, scale)?;
     let f = framed.extent();
     let longest = f64::from(f.w.max(f.h));
     if longest > side {

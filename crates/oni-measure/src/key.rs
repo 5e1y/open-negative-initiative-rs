@@ -12,6 +12,7 @@ use oni_core::balance::{self, Outcome, Suggestion};
 use oni_core::parameters;
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::Pipeline;
+use oni_pipeline::resident::{Files, Resident};
 use oni_settings::blocks::Gains;
 use oni_settings::cg::{self, Point};
 use oni_settings::frame::{FlatField, Geometry};
@@ -160,11 +161,20 @@ struct Engine {
     pipeline: Pipeline,
     /// The last copies made, keyed by path and reading, newest last.
     kept: Vec<(String, std::sync::Arc<Source>, f64)>,
+    resident: Resident,
 }
 
 impl Measurer {
     pub fn new(graph: Graph, decode: Box<Decode>, reading: Box<Reading>) -> Measurer {
-        Measurer { engine: Mutex::new(Engine { graph, pipeline: Pipeline::new(), kept: Vec::new() }), decode, reading }
+        Measurer { engine: Mutex::new(Engine { graph, pipeline: Pipeline::new(), kept: Vec::new(), resident: Resident::default() }), decode, reading }
+    }
+
+    /// Every reading laid with the custom mask and dust patches its frame names, read from `files`.
+    pub fn laying(self, files: std::sync::Arc<dyn Files>) -> Measurer {
+        if let Ok(mut e) = self.engine.lock() {
+            e.resident = Resident::new(files);
+        }
+        self
     }
 
     /// `RawDecode.measuring(url)`: the preview, then the measuring copy, each edge rebuilt.
@@ -177,7 +187,7 @@ impl Measurer {
         }
         let preview = graph.materialise(&oni_pipeline::stages::rebuilt_edge(image)).ok()?;
         drop(source);
-        let measuring = Reader { graph, pipeline }.measuring(&preview);
+        let measuring = Reader { graph, pipeline, resident: None }.measuring(&preview);
         graph.purge();
         measuring
     }
@@ -209,8 +219,9 @@ impl Measurer {
     pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
         let (source, full_width) = self.kept(path, s)?;
         let mut guard = self.engine.lock().ok()?;
-        let Engine { graph, pipeline, .. } = &mut *guard;
-        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width: Some(full_width) });
+        let Engine { graph, pipeline, resident, .. } = &mut *guard;
+        resident.fresh();
+        let out = read(&mut Reader { graph, pipeline, resident: Some(resident) }, Copy { source: &source, full_width: Some(full_width) });
         graph.purge();
         out
     }
@@ -220,7 +231,8 @@ impl Measurer {
     pub fn reduced<T>(&self, path: &str, s: &PipelineSettings, side: f64, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
         let d = (self.decode)(Path::new(path), s).ok()?;
         let mut guard = self.engine.lock().ok()?;
-        let Engine { graph, pipeline, .. } = &mut *guard;
+        let Engine { graph, pipeline, resident, .. } = &mut *guard;
+        resident.fresh();
         let uploaded = graph.upload(d.width, d.height, &d.pixels).ok()?;
         let full_width = Some(d.full_width);
         let long = f64::from(d.width.max(d.height));
@@ -232,7 +244,7 @@ impl Measurer {
         } else {
             uploaded
         };
-        let out = read(&mut Reader { graph, pipeline }, Copy { source: &source, full_width });
+        let out = read(&mut Reader { graph, pipeline, resident: Some(resident) }, Copy { source: &source, full_width });
         drop(source);
         graph.purge();
         out

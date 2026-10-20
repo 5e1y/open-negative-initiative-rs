@@ -20,6 +20,7 @@ and what is left, most noticed first.
 | The base loupe's full scan waited behind every roll tile | #91 |
 | The library column had no thumbnails, no layout key, never re-centred | #95 |
 | The gallery did not land on the open photo coming back from the editor; band headings could not be renamed in place; a Finder drop did nothing; Prepare the Roll neither applied nor kept the remembered flat-field sliders | #145 |
+| Prepare the Roll could neither take a frame nor load a picture as its mask; the measure, the roll's previews, the sheet's tiles and Auto White Balance read without the custom mask and dust patches | #151 |
 
 ## False or not worth it
 
@@ -57,6 +58,8 @@ and what is left, most noticed first.
 5. (Done, #144: Space leaves the Lab for the gallery; ⌘A completes the folders beside a photo; the
    Scanner Emulator item is lit beside a photo.)
 6. (Done, #144: a preset naming the key balances Each, asking nothing.)
+7. The editor's level and curve input histograms still read without the custom mask and dust patches,
+   where Swift's go through `Pipeline.reading` (`EditorScene+Measurements.swift:101`).
 
 ### Gallery and column
 
@@ -66,8 +69,8 @@ and what is left, most noticed first.
 
 ### Prepare the Roll
 
-1. "Use This Frame as Flat-Field" and "Load…" are disabled.
-2. The measure and the previews skip a custom flat-field mask and the dust corrections.
+1. (Done, #151: Use This Frame as Flat-Field and Load… set the roll's mask as Swift's do.)
+2. (Done, #151: the measure, the previews and the sheet's tiles lay the custom mask and dust patches.)
 3. (Done, #145: the remembered flat-field sliders applied and kept; the flagged frame is Swift's rule.)
 
 ### Proofing and export

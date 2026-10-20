@@ -32,6 +32,8 @@ export global Preparing {
     in property <bool> masks-empty;
     in property <string> mask-title;
     in property <[MenuLine]> mask-lines;
+    // A frame picked to be taken as the mask, and the decodes under way.
+    in property <bool> can-take-flat; in property <bool> taking-flat; in property <bool> loading-flat;
     // The sliders' tracks and readouts: Amount, Temperature, Tint, Picker Size, Frame.
     in property <[float]> fractions: [0, 0, 0, 0, 0];
     in property <[string]> readouts: ["", "", "", "", ""];
@@ -102,6 +104,7 @@ export global Preparing {
     callback shift-grouping();
     callback flat-toggled(bool);
     callback mask-chosen(int);
+    callback take-flat(); callback load-flat();
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
     callback release(int);
@@ -169,8 +172,7 @@ component FlatFieldBlock inherits VerticalLayout {
     }
     if Preparing.flat-on: LinesPicker { label: "Mask"; value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
     if Preparing.flat-on && Preparing.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
-    // Taking a frame as a mask is the mask library's, which this build lacks.
-    Button { text: "Use This Frame as Flat-Field"; horizontal-stretch: 1; enabled: false; }
+    Button { text: Preparing.taking-flat ? "Setting…" : "Use This Frame as Flat-Field"; horizontal-stretch: 1; enabled: Preparing.can-take-flat && !Preparing.taking-flat; clicked => { Preparing.take-flat(); } }
     if root.settings: RollSlider { field: 0; label: "Amount"; enabled: Preparing.flat-masked; }
     if root.settings && !Preparing.monochrome: RollSlider {
         field: 1; label: "Temperature"; enabled: Preparing.flat-masked;
@@ -180,7 +182,7 @@ component FlatFieldBlock inherits VerticalLayout {
         field: 2; label: "Tint"; enabled: Preparing.flat-masked;
         fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
     }
-    if root.settings: Button { text: "Load…"; horizontal-stretch: 1; enabled: false; }
+    if root.settings: Button { text: Preparing.loading-flat ? "Loading…" : "Load…"; horizontal-stretch: 1; enabled: !Preparing.loading-flat; clicked => { Preparing.load-flat(); } }
 }
 
 // `RollPanel`: the step's title and detail, its body scrolling, then Cancel, Back and the step's key.

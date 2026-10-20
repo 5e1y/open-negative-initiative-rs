@@ -29,10 +29,10 @@ enum Asked {
 
 /// The block's work under way, the dialog asked, and the system panels a check replaces.
 pub(super) struct Masking {
-    setting: bool,
+    pub(super) setting: bool,
     loading: bool,
     asked: Option<Asked>,
-    chooser: Picker,
+    pub(super) chooser: Picker,
     show: Shower,
 }
 
@@ -43,7 +43,7 @@ impl Masking {
 }
 
 /// The mask's decode, through the photographs' own path and the reading its sidecar asks for.
-fn picture(engine: &Shared, path: &Path) -> Option<Picture> {
+pub(super) fn picture(engine: &Shared, path: &Path) -> Option<Picture> {
     let mosaic = oni_decode::decodes_via_mosaic(path);
     let reading = sidecar::read(path, mosaic, false).map(|l| render::Reading::of(&l.settings)).unwrap_or_default();
     let decoded = render::decode(path, reading).ok()?;
@@ -80,7 +80,7 @@ impl Ctl {
         panel.set_can_rename_mask(flat.mask == FlatFieldMask::Custom && flat.custom.is_some());
     }
 
-    fn masks_changed(&self) {
+    pub(super) fn masks_changed(&self) {
         let mut s = self.state.borrow_mut();
         s.masks = flat_fields::entries(&s.support);
     }

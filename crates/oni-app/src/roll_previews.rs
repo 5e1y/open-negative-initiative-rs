@@ -1,10 +1,11 @@
 //! `RollPreviews` and the base's scans: each frame at rest on the roll's film and flat-field, framed
-//! then inverted on screen values; the base's scan unturned and uninverted, its loupe full size.
+//! with its mask and dust then inverted on screen values; the base's scan unturned and uninverted.
 
 use crate::display::{Params, Screen};
 use crate::render::{self, Linear, Reading};
 use oni_graph::{Graph, Image};
-use oni_pipeline::{Inputs, Pipeline};
+use oni_pipeline::resident::Resident;
+use oni_pipeline::Pipeline;
 use oni_settings::frame::FlatField;
 use oni_settings::{ConversionMode, PipelineSettings};
 use std::collections::{HashMap, VecDeque};
@@ -224,7 +225,7 @@ impl Previews {
 
 fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
     crate::decode_gate::in_background();
-    let mut engine: Option<(Graph, Pipeline)> = None;
+    let mut engine: Option<(Graph, Pipeline, Resident)> = None;
     let mut seed = 0u32;
     loop {
         let (work, session) = {
@@ -239,14 +240,15 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
             }
         };
         if engine.is_none() {
-            engine = Graph::new().ok().map(|g| (g, Pipeline::new()));
+            engine = Graph::new().ok().map(|g| (g, Pipeline::new(), Resident::new(crate::measuring::folders())));
         }
-        let Some((graph, pipeline)) = engine.as_mut() else { continue };
+        let Some((graph, pipeline, resident)) = engine.as_mut() else { continue };
+        resident.fresh();
         seed = seed.wrapping_add(1);
         let current = |q: &Queue| q.session == session;
         match work {
             Work::Card(path, source, base, look) => {
-                if let Some(b) = picture(graph, pipeline, &source, &rendered(&base, &look), seed) {
+                if let Some(b) = picture(graph, pipeline, resident, &source, &rendered(&base, &look), seed) {
                     post(session, Out::Card(path, b));
                 }
             }
@@ -299,7 +301,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 }
             }
             Work::Tile(path, source, base, look) => {
-                let b = picture(graph, pipeline, &source, &rendered(&base, &look), seed);
+                let b = picture(graph, pipeline, resident, &source, &rendered(&base, &look), seed);
                 let (lock, _) = &*queue;
                 let fresh = { let q = lock.lock().expect("roll previews"); current(&q) && q.look.as_ref() == Some(&look) };
                 if fresh && let Some(b) = b {
@@ -337,12 +339,14 @@ fn reduced(graph: &mut Graph, path: &str, side: f64) -> Option<Source> {
     Some(Source { linear: Linear { width: e.w as usize, height: e.h as usize, pixels }, full_width: decoded.full_width })
 }
 
-/// `Pipeline.framed` on a held source, then on screen values, inverted unless the film is positive.
-fn picture(graph: &mut Graph, pipeline: &mut Pipeline, source: &Source, settings: &PipelineSettings, seed: u32) -> Option<Bitmap> {
+/// `Pipeline.framed` on a held source, its mask and patches laid, then on screen values, inverted
+/// unless the film is positive.
+fn picture(graph: &mut Graph, pipeline: &mut Pipeline, resident: &mut Resident, source: &Source, settings: &PipelineSettings, seed: u32) -> Option<Bitmap> {
     let l = &source.linear;
     let uploaded = graph.upload(l.width as u32, l.height as u32, &l.pixels).ok()?;
     let scale = if source.full_width > 0.0 { l.width as f64 / source.full_width } else { 1.0 };
-    let framed = pipeline.framed(graph, Image::new(&uploaded), settings, scale, &Inputs::default()).ok()?;
+    resident.read(graph, settings);
+    let framed = pipeline.framed(graph, Image::new(&uploaded), settings, scale, &resident.inputs(settings)).ok()?;
     let e = framed.extent();
     if e.w == 0 || e.h == 0 {
         return None;

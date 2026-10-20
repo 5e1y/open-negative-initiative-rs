@@ -85,7 +85,7 @@ fn roll8_auto_white_balance_lands_on_the_filters_swift_wrote() {
         let s = sidecar(&roll, name).settings;
         let mut read = |pixels: &[[f32; 4]]| {
             let source: Source = graph.upload(d.width, d.height, pixels).unwrap();
-            let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+            let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
             key::outcome(&mut r, Copy { source: &source, full_width: None }, name, &s).map(|o| o.filters)
         };
         let ours = read(&d.pixels).expect("the frame balances");
@@ -129,7 +129,7 @@ fn roll8_reference_lands_on_the_roll_swift_measured() {
             let d = dump(&dir.join("decode").join(format!("{index:05}.f32")));
             let pixels = if swap { swapped(&d) } else { d.pixels };
             let source = graph.upload(d.width, d.height, &pixels).unwrap();
-            let mut r = Reader { graph, pipeline };
+            let mut r = Reader { graph, pipeline, resident: None };
             if let Some(m) = key::roll_measured(&mut r, Copy { source: &source, full_width: None }, name, &start) {
                 frames.push(m);
             }
@@ -187,7 +187,7 @@ fn roll8_a_second_press_finds_nothing_and_a_paste_places_ends_on_held_gains() {
         let d = dump(&dir.join("decode").join(format!("{index:05}.f32")));
         let source = graph.upload(d.width, d.height, &d.pixels).unwrap();
         let copy = Copy { source: &source, full_width: None };
-        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
         let base = PipelineSettings::default();
         let first = key::placed(&mut r, copy, &base).expect("the frame places");
         let pressed = auto_levels::applied(&first, &base, Some(auto_levels::CLASSIC));
@@ -237,7 +237,7 @@ fn roll8_the_pipette_reads_before_the_levels_so_a_second_pick_cannot_answer_the_
         let d = dump(&dir.join("decode").join(format!("{index:05}.f32")));
         let source = graph.upload(d.width, d.height, &d.pixels).unwrap();
         let copy = Copy { source: &source, full_width: None };
-        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
         let rest = PipelineSettings::default();
         let mut moved = rest.clone();
         for channel in LevelsChannel::PER_CHANNEL {
@@ -308,7 +308,7 @@ fn harness_lands_on_swift_s_own_measurements() {
         let d = dump(&base.join(f["dump"].as_str().expect("dump")));
         let source = graph.upload(d.width, d.height, &d.pixels).unwrap();
         let copy = Copy { source: &source, full_width: f["fullWidth"].as_f64() };
-        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline };
+        let mut r = Reader { graph: &mut graph, pipeline: &mut pipeline, resident: None };
         let mut differ = |what: &str, gap: f32, bound: f32| {
             compared += 1;
             if gap.is_nan() || gap >= bound {

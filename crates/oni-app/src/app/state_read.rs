@@ -78,6 +78,11 @@ impl State {
         self.prepare.shown
     }
 
+    /// The roll's frames shown on their own preview rather than their thumbnail.
+    pub fn roll_previewed(&self) -> usize {
+        self.prepare.previewed()
+    }
+
     pub fn opened(&self) -> Option<&str> {
         self.opened.as_deref()
     }

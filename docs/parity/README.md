@@ -22,11 +22,11 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
 | Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 143 | 9 | 0 | 143 of 152 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 84 | 8 | 2 | 90 of 94 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 86 | 6 | 2 | 90 of 94 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 35 | 11 | 2 | 40 of 48 |
-| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 122 | 3 | 5 | 121 of 130 |
-| **All** | | **421** | **32** | **9** | **432 of 462** |
+| Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 123 | 3 | 5 | 122 of 131 |
+| **All** | | **424** | **30** | **9** | **433 of 463** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face
@@ -64,8 +64,7 @@ tab's block order and the menu titles now read as Swift's.
    build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which European layouts take for AltGr.
 3. **Sound and touch.** No key click plays and no haptic answers; the choice to mute is kept.
 4. **The watchdog's stack.** Blocks are written and counted; the blocked thread's stack is not read.
-5. **Prepare the Roll's leftovers.** The plate's settle animation, a custom flat-field mask on the
-   roll's tiles, the tutorial videos.
+5. **Prepare the Roll's leftovers.** The plate's settle animation and the tutorial videos.
 6. **Pickers.** The Dyes picker and Select Roll Type open nothing; a roll row shows no stock.
 7. **The trees' last gestures.** No drop on the project tree, no pinned parent row, no thumbnails on the projects, no click on the projects' empty ground.
 8. **The design system's interactions.** The pager, slots, the column resizer, nested swipes and
