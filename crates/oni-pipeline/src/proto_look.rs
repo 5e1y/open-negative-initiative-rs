@@ -13,7 +13,7 @@ mod tests {
     use oni_render::cpu;
 
     #[test]
-    fn a_measured_roll_s_grey_enters_proto_where_the_chart_s_did() {
+    fn proto_reads_the_frame_at_its_own_print_exposure_as_pro_does() {
         use crate::{conversion, scanner};
         use oni_render::ScannerEncode;
         let entry = |proto: bool| {
@@ -23,9 +23,12 @@ mod tests {
             let t = scanner::CHECK_GREY.map(|d| 10f32.powf(-d));
             cpu::scanner_encode(cpu::stage47([t[0], t[1], t[2], 1.0], &k), &ScannerEncode { root: 1.0 })
         };
+        // The roll's grey enters at +1.5 EV, a light mid-grey the table prints a little above the chart's.
         let grey = entry(true);
-        assert!((0..3).all(|c| (grey[c] - 0.633).abs() < 0.01), "the chart export's grey: {grey:?}");
-        // Twin: without the anchor the grey enters a fifth of a density lower, deep in Proto's toe.
+        assert!((0..3).all(|c| (grey[c] - 0.69).abs() < 0.02), "{grey:?}");
+        let out = cpu::color_cube(grey, &CUBE);
+        assert!(out[1] > 0.5 && out[1] < 0.6, "{out:?}");
+        // Twin: the ONI machine prints at no exposure, which Proto would read as a deep shadow.
         assert!(entry(false)[1] < 0.55);
     }
 

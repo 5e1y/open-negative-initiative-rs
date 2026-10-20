@@ -17,9 +17,6 @@ use std::sync::LazyLock;
 pub const WINDOW_SCALE: f32 = 1.3;
 /// `ScannerRender.lift`: the warmth looks' moves stored raised by it, since a cube clips under zero.
 pub const LIFT: f32 = 0.5;
-/// Proto's table was fitted on a chart whose grey ONI printed 0.2 D lighter than a measured roll's:
-/// a Proto frame's gains read that much denser, so its grey enters the table where the fit put it.
-pub const PROTO_ANCHOR_STOPS: f32 = -0.2 / std::f32::consts::LOG10_2;
 
 #[derive(Deserialize)]
 struct Render {
@@ -209,14 +206,15 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
         return None;
     }
     let mut out = s.as_scanner();
-    out.print = Print { contrast: s.scanner_finish.contrast, ..Print::default() };
+    // Proto's table was fitted on Pro's render, which prints at the frame's exposure (+1.5 at rest).
+    let exposure = if s.scanner_proto { s.print.exposure } else { Print::default().exposure };
+    out.print = Print { contrast: s.scanner_finish.contrast, exposure, ..Print::default() };
     if let Some(full) = s.balance_filters {
         out.print.set_filters(full.map(|f| f * s.balance_strength));
     }
     out.density = 0.0;
     let stops = gain_stops(s);
-    let anchor = if s.scanner_proto { PROTO_ANCHOR_STOPS } else { 0.0 };
-    out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c] + anchor);
+    out.gains.stops = std::array::from_fn(|c| out.gains.stops[c] + stops[c]);
     Some(out)
 }
 

@@ -1414,8 +1414,8 @@
   {
     "id": 192,
     "type": "fix",
-    "title": "Proto anchored: a measured roll's grey enters its table where the chart's did",
+    "title": "Proto reads the frame at its own print exposure, as Pro's render the table was fitted on",
     "status": "done",
-    "detail": "The owner found Proto very dark. Proto's table was fitted on ONI's export of the synthetic chart, whose grey ONI printed at display code 0.633 (its roll window ran to scene white); on a measured roll (scanner::check_roll) the ONI machine feeds the table its grey at 0.50, which the table read as a shadow (out 0.19 against the Frontier's 0.39). A Proto frame's gains now read 0.2 D denser (PROTO_ANCHOR_STOPS), a constant like a fixed D offset, so the roll's grey enters at 0.633; checked with a twin without the anchor."
+    "detail": "The owner found Proto very dark: ONI prints about +1.5 EV in Pro (the negative's resting print exposure) and the ONI machine resets the print to no exposure before its own look, while Proto's table was fitted on Pro's export of the chart, exposure included. A first fix, a constant 0.2 D anchor fitted on scanner::check_roll, was still dark on the owner's roll and is gone: on_oni_machine now keeps the frame's print exposure for a Proto frame, so its input is Pro's conversion. check_roll's grey enters at 0.69 and prints at 0.51/0.55/0.48; a twin without the exposure lands in the toe."
   }
 ]
