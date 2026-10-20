@@ -61,11 +61,13 @@ impl Pending {
 
 impl Remote {
     /// The first meeting: the QR code's secret proves the phone was shown the desktop's screen.
+    /// A desktop that hangs up here refuses the code (spent, expired, closed or wrong), never the phone.
     pub async fn pair<S>(stream: S, me: &Identity, code: &PairingCode, name: &str) -> Result<Remote, Error>
     where
         S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     {
-        Self::open(stream, me, code.host, Some(code.secret), name).await
+        let opened = Self::open(stream, me, code.host, Some(code.secret), name).await;
+        opened.map_err(|error| if matches!(error, Error::Refused) { Error::Spent } else { error })
     }
 
     pub async fn connect<S>(stream: S, me: &Identity, host: PublicKey, name: &str) -> Result<Remote, Error>

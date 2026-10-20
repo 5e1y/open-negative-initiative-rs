@@ -78,10 +78,16 @@ and what is left, most noticed first.
 ### The phone
 
 1. Import from the phone (LocalSend) is not wired on the desktop: the phone's Send stays dark.
-2. Previews are never sent to the phone.
-3. A phone pairing on a spent code believes it is paired.
-4. The QR code carries one address; a DHCP change needs a new pairing.
-5. `host.key` and `trusted.txt` written without atomic rename or owner-only permissions.
+2. Previews are never sent to the phone. Waits on the phone: the wire's `Preview` (a JPEG of at most
+   64 KB) reaches `RemoteSession::preview()`, but neither app draws it and `DisplayState` never says a
+   new one came; the desktop's `Host` has no call to send one either.
+3. (Done, #146: the code is taken before `Welcome`, so a second phone is hung up on; `Remote::pair`
+   reads it as `Spent`, which both apps show as a used or expired code.)
+4. The QR code carries one address; a DHCP change needs a new pairing. Waits on the phone: both apps
+   dial only the code's addresses and run no discovery; a multicast query needs the multicast
+   entitlement on iOS and an FFI call that finds the desktop by key, the handshake proving it.
+5. (Done, #146: written through a sibling and renamed, 0600 on Unix, an older key closed on start;
+   on Windows the support folder's profile ACL keeps other users out.)
 6. The iPhone build clone is behind two FFI renames.
 
 ### Slop worth a pass

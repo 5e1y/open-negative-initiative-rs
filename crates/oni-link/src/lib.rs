@@ -31,6 +31,8 @@ pub enum Error {
     Version(u16),
     #[error("refused by the peer")]
     Refused,
+    #[error("the pairing code has expired or was already used: show a fresh one")]
+    Spent,
     #[error("no address answered")]
     Unreachable,
 }

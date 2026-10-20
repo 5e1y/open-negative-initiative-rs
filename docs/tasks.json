@@ -1061,5 +1061,13 @@
     "status": "done",
     "detail": "Diagnostics.startWatchdog's rule: the interface thread beats every 0.1 s with what the window shows, a thread of its own writes BLOCKED past 0.35 s of silence and recovered when it answers, each with the process's footprint (proc_pid_rusage on macOS, GetProcessMemoryInfo on Windows), one block however long it lasts; the console shows the count. The blocked thread's stack, read through Mach on the Mac, is not ported.",
     "outcome": "The check drives one silence of 0.9 s as one block and its end, its twin 0.2 s as none. Roll #8's real flow under the release build wrote no block."
+  },
+  {
+    "id": 146,
+    "type": "fix",
+    "title": "A phone on a spent code learns it is refused; the link's key and trusted phones are written whole and owner-only",
+    "status": "done",
+    "detail": "From the reviews' phone list. The Host takes the pairing window before Welcome, so a second phone that finished the handshake on the same code is hung up on instead of welcomed then dropped; Remote::pair reads any refusal as Error::Spent, which the FFI hands over as Failed and both apps show as a used or expired code (Refused stays the revoked phone's). host.key, trusted.txt and port.txt are written through a sibling, synced and renamed, 0600 on Unix; a host.key left readable by others is closed on start; on Windows the support folder's profile ACL is relied on. Previews and discovery wait on the phone: neither app draws the wire's Preview nor runs a multicast query.",
+    "outcome": "Checks: two phones finishing the handshake on one code, the first welcomed and the second hung up on with one Paired, its twin the old order failing it; a closed window reads Spent and a stranger by key stays Refused; through the FFI a reused code is Failed with the spent reason, a stranger Refused; the key and the list 0600 with no sibling left, a blocked write leaving the list whole, an older 0644 key closed on start, its twin a plain write readable by others. scripts/check green. No real phone driven."
   }
 ]

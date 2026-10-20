@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use oni_link::wire::{self, ToPhone};
+use oni_link::noise;
+use oni_link::wire::{self, PROTOCOL, ToHost, ToPhone};
 use oni_link::{
     Command, Display, Effect, Error, Host, HostEvent, Identity, Letter, PairingCode, PublicKey, Remote, State,
 };
@@ -116,13 +117,39 @@ async fn a_code_pairs_one_phone_only() {
     assert!(second.is_err());
 }
 
+/// Two phones finish the handshake on one code before either says Hello: the second hears no Welcome.
+#[tokio::test]
+async fn a_phone_on_a_spent_code_learns_it_was_refused() {
+    let (host, addr, mut log) = desktop().await;
+    let code = host.open_pairing(vec![addr]);
+    let mut opened = Vec::new();
+    for _ in 0..2 {
+        let stream = Remote::dial(&[addr]).await.unwrap();
+        opened.push(noise::initiate(stream, &Identity::generate(), code.host, Some(code.secret)).await.unwrap());
+    }
+    let mut answers = Vec::new();
+    for (reader, writer) in &mut opened {
+        writer.send(&ToHost::Hello { protocol: PROTOCOL, name: "Phone".into() }).await.unwrap();
+        answers.push(timeout(WAIT, reader.recv::<ToPhone>()).await.expect("an answer or a hang-up"));
+    }
+    // Twin: the first phone on the code is welcomed, so the check sees a Welcome when one comes.
+    assert!(matches!(answers[0], Ok(ToPhone::Welcome { .. })));
+    assert!(answers[1].is_err(), "the second phone is hung up on before any Welcome");
+    let mut paired = 0;
+    while let Ok(Some(event)) = timeout(Duration::from_millis(300), log.recv()).await {
+        paired += usize::from(matches!(event, HostEvent::Paired { .. }));
+    }
+    assert_eq!(paired, 1, "the desktop trusts one phone");
+}
+
 #[tokio::test]
 async fn a_closed_window_refuses_pairing() {
     let (host, addr, _log) = desktop().await;
     let code = host.open_pairing(vec![addr]);
     host.close_pairing();
     let stream = Remote::dial(&[addr]).await.unwrap();
-    assert!(Remote::pair(stream, &Identity::generate(), &code, "Late").await.is_err());
+    let late = Remote::pair(stream, &Identity::generate(), &code, "Late").await;
+    assert!(matches!(late, Err(Error::Spent)), "a pairing refused reads as the code's fault");
 }
 
 #[tokio::test]
@@ -135,7 +162,7 @@ async fn a_paired_phone_reconnects_and_a_stranger_does_not() {
     assert!(again.is_ok());
     let stranger =
         Remote::connect(Remote::dial(&[addr]).await.unwrap(), &Identity::generate(), host_key, "Stranger").await;
-    assert!(stranger.is_err());
+    assert!(matches!(stranger, Err(Error::Refused)), "twin: a phone refused by key is not told its code is spent");
     let wrong_host = PublicKey(Identity::generate().public().0);
     let impostor = Remote::connect(Remote::dial(&[addr]).await.unwrap(), &phone, wrong_host, "iPhone").await;
     assert!(impostor.is_err(), "a phone checks the desktop's key as much as the reverse");
