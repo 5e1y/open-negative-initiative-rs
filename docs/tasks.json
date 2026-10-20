@@ -1283,5 +1283,12 @@
     "title": "A photo whose original cannot be found opens read-only, never as a new photo",
     "status": "done",
     "detail": "With the roll's disk unplugged, the sidecar's absence read as a new photo: rest settings, writable, Prepare the Roll opened on it (its base step decoding nothing) and every settle tried to write a sidecar for it, which a reconnected disk would have taken over the Swift roll's own. The store now checks the original first: absent, the frame opens read-only on the rest settings with a message saying its disk may be disconnected, nothing is written and Prepare the Roll is not offered. Beyond Swift, whose read has the same gap. Test fixtures that opened imaginary originals now create them."
+  },
+  {
+    "id": 175,
+    "type": "data-safety",
+    "title": "The transition: RAW settings prepared in the Swift app corrected once per camera for LibRaw's decode",
+    "status": "in-progress",
+    "detail": "oni-transition measures, once per camera (LibRaw's make and model), Apple's CIRAWFilter set as RawDecode.configured against LibRaw on up to three frames spread over the camera's earlier frames (median of 8-pixel squares off floor and clip, aligned to the pixel), then shifts gains.stops and rollReference.stops of every RAW sidecar written before the transition's install by that shift, after a backup, through the sidecar writer, each outcome on a ledger so nothing is corrected twice. Roll #8: +0.064 / -0.025 / -0.124 stop against the study's +0.063 / -0.026 / -0.126; LibRaw's render against the Swift render falls from 0.0182 to 0.0051 mean worst-channel gap (study's gains-only 0.0052)."
   }
 ]

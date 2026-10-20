@@ -1,6 +1,7 @@
 //! RAW decoding through LibRaw, pinned: demosaiced once, then turned into scene-linear Rec. 2020 in floating point.
 //! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
 
+pub mod camera;
 pub mod container;
 pub mod embedded;
 pub mod plain;

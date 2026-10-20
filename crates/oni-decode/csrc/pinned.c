@@ -140,3 +140,20 @@ int oni_thumbnail(const char *path, oni_thumb *out)
     out->data = img->data;
     return 0;
 }
+
+// The maker and model LibRaw names from the file's metadata, and whether it is a DNG; nothing decoded.
+int oni_identify(const char *path, char make[64], char model[64], int *dng)
+{
+    libraw_data_t *lr = libraw_init(0);
+    if (!lr) return -1;
+    int rc = libraw_open_file(lr, path);
+    if (rc == LIBRAW_SUCCESS) {
+        strncpy(make, lr->idata.make, 63);
+        make[63] = 0;
+        strncpy(model, lr->idata.model, 63);
+        model[63] = 0;
+        *dng = lr->idata.dng_version != 0;
+    }
+    libraw_close(lr);
+    return rc;
+}
