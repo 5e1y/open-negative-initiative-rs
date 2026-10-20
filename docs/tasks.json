@@ -1099,7 +1099,8 @@
     "type": "windows",
     "title": "Copy Settings on the Windows clipboard under the app's own formats",
     "status": "done",
-    "detail": "On Windows the board was the process's memory, so a copy never crossed windows or relaunches. It is the system clipboard under formats registered by the types' names (app.opennegative.settings, .framing, .measure-window), opened for each operation with a few tries while another program holds it, through clipboard-win (already in the tree under arboard). A Windows check writes the settings and reads them back, its twin a text that leaves no settings; a runner whose clipboard will not open skips it."
+    "detail": "On Windows the board was the process's memory, so a copy never crossed windows or relaunches. It is the system clipboard under formats registered by the types' names (app.opennegative.settings, .framing, .measure-window), opened for each operation with a few tries while another program holds it, through clipboard-win (already in the tree under arboard). A Windows check writes the settings and reads them back, its twin a text that leaves no settings; a runner whose clipboard will not open skips it.",
+    "outcome": "The Windows run green with it (run of 6d289a5); the parity rows for Copy Settings and the settings pasteboard are done."
   },
   {
     "id": 149,

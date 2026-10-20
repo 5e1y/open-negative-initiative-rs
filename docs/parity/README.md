@@ -21,16 +21,16 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
-| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 143 | 9 | 0 | 143 of 152 |
+| Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 144 | 8 | 0 | 143 of 152 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 86 | 6 | 2 | 90 of 94 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
-| Presets, windows, help, updates, life cycle | [other.md](other.md) | 35 | 11 | 2 | 40 of 48 |
+| Presets, windows, help, updates, life cycle | [other.md](other.md) | 36 | 10 | 2 | 40 of 48 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 123 | 3 | 5 | 122 of 131 |
-| **All** | | **424** | **30** | **9** | **433 of 463** |
+| **All** | | **426** | **28** | **9** | **433 of 463** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face
-7 / 0 / 0, bar 11 / 1 / 0, menus 33 / 3 / 0, keys 8 / 0 / 0, history 6 / 1 / 0 (done / partial /
+7 / 0 / 0, bar 11 / 1 / 0, menus 34 / 2 / 0, keys 8 / 0 / 0, history 6 / 1 / 0 (done / partial /
 missing).
 
 Fourteen rows are done with no check: the traffic lights' inset, Recheck Originals and Read the Folders Again (three rows), bare
@@ -60,8 +60,8 @@ tab's block order and the menu titles now read as Swift's.
 
 1. **A frame not yet converted.** Its thumbnail and column picture are the pipeline's render where
    Swift shows the file's embedded preview (#61).
-2. **Windows' own surfaces.** The settings on the system clipboard under the app's types, a signed
-   build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which European layouts take for AltGr.
+2. **Windows' own surfaces.** A signed build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which
+   European layouts take for AltGr.
 3. **Sound and touch.** No key click plays and no haptic answers; the choice to mute is kept.
 4. **The watchdog's stack.** Blocks are written and counted; the blocked thread's stack is not read.
 5. **Prepare the Roll's leftovers.** The plate's settle animation and the tutorial videos.
