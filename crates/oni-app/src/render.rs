@@ -30,4 +30,6 @@ mod tests;
 #[cfg(test)]
 mod upload_tests;
 #[cfg(test)]
+mod prewarm_tests;
+#[cfg(test)]
 mod inputs_tests;

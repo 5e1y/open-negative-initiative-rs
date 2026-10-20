@@ -69,6 +69,7 @@ impl Graph {
             textures_created: self.pool.created,
             live_bytes: self.pool.live.load(Ordering::Relaxed),
             idle_textures: self.pool.idle(),
+            pipelines: self.pipelines.len(),
         }
     }
 

@@ -3,7 +3,7 @@
 use super::*;
 
 mod inputs;
-mod prewarm;
+pub(crate) mod prewarm;
 mod view;
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.

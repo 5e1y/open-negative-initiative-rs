@@ -4,23 +4,42 @@
 use super::*;
 use oni_settings::{ConversionMode, Face, ScannerMachine};
 
+/// An edit with every finishing kernel on, the set a busy notch takes.
+pub(crate) fn busy() -> PipelineSettings {
+    let mut busy = PipelineSettings::rest(ConversionMode::Negative, true);
+    busy.capture_stops = 0.5;
+    busy.geometry.angle = 1.0;
+    busy.chroma.force = 0.5;
+    busy.sharpen.amount = 1.0;
+    busy.texture.amount = 0.5;
+    busy.vignette.stops = 0.5;
+    busy.secret_sauce = 0.5;
+    busy.spectrogram.hue[0] = 0.1;
+    busy.manual_curves.contrast = 0.2;
+    busy
+}
+
 impl Engine {
-    /// Renders a small frame through each face, film and finishing branch the editor can reach.
+    /// Renders a small frame through each face, film and finishing branch the editor can reach, then
+    /// strips long enough for Texture, which rests under a 750 px side, at both its blurs' reaches.
     pub fn prewarm(&mut self) {
-        let side = 64;
-        let pixels = (0..side * side).map(|i| [0.2 + (i % 13) as f32 * 0.05, 0.4, 0.6, 1.0]).collect();
-        let decoded = Decoded { linear: Linear { width: side, height: side, pixels }, full_width: side as f64, undeclared: None };
+        for (width, height) in [(64, 64), (768, 8), (6048, 8)] {
+            self.prewarm_at(width, height);
+        }
+        // What it left is keyed by its own small previews, so the open frame's copies stand.
+        self.graph.purge();
+    }
+
+    /// The pipelines compiled so far, which a prewarmed engine's first notch adds none to.
+    pub fn compiled(&self) -> usize {
+        self.graph.stats().pipelines
+    }
+
+    pub(crate) fn prewarm_at(&mut self, width: usize, height: usize) {
+        let pixels = (0..width * height).map(|i| [0.2 + (i % 13) as f32 * 0.05, 0.4, 0.6, 1.0]).collect();
+        let decoded = Decoded { linear: Linear { width, height, pixels }, full_width: width as f64, undeclared: None };
         let Ok(negative) = self.prepare(decoded) else { return };
-        let mut busy = PipelineSettings::rest(ConversionMode::Negative, true);
-        busy.capture_stops = 0.5;
-        busy.geometry.angle = 1.0;
-        busy.chroma.force = 0.5;
-        busy.sharpen.amount = 1.0;
-        busy.texture.amount = 0.5;
-        busy.vignette.stops = 0.5;
-        busy.secret_sauce = 0.5;
-        busy.spectrogram.hue[0] = 0.1;
-        busy.manual_curves.contrast = 0.2;
+        let busy = busy();
         let mut variants = vec![busy.clone()];
         variants.push(PipelineSettings { texture: Default::default(), ..busy.clone() });
         variants.push(PipelineSettings { mode: ConversionMode::Monochrome, ..busy.clone() });
@@ -39,7 +58,5 @@ impl Engine {
             let _ = self.resident(&negative, s, None);
             let _ = self.inputs(&negative, s, false);
         }
-        // What it left is keyed by its own small preview, so the open frame's copies stand.
-        self.graph.purge();
     }
 }

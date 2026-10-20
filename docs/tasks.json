@@ -1241,5 +1241,12 @@
     "title": "The Swift app's icon on the desktop window and in the Dock",
     "status": "done",
     "detail": "A bare binary has no bundle: the 256 px render of Swift's AppIcon.icns is the window's icon (Windows' title bar and taskbar) and NSApplication's icon image (the Dock)."
+  },
+  {
+    "id": 172,
+    "type": "performance",
+    "title": "The prewarm reaches Texture: its shaders no longer compile on the first notch",
+    "status": "done",
+    "detail": "Texture rests under a 750 px side, so the 64 px prewarm frame never compiled its blurs and kernels and the first busy notch waited on them. The prewarm also renders 768 x 8 and 6048 x 8 strips, both blur reaches; Graph::stats counts compiled pipelines and a check asserts a prewarmed engine's busy notch compiles none, its twin that the small frame alone misses Texture."
   }
 ]

@@ -48,6 +48,7 @@ pub struct Stats {
     pub textures_created: u64,
     pub live_bytes: i64,
     pub idle_textures: usize,
+    pub pipelines: usize,
 }
 
 struct SourceInner {
