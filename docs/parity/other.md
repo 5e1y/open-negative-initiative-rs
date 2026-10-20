@@ -83,4 +83,5 @@ Statuses are defined in [README.md](README.md).
 | Pair Phone… sheet with QR code | none | `oni-ui/ui/pairing.slint`, `oni-app/src/phone.rs` | port-only | | `oni-app/src/phone.rs::the_qr_code_draws_its_finder_in_the_corner_inside_a_white_margin` |
 | Trusted phone written once | none | `oni-app/src/phone.rs` | port-only | | `oni-app/src/phone.rs::a_trusted_phone_is_written_once_and_read_back` |
 | Phone steps the open frame | none | `oni-link`, `oni-core/src/command.rs` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
+| Phone tabs Roll, Color, Details and the Scanner/Pro face | none | `oni-link/src/panel.rs`, `oni-core/src/link.rs`, `oni-app/src/app/phone_link/panel.rs` | port-only | Protocol 2; a protocol 1 phone still reads the scanner's screen | `oni-app/tests/window/phone_tabs.rs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face`, `oni-link/tests/panel.rs::a_protocol_1_phone_is_answered_in_its_own_version_without_the_panel` |
 | LocalSend transfer | none | `oni-localsend` | port-only | | `oni-localsend/tests/transfer.rs::sending_can_run_on_any_runtime_thread` |

@@ -29,6 +29,7 @@ mod navigator;
 mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
+mod phone_tabs;
 mod prepare;
 mod prepare_leftovers;
 mod prepare_masks;
@@ -94,6 +95,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window", panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window),
     ("paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled", paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled),
     ("phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame", phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame),
+    ("phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face", phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
     ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),

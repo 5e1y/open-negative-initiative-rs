@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::panel::{Face, Panel, Param};
+
 /// The keypad's letters: half-steps of density on D, C, M and Y, then warmth on TEMP.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Letter {
@@ -86,6 +88,12 @@ pub enum Command {
     Walk { by: i8 },
     Undo,
     Redo,
+    /// The open photo's face; protocol 2 onward, as the two below.
+    Face(Face),
+    /// A panel slider moved by `by` hundredths of its track, as the desktop's arrow keys move it.
+    StepParam { param: Param, by: i8 },
+    /// A panel slider back where a double click returns it.
+    ResetParam { param: Param },
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -140,6 +148,9 @@ pub struct State {
     pub remeasure: bool,
     pub can_undo: bool,
     pub can_redo: bool,
+    /// Out of this struct's encoding, so a protocol 1 phone still reads it; `ToPhone::Screen` carries it.
+    #[serde(skip)]
+    pub panel: Panel,
 }
 
 impl State {
@@ -162,6 +173,9 @@ impl State {
                 }
             }
             Command::Machine(machine) => next.machine = machine,
+            Command::Face(face) => next.panel.face = face,
+            // A slider's readout is the desktop's to write, so a step waits for its screen.
+            Command::StepParam { .. } | Command::ResetParam { .. } => {}
             Command::Walk { .. } | Command::Undo | Command::Redo => {}
         }
         next

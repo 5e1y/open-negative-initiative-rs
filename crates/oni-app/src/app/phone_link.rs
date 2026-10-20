@@ -3,6 +3,8 @@
 use super::*;
 use oni_link::Receipt;
 
+mod panel;
+
 impl Ctl {
     // MARK: - The phone
 
@@ -103,11 +105,17 @@ impl Ctl {
 
     /// The store's screen to the phone, the open frame's place with it; unchanged, nothing is sent.
     pub(super) fn refresh_phone(&self) {
+        let sliders = self.phone_sliders();
         let s = &mut *self.state.borrow_mut();
         let place = s.place();
         let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
         p.link.frame = place;
+        p.link.sliders = Box::new(sliders);
         p.link.refresh(store);
+    }
+
+    fn phone_sliders(&self) -> panel::PhoneSliders {
+        panel::PhoneSliders { on_paper: self.export.borrow().settings.space().paper().is_some() }
     }
 
     pub(super) fn phone_said(self: &Rc<Self>, event: phone::Event) {
@@ -131,15 +139,24 @@ impl Ctl {
 
     /// A press lands on the store as one command and one undo step, then the window follows.
     pub(super) fn phone_event(self: &Rc<Self>, event: HostEvent, receipt: Receipt) {
+        use oni_link::Command as Key;
+        let slider = matches!(&event, HostEvent::Command { command: Key::StepParam { .. } | Key::ResetParam { .. }, .. });
+        let sliders = self.phone_sliders();
+        let was = self.state.borrow().store.settings().flat_field.clone();
         let (out, changed) = {
             let s = &mut *self.state.borrow_mut();
             let place = s.place();
             let revision = s.store.revision();
             let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return receipt.applied() };
             p.link.frame = place;
+            p.link.sliders = Box::new(sliders);
             let out = p.link.handle(store, event, receipt);
             (out, store.revision() != revision)
         };
+        // A hand's flat-field sliders are kept for the next mask, as the panel's own writes keep them.
+        if slider {
+            self.remember_flat_field(&was);
+        }
         if changed {
             self.state.borrow_mut().last_change = Some(Instant::now());
             self.publish(false);
@@ -169,8 +186,18 @@ impl Ctl {
                 self.show_phones();
             }
             Some(Outward::Walk(by)) => self.walk(by),
+            Some(Outward::Face(face)) => self.phone_faced(oni_core::command::face_of(face)),
             None => {}
         }
+    }
+
+    /// The phone switched the face on the store: kept for the next launch, as the bar's switch keeps it.
+    fn phone_faced(self: &Rc<Self>, face: oni_settings::Face) {
+        super::lab::remember(&self.state.borrow().support, face);
+        if face == oni_settings::Face::Scanner {
+            self.clear_hover();
+        }
+        self.publish_bar();
     }
 
     /// `walk(by:)`: the neighbour in the open frame's group, opened and selected; the ends stop it.

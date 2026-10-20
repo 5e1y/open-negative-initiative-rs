@@ -1,10 +1,32 @@
 //! The phone remote on the store: each press from `oni-link`'s Host becomes a store command, and
-//! the scanner's screen is published after every change, from whatever hand.
+//! the screen, the scanner's and the panel's, is published after every change, from whatever hand.
 
-use crate::command::Command;
+use crate::command::{Command, face_for, face_of};
 use crate::store::{EditorStore, Surface, channel, machine_for};
-use oni_link::{Host, HostEvent, HostEvents, PublicKey, Receipt, State};
+use oni_link::{Face, Host, HostEvent, HostEvents, Panel, Param, PublicKey, Receipt, Row, State};
+use oni_settings::Face as SettingsFace;
 use std::sync::Mutex;
+
+/// The panel's sliders, which the host app lays out and formats: the store knows values, not sliders.
+pub trait Sliders: Send {
+    /// The rows the panel shows now on the open face, in its order.
+    fn rows(&self, store: &EditorStore) -> Vec<Row>;
+    /// The command a slider's step, or its reset when `by` is `None`, lands as.
+    fn command(&self, store: &EditorStore, param: Param, by: Option<i8>) -> Option<Command>;
+}
+
+/// No sliders: the phone's tabs stay empty.
+pub struct NoSliders;
+
+impl Sliders for NoSliders {
+    fn rows(&self, _: &EditorStore) -> Vec<Row> {
+        Vec::new()
+    }
+
+    fn command(&self, _: &EditorStore, _: Param, _: Option<i8>) -> Option<Command> {
+        None
+    }
+}
 
 /// The scanner's screen as the store holds it; `frame` is the open frame's place in its group.
 pub fn screen(store: &EditorStore, frame: Option<(u16, u16)>) -> State {
@@ -29,6 +51,7 @@ pub fn screen(store: &EditorStore, frame: Option<(u16, u16)>) -> State {
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         can_undo: store.can_undo(Surface::Editor),
         can_redo: store.can_redo(Surface::Editor),
+        panel: Panel { face: face_for(store.face()), rows: Vec::new() },
     }
 }
 
@@ -43,23 +66,27 @@ pub enum Outward {
     Connected { phone: PublicKey, name: String },
     Disconnected { phone: PublicKey },
     Walk(i8),
+    /// The face switched on the store, for the host to remember as its own switch does.
+    Face(Face),
 }
 
 /// Holds the Host and the last screen it published, so an unchanged screen is never resent.
 pub struct Link {
     host: Host,
     pub frame: Option<(u16, u16)>,
+    pub sliders: Box<dyn Sliders>,
     published: Option<State>,
 }
 
 impl Link {
     pub fn new(host: Host) -> Link {
-        Link { host, frame: None, published: None }
+        Link { host, frame: None, sliders: Box::new(NoSliders), published: None }
     }
 
     /// Publishes the store's screen when it differs from the last one sent.
     pub fn refresh(&mut self, store: &EditorStore) {
-        let state = screen(store, self.frame);
+        let mut state = screen(store, self.frame);
+        state.panel.rows = self.sliders.rows(store);
         if self.published.as_ref() != Some(&state) {
             self.host.publish(state.clone());
             self.published = Some(state);
@@ -69,9 +96,7 @@ impl Link {
     /// One event: a press lands on the store as one command, is marked taken, then the screen goes out.
     pub fn handle(&mut self, store: &mut EditorStore, event: HostEvent, receipt: Receipt) -> Option<Outward> {
         let out = match event {
-            HostEvent::Command { command, .. } => {
-                store.apply(Command::from(command)).walk.map(Outward::Walk)
-            }
+            HostEvent::Command { command, .. } => self.command(store, command),
             HostEvent::Paired { phone, name } => Some(Outward::Paired { phone, name }),
             HostEvent::Connected { phone, name } => Some(Outward::Connected { phone, name }),
             HostEvent::Disconnected { phone } => Some(Outward::Disconnected { phone }),
@@ -81,6 +106,24 @@ impl Link {
         self.published = None;
         self.refresh(store);
         out
+    }
+
+    fn command(&self, store: &mut EditorStore, command: oni_link::Command) -> Option<Outward> {
+        let resolved = match command {
+            oni_link::Command::StepParam { param, by } => self.sliders.command(store, param, Some(by)),
+            oni_link::Command::ResetParam { param } => self.sliders.command(store, param, None),
+            // `toggleLab`: the Scanner face needs a photograph; the face already on is left alone.
+            oni_link::Command::Face(face) => {
+                let wanted = face_of(face);
+                if wanted == store.face() || (wanted == SettingsFace::Scanner && store.path().is_none()) {
+                    return None;
+                }
+                store.apply(Command::Face(wanted));
+                return Some(Outward::Face(face));
+            }
+            key => Command::try_from(key).ok(),
+        };
+        store.apply(resolved?).walk.map(Outward::Walk)
     }
 }
 

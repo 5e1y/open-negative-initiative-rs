@@ -9,6 +9,8 @@ use crate::Error;
 use crate::noise::PublicKey;
 
 const SCHEME: &str = "oni-link://pair?";
+/// The code's own format, apart from the protocol, so every phone since the first still reads it.
+const VERSION: u16 = 1;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PairingCode {
@@ -23,7 +25,7 @@ impl PairingCode {
         let addresses: Vec<String> = self.addresses.iter().map(SocketAddr::to_string).collect();
         format!(
             "{SCHEME}v={}&k={}&s={}&n={}&a={}",
-            crate::wire::PROTOCOL,
+            VERSION,
             self.host.to_base64(),
             URL_SAFE_NO_PAD.encode(self.secret),
             URL_SAFE_NO_PAD.encode(self.name.as_bytes()),
@@ -55,7 +57,7 @@ impl PairingCode {
                 _ => {}
             }
         }
-        if version != Some(crate::wire::PROTOCOL) {
+        if version != Some(VERSION) {
             return Err(Error::Version(version.unwrap_or(0)));
         }
         Ok(PairingCode {

@@ -37,7 +37,7 @@ pub fn remembered(support: &Path) -> Face {
     }
 }
 
-fn remember(support: &Path, face: Face) {
+pub(super) fn remember(support: &Path, face: Face) {
     let _ = std::fs::create_dir_all(support);
     let _ = std::fs::write(remembered_at(support), if face == Face::Scanner { "1" } else { "0" });
 }
@@ -212,7 +212,7 @@ impl Ctl {
     fn press(self: &Rc<Self>, link: Link) {
         match link {
             Link::Walk { by } => self.walk(by),
-            _ => self.write(Command::from(link)),
+            _ => Command::try_from(link).into_iter().for_each(|c| self.write(c)),
         }
     }
 
