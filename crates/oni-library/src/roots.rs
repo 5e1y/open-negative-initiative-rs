@@ -194,12 +194,23 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, out: &mut Survey) -> bool {
 /// The folders of a previous library, offered and never added: per volume, the deepest folder
 /// holding them all, or its children holding photos when that folder is a volume or the home.
 pub fn suggested(members: &[String], home: &str) -> Vec<String> {
+    // A path laid back from its parts: rooted at `/`, or at the drive Windows names first.
+    let rebuilt = |parts: &[String]| match parts.first() {
+        Some(first) if first.ends_with(':') => parts.join("/"),
+        _ => format!("/{}", parts.join("/")),
+    };
     let volume = |path: &str| -> String {
         let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
         if parts.first() == Some(&"Volumes") && parts.len() > 1 {
             return format!("/Volumes/{}", parts[1]);
         }
-        if holds(home, path) { home.to_owned() } else { "/".to_owned() }
+        if holds(home, path) {
+            return home.to_owned();
+        }
+        match parts.first().filter(|d| d.ends_with(':')) {
+            Some(drive) => (*drive).to_owned(),
+            None => "/".to_owned(),
+        }
     };
     let folders: BTreeSet<String> = members.iter().map(|m| paths::parent(m)).collect();
     let mut groups: HashMap<String, Vec<String>> = HashMap::new();
@@ -215,8 +226,8 @@ pub fn suggested(members: &[String], home: &str) -> Vec<String> {
             let shared = common.iter().zip(parts).take_while(|(a, b)| a == b).count();
             common.truncate(shared);
         }
-        let ancestor = format!("/{}", common.join("/"));
-        if ancestor != base && ancestor != "/" {
+        let ancestor = rebuilt(&common);
+        if ancestor != base && ancestor != "/" && !ancestor.ends_with(':') {
             out.push(ancestor);
             continue;
         }
@@ -224,7 +235,7 @@ pub fn suggested(members: &[String], home: &str) -> Vec<String> {
         let children: BTreeSet<String> = split
             .iter()
             .filter(|parts| parts.len() >= depth)
-            .map(|parts| format!("/{}", parts[..depth].join("/")))
+            .map(|parts| rebuilt(&parts[..depth]))
             .collect();
         out.extend(children);
     }
@@ -336,4 +347,14 @@ mod tests {
             ["/Users/a/Pictures/Scans"]
         );
     }
+
+    /// On Windows a drive roots the folders offered: the home's children, another drive's deepest
+    /// common folder; the twin, a path rooted at `/`, never gains a drive.
+    #[test]
+    fn a_former_library_on_windows_drives_is_offered_per_drive() {
+        let members = ["C:/Users/a/Old/1.RW2", "C:/Users/a/Scans/Roll 1/2.RW2", "D:/Scans/A/3.NEF", "D:/Scans/B/4.NEF"].map(String::from);
+        assert_eq!(suggested(&members, "C:/Users/a"), ["C:/Users/a/Old", "C:/Users/a/Scans", "D:/Scans"]);
+        assert_eq!(suggested(&["/Volumes/T7/Scans/A/1.NEF".to_string()], "/Users/a"), ["/Volumes/T7/Scans/A"]);
+    }
 }
+

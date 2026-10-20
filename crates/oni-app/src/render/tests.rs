@@ -81,8 +81,8 @@ fn a_burst_of_notches_renders_the_first_and_the_last_only() {
         let mut settings = PipelineSettings::default();
         settings.print.exposure = revision as f32;
         let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
+        // At once: a timer's sleep lasts 15 ms on Windows, which would spread the burst over four renders.
         worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false });
-        std::thread::sleep(Duration::from_millis(2));
     }
     let mut revisions = Vec::new();
     while let Ok(r) = rx.recv_timeout(Duration::from_millis(500)) {
