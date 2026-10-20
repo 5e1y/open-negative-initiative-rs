@@ -1206,6 +1206,13 @@
     "detail": "docs/research/texture-speed.md: weights from the CPU, Texture folded into its last blur and one pass per blur with rows in workgroup memory are exact (about 3.65 to 2.0 ms at 2000 px) and need no setting; one- or two-channel luma is exact but needs the owner's word on the rgba32float rule; half-resolution wide blurs are the only inexact path, offered in Settings as screen-only Fast if they pass an error bound and save 30 % at 1:1. Also found: the prewarm's 64 px frame never reaches Texture."
   },
   {
+    "id": 165,
+    "type": "research",
+    "title": "Apple's decoder against LibRaw, and a recovery strategy for rolls prepared in the Swift app",
+    "status": "done",
+    "detail": "scripts/decoder-gap/run decodes RAWs with CIRAWFilter set as RawDecode.configured (apple-decode.swift) and with oni_decode (examples/blocks.rs) on one 8-pixel grid, fits gains and a 3x3 matrix (examples/decoder_fit.rs) and renders the frames through their Swift sidecars (oni-pipeline examples/decoder_gap.rs). Roll #8 leans +0.11 stop red, -0.10 blue against the Swift render; gains recover about three quarters, a per-camera matrix all but the demosaic noise. docs/research/decoder-apple-vs-libraw.md weighs a matrix at decode, a sidecar migration and a decoder marker; no app behaviour changes."
+  },
+  {
     "id": 166,
     "type": "research",
     "title": "Frontier Look Lab plan",
