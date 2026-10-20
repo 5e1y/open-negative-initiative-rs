@@ -9,7 +9,7 @@ pub mod frontier_table;
 pub mod geometry;
 pub mod look_lab;
 pub mod oni_look;
-pub mod paper_look;
+pub mod frontier_look;
 pub mod resident;
 pub mod scanner;
 pub mod stages;
@@ -21,7 +21,6 @@ use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
-use oni_settings::frontier_lab::FrontierLab;
 use oni_settings::{PipelineSettings, ScannerMachine};
 use stages::{Before, DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
 use std::collections::HashMap;
@@ -68,8 +67,6 @@ pub struct Pipeline {
     cubes: HashMap<&'static str, (Source, usize)>,
     /// The hand's Frontier look by its generation, uploaded once per edit.
     hand: Option<(u64, Source, usize)>,
-    /// The frame's Frontier look on ONI's display code, as the ONI machine's look reads.
-    lab_code: Option<(FrontierLab, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     strokes: Vec<(Vec<[f32; 4]>, Source)>,
 }
@@ -229,14 +226,6 @@ impl Pipeline {
     fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, frame: &PipelineSettings) -> Result<Image> {
         let frontier = frame.scanner_machine == ScannerMachine::Frontier;
         let hand = frontier.then(frontier_table::current).flatten();
-        let lab = frontier && hand.is_none();
-        if lab && frame.scanner_print {
-            // Frontier 2: the ONI machine's render in display code, the ONI look's tone then the paper's.
-            let code = image.then(stages::scanner_encode(1.0));
-            let printed = self.curves(graph, code, &paper_look::CURVES)?;
-            let (warmth, share) = self.warmed(graph, &printed, s.scanner.w)?;
-            return Ok(printed.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]));
-        }
         // The Frontier's look stands where ONI's does, on the same render in plain display code.
         let code = image.then(stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT }));
         let (table, n) = match hand {
@@ -247,19 +236,10 @@ impl Pipeline {
                 let (_, source, n) = self.hand.as_ref().expect("uploaded above");
                 (Image::new(source), *n)
             }
-            None if frontier => {
-                if self.lab_code.as_ref().is_none_or(|(e, _, _)| *e != frame.frontier_lab) {
-                    let cube = look_lab::edits::table_on_code(&frame.frontier_lab);
-                    self.lab_code = Some((frame.frontier_lab, upload_cube(graph, &cube)?, cube.cube_dimension));
-                }
-                let (_, source, n) = self.lab_code.as_ref().expect("baked above");
-                (Image::new(source), *n)
-            }
+            None if frontier => self.cube(graph, "frontier-look", &frontier_look::CUBE)?,
             None => self.cube(graph, "oni-look", &oni_look::CUBE)?,
         };
         let looked = code.then_reading(stages::color_cube(n), &[table]);
-        // The Lab's curve, on the Frontier's look as it reads in display code.
-        let looked = if lab { self.curves(graph, looked, &frame.frontier_curves)? } else { looked };
         let (warmth, share) = self.warmed(graph, &looked, s.scanner.w)?;
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
     }

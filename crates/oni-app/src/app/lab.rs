@@ -12,11 +12,6 @@ use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
-#[path = "look_lab.rs"]
-mod look_lab;
-#[path = "machines.rs"]
-mod machines;
-
 /// `@AppStorage("lastFaceScanner")`: the face the editor opens on, kept across launches.
 const REMEMBERED: &str = "lastFaceScanner";
 const ESCAPE: &str = "\u{1b}";
@@ -104,7 +99,7 @@ pub fn screen(s: &PipelineSettings, place: Option<(u16, u16)>) -> Screen {
     }
     Screen {
         frame: place.map_or("FRAME --/--".to_string(), |(at, count)| format!("FRAME {at:02}/{count:02}")),
-        machine: format!("{}{} · {channel}", s.scanner_machine.title().to_uppercase(), if s.scanner_print { " 2" } else { "" }),
+        machine: format!("{} · {channel}", s.scanner_machine.title().to_uppercase()),
         remeasure: s.roll_reference.as_ref().is_some_and(|r| r.median.is_none()),
         cells: Letter::ALL.iter().zip(counts).map(|(l, n)| (l.title().to_string(), spelled(n))).collect(),
         finish,
@@ -272,7 +267,7 @@ impl Ctl {
         let lab = w.global::<Lab>();
         w.global::<Bar>().set_face(i32::from(face == Face::Scanner));
         lab.set_shown(shown);
-        lab.set_machine(if settings.scanner_print { 2 } else { i32::from(settings.scanner_machine == ScannerMachine::Frontier) });
+        lab.set_machine(i32::from(settings.scanner_machine == ScannerMachine::Frontier));
         lab.set_monochrome(settings.mode.is_monochrome());
         lab.set_frame(screen.frame.into());
         lab.set_machine_line(screen.machine.into());
@@ -288,7 +283,6 @@ impl Ctl {
         if !same(&lab.get_modified(), &modified) {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
         }
-        self.publish_look_lab(&settings.frontier_lab);
         let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !shown;
         w.global::<PanelState>().set_separation_shown(separation);
     }
@@ -322,7 +316,11 @@ impl Ctl {
             }
         });
         let p = me.clone();
-        lab.on_machine_picked(move |machine| p.machine_picked(machine));
+        lab.on_machine_picked(move |machine| {
+            if let Some(machine) = at(&MACHINES, machine) {
+                p.press(Link::Machine(machine));
+            }
+        });
         let p = me.clone();
         lab.on_reset_group(move |group| {
             let Some(group) = at(&Group::ALL, group) else { return };

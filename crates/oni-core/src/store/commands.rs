@@ -327,8 +327,7 @@ fn scanned(s: &PipelineSettings, scan: Scan) -> PipelineSettings {
                 *value = 0.0;
             }
         }
-        // A machine picked leaves Frontier 2, which only the window's third tab sets.
-        Scan::Machine(machine) => (out.scanner_machine, out.scanner_print) = (machine_of(machine), false),
+        Scan::Machine(machine) => out.scanner_machine = machine_of(machine),
         Scan::Walk { .. } => {}
     }
     out

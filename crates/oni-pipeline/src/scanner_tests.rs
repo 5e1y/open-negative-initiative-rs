@@ -64,23 +64,6 @@ fn the_table_reads_and_an_odd_count_sits_between_its_neighbours() {
 }
 
 #[test]
-fn the_frontier_rests_on_its_own_neutral_and_the_others_on_zero() {
-    let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    (s.face, s.scanner_machine) = (Face::Scanner, ScannerMachine::Frontier);
-    let frontier = on_oni_machine(&s).unwrap();
-    let at = |d: i64| on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: ScannerClicks::new(d, 0, 2, -2, 0), ..s.clone() }).unwrap().gains.stops;
-    let (no_d, one_d) = (at(0), at(1));
-    for c in 0..3 {
-        let half = (no_d[c] + one_d[c]) / 2.0;
-        assert!((frontier.gains.stops[c] - half).abs() < 1e-5, "the Frontier at zero is ONI at D+0.5 M+2 Y-2: {:?}", frontier.gains.stops);
-    }
-    // Twin: the ONI machine and Frontier 2 rest on zero.
-    let plain = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, ..s.clone() }).unwrap();
-    assert_ne!(plain.gains, frontier.gains);
-    assert_eq!(resting_clicks(&PipelineSettings { scanner_print: true, ..s.clone() }), s.scanner);
-}
-
-#[test]
 fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
     s.face = Face::Scanner;
@@ -94,10 +77,11 @@ fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     // The Frontier takes the same conversion, its print bypassed for its own look.
     s.scanner_machine = ScannerMachine::Frontier;
     let frontier = on_oni_machine(&s).unwrap();
-    let at_rest = on_oni_machine(&PipelineSettings { scanner_machine: ScannerMachine::Oni, scanner: resting_clicks(&s), ..s.clone() }).unwrap();
-    // Its gains carry the rest's half D, which the test above checks.
-    assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, scanner: s.scanner, gains: frontier.gains, ..at_rest }, "the ONI machine's conversion whole");
-    // Frontier 2 takes it whole too, Pro's print included; twin: Pro leaves the settings alone.
-    assert!(!on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).unwrap().print.bypassed);
+    // The ONI machine's conversion whole, its gains moved by the Frontier's rest.
+    let rest = stops_of(frontier_rest(), &s);
+    assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, gains: frontier.gains, ..oni.clone() });
+    assert!((0..3).all(|c| (frontier.gains.stops[c] - oni.gains.stops[c] - rest[c]).abs() < 1e-6), "{:?} {:?}", frontier.gains, oni.gains);
+    assert!(rest.iter().any(|r| r.abs() > 0.01), "the rest moves the gains");
+    // Twin: Pro leaves the settings alone.
     assert!(on_oni_machine(&PipelineSettings { face: Face::Pro, ..s.clone() }).is_none());
 }

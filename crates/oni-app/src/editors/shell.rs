@@ -17,7 +17,7 @@ use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
-pub(crate) mod ink;
+mod ink;
 mod drawing;
 mod running;
 mod wiring;

@@ -58,7 +58,6 @@ fn full() -> PipelineSettings {
     // Off the resting ceiling and any round value, so a dropped key cannot round trip by luck.
     s.density_ceiling = 2.3137;
     s.separation = 0.37;
-    (s.scanner_print, _, _) = (true, s.frontier_lab.set(oni_settings::frontier_lab::LabValue::Hue(8), -7.25), s.frontier_curves.red.add(Point::new(0.5, 0.6)));
     s.separation_family = Some(SeparationFamily::FujiC41);
     s.levels.red.black = 0.1373;
     s.levels.red.white = 2.4477;
@@ -640,7 +639,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 45);
+    assert_eq!(keys.len(), 42);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

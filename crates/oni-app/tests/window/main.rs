@@ -17,7 +17,6 @@ mod export_paper_window;
 mod export_window;
 mod extended;
 mod frontier_look;
-mod look_lab;
 mod gallery;
 mod gallery_leftovers;
 mod gestures;
@@ -86,7 +85,6 @@ const CHECKS: &[(&str, fn())] = &[
     ("extended::a_patch_lands_and_feathers_as_swift_s", extended::a_patch_lands_and_feathers_as_swift_s),
     ("extended::an_export_writes_swift_s_pixels_profile_and_tags", extended::an_export_writes_swift_s_pixels_profile_and_tags),
     ("frontier_look::a_frontier_look_file_is_read_again_on_each_save", frontier_look::a_frontier_look_file_is_read_again_on_each_save),
-    ("look_lab::a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_the_machine", look_lab::a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_the_machine),
     ("gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand", gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand),
     ("gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop", gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop),
     ("gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target", gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target),

@@ -41,10 +41,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
-- **The Frontier unmixes at the frame's own Dye Separation** (owner's call), where Swift's machine ran
-  a fixed 0.6: a negative without crosstalk is read unmixed at zero.
-- **The Frontier's stretch is set by Pro's black**, not Swift's 1.3 over the window (owner's call): the
-  roll's grey on the machine's neutral, the density Pro prints black on the table's black.
+- **The Frontier is the ONI machine's render with its own baked look** (owner's call), not Swift's
+  density table: ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
+  D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
 
 ## Build

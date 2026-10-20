@@ -218,35 +218,35 @@ pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
 
 /// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
 pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
-    let clicks = MACHINE.offset(&resting_clicks(s));
-    let one_d = MACHINE.offset(&ScannerClicks::new(1, 0, 0, 0, 0));
-    let half = if resting_clicks(s) != s.scanner { FRONTIER_REST_D } else { 0.0 };
-    let offset: [f32; 3] = std::array::from_fn(|c| clicks[c] + half * one_d[c]);
+    let clicks = MACHINE.offset(&s.scanner);
+    // The Frontier's look rests where the owner set its neutral; a hand's look rests on zero.
+    let rests = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none();
+    let rest = if rests { frontier_rest() } else { [0.0; 3] };
+    stops_of(std::array::from_fn(|c| clicks[c] + rest[c]), s)
+}
+
+/// A density offset of the machine's as stops of gain, more density less light.
+pub fn stops_of(offset: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
     let sign = if s.mode.invert_flag() > 0.5 { -1.0 } else { 1.0 };
     offset.map(|o| sign * o / 2f32.log10())
 }
 
-/// Where the Frontier's keypad rests, the owner's own neutral for its look: half a D lighter, two M, two
-/// Y toward blue; the screen still reads zero.
+/// Where the Frontier's look rests, the owner's own neutral for it, in the gains before the conversion:
+/// half a D lighter, two M, two Y toward blue; the screen still reads zero.
 pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 0, c: 0, m: 2, y: -2, w: 0 };
 /// The rest's D, half a click, which no keypad count holds.
 pub const FRONTIER_REST_D: f32 = 0.5;
 
-/// The frame's clicks from the machine's rest: the Frontier look's own, the others' (a hand's look among
-/// them) at zero.
-pub fn resting_clicks(s: &PipelineSettings) -> ScannerClicks {
-    let c = s.scanner;
-    if s.scanner_machine != ScannerMachine::Frontier || s.scanner_print || crate::frontier_table::current().is_some() {
-        return c;
-    }
-    let r = FRONTIER_REST;
-    ScannerClicks::new(c.d + r.d, c.c + r.c, c.m + r.m, c.y + r.y, c.w)
+/// The rest as a density offset, the half D included.
+pub fn frontier_rest() -> [f32; 3] {
+    let (clicks, one_d) = (MACHINE.offset(&FRONTIER_REST), MACHINE.offset(&ScannerClicks::new(1, 0, 0, 0, 0)));
+    std::array::from_fn(|c| clicks[c] + FRONTIER_REST_D * one_d[c])
 }
 
 /// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's
 /// filters and the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    // Both Frontiers read ONI's inversion, window and clicks alike; the second prints on its paper.
+    // The Frontier reads ONI's inversion, window and clicks alike, its own look in place of ONI's.
     if s.face != Face::Scanner {
         return None;
     }
