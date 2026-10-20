@@ -1515,5 +1515,12 @@
     "title": "The Frontier rests on D+0.5 M+2 Y-2",
     "status": "done",
     "detail": "The owner's revised neutral for the Frontier's look: two M, two Y toward blue and half a D, where #205 had D+1 M+3 Y-3. The half D, which no keypad count holds, is half of one D click's measured offset added to the rest's (scanner::FRONTIER_REST_D)."
+  },
+  {
+    "id": 208,
+    "type": "feature",
+    "title": "Frontier 2's paper lends its colour and not its contrast",
+    "status": "done",
+    "detail": "The owner's call: each channel's curve is the ONI look's tone plus that channel's Crystal Archive layer minus the three layers' mean, read at that tone, so the channels' mean is ONI's tone and only the layers' differences (the paper's colour) remain; the Frontier 2 Paper block draws these curves."
   }
 ]
