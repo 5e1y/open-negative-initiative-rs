@@ -1,0 +1,121 @@
+// `TreeEngine` on the projects: Rust lays every row, a photo as a name or a thumbnail, holds the
+// open project under the top and resolves where a drag of rows would land.
+import { Scroller, TreeItem, RenameRow, RowKind, TileView, CardStyle, PinnedTreeRow, DropRing, DropLine, Badge } from "ds/ds.slint";
+import { Library } from "library.slint";
+
+export component ProjectTree inherits HorizontalLayout {
+    // A row's right click opening its menu, at the pointer in window coordinates.
+    callback open-menu(length, length);
+    padding-left: CardStyle.inset;
+    padding-right: CardStyle.inset;
+    Rectangle {
+        clip: true;
+        Scroller {
+            content-height: Library.project-content-height;
+            content-y <=> Library.project-viewport-y;
+            init => { Library.project-shown(self.width, self.height); }
+            changed width => { Library.project-resized(self.width, self.height); }
+            changed height => { Library.project-resized(self.width, self.height); }
+            changed content-y => { Library.project-scrolled(); }
+            // `clickEmptyProjects`: the content under no row, its gaps included, drops the picks and the ring.
+            TouchArea {
+                width: parent.width;
+                height: Library.project-content-height;
+                clicked => { Library.project-empty-clicked(); }
+            }
+            for row[i] in Library.project-rows: Rectangle {
+                x: row.x;
+                y: row.y;
+                width: row.width;
+                height: row.height;
+                if !row.thumb && !row.renaming: TreeItem {
+                    width: parent.width;
+                    depth: row.depth;
+                    title: row.title;
+                    caption: row.caption;
+                    kind: row.kind == 1 ? RowKind.project : RowKind.photo;
+                    expandable: row.expandable;
+                    expanded: row.expanded;
+                    selected: row.selected;
+                    clicked => { Library.project-row-clicked(i, self.command, self.shift); }
+                    double-clicked => { Library.project-row-double-clicked(i); }
+                    folded => { Library.project-row-folded(i); }
+                    menu(x, y) => {
+                        if (Library.project-row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                    }
+                    dragged(px, py, x, y) => { Library.project-row-dragged(i, row.x + px, row.y + py, row.x + x, row.y + y); }
+                    released(dropped) => { Library.project-drag-ended(dropped); }
+                }
+                if row.thumb: TileView {
+                    width: parent.width;
+                    picture-height: parent.width * 2 / 3;
+                    picture: row.picture;
+                    caption: row.title;
+                    selected: row.selected;
+                    medal: row.medal;
+                    missing: row.missing;
+                    rgb: row.rgb;
+                }
+                if row.thumb: TouchArea {
+                    property <bool> command;
+                    property <bool> shift;
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            self.command = event.modifiers.control || event.modifiers.meta;
+                            self.shift = event.modifiers.shift;
+                        }
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && Library.project-row-menu(i)) {
+                            root.open-menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                        }
+                        if ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel) {
+                            Library.project-drag-ended(event.kind == PointerEventKind.up);
+                        }
+                    }
+                    moved => { if (self.pressed) { Library.project-row-dragged(i, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
+                    clicked => { Library.project-row-clicked(i, self.command, self.shift); }
+                    double-clicked => { Library.project-row-double-clicked(i); }
+                }
+                // `rename`: a project's double click types over its name.
+                if row.renaming: RenameRow {
+                    width: parent.width;
+                    text: row.title;
+                    depth: row.depth;
+                    committed(t) => { Library.project-row-rename-committed(i, t); }
+                    cancelled => { Library.project-row-rename-cancelled(); }
+                    edited(t) => { Library.row-rename-edited(t); }
+                }
+            }
+            // `TreeDrop`: the ring round the row joined, or the line before the row landed before.
+            if Library.project-drag.ring: DropRing {
+                x: Library.project-drag.mark-x;
+                y: Library.project-drag.mark-y;
+                width: Library.project-drag.mark-width;
+                height: Library.project-drag.mark-height;
+            }
+            if Library.project-drag.line: DropLine {
+                x: Library.project-drag.mark-x;
+                y: Library.project-drag.mark-y;
+                width: Library.project-drag.mark-width;
+                height: Library.project-drag.mark-height;
+            }
+            // `TreeRowChrome.dragChip`: how many rows the drag carries, under the pointer.
+            if Library.project-drag.shown: Badge {
+                x: Library.project-drag.x - self.width / 2;
+                y: Library.project-drag.y - self.height / 2;
+                text: Library.project-drag.chip;
+            }
+        }
+        if Library.project-pin.shown: PinnedTreeRow {
+            y: Library.project-pin.push;
+            width: parent.width;
+            depth: Library.project-pin.row.depth;
+            title: Library.project-pin.row.title;
+            caption: Library.project-pin.row.caption;
+            kind: RowKind.project;
+            selected: Library.project-pin.row.selected;
+            clicked(command, shift) => { Library.project-pin-clicked(command, shift); }
+            double-clicked => { Library.project-row-double-clicked(Library.project-pin.index); }
+            folded => { Library.project-row-folded(Library.project-pin.index); }
+        }
+    }
+}

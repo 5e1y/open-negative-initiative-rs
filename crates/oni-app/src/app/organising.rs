@@ -141,6 +141,8 @@ pub struct Organising {
     /// What the row typed over holds now, and the project typed over in the projects' tree.
     pub(in crate::app) tree_draft: Option<String>,
     pub(in crate::app) project_renaming: Option<Id>,
+    /// A drag in the projects' tree under way.
+    pub(in crate::app) project_drag: Option<super::project_drop::Drag>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -304,6 +306,7 @@ impl Ctl {
         lib.on_project_row_double_clicked(move |i| p.project_row_double_clicked(index(i)));
         let p = me.clone();
         lib.on_project_row_menu(move |i| p.project_row_menu(index(i)));
+        Ctl::wire_project_drop(me, &lib);
         let p = me.clone();
         lib.on_project_fold_all(move || p.project_fold_all());
         let p = me.clone();

@@ -196,6 +196,9 @@ export component ListRow inherits Rectangle {
     callback folded();
     // A right click, at the pointer in the row's own coordinates.
     callback menu(length, length);
+    // A left press moved, from its press to the pointer in the row's coordinates; its release or cancel.
+    callback dragged(length, length, length, length);
+    callback released(bool);
     // What the last left press held, ⌘ (or Ctrl) and ⇧, for `clicked` to read.
     out property <bool> command;
     out property <bool> shift;
@@ -231,7 +234,11 @@ export component ListRow inherits Rectangle {
             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
                 root.menu(self.mouse-x, self.mouse-y);
             }
+            if ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel) {
+                root.released(event.kind == PointerEventKind.up);
+            }
         }
+        moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
     }
 }
 

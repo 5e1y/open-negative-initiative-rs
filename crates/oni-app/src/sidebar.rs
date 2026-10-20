@@ -104,9 +104,131 @@ pub fn centred(frame: Frame, height: f32, total: f32) -> f32 {
     (frame.y - height / 2.0 + frame.height / 2.0).clamp(0.0, (total - height).max(0.0))
 }
 
+/// `TreeEngineLayout.row(at:)`: the row whose frame holds the point; the gaps between thumbnails hold none.
+pub fn row_at(x: f32, y: f32, frames: &[Frame]) -> Option<usize> {
+    let first = frames.partition_point(|f| f.y + f.height <= y);
+    let mut i = first;
+    while i < frames.len() && frames[i].y <= y {
+        let f = frames[i];
+        if y < f.y + f.height && x >= f.x && x < f.x + f.width {
+            return Some(i);
+        }
+        i += 1;
+    }
+    None
+}
+
+/// `PinnedRow.pinned`: the open row whose children pass under the column's top, held there, and
+/// how far the row after its children pushes it up (zero or less); none while it is in view.
+pub fn pinned(top: f32, frames: &[Frame], total: f32, depths: &[usize], open: &[bool], row: f32) -> Option<(usize, f32)> {
+    let first = frames.partition_point(|f| f.y + f.height <= top);
+    if first >= frames.len() {
+        return None;
+    }
+    let mut depth = depths[first];
+    for i in (0..=first).rev() {
+        if open[i] && (depths[i] < depth || i == first) {
+            if frames[i].y >= top {
+                return None;
+            }
+            let end = (i + 1..depths.len()).find(|&e| depths[e] <= depths[i]).unwrap_or(depths.len());
+            let next = frames.get(end).map_or(total, |f| f.y);
+            return Some((i, (next - top - row).min(0.0)));
+        }
+        depth = depth.min(depths[i]);
+    }
+    None
+}
+
+/// `TreeDropTarget`: a drop onto a row, or between two, before the row named.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DropTarget {
+    Join(usize),
+    Before(usize),
+}
+
+/// `TreeDropTarget.resolve`: a name row reorders on its top and bottom strips, a thumbnail on its
+/// left and right thirds, else the drop joins the row; past a thumbnail, only before the next of its run.
+pub fn drop_target(x: f32, y: f32, frames: &[Frame], photos: &[bool], depths: &[usize], reorders: bool, strip: f32) -> Option<DropTarget> {
+    let i = row_at(x, y, frames)?;
+    if !reorders {
+        return Some(DropTarget::Join(i));
+    }
+    let f = frames[i];
+    let next = i + 1 < frames.len();
+    if photos[i] {
+        let within = x - f.x;
+        if within < f.width / 3.0 {
+            return Some(DropTarget::Before(i));
+        }
+        if within > f.width * 2.0 / 3.0 && next && photos[i + 1] && depths[i + 1] == depths[i] {
+            return Some(DropTarget::Before(i + 1));
+        }
+        return Some(DropTarget::Join(i));
+    }
+    let within = y - f.y;
+    if within < strip {
+        return Some(DropTarget::Before(i));
+    }
+    if within > f.height - strip && next {
+        return Some(DropTarget::Before(i + 1));
+    }
+    Some(DropTarget::Join(i))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn rect(x: f32, y: f32, width: f32, height: f32) -> Frame {
+        Frame { x, y, width, height }
+    }
+
+    /// `TreeDropTarget.selfCheck` (`Checks/UI/ListPicking+Checks.swift:35`).
+    #[test]
+    fn a_drop_over_the_tree_lands_where_its_strips_say() {
+        // A folder, two photos of one run, a deeper photo, then a last folder.
+        let frames = [rect(0.0, 0.0, 200.0, 24.0), rect(0.0, 24.0, 90.0, 60.0), rect(90.0, 24.0, 90.0, 60.0), rect(0.0, 84.0, 90.0, 60.0), rect(0.0, 144.0, 200.0, 24.0)];
+        let photos = [false, true, true, true, false];
+        let depths = [0, 1, 1, 2, 0];
+        let at = |x: f32, y: f32, d: &[usize], reorders: bool| drop_target(x, y, &frames, &photos, d, reorders, 6.0);
+        use DropTarget::{Before, Join};
+        assert_eq!((at(50.0, 2.0, &depths, true), at(50.0, 22.0, &depths, true), at(50.0, 12.0, &depths, true)), (Some(Before(0)), Some(Before(1)), Some(Join(0))));
+        assert_eq!((at(10.0, 50.0, &depths, true), at(45.0, 50.0, &depths, true), at(80.0, 50.0, &depths, true)), (Some(Before(1)), Some(Join(1)), Some(Before(2))));
+        assert_eq!(at(170.0, 50.0, &depths, true), Some(Join(2)), "past a photo whose next row is deeper, its right third joins it");
+        assert_eq!((at(50.0, 166.0, &depths, true), at(50.0, 400.0, &depths, true)), (Some(Join(4)), None));
+        assert_eq!((at(50.0, 2.0, &depths, false), at(10.0, 50.0, &depths, false)), (Some(Join(0)), Some(Join(1))), "a tree that does not reorder only joins");
+        // Twin: the run rule dropped, the deeper photo is landed before.
+        assert_eq!(at(170.0, 50.0, &[1; 5], true), Some(Before(3)));
+    }
+
+    /// `rowViewSelfCheck`'s reading and pinning (`Checks/UI/TreeEngine+Checks.swift:39-74`).
+    #[test]
+    fn a_row_is_read_off_its_frame_and_an_open_roll_holds_the_top_over_its_photos() {
+        let (frames, total) = frames(&[false, true, true, true, false], &[0, 1, 1, 1, 0], 200.0, 2, M);
+        let (h, top) = (M.row, M.small);
+        assert_eq!((row_at(5.0, top, &frames), row_at(5.0, top + h - 0.01, &frames)), (Some(0), Some(0)));
+        let pair = frames[1].y + frames[1].height / 2.0;
+        let middle = |f: Frame| f.x + f.width / 2.0;
+        assert_eq!((row_at(middle(frames[1]), pair, &frames), row_at(middle(frames[2]), pair, &frames)), (Some(1), Some(2)));
+        assert_eq!((row_at(5.0, top - 0.01, &frames), row_at(5.0, total, &frames)), (None, None), "above the first row and below the last, nothing");
+        // Twin: read down the column alone, the right photo goes to its left neighbour.
+        assert_ne!(frames.iter().position(|f| f.y <= pair && pair < f.y + f.height), Some(2));
+
+        let photo = [false, true, true, true, true, false, true];
+        let depths = [0, 1, 1, 1, 1, 0, 1];
+        let open = [true, false, false, false, false, true, false];
+        let (laid, total) = super::frames(&photo, &depths, 200.0, 2, M);
+        let mid = |f: Frame| f.y + f.height / 2.0;
+        assert_eq!(pinned(mid(laid[2]), &laid, total, &depths, &open, h), Some((0, 0.0)), "the roll holds the top over its photos");
+        assert_eq!(pinned(laid[0].y - 1.0, &laid, total, &depths, &open, h), None, "not before");
+        let pushed = pinned(laid[5].y - h / 2.0, &laid, total, &depths, &open, h).expect("the roll still held");
+        assert!(pushed.0 == 0 && pushed.1 < 0.0, "the next roll pushes it up: {pushed:?}");
+        assert_eq!(pinned(mid(laid[6]), &laid, total, &depths, &open, h), Some((5, 0.0)), "the next roll takes its place");
+        // Twin: the same rows with the roll closed pin nothing.
+        let closed = [false, false, false, false, false, true, false];
+        assert_eq!(pinned(mid(laid[2]), &laid, total, &depths, &closed, h), None);
+    }
 
     const M: Metrics = Metrics { row: 32.0, small: 8.0, medium: 16.0, tiny: 2.0, caption: 14.0 };
 

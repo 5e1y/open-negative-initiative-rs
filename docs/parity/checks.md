@@ -8,7 +8,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **partial**: a Rust test covers part of it; what is missing is said.
 - **none**: no Rust test asserts it. Each is a gap.
 
-Of 162 checks: 91 twin, 23 partial, 48 none.
+Of 162 checks: 92 twin, 24 partial, 46 none.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -45,9 +45,9 @@ Of 162 checks: 91 twin, 23 partial, 48 none.
 | 31 | `ProjectTree.selfCheck` | `Checks/Pipeline/ProjectTree+Checks.swift:6` | the project tree flattens, and a shared photo gets one row per project | twin | `oni-library/src/project_tree.rs::a_project_opens_into_its_photos_each_tagged_with_its_project` |
 | 32 | `FilmStockCatalog.selfCheck` | `Checks/Pipeline/FilmStock+Checks.swift:4` | the film stock catalogue has no blank or duplicate entry | twin | `oni-settings/src/film.rs::the_catalogue_holds_unique_keys` |
 | 33 | `TreeRowChrome.selfCheck` | `Checks/UI/TreeRowChrome+Checks.swift:7` | the tree rows' chrome holds: a square chevron, a roll's default stock | none | none |
-| 34 | `treeEngineRowSelfCheck` | `Checks/UI/TreeEngine+Checks.swift:89` | the tree engine's row holds | none | none |
+| 34 | `treeEngineRowSelfCheck` | `Checks/UI/TreeEngine+Checks.swift:89` | the tree engine's row holds | partial | `oni-app/src/sidebar.rs::a_row_is_read_off_its_frame_and_an_open_roll_holds_the_top_over_its_photos`, `::photos_pair_up_beside_their_folder_and_a_folder_takes_the_width`; the row pictures' cache and the one hover listener are Swift's drawing |
 | 35 | `ListPicking.selfCheck` | `Checks/UI/ListPicking+Checks.swift:5` | a click's ⌘ and ⇧ pick as shown | twin | `oni-app/src/picking.rs::a_clicks_command_and_shift_pick_as_shown` |
-| 36 | `TreeDropTarget.selfCheck` | `Checks/UI/ListPicking+Checks.swift:35` | a drop over the tree lands where its strips say | none | none |
+| 36 | `TreeDropTarget.selfCheck` | `Checks/UI/ListPicking+Checks.swift:35` | a drop over the tree lands where its strips say | twin | `oni-app/src/sidebar.rs::a_drop_over_the_tree_lands_where_its_strips_say` |
 | 37 | `FolderNavigation.selfCheck` | `Checks/UI/FolderNavigator+Checks.swift:5` | a navigator row opens or unfolds as it holds | twin | `oni-library/src/navigator.rs::a_row_opens_or_unfolds_as_it_holds` |
 | 38 | `WhatsNew.selfCheck` | `Checks/UI/WhatsNew+Checks.swift:6` | what's new hangs on its headings | none | none |
 | 39 | `InfoSidebar.selfCheck` | `Checks/UI/InfoSidebar+Checks.swift:4` | a project's stocks are counted by photo, and a typed date clamps | twin | `oni-library/src/info.rs::a_projects_stocks_are_counted_by_photo_and_a_photo_with_none_gives_no_row`, `oni-library/src/info.rs::a_typed_date_clamps_to_its_months_last_day_and_an_impossible_month_is_refused` |

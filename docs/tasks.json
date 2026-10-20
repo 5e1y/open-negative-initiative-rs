@@ -1138,5 +1138,12 @@
     "status": "done",
     "detail": "cost.rs (ONI_BENCH_COST=1) times the whole pipeline on a 2000 px preview with every finishing feature on, then each at rest in turn.",
     "outcome": "M2 Max, release: busy 6.96 ms, at rest 2.77 ms. Texture 3.65 ms of it, chroma denoise 1.49, sharpen 1.35; vignette, sauce, spectrogram and curves under 0.3 now that they share one pass. Texture's blurs are bound by their reads, 13 rgba32float taps a pixel a pass: the next steps would be tiles shared in workgroup memory, which the graph's per-pixel stage model does not offer, or the luma carried in fewer channels, which the rgba32float rule forbids; both are the owner's call."
+  },
+  {
+    "id": 156,
+    "type": "parity",
+    "title": "The library column's last tree gestures: the pinned parent row, the projects' thumbnails, a drop on the projects, their empty ground",
+    "status": "done",
+    "detail": "PinnedRow (TreeEngine.swift:139-152,332-380): on both trees the nearest open row whose children pass under the top is held there on the panel, pushed up by the row after its children; its chevron's zone folds it, elsewhere it clicks the row and centres it (sidebar::pinned, tree_column::pin_column, ds PinnedTreeRow). The projects' tree is laid as the archive's (TreeEngineLayout.frames), a photo a thumbnail by its stem when the layout asks, and the layout key stands on the projects too, cycling sidebarLayout.editor beside a photo and sidebarLayout.gallery in the gallery (EditorScene+Card.swift:386-441, OpenNegativeApp.swift:253-254); the projects' reveal is centred by Rust on the laid frames. A press moved 4 points on a project row carries the pick when its row is in it, else the row; TreeDropTarget.resolve picks a join or a landing, ringed or lined, and the release joins a project (addToProjectDrop) or reorders (reorderProjectTreeDrop) through project::add_to, reorder_drop and reorder_root, written to projects.json alone. A click on no project row drops the pick, the selection and the ring (clickEmptyProjects). Checks: sidebar.rs (TreeDropTarget.selfCheck's and rowViewSelfCheck's reading and pinning, each with its twin), project_drop.rs (join and land, twins refused), the window check tree_leftovers (thumbnails and both layout keys, the pin held, pushed and clicked through the pointer, drags joining, landing and reordering projects through the pointer, a short press clicking, the empty ground), and sidebar_reveal and tree_hand following the margin and the thumbnails."
   }
 ]

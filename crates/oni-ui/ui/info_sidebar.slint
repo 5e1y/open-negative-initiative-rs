@@ -1,0 +1,95 @@
+// `InfoSidebar` beside the gallery: the roll a selection stands on, or its project.
+import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, IconButton, Icons, TextField, CardStack, TextArea } from "ds/ds.slint";
+import { Library } from "library.slint";
+
+export component Info inherits Surface {
+    width: ShellStyle.info-width;
+    // `InfoSidebar`'s ScrollView: a tall roll scrolls under the column instead of clipping.
+    Scroller {
+        content-height: body.preferred-height;
+        body := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            if Library.info-kind == 0: VerticalLayout {
+                padding: Space.m;
+                Label { text: Library.info-empty; tone: Tone.secondary; }
+            }
+            if Library.info-kind == 1: VerticalLayout {
+                Section {
+                    title: "Roll";
+                    separated: false;
+                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; committed(t) => { Library.title-committed(t); } }
+                }
+                Section {
+                    title: "Film Stock";
+                    help: "What this roll was shot on — never guessed, only ever what a hand picks.";
+                    // `heroStock`: the artwork, the name, and where a default came from.
+                    HorizontalLayout {
+                        alignment: center;
+                        StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
+                    }
+                    if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
+                    if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
+                    Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
+                }
+                Section {
+                    title: "Shot Date";
+                    help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
+                    HorizontalLayout {
+                        spacing: Space.s;
+                        alignment: start;
+                        DateFields {
+                            month <=> Library.month;
+                            day <=> Library.day;
+                            year <=> Library.year;
+                            committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
+                        }
+                        if Library.shot-date-set: IconButton {
+                            icon: Icons.reset;
+                            help: "Clear shot date";
+                            clicked => { Library.shot-date-cleared(); }
+                        }
+                    }
+                    if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
+                }
+                Section {
+                    title: "Camera Body";
+                    help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
+                    TextField {
+                        placeholder: "e.g. Leica M6";
+                        text <=> Library.camera-body;
+                        accepted(t) => { Library.camera-body-committed(t); }
+                        left(t) => { Library.camera-body-committed(t); }
+                    }
+                }
+            }
+            if Library.info-kind == 2: VerticalLayout {
+                Section {
+                    title: "Project";
+                    separated: false;
+                    EditableTitle { text: Library.info-title; placeholder: "Project name"; committed(t) => { Library.title-committed(t); } }
+                }
+                CardStack { pictures: Library.stack; }
+                Section {
+                    title: "Film Stocks";
+                    help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
+                    if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
+                    for row in Library.stocks: HorizontalLayout {
+                        spacing: Space.s;
+                        StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }
+                        Label { text: row.name; horizontal-stretch: 1; }
+                        Label { text: row.count; tone: Tone.secondary; }
+                    }
+                }
+                Section {
+                    title: "Description";
+                    TextArea {
+                        lines-height: ShellStyle.info-description;
+                        text <=> Library.description;
+                        left(t) => { Library.description-committed(t); }
+                    }
+                }
+            }
+        }
+    }
+}
