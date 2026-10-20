@@ -26,6 +26,15 @@ impl Engine {
         variants.push(PipelineSettings { mode: ConversionMode::Monochrome, ..busy.clone() });
         variants.push(PipelineSettings { face: Face::Scanner, ..busy.clone() });
         variants.push(PipelineSettings { face: Face::Scanner, scanner_machine: ScannerMachine::Frontier, ..busy.clone() });
+        // The finishing's fused passes are one shader per set of kernels on: the usual sets too.
+        let mut plain = busy.clone();
+        plain.vignette.stops = 0.0;
+        variants.push(plain.clone());
+        plain.spectrogram = Default::default();
+        variants.push(plain.clone());
+        plain.secret_sauce = 0.0;
+        variants.push(plain);
+        variants.push(PipelineSettings::rest(ConversionMode::Negative, true));
         for s in &variants {
             let _ = self.resident(&negative, s, None);
             let _ = self.inputs(&negative, s, false);
