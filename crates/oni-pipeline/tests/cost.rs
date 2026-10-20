@@ -92,3 +92,50 @@ fn texture_s_gpu_time_on_the_preview() {
         println!("  {name}: {t:.2} ms, {} textures made over {RUNS} runs", g.stats().textures_created - before);
     }
 }
+
+/// The whole pipeline on 2000 px with every finishing feature on, then each feature at rest in
+/// turn: what each costs on the notch path, the materialise and a one-pixel read included.
+#[test]
+fn each_feature_s_share_of_a_busy_render() {
+    if std::env::var_os("ONI_BENCH_COST").is_none() {
+        return;
+    }
+    let Ok(mut g) = Graph::new() else { return };
+    let (w, h) = (2000u32, 1333u32);
+    let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| {
+        let grain = ((i.wrapping_mul(2_654_435_761) >> 8) % 1000) as f32 / 10_000.0;
+        [0.2 + (i % w) as f32 / w as f32 * 0.6 + grain, 0.4 + grain, 0.3 + (i / w) as f32 / h as f32 * 0.5, 1.0]
+    }).collect();
+    let source = g.upload(w, h, &pixels).unwrap();
+    let mut busy = PipelineSettings::rest(ConversionMode::Negative, true);
+    busy.chroma.force = 0.5;
+    busy.sharpen.amount = 1.0;
+    busy.texture.amount = 0.5;
+    busy.vignette.stops = 0.5;
+    busy.secret_sauce = 0.5;
+    busy.spectrogram.hue[0] = 0.1;
+    busy.manual_curves.contrast = 0.2;
+    let request = oni_pipeline::Request { full_width: Some(f64::from(w)), ..Default::default() };
+    let mut pipeline = oni_pipeline::Pipeline::new();
+    let mut time = |s: &PipelineSettings| {
+        let image = pipeline.image(&mut g, &source, s, &request, &Default::default()).unwrap();
+        median((0..RUNS).map(|_| ms(&mut g, &image)).collect())
+    };
+    let all = time(&busy);
+    let rest = time(&PipelineSettings::rest(ConversionMode::Negative, true));
+    println!("busy {all:.2} ms, at rest {rest:.2} ms");
+    let off: [(&str, fn(&mut PipelineSettings)); 7] = [
+        ("chroma denoise", |s| s.chroma.force = 0.0),
+        ("sharpen", |s| s.sharpen.amount = 0.0),
+        ("texture", |s| s.texture.amount = 0.0),
+        ("vignette", |s| s.vignette.stops = 0.0),
+        ("secret sauce", |s| s.secret_sauce = 0.0),
+        ("spectrogram", |s| s.spectrogram = Default::default()),
+        ("curves", |s| s.manual_curves = Default::default()),
+    ];
+    for (name, rest_it) in off {
+        let mut s = busy.clone();
+        rest_it(&mut s);
+        println!("  without {name}: {:.2} ms ({:+.2})", time(&s), time(&s) - all);
+    }
+}

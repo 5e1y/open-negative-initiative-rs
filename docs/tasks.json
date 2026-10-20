@@ -1113,5 +1113,13 @@
     "title": "Presets and printer profiles sort as localizedCaseInsensitiveCompare",
     "status": "done",
     "detail": "Both lists sorted by lowercased bytes, which put an accented name after Z. oni_settings::collation::case_insensitive orders by base letters (Latin accents folded, æ œ ß spelt out), the accents only where the letters tie, never the case; the preset shelf and the printer profiles use it. The check sorts Élan and émulsion among the E's, its twin the byte order putting Élan after Zeiss."
+  },
+  {
+    "id": 153,
+    "type": "perf",
+    "title": "Each feature's share of a busy render, measured",
+    "status": "done",
+    "detail": "cost.rs (ONI_BENCH_COST=1) times the whole pipeline on a 2000 px preview with every finishing feature on, then each at rest in turn.",
+    "outcome": "M2 Max, release: busy 6.96 ms, at rest 2.77 ms. Texture 3.65 ms of it, chroma denoise 1.49, sharpen 1.35; vignette, sauce, spectrogram and curves under 0.3 now that they share one pass. Texture's blurs are bound by their reads, 13 rgba32float taps a pixel a pass: the next steps would be tiles shared in workgroup memory, which the graph's per-pixel stage model does not offer, or the luma carried in fewer channels, which the rgba32float rule forbids; both are the owner's call."
   }
 ]
