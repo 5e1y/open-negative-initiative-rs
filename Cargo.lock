@@ -4165,6 +4165,7 @@ dependencies = [
  "oni-export",
  "oni-fixtures",
  "oni-graph",
+ "oni-hack",
  "oni-library",
  "oni-link",
  "oni-link-ffi",
@@ -4202,6 +4203,7 @@ dependencies = [
  "moxcms 0.9.1",
  "oni-decode",
  "oni-fixtures",
+ "oni-hack",
  "oni-render",
  "oni-settings",
  "percent-encoding",
@@ -4219,6 +4221,7 @@ dependencies = [
  "base64 0.22.1",
  "flate2",
  "oni-fixtures",
+ "oni-hack",
  "oni-library",
  "oni-link",
  "oni-settings",
@@ -4233,6 +4236,7 @@ version = "0.1.0"
 dependencies = [
  "cc",
  "image",
+ "oni-hack",
  "oni-settings",
 ]
 
@@ -4250,6 +4254,7 @@ dependencies = [
  "oni-colour",
  "oni-decode",
  "oni-fixtures",
+ "oni-hack",
  "oni-render",
  "oni-settings",
  "serde",
@@ -4261,6 +4266,9 @@ dependencies = [
 [[package]]
 name = "oni-fixtures"
 version = "0.1.0"
+dependencies = [
+ "oni-hack",
+]
 
 [[package]]
 name = "oni-graph"
@@ -4269,8 +4277,86 @@ dependencies = [
  "bytemuck",
  "oni-decode",
  "oni-fixtures",
+ "oni-hack",
  "pollster",
  "wgpu",
+]
+
+[[package]]
+name = "oni-hack"
+version = "0.1.0"
+dependencies = [
+ "arrayvec",
+ "bitflags 2.13.2",
+ "block2 0.6.2",
+ "bytemuck",
+ "cc",
+ "chrono",
+ "crc32fast",
+ "crossbeam-utils",
+ "derive_more",
+ "either",
+ "flate2",
+ "getrandom 0.4.3",
+ "half",
+ "hashbrown 0.17.1",
+ "i-slint-common",
+ "icu_locale_core",
+ "icu_properties",
+ "icu_provider",
+ "image",
+ "indexmap",
+ "libc",
+ "litemap",
+ "log",
+ "lyon_extra",
+ "lyon_geom",
+ "lyon_path",
+ "memchr",
+ "naga-types",
+ "num-traits",
+ "objc2 0.6.5",
+ "objc2-app-kit 0.3.2",
+ "objc2-core-foundation",
+ "objc2-core-graphics",
+ "objc2-foundation 0.3.2",
+ "objc2-metal 0.3.2",
+ "objc2-quartz-core 0.3.2",
+ "once_cell",
+ "percent-encoding",
+ "portable-atomic",
+ "potential_utf",
+ "proc-macro2",
+ "quote",
+ "read-fonts",
+ "rustc-hash 1.1.0",
+ "serde_core",
+ "serde_json",
+ "simd-adler32",
+ "skrifa",
+ "slotmap",
+ "smallvec",
+ "stable_deref_trait",
+ "swash",
+ "syn 2.0.119",
+ "syn 3.0.9",
+ "thiserror 2.0.21",
+ "tinystr",
+ "tokio",
+ "tracing",
+ "tracing-core",
+ "url",
+ "uuid",
+ "wgpu",
+ "wgpu-types",
+ "windows",
+ "windows-core",
+ "windows-sys 0.61.2",
+ "writeable",
+ "yoke",
+ "zerofrom",
+ "zerotrie",
+ "zerovec",
 ]
 
 [[package]]
@@ -4279,6 +4365,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "oni-fixtures",
+ "oni-hack",
  "oni-settings",
  "rusqlite",
  "serde",
@@ -4356,6 +4443,7 @@ dependencies = [
  "oni-decode",
  "oni-fixtures",
  "oni-graph",
+ "oni-hack",
  "oni-library",
  "oni-pipeline",
  "oni-settings",
@@ -4370,6 +4458,7 @@ dependencies = [
  "oni-decode",
  "oni-fixtures",
  "oni-graph",
+ "oni-hack",
  "oni-render",
  "oni-settings",
  "png",
@@ -4384,6 +4473,7 @@ dependencies = [
  "bytemuck",
  "oni-decode",
  "oni-fixtures",
+ "oni-hack",
  "pollster",
  "serde_json",
  "wgpu",
@@ -4394,6 +4484,7 @@ name = "oni-settings"
 version = "0.1.0"
 dependencies = [
  "oni-fixtures",
+ "oni-hack",
  "oni-render",
  "serde",
  "serde_json",
@@ -4412,6 +4503,7 @@ dependencies = [
  "oni-decode",
  "oni-fixtures",
  "oni-graph",
+ "oni-hack",
  "oni-library",
  "oni-pipeline",
  "oni-settings",
@@ -4423,6 +4515,7 @@ dependencies = [
 name = "oni-ui"
 version = "0.1.0"
 dependencies = [
+ "oni-hack",
  "slint",
  "slint-build",
 ]

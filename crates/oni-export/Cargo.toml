@@ -14,6 +14,7 @@ jpeg-encoder = "0.7"
 kamadak-exif = "0.6"
 serde.workspace = true
 serde_json.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg"] }

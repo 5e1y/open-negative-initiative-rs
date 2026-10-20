@@ -9,10 +9,12 @@ publish = false
 [[bin]]
 name = "oni"
 path = "src/main.rs"
+test = false
 
 [[bin]]
 name = "oni-tokens"
 path = "src/bin/oni-tokens.rs"
+test = false
 
 [dependencies]
 arboard = { version = "3.6", default-features = false }
@@ -54,6 +56,7 @@ tiff = "0.11"
 tokio = { version = "1", features = ["macros", "net", "rt", "sync", "time"] }
 url = "2"
 wgpu.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 # The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
 [target.'cfg(target_os = "macos")'.dependencies]

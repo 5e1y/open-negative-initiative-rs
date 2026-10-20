@@ -13,6 +13,7 @@ regex = "1"
 serde.workspace = true
 url = "2"
 zip.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 lcms2.workspace = true

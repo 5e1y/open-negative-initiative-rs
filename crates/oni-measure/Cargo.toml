@@ -10,6 +10,7 @@ oni-core = { path = "../oni-core" }
 oni-graph = { path = "../oni-graph" }
 oni-pipeline = { path = "../oni-pipeline" }
 oni-settings.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 oni-decode.workspace = true

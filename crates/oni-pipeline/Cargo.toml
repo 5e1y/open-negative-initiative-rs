@@ -13,6 +13,7 @@ bytemuck.workspace = true
 png = "0.18"
 serde = { workspace = true }
 serde_json.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 oni-decode.workspace = true

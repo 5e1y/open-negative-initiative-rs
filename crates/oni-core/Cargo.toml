@@ -14,6 +14,7 @@ oni-link = { path = "../oni-link" }
 serde.workspace = true
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 tokio = { version = "1", features = ["sync"] }
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 oni-fixtures.workspace = true

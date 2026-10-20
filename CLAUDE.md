@@ -51,7 +51,13 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 
 - **The loop stays under a minute, build and checks included.** The dev profile is incremental, the
   workspace at opt-level 1 and every dependency at 3. The Slint interface is its own crate (`oni-ui`),
-  so a Rust change never rebuilds it. The window checks are one binary (`tests/window`) that runs each
+  so a Rust change never rebuilds it.
+- **One feature set for every command**: every crate depends on `oni-hack` (cargo-hakari), so `cargo run`,
+  `scripts/check` and a one-crate test never rebuild Slint for another feature set. After any dependency
+  change, run `cargo hakari generate && cargo hakari manage-deps`. The phone-link crates stay outside it.
+- **The app the owner runs is `--profile app`** (release's numbers, incremental, 256 units): an edit
+  relinks in seconds. `--release` stays the shipped build. Debug objects are not kept (`split-debuginfo
+  = "off"`), so `target/` holds what is linked and nothing older. The window checks are one binary (`tests/window`) that runs each
   check in a process of its own, as Slint takes one platform a process. Never wait on a build: work on
   the next package while one builds.
 

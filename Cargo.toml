@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*","crates/oni-hack"]
 
 [workspace.package]
 edition = "2024"
@@ -23,13 +23,41 @@ zip = { version = "2", default-features = false, features = ["deflate"] }
 [profile.release]
 debug = 1
 
+[profile.release.package.oni-ui]
+debug = false
+
+# The Slint compiler runs in the build script: optimised, it lays the interface in a quarter the time.
+[profile.release.package.i-slint-compiler]
+opt-level = 3
+
 # Iteration: incremental, the workspace lightly optimised so the scalar references stay quick,
 # every dependency fully; `--release` stays the shipped build.
 [profile.dev]
 opt-level = 1
 debug = "line-tables-only"
-split-debuginfo = "unpacked"
+# Unpacked kept every object of every build, 47 GB in two days; none is read once linked.
+split-debuginfo = "off"
 
 [profile.dev.package."*"]
 opt-level = 3
+debug = false
+
+# The generated interface: 44 MB of Rust whose code generation was the build's longest pole.
+[profile.dev.package.oni-ui]
+opt-level = 0
+debug = false
+incremental = false
+
+# The app as the owner runs it day to day: release's numbers, built incrementally in many units, so
+# an edit relinks in seconds; `--release` stays the shipped build.
+[profile.app]
+inherits = "release"
+incremental = true
+codegen-units = 256
+debug = "line-tables-only"
+split-debuginfo = "off"
+
+[profile.app.package.oni-ui]
+opt-level = 1
+debug = false
 

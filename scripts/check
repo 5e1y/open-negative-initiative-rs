@@ -7,7 +7,7 @@ started=$(date +%s)
 out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 
-cargo test --workspace --no-run --message-format=json "$@" 2>"$out/build.log" \
+cargo test --workspace --tests --no-run --message-format=json "$@" 2>"$out/build.log" \
     | jq -r 'select(.reason == "compiler-artifact" and .profile.test == true and .executable != null)
              | "\(.executable)\t\(.manifest_path)"' >"$out/bins"
 if [ "${PIPESTATUS[0]}" -ne 0 ]; then

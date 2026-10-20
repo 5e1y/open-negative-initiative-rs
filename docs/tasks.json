@@ -1375,5 +1375,19 @@
     "title": "The Frontier Look Lab in the app: the measured table edited live from the Scanner face, every value a distance from the machine",
     "status": "done",
     "detail": "Steps 5 to 8 of docs/research/frontier/lab-plan.md, with one change: the sidecar's `frontierLab` stores each value's distance from the shipped Frontier set, so every slider rests on the measured render (the bake at zero equals frontier.cube) and a later refit keeps each edit's meaning. Settings: oni-settings FrontierLab (tolerant reader, clamped), in the look family so paste, roll sync and presets carry it with the Scanner keypad. Render: Pipeline::frontier bakes the Lab at 27³ when the frame has edits and keeps the measured cube otherwise. Panel: a Look Lab section on the Scanner face under Machine when Frontier is picked: twelve sector tabs with hue, twist and chroma, the matrix, the paper's gains and offsets, the grey cast by lightness, saturation by lightness and the character; each slider rests at 0 = Frontier, a double click returns it there."
+  },
+  {
+    "id": 187,
+    "type": "feature",
+    "title": "The Look Lab's sliders read each effect from no effect: zero takes the Frontier's effect away, each slider opens on the machine's",
+    "status": "done",
+    "detail": "The owner's call: a slider's zero is no Frontier effect (identity matrix, no hue turn, chroma and paper gains at one, no cast, no character), and each slider opens on the fitted Frontier's own value, so the panel shows what the machine does on each parameter while the image stays the measured render. The sidecar still stores the distance from the machine's value, now held in twice the plan's travel so every effect is reachable from any fitted value; a double click returns a slider to the machine's value. The paper curve keeps the machine's until its graph ships."
+  },
+  {
+    "id": 188,
+    "type": "tooling",
+    "title": "Builds under a minute and a target directory that stops growing: one feature set, no kept debug objects, no empty test builds",
+    "status": "done",
+    "detail": "Four read-only research agents measured the causes: target/ held 47 GB of debug objects that split-debuginfo=unpacked keeps forever (30 GB of them the Slint crate's), the Slint crate (44 MB of generated Rust) was rebuilt 38 times in two days because `cargo run -p oni-app`, scripts/check and one-crate tests resolve different feature sets, 88 test binaries plus 11 examples were linked per check, and LibRaw compiled on one core. Changes: oni-hack (cargo-hakari) unifies features across commands, the phone-link crates excluded so an Android build never takes the desktop's; dev split-debuginfo off and no debug info for dependencies; oni-ui at opt-level 0 without debug info or incremental cache in dev and without debug info in release; i-slint-compiler optimised in release; a profile `app` for the app the owner runs (release numbers, incremental, 256 units); `scripts/check` builds --tests only and the targets without tests skip their test build; cc's parallel feature for LibRaw."
   }
 ]

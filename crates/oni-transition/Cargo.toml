@@ -11,6 +11,7 @@ oni-decode.workspace = true
 oni-library = { path = "../oni-library" }
 serde.workspace = true
 serde_json.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"

@@ -8,9 +8,11 @@ publish = false
 
 [dependencies]
 slint = { version = "=1.18.1", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-path", "backend-winit", "accessibility", "renderer-femtovg-wgpu", "unstable-wgpu-30", "unstable-winit-030"] }
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [build-dependencies]
 slint-build = "=1.18.1"
 
 [lib]
 doctest = false
+test = false

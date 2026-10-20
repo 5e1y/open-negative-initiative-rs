@@ -9,6 +9,7 @@ license.workspace = true
 bytemuck.workspace = true
 pollster.workspace = true
 wgpu.workspace = true
+oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
 oni-decode.workspace = true
@@ -17,3 +18,4 @@ serde_json.workspace = true
 
 [lib]
 doctest = false
+test = false
