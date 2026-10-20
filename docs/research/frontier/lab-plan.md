@@ -270,6 +270,14 @@ user.
      twin), the §3C diagnosis test, and a test of both pivots that keeps the one passing (0.7244
      expected).
    - No settings, no UI, no render change.
+
+   Measured (#167) [M], on the 1 440 constrained nodes:
+   - Paper model at the published Frontier values: median ΔE **1.67** (pivot 0: 2.07). Twin, identity
+     matrix with common gains and offsets: 3.47.
+   - 27³ bake against the chain on 100 000 inputs inside `reached`: p99 ΔE **0.34**. Twin, 9³: 2.72.
+   - Diagnosis, on a lattice four times finer than the cube's inside `reached` (199 skin and 1 886 blue
+     points; the neutral reference slides −0.367 along grey): the cube turns skin **+10.6°** and blue
+     **+12.5°**; "green borrows red" at neutral turns skin −12.5°. The probe of §3C is reproduced.
 2. **Colour stage, character, refit.**
    - The Oklab stage and `R`, with the full-model and character checks.
    - `cargo run -p oni-pipeline --example look_lab_fit` (Levenberg–Marquardt on the constrained nodes)

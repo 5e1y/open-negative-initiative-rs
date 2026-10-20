@@ -1241,5 +1241,12 @@
     "title": "The Swift app's icon on the desktop window and in the Dock",
     "status": "done",
     "detail": "A bare binary has no bundle: the 256 px render of Swift's AppIcon.icns is the window's icon (Windows' title bar and taskbar) and NSApplication's icon image (the Dock)."
+  },
+  {
+    "id": 167,
+    "type": "feature",
+    "title": "Frontier Look Lab, step 1: the paper model and its bake",
+    "status": "done",
+    "detail": "oni-pipeline look_lab: LabParams with the plan's published neutral and Frontier sets, the matrix and the Fritsch-Carlson paper curve around the neutral green pivot, and a bake onto the machine's density lattice. Measured on the 1 440 constrained nodes: paper model at Frontier values median ΔE 1.67 against the cube (pivot 0: 2.07; identity and common paper: 3.47); 27³ bake p99 ΔE 0.34 against the chain (9³: 2.72); the diagnosis probe gives skin +10.6° and blue +12.5° against the neutral reference, green borrows red at neutral −12.5° on skin. No render, setting or interface change."
   }
 ]
