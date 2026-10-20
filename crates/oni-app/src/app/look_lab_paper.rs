@@ -1,4 +1,4 @@
-//! The Look Lab's paper curve on its plot: ONI's, which the Frontier prints on, the measured machine's, and the frame's,
+//! The Look Lab's curve on its plot: the straight paper the Frontier prints on, the measured machine's, and the frame's,
 //! whose five handles follow the hand up and down between their neighbours, one undo step a press.
 
 use crate::app::Ctl;
@@ -78,7 +78,7 @@ impl Ctl {
         }
         let edited = edits::edited(lab).paper;
         let line = |nodes: &[f64; NODES], ink: Ink, width: f32| PlotLine { commands: trace(nodes, size).into(), ink, width, opacity: 1.0 };
-        let lines = vec![line(&edits::ONI_PAPER, Ink::GreyHalf, 1.0), line(&FITTED.frontier.paper, Ink::GuideFaint, 1.0), line(&edited, Ink::Primary, 2.0)];
+        let lines = vec![line(&edits::STRAIGHT, Ink::GreyHalf, 1.0), line(&FITTED.frontier.paper, Ink::GuideFaint, 1.0), line(&edited, Ink::Primary, 2.0)];
         let handles = at_handles(lab);
         let dots: Vec<PlotDot> = (0..PAPER)
             .map(|i| PlotDot {

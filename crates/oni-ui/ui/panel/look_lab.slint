@@ -12,7 +12,7 @@ export global LookLab {
     in property <[bool]> sector-marked;
     in property <[bool]> tone-marked;
     in property <[color]> swatches;
-    // Colours, dyes, paper, greys, character.
+    // Colours, dyes, paper, greys, character, curve.
     in property <[bool]> modified;
     callback pick-sector(int);
     callback pick-tone(int);
@@ -69,6 +69,20 @@ export component LookLabBlocks inherits VerticalLayout {
         LabSlider { field: 3; label: "Saturation by lightness"; }
     }
     LabSection {
+        title: "Lab Curve";
+        block: 5;
+        help: "The Frontier prints on a straight paper, in grey, from the negative's blacks on the left to its whites on the right; this curve bends it. The machine's measured paper is the faint line. Drag a point up or down; a double click puts it back on the straight line.";
+        Plot {
+            plot: 7;
+            height: self.width * 3 / 4;
+            lines: LookLab.paper-lines;
+            dots: LookLab.paper-dots;
+            resized(p, w, h) => { LookLab.paper-resized(w, h); }
+            pointer(p, kind, x, y, alt) => { LookLab.paper-pointer(kind, x, y); }
+        }
+        AxisCaptions { start: "Blacks"; end: "Whites"; }
+    }
+    LabSection {
         title: "Lab Dyes";
         block: 1;
         folded-by-default: true;
@@ -84,16 +98,7 @@ export component LookLabBlocks inherits VerticalLayout {
         title: "Lab Paper";
         block: 2;
         folded-by-default: true;
-        help: "The paper curve prints each density of the negative, its blacks on the left and its whites on the right. The Frontier prints on ONI's curve, in grey; the measured Frontier's is the faint one. Drag a point up or down; a double click puts it back on ONI's. Below, the paper's red and blue against its green.";
-        Plot {
-            plot: 7;
-            height: self.width * 3 / 4;
-            lines: LookLab.paper-lines;
-            dots: LookLab.paper-dots;
-            resized(p, w, h) => { LookLab.paper-resized(w, h); }
-            pointer(p, kind, x, y, alt) => { LookLab.paper-pointer(kind, x, y); }
-        }
-        AxisCaptions { start: "Blacks"; end: "Whites"; }
+        help: "The paper's red and blue against its green: their contrast around the neutral grey and their density.";
         LabSlider { field: 10; label: "Red contrast"; }
         LabSlider { field: 11; label: "Blue contrast"; }
         LabSlider { field: 12; label: "Red density"; }

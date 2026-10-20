@@ -102,6 +102,9 @@ fn fraction(v: LabValue, effect: f32) -> f32 {
     track::position(effect, &(low..=high), None)
 }
 
+/// The curve's block, after colours, dyes, paper, greys and character.
+pub const CURVE: usize = 5;
+
 /// Which of colours, dyes, paper, greys and character a slider belongs to.
 fn section(i: usize) -> usize {
     match i {
@@ -122,7 +125,7 @@ pub fn rested(lab: &FrontierLab, section: usize) -> FrontierLab {
             (0..all).for_each(|k| out.set(value(i, k, k), 0.0));
         }
     }
-    if section == 2 {
+    if section == CURVE {
         out.paper = Default::default();
     }
     out
@@ -146,7 +149,7 @@ impl Ctl {
         let fractions: Vec<f32> = values.iter().map(|v| fraction(*v, shown(*v, &lab))).collect();
         let readouts: Vec<SharedString> = values.iter().map(|v| readout(*v, shown(*v, &lab)).into()).collect();
         let marked = |n: usize, at: fn(usize) -> [LabValue; 3]| -> Vec<bool> { (0..n).map(|k| at(k).iter().any(|v| lab.get(*v) != 0.0)).collect() };
-        let modified: Vec<bool> = (0..5).map(|s| rested(&lab, s) != lab).collect();
+        let modified: Vec<bool> = (0..=CURVE).map(|s| rested(&lab, s) != lab).collect();
         g.set_fractions(ModelRc::new(VecModel::from(fractions)));
         g.set_readouts(ModelRc::new(VecModel::from(readouts)));
         g.set_sector_marked(ModelRc::new(VecModel::from(marked(SECTORS, |k| [LabValue::Hue(k), LabValue::Twist(k), LabValue::Chroma(k)]))));
