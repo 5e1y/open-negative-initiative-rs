@@ -1,5 +1,5 @@
-//! The panel over the wire: protocol 2 phones read the face and the tabs' sliders and move them,
-//! while a protocol 1 phone keeps reading the scanner's screen it always read.
+//! The panel over the wire: phones from protocol 2 on read the face and the tabs' sliders and move
+//! them, from protocol 3 on by dragging, while a protocol 1 phone keeps reading the scanner's screen.
 
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -139,13 +139,17 @@ async fn hello<T: serde::de::DeserializeOwned>(protocol: u16) -> (Result<ToPhone
 
 #[tokio::test]
 async fn a_protocol_1_phone_is_answered_in_its_own_version_without_the_panel() {
-    assert_eq!((OLDEST, PROTOCOL), (1, 2));
+    assert_eq!((OLDEST, PROTOCOL), (1, 3));
     let (welcome, state) = hello::<OldToPhone>(1).await;
     assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 1, .. })), "{welcome:?}");
     let Ok(OldToPhone::State(state)) = state else { panic!("the old phone reads its screen: {state:?}") };
     assert_eq!(state.frame, Some((3, 12)));
     // Twin: a phone of this protocol is sent the panel, which the old decoding cannot read as a screen.
     let (welcome, screen) = hello::<ToPhone>(PROTOCOL).await;
+    assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 3, .. })));
+    assert!(matches!(screen, Ok(ToPhone::Screen { panel, .. }) if panel.rows.len() == 2));
+    // A protocol 2 phone, which steps its sliders and never drags them, still reads the panel.
+    let (welcome, screen) = hello::<ToPhone>(2).await;
     assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 2, .. })));
     assert!(matches!(screen, Ok(ToPhone::Screen { panel, .. }) if panel.rows.len() == 2));
     let (_, old) = hello::<OldToPhone>(PROTOCOL).await;
@@ -167,4 +171,78 @@ fn the_screen_s_encoding_leaves_the_panel_out() {
     let with = ToPhone::Screen { state: screen(), panel: screen().panel };
     let without = ToPhone::Screen { state: bare, panel: Panel::default() };
     assert_ne!(wire::encode(&with).unwrap(), wire::encode(&without).unwrap());
+}
+
+/// A desktop that answers each press only once the test opens its gate, as a slow one would.
+async fn gated() -> (Remote, mpsc::UnboundedSender<()>, mpsc::UnboundedReceiver<Command>) {
+    let (host, mut events) = Host::new(Identity::generate(), "Studio".into(), []);
+    let addr = host.listen("127.0.0.1:0".parse().unwrap()).await.unwrap();
+    let (gate, mut opened) = mpsc::unbounded_channel::<()>();
+    let (seen, log) = mpsc::unbounded_channel();
+    let app = host.clone();
+    tokio::spawn(async move {
+        let mut state = screen();
+        app.publish(state.clone());
+        while let Some(event) = events.next().await {
+            let HostEvent::Command { command, .. } = event else { continue };
+            let _ = seen.send(command);
+            if opened.recv().await.is_none() {
+                break;
+            }
+            state = state.predicted(command);
+            state.revision += 1;
+            app.publish(state.clone());
+        }
+    });
+    let code = PairingCode::parse(&host.open_pairing(vec![addr]).to_uri()).unwrap();
+    let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &Identity::generate(), &code, "Phone")
+        .await
+        .unwrap();
+    (remote, gate, log)
+}
+
+async fn next(log: &mut mpsc::UnboundedReceiver<Command>) -> Command {
+    timeout(WAIT, log.recv()).await.expect("a press arrived").expect("desktop alive")
+}
+
+fn place(command: Command) -> Option<f32> {
+    match command {
+        Command::SetParam { param: Param::Exposure, position } => Some(position),
+        _ => None,
+    }
+}
+
+#[tokio::test]
+async fn a_drag_keeps_one_place_on_the_wire_and_its_release_follows_the_last() {
+    let (remote, gate, mut log) = gated().await;
+    let mut display = remote.display();
+    until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
+    for at in [0.1, 0.2, 0.3] {
+        remote.slide(Param::Exposure, at);
+    }
+    let shown = remote.slide(Param::Exposure, 0.4);
+    assert_eq!(shown.panel.rows[0].position, 0.4, "the knob follows the hand before the desktop answers");
+    assert_eq!(place(next(&mut log).await), Some(0.1));
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert!(log.try_recv().is_err(), "nothing more flies while the first place is unanswered");
+    gate.send(()).unwrap();
+    assert_eq!(place(next(&mut log).await), Some(0.4), "the latest place, the ones between skipped");
+    remote.slide(Param::Exposure, 0.5);
+    remote.let_go(Param::Exposure);
+    for _ in 0..3 {
+        gate.send(()).unwrap();
+    }
+    assert_eq!(place(next(&mut log).await), Some(0.5), "the last place goes before the release");
+    assert_eq!(next(&mut log).await, Command::ReleaseParam { param: Param::Exposure });
+    let settled = until(&mut display, |d| d.state.applied == 4).await;
+    assert_eq!(settled.state.panel.rows[0].position, 0.5);
+
+    // Twin: pressed as keys, the same places all fly, one per press.
+    for at in [0.6, 0.7, 0.8] {
+        remote.press(Command::SetParam { param: Param::Exposure, position: at });
+        gate.send(()).unwrap();
+    }
+    for at in [0.6, 0.7, 0.8] {
+        assert_eq!(place(next(&mut log).await), Some(at));
+    }
 }

@@ -55,7 +55,9 @@ impl TryFrom<oni_link::Command> for Command {
             Link::Undo => Command::Undo,
             Link::Redo => Command::Redo,
             Link::Face(face) => Command::Face(face_of(face)),
-            Link::StepParam { .. } | Link::ResetParam { .. } => return Err(command),
+            Link::StepParam { .. } | Link::ResetParam { .. } | Link::SetParam { .. } | Link::ReleaseParam { .. } => {
+                return Err(command);
+            }
         })
     }
 }

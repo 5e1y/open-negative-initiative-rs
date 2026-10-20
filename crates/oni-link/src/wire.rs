@@ -9,7 +9,7 @@ use crate::scanner::{Command, State};
 
 /// Raised on any change of meaning. A desktop answers every phone from `OLDEST` on in the phone's
 /// own version; a phone wants the desktop's to be its own.
-pub const PROTOCOL: u16 = 2;
+pub const PROTOCOL: u16 = 3;
 pub const OLDEST: u16 = 1;
 
 /// A Noise message is at most 65 535 bytes, its tag 16 of them.
