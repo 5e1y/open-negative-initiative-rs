@@ -20,7 +20,7 @@ export component HelpMark inherits Rectangle {
         height: SectionStyle.help-mark;
     }
     area := TouchArea {
-        changed has-hover => { Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed has-hover => { Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height); }
     }
 }
 

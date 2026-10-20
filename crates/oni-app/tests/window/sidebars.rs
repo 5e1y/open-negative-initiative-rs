@@ -93,6 +93,14 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     let pill = w.global::<Navigator>().get_opened_help().to_string();
     assert!(!pill.is_empty(), "the opened folder names its path");
     let y = row_of(&rig, &tip, 22.0, target).expect("the target key at the column's left");
+    // A key's tooltip waits the system's delay; a help mark's note shows at once, as Swift's does.
+    assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
+    let tips = w.global::<oni_app::Tips>();
+    tips.invoke_note(true, "a note".into(), 10.0, 10.0);
+    assert!(tip.get_shown() && tip.get_at_once(), "a help mark's note shows at once");
+    tips.invoke_note(false, "a note".into(), 10.0, 10.0);
+    assert!(!tip.get_shown());
+    let y = row_of(&rig, &tip, 22.0, target).expect("the target key again");
     let met = notes_along(&rig, &tip, 0.0, 260.0, y);
     assert!(keys_then_pill(&met, target, &layout, &pill), "{met:?}");
     assert!(met.iter().all(|m| m.0 != "Read the folders again"), "Swift shows no reload key here");

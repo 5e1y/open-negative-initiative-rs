@@ -24,6 +24,8 @@ export global Tip {
     in-out property <length> x;
     in-out property <length> y;
     in-out property <bool> shown;
+    // A help mark's note shows at once, as `dsHelpBubble` does; a tooltip waits the system's delay.
+    in-out property <bool> at-once;
 }
 
 export global Tones {
@@ -256,6 +258,9 @@ export component TipLayer inherits Rectangle {
         width: min(self.preferred-width, TipStyle.max-width);
     }
     states [
+        now when Tip.shown && Tip.at-once: {
+            opacity: 1;
+        }
         shown when Tip.shown: {
             opacity: 1;
             in {
@@ -279,6 +284,7 @@ export global Tips {
     }
     public function hover(over: bool, text: string, x: length, y: length) {
         if (over && text != "") {
+            Tip.at-once = false;
             Tip.text = text;
             Tip.x = x;
             Tip.y = y + TipStyle.offset;
@@ -286,5 +292,10 @@ export global Tips {
         } else if (Tip.text == text) {
             Tip.shown = false;
         }
+    }
+    // `dsHelpBubble`: the note under its mark at once.
+    public function note(over: bool, text: string, x: length, y: length) {
+        self.hover(over, text, x, y);
+        Tip.at-once = over;
     }
 }
