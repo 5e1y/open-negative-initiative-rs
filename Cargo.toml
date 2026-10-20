@@ -42,9 +42,10 @@ split-debuginfo = "off"
 opt-level = 3
 debug = false
 
-# The generated interface: 44 MB of Rust whose code generation was the build's longest pole.
+# The generated interface: 44 MB of Rust; optimised, as the window checks run it 72 times, and edited
+# through `scripts/live`, which needs no build.
 [profile.dev.package.oni-ui]
-opt-level = 0
+opt-level = 1
 debug = false
 incremental = false
 

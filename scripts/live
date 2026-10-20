@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# The app with its interface read from the .slint files and reloaded on each save, so an interface
+# edit needs no build; its own target directory keeps the checked build untouched.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+SLINT_LIVE_PREVIEW=1 CARGO_TARGET_DIR=target/live cargo build --profile app -p oni-app --bin oni --features slint/live-preview
+exec target/live/app/oni "$@"

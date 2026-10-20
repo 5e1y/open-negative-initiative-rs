@@ -55,6 +55,8 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 - **One feature set for every command**: every crate depends on `oni-hack` (cargo-hakari), so `cargo run`,
   `scripts/check` and a one-crate test never rebuild Slint for another feature set. After any dependency
   change, run `cargo hakari generate && cargo hakari manage-deps`. The phone-link crates stay outside it.
+- **An interface edit needs no build in `scripts/live`**: the app reads the `.slint` files at launch and
+  reloads them on each save (Slint's live preview), in `target/live`.
 - **The app the owner runs is `--profile app`** (release's numbers, incremental, 256 units): an edit
   relinks in seconds. `--release` stays the shipped build. Debug objects are not kept (`split-debuginfo
   = "off"`), so `target/` holds what is linked and nothing older. The window checks are one binary (`tests/window`) that runs each
