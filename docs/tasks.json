@@ -1312,5 +1312,12 @@
     "title": "The canvas follows every render with the panel folded",
     "status": "done",
     "detail": "The canvas card's rounded clip makes the renderer draw its children into a cached layer, redrawn only when a property inside changes; a render rewrites the canvas texture in place, so the layer kept the old texels whenever nothing else on the card moved, as with the panel folded and the phone or a key driving. Canvas.frame-revision and before-revision, read by Picture.revision, are bumped on every write. ONI_BENCH=folded now compares the drawn screen per step: before, the folded steps moved 0.00 on the Scanner face; after, 4.1 and 4.0 on Scanner, 4.2 and 4.2 on Pro. Only these two textures are rewritten in place; every other picture is a new Image."
+  },
+  {
+    "id": 179,
+    "type": "decode",
+    "title": "LibRaw's white level stays the camera's: adjust_maximum_thr pinned to 0",
+    "status": "done",
+    "detail": "Left at 0.75, LibRaw lowered a frame's white level to its own brightest pixel when that passed 0.75 of white, up to +0.41 stop on a brightly exposed scan and different per frame (docs/research/libraw-knobs.md); roll #8 peaks at 0.56 so it never moved there. Owner's call. A test reads pinned.c for every automatic knob, its twin a copy without this pin."
   }
 ]
