@@ -43,11 +43,12 @@ impl Ctl {
                     let mut s = self.state.borrow_mut();
                     s.brush = (f64::from(s.brush) + by).clamp(low, high) as f32;
                 }
+                self.keep_brush();
                 self.publish_dedust();
             }
             "bigger-brush" | "smaller-brush" => {}
             "correction" if self.state.borrow().open.is_some() => self.toggle_correcting(),
-            "framing" if self.state.borrow().open.is_some() => self.toggle_framing(),
+            "framing" if self.state.borrow().open.is_some() => self.open_crop(),
             "mirror" => self.framing_act("mirror"),
             "toggle-sound" => {
                 let muted = !self.state.borrow().muted;

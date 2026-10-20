@@ -9,8 +9,17 @@ impl Ctl {
         let failure = {
             let mut s = self.state.borrow_mut();
             let flush = s.store.flush();
-            // The flat-field sliders last dialled reach a frame that never had its own.
-            let opened = s.store.open_adjusted(path, &|o| o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, kept)).err();
+            // The flat-field sliders last dialled reach a frame that never had its own; a frame never
+            // balanced opens with its measuring window proposed and armed.
+            let armed = std::cell::Cell::new(false);
+            let opened = s
+                .store
+                .open_adjusted(path, &|o| {
+                    o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, kept);
+                    armed.set(oni_core::balance::opening_window(o));
+                })
+                .err();
+            s.route.armed = armed.get();
             s.open = Some(path.to_string());
             s.opened_at = Instant::now();
             s.opens += 1;

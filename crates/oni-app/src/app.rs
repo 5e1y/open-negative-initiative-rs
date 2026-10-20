@@ -48,6 +48,7 @@ mod phone_link;
 mod actions;
 mod keys;
 mod gestures;
+mod route;
 mod menus;
 mod wiring;
 mod workers;
@@ -174,8 +175,6 @@ struct Paint {
 
 type Painter = Arc<(Mutex<Paint>, Condvar)>;
 
-/// The Crop tab, which ⌘K opens.
-const CROP_TAB: i32 = 1;
 /// `pasteSettings`'s dialog when a look crosses rolls.
 const ANOTHER_ROLL: (&str, &str) = ("Another Roll", "You are trying to apply settings from one roll to another: results may vary.");
 
@@ -368,9 +367,8 @@ pub struct State {
     scrolling: bool,
     /// The frame a straightening gesture set out from, the one it last wrote, and when.
     straightening: Option<(Geometry, Geometry, Instant)>,
-    window_armed: bool,
-    /// The panel the hand was in before De-dust, where leaving it lands unless it was the crop.
-    last_panel: i32,
+    /// The tab shown, the last panel the hand was in and the measuring window armed.
+    route: crate::tabs::Route,
     /// The stroke being painted, in fractions of the rendered frame, y down.
     painting_stroke: Vec<(f64, f64)>,
     /// The number each correction's marker shows, never its row, which a removal shifts.

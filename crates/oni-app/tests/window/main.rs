@@ -11,6 +11,7 @@ mod catalogue;
 mod contact_sheet;
 mod design_system;
 mod editor_leftovers;
+mod editor_routes;
 mod editors;
 mod export_paper_window;
 mod export_window;
@@ -59,6 +60,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),
     ("editor_leftovers::the_editors_last_gestures_behave_as_swifts", editor_leftovers::the_editors_last_gestures_behave_as_swifts),
     ("editor_leftovers::every_block_says_swifts_own_help", editor_leftovers::every_block_says_swifts_own_help),
+    ("editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts", editor_routes::the_panels_routes_and_the_measuring_window_behave_as_swifts),
     ("editors::a_point_dragged_on_the_curves_reaches_the_store_as_one_step", editors::curves::a_point_dragged_on_the_curves_reaches_the_store_as_one_step),
     ("editors::a_double_click_on_a_point_removes_it_with_its_move_as_one_step", editors::curves::a_double_click_on_a_point_removes_it_with_its_move_as_one_step),
     ("editors::a_folded_curves_block_takes_no_press", editors::curves::a_folded_curves_block_takes_no_press),

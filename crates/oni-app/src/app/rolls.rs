@@ -204,7 +204,10 @@ impl Ctl {
 
     /// `runAutoBalance`: each target read off this thread, the open frame on its live settings and
     /// the others on their own sidecars, the key showing how far the run is; one undo step.
-    fn run_auto_balance(self: &Rc<Self>, strategy: Strategy) {
+    pub(super) fn run_auto_balance(self: &Rc<Self>, strategy: Strategy) {
+        if self.state.borrow().batch.is_some() {
+            return;
+        }
         let frames: Vec<(String, PipelineSettings)> = {
             let s = self.state.borrow();
             let open = s.open_path().map(str::to_string);
@@ -224,6 +227,7 @@ impl Ctl {
         if frames.is_empty() {
             return;
         }
+        self.disarm_window();
         self.state.borrow_mut().batch = Some(Batch { done: 0, total: frames.len() });
         self.publish_batch();
         std::thread::spawn(move || {

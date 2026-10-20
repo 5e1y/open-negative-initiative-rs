@@ -196,9 +196,16 @@ impl Ctl {
     }
 
     /// Whether the Scanner face is on screen: the face, a photograph worked, not the gallery.
-    fn in_lab(&self) -> bool {
+    pub(super) fn in_lab(&self) -> bool {
         let gallery = self.window().is_some_and(|w| w.global::<crate::App>().get_gallery());
         !gallery && self.state.borrow().store.face() == Face::Scanner
+    }
+
+    /// `leaveLab()`: Pro's face, from the Lab alone.
+    pub(super) fn leave_lab(self: &Rc<Self>) {
+        if self.in_lab() {
+            self.set_face(Face::Pro);
+        }
     }
 
     /// A key of the desktop keypad, as the phone's command of the same name.
@@ -238,8 +245,8 @@ impl Ctl {
             ESCAPE if self.in_lab() && !repeat => self.set_face(Face::Pro),
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),
-            // `walkKeys`: Space reaches the gallery from Pro's editor only, never from the Lab or De-dust.
-            SPACE if bare && !repeat && !self.in_lab() && !dedust => self.act("toggle-mode"),
+            // `walkKeys` and `columnKeys`: Space reaches the gallery from the Lab, and from Pro outside De-dust.
+            SPACE if bare && !repeat && (self.in_lab() || !dedust) => self.act("toggle-mode"),
             _ => return false,
         }
         true

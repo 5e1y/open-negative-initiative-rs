@@ -252,7 +252,10 @@ impl Ctl {
         d.on_drag(move |t, span, fine| p.brush_drag(t, span, fine));
         let p = me.clone();
         d.on_release(move || {
-            p.state.borrow_mut().brush_start = None;
+            let dragged = p.state.borrow_mut().brush_start.take().is_some();
+            if dragged {
+                p.keep_brush();
+            }
             p.publish_dedust();
         });
         let p = me.clone();

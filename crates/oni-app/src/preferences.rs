@@ -12,6 +12,8 @@ pub const NEUTRAL_DECODE_NOTICE_SHOWN: &str = "neutralDecodeNoticeShown";
 pub const GALLERY_COLUMNS: &str = "galleryColumns";
 /// `@AppStorage("soundMuted")`: the key clicks silenced.
 pub const SOUND_MUTED: &str = "soundMuted";
+/// `@AppStorage("correctionBrushRadius")`: the De-dust brush's radius, kept across photos and launches.
+pub const BRUSH_RADIUS: &str = "correctionBrushRadius";
 /// The RAW previews read at half size, a choice this build adds to compare speed and grain.
 pub const HALF_SIZE_PREVIEWS: &str = "halfSizePreviews";
 

@@ -73,7 +73,7 @@ impl Ctl {
         let (g, armed, board, window_board) = {
             let s = self.state.borrow();
             let board = s.store.editor_ref().is_some_and(|e| e.board.framing.is_some());
-            (s.store.settings().geometry.clone(), s.window_armed, board, s.window_board)
+            (s.store.settings().geometry.clone(), s.route.armed, board, s.window_board)
         };
         w.global::<PanelState>().set_crop_first(g.crop == Fraction::UNIT && g.measure_window.is_none());
         let f = w.global::<crate::Framing>();
@@ -106,7 +106,8 @@ impl Ctl {
             c.set_crop_badge_y((y - BADGE_RISE).clamp(BADGE_MARGIN / 2.0, (view.1 - BADGE_MARGIN / 2.0).max(BADGE_MARGIN / 2.0)) as f32);
         }
         let window_frame = if cropping { crop_frame } else { picture_frame };
-        c.set_window_shown(armed && window_frame.is_some());
+        let tab = w.global::<PanelState>().get_tab();
+        c.set_window_shown(crate::tabs::window_shown(armed, tab) && window_frame.is_some());
         if let Some(frame) = window_frame {
             let (x, y, wd, ht) = frames::shown(frames::window_shown(&g, cropping), frame);
             c.set_window_x(x as f32);
@@ -152,8 +153,8 @@ impl Ctl {
             "window-arm" => {
                 let armed = {
                     let mut s = self.state.borrow_mut();
-                    s.window_armed = !s.window_armed;
-                    s.window_armed
+                    s.route.armed = !s.route.armed;
+                    s.route.armed
                 };
                 if armed {
                     g.propose_measure_window(self.state.borrow().store.settings().sheet.is_some());
@@ -194,6 +195,7 @@ impl Ctl {
     /// A tab opened: the toolbar's De-dust key lit on De-dust alone, and on Crop the framing the
     /// hand last chose is handed to this frame if chosen on another.
     pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
+        self.state.borrow_mut().route.moved(tab);
         if let Some(w) = self.window() {
             w.global::<Bar>().set_dedust(tab == 4);
         }

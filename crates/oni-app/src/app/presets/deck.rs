@@ -84,9 +84,12 @@ impl Ctl {
         }
         self.journal_preset(&targets, &preset.name);
         self.gesture(&targets, |store| store.apply_preset(&preset, &targets, None));
-        // A preset naming the key measures each target through the balance key's own batch.
+        if !oni_core::balance::unbalanced(self.state.borrow().store.settings()) {
+            self.disarm_window();
+        }
+        // A preset naming the key measures each target through the balance key's batch, Each, never asking.
         if oni_core::parameters::auto_balances(&preset.parameters) {
-            self.act("auto-balance");
+            self.run_auto_balance(oni_core::balance::Strategy::Each);
         }
         self.publish_presets();
         self.request_render();

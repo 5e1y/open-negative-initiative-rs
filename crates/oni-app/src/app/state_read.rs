@@ -121,6 +121,11 @@ impl State {
         self.brush
     }
 
+    /// The gallery's selection, which the editor's ⌘A completes.
+    pub fn picked(&self) -> &HashSet<String> {
+        &self.picks.selection
+    }
+
     /// The notch renders shown so far, the index `Notches::summary` starts from.
     pub fn notches(&self) -> &Notches {
         &self.notches

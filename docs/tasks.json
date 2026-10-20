@@ -1061,5 +1061,13 @@
     "status": "done",
     "detail": "Diagnostics.startWatchdog's rule: the interface thread beats every 0.1 s with what the window shows, a thread of its own writes BLOCKED past 0.35 s of silence and recovered when it answers, each with the process's footprint (proc_pid_rusage on macOS, GetProcessMemoryInfo on Windows), one block however long it lasts; the console shows the count. The blocked thread's stack, read through Mach on the Mac, is not ported.",
     "outcome": "The check drives one silence of 0.9 s as one block and its end, its twin 0.2 s as none. Roll #8's real flow under the release build wrote no block."
+  },
+  {
+    "id": 144,
+    "type": "parity",
+    "title": "The editor's routes as Swift's: the measuring window armed and disarmed, Return, ⌘K, De-dust, Space, ⌘A, the brush kept, a preset's balance unasked",
+    "status": "done",
+    "detail": "From the reviews' editor list, items 2 to 6. adopt (EditorScene+Actions.swift:73-82): a frame no balance touched opens with its window proposed and armed, a sheet dropping the margin an earlier opening proposed; onChange(of: tab) (OpenNegativeApp.swift:509-512) records the panel left on every route and disarms on leaving Crop; validate(with:) (EditorScene+Propagation.swift:181-188) applies the window then leaves Crop; ⌘K and the bar's key are openCrop (EditorScene+Menus.swift:110); toggleCorrecting leaves the Lab first; correctionBrushRadius is kept; columnKeys (EditorScene+Disk.swift:46-60) takes Space in the Lab to the gallery and ⌘A beside a photo; live(.emulator) is a photo beside the editor; applyPreset runs the balance Each without the question (EditorScene+Paste.swift:189). The window is drawn on Crop and Color only (EditorScene+Card.swift:96).",
+    "outcome": "A window check drives every route on four graded scans with the GPU canvas, each with its twin; unit checks on the route, the opening window and the editor's ⌘A. The scanner and gestures checks now assert Swift's Space and ⌘K. The tree rings no folder, so columnKeys' ringed-folder step stays unreachable."
   }
 ]

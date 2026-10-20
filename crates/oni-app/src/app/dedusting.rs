@@ -11,24 +11,6 @@ impl Ctl {
         !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().open.is_some()
     }
 
-    /// `toggleCorrecting`: into the hidden pane, or out to the panel the hand was in, never the crop.
-    pub(super) fn toggle_correcting(self: &Rc<Self>) {
-        let Some(w) = self.window() else { return };
-        let panel = w.global::<PanelState>();
-        let tab = panel.get_tab();
-        let next = if tab == 4 {
-            let last = self.state.borrow().last_panel;
-            if last == 1 || last == 4 { 2 } else { last }
-        } else {
-            self.state.borrow_mut().last_panel = tab;
-            4
-        };
-        panel.set_tab(next);
-        w.global::<Bar>().set_dedust(next == 4);
-        self.tab_opened(next);
-        self.publish_dedust();
-    }
-
     /// The brush, the corrections' rows and the canvas's marks from the open frame.
     pub(super) fn publish_dedust(&self) {
         let Some(w) = self.window() else { return };
@@ -235,9 +217,16 @@ impl Ctl {
             double
         };
         if double {
+            self.keep_brush();
             self.publish_dedust();
         }
         double
+    }
+
+    /// `@AppStorage("correctionBrushRadius")`: the size the hand left, for every photo and launch.
+    pub(super) fn keep_brush(&self) {
+        let radius = f64::from(self.state.borrow().brush);
+        self.remember(preferences::BRUSH_RADIUS, radius.into());
     }
 
     pub(super) fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
