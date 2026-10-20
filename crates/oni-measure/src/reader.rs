@@ -9,7 +9,7 @@ use crate::window::{integral, intersection, measurement_windows, union};
 use oni_graph::stages::{Axis, Crop, Lanczos};
 use oni_graph::{Graph, Image, Rect, Source};
 use oni_pipeline::resident::Resident;
-use oni_pipeline::{Pipeline, Request};
+use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::cg;
 use oni_settings::PipelineSettings;
 
@@ -26,8 +26,30 @@ pub struct Copy<'s> {
 pub struct Reader<'a> {
     pub graph: &'a mut Graph,
     pub pipeline: &'a mut Pipeline,
-    /// The custom mask and dust patches the frame names, as `Pipeline.framed` lays them; `None` lays none.
-    pub resident: Option<&'a mut Resident>,
+    /// The custom mask and dust patches the frame names, as `Pipeline.framed` lays them.
+    pub laying: Laying<'a>,
+}
+
+/// Where a reading takes the frame's named images from.
+pub enum Laying<'a> {
+    /// None laid: the bare frame.
+    Nothing,
+    /// Read from their files onto the reader's graph.
+    Read(&'a mut Resident),
+    /// Already on the reader's graph, as the canvas's engine keeps them for the same frame.
+    Held(Inputs<'a>),
+}
+
+/// The images `s` names, those on files read first; the pipeline lays each only where `s` names it.
+fn laid<'l>(laying: &'l mut Laying<'_>, graph: &mut Graph, s: &PipelineSettings) -> Inputs<'l> {
+    match laying {
+        Laying::Nothing => Inputs::default(),
+        Laying::Read(r) => {
+            r.read(graph, s);
+            r.inputs(s)
+        }
+        Laying::Held(held) => Inputs { patches: held.patches.clone(), custom_flat_field: held.custom_flat_field },
+    }
 }
 
 /// A Core Image rectangle over `extent`'s own lower-left origin, as the graph's y-down pixels.
@@ -41,21 +63,16 @@ impl Reader<'_> {
     pub fn image(&mut self, copy: Copy, s: &PipelineSettings, before: Stage) -> Option<Image> {
         let request = Request { full_width: copy.full_width, measuring: true, ..Request::default() };
         let t = truncated(s, before);
-        if let Some(r) = self.resident.as_deref_mut() {
-            r.read(self.graph, &t);
-        }
-        let inputs = self.resident.as_deref().map(|r| r.inputs(&t)).unwrap_or_default();
+        let inputs = laid(&mut self.laying, self.graph, &t);
         self.pipeline.image(self.graph, copy.source, &t, &request, &inputs).ok()
     }
 
     /// `Pipeline.framed`: the head of the chain, with the mask and patches the frame names.
     pub fn framed(&mut self, source: &Source, s: &PipelineSettings, scale: f64) -> Option<Image> {
-        if let Some(r) = self.resident.as_deref_mut() {
-            r.read(self.graph, s);
-        }
-        let inputs = self.resident.as_deref().map(|r| r.inputs(s)).unwrap_or_default();
+        let inputs = laid(&mut self.laying, self.graph, s);
         self.pipeline.framed(self.graph, Image::new(source), s, scale, &inputs).ok()
     }
+
 
     /// The recipe rendered whole and read back.
     pub fn plane(&mut self, copy: Copy, s: &PipelineSettings, before: Stage) -> Option<Plane> {

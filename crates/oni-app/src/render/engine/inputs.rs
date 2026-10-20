@@ -1,9 +1,10 @@
 //! `refreshLevelsInput` and `refreshManualCurvesInput`: the distributions in front of the levels and
-//! of the manual curves, read again only when what enters that stage moves.
+//! of the manual curves, read again only when what enters that stage moves. Each lays the custom
+//! mask and dust patches the canvas lays, as `Pipeline.reading` does.
 
 use super::*;
 use oni_measure::histogram::Histogram;
-use oni_measure::reader::{Copy, Reader};
+use oni_measure::reader::{Copy, Laying, Reader};
 use oni_measure::truncate::{Stage, truncated};
 
 /// One stage's last reading: the preview and copy it was read on, the settings entering the stage.
@@ -11,6 +12,8 @@ pub(super) struct Read {
     preview: u64,
     held: bool,
     entering: PipelineSettings,
+    /// How many patches and whether the mask were laid: one read later moves the reading.
+    laid: (usize, bool),
     histogram: Histogram,
 }
 
@@ -19,8 +22,9 @@ impl Engine {
     /// whose entering settings and copy hold keeps its reading, so a later slider reads nothing.
     pub fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
         let id = negative.preview.id();
+        self.read_custom(settings);
         if self.measures.as_ref().is_none_or(|(kept, _, _)| *kept != id) {
-            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, resident: None };
+            let mut r = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, laying: Laying::Nothing };
             let measure = r.measuring(&negative.preview)?;
             // `measureSmall`: a third of the measuring copy's side, as `CILanczosScaleTransform` makes it.
             let small = self.graph.materialise(&Image::new(&measure).lanczos_anchored(MEASURE_SMALL)).ok()?;
@@ -30,16 +34,19 @@ impl Engine {
         let source = if held { small.clone() } else { measure.clone() };
         let mut read = |slot: usize, stage: Stage| -> Histogram {
             let entering = truncated(settings, stage);
+            let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+            let laid = (inputs.patches.len(), inputs.custom_flat_field.is_some());
             if let Some(r) = &self.read[slot]
                 && r.preview == id
                 && r.held == held
                 && r.entering == entering
+                && r.laid == laid
             {
                 return r.histogram.clone();
             }
             let copy = Copy { source: &source, full_width: Some(negative.full_width) };
-            let histogram = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, resident: None }.reading(copy, settings, stage).histogram;
-            self.read[slot] = Some(Read { preview: id, held, entering, histogram: histogram.clone() });
+            let histogram = Reader { graph: &mut self.graph, pipeline: &mut self.pipeline, laying: Laying::Held(inputs) }.reading(copy, settings, stage).histogram;
+            self.read[slot] = Some(Read { preview: id, held, entering, laid, histogram: histogram.clone() });
             histogram
         };
         let levels = read(0, Stage::Levels);

@@ -58,8 +58,8 @@ and what is left, most noticed first.
 5. (Done, #144: Space leaves the Lab for the gallery; ⌘A completes the folders beside a photo; the
    Scanner Emulator item is lit beside a photo.)
 6. (Done, #144: a preset naming the key balances Each, asking nothing.)
-7. The editor's level and curve input histograms still read without the custom mask and dust patches,
-   where Swift's go through `Pipeline.reading` (`EditorScene+Measurements.swift:101`).
+7. (Done, #154: the level and curve input histograms lay the canvas's custom mask and dust patches,
+   as Swift's `Pipeline.reading` does.)
 
 ### Gallery and column
 

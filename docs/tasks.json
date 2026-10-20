@@ -1138,5 +1138,13 @@
     "status": "done",
     "detail": "cost.rs (ONI_BENCH_COST=1) times the whole pipeline on a 2000 px preview with every finishing feature on, then each at rest in turn.",
     "outcome": "M2 Max, release: busy 6.96 ms, at rest 2.77 ms. Texture 3.65 ms of it, chroma denoise 1.49, sharpen 1.35; vignette, sauce, spectrogram and curves under 0.3 now that they share one pass. Texture's blurs are bound by their reads, 13 rgba32float taps a pixel a pass: the next steps would be tiles shared in workgroup memory, which the graph's per-pixel stage model does not offer, or the luma carried in fewer channels, which the rgba32float rule forbids; both are the owner's call."
+  },
+  {
+    "id": 154,
+    "type": "parity",
+    "title": "The editor's levels and curves input histograms lay the custom mask and dust patches",
+    "status": "done",
+    "detail": "refreshLevelsInput and refreshManualCurvesInput (EditorScene+Measurements.swift:88-128) read through Pipeline.reading and Pipeline.histogram(of:), whose Pipeline.apply lays the frame's custom flat-field mask and cached dust patches (Pipeline.swift:254-266). oni-measure's Reader now takes a Laying: nothing, read from files (the measurer's Resident) or held, the inputs the canvas engine already keeps; Engine::inputs lays the engine's own mask and patches, its kept reading also keyed on how many patches and whether the mask were laid, and a forgotten patch drops the kept readings. Every other Swift reading through Pipeline.reading, Pipeline.measured or Pipeline.apply was already laid: the automatic keys (balance, filter balance, roll reference, the base pipette) and the sheet tiles through the measurer (#151), the loupe, the canvas and its output histogram, the export and the roll previews through the engine or Resident. Check: render/inputs_tests.rs (a mask and a patch move both readings; twins: a missing mask or patch reads the bare frame, and the file arriving later moves the kept reading); it fails with the engine's inputs left out.",
+    "outcome": "M2 Max, release, ONI_BENCH=settled on a scratch copy of two Roll #8 frames, three runs a build: a held reading (the small copy) p50 4.37 ms before and 4.49 after on a plain frame, 4.37 before and 5.03 after on a frame naming a custom mask (p90 5.1 to 9.6), the mask's division now in it; the rest reading unchanged (43 ms masked, 72 to 76 plain); the notch's end to end p50 2.2 to 2.4 ms either way, its p99 within the machine's noise."
   }
 ]
