@@ -74,7 +74,11 @@ impl Ctl {
         if self.state.borrow().prepare.shown {
             return self.prepare_key(text, command, shift, bare);
         }
-        if self.lab_key(text, bare, repeat) {
+        if self.lab_key(text, bare, repeat) || self.validate_key(text, bare, repeat) {
+            return true;
+        }
+        if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {
+            self.column_select_all();
             return true;
         }
         if w.global::<App>().get_gallery() && self.grid_key(text, command, shift, bare, repeat) {
@@ -86,6 +90,28 @@ impl Ctl {
             return true;
         }
         false
+    }
+
+    /// `columnKeys`' ⌘A beside a photograph: every photo of the folders the selection touches, else
+    /// the open photo's folder; no ring is passed, as the tree rings no folder.
+    fn column_select_all(self: &Rc<Self>) {
+        {
+            let mut s = self.state.borrow_mut();
+            let groups: Vec<(String, Vec<String>)> = s
+                .archive
+                .as_ref()
+                .map(|a| a.groups.iter().map(|g| g.entries.iter().map(|e| e.path.clone()).collect::<Vec<_>>()))
+                .into_iter()
+                .flatten()
+                .filter_map(|paths| Some((oni_library::paths::parent(paths.first()?), paths)))
+                .collect();
+            let open = s.open.clone();
+            s.picks.selection = crate::picking::column_select_all(&groups, &s.picks.selection, None, open.as_deref());
+        }
+        self.publish_tiles();
+        self.publish_organising();
+        self.publish_tree();
+        self.publish_bar();
     }
 
     /// `.defaultAction`: Return presses the one key a notice offers; the export's clash, whose key

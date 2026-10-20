@@ -158,6 +158,22 @@ pub fn select_all<G: Clone + Eq + Hash>(groups: &[(G, Vec<String>)], selection: 
     next
 }
 
+/// `columnKeys`' ⌘A, on folder groups: the folders the selection touches, else the ringed folder,
+/// else the open photo's; never the gallery's last group, which the editor does not show.
+pub fn column_select_all(groups: &[(String, Vec<String>)], selection: &HashSet<String>, ring: Option<&str>, open: Option<&str>) -> HashSet<String> {
+    let mut touched: HashSet<&str> = groups.iter().filter(|(_, e)| e.iter().any(|p| selection.contains(p))).map(|(f, _)| f.as_str()).collect();
+    if touched.is_empty() && let Some(folder) = ring {
+        touched.insert(folder);
+    }
+    let parent = open.map(oni_library::paths::parent);
+    if touched.is_empty() && let Some(folder) = parent.as_deref() {
+        touched.insert(folder);
+    }
+    let mut next = selection.clone();
+    next.extend(groups.iter().filter(|(f, _)| touched.contains(f.as_str())).flat_map(|(_, e)| e.iter().cloned()));
+    next
+}
+
 /// `GalleryView.named`: a blank or unchanged name is refused rather than stored.
 pub fn named(draft: &str, was: &str) -> Option<String> {
     let wanted = draft.trim();
@@ -318,6 +334,18 @@ mod tests {
         assert_eq!(completed_groups(&rolls, &set(&["b1"]), Some(&"A")), HashSet::from(["B"]));
         // Twin: the focus read before the selection would complete A.
         assert_ne!(select_all(&rolls, &set(&["b1"]), Some(&"A")), set(&["a1", "a2", "b1"]));
+    }
+
+    /// `EditorScene.columnKeys`.
+    #[test]
+    fn command_a_beside_a_photo_completes_its_folders_else_the_ring_else_the_open_photos() {
+        let folders = [("/r/A".to_string(), order(&["/r/A/1", "/r/A/2"])), ("/r/B".to_string(), order(&["/r/B/1"]))];
+        assert_eq!(column_select_all(&folders, &set(&["/r/A/1"]), None, Some("/r/B/1")), set(&["/r/A/1", "/r/A/2"]));
+        assert_eq!(column_select_all(&folders, &set(&[]), Some("/r/B"), Some("/r/A/1")), set(&["/r/B/1"]), "the ring before the open photo");
+        assert_eq!(column_select_all(&folders, &set(&[]), None, Some("/r/A/2")), set(&["/r/A/1", "/r/A/2"]));
+        assert_eq!(column_select_all(&folders, &set(&[]), None, None), set(&[]), "nothing to complete");
+        // Twin: the gallery's ⌘A completes its last group, which the editor's never falls back to.
+        assert_ne!(select_all(&folders, &set(&[]), None), column_select_all(&folders, &set(&[]), None, None));
     }
 
     #[test]

@@ -422,10 +422,10 @@ a text field is being edited, and gives exclusive claimants first refusal.
 | Key | Action |
 |---|---|
 | Arrows | Walk frames; gallery navigation; roll frames |
-| Space | Toggle mode; open in the gallery; the hand tool while held in de-dust |
-| Return | Validate framing; open in the gallery |
+| Space | Toggle mode (Pro's editor outside de-dust, and the Lab); open in the gallery; the hand tool while held in de-dust |
+| Return | Apply the armed measuring window, then leave the crop for the last panel; open in the gallery |
 | Esc | Leave crop, popover, Wrapped, lab |
-| ⌘A | Select a folder's photos |
+| ⌘A | Select a folder's photos: the gallery's groups, or beside a photo the folders the selection touches |
 | Tab | Spectrogram bands |
 
 **Slint mapping**: one `FocusScope` at the root of `MainWindow`, holding focus whenever no text field

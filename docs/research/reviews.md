@@ -44,15 +44,15 @@ and what is left, most noticed first.
 ### Editor behaviour (Swift wins)
 
 1. (Done, #98: readouts, the gains' double click, the B&W and plain-file tracks.)
-2. A never-balanced frame does not open with its measuring window proposed; the window is never
-   disarmed (leaving Crop, auto balance, Return).
-3. Return does nothing in Crop; ⌘K toggles instead of opening Crop; the last panel is recorded in
-   fewer places.
-4. De-dust does not leave the Scanner face; correction numbers never restart per photo; the brush
-   size is not remembered.
-5. Space does not leave the Lab; ⌘A does nothing in the editor; the Scanner Emulator menu item is
-   always dark.
-6. A preset with automatic balance asks the strategy question Swift never asks.
+2. (Done, #144: a never-balanced frame opens with its window proposed and armed; leaving Crop,
+   Return, a balance key, a balanced preset and a measured roll disarm it.)
+3. (Done, #144: Return applies the window then leaves Crop; ⌘K only opens Crop; the last panel is
+   recorded on every route.)
+4. (Done, #144: De-dust leaves the Lab first; the brush size is kept; numbering per photo was
+   already in place.)
+5. (Done, #144: Space leaves the Lab for the gallery; ⌘A completes the folders beside a photo; the
+   Scanner Emulator item is lit beside a photo.)
+6. (Done, #144: a preset naming the key balances Each, asking nothing.)
 
 ### Gallery and column
 

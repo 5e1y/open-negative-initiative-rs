@@ -116,7 +116,7 @@ impl Ctl {
                 smaller_brush: painting,
                 mirror: open,
                 screen_gamut: true,
-                emulator: false,
+                emulator: open && !gallery,
                 medal: selected > 0 && !modal,
                 cycle_filter: true,
                 new_roll: gallery && count > 0,

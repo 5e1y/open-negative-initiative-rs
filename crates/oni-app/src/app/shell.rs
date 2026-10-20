@@ -82,7 +82,7 @@ impl Shell {
             masks: crate::flat_fields::entries(&options.support),
             masking: masks::Masking::new(options.mask_picker, options.show_folder),
             status: String::new(),
-            brush: oni_settings::frame::Correction::DEFAULT_RADIUS as f32,
+            brush: Preferences::load(&options.support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64).map_or(oni_settings::frame::Correction::DEFAULT_RADIUS as f32, |r| r as f32),
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
             gpu: options.canvas.map(|(device, queue)| {
@@ -116,8 +116,7 @@ impl Shell {
             frame_cancelled: false,
             scrolling: false,
             straightening: None,
-            window_armed: false,
-            last_panel: 2,
+            route: crate::tabs::Route::default(),
             painting_stroke: Vec::new(),
             numbers: HashMap::new(),
             next_number: 1,

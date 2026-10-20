@@ -167,6 +167,9 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }
+        if written.iter().any(|(p, _, _)| Some(p) == open.as_ref()) {
+            self.disarm_window();
+        }
         let mut touched: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
         let passes: Vec<String> = written
             .iter()

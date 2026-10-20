@@ -4,7 +4,8 @@
 use oni_settings::axis::graduation;
 use oni_settings::blocks::{chroma_decompression, separation};
 use oni_settings::frame::RollReference;
-use oni_settings::levels::Levels;
+use oni_settings::geometry::proposal;
+use oni_settings::levels::{Levels, LevelsChannel};
 use oni_settings::settings::roll_settings;
 use oni_settings::{ConversionMode, PipelineSettings};
 
@@ -74,6 +75,29 @@ pub fn written(reference: &RollReference, settings: &PipelineSettings) -> Pipeli
     out.roll_reference = Some(reference.clone());
     out.roll_reference_declined = false;
     out
+}
+
+/// `EditorScene.unbalanced`: no balance key named, the gains and per-channel windows at rest.
+pub fn unbalanced(settings: &PipelineSettings) -> bool {
+    let rest = PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
+    settings.balance_method.is_none()
+        && settings.gains == rest.gains
+        && LevelsChannel::PER_CHANNEL.iter().all(|&c| settings.levels.get(c) == rest.levels.get(c))
+}
+
+/// `adopt`: a frame never balanced opens where a balance begins, the window its key proposes armed;
+/// a sheet drops the margin an earlier opening proposed, so it reads its grid. Whether it is armed.
+pub fn opening_window(settings: &mut PipelineSettings) -> bool {
+    let sheet = settings.sheet.is_some();
+    let armed = unbalanced(settings) && !sheet;
+    let g = &mut settings.geometry;
+    if armed {
+        g.propose_measure_window(false);
+    }
+    if sheet && g.measure_window == Some(proposal(g.crop, false)) {
+        g.measure_window = None;
+    }
+    armed
 }
 
 /// What the balance key found on one frame: the roll it stands on and the full correction.
@@ -209,5 +233,29 @@ mod tests {
         let (landed, failure) = run(&frames, Strategy::Each, &blind);
         assert_eq!((landed.len(), failure), (1, Some(Unmeasurable("b".into()))));
         assert!(run(&frames, Strategy::Average, &blind).0.is_empty());
+    }
+
+    #[test]
+    fn a_frame_never_balanced_opens_with_its_window_proposed_and_armed() {
+        let mut fresh = PipelineSettings::rest(ConversionMode::Negative, true);
+        assert!(opening_window(&mut fresh));
+        assert_eq!(fresh.geometry.measure_window, Some(proposal(fresh.geometry.crop, false)));
+        let mut balanced = written(&reference(), &PipelineSettings::rest(ConversionMode::Negative, true));
+        assert!(!unbalanced(&balanced));
+        assert!(!opening_window(&mut balanced) && balanced.geometry.measure_window.is_none(), "a balanced frame opens as it was");
+        let mut named = PipelineSettings::rest(ConversionMode::Negative, true);
+        named.balance_method = Some("balance".into());
+        assert!(!unbalanced(&named), "a key named is a balance");
+        // A sheet reads its grid: the margin an earlier opening proposed is dropped, never proposed again.
+        let mut sheet = PipelineSettings::rest(ConversionMode::Negative, true);
+        sheet.sheet = Some(oni_settings::frame::ContactSheetGrid { columns: 2, rows: 1, frames: 2, tile: oni_settings::cg::Size { width: 1.0, height: 1.0 }, margin: 0.0, windows: None });
+        sheet.geometry.measure_window = Some(proposal(sheet.geometry.crop, false));
+        assert!(!opening_window(&mut sheet));
+        assert_eq!(sheet.geometry.measure_window, None);
+        // Twin: a window the hand drew on the sheet stays.
+        let drawn = oni_settings::cg::Rect { x: 0.2, y: 0.2, width: 0.3, height: 0.3 };
+        sheet.geometry.measure_window = Some(drawn);
+        opening_window(&mut sheet);
+        assert_eq!(sheet.geometry.measure_window, Some(drawn));
     }
 }

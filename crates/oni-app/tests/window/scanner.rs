@@ -171,12 +171,11 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     w.global::<App>().invoke_menu("emulator".into());
     rig.pump();
     assert!(lab.get_shown());
-    // Twin: in the Lab Space is not a walk key, and the editor stays.
+    // `columnKeys`: a bare Space leaves the Lab for the gallery; the menu item is lit beside a photo only.
+    assert!(w.global::<oni_app::Menus>().get_live().emulator, "Scanner Emulator is lit in the Lab");
     rig.key(" ");
-    assert!(!w.global::<App>().get_gallery() && lab.get_shown(), "Space never leaves the Lab");
-    w.global::<App>().invoke_menu("toggle-mode".into());
-    rig.pump();
-    assert!(w.global::<App>().get_gallery() && !lab.get_shown(), "the Lab is not on screen over the gallery");
+    assert!(w.global::<App>().get_gallery() && !lab.get_shown(), "Space leaves the Lab, which is not on screen over the gallery");
+    assert!(!w.global::<oni_app::Menus>().get_live().emulator, "twin: the item is dark in the gallery");
     w.global::<App>().invoke_menu("emulator".into());
     rig.pump();
     assert_eq!(bar.get_face(), 1, "the menu item is off in the gallery, the face kept");

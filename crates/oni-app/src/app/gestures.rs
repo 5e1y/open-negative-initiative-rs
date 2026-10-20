@@ -227,25 +227,6 @@ impl Ctl {
         }
     }
 
-    /// `toggleFraming()`: into the crop, or out to the last panel the hand was in, never the crop.
-    pub(super) fn toggle_framing(self: &Rc<Self>) {
-        let Some(w) = self.window() else { return };
-        let panel = w.global::<PanelState>();
-        let tab = panel.get_tab();
-        let next = if tab == CROP_TAB {
-            let last = self.state.borrow().last_panel;
-            if last == CROP_TAB || last == 4 { 2 } else { last }
-        } else {
-            if tab != 4 {
-                self.state.borrow_mut().last_panel = tab;
-            }
-            CROP_TAB
-        };
-        panel.set_tab(next);
-        w.global::<Bar>().set_dedust(false);
-        self.tab_opened(next);
-    }
-
     /// nil, bronze, silver, gold, then nil again: exactly one medal, never a tier above.
     pub(super) fn cycle_filter(self: &Rc<Self>) {
         {

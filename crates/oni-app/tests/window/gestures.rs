@@ -92,7 +92,13 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.chord(Key::Control, "k");
     assert_eq!(w.global::<PanelState>().get_tab(), 1);
     rig.chord(Key::Control, "k");
-    assert_eq!(w.global::<PanelState>().get_tab(), 2, "twin: ⌘K again leaves the crop for the panel it came from");
+    assert_eq!(w.global::<PanelState>().get_tab(), 1, "`openCrop()`: ⌘K again stays in the crop");
+    // A, never balanced, opened with its window armed: Return applies it, a second leaves the crop.
+    assert!(w.global::<Framing>().get_armed());
+    rig.key("\r");
+    assert_eq!((w.global::<PanelState>().get_tab(), w.global::<Framing>().get_armed()), (1, false));
+    rig.key("\r");
+    assert_eq!(w.global::<PanelState>().get_tab(), 2, "twin: the second Return is the crop's way out");
     // A bare bracket is the brush's only on its own tab: here it reaches nothing.
     let revision = ctl.state.borrow().store().revision();
     rig.key("]");
