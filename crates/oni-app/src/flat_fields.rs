@@ -110,7 +110,8 @@ pub fn load(support: &Path, source: &Path, decode: impl FnOnce(&Path) -> Option<
     // No metadata: a RAW's EXIF, serial number included, has no business in a mask.
     let icc = oni_colour::working::working_profile().encode().unwrap_or_default();
     let tiff = oni_export::tiff::encoded_half(width, height, &pixels, &icc).ok_or(Failure::Unwritable)?;
-    std::fs::write(file(support, &id), tiff).map_err(|_| Failure::Unwritable)?;
+    // Through a sibling and a rename: a mask cut short by a crash would be taken whole by the next load.
+    oni_library::write_atomically(&file(support, &id), &tiff).map_err(|_| Failure::Unwritable)?;
     let entry = Entry { id: id.clone(), name: stem(source), per_channel: passes.map(|_| true) };
     list.retain(|e| e.id != id);
     list.push(entry.clone());
