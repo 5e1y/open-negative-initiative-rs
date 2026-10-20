@@ -1494,5 +1494,12 @@
     "title": "Back to the ONI-toned Frontier and Frontier 2, their curves shown as the Curves block draws them",
     "status": "done",
     "detail": "The owner asked to return to the last build (#201 with the work set aside in #203: the Frontier on the ONI look's tone, Frontier 2 printing each window share through the Crystal Archive's curves, the frontierCurves field) and to show the curves. The Lab gains a Lab Curves block, a copy of the Curves block on frontierCurves (its tabs, a press adding or taking a point, a double click removing it, one undo step a press, the block's key resting it), applied on the Frontier's look in display code; Frontier 2 shows its paper in a Frontier 2 Paper block drawn by the same code, one layer a tab, read only. The editor's geometry and its drawing conversion are reused as they are."
+  },
+  {
+    "id": 205,
+    "type": "feature",
+    "title": "The Frontier rests on D+1 M+3 Y-3",
+    "status": "done",
+    "detail": "The owner's neutral for the Frontier's look: every frame took about +3 M, -3 Y and +1 D to sit with the ONI look's neutrality. The Frontier machine's keypad now rests there (scanner::FRONTIER_REST, added to the frame's clicks before they become gains); the screen and the sidecar still read the hand's own clicks, zero at rest. The ONI machine and Frontier 2 rest on zero."
   }
 ]
