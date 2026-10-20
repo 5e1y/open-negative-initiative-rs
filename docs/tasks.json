@@ -1283,5 +1283,19 @@
     "title": "A photo whose original cannot be found opens read-only, never as a new photo",
     "status": "done",
     "detail": "With the roll's disk unplugged, the sidecar's absence read as a new photo: rest settings, writable, Prepare the Roll opened on it (its base step decoding nothing) and every settle tried to write a sidecar for it, which a reconnected disk would have taken over the Swift roll's own. The store now checks the original first: absent, the frame opens read-only on the rest settings with a message saying its disk may be disconnected, nothing is written and Prepare the Roll is not offered. Beyond Swift, whose read has the same gap. Test fixtures that opened imaginary originals now create them."
+  },
+  {
+    "id": 176,
+    "type": "research",
+    "title": "What LibRaw lets us tune, against the Swift app's CIRAWFilter",
+    "status": "done",
+    "detail": "docs/research/libraw-knobs.md: Swift sets colour noise reduction to 1 and turns luminance NR, sharpening, moire and lens correction off; LibRaw's AHD leaves 4.9 to 6.7 times the fine colour detail; no LibRaw knob matches Apple's colour NR, a fixed chroma blur of about 1.25 px in log space would; adjust_maximum_thr is still automatic (0.75)."
+  },
+  {
+    "id": 177,
+    "type": "tests",
+    "title": "A phone's step reaches the canvas with the panel folded",
+    "status": "done",
+    "detail": "A window check pairs a phone over loopback and steps Exposure with the panel shown then folded, each step rendered; ONI_BENCH=folded does the same in the real window and counts each step drawn, on Pro and on the Scanner face's keypad. Both pass: the owner's missed presses came from a link that dropped and never came back (no established connection, log ends on 'phone disconnected'), handed to #174."
   }
 ]
