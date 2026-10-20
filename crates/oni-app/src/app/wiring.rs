@@ -161,6 +161,7 @@ impl Ctl {
         Ctl::wire_lab(me, window);
         Ctl::wire_settings(me, window);
         me.adopt_remembered_face();
+        me.adopt_frontier_look();
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));
         let p = me.clone();

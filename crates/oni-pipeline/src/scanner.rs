@@ -139,7 +139,7 @@ impl Machine {
 
 /// `ScannerRender.renders`: the face, the machine; the resources ship inside the crate.
 pub fn renders(s: &PipelineSettings) -> bool {
-    s.face == Face::Scanner && s.scanner_machine == ScannerMachine::Frontier
+    s.face == Face::Scanner && s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none()
 }
 
 /// `ScannerRender.densityGain`: one gain for all three channels over the roll's green window.
@@ -201,7 +201,9 @@ pub fn gain_stops(s: &PipelineSettings) -> [f32; 3] {
 /// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's
 /// filters and the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
-    if s.face != Face::Scanner || s.scanner_machine != ScannerMachine::Oni {
+    // A hand's Frontier look reads ONI's inversion, as ONI's own look does.
+    let hand_frontier = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_some();
+    if s.face != Face::Scanner || (s.scanner_machine != ScannerMachine::Oni && !hand_frontier) {
         return None;
     }
     let mut out = s.as_scanner();

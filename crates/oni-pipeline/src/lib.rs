@@ -5,6 +5,7 @@ pub mod conversion;
 pub mod corrections;
 pub mod finishing;
 pub mod flat_field;
+pub mod frontier_table;
 pub mod geometry;
 pub mod look_lab;
 pub mod oni_look;
@@ -19,7 +20,7 @@ use oni_settings::curves::{CurveSet, SaturationCurve};
 use oni_settings::frame::FlatFieldMask;
 use oni_settings::id::Id;
 use oni_settings::tone::Print;
-use oni_settings::PipelineSettings;
+use oni_settings::{PipelineSettings, ScannerMachine};
 use stages::{Before, DetailColumns, DetailRows, OnGround, Patched, Stroke, Translate};
 use std::collections::HashMap;
 
@@ -63,6 +64,8 @@ pub struct Inputs<'a> {
 pub struct Pipeline {
     valoi: Option<(Source, [f32; 3])>,
     cubes: HashMap<&'static str, (Source, usize)>,
+    /// The hand's Frontier look by its generation, uploaded once per edit.
+    hand: Option<(u64, Source, usize)>,
     luts: Vec<(CurveSet, Source, Source)>,
     strokes: Vec<(Vec<[f32; 4]>, Source)>,
 }
@@ -108,7 +111,7 @@ impl Pipeline {
             return self.finishing(graph, scanned, &s.as_scanner(), false, scale, reference, request.measuring);
         }
         let out = framed.then(stages::stage47(&conversion::stage47(s)));
-        let looked = if oni.is_some() { self.oni_finish(graph, out, s)? } else { out };
+        let looked = if oni.is_some() { self.oni_finish(graph, out, s, settings.scanner_machine)? } else { out };
         self.finishing(graph, looked, s, true, scale, reference, request.measuring)
     }
 
@@ -232,9 +235,19 @@ impl Pipeline {
     }
 
     /// `ScannerRender.oniFinish`: ONI's look on Pro's render in display code, then the warmth look.
-    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings) -> Result<Image> {
-        let code = image.then(stages::scanner_encode(oni_look::ROOT));
-        let (table, n) = self.cube(graph, "oni-look", &oni_look::CUBE)?;
+    fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, machine: ScannerMachine) -> Result<Image> {
+        let hand = (machine == ScannerMachine::Frontier).then(frontier_table::current).flatten();
+        let code = image.then(stages::scanner_encode(if hand.is_some() { 1.0 } else { oni_look::ROOT }));
+        let (table, n) = match hand {
+            Some((generation, cube)) => {
+                if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {
+                    self.hand = Some((generation, upload_cube(graph, &cube)?, cube.cube_dimension));
+                }
+                let (_, source, n) = self.hand.as_ref().expect("uploaded above");
+                (Image::new(source), *n)
+            }
+            None => self.cube(graph, "oni-look", &oni_look::CUBE)?,
+        };
         let looked = code.then_reading(stages::color_cube(n), &[table]);
         let (warmth, share) = self.warmed(graph, &looked, s.scanner.w)?;
         Ok(looked.then_reading(stages::scanner_output(share, scanner::LIFT, 0.0), &[warmth]))
