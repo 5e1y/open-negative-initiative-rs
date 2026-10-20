@@ -76,6 +76,7 @@ impl Ctl {
     }
 
     pub(in crate::app) fn slider_set(self: &Rc<Self>, i: usize, value: f32) {
+        let was = self.state.borrow().prepare.flat.clone();
         {
             let mut s = self.state.borrow_mut();
             match i {
@@ -90,6 +91,13 @@ impl Ctl {
                 }
                 _ => {}
             }
+        }
+        // `rollFlatBinding`: the three sliders as a hand leaves them, for the next roll and frame.
+        let now = self.state.borrow().prepare.flat.clone();
+        if (was.amount, was.temperature, was.tint) != (now.amount, now.temperature, now.tint)
+            && let Err(e) = crate::flat_fields::remember(&mut self.state.borrow_mut().preferences, &now)
+        {
+            crate::timing::line(&format!("the flat-field sliders could not be kept: {e}"));
         }
         self.publish_prepare();
     }

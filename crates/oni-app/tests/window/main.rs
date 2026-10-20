@@ -16,6 +16,7 @@ mod export_paper_window;
 mod export_window;
 mod extended;
 mod gallery;
+mod gallery_leftovers;
 mod gestures;
 mod headless;
 mod help;
@@ -28,6 +29,7 @@ mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
 mod prepare;
+mod prepare_leftovers;
 mod preset_deck;
 mod presets;
 mod quit;
@@ -74,6 +76,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("extended::a_patch_lands_and_feathers_as_swift_s", extended::a_patch_lands_and_feathers_as_swift_s),
     ("extended::an_export_writes_swift_s_pixels_profile_and_tags", extended::an_export_writes_swift_s_pixels_profile_and_tags),
     ("gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand", gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand),
+    ("gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop", gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop),
     ("gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target", gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target),
     ("headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas", headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas),
     ("help::the_help_menus_surfaces_behave_as_swifts", help::the_help_menus_surfaces_behave_as_swifts),
@@ -87,6 +90,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled", paper_sheet_window::a_maker_s_profile_is_listed_installed_chosen_and_uninstalled),
     ("phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame", phone::a_phone_pairs_from_the_sheet_and_steps_the_open_frame),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
+    ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),

@@ -137,6 +137,9 @@ export component MainWindow inherits AppWindow {
     property <bool> revealed-library;
     property <bool> revealed-panel;
     property <bool> beside-photo: !App.gallery && !Exporting.shown && !Preparing.shown;
+    // `mode == .gallery`: the grid mounts afresh each time it shows, and lands on the open photo.
+    out property <bool> grid-shown: App.gallery && !Exporting.shown && !Preparing.shown;
+    changed grid-shown => { if (self.grid-shown) { Library.gallery-shown(); } }
     // Any sheet over the window, every flag that lays one below.
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
@@ -291,7 +294,7 @@ export component MainWindow inherits AppWindow {
                         y: 0;
                         width: parent.width;
                         height: parent.height - parent.status;
-                        visible: App.gallery && !Exporting.shown && !Preparing.shown;
+                        visible: root.grid-shown;
                         Grid { }
                     }
                     // On export the card floats in the ground, all four corners showing, with no status bar.

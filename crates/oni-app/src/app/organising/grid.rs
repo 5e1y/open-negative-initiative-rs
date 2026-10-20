@@ -6,7 +6,7 @@ impl Ctl {
     /// The bands the surface shows, the selection kept to them, then the tiles, the tree's other
     /// rows, the status bar, the sidebar and the empty state.
     pub(in crate::app) fn lay_grid(self: &Rc<Self>) {
-        {
+        let remounted = {
             let mut s = self.state.borrow_mut();
             let bands = s.bands();
             let order: Vec<String> = bands.iter().flat_map(|b| b.entries.iter().map(|e| e.path.clone())).collect();
@@ -18,8 +18,14 @@ impl Ctl {
             s.shown_picks_mut().selection.retain(|p| shown.contains(p));
             s.order = order;
             s.org.bands = bands;
-        }
+            // Each surface is its own `GalleryEngine`, which lands afresh when switched to.
+            let surface = if s.org.projects_surface { 1 } else { u8::from(s.trash_shown()) * 2 };
+            s.org.laid_surface.replace(surface) != Some(surface)
+        };
         self.relayout();
+        if remounted {
+            self.land_gallery();
+        }
         self.publish_organising();
     }
 

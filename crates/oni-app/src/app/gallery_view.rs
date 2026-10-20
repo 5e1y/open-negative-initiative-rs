@@ -16,6 +16,18 @@ impl Ctl {
         self.publish_tiles();
     }
 
+    /// `land(through:)` as the grid mounts: the open photo centred, else the top; the ONI Trash
+    /// names no open photo.
+    pub(super) fn land_gallery(&self) {
+        {
+            let mut s = self.state.borrow_mut();
+            let open = s.open.clone().filter(|_| !s.trash_shown());
+            let at = open.and_then(|p| s.order.iter().position(|o| *o == p));
+            s.scroll = s.layout.landing(at, s.grid.1);
+        }
+        self.publish_tiles();
+    }
+
     /// The cells in view and one row either side, the only tiles Slint is given.
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
@@ -64,15 +76,20 @@ impl Ctl {
             })
             .collect();
         let headers = s.layout.headers(s.scroll, s.grid.1);
-        let headings: Vec<Heading> = s.layout.bands[headers]
-            .iter()
-            .map(|b| Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into() })
+        // One field at a time: the pinned heading carries it while it covers its band's own.
+        let pinned = s.layout.pinned(s.scroll).map(|(i, _)| i);
+        let headings: Vec<Heading> = headers
+            .map(|i| {
+                let b = &s.layout.bands[i];
+                let renaming = s.heading_renamed(i) && pinned != Some(i);
+                Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into(), renaming }
+            })
             .collect();
         s.visible = range;
         let (height, scroll) = (s.layout.height, s.scroll);
         drop(s);
         lib.set_tiles(ModelRc::new(VecModel::from(tiles)));
-        lib.set_headings(ModelRc::new(VecModel::from(headings)));
+        set_headings(&lib, headings);
         self.publish_pinned();
         lib.set_content_height(height);
         lib.set_scroll(scroll);
@@ -83,14 +100,15 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let pinned = {
             let s = self.state.borrow();
-            s.layout.pinned(s.scroll).map(|(i, y)| (y, s.layout.bands[i].title.clone(), s.layout.bands[i].caption.clone()))
+            s.layout.pinned(s.scroll).map(|(i, y)| (y, s.layout.bands[i].title.clone(), s.layout.bands[i].caption.clone(), s.heading_renamed(i)))
         };
         let lib = w.global::<Library>();
         lib.set_pinned_shown(pinned.is_some());
-        if let Some((y, title, caption)) = pinned {
+        if let Some((y, title, caption, renaming)) = pinned {
             lib.set_pinned_y(y);
             lib.set_pinned_title(title.into());
             lib.set_pinned_caption(caption.into());
+            lib.set_pinned_renaming(renaming);
         }
     }
 
@@ -159,4 +177,20 @@ impl Ctl {
         }
         self.lay_archive();
     }
+}
+
+/// Row by row into the model shown: a heading typed over keeps its field while the tiles are laid again.
+fn set_headings(lib: &Library, headings: Vec<Heading>) {
+    let model = lib.get_headings();
+    if let Some(shown) = model.as_any().downcast_ref::<VecModel<Heading>>()
+        && shown.row_count() == headings.len()
+    {
+        for (i, h) in headings.into_iter().enumerate() {
+            if shown.row_data(i).as_ref() != Some(&h) {
+                shown.set_row_data(i, h);
+            }
+        }
+        return;
+    }
+    lib.set_headings(ModelRc::new(VecModel::from(headings)));
 }

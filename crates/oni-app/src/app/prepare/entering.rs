@@ -115,6 +115,7 @@ impl Ctl {
     /// `landRollFrame`: the frame's framing, its preview asked, the roll's values off the first.
     pub(in crate::app) fn land_frame(self: &Rc<Self>, session: u64, path: &str, read: PipelineSettings, draft: Option<RollDraft>, first: bool, aspect: Option<f64>) {
         {
+            let kept = self.remembered_flat_field();
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
             if !r.shown || r.session != session {
@@ -143,7 +144,7 @@ impl Ctl {
                     r.aspect = a;
                 }
                 r.window = read.geometry.measure_window.unwrap_or_else(|| oni_measure::window::proposal(&read.geometry.crop, false));
-                r.flat = read.flat_field.clone();
+                r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
                 r.film = read.mode;
                 r.capture = if read.rgb_passes.is_some() {
                     Capture::RgbPasses
