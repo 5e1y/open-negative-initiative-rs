@@ -190,6 +190,21 @@ impl RemoteSession {
         }
     }
 
+    /// A held slider's knob at `position` on its track, 0 to 1, called at every move of the hand:
+    /// one place flies at a time, the latest waiting, and the listener shows the knob at once.
+    pub fn slide(&self, param: Param, position: f32) {
+        if let Some(remote) = self.remote.lock().expect("remote lock").as_ref() {
+            remote.slide(param.into(), position);
+        }
+    }
+
+    /// The hand off the slider: the desktop records the drag as one undo step.
+    pub fn let_go(&self, param: Param) {
+        if let Some(remote) = self.remote.lock().expect("remote lock").as_ref() {
+            remote.let_go(param.into());
+        }
+    }
+
     pub fn current(&self) -> DisplayState {
         let mut display = DisplayState::from(&*self.display.borrow());
         display.connected &= self.remote.lock().expect("remote lock").is_some();

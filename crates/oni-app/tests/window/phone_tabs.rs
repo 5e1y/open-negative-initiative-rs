@@ -1,5 +1,6 @@
 //! The phone's tabs end to end, headless, through `oni-link-ffi`: it reads each tab's sliders as the
-//! panel writes them, steps one into the sidecar as one undo step, and switches the face both ways.
+//! panel writes them, steps one into the sidecar as one undo step, switches the face both ways, and
+//! drags one as the panel's drag, one undo step for the whole drag.
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Engine, Shared};
@@ -40,6 +41,13 @@ fn until_shown(rig: &common::Rig, session: &RemoteSession, what: &str, done: imp
 
 fn tab(d: &DisplayState, tab: PanelTab) -> Vec<Param> {
     d.panel.rows.iter().filter(|r| r.tab == tab).map(|r| r.param).collect()
+}
+
+/// Longer than the history's coalescing window, so two unheld changes this far apart are two steps.
+const PAST_THE_WINDOW: Duration = Duration::from_millis(500);
+
+fn position(d: &DisplayState, param: Param) -> f32 {
+    d.panel.rows.iter().find(|r| r.param == param).map(|r| r.position).unwrap()
 }
 
 fn value(d: &DisplayState, param: Param) -> Option<String> {
@@ -117,6 +125,36 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     shell.window.global::<Bar>().invoke_act("face-pro".into());
     let pro = until_shown(&rig, &session, "Pro from the desktop", |d| d.panel.face == Face::Pro);
     assert!(tab(&pro, PanelTab::Color).contains(&Param::Exposure));
+
+    // A drag from the phone: every place lands as the panel's drag puts it, the whole drag one undo
+    // step though it outlasts the history's coalescing, and the phone reads the panel's readout.
+    let f = oni_app::fields::Field::Exposure;
+    let track = |s: &oni_settings::PipelineSettings| oni_app::slider_track::track_on(f, s);
+    let at = position(&pro, Param::Exposure);
+    session.slide(Param::Exposure, at + 0.05);
+    until_shown(&rig, &session, "the first place", |d| !d.unanswered);
+    std::thread::sleep(PAST_THE_WINDOW);
+    for step in 1..=4 {
+        session.slide(Param::Exposure, at + 0.05 + 0.04 * step as f32);
+    }
+    session.let_go(Param::Exposure);
+    let dragged = until_shown(&rig, &session, "the drag", |d| !d.unanswered && d.state.can_undo);
+    let landed = ctl.state.borrow().store().settings().print.exposure;
+    let wanted = oni_app::slider_track::stored_on(f, at + 0.21, &track(ctl.state.borrow().store().settings()));
+    assert!((landed - wanted).abs() < 1e-5, "{landed} where the panel's drag puts {wanted}");
+    rig.pump();
+    assert_eq!(value(&dragged, Param::Exposure).unwrap(), store.get_exposure_value().as_str(), "the panel's readout");
+    session.press(Command::Undo);
+    until_shown(&rig, &session, "the drag undone", |d| !d.unanswered);
+    assert_eq!(ctl.state.borrow().store().settings().print.exposure, start, "one undo takes the whole drag back");
+    // Twin: two steps as far apart are two steps, so one undo leaves the first.
+    session.press(Command::StepParam { param: Param::Exposure, by: 5 });
+    until_shown(&rig, &session, "a first step", |d| !d.unanswered);
+    std::thread::sleep(PAST_THE_WINDOW);
+    session.press(Command::StepParam { param: Param::Exposure, by: 5 });
+    session.press(Command::Undo);
+    until_shown(&rig, &session, "a second step undone", |d| !d.unanswered);
+    assert_ne!(ctl.state.borrow().store().settings().print.exposure, start);
 
     session.hang_up();
     drop(store);
