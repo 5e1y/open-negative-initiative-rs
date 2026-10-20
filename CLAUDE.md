@@ -41,6 +41,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.
 - **`wgpu` with WGSL** runs on Metal (macOS) and DirectX 12 (Windows). Kernels read with
   `textureLoad` or storage buffers and interpolate themselves: `rgba32float` filtering is optional.
+- **The Frontier unmixes at the frame's own Dye Separation** (owner's call), where Swift's machine ran
+  a fixed 0.6: a negative without crosstalk is read unmixed at zero.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
 
 ## Build

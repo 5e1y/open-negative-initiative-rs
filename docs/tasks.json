@@ -1396,5 +1396,12 @@
     "title": "scripts/live: the interface reloaded on each .slint save, no build",
     "status": "done",
     "detail": "A .slint edit still costs 87 s in dev and 212 s in the app profile (rustc's front end alone reads 44 MB of generated Rust for 75 s). Slint 1.18's live preview, enabled from the script (`--features slint/live-preview`, SLINT_LIVE_PREVIEW=1) so the workspace hack never takes the Slint compiler, makes the app interpret the .slint files and reload them on each save; checked by planting a parse error in a running app, which reported it at once. Built in target/live so the checked build and its features are untouched."
+  },
+  {
+    "id": 190,
+    "type": "fix",
+    "title": "The Frontier unmixes at the frame's own Dye Separation, not a fixed 0.6",
+    "status": "done",
+    "detail": "The owner asked for the Frontier-mode mapping faults the study of the synthetic checker found to be fixed. Measured in the study's harness: the machine's fixed 0.6 dose unmixes a crosstalk-free negative it should leave alone; reading the frame's own Dye Separation (0.6 at rest, so every frame at rest renders as before) brings the chart's p90 from 4.97 to 3.53 against the virtual Frontier with the grey anchored. The chart's large median gap (9.9) is its roll median sitting 0.11 D above its grey, a click under rule 1, not code. The scale and pedestal changes help only together and with the roll measured on the same pedestal-free axis, on scanner TIFFs only: not taken."
   }
 ]

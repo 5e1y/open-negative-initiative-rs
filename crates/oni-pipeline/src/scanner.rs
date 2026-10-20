@@ -13,8 +13,6 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-/// The separation the measured machine runs on the roll's own family.
-pub const SEPARATION_DOSE: f32 = 0.6;
 /// The table reads density stretched by one gain over the roll's green window, set on a measured roll.
 pub const WINDOW_SCALE: f32 = 1.3;
 /// `ScannerRender.lift`: the warmth looks' moves stored raised by it, since a cube clips under zero.
@@ -157,10 +155,11 @@ pub fn median(s: &PipelineSettings) -> [f32; 3] {
     [g.black + 0.6 * (g.white - g.black); 3]
 }
 
-/// `ScannerRender.separation`: the family's plain matrix at the machine's dose, no chroma kept.
+/// The family's plain matrix at the frame's own Dye Separation, no chroma kept: a negative with no
+/// crosstalk is read unmixed at zero, where the Swift machine always unmixed at 0.6.
 pub fn separation(s: &PipelineSettings) -> M3 {
     match (s.rgb_passes.is_none(), s.separation_family.or(SeparationFamily::resting(s.mode))) {
-        (true, Some(family)) => separation_matrix(family, SEPARATION_DOSE),
+        (true, Some(family)) => separation_matrix(family, s.separation),
         _ => IDENTITY,
     }
 }
@@ -279,6 +278,17 @@ mod tests {
         // And TEMP + warms the grey: more red than blue than at rest.
         let warm = rendered(ScannerClicks::new(0, 0, 0, 0, 4));
         assert!(warm[0] - warm[2] > rest[0] - rest[2], "{warm:?} against {rest:?}");
+    }
+
+    #[test]
+    fn the_machine_unmixes_at_the_frame_s_own_dye_separation() {
+        let roll = check_roll();
+        assert_eq!(roll.separation, 0.6, "a frame at rest unmixes as the Swift machine did");
+        let family = roll.separation_family.or(SeparationFamily::resting(roll.mode)).unwrap();
+        assert_eq!(separation(&roll), separation_matrix(family, 0.6));
+        assert_eq!(separation(&PipelineSettings { separation: 0.0, ..roll.clone() }), IDENTITY);
+        // Twin: a dose that moved changes the rows, so the slider is not ignored.
+        assert_ne!(separation(&PipelineSettings { separation: 1.0, ..roll.clone() }), separation(&roll));
     }
 
     #[test]
