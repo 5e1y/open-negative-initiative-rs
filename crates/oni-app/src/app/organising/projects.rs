@@ -73,13 +73,24 @@ impl Ctl {
         self.publish_bar();
     }
 
+    /// `TreeEngine` on the projects: the rows laid as the archive's, a photo as a name or a thumbnail.
     pub(in crate::app) fn publish_projects(&self) {
         let Some(w) = self.window() else { return };
-        let rows: Vec<TreeRow> = {
+        let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
             let nodes = project_tree::flatten(&project_tree::roots(&s.org.projects, &s.rows), &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
-            nodes
+            let mut paths = Vec::with_capacity(nodes.len());
+            for (node, _) in &nodes {
+                let Node::Photo { entry, .. } = node else {
+                    paths.push(None);
+                    continue;
+                };
+                // A thumbnail is asked by fingerprint, which the archive's grid may never have read.
+                s.fingerprints.entry(entry.path.clone()).or_insert_with(|| entry.fingerprint.clone());
+                paths.push(Some(entry.path.clone()));
+            }
+            let rows = nodes
                 .iter()
                 .map(|(node, depth)| {
                     let id = node.id();
@@ -106,15 +117,21 @@ impl Ctl {
                             expanded: false,
                             selected: ringed || s.picks.selection.contains(&entry.path),
                             renaming: false,
+                            medal: library::medal_index(entry.label),
+                            missing: s.org.missing.contains(&entry.path),
+                            rgb: entry.leads_passes,
                             ..TreeRow::default()
                         },
                     }
                 })
-                .collect()
+                .collect();
+            (rows, paths)
         };
+        self.lay_column(crate::app::tree_column::Which::Projects, &mut rows, paths);
         let lib = w.global::<Library>();
         lib.set_project_rows(ModelRc::new(VecModel::from(rows)));
         lib.set_projects_any_open(!self.state.borrow().org.project_expanded.is_empty());
+        self.pin_column(crate::app::tree_column::Which::Projects);
     }
 
     /// `foldOrOpenEveryRow` on the projects: any row open folds them all, else every project opens.

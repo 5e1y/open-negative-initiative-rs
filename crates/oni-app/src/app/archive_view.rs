@@ -330,15 +330,15 @@ impl Ctl {
                 }
             })
             .collect();
-        s.tree_paths = paths;
         s.org.tree_ids = ids;
         drop(guard);
-        self.lay_tree(&mut rows);
+        self.lay_column(tree_column::Which::Archive, &mut rows, paths);
         w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
         self.follow_tree();
         if let Some(i) = landed {
-            self.centre_row(&w, i);
+            self.centre_row(tree_column::Which::Archive, i);
         }
+        self.pin_column(tree_column::Which::Archive);
     }
 
     /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
@@ -346,11 +346,11 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let model = w.global::<Library>().get_rows();
         let s = self.state.borrow();
-        if model.row_count() != s.tree_paths.len() {
+        if model.row_count() != s.tree.paths.len() {
             drop(s);
             return self.publish_tree();
         }
-        for (i, path) in s.tree_paths.iter().enumerate() {
+        for (i, path) in s.tree.paths.iter().enumerate() {
             let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
             let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
             if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
@@ -358,5 +358,7 @@ impl Ctl {
                 model.set_row_data(i, row);
             }
         }
+        drop(s);
+        self.pin_column(tree_column::Which::Archive);
     }
 }

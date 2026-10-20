@@ -251,8 +251,9 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     assert!(!lib.invoke_project_row_menu(project_row(&lib, "Walk")), "twin: two projects open no menu");
 
     // Through the pointer: a plain click drops the pick, ⌘ held adds a row, a right click opens its menu.
-    let height = w.global::<oni_app::DS>().get_control_film_sidebar_row_height();
-    let y = |title: &str| LIST_TOP + (project_row(&lib, title) as f32 + 0.5) * height;
+    let ds = w.global::<oni_app::DS>();
+    let (height, margin) = (ds.get_control_film_sidebar_row_height(), ds.get_space_sm());
+    let y = |title: &str| LIST_TOP + margin + (project_row(&lib, title) as f32 + 0.5) * height;
     let lit = || project_rows(&lib).into_iter().filter(|r| r.selected).map(|r| r.title.to_string()).collect::<Vec<_>>();
     rest(&rig);
     press(&rig, y("B00.tif"), PointerEventButton::Left, None);

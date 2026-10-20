@@ -1,0 +1,56 @@
+// The library column's tree over its rows: the parent row pinned under the top while its children
+// pass, and the ring round the row a drop would join.
+import { Colour, Stroke, Radius, RowStyle } from "theme.slint";
+import { TreeItem, RowKind } from "collections.slint";
+
+// `PinnedRow`: the open row held at the tree's top on the panel, a hairline under it; a click in
+// its chevron's zone folds it, elsewhere it clicks the row.
+export component PinnedTreeRow inherits Rectangle {
+    in property <int> depth;
+    in property <string> title;
+    in property <string> caption;
+    in property <RowKind> kind;
+    in property <bool> selected;
+    // ⌘ (or Ctrl) and ⇧ held on the click.
+    callback clicked(bool, bool);
+    callback double-clicked();
+    callback folded();
+    height: RowStyle.height;
+    background: Colour.ground;
+    TreeItem {
+        width: parent.width;
+        depth: root.depth;
+        title: root.title;
+        caption: root.caption;
+        kind: root.kind;
+        expandable: true;
+        expanded: true;
+        selected: root.selected;
+        clicked => { root.clicked(self.command, self.shift); }
+        double-clicked => { root.double-clicked(); }
+        folded => { root.folded(); }
+    }
+    Rectangle {
+        y: parent.height - Stroke.hairline;
+        height: Stroke.hairline;
+        background: Colour.separator;
+    }
+}
+
+// `TreeRowChrome.dropRing`: a fine edge inset in the row, the selection's ring over it.
+export component DropRing {
+    Rectangle {
+        x: Stroke.line;
+        y: Stroke.line;
+        width: parent.width - 2 * Stroke.line;
+        height: parent.height - 2 * Stroke.line;
+        border-radius: Radius.badge;
+        border-width: Stroke.line;
+        border-color: Colour.contrast-edge-idle;
+    }
+    Rectangle {
+        border-radius: Radius.badge;
+        border-width: Stroke.emphasis;
+        border-color: Colour.selected;
+    }
+}

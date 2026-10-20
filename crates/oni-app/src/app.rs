@@ -57,6 +57,8 @@ mod canvas_gpu;
 mod opening;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
+mod tree_column;
+mod project_drop;
 mod tree_reveal;
 mod tree_clicks;
 mod state_read;
@@ -277,14 +279,9 @@ pub struct State {
     /// The gallery's picks, kept by path so a relayout keeps them, and the ONI Trash's own.
     picks: crate::organise::Picks,
     trash_picks: crate::organise::Picks,
-    /// The archive tree's rows as published, each photo row's path, so a pick relights them in place.
-    tree_paths: Vec<Option<String>>,
-    /// The library column's size in points, each row's place in it and its whole height.
-    tree_size: (f32, f32),
-    tree_frames: Vec<crate::sidebar::Frame>,
-    tree_total: f32,
-    /// What each row shows as its thumbnail, none for a name, and the photo the column last centred on.
-    tree_pictures: Vec<Option<Image>>,
+    /// The archive's and the projects' trees as laid, and the photo the column last centred on.
+    tree: tree_column::Laid,
+    project_tree: tree_column::Laid,
     tree_centred: Option<String>,
     reveal: tree_reveal::Reveal,
     shelf: presets::Shelf,

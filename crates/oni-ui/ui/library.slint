@@ -1,7 +1,7 @@
-// The library column, the gallery grid and the info sidebar; the lists draw only what is on screen.
+// The library column's and the gallery grid's state, and the grid; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ColumnPill, ListView, Scroller, ScrollKnob, IconButton, Icons, Section, TextField, TreeItem, RenameRow, RowKind, TileView, TileHeading, PinnedHeading, Surface, Ground, Label, Tone, TextRole, Space, ShellStyle, Tabs, TrashRow, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, DateFields, Button, ButtonSize, TextArea, CardStack, EditableTitle, Stroke, StockIcon, StockStyle } from "ds/ds.slint";
+import { ScrollKnob, TileView, TileHeading, PinnedHeading, Surface, Ground, Space, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -44,6 +44,29 @@ export struct TreeRow {
     picture: image,
     medal: int,
     missing: bool,
+    rgb: bool,
+}
+
+// `PinnedRow`: the open row held at a tree's top, and how far the next one pushes it up.
+export struct TreePin {
+    shown: bool,
+    index: int,
+    push: length,
+    row: TreeRow,
+}
+
+// A drag in the projects' tree: its chip at the pointer, and the ring or the line where it would land.
+export struct TreeDrag {
+    shown: bool,
+    chip: string,
+    x: length,
+    y: length,
+    ring: bool,
+    line: bool,
+    mark-x: length,
+    mark-y: length,
+    mark-width: length,
+    mark-height: length,
 }
 
 export struct StockCount {
@@ -66,6 +89,14 @@ export global Library {
     callback tree-layout-next();
     callback tree-centre();
     callback tree-reload();
+    // A tree's scroll moved, which may pin another row; the pinned row's click; the column changing mode.
+    callback tree-scrolled();
+    callback project-scrolled();
+    in property <TreePin> tree-pin;
+    in property <TreePin> project-pin;
+    callback tree-pin-clicked(bool, bool);
+    callback project-pin-clicked(bool, bool);
+    callback tree-moded();
     // `GallerySurface`: 0 the archive, 1 the projects.
     in-out property <int> surface;
     in property <[TreeRow]> rows;
@@ -158,10 +189,17 @@ export global Library {
     in property <bool> projects-any-open;
     callback project-fold-all();
     callback project-centre();
-    // The projects' scroll, and the row it centres each time Rust moves the serial.
+    // The projects' tree laid as the archive's, its scroll both ways, a click under its rows.
+    in property <length> project-content-height;
     in-out property <length> project-viewport-y;
-    in property <int> project-reveal-row: -1;
-    in property <int> project-reveal-serial;
+    callback project-shown(length, length);
+    callback project-resized(length, length);
+    callback project-empty-clicked();
+    // A press on a row moved, from where it was pressed to the pointer, in the tree's coordinates;
+    // its release dropping, or its cancel; the drag's marks.
+    callback project-row-dragged(int, length, length, length, length);
+    callback project-drag-ended(bool);
+    in property <TreeDrag> project-drag;
     callback trash-row-clicked(int);
     callback trash-row-double-clicked(int);
     callback trash-row-restore(int);
@@ -295,98 +333,5 @@ export component Grid inherits Surface {
         y: root.menu-y;
         lines: Library.menu-lines;
         chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
-    }
-}
-
-// `InfoSidebar`: the roll a selection stands on, or its project.
-export component Info inherits Surface {
-    width: ShellStyle.info-width;
-    // `InfoSidebar`'s ScrollView: a tall roll scrolls under the column instead of clipping.
-    Scroller {
-        content-height: body.preferred-height;
-        body := VerticalLayout {
-            width: parent.width;
-            alignment: start;
-            if Library.info-kind == 0: VerticalLayout {
-                padding: Space.m;
-                Label { text: Library.info-empty; tone: Tone.secondary; }
-            }
-            if Library.info-kind == 1: VerticalLayout {
-                Section {
-                    title: "Roll";
-                    separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; committed(t) => { Library.title-committed(t); } }
-                }
-                Section {
-                    title: "Film Stock";
-                    help: "What this roll was shot on — never guessed, only ever what a hand picks.";
-                    // `heroStock`: the artwork, the name, and where a default came from.
-                    HorizontalLayout {
-                        alignment: center;
-                        StockIcon { artwork: Library.stock-artwork; has-artwork: Library.stock-has-artwork; side: StockStyle.hero; }
-                    }
-                    if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
-                    if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
-                    Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
-                }
-                Section {
-                    title: "Shot Date";
-                    help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
-                    HorizontalLayout {
-                        spacing: Space.s;
-                        alignment: start;
-                        DateFields {
-                            month <=> Library.month;
-                            day <=> Library.day;
-                            year <=> Library.year;
-                            committed(m, d, y) => { Library.shot-date-committed(m, d, y); }
-                        }
-                        if Library.shot-date-set: IconButton {
-                            icon: Icons.reset;
-                            help: "Clear shot date";
-                            clicked => { Library.shot-date-cleared(); }
-                        }
-                    }
-                    if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
-                }
-                Section {
-                    title: "Camera Body";
-                    help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
-                    TextField {
-                        placeholder: "e.g. Leica M6";
-                        text <=> Library.camera-body;
-                        accepted(t) => { Library.camera-body-committed(t); }
-                        left(t) => { Library.camera-body-committed(t); }
-                    }
-                }
-            }
-            if Library.info-kind == 2: VerticalLayout {
-                Section {
-                    title: "Project";
-                    separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Project name"; committed(t) => { Library.title-committed(t); } }
-                }
-                CardStack { pictures: Library.stack; }
-                Section {
-                    title: "Film Stocks";
-                    help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
-                    if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
-                    for row in Library.stocks: HorizontalLayout {
-                        spacing: Space.s;
-                        StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }
-                        Label { text: row.name; horizontal-stretch: 1; }
-                        Label { text: row.count; tone: Tone.secondary; }
-                    }
-                }
-                Section {
-                    title: "Description";
-                    TextArea {
-                        lines-height: ShellStyle.info-description;
-                        text <=> Library.description;
-                        left(t) => { Library.description-committed(t); }
-                    }
-                }
-            }
-        }
     }
 }

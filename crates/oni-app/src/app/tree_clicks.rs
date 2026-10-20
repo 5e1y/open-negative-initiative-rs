@@ -124,6 +124,10 @@ impl Ctl {
     /// clears the photos, a photo row selects it; beside a photo either opens its photo. With ⌘
     /// or ⇧ the row joins the tree's pick, whose photos become the selection.
     pub(super) fn project_row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
+        // A press that became a drag lets go on its row: the drop, never a click.
+        if self.project_dragging() {
+            return;
+        }
         self.exit_tree_editing();
         let picked = {
             let mut guard = self.state.borrow_mut();
@@ -186,6 +190,9 @@ impl Ctl {
 
     /// `takeOff` on a photo row's double click; on a project's, `rename` types over its name.
     pub(super) fn project_row_double_clicked(self: &Rc<Self>, i: usize) {
+        if self.project_dragging() {
+            return;
+        }
         let id = self.state.borrow().org.project_nodes.get(i).cloned();
         match id {
             Some(ProjectNode::Photo { path, .. }) => self.open_in_editor(&path),

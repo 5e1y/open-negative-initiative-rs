@@ -191,12 +191,13 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     rig.pump();
     let at = trip();
     assert!(project_rows()[at].expanded, "opening B05 unfolds Trip");
-    assert!(project_rows()[at + 1].title == "B05.tif" && project_rows()[at + 1].selected, "B05 is ringed under Trip, named in full");
-    let row = w.global::<oni_app::DS>().get_control_film_sidebar_row_height();
+    // Beside a photo the projects' tree is laid as the archive's, a photo as a thumbnail by its stem.
+    let b05 = project_rows()[at + 1].clone();
+    assert!(b05.title == "B05" && b05.thumb && b05.selected, "B05 is ringed under Trip as a thumbnail");
     let offset = -lib.get_project_viewport_y();
     assert!(offset > 0.0, "Trip's photo sits below the list's first screen, so it scrolls");
     // Centred, the row's middle is half the list's height down from the top.
-    let view = 2.0 * ((at + 1) as f32 * row + row / 2.0 - offset);
+    let view = 2.0 * (b05.y + b05.height / 2.0 - offset);
     assert!((100.0..800.0).contains(&view), "B05's row centred in a list {view} tall");
 
     // A photo row clicked in the projects opens it and leaves the list where it is.

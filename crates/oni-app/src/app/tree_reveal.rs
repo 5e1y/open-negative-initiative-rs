@@ -96,16 +96,13 @@ impl Ctl {
 
     /// `expandProjectAncestors` then `TreeEngine.reveal`: the project opens and the list centres the row.
     fn centre_project(&self, node: &ProjectNode) {
-        let Some(w) = self.window() else { return };
         if let ProjectNode::Photo { project, .. } = node {
             self.state.borrow_mut().org.project_expanded.insert(ProjectNode::Project(*project));
         }
         self.publish_projects();
         let row = self.state.borrow().org.project_nodes.iter().position(|n| n == node);
         if let Some(row) = row {
-            let lib = w.global::<Library>();
-            lib.set_project_reveal_row(row as i32);
-            lib.set_project_reveal_serial(lib.get_project_reveal_serial() + 1);
+            self.centre_row(super::tree_column::Which::Projects, row);
         }
     }
 }
