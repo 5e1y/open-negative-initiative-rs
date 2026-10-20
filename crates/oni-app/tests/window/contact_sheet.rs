@@ -88,10 +88,10 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
     ctl.act("prepare-roll");
-    rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown());
-    rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
+    rig.until("the roll's surface", Duration::from_secs(60), || p.get_shown());
+    rig.until("every frame read", Duration::from_secs(60), || p.get_capture() == 0);
     p.invoke_step_picked(4);
-    rig.until("the window step", Duration::from_secs(10), || p.get_action_title() == "MEASURE 4 FRAMES");
+    rig.until("the window step", Duration::from_secs(60), || p.get_action_title() == "MEASURE 4 FRAMES");
     p.invoke_advance();
     rig.pump();
     rig.until("the measure landed", Duration::from_secs(120), || !p.get_shown() || advice.get_shown());
@@ -109,7 +109,7 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     assert_eq!(sheet.roll_reference.map(|r| r.id), roll, "the sheet stands on its roll's reference");
     assert!(sheet.flat_field.is_neutral(), "and never takes a flat-field of its own");
     assert!(ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("A.tif")), "twin: the measure's sheet is adopted, not opened");
-    rig.until("the sheet's tile", Duration::from_secs(10), || oni_app::app::tiles(w).iter().any(|t| t.caption == day.trim_end_matches(".tif")));
+    rig.until("the sheet's tile", Duration::from_secs(60), || oni_app::app::tiles(w).iter().any(|t| t.caption == day.trim_end_matches(".tif")));
     let decoded = oni_app::render::decode_full(&first, oni_app::render::Reading::default()).unwrap().linear;
     let (gw, gh) = (decoded.width as f64, decoded.height as f64);
     let expected = (6.0 * grid.tile.width + 7.0 * grid.margin, grid.tile.height + 2.0 * grid.margin);
@@ -159,10 +159,10 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
     ctl.act("prepare-roll");
-    rig.until("the roll again", Duration::from_secs(10), || p.get_shown());
-    rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
+    rig.until("the roll again", Duration::from_secs(60), || p.get_shown());
+    rig.until("every frame read", Duration::from_secs(60), || p.get_capture() == 0);
     p.invoke_step_picked(4);
-    rig.until("the window step", Duration::from_secs(10), || p.get_action_title() == "MEASURE 4 FRAMES");
+    rig.until("the window step", Duration::from_secs(60), || p.get_action_title() == "MEASURE 4 FRAMES");
     p.invoke_advance();
     rig.pump();
     rig.until("the second measure", Duration::from_secs(120), || !p.get_shown() || advice.get_shown());

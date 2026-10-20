@@ -1169,5 +1169,12 @@
     "title": "The Custom space lists the printer profiles ColorSync knows, beside the folders walked",
     "status": "done",
     "detail": "OutputProfile.installed walks the profile folders, then adds what ColorSyncIterateInstalledProfiles lists (its iteration is unreliable alone: 10 in one context, 78 in another), the checks asking nothing more. oni-colour::colorsync reads each profile's URL through ColorSync and CoreFoundation; off the Mac it lists none. The check sees the system's own profiles among the files ColorSync lists, each a file that exists."
+  },
+  {
+    "id": 158,
+    "type": "tests",
+    "title": "The window checks under a whole run: limits that wait for a loaded machine",
+    "status": "done",
+    "detail": "With 66 window checks in parallel processes the window binary takes about 125 s, past scripts/check's 120 s stop, and the contact sheet's 10 s waits timed out under that load while it passes alone in 5 s. The stop is 240 s by default (ONI_CHECK_LIMIT still overrides it) and the contact sheet's waits 60 s; a wait returns as soon as its condition holds."
   }
 ]

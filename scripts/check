@@ -16,13 +16,13 @@ if [ "${PIPESTATUS[0]}" -ne 0 ]; then
 fi
 
 # One binary: its output into its own log, its verdict into a marker the summary reads. A binary
-# still running after ONI_CHECK_LIMIT seconds (120) is stopped and fails, so a hang never holds the loop.
+# still running after ONI_CHECK_LIMIT seconds (240: the window checks alone take two minutes) is stopped and fails, so a hang never holds the loop.
 run() {
     local exe=$1 manifest=$2 log pid watchdog
     log="$out/$(basename "$exe").log"
     (cd "$(dirname "$manifest")" && CARGO_MANIFEST_DIR=$(dirname "$manifest") exec "$exe" -q) >"$log" 2>&1 &
     pid=$!
-    (sleep "${ONI_CHECK_LIMIT:-120}" && kill "$pid" 2>/dev/null && echo "stopped after ${ONI_CHECK_LIMIT:-120} s" >>"$log") &
+    (sleep "${ONI_CHECK_LIMIT:-240}" && kill "$pid" 2>/dev/null && echo "stopped after ${ONI_CHECK_LIMIT:-240} s" >>"$log") &
     watchdog=$!
     if wait "$pid"; then
         touch "$log.ok"
