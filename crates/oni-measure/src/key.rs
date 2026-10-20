@@ -4,7 +4,7 @@
 use crate::auto_levels::{self, Balance};
 use crate::filter_balance::{self, filtered, minkowski, unlit};
 use crate::pipette;
-use crate::reader::{Copy, Reader, on_graph};
+use crate::reader::{Copy, Laying, Reader, on_graph};
 use crate::roll::{self, Measured};
 use crate::truncate::Stage;
 use crate::window::sheet_reads;
@@ -187,7 +187,7 @@ impl Measurer {
         }
         let preview = graph.materialise(&oni_pipeline::stages::rebuilt_edge(image)).ok()?;
         drop(source);
-        let measuring = Reader { graph, pipeline, resident: None }.measuring(&preview);
+        let measuring = Reader { graph, pipeline, laying: Laying::Nothing }.measuring(&preview);
         graph.purge();
         measuring
     }
@@ -221,7 +221,7 @@ impl Measurer {
         let mut guard = self.engine.lock().ok()?;
         let Engine { graph, pipeline, resident, .. } = &mut *guard;
         resident.fresh();
-        let out = read(&mut Reader { graph, pipeline, resident: Some(resident) }, Copy { source: &source, full_width: Some(full_width) });
+        let out = read(&mut Reader { graph, pipeline, laying: Laying::Read(resident) }, Copy { source: &source, full_width: Some(full_width) });
         graph.purge();
         out
     }
@@ -244,7 +244,7 @@ impl Measurer {
         } else {
             uploaded
         };
-        let out = read(&mut Reader { graph, pipeline, resident: Some(resident) }, Copy { source: &source, full_width });
+        let out = read(&mut Reader { graph, pipeline, laying: Laying::Read(resident) }, Copy { source: &source, full_width });
         drop(source);
         graph.purge();
         out

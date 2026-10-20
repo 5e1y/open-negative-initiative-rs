@@ -341,9 +341,10 @@ impl Engine {
         Ok(Some((Linear { width: zone.w as usize, height: zone.h as usize, pixels }, zone)))
     }
 
-    /// Forgets a correction's patch, so the next render reads it again from the cache.
+    /// Forgets a correction's patch, so the next render and input reading read it again from the cache.
     pub fn forget_patch(&mut self, id: Id) {
         self.patches.remove(&id);
+        self.read = [None, None];
     }
 
     /// Each correction's patch from the cache, read and uploaded once; one not generated yet is left

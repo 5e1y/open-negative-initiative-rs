@@ -29,3 +29,5 @@ pub use {decode::*, engine::*, view::*, previews::*, worker::*, histogram::*};
 mod tests;
 #[cfg(test)]
 mod upload_tests;
+#[cfg(test)]
+mod inputs_tests;
