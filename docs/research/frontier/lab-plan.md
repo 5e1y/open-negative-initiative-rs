@@ -320,6 +320,36 @@ user.
    and the 240–300° sectors at neutral. The same tool measures the Rust (LibRaw) Frontier render
    against Swift's on the same frames to size the decode's share. The owner looks before the interface
    is built.
+
+   Measured (#170) [M], frames DSC_6432 (sky, a blue roof) and DSC_6442 (a face, a hand, sky) of the
+   test copy of roll #8, LibRaw decode reduced to 604 px, the Frontier stages on the CPU (they match the
+   app's pipeline on the same pixels to under 1e-5). A fifth panel puts "green borrows red" at the
+   published seed's neutral (−0.023) instead of the refit's. Region medians, hue (chroma):
+
+   | Region | Table | Lab F, k 0 | Lab neutral | F, G←R + 240–300° neutral | idem, seed G←R |
+   |---|---|---|---|---|---|
+   | 6432 sky | 262.1° (.069) | 263.5° (.065) | 251.9° (.031) | 254.5° (.086) | 252.3° (.084) |
+   | 6432 roof | 263.0° (.102) | 261.2° (.100) | 250.3° (.039) | 255.6° (.129) | 254.3° (.126) |
+   | 6442 face | 63.0° (.039) | 80.0° (.039) | 47.5° (.017) | 69.2° (.039) | 56.4° (.039) |
+   | 6442 hand | 45.4° (.027) | 58.8° (.021) | 32.4° (.011) | 51.8° (.026) | 39.2° (.028) |
+   | 6442 sky | 266.0° (.050) | 266.1° (.048) | 255.0° (.025) | 259.2° (.062) | 257.8° (.061) |
+
+   - **The refit moves the meaning of "green borrows red"**: refitted, Frontier lends +0.046 and neutral
+     +0.113, so its N tick turns skin 6° *more* yellow. At the seed's −0.023 it turns skin 7° redder, as
+     the diagnosis says. Single values do not carry meaning across the two refitted sets (§5's warning),
+     and the N ticks of step 7 need a gauge fixed before they ship.
+   - The 240–300° sectors at neutral take 7–9° of violet off sky and roof, with 25 % more chroma.
+   - Lab Frontier at `k = 0` keeps sky and roof within 2° of the table, but turns skin 14–17° more
+     yellow: the model misses the table's low-chroma warm hues, which the character carries.
+   - By eye: the table and `k = 0` look alike, `k = 0` a shade colder on the white walls. The neutral
+     set is light and flat (Pro at rest prints grey near L 0.76), its skin pinker. The two moved panels
+     give a deeper, less violet sky and a cyan-blue roof; the skin change is hard to see at this size.
+   - **Rust (LibRaw) against Swift on the Frontier**, Swift's own `--render` at 1000 px
+     (`scripts/frontier-swift-dump.sh`): mean worst-channel gap 0.019 and 0.027, p99 0.071 and 0.076.
+     The pipeline alone sits near 1e-3 on Swift's decode (`roll8.rs`), so this is the decode's share.
+     Rust's skies are **4.3° and 5.8° more violet** than Swift's (262° against 258°, 266° against 260°),
+     with 10–15 % less chroma; the face's hue matches (62.0° against 61.5°) with more chroma (0.039
+     against 0.023). The violet the owner sees in the Rust app is partly LibRaw's.
 5. **Settings and sidecar**: `FrontierLab`, the codec, `fields.rs`, the `parameters.rs` row, and the
    sidecar tests. This is adversarial-review territory (the user's files).
 6. **Render path**: `Pipeline::frontier` bakes when the field is present, keeps one baked cube, and

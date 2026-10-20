@@ -1262,5 +1262,12 @@
     "title": "Frontier Look Lab, step 3: the neutral set refitted against ONI Pro at rest",
     "status": "done",
     "detail": "look_lab::pro reads a synthetic grid around scanner::check_roll's grey both as the Frontier's cube input and through Pro's CPU references at rest (stage47, the points' saturation, the output clip) to display code; look_lab_fit refits the neutral set on it and the Levenberg-Marquardt step now holds values on their stops. Neutral against Pro: median ΔE 0.19 (seeds 5.61, Frontier set 15.2); the neutral matrix and sector chroma share a gauge (chroma gains 1.1 to 1.5), noted for the N ticks. Frontier refit: 1.19."
+  },
+  {
+    "id": 170,
+    "type": "research",
+    "title": "Frontier Look Lab, step 4: strips of roll #8 for the eye, and the Rust Frontier against Swift's",
+    "status": "done",
+    "detail": "examples/look_lab_strip.rs renders frames through five cubes side by side (the table, Lab Frontier without character, Lab neutral, Lab Frontier with green-borrows-red and the 240-300° sectors at neutral, the same with the seed's green-borrows-red) and measures named regions in Oklab; scripts/frontier-swift-dump.sh makes the Swift app's own Frontier renders it compares against. On DSC_6432 and DSC_6442: the refitted sets flip green-borrows-red (its neutral turns skin 6° more yellow; the seed's turns it 7° redder); the blue sectors at neutral take 7-9° of violet off the sky; LibRaw's decode puts the Rust Frontier skies 4-6° more violet than Swift's (mean gap 0.02-0.03)."
   }
 ]

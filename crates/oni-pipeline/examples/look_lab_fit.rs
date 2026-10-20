@@ -1,6 +1,5 @@
-//! `look_lab_fit [rounds]`: fits the Look Lab's Frontier set to the measured cube's constrained nodes,
-//! its neutral set to ONI Pro at rest on a synthetic roll, and writes both with their figures to
-//! `resources/scanner/lab.json`.
+//! `look_lab_fit [rounds]`: the Lab's Frontier set fitted to the cube's constrained nodes, its neutral set
+//! to Pro at rest on a synthetic roll, both written with their figures to `resources/scanner/lab.json`.
 
 use oni_pipeline::look_lab::measure::{centile, constrained, delta_e, median};
 use oni_pipeline::look_lab::{Chain, LabParams, SEED_FRONTIER, SEED_NEUTRAL, bake, fit, normalised, pro};
