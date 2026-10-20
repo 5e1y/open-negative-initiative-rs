@@ -1236,6 +1236,34 @@
     "detail": "docs/research/frontier/lab-plan.md: the 27³ table as a chain of named parameters with neutral and Frontier values plus a measured-character blend that reproduces today's cube; a probe on frontier.cube puts skin +10.6° and blues +12.0° against neutral, mostly from the matrix's green-borrows-red term and the steep paper curve; ten steps, the first four changing no render."
   },
   {
+    "id": 167,
+    "type": "feature",
+    "title": "Frontier Look Lab, step 1: the paper model and its bake",
+    "status": "done",
+    "detail": "oni-pipeline look_lab: LabParams with the plan's published neutral and Frontier sets, the matrix and the Fritsch-Carlson paper curve around the neutral green pivot, and a bake onto the machine's density lattice. Measured on the 1 440 constrained nodes: paper model at Frontier values median ΔE 1.67 against the cube (pivot 0: 2.07; identity and common paper: 3.47); 27³ bake p99 ΔE 0.34 against the chain (9³: 2.72); the diagnosis probe gives skin +10.6° and blue +12.5° against the neutral reference, green borrows red at neutral −12.5° on skin. No render, setting or interface change."
+  },
+  {
+    "id": 168,
+    "type": "feature",
+    "title": "Frontier Look Lab, step 2: the colour stage, the measured character and the Frontier refit",
+    "status": "done",
+    "detail": "look_lab gains the Oklab stage (hue, twist and chroma by sector, saturation by L, grey cast), the character (the cube's residual against the shipped Frontier set, trilinear between its nodes) and a Levenberg-Marquardt fit; examples/look_lab_fit.rs writes resources/scanner/lab.json, which LabParams loads. Fitted Frontier full model: median ΔE 1.18 on the constrained nodes (colour stage at rest 1.94); character 1 gives frontier.cube back exactly. The full model's 27³ bake reaches p99 0.575 against the chain, past the 0.5 target (33³: 0.41), left for step 6."
+  },
+  {
+    "id": 169,
+    "type": "feature",
+    "title": "Frontier Look Lab, step 3: the neutral set refitted against ONI Pro at rest",
+    "status": "done",
+    "detail": "look_lab::pro reads a synthetic grid around scanner::check_roll's grey both as the Frontier's cube input and through Pro's CPU references at rest (stage47, the points' saturation, the output clip) to display code; look_lab_fit refits the neutral set on it and the Levenberg-Marquardt step now holds values on their stops. Neutral against Pro: median ΔE 0.19 (seeds 5.61, Frontier set 15.2); the neutral matrix and sector chroma share a gauge (chroma gains 1.1 to 1.5), noted for the N ticks. Frontier refit: 1.19."
+  },
+  {
+    "id": 170,
+    "type": "research",
+    "title": "Frontier Look Lab, step 4: strips of roll #8 for the eye, and the Rust Frontier against Swift's",
+    "status": "done",
+    "detail": "examples/look_lab_strip.rs renders frames through five cubes side by side (the table, Lab Frontier without character, Lab neutral, Lab Frontier with green-borrows-red and the 240-300° sectors at neutral, the same with the seed's green-borrows-red) and measures named regions in Oklab; scripts/frontier-swift-dump.sh makes the Swift app's own Frontier renders it compares against. On DSC_6432 and DSC_6442: the refitted sets flip green-borrows-red (its neutral turns skin 6° more yellow; the seed's turns it 7° redder); the blue sectors at neutral take 7-9° of violet off the sky; LibRaw's decode puts the Rust Frontier skies 4-6° more violet than Swift's (mean gap 0.02-0.03)."
+  },
+  {
     "id": 171,
     "type": "feature",
     "title": "The Swift app's icon on the desktop window and in the Dock",

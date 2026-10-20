@@ -6,6 +6,7 @@ pub mod corrections;
 pub mod finishing;
 pub mod flat_field;
 pub mod geometry;
+pub mod look_lab;
 pub mod oni_look;
 pub mod resident;
 pub mod scanner;

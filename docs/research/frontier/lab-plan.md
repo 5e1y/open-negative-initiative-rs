@@ -270,18 +270,86 @@ user.
      twin), the §3C diagnosis test, and a test of both pivots that keeps the one passing (0.7244
      expected).
    - No settings, no UI, no render change.
+
+   Measured (#167) [M], on the 1 440 constrained nodes:
+   - Paper model at the published Frontier values: median ΔE **1.67** (pivot 0: 2.07). Twin, identity
+     matrix with common gains and offsets: 3.47.
+   - 27³ bake against the chain on 100 000 inputs inside `reached`: p99 ΔE **0.34**. Twin, 9³: 2.72.
+   - Diagnosis, on a lattice four times finer than the cube's inside `reached` (199 skin and 1 886 blue
+     points; the neutral reference slides −0.367 along grey): the cube turns skin **+10.6°** and blue
+     **+12.5°**; "green borrows red" at neutral turns skin −12.5°. The probe of §3C is reproduced.
 2. **Colour stage, character, refit.**
    - The Oklab stage and `R`, with the full-model and character checks.
    - `cargo run -p oni-pipeline --example look_lab_fit` (Levenberg–Marquardt on the constrained nodes)
      writes `lab.json`, and `LabParams` loads it.
    - The fit's ΔE goes into the doc beside this plan.
+
+   Measured (#168, refitted in #169 with values on their stops held) [M], on the 1 440 constrained
+   nodes against the cube:
+   - Published seeds: paper only 1.67, full model 1.51 median.
+   - **Fitted Frontier, full model: median ΔE 1.19** (p90 2.99, p99 5.40). The same set with its colour
+     stage at rest: 1.95 (twin). The fit is against the cube's nodes, not the 63 renders, hence below the
+     research's 1.65.
+   - The twist at 210° sits on its −15 stop, beside a +17.8° hue offset: they cancel to +3° at C 0.1.
+     Saturation by L lands at −0.16, the seed's sign reversed. The colour stage and the paper share a
+     gauge, so single values do not compare with the seeds.
+   - Character: at the fitted Frontier values and `k = 1`, the 27³ bake equals `frontier.cube` at every
+     node (worst gap 0). The clip applies to the model alone: the cube's nodes dip to −0.11 where it
+     extrapolates, and the character keeps them. At `k = 0`: 1.19.
+   - **Open for step 6**: the full model's 27³ bake misses the bake target, p99 ΔE **0.59** against the
+     chain (the paper chain alone: 0.34). 33³ gives 0.41, but only a 27³ bake keeps the character exact.
 3. **Neutral refit against Pro**: a synthetic density grid, rendered by Pro at rest from the existing
    CPU references, refits the neutral set, with its check.
+
+   Measured (#169) [M]:
+   - Grid: `scanner::check_roll`'s balanced roll, negatives at its grey ±0.75 density by 0.05 per
+     channel, kept where the Frontier reads them unclamped with a cube-input spread under 0.6 (9 948).
+     Pro at rest: `stage47`, the points' saturation, the output clip, then sRGB code. Window gain 0.87,
+     where the research's roll had 0.81; Pro prints the grey at L 0.76.
+   - Published neutral seeds against it: 5.61 median (a different roll and gauge).
+   - **Refitted neutral: median ΔE 0.19** (p90 0.40, p99 0.80); colour stage at rest 1.67. Twin, the
+     Frontier set against Pro: 15.2.
+   - The neutral matrix mixes (every off-diagonal but one positive, B←G +0.26), and the sector chroma
+     gains climb to 1.1–1.5 (one on its stop at 180°) to win the chroma back. Matrix and chroma share a
+     gauge here. The N ticks will sit far from 0 and 1, so step 7 should weigh a light pull toward
+     identity before they ship.
+   - The fit now holds a value that sits on its stop while the descent pushes it out. Without that, both
+     fits stalled early (neutral 0.31).
 4. **Eye check before any UI**: `--example look_lab_strip <raw dir> <out>` writes PNG strips of two
    roll #8 frames: cube, Lab Frontier `k = 0`, Lab neutral, and Lab Frontier with "green borrows red"
    and the 240–300° sectors at neutral. The same tool measures the Rust (LibRaw) Frontier render
    against Swift's on the same frames to size the decode's share. The owner looks before the interface
    is built.
+
+   Measured (#170) [M], frames DSC_6432 (sky, a blue roof) and DSC_6442 (a face, a hand, sky) of the
+   test copy of roll #8, LibRaw decode reduced to 604 px, the Frontier stages on the CPU (they match the
+   app's pipeline on the same pixels to under 1e-5). A fifth panel puts "green borrows red" at the
+   published seed's neutral (−0.023) instead of the refit's. Region medians, hue (chroma):
+
+   | Region | Table | Lab F, k 0 | Lab neutral | F, G←R + 240–300° neutral | idem, seed G←R |
+   |---|---|---|---|---|---|
+   | 6432 sky | 262.1° (.069) | 263.5° (.065) | 251.9° (.031) | 254.5° (.086) | 252.3° (.084) |
+   | 6432 roof | 263.0° (.102) | 261.2° (.100) | 250.3° (.039) | 255.6° (.129) | 254.3° (.126) |
+   | 6442 face | 63.0° (.039) | 80.0° (.039) | 47.5° (.017) | 69.2° (.039) | 56.4° (.039) |
+   | 6442 hand | 45.4° (.027) | 58.8° (.021) | 32.4° (.011) | 51.8° (.026) | 39.2° (.028) |
+   | 6442 sky | 266.0° (.050) | 266.1° (.048) | 255.0° (.025) | 259.2° (.062) | 257.8° (.061) |
+
+   - **The refit moves the meaning of "green borrows red"**: refitted, Frontier lends +0.046 and neutral
+     +0.113, so its N tick turns skin 6° *more* yellow. At the seed's −0.023 it turns skin 7° redder, as
+     the diagnosis says. Single values do not carry meaning across the two refitted sets (§5's warning),
+     and the N ticks of step 7 need a gauge fixed before they ship.
+   - The 240–300° sectors at neutral take 7–9° of violet off sky and roof, with 25 % more chroma.
+   - Lab Frontier at `k = 0` keeps sky and roof within 2° of the table, but turns skin 14–17° more
+     yellow: the model misses the table's low-chroma warm hues, which the character carries.
+   - By eye: the table and `k = 0` look alike, `k = 0` a shade colder on the white walls. The neutral
+     set is light and flat (Pro at rest prints grey near L 0.76), its skin pinker. The two moved panels
+     give a deeper, less violet sky and a cyan-blue roof; the skin change is hard to see at this size.
+   - **Rust (LibRaw) against Swift on the Frontier**, Swift's own `--render` at 1000 px
+     (`scripts/frontier-swift-dump.sh`): mean worst-channel gap 0.019 and 0.027, p99 0.071 and 0.076.
+     The pipeline alone sits near 1e-3 on Swift's decode (`roll8.rs`), so this is the decode's share.
+     Rust's skies are **4.3° and 5.8° more violet** than Swift's (262° against 258°, 266° against 260°),
+     with 10–15 % less chroma; the face's hue matches (62.0° against 61.5°) with more chroma (0.039
+     against 0.023). The violet the owner sees in the Rust app is partly LibRaw's.
 5. **Settings and sidecar**: `FrontierLab`, the codec, `fields.rs`, the `parameters.rs` row, and the
    sidecar tests. This is adversarial-review territory (the user's files).
 6. **Render path**: `Pipeline::frontier` bakes when the field is present, keeps one baked cube, and
