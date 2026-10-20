@@ -1319,5 +1319,12 @@
     "title": "LibRaw's white level stays the camera's: adjust_maximum_thr pinned to 0",
     "status": "done",
     "detail": "Left at 0.75, LibRaw lowered a frame's white level to its own brightest pixel when that passed 0.75 of white, up to +0.41 stop on a brightly exposed scan and different per frame (docs/research/libraw-knobs.md); roll #8 peaks at 0.56 so it never moved there. Owner's call. A test reads pinned.c for every automatic knob, its twin a copy without this pin."
+  },
+  {
+    "id": 180,
+    "type": "research",
+    "title": "Swift against LibRaw per camera: the hue gap depends on the hardware",
+    "status": "done",
+    "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged."
   }
 ]
