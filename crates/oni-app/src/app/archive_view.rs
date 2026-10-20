@@ -324,6 +324,8 @@ impl Ctl {
                     title: renamed.unwrap_or(r.title).into(),
                     caption: r.caption.into(),
                     kind: r.kind,
+                    stock: r.stock.and_then(crate::stocks::icon).unwrap_or_default(),
+                    has_stock: r.stock.and_then(crate::stocks::icon).is_some(),
                     expandable: r.expandable,
                     expanded: r.expanded,
                     selected: path.as_deref().is_some_and(|p| s.tree_marks(p)) || s.org.tree_pick.selection.contains(&r.id),

@@ -13,6 +13,7 @@ impl Ctl {
         // A tab opened or a full frame landed reaches the loupe at this pace when no render asks.
         self.request_loupe();
         self.publish_histogram();
+        self.watch_frontier_look();
         let loading = self.state.borrow().load_bar();
         let lib = w.global::<Library>();
         lib.set_loading(loading.as_ref().map(|b| b.title.clone()).unwrap_or_default().into());

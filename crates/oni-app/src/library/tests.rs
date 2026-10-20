@@ -93,3 +93,22 @@ fn roll_8_opens_as_one_named_roll_of_its_photos() {
     folded.toggle(&id);
     assert_eq!(folded.rows().len(), 1);
 }
+
+#[test]
+fn a_rolls_row_shows_the_stock_picked_else_its_modes_generic_one() {
+    use oni_library::film_group::FilmKey;
+    use oni_settings::ConversionMode;
+    let mut entry = Entry::new("/R/A.NEF", oni_library::distant_past(), "A");
+    entry.mode = Some(ConversionMode::Positive);
+    let mut film = oni_settings::film::Film::new("Roll 1");
+    let mut group = FilmGroup { id: FilmKey::Roll(film.id.clone()), film: Some(film.clone()), start: oni_library::distant_past(), entries: vec![entry], heading: None };
+    assert_eq!(default_stock(&group), "generic-color-positive");
+    film.stock = Some("kodak-portra".into());
+    group.film = Some(film);
+    assert_eq!(default_stock(&group), "kodak-portra");
+    assert!(crate::stocks::icon(default_stock(&group)).is_some(), "the picked stock has artwork");
+    // Twin: an unknown key falls back on the mode's generic stock, never on a name nobody can draw.
+    group.film.as_mut().unwrap().stock = Some("nobody-film".into());
+    group.entries[0].mode = Some(ConversionMode::Monochrome);
+    assert_eq!(default_stock(&group), "generic-black-and-white");
+}

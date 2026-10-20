@@ -30,6 +30,9 @@ export struct TreeRow {
     caption: string,
     // 0 a folder, 1 a roll, 2 a photo.
     kind: int,
+    // A roll's stock artwork, `TreeRowChrome`'s mini canister in place of its glyph.
+    stock: image,
+    has-stock: bool,
     expandable: bool,
     expanded: bool,
     selected: bool,

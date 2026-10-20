@@ -97,6 +97,8 @@ export component Tree inherits Surface {
                             title: row.title;
                             caption: row.caption;
                             kind: row.kind == 0 ? RowKind.folder : row.kind == 1 ? RowKind.roll : RowKind.photo;
+                            stock: row.stock;
+                            has-stock: row.has-stock;
                             expandable: row.expandable;
                             expanded: row.expanded;
                             selected: row.selected;

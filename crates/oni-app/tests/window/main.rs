@@ -16,6 +16,7 @@ mod editors;
 mod export_paper_window;
 mod export_window;
 mod extended;
+mod frontier_look;
 mod gallery;
 mod gallery_leftovers;
 mod gestures;
@@ -83,6 +84,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("extended::a_patch_reduces_as_core_image_reduces_it", extended::a_patch_reduces_as_core_image_reduces_it),
     ("extended::a_patch_lands_and_feathers_as_swift_s", extended::a_patch_lands_and_feathers_as_swift_s),
     ("extended::an_export_writes_swift_s_pixels_profile_and_tags", extended::an_export_writes_swift_s_pixels_profile_and_tags),
+    ("frontier_look::a_frontier_look_file_is_read_again_on_each_save", frontier_look::a_frontier_look_file_is_read_again_on_each_save),
     ("gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand", gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand),
     ("gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop", gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop),
     ("gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target", gestures::the_menus_name_what_they_do_and_the_gestures_reach_every_target),
@@ -106,6 +108,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),
     ("rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured", rgb_passes::a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_registered_as_measured),
     ("roll_tab::the_roll_tabs_blocks_write_what_swifts_write", roll_tab::the_roll_tabs_blocks_write_what_swifts_write),
+    ("rolls::a_rolls_row_draws_its_stock", rolls::a_rolls_row_draws_its_stock),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),

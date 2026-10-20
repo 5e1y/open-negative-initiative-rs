@@ -157,9 +157,22 @@ fn bradford(from: [f64; 3], to: [f64; 3]) -> M3 {
     )
 }
 
+/// How a RAW's channels reach the working space: LibRaw demosaics on the same multipliers in each,
+/// only the matrix after it differs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Colours {
+    /// Through the camera's matrix to XYZ, Bradford to D65, then Rec. 2020.
+    #[default]
+    Matrix,
+    /// The sensor's own channels, each scaled by the 5000 K balance alone: no channel feeds another.
+    Sensor,
+    /// The sensor's own channels as the photosites counted them, no balance at all.
+    SensorUnbalanced,
+}
+
 /// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
 /// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
-fn conversion(cam_xyz: &M3, stops: f64) -> Option<Conversion> {
+fn converted_by(cam_xyz: &M3, stops: f64, colours: Colours) -> Option<Conversion> {
     let white = neutral_xyz();
     let n = apply(cam_xyz, white);
     if n.iter().any(|v| !v.is_finite() || *v <= 0.0) {
@@ -173,7 +186,14 @@ fn conversion(cam_xyz: &M3, stops: f64) -> Option<Conversion> {
     let undo = [0, 1, 2].map(|c| hi * n[c] / lo * stops.exp2());
     let to_2020 = mul(&rec2020_from_xyz(), &bradford(white, xyz(D65_XY)));
     let m = mul(&to_2020, &inverse(cam_xyz)?);
-    let matrix = [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32));
+    let diagonal = |gain: [f64; 3]| [0, 1, 2].map(|r| [0, 1, 2].map(|c| if r == c { gain[c] as f32 } else { 0.0 }));
+    let matrix = match colours {
+        Colours::Matrix => [0, 1, 2].map(|r| [0, 1, 2].map(|c| (m[r][c] * undo[c]) as f32)),
+        // The neutral reads (1, 1, 1) at the white level, as through the matrix, so grey keeps its level.
+        Colours::Sensor => diagonal([hi / lo * stops.exp2(); 3]),
+        // The most sensitive channel reads 1 at the white level; the others read their share of it.
+        Colours::SensorUnbalanced => diagonal(undo.map(|u| u / hi)),
+    };
     Some(Conversion {
         mul: n.map(|v| (1.0 / v) as f32),
         matrix,
@@ -261,15 +281,20 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
 /// `decode` for a copy no longer than `side`: read at half size, a sensor pixel per 2x2 block with
 /// no demosaic, when the sensor is twice as long; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, true)
+    decode_in(path, exposure_gain, side, Colours::Matrix)
 }
 
 /// `decode` in LibRaw's own colours, the camera's rendition matrix left out: what it is measured on.
 pub fn decode_native(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
-    decoded(path, exposure_gain, 0, false).map(|(linear, _)| linear)
+    decoded(path, exposure_gain, 0, Colours::Matrix, false).map(|(linear, _)| linear)
 }
 
-fn decoded(path: &Path, exposure_gain: f32, side: usize, matched: bool) -> Result<(Linear, usize), DecodeError> {
+/// `decode_for` in the given colours; the sensor's own never take a rendition matrix.
+pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours) -> Result<(Linear, usize), DecodeError> {
+    decoded(path, exposure_gain, side, colours, true)
+}
+
+fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool) -> Result<(Linear, usize), DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
     let min_side = c_int::try_from(side).unwrap_or(0);
@@ -289,7 +314,7 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, matched: bool) -> Resul
     let d = &s.0;
     let cam_xyz: M3 = [0, 1, 2].map(|r| d.cam_xyz[r].map(f64::from));
     let conv = (d.colors == 3)
-        .then(|| conversion(&cam_xyz, baseline(d.baseline_exposure)))
+        .then(|| converted_by(&cam_xyz, baseline(d.baseline_exposure), colours))
         .flatten();
     let conv = conv.ok_or(DecodeError(NO_COLOUR_MATRIX))?;
     let rc = unsafe { oni_process(&mut s.0, conv.mul.as_ptr()) };
@@ -306,7 +331,7 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, matched: bool) -> Resul
     let factor = if d.half != 0 { 2 } else { 1 };
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
-    let matrix = if matched { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
+    let matrix = if matched && colours == Colours::Matrix { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
     let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &matrix);
     let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
@@ -319,95 +344,4 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, matched: bool) -> Resul
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Adobe's matrix for the Nikon Z f, as LibRaw holds it.
-    const Z_F: M3 = [
-        [1.1607, -0.4491, -0.0977],
-        [-0.4522, 1.246, 0.2304],
-        [-0.0458, 0.1519, 0.7616],
-    ];
-
-    /// What LibRaw hands out for a white `w` whose most sensitive channel reaches the white level.
-    fn rendered(conv: &Conversion, w: [f64; 3]) -> [f64; 3] {
-        let n = apply(&Z_F, w);
-        let hi = n.iter().cloned().fold(0.0, f64::max);
-        let top = conv.mul.iter().cloned().fold(0.0, f32::max) as f64;
-        let o = [0, 1, 2].map(|c| n[c] / hi * conv.mul[c] as f64 / top);
-        let m = conv.matrix.map(|r| r.map(f64::from));
-        apply(&m, o)
-    }
-
-    #[test]
-    fn the_5000_k_white_reads_neutral_at_the_baseline() {
-        let conv = conversion(&Z_F, DEFAULT_BASELINE_EV).unwrap();
-        let level = DEFAULT_BASELINE_EV.exp2();
-        let out = rendered(&conv, neutral_xyz());
-        for v in out {
-            assert!((v - level).abs() < 1e-5, "{out:?}");
-        }
-        // Twin: a D65 white, the balance of LibRaw's own pre_mul, comes out visibly blue.
-        let d65 = rendered(&conv, xyz(D65_XY));
-        assert!(d65[2] / d65[0] > 1.15, "{d65:?}");
-    }
-
-    /// True when `w` has the chromaticity of a 5000 K Planckian radiator, (0.3451, 0.3516).
-    fn planckian_5000(w: [f64; 3]) -> bool {
-        let (x, y) = (w[0] / w.iter().sum::<f64>(), w[1] / w.iter().sum::<f64>());
-        (x - 0.3451).abs() < 2e-4 && (y - 0.3516).abs() < 2e-4
-    }
-
-    #[test]
-    fn the_neutral_is_the_planckian_5000_k() {
-        assert!(planckian_5000(neutral_xyz()), "{:?}", neutral_xyz());
-        // Twin: D50 sits 0.007 above the locus in y and must not pass.
-        assert!(!planckian_5000(xyz((0.3457, 0.3585))));
-    }
-
-    #[test]
-    fn rec2020_and_bradford_land_whites_on_one() {
-        let d65 = xyz(D65_XY);
-        let to_2020 = rec2020_from_xyz();
-        for v in apply(&to_2020, d65) {
-            assert!((v - 1.0).abs() < 1e-9);
-        }
-        let adapted = apply(&bradford(neutral_xyz(), d65), neutral_xyz());
-        for c in 0..3 {
-            assert!((adapted[c] - d65[c]).abs() < 1e-9);
-        }
-        // Twin: without adaptation the 5000 K white is not grey in Rec. 2020.
-        let raw = apply(&to_2020, neutral_xyz());
-        assert!(raw[0] / raw[2] > 1.2, "{raw:?}");
-    }
-
-    #[test]
-    fn a_dng_tag_replaces_the_default() {
-        assert_eq!(baseline(-999.0), DEFAULT_BASELINE_EV);
-        assert_eq!(baseline(0.35), 0.35f32 as f64);
-        // Twin: a tag of zero is a value, not an absence.
-        assert_ne!(baseline(0.0), DEFAULT_BASELINE_EV);
-    }
-
-    #[test]
-    fn the_extension_counts_only_when_the_bytes_claim_nothing() {
-        let dir = std::env::temp_dir().join(format!("oni-route-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let jpeg = dir.join("scan.NEF");
-        std::fs::write(&jpeg, b"not a container").unwrap();
-        assert_eq!(route(&jpeg), Branch::Mosaic, "unclaimed bytes fall back on a RAW extension");
-        let plain = dir.join("scan.tif");
-        std::fs::write(&plain, b"not a container").unwrap();
-        assert_eq!(route(&plain), Branch::Plain);
-        // Twin: a missing file with a RAW name still sorts as RAW, and fails at the decode.
-        assert!(decodes_via_mosaic(&dir.join("absent.rw2")));
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn a_singular_matrix_is_refused() {
-        assert!(conversion(&[[0.0; 3]; 3], 0.0).is_none());
-        // Twin: the Z f matrix is accepted.
-        assert!(conversion(&Z_F, 0.0).is_some());
-    }
-}
+mod tests;

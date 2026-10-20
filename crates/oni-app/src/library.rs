@@ -5,6 +5,7 @@
 use oni_library::archive_tree::{self, Node, NodeId};
 use oni_library::index::{self as library_index, LibraryIndex};
 use oni_library::roots::Survey;
+use oni_library::film_group::FilmGroup;
 use oni_library::{Entry, folders, library, paths, relink, roots};
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
@@ -26,6 +27,15 @@ pub struct Row {
     pub kind: i32,
     pub expandable: bool,
     pub expanded: bool,
+    /// `TreeRowChrome.defaultStock`: a roll's stock, picked or its mode's generic one.
+    pub stock: Option<&'static str>,
+}
+
+/// `TreeRowChrome.defaultStock`: the stock a hand picked for the roll, else its first photo's mode's.
+pub fn default_stock(group: &FilmGroup) -> &'static str {
+    let picked = group.film.as_ref().and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.id);
+    let mode = group.entries.first().and_then(|e| e.mode).unwrap_or(oni_settings::ConversionMode::Negative);
+    picked.unwrap_or_else(|| oni_settings::film::default_stock_id(mode))
 }
 
 /// One band of the gallery: its title, its caption and its photos in order.
@@ -123,15 +133,15 @@ impl Archive {
                 let count = node.count();
                 // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
                 match &node {
-                    Node::Photo(e) => Row { id, depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded },
+                    Node::Photo(e) => Row { id, depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded, stock: None },
                     Node::Folder { path, group, .. } => {
-                        let roll = group.as_ref().and_then(|g| g.film.as_ref());
-                        let title = roll.map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
-                        Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded }
+                        let roll = group.as_ref().filter(|g| g.film.is_some());
+                        let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
+                        Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
                     }
                     Node::Roll { group, .. } | Node::Day { group, .. } => {
                         let title = group.film.as_ref().map(|f| f.name.clone()).or(group.heading.clone()).unwrap_or_default();
-                        Row { id, depth, title, caption: count.to_string(), kind: 1, expandable: count > 0, expanded }
+                        Row { id, depth, title, caption: count.to_string(), kind: 1, expandable: count > 0, expanded, stock: Some(default_stock(group)) }
                     }
                 }
             })

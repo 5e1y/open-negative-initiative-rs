@@ -242,33 +242,6 @@ export component ListRow inherits Rectangle {
     }
 }
 
-// The archive's row: indented by depth, a chevron when it opens, then its glyph, a photo's included.
-export component TreeItem inherits ListRow {
-    in property <int> depth;
-    in property <RowKind> kind;
-    in property <bool> expandable;
-    in property <bool> expanded;
-    indent: root.depth * RowStyle.indent;
-    fold-zone: root.expandable ? RowStyle.chevron-zone : 0;
-    Rectangle {
-        width: RowStyle.chevron-zone;
-        if root.expandable: Icon {
-            source: root.expanded ? Icons.chevron-down : Icons.chevron-right;
-            width: RowStyle.chevron;
-            height: RowStyle.chevron;
-        }
-    }
-    VerticalLayout {
-        alignment: center;
-        Icon {
-            source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note
-                : root.kind == RowKind.roll ? Icons.film-roll : root.expanded ? Icons.folder-open : Icons.folder;
-            width: RowStyle.icon;
-            height: RowStyle.icon;
-        }
-    }
-}
-
 // A gallery cell: the picture in its well, the medal, the RGB seal, the selection ring, and a
 // caption under it only when one is given. A missing original shows faded.
 export component TileView inherits Rectangle {

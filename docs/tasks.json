@@ -1328,6 +1328,34 @@
     "detail": "docs/research/decoder-per-camera.md: on greys Rust leans red-orange on the Nikon Z f (Red-Cyan +0.083 EV, Blue-Yellow -0.086 EV, 1.5 dE) and yellow on the Lumix S1R (+0.040, -0.292, 2.6 dE); constant within a camera (0.001-0.002 EV across 38 frames). The owner's -8 red-cyan matches the measured 8.5; the leftover yellow is the skin's extra chroma. The deeper blacks come from the decode's colour matrix, which a gain cannot remove. Only three cameras on the Mac with the T7 unplugged."
   },
   {
+    "id": 181,
+    "type": "research",
+    "title": "Sensor colours: the decode without the camera matrix, prototyped and measured",
+    "status": "done",
+    "detail": "oni-decode gains Colours (Matrix, the app's only path; Sensor, the 5000 K multipliers as a diagonal; SensorUnbalanced) and decode_in, tested with twins; oni-measure/examples/sensor_colours re-measures a roll as Prepare the Roll does in each colours (base pick found again in the rebate band) and renders both faces; scripts/sensor-colours compares with the Swift app's --render. docs/research/sensor-colours.md: neutrals closer to Swift on the S1R (2.9 to 1.7 dE x100), about equal on the Z f; foliage yellower and duller (-35 deg, x0.70), sky chroma x0.51, skin redder; blacks unchanged; fewer pixels outside sRGB; the 5000 K diagonal chosen over no balance (same once prepared, same rest look). Proposed: a Settings default for new rolls and a per-roll choice in Prepare the Roll, the transition skipping sensor rolls. No app behaviour changed. Its decode checks moved to oni-decode/src/tests.rs, as lib.rs passed its line ceiling."
+  },
+  {
+    "id": 182,
+    "type": "feature",
+    "title": "The Frontier as the hand's own LUT on ONI's inversion, edited in any LUT tool",
+    "status": "done",
+    "detail": "Owner's call: the parametric Lab's strips were rejected; the Frontier goes through ONI's inversion first, then a LUT the owner edits. Settings > Frontier look: EXPORT writes the look in use, else ONI's own scanner look re-laid on display sRGB code (33 nodes), as a standard .cube; USE A FILE reads one and stands it in for the measured table on the Scanner face's Frontier machine, the file read again within a second of each save, a broken save keeping the last; MEASURED returns to the measured table. The path is ONI's: Pro's render, encoded to sRGB code, the hand's cube, then the warmth look. Kept in preferences (frontierLook), no sidecar field. Gallery thumbnails of Frontier frames refresh on their next render."
+  },
+  {
+    "id": 183,
+    "type": "parity",
+    "title": "A roll's row in the tree draws its stock",
+    "status": "done",
+    "detail": "TreeRowChrome.defaultStock: the stock a hand picked for the roll, else its first photo's mode's generic stock, drawn as its artwork in a slot the size of Swift's mini canister (22 px), so glyphs and canisters share a starting edge. Folders holding no roll keep their glyph."
+  },
+  {
+    "id": 184,
+    "type": "windows",
+    "title": "A stranger phone reads as refused on Windows too",
+    "status": "done",
+    "detail": "Windows CI: the window check's unpaired phone was not refused, as Windows reports a desktop's hang-up during the handshake as an aborted connection, which the phone took for a slow desktop and dialled again. ConnectionAborted now reads as a refusal like a reset or an end of stream; a timeout still dials again (unit test with its twin)."
+  },
+  {
     "id": 175,
     "type": "data-safety",
     "title": "The transition: each camera matched once to Apple's decode by a 3x3 folded into LibRaw's conversion",

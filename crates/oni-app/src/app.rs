@@ -46,6 +46,7 @@ mod archive_view;
 mod gallery_view;
 mod phone_link;
 mod settings_sheet;
+mod frontier_look;
 mod actions;
 mod keys;
 mod gestures;
