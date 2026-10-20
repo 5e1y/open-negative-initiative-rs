@@ -13,6 +13,23 @@ mod tests {
     use oni_render::cpu;
 
     #[test]
+    fn a_measured_roll_s_grey_enters_proto_where_the_chart_s_did() {
+        use crate::{conversion, scanner};
+        use oni_render::ScannerEncode;
+        let entry = |proto: bool| {
+            let mut s = scanner::check_roll();
+            (s.face, s.scanner_machine, s.scanner_proto) = (oni_settings::Face::Scanner, oni_settings::ScannerMachine::Oni, proto);
+            let k = conversion::stage47(&scanner::on_oni_machine(&s).unwrap());
+            let t = scanner::CHECK_GREY.map(|d| 10f32.powf(-d));
+            cpu::scanner_encode(cpu::stage47([t[0], t[1], t[2], 1.0], &k), &ScannerEncode { root: 1.0 })
+        };
+        let grey = entry(true);
+        assert!((0..3).all(|c| (grey[c] - 0.633).abs() < 0.01), "the chart export's grey: {grey:?}");
+        // Twin: without the anchor the grey enters a fifth of a density lower, deep in Proto's toe.
+        assert!(entry(false)[1] < 0.55);
+    }
+
+    #[test]
     fn proto_darkens_onis_grey_onto_the_virtual_frontier_s_and_climbs_along_the_greys() {
         assert_eq!(CUBE.cube_dimension, 33);
         // ONI's 18 % grey in display code lands on the virtual Frontier's green-tinged grey.

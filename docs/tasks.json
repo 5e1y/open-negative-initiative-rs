@@ -1410,5 +1410,12 @@
     "title": "Proto, a third Scanner machine: ONI's inversion then the virtual Frontier's look fitted on the synthetic checker",
     "status": "done",
     "detail": "The owner's call after the checker study: the look is what the virtual Frontier does after a faithful inversion. The owner converted the synthetic negative in ONI; a 33³ table from that export (display sRGB code) to the virtual Frontier's Base render was fitted on 2 235 pairs (the 507 patches and both gamut bands), greys weighted onto the Frontier's grey curve and monotone, smoothing chosen by 5-fold cross-validation: median ΔE 0.24 / p90 1.29 on held-out patches, 0.12 over the whole chart against 13.5 for the export alone. The worst patches are saturated reds and magentas that ONI's export already clips to the sRGB edge. The ONI machine's path reads it in plain display code (resources/scanner/proto.cube). Stored as `scannerProto` beside `scannerMachine: oni`, so the Swift app reads a Proto frame as ONI; picking ONI or Frontier leaves Proto; the phone's protocol keeps its two machines."
+  },
+  {
+    "id": 192,
+    "type": "fix",
+    "title": "Proto anchored: a measured roll's grey enters its table where the chart's did",
+    "status": "done",
+    "detail": "The owner found Proto very dark. Proto's table was fitted on ONI's export of the synthetic chart, whose grey ONI printed at display code 0.633 (its roll window ran to scene white); on a measured roll (scanner::check_roll) the ONI machine feeds the table its grey at 0.50, which the table read as a shadow (out 0.19 against the Frontier's 0.39). A Proto frame's gains now read 0.2 D denser (PROTO_ANCHOR_STOPS), a constant like a fixed D offset, so the roll's grey enters at 0.633; checked with a twin without the anchor."
   }
 ]
