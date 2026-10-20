@@ -96,6 +96,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     let mut phone = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
     let twin_dir = root.join("Phone");
     std::fs::create_dir_all(&twin_dir).unwrap();
+    std::fs::write(twin_dir.join("A.NEF"), b"").unwrap();
     phone.open(&twin_dir.join("A.NEF").to_string_lossy()).unwrap();
     for (letter, by) in presses {
         phone.apply(Command::try_from(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }).unwrap());

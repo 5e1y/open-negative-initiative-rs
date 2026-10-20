@@ -7,6 +7,7 @@ fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let frame = dir.join("frame.tif").to_string_lossy().into_owned();
+    std::fs::write(&frame, b"").unwrap();
     let mut store = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| false));
     store.open(&frame).unwrap();
     (store, dir)
@@ -92,6 +93,7 @@ fn an_adjusted_opening_starts_the_history_on_the_adjusted_settings() {
     store.undo(Surface::Editor);
     assert_eq!(store.settings().flat_field.temperature, 0.4, "an undo lands on the adjusted opening");
     // Twin: a plain opening of another frame reads its sidecar as it stands.
+    std::fs::write(dir.join("other.tif"), b"").unwrap();
     store.open(&dir.join("other.tif").to_string_lossy()).unwrap();
     assert_eq!(store.settings().flat_field.temperature, 0.0);
     let _ = std::fs::remove_dir_all(&dir);
@@ -117,6 +119,7 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
+    std::fs::write(&a, b"").unwrap();
     for p in [&b, &c] {
         sidecar::write(&PipelineSettings::default(), Path::new(p), WriteOptions::default()).unwrap();
     }
@@ -141,5 +144,29 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     store.set_film(&[b.clone()], Some(film.clone()), "Set Film Stock");
     store.set_film(&[b.clone()], None, "Ungroup");
     assert_eq!(read(&b), None);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_frame_whose_original_is_gone_opens_read_only_and_writes_nothing() {
+    let dir = std::env::temp_dir().join(format!("oni-core-store-gone-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    // A roll on a disk that was unplugged: neither the original nor its sidecar can be seen.
+    let gone = dir.join("Unplugged").join("P1.RW2").to_string_lossy().into_owned();
+    let mut store = EditorStore::new(Archive::new(vec![gone.clone()], |_: &Path| true));
+    let opened = store.open(&gone);
+    assert_eq!(opened.map_err(|e| e.to_string()), Err(super::opening::UNREACHABLE.to_string()));
+    assert!(!store.writable(), "an unreachable frame is no new photo to write");
+    store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
+    assert_eq!(store.flush(), None);
+    std::fs::create_dir_all(dir.join("Unplugged")).unwrap();
+    store.flush();
+    assert!(!sidecar::url_for(Path::new(&gone)).exists(), "the disk come back takes no sidecar from it");
+    // Twin: an original present without a sidecar is a new photo, open to edits.
+    let present = dir.join("P2.RW2").to_string_lossy().into_owned();
+    std::fs::write(&present, b"").unwrap();
+    store.open(&present).unwrap();
+    assert!(store.writable());
     let _ = std::fs::remove_dir_all(&dir);
 }

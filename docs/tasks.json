@@ -1248,5 +1248,12 @@
     "title": "The prewarm reaches Texture: its shaders no longer compile on the first notch",
     "status": "done",
     "detail": "Texture rests under a 750 px side, so the 64 px prewarm frame never compiled its blurs and kernels and the first busy notch waited on them. The prewarm also renders 768 x 8 and 6048 x 8 strips, both blur reaches; Graph::stats counts compiled pipelines and a check asserts a prewarmed engine's busy notch compiles none, its twin that the small frame alone misses Texture."
+  },
+  {
+    "id": 173,
+    "type": "data-safety",
+    "title": "A photo whose original cannot be found opens read-only, never as a new photo",
+    "status": "done",
+    "detail": "With the roll's disk unplugged, the sidecar's absence read as a new photo: rest settings, writable, Prepare the Roll opened on it (its base step decoding nothing) and every settle tried to write a sidecar for it, which a reconnected disk would have taken over the Swift roll's own. The store now checks the original first: absent, the frame opens read-only on the rest settings with a message saying its disk may be disconnected, nothing is written and Prepare the Roll is not offered. Beyond Swift, whose read has the same gap. Test fixtures that opened imaginary originals now create them."
   }
 ]

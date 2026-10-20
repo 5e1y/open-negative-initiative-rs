@@ -14,6 +14,7 @@ fn fresh(label: &str, frames: usize) -> (EditorStore, Vec<String>, PathBuf) {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let paths: Vec<String> = (0..frames).map(|i| dir.join(format!("frame{i}.tif")).to_string_lossy().into_owned()).collect();
+    paths.iter().for_each(|p| std::fs::write(p, b"").unwrap());
     let mut store = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
     store.open(&paths[0]).unwrap();
     (store, paths, dir)

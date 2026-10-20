@@ -13,7 +13,9 @@ fn roll(label: &str, names: &[&str]) -> (PathBuf, Vec<String>) {
     let dir = std::env::temp_dir().join(format!("oni-core-presets-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    (dir.clone(), names.iter().map(|n| dir.join(n).to_string_lossy().into_owned()).collect())
+    let frames: Vec<String> = names.iter().map(|n| dir.join(n).to_string_lossy().into_owned()).collect();
+    frames.iter().for_each(|f| std::fs::write(f, b"").unwrap());
+    (dir, frames)
 }
 
 fn on_disk(path: &str) -> PipelineSettings {

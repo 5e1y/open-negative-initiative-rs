@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// What a photo whose original cannot be found says as it opens read-only.
+pub const UNREACHABLE: &str = "The original cannot be found; its disk may be disconnected. The photo opens read-only, and nothing is saved.";
+
 impl EditorStore {
     /// Opens a frame on its sidecar, writing the previous one first; its history starts here, so
     /// an undo never climbs into another photo's.
@@ -14,7 +17,13 @@ impl EditorStore {
     pub fn open_adjusted(&mut self, path: &str, adjust: impl FnOnce(&mut PipelineSettings)) -> Result<(), sidecar::Error> {
         self.release();
         self.flush();
-        let read = sidecar::read(Path::new(path), self.mosaic(path), true);
+        // A sidecar is absent for a new photo, or when its disk is gone: the original's absence says
+        // which, so an unplugged roll never opens as a new one that a reconnection would overwrite.
+        let read = if Path::new(path).exists() {
+            sidecar::read(Path::new(path), self.mosaic(path), true)
+        } else {
+            Err(sidecar::Error::Io(std::io::Error::new(std::io::ErrorKind::NotFound, UNREACHABLE)))
+        };
         let (mut settings, writable, persisted, result) = match read {
             Ok(loaded) => {
                 let persisted = (!loaded.is_new).then(|| loaded.settings.clone());

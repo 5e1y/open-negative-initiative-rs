@@ -207,6 +207,7 @@ pub(crate) mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let frame = dir.join("frame.NEF").to_string_lossy().into_owned();
+        std::fs::write(&frame, b"").unwrap();
         let mut store = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| true));
         store.open(&frame).unwrap();
         (store, dir)
