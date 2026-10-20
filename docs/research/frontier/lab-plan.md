@@ -284,21 +284,37 @@ user.
      writes `lab.json`, and `LabParams` loads it.
    - The fit's ΔE goes into the doc beside this plan.
 
-   Measured (#168) [M], on the 1 440 constrained nodes against the cube:
+   Measured (#168, refitted in #169 with values on their stops held) [M], on the 1 440 constrained
+   nodes against the cube:
    - Published seeds: paper only 1.67, full model 1.51 median.
-   - **Fitted Frontier, full model: median ΔE 1.18** (p90 2.98, p99 5.42), from the seeds in 12
-     Levenberg–Marquardt rounds. The same set with its colour stage at rest: 1.94 (twin). The fit is
-     against the cube's nodes, not the 63 renders, hence below the research's 1.65.
-   - Two sector values sit on their range's stop: hue +20° and twist −15° at 210°, which cancel to +5°
-     at C 0.1. Saturation by L lands at −0.18, the seed's sign reversed. The colour stage and the paper
-     share a gauge, so single values do not compare with the seeds.
+   - **Fitted Frontier, full model: median ΔE 1.19** (p90 2.99, p99 5.40). The same set with its colour
+     stage at rest: 1.95 (twin). The fit is against the cube's nodes, not the 63 renders, hence below the
+     research's 1.65.
+   - The twist at 210° sits on its −15 stop, beside a +17.8° hue offset: they cancel to +3° at C 0.1.
+     Saturation by L lands at −0.16, the seed's sign reversed. The colour stage and the paper share a
+     gauge, so single values do not compare with the seeds.
    - Character: at the fitted Frontier values and `k = 1`, the 27³ bake equals `frontier.cube` at every
      node (worst gap 0). The clip applies to the model alone: the cube's nodes dip to −0.11 where it
-     extrapolates, and the character keeps them. At `k = 0`: 1.18.
-   - **Open for step 6**: the full model's 27³ bake misses the bake target, p99 ΔE **0.575** against the
+     extrapolates, and the character keeps them. At `k = 0`: 1.19.
+   - **Open for step 6**: the full model's 27³ bake misses the bake target, p99 ΔE **0.59** against the
      chain (the paper chain alone: 0.34). 33³ gives 0.41, but only a 27³ bake keeps the character exact.
 3. **Neutral refit against Pro**: a synthetic density grid, rendered by Pro at rest from the existing
    CPU references, refits the neutral set, with its check.
+
+   Measured (#169) [M]:
+   - Grid: `scanner::check_roll`'s balanced roll, negatives at its grey ±0.75 density by 0.05 per
+     channel, kept where the Frontier reads them unclamped with a cube-input spread under 0.6 (9 948).
+     Pro at rest: `stage47`, the points' saturation, the output clip, then sRGB code. Window gain 0.87,
+     where the research's roll had 0.81; Pro prints the grey at L 0.76.
+   - Published neutral seeds against it: 5.61 median (a different roll and gauge).
+   - **Refitted neutral: median ΔE 0.19** (p90 0.40, p99 0.80); colour stage at rest 1.67. Twin, the
+     Frontier set against Pro: 15.2.
+   - The neutral matrix mixes (every off-diagonal but one positive, B←G +0.26), and the sector chroma
+     gains climb to 1.1–1.5 (one on its stop at 180°) to win the chroma back. Matrix and chroma share a
+     gauge here. The N ticks will sit far from 0 and 1, so step 7 should weigh a light pull toward
+     identity before they ship.
+   - The fit now holds a value that sits on its stop while the descent pushes it out. Without that, both
+     fits stalled early (neutral 0.31).
 4. **Eye check before any UI**: `--example look_lab_strip <raw dir> <out>` writes PNG strips of two
    roll #8 frames: cube, Lab Frontier `k = 0`, Lab neutral, and Lab Frontier with "green borrows red"
    and the 240–300° sectors at neutral. The same tool measures the Rust (LibRaw) Frontier render

@@ -147,14 +147,21 @@ pub fn fit(start: &LabParams, samples: &[([f64; 3], [f64; 3])], rounds: usize, r
         let n = v.len();
         let a: Vec<Vec<f64>> = (0..n).map(|p| (0..n).map(|q| j[p].iter().zip(&j[q]).map(|(x, y)| x * y).sum()).collect()).collect();
         let g: Vec<f64> = (0..n).map(|p| -j[p].iter().zip(&r).map(|(x, y)| x * y).sum::<f64>()).collect();
+        // A value on its stop that the descent pushes further out stays there this round.
+        let bounds = ranges();
+        let free: Vec<usize> = (0..n).filter(|&p| !((v[p] <= bounds[p].0 && g[p] < 0.0) || (v[p] >= bounds[p].1 && g[p] > 0.0))).collect();
         let mut better = false;
         for _ in 0..12 {
-            let damped: Vec<Vec<f64>> =
-                (0..n).map(|p| (0..n).map(|q| if p == q { a[p][q] * (1.0 + lambda) + 1e-9 } else { a[p][q] }).collect()).collect();
-            let Some(step) = cholesky_solve(&damped, &g) else {
+            let damped: Vec<Vec<f64>> = free
+                .iter()
+                .map(|&p| free.iter().map(|&q| if p == q { a[p][q] * (1.0 + lambda) + 1e-9 } else { a[p][q] }).collect())
+                .collect();
+            let Some(solved) = cholesky_solve(&damped, &free.iter().map(|&p| g[p]).collect::<Vec<_>>()) else {
                 lambda *= 4.0;
                 continue;
             };
+            let mut step = vec![0.0; n];
+            free.iter().zip(&solved).for_each(|(&p, d)| step[p] = *d);
             let mut tried: Vec<f64> = v.iter().zip(&step).map(|(x, d)| x + d).collect();
             project(&mut tried);
             let tried_r = residuals(&tried, samples);

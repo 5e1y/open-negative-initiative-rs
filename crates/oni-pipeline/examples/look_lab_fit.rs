@@ -1,8 +1,9 @@
-//! `look_lab_fit [rounds]`: fits the Look Lab's Frontier set to the measured cube's constrained nodes
-//! and writes both sets with their figures to `resources/scanner/lab.json`.
+//! `look_lab_fit [rounds]`: fits the Look Lab's Frontier set to the measured cube's constrained nodes,
+//! its neutral set to ONI Pro at rest on a synthetic roll, and writes both with their figures to
+//! `resources/scanner/lab.json`.
 
 use oni_pipeline::look_lab::measure::{centile, constrained, delta_e, median};
-use oni_pipeline::look_lab::{Chain, LabParams, SEED_FRONTIER, SEED_NEUTRAL, bake, fit, normalised};
+use oni_pipeline::look_lab::{Chain, LabParams, SEED_FRONTIER, SEED_NEUTRAL, bake, fit, normalised, pro};
 use oni_pipeline::scanner::MACHINE;
 use serde_json::json;
 
@@ -58,13 +59,21 @@ fn main() {
     let paper = figures(&frontier.paper_only(), &cube);
     let bakes = json!({ "27": baked(&frontier, 27), "33": baked(&frontier, 33) });
     println!("fitted, full model: {full}\nfitted, colour stage at rest: {paper}\nbake p99 against the chain: {bakes}");
+    let grid: Samples = pro::grid();
+    println!("{} synthetic negatives\nseed neutral against Pro: {}", grid.len(), figures(&SEED_NEUTRAL, &grid));
+    let neutral = rounded(&fit::fit(&SEED_NEUTRAL, &grid, rounds, |round, cost| println!("  round {round}: mean ΔE² {:.4}", cost / grid.len() as f64)));
+    let pro = figures(&neutral, &grid);
+    let pro_paper = figures(&neutral.paper_only(), &grid);
+    let crossed = figures(&frontier, &grid);
+    println!("fitted neutral against Pro: {pro}\ncolour stage at rest: {pro_paper}\nFrontier set against Pro: {crossed}");
     let lab = json!({
-        "neutral": SEED_NEUTRAL,
+        "neutral": neutral,
         "frontier": frontier.with_character(1.0),
         "figures": {
             "frontier": { "nodes": "inside reached, channel spread under 0.6", "model": full, "colourAtRest": paper, "bakeP99": bakes },
+            "neutral": { "negatives": "scanner::check_roll's grey ±0.75 by 0.05, read unclamped, spread under 0.6", "model": pro, "colourAtRest": pro_paper, "frontierSet": crossed },
         },
-        "source": "cargo run -p oni-pipeline --example look_lab_fit; the neutral set is the published seed",
+        "source": "cargo run -p oni-pipeline --example look_lab_fit",
     });
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/resources/scanner/lab.json");
     std::fs::write(path, serde_json::to_string_pretty(&lab).unwrap() + "\n").expect("lab.json");

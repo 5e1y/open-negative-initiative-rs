@@ -8,6 +8,7 @@ pub mod measure;
 mod model_tests;
 pub mod paper;
 pub mod params;
+pub mod pro;
 #[cfg(test)]
 mod tests;
 
