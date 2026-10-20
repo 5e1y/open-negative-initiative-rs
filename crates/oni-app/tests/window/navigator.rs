@@ -73,7 +73,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     for empty in ["Scans/Empty", "Other", "Old"] {
         std::fs::create_dir_all(home.join(empty)).unwrap();
     }
-    let p = |path: &Path| path.to_string_lossy().into_owned();
+    let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
     // A library made before the archive followed the disk: two photos in Old, one in Roll 1.
     let former = [p(&home.join("Old/x.tif")), p(&home.join("Old/y.tif")), p(&home.join("Scans/Roll 1/A.tif"))];
     std::fs::create_dir_all(&support).unwrap();

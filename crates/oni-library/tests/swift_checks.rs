@@ -326,7 +326,7 @@ fn no_crate_trashes_or_removes_a_library_member() {
     for file in &files {
         let text = std::fs::read_to_string(file).unwrap();
         for target in member_deletions(&text) {
-            let named = format!("{}: {target}", file.strip_prefix(crates).unwrap().display());
+            let named = format!("{}: {target}", file.strip_prefix(crates).unwrap().display()).replace('\\', "/");
             if !SCRATCH.contains(&named.as_str()) {
                 offenders.push(named);
             }

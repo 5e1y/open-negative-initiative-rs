@@ -6,7 +6,6 @@ use crate::paths;
 use chrono::{DateTime, Local, TimeZone};
 use oni_settings::{Date, Film, Id};
 use std::collections::HashMap;
-use std::path::MAIN_SEPARATOR;
 
 /// The bucket a frame falls in: its roll, its capture day (local midnight, whole seconds since
 /// 1970), or the folder it lies in.
@@ -49,7 +48,7 @@ impl FilmGroup {
 
     pub fn trail(&self) -> Option<String> {
         let heading = self.heading.as_ref()?;
-        heading.rfind(MAIN_SEPARATOR).map(|cut| heading[..cut].to_owned())
+        heading.rfind('/').map(|cut| heading[..cut].to_owned())
     }
 
     pub fn heading_title(&self) -> String {
