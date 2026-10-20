@@ -1138,5 +1138,12 @@
     "status": "done",
     "detail": "cost.rs (ONI_BENCH_COST=1) times the whole pipeline on a 2000 px preview with every finishing feature on, then each at rest in turn.",
     "outcome": "M2 Max, release: busy 6.96 ms, at rest 2.77 ms. Texture 3.65 ms of it, chroma denoise 1.49, sharpen 1.35; vignette, sauce, spectrogram and curves under 0.3 now that they share one pass. Texture's blurs are bound by their reads, 13 rgba32float taps a pixel a pass: the next steps would be tiles shared in workgroup memory, which the graph's per-pixel stage model does not offer, or the luma carried in fewer channels, which the rgba32float rule forbids; both are the owner's call."
+  },
+  {
+    "id": 157,
+    "type": "parity",
+    "title": "The Custom space lists the printer profiles ColorSync knows, beside the folders walked",
+    "status": "done",
+    "detail": "OutputProfile.installed walks the profile folders, then adds what ColorSyncIterateInstalledProfiles lists (its iteration is unreliable alone: 10 in one context, 78 in another), the checks asking nothing more. oni-colour::colorsync reads each profile's URL through ColorSync and CoreFoundation; off the Mac it lists none. The check sees the system's own profiles among the files ColorSync lists, each a file that exists."
   }
 ]

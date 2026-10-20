@@ -1,6 +1,7 @@
 //! ONI's colour management: working and export spaces, their ICC profiles, our own BPC and clip,
 //! the proof, Paper Correction and the screen gamut zebra.
 
+pub mod colorsync;
 pub mod curve;
 pub mod gamut;
 pub mod icc_lut;

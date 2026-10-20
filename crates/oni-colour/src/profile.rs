@@ -202,6 +202,11 @@ impl OutputProfile {
         for folder in folders {
             walk(folder, &mut paths);
         }
+        // The app's own list asks ColorSync too: its iteration finds 10 in one context and 78 in
+        // another, so the walk stays first. A check walking its own folder asks nothing more.
+        if remember {
+            paths.extend(crate::colorsync::installed());
+        }
         let mut seen = HashSet::new();
         let mut listed: Vec<OutputProfile> = paths
             .iter()

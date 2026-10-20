@@ -75,8 +75,7 @@ and what is left, most noticed first.
 
 ### Proofing and export
 
-1. The Custom space lists only profiles found by walking folders, not ColorSync's: it may land on
-   "pending" on a Mac whose printer profiles live elsewhere.
+1. (Done, #157: the Custom space also lists the profiles ColorSync iterates, after the folders walked.)
 2. (Done, #152: preset and profile lists sort as `localizedCaseInsensitiveCompare`, accented names among their letter.)
 
 ### The phone
