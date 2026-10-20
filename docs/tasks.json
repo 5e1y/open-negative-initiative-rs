@@ -1038,7 +1038,7 @@
     "type": "bench",
     "title": "The flows bench says a roll was never prepared instead of waiting",
     "status": "done",
-    "detail": "On a roll never prepared, requireRoll opens every frame on Prepare the Roll, which holds the editor; ONI_BENCH=flows waited forever for the gallery. It now ends at once naming the cause. Real flow on roll #8 after the night's merges: 3 frames picked, double-clicked open and edited through resizes, no failure."
+    "detail": "On a roll never prepared, requireRoll opens every frame on Prepare the Roll, which holds the editor; ONI_BENCH=flows waited forever for the gallery. It now ends at once naming the cause. Real flow on roll #8 after the night's merges: 3 frames picked, double-clicked open and edited through resizes, no failure. Back in the gallery, the flow waits 300 ms before it looks: the grid lands on the open photo in a change handler Slint runs later, and a click computed on the scroll before the landing reached the last row in 1 run of 3; 6 of 6 since."
   },
   {
     "id": 141,

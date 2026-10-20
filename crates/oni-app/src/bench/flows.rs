@@ -13,7 +13,7 @@ pub(super) enum Flow {
     Opening { frame: usize, at: Instant },
     Editing { frame: usize, notch: usize },
     Shown { frame: usize, revision: u64 },
-    Back { frame: usize },
+    Back { frame: usize, since: Instant },
     Below { name: usize },
 }
 
@@ -135,9 +135,13 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 // The edit undone, so the test copy's sidecar reads as it did.
                 ctl.act("undo");
                 ctl.act("toggle-mode");
-                phase.set(Flow::Back { frame });
+                phase.set(Flow::Back { frame, since: Instant::now() });
             }
-            Flow::Back { frame } => {
+            Flow::Back { frame, since } => {
+                // The gallery lands on the open photo once it shows: the hand looks after it has.
+                if since.elapsed() < Duration::from_millis(300) {
+                    return;
+                }
                 let Some(t) = tile(&w, FLOW_TILES[frame]).filter(|_| app.get_gallery()) else { return };
                 check(&t.caption, "back in the gallery");
                 if frame + 1 < FLOW_TILES.len() {
