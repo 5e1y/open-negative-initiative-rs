@@ -38,7 +38,7 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     p
 }
 
-/// The Frontier's look on ONI's window: each channel's share of its window (0 black, 1 white), read as
+/// The Frontier's look in place of ONI's, on the ONI machine's render in display code, each code read as
 /// the table's density across its black to its white.
 pub fn table_on_code(lab: &FrontierLab) -> ColorCube {
     let chain = super::Chain::new(&edited(lab));

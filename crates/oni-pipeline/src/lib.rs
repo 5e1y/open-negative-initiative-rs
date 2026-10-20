@@ -253,8 +253,8 @@ impl Pipeline {
     fn oni_finish(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, machine: ScannerMachine) -> Result<Image> {
         let frontier = machine == ScannerMachine::Frontier;
         let hand = frontier.then(frontier_table::current).flatten();
-        // The Frontier's look reads each channel's share of ONI's window as it stands, unprinted.
-        let code = if frontier && hand.is_none() { image } else { image.then(stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT })) };
+        // The Frontier's look stands where ONI's does, on the same render in plain display code.
+        let code = image.then(stages::scanner_encode(if frontier { 1.0 } else { oni_look::ROOT }));
         let (table, n) = match hand {
             Some((generation, cube)) => {
                 if self.hand.as_ref().is_none_or(|(g, _, _)| *g != generation) {

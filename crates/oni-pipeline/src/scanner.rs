@@ -239,8 +239,6 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
     }
     let mut out = s.as_scanner();
     out.print = Print { contrast: s.scanner_finish.contrast, ..Print::default() };
-    // The Frontier prints through its own look, ONI's window its input: no print curve of Pro's.
-    out.print.bypassed = s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none();
     if let Some(full) = s.balance_filters {
         out.print.set_filters(full.map(|f| f * s.balance_strength));
     }
@@ -373,7 +371,7 @@ mod tests {
         // The Frontier takes the same conversion, its print bypassed for its own look.
         s.scanner_machine = ScannerMachine::Frontier;
         let frontier = on_oni_machine(&s).unwrap();
-        assert!(frontier.print.bypassed && !oni.print.bypassed && frontier.gains == oni.gains && frontier.levels == oni.levels);
+        assert!(frontier == PipelineSettings { scanner_machine: ScannerMachine::Frontier, ..oni.clone() }, "the ONI machine's conversion whole");
         // Twin: Frontier 2 prints from density, and Pro leaves the settings alone.
         assert!(on_oni_machine(&PipelineSettings { scanner_print: true, ..s.clone() }).is_none());
         assert!(renders(&PipelineSettings { scanner_print: true, ..s.clone() }));

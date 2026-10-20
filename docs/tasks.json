@@ -1473,5 +1473,12 @@
     "title": "The Frontier takes ONI's conversion whole, its print bypassed for its look; the Lab's curve gives way to the Curves block",
     "status": "done",
     "detail": "The owner found the Frontier burning raw0021 (its export: median luminance 223 against ONI's 147, 36.7 % of pixels with a channel at 255, against 0.3 %) and asked for every stage identical to the ONI machine but its clicks, print curve, look and output. The Frontier now runs on_oni_machine like the ONI machine: Pro's conversion with the same density, per-channel window, stretch and separation, the same gains and clicks; Pro's print is bypassed, and the Frontier's look (the Lab chain, baked on 33 nodes over each channel's share of the window, read as the table's density from its black to its white, on a straight paper) takes its place, then the warmth and the output. The B anchor of #195 no longer drives it (it remains for Frontier 2's density path). The Lab's five-handle curve is removed: the Scanner face's Curves block, the app's own editor, shapes the tone."
+  },
+  {
+    "id": 201,
+    "type": "fix",
+    "title": "The Frontier is the ONI machine's render with the Lab's look in place of ONI's",
+    "status": "done",
+    "detail": "The owner's words: duplicate the Scanner face's ONI render and replace only its look table by the Lab's. Pro's print is no longer bypassed: the Frontier runs the ONI machine's conversion whole (print curve at rest included) and its look table reads that render in display code where ONI's reads its square root."
   }
 ]
