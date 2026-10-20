@@ -11,11 +11,16 @@ thread_local! {
     static PENDING: Cell<bool> = const { Cell::new(false) };
 }
 
-/// Builds the main window with `build`, so only its winit attributes take the unified bar.
+/// The Swift app's icon, which a bare binary has no bundle to carry.
+const ICON: &[u8] = include_bytes!("../../oni-ui/ui/icons/app-icon.png");
+
+/// Builds the main window with `build`, so only its winit attributes take the unified bar, and gives
+/// the Dock the app's icon.
 pub fn unified<T>(build: impl FnOnce() -> T) -> T {
     PENDING.with(|p| p.set(true));
     let built = build();
     PENDING.with(|p| p.set(false));
+    platform::dock_icon(ICON);
     built
 }
 
@@ -80,6 +85,14 @@ mod platform {
         attributes.with_titlebar_transparent(true).with_fullsize_content_view(true).with_title_hidden(true)
     }
 
+    pub fn dock_icon(png: &[u8]) {
+        let Some(mtm) = objc2::MainThreadMarker::new() else { return };
+        let data = objc2_foundation::NSData::with_bytes(png);
+        let Some(image) = objc2_app_kit::NSImage::initWithData(objc2::AllocAnyThread::alloc(), &data) else { return };
+        // SAFETY: on the main thread, with an image AppKit retains for as long as it shows it.
+        unsafe { objc2_app_kit::NSApplication::sharedApplication(mtm).setApplicationIconImage(Some(&image)) };
+    }
+
     /// AppKit lays the lights again on every resize, so each call lays them back; the room is the zoom
     /// key's right edge plus the close key's margin, as far from the lights as they sit from the edge.
     pub fn traffic_lights(window: &Window, bar: f64) -> f32 {
@@ -131,6 +144,9 @@ mod platform {
     pub fn unify(attributes: WindowAttributes) -> WindowAttributes {
         attributes
     }
+
+    /// Windows takes the icon from the window's own `icon`.
+    pub fn dock_icon(_: &[u8]) {}
 
     pub fn traffic_lights(_: &Window, _: f64) -> f32 {
         0.0
