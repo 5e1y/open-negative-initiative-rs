@@ -1431,5 +1431,12 @@
     "title": "The Look Lab's paper curve: a graph with five handles on the Frontier's curve",
     "status": "done",
     "detail": "The owner asked to see and edit how the Frontier prints: its toe (blacks) and its shoulder (whites and intense colours clipped). The Lab Paper block now draws the paper curve over negative density (blacks left, whites right): the machine's measured curve, a print without the look in grey, and the frame's. Five handles sit on the curve at densities 0, 0.4, 0.75 (the machine's neutral), 1.15 and 1.6; each stores its distance from the machine's curve (`frontierLab.paper`, five values), spread over the curve's fifteen nodes by a smooth Hermite curve held past the end handles, so the blacks' handle moves the whole toe and the whites' the whole shoulder; the curve is held climbing. A handle follows the hand between its neighbours, one undo step a press; a double click returns it to the machine's. At rest the curve is the machine's exactly."
+  },
+  {
+    "id": 195,
+    "type": "fix",
+    "title": "The Frontier prints Pro's black black: the roll's grey on the machine's neutral, Pro's black on the table's",
+    "status": "done",
+    "detail": "The owner saw lifted blacks the paper curve could not reach. Measured on DSC_6442 and DSC_6432: the Frontier stretched density by 1.3 over the roll's green window about its median (Swift's densityGain), which laid the frames between 0.26 and 1.1 D of the table, whose grey prints black under about 0.14 D and white over about 1.54 D: blacks came out at code 0.06-0.07, whites at 0.80-0.85. Laying the whole window on the table's ends (the owner's first ask) blacked the blacks but darkened the mid-tones (median 0.25), as the table is steeper than Pro's print. Chosen with the owner on renders: the roll's median stays on the machine's neutral and the density where Pro prints its grey black (its window, print exposure and curve included) lands on the table's black: blacks 0.002, median 0.43 as before, whites 0.90, clipping as the Frontier does. scanner::fitted_density keeps the old stretch for the Look Lab's fits."
   }
 ]

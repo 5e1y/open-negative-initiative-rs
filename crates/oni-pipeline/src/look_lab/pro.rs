@@ -23,7 +23,7 @@ pub fn rolls() -> (PipelineSettings, PipelineSettings) {
 
 /// The Frontier's cube input for a scanned pixel, `None` where the reach or the domain clamps it.
 pub fn cube_input(pixel: [f32; 4], frontier: &PipelineSettings) -> Option<[f64; 3]> {
-    let k = scanner::density(frontier);
+    let k = scanner::fitted_density(frontier);
     let out = cpu::scanner_density(pixel, &k);
     let x: [f64; 3] = std::array::from_fn(|c| f64::from(k.low) + f64::from(k.span) * f64::from(out[c]));
     let (_, high) = MACHINE.reached();

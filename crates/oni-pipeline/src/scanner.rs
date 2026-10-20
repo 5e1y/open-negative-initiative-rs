@@ -13,8 +13,6 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-/// The table reads density stretched by one gain over the roll's green window, set on a measured roll.
-pub const WINDOW_SCALE: f32 = 1.3;
 /// `ScannerRender.lift`: the warmth looks' moves stored raised by it, since a cube clips under zero.
 pub const LIFT: f32 = 0.5;
 
@@ -140,20 +138,20 @@ pub fn renders(s: &PipelineSettings) -> bool {
     s.face == Face::Scanner && s.scanner_machine == ScannerMachine::Frontier && crate::frontier_table::current().is_none()
 }
 
-/// `ScannerRender.densityGain`: one gain for all three channels over the roll's green window.
-pub fn density_gain(s: &PipelineSettings) -> f32 {
-    WINDOW_SCALE / (s.levels.green.white - s.levels.green.black).max(Print::MINIMUM_SPAN)
-}
-
-/// `ScannerRender.median`: the roll's green median on all three channels, else 0.6 of green's window.
-pub fn median(s: &PipelineSettings) -> [f32; 3] {
-    let window = graduation::window(s.mode);
-    if let Some(median) = s.roll_reference.as_ref().and_then(|r| r.median) {
-        return [window.start() + median[1] * (window.end() - window.start()); 3];
-    }
-    let g = s.levels.green;
-    [g.black + 0.6 * (g.white - g.black); 3]
-}
+/// Where the table prints its grey black (under 0.3 %) and white (over 98.5 %), as green density along
+/// its neutral axis: the ends ONI's window is laid on.
+pub static ENDS: LazyLock<(f32, f32)> = LazyLock::new(|| {
+    let m = &*MACHINE;
+    let neutral = m.neutral();
+    let grey = |g: f32| {
+        let n = neutral.map(|c| ((c + g - neutral[1] - m.low()) / m.span()).clamp(0.0, 1.0));
+        cpu::color_cube([n[0], n[1], n[2], 1.0], &m.render)[1]
+    };
+    let steps = (0..=550).map(|i| m.low() + m.span() * i as f32 / 550.0);
+    let black = steps.clone().filter(|g| grey(*g) <= 0.003).fold(m.low(), f32::max);
+    let white = steps.filter(|g| grey(*g) >= 0.985).fold(m.low() + m.span(), f32::min);
+    (black, white)
+});
 
 /// The family's plain matrix at the frame's own Dye Separation, no chroma kept: a negative with no
 /// crosstalk is read unmixed at zero, where the Swift machine always unmixed at 0.6.
@@ -164,22 +162,48 @@ pub fn separation(s: &PipelineSettings) -> M3 {
     }
 }
 
-/// The density kernel's arguments for these settings on the Frontier.
+/// Where Pro prints the frame's grey black (under 0.03 % of the light), as a share of the green window,
+/// its print exposure and curve included.
+pub fn pro_black(s: &PipelineSettings) -> f32 {
+    let pro = PipelineSettings { face: Face::Pro, ..s.clone() };
+    let k = crate::conversion::stage47(&pro);
+    let windows = s.levels.windows();
+    let (pedestal, gain) = (density_axis::pedestal(s.density_ceiling), s.gains.stops.map(f32::exp2));
+    let grey = |f: f32| {
+        let t: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-(windows[c].black + f * (windows[c].white - windows[c].black))) / gain[c] - pedestal);
+        let out = cpu::stage47([t[0].max(0.0), t[1].max(0.0), t[2].max(0.0), 1.0], &k);
+        out[0] * 0.2627 + out[1] * 0.678 + out[2] * 0.0593
+    };
+    (0..=400).map(|i| i as f32 / 400.0).filter(|f| grey(*f) <= 3e-4).fold(0.0, f32::max)
+}
+
+/// The roll's green median, else 0.6 of green's window: the grey the machine's neutral prints.
+pub fn roll_median(s: &PipelineSettings) -> f32 {
+    let window = graduation::window(s.mode);
+    let g = s.levels.green;
+    s.roll_reference.as_ref().and_then(|r| r.median).map_or(g.black + 0.6 * (g.white - g.black), |m| window.start() + m[1] * (window.end() - window.start()))
+}
+
+/// The density kernel's arguments for these settings on the Frontier: the roll's grey on the machine's
+/// neutral and Pro's black on the table's, so the blacks print black as ONI's do and the whites clip.
 pub fn density(s: &PipelineSettings) -> ScannerDensity {
     let m = &*MACHINE;
     let offset = m.offset(&s.scanner);
     let neutral = m.neutral();
+    let median = roll_median(s);
+    let g = s.levels.green;
+    let black = g.black + pro_black(s) * (g.white - g.black);
     let unmix = separation(s);
     let (reached_low, reached_high) = m.reached();
     ScannerDensity {
         gain: s.gains.stops.map(f32::exp2),
         pedestal: density_axis::pedestal(s.density_ceiling),
         log_guard: density_axis::log_guard(s.density_ceiling),
-        median: median(s),
+        median: [median; 3],
         sep_r: unmix[0],
         sep_g: unmix[1],
         sep_b: unmix[2],
-        scale: density_gain(s),
+        scale: (neutral[1] - ENDS.0) / (median - black).max(Print::MINIMUM_SPAN),
         shift: std::array::from_fn(|c| neutral[c] + offset[c]),
         reached_low,
         reached_high,
@@ -188,6 +212,13 @@ pub fn density(s: &PipelineSettings) -> ScannerDensity {
         invert: s.mode.invert_flag(),
         dmax: pipeline::DMAX,
     }
+}
+
+/// The coordinates the Look Lab's sets were fitted in: one stretch of 1.3 over the roll's green window
+/// about its median, which the app's black anchor replaced; kept so the fits read as they were made.
+pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
+    let g = s.levels.green;
+    ScannerDensity { scale: 1.3 / (g.white - g.black).max(Print::MINIMUM_SPAN), ..density(s) }
 }
 
 /// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
@@ -278,6 +309,26 @@ mod tests {
         // And TEMP + warms the grey: more red than blue than at rest.
         let warm = rendered(ScannerClicks::new(0, 0, 0, 0, 4));
         assert!(warm[0] - warm[2] > rest[0] - rest[2], "{warm:?} against {rest:?}");
+    }
+
+    #[test]
+    fn pro_s_black_prints_black_and_the_roll_s_grey_on_the_machine_s_neutral() {
+        let roll = PipelineSettings { separation: 0.0, ..check_roll() };
+        let k = density(&roll);
+        let (black, white) = *ENDS;
+        assert!(black < 0.3 && white > 1.2 && white < 2.0, "{black} {white}");
+        let g = roll.levels.green;
+        let read = |k: &ScannerDensity, d: f32| {
+            // The scan whose green density, pedestal and gain included, reads `d`.
+            let t: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-d) / k.gain[c] - k.pedestal);
+            MACHINE.low() + MACHINE.span() * cpu::scanner_density([t[0], t[1], t[2], 1.0], k)[1]
+        };
+        let at = |d: f32| read(&k, d);
+        let pro = g.black + pro_black(&roll) * (g.white - g.black);
+        assert!((at(pro) - black).abs() < 0.01, "{} against {black}", at(pro));
+        assert!((at(roll_median(&roll)) - MACHINE.neutral()[1]).abs() < 0.01);
+        // Twin: the fit's stretch lands Pro's black elsewhere than the table's black.
+        assert!((read(&fitted_density(&roll), pro) - black).abs() > 0.03);
     }
 
     #[test]
