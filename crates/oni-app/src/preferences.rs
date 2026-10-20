@@ -10,7 +10,7 @@ pub const OPENED_FOLDER: &str = "openedFolder";
 pub const NEUTRAL_DECODE_NOTICE_SHOWN: &str = "neutralDecodeNoticeShown";
 /// `@AppStorage("galleryColumns")`: the gallery's tile size, a rung of its ladder.
 pub const GALLERY_COLUMNS: &str = "galleryColumns";
-/// `@AppStorage("soundMuted")`: the key clicks silenced.
+/// `@AppStorage("soundMuted")`: the key clicks silenced; unset reads as silenced, the owner's default.
 pub const SOUND_MUTED: &str = "soundMuted";
 /// `@AppStorage("correctionBrushRadius")`: the De-dust brush's radius, kept across photos and launches.
 pub const BRUSH_RADIUS: &str = "correctionBrushRadius";

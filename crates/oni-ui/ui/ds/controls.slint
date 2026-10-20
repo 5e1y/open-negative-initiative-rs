@@ -1,6 +1,6 @@
 // The controls: buttons, the toggle, the slider, the field and the picker; the tabs are `tabs.slint`.
 import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
+import { Label, Icon, TextRole, Tone, Tips, Clicks } from "base.slint";
 import { Icons } from "icons.slint";
 
 export enum ButtonKind { plain, accent, caution, destructive, update, confirm }
@@ -113,6 +113,7 @@ export component Button inherits Rectangle {
         enabled: root.enabled;
         clicked => { root.clicked(); }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed pressed => { if (self.pressed) { Clicks.press(); } else { Clicks.release(); } }
     }
 }
 
@@ -176,7 +177,10 @@ export component Toggle inherits Rectangle {
     }
     TouchArea {
         enabled: root.enabled;
-        clicked => { root.toggled(!root.on); }
+        clicked => {
+            Clicks.press();
+            root.toggled(!root.on);
+        }
     }
 }
 

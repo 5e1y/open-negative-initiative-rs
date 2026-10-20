@@ -137,6 +137,8 @@ impl Ctl {
             w.global::<crate::Navigator>().invoke_catch_up_done();
         } else if w.global::<crate::Wrapped>().get_shown() {
             w.global::<crate::Wrapped>().invoke_close();
+        } else if w.global::<crate::AppSettings>().get_shown() {
+            self.close_settings();
         }
     }
 }

@@ -159,6 +159,7 @@ impl Ctl {
             p.key(&text, control, shift, !(control || meta || shift || option), repeat)
         });
         Ctl::wire_lab(me, window);
+        Ctl::wire_settings(me, window);
         me.adopt_remembered_face();
         let p = me.clone();
         window.global::<Pairing>().on_close(move || p.act("close-pairing"));

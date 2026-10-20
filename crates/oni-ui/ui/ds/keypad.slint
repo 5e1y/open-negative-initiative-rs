@@ -1,6 +1,6 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
 import { Colour, Space, Stroke, State, Motion, ScannerStyle } from "theme.slint";
-import { Label, Tone, Tips } from "base.slint";
+import { Label, Tone, Tips, Clicks } from "base.slint";
 import { Look } from "controls.slint";
 
 export global KeyInk {
@@ -51,10 +51,12 @@ export component Key inherits Rectangle {
                 lift.running = false;
                 root.down = true;
                 root.pressed-at = animation-tick();
+                Clicks.press();
             } else {
                 root.left = ScannerStyle.key-hold - (animation-tick() - root.pressed-at);
                 if (root.left <= 0ms) {
                     root.down = false;
+                    Clicks.release();
                 } else {
                     lift.running = true;
                 }
@@ -67,6 +69,8 @@ export component Key inherits Rectangle {
         triggered => {
             self.running = false;
             root.down = false;
+            // The rise's click follows the cap, not the finger.
+            Clicks.release();
         }
     }
 }

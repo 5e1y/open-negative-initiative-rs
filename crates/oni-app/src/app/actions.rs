@@ -54,11 +54,13 @@ impl Ctl {
                 let muted = !self.state.borrow().muted;
                 self.state.borrow_mut().muted = muted;
                 self.remember(preferences::SOUND_MUTED, muted.into());
+                self.publish_settings();
             }
             "half-size" => {
                 let half = !crate::render::HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed);
                 crate::render::HALF_SIZE_PREVIEWS.store(half, std::sync::atomic::Ordering::Relaxed);
                 self.remember(preferences::HALF_SIZE_PREVIEWS, half.into());
+                self.publish_settings();
                 self.state.borrow().previews.lock().expect("previews").clear();
                 self.redecode();
             }
@@ -109,6 +111,8 @@ impl Ctl {
             "check-updates" | "update" => self.check_for_updates(true),
             "wrapped" => self.show_wrapped(oni_library::wrapped::today().0),
             "pair-phone" => self.pair_phone(),
+            "settings" => self.open_settings(),
+            "close-settings" => self.close_settings(),
             "close-pairing" => self.close_pairing(),
             "forget-phones" => self.forget_phones(),
             a if a.starts_with("medal-") => {

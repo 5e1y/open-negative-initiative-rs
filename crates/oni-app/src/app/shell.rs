@@ -43,7 +43,7 @@ impl Shell {
             drawing: 0,
             rows: Vec::new(),
             pending: None,
-            muted: Preferences::load(&options.support).bool(preferences::SOUND_MUTED).unwrap_or(false),
+            muted: Preferences::load(&options.support).bool(preferences::SOUND_MUTED).unwrap_or(true),
             open: None,
             picks: Default::default(),
             trash_picks: Default::default(),

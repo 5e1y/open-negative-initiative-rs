@@ -1,6 +1,6 @@
 // `DSTabBar`, the segmented tabs.
 import { Colour, Space, State, Motion, TabsStyle } from "theme.slint";
-import { Label, Tips } from "base.slint";
+import { Label, Tips, Clicks } from "base.slint";
 
 // `DSTabBar` as a segmented control: one raised pill under the selection.
 export component Tabs inherits Rectangle {
@@ -52,6 +52,7 @@ export component Tabs inherits Rectangle {
         }
         touch := TouchArea {
             clicked => {
+                if (i != root.selected) { Clicks.press(); }
                 root.selected = i;
                 root.picked(i);
             }

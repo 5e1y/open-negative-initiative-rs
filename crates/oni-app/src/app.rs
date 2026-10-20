@@ -45,6 +45,7 @@ mod rendering;
 mod archive_view;
 mod gallery_view;
 mod phone_link;
+mod settings_sheet;
 mod actions;
 mod keys;
 mod gestures;

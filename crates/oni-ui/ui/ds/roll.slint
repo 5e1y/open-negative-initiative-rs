@@ -2,7 +2,7 @@
 // scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone, StatusLine } from "base.slint";
+import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks } from "base.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -237,7 +237,10 @@ export component PassReorder inherits VerticalLayout {
                     root.travel = 0;
                 }
                 if (e.kind == PointerEventKind.up && root.held >= 0) {
-                    if (root.target != root.held) { root.moved(root.held, root.target); }
+                    if (root.target != root.held) {
+                        Clicks.press();
+                        root.moved(root.held, root.target);
+                    }
                     root.held = -1;
                     root.travel = 0;
                 }

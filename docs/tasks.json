@@ -1178,10 +1178,45 @@
     "detail": "With 66 window checks in parallel processes the window binary takes about 125 s, past scripts/check's 120 s stop, and the contact sheet's 10 s waits timed out under that load while it passes alone in 5 s. The stop is 240 s by default (ONI_CHECK_LIMIT still overrides it) and the contact sheet's waits 60 s; a wait returns as soon as its condition holds."
   },
   {
+    "id": 159,
+    "type": "feature",
+    "title": "A Settings sheet behind a gear in the header, and a phone key beside it",
+    "status": "done",
+    "detail": "The header gains two square keys left of the export key: the phone opens Pair Phone, the gear a Settings sheet holding the half-size RAW previews and the key clicks, each the same preference as its menu item. Escape and DONE close it. The bar turns compact a little earlier (the toolbar check now compares 1440 and 1700 px)."
+  },
+  {
+    "id": 160,
+    "type": "feature",
+    "title": "Key clicks, silent by default",
+    "status": "done",
+    "detail": "Swift's click-down/up.wav (copied with the owner's leave) play on a key's press and rise, a switch, a tab change, a medal and a reorder, the pitch drawn within ±120 cents per press and kept for the rise, at volume 0.5, each click stopping the last. Rendered in Rust and played by NSSound on macOS, PlaySound on Windows, no audio crate. soundMuted unset reads as muted: the owner's default where Swift clicks."
+  },
+  {
     "id": 161,
     "type": "privacy",
     "title": "The log names no person: session tokens for photos, every path scrubbed from a sealed report",
     "status": "done",
     "detail": "Swift's Diagnostics.token: a photo or folder is written to the log as # and six hex digits of SHA-256 over a per-run salt, the same all run and unreadable back. Render, thumbnail, dust and full-resolution lines and the watchdog's witness use it; the phone's name and the log's own path are no longer written. The sealed log is this run's alone (the last run is kept beside it as oni.previous.log, never sent) and passes a scrub turning the home into ~ and every remaining path into <path>. A source scan fails when a log call takes a stem, a name or a displayed path."
+  },
+  {
+    "id": 164,
+    "type": "research",
+    "title": "Texture speed: the exact paths first, a Fast choice only if it earns its place",
+    "status": "done",
+    "detail": "docs/research/texture-speed.md: weights from the CPU, Texture folded into its last blur and one pass per blur with rows in workgroup memory are exact (about 3.65 to 2.0 ms at 2000 px) and need no setting; one- or two-channel luma is exact but needs the owner's word on the rgba32float rule; half-resolution wide blurs are the only inexact path, offered in Settings as screen-only Fast if they pass an error bound and save 30 % at 1:1. Also found: the prewarm's 64 px frame never reaches Texture."
+  },
+  {
+    "id": 166,
+    "type": "research",
+    "title": "Frontier Look Lab plan",
+    "status": "done",
+    "detail": "docs/research/frontier/lab-plan.md: the 27³ table as a chain of named parameters with neutral and Frontier values plus a measured-character blend that reproduces today's cube; a probe on frontier.cube puts skin +10.6° and blues +12.0° against neutral, mostly from the matrix's green-borrows-red term and the steep paper curve; ten steps, the first four changing no render."
+  },
+  {
+    "id": 171,
+    "type": "feature",
+    "title": "The Swift app's icon on the desktop window and in the Dock",
+    "status": "done",
+    "detail": "A bare binary has no bundle: the 256 px render of Swift's AppIcon.icns is the window's icon (Windows' title bar and taskbar) and NSApplication's icon image (the Dock)."
   }
 ]

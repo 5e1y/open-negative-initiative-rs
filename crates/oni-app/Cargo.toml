@@ -56,13 +56,14 @@ wgpu.workspace = true
 
 # The double-click interval, the dialogs and the Trash are the system's own; Linux runs the checks only.
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent", "NSWorkspace", "NSPasteboard", "NSWindow", "NSView", "NSResponder", "NSButton", "NSControl"] }
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSEvent", "NSWorkspace", "NSPasteboard", "NSWindow", "NSView", "NSResponder", "NSButton", "NSControl", "NSSound", "NSApplication", "NSImage"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSFileManager", "NSURL", "NSString", "NSError", "NSArray", "NSData", "NSUserDefaults"] }
 rfd = { version = "0.17", default-features = false }
 libc = "0.2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Media_Audio", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
 clipboard-win = "5.4"
 rfd = { version = "0.17", default-features = false }
 

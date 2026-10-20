@@ -2,6 +2,7 @@
 //! gallery, drawn by Slint and driven by the editing model of `oni-core`.
 
 pub mod anonymity;
+pub mod sound;
 pub mod app;
 pub mod bench;
 pub mod chrome;

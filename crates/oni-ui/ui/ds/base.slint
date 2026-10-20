@@ -270,6 +270,12 @@ export component TipLayer inherits Rectangle {
     ]
 }
 
+// `KeycapSound`: a key's click as it goes down and as it rises; the app decides if it sounds.
+export global Clicks {
+    callback press();
+    callback release();
+}
+
 // Shows `text` under `anchor` while it is hovered, and hides it when the pointer leaves.
 export global Tips {
     // `DSHelpPlacement.place`: the note at its anchor, held a margin in from each of the room's four

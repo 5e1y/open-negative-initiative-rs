@@ -123,7 +123,7 @@ export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
     // The bar's width with every word, read off hidden copies: the layout's widths never depend on
     // which face shows, or the window's width would loop through it.
-    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + ShellStyle.export-width + 5 * ShellStyle.bar-gap;
+    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + ShellStyle.export-width + 2 * glyphs.preferred-width + 7 * ShellStyle.bar-gap;
     property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
     property <bool> compact: root.width < root.full;
     // Under the keys, so only the room between them reaches it.
@@ -158,6 +158,7 @@ export component Toolbar inherits Surface {
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
             feedback-sizing := Word { visible: false; text: "FEEDBACKS"; }
             glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
+            glyphs := Item { visible: false; icon: Icons.settings; }
             if Preparing.shown: RollStepKeys { x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
             if Bar.editing && !Preparing.shown: EditorKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
             if !Bar.editing && !Preparing.shown: GalleryKeys { compact: root.compact; x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
@@ -178,6 +179,8 @@ export component Toolbar inherits Surface {
                 help: "Report a Bug / Give Feedback";
             }
         }
+        Item { action: "pair-phone"; icon: Icons.phone; help: "Phone Remote"; }
+        Item { action: "settings"; icon: Icons.settings; help: "Settings"; }
         if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? "export" : "open";
             text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";
