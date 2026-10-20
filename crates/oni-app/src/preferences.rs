@@ -60,17 +60,24 @@ impl Preferences {
 
     /// Writes the whole file at once, through a sibling so a crash never leaves half a file. Read
     /// again first: another holder may have written a key since this one loaded.
+    /// A failure is also written to the log, as most callers have nothing better to do with it.
     pub fn set(&mut self, key: &str, value: Value) -> std::io::Result<()> {
         let mut values = Self::read(&self.file);
         values.insert(key.to_owned(), value);
         self.values = values;
-        if let Some(folder) = self.file.parent() {
-            std::fs::create_dir_all(folder)?;
+        let written = (|| {
+            if let Some(folder) = self.file.parent() {
+                std::fs::create_dir_all(folder)?;
+            }
+            let text = serde_json::to_vec_pretty(&self.values).map_err(std::io::Error::other)?;
+            let staged = self.file.with_extension("json.part");
+            std::fs::write(&staged, text)?;
+            std::fs::rename(&staged, &self.file)
+        })();
+        if let Err(e) = &written {
+            crate::timing::line(&format!("the preference {key} could not be kept: {e}"));
         }
-        let text = serde_json::to_vec_pretty(&self.values).map_err(std::io::Error::other)?;
-        let staged = self.file.with_extension("json.part");
-        std::fs::write(&staged, text)?;
-        std::fs::rename(&staged, &self.file)
+        written
     }
 }
 
