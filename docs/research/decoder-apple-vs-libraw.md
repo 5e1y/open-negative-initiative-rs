@@ -210,47 +210,44 @@ become "matches it for the cameras in the table". The owner decides.
 
 ## Transition
 
-The owner chose a one-time, explained migration (strategy (b), gains only) for the users of the Swift
-app: `crates/oni-transition`, behind a blocking sheet at launch (#175).
+The owner chose strategy (a), once a 3×3 proved quick to measure in the app: `crates/oni-transition`,
+behind a blocking sheet on macOS (#175). No sidecar is read to decide anything, and none is written.
 
-- **Which sidecars.** No field or layout tells the two apps' sidecars apart: same `version`, same key
-  order and number format, same envelope. The rule is time: a RAW's sidecar (not a DNG, not a scan, no
-  RGB passes) last written before the transition's install instant, kept in
-  `<support>/Transition/state.json` from the first search on, and not yet on the ledger.
 - **Per camera.** LibRaw's make and model. `CIRAWFilter` runs in the process through `objc2`, set as
-  `RawDecode.configured`; both decodes are averaged over 8-pixel squares, aligned to the pixel (the
-  best correlation of log luminance within 8 pixels of the frames' size difference), and each channel's
-  shift is the median of log2 ratios over squares off floor and clip. Three frames spread over the
-  camera's earlier frames, the median of each channel; the shift is kept and reused for every later
-  frame of that camera.
-- **What moves.** `gains.stops` and `rollReference.stops`, by the shift, clamped to the gains' range.
-  Every density (levels, the reference's black, white, base and median), the print's filters and the
-  pedestal stand at the gains, so they stay.
-- **Measured against both studies.** The three frames the transition picks per camera, then the
-  render of every Swift-prepared frame through the pipeline with the corrected sidecar against the
-  Swift render (mean worst-channel gap). Relative to green, the transition's shift lands on
-  `decoder-per-camera.md`'s decode figures and within 0.01 to 0.03 stop of its render-solved cure.
+  `RawDecode.configured`. Both decodes are averaged over 8-pixel squares and aligned to the pixel (the
+  best correlation of log luminance within 8 pixels of the frames' size difference). The squares off
+  floor and clip of three frames spread over the camera's RAWs are pooled, and the 3×3 is fitted on
+  their relative error, as `decoder_fit` does.
+- **The table.** `<support>/Transition/cameras.json` holds, per camera, the matrix, its frames and its
+  residual, written atomically. `oni-decode/src/rendition.rs` folds the camera's matrix after
+  `conversion()`'s, before `linear::converted`, in one place that `decode_native` skips. DNGs, linear
+  scans and cameras absent from the table decode as before.
+- **When.** At launch and whenever a folder opens, the library's RAWs are named off the interface thread
+  (`seen.json` remembers each file by size and date). A camera the table lacks is measured behind the
+  sheet, from any three reachable frames, while the thumbnails' pass waits. Its frames' previews and
+  thumbnails are then dropped and drawn again, and the open frame is read again.
+- **Windows.** There is no Apple decoder, so no table: RAWs decode in LibRaw's own colours.
+- **Rolls prepared in Rust test builds** were balanced on LibRaw's colours and shift once. The owner
+  accepted this.
 
-  | Camera | Transition R / G / B | R − G, B − G | Per camera, decode | Per camera, render cure | Gap before → after |
-  |---|---|---|---|---|---|
-  | Z f, roll #8 (DSC_6441, 6454, 6466) | +0.064 / −0.025 / −0.124 | +0.089, −0.099 | +0.089, −0.097 | +0.083, −0.086 | 0.0182 → 0.0051 |
-  | Z f, its 38 frames | +0.064 / −0.026 / −0.124 | +0.090, −0.098 | | | |
-  | S1R, the ColorPlus roll (P1071952, 965, 977) | +0.013 / −0.030 / −0.285 | +0.043, −0.255 | +0.043, −0.274 | +0.040, −0.292 | 0.0462 → 0.0119 |
-  | S1R, its 38 frames | +0.014 / −0.027 / −0.290 | +0.041, −0.263 | | | |
+Measured on the test copy of roll #8 and on the S1R ColorPlus roll, read only:
 
-  The Z f's after-gap is this study's gains-only figure (0.0052); the S1R's is its single frame's
-  (0.0093) on a whole roll whose blue spreads 0.034 stop between frames.
-- **What stays.** Gains move the balance alone. The deeper blacks (6.1 % of pixels under L 0.03 on the
-  Z f against Swift's 3.4 %) and the S1R's skin and sky hues come from Apple's matrix, which a gain
-  cannot carry: they stay until a per-camera matrix, option (a), is decided.
-- **Safety.** Each sidecar is backed up under `<support>/Transition/backup/` (named by its digest,
-  `manifest.jsonl` mapping it to its path) before it is written through the sidecar writer; every
-  outcome goes on `ledger.jsonl` with the digests before and after, so nothing is corrected twice and a
-  run stopped anywhere resumes. `oni_transition::correct::restore` puts back every backup whose sidecar
-  has not changed since.
-- **Limits.** A roll prepared in this app before the transition was installed is taken for the
-  earlier app's; a roll prepared in the Swift app after it is not corrected. A roll moved after its
-  correction keeps a later date and is left alone. Frames of RGB passes and DNGs keep their settings.
+| | Z f | S1R |
+|---|---|---|
+| Measure, three frames (both decodes) | 4.2 s | 7.0 s |
+| Fitting the matrix | 32 ms | 63 ms |
+| Density residual R / G / B | 0.0007 / 0.0007 / 0.0036 | 0.0044 / 0.0036 / 0.0194 |
+| Render gap to Swift: none / gains / matrix | 0.0182 / 0.0051 / 0.0016 | 0.0462 / 0.0119 / 0.0095 |
+| Pro face, pixels under L 0.03: Swift / LibRaw × gains / matrix | 6.64 / 7.51 / 6.62 % | |
+| Pro face, darkest 5 % L ×100: Swift / gains / matrix | 3.4 / 2.9 / 3.4 | 23.1 / 22.9 / 23.2 |
+
+- **Blacks.** The matrix brings them back to Swift's, where gains alone deepen them on the Z f.
+- **S1R.** The blue curvature stays (0.0095): a matrix cannot carry it.
+- **Fit on one frame.** A matrix fitted on a single frame holds on the Z f (0.0018). On the S1R one frame
+  of three gave an outlier, so the three frames are pooled.
+- **Blacks against #180.** These percentages come from `render-pairs` and `analyse.py` on this branch.
+  Their absolute level differs from `decoder-per-camera.md`'s table, though the order of the arms is
+  the measure's.
 
 ## Reproduce
 
@@ -264,5 +261,5 @@ toolchain's `swiftc`, writes `<out>/dumps`, then prints the fit to `<out>/fit.tx
 `<out>/gap.txt`. The sidecar folder holds `<name>.json` copies, so the originals are only read. The
 whole roll takes about 70 s.
 
-The transition's own measure and residual: `cargo run --release -p oni-transition --example measure --
-<raw>...` and `--example residual -- <out>/dumps <sidecar folder> <r,g,b stops>`.
+The transition's own measure, a camera's matrix from its frames with each step timed:
+`cargo run --release -p oni-transition --example measure -- <raw>...`.

@@ -1,6 +1,6 @@
 [package]
 name = "oni-transition"
-description = "The one-time correction of RAW settings prepared in the Swift app, measured per camera against Apple's decode"
+description = "Each camera matched once to the Swift app's Apple decode by a 3x3 that every LibRaw decode of it folds"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -9,10 +9,8 @@ publish = false
 [dependencies]
 oni-decode.workspace = true
 oni-library = { path = "../oni-library" }
-oni-settings.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-sha2 = "0.10"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
@@ -23,6 +21,7 @@ objc2-foundation = { version = "0.3", default-features = false, features = ["std
 
 [dev-dependencies]
 oni-fixtures.workspace = true
+oni-settings.workspace = true
 # The residual check renders through the real pipeline.
 oni-graph = { path = "../oni-graph" }
 oni-pipeline = { path = "../oni-pipeline" }

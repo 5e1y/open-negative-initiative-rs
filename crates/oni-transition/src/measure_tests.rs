@@ -29,13 +29,20 @@ fn scene(width: usize, height: usize) -> Vec<[f32; 4]> {
 
 /// Apple's view of `libraw`: its frame starting at `offset`, gained by `stops`, and its grid.
 fn apple_of(libraw: Plane<'_>, offset: (usize, usize), stops: [f64; 3], flipped: bool) -> Grid {
+    let m = [0, 1, 2].map(|r| [0, 1, 2].map(|c| if r == c { stops[c].exp2() } else { 0.0 }));
+    seen_through(libraw, offset, &m, flipped)
+}
+
+/// Apple's view of `libraw` through a 3x3 `m`.
+fn seen_through(libraw: Plane<'_>, offset: (usize, usize), m: &M3, flipped: bool) -> Grid {
     let (w, h) = (libraw.width - offset.0, libraw.height - offset.1);
     let mut pixels = Vec::with_capacity(w * h);
     for y in 0..h {
         let row = if flipped { libraw.height - 1 - y } else { y + offset.1 };
         for x in 0..w {
             let p = libraw.pixels[row * libraw.width + x + offset.0];
-            pixels.push([0, 1, 2, 3].map(|c| if c < 3 { p[c] * stops[c].exp2() as f32 } else { 1.0 }));
+            let v = apply(m, [0, 1, 2].map(|c| f64::from(p[c])));
+            pixels.push([v[0] as f32, v[1] as f32, v[2] as f32, 1.0]);
         }
     }
     Grid::of(Plane { width: w, height: h, pixels: &pixels })
@@ -84,4 +91,26 @@ fn a_camera_takes_each_channel_median_of_its_frames() {
     let mean = frames.iter().map(|f| f[1]).sum::<f64>() / 3.0;
     assert!((mean - combined(&frames)[1]).abs() > 1e-3);
     assert_eq!(median(vec![1.0, 3.0]), 2.0);
+}
+
+/// The study's Z f matrix, LibRaw's Rec. 2020 to Apple's.
+const ZF_MATRIX: M3 = [[1.1252, -0.1698, -0.0064], [0.0259, 0.9537, -0.0640], [0.0092, -0.0109, 0.8969]];
+
+#[test]
+fn the_matrix_is_recovered_where_gains_leave_a_residual() {
+    let (w, h) = (400, 300);
+    let pixels = scene(w, h);
+    let libraw = Plane { width: w, height: h, pixels: &pixels };
+    let shift = fit(&seen_through(libraw, (2, 1), &ZF_MATRIX, false), libraw).expect("a fit");
+    let m = matrix(&shift.pairs).expect("a matrix");
+    for r in 0..3 {
+        for c in 0..3 {
+            assert!((m[r][c] - ZF_MATRIX[r][c]).abs() < 1e-3, "{m:?}");
+        }
+    }
+    assert!(residual(&shift.pairs, &m).iter().all(|e| *e < 1e-4));
+    // Twin: the channels' own gains alone leave the mixing unexplained.
+    let gains = [0, 1, 2].map(|r| [0, 1, 2].map(|c| if r == c { shift.stops[c].exp2() } else { 0.0 }));
+    assert!(residual(&shift.pairs, &gains).iter().any(|e| *e > 1e-3), "{:?}", residual(&shift.pairs, &gains));
+    assert!(matrix(&[]).is_none(), "no pair, no matrix");
 }

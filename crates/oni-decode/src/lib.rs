@@ -2,6 +2,7 @@
 //! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
 
 pub mod camera;
+pub mod rendition;
 pub mod container;
 pub mod embedded;
 pub mod plain;
@@ -26,6 +27,8 @@ struct Decoded {
     half: c_int,
     inset: [c_int; 4],
     flip: c_int,
+    make: [c_char; 64],
+    model: [c_char; 64],
 }
 
 unsafe extern "C" {
@@ -258,6 +261,15 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
 /// `decode` for a copy no longer than `side`: read at half size, a sensor pixel per 2x2 block with
 /// no demosaic, when the sensor is twice as long; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
+    decoded(path, exposure_gain, side, true)
+}
+
+/// `decode` in LibRaw's own colours, the camera's rendition matrix left out: what it is measured on.
+pub fn decode_native(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
+    decoded(path, exposure_gain, 0, false).map(|(linear, _)| linear)
+}
+
+fn decoded(path: &Path, exposure_gain: f32, side: usize, matched: bool) -> Result<(Linear, usize), DecodeError> {
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
     let min_side = c_int::try_from(side).unwrap_or(0);
@@ -294,7 +306,8 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
     let factor = if d.half != 0 { 2 } else { 1 };
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
-    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &conv.matrix);
+    let matrix = if matched { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
+    let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &matrix);
     let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
         eprintln!(

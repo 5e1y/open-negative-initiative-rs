@@ -1,5 +1,5 @@
-// The transition from the earlier version: a blocking sheet while each camera is measured and its
-// photos corrected, then what was done and CONTINUE. Rust fills every line.
+// The transition from the earlier version: a blocking sheet while each camera is matched to the
+// earlier version's colours, then what was done and CONTINUE. Rust fills every line.
 import { Sheet, SheetStyle, Space, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress, Note } from "ds/ds.slint";
 
 export struct TransitionLine { camera: string, detail: string }
@@ -26,13 +26,13 @@ export component TransitionSheet inherits Sheet {
     }
     VerticalLayout {
         spacing: Space.l;
-        Label { text: "Photos From the Earlier Version"; role: TextRole.title; wrap: word-wrap; }
+        Label { text: "Matching Your Cameras"; role: TextRole.title; wrap: word-wrap; }
         VerticalLayout {
             spacing: Space.s;
             for line in [
-                "ONI now reads RAW files with a different decoder, which sees each camera's colours a little differently.",
-                "Photos prepared in the earlier version are corrected once, camera by camera, so they keep their colours.",
-                "A backup of their settings is kept. Opened in the earlier version afterwards, they would look slightly cooler.",
+                "ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version.",
+                "Each camera is matched once to the earlier version's colours, on a few of your photos.",
+                "Nothing in your photos' settings is changed.",
             ]: BulletLine { text: line; }
         }
         VerticalLayout {

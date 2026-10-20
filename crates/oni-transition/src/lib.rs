@@ -1,13 +1,12 @@
-//! The transition from the Swift app: RAWs it prepared were measured on Apple's decode, which reads
-//! each camera a little differently from LibRaw. Once per camera the gap is measured on a few frames,
-//! then every earlier sidecar of that camera has its gains shifted by it, after a backup.
+//! The transition from the Swift app: Apple's decode reads each camera a little differently from
+//! LibRaw. Once per camera, on a Mac, the gap is fitted as a 3x3 on a few frames and kept in a table
+//! every decode of that camera folds, so RAWs keep the earlier version's colours; no setting moves.
 
 pub mod apple;
-pub mod correct;
 pub mod measure;
-pub mod records;
 pub mod run;
 pub mod survey;
+pub mod table;
 
 pub use apple::{AppleDecode, Simulated};
 pub use run::{Event, Summary, pending, run};

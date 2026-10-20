@@ -1,5 +1,5 @@
-//! Apple's decode against LibRaw's on one frame: aligned to the pixel, then each channel's ratio
-//! as the median over squares both decoders read clearly, in stops.
+//! Apple's decode against LibRaw's on one frame: aligned to the pixel, the squares both decoders read
+//! clearly paired, then the camera's 3x3 from LibRaw's Rec. 2020 to Apple's fitted over those pairs.
 
 /// The side of the squares both decodes are averaged over, as `scripts/decoder-gap` averages them.
 pub const BLOCK: usize = 8;
@@ -38,9 +38,14 @@ impl Grid {
     }
 }
 
-/// One frame's measure: Apple over LibRaw per channel, and what it rests on.
+pub type Rgb = [f64; 3];
+pub type M3 = [[f64; 3]; 3];
+
+/// One frame's measure: its squares paired, Apple over LibRaw per channel, and what they rest on.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Shift {
+    /// Each clear square, Apple's then LibRaw's.
+    pub pairs: Vec<(Rgb, Rgb)>,
     pub stops: [f64; 3],
     /// Where Apple's top-left pixel falls in LibRaw's frame.
     pub offset: (isize, isize),
@@ -158,30 +163,79 @@ fn aligned(apple: &Grid, libraw: Plane<'_>) -> Result<((isize, isize), f64), Ref
     Ok(best)
 }
 
-/// Apple over LibRaw on one frame, per channel, in stops.
+/// Apple over LibRaw on one frame: its clear squares paired, and each channel's median ratio in stops.
 pub fn fit(apple: &Grid, libraw: Plane<'_>) -> Result<Shift, Refusal> {
     let (offset, correlation) = aligned(apple, libraw)?;
-    let mut logs: [Vec<f64>; 3] = Default::default();
+    let mut pairs = Vec::new();
     let mut total = 0usize;
     for (x, y) in interior(apple) {
         total += 1;
         let a = &apple.means[y * apple.width + x];
         let Some(l) = under(libraw, x, y, offset) else { continue };
         if usable(a) && usable(&l) {
-            (0..3).for_each(|c| logs[c].push((f64::from(a[c]) / f64::from(l[c])).log2()));
+            pairs.push((a.map(f64::from), l.map(f64::from)));
         }
     }
-    let share = logs[0].len() as f64 / total.max(1) as f64;
+    let share = pairs.len() as f64 / total.max(1) as f64;
     if share < MIN_SHARE {
         return Err(Refusal::TooFewUsable(share));
     }
-    let [r, g, b] = logs;
-    Ok(Shift { stops: [median(r), median(g), median(b)], offset, correlation, share })
+    let stops = [0, 1, 2].map(|c| median(pairs.iter().map(|(a, l)| (a[c] / l[c]).log2()).collect()));
+    Ok(Shift { pairs, stops, offset, correlation, share })
 }
 
 /// The camera's shift from its frames' measures: each channel's median.
 pub fn combined(shifts: &[[f64; 3]]) -> [f64; 3] {
     [0, 1, 2].map(|c| median(shifts.iter().map(|s| s[c]).collect()))
+}
+
+fn solve(a: M3, b: Rgb) -> Option<Rgb> {
+    let det = |m: M3| {
+        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+    };
+    let d = det(a);
+    (d.abs() > 1e-12).then(|| {
+        [0, 1, 2].map(|k| {
+            let mut m = a;
+            (0..3).for_each(|r| m[r][k] = b[r]);
+            det(m) / d
+        })
+    })
+}
+
+/// LibRaw to Apple, each row minimising the relative error `(M l)_c / a_c - 1` over every pair:
+/// a density error, so the negative's dense and thin squares weigh alike.
+pub fn matrix(pairs: &[(Rgb, Rgb)]) -> Option<M3> {
+    let rows: Vec<Rgb> = (0..3)
+        .map(|c| {
+            let (mut ata, mut atb) = ([[0f64; 3]; 3], [0f64; 3]);
+            for (a, l) in pairs {
+                let row = l.map(|v| v / a[c]);
+                for i in 0..3 {
+                    atb[i] += row[i];
+                    (0..3).for_each(|j| ata[i][j] += row[i] * row[j]);
+                }
+            }
+            solve(ata, atb)
+        })
+        .collect::<Option<_>>()?;
+    Some([rows[0], rows[1], rows[2]])
+}
+
+pub fn apply(m: &M3, v: Rgb) -> Rgb {
+    [0, 1, 2].map(|r| m[r][0] * v[0] + m[r][1] * v[1] + m[r][2] * v[2])
+}
+
+/// Root mean square of the density error per channel, Apple against `m` times LibRaw (log10).
+pub fn residual(pairs: &[(Rgb, Rgb)], m: &M3) -> Rgb {
+    let n = pairs.len().max(1) as f64;
+    let mut sq = [0f64; 3];
+    for (a, l) in pairs {
+        let fitted = apply(m, *l);
+        (0..3).for_each(|c| sq[c] += (a[c].log10() - fitted[c].max(1e-9).log10()).powi(2) / n);
+    }
+    sq.map(f64::sqrt)
 }
 
 #[cfg(test)]

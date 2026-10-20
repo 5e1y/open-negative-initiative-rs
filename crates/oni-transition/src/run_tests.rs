@@ -1,7 +1,5 @@
 use super::*;
 use crate::test_support::Scratch;
-use oni_settings::sidecar;
-use std::time::{Duration, SystemTime};
 
 #[test]
 fn the_frames_tried_spread_over_the_roll() {
@@ -12,74 +10,54 @@ fn the_frames_tried_spread_over_the_roll() {
     assert_ne!(spread(38)[..3], [0, 1, 2]);
 }
 
-/// Sets a file's modification date `days` before now.
-fn aged(path: &Path, days: u64) {
-    let file = std::fs::OpenOptions::new().write(true).open(path).unwrap();
-    file.set_modified(SystemTime::now() - Duration::from_secs(days * 86_400)).unwrap();
-}
-
-fn frame(folder: &Path, name: &str) -> PathBuf {
-    let raw = folder.join(name);
-    std::fs::write(&raw, b"raw").unwrap();
-    let mut s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-    s.gains.stops = [-1.0, 0.0, 1.0];
-    sidecar::write(&s, &raw, sidecar::WriteOptions::default()).unwrap();
-    raw
-}
-
 #[test]
-fn only_raw_sidecars_written_before_the_install_are_found() {
-    let roll = Scratch::new("survey");
-    let old = frame(roll.path(), "old.NEF");
-    aged(&sidecar::url_for(&old), 30);
-    let recent = frame(roll.path(), "recent.NEF");
-    let scan = frame(roll.path(), "scan.tif");
-    aged(&sidecar::url_for(&scan), 30);
+fn a_file_libraw_cannot_name_is_no_camera_and_an_unplugged_root_waits() {
+    let (support, roll) = (Scratch::new("support"), Scratch::new("roll"));
+    std::fs::write(roll.path().join("scan.NEF"), b"not a RAW").unwrap();
+    std::fs::write(roll.path().join("scan.tif"), b"not a RAW either").unwrap();
     let roots = vec![roll.path().to_string_lossy().into_owned(), "/Volumes/oni-unplugged-disk".into()];
-    let found = survey::survey(&roots, records::now() - 86_400.0, &Ledger::default());
-    let names: Vec<_> = found.raws.iter().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()).collect();
-    assert_eq!(names, ["old.NEF"]);
+    let found = survey::survey(support.path(), &roots);
+    assert!(found.cameras.is_empty());
     assert_eq!(found.unreachable, ["/Volumes/oni-unplugged-disk"]);
-    assert!(survey::written_at(&sidecar::url_for(&recent)).is_some());
-    // Twin: once the ledger settles it, the same sidecar is not found again.
-    let mut ledger = Ledger::default();
-    ledger.entries.insert(
-        sidecar::url_for(&old).to_string_lossy().into_owned(),
-        Entry { sidecar: String::new(), outcome: Outcome::Corrected, reason: None, before: String::new(), after: None, stops: None, backup: None, at: 0.0 },
-    );
-    assert!(survey::survey(&roots, records::now() - 86_400.0, &ledger).raws.is_empty());
+    assert_eq!(pending(support.path(), &roots), 0);
+    // Twin: an unreadable table measures nothing rather than starting an empty one.
+    std::fs::create_dir_all(table::folder(support.path())).unwrap();
+    std::fs::write(Table::path(support.path()), b"{ torn").unwrap();
+    assert!(run(support.path(), &roots, &crate::Simulated { matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] }, &mut |_| {}).is_err());
 }
 
+const ZF: M3 = [[1.1252, -0.1698, -0.0064], [0.0259, 0.9537, -0.0640], [0.0092, -0.0109, 0.8969]];
+
 #[test]
-fn a_run_measures_corrects_and_never_twice_on_real_frames() {
-    let Some(dir) = oni_fixtures::raw_dir("a_run_measures_corrects_and_never_twice_on_real_frames") else { return };
+fn a_camera_is_matched_once_and_no_setting_moves() {
+    let Some(dir) = oni_fixtures::raw_dir("a_camera_is_matched_once_and_no_setting_moves") else { return };
     let mut nefs: Vec<PathBuf> = std::fs::read_dir(&dir).unwrap().filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.extension().is_some_and(|e| e == "NEF")).collect();
     nefs.sort();
     let (support, roll) = (Scratch::new("support"), Scratch::new("roll"));
     for nef in nefs.iter().take(2) {
-        let copy = roll.path().join(nef.file_name().unwrap());
-        std::fs::copy(nef, &copy).unwrap();
-        let mut s = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
-        s.gains.stops = [-1.0, 0.0, 1.0];
-        sidecar::write(&s, &copy, sidecar::WriteOptions::default()).unwrap();
-        aged(&sidecar::url_for(&copy), 30);
+        std::fs::hard_link(nef, roll.path().join(nef.file_name().unwrap())).unwrap();
     }
+    let sidecar = roll.path().join(format!("{}.json", nefs[0].file_name().unwrap().to_string_lossy()));
+    std::fs::write(&sidecar, b"{\"version\":19}").unwrap();
     let roots = vec![roll.path().to_string_lossy().into_owned()];
-    assert_eq!(pending(support.path(), &roots), 2);
-    let apple = crate::Simulated { stops: [0.063, -0.026, -0.126] };
+    assert_eq!(pending(support.path(), &roots), 1);
     let mut events = Vec::new();
-    let summary = run(support.path(), &roots, &apple, &mut |e| events.push(e)).unwrap();
-    assert_eq!(summary.corrected.len(), 2, "{summary:?}");
-    let stops = summary.cameras[0].stops.clone().unwrap();
-    for c in 0..3 {
-        assert!((stops[c] - apple.stops[c]).abs() < 0.002, "{stops:?}");
+    let summary = run(support.path(), &roots, &crate::Simulated { matrix: ZF }, &mut |e| events.push(e)).unwrap();
+    assert_eq!(summary.matched.len(), 2, "{summary:?}");
+    assert!(matches!(events.last(), Some(Event::Measured { residual: Ok(_), .. })));
+    let table = Table::load(support.path()).unwrap();
+    let entry = table.get("Nikon", "Z f").expect("the Z f");
+    for r in 0..3 {
+        for c in 0..3 {
+            assert!((entry.matrix[r][c] - ZF[r][c]).abs() < 2e-3, "{:?}", entry.matrix);
+        }
     }
-    assert!(events.contains(&Event::Corrected { done: 2, of: 2 }));
-    let read = sidecar::read(&summary.corrected[0], true, true).unwrap().settings;
-    assert!((read.gains.stops[2] - (1.0 + stops[2] as f32)).abs() < 1e-5);
-    // Twin: the run again finds nothing, and the gains stay where one run put them.
+    assert_eq!(entry.frames.len(), 2);
+    assert!(oni_decode::rendition::matrix_for("Nikon", "Z f").is_some(), "installed for every later decode");
+    assert_eq!(std::fs::read(&sidecar).unwrap(), b"{\"version\":19}", "no sidecar is written");
+    // Twin: a camera in the table is never measured again.
     assert_eq!(pending(support.path(), &roots), 0);
-    let second = run(support.path(), &roots, &apple, &mut |_| {}).unwrap();
-    assert!(second.corrected.is_empty() && second.cameras.is_empty());
-    assert_eq!(sidecar::read(&summary.corrected[0], true, true).unwrap().settings.gains, read.gains);
+    let again = run(support.path(), &roots, &crate::Simulated { matrix: ZF }, &mut |_| {}).unwrap();
+    assert!(again.cameras.is_empty() && again.matched.is_empty());
+    oni_decode::rendition::install([]);
 }

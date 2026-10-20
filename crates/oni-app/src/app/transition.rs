@@ -1,41 +1,49 @@
-//! The transition from the earlier version: when a folder opens, the library is searched off this
-//! thread for RAW sidecars the Swift app wrote; any found are corrected behind a blocking sheet.
+//! The transition from the earlier version: when a folder opens, the library's RAWs are named off this
+//! thread; any camera the table lacks is matched to Apple's decode behind a blocking sheet. The
+//! thumbnails' pass waits meanwhile, so no frame renders without its camera's matrix.
 
 use super::{Ctl, with_shell};
 use crate::{MainWindow, Transition as Sheet, TransitionLine};
 use oni_transition::{AppleDecode, Event, Summary};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-
-/// The lines naming frames left as they were, the rest counted.
-const LEFT_SHOWN: usize = 6;
+use std::sync::atomic::Ordering;
 
 #[derive(Default)]
 pub(crate) struct Transition {
     /// Apple's decode; none in the checks and wherever the earlier app never ran.
     apple: Option<Arc<dyn AppleDecode>>,
-    /// A search or a run under way: a folder opened meanwhile asks nothing more.
+    /// A search or a run under way, holding the thumbnails' pass.
     busy: bool,
-    /// Every root was searched this session; a later folder adds itself and the disks unplugged before.
+    /// Every root was searched this session; a later folder is searched alone.
     searched: bool,
     /// Folders opened while a search or a run was under way, searched once it ends.
     waiting: Vec<String>,
-    /// Each camera's name, its frame count and the line its shift shows on.
+    /// Each camera's name, its frame count and the line its match shows on.
     cameras: Vec<(String, usize, String)>,
+    /// Cameras matched over all, for the progress bar.
+    measured: (usize, usize),
 }
 
 impl Transition {
-    pub(crate) fn new(apple: Option<Arc<dyn AppleDecode>>) -> Transition {
+    /// The table on file goes into every decode before the first frame is read.
+    pub(crate) fn new(apple: Option<Arc<dyn AppleDecode>>, support: &Path) -> Transition {
+        if apple.is_some()
+            && let Err(e) = oni_transition::table::install_from(support)
+        {
+            crate::timing::line(&format!("the camera table is not used: {e}"));
+        }
         Transition { apple, ..Transition::default() }
     }
 }
 
-/// A camera's shift as the sheet prints it, in stops.
-pub fn shift_line(stops: &[f64; 3]) -> String {
-    format!("R {:+.3}  G {:+.3}  B {:+.3} stop", stops[0], stops[1], stops[2]).replace('-', "\u{2212}")
+/// A camera's match as the sheet prints it: the density error left, as a share of the light.
+pub fn residual_line(residual: &[f64; 3]) -> String {
+    let worst = residual.iter().cloned().fold(0.0, f64::max);
+    format!("matched, within {:.1} %", (10f64.powf(worst) - 1.0) * 100.0)
 }
 
 fn photos(n: usize) -> String {
@@ -52,8 +60,7 @@ impl Ctl {
         });
     }
 
-    /// Searches the library for the earlier version's sidecars off this thread: every root the
-    /// first time, then each folder opened and the roots unreachable before.
+    /// Names the library's RAWs off this thread, every root the first time, then each folder opened.
     pub(super) fn transition_check(self: &Rc<Self>, folder: &str) {
         let (apple, support, roots) = {
             let mut s = self.state.borrow_mut();
@@ -63,6 +70,7 @@ impl Ctl {
                 return;
             }
             s.transition.busy = true;
+            s.hands.fetch_add(1, Ordering::Relaxed);
             let mut roots = if s.transition.searched { Vec::new() } else { oni_library::roots::Roots::load(&s.support).paths };
             roots.append(&mut s.transition.waiting);
             (apple, s.support.clone(), roots)
@@ -82,12 +90,13 @@ impl Ctl {
             .expect("the transition's thread");
     }
 
-    /// The search or the run over; a folder opened meanwhile is searched now.
+    /// The search or the run over: the thumbnails' pass goes on, and a folder opened meanwhile is searched.
     fn transition_idle(self: &Rc<Self>) {
         let next = {
             let mut s = self.state.borrow_mut();
             s.transition.busy = false;
             s.transition.searched = true;
+            let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
             s.transition.waiting.pop()
         };
         if let Some(folder) = next {
@@ -95,17 +104,18 @@ impl Ctl {
         }
     }
 
-    /// The sheet over the window, the open frame's settings written first, then the run off this thread.
+    /// The sheet over the window, then the run off this thread.
     fn transition_run(self: &Rc<Self>, apple: Arc<dyn AppleDecode>, support: PathBuf, roots: Vec<String>) {
-        if let Some(failure) = self.last_writes() {
-            self.say(&format!("The open frame's settings could not be saved: {failure}"));
+        {
+            let mut s = self.state.borrow_mut();
+            s.transition.cameras.clear();
+            s.transition.measured = (0, 0);
         }
-        self.state.borrow_mut().transition.cameras.clear();
         if let Some(w) = self.window() {
             let t = w.global::<Sheet>();
             t.set_done(false);
             t.set_progress(-1.0);
-            t.set_stage("Looking for photos prepared in the earlier version…".into());
+            t.set_stage("Looking for the cameras of your photos…".into());
             t.set_cameras(ModelRc::default());
             t.set_left(ModelRc::default());
             t.set_summary("".into());
@@ -139,20 +149,24 @@ impl Ctl {
         let t = w.global::<Sheet>();
         match e {
             Event::Found { cameras } => {
-                self.state.borrow_mut().transition.cameras = cameras.into_iter().map(|(name, n)| (name, n, "waiting".into())).collect();
+                let mut s = self.state.borrow_mut();
+                s.transition.measured = (0, cameras.len());
+                s.transition.cameras = cameras.into_iter().map(|(name, n)| (name, n, "waiting".into())).collect();
+                drop(s);
                 self.publish_cameras();
             }
             Event::Measuring { camera } => {
-                t.set_progress(-1.0);
-                t.set_stage(format!("Measuring the {camera} against the earlier decoder…").into());
-                self.set_camera_detail(&camera, "measuring…".into());
+                t.set_stage(format!("Matching the {camera} to the earlier version…").into());
+                self.set_camera_detail(&camera, "matching…".into());
             }
-            Event::Measured { camera, stops } => {
-                self.set_camera_detail(&camera, stops.as_ref().map_or_else(|_| "not measured".into(), shift_line));
-            }
-            Event::Corrected { done, of } => {
+            Event::Measured { camera, residual } => {
+                let (done, of) = {
+                    let mut s = self.state.borrow_mut();
+                    s.transition.measured.0 += 1;
+                    s.transition.measured
+                };
                 t.set_progress(done as f32 / of.max(1) as f32);
-                t.set_stage(format!("Correcting {done} of {}", photos(of)).into());
+                self.set_camera_detail(&camera, residual.as_ref().map_or_else(|_| "not matched".into(), residual_line));
             }
         }
     }
@@ -164,12 +178,12 @@ impl Ctl {
         self.publish_cameras();
     }
 
-    /// The summary and CONTINUE; the open frame read again and the corrected photos' thumbnails redrawn.
     fn transition_finished(self: &Rc<Self>, result: Result<Summary, String>) {
         self.transition_summary(result);
         self.transition_idle();
     }
 
+    /// The summary and CONTINUE; the matched cameras' frames decoded and drawn again.
     fn transition_summary(self: &Rc<Self>, result: Result<Summary, String>) {
         let Some(w) = self.window() else { return };
         let t = w.global::<Sheet>();
@@ -179,56 +193,53 @@ impl Ctl {
             Ok(summary) => summary,
             Err(e) => {
                 t.set_stage("Stopped".into());
-                t.set_summary(format!("The correction stopped: {e}. Nothing is lost; it starts again at the next launch.").into());
+                t.set_summary(format!("The cameras could not be matched: {e}. RAW files show LibRaw's own colours until the next launch.").into());
                 return;
             }
         };
         t.set_stage("Done".into());
-        let mut text = match summary.corrected.len() {
-            0 => "No photo needed a correction.".to_string(),
-            n => format!("{} corrected.", photos(n)),
+        let matched = summary.cameras.iter().filter(|c| c.residual.is_ok()).count();
+        let mut text = match matched {
+            0 => "No camera could be matched.".to_string(),
+            1 => "1 camera matched.".to_string(),
+            n => format!("{n} cameras matched."),
         };
-        if !summary.left.is_empty() {
-            text += &format!(" {} left as they were:", photos(summary.left.len()));
-        }
         if !summary.unreachable.is_empty() {
-            text += " Some folders could not be reached: their photos are corrected when they come back.";
+            text += " Some folders could not be reached: their cameras are matched when they come back.";
         }
         t.set_summary(text.into());
-        let mut left: Vec<slint::SharedString> = summary
-            .left
-            .iter()
-            .take(LEFT_SHOWN)
-            .map(|(raw, why)| format!("{}: {why}", raw.file_name().map_or_else(String::new, |n| n.to_string_lossy().into_owned())).into())
-            .collect();
-        if summary.left.len() > LEFT_SHOWN {
-            left.push(format!("and {} more", summary.left.len() - LEFT_SHOWN).into());
-        }
+        let left: Vec<slint::SharedString> =
+            summary.cameras.iter().filter_map(|c| c.residual.as_ref().err().map(|why| format!("{}: {why}", c.name).into())).collect();
         t.set_left(ModelRc::new(VecModel::from(left)));
-        self.transition_reload(&summary);
+        self.transition_redraw(&summary.matched);
     }
 
-    /// The open frame read again from its corrected sidecar, and each corrected photo's thumbnail redrawn.
-    fn transition_reload(self: &Rc<Self>, summary: &Summary) {
-        let corrected: HashSet<String> = summary.corrected.iter().map(|p| p.to_string_lossy().into_owned()).collect();
-        let (open, shown, support) = {
-            let s = self.state.borrow();
-            let shown: Vec<String> = corrected.iter().filter(|p| s.fingerprints.contains_key(*p)).cloned().collect();
-            (s.open.clone().filter(|p| corrected.contains(p)), shown, s.support.clone())
+    /// The frames of the cameras just matched: previews and thumbnails dropped, the open one read again.
+    fn transition_redraw(self: &Rc<Self>, matched: &[PathBuf]) {
+        let matched: HashSet<String> = matched.iter().map(|p| oni_library::paths::canonical(p)).collect();
+        let (open, shown, support, previews) = {
+            let mut s = self.state.borrow_mut();
+            if s.full.as_ref().is_some_and(|(p, _)| matched.contains(p)) {
+                s.full = None;
+            }
+            let shown: Vec<String> = matched.iter().filter(|p| s.fingerprints.contains_key(*p)).cloned().collect();
+            (s.open.clone().filter(|p| matched.contains(p)), shown, s.support.clone(), s.previews.clone())
         };
+        if let Ok(mut p) = previews.lock() {
+            matched.iter().for_each(|path| p.remove(path));
+        }
+        let index = self.state.borrow().index_path.clone();
+        if let Some(index) = oni_library::index::LibraryIndex::open(&index) {
+            for e in index.all().into_iter().filter(|e| matched.contains(&e.path)) {
+                let stale_thumbnail = crate::thumbnails::file(&support, &e.fingerprint);
+                let _ = std::fs::remove_file(stale_thumbnail);
+            }
+        }
         if let Some(open) = open {
             self.open_photo(&open);
         }
         for p in &shown {
             self.redraw(p);
-        }
-        // The thumbnails of photos outside the open folder are dropped, so their pass draws them again.
-        let index = self.state.borrow().index_path.clone();
-        if let Some(index) = oni_library::index::LibraryIndex::open(&index) {
-            for e in index.all().into_iter().filter(|e| corrected.contains(&e.path) && !shown.contains(&e.path)) {
-                let stale_thumbnail = crate::thumbnails::file(&support, &e.fingerprint);
-                let _ = std::fs::remove_file(stale_thumbnail);
-            }
         }
     }
 }
