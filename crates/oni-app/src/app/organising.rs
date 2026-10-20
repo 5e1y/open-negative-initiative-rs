@@ -125,7 +125,7 @@ pub struct Organising {
     /// The surface last laid: 0 the archive, 1 the projects, 2 the ONI Trash.
     laid_surface: Option<u8>,
     /// `renaming` and `draft`: the heading typed over, and what its field holds now.
-    renaming: Option<(Naming, String)>,
+    pub(in crate::app) renaming: Option<(Naming, String)>,
     /// The heading last clicked and when, which tells a double click's second.
     heading_click: Option<(usize, Instant)>,
 }

@@ -90,7 +90,15 @@ impl Ctl {
     /// folder, a roll's name and the index rows follow it, then the folder is read again.
     pub(in crate::app) fn rename_folder(self: &Rc<Self>, path: &str, name: &str) {
         let trimmed = trim_spaces(name);
-        if trimmed.is_empty() || trimmed.contains('/') || trimmed == paths::name(path) {
+        // A separator would move the folder rather than name it: `\` is one on Windows.
+        let separator = trimmed.contains('/') || (cfg!(windows) && trimmed.contains('\\'));
+        if trimmed.is_empty() || separator || trimmed == paths::name(path) {
+            return self.publish_navigator();
+        }
+        // The open frame's settings reach its sidecar before the folder holding it moves.
+        let unsaved = self.state.borrow_mut().store.flush();
+        if let Some(e) = unsaved {
+            self.went_wrong(&format!("The folder was not renamed, as the open photo's settings could not be saved: {e}"));
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
@@ -123,6 +131,8 @@ impl Ctl {
             film.name = trimmed.to_owned();
             let _ = folders::set_roll(Some(&film), &target);
         }
+        // A read in flight under the old names is superseded, never laid over the moved rows.
+        self.state.borrow().generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         self.followed(&[Move { from: path.to_owned(), to: target }]);
         self.start_pass();
         self.publish_navigator();

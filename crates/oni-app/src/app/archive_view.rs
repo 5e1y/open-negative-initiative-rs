@@ -19,7 +19,8 @@ impl Ctl {
     /// `dropDestination`: files from the Finder are taken in the gallery alone, as ⌘O takes them;
     /// whether they were.
     pub fn dropped(self: &Rc<Self>, paths: &[PathBuf]) -> bool {
-        let shown = self.window().is_some_and(|w| w.get_grid_shown());
+        // Under a sheet the drop would change the folder the sheet was asked about.
+        let shown = self.window().is_some_and(|w| w.get_grid_shown() && !w.get_sheet_shown());
         if !shown || paths.is_empty() {
             return false;
         }
@@ -64,6 +65,7 @@ impl Ctl {
         let (generation, index_path) = {
             let mut s = self.state.borrow_mut();
             s.org.trash_open = false;
+            s.org.renaming = None;
             s.trash_picks = Default::default();
             s.opened = Some(folder.clone());
             s.reveal.fresh = true;

@@ -57,6 +57,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.org.projects_surface = i == 1;
             s.org.reorder = None;
+            s.org.renaming = None;
             s.org.info_loaded = None;
         }
         if let Some(w) = self.window() {
