@@ -177,9 +177,11 @@ impl Ctl {
             (imported, shown)
         };
         self.watch_histogram();
+        let c = w.global::<Canvas>();
         if let (Some(image), _) = &image {
-            w.global::<Canvas>().set_frame(image.clone());
+            c.set_frame(image.clone());
         }
+        c.set_frame_revision(c.get_frame_revision().wrapping_add(1));
         if let Some(e) = refused {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
             static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

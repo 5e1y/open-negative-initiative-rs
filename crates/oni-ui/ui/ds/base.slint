@@ -103,6 +103,9 @@ export component Picture inherits Rectangle {
     in property <bool> rounded;
     in property <bool> pixelated;
     in property <bool> stretched;
+    // Bumped when the texture behind `source` is rewritten in place, which changes no property: a
+    // rounded clip above caches its children as a layer and would keep drawing the old texels.
+    in property <int> revision;
     background: Tones.ground(root.ground);
     border-radius: root.rounded ? Radius.badge : 0px;
     clip: root.rounded;
@@ -110,7 +113,7 @@ export component Picture inherits Rectangle {
         width: parent.width;
         height: parent.height;
         source: root.source;
-        image-fit: root.stretched ? ImageFit.fill : ImageFit.contain;
+        image-fit: root.revision < 0 || root.stretched ? ImageFit.fill : ImageFit.contain;
         image-rendering: root.pixelated ? ImageRendering.pixelated : ImageRendering.smooth;
     }
 }

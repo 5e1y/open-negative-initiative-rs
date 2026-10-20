@@ -36,6 +36,7 @@ impl Ctl {
         if let Some(image) = imported {
             c.set_before(image);
         }
+        c.set_before_revision(c.get_before_revision().wrapping_add(1));
         if let Some(p) = rect {
             let scale = f64::from(w.window().scale_factor());
             c.set_before_x((p.x / scale) as f32);

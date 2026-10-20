@@ -16,6 +16,9 @@ export struct Mark {
 
 export global Canvas {
     in property <image> frame;
+    // `Picture.revision` for `frame` and `before`, the textures each render rewrites in place.
+    in property <int> frame-revision;
+    in property <int> before-revision;
     in property <string> status;
     in property <bool> busy;
     // The open frame's sidecar cannot be written, and what a frame that failed to decode says.
@@ -116,6 +119,7 @@ export component CanvasCard inherits Card {
             ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
             stretched: true;
             source: Canvas.frame;
+            revision: Canvas.frame-revision;
         }
         // Held at the left edge: an element with no place is centred in its parent.
         if Canvas.split >= 0: Rectangle {
@@ -132,6 +136,7 @@ export component CanvasCard inherits Card {
                 ground: Ground.canvas;
                 stretched: true;
                 source: Canvas.before;
+                revision: Canvas.before-revision;
             }
         }
         // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.

@@ -48,6 +48,25 @@ fn phone(uri: String, pressed: Arc<AtomicUsize>, fold: Arc<AtomicBool>) {
     });
 }
 
+/// The mean colour of the window's middle, as the renderer last drew it.
+fn shown(w: &crate::MainWindow) -> [f32; 3] {
+    let Ok(shot) = w.window().take_snapshot() else { return [-1.0; 3] };
+    let (wd, ht) = (shot.width() as usize, shot.height() as usize);
+    let px = shot.as_slice();
+    let mut sum = [0f64; 3];
+    let mut n = 0f64;
+    for y in ht * 2 / 5..ht * 3 / 5 {
+        for x in wd * 3 / 10..wd * 5 / 10 {
+            let p = px[y * wd + x];
+            sum[0] += f64::from(p.r);
+            sum[1] += f64::from(p.g);
+            sum[2] += f64::from(p.b);
+            n += 1.0;
+        }
+    }
+    sum.map(|v| (v / n.max(1.0)) as f32)
+}
+
 pub(super) fn folded(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let frames = Rc::new(Cell::new(0u64));
     if let Some(w) = ctl.window() {
@@ -66,6 +85,7 @@ pub(super) fn folded(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let watching: Cell<Option<(u64, usize, bool)>> = Cell::new(None);
     let landed: Cell<Option<(u64, Instant, bool)>> = Cell::new(None);
     let lines = RefCell::new(Vec::new());
+    let last: Cell<Option<[f32; 3]>> = Cell::new(None);
     let started = Instant::now();
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
@@ -115,7 +135,19 @@ pub(super) fn folded(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         {
             landed.set(None);
             let drawn = frames.get() > before;
-            lines.borrow_mut().push(format!("step {}: panel {}, rendered, {}", seen.get(), if folded { "folded" } else { "shown" }, if drawn { "drawn" } else { "NOT drawn" }));
+            let colour = shown(&w);
+            let moved = last.get().map(|l| (0..3).map(|i| (l[i] - colour[i]).abs()).fold(0.0, f32::max));
+            last.set(Some(colour));
+            lines.borrow_mut().push(format!(
+                "step {}: panel {}, rendered, {}, screen {:.1}/{:.1}/{:.1}, moved {}",
+                seen.get(),
+                if folded { "folded" } else { "shown" },
+                if drawn { "drawn" } else { "NOT drawn" },
+                colour[0],
+                colour[1],
+                colour[2],
+                moved.map_or("-".into(), |m| format!("{m:.2}"))
+            ));
         }
         if lines.borrow().len() >= STEPS || started.elapsed() > Duration::from_secs(45) {
             held.stop();
