@@ -73,8 +73,10 @@ fields! {
     Face => "face", face;
     Scanner => "scanner", scanner;
     ScannerMachine => "scannerMachine", scanner_machine;
+    ScannerPrint => "scannerPrint", scanner_print;
     ScannerFinish => "scannerFinish", scanner_finish;
     FrontierLab => "frontierLab", frontier_lab;
+    FrontierCurves => "frontierCurves", frontier_curves;
     Texture => "texture", texture;
     Sharpen => "sharpen", sharpen;
 }
@@ -245,7 +247,7 @@ mod tests {
     #[test]
     fn every_field_is_the_rolls_the_looks_or_the_frames_and_one_only() {
         let names = declared_names();
-        assert_eq!(names.len(), 43, "{names:?}");
+        assert_eq!(names.len(), 45, "{names:?}");
         assert_eq!(placement_faults(names, FAMILIES), Vec::<String>::new());
         // Twin: a field the families leave out, and one in two of them, are both refused.
         let mut grown = names.to_vec();

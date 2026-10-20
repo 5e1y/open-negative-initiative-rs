@@ -4,39 +4,11 @@
 use super::measure::SIDE;
 use super::{FITTED, LabParams, bake};
 use oni_render::ColorCube;
-use oni_settings::frontier_lab::{FrontierLab, PAPER};
+use oni_settings::frontier_lab::FrontierLab;
 use std::sync::LazyLock;
 
-/// The curve's handles on the image it is given, 0 to 1: blacks, shadows, mid-tones, highlights, whites.
-pub const HANDLES: [f64; PAPER] = [0.0, 0.25, 0.5, 0.75, 1.0];
-
-/// The handles' distances spread over the image, smooth through each handle.
-pub fn paper_shift(handles: &[f32; PAPER], d: f64) -> f64 {
-    let v = handles.map(f64::from);
-    if d <= HANDLES[0] {
-        return v[0];
-    }
-    if d >= HANDLES[PAPER - 1] {
-        return v[PAPER - 1];
-    }
-    let k = (0..PAPER - 1).find(|&k| d <= HANDLES[k + 1]).unwrap_or(PAPER - 2);
-    let slope = |i: usize| {
-        let (a, b) = (i.saturating_sub(1), (i + 1).min(PAPER - 1));
-        if a == b { 0.0 } else { (v[b] - v[a]) / (HANDLES[b] - HANDLES[a]) }
-    };
-    let h = HANDLES[k + 1] - HANDLES[k];
-    let t = (d - HANDLES[k]) / h;
-    let (t2, t3) = (t * t, t * t * t);
-    (2.0 * t3 - 3.0 * t2 + 1.0) * v[k] + (t3 - 2.0 * t2 + t) * h * slope(k) + (-2.0 * t3 + 3.0 * t2) * v[k + 1] + (t3 - t2) * h * slope(k + 1)
-}
-
-/// The curve on the image it is given: the diagonal at rest, its handles' distances added.
-pub fn curve(handles: &[f32; PAPER], u: f64) -> f64 {
-    (u + paper_shift(handles, u)).clamp(0.0, 1.0)
-}
-
-/// The paper without Fuji's: a straight line from the table's black to its white, the image the Lab's
-/// curve is given (the owner's call).
+/// The paper without Fuji's: a straight line from the table's black to its white, ONI's Curves shaping
+/// the tone after the look (the owner's call).
 pub static STRAIGHT: LazyLock<[f64; super::paper::NODES]> = LazyLock::new(|| {
     let (black, white) = (f64::from(crate::scanner::ENDS.0), f64::from(crate::scanner::ENDS.1));
     std::array::from_fn(|i| ((super::paper::density(i) - black) / (white - black)).clamp(0.0, 1.0))
@@ -54,7 +26,7 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     add(&mut p.paper_offset, &lab.paper_offset);
     add(&mut p.grey_a, &lab.grey_a);
     add(&mut p.grey_b, &lab.grey_b);
-    p.paper = STRAIGHT.map(|u| curve(&lab.paper, u));
+    p.paper = *STRAIGHT;
     // A curve held inside the code and climbing, as its spline needs.
     let mut floor = 0.0f64;
     p.paper.iter_mut().for_each(|v| {
@@ -64,6 +36,31 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     p.saturation_by_l += f64::from(lab.saturation_by_l);
     p.character += f64::from(lab.character);
     p
+}
+
+/// ONI's tone: the ONI look's grey for a grey of display code `u`, the brightness its table lends the
+/// ONI machine's render (printed with no exposure), which the Frontier keeps.
+pub fn oni_tone(u: f64) -> f64 {
+    let v = u.clamp(0.0, 1.0).powf(1.0 / f64::from(crate::oni_look::ROOT)) as f32;
+    f64::from(oni_render::cpu::color_cube([v, v, v, 1.0], &crate::oni_look::CUBE)[1])
+}
+
+/// The Frontier's look in place of ONI's, on the ONI machine's render in display code, each code read as
+/// the table's density across its black to its white, printed on ONI's tone.
+pub fn table_on_code(lab: &FrontierLab) -> ColorCube {
+    let mut p = edited(lab);
+    p.paper = STRAIGHT.map(oni_tone);
+    let chain = super::Chain::new(&p);
+    let (black, white) = (f64::from(crate::scanner::ENDS.0), f64::from(crate::scanner::ENDS.1));
+    const N: usize = 33;
+    let cube_data = (0..N * N * N)
+        .map(|i| {
+            let x = [i % N, (i / N) % N, i / (N * N)].map(|k| black + (white - black) * k as f64 / (N - 1) as f64);
+            let c = chain.code(x);
+            [c[0] as f32, c[1] as f32, c[2] as f32, 1.0]
+        })
+        .collect();
+    ColorCube { cube_dimension: N, cube_data }
 }
 
 /// The edited table at the measured cube's 27 nodes a side, so the character stays exact.
@@ -111,18 +108,4 @@ mod tests {
         assert!((super::super::paper::Curve::new(&FITTED.frontier.paper).at((black + white) / 2.0) - 0.5).abs() > 0.05);
     }
 
-    #[test]
-    fn a_paper_node_raised_lifts_the_blacks_and_the_curve_stays_climbing() {
-        let mut lab = FrontierLab::default();
-        lab.set(LabValue::Paper(0), 0.08);
-        let p = edited(&lab);
-        assert!((p.paper[0] - 0.08).abs() < 1e-6 && p.paper[4] > STRAIGHT[4], "the black lifts: {:?}", &p.paper[..5]);
-        assert!((p.paper[14] - 1.0).abs() < 1e-9, "the white stays");
-        assert!(p.paper.windows(2).all(|w| w[1] >= w[0]), "{:?}", p.paper);
-        // Twin: the whites pulled far down are held level with the highlights, never under them.
-        let mut dip = FrontierLab::default();
-        dip.set(LabValue::Paper(4), -0.9);
-        let q = edited(&dip);
-        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < 0.97, "{:?}", q.paper);
-    }
 }

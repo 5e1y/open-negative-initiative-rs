@@ -54,11 +54,11 @@ pub(super) fn model<T: Clone + 'static>(items: Vec<T>) -> ModelRc<T> {
     ModelRc::new(VecModel::from(items))
 }
 
-pub(super) fn lines(d: &Drawing) -> ModelRc<PlotLine> {
+pub(crate) fn lines(d: &Drawing) -> ModelRc<PlotLine> {
     model(d.lines.iter().map(line).collect())
 }
 
-pub(super) fn dots(d: &Drawing) -> ModelRc<PlotDot> {
+pub(crate) fn dots(d: &Drawing) -> ModelRc<PlotDot> {
     model(d.dots.iter().map(dot).collect())
 }
 

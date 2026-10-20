@@ -1487,5 +1487,12 @@
     "title": "Back to 8fed395 at the owner's word",
     "status": "done",
     "detail": "The owner asked to stop and return to the version running before raw0016's burnt whites were reported, the only one that still suited them: the tree is set back to 8fed395 (#199), which undoes #200 to #202 (the Frontier on the ONI machine's path, the Lab's curve removed, Frontier 2's plumbing); the uncommitted work (Frontier 2's paper from Fujifilm's datasheets, the Lab's CurveSet) is kept aside as a patch, outside the repository."
+  },
+  {
+    "id": 204,
+    "type": "feature",
+    "title": "Back to the ONI-toned Frontier and Frontier 2, their curves shown as the Curves block draws them",
+    "status": "done",
+    "detail": "The owner asked to return to the last build (#201 with the work set aside in #203: the Frontier on the ONI look's tone, Frontier 2 printing each window share through the Crystal Archive's curves, the frontierCurves field) and to show the curves. The Lab gains a Lab Curves block, a copy of the Curves block on frontierCurves (its tabs, a press adding or taking a point, a double click removing it, one undo step a press, the block's key resting it), applied on the Frontier's look in display code; Frontier 2 shows its paper in a Frontier 2 Paper block drawn by the same code, one layer a tab, read only. The editor's geometry and its drawing conversion are reused as they are."
   }
 ]

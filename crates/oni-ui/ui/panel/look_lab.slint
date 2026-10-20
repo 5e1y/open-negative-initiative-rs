@@ -1,6 +1,6 @@
 // The Frontier Look Lab: the measured table's named values, each slider opening on the machine's own
 // effect over a zero that is no effect, so the hand sees what each value does to the render.
-import { Section, Tabs, Slider, SliderFill, PlotInkStyle, ScannerStyle, Space, Plot, PlotLine, PlotDot, AxisCaptions } from "../ds/ds.slint";
+import { Section, Tabs, Slider, SliderFill, PlotInkStyle, ScannerStyle, Space, Plot, PlotLine, PlotDot } from "../ds/ds.slint";
 import { PanelState } from "state.slint";
 
 export global LookLab {
@@ -12,7 +12,7 @@ export global LookLab {
     in property <[bool]> sector-marked;
     in property <[bool]> tone-marked;
     in property <[color]> swatches;
-    // Colours, dyes, paper, greys, character, curve.
+    // Colours, dyes, paper, greys, character, curves.
     in property <[bool]> modified;
     callback pick-sector(int);
     callback pick-tone(int);
@@ -22,11 +22,65 @@ export global LookLab {
     callback release(int);
     callback scroll(int, length, length, length, bool) -> bool;
     callback step(int, int);
-    // The paper curve: the machine's, the neutral one and the frame's, its nodes dragged up and down.
+    // The Lab's curve, a copy of the Curves block: its channel, tabs lit off the diagonal, its drawing.
+    in-out property <int> curve-channel;
+    in property <[bool]> curve-marked;
+    in property <[PlotLine]> curve-lines;
+    in property <[PlotDot]> curve-dots;
+    callback curve-pick(int);
+    callback curve-resized(length, length);
+    // 0 press, 1 move, 2 release, 3 cancel, as the plot names them.
+    callback curve-pointer(int, length, length);
+    // Frontier 2's paper, drawn as the Curves block draws, one layer a tab.
+    in-out property <int> paper-channel;
     in property <[PlotLine]> paper-lines;
     in property <[PlotDot]> paper-dots;
+    callback paper-pick(int);
     callback paper-resized(length, length);
-    callback paper-pointer(int, length, length);
+}
+
+// `CurveSetEditor` again: the channel's tabs over a square plot, its points the hand's.
+component LabCurvesEditor inherits VerticalLayout {
+    spacing: Space.s;
+    Tabs {
+        tabs: ["RGB", "Luma", "R", "G", "B"];
+        marked: LookLab.curve-marked;
+        selected <=> LookLab.curve-channel;
+        picked(i) => { LookLab.curve-pick(i); }
+    }
+    Plot {
+        plot: 7;
+        height: self.width;
+        lines: LookLab.curve-lines;
+        dots: LookLab.curve-dots;
+        resized(p, w, h) => { LookLab.curve-resized(w, h); }
+        pointer(p, kind, x, y, alt) => { LookLab.curve-pointer(kind, x, y); }
+    }
+}
+
+// Frontier 2's paper as the Curves block draws it: each layer from the window's black to its white.
+export component PaperCurves inherits Section {
+    title: "Frontier 2 Paper";
+    help: "The curves Frontier 2 prints through: each Crystal Archive layer from its toe to its shoulder, laid from the window's black point to its white point.";
+    folded: PanelState.folds-read ? PanelState.fold-of(self.title, false) : false;
+    fold-toggled(f) => { PanelState.fold-changed(self.title, f); }
+    VerticalLayout {
+        spacing: Space.s;
+        Tabs {
+            tabs: ["R", "G", "B"];
+            marked: [false, false, false];
+            selected <=> LookLab.paper-channel;
+            picked(i) => { LookLab.paper-pick(i); }
+        }
+        Plot {
+            plot: 8;
+            height: self.width;
+            interactive: false;
+            lines: LookLab.paper-lines;
+            dots: LookLab.paper-dots;
+            resized(p, w, h) => { LookLab.paper-resized(w, h); }
+        }
+    }
 }
 
 component LabSlider inherits Slider {
@@ -69,18 +123,10 @@ export component LookLabBlocks inherits VerticalLayout {
         LabSlider { field: 3; label: "Saturation by lightness"; }
     }
     LabSection {
-        title: "Lab Curve";
+        title: "Lab Curves";
         block: 5;
-        help: "The Frontier prints on a straight paper, in grey, from the negative's blacks on the left to its whites on the right; this curve bends it. The machine's measured paper is the faint line. Drag a point up or down; a double click puts it back on the straight line.";
-        Plot {
-            plot: 7;
-            height: self.width * 3 / 4;
-            lines: LookLab.paper-lines;
-            dots: LookLab.paper-dots;
-            resized(p, w, h) => { LookLab.paper-resized(w, h); }
-            pointer(p, kind, x, y, alt) => { LookLab.paper-pointer(kind, x, y); }
-        }
-        AxisCaptions { start: "Blacks"; end: "Whites"; }
+        help: "Curves drawn by hand on the Frontier's look, one point at a time, as the Curves block draws them.";
+        LabCurvesEditor { }
     }
     LabSection {
         title: "Lab Dyes";

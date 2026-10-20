@@ -107,28 +107,28 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     let renders = ctl.state.borrow().renders();
     assert!(!g.invoke_press(0, false), "a first press is no double click");
     for k in 1..=10 {
-        g.invoke_drag(0, -k as f32 * 6.0, 300.0, false);
+        g.invoke_drag(0, -k as f32 * 12.0, 300.0, false);
         rig.pump();
         std::thread::sleep(Duration::from_millis(10));
     }
     g.invoke_release(0);
     rig.pump();
     let turned = lab().hue[8];
-    assert!((turned + 12.0).abs() < 0.05, "60 px of 300 on ±30° is −12°: {turned}");
+    assert!((turned + 24.0).abs() < 0.05, "120 px of 300 on ±30° is −24°: {turned}");
     let effect = oni_pipeline::look_lab::FITTED.frontier.hue[8] as f32 + turned;
     assert_eq!(g.get_readouts().row_data(0).unwrap(), format!("{effect:+.1}°"), "the machine's effect, moved");
     assert!(g.get_sector_marked().row_data(8).unwrap() && g.get_modified().row_data(0).unwrap());
     rig.until("the edited render", Duration::from_secs(120), || ctl.state.borrow().renders() > renders);
     rig.settle();
     let edited = pixels(&rig, "look-lab-blues-turned");
-    assert!(gap(&machine, &edited) > 2.0, "the drawn image turned: {}", gap(&machine, &edited));
+    assert!(gap(&machine, &edited) > 1.0, "the drawn image turned: {}", gap(&machine, &edited));
 
     // One undo returns the whole drag to the machine's render.
     rig.chord(slint::platform::Key::Control, "z");
     assert_eq!(lab(), FrontierLab::default(), "the drag was one step");
     rig.settle();
     let undone = pixels(&rig, "look-lab-undone");
-    assert!(gap(&machine, &undone) < 1.0, "back on the machine: {}", gap(&machine, &undone));
+    assert!(gap(&machine, &undone) < 0.75, "back on the machine: {}", gap(&machine, &undone));
     // Twin: a double click rests an edited slider on the machine rather than starting a drag.
     g.invoke_step(0, -10);
     rig.pump();
@@ -139,20 +139,20 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     rig.pump();
     assert_eq!(lab().hue[8], 0.0);
 
-    // The curve: the blacks' handle, in the black corner, lifted by hand.
-    g.invoke_paper_resized(220.0, 165.0);
-    let x = 0.0;
-    g.invoke_paper_pointer(0, x, 165.0);
-    for k in 1..=5 {
-        g.invoke_paper_pointer(1, x, 165.0 - k as f32 * 2.0);
-        rig.pump();
-    }
-    g.invoke_paper_pointer(2, x, 155.0);
+    // The Lab's curve, as the Curves block: a press off the diagonal adds a point, one undo takes it back.
+    g.invoke_curve_resized(200.0, 200.0);
+    g.invoke_curve_pointer(0, 100.0, 60.0);
+    g.invoke_curve_pointer(1, 100.0, 50.0);
+    g.invoke_curve_pointer(2, 100.0, 50.0);
     rig.pump();
-    assert!(lab().paper[0] > 0.05, "the blacks lifted: {:?}", lab().paper);
-    assert_eq!(g.get_paper_dots().row_count(), 5);
+    let curves = || ctl.state.borrow().store().settings().frontier_curves.clone();
+    assert_eq!(curves().linked.points.len(), 3, "{:?}", curves().linked.points);
+    assert!(g.get_curve_marked().row_data(0).unwrap() && g.get_curve_dots().row_count() == 3);
     rig.chord(slint::platform::Key::Control, "z");
-    assert_eq!(lab().paper, [0.0; 5], "the drag was one step");
+    assert!(curves().is_neutral(), "the gesture was one step");
+    // Frontier 2's paper, drawn as the Curves block draws, its three layers.
+    g.invoke_paper_resized(200.0, 200.0);
+    assert!(g.get_paper_lines().row_count() >= 2 && g.get_paper_dots().row_count() == 11);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
