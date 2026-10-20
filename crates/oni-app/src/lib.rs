@@ -30,6 +30,7 @@ pub mod proof;
 pub mod report;
 pub mod render;
 pub mod roll_previews;
+pub mod scans;
 pub mod sidebar;
 pub mod slider_track;
 pub mod stocks;

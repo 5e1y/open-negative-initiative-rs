@@ -2,6 +2,7 @@
 //! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
 
 pub mod container;
+pub mod embedded;
 pub mod plain;
 mod linear;
 
@@ -45,7 +46,7 @@ impl Drop for Session {
 
 /// LibRaw's DNG unpacker fills a static cosine table on first use, unguarded (`ljpeg_idct`): DNG
 /// unpacks take this lock, every other stage of every decode runs concurrently.
-static DNG_UNPACK: Mutex<()> = Mutex::new(());
+pub(crate) static DNG_UNPACK: Mutex<()> = Mutex::new(());
 
 type M3 = [[f64; 3]; 3];
 

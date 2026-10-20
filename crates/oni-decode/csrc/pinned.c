@@ -101,3 +101,42 @@ void oni_inset(const oni_decoded *d, int out[4])
 {
     memcpy(out, d->inset, sizeof d->inset);
 }
+
+// The file's embedded preview as LibRaw hands it, never demosaiced: a JPEG's bytes or an 8-bit
+// bitmap, unturned, with the frame's flip to turn it by.
+typedef struct {
+    int format, width, height, colors, bits, flip;
+    unsigned int size;
+    unsigned char *data;
+    libraw_processed_image_t *image;
+} oni_thumb;
+
+void oni_thumb_release(oni_thumb *t)
+{
+    if (t->image) libraw_dcraw_clear_mem(t->image);
+    memset(t, 0, sizeof *t);
+}
+
+int oni_thumbnail(const char *path, oni_thumb *out)
+{
+    memset(out, 0, sizeof *out);
+    libraw_data_t *lr = libraw_init(0);
+    if (!lr) return -1;
+    int rc = libraw_open_file(lr, path);
+    if (rc == LIBRAW_SUCCESS) rc = libraw_unpack_thumb(lr);
+    if (rc != LIBRAW_SUCCESS) { libraw_close(lr); return rc; }
+    int err = 0;
+    libraw_processed_image_t *img = libraw_dcraw_make_mem_thumb(lr, &err);
+    out->flip = lr->sizes.flip;
+    libraw_close(lr);
+    if (!img) return err ? err : -2;
+    out->image = img;
+    out->format = img->type;
+    out->width = img->width;
+    out->height = img->height;
+    out->colors = img->colors;
+    out->bits = img->bits;
+    out->size = img->data_size;
+    out->data = img->data;
+    return 0;
+}

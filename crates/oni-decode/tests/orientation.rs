@@ -44,3 +44,22 @@ fn a_portrait_raw_opens_upright() {
     // Twin: the two quarter turns are not the same picture.
     assert_ne!(r.pixels[0], l.pixels[0]);
 }
+
+/// The preview a NEF carries reads as a JPEG, and the file's orientation turns it as it turns the frame.
+#[test]
+fn the_embedded_preview_reads_and_turns_with_the_frame() {
+    let Some(raw) = raw() else { return eprintln!("ONI_RAW_DIR names no NEF: the embedded preview is not exercised") };
+    let scratch = std::env::temp_dir().join(format!("oni-embedded-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let (level, right) = (scratch.join("level.nef"), scratch.join("right.nef"));
+    tagged(&raw, &level, 1);
+    tagged(&raw, &right, 6);
+    let (a, r) = (oni_decode::embedded::embedded(&level).expect("a preview"), oni_decode::embedded::embedded(&right).expect("a preview"));
+    let _ = std::fs::remove_dir_all(&scratch);
+    let oni_decode::embedded::Preview::Jpeg(bytes) = &a.preview else { panic!("a NEF's preview is a JPEG") };
+    assert_eq!(&bytes[..2], [0xFF, 0xD8], "the JPEG's start of image");
+    assert!(bytes.len() > 10_000, "a preview, not a stamp: {} bytes", bytes.len());
+    // The flip read with the preview, the tag's quarter turn right; twin, the level copy reads none.
+    assert_eq!(r.flip, 6);
+    assert_eq!(a.flip, 0);
+}

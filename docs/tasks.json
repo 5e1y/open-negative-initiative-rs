@@ -441,8 +441,9 @@
     "id": 61,
     "type": "feature",
     "title": "The scan as the file holds it for a frame not yet converted, in the gallery and the editor's column",
-    "status": "doing",
-    "detail": "Thumbnails.produce: a frame whose sidecar is missing or equals Parameters.unconverted shows Thumbnails.scan, the file's embedded preview (ImageIO's FromImageIfAbsent) at 320 px, never the pipeline's render."
+    "status": "done",
+    "detail": "Thumbnails.produce: a frame whose sidecar is missing or equals Parameters.unconverted shows Thumbnails.scan, the file's embedded preview (ImageIO's FromImageIfAbsent) at 320 px, never the pipeline's render.",
+    "outcome": "A frame whose settings equal Parameters.unconverted shows the scan as the file holds it (Thumbnails.produce/scan): a RAW its embedded preview read through LibRaw's unpack_thumb, never demosaiced, decoded at an eighth by the JPEG's IDCT, turned by the frame's flip and averaged to 320 px; any other file its own pixels read at 320. A RAW carrying no preview falls back on the render. Ten unconverted NEFs of roll #8, release: about 53 ms a tile against 360 ms at half size and 1 s whole. Checks: the flips turn the preview as a decode is turned, with a twin; a NEF's preview reads as a JPEG and a portrait copy reads flip 6 (ONI_RAW_DIR); the reduction averages each half, its twin keeping a small image; fresh settings read as unconverted and an edit as converted. favourites.rs and flat_fields.rs keep their checks in files of their own, under the 400-line ceiling."
   },
   {
     "id": 62,
