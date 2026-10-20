@@ -85,9 +85,6 @@ pub struct PipelineSettings {
     pub scanner: ScannerClicks,
     #[serde(rename = "scannerMachine")]
     pub scanner_machine: ScannerMachine,
-    /// The Proto look on the ONI machine; apart from the machine, so the Swift app reads it as ONI.
-    #[serde(rename = "scannerProto", skip_serializing_if = "std::ops::Not::not", default)]
-    pub scanner_proto: bool,
     #[serde(rename = "scannerFinish")]
     pub scanner_finish: ScannerFinish,
     /// The Look Lab's edits of the Frontier, absent when the frame renders the measured table.
@@ -140,7 +137,6 @@ impl Default for PipelineSettings {
             scanner: ScannerClicks::default(),
             scanner_machine: ScannerMachine::Oni,
             scanner_finish: ScannerFinish::default(),
-            scanner_proto: false,
             frontier_lab: FrontierLab::default(),
             texture: Texture::default(),
             sharpen: Sharpen::default(),
@@ -204,7 +200,7 @@ impl PipelineSettings {
 pub mod look_settings {
     use super::*;
 
-    pub const FIELDS: [&str; 17] = [
+    pub const FIELDS: [&str; 16] = [
         "balanceFilters",
         "print",
         "density",
@@ -220,7 +216,6 @@ pub mod look_settings {
         "scanner",
         "scannerFinish",
         "scannerMachine",
-        "scannerProto",
         "frontierLab",
     ];
 
@@ -261,7 +256,6 @@ pub mod look_settings {
         out.scanner_finish = donor.scanner_finish.clone();
         out.scanner_machine = donor.scanner_machine;
         out.frontier_lab = donor.frontier_lab;
-        out.scanner_proto = donor.scanner_proto;
         out
     }
 }

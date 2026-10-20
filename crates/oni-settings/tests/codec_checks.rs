@@ -59,7 +59,6 @@ fn full() -> PipelineSettings {
     s.density_ceiling = 2.3137;
     s.separation = 0.37;
     s.frontier_lab.set(oni_settings::frontier_lab::LabValue::Hue(8), -7.25);
-    s.scanner_proto = true;
     s.separation_family = Some(SeparationFamily::FujiC41);
     s.levels.red.black = 0.1373;
     s.levels.red.white = 2.4477;
@@ -633,14 +632,15 @@ fn every_field_lives_in_exactly_one_family() {
     let families = |names: &[&str]| -> Vec<String> {
         let mut all: Vec<String> = oni_settings::settings::look_settings::FIELDS
             .iter()
-            .chain(oni_settings::settings::look_settings::FRAME_FIELDS.iter()).chain(names.iter())
+            .chain(oni_settings::settings::look_settings::FRAME_FIELDS.iter())
+            .chain(names.iter())
             .map(|s| s.to_string()).collect();
         all.sort();
         all
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 44);
+    assert_eq!(keys.len(), 43);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

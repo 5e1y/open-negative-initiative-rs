@@ -138,6 +138,21 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     assert!(g.invoke_press(0, false), "the second press within the interval is a double click");
     rig.pump();
     assert_eq!(lab().hue[8], 0.0);
+
+    // The paper curve: the blacks' handle (density 0, a eleventh of the way across) lifted by hand.
+    g.invoke_paper_resized(220.0, 165.0);
+    let x = 220.0 * 0.2 / 2.2;
+    g.invoke_paper_pointer(0, x, 165.0);
+    for k in 1..=5 {
+        g.invoke_paper_pointer(1, x, 165.0 - k as f32 * 2.0);
+        rig.pump();
+    }
+    g.invoke_paper_pointer(2, x, 155.0);
+    rig.pump();
+    assert!(lab().paper[0] > 0.05, "the blacks lifted: {:?}", lab().paper);
+    assert_eq!(g.get_paper_dots().row_count(), 5);
+    rig.chord(slint::platform::Key::Control, "z");
+    assert_eq!(lab().paper, [0.0; 5], "the drag was one step");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

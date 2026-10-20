@@ -206,9 +206,7 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
         return None;
     }
     let mut out = s.as_scanner();
-    // Proto's table was fitted on Pro's render, which prints at the frame's exposure (+1.5 at rest).
-    let exposure = if s.scanner_proto { s.print.exposure } else { Print::default().exposure };
-    out.print = Print { contrast: s.scanner_finish.contrast, exposure, ..Print::default() };
+    out.print = Print { contrast: s.scanner_finish.contrast, ..Print::default() };
     if let Some(full) = s.balance_filters {
         out.print.set_filters(full.map(|f| f * s.balance_strength));
     }

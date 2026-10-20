@@ -1417,5 +1417,19 @@
     "title": "Proto reads the frame at its own print exposure, as Pro's render the table was fitted on",
     "status": "done",
     "detail": "The owner found Proto very dark: ONI prints about +1.5 EV in Pro (the negative's resting print exposure) and the ONI machine resets the print to no exposure before its own look, while Proto's table was fitted on Pro's export of the chart, exposure included. A first fix, a constant 0.2 D anchor fitted on scanner::check_roll, was still dark on the owner's roll and is gone: on_oni_machine now keeps the frame's print exposure for a Proto frame, so its input is Pro's conversion. check_roll's grey enters at 0.69 and prints at 0.51/0.55/0.48; a twin without the exposure lands in the toe."
+  },
+  {
+    "id": 193,
+    "type": "revert",
+    "title": "Proto removed",
+    "status": "done",
+    "detail": "The owner's call after trying it on roll #8: Proto (#191, #192) is taken out whole, its machine tab, its scannerProto field and its table. A sidecar written while it existed keeps a `scannerProto` key, which the reader ignores, so the frame renders on the ONI machine."
+  },
+  {
+    "id": 194,
+    "type": "feature",
+    "title": "The Look Lab's paper curve: a graph with five handles on the Frontier's curve",
+    "status": "done",
+    "detail": "The owner asked to see and edit how the Frontier prints: its toe (blacks) and its shoulder (whites and intense colours clipped). The Lab Paper block now draws the paper curve over negative density (blacks left, whites right): the machine's measured curve, a print without the look in grey, and the frame's. Five handles sit on the curve at densities 0, 0.4, 0.75 (the machine's neutral), 1.15 and 1.6; each stores its distance from the machine's curve (`frontierLab.paper`, five values), spread over the curve's fifteen nodes by a smooth Hermite curve held past the end handles, so the blacks' handle moves the whole toe and the whites' the whole shoulder; the curve is held climbing. A handle follows the hand between its neighbours, one undo step a press; a double click returns it to the machine's. At rest the curve is the machine's exactly."
   }
 ]

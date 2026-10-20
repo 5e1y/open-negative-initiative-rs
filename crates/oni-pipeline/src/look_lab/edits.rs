@@ -4,7 +4,31 @@
 use super::measure::SIDE;
 use super::{FITTED, LabParams, bake};
 use oni_render::ColorCube;
-use oni_settings::frontier_lab::FrontierLab;
+use oni_settings::frontier_lab::{FrontierLab, PAPER};
+
+/// The paper handles' densities: blacks, shadows, mid-tones (the machine's neutral), highlights, whites.
+pub const HANDLES: [f64; PAPER] = [0.0, 0.4, 0.75, 1.15, 1.6];
+
+/// The handles' distances spread over density, smooth through each handle and held past the ends,
+/// so the blacks' handle moves the whole toe and the whites' the whole shoulder.
+pub fn paper_shift(handles: &[f32; PAPER], d: f64) -> f64 {
+    let v = handles.map(f64::from);
+    if d <= HANDLES[0] {
+        return v[0];
+    }
+    if d >= HANDLES[PAPER - 1] {
+        return v[PAPER - 1];
+    }
+    let k = (0..PAPER - 1).find(|&k| d <= HANDLES[k + 1]).unwrap_or(PAPER - 2);
+    let slope = |i: usize| {
+        let (a, b) = (i.saturating_sub(1), (i + 1).min(PAPER - 1));
+        if a == b { 0.0 } else { (v[b] - v[a]) / (HANDLES[b] - HANDLES[a]) }
+    };
+    let h = HANDLES[k + 1] - HANDLES[k];
+    let t = (d - HANDLES[k]) / h;
+    let (t2, t3) = (t * t, t * t * t);
+    (2.0 * t3 - 3.0 * t2 + 1.0) * v[k] + (t3 - 2.0 * t2 + t) * h * slope(k) + (-2.0 * t3 + 3.0 * t2) * v[k + 1] + (t3 - t2) * h * slope(k + 1)
+}
 
 /// The shipped Frontier values moved by the frame's edits.
 pub fn edited(lab: &FrontierLab) -> LabParams {
@@ -18,6 +42,13 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     add(&mut p.paper_offset, &lab.paper_offset);
     add(&mut p.grey_a, &lab.grey_a);
     add(&mut p.grey_b, &lab.grey_b);
+    p.paper.iter_mut().enumerate().for_each(|(i, v)| *v += paper_shift(&lab.paper, super::paper::density(i)));
+    // A curve held inside the code and climbing, as its spline needs.
+    let mut floor = 0.0f64;
+    p.paper.iter_mut().for_each(|v| {
+        *v = v.clamp(floor, 1.0);
+        floor = *v;
+    });
     p.saturation_by_l += f64::from(lab.saturation_by_l);
     p.character += f64::from(lab.character);
     p
@@ -55,5 +86,20 @@ mod tests {
         assert!(moved(&turned, &rest, coloured) > 0.01, "a hue edit turns the coloured nodes");
         // Twin: the greys, without chroma to turn, stay within a hair of the machine.
         assert!(moved(&turned, &rest, |x| x[0] == x[1] && x[1] == x[2]) < 2e-3);
+    }
+
+    #[test]
+    fn a_paper_node_raised_lifts_the_blacks_and_the_curve_stays_climbing() {
+        let mut lab = FrontierLab::default();
+        lab.set(LabValue::Paper(0), 0.08);
+        let p = edited(&lab);
+        assert!((p.paper[0] - FITTED.frontier.paper[0] - 0.08).abs() < 1e-6 && (p.paper[1] - FITTED.frontier.paper[1] - 0.08).abs() < 1e-6 && p.paper[2] > FITTED.frontier.paper[2], "the whole toe lifts: {:?}", &p.paper[..5]);
+        assert!((p.paper[14] - FITTED.frontier.paper[14]).abs() < 1e-9, "the whites stay");
+        assert!(p.paper.windows(2).all(|w| w[1] >= w[0]), "{:?}", p.paper);
+        // Twin: the whites pulled far down are held level with the highlights, never under them.
+        let mut dip = FrontierLab::default();
+        dip.set(LabValue::Paper(4), -0.9);
+        let q = edited(&dip);
+        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < 0.9 && q.paper[14] == q.paper[13], "{:?}", q.paper);
     }
 }

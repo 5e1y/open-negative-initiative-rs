@@ -9,6 +9,8 @@ use serde_json::Value;
 pub const SECTORS: usize = 12;
 /// The grey cast's lightness nodes, 0.1 to 0.9.
 pub const GREYS: usize = 5;
+/// The paper curve's handles: blacks, shadows, mid-tones, highlights, whites.
+pub const PAPER: usize = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -23,6 +25,8 @@ pub struct FrontierLab {
     pub grey_a: [f32; GREYS],
     pub grey_b: [f32; GREYS],
     pub character: f32,
+    /// Each paper handle's code, as a distance from the machine's curve.
+    pub paper: [f32; PAPER],
 }
 
 /// One edited value, by the array it sits in and its place there.
@@ -38,6 +42,7 @@ pub enum LabValue {
     GreyA(usize),
     GreyB(usize),
     Character,
+    Paper(usize),
 }
 
 impl LabValue {
@@ -52,6 +57,7 @@ impl LabValue {
             LabValue::PaperGain(_) | LabValue::PaperOffset(_) => 0.2,
             LabValue::GreyA(_) | LabValue::GreyB(_) => 0.03,
             LabValue::Character => return (-1.0, 0.0),
+            LabValue::Paper(_) => return (-1.0, 1.0),
         };
         (-half, half)
     }
@@ -59,7 +65,7 @@ impl LabValue {
     /// The span a stored distance is held in.
     pub fn stored(self) -> (f32, f32) {
         let (low, high) = self.range();
-        if self == LabValue::Character { (low, high) } else { (2.0 * low, 2.0 * high) }
+        if matches!(self, LabValue::Character | LabValue::Paper(_)) { (low, high) } else { (2.0 * low, 2.0 * high) }
     }
 }
 
@@ -80,6 +86,7 @@ impl FrontierLab {
             LabValue::GreyA(i) => self.grey_a[i],
             LabValue::GreyB(i) => self.grey_b[i],
             LabValue::Character => self.character,
+            LabValue::Paper(i) => self.paper[i],
         }
     }
 
@@ -98,6 +105,7 @@ impl FrontierLab {
             LabValue::GreyA(i) => &mut self.grey_a[i],
             LabValue::GreyB(i) => &mut self.grey_b[i],
             LabValue::Character => &mut self.character,
+            LabValue::Paper(i) => &mut self.paper[i],
         };
         *slot = value;
     }
@@ -113,7 +121,7 @@ impl<'de> Deserialize<'de> for FrontierLab {
             read.map_or(vec![0.0; n], |a| a.iter().map(|v| tolerant::number_f32(Some(v)).unwrap_or(0.0)).collect())
         };
         let scalar = |key: &str| tolerant::number_f32(map.get(key)).unwrap_or(0.0);
-        let arrays: [(&str, usize, fn(usize) -> LabValue); 8] = [
+        let arrays: [(&str, usize, fn(usize) -> LabValue); 9] = [
             ("hue", SECTORS, LabValue::Hue),
             ("twist", SECTORS, LabValue::Twist),
             ("chroma", SECTORS, LabValue::Chroma),
@@ -122,6 +130,7 @@ impl<'de> Deserialize<'de> for FrontierLab {
             ("paperOffset", 2, LabValue::PaperOffset),
             ("greyA", GREYS, LabValue::GreyA),
             ("greyB", GREYS, LabValue::GreyB),
+            ("paper", PAPER, LabValue::Paper),
         ];
         for (key, n, value) in arrays {
             array(key, n).into_iter().enumerate().for_each(|(i, v)| out.set(value(i), v));
