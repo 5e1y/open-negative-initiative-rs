@@ -211,6 +211,9 @@ impl Viewport {
 }
 
 #[cfg(test)]
+mod checks;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

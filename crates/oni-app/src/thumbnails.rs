@@ -172,6 +172,9 @@ impl<T: Clone> Memory<T> {
 }
 
 #[cfg(test)]
+mod criterion;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

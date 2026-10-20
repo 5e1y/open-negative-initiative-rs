@@ -3,6 +3,7 @@
 
 pub mod balance;
 pub mod command;
+pub mod compare;
 pub mod fields;
 pub mod history;
 pub mod knob;
