@@ -7,11 +7,10 @@ use oni_render::ColorCube;
 use oni_settings::frontier_lab::{FrontierLab, PAPER};
 use std::sync::LazyLock;
 
-/// The paper handles' densities: blacks, shadows, mid-tones (the machine's neutral), highlights, whites.
-pub const HANDLES: [f64; PAPER] = [0.0, 0.4, 0.75, 1.15, 1.6];
+/// The curve's handles on the image it is given, 0 to 1: blacks, shadows, mid-tones, highlights, whites.
+pub const HANDLES: [f64; PAPER] = [0.0, 0.25, 0.5, 0.75, 1.0];
 
-/// The handles' distances spread over density, smooth through each handle and held past the ends,
-/// so the blacks' handle moves the whole toe and the whites' the whole shoulder.
+/// The handles' distances spread over the image, smooth through each handle.
 pub fn paper_shift(handles: &[f32; PAPER], d: f64) -> f64 {
     let v = handles.map(f64::from);
     if d <= HANDLES[0] {
@@ -31,8 +30,13 @@ pub fn paper_shift(handles: &[f32; PAPER], d: f64) -> f64 {
     (2.0 * t3 - 3.0 * t2 + 1.0) * v[k] + (t3 - 2.0 * t2 + t) * h * slope(k) + (-2.0 * t3 + 3.0 * t2) * v[k + 1] + (t3 - t2) * h * slope(k + 1)
 }
 
-/// The paper without a curve: a straight line from the table's black to its white, which the Lab's
-/// curve shapes (the owner's call).
+/// The curve on the image it is given: the diagonal at rest, its handles' distances added.
+pub fn curve(handles: &[f32; PAPER], u: f64) -> f64 {
+    (u + paper_shift(handles, u)).clamp(0.0, 1.0)
+}
+
+/// The paper without Fuji's: a straight line from the table's black to its white, the image the Lab's
+/// curve is given (the owner's call).
 pub static STRAIGHT: LazyLock<[f64; super::paper::NODES]> = LazyLock::new(|| {
     let (black, white) = (f64::from(crate::scanner::ENDS.0), f64::from(crate::scanner::ENDS.1));
     std::array::from_fn(|i| ((super::paper::density(i) - black) / (white - black)).clamp(0.0, 1.0))
@@ -50,8 +54,7 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     add(&mut p.paper_offset, &lab.paper_offset);
     add(&mut p.grey_a, &lab.grey_a);
     add(&mut p.grey_b, &lab.grey_b);
-    p.paper = *STRAIGHT;
-    p.paper.iter_mut().enumerate().for_each(|(i, v)| *v += paper_shift(&lab.paper, super::paper::density(i)));
+    p.paper = STRAIGHT.map(|u| curve(&lab.paper, u));
     // A curve held inside the code and climbing, as its spline needs.
     let mut floor = 0.0f64;
     p.paper.iter_mut().for_each(|v| {
@@ -113,14 +116,13 @@ mod tests {
         let mut lab = FrontierLab::default();
         lab.set(LabValue::Paper(0), 0.08);
         let p = edited(&lab);
-        let oni = *STRAIGHT;
-        assert!((p.paper[0] - oni[0] - 0.08).abs() < 1e-6 && (p.paper[1] - oni[1] - 0.08).abs() < 1e-6 && p.paper[2] > oni[2], "the whole toe lifts: {:?}", &p.paper[..5]);
-        assert!((p.paper[14] - oni[14]).abs() < 1e-9, "the whites stay");
+        assert!((p.paper[0] - 0.08).abs() < 1e-6 && p.paper[4] > STRAIGHT[4], "the black lifts: {:?}", &p.paper[..5]);
+        assert!((p.paper[14] - 1.0).abs() < 1e-9, "the white stays");
         assert!(p.paper.windows(2).all(|w| w[1] >= w[0]), "{:?}", p.paper);
         // Twin: the whites pulled far down are held level with the highlights, never under them.
         let mut dip = FrontierLab::default();
         dip.set(LabValue::Paper(4), -0.9);
         let q = edited(&dip);
-        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[13] < STRAIGHT[13] - 0.03 && q.paper[14] == q.paper[13], "{:?}", q.paper);
+        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < 0.97, "{:?}", q.paper);
     }
 }

@@ -139,9 +139,9 @@ pub(crate) fn a_drag_in_the_look_lab_turns_the_frontier_and_one_undo_returns_to_
     rig.pump();
     assert_eq!(lab().hue[8], 0.0);
 
-    // The paper curve: the blacks' handle (density 0, a eleventh of the way across) lifted by hand.
+    // The curve: the blacks' handle, in the black corner, lifted by hand.
     g.invoke_paper_resized(220.0, 165.0);
-    let x = 220.0 * 0.2 / 2.2;
+    let x = 0.0;
     g.invoke_paper_pointer(0, x, 165.0);
     for k in 1..=5 {
         g.invoke_paper_pointer(1, x, 165.0 - k as f32 * 2.0);

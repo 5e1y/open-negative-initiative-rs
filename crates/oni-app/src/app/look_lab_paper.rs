@@ -4,7 +4,7 @@
 use crate::app::Ctl;
 use crate::track::DOUBLE_CLICK;
 use crate::{Ink, LookLab, MainWindow, PlotDot, PlotLine};
-use oni_pipeline::look_lab::paper::{self, Curve, NODES};
+use oni_pipeline::look_lab::paper::Curve;
 use oni_pipeline::look_lab::edits::{self, HANDLES};
 use oni_pipeline::look_lab::FITTED;
 use oni_settings::frontier_lab::{FrontierLab, LabValue, PAPER};
@@ -29,35 +29,39 @@ thread_local! {
     static GRAPH: RefCell<Paper> = RefCell::default();
 }
 
-fn x_of(d: f64, w: f32) -> f32 {
-    ((d - paper::FIRST) / (paper::LAST - paper::FIRST)) as f32 * w
+fn x_of(u: f64, w: f32) -> f32 {
+    u as f32 * w
 }
 
 fn y_of(code: f64, h: f32) -> f32 {
     (1.0 - code.clamp(0.0, 1.0)) as f32 * h
 }
 
-/// The curve as path commands across the plot.
-pub fn trace(nodes: &[f64; NODES], (w, h): (f32, f32)) -> String {
-    let curve = Curve::new(nodes);
+/// A curve over the image, 0 to 1, as path commands across the plot.
+pub fn trace(at: impl Fn(f64) -> f64, (w, h): (f32, f32)) -> String {
     (0..=STEPS)
         .map(|k| {
-            let d = paper::FIRST + (paper::LAST - paper::FIRST) * k as f64 / STEPS as f64;
-            format!("{} {:.2} {:.2}", if k == 0 { "M" } else { "L" }, x_of(d, w), y_of(curve.at(d), h))
+            let u = k as f64 / STEPS as f64;
+            format!("{} {:.2} {:.2}", if k == 0 { "M" } else { "L" }, x_of(u, w), y_of(at(u), h))
         })
         .collect::<Vec<_>>()
         .join(" ")
 }
 
-/// The frame's curve at each handle's density.
+/// The machine's measured paper over the same image: its densities from the table's black to its white.
+fn machine(u: f64) -> f64 {
+    let (black, white) = (f64::from(oni_pipeline::scanner::ENDS.0), f64::from(oni_pipeline::scanner::ENDS.1));
+    Curve::new(&FITTED.frontier.paper).at(black + u * (white - black))
+}
+
+/// The frame's curve at each handle.
 fn at_handles(lab: &FrontierLab) -> [f64; PAPER] {
-    let curve = Curve::new(&edits::edited(lab).paper);
-    HANDLES.map(|d| curve.at(d))
+    HANDLES.map(|u| edits::curve(&lab.paper, u))
 }
 
 /// The handle nearest a point across the plot.
 pub fn nearest(x: f32, w: f32) -> usize {
-    let at = |d: f64| (x_of(d, w) - x).abs();
+    let at = |u: f64| (x_of(u, w) - x).abs();
     (0..PAPER).min_by(|a, b| at(HANDLES[*a]).total_cmp(&at(HANDLES[*b]))).unwrap_or(0)
 }
 
@@ -66,7 +70,7 @@ pub fn edit_at(lab: &FrontierLab, i: usize, code: f64) -> f32 {
     let y = at_handles(lab);
     let low = if i == 0 { 0.0 } else { y[i - 1] };
     let high = if i == PAPER - 1 { 1.0 } else { y[i + 1] };
-    (f64::from(lab.paper[i]) + code.clamp(low, high) - y[i]) as f32
+    (code.clamp(low, high) - HANDLES[i]) as f32
 }
 
 impl Ctl {
@@ -76,9 +80,8 @@ impl Ctl {
         if size.0 <= 0.0 {
             return;
         }
-        let edited = edits::edited(lab).paper;
-        let line = |nodes: &[f64; NODES], ink: Ink, width: f32| PlotLine { commands: trace(nodes, size).into(), ink, width, opacity: 1.0 };
-        let lines = vec![line(&edits::STRAIGHT, Ink::GreyHalf, 1.0), line(&FITTED.frontier.paper, Ink::GuideFaint, 1.0), line(&edited, Ink::Primary, 2.0)];
+        let line = |at: &dyn Fn(f64) -> f64, ink: Ink, width: f32| PlotLine { commands: trace(at, size).into(), ink, width, opacity: 1.0 };
+        let lines = vec![line(&|u| u, Ink::GreyHalf, 1.0), line(&machine, Ink::GuideFaint, 1.0), line(&|u| edits::curve(&lab.paper, u), Ink::Primary, 2.0)];
         let handles = at_handles(lab);
         let dots: Vec<PlotDot> = (0..PAPER)
             .map(|i| PlotDot {
@@ -163,12 +166,13 @@ mod tests {
 
     #[test]
     fn a_node_follows_the_hand_between_its_neighbours() {
-        assert_eq!((nearest(0.0, 280.0), nearest(280.0, 280.0), nearest(x_of(0.75, 280.0), 280.0)), (0, 4, 2));
+        assert_eq!((nearest(0.0, 280.0), nearest(280.0, 280.0), nearest(140.0, 280.0)), (0, 4, 2));
         let rest = FrontierLab::default();
         let mut lifted = rest;
         lifted.set(LabValue::Paper(0), edit_at(&rest, 0, 0.05));
         assert!((at_handles(&lifted)[0] - 0.05).abs() < 2e-3, "the blacks' handle lands under the hand: {:?}", at_handles(&lifted));
-        assert_eq!(trace(&FITTED.frontier.paper, (280.0, 210.0)).matches('L').count(), STEPS);
+        assert_eq!(trace(machine, (280.0, 210.0)).matches('L').count(), STEPS);
+        assert!(trace(|u| u, (280.0, 210.0)).starts_with("M 0.00 210.00"), "the diagonal starts in the black corner");
         // Twin: the mid-tones asked over the highlights stop level with them.
         let over = edit_at(&rest, 2, 0.99);
         assert!((at_handles(&rest)[2] + f64::from(over) - at_handles(&rest)[3]).abs() < 1e-6);

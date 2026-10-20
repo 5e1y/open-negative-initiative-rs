@@ -1459,5 +1459,12 @@
     "title": "The Frontier prints on a straight paper; the Lab's curve bends it",
     "status": "done",
     "detail": "The owner's call: the paper curve is taken out of the Frontier mode, which now prints on a straight line from the table's black to its white (ONI's slid paper of #196-#197 is gone), and the five-handle graph becomes the Look Lab's own Curve block, straight at rest, a double click returning a handle to the line, its round key resting the whole curve. The measured machine's paper stays drawn faint. A research agent looks for the paper the Frontier emulates and its ICC profile, to build a paper curve from it later."
+  },
+  {
+    "id": 199,
+    "type": "fix",
+    "title": "The Lab's curve acts on the image it is given, black and white in the corners",
+    "status": "done",
+    "detail": "The owner did not understand the flats at both ends of the graph: its x axis ran over the table's whole density domain while the straight paper spans only the table's window (black 0.14 D, white 1.54 D), so the black and white handles sat on the clipped flats. The curve is now drawn and applied over the image the straight paper gives (0 to 1): the diagonal at rest, handles at 0, 1/4, 1/2, 3/4 and 1, the corners black and white; the measured machine's paper is drawn over the same axis, faint."
   }
 ]
