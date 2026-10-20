@@ -283,6 +283,20 @@ user.
    - `cargo run -p oni-pipeline --example look_lab_fit` (Levenberg–Marquardt on the constrained nodes)
      writes `lab.json`, and `LabParams` loads it.
    - The fit's ΔE goes into the doc beside this plan.
+
+   Measured (#168) [M], on the 1 440 constrained nodes against the cube:
+   - Published seeds: paper only 1.67, full model 1.51 median.
+   - **Fitted Frontier, full model: median ΔE 1.18** (p90 2.98, p99 5.42), from the seeds in 12
+     Levenberg–Marquardt rounds. The same set with its colour stage at rest: 1.94 (twin). The fit is
+     against the cube's nodes, not the 63 renders, hence below the research's 1.65.
+   - Two sector values sit on their range's stop: hue +20° and twist −15° at 210°, which cancel to +5°
+     at C 0.1. Saturation by L lands at −0.18, the seed's sign reversed. The colour stage and the paper
+     share a gauge, so single values do not compare with the seeds.
+   - Character: at the fitted Frontier values and `k = 1`, the 27³ bake equals `frontier.cube` at every
+     node (worst gap 0). The clip applies to the model alone: the cube's nodes dip to −0.11 where it
+     extrapolates, and the character keeps them. At `k = 0`: 1.18.
+   - **Open for step 6**: the full model's 27³ bake misses the bake target, p99 ΔE **0.575** against the
+     chain (the paper chain alone: 0.34). 33³ gives 0.41, but only a 27³ bake keeps the character exact.
 3. **Neutral refit against Pro**: a synthetic density grid, rendered by Pro at rest from the existing
    CPU references, refits the neutral set, with its check.
 4. **Eye check before any UI**: `--example look_lab_strip <raw dir> <out>` writes PNG strips of two

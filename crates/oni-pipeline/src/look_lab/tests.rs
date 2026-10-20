@@ -30,11 +30,11 @@ fn the_constrained_nodes_are_the_measured_core_of_the_cube() {
 /// The paper stage at Frontier values stays near the cube; made common to the channels it does not.
 #[test]
 fn the_paper_model_lands_near_the_cube() {
-    let frontier = against_cube(&Chain::new(&SEED_FRONTIER));
+    let frontier = against_cube(&Chain::new(&SEED_FRONTIER.paper_only()));
     println!("paper model at Frontier values against the cube: median ΔE {frontier:.3}");
     assert!(frontier <= 2.0, "{frontier}");
     // Twin: the identity matrix, the gains and offsets made common to all three channels.
-    let common = LabParams { matrix: [0.0; 6], paper_gain: [1.0; 2], paper_offset: [0.0; 2], ..SEED_FRONTIER };
+    let common = LabParams { matrix: [0.0; 6], paper_gain: [1.0; 2], paper_offset: [0.0; 2], ..SEED_FRONTIER.paper_only() };
     let twin = against_cube(&Chain::new(&common));
     println!("  twin, identity and common paper: {twin:.3}");
     assert!(twin > 2.5, "{twin}");
@@ -43,8 +43,9 @@ fn the_paper_model_lands_near_the_cube() {
 /// Both pivots the probe tried: the machine's neutral green passes, density zero does not.
 #[test]
 fn the_paper_turns_around_the_neutral_green() {
-    let neutral = against_cube(&Chain::with_pivot(&SEED_FRONTIER, pivot()));
-    let zero = against_cube(&Chain::with_pivot(&SEED_FRONTIER, 0.0));
+    let paper = SEED_FRONTIER.paper_only();
+    let neutral = against_cube(&Chain::with_pivot(&paper, pivot()));
+    let zero = against_cube(&Chain::with_pivot(&paper, 0.0));
     println!("pivot {:.4}: {neutral:.3}; pivot 0: {zero:.3}", pivot());
     assert!((pivot() - 0.7244).abs() < 1e-6);
     assert!(neutral <= 2.0 && zero > 2.0, "{neutral} {zero}");
@@ -71,7 +72,8 @@ fn inside_reach(count: usize) -> Vec<[f64; 3]> {
 }
 
 fn bake_error(n: usize, inputs: &[[f64; 3]]) -> f64 {
-    let (cube, chain) = (bake(&SEED_FRONTIER, n), Chain::new(&SEED_FRONTIER));
+    let paper = SEED_FRONTIER.paper_only();
+    let (cube, chain) = (bake(&paper, n), Chain::new(&paper));
     let e: Vec<f64> = inputs
         .iter()
         .map(|x| {
@@ -83,7 +85,7 @@ fn bake_error(n: usize, inputs: &[[f64; 3]]) -> f64 {
     centile(&e, 0.99)
 }
 
-/// The 27³ bake the kernel reads stays within sight of the chain it samples.
+/// The 27³ bake the kernel reads stays within sight of the paper chain it samples.
 #[test]
 fn the_bake_holds_the_chain() {
     let inputs = inside_reach(100_000);
@@ -104,7 +106,7 @@ fn reference() -> (f64, Chain) {
         let c = oni_render::cpu::color_cube([t[0], t[1], t[2], 1.0], &MACHINE.render);
         lab_of([c[0], c[1], c[2]].map(f64::from))[0]
     };
-    let chain = Chain::new(&SEED_NEUTRAL);
+    let chain = Chain::new(&SEED_NEUTRAL.paper_only());
     let (mut lo, mut hi) = (-1.0, 0.0);
     for _ in 0..60 {
         let mid = (lo + hi) / 2.0;
@@ -152,8 +154,8 @@ fn the_cube_turns_skin_and_blue_and_green_borrowing_red_carries_the_skin() {
     let cube_turn = |set: &[([f64; 3], [f64; 3])]| turned(set, &|x, c| turn(lch(lab_of(c))[2], at(&neutral, x.map(|v| v + shift))[2]));
     let (skin_cube, blue_cube) = (cube_turn(&skin), cube_turn(&blue));
     println!("cube against the reference: skin {skin_cube:+.1}°, blue {blue_cube:+.1}°");
-    let frontier = Chain::new(&SEED_FRONTIER);
-    let mut moved = SEED_FRONTIER.clone();
+    let frontier = Chain::new(&SEED_FRONTIER.paper_only());
+    let mut moved = SEED_FRONTIER.paper_only();
     moved.matrix[2] = SEED_NEUTRAL.matrix[2];
     let moved = Chain::new(&moved);
     let skin_back = turned(&skin, &|x, _| turn(at(&moved, x)[2], at(&frontier, x)[2]));

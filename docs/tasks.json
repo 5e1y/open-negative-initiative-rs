@@ -1248,5 +1248,12 @@
     "title": "Frontier Look Lab, step 1: the paper model and its bake",
     "status": "done",
     "detail": "oni-pipeline look_lab: LabParams with the plan's published neutral and Frontier sets, the matrix and the Fritsch-Carlson paper curve around the neutral green pivot, and a bake onto the machine's density lattice. Measured on the 1 440 constrained nodes: paper model at Frontier values median ΔE 1.67 against the cube (pivot 0: 2.07; identity and common paper: 3.47); 27³ bake p99 ΔE 0.34 against the chain (9³: 2.72); the diagnosis probe gives skin +10.6° and blue +12.5° against the neutral reference, green borrows red at neutral −12.5° on skin. No render, setting or interface change."
+  },
+  {
+    "id": 168,
+    "type": "feature",
+    "title": "Frontier Look Lab, step 2: the colour stage, the measured character and the Frontier refit",
+    "status": "done",
+    "detail": "look_lab gains the Oklab stage (hue, twist and chroma by sector, saturation by L, grey cast), the character (the cube's residual against the shipped Frontier set, trilinear between its nodes) and a Levenberg-Marquardt fit; examples/look_lab_fit.rs writes resources/scanner/lab.json, which LabParams loads. Fitted Frontier full model: median ΔE 1.18 on the constrained nodes (colour stage at rest 1.94); character 1 gives frontier.cube back exactly. The full model's 27³ bake reaches p99 0.575 against the chain, past the 0.5 target (33³: 0.41), left for step 6."
   }
 ]
