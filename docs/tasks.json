@@ -1445,5 +1445,12 @@
     "title": "The Frontier prints on ONI's paper curve",
     "status": "done",
     "detail": "The owner's call: the Frontier's paper curve is ONI's (the neutral set's, fitted to Pro at rest), not the measured machine's S; the five handles move it, a double click returns a handle to ONI's. Every Frontier frame now renders through the Lab's bake (once per set of edits, about a millisecond), so a frame with no edit prints on ONI's paper too; the measured curve stays drawn faint for reference."
+  },
+  {
+    "id": 197,
+    "type": "fix",
+    "title": "The Frontier prints without Pro's +1.5 EV: ONI's paper slid to Pro's grey without its exposure",
+    "status": "done",
+    "detail": "The owner found the Frontier much lighter than the ONI machine on the same paper curve: ONI's curve in the Lab is the neutral set's, fitted to Pro at rest, which prints at +1.5 EV, so the roll's grey on the machine's neutral came out near 0.76. The owner asked for the +1.5 EV out: the curve is slid along density, its shape kept, so the machine's neutral prints the reference roll's grey as Pro renders it with the print exposure at 0 (computed through Pro's own chain); the graph draws the slid curve."
   }
 ]

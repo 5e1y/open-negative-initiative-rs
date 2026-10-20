@@ -3,8 +3,34 @@
 
 use super::measure::SIDE;
 use super::{FITTED, LabParams, bake};
-use oni_render::ColorCube;
+use oni_render::{ColorCube, ScannerEncode, cpu};
 use oni_settings::frontier_lab::{FrontierLab, PAPER};
+use std::sync::LazyLock;
+
+/// Pro's grey without its print exposure, in display code: the reference roll's grey through Pro at rest
+/// with the exposure taken off, where the Frontier's grey prints.
+pub fn pro_grey_unexposed() -> f64 {
+    let mut s = crate::scanner::check_roll();
+    (s.face, s.print.exposure) = (oni_settings::Face::Pro, 0.0);
+    let k = crate::conversion::stage47(&s);
+    let t = crate::scanner::CHECK_GREY.map(|d| 10f32.powf(-d));
+    let code = cpu::scanner_encode(cpu::stage47([t[0], t[1], t[2], 1.0], &k), &ScannerEncode { root: 1.0 });
+    f64::from(code[1])
+}
+
+/// ONI's paper curve slid along density, its shape kept, so the machine's neutral prints Pro's grey
+/// without the +1.5 EV Pro prints at rest (the owner's call).
+pub static ONI_PAPER: LazyLock<[f64; super::paper::NODES]> = LazyLock::new(|| {
+    let curve = super::paper::Curve::new(&FITTED.neutral.paper);
+    let (target, neutral) = (pro_grey_unexposed(), f64::from(crate::scanner::MACHINE.neutral()[1]));
+    let (mut low, mut high) = (super::paper::FIRST, super::paper::LAST);
+    for _ in 0..60 {
+        let mid = (low + high) / 2.0;
+        if curve.at(mid) < target { low = mid } else { high = mid }
+    }
+    let shift = neutral - (low + high) / 2.0;
+    std::array::from_fn(|i| curve.at(super::paper::density(i) - shift))
+});
 
 /// The paper handles' densities: blacks, shadows, mid-tones (the machine's neutral), highlights, whites.
 pub const HANDLES: [f64; PAPER] = [0.0, 0.4, 0.75, 1.15, 1.6];
@@ -43,7 +69,7 @@ pub fn edited(lab: &FrontierLab) -> LabParams {
     add(&mut p.paper_offset, &lab.paper_offset);
     add(&mut p.grey_a, &lab.grey_a);
     add(&mut p.grey_b, &lab.grey_b);
-    p.paper = FITTED.neutral.paper;
+    p.paper = *ONI_PAPER;
     p.paper.iter_mut().enumerate().for_each(|(i, v)| *v += paper_shift(&lab.paper, super::paper::density(i)));
     // A curve held inside the code and climbing, as its spline needs.
     let mut floor = 0.0f64;
@@ -79,7 +105,7 @@ mod tests {
     #[test]
     fn at_rest_the_lab_is_the_machine_on_onis_paper_and_an_edit_moves_its_colours_only() {
         let rest = table(&FrontierLab::default());
-        let on_onis_paper = LabParams { paper: FITTED.neutral.paper, ..FITTED.frontier.clone() };
+        let on_onis_paper = LabParams { paper: *ONI_PAPER, ..FITTED.frontier.clone() };
         assert!(moved(&rest, &bake(&on_onis_paper, SIDE), |_| true) < 1e-5, "the sliders at zero: the machine on ONI's paper");
         // Twin: the machine's own paper prints another table.
         assert!(moved(&rest, &MACHINE.render, |_| true) > 0.05);
@@ -93,11 +119,20 @@ mod tests {
     }
 
     #[test]
+    fn onis_paper_prints_the_machine_s_neutral_at_pro_s_grey_without_its_exposure() {
+        let at_neutral = super::super::paper::Curve::new(&ONI_PAPER).at(f64::from(MACHINE.neutral()[1]));
+        let target = pro_grey_unexposed();
+        assert!((at_neutral - target).abs() < 0.005 && target < 0.6, "{at_neutral} against {target}");
+        // Twin: ONI's curve unslid prints the neutral 1.5 EV brighter.
+        assert!(super::super::paper::Curve::new(&FITTED.neutral.paper).at(f64::from(MACHINE.neutral()[1])) > target + 0.1);
+    }
+
+    #[test]
     fn a_paper_node_raised_lifts_the_blacks_and_the_curve_stays_climbing() {
         let mut lab = FrontierLab::default();
         lab.set(LabValue::Paper(0), 0.08);
         let p = edited(&lab);
-        let oni = FITTED.neutral.paper;
+        let oni = *ONI_PAPER;
         assert!((p.paper[0] - oni[0] - 0.08).abs() < 1e-6 && (p.paper[1] - oni[1] - 0.08).abs() < 1e-6 && p.paper[2] > oni[2], "the whole toe lifts: {:?}", &p.paper[..5]);
         assert!((p.paper[14] - oni[14]).abs() < 1e-9, "the whites stay");
         assert!(p.paper.windows(2).all(|w| w[1] >= w[0]), "{:?}", p.paper);
@@ -105,6 +140,6 @@ mod tests {
         let mut dip = FrontierLab::default();
         dip.set(LabValue::Paper(4), -0.9);
         let q = edited(&dip);
-        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < FITTED.neutral.paper[14] - 0.03 && q.paper[14] == q.paper[13], "{:?}", q.paper);
+        assert!(q.paper.windows(2).all(|w| w[1] >= w[0]) && q.paper[14] < ONI_PAPER[14] - 0.03 && q.paper[14] == q.paper[13], "{:?}", q.paper);
     }
 }

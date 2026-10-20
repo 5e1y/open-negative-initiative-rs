@@ -78,7 +78,7 @@ impl Ctl {
         }
         let edited = edits::edited(lab).paper;
         let line = |nodes: &[f64; NODES], ink: Ink, width: f32| PlotLine { commands: trace(nodes, size).into(), ink, width, opacity: 1.0 };
-        let lines = vec![line(&FITTED.neutral.paper, Ink::GreyHalf, 1.0), line(&FITTED.frontier.paper, Ink::GuideFaint, 1.0), line(&edited, Ink::Primary, 2.0)];
+        let lines = vec![line(&edits::ONI_PAPER, Ink::GreyHalf, 1.0), line(&FITTED.frontier.paper, Ink::GuideFaint, 1.0), line(&edited, Ink::Primary, 2.0)];
         let handles = at_handles(lab);
         let dots: Vec<PlotDot> = (0..PAPER)
             .map(|i| PlotDot {
