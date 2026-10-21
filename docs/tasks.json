@@ -1571,5 +1571,12 @@
     "title": "De-dust: the brush follows the pointer, a stroke reuses the frame's full resolution",
     "status": "done",
     "detail": "The brush disc follows the pointer in Slint (TouchArea's moved fires only while pressed), over the picture alone, hiding the system cursor only there; scroll zooms under the brush; Space pressed mid-stroke finishes it and is let go with the focus; ⌘-drag pans; a press gives the keys back their focus. A move appends one segment to the stroke's path (0.3 µs a move, was a full republish of every correction). The full resolution is built as De-dust opens and each patch search reuses it (fullIfReady) instead of decoding the RAW again; the search window covers only the farthest candidate; the cost map's taps skip the clamp inside the region; the engine is taken per correction and purged once. A stroke stays painted until its patch lands; a patch made for a correction removed meanwhile is dropped; removal never locks the engine on the interface thread. ONI_BENCH=dedust on roll #8: patch 185 ms after its search starts, was 2.2 s."
+  },
+  {
+    "id": 216,
+    "type": "spec",
+    "title": "The open frame's full resolution built ahead once it has stayed a second",
+    "status": "done",
+    "detail": "Owner's call: the open frame's full resolution is built in the background once it has been shown one second (never under a hand, at once in De-dust), so a stroke's patch and a zoom read it at once; one frame's at a time, dropped on another open or the gallery. Arrows walking a roll pass sooner and decode nothing. Swift builds it only on demand (corrections, Details, zoom). Roll #8 NEF: 907 ms decode, 46 ms upload, about 390 MB held; ONI_BENCH=dedust peak footprint 2.9 GB, resident 1.7 GB."
   }
 ]

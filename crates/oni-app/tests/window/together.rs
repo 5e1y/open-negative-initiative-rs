@@ -92,5 +92,8 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_tile_opened(tile("D"));
     rig.until("D alone", Duration::from_secs(60), || canvas.get_status().contains(" × "));
     assert!(ctl.state.borrow().store().editor_ref().is_some_and(|e| e.together().is_empty()));
+    // A frame looked at a second has its full resolution built ahead, for a stroke or a zoom.
+    assert!(!ctl.state.borrow().full_built(), "twin: not at once, so the arrows walk a roll freely");
+    rig.until("D's full resolution", Duration::from_secs(10), || ctl.state.borrow().full_built());
     let _ = std::fs::remove_dir_all(&root);
 }

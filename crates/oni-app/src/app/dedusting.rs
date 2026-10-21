@@ -202,17 +202,22 @@ impl Ctl {
         self.write(Command::Write(Box::new(next)));
     }
 
-    /// `negative.fullIfReady`: the open frame's full resolution built as De-dust opens, so the first
-    /// stroke's patch reads it rather than decoding the frame again.
+    /// `negative.fullIfReady`, built ahead for the open frame alone: as De-dust opens, or once the frame
+    /// has stayed on screen, so a stroke's patch and a zoom read it at once (about 390 MB a 24 Mpx frame).
     pub(super) fn ready_full(self: &Rc<Self>) {
-        if !self.painting() {
+        let Some(w) = self.window() else { return };
+        if w.global::<App>().get_gallery() || self.together_shown() {
             return;
         }
+        let painting = self.painting();
         let asked = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let built = s.full.as_ref().is_some_and(|(p, _)| *p == path);
             if built || s.rendered == 0 || s.building_full.is_some() || s.full_failed.contains(&path) {
+                return;
+            }
+            if !ahead(painting, s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0) {
                 return;
             }
             s.building_full = Some(path.clone());
@@ -356,5 +361,28 @@ mod tests {
         let next = renewed(&model, vec![1, 3]).expect("twin: a changed item renews the model");
         assert_eq!(next.row_data(1), Some(3));
         assert!(renewed(&model, vec![1]).is_some(), "twin: a shorter list renews it");
+    }
+}
+
+/// A frame looked at this long has its full resolution built; arrows walking a roll pass sooner.
+const DWELL: std::time::Duration = std::time::Duration::from_secs(1);
+
+/// Whether the open frame's full resolution is built now: never under a hand, at once for De-dust,
+/// else once the frame has been shown `DWELL`.
+fn ahead(painting: bool, shown_for: std::time::Duration, held: bool) -> bool {
+    !held && (painting || shown_for >= DWELL)
+}
+
+#[cfg(test)]
+mod ahead_tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn a_frame_stayed_on_builds_its_full_resolution_and_one_walked_past_does_not() {
+        assert!(ahead(false, Duration::from_millis(1000), false));
+        assert!(!ahead(false, Duration::from_millis(400), false), "twin: a frame the arrows pass builds nothing");
+        assert!(ahead(true, Duration::ZERO, false), "De-dust builds at once");
+        assert!(!ahead(true, Duration::from_secs(5), true), "never under a hand");
     }
 }

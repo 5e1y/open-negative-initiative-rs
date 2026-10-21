@@ -23,6 +23,11 @@ impl State {
         self.picks.cursor = Some(path.to_string());
     }
 
+    /// The open frame's full resolution, once built.
+    pub fn full_built(&self) -> bool {
+        self.full.as_ref().is_some_and(|(p, _)| self.open.as_ref() == Some(p))
+    }
+
     /// The settings the canvas was last asked to show, a hovered preset's preview included.
     pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
         self.requested_live.as_ref()
