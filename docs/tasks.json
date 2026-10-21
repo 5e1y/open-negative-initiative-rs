@@ -1676,5 +1676,12 @@
     "title": "The editor reads the full resolution; a preview copy in Settings",
     "status": "done",
     "detail": "Owner's ask: the full resolution shown from the start, so a zoom never renders twice, the preview mode kept as a choice. The full resolution is built as a photo opens and every render reads it once built (fitted down at fit, a region when zoomed); Settings › Rendering 'Edit on a preview copy' (previewEditing, off) keeps the former way. Roll #8, against the preview copy: a 10 s Exposure drag p50 0.3 ms both, p99 7.2 ms against 6.2 ms; a pinch from fit p99 7.6 ms against 12.1 ms; peak footprint 2.37 GB against 2.41 GB, the preview copy building the full resolution after its 1 s dwell anyway. A departure from Swift, which edits on its preview."
+  },
+  {
+    "id": 231,
+    "type": "perf",
+    "title": "A zoom reduces from the full resolution's halvings",
+    "status": "done",
+    "detail": "On the full resolution (#230) a pinch from fit reduced the whole 24 Mpx frame on every event: notch p50 25 ms. The fitted copy is now reduced from the smallest halving of its base still past it (kept per base, down to 512 px). ONI_BENCH=zoom, pinch from fit: p50 2.0 ms, p99 4.5 ms, gap p99 11 ms, as on the preview copy (0.6, 7.9, 10.6). Peak footprint of that bench 4.3 to 4.7 GB against 3.7 GB on the preview copy."
   }
 ]

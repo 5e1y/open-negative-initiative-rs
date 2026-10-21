@@ -90,8 +90,8 @@ impl Device {
 pub struct Engine {
     pub(super) graph: Graph,
     pipeline: Pipeline,
-    /// The open frame's preview reduced to the canvas: its source's id, its long side, its pixels.
-    fitted: Option<(u64, usize, Source)>,
+    /// The open frame reduced to the canvas, and the halvings it was reduced from.
+    fitted: view::Fitting,
     /// Laid after the pipeline on every render the editor shows, never on an export.
     pub proof: crate::proof::Proofing,
     /// Where the custom flat-field masks are kept, and those read so far, `None` once one is gone.
@@ -232,7 +232,7 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: None, proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
     }
 
     pub fn shared(d: &Device) -> Shared {
@@ -244,7 +244,7 @@ impl Engine {
     /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the
     /// measuring copies and the pool's idle textures, a few hundred MB on a 24 MP frame.
     pub fn trim(&mut self) {
-        self.fitted = None;
+        self.fitted = Default::default();
         self.measures = None;
         self.read = [None, None];
         self.cache.clear();

@@ -70,17 +70,73 @@ impl Engine {
         Ok(source)
     }
 
+    /// `base` reduced to `side` on its long side, from the smallest of its halvings still past it, so
+    /// each step of a zoom reduces a few megapixels rather than the whole frame.
     pub(super) fn fitted(&mut self, base: &Source, side: usize, long: usize) -> Result<Source, String> {
         let id = base.id();
-        if let Some((kept, s, source)) = &self.fitted
+        if let Some((kept, s, source)) = &self.fitted.kept
             && (*kept, *s) == (id, side)
         {
             return Ok(source.clone());
         }
-        self.fitted = None;
-        let reduced = Image::new(base).lanczos(side as f64 / long as f64);
+        self.fitted.kept = None;
+        if self.fitted.halves.as_ref().is_none_or(|(k, _)| *k != id) {
+            self.fitted.halves = Some((id, Vec::new()));
+        }
+        let (mut from, mut from_long) = (base.clone(), long);
+        for level in 0.. {
+            if from_long / 2 < side.max(MIN_HALF) {
+                break;
+            }
+            let halves = &mut self.fitted.halves.as_mut().expect("set above").1;
+            if halves.len() == level {
+                let half = self.graph.materialise(&Image::new(&from).lanczos(0.5)).map_err(|e| e.to_string())?;
+                halves.push(half);
+            }
+            from = halves[level].clone();
+            let e = from.extent();
+            from_long = e.w.max(e.h) as usize;
+        }
+        let reduced = Image::new(&from).lanczos(side as f64 / from_long as f64);
         let source = self.graph.materialise(&reduced).map_err(|e| e.to_string())?;
-        self.fitted = Some((id, side, source.clone()));
+        self.fitted.kept = Some((id, side, source.clone()));
         Ok(source)
+    }
+}
+
+/// The smallest halving kept: under it a reduction costs little from the level above.
+const MIN_HALF: usize = 512;
+
+/// The last reduction made and the halvings of the base it came from.
+#[derive(Default)]
+pub(crate) struct Fitting {
+    halves: Option<(u64, Vec<Source>)>,
+    kept: Option<(u64, usize, Source)>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_graph::Rect;
+
+    #[test]
+    fn a_reduction_through_the_halvings_is_the_direct_one() {
+        let Ok(device) = crate::render::Device::open() else { return };
+        let mut engine = Engine::on(&device);
+        let (w, h) = (1600usize, 1000usize);
+        let wave = |x: f32, y: f32| [0.4 + 0.3 * (x * 0.05).sin() * (y * 0.031).cos(), 0.3 + 0.2 * x / w as f32, 0.5, 1.0];
+        let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| wave((i % w) as f32, (i / w) as f32)).collect();
+        let full = engine.graph.upload(w as u32, h as u32, &pixels).unwrap();
+        let through = engine.fitted(&full, 300, w).unwrap();
+        let read = |e: &mut Engine, image: &Image| e.graph.render(image, image.extent(), None).unwrap();
+        let direct = Image::new(&full).lanczos(300.0 / w as f64);
+        assert_eq!(through.extent(), direct.extent());
+        let (ours, theirs) = (read(&mut engine, &Image::new(&through)), read(&mut engine, &direct));
+        let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).map(|(p, q)| (0..3).map(|c| (p[c] - q[c]).abs()).sum::<f32>()).sum::<f32>() / a.len() as f32;
+        assert!(gap(&ours, &theirs) < 2e-3, "{}", gap(&ours, &theirs));
+        // Twin: the frame a few pixels over reduces to another picture, which the gap sees.
+        let moved = Image::new(&full).then(oni_graph::stages::Crop(Rect::new(6, 0, w as u32 - 6, h as u32))).lanczos(300.0 / w as f64);
+        let other = read(&mut engine, &moved);
+        assert!(gap(&ours[..other.len().min(ours.len())], &other) > 1e-2);
     }
 }
