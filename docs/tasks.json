@@ -1732,5 +1732,12 @@
     "title": "The interface thread neither traces the input histograms nor polls the GPU",
     "status": "done",
     "detail": "The levels' and curves' plots were traced on the interface thread, about 3 ms a reading at 30 Hz; they are now traced off it with a ticket, as the picture's histogram is (Ctl::traced and app::premultiplied deleted). The histogram's readback was polled every 2 ms by a repeating timer, about 500 wakes a second through a slide; the count's map callback now publishes it, and a single-shot timer waits only for the image's cadence (HISTOGRAM_POLL gone). ONI_BENCH=long: 229 histograms in 10 s, frame to panel p50 6.9 ms (9.1 before); ONI_BENCH=midzoom: 0 through the pan and pinch, 9 through the drag."
+  },
+  {
+    "id": 239,
+    "type": "perf",
+    "title": "A pan or a zoom moves the picture at once",
+    "status": "done",
+    "detail": "Nothing moved on the canvas until a render came back from the render thread, a thread hop and up to a refresh late. navigate now lays the picture shown where the new view puts it, by the same arithmetic a resize uses (resizing::followed), on the interface thread, and the render asked refines it. Benches unchanged: ONI_BENCH=midzoom pan p50 0.3 ms, pinch 0.4 ms."
   }
 ]

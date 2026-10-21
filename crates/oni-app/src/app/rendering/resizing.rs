@@ -34,7 +34,7 @@ fn covering(start: Viewport, from: (f64, f64), to: (f64, f64)) -> Viewport {
 }
 
 /// The texture's rectangle `t`, laid within the whole image at `from`, moved to the same share of `to`.
-fn followed(t: Rect, from: Rect, to: Rect) -> Rect {
+pub(super) fn followed(t: Rect, from: Rect, to: Rect) -> Rect {
     let k = to.2 / from.2.max(1e-9);
     (to.0 + (t.0 - from.0) * k, to.1 + (t.1 - from.1) * k, t.2 * k, t.3 * k)
 }
