@@ -130,6 +130,8 @@ export struct CorrectionRow {
     label: string,
     pending: bool,
     fallback: bool,
+    // The dust the patch covers, as the frame shows it unpatched.
+    original: image,
 }
 
 // The De-dust pane's model: the brush, held by Rust as a slider is, and the corrections.

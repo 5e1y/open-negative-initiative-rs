@@ -206,7 +206,8 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     rig.key(&ret);
     assert!(!w.global::<App>().get_gallery());
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("C.tif").as_str()), "Return opens the cursor, C");
-    assert_eq!(hand.lit_rows(), ["C"], "`designate`: the frame opened is the selection, ⌘A's four narrowed to it");
+    assert_eq!(hand.lit_rows(), ["A", "B", "C", "D"], "⌘A's four open together and stay the selection");
+    rig.until("the four together", std::time::Duration::from_secs(30), || w.global::<oni_app::Canvas>().get_status().as_str() == "4 frames together");
     rig.chord(Key::Control, "g");
     hand.rest();
 

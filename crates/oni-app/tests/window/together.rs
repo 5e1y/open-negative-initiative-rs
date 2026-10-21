@@ -6,7 +6,7 @@ use oni_app::fields::Field;
 use oni_app::{Canvas, Library, Store as StoreGlobal};
 use oni_core::{Archive, EditorStore};
 use oni_settings::sidecar;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use slint::platform::WindowEvent;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -58,9 +58,20 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let at = |x: usize, y: usize| canvas.get_frame().to_rgba8().filter(|b| b.width() as usize > x).map(|b| b.as_slice()[y * b.width() as usize + x]);
     // Within the dither's step: two grounds differ by a code at most.
     let near = |a: Option<slint::Rgba8Pixel>, b: Option<slint::Rgba8Pixel>| a.zip(b).is_some_and(|(a, b)| [a.r.abs_diff(b.r), a.g.abs_diff(b.g), a.b.abs_diff(b.b)].iter().all(|d| *d <= 2));
-    rig.until("the grid", Duration::from_secs(60), || canvas.get_status().as_str() == "3 frames together" && !near(at(2 * 312 + 150, 150), at(306, 150)));
-    assert_eq!(canvas.get_frame().size().width, 3 * 300 + 2 * 12, "three tiles on one row");
-    assert!(near(at(306, 150), at(150, 10)), "twin: a gap and a cell's empty edge show the same ground");
+    rig.until("the grid", Duration::from_secs(60), || canvas.get_status().as_str() == "3 frames together" && !near(at(2 * 412 + 200, 200), at(406, 200)));
+    assert_eq!(canvas.get_frame().size().width, 3 * 400 + 2 * 12, "three tiles on one row");
+    assert!(near(at(406, 200), at(200, 10)), "twin: a gap and a cell's empty edge show the same ground");
+    let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
+    assert!(["A", "B", "C"].iter().all(|n| selected(n)), "the selection stays the frames shown");
+
+    // Zoomed and panned as a contact sheet: a double click takes the sheet to its own pixels.
+    let fitted = canvas.get_frame_width();
+    canvas.invoke_double_clicked();
+    rig.pump();
+    assert!((canvas.get_frame_width() - fitted).abs() > 1.0, "the sheet zooms: {fitted} then {}", canvas.get_frame_width());
+    canvas.invoke_double_clicked();
+    rig.pump();
+    assert!((canvas.get_frame_width() - fitted).abs() < 1.0, "twin: back to fitted");
     rig.settle();
     println!("shot {}", rig.shot("together-grid").display());
 
@@ -80,6 +91,15 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     ctl.act("undo");
     rig.pump();
     let back = ctl.state.borrow().store().settings().print.exposure;
+    // Auto White Balance over frames together lays their average on all of them, without asking.
+    let filters = |p: &Path| sidecar::read(p, false, true).ok().and_then(|l| l.settings.balance_filters);
+    ctl.act("auto-balance");
+    rig.until("the balance landed", Duration::from_secs(60), || filters(&path("A")).is_some() && filters(&path("C")).is_some());
+    let lead = ctl.state.borrow().store().settings().balance_filters;
+    assert!(lead.is_some() && filters(&path("A")) == lead && filters(&path("C")) == lead, "{lead:?}, {:?}", filters(&path("A")));
+    assert_eq!(filters(&path("D")), None, "twin: a frame left out keeps its own");
+    ctl.act("undo");
+    rig.pump();
     assert!((back - set).abs() > 1e-6, "the drag was undone");
     for n in ["A", "C"] {
         assert!((exposure(&path(n)) - back).abs() < 1e-6, "{n}: one undo takes every frame back");
@@ -95,5 +115,14 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     // A frame looked at a second has its full resolution built ahead, for a stroke or a zoom.
     assert!(!ctl.state.borrow().full_built(), "twin: not at once, so the arrows walk a roll freely");
     rig.until("D's full resolution", Duration::from_secs(10), || ctl.state.borrow().full_built());
+
+    // Beside the photo, a ⌘-click in the column shows the two frames together at once, no double click.
+    let row = |n: &str| lib.get_rows().iter().position(|r| r.kind == 2 && r.title == n).unwrap_or_else(|| panic!("{n}'s row")) as i32;
+    lib.invoke_row_clicked(row("A"), true, false);
+    rig.until("D and A together", Duration::from_secs(30), || canvas.get_status().as_str() == "2 frames together");
+    assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("D.tif")), "the open frame leads");
+    // Twin: A taken out again leaves D alone on the canvas.
+    lib.invoke_row_clicked(row("A"), true, false);
+    rig.until("D alone again", Duration::from_secs(30), || canvas.get_status().contains(" × "));
     let _ = std::fs::remove_dir_all(&root);
 }

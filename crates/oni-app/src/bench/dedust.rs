@@ -61,11 +61,17 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 let row = d.get_rows().row_data(0);
+                // The row's reminder of the dust lands beside the patch.
+                if row.as_ref().is_some_and(|r| r.original.size().width == 0) && painted.get().is_some_and(|t| t.elapsed() < Duration::from_secs(30)) {
+                    step.set(2);
+                    return;
+                }
                 lines.borrow_mut().push(format!(
-                    "patch generated {:.0} ms after the stroke; row {:?}, pending {:?}",
+                    "patch and reminder {:.0} ms after the stroke; row {:?}, pending {:?}, reminder {:?}",
                     painted.get().map_or(0.0, |t| t.elapsed().as_secs_f64() * 1000.0),
                     row.as_ref().map(|r| r.label.to_string()),
-                    row.as_ref().map(|r| r.pending)
+                    row.as_ref().map(|r| r.pending),
+                    row.as_ref().map(|r| (r.original.size().width, r.original.size().height))
                 ));
             }
             3 => {

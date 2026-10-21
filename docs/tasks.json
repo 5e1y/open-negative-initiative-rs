@@ -1578,5 +1578,19 @@
     "title": "The open frame's full resolution built ahead once it has stayed a second",
     "status": "done",
     "detail": "Owner's call: the open frame's full resolution is built in the background once it has been shown one second (never under a hand, at once in De-dust), so a stroke's patch and a zoom read it at once; one frame's at a time, dropped on another open or the gallery. Arrows walking a roll pass sooner and decode nothing. Swift builds it only on demand (corrections, Details, zoom). Roll #8 NEF: 907 ms decode, 46 ms upload, about 390 MB held; ONI_BENCH=dedust peak footprint 2.9 GB, resident 1.7 GB."
+  },
+  {
+    "id": 217,
+    "type": "spec",
+    "title": "De-dust reminders: each correction's dust shown unpatched in the tab",
+    "status": "done",
+    "detail": "Owner's ask: each correction's row in the De-dust tab shows a 56 pt square of the frame about its stroke as it looks with no patch, so a dust healed away is remembered. Rendered on the preview with every correction removed, cropped to the stroke's box, brush and margin, reduced to 112 px on the GPU, off the interface thread, kept until the frame's look moves. ONI_BENCH=dedust waits for it: 112 x 112 beside the patch."
+  },
+  {
+    "id": 218,
+    "type": "spec",
+    "title": "Edit Together follows the selection, zooms as a contact sheet, averages Auto White Balance",
+    "status": "done",
+    "detail": "Owner's asks: beside the photo, a ⌘ or ⇧ pick of two frames or more in the column shows them together at once (the frame on screen joins the first pick and leads), one frame shows alone again; the gallery's selection shows together as the editor comes back; the selection stays the frames shown. Tiles 400 px on their longest side; the sheet zooms, pans and double-clicks to 100 % as a frame does; sources a former group decoded are kept for the next. Auto White Balance over frames together runs Average without asking: each frame measured, the mean laid on all, one undo. The block reading's 30 ms budget is read as the best of three runs, so a machine busy with the other checks no longer fails it."
   }
 ]

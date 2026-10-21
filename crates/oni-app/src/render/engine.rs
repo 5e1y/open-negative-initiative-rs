@@ -4,6 +4,7 @@ use super::*;
 
 mod inputs;
 pub(crate) mod prewarm;
+mod originals;
 mod tiles;
 mod view;
 

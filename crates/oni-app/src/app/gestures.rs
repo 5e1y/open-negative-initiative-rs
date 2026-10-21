@@ -223,6 +223,8 @@ impl Ctl {
         if self.state.borrow().open.as_deref() == Some(path.as_str()) {
             w.global::<App>().set_gallery(false);
             self.land_tree_request();
+            // A selection of several made in the gallery shows together as the editor comes back.
+            self.follow_selection();
         } else {
             self.open_in_editor(&path);
         }

@@ -213,6 +213,22 @@ export component BrushDisc inherits Rectangle {
     drop-shadow-blur: Stroke.emphasis;
 }
 
+// A De-dust reminder: the dust a patch covers, as the frame shows it unpatched.
+export component DustOriginal inherits Rectangle {
+    in property <image> source;
+    width: CropStyle.dust-original;
+    height: CropStyle.dust-original;
+    border-radius: CropStyle.well-radius;
+    background: Colour.contrast-edge;
+    clip: true;
+    Image {
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        image-fit: cover;
+    }
+}
+
 // The stroke being painted, as a polyline in the canvas's points.
 export component LiveStroke inherits Path {
     in property <length> thickness;

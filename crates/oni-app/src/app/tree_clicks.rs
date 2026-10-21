@@ -29,6 +29,7 @@ impl Ctl {
     /// the row joins the tree's pick, whose photos become the selection (`pickInColumn`).
     pub(super) fn row_clicked(self: &Rc<Self>, i: usize, command: bool, shift: bool) {
         self.exit_tree_editing();
+        let beside = self.beside_photo();
         let picked = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
@@ -37,6 +38,12 @@ impl Ctl {
                 return;
             }
             let Some(id) = s.org.tree_ids.get(i).cloned() else { return };
+            // Beside a photo, the frame on screen joins the first ⌘ or ⇧ pick, wherever it was opened from.
+            if beside && s.org.tree_pick.selection.is_empty()
+                && let Some(open) = s.open.clone()
+            {
+                s.org.tree_pick.anchor = Some(NodeId::Photo(open));
+            }
             if !s.org.tree_pick.click(&id, &s.org.tree_ids, command, shift) {
                 false
             } else {
@@ -45,6 +52,9 @@ impl Ctl {
             }
         };
         if picked {
+            if self.beside_photo() {
+                self.follow_selection();
+            }
             self.publish_tiles();
             self.publish_organising();
             return self.publish_bar();
@@ -145,6 +155,9 @@ impl Ctl {
             }
         };
         if picked {
+            if self.beside_photo() {
+                self.follow_selection();
+            }
             self.publish_tiles();
             self.publish_organising();
             return self.publish_bar();

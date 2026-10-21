@@ -3,6 +3,7 @@
 use super::*;
 
 pub(super) mod live;
+mod originals;
 
 impl Ctl {
     // MARK: - De-dust
@@ -43,6 +44,7 @@ impl Ctl {
                     label: s.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
                     pending: pending(c),
                     fallback: s.fallback.contains(&c.id),
+                    original: originals::original(c.id),
                 })
                 .collect();
             let rendered = s.full_size;

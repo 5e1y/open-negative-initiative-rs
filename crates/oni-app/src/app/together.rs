@@ -8,7 +8,7 @@ use std::sync::{Condvar, LazyLock, Mutex};
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
 const COLUMNS: usize = 6;
-const TILE: usize = 300;
+const TILE: usize = 400;
 const GAP: usize = 12;
 /// Decodes at once while a group opens: a half-size RAW holds about 100 MB until it is reduced.
 const DECODERS: usize = 3;
@@ -27,6 +27,8 @@ struct Group {
 
 thread_local! {
     static GROUP: RefCell<Option<Group>> = const { RefCell::new(None) };
+    /// The sources of the group last left, which the next one takes rather than decoding them again.
+    static SPARE: RefCell<HashMap<String, Arc<Negative>>> = RefCell::new(HashMap::new());
 }
 
 static GROUPS: AtomicU64 = AtomicU64::new(0);
@@ -47,32 +49,83 @@ static SLOT: LazyLock<(Mutex<Option<Ask>>, Condvar)> = LazyLock::new(|| (Mutex::
 static DRAWING: std::sync::Once = std::sync::Once::new();
 
 impl Ctl {
-    /// Opens `paths` together around the frame just opened, or leaves any group for two frames fewer.
+    /// Opens `paths` together around the frame just opened, or leaves any group for two frames fewer;
+    /// the selection stays theirs, and the sources a former group decoded are kept.
     pub(in crate::app) fn edit_together(self: &Rc<Self>, paths: Vec<String>) {
         if paths.len() < 2 {
             return self.leave_together();
         }
         let open = self.state.borrow().open.clone();
         let others = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
-        if let Some(e) = self.state.borrow_mut().store.editor() {
-            e.set_together(others);
+        {
+            let mut s = self.state.borrow_mut();
+            if let Some(e) = s.store.editor() {
+                e.set_together(others);
+            }
+            s.picks.selection = paths.iter().cloned().collect();
         }
         let id = GROUPS.fetch_add(1, Ordering::Relaxed) + 1;
-        let count = paths.len();
-        GROUP.with(|g| *g.borrow_mut() = Some(Group { id, paths: paths.clone(), negatives: vec![None; count], asked: None, shown: None, drawn: 0, latencies: Vec::new() }));
-        self.decode_together(id, paths);
+        let negatives: Vec<Option<Arc<Negative>>> = GROUP.with(|g| {
+            let g = g.borrow();
+            let mut spare = SPARE.with(|s| std::mem::take(&mut *s.borrow_mut()));
+            let kept = |p: &String| g.as_ref().and_then(|g| g.paths.iter().position(|q| q == p).and_then(|i| g.negatives[i].clone()));
+            paths.iter().map(|p| kept(p).or_else(|| spare.remove(p))).collect()
+        });
+        let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
+        let fresh = GROUP.with(|g| g.borrow().is_none());
+        GROUP.with(|g| *g.borrow_mut() = Some(Group { id, paths, negatives, asked: None, shown: None, drawn: 0, latencies: Vec::new() }));
+        if fresh {
+            self.state.borrow_mut().viewport.fit();
+        }
+        self.decode_together(id, lacking);
         self.request_render();
+        self.publish_tiles();
+    }
+
+    /// The selection made beside the open photo: two frames or more show together at once, the open one
+    /// leading when it is among them; one frame shows alone again.
+    pub(in crate::app) fn follow_selection(self: &Rc<Self>) {
+        let (selected, open) = {
+            let s = self.state.borrow();
+            (s.selected(), s.open.clone())
+        };
+        if selected.len() < 2 {
+            if self.together_shown() {
+                self.leave_together();
+                self.request_render();
+            }
+            return;
+        }
+        let lead = open.filter(|o| selected.contains(o)).unwrap_or_else(|| selected[0].clone());
+        if self.state.borrow().open.as_deref() != Some(lead.as_str()) {
+            self.open_photo(&lead);
+        }
+        self.edit_together(selected);
+    }
+
+    /// The frames shown together, for the keys that act on all of them.
+    pub(in crate::app) fn together_paths(&self) -> Option<Vec<String>> {
+        GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.clone()))
+    }
+
+    /// The sheet where the view lays it: zoomed and panned as a contact sheet, its pixels the full size.
+    fn lay_sheet(&self, size: (usize, usize)) {
+        let Some(view) = self.canvas_size() else { return };
+        let full = (size.0 as f64, size.1 as f64);
+        let p = self.state.borrow().viewport.placement(full, view).image;
+        self.lay(Some(Placed { x: p.0, y: p.1, width: p.2, height: p.3, full, whole: true, at_full_resolution: true }), size);
     }
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
     pub(in crate::app) fn leave_together(&self) {
-        if GROUP.with(|g| g.borrow_mut().take()).is_none() {
-            return;
-        }
+        let Some(left) = GROUP.with(|g| g.borrow_mut().take()) else { return };
+        let spare = left.paths.into_iter().zip(left.negatives).filter_map(|(p, n)| Some((p, n?))).collect();
+        SPARE.with(|s| *s.borrow_mut() = spare);
         GROUPS.fetch_add(1, Ordering::Relaxed);
         if let Some(e) = self.state.borrow_mut().store.editor() {
             e.set_together(Vec::new());
         }
+        self.state.borrow_mut().viewport.fit();
         let mut s = self.state.borrow_mut();
         s.rendered = 0;
         s.requested_view = None;
@@ -83,19 +136,18 @@ impl Ctl {
     }
 
     /// Each frame's source at a tile's side, a few decoded at once off this thread.
-    fn decode_together(&self, id: u64, paths: Vec<String>) {
+    fn decode_together(&self, id: u64, paths: Vec<(usize, String)>) {
         let next = Arc::new(AtomicUsize::new(0));
         let paths = Arc::new(paths);
         for _ in 0..DECODERS.min(paths.len()) {
             let (engine, next, paths) = (self.engine.clone(), next.clone(), paths.clone());
             std::thread::spawn(move || {
                 loop {
-                    let i = next.fetch_add(1, Ordering::Relaxed);
-                    let Some(path) = paths.get(i) else { return };
+                    let Some((i, path)) = paths.get(next.fetch_add(1, Ordering::Relaxed)).cloned() else { return };
                     if GROUPS.load(Ordering::Relaxed) != id {
                         return;
                     }
-                    let Ok(negative) = tile_source(&engine, path) else { continue };
+                    let Ok(negative) = tile_source(&engine, &path) else { continue };
                     with_shell(move |c| c.tile_decoded(id, i, negative));
                 }
             });
@@ -146,7 +198,7 @@ impl Ctl {
             Some(ask) => self.ask_grid(ask),
             None => {
                 if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
-                    self.lay(None, size);
+                    self.lay_sheet(size);
                 }
             }
         }
@@ -186,7 +238,7 @@ impl Ctl {
         });
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
-        self.lay(None, size);
+        self.lay_sheet(size);
         let on_gpu = self.state.borrow().gpu.is_some();
         match picture {
             Picture::Pixels { rgba8, .. } if !on_gpu => c.set_frame(image(&rgba8, size.0, size.1)),
@@ -289,9 +341,9 @@ mod tests {
 
     #[test]
     fn a_reduction_keeps_the_mean_and_the_longest_side() {
-        let pixels = (0..600 * 400).map(|i| if i % 2 == 0 { [1.0, 0.0, 0.5, 1.0] } else { [0.0, 1.0, 0.5, 1.0] }).collect();
-        let r = reduced(render::Linear { width: 600, height: 400, pixels }, TILE);
-        assert_eq!((r.width, r.height), (300, 200));
+        let pixels = (0..2 * TILE * TILE).map(|i| if i % 2 == 0 { [1.0, 0.0, 0.5, 1.0] } else { [0.0, 1.0, 0.5, 1.0] }).collect();
+        let r = reduced(render::Linear { width: 2 * TILE, height: TILE, pixels }, TILE);
+        assert_eq!((r.width, r.height), (TILE, TILE / 2));
         assert!(r.pixels.iter().all(|p| (p[0] - 0.5).abs() < 1e-6 && (p[1] - 0.5).abs() < 1e-6), "{:?}", r.pixels[0]);
         // Twin: a picture already small is kept as it is, not averaged.
         let small = reduced(render::Linear { width: 2, height: 1, pixels: vec![[1.0; 4], [0.0; 4]] }, TILE);
@@ -302,9 +354,11 @@ mod tests {
     fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell() {
         assert_eq!(sheet_size(7), ((6 * TILE + 5 * GAP) as u32, (2 * TILE + GAP) as u32));
         assert_eq!(sheet_size(3), ((3 * TILE + 2 * GAP) as u32, TILE as u32), "a short row is only as wide as its tiles");
-        assert_eq!(place(0, (300, 200)), (0, 50), "a landscape tile centred in its cell's height");
-        assert_eq!(place(6, (200, 300)), (50, (TILE + GAP) as i32), "the seventh opens the second row");
+        let (long, short) = (TILE as u32, TILE as u32 / 2);
+        let inset = (TILE / 4) as i32;
+        assert_eq!(place(0, (long, short)), (0, inset), "a landscape tile centred in its cell's height");
+        assert_eq!(place(6, (short, long)), (inset, (TILE + GAP) as i32), "the seventh opens the second row");
         // Twin: the second tile's cell starts past the first's and the gap.
-        assert_eq!(place(1, (300, 300)), ((TILE + GAP) as i32, 0));
+        assert_eq!(place(1, (long, long)), ((TILE + GAP) as i32, 0));
     }
 }

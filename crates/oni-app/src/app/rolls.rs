@@ -171,8 +171,12 @@ impl Ctl {
 
     // MARK: - Auto White Balance over several frames
 
-    /// `press(.balance)`: the open frame alone balances at once; a selection asks Each or Average.
+    /// `press(.balance)`: the open frame alone balances at once; a selection asks Each or Average;
+    /// frames shown together take the average of their balances, as one look across them.
     pub(super) fn auto_balance(self: &Rc<Self>) {
+        if self.together_shown() {
+            return self.run_auto_balance(Strategy::Average);
+        }
         let count = self.state.borrow().balance_targets().len();
         if count == 0 || self.state.borrow().batch.is_some() {
             return;
@@ -211,7 +215,8 @@ impl Ctl {
         let frames: Vec<(String, PipelineSettings)> = {
             let s = self.state.borrow();
             let open = s.open_path().map(str::to_string);
-            s.balance_targets()
+            self.together_paths()
+                .unwrap_or_else(|| s.balance_targets())
                 .into_iter()
                 .map(|path| {
                     let settings = if Some(&path) == open.as_ref() {
