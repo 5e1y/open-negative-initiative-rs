@@ -325,7 +325,6 @@ impl Engine {
         let win = crate::heal::search_window(c, size.0, size.1);
         let region = Rect::new(e.x + win[0] as i32, e.y + win[1] as i32, win[2] as u32, win[3] as u32);
         let pixels = self.graph.render(&framed, region, None).map_err(|e| e.to_string())?;
-        self.graph.purge();
         let r = crate::heal::Region { x: win[0] as i64, y: win[1] as i64, width: region.w as usize, height: region.h as usize, pixels, frame_width: size.0, frame_height: size.1 };
         Ok((r, size))
     }
@@ -340,6 +339,11 @@ impl Engine {
         let Some(zone) = crate::loupe::region(image.extent(), viewport, drawable, magnification) else { return Ok(None) };
         let pixels = self.graph.render(&image, zone, None).map_err(|e| e.to_string())?;
         Ok(Some((Linear { width: zone.w as usize, height: zone.h as usize, pixels }, zone)))
+    }
+
+    /// Frees the textures a run of searches left idle, once after the run rather than after each.
+    pub fn purge(&mut self) {
+        self.graph.purge();
     }
 
     /// Forgets a correction's patch, so the next render and input reading read it again from the cache.

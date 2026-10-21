@@ -116,7 +116,7 @@ impl Shell {
             scrolling: false,
             straightening: None,
             route: crate::tabs::Route::default(),
-            painting_stroke: Vec::new(),
+            painting_stroke: Default::default(),
             numbers: HashMap::new(),
             next_number: 1,
             fallback: std::collections::HashSet::new(),

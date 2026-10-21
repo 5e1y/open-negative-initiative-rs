@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// The stroke's moves, a 1000 Hz mouse's half second.
+const MOVES: usize = 500;
+
 /// De-dust through its own key, the brush keys and the canvas's painting callbacks; the patch
 /// waited for, then the correction removed and the tool left.
 pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -34,11 +37,15 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 lines.borrow_mut().push(format!("painting {}, brush {}", c.get_painting(), d.get_readout()));
                 // A short stroke across the middle of the frame shown.
                 let (x, y) = (c.get_frame_x() + c.get_frame_width() * 0.4, c.get_frame_y() + c.get_frame_height() * 0.45);
+                // Moves a point apart, as a 1000 Hz mouse sends them: each one's cost on the hand's thread.
                 c.invoke_paint_start(x, y);
-                for k in 1..=8 {
-                    c.invoke_paint_move(x + k as f32 * 3.0, y + k as f32);
+                let moved = Instant::now();
+                for k in 1..=MOVES {
+                    c.invoke_paint_move(x + k as f32 * 0.25, y + (k as f32 * 0.05).sin() * 4.0);
                 }
+                let each = moved.elapsed().as_secs_f64() * 1e6 / MOVES as f64;
                 c.invoke_paint_end();
+                lines.borrow_mut().push(format!("{MOVES} moves: {each:.1} us each on the hand's thread"));
                 painted.set(Some(Instant::now()));
                 let list = corrections();
                 lines.borrow_mut().push(format!("{} correction, radius {:.0}, {} points, marks {}", list.len(), list.first().map_or(0.0, |c| c.radius), list.first().map_or(0, |c| c.stroke.len()), c.get_marks().row_count()));

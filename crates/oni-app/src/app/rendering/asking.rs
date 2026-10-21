@@ -55,11 +55,13 @@ impl Ctl {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });
-            let view = size.map(|size| View { viewport: s.viewport, size, full, settled });
-            // The cache is purged at every quit, so each correction's patch is generated as its frame opens.
-            let heal = (!s.healing.contains(&path) && s.unhealed()).then(|| {
+            let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), settled });
+            // The cache is purged at every quit, so each correction's patch is generated as its frame opens;
+            // a full resolution being built is waited for, its landing asking again, never decoded twice.
+            let building = build.is_some() || s.building_full.as_deref() == Some(path.as_str());
+            let heal = (!building && !s.healing.contains(&path) && s.unhealed()).then(|| {
                 s.healing.insert(path.clone());
-                (path.clone(), s.store.settings().clone())
+                (path.clone(), s.store.settings().clone(), full.clone())
             });
             let reference = s.split.map(|_| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
@@ -68,27 +70,35 @@ impl Ctl {
         };
         self.worker.submit(job);
         self.request_loupe();
+        let pending = build.is_some() || heal.is_some();
         if let Some((path, converted)) = build {
             self.build_full(path, converted);
         }
-        if let Some((path, settings)) = heal {
-            self.heal(path, settings);
+        if let Some((path, settings, full)) = heal {
+            self.heal(path, settings, full);
+        }
+        if pending {
             self.publish_dedust();
         }
     }
 
     /// `ensureGenerated` for each correction of the open frame that has no patch yet, one after the
-    /// other on the full-resolution frame, so each source holds the patches before it healed.
-    pub(in crate::app) fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings) {
+    /// other on the full-resolution frame, so each source holds the patches before it healed. `full`
+    /// is the frame's own when built, `fullIfReady`; else it is decoded here and handed back.
+    pub(in crate::app) fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings, full: Option<oni_graph::Source>) {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
+            let started = Instant::now();
             let caches = crate::patches::caches();
             let lacking = |c: &oni_settings::frame::Correction| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists();
-            let mut made = Vec::new();
+            let (mut made, mut built) = (Vec::new(), None);
             let failed = (|| -> Result<(), String> {
-                let decoded = render::decode_full(Path::new(&path), render::Reading::of(&settings))?;
-                let full = engine.full(decoded)?;
+                let (full, decoded) = reused(full, || engine.full(render::decode_full(Path::new(&path), render::Reading::of(&settings))?))?;
+                if decoded {
+                    built = Some(full.clone());
+                }
+                // The engine is taken per correction, so the canvas's renders pass between two.
                 for c in settings.corrections.iter().filter(|c| lacking(c)) {
                     let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
@@ -96,9 +106,11 @@ impl Ctl {
                     engine.lock()?.forget_patch(c.id);
                     made.push((c.id, patch.fallback, patch.offset));
                 }
+                engine.lock()?.purge();
                 Ok(())
             })()
             .err();
+            let (took, decoded_here) = (started.elapsed(), built.is_some());
             // A correction left without its patch by a failure is not generated again on every render.
             let unhealable: Vec<oni_settings::id::Id> =
                 if failed.is_some() { settings.corrections.iter().filter(|c| lacking(c)).map(|c| c.id).collect() } else { Vec::new() };
@@ -108,6 +120,18 @@ impl Ctl {
                     let mut s = c.state.borrow_mut();
                     s.healing.remove(&path);
                     s.unhealable.extend(unhealable);
+                    // `deleteCorrection` cancels the generation: a patch made for a correction removed meanwhile is dropped.
+                    if open {
+                        let (kept, gone) = landed(made, &s.store.settings().corrections);
+                        for id in gone {
+                            let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), id));
+                        }
+                        made = kept;
+                    }
+                    let current = s.reading.as_ref() == Some(&render::Reading::of(&settings));
+                    if let Some(full) = built.filter(|_| open && current && s.full.is_none()) {
+                        s.full = Some((path.clone(), full));
+                    }
                     for &(id, fell_back, offset) in &made {
                         s.patched.insert(id);
                         if open {
@@ -119,11 +143,14 @@ impl Ctl {
                     }
                 }
                 if !made.is_empty() {
-                    timing::line(&format!("{}: {} dust patches generated", crate::anonymity::token(&path), made.len()));
-                    if open {
-                        c.state.borrow_mut().requested_view = None;
-                        c.request_render();
-                    }
+                    let from = if decoded_here { "decoded for them" } else { "the frame's own" };
+                    timing::line(&format!("{}: {} dust patches generated in {:.0} ms, full resolution {from}", crate::anonymity::token(&path), made.len(), took.as_secs_f64() * 1000.0));
+                }
+                // Strokes painted meanwhile are generated next, on the full resolution now kept.
+                let more = open && c.state.borrow_mut().unhealed();
+                if open && (!made.is_empty() || more) {
+                    c.state.borrow_mut().requested_view = None;
+                    c.request_render();
                 }
                 if let Some(e) = failed {
                     timing::line(&format!("{}: dust patches not generated: {e}", crate::anonymity::token(&path)));
@@ -174,5 +201,53 @@ impl Ctl {
                 c.request_render();
             });
         });
+    }
+}
+
+/// The source kept when there is one, else the one `build` makes, and whether it had to.
+fn reused<T>(kept: Option<T>, build: impl FnOnce() -> Result<T, String>) -> Result<(T, bool), String> {
+    match kept {
+        Some(t) => Ok((t, false)),
+        None => build().map(|t| (t, true)),
+    }
+}
+
+type Made = (oni_settings::id::Id, bool, (f64, f64));
+
+/// The patches made for corrections the frame still holds, and the ids of those removed meanwhile.
+fn landed(made: Vec<Made>, corrections: &[oni_settings::frame::Correction]) -> (Vec<Made>, Vec<oni_settings::id::Id>) {
+    let (kept, gone): (Vec<Made>, Vec<Made>) = made.into_iter().partition(|m| corrections.iter().any(|c| c.id == m.0));
+    (kept, gone.into_iter().map(|m| m.0).collect())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_settings::frame::Correction;
+    use oni_settings::id::Id;
+
+    #[test]
+    fn a_kept_full_resolution_is_reused_and_none_is_decoded() {
+        let decodes = std::cell::Cell::new(0);
+        let decode = || {
+            decodes.set(decodes.get() + 1);
+            Ok(7)
+        };
+        assert_eq!(reused(Some(3), decode), Ok((3, false)));
+        assert_eq!(decodes.get(), 0, "a frame's own full resolution decodes nothing");
+        assert_eq!(reused(None, decode), Ok((7, true)), "twin: none kept decodes one");
+        assert_eq!(decodes.get(), 1);
+    }
+
+    #[test]
+    fn a_patch_made_for_a_correction_removed_meanwhile_does_not_land() {
+        let c = |id| Correction { id, stroke: Vec::new(), radius: 20.0 };
+        let (stays, removed) = (Id::new(), Id::new());
+        let made = vec![(stays, false, (0.1, 0.0)), (removed, true, (0.0, 0.2))];
+        let (kept, gone) = landed(made.clone(), &[c(stays)]);
+        assert_eq!(kept.iter().map(|m| m.0).collect::<Vec<_>>(), vec![stays]);
+        assert_eq!(gone, vec![removed]);
+        let (kept, gone) = landed(made, &[c(stays), c(removed)]);
+        assert_eq!((kept.len(), gone.len()), (2, 0), "twin: with both still there, both land");
     }
 }

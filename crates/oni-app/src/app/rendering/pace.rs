@@ -10,8 +10,9 @@ impl Ctl {
     /// The load counter on its own pace, and the histogram should a count have waited for it.
     pub(in crate::app) fn pulse(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };
-        // A tab opened or a full frame landed reaches the loupe at this pace when no render asks.
+        // A tab opened or a full frame landed reaches the loupe and De-dust at this pace when no render asks.
         self.request_loupe();
+        self.ready_full();
         self.publish_histogram();
         self.watch_frontier_look();
         let loading = self.state.borrow().load_bar();
