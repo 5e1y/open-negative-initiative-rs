@@ -32,20 +32,32 @@ impl Engine {
         let e = base.extent();
         let long = e.w.max(e.h) as usize;
         let side = ((long as f64 * (scale / base_ratio).min(1.0)).round() as usize).max(1);
-        let source = if side < long { self.fitted(&base, side, long)? } else { base };
+        // Reduced on the way in, so the chain pulls only the region's share of the level it reads; a
+        // reduction the canvas nearly holds whole is kept, so a notch at fit reads it ready.
+        let (source, reduce) = match side < long {
+            true => {
+                let (level, reduce) = self.level(&base, side, long)?;
+                let e = level.extent();
+                let whole = f64::from(e.w) * f64::from(e.h) * reduce * reduce;
+                if whole <= KEPT_WHOLE * view.size.0 * view.size.1 { (self.reduced(&level, reduce)?, 1.0) } else { (level, reduce) }
+            }
+            false => (base, 1.0),
+        };
+        let request = Request { scale: reduce, ..request };
         let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
         let image = self.pipeline.image(&mut self.graph, &source, settings, &request, &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let extent = image.extent();
         let stretch = scale * full.0 / extent.w as f64;
         let (vx, vy, vw, vh) = placement.visible;
-        let corner = |v: f64, origin: i32, f: fn(f64) -> f64| origin + f(v / stretch) as i32;
-        let region = Rect::from_corners(
-            corner(vx, extent.x, f64::floor).max(extent.x),
-            corner(vy, extent.y, f64::floor).max(extent.y),
-            corner(vx + vw, extent.x, f64::ceil).min(extent.right()),
-            corner(vy + vh, extent.y, f64::ceil).min(extent.bottom()),
-        );
+        // One size a view, the visible part's plus a pixel, so a pan keeps every texture it renders into.
+        let span = |v: f64, len: f64, origin: i32, end: i32| {
+            let size = ((len / stretch).ceil() as i32 + 1).min(end - origin);
+            let start = (origin + (v / stretch).floor() as i32).clamp(origin, end - size);
+            (start, start + size)
+        };
+        let ((x0, x1), (y0, y1)) = (span(vx, vw, extent.x, extent.right()), span(vy, vh, extent.y, extent.bottom()));
+        let region = Rect::from_corners(x0, y0, x1, y1);
         if region.is_empty() {
             return Err("the image is off the canvas".into());
         }
@@ -70,48 +82,63 @@ impl Engine {
         Ok(source)
     }
 
-    /// `base` reduced to `side` on its long side, from the smallest of its halvings still past it, so
-    /// each step of a zoom reduces a few megapixels rather than the whole frame.
-    pub(super) fn fitted(&mut self, base: &Source, side: usize, long: usize) -> Result<Source, String> {
+    /// The smallest halving of `base` still at or past `side` on its long side, and the factor left to
+    /// reach `side` from it, under two: a zoom's every step reads a level near the screen's size.
+    pub(super) fn level(&mut self, base: &Source, side: usize, long: usize) -> Result<(Source, f64), String> {
         let id = base.id();
-        if let Some((kept, s, source)) = &self.fitted.kept
-            && (*kept, *s) == (id, side)
-        {
-            return Ok(source.clone());
-        }
-        self.fitted.kept = None;
-        if self.fitted.halves.as_ref().is_none_or(|(k, _)| *k != id) {
-            self.fitted.halves = Some((id, Vec::new()));
-        }
+        let at = match self.fitted.halves.iter().position(|(k, _)| *k == id) {
+            Some(at) => at,
+            None => {
+                if self.fitted.halves.len() >= BASES {
+                    self.fitted.halves.remove(0);
+                }
+                self.fitted.halves.push((id, Vec::new()));
+                self.fitted.halves.len() - 1
+            }
+        };
         let (mut from, mut from_long) = (base.clone(), long);
         for level in 0.. {
             if from_long / 2 < side.max(MIN_HALF) {
                 break;
             }
-            let halves = &mut self.fitted.halves.as_mut().expect("set above").1;
-            if halves.len() == level {
+            if self.fitted.halves[at].1.len() == level {
                 let half = self.graph.materialise(&Image::new(&from).lanczos(0.5)).map_err(|e| e.to_string())?;
-                halves.push(half);
+                self.fitted.halves[at].1.push(half);
             }
-            from = halves[level].clone();
+            from = self.fitted.halves[at].1[level].clone();
             let e = from.extent();
             from_long = e.w.max(e.h) as usize;
         }
-        let reduced = Image::new(&from).lanczos(side as f64 / from_long as f64);
-        let source = self.graph.materialise(&reduced).map_err(|e| e.to_string())?;
-        self.fitted.kept = Some((id, side, source.clone()));
+        Ok((from, side as f64 / from_long as f64))
+    }
+
+    /// `level` reduced by `reduce` whole, the last one kept.
+    fn reduced(&mut self, level: &Source, reduce: f64) -> Result<Source, String> {
+        let key = (level.id(), reduce.to_bits());
+        if let Some((k, source)) = &self.fitted.kept
+            && *k == key
+        {
+            return Ok(source.clone());
+        }
+        let source = self.graph.materialise(&Image::new(level).lanczos(reduce)).map_err(|e| e.to_string())?;
+        self.fitted.kept = Some((key, source.clone()));
         Ok(source)
     }
 }
 
-/// The smallest halving kept: under it a reduction costs little from the level above.
-const MIN_HALF: usize = 512;
+/// A reduction kept whole when it holds at most this many canvases of pixels.
+const KEPT_WHOLE: f64 = 2.0;
 
-/// The last reduction made and the halvings of the base it came from.
+/// The smallest halving kept: under it a reduction costs little from the level above.
+const MIN_HALF: usize = 64;
+/// The bases whose halvings are kept: the preview and the full frame, so neither evicts the other.
+const BASES: usize = 2;
+
+/// The halvings of the bases the canvas reads, and the last whole reduction made from one.
 #[derive(Default)]
 pub(crate) struct Fitting {
-    halves: Option<(u64, Vec<Source>)>,
-    kept: Option<(u64, usize, Source)>,
+    halves: Vec<(u64, Vec<Source>)>,
+    kept: Option<((u64, u64), Source)>,
 }
 
 #[cfg(test)]
@@ -127,11 +154,13 @@ mod tests {
         let wave = |x: f32, y: f32| [0.4 + 0.3 * (x * 0.05).sin() * (y * 0.031).cos(), 0.3 + 0.2 * x / w as f32, 0.5, 1.0];
         let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| wave((i % w) as f32, (i / w) as f32)).collect();
         let full = engine.graph.upload(w as u32, h as u32, &pixels).unwrap();
-        let through = engine.fitted(&full, 300, w).unwrap();
+        let (level, reduce) = engine.level(&full, 300, w).unwrap();
+        assert!(level.extent().w < w as u32 && reduce > 0.5, "{:?} {reduce}", level.extent());
+        let through = Image::new(&level).lanczos(reduce);
         let read = |e: &mut Engine, image: &Image| e.graph.render(image, image.extent(), None).unwrap();
         let direct = Image::new(&full).lanczos(300.0 / w as f64);
         assert_eq!(through.extent(), direct.extent());
-        let (ours, theirs) = (read(&mut engine, &Image::new(&through)), read(&mut engine, &direct));
+        let (ours, theirs) = (read(&mut engine, &through), read(&mut engine, &direct));
         let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).map(|(p, q)| (0..3).map(|c| (p[c] - q[c]).abs()).sum::<f32>()).sum::<f32>() / a.len() as f32;
         assert!(gap(&ours, &theirs) < 2e-3, "{}", gap(&ours, &theirs));
         // Twin: the frame a few pixels over reduces to another picture, which the gap sees.

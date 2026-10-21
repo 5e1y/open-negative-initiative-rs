@@ -29,6 +29,7 @@ impl Ctl {
             g.target = None;
         }
         let size = thumbnail.size();
+        unclipped(&w);
         w.global::<Canvas>().set_frame(thumbnail);
         self.lay(None, (size.width as usize, size.height as usize));
     }
@@ -40,9 +41,16 @@ impl Ctl {
             g.target = None;
         }
         if let Some(w) = self.window() {
+            unclipped(&w);
             w.global::<Canvas>().set_frame(Image::default());
         }
     }
+}
+
+/// A picture of its own on the canvas, shown whole: only the display texture is clipped.
+fn unclipped(w: &MainWindow) {
+    w.global::<Canvas>().set_frame_clip_width(0);
+    w.global::<Canvas>().set_frame_clip_height(0);
 }
 
 #[cfg(test)]

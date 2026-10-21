@@ -47,6 +47,30 @@ pub(super) fn place(i: usize, size: (u32, u32), (tile, gap): (usize, usize)) -> 
     ((cx + tile.saturating_sub(w) / 2) as i32, (cy + tile.saturating_sub(h) / 2) as i32)
 }
 
+/// A sheet's rectangle in its pixels: x, y, width, height.
+pub(super) type Window = (u32, u32, u32, u32);
+
+/// Which of `count` tiles a view showing `visible` of the sheet meets, and the cells' box around them,
+/// so a grid draws the tiles on screen alone, on a sheet no larger than they need.
+pub(super) fn seen(count: usize, (tile, gap): (usize, usize), visible: (f64, f64, f64, f64)) -> (Vec<bool>, Window) {
+    let (vx0, vy0, vx1, vy1) = (visible.0, visible.1, visible.0 + visible.2, visible.1 + visible.3);
+    let mut corners = (u32::MAX, u32::MAX, 0, 0);
+    let shows = (0..count)
+        .map(|i| {
+            let (x, y) = ((i % COLUMNS) * (tile + gap), (i / COLUMNS) * (tile + gap));
+            let (x1, y1) = (x + tile, y + tile);
+            let meets = (x as f64) < vx1 && (x1 as f64) > vx0 && (y as f64) < vy1 && (y1 as f64) > vy0;
+            if meets {
+                corners = (corners.0.min(x as u32), corners.1.min(y as u32), corners.2.max(x1 as u32), corners.3.max(y1 as u32));
+            }
+            meets
+        })
+        .collect::<Vec<_>>();
+    let whole = sheet_size(count, (tile, gap));
+    let window = if corners.0 == u32::MAX { (0, 0, whole.0, whole.1) } else { (corners.0, corners.1, corners.2 - corners.0, corners.3 - corners.1) };
+    (shows, window)
+}
+
 /// The share of the full sheet worth drawing for a view showing it `shown` wide in screen pixels:
 /// never past the full sheet, in steps of an eighth so a zoom redraws only when it crosses one.
 pub(super) fn scale_for(shown: f64, full: f64) -> f64 {
@@ -56,6 +80,22 @@ pub(super) fn scale_for(shown: f64, full: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_grid_draws_the_tiles_its_view_meets_on_their_box_alone() {
+        let cell = cell_at(1.0);
+        // Zoomed on the second tile of the second row: it alone, on its own cell.
+        let at = (TILE + GAP) as f64;
+        let (shows, window) = seen(12, cell, (at + 10.0, at + 10.0, 300.0, 200.0));
+        assert_eq!(shows.iter().filter(|s| **s).count(), 1);
+        assert!(shows[7] && !shows[0], "twin: a tile off the view is not drawn");
+        assert_eq!(window, ((TILE + GAP) as u32, (TILE + GAP) as u32, TILE as u32, TILE as u32));
+        // The whole sheet in view: every tile, the whole sheet.
+        let whole = sheet_size(12, cell);
+        let (shows, window) = seen(12, cell, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));
+        assert!(shows.iter().all(|s| *s));
+        assert_eq!(window, (0, 0, whole.0, whole.1));
+    }
 
     #[test]
     fn a_reduction_keeps_the_mean_and_the_longest_side() {

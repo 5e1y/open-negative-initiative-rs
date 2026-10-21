@@ -1683,5 +1683,12 @@
     "title": "A zoom reduces from the full resolution's halvings",
     "status": "done",
     "detail": "On the full resolution (#230) a pinch from fit reduced the whole 24 Mpx frame on every event: notch p50 25 ms. The fitted copy is now reduced from the smallest halving of its base still past it (kept per base, down to 512 px). ONI_BENCH=zoom, pinch from fit: p50 2.0 ms, p99 4.5 ms, gap p99 11 ms, as on the preview copy (0.6, 7.9, 10.6). Peak footprint of that bench 4.3 to 4.7 GB against 3.7 GB on the preview copy."
+  },
+  {
+    "id": 232,
+    "type": "perf",
+    "title": "Renders follow the canvas, not the frame, at any zoom",
+    "status": "done",
+    "detail": "Owner: on the full resolution, the further out from 100 % the slower a pan or a pinch; Edit Together zoomed in edited at a low rate. Four changes on the one render path. (1) The region a view renders keeps one size, the visible part plus a pixel, where it alternated between two as a pan moved fractionally. (2) The display texture grows by 256 px steps and is shown clipped (Picture.clip-width/height), so a pan or a pinch rewrites texels instead of importing a texture into Slint: ONI_BENCH=midzoom 36 imports to 2, ONI_BENCH=zoom 59 to 10. (3) The canvas reads the smallest halving of its base past the scale shown, halvings kept for the preview and the full frame down to 64 px, reduced lazily so the chain pulls only the region's share; a reduction the canvas nearly holds whole (two canvases) is kept for the notches at fit. Pinch at 60 % p50 1.9 to 0.4 ms; peak footprint of the zoom bench 4.3-4.7 GB to 3.1 GB; a 10 s drag at fit p99 12.5 to 5 ms. (4) Edit Together draws only the tiles its view meets, on a sheet the size of their box laid at its place: ONI_GRID_ZOOM=1 notch p50 2.2 to 0.4 ms, p99 12.9 to 3.3 ms; at fit unchanged. ONI_BENCH=midzoom added: at 60 %, a pan and a pinch on the full resolution."
   }
 ]

@@ -154,12 +154,14 @@ impl Ctl {
                     (uploaded.create_view(&Default::default()), w, h)
                 }
             };
-            // The texture is imported once per size; a new render only rewrites its texels. One Slint
-            // refuses is not kept, so the next render tries again rather than drawing nowhere.
+            // The texture is imported once per step of size, the render written in its corner and shown
+            // clipped, so a pan or a pinch rewrites texels only. One Slint refuses is not kept, so the next
+            // render tries again rather than drawing nowhere.
+            let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
             let (target, imported) = match &g.target {
-                Some(t) if t.width() == wd && t.height() == ht => (t.clone(), None),
+                Some(t) if t.width() == bw && t.height() == bh => (t.clone(), None),
                 _ => {
-                    let t = display::Gpu::target(&g.device, wd, ht);
+                    let t = display::Gpu::target(&g.device, bw, bh);
                     match Image::try_from(t.clone()) {
                         Ok(image) => {
                             g.target = Some(t.clone());
@@ -181,13 +183,15 @@ impl Ctl {
             // A region is not the picture: its histogram would describe what the zoom shows.
             g.uncounted = whole;
             g.count_due();
-            (imported, shown)
+            (imported, shown, (wd, ht))
         };
         self.watch_histogram();
         let c = w.global::<Canvas>();
-        if let (Some(image), _) = &image {
+        if let (Some(image), _, _) = &image {
             c.set_frame(image.clone());
         }
+        c.set_frame_clip_width(image.2.0 as i32);
+        c.set_frame_clip_height(image.2.1 as i32);
         c.set_frame_revision(c.get_frame_revision().wrapping_add(1));
         if let Some(e) = refused {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
@@ -218,3 +222,6 @@ impl Ctl {
         }
     }
 }
+
+/// The display texture grows and shrinks by this many pixels a side, so a pan or a pinch keeps it.
+const TARGET_STEP: u32 = 256;

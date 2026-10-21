@@ -41,7 +41,8 @@ mod sheet;
 mod loupe;
 mod folded;
 mod grid;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, sheet::*, loupe::*, folded::*, grid::*};
+mod midzoom;
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, sheet::*, loupe::*, folded::*, grid::*, midzoom::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -125,6 +126,7 @@ pub enum Mode {
     Loupe,
     Folded,
     Grid,
+    Midzoom,
 }
 
 impl Mode {
@@ -156,6 +158,7 @@ pub fn requested() -> Option<Mode> {
         "loupe" => Some(Mode::Loupe),
         "folded" => Some(Mode::Folded),
         "grid" => Some(Mode::Grid),
+        "midzoom" => Some(Mode::Midzoom),
         _ => None,
     }
 }
@@ -172,6 +175,9 @@ enum Phase {
 pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     if mode == Mode::Zoom {
         return zoom(ctl, done);
+    }
+    if mode == Mode::Midzoom {
+        return midzoom(ctl, done);
     }
     if mode == Mode::Crop {
         return crop(ctl, done);
@@ -296,7 +302,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet | Mode::Loupe | Mode::Folded | Mode::Grid => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);

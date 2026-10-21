@@ -8,7 +8,7 @@ use std::sync::{Condvar, LazyLock, Mutex};
 
 #[path = "together/sheet.rs"]
 mod sheet;
-use sheet::{cell_at, place, reduced, scale_for, sheet_size};
+use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
 const COLUMNS: usize = 6;
@@ -22,8 +22,9 @@ struct Group {
     id: u64,
     paths: Vec<String>,
     negatives: Vec<Option<Arc<Negative>>>,
-    asked: Option<(u64, usize, u64)>,
-    shown: Option<(usize, usize)>,
+    asked: Option<(u64, usize, u64, Window)>,
+    /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
+    shown: Option<((usize, usize), Window, f64)>,
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
     drawn: u64,
     latencies: Vec<Duration>,
@@ -46,8 +47,9 @@ struct Ask {
     screen: Screen,
     /// The canvas encodes on the GPU, which takes the grid as light; the software one takes bytes.
     gpu: bool,
-    /// The share of the full sheet drawn, as the view shows it.
+    /// The share of the full sheet drawn, as the view shows it, and the box of it drawn.
     scale: f64,
+    window: Window,
 }
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
@@ -116,13 +118,17 @@ impl Ctl {
 
     /// The sheet where the view lays it, zoomed and panned as a contact sheet: the view reasons on the
     /// full sheet whatever share of it was drawn.
-    fn lay_sheet(&self, size: (usize, usize)) {
+    fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) {
         let Some(view) = self.canvas_size() else { return };
         let Some(count) = GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.len())) else { return };
-        let full = sheet_size(count, cell_at(1.0));
+        let (drawn, full) = (sheet_size(count, cell_at(scale)), sheet_size(count, cell_at(1.0)));
         let full = (f64::from(full.0), f64::from(full.1));
         let p = self.state.borrow().viewport.placement(full, view).image;
-        self.lay(Some(Placed { x: p.0, y: p.1, width: p.2, height: p.3, full, whole: true, at_full_resolution: true }), size);
+        // Canvas pixels a pixel of the sheet drawn, which shows its box at that box's place.
+        let k = p.2 / f64::from(drawn.0);
+        let (x, y, w, h) = (f64::from(window.0), f64::from(window.1), f64::from(window.2), f64::from(window.3));
+        let whole = (window.2, window.3) == drawn;
+        self.lay(Some(Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true }), size);
     }
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
@@ -201,9 +207,16 @@ impl Ctl {
             let g = g.as_mut()?;
             let full = sheet_size(g.paths.len(), cell_at(1.0));
             let full = (f64::from(full.0), f64::from(full.1));
-            let shown = view.map_or(full.0, |v| self.state.borrow().viewport.placement(full, v).image.2);
-            let scale = scale_for(shown, full.0);
-            let key = (revision, g.negatives.iter().flatten().count(), (scale * 8.0) as u64);
+            let placed = view.map(|v| self.state.borrow().viewport.placement(full, v));
+            let scale = scale_for(placed.map_or(full.0, |p| p.image.2), full.0);
+            // The view's part of the sheet, in the drawn sheet's pixels: only the tiles it meets are drawn.
+            let drawn = sheet_size(g.paths.len(), cell_at(scale));
+            let visible = placed.map_or((0.0, 0.0, f64::from(drawn.0), f64::from(drawn.1)), |p| {
+                let k = f64::from(drawn.0) / p.image.2;
+                (p.visible.0 * k, p.visible.1 * k, p.visible.2 * k, p.visible.3 * k)
+            });
+            let (shows, window) = seen(g.paths.len(), cell_at(scale), visible);
+            let key = (revision, g.negatives.iter().flatten().count(), (scale * 8.0) as u64, window);
             if g.asked == Some(key) {
                 return None;
             }
@@ -212,12 +225,13 @@ impl Ctl {
                 .paths
                 .iter()
                 .zip(&g.negatives)
-                .map(|(path, n)| {
+                .zip(&shows)
+                .map(|((path, n), shown)| {
                     let settings = if Some(path) == open.as_ref() { Some(lead.clone()) } else { live.get(path).cloned() };
-                    n.clone().zip(settings)
+                    n.clone().zip(settings).filter(|_| *shown)
                 })
                 .collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale })
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale, window })
         });
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
@@ -246,14 +260,14 @@ impl Ctl {
         GROUP.with(|g| g.borrow().as_ref().map_or(0, |g| g.drawn))
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration) {
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration, (window, scale): (Window, f64)) {
         let size = match &picture {
             Picture::Pixels { linear, .. } => (linear.width, linear.height),
             Picture::Resident(sheet) => (sheet.extent().w as usize, sheet.extent().h as usize),
         };
         let count = GROUP.with(|g| match g.borrow_mut().as_mut() {
             Some(g) if g.id == group => {
-                g.shown = Some(size);
+                g.shown = Some((size, window, scale));
                 g.drawn = revision;
                 g.latencies.push(at.elapsed());
                 Some(g.paths.len())
@@ -262,7 +276,7 @@ impl Ctl {
         });
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
-        self.lay_sheet(size);
+        self.lay_sheet((size, window, scale));
         let on_gpu = self.state.borrow().gpu.is_some();
         match picture {
             Picture::Pixels { rgba8, .. } if !on_gpu => c.set_frame(image(&rgba8, size.0, size.1)),
@@ -303,9 +317,14 @@ fn draw_grids(engine: Shared) {
         let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
         let present: Vec<(&Negative, &PipelineSettings)> = ask.tiles.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
         let cell = cell_at(ask.scale);
-        let size = sheet_size(ask.tiles.len(), cell);
+        let (wx, wy, ww, wh) = ask.window;
+        let size = (ww, wh);
         let Ok(mut guard) = engine.lock() else { continue };
-        let Ok(sheet) = guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), size) else { continue };
+        let at = |i: usize, tile| {
+            let (x, y) = place(cells[i], tile, cell);
+            (x - wx as i32, y - wy as i32)
+        };
+        let Ok(sheet) = guard.render_laid(&present, cell.0, &at, size) else { continue };
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
         let picture = if ask.gpu {
             Picture::Resident(sheet)
@@ -315,7 +334,7 @@ fn draw_grids(engine: Shared) {
             Picture::Pixels { linear, rgba8 }
         };
         drop(guard);
-        let (group, revision, at, pipeline) = (ask.group, ask.revision, ask.at, started.elapsed());
-        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline));
+        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
+        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline, laid));
     }
 }

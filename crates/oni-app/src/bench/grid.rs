@@ -1,4 +1,5 @@
-//! `ONI_BENCH=grid`: the gallery's frames, up to 36, opened together, then Exposure dragged over them.
+//! `ONI_BENCH=grid`: the gallery's frames, up to 36, opened together, then Exposure dragged over them;
+//! `ONI_GRID_ZOOM=1` drags zoomed in as far as the canvas goes, where a few tiles show.
 
 use super::*;
 
@@ -19,6 +20,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let decoded = Cell::new(None::<Duration>);
     let from = Cell::new(0usize);
     let notched = Cell::new(0usize);
+    let zoom = Cell::new(std::env::var_os("ONI_GRID_ZOOM").is_some());
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {
@@ -46,6 +48,12 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             1 => {
                 let (tiles, sources, latencies) = ctl.together_stats();
+                if tiles > 0 && sources == tiles && zoom.replace(false) {
+                    let c = w.global::<crate::Canvas>();
+                    c.invoke_pinch_started();
+                    c.invoke_pinched(100.0, c.get_width() / 2.0, c.get_height() / 2.0);
+                    return;
+                }
                 if tiles > 0 && sources == tiles {
                     decoded.set(opened.get().map(|t| t.elapsed()));
                     from.set(latencies.len());
