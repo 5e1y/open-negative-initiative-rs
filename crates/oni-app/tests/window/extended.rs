@@ -236,18 +236,18 @@ pub(crate) fn a_patch_lands_and_feathers_as_swift_s() {
         let c = settings.corrections.iter().find(|c| c.id.to_string().eq_ignore_ascii_case(e["id"].as_str().unwrap())).unwrap();
         let (pw, ph, _) = oni_app::flat_fields::read_tiff(&dir.join("heal").join(format!("{name}.tiff"))).unwrap();
         let framed = oni_graph::Rect::new(0, 0, small[2] as u32, small[3] as u32);
-        let tile = oni_pipeline::corrections::placed(c, (pw, ph), framed, scale);
+        let (tile, _) = oni_pipeline::corrections::placed(c, (pw, ph), framed, scale);
         let swift_tile = oni_graph::Rect::new(placed_up[0] as i32, (small[3] - placed_up[1] - placed_up[3]) as i32, placed_up[2] as u32, placed_up[3] as u32);
         let points = oni_pipeline::corrections::stroke_points(c, framed);
-        let count = points.len();
-        let row = g.upload(count as u32, 1, &points).unwrap();
-        let hard = oni_graph::Image::new(&row).then(oni_pipeline::stages::Stroke { k: oni_render::StrokeMask { radius: (c.radius * scale) as f32, count }, extent: tile });
+        let (count, row) = (points.len(), g.upload(points.len() as u32, 1, &points).unwrap());
+        let hard = oni_graph::Image::new(&row).then(oni_pipeline::stages::Stroke { k: oni_render::StrokeMask { radius: (c.radius * scale) as f32, count }, extent: swift_tile });
         let mask = oni_pipeline::stages::blurred(hard, oni_pipeline::corrections::feather(c, scale), true);
-        let ours = g.render(&mask, tile, None).unwrap();
-        let swift = dump(&dir.join("heal").join(format!("{name}-mask.f32")));
-        let (mean, p99, worst) = if tile == swift_tile { gap(&ours, &swift.pixels, swift.width, 0) } else { (f64::NAN, f64::NAN, f64::NAN) };
+        // The patch covers the whole pixels its exact edges touch, where Swift rounds them: a pixel apart at most.
+        let near = [(tile.x, swift_tile.x), (tile.y, swift_tile.y), (tile.right(), swift_tile.right()), (tile.bottom(), swift_tile.bottom())].iter().all(|(a, b)| (a - b).abs() <= 1);
+        let (ours, swift) = (g.render(&mask, swift_tile, None).unwrap(), dump(&dir.join("heal").join(format!("{name}-mask.f32"))));
+        let (mean, p99, worst) = gap(&ours, &swift.pixels, swift.width, 0);
         // A stroke a pixel or two wide keeps CoreGraphics' own antialiasing, which the coverage only nears.
-        let ok = tile == swift_tile && mean < 1e-2 && p99 < 6e-2;
+        let ok = near && mean < 1e-2 && p99 < 6e-2;
         println!("{name} placed {tile:?} Swift {swift_tile:?}; mask mean {mean:.5} p99 {p99:.5} max {worst:.4}  {}", if ok { "ok" } else { "DEPARTS" });
         if !ok {
             failures.push(name);

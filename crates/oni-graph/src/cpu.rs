@@ -84,9 +84,14 @@ pub fn lanczos3(t: f32) -> f32 {
 
 /// `AnchoredLanczos` along `axis`, the GPU kernel's arithmetic in f32.
 pub fn lanczos_anchored(input: &Plane, axis: Axis, scale: f64) -> Plane {
+    lanczos_shifted(input, axis, scale, 0.0)
+}
+
+/// `AnchoredLanczos` with its leading edge `shift` output pixels in.
+pub fn lanczos_shifted(input: &Plane, axis: Axis, scale: f64, shift: f64) -> Plane {
     let e = input.extent;
     let (origin, from) = if axis == Axis::X { (e.x, e.w) } else { (e.y, e.h) };
-    let stage = crate::stages::AnchoredLanczos { axis, origin, from, scale };
+    let stage = crate::stages::AnchoredLanczos { axis, origin, from, scale, shift };
     let to = stage.to();
     let extent = if axis == Axis::X { Rect::new(0, e.y, to, e.h) } else { Rect::new(e.x, 0, e.w, to) };
     let narrow = (scale as f32).min(1.0);
@@ -94,7 +99,7 @@ pub fn lanczos_anchored(input: &Plane, axis: Axis, scale: f64) -> Plane {
     input.map(extent, |x, y| {
         let o = if axis == Axis::X { x } else { y };
         let k = if axis == Axis::Y { to as i32 - 1 - o } else { o } as f32;
-        let up = (k + 0.5) / scale as f32 - 0.5;
+        let up = (k + 0.5 - shift as f32) / scale as f32 - 0.5;
         let centre = origin as f32 + if axis == Axis::Y { from as f32 - 1.0 - up } else { up };
         let mut sum = [0.0f32; 4];
         let mut weights = 0.0f32;

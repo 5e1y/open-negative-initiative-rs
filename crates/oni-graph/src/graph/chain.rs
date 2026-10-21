@@ -41,10 +41,15 @@ impl Image {
 
     /// `CILanczosScaleTransform` by `scale`: see `AnchoredLanczos`; the result starts at 0.
     pub fn lanczos_anchored(self, scale: f64) -> Self {
+        self.lanczos_shifted(scale, (0.0, 0.0))
+    }
+
+    /// `lanczos_anchored` with the left and bottom edges `shift` output pixels in, each under one.
+    pub fn lanczos_shifted(self, scale: f64, shift: (f64, f64)) -> Self {
         assert!(scale.is_finite() && scale > 0.0, "Lanczos scale {scale}");
         let e = self.extent();
-        self.then(AnchoredLanczos { axis: Axis::X, origin: e.x, from: e.w, scale })
-            .then(AnchoredLanczos { axis: Axis::Y, origin: e.y, from: e.h, scale })
+        self.then(AnchoredLanczos { axis: Axis::X, origin: e.x, from: e.w, scale, shift: shift.0 })
+            .then(AnchoredLanczos { axis: Axis::Y, origin: e.y, from: e.h, scale, shift: shift.1 })
     }
 
     pub fn extent(&self) -> Rect {

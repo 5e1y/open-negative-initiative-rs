@@ -369,6 +369,13 @@ fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
     let top = cpu::lanczos_anchored(&cpu::lanczos_anchored(&flipped, Axis::X, scale), Axis::Y, scale);
     let top: Vec<[f32; 4]> = (0..34).rev().flat_map(|y| top.pixels[y * 50..(y + 1) * 50].to_vec()).collect();
     assert!(error(&gpu, &top) > 1e-2, "the anchor went unseen");
+    // Shifted under a pixel, the kernel still follows its reference, and the shift is seen.
+    let shifted = Image::new(&s).lanczos_shifted(scale, (0.37, 0.81));
+    assert_eq!(shifted.extent(), Rect::new(0, 0, 50, 34));
+    let moved = g.render(&shifted, shifted.extent(), None).expect("render");
+    let reference = cpu::lanczos_shifted(&cpu::lanczos_shifted(&plane, Axis::X, scale, 0.37), Axis::Y, scale, 0.81);
+    assert!(error(&moved, &reference.pixels) < TOLERANCE, "shifted anchored Lanczos error {}", error(&moved, &reference.pixels));
+    assert!(error(&moved, &gpu) > 1e-2, "twin: the shift went unseen");
 }
 
 #[test]

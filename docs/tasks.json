@@ -1662,5 +1662,12 @@
     "title": "A run of dust patches frees its textures one by one",
     "status": "done",
     "detail": "Owner: dozens of large strokes at once took the app 2 GB up. Each search lays textures of its own size, kept until the run ended; the engine now purges after each patch. ONI_DUST_STROKES=24 on the largest brush: peak footprint 5.2 GB to 3.1 GB, 24 patches in 6.5 s against 6.3 s."
+  },
+  {
+    "id": 229,
+    "type": "bug",
+    "title": "A reduced dust patch lands where the full one does",
+    "status": "done",
+    "detail": "Owner: patches moved a little between the full frame and the preview, in no fixed direction. A reduced patch was laid as Core Image lays it, its origin rounded (x) and its bottom anchored in Core Image's y: up to a reduced pixel off, three full-resolution pixels on a 2000 px preview. AnchoredLanczos takes a sub-pixel shift (kernel and its CPU reference), and corrections::placed covers the whole pixels the exact edges touch with the shifts that set the content in place. A departure from Swift, which has the same offset: its check now holds our tile within a pixel of Swift's and the mask on Swift's."
   }
 ]

@@ -96,13 +96,15 @@ pub const LANCZOS_LOBES: f64 = 3.0;
 
 /// `CILanczosScaleTransform` along one axis: `ceil(from × scale)` pixels at the exact scale, anchored
 /// at Core Image's origin, the left and the bottom, and clear past the input, so a partial last pixel
-/// keeps only its share; a patch reduced otherwise lands up to half a pixel away, stretched.
+/// keeps only its share; a patch reduced otherwise lands up to half a pixel away, stretched. `shift`
+/// sets the input's leading edge (left, or bottom) that many output pixels in, so it lands sub-pixel exact.
 #[derive(Clone, Copy, Debug)]
 pub struct AnchoredLanczos {
     pub axis: Axis,
     pub origin: i32,
     pub from: u32,
     pub scale: f64,
+    pub shift: f64,
 }
 
 #[repr(C)]
@@ -119,14 +121,14 @@ struct AnchoredParams {
 impl AnchoredLanczos {
     pub fn to(&self) -> u32 {
         // The float noise of `from × scale` must not add a whole pixel.
-        ((f64::from(self.from) * self.scale - 1e-9).ceil() as u32).max(1)
+        ((f64::from(self.from) * self.scale + self.shift - 1e-9).ceil() as u32).max(1)
     }
 
     /// The input coordinate an output pixel's centre reads, in the axis's own counting.
     pub fn centre(&self, o: i32) -> f64 {
         let to = self.to() as i32;
         let k = if self.axis == Axis::Y { to - 1 - o } else { o };
-        let up = (f64::from(k) + 0.5) / self.scale - 0.5;
+        let up = (f64::from(k) + 0.5 - self.shift) / self.scale - 0.5;
         f64::from(self.origin) + if self.axis == Axis::Y { f64::from(self.from) - 1.0 - up } else { up }
     }
 
@@ -144,7 +146,7 @@ impl Stage for AnchoredLanczos {
 
     fn shader(&self) -> &'static str {
         r#"
-struct Params { origin: i32, from_len: u32, to_len: u32, axis: u32, scale: f32, pad0: f32, pad1: f32, pad2: f32 }
+struct Params { origin: i32, from_len: u32, to_len: u32, axis: u32, scale: f32, shift: f32, pad1: f32, pad2: f32 }
 @group(0) @binding(3) var<uniform> params: Params;
 const PI: f32 = 3.14159265358979;
 fn lanczos3(t: f32) -> f32 {
@@ -158,7 +160,7 @@ fn pixel(p: vec2<i32>) -> vec4<f32> {
     let narrow = min(params.scale, 1.0);
     let o = select(p.x, p.y, params.axis == 1u);
     let k = select(f32(o), f32(i32(params.to_len) - 1 - o), params.axis == 1u);
-    let up = (k + 0.5) / params.scale - 0.5;
+    let up = (k + 0.5 - params.shift) / params.scale - 0.5;
     let centre = f32(params.origin) + select(up, f32(params.from_len) - 1.0 - up, params.axis == 1u);
     let radius = 3.0 / narrow;
     var sum = vec4<f32>(0.0);
@@ -177,7 +179,7 @@ fn pixel(p: vec2<i32>) -> vec4<f32> {
 
     fn params(&self) -> Vec<u8> {
         let axis = if self.axis == Axis::Y { 1 } else { 0 };
-        bytemuck::bytes_of(&AnchoredParams { origin: self.origin, from: self.from, to: self.to(), axis, scale: self.scale as f32, pad: [0.0; 3] }).to_vec()
+        bytemuck::bytes_of(&AnchoredParams { origin: self.origin, from: self.from, to: self.to(), axis, scale: self.scale as f32, pad: [self.shift as f32, 0.0, 0.0] }).to_vec()
     }
 
     fn extent(&self, input: Rect) -> Rect {

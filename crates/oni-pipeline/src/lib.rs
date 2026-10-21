@@ -186,10 +186,10 @@ impl Pipeline {
                 continue;
             }
             let size = (patch.extent().w, patch.extent().h);
-            let tile = corrections::placed(c, size, framed, scale);
+            let (tile, shift) = corrections::placed(c, size, framed, scale);
             let mut placed = Image::new(patch);
             if scale != 1.0 {
-                placed = placed.lanczos_anchored(scale);
+                placed = placed.lanczos_shifted(scale, shift);
             }
             let at = placed.extent();
             let placed = placed.then(Translate(tile.x - at.x, tile.y - at.y));
