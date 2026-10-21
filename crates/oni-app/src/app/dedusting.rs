@@ -19,7 +19,8 @@ impl Ctl {
     pub(super) fn publish_dedust(&self) {
         let Some(w) = self.window() else { return };
         let painting = self.painting();
-        let frame = self.image_frame(false);
+        // Strokes and marks show in De-dust alone: a notch elsewhere builds none of their paths.
+        let frame = self.image_frame(false).filter(|_| painting);
         type Shape = (Vec<(f64, f64)>, f64);
         let (rows, marks, radius, stroke, rendered, traces, lines, waiting) = {
             let mut s = self.state.borrow_mut();
@@ -96,6 +97,7 @@ impl Ctl {
         c.set_painting(painting);
         if !painting {
             c.set_space_held(false);
+            return;
         }
         let picture = frame.unwrap_or_default();
         c.set_picture_x(picture.0 as f32);

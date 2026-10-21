@@ -341,8 +341,8 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, match
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let matrix = if matched && colours == Colours::Matrix { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
     if let Some(key) = key.filter(|_| d.half == 0) {
-        let window = (y0..y0 + h_out).flat_map(|row| raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3].iter().copied()).collect();
-        cache::write(key, cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: window });
+        let head = cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: Vec::new() };
+        cache::write(&key, &head, (y0..y0 + h_out).map(|row| &raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3]));
     }
     let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &matrix);
     let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));

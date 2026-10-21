@@ -77,24 +77,28 @@ fn read_in(dir: &Path, key: &str) -> Option<Kept> {
     for v in matrix.iter_mut().flatten() {
         *v = f32::from_bits(next(&mut f)?);
     }
-    let mut bytes = vec![0u8; width * height * 6];
-    f.read_exact(&mut bytes).ok()?;
-    let raw = bytes.chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])).collect();
+    // Read a row at a time into the samples, so no second copy of the window is ever held.
+    let mut raw = Vec::with_capacity(width * height * 3);
+    let mut row = vec![0u8; width * 6];
+    for _ in 0..height {
+        f.read_exact(&mut row).ok()?;
+        raw.extend(row.chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])));
+    }
     let _ = f.set_modified(std::time::SystemTime::now());
     Some(Kept { width, height, flip, factor, matrix, raw })
 }
 
-/// Writes `kept` under `key` off the caller's thread, then lets the oldest decodes go past the cap.
-pub(crate) fn write(key: String, kept: Kept) {
+/// Writes a decode's `rows` under `key` straight from the decoder's buffer, then lets the oldest
+/// decodes go past the cap; a copy for a writer thread would hold another 145 MB.
+pub(crate) fn write<'a>(key: &str, head: &Kept, rows: impl Iterator<Item = &'a [u16]>) {
     let Some((dir, cap)) = PLACE.read().ok().and_then(|p| p.clone()) else { return };
-    std::thread::spawn(move || {
-        store(&dir, &key, &kept);
-        trim(&dir, cap);
-    });
+    store(&dir, key, head, rows);
+    trim(&dir, cap);
 }
 
-/// `kept` written whole under a name of its own, then renamed, so a reader never meets half a file.
-fn store(dir: &Path, key: &str, kept: &Kept) {
+/// The decode written whole under a name of its own, then renamed, so a reader never meets half a file;
+/// `head`'s samples are not read, `rows` are.
+fn store<'a>(dir: &Path, key: &str, kept: &Kept, rows: impl Iterator<Item = &'a [u16]>) {
     let _ = std::fs::create_dir_all(dir);
     let at = file(dir, key);
     let part = at.with_extension("part");
@@ -109,8 +113,12 @@ fn store(dir: &Path, key: &str, kept: &Kept) {
         for v in kept.matrix.iter().flatten() {
             out.write_all(&v.to_bits().to_le_bytes())?;
         }
-        let bytes: Vec<u8> = kept.raw.iter().flat_map(|v| v.to_le_bytes()).collect();
-        out.write_all(&bytes)?;
+        let mut bytes = Vec::with_capacity(kept.width * 6);
+        for row in rows {
+            bytes.clear();
+            bytes.extend(row.iter().flat_map(|v| v.to_le_bytes()));
+            out.write_all(&bytes)?;
+        }
         out.flush()?;
         std::fs::rename(&part, &at)
     })();
@@ -155,7 +163,8 @@ mod tests {
         let dir = temporary("round");
         let raw: Vec<u16> = (0..4 * 3 * 3).map(|i| (i * 2731 % 65536) as u16).collect();
         let matrix = [[1.25, -0.5, 0.125], [0.0, 1.0, 0.0], [-0.0625, 0.25, 0.8125]];
-        store(&dir, "frame|a", &Kept { width: 4, height: 3, flip: 6, factor: 1, matrix, raw: raw.clone() });
+        let kept = Kept { width: 4, height: 3, flip: 6, factor: 1, matrix, raw: Vec::new() };
+        store(&dir, "frame|a", &kept, raw.chunks(12));
         let back = read_in(&dir, "frame|a").expect("kept");
         assert_eq!((back.width, back.height, back.flip, back.factor, back.matrix), (4, 3, 6, 1, matrix));
         assert_eq!(back.raw, raw);
@@ -173,9 +182,10 @@ mod tests {
     #[test]
     fn the_oldest_decodes_go_first_past_the_cap() {
         let dir = temporary("trim");
-        let kept = |n: u16| Kept { width: 10, height: 10, flip: 0, factor: 1, matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], raw: vec![n; 300] };
+        let kept = Kept { width: 10, height: 10, flip: 0, factor: 1, matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], raw: Vec::new() };
         for (i, key) in ["old", "mid", "new"].iter().enumerate() {
-            store(&dir, key, &kept(i as u16));
+            let samples = vec![i as u16; 300];
+            store(&dir, key, &kept, samples.chunks(30));
             let at = std::time::SystemTime::now() - std::time::Duration::from_secs(100 - 10 * i as u64);
             std::fs::File::options().write(true).open(file(&dir, key)).unwrap().set_modified(at).unwrap();
         }

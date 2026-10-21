@@ -61,6 +61,9 @@ impl Ctl {
         };
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_split(split.unwrap_or(-1.0));
+            if split.is_none() {
+                w.global::<Canvas>().set_before(Image::default());
+            }
         }
         self.request_render();
     }

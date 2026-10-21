@@ -11,6 +11,8 @@ impl Ctl {
             Delivery::Render(_) if self.together_shown() => return,
             Delivery::Render(done) => done,
             Delivery::Inputs { path, inputs } => return self.inputs_landed(&path, inputs),
+            Delivery::Counted { .. } if self.together_shown() => return,
+            Delivery::Counted { path, picture } => return self.counted_landed(&path, picture),
         };
         let Some(w) = self.window() else { return };
         let done = match done {
@@ -54,7 +56,7 @@ impl Ctl {
             s.gpu.is_some()
         };
         if on_gpu {
-            self.encode(done.picture, shown, done.counted);
+            self.encode(done.picture, shown, None);
             w.window().request_redraw();
         } else {
             if let Picture::Pixels { rgba8, .. } = done.picture {
@@ -72,6 +74,20 @@ impl Ctl {
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
+    }
+
+    /// The histogram's picture of the open frame, counted at the image's cadence; another photo's is dropped.
+    fn counted_landed(&self, path: &Path, picture: oni_graph::Source) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.open_path().map(Path::new) != Some(path) {
+                return;
+            }
+            let Some(g) = s.gpu.as_mut() else { return };
+            g.uncounted = Some(picture);
+            g.count_due();
+        }
+        self.watch_histogram();
     }
 
     /// The input distributions of a render already shown; another photo's are dropped.
@@ -101,6 +117,13 @@ impl Ctl {
             (None, None) => return,
         };
         resizing::laid_in(self.canvas_size());
+        let c = w.global::<Canvas>();
+        // A render landing where the last one lay, as every notch's does, moves nothing to publish.
+        let at = [rect.0, rect.1, rect.2, rect.3].map(|v| (v / scale) as f32);
+        let unmoved = placed.is_some() && self.state.borrow().placed == placed && at == [c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height()];
+        if unmoved {
+            return;
+        }
         {
             let mut s = self.state.borrow_mut();
             s.placed = placed;
@@ -108,11 +131,10 @@ impl Ctl {
                 s.full_size = Some(p.full);
             }
         }
-        let c = w.global::<Canvas>();
-        c.set_frame_x((rect.0 / scale) as f32);
-        c.set_frame_y((rect.1 / scale) as f32);
-        c.set_frame_width((rect.2 / scale) as f32);
-        c.set_frame_height((rect.3 / scale) as f32);
+        c.set_frame_x(at[0]);
+        c.set_frame_y(at[1]);
+        c.set_frame_width(at[2]);
+        c.set_frame_height(at[3]);
         let bubble = {
             let s = self.state.borrow();
             match (placed, self.canvas_size()) {

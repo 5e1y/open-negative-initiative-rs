@@ -150,6 +150,11 @@ impl Ctl {
         s.requested_view = None;
     }
 
+    /// The editor left: the sources a group kept for the next one go, a few hundred MB of tiles.
+    pub(in crate::app) fn drop_spare(&self) {
+        SPARE.with(|s| s.borrow_mut().clear());
+    }
+
     pub(in crate::app) fn together_shown(&self) -> bool {
         GROUP.with(|g| g.borrow().is_some())
     }

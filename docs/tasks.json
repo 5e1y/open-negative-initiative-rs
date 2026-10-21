@@ -1718,5 +1718,12 @@
     "title": "Idle textures held within a byte budget",
     "status": "done",
     "detail": "Owner: the app reached 7.16 GB, its memory following the zoom, not the edits. The pool reuses a texture of the exact size only and kept every idle one for 8 renders; a zoom asks new sizes at every step, about 1 GB of intermediates each, so 5 to 8 GB stayed idle and remained once the hand stopped. Idle textures are now held within 1 GB, the newest kept (Graph::idle_budget); the pool test bounds a run of new shapes by the budget, with a twin."
+  },
+  {
+    "id": 237,
+    "type": "perf",
+    "title": "Quick wins: less held, less republished, the histogram after the canvas",
+    "status": "done",
+    "detail": "From the ten agents' review (owner's go). A render landing where the last one lay republishes nothing (lay); De-dust builds its strokes and marks only while painting, its rows always; Compare off lets the render thread's kept before and the canvas's before image go; leaving the editor lets the last group's tile sources go (SPARE, up to 400 MB); the decode cache writes from LibRaw's rows and reads a row at a time, with no 145 MB copy either way (first open 1080 ms, reopen 171 ms, warm peak 2.66 GB); the histogram's picture is made after the canvas is handed over and at the image's cadence (Delivery::Counted), not before each notch. ONI_BENCH=midzoom: 0 histograms through the pan and pinch, 8 through the drag."
   }
 ]

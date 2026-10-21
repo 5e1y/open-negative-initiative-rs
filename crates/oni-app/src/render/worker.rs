@@ -39,8 +39,6 @@ pub struct Done {
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
-    /// The whole picture the histogram counts, made again only when the settings move.
-    pub counted: Option<Source>,
 }
 
 /// What the render thread hands back: a render as soon as it is drawn, then, at most once an image
@@ -49,6 +47,8 @@ pub enum Delivery {
     /// A failure names its frame, so one that lands after the frame was left is dropped.
     Render(Result<Done, (PathBuf, String)>),
     Inputs { path: PathBuf, inputs: InputHistograms },
+    /// The whole picture the histogram counts, made after the canvas's render at the image's cadence.
+    Counted { path: PathBuf, picture: Source },
 }
 
 /// What the levels and the manual curves are drawn over: the distributions in front of each.
@@ -89,6 +89,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                 // The before is kept while its settings and the view hold, so a notch never renders it again.
                 let mut kept: Option<(PathBuf, PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
+                let mut last_counted = last_inputs;
                 // The last job read on the small copy, read again on the full one once the hand rests.
                 let mut resting: Option<(PathBuf, Arc<I>, PipelineSettings)> = None;
                 // The distributions read last: they hang on the frame and its settings, never on the view.
@@ -129,8 +130,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            let counted = renderer.counted(&job.negative, &job.settings);
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None, counted }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -138,7 +138,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(crate::histogram::measure(&linear.pixels, linear.width, linear.height, screen));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None, counted: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
                         }),
                     };
                     let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {
@@ -155,13 +155,23 @@ impl<I: Send + Sync + 'static> Worker<I> {
                                 },
                             }
                         }
-                        _ => None,
+                        // Compare off lets its kept before go, a canvas of floats.
+                        _ => {
+                            kept = None;
+                            None
+                        }
                     };
                     let drawn = done.is_ok();
                     deliver(Delivery::Render(done.map(|d| Done { before, ..d }).map_err(|e| (job.path.clone(), e))));
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
+                    if drawn && gpu.load(Ordering::Relaxed) && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                        last_counted = Instant::now();
+                        if let Some(picture) = renderer.counted(&job.negative, &job.settings) {
+                            deliver(Delivery::Counted { path: job.path.clone(), picture });
+                        }
+                    }
                     let read = (job.path.clone(), job.settings.clone(), job.held);
                     if drawn && measured.as_ref() != Some(&read) && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_inputs = Instant::now();
