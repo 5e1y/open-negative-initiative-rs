@@ -42,6 +42,8 @@ impl Graph {
             }),
             at: 0,
             align: u64::from(limits.min_uniform_buffer_offset_alignment).max(16),
+            staged: Vec::new(),
+            staged_from: 0,
         };
         Self {
             pool: Pool::new(device.clone()),

@@ -4,16 +4,34 @@ use super::*;
 
 /// Frames a grid holds at most, a roll's worth.
 const FRAMES: usize = 36;
+/// Notches dragged: four seconds at a trackpad's pace, an eighth of the usual step each, inside the range.
+const DRAG: usize = 8 * NOTCHES;
 
-/// Every frame picked by the hand's clicks and opened together; once each tile is decoded, sixty notches
+/// Every frame picked by the hand's clicks and opened together; once each tile is decoded, `DRAG` notches
 /// at a trackpad's pace, then each grid's latency from its notch to the canvas, and the drag undone.
 pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
+    // The interface's own frames: each one's time from the start of its drawing to its end, and when.
+    let drawn: Rc<RefCell<Vec<(Instant, Duration)>>> = Rc::default();
+    if let Some(w) = ctl.window() {
+        let (log, began) = (drawn.clone(), Cell::new(None::<Instant>));
+        let _ = w.window().set_rendering_notifier(move |state, _| match state {
+            slint::RenderingState::BeforeRendering => began.set(Some(Instant::now())),
+            slint::RenderingState::AfterRendering => {
+                if let Some(t) = began.take() {
+                    log.borrow_mut().push((t, t.elapsed()));
+                }
+            }
+            _ => {}
+        });
+    }
+    let dragged = Cell::new(None::<Instant>);
     let timer = Rc::new(Timer::default());
     let done = RefCell::new(Some(done));
     let phase = Cell::new(0usize);
     let opened = Cell::new(None::<Instant>);
     let decoded = Cell::new(None::<Duration>);
     let from = Cell::new(0usize);
+    let notched = Cell::new(0usize);
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {
@@ -44,15 +62,17 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if tiles > 0 && sources == tiles {
                     decoded.set(opened.get().map(|t| t.elapsed()));
                     from.set(latencies.len());
+                    notched.set(ctl.state.borrow().notches().count());
+                    dragged.set(Some(Instant::now()));
                     g.invoke_press(field, false);
                     phase.set(2);
                 }
             }
-            k if k < 2 + NOTCHES => {
-                g.invoke_drag(field, (k - 1) as f32 * STEP, SPAN, false);
+            k if k < 2 + DRAG => {
+                g.invoke_drag(field, (k - 1) as f32 * STEP / 8.0, SPAN, false);
                 phase.set(k + 1);
             }
-            k if k == 2 + NOTCHES => {
+            k if k == 2 + DRAG => {
                 g.invoke_release(field);
                 phase.set(k + 1);
             }
@@ -66,12 +86,25 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 ms.sort_by(f64::total_cmp);
                 let at = |q: f64| ms[((ms.len() - 1) as f64 * q).round() as usize];
                 let text = format!(
-                    "bench, grid: {tiles} frames together, sources in {:.1} s; {} grids over {NOTCHES} notches, notch to canvas p50 {:.1} ms, p99 {:.1} ms, max {:.1} ms",
+                    "bench, grid: {tiles} frames together, sources in {:.1} s; {} grids over {DRAG} notches, notch to canvas p50 {:.1} ms, p99 {:.1} ms, max {:.1} ms",
                     decoded.get().unwrap_or_default().as_secs_f64(),
                     ms.len(),
                     at(0.5),
                     at(0.99),
                     ms[ms.len() - 1],
+                );
+                // The interface's own pace over the drag: each frame drawn, its gaps and spikes.
+                let text = format!("{text}\n{}", ctl.state.borrow().notches().cadence(notched.get()));
+                let since = dragged.get().unwrap_or_else(Instant::now);
+                let mut frames: Vec<f64> = drawn.borrow().iter().filter(|(t, _)| *t >= since).map(|(_, d)| d.as_secs_f64() * 1000.0).collect();
+                frames.sort_by(f64::total_cmp);
+                let at = |q: f64| frames.get(((frames.len().max(1) - 1) as f64 * q).round() as usize).copied().unwrap_or(0.0);
+                let text = format!(
+                    "{text}\ninterface: {} frames drawn in {:.0} ms, each drawn in p50 {:.1} ms, p99 {:.1} ms",
+                    frames.len(),
+                    since.elapsed().as_secs_f64() * 1000.0,
+                    at(0.5),
+                    at(0.99)
                 );
                 ctl.act("undo");
                 ctl.flush();

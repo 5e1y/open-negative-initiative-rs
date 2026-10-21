@@ -64,6 +64,7 @@ impl Graph {
             self.pool.release(texture);
             owned
         };
+        self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
         self.settle(cache);
         self.pool.end_render();
@@ -93,6 +94,7 @@ impl Graph {
             self.copy(&mut encoder, &texture, from, &sheet, sheet_rect, at);
             self.pool.release(texture);
         }
+        self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
         self.pool.end_render();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
@@ -164,6 +166,7 @@ impl Graph {
             },
             wgpu::Extent3d { width: piece.w, height: piece.h, depth_or_array_layers: 1 },
         );
+        self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
         self.pool.release(texture);
         let slice = readback.slice(..);
@@ -199,13 +202,21 @@ impl Graph {
             }
         }
         let mut results = hits;
+        // Sources are laid first, their copies outside the pass: every stage then runs in one compute
+        // pass, as each pass begun costs Metal an encoder, about ten microseconds a stage.
+        for i in 0..n {
+            if let (Some(need), None, Kind::Source(source)) = (rects[i], &results[i], &nodes[i].kind) {
+                results[i] = Some(self.assemble(encoder, source, need));
+            }
+        }
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("stages"), timestamp_writes: None });
         for i in 0..n {
             let Some(need) = rects[i] else { continue };
             if results[i].is_some() {
                 continue;
             }
             match &nodes[i].kind {
-                Kind::Source(source) => results[i] = Some(self.assemble(encoder, source, need)),
+                Kind::Source(_) => unreachable!("every source is laid before the pass"),
                 Kind::Stage { stage, input, aux } => {
                     let out = if owned_last && i == last { self.pool.output(need.w, need.h) } else { self.pool.acquire(need.w, need.h) };
                     {
@@ -217,7 +228,7 @@ impl Graph {
                                 (t, *r, nodes[a].extent)
                             })
                             .collect();
-                        self.dispatch(encoder, *stage, (&main.0, main.1, nodes[*input].extent), &extras, &out, need);
+                        self.dispatch(&mut pass, *stage, (&main.0, main.1, nodes[*input].extent), &extras, &out, need);
                     }
                     if let Some(c) = cache.as_deref_mut()
                         && let Some(old) = c.store(nodes[i].key, need, &out)
@@ -236,6 +247,7 @@ impl Graph {
                 }
             }
         }
+        drop(pass);
         results[last].take().expect("the last node is evaluated")
     }
 

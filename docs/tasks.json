@@ -1592,5 +1592,19 @@
     "title": "Edit Together follows the selection, zooms as a contact sheet, averages Auto White Balance",
     "status": "done",
     "detail": "Owner's asks: beside the photo, a ⌘ or ⇧ pick of two frames or more in the column shows them together at once (the frame on screen joins the first pick and leads), one frame shows alone again; the gallery's selection shows together as the editor comes back; the selection stays the frames shown. Tiles 400 px on their longest side; the sheet zooms, pans and double-clicks to 100 % as a frame does; sources a former group decoded are kept for the next. Auto White Balance over frames together runs Average without asking: each frame measured, the mean laid on all, one undo. The block reading's 30 ms budget is read as the best of three runs, so a machine busy with the other checks no longer fails it."
+  },
+  {
+    "id": 219,
+    "type": "spec",
+    "title": "The interface draws in 1.9 ms: femtovg keeps its wgpu pipelines",
+    "status": "done",
+    "detail": "Measured during a drag: each interface frame took 8.7 ms to draw (p99 11.9 ms), most of it in femtovg's wgpu renderer creating render pipelines, MSL compilation included. femtovg 0.27.0 drops every pipeline a flush did not use, and Slint draws a frame in several flushes (layers, shadows, clips), so each one dropped the others'. femtovg is vendored in vendor/femtovg (MIT OR Apache-2.0, licences kept) with every pipeline kept, through [patch.crates-io]. Frames now draw in 1.5-1.9 ms (p99 2.6 ms), across the whole interface."
+  },
+  {
+    "id": 220,
+    "type": "spec",
+    "title": "One compute pass a render and one uniform copy a submission, in the shared graph",
+    "status": "done",
+    "detail": "The graph ran each stage in a compute pass of its own (a Metal encoder each, about ten microseconds a stage on the CPU and the GPU) and wrote each stage's uniforms through the queue's lock. A render now lays its sources first, then records every stage in one pass, and stages its uniforms for one copy before each submission; a pipeline is found by its static shader's address, not by hashing the shader's text. Every render gains: the editor, thumbnails, the grid, export. Edit Together's sheet is drawn at the share of its size the view shows, in eighths, never past 400 px a tile. ONI_BENCH=grid on roll #8, 36 frames, 480 notches: notch to canvas p50 2.0 ms, p99 4-6 ms (was 24 / 68 ms), images every 8.3 ms, the hand's pace."
   }
 ]

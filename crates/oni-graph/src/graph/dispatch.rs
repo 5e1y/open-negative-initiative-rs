@@ -28,7 +28,7 @@ impl Graph {
     /// One stage over `output_rect`; `input` and each of `aux` is (texture, rectangle it covers, extent).
     pub(super) fn dispatch(
         &mut self,
-        encoder: &mut wgpu::CommandEncoder,
+        pass: &mut wgpu::ComputePass<'_>,
         stage: &dyn Stage,
         input: (&FloatTexture, Rect, Rect),
         aux: &[(&FloatTexture, Rect, Rect)],
@@ -74,26 +74,37 @@ impl Graph {
             layout: &self.layouts[&aux.len()].group,
             entries: &entries,
         });
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some(stage.name()), timestamp_writes: None });
         pass.set_pipeline(&pipeline);
         pass.set_bind_group(0, &group, &[]);
         pass.dispatch_workgroups(output_rect.w.div_ceil(8), output_rect.h.div_ceil(8), 1);
         self.dispatches += 1;
     }
 
-    /// `bytes` written at the ring's next aligned place; its offset and size there.
+    /// `bytes` staged at the ring's next aligned place; its offset and size there.
     fn uniform(&mut self, bytes: &[u8]) -> (u64, u64) {
-        let u = &mut self.uniforms;
         let size = (bytes.len() as u64).div_ceil(16).max(1) * 16;
-        if u.at + size > UNIFORM_RING {
-            u.at = 0;
+        if self.uniforms.at + size > UNIFORM_RING {
+            self.flush_uniforms();
+            self.uniforms.at = 0;
+            self.uniforms.staged_from = 0;
         }
+        let u = &mut self.uniforms;
         let at = u.at;
-        let mut padded = bytes.to_vec();
-        padded.resize(size as usize, 0);
-        self.queue.write_buffer(&u.buffer, at, &padded);
+        u.staged.resize((at - u.staged_from) as usize, 0);
+        u.staged.extend_from_slice(bytes);
+        u.staged.resize((at - u.staged_from + size) as usize, 0);
         u.at = (at + size).div_ceil(u.align) * u.align;
         (at, size)
+    }
+
+    /// The uniforms staged since the last submission copied into the ring, before the next one reads them.
+    pub(super) fn flush_uniforms(&mut self) {
+        let u = &mut self.uniforms;
+        if !u.staged.is_empty() {
+            self.queue.write_buffer(&u.buffer, u.staged_from, &u.staged);
+            u.staged.clear();
+        }
+        u.staged_from = u.at;
     }
 
     pub(super) fn layout(&mut self, arity: usize) -> &Layout {
@@ -129,9 +140,8 @@ impl Graph {
     }
 
     pub(super) fn pipeline(&mut self, stage: &dyn Stage, arity: usize) -> wgpu::ComputePipeline {
-        let mut hasher = DefaultHasher::new();
-        (stage.shader(), arity).hash(&mut hasher);
-        let key = hasher.finish();
+        // A shader is a static text: its address and length name it without reading it each dispatch.
+        let key = (stage.shader().as_ptr() as usize, stage.shader().len(), arity);
         if let Some(p) = self.pipelines.get(&key) {
             return p.clone();
         }

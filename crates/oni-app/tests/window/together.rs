@@ -58,9 +58,18 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let at = |x: usize, y: usize| canvas.get_frame().to_rgba8().filter(|b| b.width() as usize > x).map(|b| b.as_slice()[y * b.width() as usize + x]);
     // Within the dither's step: two grounds differ by a code at most.
     let near = |a: Option<slint::Rgba8Pixel>, b: Option<slint::Rgba8Pixel>| a.zip(b).is_some_and(|(a, b)| [a.r.abs_diff(b.r), a.g.abs_diff(b.g), a.b.abs_diff(b.b)].iter().all(|d| *d <= 2));
-    rig.until("the grid", Duration::from_secs(60), || canvas.get_status().as_str() == "3 frames together" && !near(at(2 * 412 + 200, 200), at(406, 200)));
-    assert_eq!(canvas.get_frame().size().width, 3 * 400 + 2 * 12, "three tiles on one row");
-    assert!(near(at(406, 200), at(200, 10)), "twin: a gap and a cell's empty edge show the same ground");
+    // The sheet is drawn at the share of its size the view shows: its cells and gaps scale with it.
+    let cell = || {
+        let k = f64::from(canvas.get_frame().size().width) / f64::from(3 * 400 + 2 * 12);
+        ((400.0 * k).round() as usize, (12.0 * k).round() as usize)
+    };
+    let (third, gap) = (|| { let (c, g) = cell(); (2 * (c + g) + c / 2, c / 2) }, || { let (c, g) = cell(); (c + g / 2, c / 2) });
+    rig.until("the grid", Duration::from_secs(60), || {
+        canvas.get_status().as_str() == "3 frames together" && !near(at(third().0, third().1), at(gap().0, gap().1))
+    });
+    let size = canvas.get_frame().size();
+    assert!((f64::from(size.width) / f64::from(size.height) - 1224.0 / 400.0).abs() < 0.02, "three tiles on one row: {size:?}");
+    assert!(near(at(gap().0, gap().1), at(cell().0 / 2, 1)), "twin: a gap and a cell's empty edge show the same ground");
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
     assert!(["A", "B", "C"].iter().all(|n| selected(n)), "the selection stays the frames shown");
 

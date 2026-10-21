@@ -123,7 +123,7 @@ pub struct Graph {
     device: wgpu::Device,
     queue: wgpu::Queue,
     layouts: HashMap<usize, Layout>,
-    pipelines: HashMap<u64, wgpu::ComputePipeline>,
+    pipelines: HashMap<(usize, usize, usize), wgpu::ComputePipeline>,
     pool: Pool,
     max_side: u32,
     max_buffer: u64,
@@ -133,11 +133,14 @@ pub struct Graph {
     pub adapter: String,
 }
 
-/// Every dispatch's uniforms written in turn into one buffer, so no stage creates buffers of its own.
+/// Every dispatch's uniforms written in turn into one buffer, so no stage creates buffers of its own;
+/// a submission's are gathered here and copied in once, as each write takes the queue's lock.
 struct Uniforms {
     buffer: wgpu::Buffer,
     at: u64,
     align: u64,
+    staged: Vec<u8>,
+    staged_from: u64,
 }
 
 /// The ring's size: a render writes about a kilobyte a stage, so one never wraps onto itself.

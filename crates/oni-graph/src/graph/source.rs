@@ -132,6 +132,7 @@ impl Graph {
                 wgpu::Extent3d { width: rect.w, height: rect.h, depth_or_array_layers: 1 },
             );
         }
+        self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
         let slice = readback.slice(..);
         slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));

@@ -62,3 +62,7 @@ split-debuginfo = "off"
 opt-level = 1
 debug = false
 
+
+# femtovg 0.27.0 with its wgpu pipelines kept across flushes (vendor/femtovg, MIT OR Apache-2.0).
+[patch.crates-io]
+femtovg = { path = "vendor/femtovg" }

@@ -18,7 +18,7 @@ struct Group {
     id: u64,
     paths: Vec<String>,
     negatives: Vec<Option<Arc<Negative>>>,
-    asked: Option<(u64, usize)>,
+    asked: Option<(u64, usize, u64)>,
     shown: Option<(usize, usize)>,
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
     drawn: u64,
@@ -42,6 +42,8 @@ struct Ask {
     screen: Screen,
     /// The canvas encodes on the GPU, which takes the grid as light; the software one takes bytes.
     gpu: bool,
+    /// The share of the full sheet drawn, as the view shows it.
+    scale: f64,
 }
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
@@ -108,10 +110,13 @@ impl Ctl {
         GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.clone()))
     }
 
-    /// The sheet where the view lays it: zoomed and panned as a contact sheet, its pixels the full size.
+    /// The sheet where the view lays it, zoomed and panned as a contact sheet: the view reasons on the
+    /// full sheet whatever share of it was drawn.
     fn lay_sheet(&self, size: (usize, usize)) {
         let Some(view) = self.canvas_size() else { return };
-        let full = (size.0 as f64, size.1 as f64);
+        let Some(count) = GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.len())) else { return };
+        let full = sheet_size(count, cell_at(1.0));
+        let full = (f64::from(full.0), f64::from(full.1));
         let p = self.state.borrow().viewport.placement(full, view).image;
         self.lay(Some(Placed { x: p.0, y: p.1, width: p.2, height: p.3, full, whole: true, at_full_resolution: true }), size);
     }
@@ -175,10 +180,15 @@ impl Ctl {
         };
         let live: HashMap<String, PipelineSettings> =
             self.state.borrow().store.editor_ref().map(|e| e.together_live().into_iter().collect()).unwrap_or_default();
+        let view = self.canvas_size();
         let ask = GROUP.with(|g| {
             let mut g = g.borrow_mut();
             let g = g.as_mut()?;
-            let key = (revision, g.negatives.iter().flatten().count());
+            let full = sheet_size(g.paths.len(), cell_at(1.0));
+            let full = (f64::from(full.0), f64::from(full.1));
+            let shown = view.map_or(full.0, |v| self.state.borrow().viewport.placement(full, v).image.2);
+            let scale = scale_for(shown, full.0);
+            let key = (revision, g.negatives.iter().flatten().count(), (scale * 8.0) as u64);
             if g.asked == Some(key) {
                 return None;
             }
@@ -192,15 +202,14 @@ impl Ctl {
                     n.clone().zip(settings)
                 })
                 .collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu })
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale })
         });
-        match ask {
-            Some(ask) => self.ask_grid(ask),
-            None => {
-                if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
-                    self.lay_sheet(size);
-                }
-            }
+        // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
+        if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
+            self.lay_sheet(size);
+        }
+        if let Some(ask) = ask {
+            self.ask_grid(ask);
         }
     }
 
@@ -304,9 +313,10 @@ fn draw_grids(engine: Shared) {
         let started = Instant::now();
         let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
         let present: Vec<(&Negative, &PipelineSettings)> = ask.tiles.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
-        let size = sheet_size(ask.tiles.len());
+        let cell = cell_at(ask.scale);
+        let size = sheet_size(ask.tiles.len(), cell);
         let Ok(mut guard) = engine.lock() else { continue };
-        let Ok(sheet) = guard.render_laid(&present, TILE, &|i, tile| place(cells[i], tile), size) else { continue };
+        let Ok(sheet) = guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), size) else { continue };
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
         let picture = if ask.gpu {
             Picture::Resident(sheet)
@@ -321,18 +331,29 @@ fn draw_grids(engine: Shared) {
     }
 }
 
+/// A cell's side and the gap after it, in the sheet's pixels, at `scale` of the full sheet.
+fn cell_at(scale: f64) -> (usize, usize) {
+    (((TILE as f64 * scale).round() as usize).max(1), (GAP as f64 * scale).round() as usize)
+}
+
 /// A sheet of `count` tiles six to a row, with the gaps between them.
-fn sheet_size(count: usize) -> (u32, u32) {
+fn sheet_size(count: usize, (tile, gap): (usize, usize)) -> (u32, u32) {
     let columns = count.clamp(1, COLUMNS);
     let rows = count.div_ceil(COLUMNS).max(1);
-    ((columns * TILE + (columns - 1) * GAP) as u32, (rows * TILE + (rows - 1) * GAP) as u32)
+    ((columns * tile + (columns - 1) * gap) as u32, (rows * tile + (rows - 1) * gap) as u32)
 }
 
 /// The corner of tile `i` of `size`, centred in its cell.
-fn place(i: usize, size: (u32, u32)) -> (i32, i32) {
-    let (cx, cy) = ((i % COLUMNS) * (TILE + GAP), (i / COLUMNS) * (TILE + GAP));
+fn place(i: usize, size: (u32, u32), (tile, gap): (usize, usize)) -> (i32, i32) {
+    let (cx, cy) = ((i % COLUMNS) * (tile + gap), (i / COLUMNS) * (tile + gap));
     let (w, h) = (size.0 as usize, size.1 as usize);
-    ((cx + TILE.saturating_sub(w) / 2) as i32, (cy + TILE.saturating_sub(h) / 2) as i32)
+    ((cx + tile.saturating_sub(w) / 2) as i32, (cy + tile.saturating_sub(h) / 2) as i32)
+}
+
+/// The share of the full sheet worth drawing for a view showing it `shown` wide in screen pixels:
+/// never past the full sheet, in steps of an eighth so a zoom redraws only when it crosses one.
+fn scale_for(shown: f64, full: f64) -> f64 {
+    ((shown / full.max(1.0) * 8.0).ceil() / 8.0).clamp(0.125, 1.0)
 }
 
 #[cfg(test)]
@@ -352,13 +373,25 @@ mod tests {
 
     #[test]
     fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell() {
-        assert_eq!(sheet_size(7), ((6 * TILE + 5 * GAP) as u32, (2 * TILE + GAP) as u32));
-        assert_eq!(sheet_size(3), ((3 * TILE + 2 * GAP) as u32, TILE as u32), "a short row is only as wide as its tiles");
+        let full = cell_at(1.0);
+        assert_eq!(sheet_size(7, full), ((6 * TILE + 5 * GAP) as u32, (2 * TILE + GAP) as u32));
+        assert_eq!(sheet_size(3, full), ((3 * TILE + 2 * GAP) as u32, TILE as u32), "a short row is only as wide as its tiles");
         let (long, short) = (TILE as u32, TILE as u32 / 2);
         let inset = (TILE / 4) as i32;
-        assert_eq!(place(0, (long, short)), (0, inset), "a landscape tile centred in its cell's height");
-        assert_eq!(place(6, (short, long)), (inset, (TILE + GAP) as i32), "the seventh opens the second row");
+        assert_eq!(place(0, (long, short), full), (0, inset), "a landscape tile centred in its cell's height");
+        assert_eq!(place(6, (short, long), full), (inset, (TILE + GAP) as i32), "the seventh opens the second row");
         // Twin: the second tile's cell starts past the first's and the gap.
-        assert_eq!(place(1, (long, long)), ((TILE + GAP) as i32, 0));
+        assert_eq!(place(1, (long, long), full), ((TILE + GAP) as i32, 0));
+        // At half the scale, half the cells.
+        assert_eq!(sheet_size(7, cell_at(0.5)), ((6 * TILE / 2 + 5 * GAP / 2) as u32, (TILE + GAP / 2) as u32));
+    }
+
+    #[test]
+    fn a_sheet_is_drawn_at_the_size_it_is_shown_in_eighths_never_past_its_own() {
+        assert_eq!(scale_for(1230.0, 2460.0), 0.5);
+        assert_eq!(scale_for(1231.0, 2460.0), 0.625, "a pixel past a step draws the next one");
+        assert_eq!(scale_for(9000.0, 2460.0), 1.0, "zoomed past the sheet: its own pixels, no more");
+        // Twin: a tiny view still draws an eighth rather than nothing.
+        assert_eq!(scale_for(10.0, 2460.0), 0.125);
     }
 }
