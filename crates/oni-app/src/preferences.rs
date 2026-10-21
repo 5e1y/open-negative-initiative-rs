@@ -16,6 +16,8 @@ pub const SOUND_MUTED: &str = "soundMuted";
 pub const BRUSH_RADIUS: &str = "correctionBrushRadius";
 /// The RAW previews read at half size, a choice this build adds to compare speed and grain.
 pub const HALF_SIZE_PREVIEWS: &str = "halfSizePreviews";
+/// The zoom kept from one photo to the next, a choice this build adds; each opens fitted without it.
+pub const KEEP_ZOOM: &str = "keepZoom";
 /// The `.cube` the hand's Frontier look is read from, a choice this build adds.
 pub const FRONTIER_LOOK: &str = "frontierLook";
 

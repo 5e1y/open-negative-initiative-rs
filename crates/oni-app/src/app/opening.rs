@@ -38,8 +38,8 @@ impl Ctl {
             s.inputs_drawn = None;
             s.rendered = 0;
             s.requested = 0;
-            // Kept, not fitted: walking a roll at 100 % to compare grain needs it.
-            s.viewport.recentre();
+            // Fitted, unless Settings keeps the zoom to walk a roll at 100 % comparing grain.
+            s.viewport.next_photo(crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed));
             s.requested_view = None;
             if s.full.as_ref().is_some_and(|(p, _)| p != path) {
                 s.full = None;

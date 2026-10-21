@@ -56,6 +56,12 @@ impl Ctl {
                 self.remember(preferences::SOUND_MUTED, muted.into());
                 self.publish_settings();
             }
+            "keep-zoom" => {
+                let keep = !crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed);
+                crate::viewport::KEEP_ZOOM.store(keep, std::sync::atomic::Ordering::Relaxed);
+                self.remember(preferences::KEEP_ZOOM, keep.into());
+                self.publish_settings();
+            }
             "half-size" => {
                 let half = !crate::render::HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed);
                 crate::render::HALF_SIZE_PREVIEWS.store(half, std::sync::atomic::Ordering::Relaxed);

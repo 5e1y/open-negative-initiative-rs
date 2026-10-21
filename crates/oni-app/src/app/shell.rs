@@ -19,6 +19,8 @@ impl Shell {
         let disk = read_disk(options.support.clone(), options.screen);
         let half = Preferences::load(&options.support).bool(preferences::HALF_SIZE_PREVIEWS).unwrap_or(false);
         crate::render::HALF_SIZE_PREVIEWS.store(half, Ordering::Relaxed);
+        let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
+        crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,

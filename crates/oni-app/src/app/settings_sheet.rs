@@ -43,6 +43,7 @@ impl Ctl {
         let s = w.global::<AppSettings>();
         s.set_half_size(crate::render::HALF_SIZE_PREVIEWS.load(Ordering::Relaxed));
         s.set_clicks(!self.state.borrow().muted);
+        s.set_keep_zoom(crate::viewport::KEEP_ZOOM.load(Ordering::Relaxed));
         s.set_frontier_look(self.frontier_look_line().into());
         s.set_frontier_hand(oni_pipeline::frontier_table::current().is_some());
     }

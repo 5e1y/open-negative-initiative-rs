@@ -10,6 +10,8 @@ pub const RANGE: (f64, f64) = (0.02, 4.0);
 pub const ZOOM_STEPS: [f64; 5] = [0.25, 0.5, 1.0, 2.0, RANGE.1];
 /// Debounce after the last navigation before full resolution is asked for.
 pub const SETTLE: std::time::Duration = std::time::Duration::from_millis(150);
+/// The zoom kept from one photo to the next, a choice in Settings; off, each photo opens fitted.
+pub static KEEP_ZOOM: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 /// Margin around the view a full-resolution region keeps for panning.
 pub const REGION_MARGIN: f64 = 0.3;
 
@@ -104,6 +106,15 @@ impl Viewport {
     }
 
     /// The scale is in full-resolution pixels so it survives a change of frame; a pan does not.
+    /// Another photo opened: fitted, or at the same zoom recentred when the zoom is kept.
+    pub fn next_photo(&mut self, keep: bool) {
+        if keep {
+            self.recentre();
+        } else {
+            self.fit();
+        }
+    }
+
     pub fn recentre(&mut self) {
         self.offset = (0.0, 0.0);
     }
@@ -216,6 +227,18 @@ mod checks;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn another_photo_opens_fitted_unless_the_zoom_is_kept() {
+        let zoomed = Viewport { scale: Some(1.0), offset: (120.0, -40.0) };
+        let mut v = zoomed;
+        v.next_photo(false);
+        assert!(v.is_fitted() && v.offset == (0.0, 0.0));
+        // Twin: kept, the zoom stays and only the centre returns.
+        let mut v = zoomed;
+        v.next_photo(true);
+        assert_eq!(v, Viewport { scale: Some(1.0), offset: (0.0, 0.0) });
+    }
 
     const RAW: Size = (8368.0, 5584.0);
     const BIG: Size = (3950.0, 2624.0);
