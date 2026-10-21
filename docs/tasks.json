@@ -1704,5 +1704,12 @@
     "title": "The histogram counts the whole picture at one size, whatever the zoom",
     "status": "done",
     "detail": "Owner: on one photo the histogram stopped following the edits once zoomed in; in Edit Together it changed while zooming with no edit. It counted the render shown, and only when that render was the whole picture; the grid's was drawn at the zoom's scale. The histogram now counts a picture of its own, made again only when the settings move: the photo's preview through the chain at 1024 px, the grid's sheet whole at an eighth (128 px a tile). ONI_BENCH=midzoom at 60 %: 0 histograms through the pan and the pinch, 3 to 4 through a 30-notch Exposure drag, where none followed it before."
+  },
+  {
+    "id": 235,
+    "type": "perf",
+    "title": "Whole decodes kept on disk",
+    "status": "done",
+    "detail": "A frame opened again skipped nothing: LibRaw demosaiced it anew, about 0.9 s a 24 Mpx frame. oni-decode keeps each whole decode in Caches/Decodes: the camera's 16-bit window (145 MB a 24 Mpx frame), its flip and the matrix that converts it, keyed by the file's path, size and date, the reading asked and a hash of the decoder's own code; written off the decode's thread under a name of its own then renamed, the oldest let go past 4 GB. The original files are only read. Roll #8, reopening a frame: 1061 ms to 135 ms to its first render; the kept decode is LibRaw's bit for bit (oni-decode/tests/kept.rs)."
   }
 ]

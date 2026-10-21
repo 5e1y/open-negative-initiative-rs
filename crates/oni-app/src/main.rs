@@ -63,6 +63,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
     });
     let gate = engine.clone();
+    // Whole decodes kept for the next opening, about 145 MB a 24 Mpx frame.
+    oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     // The earlier version ran on macOS alone: there its RAW settings are corrected once, never under a bench.
     #[cfg(target_os = "macos")]
@@ -210,3 +212,6 @@ impl slint::winit_030::CustomApplicationHandler for Quitting {
         EventResult::Propagate
     }
 }
+
+/// The disk the kept decodes may take, a roll's worth.
+const DECODES_KEPT: u64 = 4 << 30;

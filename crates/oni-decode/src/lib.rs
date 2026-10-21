@@ -6,6 +6,7 @@ pub mod rendition;
 pub mod container;
 pub mod embedded;
 pub mod plain;
+pub mod cache;
 mod linear;
 
 use std::ffi::CString;
@@ -295,6 +296,13 @@ pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours)
 }
 
 fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool) -> Result<(Linear, usize), DecodeError> {
+    // A whole decode is kept on disk, and one kept is read back in place of LibRaw's.
+    let key = (side == 0).then(|| cache::key(path, &format!("{:08x}|{colours:?}|{matched}", exposure_gain.to_bits()))).flatten();
+    if let Some(k) = key.as_deref().and_then(cache::read) {
+        let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &k.matrix);
+        let (width, height) = linear::upright(k.flip, (k.width, k.height));
+        return Ok((Linear { width, height, pixels }, k.factor));
+    }
     let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
     let mut s = Session(unsafe { std::mem::zeroed() });
     let min_side = c_int::try_from(side).unwrap_or(0);
@@ -332,6 +340,10 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, match
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let matrix = if matched && colours == Colours::Matrix { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
+    if let Some(key) = key.filter(|_| d.half == 0) {
+        let window = (y0..y0 + h_out).flat_map(|row| raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3].iter().copied()).collect();
+        cache::write(key, cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: window });
+    }
     let pixels = linear::converted(raw, w, (x0, y0, w_out, h_out), d.flip, &matrix);
     let (w_out, h_out) = linear::upright(d.flip, (w_out, h_out));
     if std::env::var_os("ONI_DECODE_TRACE").is_some() {
