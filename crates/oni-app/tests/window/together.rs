@@ -121,8 +121,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_tile_opened(tile("D"));
     rig.until("D alone", Duration::from_secs(60), || canvas.get_status().contains(" × "));
     assert!(ctl.state.borrow().store().editor_ref().is_some_and(|e| e.together().is_empty()));
-    // A frame looked at a second has its full resolution built ahead, for a stroke or a zoom.
-    assert!(!ctl.state.borrow().full_built(), "twin: not at once, so the arrows walk a roll freely");
+    // The full resolution is built as the frame opens, for every render, a stroke or a zoom.
     rig.until("D's full resolution", Duration::from_secs(10), || ctl.state.borrow().full_built());
 
     // Beside the photo, a ⌘-click in the column shows the two frames together at once, no double click.

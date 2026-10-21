@@ -12,6 +12,18 @@ pub const ZOOM_STEPS: [f64; 5] = [0.25, 0.5, 1.0, 2.0, RANGE.1];
 pub const SETTLE: std::time::Duration = std::time::Duration::from_millis(150);
 /// The zoom kept from one photo to the next, a choice in Settings; off, each photo opens fitted.
 pub static KEEP_ZOOM: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// The editor on a preview copy, the full resolution only for a settled zoom past it (Settings); else
+/// the full resolution is built as a photo opens and every render reads it.
+pub static PREVIEW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether a render reads the full resolution: always once built, or on a preview copy only settled past it.
+pub fn reads_full(preview: bool, settled_past_preview: bool) -> bool {
+    !preview || settled_past_preview
+}
+
+pub fn on_preview() -> bool {
+    PREVIEW.load(std::sync::atomic::Ordering::Relaxed)
+}
 /// Margin around the view a full-resolution region keeps for panning.
 pub const REGION_MARGIN: f64 = 0.3;
 
@@ -227,6 +239,13 @@ mod checks;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_full_resolution_is_read_always_unless_editing_on_a_preview() {
+        assert!(reads_full(false, false));
+        assert!(!reads_full(true, false), "twin: a preview copy at fit reads the preview");
+        assert!(reads_full(true, true));
+    }
 
     #[test]
     fn another_photo_opens_fitted_unless_the_zoom_is_kept() {

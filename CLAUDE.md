@@ -45,6 +45,8 @@ the code; a costly trap keeps its constraint and its number in two lines.
   density table: ONI's window and print, then the Look Lab's chain on the ONI look's tone, resting on
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
+- **The editor reads the full resolution** as soon as it is built (owner's call), not Swift's preview: a zoom
+  never renders twice, at the same frame cost. Settings' "Edit on a preview copy" keeps Swift's way.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
   flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms.
 

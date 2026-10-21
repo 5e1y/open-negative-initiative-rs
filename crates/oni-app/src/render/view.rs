@@ -10,8 +10,10 @@ pub struct View {
     /// The canvas, in drawable pixels.
     pub size: (f64, f64),
     pub full: Option<Source>,
-    /// False while a navigation is in the hand: the preview serves it, as Swift's does.
+    /// False while a navigation is in the hand: on a preview copy the preview serves it, as Swift's does.
     pub settled: bool,
+    /// The editor on a preview copy, the full resolution read only settled past it.
+    pub preview: bool,
 }
 
 /// A view's identity for a kept render: the viewport, the canvas, settled or not, and which full frame.

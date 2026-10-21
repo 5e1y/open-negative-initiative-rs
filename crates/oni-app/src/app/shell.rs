@@ -21,6 +21,8 @@ impl Shell {
         crate::render::HALF_SIZE_PREVIEWS.store(half, Ordering::Relaxed);
         let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
         crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
+        let preview = Preferences::load(&options.support).bool(preferences::PREVIEW_EDITING).unwrap_or(false);
+        crate::viewport::PREVIEW.store(preview, Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,

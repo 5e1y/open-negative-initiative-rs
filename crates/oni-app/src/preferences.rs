@@ -18,6 +18,8 @@ pub const BRUSH_RADIUS: &str = "correctionBrushRadius";
 pub const HALF_SIZE_PREVIEWS: &str = "halfSizePreviews";
 /// The zoom kept from one photo to the next, a choice this build adds; each opens fitted without it.
 pub const KEEP_ZOOM: &str = "keepZoom";
+/// The editor on a preview copy rather than the full resolution, a choice this build adds.
+pub const PREVIEW_EDITING: &str = "previewEditing";
 /// The `.cube` the hand's Frontier look is read from, a choice this build adds.
 pub const FRONTIER_LOOK: &str = "frontierLook";
 

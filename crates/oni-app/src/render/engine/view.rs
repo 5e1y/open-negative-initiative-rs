@@ -24,7 +24,7 @@ impl Engine {
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
         let placement = vp.placement(full, view.size);
-        let at_full = view.settled && vp.needs_full_resolution(ratio, full, view.size, crate::viewport::NOMINAL_BUDGET);
+        let at_full = crate::viewport::reads_full(view.preview, view.settled && vp.needs_full_resolution(ratio, full, view.size, crate::viewport::NOMINAL_BUDGET));
         let (base, base_ratio) = match (&view.full, at_full) {
             (Some(f), true) => (f.clone(), 1.0),
             _ => (negative.preview.clone(), ratio),
