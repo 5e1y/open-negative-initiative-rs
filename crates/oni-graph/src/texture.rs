@@ -13,6 +13,9 @@ const OUTPUTS: usize = 4;
 /// Renders an idle texture waits for reuse: a notch's own reads (histograms, loupe) sit between two of
 /// its renders, and a 43 MB texture made again costs about 1.5 ms.
 pub const IDLE_RENDERS: u64 = 8;
+/// Bytes idle textures may hold, the newest kept: a zoom asks new sizes every step, which would
+/// otherwise pile up gigabytes no render takes again.
+const IDLE_BYTES: u64 = 1 << 30;
 
 struct Inner {
     texture: wgpu::Texture,
@@ -67,13 +70,14 @@ pub(crate) struct Pool {
     /// by a kernel is cleared first, a 43 MB pass at the canvas's size.
     outputs: Vec<FloatTexture>,
     generation: u64,
+    pub idle_bytes: u64,
     pub created: u64,
     pub live: Arc<AtomicI64>,
 }
 
 impl Pool {
     pub fn new(device: wgpu::Device) -> Self {
-        Self { device, free: Vec::new(), outputs: Vec::new(), generation: 0, created: 0, live: Arc::new(AtomicI64::new(0)) }
+        Self { device, free: Vec::new(), outputs: Vec::new(), generation: 0, idle_bytes: IDLE_BYTES, created: 0, live: Arc::new(AtomicI64::new(0)) }
     }
 
     /// A texture of exactly this size, recycled when one is free.
@@ -122,6 +126,13 @@ impl Pool {
     pub fn end_render(&mut self) {
         let generation = self.generation;
         self.free.retain(|f| f.generation + IDLE_RENDERS > generation);
+        self.free.sort_by_key(|f| std::cmp::Reverse(f.generation));
+        let mut held = 0;
+        self.free.retain(|f| {
+            let (w, h) = f.texture.size();
+            held += u64::from(w) * u64::from(h) * BYTES_PER_PIXEL;
+            held <= self.idle_bytes
+        });
         self.generation += 1;
     }
 

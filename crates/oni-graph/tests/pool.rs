@@ -57,6 +57,17 @@ fn the_pool_recycles_and_frees() {
         g.render(&image, Rect::new(0, 0, 60 + i, 40), None).expect("render");
     }
     assert!(g.stats().textures_created >= before + 3, "the counter misses allocations");
+    // A zoom's shapes, new every render, hold no more idle than the budget; the newest stay.
+    let budget = 3 * 16 * region.area() as u64;
+    g.idle_budget(budget);
+    for i in 0..6 {
+        g.render(&image, Rect::new(0, 0, 100 + i, 80), None).expect("render");
+    }
+    let idle = g.stats().live_bytes - source_bytes;
+    assert!(idle as u64 <= budget + 3 * 16 * 105 * 80, "{idle} bytes past a {budget} budget");
+    g.render(&image, Rect::new(0, 0, 105, 80), None).expect("render");
+    // Twin: without the budget the eight renders' shapes stay, three textures each.
+    assert!(6 * 3 * 16 * 100 * 80 > budget + 3 * 16 * 105 * 80, "the bound cannot see a pool keeping every shape");
     g.purge();
     assert_eq!(g.stats().idle_textures, 0);
     assert_eq!(g.stats().live_bytes, source_bytes, "purged, only the source remains");

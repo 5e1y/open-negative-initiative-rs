@@ -79,4 +79,9 @@ impl Graph {
     pub fn purge(&mut self) {
         self.pool.purge();
     }
+
+    /// The bytes idle textures may hold between renders.
+    pub fn idle_budget(&mut self, bytes: u64) {
+        self.pool.idle_bytes = bytes;
+    }
 }
