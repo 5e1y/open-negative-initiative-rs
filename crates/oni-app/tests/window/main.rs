@@ -51,6 +51,7 @@ mod sidebars;
 mod space_chip;
 mod stocks;
 mod together;
+mod together_all;
 mod toolbar;
 mod tree_hand;
 mod transition;
@@ -126,6 +127,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
+    ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("transition::a_new_camera_is_matched_once_behind_the_sheet", transition::a_new_camera_is_matched_once_behind_the_sheet),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),

@@ -31,3 +31,18 @@ impl Engine {
         Linear { width: e.w as usize, height: e.h as usize, pixels: self.graph.read_back(&[sheet]).remove(0) }
     }
 }
+
+impl Engine {
+    /// A frame's preview reduced to `side` on its longest side, laid as a source of its own: a tile
+    /// from what the editor already holds, with no decode.
+    pub fn tile_of(&mut self, negative: &Negative, side: usize) -> Result<Negative, String> {
+        let (w, h) = negative.size();
+        let long = w.max(h) as f64;
+        let mut image = Image::new(&negative.preview);
+        if long > side as f64 {
+            image = image.lanczos(side as f64 / long);
+        }
+        let preview = self.graph.materialise(&image).map_err(|e| e.to_string())?;
+        Ok(Negative { preview, full_width: negative.full_width, undeclared: negative.undeclared })
+    }
+}

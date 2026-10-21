@@ -29,3 +29,23 @@ fn tiles_laid_on_a_sheet_equal_each_render_alone_at_its_place() {
     // Twin: the two tiles differ, so a sheet swapping their places would fail above.
     assert_ne!((alone[0].width, alone[0].height), (alone[1].width, alone[1].height));
 }
+
+#[test]
+fn a_tile_from_a_held_preview_is_reduced_to_its_side_and_a_small_one_kept() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the tiles are not exercised");
+        return;
+    };
+    let shared = Engine::shared(&device);
+    let mut engine = shared.lock().unwrap();
+    let mut frame = |w: usize, h: usize| {
+        let pixels = (0..w * h).map(|i| [0.2 + (i % 7) as f32 * 0.02, 0.4, 0.6, 1.0]).collect();
+        engine.prepare(Decoded { linear: Linear { width: w, height: h, pixels }, full_width: 6000.0, undeclared: None }).unwrap()
+    };
+    let (big, small) = (frame(600, 400), frame(120, 80));
+    let tile = engine.tile_of(&big, 300).unwrap();
+    assert_eq!(tile.size(), (300, 200));
+    assert_eq!(tile.full_width, 6000.0, "the frame's own width, which the dosed radii read");
+    // Twin: a preview already under the side is laid as it is.
+    assert_eq!(engine.tile_of(&small, 300).unwrap().size(), (120, 80));
+}

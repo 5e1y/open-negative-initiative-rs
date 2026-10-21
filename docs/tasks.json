@@ -1606,5 +1606,12 @@
     "title": "One compute pass a render and one uniform copy a submission, in the shared graph",
     "status": "done",
     "detail": "The graph ran each stage in a compute pass of its own (a Metal encoder each, about ten microseconds a stage on the CPU and the GPU) and wrote each stage's uniforms through the queue's lock. A render now lays its sources first, then records every stage in one pass, and stages its uniforms for one copy before each submission; a pipeline is found by its static shader's address, not by hashing the shader's text. Every render gains: the editor, thumbnails, the grid, export. Edit Together's sheet is drawn at the share of its size the view shows, in eighths, never past 400 px a tile. ONI_BENCH=grid on roll #8, 36 frames, 480 notches: notch to canvas p50 2.0 ms, p99 4-6 ms (was 24 / 68 ms), images every 8.3 ms, the hand's pace."
+  },
+  {
+    "id": 221,
+    "type": "spec",
+    "title": "Edit Together: frames on the other face follow, held previews make tiles at once, checks open behind",
+    "status": "done",
+    "detail": "The frame that did not follow was on the other face: roll #8 holds 25 frames on Pro and 13 on Scanner, and a value moved on Pro is written but unseen on a Scanner frame. Each step now carries the face it was taken on with the fields it moved. A frame whose preview the editor holds (the open one first) gets its tile reduced from it on the GPU, before any decode. A bench, or ONI_BACKGROUND=1, opens behind the other apps' windows without taking the focus (winit's activation and the window's active flag off), so the owner keeps working while checks run. A window check opens five frames together three ways (gallery, editor key, column) and finds every sidecar on every step."
   }
 ]

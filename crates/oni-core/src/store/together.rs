@@ -42,9 +42,14 @@ impl Together {
     }
 }
 
-/// The fields moved from `before` to `after` that are no frame's own.
+/// The fields moved from `before` to `after` that are no frame's own, and the face they were moved on:
+/// a frame left on the other face would hold the value and show none of it.
 fn shared(before: &PipelineSettings, after: &PipelineSettings) -> Vec<Field> {
-    FieldSet::between(before, after).iter().filter(|f| !OWN.contains(f)).collect()
+    let mut fields: Vec<Field> = FieldSet::between(before, after).iter().filter(|f| !OWN.contains(f)).collect();
+    if !fields.is_empty() && !fields.contains(&Field::Face) {
+        fields.push(Field::Face);
+    }
+    fields
 }
 
 impl EditorStore {
@@ -107,6 +112,7 @@ mod tests {
         let mut theirs = PipelineSettings::default();
         theirs.vignette.stops = -0.7;
         theirs.manual_order = Some(4.0);
+        theirs.face = oni_settings::Face::Scanner;
         for p in [&b, &c] {
             sidecar::write(&theirs, Path::new(p), WriteOptions::default()).unwrap();
         }
@@ -121,7 +127,9 @@ mod tests {
         assert_eq!(store.together_live()[0].1.vignette.stops, 0.5, "shown as written");
         assert_eq!(read(&b).vignette.stops, 0.5, "the value set, not the difference");
         assert_eq!(read(&b).manual_order, Some(4.0), "a frame's own field stays its own");
+        assert_eq!(read(&b).face, store.settings().face, "on the face the step was taken on, or it would show none of it");
         assert_eq!(read(&c).vignette.stops, -0.7, "twin: a frame left out keeps its value");
+        assert_eq!(read(&c).face, oni_settings::Face::Scanner, "and its face");
         store.undo(Surface::Editor);
         assert_eq!(read(&b).vignette.stops, -0.7, "one undo takes the others back");
         assert_eq!(store.together_live()[0].1.vignette.stops, -0.7, "and shows them back");

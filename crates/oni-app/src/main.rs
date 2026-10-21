@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gpu = Device::open()?;
     let info = gpu.adapter.get_info();
     timing::line(&format!("GPU: {} ({:?}, {:?}, driver {} {})", info.name, info.backend, info.device_type, info.driver, info.driver_info));
-    let wgpu = slint::BackendSelector::new()
+    let selector = slint::BackendSelector::new()
         .renderer_name("femtovg-wgpu".into())
         .require_wgpu_30(slint::wgpu_30::WGPUConfiguration::Manual {
             instance: gpu.instance.clone(),
@@ -36,8 +36,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             queue: gpu.queue.clone(),
         })
         .with_winit_custom_application_handler(Quitting)
-        .with_winit_window_attributes_hook(oni_app::chrome::attributes)
-        .select();
+        .with_winit_window_attributes_hook(oni_app::chrome::attributes);
+    let wgpu = behind(selector).select();
     let canvas = match wgpu {
         Ok(()) => {
             timing::line("Slint backend: femtovg-wgpu on the pipeline's device");
@@ -184,6 +184,23 @@ thread_local! {
 
 /// The application's exit, seen before AppKit ends the process, so ⌘Q loses no settings.
 struct Quitting;
+
+/// A bench, or `ONI_BACKGROUND=1`, opens behind the other apps' windows and leaves the focus where it is,
+/// so the hand keeps working while a check drives the window.
+fn behind(selector: slint::BackendSelector) -> slint::BackendSelector {
+    let background = bench::requested().is_some() || std::env::var_os("ONI_BACKGROUND").is_some_and(|v| v == "1");
+    #[cfg(target_os = "macos")]
+    if background {
+        use slint::winit_030::winit::platform::macos::EventLoopBuilderExtMacOS;
+        let mut builder = slint::winit_030::winit::event_loop::EventLoop::<slint::winit_030::SlintEvent>::with_user_event();
+        builder.with_activate_ignoring_other_apps(false);
+        return selector
+            .with_winit_event_loop_builder(builder)
+            .with_winit_window_attributes_hook(|a| oni_app::chrome::attributes(a).with_active(false));
+    }
+    let _ = background;
+    selector
+}
 
 impl slint::winit_030::CustomApplicationHandler for Quitting {
     fn exiting(&mut self, _: &slint::winit_030::winit::event_loop::ActiveEventLoop) -> EventResult {
