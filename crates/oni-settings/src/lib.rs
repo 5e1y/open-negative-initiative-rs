@@ -11,7 +11,6 @@ pub mod date;
 pub mod density_migration;
 pub mod film;
 pub mod frame;
-pub mod frontier_lab;
 pub mod geometry;
 pub mod id;
 pub mod json;

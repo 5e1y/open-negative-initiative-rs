@@ -92,7 +92,7 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     let layout = lib.get_tree_layout_help().to_string();
     let pill = w.global::<Navigator>().get_opened_help().to_string();
     assert!(!pill.is_empty(), "the opened folder names its path");
-    let y = row_of(&rig, &tip, 22.0, target).expect("the target key at the column's left");
+    row_of(&rig, &tip, 22.0, target).expect("the target key at the column's left");
     // A key's tooltip waits the system's delay; a help mark's note shows at once, as Swift's does.
     assert!(!tip.get_at_once(), "twin: a tooltip is not shown at once");
     let tips = w.global::<oni_app::Tips>();

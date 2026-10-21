@@ -142,7 +142,7 @@ fn per_pixel_kernels_match_their_references() {
     frontier.face = Face::Scanner;
     frontier.scanner_machine = ScannerMachine::Frontier;
     frontier.scanner = ScannerClicks::new(1, -2, 3, 0, 0);
-    let d = scanner::density(&frontier);
+    let d = scanner::fitted_density(&frontier);
     let steeper = oni_render::ScannerDensity { scale: d.scale * 1.01, ..d };
     per_pixel(&mut g, "scanner density", &film, &transmitted, stages::scanner_density(&d), |p| cpu::scanner_density(p, &d), |p| cpu::scanner_density(p, &steeper));
     let root = |root| ScannerEncode { root };

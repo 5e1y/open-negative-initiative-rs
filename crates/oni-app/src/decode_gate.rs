@@ -155,9 +155,12 @@ mod tests {
         std::thread::scope(|s| {
             for _ in 0..4 {
                 let busy = busy.clone();
+                // The count is given back inside the turn, so no other turn can find it raised.
                 s.spawn(move || {
-                    gate.run(ticket, || assert_eq!(busy.fetch_add(1, Ordering::SeqCst), 0, "two decodes at once"));
-                    busy.store(0, Ordering::SeqCst);
+                    gate.run(ticket, || {
+                        assert_eq!(busy.fetch_add(1, Ordering::SeqCst), 0, "two decodes at once");
+                        busy.fetch_sub(1, Ordering::SeqCst);
+                    });
                 });
             }
         });

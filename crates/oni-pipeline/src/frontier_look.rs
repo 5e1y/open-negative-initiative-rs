@@ -1,17 +1,39 @@
-//! The Frontier's look, baked once as ONI's is: the Look Lab's chain at the machine's own values on the
-//! ONI look's tone, read on the ONI machine's render in display code. Its rest rides in the gains.
+//! The Frontier's look, baked once as ONI's is: the Look Lab's chain at the machine's own values, its paper
+//! the ONI look's tone, read on the ONI machine's render in display code. Its rest rides in the gains.
 
-use crate::look_lab::edits;
-use oni_render::ColorCube;
-use oni_settings::frontier_lab::FrontierLab;
+use crate::look_lab::{Chain, FITTED, paper};
+use oni_render::{ColorCube, cpu};
 use std::sync::LazyLock;
 
-pub static CUBE: LazyLock<ColorCube> = LazyLock::new(|| edits::table_on_code(&FrontierLab::default()));
+/// The table's nodes a side.
+const NODES: usize = 33;
+
+/// The ONI look's grey for a grey of display code `u`: the brightness its table lends the ONI machine's
+/// render, printed with no exposure, which the Frontier keeps.
+pub fn oni_tone(u: f64) -> f64 {
+    let v = u.clamp(0.0, 1.0).powf(1.0 / f64::from(crate::oni_look::ROOT)) as f32;
+    f64::from(cpu::color_cube([v, v, v, 1.0], &crate::oni_look::CUBE)[1])
+}
+
+/// Each display code read as the table's density from its black to its white, through the chain.
+pub static CUBE: LazyLock<ColorCube> = LazyLock::new(|| {
+    let (black, white) = (f64::from(crate::scanner::ENDS.0), f64::from(crate::scanner::ENDS.1));
+    let mut look = FITTED.frontier.clone();
+    look.paper = std::array::from_fn(|i| oni_tone(((paper::density(i) - black) / (white - black)).clamp(0.0, 1.0)));
+    let chain = Chain::new(&look);
+    let cube_data = (0..NODES * NODES * NODES)
+        .map(|i| {
+            let x = [i % NODES, (i / NODES) % NODES, i / (NODES * NODES)].map(|k| black + (white - black) * k as f64 / (NODES - 1) as f64);
+            let c = chain.code(x);
+            [c[0] as f32, c[1] as f32, c[2] as f32, 1.0]
+        })
+        .collect();
+    ColorCube { cube_dimension: NODES, cube_data }
+});
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use oni_render::cpu;
 
     #[test]
     fn the_baked_look_keeps_onis_tone_and_lends_the_frontier_its_colour() {

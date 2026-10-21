@@ -2,7 +2,6 @@
 //! curve, a colour stage, the table's own residual), baked on the CPU into a cube like the measured one.
 
 pub mod colour;
-pub mod edits;
 pub mod fit;
 pub mod measure;
 #[cfg(test)]

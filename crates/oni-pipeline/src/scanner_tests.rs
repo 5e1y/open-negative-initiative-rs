@@ -19,26 +19,6 @@ fn a_density_key_lightens_and_a_colour_key_takes_its_own_channel_off() {
 }
 
 #[test]
-fn pro_s_black_prints_black_and_the_roll_s_grey_on_the_machine_s_neutral() {
-    let roll = PipelineSettings { separation: 0.0, ..check_roll() };
-    let k = density(&roll);
-    let (black, white) = *ENDS;
-    assert!(black < 0.3 && white > 1.2 && white < 2.0, "{black} {white}");
-    let g = roll.levels.green;
-    let read = |k: &ScannerDensity, d: f32| {
-        // The scan whose green density, pedestal and gain included, reads `d`.
-        let t: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-d) / k.gain[c] - k.pedestal);
-        MACHINE.low() + MACHINE.span() * cpu::scanner_density([t[0], t[1], t[2], 1.0], k)[1]
-    };
-    let at = |d: f32| read(&k, d);
-    let pro = g.black + pro_black(&roll) * (g.white - g.black);
-    assert!((at(pro) - black).abs() < 0.01, "{} against {black}", at(pro));
-    assert!((at(roll_median(&roll)) - MACHINE.neutral()[1]).abs() < 0.01);
-    // Twin: the fit's stretch lands Pro's black elsewhere than the table's black.
-    assert!((read(&fitted_density(&roll), pro) - black).abs() > 0.03);
-}
-
-#[test]
 fn the_machine_unmixes_at_the_frame_s_own_dye_separation() {
     let roll = check_roll();
     assert_eq!(roll.separation, 0.6, "a frame at rest unmixes as the Swift machine did");

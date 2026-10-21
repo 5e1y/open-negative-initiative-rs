@@ -1529,5 +1529,19 @@
     "title": "The Frontier's look locked: baked once as ONI's is; the Lab and Frontier 2 removed",
     "status": "done",
     "detail": "The owner locked the Frontier look and asked to remove Frontier 2 and to bake the Lab's parameters and the per-channel rest into a table as ONI's is. The Frontier machine now reads frontier_look::CUBE, the Lab's chain at the machine's own values on the ONI look's tone, baked once (33 nodes) over the ONI machine's render in display code. Baking the rest into the table was measured and refused: a density offset before Pro's print does not map to one code curve after it, as the print sits where each frame's window puts it (against the exact rest, median 0.03-0.04 and 99th centile up to 0.16 of code on raw0021 and DSC_6442); the rest D+0.5 M+2 Y-2 stays in the gains, exactly, the screen at zero. Removed: Frontier 2 (scannerPrint, its paper and its block), the Look Lab panel, its curve, and the frontierLab and frontierCurves fields (a sidecar carrying them still reads, the keys ignored). The research module look_lab stays in the pipeline, the bake's source."
+  },
+  {
+    "id": 210,
+    "type": "cleanup",
+    "title": "Dead code of the locked look removed",
+    "status": "done",
+    "detail": "FrontierLab and its edit machinery (oni-settings frontier_lab.rs, look_lab/edits.rs) are gone; the bake and the ONI look's tone live in frontier_look.rs. The old Frontier density mapping (scanner::density, pro_black, roll_median) is gone; scanner::fitted_density, self-contained, keeps the Swift machine's coordinates the Look Lab's fits and the CPU replica read. An unused binding in the sidebars window check is dropped. decode_gate's one-at-a-time test gave its count back after leaving the turn, so another thread could find it raised: it now gives it back inside the turn."
+  },
+  {
+    "id": 211,
+    "type": "bug",
+    "title": "contact_sheet's window check times out waiting for the roll measure under a check that rebuilds",
+    "status": "open",
+    "detail": "Seen about six times on 2026-10-20 and 21, only when scripts/check rebuilt before running (12 binaries at once): Prepare the Roll's measure never lands within 120 s, where it lands in under 3 s alone. The measure's job always ends in land_measure (a superseded MEASURE ticket only skips a frame), so the wait is elsewhere, likely a decode slot (decode_gate::Slots) starved while the thumbnail pass and the open frame hold places under load. To do: log each slot's taker and waiter in that check, reproduce with ONI_BINARIES=12 after a touch, then fix the starvation rather than the timeout."
   }
 ]

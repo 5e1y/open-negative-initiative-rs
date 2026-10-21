@@ -157,37 +157,13 @@ pub fn separation(s: &PipelineSettings) -> M3 {
     }
 }
 
-/// Where Pro prints the frame's grey black (under 0.03 % of the light), as a share of the green window,
-/// its print exposure and curve included.
-pub fn pro_black(s: &PipelineSettings) -> f32 {
-    let pro = PipelineSettings { face: Face::Pro, ..s.clone() };
-    let k = crate::conversion::stage47(&pro);
-    let windows = s.levels.windows();
-    let (pedestal, gain) = (density_axis::pedestal(s.density_ceiling), s.gains.stops.map(f32::exp2));
-    let grey = |f: f32| {
-        let t: [f32; 3] = std::array::from_fn(|c| 10f32.powf(-(windows[c].black + f * (windows[c].white - windows[c].black))) / gain[c] - pedestal);
-        let out = cpu::stage47([t[0].max(0.0), t[1].max(0.0), t[2].max(0.0), 1.0], &k);
-        out[0] * 0.2627 + out[1] * 0.678 + out[2] * 0.0593
-    };
-    (0..=400).map(|i| i as f32 / 400.0).filter(|f| grey(*f) <= 3e-4).fold(0.0, f32::max)
-}
-
-/// The roll's green median, else 0.6 of green's window: the grey the machine's neutral prints.
-pub fn roll_median(s: &PipelineSettings) -> f32 {
-    let window = graduation::window(s.mode);
-    let g = s.levels.green;
-    s.roll_reference.as_ref().and_then(|r| r.median).map_or(g.black + 0.6 * (g.white - g.black), |m| window.start() + m[1] * (window.end() - window.start()))
-}
-
-/// The density kernel's arguments for these settings on the Frontier: the roll's grey on the machine's
-/// neutral and Pro's black on the table's, so the blacks print black as ONI's do and the whites clip.
-pub fn density(s: &PipelineSettings) -> ScannerDensity {
+/// The coordinates the Look Lab's sets were fitted in, the Swift machine's: one stretch of 1.3 over the
+/// roll's green window about its median, the machine's neutral on that median.
+pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
     let m = &*MACHINE;
-    let offset = m.offset(&s.scanner);
-    let neutral = m.neutral();
-    let median = roll_median(s);
-    let g = s.levels.green;
-    let black = g.black + pro_black(s) * (g.white - g.black);
+    let (offset, neutral) = (m.offset(&s.scanner), m.neutral());
+    let (window, g) = (graduation::window(s.mode), s.levels.green);
+    let median = s.roll_reference.as_ref().and_then(|r| r.median).map_or(g.black + 0.6 * (g.white - g.black), |m| window.start() + m[1] * (window.end() - window.start()));
     let unmix = separation(s);
     let (reached_low, reached_high) = m.reached();
     ScannerDensity {
@@ -198,7 +174,7 @@ pub fn density(s: &PipelineSettings) -> ScannerDensity {
         sep_r: unmix[0],
         sep_g: unmix[1],
         sep_b: unmix[2],
-        scale: (neutral[1] - ENDS.0) / (median - black).max(Print::MINIMUM_SPAN),
+        scale: 1.3 / (g.white - g.black).max(Print::MINIMUM_SPAN),
         shift: std::array::from_fn(|c| neutral[c] + offset[c]),
         reached_low,
         reached_high,
@@ -207,13 +183,6 @@ pub fn density(s: &PipelineSettings) -> ScannerDensity {
         invert: s.mode.invert_flag(),
         dmax: pipeline::DMAX,
     }
-}
-
-/// The coordinates the Look Lab's sets were fitted in: one stretch of 1.3 over the roll's green window
-/// about its median, which the app's black anchor replaced; kept so the fits read as they were made.
-pub fn fitted_density(s: &PipelineSettings) -> ScannerDensity {
-    let g = s.levels.green;
-    ScannerDensity { scale: 1.3 / (g.white - g.black).max(Print::MINIMUM_SPAN), ..density(s) }
 }
 
 /// `OniLook.gainStops`: the Frontier's density offset as stops of gain, more density less light.
@@ -268,7 +237,7 @@ pub fn replica(t: [f32; 3], s: &PipelineSettings) -> Option<[f32; 3]> {
         return None;
     }
     let m = &*MACHINE;
-    let code = cpu::color_cube(cpu::scanner_density([t[0], t[1], t[2], 1.0], &density(s)), &m.render);
+    let code = cpu::color_cube(cpu::scanner_density([t[0], t[1], t[2], 1.0], &fitted_density(s)), &m.render);
     let (warmth, share) = m.warmth(s.scanner.w).map_or((code, 0.0), |(cube, share)| (cpu::color_cube(code, cube), share));
     let out = cpu::scanner_output(code, warmth, &ScannerOutput { warmth_share: share, lift: LIFT, contrast: s.scanner_finish.contrast });
     Some([out[0], out[1], out[2]])
