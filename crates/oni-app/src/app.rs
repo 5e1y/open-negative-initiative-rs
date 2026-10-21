@@ -373,7 +373,7 @@ pub struct State {
     /// The tab shown, the last panel the hand was in and the measuring window armed.
     route: crate::tabs::Route,
     /// The stroke being painted, in fractions of the rendered frame, y down.
-    painting_stroke: Vec<(f64, f64)>,
+    painting_stroke: dedusting::live::Live,
     /// The number each correction's marker shows, never its row, which a removal shifts.
     numbers: HashMap<oni_settings::id::Id, usize>,
     next_number: usize,

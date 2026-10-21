@@ -252,6 +252,12 @@ export component MainWindow inherits AppWindow {
     }
 
     keys := FocusScope {
+        // A key released while another window held the focus never comes: Space is let go with it.
+        changed has-focus => {
+            if (!self.has-focus) {
+                Canvas.space-held = false;
+            }
+        }
         key-pressed(event) => {
             if (event.text == " " && Canvas.painting) {
                 Canvas.space-held = true;

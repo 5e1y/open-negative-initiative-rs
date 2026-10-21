@@ -1,5 +1,5 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
-import { DS, Card, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
+import { DS, Card, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -53,18 +53,20 @@ export global Canvas {
     callback frame-grabbed(bool, int);
     callback frame-dragged(bool, int, length, length);
     callback frame-released(bool);
-    // De-dust: painting armed, the brush under the pointer, the stroke being painted, the marks.
+    // De-dust: painting armed, the picture the brush shows over, the stroke being painted, the marks.
     in property <bool> painting;
-    in property <bool> brush-shown;
-    in property <length> brush-x;
-    in property <length> brush-y;
+    in property <length> picture-x;
+    in property <length> picture-y;
+    in property <length> picture-width;
+    in property <length> picture-height;
     in property <length> brush-diameter;
     in property <string> stroke;
     in property <length> stroke-width;
     in property <[Mark]> marks;
+    // The strokes whose patch is being generated, kept on the canvas until it lands.
+    in property <[{commands: string, width: length}]> pending-strokes;
     // Each patch's source: the lines to them, and the copied strokes with their widths.
     in property <string> source-lines;
-    in property <length> source-line-width;
     in property <[{commands: string, width: length}]> source-shapes;
     // Space held in De-dust: the drag pans instead of painting.
     in-out property <bool> space-held;
@@ -76,7 +78,6 @@ export global Canvas {
     in property <string> zoom-label;
     in property <bool> can-zoom-out;
     in property <bool> can-zoom-in;
-    callback paint-hover(length, length, bool);
     callback paint-start(length, length);
     callback paint-move(length, length);
     callback paint-end();
@@ -148,6 +149,8 @@ export component CanvasCard inherits Card {
             navigation := TouchArea {
                 width: parent.width;
                 height: parent.height;
+                // `NavigationCatcher.updateCursor`: Space held over the canvas shows the hand.
+                mouse-cursor: Canvas.space-held ? (self.pressed ? MouseCursor.grabbing : MouseCursor.grab) : MouseCursor.default;
                 clicked => { root.refocused(); }
                 double-clicked => { Canvas.double-clicked(); }
                 pointer-event(event) => {
@@ -203,7 +206,7 @@ export component CanvasCard inherits Card {
                 width: parent.width;
                 height: parent.height;
                 commands: Canvas.source-lines;
-                thickness: Canvas.source-line-width;
+                thickness: Stroke.line;
             }
             for m in Canvas.marks: CorrectionMark {
                 x: m.x;
@@ -212,29 +215,61 @@ export component CanvasCard inherits Card {
                 height: m.height;
                 number: m.number;
             }
+            for t in Canvas.pending-strokes: LiveStroke {
+                width: parent.width;
+                height: parent.height;
+                commands: t.commands;
+                thickness: t.width;
+            }
             if Canvas.stroke != "": LiveStroke {
                 width: parent.width;
                 height: parent.height;
                 commands: Canvas.stroke;
                 thickness: Canvas.stroke-width;
             }
-            if Canvas.brush-shown && !Canvas.space-held: BrushDisc {
-                x: Canvas.brush-x - Canvas.brush-diameter / 2;
-                y: Canvas.brush-y - Canvas.brush-diameter / 2;
+            // The disc follows the pointer here, with no trip through Rust, over the picture only.
+            if paint.shows-brush: BrushDisc {
+                x: paint.mouse-x - Canvas.brush-diameter / 2;
+                y: paint.mouse-y - Canvas.brush-diameter / 2;
                 width: Canvas.brush-diameter;
                 height: Canvas.brush-diameter;
             }
             paint := TouchArea {
-                enabled: !Canvas.space-held;
-                mouse-cursor: none;
-                changed has-hover => { Canvas.paint-hover(self.mouse-x, self.mouse-y, self.has-hover); }
+                // `wantsHiddenCursor`: the disc stands for the pointer while it shows, Space aside.
+                out property <bool> shows-brush: self.has-hover && !Canvas.space-held
+                    && self.mouse-x >= Canvas.picture-x && self.mouse-x <= Canvas.picture-x + Canvas.picture-width
+                    && self.mouse-y >= Canvas.picture-y && self.mouse-y <= Canvas.picture-y + Canvas.picture-height;
+                // A press with ⌘ pans until its release, as `NavigationCatcher` takes it from the brush.
+                property <bool> panning;
+                // Space pressed mid-stroke leaves that stroke to its end.
+                enabled: !Canvas.space-held || self.pressed;
+                mouse-cursor: self.shows-brush ? MouseCursor.none : MouseCursor.default;
                 pointer-event(event) => {
-                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) { Canvas.paint-start(self.mouse-x, self.mouse-y); }
-                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.up) { Canvas.paint-end(); }
+                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                        root.refocused();
+                        self.panning = event.modifiers.control;
+                        if (self.panning) {
+                            Canvas.grabbed(self.mouse-x, self.mouse-y);
+                        } else {
+                            Canvas.paint-start(self.mouse-x, self.mouse-y);
+                        }
+                    }
+                    if ((event.button == PointerEventButton.left && event.kind == PointerEventKind.up) || event.kind == PointerEventKind.cancel) {
+                        if (!self.panning) {
+                            Canvas.paint-end();
+                        }
+                        self.panning = false;
+                    }
                 }
                 moved => {
-                    Canvas.paint-hover(self.mouse-x, self.mouse-y, true);
-                    if (self.pressed) { Canvas.paint-move(self.mouse-x, self.mouse-y); }
+                    if (self.panning) {
+                        Canvas.dragged(self.mouse-x, self.mouse-y);
+                    } else {
+                        Canvas.paint-move(self.mouse-x, self.mouse-y);
+                    }
+                }
+                scroll-event(event) => {
+                    Canvas.scrolled(event.delta-x, event.delta-y, self.mouse-x, self.mouse-y, event.modifiers.control) ? EventResult.accept : EventResult.reject
                 }
             }
         }

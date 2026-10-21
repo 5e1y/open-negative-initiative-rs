@@ -2,6 +2,8 @@
 
 use super::*;
 
+pub(super) mod live;
+
 impl Ctl {
     // MARK: - De-dust
 
@@ -11,12 +13,14 @@ impl Ctl {
         !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 4 && self.state.borrow().open.is_some()
     }
 
-    /// The brush, the corrections' rows and the canvas's marks from the open frame.
+    /// The brush, the corrections' rows and the canvas's marks from the open frame; a stroke's
+    /// moves skip it and grow the stroke's path alone.
     pub(super) fn publish_dedust(&self) {
         let Some(w) = self.window() else { return };
         let painting = self.painting();
         let frame = self.image_frame(false);
-        let (rows, marks, radius, stroke, rendered, traces, lines) = {
+        type Shape = (Vec<(f64, f64)>, f64);
+        let (rows, marks, radius, stroke, rendered, traces, lines, waiting) = {
             let mut s = self.state.borrow_mut();
             let corrections = s.store.settings().corrections.clone();
             for c in &corrections {
@@ -26,12 +30,18 @@ impl Ctl {
                     s.next_number += 1;
                 }
             }
-            let healing = s.open_path().is_some_and(|p| s.healing.contains(p));
+            if let Some(f) = frame {
+                s.painting_stroke.relaid(f);
+            }
+            let s = &*s;
+            // A heal waiting on the frame's full-resolution build is already under way.
+            let healing = s.open_path().is_some_and(|p| s.healing.contains(p) || s.building_full.as_deref() == Some(p));
+            let pending = |c: &oni_settings::frame::Correction| healing && !s.patched.contains(&c.id) && !s.unhealable.contains(&c.id);
             let rows: Vec<crate::CorrectionRow> = corrections
                 .iter()
                 .map(|c| crate::CorrectionRow {
                     label: s.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
-                    pending: healing && !s.patched.contains(&c.id) && !s.unhealable.contains(&c.id),
+                    pending: pending(c),
                     fallback: s.fallback.contains(&c.id),
                 })
                 .collect();
@@ -52,7 +62,7 @@ impl Ctl {
                 _ => Vec::new(),
             };
             // `correctionMarks`: the line from each stroke to its source, and the copied stroke itself.
-            let traces: Vec<(Vec<(f64, f64)>, f64)> = corrections
+            let traces: Vec<Shape> = corrections
                 .iter()
                 .filter_map(|c| {
                     let o = *s.sources.get(&c.id)?;
@@ -63,12 +73,13 @@ impl Ctl {
                 .iter()
                 .filter_map(|c| {
                     let o = s.sources.get(&c.id)?;
-                    let n = c.stroke.len().max(1) as f64;
-                    let centre = (c.stroke.iter().map(|p| p.x).sum::<f64>() / n, c.stroke.iter().map(|p| p.y).sum::<f64>() / n);
+                    let centre = live::bounding_centre(c.stroke.iter().map(|p| (p.x, p.y)))?;
                     Some((centre, (centre.0 + o.0, centre.1 + o.1)))
                 })
                 .collect();
-            (rows, marks, s.brush, s.painting_stroke.clone(), rendered, traces, lines)
+            // A stroke stays painted until its patch lands, so the dust is never shown bare meanwhile.
+            let waiting: Vec<Shape> = corrections.iter().filter(|c| pending(c)).map(|c| (c.stroke.iter().map(|p| (p.x, p.y)).collect(), c.radius)).collect();
+            (rows, marks, s.brush, SharedString::from(s.painting_stroke.commands()), rendered, traces, lines, waiting)
         };
         let d = w.global::<crate::Dedust>();
         let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
@@ -81,23 +92,22 @@ impl Ctl {
         }
         let c = w.global::<Canvas>();
         c.set_painting(painting);
+        if !painting {
+            c.set_space_held(false);
+        }
+        let picture = frame.unwrap_or_default();
+        c.set_picture_x(picture.0 as f32);
+        c.set_picture_y(picture.1 as f32);
+        c.set_picture_width(picture.2 as f32);
+        c.set_picture_height(picture.3 as f32);
         // `strokeLineWidth`: the radius in full-resolution pixels as a width on the canvas.
-        let width = match (frame, rendered) {
-            (Some(f), Some(r)) => f64::from(radius) * 2.0 * f.2 / r.0.max(1.0),
+        let width = |radius: f64| match (frame, rendered) {
+            (Some(f), Some(r)) => (radius * 2.0 * f.2 / r.0.max(1.0)) as f32,
             _ => 0.0,
         };
-        c.set_brush_diameter(width as f32);
-        c.set_stroke_width(width as f32);
-        let commands = match frame {
-            Some(f) if stroke.len() > 1 => stroke
-                .iter()
-                .enumerate()
-                .map(|(i, p)| format!("{} {:.2} {:.2}", if i == 0 { "M" } else { "L" }, f.0 + p.0 * f.2, f.1 + p.1 * f.3))
-                .collect::<Vec<_>>()
-                .join(" "),
-            _ => String::new(),
-        };
-        c.set_stroke(commands.into());
+        c.set_brush_diameter(width(f64::from(radius)));
+        c.set_stroke_width(width(f64::from(radius)));
+        c.set_stroke(stroke);
         let marks: Vec<Mark> = marks
             .into_iter()
             .map(|(x, y, wd, ht, number)| Mark { x: x as f32, y: y as f32, width: wd as f32, height: ht as f32, number: number as i32 })
@@ -115,73 +125,61 @@ impl Ctl {
             }
             out
         };
-        let (shapes, line_commands) = match (frame, rendered) {
-            (Some(f), Some(r)) => (
-                traces
-                    .iter()
-                    .map(|(points, radius)| (path(points, f).into(), (radius * 2.0 * f.2 / r.0.max(1.0)) as f32))
-                    .collect::<Vec<(SharedString, f32)>>(),
-                lines.iter().map(|(a, b)| path(&[*a, *b], f)).collect::<Vec<_>>().join(" "),
-            ),
-            _ => (Vec::new(), String::new()),
+        let shapes = |list: &[Shape]| match frame {
+            Some(f) => list.iter().map(|(points, radius)| (path(points, f).into(), width(*radius))).collect::<Vec<(SharedString, f32)>>(),
+            None => Vec::new(),
         };
-        if let Some(shapes) = renewed(&c.get_source_shapes(), shapes) {
+        if let Some(shapes) = renewed(&c.get_source_shapes(), shapes(&traces)) {
             c.set_source_shapes(shapes);
         }
+        if let Some(waiting) = renewed(&c.get_pending_strokes(), shapes(&waiting)) {
+            c.set_pending_strokes(waiting);
+        }
+        let line_commands = frame.map(|f| lines.iter().map(|(a, b)| path(&[*a, *b], f)).collect::<Vec<_>>().join(" ")).unwrap_or_default();
         c.set_source_lines(line_commands.into());
-        c.set_source_line_width(1.5);
     }
 
-    /// A point of the canvas in fractions of the rendered frame, when it falls on the picture.
-    pub(super) fn on_picture(&self, x: f32, y: f32) -> Option<(f64, f64)> {
-        let f = self.image_frame(false)?;
-        let (fx, fy) = ((f64::from(x) - f.0) / f.2, (f64::from(y) - f.1) / f.3);
-        ((0.0..=1.0).contains(&fx) && (0.0..=1.0).contains(&fy)).then_some((fx, fy))
-    }
-
-    pub(super) fn paint_hover(&self, x: f32, y: f32, hover: bool) {
-        let Some(w) = self.window() else { return };
-        let c = w.global::<Canvas>();
-        c.set_brush_shown(hover && self.on_picture(x, y).is_some());
-        c.set_brush_x(x);
-        c.set_brush_y(y);
-    }
-
+    /// A press or a move on the canvas: a point on the picture joins the stroke, and the canvas's
+    /// path grows by that one segment, so a move costs the same at any length of stroke.
     pub(super) fn paint_at(&self, x: f32, y: f32, start: bool) {
-        let point = self.on_picture(x, y);
-        {
+        let Some(w) = self.window() else { return };
+        let Some(f) = self.image_frame(false) else { return };
+        let commands = {
             let mut s = self.state.borrow_mut();
             if start {
                 s.painting_stroke.clear();
             }
-            if let Some(p) = point {
-                s.painting_stroke.push(p);
-            }
+            let p = ((f64::from(x) - f.0) / f.2, (f64::from(y) - f.1) / f.3);
+            let on = (0.0..=1.0).contains(&p.0) && (0.0..=1.0).contains(&p.1);
+            (on && s.painting_stroke.push(p, f)).then(|| SharedString::from(s.painting_stroke.commands()))
+        };
+        if let Some(commands) = commands {
+            w.global::<Canvas>().set_stroke(commands);
         }
-        self.paint_hover(x, y, true);
-        self.publish_dedust();
     }
 
-    /// `appendCorrection`: a stroke of two points at least becomes a correction, its patch generated next.
+    /// `appendCorrection`: a stroke of two points at least becomes a correction; the write asks the
+    /// render, which starts its patch and shows it pending before the next frame.
     pub(super) fn paint_end(self: &Rc<Self>) {
         let (stroke, radius) = {
             let mut s = self.state.borrow_mut();
-            (std::mem::take(&mut s.painting_stroke), s.brush)
+            (s.painting_stroke.take(), s.brush)
         };
-        if stroke.len() > 1 {
-            let correction = oni_settings::frame::Correction {
-                id: oni_settings::id::Id::new(),
-                stroke: stroke.iter().map(|&(x, y)| oni_settings::cg::Point { x, y }).collect(),
-                radius: f64::from(radius),
-            };
-            let mut next = self.state.borrow().store.settings().clone();
-            next.corrections.push(correction);
-            self.write(Command::Write(Box::new(next)));
+        if stroke.len() < 2 {
+            return self.publish_dedust();
         }
-        self.publish_dedust();
+        let correction = oni_settings::frame::Correction {
+            id: oni_settings::id::Id::new(),
+            stroke: stroke.iter().map(|&(x, y)| oni_settings::cg::Point { x, y }).collect(),
+            radius: f64::from(radius),
+        };
+        let mut next = self.state.borrow().store.settings().clone();
+        next.corrections.push(correction);
+        self.write(Command::Write(Box::new(next)));
     }
 
-    /// `deleteCorrection`: gone from the settings, its patch from the cache and the engine.
+    /// `deleteCorrection`: gone from the settings, its patch from the cache and the engine; the
+    /// engine forgets it off this thread, as a render may hold it for a while.
     pub(super) fn remove_correction(self: &Rc<Self>, row: usize) {
         let mut next = self.state.borrow().store.settings().clone();
         if row >= next.corrections.len() {
@@ -189,15 +187,39 @@ impl Ctl {
         }
         let gone = next.corrections.remove(row);
         let _ = std::fs::remove_file(crate::patches::file(&crate::patches::caches(), gone.id));
-        if let Ok(mut e) = self.engine.lock() {
-            e.forget_patch(gone.id);
-        }
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            if let Ok(mut e) = engine.lock() {
+                e.forget_patch(gone.id);
+            }
+        });
         {
             let mut s = self.state.borrow_mut();
             s.fallback.remove(&gone.id);
             s.patched.remove(&gone.id);
+            s.sources.remove(&gone.id);
         }
         self.write(Command::Write(Box::new(next)));
+    }
+
+    /// `negative.fullIfReady`: the open frame's full resolution built as De-dust opens, so the first
+    /// stroke's patch reads it rather than decoding the frame again.
+    pub(super) fn ready_full(self: &Rc<Self>) {
+        if !self.painting() {
+            return;
+        }
+        let asked = {
+            let mut s = self.state.borrow_mut();
+            let Some(path) = s.open_path().map(str::to_string) else { return };
+            let built = s.full.as_ref().is_some_and(|(p, _)| *p == path);
+            if built || s.rendered == 0 || s.building_full.is_some() || s.full_failed.contains(&path) {
+                return;
+            }
+            s.building_full = Some(path.clone());
+            (path, render::Reading::of(s.store.settings()))
+        };
+        self.build_full(asked.0, asked.1);
+        self.publish_dedust();
     }
 
     /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the

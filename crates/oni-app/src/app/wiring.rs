@@ -265,8 +265,6 @@ impl Ctl {
         d.on_remove(move |i| p.remove_correction(usize::try_from(i).unwrap_or(usize::MAX)));
         let c = window.global::<Canvas>();
         let p = me.clone();
-        c.on_paint_hover(move |x, y, hover| p.paint_hover(x, y, hover));
-        let p = me.clone();
         c.on_paint_start(move |x, y| p.paint_at(x, y, true));
         let p = me.clone();
         c.on_paint_move(move |x, y| p.paint_at(x, y, false));

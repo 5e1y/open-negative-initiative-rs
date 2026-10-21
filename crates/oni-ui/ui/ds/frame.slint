@@ -1,6 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
-import { Colour, CropStyle, Space } from "theme.slint";
+import { DS, Colour, CropStyle, Space, Radius, Stroke, Type } from "theme.slint";
 
 export enum FrameStyle { crop, window }
 
@@ -206,10 +206,11 @@ export component Well inherits Rectangle {
 // The brush's disc under the pointer, its diameter the radius at the canvas's scale.
 export component BrushDisc inherits Rectangle {
     border-radius: self.width / 2;
-    border-width: CropStyle.hairline + 1px;
+    // `DSGuide.width(true)` and its shadow, `DS.Stroke.emphasis`.
+    border-width: Stroke.line + DS.control-guide-grow;
     border-color: Colour.handle-active;
     drop-shadow-color: Colour.contrast-edge;
-    drop-shadow-blur: 2px;
+    drop-shadow-blur: Stroke.emphasis;
 }
 
 // The stroke being painted, as a polyline in the canvas's points.
@@ -232,17 +233,18 @@ export component CorrectionMark inherits Rectangle {
         border-width: CropStyle.hairline;
         border-color: Colour.sharpen;
     }
+    // Half an `xxs` clear of the ring, as Swift's alignment guides set it.
     if root.number > 0: Rectangle {
-        x: parent.width;
-        y: -self.height;
-        width: badge.preferred-width + 6px;
-        height: badge.preferred-height + 2px;
+        x: parent.width + Space.xxs / 2;
+        y: -self.height - Space.xxs / 2;
+        width: badge.preferred-width + DS.control-badge-padding;
+        height: badge.preferred-height + Space.xxs;
         background: Colour.contrast-edge;
-        border-radius: 3px;
+        border-radius: Radius.badge / 2;
         badge := Text {
             text: root.number;
             color: Colour.handle-active;
-            font-size: 11px;
+            font-size: Type.chip;
         }
     }
 }

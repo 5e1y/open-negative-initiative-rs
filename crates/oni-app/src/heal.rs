@@ -36,10 +36,15 @@ impl Region {
         let (x0, y0) = (u.floor(), v.floor());
         let (fx, fy) = ((u - x0) as f32, (v - y0) as f32);
         let (x0, y0) = (x0 as i64, y0 as i64);
-        let a = self.texel(x0, y0);
-        let b = self.texel(x0 + 1, y0);
-        let c = self.texel(x0, y0 + 1);
-        let d = self.texel(x0 + 1, y0 + 1);
+        // The four taps inside the region, itself inside the frame, are read with no clamp: the
+        // search's hot path.
+        let (col, top) = (x0 - self.x, self.frame_height as i64 - 2 - y0 - self.y);
+        let (a, b, c, d) = if col >= 0 && top >= 0 && ((col + 1) as usize) < self.width && ((top + 1) as usize) < self.height {
+            let i = top as usize * self.width + col as usize;
+            (self.pixels[i + self.width], self.pixels[i + self.width + 1], self.pixels[i], self.pixels[i + 1])
+        } else {
+            (self.texel(x0, y0), self.texel(x0 + 1, y0), self.texel(x0, y0 + 1), self.texel(x0 + 1, y0 + 1))
+        };
         std::array::from_fn(|k| (a[k] * (1.0 - fx) + b[k] * fx) * (1.0 - fy) + (c[k] * (1.0 - fx) + d[k] * fx) * fy)
     }
 
@@ -139,6 +144,14 @@ fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, f64), step:
     let hole = f.hole;
     let inside = |p: (f64, f64)| p.0 >= hole.x && p.0 <= hole.x + hole.w && p.1 >= hole.y && p.1 <= hole.y + hole.h;
     let cell = |j: usize| (j as f64 + 0.5) / grid_n as f64 * 2.0 - 1.0;
+    // The stroke's side of every cell is the same for each candidate: sampled once, in the order summed.
+    let cells: Vec<((f64, f64), Option<[f32; 3]>)> = (0..grid_n * grid_n)
+        .map(|n| {
+            let t = (cell(n % grid_n) * half.0, cell(n / grid_n) * half.1);
+            let dest = (f.centre.0 + t.0, f.centre.1 + t.1);
+            (t, (!inside(dest)).then(|| src.sample(dest.0, dest.1)))
+        })
+        .collect();
     let one = |index: usize| {
         let (i, j) = (index % size, index / size);
         let offset = (origin.0 + (i as f64 + 0.5) * step, origin.1 + (j as f64 + 0.5) * step);
@@ -152,22 +165,15 @@ fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, f64), step:
             return Candidate { offset, cost: f32::INFINITY };
         }
         let (mut accum, mut counted) = ([0.0f32; 3], 0usize);
-        for cj in 0..grid_n {
-            for ci in 0..grid_n {
-                let t = (cell(ci) * half.0, cell(cj) * half.1);
-                let dest = (f.centre.0 + t.0, f.centre.1 + t.1);
-                let from = (cand.0 + t.0, cand.1 + t.1);
-                if inside(dest) || inside(from) {
-                    continue;
-                }
-                let d = src.sample(dest.0, dest.1);
-                let s = src.sample(from.0, from.1);
-                for k in 0..3 {
-                    let diff = d[k] - s[k];
-                    accum[k] += diff * diff / (d[k] * d[k] + 0.001);
-                }
-                counted += 1;
+        for &(t, d) in &cells {
+            let from = (cand.0 + t.0, cand.1 + t.1);
+            let Some(d) = d.filter(|_| !inside(from)) else { continue };
+            let s = src.sample(from.0, from.1);
+            for k in 0..3 {
+                let diff = d[k] - s[k];
+                accum[k] += diff * diff / (d[k] * d[k] + 0.001);
             }
+            counted += 1;
         }
         let cost = if counted == 0 { f32::INFINITY } else { (accum[0] + accum[1] + accum[2]) / counted as f32 };
         Candidate { offset, cost }
@@ -198,23 +204,56 @@ pub fn best_offset(src: &Region, c: &Correction, width: f64, height: f64) -> (f6
     search(src, c, width, height).0
 }
 
+/// The two passes' grids: the coarse ring, radius and step about the stroke, the fine about its best.
+struct Plan {
+    half: (f64, f64),
+    min_radius: f64,
+    coarse_radius: f64,
+    coarse_size: usize,
+    fine_half: (f64, f64),
+    fine_n: usize,
+    fine_radius: f64,
+    fine_size: usize,
+}
+
+const COARSE_STEP: f64 = 8.0;
+const COARSE_N: usize = 8;
+
+impl Plan {
+    fn of(f: &Frame) -> Plan {
+        let ring = context_ring(f.centre, f.hole, f.extent);
+        let half = (ring.w / 2.0, ring.h / 2.0);
+        let min_radius = half.0.max(half.1) * 1.2;
+        let coarse_radius = (f.tile.w.max(f.tile.h) * 1.6).max(min_radius * 1.5);
+        let fine_half = edge_clamped_half((30f64.max(f.hole.w * 0.75), 30f64.max(f.hole.h * 0.75)), f.centre, f.extent);
+        let fine_radius = half.0.max(half.1) / COARSE_N as f64 * 2.0 + COARSE_STEP;
+        Plan {
+            half,
+            min_radius,
+            coarse_radius,
+            coarse_size: (coarse_radius * 2.0 / COARSE_STEP).round() as usize + 1,
+            fine_half,
+            fine_n: ((fine_half.0.max(fine_half.1) / 1.25).ceil() as usize).clamp(24, 64),
+            fine_radius,
+            fine_size: (fine_radius * 2.0).round() as usize + 1,
+        }
+    }
+
+    /// The farthest a candidate's offset goes on either axis: the coarse grid's last cell, the
+    /// fine grid's about it, and a pixel for the parabola's half and the rounding's.
+    fn farthest(&self) -> f64 {
+        let coarse = (self.coarse_size as f64 - 0.5) * COARSE_STEP - self.coarse_radius;
+        coarse.max(self.coarse_radius - 0.5 * COARSE_STEP) + (self.fine_size as f64 - 0.5) - self.fine_radius + 1.0
+    }
+}
+
 /// The offset, and whether the search found no match and fell back on the tile beside itself.
 fn search(src: &Region, c: &Correction, width: f64, height: f64) -> ((f64, f64), bool) {
     let Some(f) = frame(c, width, height) else { return (fallback(&frame_without_stroke(c, width, height)), true) };
-    let ring = context_ring(f.centre, f.hole, f.extent);
-    let half = (ring.w / 2.0, ring.h / 2.0);
-    let min_radius = half.0.max(half.1) * 1.2;
-    let coarse_radius = (f.tile.w.max(f.tile.h) * 1.6).max(min_radius * 1.5);
-    let (coarse_step, coarse_n) = (8.0, 8usize);
-    let coarse_size = (coarse_radius * 2.0 / coarse_step).round() as usize + 1;
-    let coarse = cost_map(src, &f, half, (-coarse_radius, -coarse_radius), coarse_step, coarse_n, coarse_size, min_radius);
+    let Plan { half, min_radius, coarse_radius, coarse_size, fine_half, fine_n, fine_radius, fine_size } = Plan::of(&f);
+    let coarse = cost_map(src, &f, half, (-coarse_radius, -coarse_radius), COARSE_STEP, COARSE_N, coarse_size, min_radius);
     let Some(best_coarse) = lowest(&coarse).map(|i| coarse[i]) else { return (fallback(&f), true) };
 
-    let fine_half = edge_clamped_half((30f64.max(f.hole.w * 0.75), 30f64.max(f.hole.h * 0.75)), f.centre, f.extent);
-    let fine_n = ((fine_half.0.max(fine_half.1) / 1.25).ceil() as usize).clamp(24, 64);
-    let blind = half.0.max(half.1) / coarse_n as f64;
-    let fine_radius = blind * 2.0 + coarse_step;
-    let fine_size = (fine_radius * 2.0).round() as usize + 1;
     let fine_min = fine_half.0.max(fine_half.1) * 1.2;
     let origin = (best_coarse.offset.0 - fine_radius, best_coarse.offset.1 - fine_radius);
     let fine = cost_map(src, &f, fine_half, origin, 1.0, fine_n, fine_size, fine_min);
@@ -341,95 +380,25 @@ pub fn generate(src: &Region, c: &Correction, width: f64, height: f64) -> Patch 
     Patch { rect, width: w, height: h, pixels, offset: (dx / width, -dy / height), fallback: fell_back }
 }
 
-/// The rectangle of the framed frame, y down, a search for `c` reads: every candidate's ring and
-/// the patch's own source, inside the frame.
+/// The rectangle of the framed frame, y down, a search for `c` reads: the farthest candidate's
+/// rings, the patch's source and the bilinear taps' two pixels, inside the frame.
 pub fn search_window(c: &Correction, width: f64, height: f64) -> Area {
-    let tile = corrections::context_rect(c, [0.0, 0.0, width, height]);
-    let reach = (tile[2].max(tile[3]) * 1.6 + tile[2].max(tile[3])) * 1.5 + 16.0;
-    let (cx, cy) = (tile[0] + tile[2] / 2.0, tile[1] + tile[3] / 2.0);
+    let extent = [0.0, 0.0, width, height];
+    let tile = corrections::context_rect(c, extent);
+    let (cx, cy, reach) = match frame(c, width, height) {
+        Some(f) => {
+            let p = Plan::of(&f);
+            let (cx, cy) = (f.centre.0, height - f.centre.1);
+            let r = corrections::patch_rect(c, extent);
+            let patch = (cx - r[0]).max(r[0] + r[2] - cx).max(cy - r[1]).max(r[1] + r[3] - cy);
+            (cx, cy, p.farthest() + p.half.0.max(p.half.1).max(p.fine_half.0).max(p.fine_half.1).max(patch) + 2.0)
+        }
+        None => (tile[0] + tile[2] / 2.0, tile[1] + tile[3] / 2.0, (tile[2].max(tile[3]) * 2.6) * 1.5 + 16.0),
+    };
     let (x0, y0) = ((cx - reach).max(0.0).floor(), (cy - reach).max(0.0).floor());
     let (x1, y1) = ((cx + reach).min(width).ceil(), (cy + reach).min(height).ceil());
     [x0, y0, x1 - x0, y1 - y0]
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use oni_settings::cg::Point;
-    use oni_settings::id::Id;
-
-    /// A textured frame whose neighbourhood of the dust is a copy of a block `known` away: the search
-    /// must find that block, and the patch must carry its pixels, not the dust's.
-    #[test]
-    fn the_search_finds_the_place_the_surroundings_were_copied_from() {
-        let (w, h) = (1600usize, 1200usize);
-        // White noise smoothed over 17 pixels: no period, and a basin wider than the coarse step.
-        let hash = |x: usize, y: usize| {
-            let mut v = (x as u32).wrapping_mul(73_856_093) ^ (y as u32).wrapping_mul(19_349_663);
-            v ^= v >> 13;
-            v = v.wrapping_mul(1_274_126_177);
-            (v >> 8) as f32 / 16_777_216.0
-        };
-        let noise: Vec<f32> = (0..w * h).map(|i| hash(i % w, i / w)).collect();
-        let r = 8usize;
-        let smooth: Vec<f32> = (0..w * h)
-            .map(|i| {
-                let (x, y) = (i % w, i / w);
-                let (mut sum, mut n) = (0.0, 0.0);
-                for yy in y.saturating_sub(r)..(y + r + 1).min(h) {
-                    for xx in x.saturating_sub(r)..(x + r + 1).min(w) {
-                        sum += noise[yy * w + xx];
-                        n += 1.0;
-                    }
-                }
-                sum / n
-            })
-            .collect();
-        // Stretched back to a photograph's contrast: a mean of 0.4 and a spread of 0.08.
-        let mean = smooth.iter().sum::<f32>() / smooth.len() as f32;
-        let spread = (smooth.iter().map(|v| (v - mean) * (v - mean)).sum::<f32>() / smooth.len() as f32).sqrt();
-        let smooth: Vec<f32> = smooth.iter().map(|v| 0.4 + 0.08 * (v - mean) / spread).collect();
-        let texture = |x: usize, y: usize| smooth[y * w + x];
-        let mut pixels: Vec<[f32; 4]> = (0..w * h).map(|i| { let v = smooth[i]; [v, v * 0.9, v * 0.8, 1.0] }).collect();
-        let (dot_x, dot_y) = (800usize, 600usize);
-        let known = (-288i64, 168i64);
-        for y in dot_y - 200..dot_y + 200 {
-            for x in dot_x - 200..dot_x + 200 {
-                let from = ((y as i64 + known.1) as usize) * w + (x as i64 + known.0) as usize;
-                pixels[y * w + x] = pixels[from];
-            }
-        }
-        for y in dot_y - 20..=dot_y + 20 {
-            for x in dot_x - 20..=dot_x + 20 {
-                pixels[y * w + x] = [0.02, 0.02, 0.02, 1.0];
-            }
-        }
-        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
-        let c = Correction { id: Id::new(), stroke: vec![Point { x: dot_x as f64 / w as f64, y: dot_y as f64 / h as f64 }], radius: 30.0 };
-        let (dx, dy) = best_offset(&src, &c, w as f64, h as f64);
-        // The offset is y up: a block lower on the frame (y down + 168) is 168 under, −168 up.
-        assert_eq!((dx, dy), (known.0 as f64, -known.1 as f64), "found {dx}, {dy}");
-        let patch = generate(&src, &c, w as f64, h as f64);
-        let (px, py) = (dot_x - patch.rect[0] as usize, dot_y - patch.rect[1] as usize);
-        let healed = patch.pixels[py * patch.width + px][0];
-        let want = texture((dot_x as i64 + known.0) as usize, (dot_y as i64 + known.1) as usize);
-        assert!((healed - want).abs() < 0.02, "healed to {healed}, the copied block holds {want}");
-        // Twin: the frame still holds the dust there, so a patch copied in place would be seen.
-        assert!((src.pixels[dot_y * w + dot_x][0] - want).abs() > 0.2);
-    }
-
-    #[test]
-    fn a_bias_lifts_the_copy_to_its_surroundings_tone() {
-        // The right half a step brighter: a copy taken from the left half is lifted by the base.
-        let (w, h) = (400usize, 300usize);
-        let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| { let v = if i % w >= 200 { 0.5 } else { 0.4 }; [v, v, v, 1.0] }).collect();
-        let src = Region { x: 0, y: 0, width: w, height: h, pixels, frame_width: w as f64, frame_height: h as f64 };
-        let destination = Rect { x: 250.0, y: 100.0, w: 60.0, h: 60.0 };
-        let source = Rect { x: 50.0, ..destination };
-        let field = tone_field(&src, destination, source, Rect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 });
-        assert!((field.base[0] - 0.1).abs() < 1e-4, "{:?}", field.base);
-        // Twin: the same rings on one tone need no bias.
-        let flat = tone_field(&src, destination, Rect { x: 320.0, ..destination }, Rect { x: 0.0, y: 0.0, w: 0.0, h: 0.0 });
-        assert!(flat.base[0].abs() < 1e-5);
-    }
-}
+mod tests;
