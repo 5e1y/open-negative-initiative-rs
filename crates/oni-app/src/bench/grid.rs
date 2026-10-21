@@ -13,6 +13,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let phase = Cell::new(0usize);
     let opened = Cell::new(None::<Instant>);
     let decoded = Cell::new(None::<Duration>);
+    let from = Cell::new(0usize);
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {
@@ -39,9 +40,10 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 phase.set(1);
             }
             1 => {
-                let (tiles, sources, _) = ctl.together_stats();
+                let (tiles, sources, latencies) = ctl.together_stats();
                 if tiles > 0 && sources == tiles {
                     decoded.set(opened.get().map(|t| t.elapsed()));
+                    from.set(latencies.len());
                     g.invoke_press(field, false);
                     phase.set(2);
                 }
@@ -56,6 +58,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             _ => {
                 let (tiles, _, latencies) = ctl.together_stats();
+                let latencies = &latencies[from.get().min(latencies.len())..];
                 if latencies.is_empty() || ctl.state.borrow().store().revision() != ctl.together_drawn() {
                     return;
                 }

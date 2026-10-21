@@ -372,16 +372,25 @@ fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
 }
 
 #[test]
-fn sources_read_back_together_equal_each_render_and_keep_their_order() {
-    let Some(mut g) = graph("sources_read_back_together_equal_each_render_and_keep_their_order") else { return };
+fn images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_rest_clear() {
+    let Some(mut g) = graph("images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_rest_clear") else { return };
     let (a, _) = source(&mut g, 3);
     let (b, _) = source(&mut g, 4);
     let (ia, ib) = (chain(&a), Image::new(&b).then(Gain([0.5, 1.2, 0.9, 1.0])));
     let rendered = [g.render(&ia, ia.extent(), None).unwrap(), g.render(&ib, ib.extent(), None).unwrap()];
-    let kept = [g.materialise(&ia).unwrap(), g.materialise(&ib).unwrap()];
-    let read = g.read_back(&[&kept[0], &kept[1]]);
-    assert_eq!(read[0], rendered[0]);
-    assert_eq!(read[1], rendered[1]);
-    // Twin: the two pictures differ, so a readback swapping or repeating one would fail above.
-    assert_ne!(rendered[0].len(), rendered[1].len());
+    let (pa, pb) = ((5, 7), (110, 2));
+    let size = (420, 210);
+    let sheet = g.laid_out(&[(&ia, pa), (&ib, pb)], size).unwrap();
+    let read = g.read_back(&[&sheet]).remove(0);
+    let sheet_rect = Rect::new(0, 0, size.0, size.1);
+    for ((image, at), pixels) in [(&ia, pa), (&ib, pb)].into_iter().zip(&rendered) {
+        let e = image.extent();
+        assert_eq!(cut(&read, sheet_rect, Rect::new(at.0, at.1, e.w, e.h)), *pixels);
+    }
+    assert_eq!(read[0], [0.0; 4], "the sheet is clear where nothing lies");
+    // Twin: a place past the sheet's edge is refused rather than cut.
+    assert!(g.laid_out(&[(&ib, (400, 0))], size).is_err());
+    // Twin: the second sheet reuses nothing of the first under its clear corner.
+    let again = g.laid_out(&[(&ib, pb)], size).unwrap();
+    assert_eq!(g.read_back(&[&again]).remove(0)[size.0 as usize * 5 + 10], [0.0; 4]);
 }

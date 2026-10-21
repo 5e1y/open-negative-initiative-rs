@@ -1,8 +1,8 @@
-//! Tiles rendered together read back as each one rendered alone, in their order.
+//! Tiles laid on one sheet read back as each one rendered alone, at its place.
 use super::*;
 
 #[test]
-fn tiles_rendered_together_equal_each_render_alone() {
+fn tiles_laid_on_a_sheet_equal_each_render_alone_at_its_place() {
     let Ok(device) = Device::open() else {
         eprintln!("no adapter: the tiles are not exercised");
         return;
@@ -16,13 +16,16 @@ fn tiles_rendered_together_equal_each_render_alone() {
     let (a, b) = (frame(600, 400, 0.2), frame(300, 450, 0.5));
     let (sa, mut sb) = (PipelineSettings::default(), PipelineSettings::default());
     sb.vignette.stops = 0.6;
-    let together = engine.render_tiles(&[(&a, &sa), (&b, &sb)], 300);
+    let places = [(0, 0), (320, 10)];
+    let sheet = engine.render_laid(&[(&a, &sa), (&b, &sb)], 300, &|i, _| places[i], (640, 320)).unwrap();
+    let read = engine.read_sheet(&sheet);
     let alone = [engine.render(&a, &sa, Some(300)).unwrap(), engine.render(&b, &sb, Some(300)).unwrap()];
-    for (t, a) in together.iter().zip(&alone) {
-        let t = t.as_ref().unwrap();
-        assert_eq!((t.width, t.height), (a.width, a.height));
-        assert_eq!(t.pixels, a.pixels);
+    for (l, (x, y)) in alone.iter().zip(places) {
+        for row in 0..l.height {
+            let at = (y as usize + row) * read.width + x as usize;
+            assert_eq!(read.pixels[at..at + l.width], l.pixels[row * l.width..(row + 1) * l.width], "row {row}");
+        }
     }
-    // Twin: the two tiles differ, so a readback swapping them would fail above.
+    // Twin: the two tiles differ, so a sheet swapping their places would fail above.
     assert_ne!((alone[0].width, alone[0].height), (alone[1].width, alone[1].height));
 }

@@ -173,7 +173,7 @@ impl Ctl {
     fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration) {
         let size = match &picture {
             Picture::Pixels { linear, .. } => (linear.width, linear.height),
-            Picture::Resident(_) => return,
+            Picture::Resident(sheet) => (sheet.extent().w as usize, sheet.extent().h as usize),
         };
         let count = GROUP.with(|g| match g.borrow_mut().as_mut() {
             Some(g) if g.id == group => {
@@ -250,38 +250,37 @@ fn draw_grids(engine: Shared) {
         };
         seed = seed.wrapping_add(1);
         let started = Instant::now();
+        let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
         let present: Vec<(&Negative, &PipelineSettings)> = ask.tiles.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
+        let size = sheet_size(ask.tiles.len());
         let Ok(mut guard) = engine.lock() else { continue };
-        let mut linears = guard.render_tiles(&present, TILE).into_iter();
-        drop(guard);
-        let tiles: Vec<Option<(Vec<[f32; 4]>, usize, usize)>> =
-            ask.tiles.iter().map(|t| t.as_ref().and_then(|_| linears.next()?.ok()).map(|l| (l.pixels, l.width, l.height))).collect();
+        let Ok(sheet) = guard.render_laid(&present, TILE, &|i, tile| place(cells[i], tile), size) else { continue };
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
-        let (pixels, size) = laid(&tiles);
-        let linear = render::Linear { width: size.0, height: size.1, pixels };
-        let rgba8 = if ask.gpu { Vec::new() } else { render::encoded(&linear, &Params::new(ask.screen, size.0 as u32, size.1 as u32, seed), 1) };
+        let picture = if ask.gpu {
+            Picture::Resident(sheet)
+        } else {
+            let linear = guard.read_sheet(&sheet);
+            let rgba8 = render::encoded(&linear, &Params::new(ask.screen, size.0, size.1, seed), 1);
+            Picture::Pixels { linear, rgba8 }
+        };
+        drop(guard);
         let (group, revision, at, pipeline) = (ask.group, ask.revision, ask.at, started.elapsed());
-        with_shell(move |c| c.grid_landed(group, revision, at, Picture::Pixels { linear, rgba8 }, pipeline));
+        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline));
     }
 }
 
-/// The tiles six to a row, each centred in its cell, the gaps and empty cells transparent.
-fn laid(tiles: &[Option<(Vec<[f32; 4]>, usize, usize)>]) -> (Vec<[f32; 4]>, (usize, usize)) {
-    let columns = tiles.len().clamp(1, COLUMNS);
-    let rows = tiles.len().div_ceil(COLUMNS).max(1);
-    let (w, h) = (columns * TILE + (columns - 1) * GAP, rows * TILE + (rows - 1) * GAP);
-    let mut out = vec![[0.0; 4]; w * h];
-    for (i, tile) in tiles.iter().enumerate() {
-        let Some((rgba, tw, th)) = tile else { continue };
-        let (cx, cy) = ((i % COLUMNS) * (TILE + GAP), (i / COLUMNS) * (TILE + GAP));
-        let (ox, oy) = (cx + (TILE - tw.min(&TILE)) / 2, cy + (TILE - th.min(&TILE)) / 2);
-        for y in 0..(*th).min(TILE) {
-            let from = &rgba[y * tw..y * tw + (*tw).min(TILE)];
-            let at = (oy + y) * w + ox;
-            out[at..at + from.len()].copy_from_slice(from);
-        }
-    }
-    (out, (w, h))
+/// A sheet of `count` tiles six to a row, with the gaps between them.
+fn sheet_size(count: usize) -> (u32, u32) {
+    let columns = count.clamp(1, COLUMNS);
+    let rows = count.div_ceil(COLUMNS).max(1);
+    ((columns * TILE + (columns - 1) * GAP) as u32, (rows * TILE + (rows - 1) * GAP) as u32)
+}
+
+/// The corner of tile `i` of `size`, centred in its cell.
+fn place(i: usize, size: (u32, u32)) -> (i32, i32) {
+    let (cx, cy) = ((i % COLUMNS) * (TILE + GAP), (i / COLUMNS) * (TILE + GAP));
+    let (w, h) = (size.0 as usize, size.1 as usize);
+    ((cx + TILE.saturating_sub(w) / 2) as i32, (cy + TILE.saturating_sub(h) / 2) as i32)
 }
 
 #[cfg(test)]
@@ -300,16 +299,12 @@ mod tests {
     }
 
     #[test]
-    fn seven_tiles_lay_two_rows_of_six_each_in_its_cell() {
-        let tile = |v: u8| Some((vec![[f32::from(v); 4]; 300 * 200], 300, 200));
-        let tiles: Vec<_> = (1..=7).map(tile).collect();
-        let (rgba, (w, h)) = laid(&tiles);
-        assert_eq!((w, h), (6 * TILE + 5 * GAP, 2 * TILE + GAP));
-        let at = |x: usize, y: usize| rgba[y * w + x][0];
-        assert_eq!(at(150, 150), 1.0, "the first tile, centred in its cell");
-        assert_eq!(at(150, TILE + GAP + 150), 7.0, "the seventh opens the second row");
-        // Twin: a tile shorter than its cell leaves the cell's edge and the gaps empty.
-        assert_eq!(at(150, 10), 0.0);
-        assert_eq!(at(TILE + GAP / 2, 150), 0.0);
+    fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell() {
+        assert_eq!(sheet_size(7), ((6 * TILE + 5 * GAP) as u32, (2 * TILE + GAP) as u32));
+        assert_eq!(sheet_size(3), ((3 * TILE + 2 * GAP) as u32, TILE as u32), "a short row is only as wide as its tiles");
+        assert_eq!(place(0, (300, 200)), (0, 50), "a landscape tile centred in its cell's height");
+        assert_eq!(place(6, (200, 300)), (50, (TILE + GAP) as i32), "the seventh opens the second row");
+        // Twin: the second tile's cell starts past the first's and the gap.
+        assert_eq!(place(1, (300, 300)), ((TILE + GAP) as i32, 0));
     }
 }

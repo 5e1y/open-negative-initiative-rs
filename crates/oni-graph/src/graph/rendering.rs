@@ -71,6 +71,34 @@ impl Graph {
         Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, owned)] })))
     }
 
+    /// Each image evaluated whole and laid with its corner at its place on one clear sheet of `size`,
+    /// all in one submission: many small pictures pay one hand-over to the GPU and no readback.
+    pub fn laid_out(&mut self, images: &[(&Image, (i32, i32))], size: (u32, u32)) -> Result<Source, Error> {
+        let sheet_rect = Rect::new(0, 0, size.0, size.1);
+        let sheet = self.pool.create_owned(size.0, size.1);
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        for (image, (x, y)) in images {
+            let region = image.extent();
+            let at = Rect::new(*x, *y, region.w, region.h);
+            if !sheet_rect.contains(&at) {
+                return Err(Error::RegionOutside { region: at, extent: sheet_rect });
+            }
+            let plan = Plan::new(image, region, None)?;
+            if !self.fits(&plan) {
+                return Err(Error::TooLarge);
+            }
+            let (texture, rect) = self.evaluate(&mut encoder, plan, None, false);
+            // The image's own region, shifted to its place on the sheet.
+            let from = Rect::new(rect.x - region.x + x, rect.y - region.y + y, rect.w, rect.h);
+            self.copy(&mut encoder, &texture, from, &sheet, sheet_rect, at);
+            self.pool.release(texture);
+        }
+        self.queue.submit([encoder.finish()]);
+        self.pool.end_render();
+        let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
+        Ok(Source(Arc::new(SourceInner { id, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
+    }
+
     /// Hands the pool what the cache let go of after a render.
     fn settle(&mut self, cache: Option<&mut Cache>) {
         for texture in cache.map(Cache::settle).unwrap_or_default() {

@@ -1557,5 +1557,12 @@
     "title": "Edit Together: frames selected in the gallery open six to a row, a step sets the same value on all",
     "status": "done",
     "detail": "Opening a frame among a gallery selection of two or more opens them together: the canvas lays each frame's own render six to a row at 300 px (half-size decode reduced on the CPU, three decoders), every step on the open frame is laid by the store on the others at the same absolute value as part of that one undo step, each frame's own fields (film, order, framing, dust, roll, balance method) never move. The grid renders every tile on the GPU before one readback (Graph::read_back) and is encoded by the canvas's display kernel. Leaving: a single open or back to the gallery. Checks: store test with twin, window check (three frames, a drag, one undo, a frame left out), grid layout and reduction tests, tiles-together against alone, batched readback against renders. ONI_BENCH=grid on roll #8, 36 frames: sources 6.4 s, notch to canvas p50 14-17 ms, p99 38-117 ms (spikes while the GPU allocates the 36 outputs)."
+  },
+  {
+    "id": 214,
+    "type": "spec",
+    "title": "Edit Together's grid laid on one GPU sheet, no readback",
+    "status": "done",
+    "detail": "The grid's tiles are evaluated in one submission and copied onto one clear sheet (Graph::laid_out), which the canvas's display kernel encodes as any render: no readback, no CPU encode, no upload. The software canvas reads the sheet back once. ONI_BENCH=grid counts only the drag's grids. Roll #8, 36 frames, drag only: notch to canvas p50 16-23 ms, p99 47-84 ms; each grid costs about 10 ms of dispatch recording (36 tiles, one dispatch a stage each), the rest waits for the interface loop."
   }
 ]
