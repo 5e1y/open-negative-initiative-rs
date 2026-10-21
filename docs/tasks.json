@@ -1746,5 +1746,12 @@
     "title": "One frame in flight, presented as soon as drawn",
     "status": "done",
     "detail": "Slint's femtovg renderer configured the surface with AutoVsync and wgpu's default frame latency 2: up to three drawables on the layer, a drawn frame waiting for a refresh and possibly behind another. It is vendored (vendor/i-slint-renderer-femtovg, 1.18.1, [patch.crates-io]) with desired_maximum_frame_latency 1 and AutoNoVsync (Immediate on Metal); the CADisplayLink still paces the draws and the window compositor still syncs to the screen. The owner judges the feel; benches run in hidden windows that draw no frames."
+  },
+  {
+    "id": 241,
+    "type": "bug",
+    "title": "A pan shows no bare edge: the view is rendered with a margin",
+    "status": "done",
+    "detail": "Owner: the edges flickered while panning a zoomed picture. Since #239 the picture moves at once with the hand, but its texture covered the visible part plus a pixel, so the strip a pan uncovers showed the ground until the next render landed. The region rendered now reaches an eighth of the view past each side (PAN_MARGIN), the size still one per view. ONI_BENCH=midzoom: pan p50 0.3 ms, pinch about 2 ms (from 0.4), peak footprint 6.5 GB as before. A graph render also polls the device once ended, so what the GPU has finished with is let go without waiting for another poll."
   }
 ]

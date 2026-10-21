@@ -50,10 +50,12 @@ impl Engine {
         let extent = image.extent();
         let stretch = scale * full.0 / extent.w as f64;
         let (vx, vy, vw, vh) = placement.visible;
-        // One size a view, the visible part's plus a pixel, so a pan keeps every texture it renders into.
+        // One size a view, the visible part's with a margin each side, so a pan keeps every texture it renders
+        // into and the picture it moves at once shows no bare edge before the next render lands.
         let span = |v: f64, len: f64, origin: i32, end: i32| {
-            let size = ((len / stretch).ceil() as i32 + 1).min(end - origin);
-            let start = (origin + (v / stretch).floor() as i32).clamp(origin, end - size);
+            let margin = (len / stretch * PAN_MARGIN).ceil() as i32;
+            let size = ((len / stretch).ceil() as i32 + 1 + 2 * margin).min(end - origin);
+            let start = (origin + (v / stretch).floor() as i32 - margin).clamp(origin, end - size);
             (start, start + size)
         };
         let ((x0, x1), (y0, y1)) = (span(vx, vw, extent.x, extent.right()), span(vy, vh, extent.y, extent.bottom()));
@@ -145,6 +147,8 @@ impl Engine {
     }
 }
 
+/// The share of the view rendered past each of its sides, which a pan reveals before its render lands.
+const PAN_MARGIN: f64 = 0.125;
 /// The long side of the picture the histogram counts.
 const COUNTED_SIDE: f64 = 1024.0;
 /// A reduction kept whole when it holds at most this many canvases of pixels.

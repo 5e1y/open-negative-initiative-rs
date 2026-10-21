@@ -23,7 +23,7 @@ impl Graph {
         let mut out = vec![[0.0f32; 4]; region.area() as usize];
         let result = self.render_piece(image, region, region, &mut out, cache.as_deref_mut());
         self.settle(cache);
-        self.pool.end_render();
+        self.ended();
         result.map(|()| out)
     }
 
@@ -67,7 +67,7 @@ impl Graph {
         self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
         self.settle(cache);
-        self.pool.end_render();
+        self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
         Ok(Source(Arc::new(SourceInner { id, extent: region, tiles: vec![(region, owned)] })))
     }
@@ -96,9 +96,16 @@ impl Graph {
         }
         self.flush_uniforms();
         self.queue.submit([encoder.finish()]);
-        self.pool.end_render();
+        self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
         Ok(Source(Arc::new(SourceInner { id, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
+    }
+
+    /// Ends a render: the pool frees what no render took again, and the device lets go of what the GPU
+    /// has finished with, which it otherwise keeps (textures destroyed, their zero fills) until polled.
+    fn ended(&mut self) {
+        self.pool.end_render();
+        let _ = self.device.poll(wgpu::PollType::Poll);
     }
 
     /// Hands the pool what the cache let go of after a render.

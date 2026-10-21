@@ -153,7 +153,8 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     let placed = placed.unwrap();
     assert!(placed.at_full_resolution && !placed.whole);
     let e = source.extent();
-    assert!((e.w as f64 - size.0).abs() <= 2.0 && (e.h as f64 - size.1).abs() <= 2.0, "the canvas's pixels only: {e:?}");
+    // The canvas's pixels and an eighth of them past each side, which a pan shows before its render lands.
+    assert!((e.w as f64 - size.0 * 1.25).abs() <= 2.0 && (e.h as f64 - size.1 * 1.25).abs() <= 2.0, "the canvas and its margin only: {e:?}");
     assert!(placed.x <= 0.0 && placed.y <= 0.0 && placed.x + placed.width >= size.0 && placed.y + placed.height >= size.1);
     // Twin: unsettled, the same view stays on the preview, a quarter of the pixels stretched four times.
     let moving = View { settled: false, ..view.clone() };
