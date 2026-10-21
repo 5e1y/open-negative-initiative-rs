@@ -33,3 +33,5 @@ mod upload_tests;
 mod prewarm_tests;
 #[cfg(test)]
 mod inputs_tests;
+#[cfg(test)]
+mod tiles_tests;

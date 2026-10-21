@@ -7,6 +7,8 @@ impl Ctl {
     /// the software renderer shows the bytes encoded on the render thread.
     pub(in crate::app) fn deliver(self: &Rc<Self>, delivery: Delivery) {
         let done = match delivery {
+            // Frames edited together own the canvas; the open one's render waits for the group to end.
+            Delivery::Render(_) if self.together_shown() => return,
             Delivery::Render(done) => done,
             Delivery::Inputs { path, inputs } => return self.inputs_landed(&path, inputs),
         };

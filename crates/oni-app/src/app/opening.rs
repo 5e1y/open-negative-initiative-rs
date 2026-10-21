@@ -5,6 +5,7 @@ use super::*;
 impl Ctl {
     /// Opens a photo in the store; the canvas renders once its negative is decoded.
     pub(super) fn open_photo(self: &Rc<Self>, path: &str) {
+        self.leave_together();
         let kept = self.remembered_flat_field();
         let failure = {
             let mut s = self.state.borrow_mut();

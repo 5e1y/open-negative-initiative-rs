@@ -26,6 +26,7 @@ mod paste;
 mod several;
 mod oni_trash;
 mod scanner;
+mod together;
 
 pub use scanner::{channel, machine_for, machine_of};
 
@@ -104,6 +105,8 @@ pub struct EditorStore {
     roll_touched: bool,
     /// A look laid on the open frame waiting for its step, to lay it on the rest of the roll.
     roll_look: Option<(PipelineSettings, Id)>,
+    /// Frames edited together with the open one, every step laid on them too.
+    together: together::Together,
     measured: HashMap<Id, BTreeSet<String>>,
     pending: FieldSet,
     revision: u64,
@@ -127,6 +130,7 @@ impl EditorStore {
             deferred: None,
             roll_touched: false,
             roll_look: None,
+            together: together::Together::default(),
             measured: HashMap::new(),
             pending: FieldSet::EMPTY,
             revision: 0,

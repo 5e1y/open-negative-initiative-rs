@@ -2,6 +2,9 @@
 
 use super::*;
 
+#[path = "together.rs"]
+mod together;
+
 impl Ctl {
     // MARK: - The gallery
 
@@ -128,10 +131,13 @@ impl Ctl {
     /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`.
     pub(super) fn open_in_editor(self: &Rc<Self>, path: &str) {
         let reopened = self.state.borrow().open.as_deref() == Some(path);
+        let together = self.state.borrow().selected();
+        let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };
         self.state.borrow_mut().designate(path);
         if !reopened {
             self.open_photo(path);
         }
+        self.edit_together(together);
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
         }

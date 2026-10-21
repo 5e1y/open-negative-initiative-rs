@@ -370,3 +370,18 @@ fn the_anchored_reduction_is_core_image_s_and_its_reference_s() {
     let top: Vec<[f32; 4]> = (0..34).rev().flat_map(|y| top.pixels[y * 50..(y + 1) * 50].to_vec()).collect();
     assert!(error(&gpu, &top) > 1e-2, "the anchor went unseen");
 }
+
+#[test]
+fn sources_read_back_together_equal_each_render_and_keep_their_order() {
+    let Some(mut g) = graph("sources_read_back_together_equal_each_render_and_keep_their_order") else { return };
+    let (a, _) = source(&mut g, 3);
+    let (b, _) = source(&mut g, 4);
+    let (ia, ib) = (chain(&a), Image::new(&b).then(Gain([0.5, 1.2, 0.9, 1.0])));
+    let rendered = [g.render(&ia, ia.extent(), None).unwrap(), g.render(&ib, ib.extent(), None).unwrap()];
+    let kept = [g.materialise(&ia).unwrap(), g.materialise(&ib).unwrap()];
+    let read = g.read_back(&[&kept[0], &kept[1]]);
+    assert_eq!(read[0], rendered[0]);
+    assert_eq!(read[1], rendered[1]);
+    // Twin: the two pictures differ, so a readback swapping or repeating one would fail above.
+    assert_ne!(rendered[0].len(), rendered[1].len());
+}

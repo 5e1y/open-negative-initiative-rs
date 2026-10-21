@@ -4,6 +4,7 @@ use super::*;
 
 mod inputs;
 pub(crate) mod prewarm;
+mod tiles;
 mod view;
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.

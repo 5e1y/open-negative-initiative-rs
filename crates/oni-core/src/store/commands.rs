@@ -149,6 +149,10 @@ impl EditorStore {
         if let Some((donor, id)) = look {
             self.paste_on_roll(&donor, id, serial);
         }
+        if let Some(serial) = serial {
+            let after = self.settings.clone();
+            self.propagate_together(&before, &after, serial);
+        }
     }
 
     pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64) {
@@ -274,6 +278,7 @@ impl EditorStore {
                 Err(e) => self.failure = Some(e.to_string()),
             }
         }
+        self.together.landed(&after);
         (before, after)
     }
 }

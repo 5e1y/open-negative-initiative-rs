@@ -191,6 +191,7 @@ impl Ctl {
     /// Back in the gallery, the editor's full-resolution frame and its copies are let go: up to 1.6 GB
     /// on a 24 MP frame; the view builds it again once it asks.
     fn leave_editor_memory(&self) {
+        self.leave_together();
         {
             let mut s = self.state.borrow_mut();
             s.full = None;

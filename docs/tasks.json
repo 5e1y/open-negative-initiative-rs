@@ -1550,5 +1550,12 @@
     "title": "Spec: editing several frames together, and the contact sheet as a marked-up proof",
     "status": "done",
     "detail": "docs/research/multi-edit-and-contact-sheet.md: Option A (Edit Together: the selection six to a row on the canvas, every notch setting the same absolute value on each frame, 300 px half-size sources cached, per-tile renders benched before any atlas, one undo step a gesture) and Option B (a Mark tab on the contact sheet: pen, circle and cross, a circle labelling its frame favourite, marks as vectors in the sheet's sidecar, burnt in at export), compared, A first recommended, four questions for the owner."
+  },
+  {
+    "id": 213,
+    "type": "spec",
+    "title": "Edit Together: frames selected in the gallery open six to a row, a step sets the same value on all",
+    "status": "done",
+    "detail": "Opening a frame among a gallery selection of two or more opens them together: the canvas lays each frame's own render six to a row at 300 px (half-size decode reduced on the CPU, three decoders), every step on the open frame is laid by the store on the others at the same absolute value as part of that one undo step, each frame's own fields (film, order, framing, dust, roll, balance method) never move. The grid renders every tile on the GPU before one readback (Graph::read_back) and is encoded by the canvas's display kernel. Leaving: a single open or back to the gallery. Checks: store test with twin, window check (three frames, a drag, one undo, a frame left out), grid layout and reduction tests, tiles-together against alone, batched readback against renders. ONI_BENCH=grid on roll #8, 36 frames: sources 6.4 s, notch to canvas p50 14-17 ms, p99 38-117 ms (spikes while the GPU allocates the 36 outputs)."
   }
 ]

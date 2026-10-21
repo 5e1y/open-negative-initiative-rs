@@ -98,3 +98,58 @@ fn laid(queue: &wgpu::Queue, max_side: u32, extent: Rect, pixels: &[[f32; 4]], m
     let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
     Ok(Source(Arc::new(SourceInner { id, extent, tiles })))
 }
+
+impl Graph {
+    /// Each source read back whole, row-major, every copy in one submission and one wait: many small
+    /// pictures pay one round trip to the GPU, not one each.
+    pub fn read_back(&mut self, sources: &[&Source]) -> Vec<Vec<[f32; 4]>> {
+        let mut parts = Vec::new();
+        let mut size = 0u64;
+        for (i, s) in sources.iter().enumerate() {
+            for (rect, texture) in &s.0.tiles {
+                parts.push((i, *rect, texture, size));
+                size += rendering::padded_row(rect.w) * rect.h as u64;
+            }
+        }
+        let mut out: Vec<Vec<[f32; 4]>> = sources.iter().map(|s| vec![[0.0; 4]; s.extent().area() as usize]).collect();
+        if size == 0 {
+            return out;
+        }
+        let readback = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("readback"),
+            size,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        for (_, rect, texture, offset) in &parts {
+            encoder.copy_texture_to_buffer(
+                wgpu::TexelCopyTextureInfo { texture: texture.texture(), mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &readback,
+                    layout: wgpu::TexelCopyBufferLayout { offset: *offset, bytes_per_row: Some(rendering::padded_row(rect.w) as u32), rows_per_image: None },
+                },
+                wgpu::Extent3d { width: rect.w, height: rect.h, depth_or_array_layers: 1 },
+            );
+        }
+        self.queue.submit([encoder.finish()]);
+        let slice = readback.slice(..);
+        slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));
+        self.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        {
+            let mapped = slice.get_mapped_range().expect("mapped range");
+            for (i, rect, _, offset) in &parts {
+                let (extent, row) = (sources[*i].extent(), rendering::padded_row(rect.w) as usize);
+                let width = rect.w as usize * BYTES_PER_PIXEL as usize;
+                for y in 0..rect.h as usize {
+                    let first = ((rect.y - extent.y) as usize + y) * extent.w as usize + (rect.x - extent.x) as usize;
+                    let target: &mut [u8] = bytemuck::cast_slice_mut(&mut out[*i][first..first + rect.w as usize]);
+                    let at = *offset as usize + y * row;
+                    target.copy_from_slice(&mapped[at..at + width]);
+                }
+            }
+        }
+        readback.unmap();
+        out
+    }
+}
