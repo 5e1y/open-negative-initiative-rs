@@ -2,6 +2,14 @@
 
 use super::*;
 
+/// The full size of a photo seen only as a picture of `size`: its shape at the last photo's long side,
+/// a roll's frames sharing a camera; the picture's own size when none was seen.
+pub(super) fn guessed_full(size: (f64, f64), last: Option<(f64, f64)>) -> (f64, f64) {
+    let Some(last) = last else { return size };
+    let k = last.0.max(last.1) / size.0.max(size.1).max(1.0);
+    (size.0 * k, size.1 * k)
+}
+
 impl Ctl {
     /// The thumbnail of `path` on the canvas, else an empty canvas: never the last photo's picture,
     /// nor Compare's before of it.
@@ -34,5 +42,23 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_frame(Image::default());
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_thumbnail_lies_where_the_zoom_will_put_its_photo() {
+        let (view, zoomed) = ((1000.0, 800.0), Viewport { scale: Some(1.0), offset: (0.0, 0.0) });
+        let full = (6048.0, 4032.0);
+        let thumbnail = guessed_full((960.0, 640.0), Some(full));
+        assert_eq!(zoomed.placement(thumbnail, view).image, zoomed.placement(full, view).image);
+        // A portrait frame after a landscape one keeps the long side.
+        assert_eq!(guessed_full((640.0, 960.0), Some(full)), (4032.0, 6048.0));
+        // Twin: the thumbnail's own size, zoomed, would show a tiny picture.
+        assert_ne!(zoomed.placement((960.0, 640.0), view).image, zoomed.placement(full, view).image);
+        assert_eq!(guessed_full((960.0, 640.0), None), (960.0, 640.0));
     }
 }

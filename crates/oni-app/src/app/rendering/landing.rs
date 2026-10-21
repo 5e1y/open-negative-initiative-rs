@@ -88,13 +88,17 @@ impl Ctl {
         self.publish_inputs();
     }
 
-    /// Lays the render where the viewport puts it; a render with no place fills the canvas, fitted.
+    /// Lays the render where the viewport puts it; a picture with no place (a thumbnail waiting for its
+    /// render) where the viewport will put the photo, its size guessed from the last photo's.
     pub(in crate::app) fn lay(&self, placed: Option<Placed>, size: (usize, usize)) {
         let Some(w) = self.window() else { return };
         let scale = f64::from(w.window().scale_factor());
         let rect = match (placed, self.canvas_size()) {
             (Some(p), _) => (p.x, p.y, p.width, p.height),
-            (None, Some(view)) => Viewport::default().placement((size.0 as f64, size.1 as f64), view).image,
+            (None, Some(view)) => {
+                let s = self.state.borrow();
+                s.viewport.placement(super::placeholder::guessed_full((size.0 as f64, size.1 as f64), s.full_size), view).image
+            }
             (None, None) => return,
         };
         resizing::laid_in(self.canvas_size());

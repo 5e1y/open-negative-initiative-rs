@@ -64,8 +64,17 @@ impl Ctl {
                 _ => None,
             }
         };
-        if let Some(p) = moved {
-            self.lay(Some(p), (0, 0));
+        let unplaced = self.state.borrow().placed.is_none();
+        match (moved, self.window()) {
+            (Some(p), _) => self.lay(Some(p), (0, 0)),
+            // A thumbnail waiting for its render is laid again in the new frame.
+            (None, Some(w)) if unplaced => {
+                let size = w.global::<Canvas>().get_frame().size();
+                if size.width > 0 {
+                    self.lay(None, (size.width as usize, size.height as usize));
+                }
+            }
+            _ => {}
         }
         self.publish_framing();
         let me = Rc::downgrade(self);

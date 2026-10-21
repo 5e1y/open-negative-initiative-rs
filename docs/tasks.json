@@ -1634,5 +1634,12 @@
     "title": "A zoomed picture covers the canvas while the window resizes",
     "status": "done",
     "detail": "Owner's ask: zoomed in, the picture behaves as a CSS background in cover mode while the window resizes, its zoom scaled from the gesture's start by the larger of the two size ratios, so no edge of the texture ever shows; fitted stays fitted. ONI_BENCH=resize zooms to 100 % first and counts the resizes leaving an edge inside (0; 29 of 60 with the zoom kept)."
+  },
+  {
+    "id": 225,
+    "type": "bug",
+    "title": "The thumbnail waiting for a render lies where the photo will",
+    "status": "done",
+    "detail": "Owner: the thumbnail shown while a photo loads was not the size of the photo. It was laid fitted once, so a canvas resized after (the editor opening from the gallery, a window resized) left it at the old size, and a kept zoom drew it fitted. It is now laid by the viewport on a size guessed from the last photo's long side, and laid again on every resize."
   }
 ]
