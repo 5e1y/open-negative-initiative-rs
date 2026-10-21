@@ -206,6 +206,8 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     let timer = Rc::new(Timer::default());
     let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();
     let resized_from = Cell::new(None::<(Instant, usize)>);
+    let unfilled = Cell::new(0usize);
+    let zoomed_at = Cell::new(None::<usize>);
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
     let started = Instant::now();
@@ -238,6 +240,14 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                         return;
                     }
                     let from = ctl.state.borrow().notches().count();
+                    // Zoomed to 100 % first, the case where the picture must cover the canvas.
+                    if mode == Mode::Resize && zoomed_at.get().is_none_or(|n| ctl.state.borrow().renders() <= n) {
+                        if zoomed_at.get().is_none() {
+                            zoomed_at.set(Some(ctl.state.borrow().renders()));
+                            w.global::<crate::Canvas>().invoke_double_clicked();
+                        }
+                        return;
+                    }
                     if mode == Mode::Resize {
                         *drawn.borrow_mut() = frame_clock(&ctl);
                         resized_from.set(Some((Instant::now(), ctl.state.borrow().renders())));
@@ -259,6 +269,11 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     w.global::<crate::Canvas>().invoke_split_dragged(width * (0.2 + 0.6 * notch as f32 / NOTCHES as f32));
                 }
                 if mode == Mode::Resize {
+                    // The zoomed picture covers the canvas after the last resize, no edge of it inside.
+                    let c = w.global::<crate::Canvas>();
+                    let (x, y, fw, fh) = (c.get_frame_x(), c.get_frame_y(), c.get_frame_width(), c.get_frame_height());
+                    let covers = x <= 0.5 && y <= 0.5 && x + fw >= c.get_width() - 0.5 && y + fh >= c.get_height() - 0.5;
+                    unfilled.set(unfilled.get() + usize::from(!covers));
                     let (width, height) = SIZES[notch % SIZES.len()];
                     w.window().set_size(slint::LogicalSize::new(width, height));
                 }
@@ -266,7 +281,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     phase.set(Phase::Dragging { notch, from });
                 } else if let Some((since, renders)) = resized_from.get() {
                     let asked = ctl.state.borrow().renders() - renders;
-                    return finish(format!("bench, {NOTCHES} resizes with no hand on a slider: {asked} renders meanwhile\n{}", frames_since(&drawn.borrow().borrow(), since)));
+                    return finish(format!("bench, {NOTCHES} resizes with no hand on a slider: {asked} renders meanwhile, {} left an edge of the zoomed picture inside\n{}", unfilled.get(), frames_since(&drawn.borrow().borrow(), since)));
                 } else {
                     g.invoke_release(field);
                     phase.set(Phase::Landing { revision: ctl.state.borrow().store().revision(), from });

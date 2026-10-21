@@ -1627,5 +1627,12 @@
     "title": "Each photo opens fitted; Keep zoom in Settings",
     "status": "done",
     "detail": "Owner's ask: every change of photo resets the view to fitted; Settings › Rendering gains 'Keep the zoom from one photo to the next' (preferences keepZoom, off by default), which keeps the former behaviour, the zoom kept and the view recentred, to compare grain across a roll."
+  },
+  {
+    "id": 224,
+    "type": "spec",
+    "title": "A zoomed picture covers the canvas while the window resizes",
+    "status": "done",
+    "detail": "Owner's ask: zoomed in, the picture behaves as a CSS background in cover mode while the window resizes, its zoom scaled from the gesture's start by the larger of the two size ratios, so no edge of the texture ever shows; fitted stays fitted. ONI_BENCH=resize zooms to 100 % first and counts the resizes leaving an edge inside (0; 29 of 60 with the zoom kept)."
   }
 ]
