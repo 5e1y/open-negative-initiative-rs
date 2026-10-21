@@ -14,6 +14,8 @@ use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
 const COLUMNS: usize = 6;
 const TILE: usize = 1024;
 const GAP: usize = 30;
+/// The share of the full sheet the histogram counts, an eighth: 128 px a tile.
+const COUNTED_SCALE: f64 = 0.125;
 /// Decodes at once while a group opens: a half-size RAW holds about 100 MB until it is reduced.
 const DECODERS: usize = 3;
 
@@ -50,6 +52,8 @@ struct Ask {
     /// The share of the full sheet drawn, as the view shows it, and the box of it drawn.
     scale: f64,
     window: Window,
+    /// Every tile, when the settings or the sources moved: the histogram's sheet, drawn whole at a set scale.
+    counted: Option<Vec<Option<(Arc<Negative>, PipelineSettings)>>>,
 }
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
@@ -220,18 +224,19 @@ impl Ctl {
             if g.asked == Some(key) {
                 return None;
             }
+            let moved = g.asked.is_none_or(|a| (a.0, a.1) != (key.0, key.1));
             g.asked = Some(key);
-            let tiles = g
+            let all: Vec<_> = g
                 .paths
                 .iter()
                 .zip(&g.negatives)
-                .zip(&shows)
-                .map(|((path, n), shown)| {
+                .map(|(path, n)| {
                     let settings = if Some(path) == open.as_ref() { Some(lead.clone()) } else { live.get(path).cloned() };
-                    n.clone().zip(settings).filter(|_| *shown)
+                    n.clone().zip(settings)
                 })
                 .collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale, window })
+            let tiles = all.iter().zip(&shows).map(|(t, shown)| t.clone().filter(|_| *shown)).collect();
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale, window, counted: moved.then_some(all) })
         });
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
@@ -260,7 +265,7 @@ impl Ctl {
         GROUP.with(|g| g.borrow().as_ref().map_or(0, |g| g.drawn))
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration, (window, scale): (Window, f64)) {
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
         let size = match &picture {
             Picture::Pixels { linear, .. } => (linear.width, linear.height),
             Picture::Resident(sheet) => (sheet.extent().w as usize, sheet.extent().h as usize),
@@ -282,7 +287,7 @@ impl Ctl {
             Picture::Pixels { rgba8, .. } if !on_gpu => c.set_frame(image(&rgba8, size.0, size.1)),
             picture => {
                 let frame = format!("{count} frames together");
-                self.encode(picture, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, true);
+                self.encode(picture, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
             }
         }
         c.set_busy(false);
@@ -325,6 +330,13 @@ fn draw_grids(engine: Shared) {
             (x - wx as i32, y - wy as i32)
         };
         let Ok(sheet) = guard.render_laid(&present, cell.0, &at, size) else { continue };
+        // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
+        let counted = ask.counted.as_ref().filter(|_| ask.gpu).and_then(|all| {
+            let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
+            let present: Vec<(&Negative, &PipelineSettings)> = all.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
+            let cell = cell_at(COUNTED_SCALE);
+            guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
+        });
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
         let picture = if ask.gpu {
             Picture::Resident(sheet)
@@ -335,6 +347,6 @@ fn draw_grids(engine: Shared) {
         };
         drop(guard);
         let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
-        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline, laid));
+        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline, laid, counted));
     }
 }

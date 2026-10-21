@@ -1697,5 +1697,12 @@
     "title": "A RAW opened whole is its own full resolution",
     "status": "done",
     "detail": "Opening a RAW decoded it whole, reduced it to the preview and let the whole go, then the full resolution decoded the file a second time (about 0.9 s). The upload the preview is reduced from is now kept as the frame's full resolution when the decode read the frame whole: ONI_BENCH=zoom, full resolution 643 ms after the double click to 8 ms; opening and peak footprint unchanged."
+  },
+  {
+    "id": 234,
+    "type": "bug",
+    "title": "The histogram counts the whole picture at one size, whatever the zoom",
+    "status": "done",
+    "detail": "Owner: on one photo the histogram stopped following the edits once zoomed in; in Edit Together it changed while zooming with no edit. It counted the render shown, and only when that render was the whole picture; the grid's was drawn at the zoom's scale. The histogram now counts a picture of its own, made again only when the settings move: the photo's preview through the chain at 1024 px, the grid's sheet whole at an eighth (128 px a tile). ONI_BENCH=midzoom at 60 %: 0 histograms through the pan and the pinch, 3 to 4 through a 30-notch Exposure drag, where none followed it before."
   }
 ]

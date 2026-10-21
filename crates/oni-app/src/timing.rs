@@ -130,6 +130,11 @@ impl Notches {
         self.histograms.push(lag);
     }
 
+    /// The histograms drawn so far, for a bench counting them over a gesture.
+    pub fn histogram_count(&self) -> usize {
+        self.histograms.len()
+    }
+
     pub fn record_publish(&mut self, took: Duration) {
         self.publishes.push(took);
     }

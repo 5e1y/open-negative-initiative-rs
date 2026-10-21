@@ -1,5 +1,6 @@
 //! `ONI_BENCH=midzoom`: at 60 %, between fit and full size, a pan then a pinch about that zoom, the
-//! full resolution built first: the zooms where each step's cost should follow the canvas, not the frame.
+//! full resolution built first, then Exposure dragged there: the histogram holds still under the view's
+//! moves and follows the drag.
 
 use super::*;
 
@@ -12,6 +13,8 @@ enum Mid {
     Zooming { at: Instant },
     Panning { step: usize, from: usize },
     Pinching { event: usize, pan_from: usize, from: usize },
+    Dragging { notch: usize, held: usize, report: usize },
+    Landing { at: Instant, held: usize, dragged: usize },
 }
 
 pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -21,6 +24,8 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let started = Instant::now();
     let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();
     let marks = Cell::new((started, started));
+    let text = RefCell::new(String::new());
+    let before = Cell::new(0usize);
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
     timer.start(TimerMode::Repeated, PACE, move || {
@@ -56,6 +61,7 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 let from = s.views().count();
+                before.set(s.notches().histogram_count());
                 drop(s);
                 *drawn.borrow_mut() = frame_clock(&ctl);
                 marks.set((Instant::now(), Instant::now()));
@@ -95,8 +101,34 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     s.views().summary(from, &format!("a pinch of {PINCH_EVENTS} events about it")),
                     frames_since(&frames, pinch_at),
                 );
+                let held = s.notches().histogram_count();
                 drop(s);
-                finish(report);
+                *text.borrow_mut() = report;
+                w.global::<StoreGlobal>().invoke_press(Field::Exposure.index(), false);
+                phase.set(Mid::Dragging { notch: 0, held, report: 0 });
+            }
+            Mid::Dragging { notch, held, .. } => {
+                drop(s);
+                let g = w.global::<StoreGlobal>();
+                if notch < NOTCHES / 2 {
+                    g.invoke_drag(Field::Exposure.index(), (notch + 1) as f32 * STEP, SPAN, false);
+                    phase.set(Mid::Dragging { notch: notch + 1, held, report: 0 });
+                } else {
+                    g.invoke_release(Field::Exposure.index());
+                    phase.set(Mid::Landing { at: Instant::now(), held, dragged: 0 });
+                }
+            }
+            Mid::Landing { at, held, .. } => {
+                if at.elapsed() < Duration::from_millis(500) {
+                    return;
+                }
+                let dragged = s.notches().histogram_count() - held;
+                drop(s);
+                ctl.act("undo");
+                ctl.flush();
+                let moved = text.borrow().clone();
+                finish(format!("{moved}
+histograms zoomed: {} drawn through the pan and the pinch, {dragged} through the drag", held - before.get()));
             }
         }
     });

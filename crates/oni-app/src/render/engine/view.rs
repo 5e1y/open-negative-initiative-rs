@@ -112,6 +112,25 @@ impl Engine {
         Ok((from, side as f64 / from_long as f64))
     }
 
+    /// The whole picture `COUNTED_SIDE` long from the preview, for the histogram, which so reads the same
+    /// pixels at fit and zoomed; `None` while the settings and the preview are those last counted.
+    pub fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Option<Source>, String> {
+        let key = (settings.clone(), negative.preview.id());
+        if self.fitted.counted.as_ref() == Some(&key) {
+            return Ok(None);
+        }
+        let (w, h) = negative.size();
+        let scale = (COUNTED_SIDE / w.max(h) as f64).min(1.0);
+        let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
+        self.read_custom(settings);
+        let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
+        let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;
+        let image = self.proof.laid(&mut self.graph, image, settings)?;
+        let source = self.graph.materialise(&image).map_err(|e| e.to_string())?;
+        self.fitted.counted = Some(key);
+        Ok(Some(source))
+    }
+
     /// `level` reduced by `reduce` whole, the last one kept.
     fn reduced(&mut self, level: &Source, reduce: f64) -> Result<Source, String> {
         let key = (level.id(), reduce.to_bits());
@@ -126,6 +145,8 @@ impl Engine {
     }
 }
 
+/// The long side of the picture the histogram counts.
+const COUNTED_SIDE: f64 = 1024.0;
 /// A reduction kept whole when it holds at most this many canvases of pixels.
 const KEPT_WHOLE: f64 = 2.0;
 
@@ -139,6 +160,8 @@ const BASES: usize = 2;
 pub(crate) struct Fitting {
     halves: Vec<(u64, Vec<Source>)>,
     kept: Option<((u64, u64), Source)>,
+    /// The settings and preview the histogram's picture was last made from.
+    counted: Option<(PipelineSettings, u64)>,
 }
 
 #[cfg(test)]

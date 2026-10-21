@@ -54,8 +54,7 @@ impl Ctl {
             s.gpu.is_some()
         };
         if on_gpu {
-            let whole = done.placed.is_none_or(|p| p.whole);
-            self.encode(done.picture, shown, whole);
+            self.encode(done.picture, shown, done.counted);
             w.window().request_redraw();
         } else {
             if let Picture::Pixels { rgba8, .. } = done.picture {
@@ -134,7 +133,7 @@ impl Ctl {
     }
 
     /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
-    pub(in crate::app) fn encode(&self, picture: Picture, shown: Shown, whole: bool) {
+    pub(in crate::app) fn encode(&self, picture: Picture, shown: Shown, counted: Option<oni_graph::Source>) {
         let Some(w) = self.window() else { return };
         let canvas = self.canvas_size();
         let mut refused: Option<String> = None;
@@ -180,8 +179,10 @@ impl Ctl {
             let Some(g) = s.gpu.as_mut() else { return };
             g.kernel.run(&g.device, &g.queue, &source, &k, &target);
             g.current = Some(picture);
-            // A region is not the picture: its histogram would describe what the zoom shows.
-            g.uncounted = whole;
+            // The histogram describes the whole picture at one size, never the zoom's part of it.
+            if counted.is_some() {
+                g.uncounted = counted;
+            }
             g.count_due();
             (imported, shown, (wd, ht))
         };

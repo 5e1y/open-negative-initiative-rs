@@ -39,6 +39,8 @@ pub struct Done {
     /// Where the canvas lays it; none fills the canvas.
     pub placed: Option<Placed>,
     pub before: Option<(Source, Option<Placed>)>,
+    /// The whole picture the histogram counts, made again only when the settings move.
+    pub counted: Option<Source>,
 }
 
 /// What the render thread hands back: a render as soon as it is drawn, then, at most once an image
@@ -127,7 +129,8 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let e = source.extent();
                             let (width, height) = (e.w as usize, e.h as usize);
                             let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
+                            let counted = renderer.counted(&job.negative, &job.settings);
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None, counted }
                         }),
                         None => renderer.render(&job.negative, &job.settings).map(|linear| {
                             let pipeline = started.elapsed();
@@ -135,7 +138,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             let histogram = Some(crate::histogram::measure(&linear.pixels, linear.width, linear.height, screen));
                             let (width, height) = (linear.width, linear.height);
                             let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
+                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None, counted: None }
                         }),
                     };
                     let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {

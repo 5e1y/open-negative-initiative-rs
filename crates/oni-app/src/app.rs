@@ -234,8 +234,8 @@ struct Gpu {
     before: Option<(wgpu::Texture, oni_graph::Source)>,
     /// The picture the canvas was last encoded from, alive until the next one is encoded.
     current: Option<Picture>,
-    /// A frame was encoded since the histogram last counted one.
-    uncounted: bool,
+    /// The whole picture the histogram counts next, at one size whatever the zoom; none once counted.
+    uncounted: Option<oni_graph::Source>,
     seed: u32,
     screen: display::Screen,
     /// When the last count started, which holds the counts to the image's cadence.

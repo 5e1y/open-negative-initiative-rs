@@ -53,6 +53,11 @@ pub trait Renderer<I>: Send {
     fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
         None
     }
+
+    /// The whole picture at the histogram's size when the settings moved since the last; `None` else.
+    fn counted(&mut self, _negative: &I, _settings: &PipelineSettings) -> Option<Source> {
+        None
+    }
 }
 
 impl Renderer<Negative> for Shared {
@@ -66,5 +71,9 @@ impl Renderer<Negative> for Shared {
 
     fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
         self.lock().ok()?.inputs(negative, settings, held)
+    }
+
+    fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Source> {
+        self.lock().ok()?.counted(negative, settings).ok().flatten()
     }
 }

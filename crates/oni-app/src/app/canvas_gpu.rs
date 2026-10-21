@@ -16,19 +16,18 @@ impl Gpu {
     /// follows its frames without the GPU counting faster than they come.
     pub(super) fn count_due(&mut self) {
         let due = self.counted_at.is_none_or(|at| at.elapsed() >= crate::timing::IMAGE_INTERVAL);
-        if self.uncounted
-            && due
-            && let Some(Picture::Resident(picture)) = &self.current
+        if due
+            && let Some(picture) = &self.uncounted
             && let Some(view) = picture.view()
             && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen)
         {
-            self.uncounted = false;
+            self.uncounted = None;
             self.counted_at = Some(Instant::now());
         }
     }
 
     /// A count is under way or a frame waits for one.
     pub(super) fn histogram_pending(&self) -> bool {
-        self.uncounted || self.kernel.counting()
+        self.uncounted.is_some() || self.kernel.counting()
     }
 }
