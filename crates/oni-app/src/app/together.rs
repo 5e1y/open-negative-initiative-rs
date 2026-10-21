@@ -12,8 +12,8 @@ use sheet::{cell_at, place, reduced, scale_for, sheet_size};
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
 const COLUMNS: usize = 6;
-const TILE: usize = 400;
-const GAP: usize = 12;
+const TILE: usize = 1024;
+const GAP: usize = 30;
 /// Decodes at once while a group opens: a half-size RAW holds about 100 MB until it is reduced.
 const DECODERS: usize = 3;
 
