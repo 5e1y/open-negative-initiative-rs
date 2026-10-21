@@ -13,8 +13,8 @@ enum Mid {
     Zooming { at: Instant },
     Panning { step: usize, from: usize },
     Pinching { event: usize, pan_from: usize, from: usize },
-    Dragging { notch: usize, held: usize, report: usize },
-    Landing { at: Instant, held: usize, dragged: usize },
+    Dragging { notch: usize, held: usize },
+    Landing { at: Instant, held: usize },
 }
 
 pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
@@ -105,17 +105,17 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 drop(s);
                 *text.borrow_mut() = report;
                 w.global::<StoreGlobal>().invoke_press(Field::Exposure.index(), false);
-                phase.set(Mid::Dragging { notch: 0, held, report: 0 });
+                phase.set(Mid::Dragging { notch: 0, held });
             }
             Mid::Dragging { notch, held, .. } => {
                 drop(s);
                 let g = w.global::<StoreGlobal>();
                 if notch < NOTCHES / 2 {
                     g.invoke_drag(Field::Exposure.index(), (notch + 1) as f32 * STEP, SPAN, false);
-                    phase.set(Mid::Dragging { notch: notch + 1, held, report: 0 });
+                    phase.set(Mid::Dragging { notch: notch + 1, held });
                 } else {
                     g.invoke_release(Field::Exposure.index());
-                    phase.set(Mid::Landing { at: Instant::now(), held, dragged: 0 });
+                    phase.set(Mid::Landing { at: Instant::now(), held });
                 }
             }
             Mid::Landing { at, held, .. } => {

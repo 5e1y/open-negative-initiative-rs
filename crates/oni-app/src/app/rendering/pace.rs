@@ -23,18 +23,16 @@ impl Ctl {
         lib.set_loading_fraction(loading.as_ref().map_or(-1.0, LoadBar::fraction));
     }
 
-    /// Polls the histogram's readback every `HISTOGRAM_POLL` while a count is under way, so a
-    /// slide's histogram reaches the panel within a frame of its picture; stops once none is.
+    /// A picture waiting for its count is counted once the image's cadence allows; a count read back
+    /// publishes itself, so nothing polls the device meanwhile.
     pub(in crate::app) fn watch_histogram(&self) {
+        let Some(wait) = self.state.borrow().gpu.as_ref().and_then(Gpu::count_wait) else { return };
         if self.histogram_watch.running() {
             return;
         }
-        self.histogram_watch.start(TimerMode::Repeated, HISTOGRAM_POLL, move || {
+        self.histogram_watch.start(TimerMode::SingleShot, wait.max(MIN_WAIT), move || {
             let Some(me) = SHELL.with(|s| s.borrow().upgrade()) else { return };
             me.publish_histogram();
-            if !me.state.borrow().gpu.as_ref().is_some_and(Gpu::histogram_pending) {
-                me.histogram_watch.stop();
-            }
         });
     }
 
@@ -44,6 +42,9 @@ impl Ctl {
         let (histogram, counted) = {
             let mut s = self.state.borrow_mut();
             let landed = s.gpu.as_mut().and_then(Gpu::landed);
+            drop(s);
+            self.watch_histogram();
+            let mut s = self.state.borrow_mut();
             let counted = landed.as_ref().map(|(_, at)| *at);
             if let Some((h, _)) = landed {
                 s.histogram = Some(h);

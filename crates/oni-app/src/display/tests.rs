@@ -111,8 +111,8 @@ fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
         (0..w * h).map(|i| [(i % w) as f32 / w as f32 * 1.2 - 0.1, 0.9 * (i / w) as f32 / h as f32, 0.4, 1.0]).collect();
     let gpu = Gpu::new(&device);
     let picture = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
-    assert!(gpu.count(&device, &queue, &picture, w, h, Screen::Srgb));
-    assert!(!gpu.count(&device, &queue, &picture, w, h, Screen::Srgb), "a second count waits for the first to be read");
+    assert!(gpu.count(&device, &queue, &picture, w, h, Screen::Srgb, || {}));
+    assert!(!gpu.count(&device, &queue, &picture, w, h, Screen::Srgb, || {}), "a second count waits for the first to be read");
     device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
     let counted = gpu.histogram().expect("the count landed");
     let close = |a: &oni_measure::histogram::Histogram, b: &oni_measure::histogram::Histogram| {

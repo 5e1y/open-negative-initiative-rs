@@ -19,15 +19,16 @@ impl Gpu {
         if due
             && let Some(picture) = &self.uncounted
             && let Some(view) = picture.view()
-            && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen)
+            && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen, || with_shell(|c| c.publish_histogram()))
         {
             self.uncounted = None;
             self.counted_at = Some(Instant::now());
         }
     }
 
-    /// A count is under way or a frame waits for one.
-    pub(super) fn histogram_pending(&self) -> bool {
-        self.uncounted.is_some() || self.kernel.counting()
+    /// How long a picture waiting for its count waits for the image's cadence; none when none waits.
+    pub(super) fn count_wait(&self) -> Option<Duration> {
+        self.uncounted.as_ref()?;
+        Some(self.counted_at.map_or(Duration::ZERO, |at| crate::timing::IMAGE_INTERVAL.saturating_sub(at.elapsed())))
     }
 }

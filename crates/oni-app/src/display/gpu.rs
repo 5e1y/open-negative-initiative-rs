@@ -125,8 +125,9 @@ impl Gpu {
         queue.submit([encoder.finish()]);
     }
 
-    /// Counts `picture`, `width` by `height`, unless the last count is still being read; says whether it did.
-    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, width: u32, height: u32, screen: Screen) -> bool {
+    /// Counts `picture`, `width` by `height`, unless the last count is still being read; says whether it
+    /// did. `read` runs once the count can be read, on whichever thread the device was polled.
+    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, width: u32, height: u32, screen: Screen, read: impl FnOnce() + Send + 'static) -> bool {
         use wgpu::util::DeviceExt;
         {
             let mut m = self.mapping.lock().expect("histogram mapping");
@@ -161,6 +162,7 @@ impl Gpu {
         let mapping = self.mapping.clone();
         self.staging.slice(..).map_async(wgpu::MapMode::Read, move |r| {
             *mapping.lock().expect("histogram mapping") = if r.is_ok() { Mapping::Mapped } else { Mapping::Idle };
+            read();
         });
         true
     }

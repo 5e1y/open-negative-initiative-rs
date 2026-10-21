@@ -1725,5 +1725,12 @@
     "title": "Quick wins: less held, less republished, the histogram after the canvas",
     "status": "done",
     "detail": "From the ten agents' review (owner's go). A render landing where the last one lay republishes nothing (lay); De-dust builds its strokes and marks only while painting, its rows always; Compare off lets the render thread's kept before and the canvas's before image go; leaving the editor lets the last group's tile sources go (SPARE, up to 400 MB); the decode cache writes from LibRaw's rows and reads a row at a time, with no 145 MB copy either way (first open 1080 ms, reopen 171 ms, warm peak 2.66 GB); the histogram's picture is made after the canvas is handed over and at the image's cadence (Delivery::Counted), not before each notch. ONI_BENCH=midzoom: 0 histograms through the pan and pinch, 8 through the drag."
+  },
+  {
+    "id": 238,
+    "type": "perf",
+    "title": "The interface thread neither traces the input histograms nor polls the GPU",
+    "status": "done",
+    "detail": "The levels' and curves' plots were traced on the interface thread, about 3 ms a reading at 30 Hz; they are now traced off it with a ticket, as the picture's histogram is (Ctl::traced and app::premultiplied deleted). The histogram's readback was polled every 2 ms by a repeating timer, about 500 wakes a second through a slide; the count's map callback now publishes it, and a single-shot timer waits only for the image's cadence (HISTOGRAM_POLL gone). ONI_BENCH=long: 229 histograms in 10 s, frame to panel p50 6.9 ms (9.1 before); ONI_BENCH=midzoom: 0 through the pan and pinch, 9 through the drag."
   }
 ]

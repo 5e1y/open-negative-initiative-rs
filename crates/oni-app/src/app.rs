@@ -71,8 +71,8 @@ use workers::{paint, picture_view, prepared, prepared_keeping, read_disk, zebra}
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
 const PULSE: Duration = Duration::from_millis(100);
-/// How often a histogram under way is looked for: its count takes well under a millisecond.
-const HISTOGRAM_POLL: Duration = Duration::from_millis(2);
+/// The least a picture waits for its count, so the event loop runs between two counts.
+const MIN_WAIT: Duration = Duration::from_millis(2);
 /// `DS.Control.cropHint` and `DS.Space.md`: the crop badge's margin inside the view and its rise above the frame.
 const BADGE_MARGIN: f64 = 32.0;
 const BADGE_RISE: f64 = 16.0;
@@ -521,10 +521,6 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
 
 fn image(bytes: &[u8], w: usize, h: usize) -> Image {
     Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32))
-}
-
-fn premultiplied(bytes: &[u8], w: usize, h: usize) -> Image {
-    Image::from_rgba8_premultiplied(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32))
 }
 
 use oni_library::paths::stem;
