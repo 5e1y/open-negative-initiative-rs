@@ -97,6 +97,7 @@ impl Ctl {
             (None, Some(view)) => Viewport::default().placement((size.0 as f64, size.1 as f64), view).image,
             (None, None) => return,
         };
+        resizing::laid_in(self.canvas_size());
         {
             let mut s = self.state.borrow_mut();
             s.placed = placed;

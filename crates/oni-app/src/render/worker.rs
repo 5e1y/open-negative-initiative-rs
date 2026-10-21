@@ -89,6 +89,8 @@ impl<I: Send + Sync + 'static> Worker<I> {
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 // The last job read on the small copy, read again on the full one once the hand rests.
                 let mut resting: Option<(PathBuf, Arc<I>, PipelineSettings)> = None;
+                // The distributions read last: they hang on the frame and its settings, never on the view.
+                let mut measured: Option<(PathBuf, PipelineSettings, bool)> = None;
                 loop {
                     let job = {
                         let (lock, wake) = &*shared;
@@ -103,8 +105,10 @@ impl<I: Send + Sync + 'static> Worker<I> {
                             if waited.timed_out() && s.waiting.is_none() && !s.closed {
                                 drop(s);
                                 if let Some((path, negative, settings)) = resting.take()
+                                    && measured.as_ref() != Some(&(path.clone(), settings.clone(), false))
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false)
                                 {
+                                    measured = Some((path.clone(), settings, false));
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
                                 s = lock.lock().expect("render slot");
@@ -155,11 +159,13 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
-                    if drawn && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    let read = (job.path.clone(), job.settings.clone(), job.held);
+                    if drawn && measured.as_ref() != Some(&read) && (quiet || last_inputs.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_inputs = Instant::now();
                         if let Some(inputs) = renderer.inputs(&job.negative, &job.settings, job.held) {
                             deliver(Delivery::Inputs { path: job.path.clone(), inputs });
                         }
+                        measured = Some(read);
                         resting = job.held.then(|| (job.path.clone(), job.negative.clone(), job.settings.clone()));
                     }
                 }

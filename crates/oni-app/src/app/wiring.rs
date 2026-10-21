@@ -302,16 +302,7 @@ impl Ctl {
         let backing = move |p: &Rc<Ctl>| p.window().map_or(2.0, |w| f64::from(w.window().scale_factor()));
 
         let p = me.clone();
-        c.on_resized(move || {
-            let size = p.canvas_size();
-            // Bound first: an `if let` scrutinee's borrow lives through its block, where the write panics.
-            let full = p.state.borrow().full_size;
-            if let (Some(size), Some(full)) = (size, full) {
-                p.state.borrow_mut().viewport.clamp(full, size);
-            }
-            p.request_render();
-            p.publish_framing();
-        });
+        c.on_resized(move || p.resized());
 
         let p = me.clone();
         c.on_split_dragged(move |x| {

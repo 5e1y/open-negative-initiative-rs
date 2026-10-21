@@ -130,6 +130,8 @@ first on the simplified design system; the real interface work comes after.
 
 ## Working loop
 
+- **The app is always launched in the background, without the focus** (owner's rule), so the owner keeps
+  working: a bench does it by itself, any other launch sets `ONI_BACKGROUND=1`, the owner's app included.
 - **Local first.** Build and test on a Mac; GitHub Actions only for Windows, started at the milestones
   that need it, and never something to wait on between steps.
 - **Fast by default**: tests on two frames of the reference roll, the whole roll on demand. An

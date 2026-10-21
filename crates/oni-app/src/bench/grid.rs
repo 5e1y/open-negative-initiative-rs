@@ -10,20 +10,7 @@ const DRAG: usize = 8 * NOTCHES;
 /// Every frame picked by the hand's clicks and opened together; once each tile is decoded, `DRAG` notches
 /// at a trackpad's pace, then each grid's latency from its notch to the canvas, and the drag undone.
 pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
-    // The interface's own frames: each one's time from the start of its drawing to its end, and when.
-    let drawn: Rc<RefCell<Vec<(Instant, Duration)>>> = Rc::default();
-    if let Some(w) = ctl.window() {
-        let (log, began) = (drawn.clone(), Cell::new(None::<Instant>));
-        let _ = w.window().set_rendering_notifier(move |state, _| match state {
-            slint::RenderingState::BeforeRendering => began.set(Some(Instant::now())),
-            slint::RenderingState::AfterRendering => {
-                if let Some(t) = began.take() {
-                    log.borrow_mut().push((t, t.elapsed()));
-                }
-            }
-            _ => {}
-        });
-    }
+    let drawn = frame_clock(ctl);
     let dragged = Cell::new(None::<Instant>);
     let timer = Rc::new(Timer::default());
     let done = RefCell::new(Some(done));
@@ -95,17 +82,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 );
                 // The interface's own pace over the drag: each frame drawn, its gaps and spikes.
                 let text = format!("{text}\n{}", ctl.state.borrow().notches().cadence(notched.get()));
-                let since = dragged.get().unwrap_or_else(Instant::now);
-                let mut frames: Vec<f64> = drawn.borrow().iter().filter(|(t, _)| *t >= since).map(|(_, d)| d.as_secs_f64() * 1000.0).collect();
-                frames.sort_by(f64::total_cmp);
-                let at = |q: f64| frames.get(((frames.len().max(1) - 1) as f64 * q).round() as usize).copied().unwrap_or(0.0);
-                let text = format!(
-                    "{text}\ninterface: {} frames drawn in {:.0} ms, each drawn in p50 {:.1} ms, p99 {:.1} ms",
-                    frames.len(),
-                    since.elapsed().as_secs_f64() * 1000.0,
-                    at(0.5),
-                    at(0.99)
-                );
+                let text = format!("{text}\n{}", frames_since(&drawn.borrow(), dragged.get().unwrap_or_else(Instant::now)));
                 ctl.act("undo");
                 ctl.flush();
                 held.stop();

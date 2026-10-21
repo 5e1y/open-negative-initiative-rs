@@ -5,6 +5,9 @@ use super::*;
 impl Ctl {
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
     pub(in crate::app) fn request_render(self: &Rc<Self>) {
+        if resizing() {
+            return;
+        }
         if self.together_shown() {
             return self.render_together();
         }

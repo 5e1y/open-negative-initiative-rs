@@ -10,4 +10,6 @@ mod gamut;
 mod pace;
 mod plots;
 mod placeholder;
+mod resizing;
+pub(in crate::app) use resizing::resizing;
 

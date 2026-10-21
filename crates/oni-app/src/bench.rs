@@ -1,6 +1,7 @@
 //! `ONI_BENCH=1`: once the open frame is on the canvas, sixty notches dragged on {on} at a
 //! trackpad's pace through the slider's own callbacks, then the notch centiles, without a hand.
-//! `ONI_BENCH=resize` also resizes the window on every notch, so the surface is reconfigured mid-render;
+//! `ONI_BENCH=resize` resizes the window at a trackpad's pace with no hand on a slider, then reports the
+//! interface's frames and the renders asked meanwhile;
 //! `ONI_BENCH=settled` waits for every thumbnail first, so the drag has the GPU to itself;
 //! `ONI_BENCH=long` then drags slowly for ten seconds and reports the image's cadence;
 //! `ONI_BENCH=zoom` double-clicks to 100 %, waits for full resolution, pans, then walks the ladder to fit;
@@ -43,6 +44,46 @@ mod grid;
 use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, sheet::*, loupe::*, folded::*, grid::*};
 
 pub const NOTCHES: usize = 60;
+
+/// The interface's frames from now on: each one's start and the time it took to draw.
+pub(crate) fn frame_clock(ctl: &Rc<Ctl>) -> Rc<RefCell<Vec<(Instant, Duration)>>> {
+    let drawn: Rc<RefCell<Vec<(Instant, Duration)>>> = Rc::default();
+    if let Some(w) = ctl.window() {
+        let (log, began) = (drawn.clone(), Cell::new(None::<Instant>));
+        let _ = w.window().set_rendering_notifier(move |state, _| match state {
+            slint::RenderingState::BeforeRendering => began.set(Some(Instant::now())),
+            slint::RenderingState::AfterRendering => {
+                if let Some(t) = began.take() {
+                    log.borrow_mut().push((t, t.elapsed()));
+                }
+            }
+            _ => {}
+        });
+    }
+    drawn
+}
+
+/// The frames drawn since `since`: how many, their gaps' and draws' medians and worst.
+pub(crate) fn frames_since(drawn: &[(Instant, Duration)], since: Instant) -> String {
+    let kept: Vec<&(Instant, Duration)> = drawn.iter().filter(|(t, _)| *t >= since).collect();
+    let centiles = |mut v: Vec<f64>| {
+        v.sort_by(f64::total_cmp);
+        let at = |q: f64| v.get(((v.len().max(1) - 1) as f64 * q).round() as usize).copied().unwrap_or(0.0);
+        (at(0.5), at(0.99), v.last().copied().unwrap_or(0.0))
+    };
+    let gaps = centiles(kept.windows(2).map(|w| (w[1].0 - w[0].0).as_secs_f64() * 1000.0).collect());
+    let draws = centiles(kept.iter().map(|(_, d)| d.as_secs_f64() * 1000.0).collect());
+    format!(
+        "interface: {} frames in {:.0} ms; gap p50 {:.1} ms, p99 {:.1} ms, worst {:.1} ms; drawn in p50 {:.1} ms, p99 {:.1} ms",
+        kept.len(),
+        since.elapsed().as_secs_f64() * 1000.0,
+        gaps.0,
+        gaps.1,
+        gaps.2,
+        draws.0,
+        draws.1
+    )
+}
 
 /// `ONI_BENCH_FIELD` names the dragged parameter by its Slint stem (`dye-separation`); Exposure else.
 pub(crate) fn drag_field() -> Field {
@@ -163,6 +204,8 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
         return grid(ctl, done);
     }
     let timer = Rc::new(Timer::default());
+    let drawn: RefCell<Rc<RefCell<Vec<(Instant, Duration)>>>> = RefCell::default();
+    let resized_from = Cell::new(None::<(Instant, usize)>);
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
     let started = Instant::now();
@@ -195,7 +238,12 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                         return;
                     }
                     let from = ctl.state.borrow().notches().count();
-                    g.invoke_press(field, false);
+                    if mode == Mode::Resize {
+                        *drawn.borrow_mut() = frame_clock(&ctl);
+                        resized_from.set(Some((Instant::now(), ctl.state.borrow().renders())));
+                    } else {
+                        g.invoke_press(field, false);
+                    }
                     phase.set(Phase::Dragging { notch: 0, from });
                 } else if started.elapsed() > LOADING {
                     finish(format!("bench: no frame rendered in {} s", LOADING.as_secs()));
@@ -203,7 +251,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
             }
             Phase::Dragging { notch, from } => {
                 let notch = notch + 1;
-                g.invoke_drag(field, mode.travel(notch), SPAN, false);
+                if mode != Mode::Resize {
+                    g.invoke_drag(field, mode.travel(notch), SPAN, false);
+                }
                 if mode == Mode::Compare {
                     let width = w.global::<crate::Canvas>().get_width();
                     w.global::<crate::Canvas>().invoke_split_dragged(width * (0.2 + 0.6 * notch as f32 / NOTCHES as f32));
@@ -214,6 +264,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 }
                 if notch < mode.notches() {
                     phase.set(Phase::Dragging { notch, from });
+                } else if let Some((since, renders)) = resized_from.get() {
+                    let asked = ctl.state.borrow().renders() - renders;
+                    return finish(format!("bench, {NOTCHES} resizes with no hand on a slider: {asked} renders meanwhile\n{}", frames_since(&drawn.borrow().borrow(), since)));
                 } else {
                     g.invoke_release(field);
                     phase.set(Phase::Landing { revision: ctl.state.borrow().store().revision(), from });
