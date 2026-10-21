@@ -1648,5 +1648,19 @@
     "title": "Edit Together tiles at 1024 px",
     "status": "done",
     "detail": "Owner's call: tiles 1024 px on their long side (from 400), the gap 30 px so the sheet keeps its look. ONI_BENCH=grid on 36 frames: notch to canvas p50 2.1 ms, p99 7.4 ms; peak footprint 2.76 GB (2.2 GB at 400); 1600 px jumped to a 12.9 ms p50."
+  },
+  {
+    "id": 227,
+    "type": "bug",
+    "title": "De-dust's strokes and the curves drawn where their points are",
+    "status": "done",
+    "detail": "Owner: the red stroke painted in De-dust did not sit on the drawing the patch follows. Slint fits a Path's viewbox inside its size less the stroke's width and shifts it by half of it, so a stroke slid towards the canvas's centre by up to half the brush; LiveStroke, SourceTrace and the plots' lines now lay their commands unfitted (fit: preserve)."
+  },
+  {
+    "id": 228,
+    "type": "bug",
+    "title": "A run of dust patches frees its textures one by one",
+    "status": "done",
+    "detail": "Owner: dozens of large strokes at once took the app 2 GB up. Each search lays textures of its own size, kept until the run ended; the engine now purges after each patch. ONI_DUST_STROKES=24 on the largest brush: peak footprint 5.2 GB to 3.1 GB, 24 patches in 6.5 s against 6.3 s."
   }
 ]

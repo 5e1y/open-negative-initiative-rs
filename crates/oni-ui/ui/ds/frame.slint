@@ -236,9 +236,8 @@ export component LiveStroke inherits Path {
     stroke-width: root.thickness;
     stroke-line-cap: round;
     fill: transparent;
-    // One unit of the commands a point of the canvas.
-    viewbox-width: self.width / 1px;
-    viewbox-height: self.height / 1px;
+    // One unit of the commands a point of the canvas: a fitted path shrinks by its stroke's width.
+    fit: preserve;
 }
 
 // A correction on the canvas: its ring and, off the ring's top-right corner, its number.
@@ -315,6 +314,5 @@ export component SourceTrace inherits Path {
     stroke-width: root.thickness;
     stroke-line-cap: round;
     fill: transparent;
-    viewbox-width: self.width / 1px;
-    viewbox-height: self.height / 1px;
+    fit: preserve;
 }

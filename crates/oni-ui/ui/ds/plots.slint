@@ -98,8 +98,8 @@ export component Plot inherits Rectangle {
     for line in root.lines: Path {
         width: root.width;
         height: root.height;
-        viewbox-width: root.width / 1px;
-        viewbox-height: root.height / 1px;
+        // One unit a point: a fitted path shrinks by its stroke's width, off the handles.
+        fit: preserve;
         commands: line.commands;
         stroke: Inks.of(line.ink);
         stroke-width: line.width;

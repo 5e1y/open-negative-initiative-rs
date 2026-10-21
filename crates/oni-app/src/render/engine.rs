@@ -342,7 +342,7 @@ impl Engine {
         Ok(Some((Linear { width: zone.w as usize, height: zone.h as usize, pixels }, zone)))
     }
 
-    /// Frees the textures a run of searches left idle, once after the run rather than after each.
+    /// Frees the textures a search left idle.
     pub fn purge(&mut self) {
         self.graph.purge();
     }

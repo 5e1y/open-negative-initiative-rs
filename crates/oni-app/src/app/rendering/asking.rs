@@ -106,10 +106,14 @@ impl Ctl {
                     let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
                     let patch = crate::heal::generate(&region, c, size.0, size.1);
                     crate::patches::write(&caches, c.id, patch.width as u32, patch.height as u32, &patch.pixels)?;
-                    engine.lock()?.forget_patch(c.id);
+                    // Each search lays textures of its own size, so a run of large strokes frees them one by one.
+                    {
+                        let mut e = engine.lock()?;
+                        e.forget_patch(c.id);
+                        e.purge();
+                    }
                     made.push((c.id, patch.fallback, patch.offset));
                 }
-                engine.lock()?.purge();
                 Ok(())
             })()
             .err();
