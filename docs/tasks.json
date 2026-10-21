@@ -1739,5 +1739,12 @@
     "title": "A pan or a zoom moves the picture at once",
     "status": "done",
     "detail": "Nothing moved on the canvas until a render came back from the render thread, a thread hop and up to a refresh late. navigate now lays the picture shown where the new view puts it, by the same arithmetic a resize uses (resizing::followed), on the interface thread, and the render asked refines it. Benches unchanged: ONI_BENCH=midzoom pan p50 0.3 ms, pinch 0.4 ms."
+  },
+  {
+    "id": 240,
+    "type": "perf",
+    "title": "One frame in flight, presented as soon as drawn",
+    "status": "done",
+    "detail": "Slint's femtovg renderer configured the surface with AutoVsync and wgpu's default frame latency 2: up to three drawables on the layer, a drawn frame waiting for a refresh and possibly behind another. It is vendored (vendor/i-slint-renderer-femtovg, 1.18.1, [patch.crates-io]) with desired_maximum_frame_latency 1 and AutoNoVsync (Immediate on Metal); the CADisplayLink still paces the draws and the window compositor still syncs to the screen. The owner judges the feel; benches run in hidden windows that draw no frames."
   }
 ]

@@ -48,7 +48,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **The editor reads the full resolution** as soon as it is built (owner's call), not Swift's preview: a zoom
   never renders twice, at the same frame cost. Settings' "Edit on a preview copy" keeps Swift's way.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
-  flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms.
+  flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms. Slint's femtovg renderer is
+  vendored too (`vendor/i-slint-renderer-femtovg`, 1.18.1) for one frame in flight and no vsync wait on present
+  (`ONI:` comments in `wgpu.rs`): the display link still paces the draws, a frame is never queued behind another.
 
 ## Build
 
