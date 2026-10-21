@@ -1543,5 +1543,12 @@
     "title": "contact_sheet's window check times out waiting for the roll measure under a check that rebuilds",
     "status": "open",
     "detail": "Seen about six times on 2026-10-20 and 21, only when scripts/check rebuilt before running (12 binaries at once): Prepare the Roll's measure never lands within 120 s, where it lands in under 3 s alone. The measure's job always ends in land_measure (a superseded MEASURE ticket only skips a frame), so the wait is elsewhere, likely a decode slot (decode_gate::Slots) starved while the thumbnail pass and the open frame hold places under load. To do: log each slot's taker and waiter in that check, reproduce with ONI_BINARIES=12 after a touch, then fix the starvation rather than the timeout."
+  },
+  {
+    "id": 212,
+    "type": "spec",
+    "title": "Spec: editing several frames together, and the contact sheet as a marked-up proof",
+    "status": "done",
+    "detail": "docs/research/multi-edit-and-contact-sheet.md: Option A (Edit Together: the selection six to a row on the canvas, every notch setting the same absolute value on each frame, 300 px half-size sources cached, per-tile renders benched before any atlas, one undo step a gesture) and Option B (a Mark tab on the contact sheet: pen, circle and cross, a circle labelling its frame favourite, marks as vectors in the sheet's sidecar, burnt in at export), compared, A first recommended, four questions for the owner."
   }
 ]
