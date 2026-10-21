@@ -1690,5 +1690,12 @@
     "title": "Renders follow the canvas, not the frame, at any zoom",
     "status": "done",
     "detail": "Owner: on the full resolution, the further out from 100 % the slower a pan or a pinch; Edit Together zoomed in edited at a low rate. Four changes on the one render path. (1) The region a view renders keeps one size, the visible part plus a pixel, where it alternated between two as a pan moved fractionally. (2) The display texture grows by 256 px steps and is shown clipped (Picture.clip-width/height), so a pan or a pinch rewrites texels instead of importing a texture into Slint: ONI_BENCH=midzoom 36 imports to 2, ONI_BENCH=zoom 59 to 10. (3) The canvas reads the smallest halving of its base past the scale shown, halvings kept for the preview and the full frame down to 64 px, reduced lazily so the chain pulls only the region's share; a reduction the canvas nearly holds whole (two canvases) is kept for the notches at fit. Pinch at 60 % p50 1.9 to 0.4 ms; peak footprint of the zoom bench 4.3-4.7 GB to 3.1 GB; a 10 s drag at fit p99 12.5 to 5 ms. (4) Edit Together draws only the tiles its view meets, on a sheet the size of their box laid at its place: ONI_GRID_ZOOM=1 notch p50 2.2 to 0.4 ms, p99 12.9 to 3.3 ms; at fit unchanged. ONI_BENCH=midzoom added: at 60 %, a pan and a pinch on the full resolution."
+  },
+  {
+    "id": 233,
+    "type": "perf",
+    "title": "A RAW opened whole is its own full resolution",
+    "status": "done",
+    "detail": "Opening a RAW decoded it whole, reduced it to the preview and let the whole go, then the full resolution decoded the file a second time (about 0.9 s). The upload the preview is reduced from is now kept as the frame's full resolution when the decode read the frame whole: ONI_BENCH=zoom, full resolution 643 ms after the double click to 8 ms; opening and peak footprint unchanged."
   }
 ]

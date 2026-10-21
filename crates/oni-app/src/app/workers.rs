@@ -33,9 +33,14 @@ static CLOCK: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 
 /// A frame decoded on the calling thread, the CPU's part, then laid on the GPU as its preview.
 pub(super) fn prepared(engine: &Shared, path: &str, reading: render::Reading) -> Result<Arc<Negative>, String> {
+    prepared_keeping(engine, path, reading).map(|(negative, _)| negative)
+}
+
+/// `prepared`, with the full resolution when the decode read it whole.
+pub(super) fn prepared_keeping(engine: &Shared, path: &str, reading: render::Reading) -> Result<(Arc<Negative>, Option<oni_graph::Source>), String> {
     let decoded = render::decode(Path::new(path), reading)?;
-    let negative = engine.prepare(decoded)?;
-    Ok(Arc::new(negative))
+    let (negative, full) = engine.prepare_keeping(decoded)?;
+    Ok((Arc::new(negative), full))
 }
 
 /// The renderer's thread for thumbnails: an edit's redraw first, then the pass's next photo, each

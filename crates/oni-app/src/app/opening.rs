@@ -87,11 +87,17 @@ impl Ctl {
         let engine = self.engine.clone();
         let ticket = crate::decode_gate::PREVIEW.ask();
         std::thread::spawn(move || {
-            let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared(&engine, &path, converted)) else { return };
+            let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_keeping(&engine, &path, converted.clone())) else { return };
             with_shell(move |c| match prepared {
-                Ok(negative) => {
+                Ok((negative, full)) => {
                     c.state.borrow().previews.lock().expect("previews").insert(path.clone(), negative.clone());
                     if c.state.borrow().open_path() == Some(path.as_str()) {
+                        let mut s = c.state.borrow_mut();
+                        // The decode read the whole frame: it is the full resolution, kept rather than read again.
+                        if let Some(full) = full.filter(|_| s.full.is_none() && s.reading.as_ref().is_none_or(|r| *r == converted)) {
+                            s.full = Some((path.clone(), full));
+                        }
+                        drop(s);
                         c.state.borrow_mut().negative = Some((path.clone(), negative));
                         c.request_render();
                         c.publish_roll_tab();

@@ -196,10 +196,17 @@ impl Shared {
 
     /// `Engine::prepare` with the upload outside the engine.
     pub fn prepare(&self, decoded: Decoded) -> Result<Negative, String> {
+        self.prepare_keeping(decoded).map(|(negative, _)| negative)
+    }
+
+    /// `prepare`, and the decode laid as it is when it was the frame's full resolution, so the full
+    /// frame costs no second decode.
+    pub fn prepare_keeping(&self, decoded: Decoded) -> Result<(Negative, Option<Source>), String> {
         let source = self.upload(&decoded.linear)?;
         let (w, h) = (decoded.linear.width, decoded.linear.height);
         drop(decoded.linear);
-        self.lock()?.reduce(source, (w, h), decoded.full_width, decoded.undeclared)
+        let full = (w as f64 == decoded.full_width).then(|| source.clone());
+        Ok((self.lock()?.reduce(source, (w, h), decoded.full_width, decoded.undeclared)?, full))
     }
 
     /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
