@@ -135,6 +135,7 @@ pub struct Graph {
     uniforms: Uniforms,
     /// The pass that packs a render into half floats, made at its first use.
     packer: Option<half::Packer>,
+    door: Option<Arc<dyn Door>>,
     pub adapter: String,
 }
 
@@ -152,3 +153,10 @@ struct Uniforms {
 const UNIFORM_RING: u64 = 4 << 20;
 
 static SOURCE_IDS: AtomicU64 = AtomicU64::new(1);
+
+/// What a graph passes before it hands work to its queue, when another owner of the device must at
+/// times keep the queue still (a window reconfiguring its surface); `enter` false lets it pass.
+pub trait Door: Send + Sync {
+    fn enter(&self) -> bool;
+    fn leave(&self);
+}

@@ -57,6 +57,7 @@ impl Graph {
             copies: 0,
             uniforms,
             packer: None,
+            door: None,
             adapter,
         }
     }
@@ -64,6 +65,11 @@ impl Graph {
     /// The device and queue the graph records on, for a kernel beside it on the same GPU.
     pub fn device(&self) -> (wgpu::Device, wgpu::Queue) {
         (self.device.clone(), self.queue.clone())
+    }
+
+    /// Every later submission and upload passes `door`.
+    pub fn through(&mut self, door: Arc<dyn Door>) {
+        self.door = Some(door);
     }
 
     pub fn max_side(&self) -> u32 {

@@ -93,7 +93,8 @@ fn a_burst_of_notches_renders_the_first_and_the_last_only() {
         worker.submit(Job { revision, path: PathBuf::new(), negative: negative.clone(), settings, kind, asked, view: None, reference: None, held: false });
     }
     let mut revisions = Vec::new();
-    while let Ok(r) = rx.recv_timeout(Duration::from_millis(500)) {
+    // The first render compiles the pipeline's kernels; the slot is judged on what follows.
+    while let Ok(r) = rx.recv_timeout(Duration::from_millis(if revisions.is_empty() { 30_000 } else { 500 })) {
         revisions.push(r.unwrap());
     }
     assert_eq!(revisions.last(), Some(&20), "the latest settings are always rendered");

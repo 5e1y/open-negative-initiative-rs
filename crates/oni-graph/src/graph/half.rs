@@ -87,8 +87,7 @@ impl Graph {
             pass.set_bind_group(0, &group, &[]);
             pass.dispatch_workgroups(region.w.div_ceil(8), region.h.div_ceil(8), 1);
         }
-        self.flush_uniforms();
-        self.queue.submit([encoder.finish()]);
+        self.submit(encoder);
         self.pool.release(texture);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);

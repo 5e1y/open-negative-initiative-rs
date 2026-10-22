@@ -66,8 +66,7 @@ impl Graph {
             self.pool.release(texture);
             owned
         };
-        self.flush_uniforms();
-        self.queue.submit([encoder.finish()]);
+        self.submit(encoder);
         self.settle(cache);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
@@ -97,8 +96,7 @@ impl Graph {
             self.copy(&mut encoder, &texture, from, &sheet, sheet_rect, at);
             self.pool.release(texture);
         }
-        self.flush_uniforms();
-        self.queue.submit([encoder.finish()]);
+        self.submit(encoder);
         self.ended();
         let id = SOURCE_IDS.fetch_add(1, Ordering::Relaxed);
         Ok(Source(Arc::new(SourceInner { id, extent: sheet_rect, tiles: vec![(sheet_rect, sheet)] })))
@@ -176,8 +174,7 @@ impl Graph {
             },
             wgpu::Extent3d { width: piece.w, height: piece.h, depth_or_array_layers: 1 },
         );
-        self.flush_uniforms();
-        self.queue.submit([encoder.finish()]);
+        self.submit(encoder);
         self.pool.release(texture);
         let slice = readback.slice(..);
         slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));

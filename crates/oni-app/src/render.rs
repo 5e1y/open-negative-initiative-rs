@@ -17,11 +17,14 @@ use std::time::{Duration, Instant};
 
 
 mod decode;
+mod door;
 mod engine;
 mod view;
 mod previews;
 mod worker;
 mod histogram;
+pub use door::graph;
+pub(crate) use door::Door;
 pub use {decode::*, engine::*, view::*, previews::*, worker::*, histogram::*};
 
 #[cfg(test)]

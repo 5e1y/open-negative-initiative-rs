@@ -116,15 +116,8 @@ pub struct Shared(Arc<Gated>);
 
 pub(crate) struct Gated {
     engine: Mutex<Engine>,
-    gate: Mutex<Gate>,
-    turn: Condvar,
+    door: Arc<Door>,
     uploader: oni_graph::Uploader,
-}
-
-#[derive(Default)]
-pub(crate) struct Gate {
-    held: bool,
-    inside: usize,
 }
 
 /// The engine, locked by a thread the gate let through.
@@ -149,16 +142,7 @@ impl DerefMut for EngineGuard<'_> {
 impl Drop for EngineGuard<'_> {
     fn drop(&mut self) {
         self.engine.take();
-        self.gated.leave();
-    }
-}
-
-impl Gated {
-    fn leave(&self) {
-        if let Ok(mut g) = self.gate.lock() {
-            g.inside -= 1;
-        }
-        self.turn.notify_all();
+        self.gated.door.leave();
     }
 }
 
@@ -166,31 +150,29 @@ impl Shared {
     /// Waits while the gate is held, then for the engine.
     pub fn lock(&self) -> Result<EngineGuard<'_>, String> {
         let gated = &*self.0;
-        self.enter()?;
+        gated.door.enter()?;
         match gated.engine.lock() {
             Ok(engine) => Ok(EngineGuard { engine: Some(engine), gated }),
             Err(_) => {
-                gated.leave();
+                gated.door.leave();
                 Err("the render engine failed earlier".into())
             }
         }
     }
 
-    fn enter(&self) -> Result<(), String> {
-        let mut g = self.0.gate.lock().map_err(|_| "the render gate failed earlier")?;
-        while g.held {
-            g = self.0.turn.wait(g).map_err(|_| "the render gate failed earlier")?;
-        }
-        g.inside += 1;
+    /// The engine's device and door made the whole app's: every other graph records on that device.
+    pub fn adopt(&self) -> Result<(), String> {
+        let device = self.lock()?.device();
+        door::adopt(device, self.0.door.clone());
         Ok(())
     }
 
     /// The decode laid on the GPU through the gate alone: a 24 MP upload holds the engine about
     /// 100 ms, which every render asked meanwhile would wait.
     pub fn upload(&self, l: &Linear) -> Result<Source, String> {
-        self.enter()?;
+        self.0.door.enter()?;
         let laid = self.0.uploader.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string());
-        self.0.leave();
+        self.0.door.leave();
         laid
     }
 
@@ -216,22 +198,11 @@ impl Shared {
 
     /// Closes the gate and waits for the threads inside to leave, so nothing submits until `release`.
     pub fn hold(&self) {
-        let gated = &*self.0;
-        let Ok(mut g) = gated.gate.lock() else { return };
-        g.held = true;
-        while g.inside > 0 {
-            match gated.turn.wait(g) {
-                Ok(next) => g = next,
-                Err(_) => return,
-            }
-        }
+        self.0.door.hold();
     }
 
     pub fn release(&self) {
-        if let Ok(mut g) = self.0.gate.lock() {
-            g.held = false;
-        }
-        self.0.turn.notify_all();
+        self.0.door.release();
     }
 }
 
@@ -245,7 +216,7 @@ impl Engine {
     pub fn shared(d: &Device) -> Shared {
         let engine = Engine::on(d);
         let uploader = engine.graph.uploader();
-        Shared(Arc::new(Gated { engine: Mutex::new(engine), gate: Mutex::new(Gate::default()), turn: Condvar::new(), uploader }))
+        Shared(Arc::new(Gated { engine: Mutex::new(engine), door: Arc::default(), uploader }))
     }
 
     /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the

@@ -43,6 +43,11 @@ impl Ctl {
             if ordered.is_empty() || s.prepare.progress.is_some() {
                 return;
             }
+            // The roll shown asked again (its own key landing after the automatic entry) keeps its step.
+            let same = ordered.len() == s.prepare.sources.len() && s.prepare.sources.iter().all(|f| ordered.iter().any(|(p, _)| *p == f.path));
+            if s.prepare.shown && same {
+                return;
+            }
             let gallery = w.global::<App>().get_gallery();
             s.shelf.hovered = None;
             let r = &mut s.prepare;

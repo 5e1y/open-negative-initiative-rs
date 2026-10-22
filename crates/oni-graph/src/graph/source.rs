@@ -37,14 +37,22 @@ impl Graph {
 
     /// As `upload`, the pixels covering `extent` wherever it lies.
     pub fn upload_at(&mut self, extent: Rect, pixels: &[[f32; 4]]) -> Result<Source, Error> {
-        let (queue, pool) = (&self.queue, &mut self.pool);
-        laid(queue, self.max_side, extent, pixels, Precision::Full, |w, h, p| pool.create_owned(w, h, p))
+        self.laid_through(extent, pixels, Precision::Full)
     }
 
     /// As `upload`, held in half floats when one texture takes it whole.
     pub fn upload_half(&mut self, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<Source, Error> {
+        self.laid_through(Rect::new(0, 0, width, height), pixels, Precision::Half)
+    }
+
+    fn laid_through(&mut self, extent: Rect, pixels: &[[f32; 4]], precision: Precision) -> Result<Source, Error> {
+        let door = self.door.clone().filter(|d| d.enter());
         let (queue, pool) = (&self.queue, &mut self.pool);
-        laid(queue, self.max_side, Rect::new(0, 0, width, height), pixels, Precision::Half, |w, h, p| pool.create_owned(w, h, p))
+        let made = laid(queue, self.max_side, extent, pixels, precision, |w, h, p| pool.create_owned(w, h, p));
+        if let Some(d) = door {
+            d.leave();
+        }
+        made
     }
 
     /// What lays pixels beside the graph, from any thread.
@@ -147,8 +155,7 @@ impl Graph {
                 wgpu::Extent3d { width: rect.w, height: rect.h, depth_or_array_layers: 1 },
             );
         }
-        self.flush_uniforms();
-        self.queue.submit([encoder.finish()]);
+        self.submit(encoder);
         let slice = readback.slice(..);
         slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));
         self.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");

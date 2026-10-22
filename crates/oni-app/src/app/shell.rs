@@ -10,6 +10,7 @@ impl Shell {
         crate::measuring::set_folders(&options.support, caches);
         let worker = Worker::new(Box::new(engine.clone()), |done| with_shell(move |c| c.deliver(done)));
         let (device, queue) = engine.lock().map_err(slint::PlatformError::Other)?.device();
+        engine.adopt().map_err(slint::PlatformError::Other)?;
         let index_path = LibraryIndex::default_path(&options.caches);
         let painter: Painter = Arc::default();
         let previews: Arc<Mutex<Previews>> = Arc::default();

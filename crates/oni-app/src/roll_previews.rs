@@ -156,7 +156,7 @@ impl Queue {
 
 type Post = Arc<dyn Fn(u64, Out) + Send + Sync>;
 
-/// The worker's handle; one thread with its own graph, so no preview waits on the canvas.
+/// The worker's handle; one thread with its own graph on the app's device, so no preview waits on the canvas.
 pub struct Previews {
     queue: Arc<(Mutex<Queue>, Condvar)>,
 }
@@ -240,7 +240,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
             }
         };
         if engine.is_none() {
-            engine = Graph::new().ok().map(|g| (g, Pipeline::new(), Resident::new(crate::measuring::folders())));
+            engine = render::graph().map(|g| (g, Pipeline::new(), Resident::new(crate::measuring::folders())));
         }
         let Some((graph, pipeline, resident)) = engine.as_mut() else { continue };
         resident.fresh();

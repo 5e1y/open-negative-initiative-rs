@@ -1541,8 +1541,8 @@
     "id": 211,
     "type": "bug",
     "title": "contact_sheet's window check times out waiting for the roll measure under a check that rebuilds",
-    "status": "open",
-    "detail": "Seen about six times on 2026-10-20 and 21, only when scripts/check rebuilt before running (12 binaries at once): Prepare the Roll's measure never lands within 120 s, where it lands in under 3 s alone. The measure's job always ends in land_measure (a superseded MEASURE ticket only skips a frame), so the wait is elsewhere, likely a decode slot (decode_gate::Slots) starved while the thumbnail pass and the open frame hold places under load. To do: log each slot's taker and waiter in that check, reproduce with ONI_BINARIES=12 after a touch, then fix the starvation rather than the timeout."
+    "status": "done",
+    "detail": "Seen about six times on 2026-10-20 and 21, only when scripts/check rebuilt before running (12 binaries at once): Prepare the Roll's measure never lands within 120 s, where it lands in under 3 s alone. The measure's job always ends in land_measure (a superseded MEASURE ticket only skips a frame), so the wait is elsewhere, likely a decode slot (decode_gate::Slots) starved while the thumbnail pass and the open frame hold places under load. To do: log each slot's taker and waiter in that check, reproduce with ONI_BINARIES=12 after a touch, then fix the starvation rather than the timeout. Found (2026-10-22, the stalled run's threads all idle, the advance landing on the Film step): opening the roll's first frame enters Prepare the Roll by itself, and the check's own Prepare key, its roll read off the thread, landed after the hand had reached the Window step and entered the roll again, back on Film; MEASURE then stepped instead of measuring. The roll shown, asked again, now keeps its step. 0 stalls in 30 runs, against about one in thirteen."
   },
   {
     "id": 212,
@@ -1788,5 +1788,12 @@
     "title": "No software canvas: every render stays on the GPU",
     "status": "done",
     "detail": "Unification (owner's decision of 2026-10-21). The render thread no longer renders pixels on the CPU and encodes them for a window without wgpu: the worker asks the engine's resident render only (Picture, Renderer::render, the on_gpu flag and the generic Worker<I> are gone; Renderer stays the seam a check fills). The canvas's GPU is always there, on the engine's device; on Slint's software renderer, the windows the checks drive, the display kernel's output is read back and shown, so the checks see the very kernel the app runs. Edit Together and Compare follow; Engine::read_sheet goes."
+  },
+  {
+    "id": 247,
+    "type": "simplification",
+    "title": "One GPU device for the whole app",
+    "status": "done",
+    "detail": "Unification. The automatic keys' reader and the roll previews opened a wgpu device each; they now record on the window engine's device, each in a graph of its own (64 MB idle budget), every submission and upload through the door the window's surface reconfigure closes (oni_graph::Door, render::graph). The engine's gate becomes that door. The worker's slot check runs on the engine, its first render's kernel compile awaited."
   }
 ]

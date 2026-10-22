@@ -97,6 +97,16 @@ impl Graph {
         (at, size)
     }
 
+    /// Hands `encoder` to the queue, the uniforms it reads first, through the graph's door when it has one.
+    pub(super) fn submit(&mut self, encoder: wgpu::CommandEncoder) {
+        let door = self.door.clone().filter(|d| d.enter());
+        self.flush_uniforms();
+        self.queue.submit([encoder.finish()]);
+        if let Some(d) = door {
+            d.leave();
+        }
+    }
+
     /// The uniforms staged since the last submission copied into the ring, before the next one reads them.
     pub(super) fn flush_uniforms(&mut self) {
         let u = &mut self.uniforms;

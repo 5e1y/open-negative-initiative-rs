@@ -1,5 +1,5 @@
-//! The automatic keys' reader in the app: a graph of its own, made on the first press, so a reading
-//! never waits on the canvas's engine nor holds it while the window's surface is reconfigured.
+//! The automatic keys' reader in the app: a graph of its own on the app's device, made on the first
+//! press, so a reading never waits on the canvas's engine.
 
 use crate::render;
 use oni_core::balance::{Measure, Outcome};
@@ -46,7 +46,7 @@ pub fn measurer() -> Option<&'static Measurer> {
     static MEASURER: OnceLock<Option<Measurer>> = OnceLock::new();
     MEASURER
         .get_or_init(|| {
-            let graph = oni_graph::Graph::new().ok()?;
+            let graph = render::graph()?;
             Some(Measurer::new(
                 graph,
                 Box::new(|path: &Path, s: &PipelineSettings| {
