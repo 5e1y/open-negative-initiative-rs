@@ -148,7 +148,7 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let size = (600.0, 400.0);
     let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
-    let view = View { viewport: hundred, size, full: Some(full.clone()), settled: true, preview: true };
+    let view = View { viewport: hundred, size, full: Some(full.clone()) };
     let (source, placed) = engine.resident(&negative, &settings, Some(&view)).unwrap();
     let placed = placed.unwrap();
     assert!(placed.at_full_resolution && !placed.whole);
@@ -156,23 +156,17 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     // The canvas's pixels and an eighth of them past each side, which a pan shows before its render lands.
     assert!((e.w as f64 - size.0 * 1.25).abs() <= 2.0 && (e.h as f64 - size.1 * 1.25).abs() <= 2.0, "the canvas and its margin only: {e:?}");
     assert!(placed.x <= 0.0 && placed.y <= 0.0 && placed.x + placed.width >= size.0 && placed.y + placed.height >= size.1);
-    // Twin: unsettled, the same view stays on the preview, a quarter of the pixels stretched four times.
-    let moving = View { settled: false, ..view.clone() };
-    let (stretched, placed) = engine.resident(&negative, &settings, Some(&moving)).unwrap();
+    // Twin: before the full resolution is built, the same view reads the preview, a quarter of the pixels stretched four times.
+    let early = View { full: None, ..view.clone() };
+    let (stretched, placed) = engine.resident(&negative, &settings, Some(&early)).unwrap();
     assert!(!placed.unwrap().at_full_resolution);
     assert!(stretched.extent().w * 3 < e.w, "{:?}", stretched.extent());
-    // Off a preview copy, the hand's view reads the full resolution as well.
-    let (_, placed) = engine.resident(&negative, &settings, Some(&View { preview: false, ..moving })).unwrap();
-    assert!(placed.unwrap().at_full_resolution);
-    // Fitted on a canvas smaller than the preview: the whole image, from the preview on a preview copy.
-    let fitted = View { viewport: crate::viewport::Viewport::default(), size: (300.0, 200.0), full: Some(full), settled: true, preview: true };
+    // Fitted on a canvas smaller than the preview: the whole image, reduced from the full resolution.
+    let fitted = View { viewport: crate::viewport::Viewport::default(), size: (300.0, 200.0), full: Some(full) };
     let (_, placed) = engine.resident(&negative, &settings, Some(&fitted)).unwrap();
     let placed = placed.unwrap();
-    assert!(placed.whole && !placed.at_full_resolution, "{placed:?}");
-    assert!((placed.width - 300.0).abs() < 1.0 && (placed.height - 187.5).abs() < 1.0, "{placed:?}");
-    let (_, placed) = engine.resident(&negative, &settings, Some(&View { preview: false, ..fitted })).unwrap();
-    let placed = placed.unwrap();
     assert!(placed.whole && placed.at_full_resolution && (placed.width - 300.0).abs() < 1.0, "fitted down from the full resolution: {placed:?}");
+    assert!((placed.height - 187.5).abs() < 1.0, "{placed:?}");
 }
 
 /// `Loupe.selfCheck`: the loupe shows the exported file's pixels over its region; cropped before

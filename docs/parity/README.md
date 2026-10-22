@@ -13,6 +13,7 @@ over any note, and the Rust test that proves it.
   differs. The Gap column says which.
 - **missing**: neither the core nor the interface exists.
 - **port-only**: the port has it and Swift does not (the phone link). Not counted below.
+- **departed**: Swift has it and the owner chose to leave it. Not counted below.
 
 The **Check** column names the Rust test that proves the row, or "no check". The end state is every
 row done with a check. A test marked "crate only" proves the core, not the feature in the app.
@@ -24,9 +25,9 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 145 | 7 | 0 | 144 of 152 |
 | Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 90 | 5 | 1 | 93 of 96 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
-| Presets, windows, help, updates, life cycle | [other.md](other.md) | 37 | 9 | 2 | 40 of 48 |
+| Presets, windows, help, updates, life cycle | [other.md](other.md) | 37 | 8 | 2 | 39 of 47 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 123 | 3 | 5 | 122 of 131 |
-| **All** | | **432** | **24** | **8** | **437 of 465** |
+| **All** | | **432** | **23** | **8** | **436 of 464** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face

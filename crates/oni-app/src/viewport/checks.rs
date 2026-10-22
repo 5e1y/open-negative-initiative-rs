@@ -1,11 +1,9 @@
-//! `Viewport.selfCheck`, `CanvasEvents.selfCheck` and `MemoryBudget.selfCheck`: what the unit tests
-//! beside the code leave, each with its twin.
+//! `Viewport.selfCheck` and `CanvasEvents.selfCheck`: what the unit tests beside the code leave, each
+//! with its twin.
 
 use super::*;
 
 const RAW: Size = (8368.0, 5584.0);
-const BIG: Size = (3950.0, 2624.0);
-const GB: f64 = 1_073_741_824.0;
 
 /// A rung reached by multiplying the fitted scale, the shape that misses 1.0 by an ulp.
 fn multiplied(target: f64, view: Size) -> f64 {
@@ -14,28 +12,9 @@ fn multiplied(target: f64, view: Size) -> f64 {
 }
 
 #[test]
-fn the_budget_follows_the_machine_and_stops_at_its_ceiling() {
-    let big = budget_for_working_set(77.76 * GB);
-    let air = budget_for_working_set(10.6 * GB);
-    let old = budget_for_working_set(1.5 * GB);
-    assert!((big - NOMINAL_BUDGET).abs() / NOMINAL_BUDGET < 0.02, "a 77.8 GB machine is handed {big}");
-    assert!(air < big * 0.75 && air > big * 0.4, "a 10.6 GB one {air}");
-    assert!(old < air * 0.25, "a 1.5 GB one {old}");
-    // Twin: a budget read off a constant would hand all three the same.
-    assert!(!((big - air).abs() < 1.0 && (air - old).abs() < 1.0));
-    let steps: Vec<f64> = (1..=160).map(|n| budget_for_working_set(n as f64 * 0.5 * GB)).collect();
-    assert!(steps.windows(2).all(|w| w[1] >= w[0] - 1.0), "the budget never falls as the working set grows");
-    assert_eq!(budget_for_working_set(400.0 * GB), budget_for_working_set(80.0 * GB));
-    // The same viewport at 100 % switches on the nominal budget and not on the small one.
-    let at_hundred = Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
-    assert!(at_hundred.needs_full_resolution(0.239, RAW, BIG, NOMINAL_BUDGET));
-    assert!(!at_hundred.needs_full_resolution(0.239, RAW, BIG, old));
-}
-
-#[test]
 fn the_hundred_rung_lands_on_its_number_at_every_window_width() {
     let widths = 3800..=6000;
-    let (mut lands, mut misses, mut previews) = (0, 0, 0);
+    let (mut lands, mut misses) = (0, 0);
     for w in widths.clone() {
         let window = (f64::from(w), (f64::from(w) * 2.0 / 3.0).round());
         let mut port = Viewport::default();
@@ -43,12 +22,11 @@ fn the_hundred_rung_lands_on_its_number_at_every_window_width() {
         lands += usize::from(port.scale == Some(1.0));
         let product = Viewport { scale: Some(multiplied(1.0, window)), offset: (0.0, 0.0) };
         misses += usize::from(product.scale != Some(1.0));
-        previews += usize::from(!product.needs_full_resolution(0.239, RAW, window, NOMINAL_BUDGET));
     }
     let count = widths.count();
     assert_eq!(lands, count, "the 100 % rung lands on its number at every width");
-    // Twin: reached by multiplication it misses on some widths, and some serve a preview under 100 %.
-    assert!(misses > count / 20 && previews > 0, "{misses} misses, {previews} previews");
+    // Twin: reached by multiplication it misses on some widths.
+    assert!(misses > count / 20, "{misses} misses");
 }
 
 #[test]

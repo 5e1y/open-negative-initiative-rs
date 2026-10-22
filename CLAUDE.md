@@ -47,7 +47,7 @@ the code; a costly trap keeps its constraint and its number in two lines.
   D+0.5 M+2 Y-2 in the gains while the keypad reads zero.
 - **Sidecars keep the Swift JSON format and field names**, so a roll opens in either app.
 - **The editor reads the full resolution** as soon as it is built (owner's call), not Swift's preview: a zoom
-  never renders twice, at the same frame cost. Settings' "Edit on a preview copy" keeps Swift's way.
+  never renders twice, at the same frame cost. Swift's preview copy and its memory budget are gone.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
   flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms. Slint's femtovg renderer is
   vendored too (`vendor/i-slint-renderer-femtovg`, 1.18.1) for one frame in flight and no vsync wait on present

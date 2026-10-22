@@ -8,32 +8,10 @@ pub type Size = (f64, f64);
 pub const RANGE: (f64, f64) = (0.02, 4.0);
 /// The ladder the bar's − / + walk, ascending; the top rung is the range's ceiling.
 pub const ZOOM_STEPS: [f64; 5] = [0.25, 0.5, 1.0, 2.0, RANGE.1];
-/// Debounce after the last navigation before full resolution is asked for.
+/// Debounce after the last resize before the canvas renders at its new size.
 pub const SETTLE: std::time::Duration = std::time::Duration::from_millis(150);
 /// The zoom kept from one photo to the next, a choice in Settings; off, each photo opens fitted.
 pub static KEEP_ZOOM: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-/// The editor on a preview copy, the full resolution only for a settled zoom past it (Settings); else
-/// the full resolution is built as a photo opens and every render reads it.
-pub static PREVIEW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
-/// Whether a render reads the full resolution: always once built, or on a preview copy only settled past it.
-pub fn reads_full(preview: bool, settled_past_preview: bool) -> bool {
-    !preview || settled_past_preview
-}
-
-pub fn on_preview() -> bool {
-    PREVIEW.load(std::sync::atomic::Ordering::Relaxed)
-}
-/// Margin around the view a full-resolution region keeps for panning.
-pub const REGION_MARGIN: f64 = 0.3;
-
-/// `MemoryBudget`: a quarter of the GPU's working set, at most 4 GB, over 8 bytes a pixel and 22
-/// times the texture's bytes at the peak; 24 Mpx is what the 4 GB ceiling gives.
-pub const NOMINAL_BUDGET: f64 = 24_000_000.0;
-
-pub fn budget_for_working_set(bytes: f64) -> f64 {
-    (4.0 * 1024.0 * 1024.0 * 1024.0_f64).min(bytes * 0.25) / (8.0 * 22.0)
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Rung {
@@ -146,19 +124,6 @@ impl Viewport {
         (view.0 / 2.0 + offset.0, view.1 / 2.0 + offset.1)
     }
 
-    /// True when the preview would be stretched and full resolution is affordable.
-    pub fn needs_full_resolution(&self, preview_ratio: f64, full: Size, view: Size, budget: f64) -> bool {
-        let s = self.effective_scale(full, view);
-        if s <= preview_ratio {
-            return false;
-        }
-        let visible = (view.0 / s) * (view.1 / s);
-        let needed = visible.min(full.0 * full.1);
-        let margined = (1.0 + 2.0 * REGION_MARGIN).powi(2);
-        // The region with its margin fits, so panning is free; at pixel-exact and beyond it switches anyway.
-        needed <= budget / margined || (s >= 1.0 && needed <= budget)
-    }
-
     /// Clamps to the overflow `(full × s − view) / 2`, zero once the image fits.
     pub fn clamp(&mut self, full: Size, view: Size) {
         let s = self.effective_scale(full, view);
@@ -241,13 +206,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_full_resolution_is_read_always_unless_editing_on_a_preview() {
-        assert!(reads_full(false, false));
-        assert!(!reads_full(true, false), "twin: a preview copy at fit reads the preview");
-        assert!(reads_full(true, true));
-    }
-
-    #[test]
     fn another_photo_opens_fitted_unless_the_zoom_is_kept() {
         let zoomed = Viewport { scale: Some(1.0), offset: (120.0, -40.0) };
         let mut v = zoomed;
@@ -260,19 +218,7 @@ mod tests {
     }
 
     const RAW: Size = (8368.0, 5584.0);
-    const BIG: Size = (3950.0, 2624.0);
     const AWKWARD: Size = (3810.0, 2540.0);
-
-    #[test]
-    fn full_resolution_is_asked_for_at_a_hundred_and_beyond_never_wide_out() {
-        let at = |s| Viewport { scale: Some(s), offset: (0.0, 0.0) };
-        assert!(at(1.0).needs_full_resolution(0.239, RAW, BIG, NOMINAL_BUDGET), "100 % on a large screen");
-        assert!(at(2.0).needs_full_resolution(0.239, RAW, BIG, NOMINAL_BUDGET), "200 %");
-        // Twin: at 20 % the reduced preview stays, or 100 % would mean "always full resolution".
-        assert!(!at(0.2).needs_full_resolution(0.239, RAW, BIG, NOMINAL_BUDGET));
-        let small = budget_for_working_set(1.5 * 1_073_741_824.0);
-        assert!(!at(1.0).needs_full_resolution(0.239, RAW, BIG, small), "a small GPU keeps its preview");
-    }
 
     #[test]
     fn a_zoom_holds_the_pixel_under_the_pointer() {
@@ -299,8 +245,7 @@ mod tests {
         let mut canvas = Viewport::default();
         canvas.toggle_hundred(RAW, AWKWARD);
         assert_eq!(canvas.scale, Some(1.0), "on 100 %, not an ulp beside it");
-        assert!(canvas.needs_full_resolution(0.239, RAW, AWKWARD, NOMINAL_BUDGET));
-        // Twin: the multiplied rung misses 1.0 on this window and would read as a preview.
+        // Twin: the multiplied rung misses 1.0 on this window.
         let fitted = Viewport::default().effective_scale(RAW, AWKWARD);
         assert_ne!(fitted * (1.0 / fitted), 1.0);
         canvas.toggle_hundred(RAW, AWKWARD);

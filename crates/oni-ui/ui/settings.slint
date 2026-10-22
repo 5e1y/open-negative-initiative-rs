@@ -3,14 +3,12 @@ import { Sheet, SheetKeys, SheetStyle, Button, ButtonGroup, ToggleRow, Note, Sec
 
 export global AppSettings {
     in property <bool> shown;
-    in property <bool> half-size;
     in property <bool> clicks;
     in property <bool> keep-zoom;
-    in property <bool> preview-editing;
     // The Frontier look in use, and whether it is the hand's file rather than the measured table.
     in property <string> frontier-look;
     in property <bool> frontier-hand;
-    // A choice by its preference's action: "half-size", "keep-zoom", "preview-editing" or "toggle-sound".
+    // A choice by its preference's action: "keep-zoom", "toggle-sound" or a Frontier key's.
     callback flip(string);
     callback close();
 }
@@ -24,23 +22,11 @@ export component SettingsSheet inherits Sheet {
         title: "Rendering";
         separated: false;
         ToggleRow {
-            label: "Read RAW previews at half size";
-            on: AppSettings.half-size;
-            toggled => { AppSettings.flip("half-size"); }
-        }
-        Note { text: "Opens faster, with less fine grain on screen. A zoom to full size and every export read the whole RAW."; }
-        ToggleRow {
             label: "Keep the zoom from one photo to the next";
             on: AppSettings.keep-zoom;
             toggled => { AppSettings.flip("keep-zoom"); }
         }
         Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
-        ToggleRow {
-            label: "Edit on a preview copy";
-            on: AppSettings.preview-editing;
-            toggled => { AppSettings.flip("preview-editing"); }
-        }
-        Note { text: "Off, the whole RAW is read as a photo opens and every render reads it, so a zoom never redraws. On, the editor works on a 2000 px copy and reads the whole RAW only for a zoom past it."; }
     }
     Section {
         title: "Frontier look";

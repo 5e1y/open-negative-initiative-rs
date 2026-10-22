@@ -17,12 +17,8 @@ impl Shell {
         let generation: Arc<AtomicU64> = Arc::default();
         paint(painter.clone(), engine.clone(), previews.clone(), hands.clone(), generation.clone(), options.support.clone(), options.screen);
         let disk = read_disk(options.support.clone(), options.screen);
-        let half = Preferences::load(&options.support).bool(preferences::HALF_SIZE_PREVIEWS).unwrap_or(false);
-        crate::render::HALF_SIZE_PREVIEWS.store(half, Ordering::Relaxed);
         let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
         crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
-        let preview = Preferences::load(&options.support).bool(preferences::PREVIEW_EDITING).unwrap_or(false);
-        crate::viewport::PREVIEW.store(preview, Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,
@@ -107,7 +103,6 @@ impl Shell {
             healing: HashSet::new(),
             patched: HashSet::new(),
             unhealable: HashSet::new(),
-            navigated_at: None,
             full_size: None,
             requested_view: None,
             requested_live: None,

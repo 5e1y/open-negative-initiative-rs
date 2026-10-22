@@ -18,9 +18,8 @@ impl Ctl {
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
-            let settled = s.navigated_at.is_none_or(|t| t.elapsed() >= viewport::SETTLE);
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let view_key = size.map(|size| (s.viewport, size, settled, full.is_some(), s.split.is_some(), cropping));
+            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.split.is_some(), cropping));
             let moved = revision != s.requested || s.rendered == 0;
             if !moved && view_key == s.requested_view {
                 return;
@@ -49,16 +48,12 @@ impl Ctl {
             } else {
                 (Kind::View, Instant::now())
             };
-            // Full resolution is built as the photo opens, or on a preview copy once the view settles past it.
-            let wants_full = viewport::reads_full(viewport::on_preview(), match (size, s.full_size) {
-                (Some(size), Some(f)) => settled && s.viewport.needs_full_resolution(negative.size().0 as f64 / negative.full_width, f, size, viewport::NOMINAL_BUDGET),
-                _ => false,
-            });
-            let build = (wants_full && full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
+            // Full resolution is built as the photo opens; every render reads it once built.
+            let build = (full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });
-            let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), settled, preview: viewport::on_preview() });
+            let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone() });
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens;
             // a full resolution being built is waited for, its landing asking again, never decoded twice.
             let building = build.is_some() || s.building_full.as_deref() == Some(path.as_str());

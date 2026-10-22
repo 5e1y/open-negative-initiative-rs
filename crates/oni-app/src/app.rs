@@ -350,12 +350,10 @@ pub struct State {
     healing: HashSet<String>,
     patched: HashSet<oni_settings::id::Id>,
     unhealable: HashSet<oni_settings::id::Id>,
-    /// The last navigation, which keeps the preview until it settles.
-    navigated_at: Option<Instant>,
     /// The displayed image's size in full-resolution pixels, from the last render placed.
     full_size: Option<(f64, f64)>,
     /// What the last render request showed, so a navigation alone asks again.
-    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool, bool)>,
+    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool)>,
     /// The settings the last render was asked with, so a crop moved while framing renders nothing.
     requested_live: Option<oni_settings::PipelineSettings>,
     placed: Option<Placed>,

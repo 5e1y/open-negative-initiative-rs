@@ -45,17 +45,17 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
     rig.pump();
     let sheet = first.window.global::<AppSettings>();
     assert!(sheet.get_shown() && first.window.get_sheet_shown());
-    assert_eq!((sheet.get_clicks(), sheet.get_half_size()), (false, false), "silent and whole by default");
+    assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (false, false), "silent and fitted by default");
     sheet.invoke_flip("toggle-sound".into());
-    sheet.invoke_flip("half-size".into());
+    sheet.invoke_flip("keep-zoom".into());
     rig.pump();
-    assert_eq!((sheet.get_clicks(), sheet.get_half_size()), (true, true));
+    assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (true, true));
     assert_eq!(first.window.global::<Menus>().get_titles().sound.as_str(), "Mute Key Clicks");
     rig.key("\u{1b}");
     assert!(!sheet.get_shown(), "Escape closes the sheet");
     let kept = Preferences::load(&support);
     assert_eq!((kept.int(preferences::GALLERY_COLUMNS), kept.bool(preferences::SOUND_MUTED)), (Some(12), Some(false)));
-    assert_eq!(kept.bool(preferences::HALF_SIZE_PREVIEWS), Some(true));
+    assert_eq!(kept.bool(preferences::KEEP_ZOOM), Some(true));
     drop(first);
 
     let second = shell(&support);

@@ -5,10 +5,6 @@ use super::*;
 /// `Negative.previewSide`: the long side every editor render and thumbnail starts from.
 pub const PREVIEW_SIDE: usize = 2000;
 
-/// The hand's choice to read a RAW's preview at half size, which skips the demosaic for a third of the
-/// second; whole by default, as the half size softens fine grain.
-pub static HALF_SIZE_PREVIEWS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-
 /// Scene-linear Rec. 2020, row-major, alpha 1.
 #[derive(Clone)]
 pub struct Linear {
@@ -52,13 +48,10 @@ pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
 }
 
 /// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it; a RAW
-/// whole, or at half size when the hand chose it.
+/// whole, so the editor's full resolution costs no second decode.
 pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => {
-            let half = HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed);
-            mosaic(path, if half { PREVIEW_SIDE } else { 0 })
-        }
+        oni_decode::Branch::Mosaic => mosaic(path, 0),
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
             linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)

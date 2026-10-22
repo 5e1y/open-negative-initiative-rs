@@ -4,8 +4,8 @@ use super::*;
 
 impl Engine {
     /// `Pipeline.apply` left on the GPU in one texture for the display kernel to read. With a view,
-    /// only its visible region, from the preview or past its ratio from the full frame, each reduced
-    /// once to the scale shown, so a notch computes no hidden pixel.
+    /// only its visible region, from the full frame once built, else the preview, each reduced once to
+    /// the scale shown, so a notch computes no hidden pixel.
     pub fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         let request = Request { full_width: Some(negative.full_width), ..Request::default() };
         self.read_custom(settings);
@@ -24,10 +24,9 @@ impl Engine {
         let vp = view.viewport;
         let scale = vp.effective_scale(full, view.size);
         let placement = vp.placement(full, view.size);
-        let at_full = crate::viewport::reads_full(view.preview, view.settled && vp.needs_full_resolution(ratio, full, view.size, crate::viewport::NOMINAL_BUDGET));
-        let (base, base_ratio) = match (&view.full, at_full) {
-            (Some(f), true) => (f.clone(), 1.0),
-            _ => (negative.preview.clone(), ratio),
+        let (base, base_ratio) = match &view.full {
+            Some(f) => (f.clone(), 1.0),
+            None => (negative.preview.clone(), ratio),
         };
         let e = base.extent();
         let long = e.w.max(e.h) as usize;
@@ -70,7 +69,7 @@ impl Engine {
             height: f64::from(region.h) * stretch,
             full,
             whole: region == extent,
-            at_full_resolution: at_full && view.full.is_some(),
+            at_full_resolution: view.full.is_some(),
         };
         Ok((self.one_texture(&image, Some(region))?, Some(placed)))
     }

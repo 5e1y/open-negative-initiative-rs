@@ -133,11 +133,11 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     let negative = match known {
         Some(n) => n,
         None => {
-            // A RAW read at half size, a third of the second: kept for the editor only if it reads RAWs so.
+            // A RAW read at half size, a third of the second: kept for the editor only when it was read whole.
             let decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), render::PREVIEW_SIDE)?;
             let halved = mosaic && decoded.full_width > decoded.linear.width as f64;
             let n = Arc::new(engine.prepare(decoded)?);
-            if !halved || render::HALF_SIZE_PREVIEWS.load(Ordering::Relaxed) {
+            if !halved {
                 previews.lock().expect("previews").insert(path.to_string(), n.clone());
             }
             n

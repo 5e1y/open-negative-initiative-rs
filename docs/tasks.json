@@ -1774,5 +1774,12 @@
     "title": "Sources in half floats; pooled textures shared across a chain's stages",
     "status": "done",
     "detail": "Unification, first step (owner's go, 2026-10-22). A decode, its preview and the halvings the canvas reads are held in rgba16float (Graph::upload_half, materialise_half: a render packed by one pass), half the memory; stages still write rgba32float, and a bare half source is read through a pass before any readback or copy. The pool rounded nothing: each stage's region, a few pixels apart in reach, took a texture of its own, so a render's working set needed a 1 GB idle budget. Pooled sides are now rounded up to 128 px and each dispatch clamps its reads to the rectangle held, so a chain's stages share textures; the idle budget falls to 512 MB. midzoom (2 x 24 MP): pinch p50 19.4 -> 7 ms, pan frame gap 10 -> 8.8 ms, graph textures peak 2.2 GB -> 1.4 GB; zoom from fit pinch p50 21.4 -> 1.4 ms. Benches log the graph's texture peak. Edit Together's group lives in the app's state, and the sources of a group left (SPARE) are no longer kept: held in thread-locals, they were freed after the GPU's own at the thread's end."
+  },
+  {
+    "id": 245,
+    "type": "simplification",
+    "title": "No preview copy: the editor always reads the full resolution",
+    "status": "done",
+    "detail": "Unification (owner's decisions of 2026-10-21). Settings' 'Edit on a preview copy' and 'Read RAW previews at half size' (and its menu item) are gone, with the settled flag, the debounce re-render after a navigation and Swift's MemoryBudget (needs_full_resolution, the budget formula and their checks): the full resolution is built as a photo opens and every render reads it once built, the preview serving only until then. A RAW's opening decode is always whole, so it is the full resolution too. Parity rows: MemoryBudget marked departed."
   }
 ]

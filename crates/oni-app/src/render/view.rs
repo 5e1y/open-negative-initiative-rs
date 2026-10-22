@@ -10,18 +10,14 @@ pub struct View {
     /// The canvas, in drawable pixels.
     pub size: (f64, f64),
     pub full: Option<Source>,
-    /// False while a navigation is in the hand: on a preview copy the preview serves it, as Swift's does.
-    pub settled: bool,
-    /// The editor on a preview copy, the full resolution read only settled past it.
-    pub preview: bool,
 }
 
-/// A view's identity for a kept render: the viewport, the canvas, settled or not, and which full frame.
-pub type ViewKey = (crate::viewport::Viewport, (f64, f64), bool, Option<u64>);
+/// A view's identity for a kept render: the viewport, the canvas and which full frame.
+pub type ViewKey = (crate::viewport::Viewport, (f64, f64), Option<u64>);
 
 impl View {
     pub fn key(&self) -> ViewKey {
-        (self.viewport, self.size, self.settled, self.full.as_ref().map(Source::id))
+        (self.viewport, self.size, self.full.as_ref().map(Source::id))
     }
 }
 

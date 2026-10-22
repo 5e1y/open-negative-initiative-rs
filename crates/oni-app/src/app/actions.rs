@@ -62,22 +62,6 @@ impl Ctl {
                 self.remember(preferences::KEEP_ZOOM, keep.into());
                 self.publish_settings();
             }
-            "preview-editing" => {
-                let preview = !crate::viewport::on_preview();
-                crate::viewport::PREVIEW.store(preview, std::sync::atomic::Ordering::Relaxed);
-                self.remember(preferences::PREVIEW_EDITING, preview.into());
-                self.publish_settings();
-                self.state.borrow_mut().requested_view = None;
-                self.request_render();
-            }
-            "half-size" => {
-                let half = !crate::render::HALF_SIZE_PREVIEWS.load(std::sync::atomic::Ordering::Relaxed);
-                crate::render::HALF_SIZE_PREVIEWS.store(half, std::sync::atomic::Ordering::Relaxed);
-                self.remember(preferences::HALF_SIZE_PREVIEWS, half.into());
-                self.publish_settings();
-                self.state.borrow().previews.lock().expect("previews").clear();
-                self.redecode();
-            }
             "cycle-filter" => self.cycle_filter(),
             "show-selected" => self.show_selected(),
             "copy" => {
