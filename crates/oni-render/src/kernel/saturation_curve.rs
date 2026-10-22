@@ -33,11 +33,3 @@ pub fn saturation_curve(s: V4, k: &SaturationCurve) -> V4 {
     let lost = dot(chroma, LUMA);
     with_alpha(map(chroma, |_, c| y + (c - lost)), s[3])
 }
-
-const SATURATION_CURVE: Shader = shader!("saturation_curve");
-
-impl Gpu {
-    pub fn saturation_curve(&self, image: &Image, k: &SaturationCurve) -> Image {
-        self.per_pixel(SATURATION_CURVE, |_| k.rows(), &[image], &[], 0)
-    }
-}

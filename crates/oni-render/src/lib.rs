@@ -1,27 +1,21 @@
 //! The render core: each GPU kernel beside the scalar reference that judges it.
 
 pub mod cpu;
-pub mod gpu;
 mod kernel;
 mod prelude;
 pub mod wgsl;
 
 pub use kernel::affine::Affine;
-pub use kernel::area::{AreaHistogram, Rect};
-pub use kernel::color_clamp::ColorClamp;
 pub use kernel::color_cube::ColorCube;
 pub use kernel::color_matrix::ColorMatrix;
-pub use kernel::correction::{CorrectionCost, CorrectionBiasField};
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};
 pub use kernel::exposure_adjust::ExposureAdjust;
 pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
-pub use kernel::gradients::{LinearGradient, RadialGradient};
 pub use kernel::orient::Orient;
 pub use kernel::saturation_curve::SaturationCurve;
 pub use kernel::scanner::{ScannerDensity, ScannerOutput, SCANNER_LIFT, ScannerEncode};
-pub use kernel::screen_gamut_zebra::ScreenGamutZebra;
 pub use kernel::spectrogram::Spectrogram;
 pub use kernel::stage47::{Stage47, Packed};
 pub use kernel::stroke_mask::StrokeMask;

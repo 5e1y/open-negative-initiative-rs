@@ -13,8 +13,7 @@ test = false
 
 [[bin]]
 name = "oni-tokens"
-path = "src/bin/oni-tokens.rs"
-test = false
+path = "src/bin/oni-tokens/main.rs"
 
 [dependencies]
 arboard = { version = "3.6", default-features = false }

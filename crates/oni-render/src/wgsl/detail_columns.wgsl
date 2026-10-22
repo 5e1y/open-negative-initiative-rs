@@ -58,24 +58,3 @@ fn detail_columns_px(s: vec4<f32>, x: i32, y: i32) -> vec4<f32> {
     }
     return vec4<f32>(rgb, s.a);
 }
-
-// MARK: - Buffers
-
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read> rows: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read_write> dest: array<vec4<f32>>;
-
-// Row `y` of the rows pass, column `x` of the source; the rows run `disk` wider each side.
-fn detail_row(x: i32, y: i32) -> vec4<f32> {
-    let h = i32(P.head.z);
-    let disk = i32(P.disk_force_amount_halo.x);
-    return rows[u32(clamp(y, 0, h - 1)) * P.head.w + u32(x + disk)];
-}
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    dest[i] = detail_columns_px(src_px[i], i32(i % P.head.y), i32(i / P.head.y));
-}

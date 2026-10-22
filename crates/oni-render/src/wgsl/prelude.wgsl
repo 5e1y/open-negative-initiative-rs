@@ -1,21 +1,10 @@
-// Shared by every kernel: Rec. 2020 luminance, the display gamma, the contrast family of
-// `Contrast.h`, and the conventions every binding follows.
+// Shared by every kernel: Rec. 2020 luminance, the display gamma and the contrast family of
+// `Contrast.h`.
 
 const LUMA = vec3<f32>(0.2627, 0.6780, 0.0593);
 const DISPLAY_GAMMA: f32 = 2.2;
 const CONTRAST_WARP: f32 = 0.88927292;
 const LOG10_E: f32 = 0.43429448190325176;
-const WORKGROUP: u32 = 64u;
-
-// The invocation's flat index: past 65535 workgroups a dispatch folds onto its second dimension.
-fn flat_index(id: vec3<u32>, groups: vec3<u32>) -> u32 {
-    return id.x + id.y * groups.x * WORKGROUP;
-}
-
-// Core Image's coordinate of a pixel's centre: buffers hold the top row first, Core Image's y runs up.
-fn ci_coord(x: u32, y: u32, origin: vec2<f32>, height: u32) -> vec2<f32> {
-    return vec2<f32>(origin.x + f32(x) + 0.5, origin.y + f32(height - 1u - y) + 0.5);
-}
 
 fn infinity() -> f32 {
     return bitcast<f32>(0x7f800000u);

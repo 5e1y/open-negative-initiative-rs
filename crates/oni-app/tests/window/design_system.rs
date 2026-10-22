@@ -1,7 +1,7 @@
 //! The screens stand on the design system alone: no literal value or styled primitive outside `ui/ds/`,
 //! and a planted one in a copy of the tree is caught, while the same text in a comment is not.
 
-use oni_app::strict::{self, Rule};
+use crate::strict::{self, Rule};
 use std::path::{Path, PathBuf};
 
 fn copy(from: &Path, to: &Path) {

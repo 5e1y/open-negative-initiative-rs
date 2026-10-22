@@ -35,11 +35,3 @@ pub fn color_matrix(s: V4, k: &ColorMatrix) -> V4 {
     let rows = [k.r_vector, k.g_vector, k.b_vector, k.a_vector];
     std::array::from_fn(|c| dot4(s, rows[c]) + k.bias_vector[c])
 }
-
-const COLOR_MATRIX: Shader = shader!("color_matrix");
-
-impl Gpu {
-    pub fn color_matrix(&self, image: &Image, k: &ColorMatrix) -> Image {
-        self.per_pixel(COLOR_MATRIX, |_| k.rows(), &[image], &[], 0)
-    }
-}
