@@ -1949,5 +1949,54 @@
     "title": "A hovered preset previews on every frame of Edit Together",
     "status": "done",
     "detail": "The single frame's render laid the hovered preset over its settings (preset_preview, Swift's previewedSettings) but Edit Together's grid did not, so a hover showed nothing on the group a click would change. The grid now lays the preview over the lead's and every other frame's live settings, and the hovered preset joins the grid's key so a hover asks a grid. Swift has no grid to copy; the preview follows what the click applies, the whole selection."
+  },
+  {
+    "id": 270,
+    "type": "performance",
+    "title": "Edit Together and the canvas wait for the GPU before the next render",
+    "status": "todo",
+    "detail": "The GPU audit found renders landing 15 to 80 ms behind their request while the CPU queued more; waiting at most 100 ms for the last render before taking the next halves the latency to photon and frees 250 MB, but the benches, which time the CPU side, read worse (pinch p50 1.4 to 19 ms). Diff kept at the scratchpad's gpu-settle.diff; needs the owner's eye on a real pan before it lands."
+  },
+  {
+    "id": 271,
+    "type": "refactor",
+    "title": "State split per feature, reset by assignment",
+    "status": "todo",
+    "detail": "State holds 117 fields; open_photo resets about 20 by hand and three partial copies of that reset exist, so a new per-frame field leaks into the next photo when one is missed. Group them as Frame (open, negative, full, reading, rendered, requested, placed, inputs, histogram), Dedust and Compare sub-structs, each reset with one assignment; then explicit imports instead of use super::* in feature modules."
+  },
+  {
+    "id": 272,
+    "type": "refactor",
+    "title": "One display encode, one latest-value slot, one live-settings builder",
+    "status": "todo",
+    "detail": "The display kernel's target-run-import sequence is written four times (landing, compare, gamut, loupe); three one-in-flight slots exist (the render worker, Edit Together's SLOT, the loupe's busy/again); single frame, loupe and Together build their live settings three ways. One Gpu::encode, one generic slot or Job variants on the render thread, and one State::live_settings(path)."
+  },
+  {
+    "id": 273,
+    "type": "refactor",
+    "title": "Full resolution built in one place",
+    "status": "todo",
+    "detail": "asking.rs, the loupe, ready_full, opening and heal each build or decode the full frame; ready_full's dwell rule is contradicted by the build on first render, and heal decodes outside decode_gate::FULL. One ensure_full() that heal goes through, ready_full/ahead/DWELL deleted."
+  },
+  {
+    "id": 274,
+    "type": "refactor",
+    "title": "Menus, sheets and the mode as Slint enums",
+    "status": "todo",
+    "detail": "Sixty menu actions are strings dispatched in actions.rs, eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites; a deleted feature leaves a menu item that silently does nothing. Enums for the action, the sheet and the mode; one Ask dialog for the six copies of Swift's DSDialogRequest; one RowTree for the archive and projects trees."
+  },
+  {
+    "id": 275,
+    "type": "refactor",
+    "title": "The scanner vocabulary leaves the phone link crate",
+    "status": "todo",
+    "detail": "Letter, Effect, Machine, Channel and Face live in oni-link, so oni-core depends on oni-link and tokio and oni-measure pulls in the network stack. Move them to oni-settings with oni-link re-exporting them, and oni-core/src/link.rs into the app's phone module."
+  },
+  {
+    "id": 276,
+    "type": "performance",
+    "title": "The sidebar tree and Prepare's cells laid like the gallery",
+    "status": "todo",
+    "detail": "The library and projects trees keep every row (each thumbnail row its own texture, about 270 MB at 1,000 photos); send only the rows in view plus a margin, as publish_tiles does. Prepare's cells model is replaced at each publish and its pictures compared pixel by pixel; keep it as the gallery's (#266)."
   }
 ]
