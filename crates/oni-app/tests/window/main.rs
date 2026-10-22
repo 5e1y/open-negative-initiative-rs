@@ -3,6 +3,7 @@
 
 mod common;
 mod runner;
+mod strict;
 mod archive;
 mod auto_balance;
 mod canvas_layout;

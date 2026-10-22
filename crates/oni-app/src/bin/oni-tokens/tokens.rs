@@ -531,20 +531,20 @@ pub fn generate(tokens: &str, foreign: &[&str]) -> Result<String, TokenError> {
     Ok(text)
 }
 
-/// Throws when two Swift names land on one Slint name, which would leave only the last one.
-pub fn check_unique(names: &[&str]) -> Result<(), TokenError> {
-    let mut seen = HashMap::new();
-    for n in names {
-        if let Some(prev) = seen.insert(n.to_lowercase(), *n) {
-            return Err(TokenError::Collision(format!("{prev} and {n}")));
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Throws when two Swift names land on one Slint name, which would leave only the last one.
+    fn check_unique(names: &[&str]) -> Result<(), TokenError> {
+        let mut seen = HashMap::new();
+        for n in names {
+            if let Some(prev) = seen.insert(n.to_lowercase(), *n) {
+                return Err(TokenError::Collision(format!("{prev} and {n}")));
+            }
+        }
+        Ok(())
+    }
 
     const SAMPLE: &str = r#"
 enum DS {
@@ -623,14 +623,14 @@ enum DS {
 
     #[test]
     fn the_committed_tokens_are_the_swift_ones() {
-        let Some(root) = crate::swift_sources() else {
+        let Some(root) = oni_app::swift_sources() else {
             println!("SKIPPED: no Swift sources (ONI_SWIFT_APP)");
             return;
         };
         let tokens = std::fs::read_to_string(root.join("DesignSystem/DSTokens.swift")).unwrap();
         let gamut = std::fs::read_to_string(root.join("Pipeline/ScreenGamut.swift")).unwrap_or_default();
         let fresh = generate(&tokens, &[&gamut]).unwrap();
-        let committed = include_str!("../../oni-ui/ui/ds/tokens.slint");
+        let committed = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../oni-ui/ui/ds/tokens.slint"));
         assert_eq!(fresh, committed, "ui/ds/tokens.slint is stale: run cargo run -p oni-app --bin oni-tokens");
         // Twin: a token moved in the Swift source must make the committed file stale.
         let moved = tokens.replace("static let panelWidth: CGFloat = 340", "static let panelWidth: CGFloat = 341");

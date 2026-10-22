@@ -34,7 +34,7 @@ A screen imports from `ds/ds.slint` and nowhere else. It may lay things out with
 as a plain box, `TouchArea`, `Scroller` and tokens. It never writes a literal value, and never styles
 a primitive itself.
 
-`tests/design_system.rs` enforces this, using `src/strict.rs`. It reads every `.slint` file outside
+`oni-app/tests/window/design_system.rs` enforces this, using `tests/window/strict.rs` beside it. It reads every `.slint` file outside
 `ui/ds/` (comments and strings blanked) and refuses:
 
 - a literal length other than zero (`px`, `phys-px`, `rem`, `pt`, `%`…), a literal duration, or an angle;
