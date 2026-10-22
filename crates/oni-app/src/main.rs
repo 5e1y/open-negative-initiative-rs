@@ -12,6 +12,14 @@ use slint::winit_030::winit::event::{ElementState, MouseButton};
 use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // macOS's allocator keeps freed large blocks dirty for reuse, 0.7 GB once two 24 MP frames are open,
+    // and reads its switch only at launch: the app starts itself again once with the cache off.
+    #[cfg(target_os = "macos")]
+    if std::env::var_os("MallocLargeCache").is_none() {
+        use std::os::unix::process::CommandExt;
+        let again = std::process::Command::new(std::env::current_exe()?).args(std::env::args_os().skip(1)).env("MallocLargeCache", "0").exec();
+        timing::line(&format!("the allocator's large cache stays on: {again}"));
+    }
     let catalogue = std::env::args().any(|a| a == "--catalogue") || std::env::var_os("ONI_CATALOGUE").is_some_and(|v| v == "1");
     if catalogue {
         Catalogue::new()?.run()?;

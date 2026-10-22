@@ -1844,5 +1844,12 @@
     "title": "Colourised glyphs drawn as masks, with no copy rendered aside",
     "status": "done",
     "detail": "Slint's femtovg renderer colourised an image by rendering a copy into a texture of its own, two passes each and again at every change of ink (a hover), 42 icons on the first frame. A solid ink now draws the image's alpha in that colour in the current pass (femtovg Paint::image_mask, tex_type 3 in both shaders): the first frame falls from 222 to 144 passes, and the window reads within 1/255 of the copy on 207 icon pixels. A check draws a glyph both ways and finds them within 1/255, and its twin tells a multiplied tint from them."
+  },
+  {
+    "id": 255,
+    "type": "performance",
+    "title": "The allocator's large-block cache off, so freed decodes go back to the system",
+    "status": "done",
+    "detail": "After a frame opened, 710 MB of MALLOC_LARGE stayed dirty although only 4 MB was live: macOS's allocator keeps freed large blocks (the f32 decode, the cache read, LibRaw's buffers, the upload bands) for reuse, and malloc_zone_pressure_relief returns none of it. libmalloc reads MallocLargeCache only at launch, so the app execs itself once with it at 0 (10 to 15 ms). On the midzoom bench with a prepared support folder: MALLOC_LARGE 710 MB to 4 MB, steady footprint 2.25 GB to 1.5 GB, peak 2.8-3.0 GB to 2.0-2.2 GB, notch renders unchanged."
   }
 ]
