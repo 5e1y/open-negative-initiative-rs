@@ -115,6 +115,7 @@ impl Shell {
             unhealable: HashSet::new(),
             full_size: None,
             requested_view: None,
+            hand: None,
             requested_live: None,
             placed: None,
             grab: None,

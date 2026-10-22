@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// How long the hand rests before the view is rendered sharp again.
+pub(in crate::app) const SETTLE: Duration = Duration::from_millis(150);
+
 impl Ctl {
     /// The canvas in drawable pixels, once laid out.
     pub(in crate::app) fn canvas_size(&self) -> Option<(f64, f64)> {
@@ -32,6 +35,18 @@ impl Ctl {
             self.lay(Some(p), (0, 0));
         }
         self.request_render();
+    }
+
+    /// A move of the hand's (a drag, a wheel, a pinch): the view renders lighter while it lasts, and
+    /// sharp once the hand has rested `SETTLE`.
+    pub(in crate::app) fn by_hand(self: &Rc<Self>, change: impl FnOnce(&mut Viewport, (f64, f64), (f64, f64))) {
+        self.state.borrow_mut().hand = Some(Instant::now());
+        slint::Timer::single_shot(SETTLE, || {
+            if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
+                me.request_render();
+            }
+        });
+        self.navigate(change);
     }
 
     /// The bar's − / +: the zoom ladder in the editor.

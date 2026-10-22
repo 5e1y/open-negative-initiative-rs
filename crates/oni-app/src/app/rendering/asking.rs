@@ -19,7 +19,8 @@ impl Ctl {
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.split.is_some(), cropping));
+            let coarse = s.hand.is_some_and(|t| t.elapsed() < super::navigation::SETTLE);
+            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.split.is_some(), cropping, coarse));
             let moved = revision != s.requested || s.rendered == 0;
             if !moved && view_key == s.requested_view {
                 return;
@@ -34,6 +35,14 @@ impl Ctl {
             }
             if s.rendered != 0 && view_key == s.requested_view && s.requested_live.as_ref() == Some(&live) {
                 s.requested = revision;
+                return;
+            }
+            // A pan `navigate` already laid asks no render while the picture rendered, its margin around the
+            // view included, still covers all the view shows: on a 5K canvas each render is 15 MP or more.
+            let laid = |k: &Option<(Viewport, (f64, f64), bool, bool, bool, bool)>| k.map(|(v, size, full, split, crop, coarse)| (v.scale, size, full, split, crop, coarse));
+            let covered = size.zip(s.placed).is_some_and(|(size, p)| s.viewport.placement(p.full, size).covered_by((p.x, p.y, p.width, p.height)));
+            if !moved && covered && laid(&view_key) == laid(&s.requested_view) && s.requested_live.as_ref() == Some(&live) {
+                s.requested_view = view_key;
                 return;
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
@@ -53,7 +62,7 @@ impl Ctl {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });
-            let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone() });
+            let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), coarse });
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens;
             // a full resolution being built is waited for, its landing asking again, never decoded twice.
             let building = build.is_some() || s.building_full.as_deref() == Some(path.as_str());

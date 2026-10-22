@@ -10,14 +10,16 @@ pub struct View {
     /// The canvas, in drawable pixels.
     pub size: (f64, f64),
     pub full: Option<Source>,
+    /// A hand is moving the view: it is rendered lighter, the sharp render following once it stops.
+    pub coarse: bool,
 }
 
 /// A view's identity for a kept render: the viewport, the canvas and which full frame.
-pub type ViewKey = (crate::viewport::Viewport, (f64, f64), Option<u64>);
+pub type ViewKey = (crate::viewport::Viewport, (f64, f64), Option<u64>, bool);
 
 impl View {
     pub fn key(&self) -> ViewKey {
-        (self.viewport, self.size, self.full.as_ref().map(Source::id))
+        (self.viewport, self.size, self.full.as_ref().map(Source::id), self.coarse)
     }
 }
 

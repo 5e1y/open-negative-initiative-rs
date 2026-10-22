@@ -79,6 +79,8 @@ export global Canvas {
     in property <length> crop-badge-y;
     // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
     in property <string> zoom-label;
+    // `ONI_HZ=1`: the canvas's real rate and the window's frames this second, by the zoom.
+    in property <string> hz;
     in property <bool> can-zoom-out;
     in property <bool> can-zoom-in;
     callback paint-start(length, length);
@@ -341,6 +343,7 @@ export component CanvasCard inherits Card {
         height: self.preferred-height;
         spacing: Space.s;
         alignment: center;
+        if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
         Label { text: Canvas.zoom-label; role: TextRole.value; }
         ButtonGroup {
             alignment: center;

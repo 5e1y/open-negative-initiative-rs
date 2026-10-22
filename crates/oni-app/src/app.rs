@@ -355,7 +355,8 @@ pub struct State {
     /// The displayed image's size in full-resolution pixels, from the last render placed.
     full_size: Option<(f64, f64)>,
     /// What the last render request showed, so a navigation alone asks again.
-    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool)>,
+    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool, bool)>,
+    hand: Option<Instant>,
     /// The settings the last render was asked with, so a crop moved while framing renders nothing.
     requested_live: Option<oni_settings::PipelineSettings>,
     placed: Option<Placed>,

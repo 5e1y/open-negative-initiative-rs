@@ -107,3 +107,18 @@ fn each_device_s_zoom_dose_is_its_own_and_a_notch_undoes_its_opposite() {
     assert!(zoom_factor(1.0, false) > 1.0 && zoom_factor(-1.0, false) < 1.0);
     assert!((zoom_factor(1.0, false) * zoom_factor(-1.0, false) - 1.0).abs() < 1e-12);
 }
+
+#[test]
+fn a_pan_inside_the_margin_rendered_needs_no_render_and_one_past_it_does() {
+    let (full, view) = ((6000.0, 4000.0), (1000.0, 800.0));
+    let v = Viewport { scale: Some(0.5), offset: (0.0, 0.0) };
+    // The view and an eighth of it rendered each side; a pan moves that picture with the hand.
+    let rendered = (-125.0, -100.0, 1250.0, 1000.0);
+    let moved = |dx: f64, dy: f64| (Viewport { offset: (dx, dy), ..v }.placement(full, view), (rendered.0 + dx, rendered.1 + dy, rendered.2, rendered.3));
+    assert!(v.placement(full, view).covered_by(rendered));
+    let (inside, laid) = moved(100.0, -80.0);
+    assert!(inside.covered_by(laid), "a pan within the margin still shows only rendered pixels");
+    // Twin: past the margin an edge of the view has nothing rendered under it.
+    let (past, laid) = moved(200.0, 0.0);
+    assert!(!past.covered_by(laid));
+}

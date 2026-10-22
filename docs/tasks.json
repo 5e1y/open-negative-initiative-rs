@@ -2005,5 +2005,68 @@
     "title": "Prepare the Roll keeps its cells, and a redrawn scan is laid again",
     "status": "done",
     "detail": "publish_prepare, which runs at every pointer move on the base step and every slider notch, set a new cell model each time, so Slint compared every cell's picture pixel by pixel. The model is kept: a cell is written when its photo, its picture's source (none, thumbnail, tile) or its marks change, or its tile was drawn again (fresh_tiles, filled where a tile lands). The scan and the loupe's source, set only on a new path or size since #266, are now also laid again when the preview worker draws them again for the same photo."
+  },
+  {
+    "id": 278,
+    "type": "performance",
+    "title": "Histogram plots kept as textures written in place, traced on one thread (96e0a6f)",
+    "status": "done",
+    "detail": "Each histogram plot (output, saturation, levels, curves) is one Rgba8Unorm texture kept while its size holds and rewritten with queue.write_texture; a revision per plot (Plots.*-revision to Plot.histogram-revision to Picture.revision) redraws it, and the software window keeps pixel images. One long-lived plots thread holds a Tracer whose buffers are reused, replacing a thread and about 23 MB of allocation per publish at 30 a second; the bytes are made non-premultiplied for the texture. Checks: kept and fresh tracers give the same bytes (twin: no clearing differs), alpha conversion (twin: truncation). A refused import (a texture lacking RENDER_ATTACHMENT) is logged."
+  },
+  {
+    "id": 279,
+    "type": "performance",
+    "title": "The Details loupe keeps its texture (9c74d63)",
+    "status": "done",
+    "detail": "The Details loupe keeps its texture while the region keeps its size and bumps DetailLoupe.revision, which LoupeBand reads, as Compare's before does; the texture is dropped with the band's picture. Real run: 10 Sharpening notches through one texture, notch to loupe 10 ms median."
+  },
+  {
+    "id": 280,
+    "type": "performance",
+    "title": "Export previews rendered at the size their slot shows (4540cc9)",
+    "status": "done",
+    "detail": "Export previews render at the long side their slot shows: Exporting.preview-room from ExportColumn, crop included, capped at Swift's 1600 px (preview_side, tested with a twin), and rendered again when the room grows; the size lands before the render, which waits up to 1 s for the room. publish_lines sets only changed rows. The Exporting global moves to export_state.slint, and export.slint's ceiling drops from 518 to 401. Measured 1600x1268 to 704x558 (8.1 to 1.6 MB) a preview in a 1100x680 pt window."
+  },
+  {
+    "id": 281,
+    "type": "performance",
+    "title": "The window keeps three drawables",
+    "status": "done",
+    "detail": "With one frame queued (desired_maximum_frame_latency 1, two drawables) the interface thread waited in CAMetalLayer nextDrawable whenever a render shared the GPU ahead of it: 1,181 samples against 5 with three drawables in the same pan. The vendored femtovg-wgpu renderer now asks a latency of 2; a frame still presents as soon as it is drawn, at most one more frame queued when the GPU runs late."
+  },
+  {
+    "id": 282,
+    "type": "fix",
+    "title": "The whole reduction near fit kept again",
+    "status": "done",
+    "detail": "#258 removed the reduction kept whole when it held at most two canvases (KEPT_WHOLE, reduced, Fitting.kept), so every pan render near fit read the full frame through two Lanczos passes and textures of hundreds of MB the pool could not keep; on a 5K canvas the picture fell to 25-30 updates a second. The view.rs hunk is put back; the pool's FIT stays."
+  },
+  {
+    "id": 283,
+    "type": "performance",
+    "title": "A pan renders only once the picture rendered no longer covers the view",
+    "status": "done",
+    "detail": "Each pan event asked a render although navigate had already moved the picture and the margin rendered around the view still covered it. request_render now skips a move of the offset alone while Placement::covered_by the picture laid holds: on the S1R bench 2 renders for 60 pan steps instead of 59. A check pans within the margin with no render needed, its twin past it."
+  },
+  {
+    "id": 284,
+    "type": "performance",
+    "title": "Gestures render lighter, the sharp render follows the stop",
+    "status": "done",
+    "detail": "A drag, a wheel or a pinch (by_hand) marks the hand; while it moves the view renders at most GESTURE_PIXELS (4 MP, about a 1440p window's view) and shows the texture stretched, and 150 ms after the last move (SETTLE) the view renders sharp. The view key carries the gesture so the sharp render is asked. Owner's call after testing on a 5K 120 Hz screen."
+  },
+  {
+    "id": 285,
+    "type": "tool",
+    "title": "ONI_HZ shows the picture's real rate",
+    "status": "done",
+    "detail": "hz.rs counts each second the frames the window draws and those in which the canvas changed (a render landed or the picture moved), 0 at rest; ONI_HZ=1 shows it by the zoom and the log keeps every second something changed. It told a near-fit pan at 73-93 Hz from a fully zoomed one at 111-118 on the same input. A check counts frames after changes, its twin a meter counting every frame."
+  },
+  {
+    "id": 286,
+    "type": "performance",
+    "title": "The columns and the bar cached as layers",
+    "status": "done",
+    "detail": "femtovg redraws the whole window at every frame, so a pan redrew every row of the library tree, the panel and the toolbar: the sample's interface thread spent most of its drawing in the tree's rows and tiles. The Tree, the Panel and the Toolbar carry cache-rendering-hint: each is drawn once into a texture and copied while nothing inside it changes. With it the near-fit pan on a 5K canvas runs at the display's rate (owner's eye)."
   }
 ]

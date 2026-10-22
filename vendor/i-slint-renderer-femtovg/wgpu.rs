@@ -406,8 +406,8 @@ impl FemtoVGRenderer<WGPUBackend> {
     ) {
         let mut surface_config =
             surface.get_default_config(&adapter, size.width, size.height).unwrap();
-        // ONI: one frame queued at most, so a drawn frame never waits behind another.
-        surface_config.desired_maximum_frame_latency = 1;
+        // ONI: three drawables, so the interface never waits for one while a render runs ahead on the GPU.
+        surface_config.desired_maximum_frame_latency = 2;
         surface_config.present_mode = wgpu::PresentMode::AutoNoVsync;
 
         let swapchain_capabilities = surface.get_capabilities(&adapter);

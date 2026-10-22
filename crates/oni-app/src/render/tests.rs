@@ -157,7 +157,7 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     let settings = PipelineSettings::rest(oni_settings::ConversionMode::Positive, true);
     let size = (600.0, 400.0);
     let hundred = crate::viewport::Viewport { scale: Some(1.0), offset: (0.0, 0.0) };
-    let view = View { viewport: hundred, size, full: Some(full.clone()) };
+    let view = View { viewport: hundred, size, full: Some(full.clone()), coarse: false };
     let (source, placed) = engine.resident(&negative, &settings, Some(&view)).unwrap();
     let placed = placed.unwrap();
     assert!(placed.at_full_resolution && !placed.whole);
@@ -171,7 +171,7 @@ fn a_view_renders_its_visible_region_from_the_source_its_scale_needs() {
     assert!(!placed.unwrap().at_full_resolution);
     assert!(stretched.extent().w * 3 < e.w, "{:?}", stretched.extent());
     // Fitted on a canvas smaller than the preview: the whole image, reduced from the full resolution.
-    let fitted = View { viewport: crate::viewport::Viewport::default(), size: (300.0, 200.0), full: Some(full) };
+    let fitted = View { viewport: crate::viewport::Viewport::default(), size: (300.0, 200.0), full: Some(full), coarse: false };
     let (_, placed) = engine.resident(&negative, &settings, Some(&fitted)).unwrap();
     let placed = placed.unwrap();
     assert!(placed.whole && placed.at_full_resolution && (placed.width - 300.0).abs() < 1.0, "fitted down from the full resolution: {placed:?}");

@@ -327,7 +327,7 @@ impl Ctl {
         c.on_dragged(move |x, y| {
             let Some((gx, gy)) = p.state.borrow_mut().grab.replace((x, y)) else { return };
             let b = backing(&p);
-            p.navigate(|v, full, size| v.pan(viewport::pan_step(f64::from(x - gx), f64::from(y - gy), b), full, size));
+            p.by_hand(|v, full, size| v.pan(viewport::pan_step(f64::from(x - gx), f64::from(y - gy), b), full, size));
         });
 
         let p = me.clone();
@@ -340,9 +340,9 @@ impl Ctl {
             let at = (f64::from(x) * b, f64::from(y) * b);
             if viewport::zooms(wheel.precise, command) {
                 let factor = viewport::zoom_factor(wheel.dy, wheel.precise);
-                p.navigate(|v, full, size| v.zoom_by(factor, at, full, size));
+                p.by_hand(|v, full, size| v.zoom_by(factor, at, full, size));
             } else {
-                p.navigate(|v, full, size| v.pan(viewport::pan_step(wheel.dx, wheel.dy, b), full, size));
+                p.by_hand(|v, full, size| v.pan(viewport::pan_step(wheel.dx, wheel.dy, b), full, size));
             }
             true
         });
@@ -359,7 +359,7 @@ impl Ctl {
                 factor
             };
             let b = backing(&p);
-            p.navigate(|v, full, size| v.zoom_by(factor, (f64::from(x) * b, f64::from(y) * b), full, size));
+            p.by_hand(|v, full, size| v.zoom_by(factor, (f64::from(x) * b, f64::from(y) * b), full, size));
         });
     }
 }

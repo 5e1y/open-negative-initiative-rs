@@ -186,6 +186,17 @@ pub struct Placement {
     pub visible: (f64, f64, f64, f64),
 }
 
+impl Placement {
+    /// Whether a picture laid at `rect`, in view pixels, covers all the image the view shows: a pan that
+    /// keeps it so needs no render, the picture moved being the one a render would give.
+    pub fn covered_by(&self, rect: (f64, f64, f64, f64)) -> bool {
+        let (x, y) = (self.image.0 + self.visible.0, self.image.1 + self.visible.1);
+        let (w, h) = (self.visible.2, self.visible.3);
+        const SLACK: f64 = 0.5;
+        rect.0 <= x + SLACK && rect.1 <= y + SLACK && rect.0 + rect.2 >= x + w - SLACK && rect.1 + rect.3 >= y + h - SLACK
+    }
+}
+
 impl Viewport {
     pub fn placement(&self, full: Size, view: Size) -> Placement {
         let s = self.effective_scale(full, view);

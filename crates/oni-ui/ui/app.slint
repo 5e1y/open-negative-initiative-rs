@@ -274,11 +274,13 @@ export component MainWindow inherits AppWindow {
         }
         VerticalLayout {
             // The export surface hides the bar whole: every gesture there is the panel's.
-            if !Exporting.shown: Toolbar { }
+            // The columns and the bar drawn once into a texture each, kept while nothing in them changes:
+            // femtovg redraws the whole window at every frame a pan moves, every row of the tree included.
+            if !Exporting.shown: Toolbar { cache-rendering-hint: true; }
             HorizontalLayout {
                 vertical-stretch: 1;
                 // The gallery always lists the library; beside a photo the column can be hidden.
-                if (App.gallery || !App.library-hidden) && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; }
+                if (App.gallery || !App.library-hidden) && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; cache-rendering-hint: true; }
                 Rectangle {
                     horizontal-stretch: 1;
                     // `card`: flush with the columns and the status bar, inset on all four sides only on export.
@@ -377,7 +379,7 @@ export component MainWindow inherits AppWindow {
                         }
                     }
                 }
-                if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { }
+                if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { cache-rendering-hint: true; }
                 if App.gallery && !Exporting.shown && !Preparing.shown: Info { }
                 if Preparing.shown: RollPanel { }
                 if Exporting.shown: ExportPanel { }

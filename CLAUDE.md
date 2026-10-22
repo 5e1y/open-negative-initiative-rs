@@ -51,8 +51,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
 - **femtovg is vendored** (`vendor/femtovg`, 0.27.0, `[patch.crates-io]`) to keep its wgpu pipelines across
   flushes: upstream drops them and an interface frame cost 8.7 ms instead of 1.9 ms; a frame is submitted every 16 passes, as
   Metal holds about 2.6 MB of driver memory per pass until its command buffer completes (590 MB on a first frame). Slint's femtovg renderer is
-  vendored too (`vendor/i-slint-renderer-femtovg`, 1.18.1) for one frame in flight and no vsync wait on present
-  (`ONI:` comments in `wgpu.rs`): the display link still paces the draws, a frame is never queued behind another.
+  vendored too (`vendor/i-slint-renderer-femtovg`, 1.18.1) for no vsync wait on present and three drawables
+  (`ONI:` comments in `wgpu.rs`): the display link still paces the draws; with two, the interface waited on drawables.
+- **femtovg redraws the whole window at every frame**: the columns and the bar carry `cache-rendering-hint`, or a
+  pan redraws every row of the tree. A gesture renders the view lighter, sharp once the hand rests (`SETTLE`).
 
 ## Build
 

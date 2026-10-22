@@ -118,6 +118,7 @@ impl Ctl {
                 s.full_size = Some(p.full);
             }
         }
+        crate::hz::changed();
         c.set_frame_x(at[0]);
         c.set_frame_y(at[1]);
         c.set_frame_width(at[2]);
@@ -200,6 +201,7 @@ impl Ctl {
         c.set_frame_clip_width(image.2.0 as i32);
         c.set_frame_clip_height(image.2.1 as i32);
         c.set_frame_revision(c.get_frame_revision().wrapping_add(1));
+        crate::hz::changed();
         if let Some(e) = refused {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
             static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);

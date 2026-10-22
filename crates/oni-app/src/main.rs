@@ -172,6 +172,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         shell.window.show()?;
         lights(&shell.window);
     }
+    let _hz = if bench::requested().is_none() { oni_app::hz::watch(&shell.window) } else { None };
     slint::run_event_loop()?;
     // A quit that never asked the window to close still writes the open frame's last settings.
     if let Some(failure) = shell.last_writes() {
