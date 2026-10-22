@@ -1802,5 +1802,12 @@
     "title": "Edit Together's sheet reuses the last one, cleared",
     "status": "done",
     "detail": "Every grid laid a fresh owned texture, a sheet's allocation and zero fill each notch. The device now asks for CLEAR_TEXTURE where the adapter has it, and laid_out takes an output no source holds any more (the one before the sheet shown) and clears it in place; without the feature a fresh texture as before. grid bench (36 frames): notch to canvas p99 49 -> 19 ms, 283 -> 334 grids over 480 notches."
+  },
+  {
+    "id": 249,
+    "type": "simplification",
+    "title": "The Details loupe goes through the canvas's display kernel",
+    "status": "done",
+    "detail": "Unification. The loupe's region was read back under the engine's lock and encoded for the screen on the CPU; it now stays on the GPU (Engine::loupe returns the materialised region) and the display kernel encodes it into a texture the band shows, read back only on Slint's software renderer, as the canvas. The engine is held for the render alone. loupe bench: a Sharpening notch reaches the loupe in 6 ms median, as before."
   }
 ]

@@ -1,13 +1,14 @@
 //! The Details loupe in the window: the band's region of the full-resolution frame, which Details
-//! builds, rendered off this thread with one render in flight and the latest asked kept.
+//! builds, rendered off this thread with one render in flight and the latest asked kept, then encoded
+//! for the screen by the canvas's display kernel.
 
 use super::{Ctl, with_shell};
-use crate::display::{Params, Screen};
-use crate::render::{self, Reading};
+use crate::display::{self, Params, Screen};
+use crate::render::Reading;
 use crate::viewport::Viewport;
 use crate::{App, DetailLoupe, PanelState, loupe};
 use oni_settings::PipelineSettings;
-use slint::{ComponentHandle, Image, Rgba8Pixel, SharedPixelBuffer};
+use slint::{ComponentHandle, Image};
 use std::rc::Rc;
 
 /// What a loupe render shows: the settings, the view, the band, the ratio, the frame and the screen.
@@ -104,13 +105,8 @@ impl Ctl {
         let Some((full, settings, key, path)) = job else { return };
         let engine = self.engine.clone();
         std::thread::spawn(move || {
-            let (_, viewport, drawable, m, _, screen) = key;
-            let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| {
-                laid.map(|(linear, _)| {
-                    let (w, h) = (linear.width as u32, linear.height as u32);
-                    (render::encoded(&linear, &Params::new(screen, w, h, 0), 1), w, h)
-                })
-            });
+            let (_, viewport, drawable, m, _, _) = key;
+            let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
             with_shell(move |c| {
                 let again = {
                     let mut s = c.state.borrow_mut();
@@ -119,7 +115,7 @@ impl Ctl {
                 };
                 let open = c.state.borrow().open_path() == Some(path.as_str());
                 match made {
-                    Ok(Some((bytes, w, h))) if open => c.show_loupe(&bytes, w, h, m, key),
+                    Ok(Some(source)) if open => c.show_loupe(&source, m, key),
                     Ok(_) => {}
                     Err(e) => crate::timing::line(&format!("loupe not rendered: {e}")),
                 }
@@ -130,11 +126,25 @@ impl Ctl {
         });
     }
 
-    fn show_loupe(&self, bytes: &[u8], w: u32, h: u32, m: f64, key: Key) {
+    /// The region encoded into a texture of its own, which the band shows.
+    fn show_loupe(&self, source: &oni_graph::Source, m: f64, key: Key) {
         let Some(win) = self.window() else { return };
+        let Some(view) = source.view() else { return };
+        let e = source.extent();
+        let (w, h) = (e.w, e.h);
+        let image = {
+            let s = self.state.borrow();
+            let g = &s.gpu;
+            let target = display::Gpu::target(&g.device, w, h);
+            g.kernel.run(&g.device, &g.queue, view, &Params::new(key.5, w, h, 0), &target);
+            match g.read_back(&target, (w, h)) {
+                Some(image) => image,
+                None => Image::try_from(target).unwrap_or_default(),
+            }
+        };
         let scale = f64::from(win.window().scale_factor());
         let band = win.global::<DetailLoupe>();
-        band.set_source(Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w, h)));
+        band.set_source(image);
         band.set_shown_width((f64::from(w) * m / scale) as f32);
         band.set_shown_height((f64::from(h) * m / scale) as f32);
         let mut s = self.state.borrow_mut();

@@ -319,15 +319,16 @@ impl Engine {
     }
 
     /// `Loupe.recipe`: the pipeline on the full-resolution frame FIRST, the region second, since
-    /// the neighbourhood radii index on the incoming extent; `None` on an unlaid band.
-    pub fn loupe(&mut self, full: &Source, settings: &PipelineSettings, viewport: &crate::viewport::Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Linear, Rect)>, String> {
+    /// the neighbourhood radii index on the incoming extent; kept on the GPU for the display kernel,
+    /// `None` on an unlaid band.
+    pub fn loupe(&mut self, full: &Source, settings: &PipelineSettings, viewport: &crate::viewport::Viewport, drawable: (f64, f64), magnification: f64) -> Result<Option<(Source, Rect)>, String> {
         self.read_custom(settings);
         let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
         let image = self.pipeline.image(&mut self.graph, full, settings, &Request::default(), &inputs).map_err(|e| e.to_string())?;
         let image = self.proof.laid(&mut self.graph, image, settings)?;
         let Some(zone) = crate::loupe::region(image.extent(), viewport, drawable, magnification) else { return Ok(None) };
-        let pixels = self.graph.render(&image, zone, None).map_err(|e| e.to_string())?;
-        Ok(Some((Linear { width: zone.w as usize, height: zone.h as usize, pixels }, zone)))
+        let source = self.graph.materialise_region(&image, zone).map_err(|e| e.to_string())?;
+        Ok(Some((source, zone)))
     }
 
     /// Frees the textures a search left idle.
