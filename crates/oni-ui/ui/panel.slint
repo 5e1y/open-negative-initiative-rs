@@ -15,6 +15,7 @@ export component Panel inherits Surface {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
         if !Lab.shown && PanelState.tab != 3: HistogramFrame {
             source: Plots.output;
+            revision: Plots.output-revision;
             size: PlotSize.main;
             init => { Plots.output-width = self.width; Plots.output-height = self.height; }
             changed width => { Plots.output-width = self.width; }

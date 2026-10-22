@@ -175,7 +175,7 @@ export component ColorPane inherits Pane {
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
         help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
-        CurvesEditor { histogram: Plots.curves; }
+        CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.
     if !Editors.monochrome: EditorBlock {
@@ -192,6 +192,6 @@ export component ColorPane inherits Pane {
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
         help: "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.";
-        SaturationEditor { histogram: Plots.saturation; }
+        SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }

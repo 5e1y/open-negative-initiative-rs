@@ -12,6 +12,11 @@ export global Plots {
     in property <image> levels;
     // The manual curves' input distribution, the channel in focus drawn whole.
     in property <image> curves;
+    // `Picture.revision` for each plot, a texture rewritten in place at each trace.
+    in property <int> output-revision;
+    in property <int> saturation-revision;
+    in property <int> levels-revision;
+    in property <int> curves-revision;
 }
 
 export global PanelState {
