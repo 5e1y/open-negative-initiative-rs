@@ -3,9 +3,10 @@
 use super::*;
 
 /// The tiles Slint was last given, read back by the checks.
+/// The tiles laid in the grid, its empty slots left out.
 pub fn tiles(window: &MainWindow) -> Vec<Tile> {
     let model = window.global::<Library>().get_tiles();
-    (0..model.row_count()).filter_map(|i| model.row_data(i)).collect()
+    (0..model.row_count()).filter_map(|i| model.row_data(i)).filter(|t| t.width > 0.0).collect()
 }
 
 /// The display kernel's block with the screen gamut's stripes when they are on, laid by where the

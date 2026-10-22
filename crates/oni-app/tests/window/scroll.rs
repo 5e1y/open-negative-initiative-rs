@@ -256,7 +256,7 @@ pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
     assert!(slowest < Duration::from_millis(16), "a knob move took {slowest:?}, past a frame");
 
     // The tiles laid are those in view, the heading pinned at the new top, as after a wheel.
-    let tiles: Vec<oni_app::Tile> = lib.get_tiles().iter().collect();
+    let tiles = oni_app::app::tiles(&shell.window);
     assert!(ctl.state.borrow().visible().start > 0, "the visible range stayed at the top");
     assert!(tiles.iter().any(|t| t.y <= scroll + page / 2.0 && t.y + t.height >= scroll), "no tile laid where the grid now shows");
     assert!(tiles.iter().all(|t| t.y + t.height > scroll - page && t.y < scroll + 2.0 * page), "tiles laid far from the view");

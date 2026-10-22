@@ -28,18 +28,16 @@ pub(super) fn click_at(w: &crate::MainWindow, at: slint::LogicalPosition) {
 
 /// The tile at place `i` in the gallery, when it is laid on screen.
 pub(super) fn tile(w: &crate::MainWindow, i: usize) -> Option<crate::Tile> {
-    let lib = w.global::<crate::Library>();
-    let tiles = lib.get_tiles();
-    (0..tiles.row_count()).filter_map(|k| tiles.row_data(k)).find(|t| t.index as usize == i)
+    crate::app::tiles(w).into_iter().find(|t| t.index as usize == i)
 }
 
 /// The tiles and the sidebar's photo rows lit, by name.
 pub(super) fn lit(w: &crate::MainWindow) -> (Vec<String>, Vec<String>) {
     let lib = w.global::<crate::Library>();
-    let tiles = lib.get_tiles();
+    let tiles = crate::app::tiles(w);
     let rows = lib.get_rows();
     (
-        (0..tiles.row_count()).filter_map(|k| tiles.row_data(k)).filter(|t| t.selected).map(|t| t.caption.to_string()).collect(),
+        tiles.into_iter().filter(|t| t.selected).map(|t| t.caption.to_string()).collect(),
         (0..rows.row_count()).filter_map(|k| rows.row_data(k)).filter(|r| r.kind == 2 && r.selected).map(|r| r.title.to_string()).collect(),
     )
 }

@@ -240,11 +240,11 @@ impl Ctl {
                 Ok((rgba, w, h)) => {
                     s.failed.remove(&fingerprint);
                     s.asked.remove(&fingerprint);
-                    s.thumbs.insert(fingerprint, image(&rgba, w, h));
+                    s.thumbs.insert(fingerprint.clone(), image(&rgba, w, h));
                     None
                 }
                 Err(e) => {
-                    s.failed.insert(fingerprint);
+                    s.failed.insert(fingerprint.clone());
                     Some(format!("{name}: {e}"))
                 }
             }
@@ -252,6 +252,7 @@ impl Ctl {
         if let Some(message) = failure {
             self.say(&message);
         }
+        self.relay_thumbnail(&fingerprint);
         self.publish_tiles();
     }
 
@@ -261,8 +262,9 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             s.asked.remove(&fingerprint);
-            s.thumbs.insert(fingerprint, image(&rgba, w, h));
+            s.thumbs.insert(fingerprint.clone(), image(&rgba, w, h));
         }
+        self.relay_thumbnail(&fingerprint);
         self.publish_tiles();
     }
 

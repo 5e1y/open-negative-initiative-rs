@@ -142,6 +142,10 @@ pub(crate) struct Roll {
     pub opened_among: HashSet<String>,
     pub require: bool,
     tutorial: Option<tutorial::Playing>,
+    /// What the scan and the loupe were last given, by path and size: a 24 MP picture set again
+    /// would be compared pixel by pixel at every move of the pointer.
+    laid_scan: Option<(String, (usize, usize))>,
+    laid_loupe: Option<(String, (usize, usize))>,
 }
 
 impl Default for Roll {
@@ -191,6 +195,8 @@ impl Default for Roll {
             opened_among: HashSet::new(),
             require: false,
             tutorial: None,
+            laid_scan: None,
+            laid_loupe: None,
         }
     }
 }

@@ -196,12 +196,15 @@ impl Ctl {
             p.set_loupe_shown(false);
             return;
         };
-        let s = self.state.borrow();
+        let mut s = self.state.borrow_mut();
         let radius = base_radius(&s);
-        let r = &s.prepare;
-        let Some((path, scan, _)) = r.scan.clone() else { return };
+        let r = &mut s.prepare;
+        let Some((path, scan, scan_size)) = r.scan.clone() else { return };
         p.set_scan_ready(true);
-        p.set_scan(scan.clone());
+        if r.laid_scan.as_ref() != Some(&(path.clone(), scan_size)) {
+            p.set_scan(scan.clone());
+            r.laid_scan = Some((path.clone(), scan_size));
+        }
         p.set_scan_x(rect.0 as f32);
         p.set_scan_y(rect.1 as f32);
         p.set_scan_width(rect.2 as f32);
@@ -223,7 +226,10 @@ impl Ctl {
         p.set_loupe_shown(true);
         p.set_loupe_x(pointer.0 as f32);
         p.set_loupe_y(pointer.1 as f32);
-        p.set_loupe_source(source);
+        if r.laid_loupe.as_ref() != Some(&(path.clone(), (width, height))) {
+            p.set_loupe_source(source);
+            r.laid_loupe = Some((path.clone(), (width, height)));
+        }
         p.set_loupe_cut(ModelRc::new(VecModel::from(l.cut.to_vec())));
         p.set_loupe_shown_at(ModelRc::new(VecModel::from(l.at.iter().map(|v| *v as f32).collect::<Vec<_>>())));
         p.set_loupe_rings(ModelRc::new(VecModel::from(l.rings.iter().map(|v| *v as f32).collect::<Vec<_>>())));

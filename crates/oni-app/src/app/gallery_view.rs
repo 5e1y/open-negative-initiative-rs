@@ -33,6 +33,23 @@ impl Ctl {
         self.publish_tiles();
     }
 
+    /// A thumbnail drawn again onto the cells already showing its photo, the only ones it changes.
+    pub(super) fn relay_thumbnail(&self, fingerprint: &str) {
+        let Some(w) = self.window() else { return };
+        let model = w.global::<Library>().get_tiles();
+        let Some(rows) = model.as_any().downcast_ref::<VecModel<Tile>>() else { return };
+        let s = self.state.borrow();
+        let Some(picture) = s.thumbs.get(fingerprint) else { return };
+        for at in 0..rows.row_count() {
+            let Some(mut row) = rows.row_data(at) else { continue };
+            let shows = s.order.get(row.index as usize).and_then(|p| s.fingerprints.get(p)).is_some_and(|f| f == fingerprint);
+            if shows && row.width > 0.0 {
+                row.picture = picture.clone();
+                rows.set_row_data(at, row);
+            }
+        }
+    }
+
     /// The cells in view and one row either side, the only tiles Slint is given.
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
@@ -90,10 +107,11 @@ impl Ctl {
                 Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into(), renaming }
             })
             .collect();
+        let slots = range.len();
         s.visible = range;
         let (height, scroll) = (s.layout.height, s.scroll);
         drop(s);
-        lib.set_tiles(ModelRc::new(VecModel::from(tiles)));
+        lay_tiles(&lib, tiles, slots);
         set_headings(&lib, headings);
         self.publish_pinned();
         lib.set_content_height(height);
@@ -201,4 +219,64 @@ fn set_headings(lib: &Library, headings: Vec<Heading>) {
         return;
     }
     lib.set_headings(ModelRc::new(VecModel::from(headings)));
+}
+
+/// The grid's tiles in one kept model, each photo in the slot its index keeps while in view: a scroll
+/// or a pick rewrites only the cells that changed, and Slint uploads no unchanged thumbnail again.
+fn lay_tiles(lib: &Library, tiles: Vec<Tile>, slots: usize) {
+    let slots = slots.max(1);
+    let model = lib.get_tiles();
+    let kept = model.as_any().downcast_ref::<VecModel<Tile>>().filter(|m| m.row_count() == slots);
+    let Some(kept) = kept else {
+        let mut rows = vec![Tile::default(); slots];
+        for tile in tiles {
+            let at = tile.index as usize % slots;
+            rows[at] = tile;
+        }
+        return lib.set_tiles(ModelRc::new(VecModel::from(rows)));
+    };
+    let mut rows: Vec<Option<Tile>> = vec![None; slots];
+    for tile in tiles {
+        let at = tile.index as usize % slots;
+        rows[at] = Some(tile);
+    }
+    for (at, row) in rows.into_iter().enumerate() {
+        let new = row.unwrap_or_default();
+        let old = kept.row_data(at).unwrap_or_default();
+        if !same_tile(&old, &new) {
+            kept.set_row_data(at, new);
+        }
+    }
+}
+
+/// The same cell but for its picture, which only a landing thumbnail changes (`relay_thumbnail`)
+/// once the cell holds one; comparing pictures would read every pixel of every tile.
+fn same_tile(old: &Tile, new: &Tile) -> bool {
+    let held = old.picture.size().width > 0 || new.picture.size().width == 0;
+    let place = (old.index, old.x, old.y, old.width, old.height) == (new.index, new.x, new.y, new.width, new.height);
+    let marks = (old.selected, old.medal, old.missing, old.rgb) == (new.selected, new.medal, new.missing, new.rgb);
+    held && place && marks && old.caption == new.caption
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn picture(side: u32) -> Image {
+        Image::from_rgba8(slint::SharedPixelBuffer::new(side, side))
+    }
+
+    #[test]
+    fn a_cell_is_rewritten_only_when_more_than_its_held_picture_changes() {
+        let tile = Tile { index: 7, width: 100.0, picture: picture(4), caption: "DSC_1".into(), ..Tile::default() };
+        // Its picture drawn again goes through the relay, and a pending one never blanks a held one.
+        assert!(same_tile(&tile, &Tile { picture: picture(8), ..tile.clone() }));
+        assert!(same_tile(&tile, &Tile { picture: Image::default(), ..tile.clone() }));
+        // Twins: a pick, a move or a first picture each rewrite the cell.
+        assert!(!same_tile(&tile, &Tile { selected: true, ..tile.clone() }));
+        assert!(!same_tile(&tile, &Tile { index: 8, ..tile.clone() }));
+        let pending = Tile { picture: Image::default(), ..tile.clone() };
+        assert!(!same_tile(&pending, &tile));
+    }
 }

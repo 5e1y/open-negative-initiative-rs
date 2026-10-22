@@ -405,7 +405,7 @@ component BaseSurface inherits VerticalLayout {
             }
             clicked => { Preparing.base-clicked(self.mouse-x, self.mouse-y); }
         }
-        if Preparing.scan-ready && Preparing.loupe-shown: Loupe {
+        if Preparing.scan-ready: Loupe { visible: Preparing.loupe-shown; // kept while the pointer leaves: its source is the whole frame
             x: Preparing.loupe-x - self.width / 2;
             y: Preparing.loupe-y - self.height / 2;
             source: Preparing.loupe-source;
