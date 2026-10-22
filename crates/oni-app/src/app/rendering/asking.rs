@@ -58,7 +58,8 @@ impl Ctl {
                 (Kind::View, Instant::now())
             };
             // Full resolution is built as the photo opens; every render reads it once built.
-            let build = (full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
+            let whole = render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed);
+            let build = (whole && full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
                 s.building_full = Some(path.clone());
                 (path.clone(), render::Reading::of(s.store.settings()))
             });

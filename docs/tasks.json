@@ -2068,5 +2068,19 @@
     "title": "The columns and the bar cached as layers",
     "status": "done",
     "detail": "femtovg redraws the whole window at every frame, so a pan redrew every row of the library tree, the panel and the toolbar: the sample's interface thread spent most of its drawing in the tree's rows and tiles. The Tree, the Panel and the Toolbar carry cache-rendering-hint: each is drawn once into a texture and copied while nothing inside it changes. With it the near-fit pan on a 5K canvas runs at the display's rate (owner's eye)."
+  },
+  {
+    "id": 287,
+    "type": "performance",
+    "title": "RAWs open at LibRaw's half size, whole on the Settings' choice",
+    "status": "done",
+    "detail": "An opening decoded the whole RAW: 0.90 s for a 24 MP Nikon, 1.4-1.55 s for a 47 MP S1R, seconds past 200 MP, the first time a photo opened. The editor now reads LibRaw's half size (a sensor pixel a 2x2 block, no demosaic; 0.33-0.38 s cold) and builds no full resolution beside it; Settings > Rendering > Decode RAW files at full resolution brings the whole decode back (preference fullDecode, render::FULL_DECODE). Details, De-dust's search and every export still read the whole RAW. Half decodes are kept on disk as whole ones are (oni_decode::HALF, its side in the key): 14-31 ms read back. Owner's call: no difference seen on screen."
+  },
+  {
+    "id": 288,
+    "type": "performance",
+    "title": "The frames either side of the one opened are decoded into the cache",
+    "status": "done",
+    "detail": "Each opening decodes its gallery neighbours, the next and the previous, into the disk cache behind the hand's own decode (background slots), so a step to one reads it back in tens of ms; a later opening drops the rest. Only the decode passes through memory, one at a time."
   }
 ]

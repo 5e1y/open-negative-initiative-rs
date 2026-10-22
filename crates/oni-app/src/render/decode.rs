@@ -2,6 +2,9 @@
 
 use super::*;
 
+/// The editor's RAWs decoded whole as they open (the Settings' choice); off, at LibRaw's half size.
+pub static FULL_DECODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// `Negative.previewSide`: the long side every editor render and thumbnail starts from.
 pub const PREVIEW_SIDE: usize = 2000;
 
@@ -48,10 +51,10 @@ pub fn decode(path: &Path, reading: Reading) -> Result<Decoded, String> {
 }
 
 /// `RawDecode.alone` on its preview: the branch the bytes claim, the preview side asked of it; a RAW
-/// whole, so the editor's full resolution costs no second decode.
+/// at LibRaw's half size, or whole when the Settings ask it, so the full resolution costs no second decode.
 pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
-        oni_decode::Branch::Mosaic => mosaic(path, 0),
+        oni_decode::Branch::Mosaic => mosaic(path, if FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed) { 0 } else { oni_decode::HALF }),
         oni_decode::Branch::LinearRgb => {
             let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
             linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)

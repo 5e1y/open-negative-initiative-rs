@@ -56,6 +56,12 @@ impl Ctl {
                 self.remember(preferences::SOUND_MUTED, muted.into());
                 self.publish_settings();
             }
+            "full-decode" => {
+                let whole = !crate::render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed);
+                crate::render::FULL_DECODE.store(whole, std::sync::atomic::Ordering::Relaxed);
+                self.remember(preferences::FULL_DECODE, whole.into());
+                self.publish_settings();
+            }
             "keep-zoom" => {
                 let keep = !crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed);
                 crate::viewport::KEEP_ZOOM.store(keep, std::sync::atomic::Ordering::Relaxed);

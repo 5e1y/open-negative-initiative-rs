@@ -5,6 +5,7 @@ export global AppSettings {
     in property <bool> shown;
     in property <bool> clicks;
     in property <bool> keep-zoom;
+    in property <bool> full-decode;
     // The Frontier look in use, and whether it is the hand's file rather than the measured table.
     in property <string> frontier-look;
     in property <bool> frontier-hand;
@@ -29,6 +30,12 @@ export component SettingsSheet inherits Sheet {
             toggled => { AppSettings.flip("keep-zoom"); }
         }
         Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
+        ToggleRow {
+            label: "Decode RAW files at full resolution";
+            on: AppSettings.full-decode;
+            toggled => { AppSettings.flip("full-decode"); }
+        }
+        Note { text: "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."; }
     }
     Section {
         inset: SectionStyle.flush;

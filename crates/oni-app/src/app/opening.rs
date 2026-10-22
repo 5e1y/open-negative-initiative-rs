@@ -65,8 +65,30 @@ impl Ctl {
         self.publish_tree();
         self.schedule_redraw();
         self.decode_open(path);
+        self.prefetch_neighbours(path);
         self.require_roll(path);
         self.journal_opened(path);
+    }
+
+    /// The frames either side of the one opened, decoded into the disk cache behind the hand's own,
+    /// so a step to one reads its decode back rather than LibRaw's; a later opening drops the rest.
+    fn prefetch_neighbours(&self, path: &str) {
+        static NEAR: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let near: Vec<String> = {
+            let s = self.state.borrow();
+            let Some(at) = s.order.iter().position(|p| p == path) else { return };
+            [at + 1, at.wrapping_sub(1)].iter().filter_map(|&i| s.order.get(i)).filter(|p| oni_decode::route(Path::new(p.as_str())) == oni_decode::Branch::Mosaic).cloned().collect()
+        };
+        let mine = NEAR.fetch_add(1, Ordering::Relaxed) + 1;
+        std::thread::spawn(move || {
+            crate::decode_gate::in_background();
+            for p in near {
+                if NEAR.load(Ordering::Relaxed) != mine {
+                    return;
+                }
+                let _ = render::decode(Path::new(&p), render::Reading::default());
+            }
+        });
     }
 
     /// The open frame's preview: the one kept, else a decode off this thread by the reading its

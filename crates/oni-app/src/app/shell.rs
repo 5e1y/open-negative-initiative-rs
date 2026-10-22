@@ -20,6 +20,8 @@ impl Shell {
         let disk = read_disk(options.support.clone(), options.screen);
         let keep = Preferences::load(&options.support).bool(preferences::KEEP_ZOOM).unwrap_or(false);
         crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
+        let whole = Preferences::load(&options.support).bool(preferences::FULL_DECODE).unwrap_or(false);
+        crate::render::FULL_DECODE.store(whole, Ordering::Relaxed);
         let state = State {
             store,
             screen: options.screen,
