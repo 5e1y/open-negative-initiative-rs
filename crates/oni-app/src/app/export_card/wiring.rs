@@ -35,6 +35,11 @@ impl Ctl {
     pub(in crate::app) fn wire_export(me: &Rc<Ctl>, window: &MainWindow) {
         let e = window.global::<Exporting>();
         let p = me.clone();
+        e.on_preview_room(move |w, h, floor| {
+            let scale = p.window().map_or(1.0, |w| f64::from(w.window().scale_factor()));
+            p.preview_room((f64::from(w) * scale, f64::from(h) * scale, f64::from(floor) * scale));
+        });
+        let p = me.clone();
         e.on_preset(move |i| {
             let Some(preset) = Preset::ALL.get(i as usize).copied() else { return };
             let before = p.export.borrow().settings.space().clone();

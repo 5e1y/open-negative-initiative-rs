@@ -76,6 +76,8 @@ pub struct Card {
     pub rows: Vec<Option<Row>>,
     sizes: Vec<Option<(f64, f64)>>,
     previews: Vec<Preview>,
+    /// The room a line's preview takes, once the column is laid out, which sizes each render.
+    room: Arc<std::sync::Mutex<Option<targets::Room>>>,
     low_precision: usize,
     estimate: Option<u64>,
     pub exporting: bool,
@@ -135,6 +137,7 @@ impl Card {
             rows: Vec::new(),
             sizes: Vec::new(),
             previews: Vec::new(),
+            room: Arc::default(),
             low_precision: 0,
             estimate: None,
             exporting: false,

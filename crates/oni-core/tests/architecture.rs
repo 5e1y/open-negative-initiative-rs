@@ -30,7 +30,7 @@ const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-settings/tests/codec_checks.rs", 735),
     ("crates/oni-ui/ui/app.slint", 425),
     ("crates/oni-ui/ui/ds/controls.slint", 413),
-    ("crates/oni-ui/ui/export.slint", 518),
+    ("crates/oni-ui/ui/export.slint", 401),
     ("crates/oni-ui/ui/prepare.slint", 480),
 ];
 

@@ -51,6 +51,7 @@ export global Inks {
 export component Plot inherits Rectangle {
     in property <int> plot;
     in property <image> histogram;
+    in property <int> histogram-revision;
     in property <bool> grid: true;
     in property <bool> screen: true;
     in property <bool> interactive: true;
@@ -91,6 +92,7 @@ export component Plot inherits Rectangle {
     }
     Picture {
         source: root.histogram;
+        revision: root.histogram-revision;
         ground: Ground.ground;
         stretched: true;
         background: transparent;

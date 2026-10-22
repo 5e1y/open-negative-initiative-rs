@@ -46,12 +46,13 @@ pub fn heights(counts: &[f32]) -> Vec<f32> {
     counts.iter().map(|c| (c.max(0.0) / peak).powf(EXPONENT).min(1.0)).collect()
 }
 
-/// One trace's coverage per pixel: the fill under the curve and the line along it, each 0 to 1.
-fn coverage(heights: &[f32], size: PlotSize) -> Vec<(f32, f32)> {
+/// One trace's coverage per pixel into `out`: the fill under the curve and the line along it, each 0 to 1.
+fn coverage(out: &mut Vec<(f32, f32)>, heights: &[f32], size: PlotSize) {
     let (w, h) = (size.width, size.height);
-    let mut out = vec![(0.0, 0.0); w * h];
+    out.clear();
+    out.resize(w * h, (0.0, 0.0));
     if heights.len() < 2 {
-        return out;
+        return;
     }
     let last = (heights.len() - 1) as f32;
     let y_at = |x: f32| {
@@ -70,45 +71,80 @@ fn coverage(heights: &[f32], size: PlotSize) -> Vec<(f32, f32)> {
             out[y * w + x] = (fill, line);
         }
     }
-    out
 }
 
 /// The plot, premultiplied RGBA8 of `size`: a channel out of `focus` drawn at a fifth.
 pub fn raster(histogram: &Histogram, focus: Option<usize>, size: PlotSize) -> Vec<u8> {
-    let n = size.width * size.height;
-    let columns = size.points as usize;
-    let trace = |counts: Vec<f32>| coverage(&heights(&coarsened(&counts, columns)), size);
-    let mut out = vec![[0f32; 4]; n];
-    // The luminance first and outside the added layer, a backdrop free of any colour cast.
-    if histogram.luma.iter().any(|v| *v > 0.0) {
-        for (px, (fill, line)) in out.iter_mut().zip(trace(histogram.luma.clone())) {
-            let a = line * 0.45 + fill * 0.12 * (1.0 - line * 0.45);
-            *px = [a, a, a, a];
+    Tracer::default().raster(histogram, focus, size).to_vec()
+}
+
+/// A tracer's working buffers, kept from one trace to the next: a main plot's are 30 MB at 2x.
+#[derive(Default)]
+pub struct Tracer {
+    out: Vec<[f32; 4]>,
+    added: Vec<[f32; 4]>,
+    cover: Vec<(f32, f32)>,
+    bytes: Vec<u8>,
+}
+
+impl Tracer {
+    /// `raster` into the kept buffers, each cleared first.
+    pub fn raster(&mut self, histogram: &Histogram, focus: Option<usize>, size: PlotSize) -> &mut [u8] {
+        let n = size.width * size.height;
+        for layer in [&mut self.out, &mut self.added] {
+            layer.clear();
+            layer.resize(n, [0.0; 4]);
         }
+        self.compose(histogram, focus, size)
     }
-    let mut added = vec![[0f32; 4]; n];
-    for (c, colour) in CHANNELS.iter().enumerate() {
-        let counts: Vec<f32> = histogram.rgb.iter().map(|b| b[c]).collect();
-        if !counts.iter().any(|v| *v > 0.0) {
-            continue;
-        }
-        let strength = if focus.is_some_and(|f| f != c) { 0.2 } else { 1.0 };
-        for (px, (fill, line)) in added.iter_mut().zip(trace(counts)) {
-            let (l, f) = (line * 0.85 * strength, fill * 0.28 * strength);
-            let a = l + f * (1.0 - l);
-            // `plusLighter`: premultiplied colours summed, held at one.
-            for k in 0..3 {
-                px[k] = (px[k] + colour[k] * a).min(1.0);
+
+    /// The layers drawn over what the buffers hold, then flattened to bytes.
+    fn compose(&mut self, histogram: &Histogram, focus: Option<usize>, size: PlotSize) -> &mut [u8] {
+        let columns = size.points as usize;
+        let trace = |cover: &mut Vec<(f32, f32)>, counts: &[f32]| coverage(cover, &heights(&coarsened(counts, columns)), size);
+        // The luminance first and outside the added layer, a backdrop free of any colour cast.
+        if histogram.luma.iter().any(|v| *v > 0.0) {
+            trace(&mut self.cover, &histogram.luma);
+            for (px, &(fill, line)) in self.out.iter_mut().zip(&self.cover) {
+                let a = line * 0.45 + fill * 0.12 * (1.0 - line * 0.45);
+                *px = [a, a, a, a];
             }
-            px[3] = (px[3] + a).min(1.0);
+        }
+        for (c, colour) in CHANNELS.iter().enumerate() {
+            let counts: Vec<f32> = histogram.rgb.iter().map(|b| b[c]).collect();
+            if !counts.iter().any(|v| *v > 0.0) {
+                continue;
+            }
+            let strength = if focus.is_some_and(|f| f != c) { 0.2 } else { 1.0 };
+            trace(&mut self.cover, &counts);
+            for (px, &(fill, line)) in self.added.iter_mut().zip(&self.cover) {
+                let (l, f) = (line * 0.85 * strength, fill * 0.28 * strength);
+                let a = l + f * (1.0 - l);
+                // `plusLighter`: premultiplied colours summed, held at one.
+                for k in 0..3 {
+                    px[k] = (px[k] + colour[k] * a).min(1.0);
+                }
+                px[3] = (px[3] + a).min(1.0);
+            }
+        }
+        self.bytes.clear();
+        for (px, top) in self.out.iter().zip(&self.added) {
+            self.bytes.extend((0..4).map(|k| ((top[k] + px[k] * (1.0 - top[3])).clamp(0.0, 1.0) * 255.0).round() as u8));
+        }
+        &mut self.bytes
+    }
+}
+
+/// Premultiplied RGBA8 made straight, as a texture the interface samples is read.
+pub fn straighten(bytes: &mut [u8]) {
+    for px in bytes.chunks_exact_mut(4) {
+        let a = u16::from(px[3]);
+        if a > 0 {
+            for v in &mut px[..3] {
+                *v = ((u16::from(*v) * 255 + a / 2) / a).min(255) as u8;
+            }
         }
     }
-    for (px, top) in out.iter_mut().zip(added) {
-        for k in 0..4 {
-            px[k] = top[k] + px[k] * (1.0 - top[3]);
-        }
-    }
-    out.iter().flat_map(|p| p.map(|v| (v.clamp(0.0, 1.0) * 255.0).round() as u8)).collect()
 }
 
 #[cfg(test)]
@@ -155,5 +191,27 @@ mod tests {
         assert!(at(&green, 40, 19, 0) < at(&all, 40, 19, 0) && at(&green, 40, 19, 1) >= at(&all, 40, 19, 1) / 2);
         // Twin: an empty reading draws nothing at all.
         assert!(raster(&Histogram::default(), None, PlotSize::of(8.0, 8.0, 1.0)).iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn a_tracer_kept_across_traces_draws_the_bytes_a_fresh_one_draws() {
+        let ramp = |k: f32| Histogram { rgb: (0..256).map(|i| [i as f32 * k, 256.0 - i as f32, 30.0]).collect(), luma: vec![k; 256], ends: None };
+        let (big, small) = (PlotSize::of(120.0, 60.0, 2.0), PlotSize::of(64.0, 30.0, 1.0));
+        let mut kept = Tracer::default();
+        kept.raster(&ramp(3.0), None, big);
+        assert_eq!(kept.raster(&ramp(1.0), Some(2), small).to_vec(), raster(&ramp(1.0), Some(2), small));
+        assert_eq!(kept.raster(&ramp(2.0), None, big).to_vec(), raster(&ramp(2.0), None, big));
+        // Twin: layers not cleared keep the last trace under the next one.
+        kept.raster(&ramp(3.0), None, small);
+        assert_ne!(kept.compose(&ramp(1.0), Some(2), small).to_vec(), raster(&ramp(1.0), Some(2), small));
+    }
+
+    #[test]
+    fn a_straight_texel_is_its_premultiplied_colour_over_its_alpha() {
+        let mut px = [64, 32, 0, 128, 100, 20, 30, 200, 10, 20, 30, 0];
+        straighten(&mut px);
+        assert_eq!(px, [128, 64, 0, 128, 128, 26, 38, 200, 10, 20, 30, 0]);
+        // Twin: a truncating division would land 100 over 200 on 127, which the bytes above refuse.
+        assert_eq!(100 * 255 / 200, 127);
     }
 }

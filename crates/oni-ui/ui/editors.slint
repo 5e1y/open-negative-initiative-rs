@@ -76,6 +76,7 @@ component EditorPlot inherits Plot {
 // `CurveSetEditor`: the channel's tabs over a square plot.
 export component CurvesEditor inherits VerticalLayout {
     in property <image> histogram;
+    in property <int> revision;
     spacing: Space.s;
     Tabs {
         tabs: ["RGB", "Luma", "R", "G", "B"];
@@ -87,6 +88,7 @@ export component CurvesEditor inherits VerticalLayout {
         plot: 0;
         height: self.width;
         histogram: root.histogram;
+        histogram-revision: root.revision;
         lines: Editors.curve-lines;
         dots: Editors.curve-dots;
     }
@@ -95,6 +97,7 @@ export component CurvesEditor inherits VerticalLayout {
 // `LevelsView` on the three per-channel windows: tabs, the histogram and the track inset alike.
 export component LevelsEditor inherits VerticalLayout {
     in property <image> histogram;
+    in property <int> revision;
     spacing: Space.s;
     padding-left: PlotInkStyle.knob-width / 2;
     padding-right: PlotInkStyle.knob-width / 2;
@@ -111,6 +114,7 @@ export component LevelsEditor inherits VerticalLayout {
             height: PlotInkStyle.histogram;
             interactive: false;
             histogram: root.histogram;
+            histogram-revision: root.revision;
             lines: Editors.levels-markers;
         }
         track := LevelsTrack {
@@ -170,12 +174,14 @@ export component SpectrogramEditor inherits VerticalLayout {
 // `SaturationCurveView`: the light's two ends named above an equaliser over the output's histogram.
 export component SaturationEditor inherits VerticalLayout {
     in property <image> histogram;
+    in property <int> revision;
     spacing: Space.xs;
     AxisCaptions { start: "Black point"; end: "White point"; }
     EditorPlot {
         plot: 3;
         height: PlotInkStyle.histogram;
         histogram: root.histogram;
+        histogram-revision: root.revision;
         lines: Editors.saturation-lines;
         dots: Editors.saturation-dots;
         VerticalLayout {

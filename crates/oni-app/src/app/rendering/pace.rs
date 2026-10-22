@@ -1,6 +1,7 @@
 //! What runs on its own pace beside the renders: the histogram, the load counter, the deferred write, the status line.
 
 use super::*;
+use super::plots::Slot;
 use std::sync::atomic::AtomicU64;
 
 /// The last histogram trace asked, so an older one landing after it is dropped.
@@ -62,17 +63,16 @@ impl Ctl {
             let under = crate::editors::size(self, crate::editors::Plot::Saturation);
             let sizes = [(f64::from(plots.get_output_width()), f64::from(plots.get_output_height())), (under.w, under.h)];
             // Traced off this thread, 1.5 ms a plot; a trace overtaken by a later one is dropped.
-            let ticket = TRACES.fetch_add(1, Ordering::SeqCst) + 1;
-            std::thread::spawn(move || {
-                let [output, saturation] = sizes.map(|(pw, ph)| super::plots::pixels(&h, pw, ph, scale));
+            let (ticket, writer) = (TRACES.fetch_add(1, Ordering::SeqCst) + 1, self.plot_writer());
+            super::plots::plot(move |p| {
+                if TRACES.load(Ordering::SeqCst) != ticket {
+                    return;
+                }
+                let [output, saturation] = [Slot::Output, Slot::Saturation].map(|slot| p.trace(&writer, slot, &h, None, sizes[slot as usize], scale));
                 with_shell(move |c| {
-                    if TRACES.load(Ordering::SeqCst) != ticket {
-                        return;
-                    }
                     let Some(w) = c.window() else { return };
-                    let plots = w.global::<Plots>();
-                    plots.set_output(output.map(Image::from_rgba8_premultiplied).unwrap_or_default());
-                    plots.set_saturation(saturation.map(Image::from_rgba8_premultiplied).unwrap_or_default());
+                    super::plots::land(&w, Slot::Output, output);
+                    super::plots::land(&w, Slot::Saturation, saturation);
                     if let Some(at) = counted {
                         c.state.borrow_mut().notches.record_histogram(at.elapsed());
                     }

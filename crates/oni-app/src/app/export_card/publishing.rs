@@ -10,9 +10,12 @@ impl Ctl {
             (0..c.targets.len()).map(|i| c.line(i)).collect()
         };
         let model = self.export.borrow().model.clone();
+        // A row is set only when it changed, so an unchanged preview is never handed over again.
         if model.row_count() == lines.len() {
             for (i, l) in lines.into_iter().enumerate() {
-                model.set_row_data(i, l);
+                if model.row_data(i).as_ref() != Some(&l) {
+                    model.set_row_data(i, l);
+                }
             }
         } else {
             model.set_vec(lines);

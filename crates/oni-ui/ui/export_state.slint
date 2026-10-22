@@ -1,0 +1,126 @@
+// The export surface's state: its lines, its settings and the paper profiles sheet, which Rust sets.
+
+// One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
+export struct ExportLine {
+    name: string,
+    camera: string,
+    lens: string,
+    film: string,
+    iso: string,
+    date: string,
+    artist: string,
+    copyright: string,
+    // The line is read off the main thread; until it lands the fields wait, disabled.
+    ready: bool,
+    preview: image,
+    // 0 waits, 1 shows the picture, 2 failed.
+    state: int,
+    caption: string,
+    // Width over height, 0 before it is measured.
+    aspect: float,
+}
+
+// One profile a maker's page offers, titled from its file name.
+export struct PaperRow {
+    title: string,
+    installed: bool,
+    installing: bool,
+}
+
+export global Exporting {
+    in property <bool> shown;
+    // The space is a paper: the Color pane shows Paper Correction.
+    in property <bool> on-paper;
+    in property <[ExportLine]> lines;
+    in property <string> extension: ".jpg";
+    in property <string> subtitle;
+    in property <int> count;
+    in-out property <int> format: 1;
+    // 0 to 3 the built-in spaces, 4 Custom.
+    in-out property <int> space-tab: 1;
+    in property <string> purpose;
+    in property <bool> jpeg: true;
+    in property <bool> on-profile;
+    in property <bool> pending;
+    in property <[string]> profiles;
+    in property <int> profile;
+    in property <string> profile-note;
+    in property <string> pending-note;
+    in property <bool> colour-only;
+    in property <string> edited-in;
+    in property <bool> compress: true;
+    in property <float> quality-fraction;
+    in property <string> quality-readout;
+    in property <string> width-text;
+    in property <string> height-text;
+    in property <bool> size-enabled;
+    in property <bool> resized;
+    in property <bool> hdr;
+    in property <string> bits;
+    in property <string> dims;
+    in property <string> weight-label;
+    in property <string> weight;
+    in property <string> low-precision;
+    in property <bool> exporting;
+    in property <bool> can-export: true;
+    in property <string> key-title: "EXPORT";
+    in property <string> menu-title: "Export…";
+    in property <bool> menu-live;
+    in property <string> gamut-title: "Show What This Screen Cannot Show";
+    in property <string> chip-title;
+    in property <string> chip-hint;
+    in property <bool> confirm-shown;
+    in property <string> confirm-title;
+    in property <string> confirm-message;
+    in property <bool> notice-shown;
+    in property <string> notice-title;
+    in property <string> notice-message;
+    callback preset(int);
+    callback format-picked(int);
+    callback space-picked(int);
+    callback profile-picked(int);
+    callback pending-picked(int);
+    callback load-profile();
+    callback get-papers();
+    callback colour-only-set(bool);
+    callback compress-set(bool);
+    callback hdr-set(bool);
+    callback quality-press(bool) -> bool;
+    callback quality-drag(length, length, bool);
+    callback quality-release();
+    callback quality-step(int);
+    callback size-typed(string, string);
+    callback full-size();
+    callback edited(int, string, string);
+    callback pick-film(int);
+    callback stock-chosen(int);
+    callback cancel();
+    callback export();
+    callback confirmed(bool);
+    callback notice-closed();
+    callback auto-paper();
+    // The paper profiles sheet: the sources in two groups, the chosen one's card, its offered files.
+    in property <bool> papers-shown;
+    in property <[string]> paper-direct;
+    in property <[string]> paper-browsed;
+    in property <int> paper-direct-count;
+    in property <int> paper-source;
+    in property <string> paper-name;
+    in property <string> paper-note;
+    in property <bool> paper-browser;
+    in property <bool> paper-reading;
+    in property <bool> paper-any;
+    in property <string> paper-filter;
+    in property <bool> paper-busy;
+    in property <string> paper-message;
+    in property <[PaperRow]> paper-rows;
+    callback papers-done();
+    callback paper-picked(int);
+    callback paper-open-page();
+    callback paper-filter-typed(string);
+    callback paper-install(int);
+    callback paper-uninstall(int);
+    // The room a line's preview takes in points: the picture's width, the height left under its caption
+    // and the slot's floor; each preview is rendered at the size it is shown.
+    callback preview-room(length, length, length);
+}

@@ -25,7 +25,7 @@ impl Ctl {
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
                 w.global::<Canvas>().set_failure(format!("{name}: could not be decoded").into());
-                w.global::<Plots>().set_output(Image::default());
+                super::plots::clear(&w, super::plots::Slot::Output);
                 self.state.borrow_mut().histogram_dirty = false;
                 self.say(&format!("Not rendered: {e}"));
                 return;

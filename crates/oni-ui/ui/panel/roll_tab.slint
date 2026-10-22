@@ -157,7 +157,7 @@ export component RollPane inherits Pane {
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;
-        LevelsEditor { histogram: Plots.levels; }
+        LevelsEditor { histogram: Plots.levels; revision: Plots.levels-revision; }
         if Editors.low-precision: HorizontalLayout {
             alignment: start;
             WarningBadge { text: "8-bit source — 256 levels per channel"; }

@@ -283,6 +283,8 @@ export component Badge inherits Rectangle {
 // ratio's badge in the corner, which swaps rest for close.
 export component LoupeBand inherits Rectangle {
     in property <image> source;
+    // Bumped when the texture behind `source` is rewritten in place, as `Picture.revision`.
+    in property <int> revision;
     in property <length> shown-width;
     in property <length> shown-height;
     in property <string> ratio;
@@ -296,7 +298,8 @@ export component LoupeBand inherits Rectangle {
         width: root.shown-width;
         height: root.shown-height;
         source: root.source;
-        image-fit: fill;
+        // Read so a rewrite in place, which changes no other property, redraws the band.
+        image-fit: root.revision < 0 ? ImageFit.contain : ImageFit.fill;
     }
     if root.ratio-shown: TouchArea {
         x: parent.width - self.width - Space.s;
