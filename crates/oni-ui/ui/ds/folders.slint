@@ -1,7 +1,7 @@
 // The navigator's controls: a folder's row and its rename field, the header's keys and pill, the
 // pill's list of folders above, and the line dragged to size the rows beside a photograph.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { TextField } from "controls.slint";
 import { MenuPanel } from "containers.slint";
@@ -62,8 +62,8 @@ export component FolderRow inherits Rectangle {
                     height: RowStyle.chevron;
                 }
             }
-            VerticalLayout {
-                alignment: center;
+            Rectangle {
+                width: RowStyle.slot;
                 Icon {
                     source: root.kind == FolderKind.roll ? Icons.film-roll : root.kind == FolderKind.opened ? Icons.folder-open : Icons.folder;
                     width: RowStyle.icon;
@@ -117,7 +117,8 @@ export component RenameRow inherits FocusScope {
         reject
     }
     HorizontalLayout {
-        padding-left: RowStyle.padding + root.depth * RowStyle.indent;
+        // The typed name starts where the row's title stood.
+        padding-left: RowStyle.padding + root.depth * RowStyle.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.padding;
         padding-right: RowStyle.padding;
         // Stretched across the row: the field has no width of its own to centre.
         field := TextField {
@@ -168,7 +169,8 @@ export component ColumnPill inherits Rectangle {
     in property <bool> enabled: true;
     in property <bool> pressable;
     callback clicked();
-    height: NavigatorStyle.key;
+    // As tall as the key plate beside it, keys and inset alike.
+    height: NavigatorStyle.key + 2 * ButtonStyle.plate-inset;
     border-radius: Radius.badge;
     background: root.pressable && root.enabled && touch.has-hover ? Colour.hover : Colour.canvas;
     accessible-role: button;

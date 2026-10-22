@@ -104,6 +104,7 @@ export component Plot inherits Rectangle {
         stroke: Inks.of(line.ink);
         stroke-width: line.width;
         stroke-line-cap: round;
+        stroke-line-join: round;
         opacity: line.opacity;
     }
     for dot in root.dots: Rectangle {
@@ -247,8 +248,9 @@ export struct PlotReadout { name: string, value: string }
 export component PlotReadouts inherits HorizontalLayout {
     in property <[PlotReadout]> readouts;
     spacing: Space.xxs;
+    // Equal cells, so the middle figure sits on the plot's centre whatever the words' widths.
     for r[i] in root.readouts: VerticalLayout {
-        horizontal-stretch: 1;
+        width: (root.width - (root.readouts.length - 1) * Space.xxs) / max(1, root.readouts.length);
         spacing: Space.xxs;
         Label { text: r.name; role: TextRole.caption; tone: Tone.secondary; horizontal-alignment: i == 0 ? left : i == root.readouts.length - 1 ? right : center; }
         Label { text: r.value; role: TextRole.value; horizontal-alignment: i == 0 ? left : i == root.readouts.length - 1 ? right : center; }

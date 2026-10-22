@@ -260,9 +260,10 @@ export component TileView inherits Rectangle {
         source: root.picture;
         opacity: root.missing ? State.disabled : 1;
         // `TileLayers`: the medal at the bottom-left corner, the RGB seal at the bottom-right.
+        // The medal's centre level with the seal's.
         if root.medal > 0: Rectangle {
             x: TileStyle.badge-inset;
-            y: parent.height - self.height - TileStyle.badge-inset;
+            y: parent.height - TileStyle.badge-inset - (TileStyle.caption + self.height) / 2;
             width: TileStyle.medal;
             height: TileStyle.medal;
             border-radius: self.width / 2;

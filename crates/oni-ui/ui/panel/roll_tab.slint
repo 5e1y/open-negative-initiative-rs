@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, KeyPlate, GlyphKey, ToggleRow, WarningBadge, Note, WarningBand, Field, LinesPicker } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, IconButton, ButtonSize, KeyPlate, ToggleRow, WarningBadge, Note, WarningBand, Field, LinesPicker } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -67,7 +67,7 @@ export component RollPane inherits Pane {
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
-                GlyphKey { icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
+                IconButton { size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
             }
         }
         if PanelState.flat-field-on: Field {

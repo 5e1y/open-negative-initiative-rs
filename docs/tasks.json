@@ -1753,5 +1753,19 @@
     "title": "A pan shows no bare edge: the view is rendered with a margin",
     "status": "done",
     "detail": "Owner: the edges flickered while panning a zoomed picture. Since #239 the picture moves at once with the hand, but its texture covered the visible part plus a pixel, so the strip a pan uncovers showed the ground until the next render landed. The region rendered now reaches an eighth of the view past each side (PAN_MARGIN), the size still one per view. ONI_BENCH=midzoom: pan p50 0.3 ms, pinch about 2 ms (from 0.4), peak footprint 6.5 GB as before. A graph render also polls the device once ended, so what the GPU has finished with is let go without waiting for another poll."
+  },
+  {
+    "id": 242,
+    "type": "bug",
+    "title": "The header fits a narrow window, and fifty alignment slips found by eight reviewers are fixed",
+    "status": "done",
+    "detail": "Owner: at a small width the header's keys did not fit. Its fixed widths summed to about 1219 px against a 1100 px floor: compact now also turns PASTE TO ROLL into a glyph and halves the gaps, the key zone keeps only the shown mode's compact width, and the compact threshold counts the row's five gaps (it counted seven) and no Export while a roll is prepared. A fixed key elides a word longer than its room; a lamp gets its own room. Alignment, measured from the Slint layout solver (a fixed-height child sits at the top of its row): the column pill beside the key plate is as tall as the plate; Prepare's flat-field toggle, De-dust's remove key and help mark, Crop's rotate key, the trash row's RESTORE key and the preset badge are centred on their rows; the base note row, the paper rows and a Field's label row keep their height whether a key or '?' shows; folder and trash rows put their icon in the tree's slot; a rename starts where the title stood; roll rings follow the picture's corners; stock icons grow on hover without moving the names; Scanner screen cells and level readouts are equal columns; Levels' tabs, plot and readouts share one inset; the Settings sheet is wide enough for its rows; the Paper Profiles sheet has its top inset; the read-only banner clears Compare's labels; the tile medal is level with the RGB seal; tree captions sit 2 px under their pictures as the layout budgets."
+  },
+  {
+    "id": 243,
+    "type": "bug",
+    "title": "De-dust's red stroke has round joins and ends",
+    "status": "done",
+    "detail": "Owner: the red stroke's ends looked flat and its trace had artefacts. Slint's paths default to mitre joins (limit 4), so every jitter of the hand grew a spike up to twice the stroke's width; Swift draws round caps and joins. Every stroke path now joins round. A kept stroke's path drops a point within a canvas point of the last (a zero-length segment folds a round cap flat), and a lone point draws as a dot. The vendored femtovg merged repeated points by looking one past the contour's last point, so it never merged; it now reads the last."
   }
 ]

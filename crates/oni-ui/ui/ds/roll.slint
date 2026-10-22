@@ -16,6 +16,8 @@ export global RollStyle {
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
     out property <length> hollow: DS.control-tab-bar-height;
+    // The frame's name between Previous and Next, wide enough that the keys never move with it.
+    out property <length> name-width: 10 * Space.m;
 }
 
 // `DSGoldSealView` flattened: a word on its metal, the red one for a flagged frame.
@@ -82,16 +84,17 @@ export component RollCellView inherits Rectangle {
         y: parent.height - Space.xs - self.height;
         word: "RGB";
     }
+    // The rings follow the picture's corners: the inner one just inside the outer.
     if root.marked && !root.outset: Rectangle {
-        border-radius: Radius.card;
+        border-radius: Radius.badge;
         border-width: Stroke.emphasis;
         border-color: root.flagged ? Colour.destructive : Colour.selected;
         Rectangle {
-            x: Stroke.line;
-            y: Stroke.line;
-            width: parent.width - 2 * Stroke.line;
-            height: parent.height - 2 * Stroke.line;
-            border-radius: Radius.card;
+            x: Stroke.emphasis;
+            y: Stroke.emphasis;
+            width: parent.width - 2 * Stroke.emphasis;
+            height: parent.height - 2 * Stroke.emphasis;
+            border-radius: Radius.badge - Stroke.emphasis;
             border-width: Stroke.line;
             border-color: Colour.contrast-edge-idle;
         }
@@ -101,7 +104,7 @@ export component RollCellView inherits Rectangle {
         y: -Space.xs;
         width: parent.width + 2 * Space.xs;
         height: parent.height + 2 * Space.xs;
-        border-radius: Radius.card + Space.xs;
+        border-radius: Radius.badge + Space.xs;
         border-width: Stroke.emphasis;
         border-color: root.flagged ? Colour.destructive : Colour.selected;
     }

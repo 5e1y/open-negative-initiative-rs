@@ -60,7 +60,7 @@ component ResetScan inherits Word {
 
 component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
-    spacing: ShellStyle.bar-gap;
+    spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     ButtonGroup {
         Item { action: "framing"; icon: Icons.framing; help: "Crop and Straighten (⌘K)"; enabled: Bar.has-photo; }
         Item { action: "compare"; icon: Icons.compare; help: "Compare"; enabled: Bar.has-photo; }
@@ -86,7 +86,14 @@ component EditorKeys inherits HorizontalLayout {
             help: Bar.targets > 1 ? "Paste settings to " + Bar.targets + " photos (⌘⇧V)" : "Paste settings (⌘⇧V)";
             enabled: Bar.can-paste;
         }
-        Word { action: "paste-to-roll"; text: "PASTE TO ROLL"; help: "Paste to the Roll"; enabled: Bar.can-paste; }
+        Word {
+            action: "paste-to-roll";
+            text: root.compact ? "" : "PASTE TO ROLL";
+            has-icon: root.compact;
+            icon: Icons.film-roll;
+            help: "Paste to the Roll";
+            enabled: Bar.can-paste;
+        }
     }
     Item {
         action: "correction";
@@ -100,7 +107,7 @@ component EditorKeys inherits HorizontalLayout {
 
 component GalleryKeys inherits HorizontalLayout {
     in property <bool> compact;
-    spacing: ShellStyle.bar-gap;
+    spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     Item { action: "contact-sheet"; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     ButtonGroup {
         Item { action: "undo"; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
@@ -123,7 +130,8 @@ export component Toolbar inherits Surface {
     height: ShellStyle.bar-height;
     // The bar's width with every word, read off hidden copies: the layout's widths never depend on
     // which face shows, or the window's width would loop through it.
-    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + ShellStyle.export-width + 2 * glyphs.preferred-width + 7 * ShellStyle.bar-gap;
+    property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + 2 * glyphs.preferred-width + 4 * ShellStyle.bar-gap
+        + (Preparing.shown ? 0px : ShellStyle.export-width + ShellStyle.bar-gap);
     property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
     property <bool> compact: root.width < root.full;
     // Under the keys, so only the room between them reaches it.
@@ -137,7 +145,7 @@ export component Toolbar inherits Surface {
         padding-right: ShellStyle.bar-padding;
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
-        spacing: ShellStyle.bar-gap;
+        spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
         // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
         mode := Word {
             action: Preparing.shown ? "leave-roll" : "toggle-mode";
@@ -146,11 +154,11 @@ export component Toolbar inherits Surface {
             help: Bar.editing || Preparing.shown ? "Gallery (⌘G)" : "Editor (⌘G)";
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
-        // Hidden copies of both sets hold the zone at the wider one's width, so neither spills over;
-        // the zone takes the room between the sides and its keys sit on the window's centre if they can.
+        // Hidden copies of both sets hold the zone at the wider one's width, short of room at the shown
+        // set's compact width; the zone takes the room between the sides and its keys sit on the window's centre if they can.
         Rectangle {
             horizontal-stretch: 1;
-            min-width: max(compact-sizing.preferred-width, compact-gallery-sizing.preferred-width);
+            min-width: Bar.editing ? compact-sizing.preferred-width : compact-gallery-sizing.preferred-width;
             preferred-width: max(sizing.preferred-width, gallery-sizing.preferred-width);
             sizing := EditorKeys { visible: false; }
             gallery-sizing := GalleryKeys { visible: false; }

@@ -99,8 +99,9 @@ export component ReportSheet inherits Sheet {
     // `DSToggle`: the switch, then its words, which a click toggles as well.
     if !Help.report-sent: HorizontalLayout {
         spacing: Space.s;
+        // On the first line of its words, which wrap to two.
         VerticalLayout {
-            alignment: center;
+            alignment: start;
             Toggle { label: "Encrypted console log"; on: Help.report-log; toggled(on) => { Help.report-log = on; } }
         }
         Label {

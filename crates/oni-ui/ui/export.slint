@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, Label, Tone, TextRole, Button, IconButton, ButtonKind, SheetKeys, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
+import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, IconButton, ButtonKind, SheetKeys, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
 
 // One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
 export struct ExportLine {
@@ -435,13 +435,13 @@ export component PaperSheet inherits BoardSheet {
         width: FormStyle.paper-list;
         content-height: makers.preferred-height;
         makers := VerticalLayout {
-            padding-left: Space.s;
+            padding-top: CardStyle.inset; padding-left: Space.s;
             padding-right: Space.s;
             padding-bottom: Space.m;
             spacing: Space.m;
             alignment: start;
             VerticalLayout {
-                GroupHeading { text: "DOWNLOAD HERE"; }
+                HorizontalLayout { padding-left: RowStyle.padding; GroupHeading { text: "DOWNLOAD HERE"; } }
                 for name[i] in Exporting.paper-direct: ListRow {
                     title: name;
                     selected: i == Exporting.paper-source;
@@ -453,7 +453,7 @@ export component PaperSheet inherits BoardSheet {
                 }
             }
             VerticalLayout {
-                GroupHeading { text: "ON THE MAKER’S SITE"; }
+                HorizontalLayout { padding-left: RowStyle.padding; GroupHeading { text: "ON THE MAKER’S SITE"; } }
                 for name[i] in Exporting.paper-browsed: ListRow {
                     title: name;
                     selected: i + Exporting.paper-direct-count == Exporting.paper-source;
@@ -468,7 +468,7 @@ export component PaperSheet inherits BoardSheet {
     }
     VerticalLayout {
         horizontal-stretch: 1;
-        padding-right: CardStyle.inset;
+        padding-top: CardStyle.inset; padding-right: CardStyle.inset;
         padding-bottom: CardStyle.inset;
         BoardCard {
             vertical-stretch: 1;
@@ -492,10 +492,11 @@ export component PaperSheet inherits BoardSheet {
             }
             if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: ListView {
                 vertical-stretch: 1;
+                // As tall installing as with its key, so the list never jumps.
                 for row[i] in Exporting.paper-rows: HorizontalLayout {
                     spacing: Space.s;
                     padding-top: Space.xs;
-                    padding-bottom: Space.xs;
+                    padding-bottom: Space.xs; min-height: ButtonStyle.height + 2 * Space.xs;
                     Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
                     if row.installing: Note { text: "Installing…"; }
                     if !row.installing && row.installed: Button {

@@ -28,9 +28,15 @@ export component DedustPane inherits Pane {
                     // The dust under the patch, to remember what the corrected picture no longer shows.
                     DustOriginal { source: row.original; }
                     Label { text: row.label; horizontal-stretch: 1; }
-                    if row.fallback: HelpMark { note: "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."; }
+                    if row.fallback: VerticalLayout {
+                        alignment: center;
+                        HelpMark { note: "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."; }
+                    }
                     if row.pending: Label { text: "Generating…"; tone: Tone.secondary; }
-                    IconButton { icon: Icons.remove; help: "Remove this correction"; clicked => { Dedust.remove(i); } }
+                    VerticalLayout {
+                        alignment: center;
+                        IconButton { icon: Icons.remove; help: "Remove this correction"; clicked => { Dedust.remove(i); } }
+                    }
                 }
             }
         }

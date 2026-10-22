@@ -92,12 +92,15 @@ export component PresetRow inherits Rectangle {
     row := HorizontalLayout {
         padding: Space.xs;
         spacing: Space.s;
-        Rectangle {
-            width: PresetStyle.badge-width;
-            height: PresetStyle.badge-height;
-            border-radius: Radius.badge;
-            background: root.fill;
-            Text { text: root.abbreviation; font-family: Type.family; font-size: Type.chip; color: root.ink; }
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: PresetStyle.badge-width;
+                height: PresetStyle.badge-height;
+                border-radius: Radius.badge;
+                background: root.fill;
+                Text { text: root.abbreviation; font-family: Type.family; font-size: Type.chip; color: root.ink; }
+            }
         }
         VerticalLayout {
             Label { text: root.name; overflow: elide; }

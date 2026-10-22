@@ -1,7 +1,7 @@
 // The forms of export and colour management: a labelled field, a note, a summary box, a preview slot,
 // a chip that opens a popover, and the panel a popover or a sheet draws on.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, SectionStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
 import { HelpMark } from "containers.slint";
 import { TextField, Button } from "controls.slint";
@@ -29,9 +29,11 @@ export component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> help;
     spacing: FormStyle.row-gap;
+    // As tall without its "?" as with it, so every field keeps one rhythm.
     HorizontalLayout {
         spacing: Space.s;
         alignment: start;
+        min-height: SectionStyle.help-mark;
         Label { text: root.label; tone: Tone.secondary; }
         if root.help != "": VerticalLayout {
             alignment: center;

@@ -96,6 +96,8 @@ export component CurvesEditor inherits VerticalLayout {
 export component LevelsEditor inherits VerticalLayout {
     in property <image> histogram;
     spacing: Space.s;
+    padding-left: PlotInkStyle.knob-width / 2;
+    padding-right: PlotInkStyle.knob-width / 2;
     Tabs {
         tabs: ["R", "G", "B"];
         marked: Editors.levels-marked;
@@ -104,8 +106,6 @@ export component LevelsEditor inherits VerticalLayout {
     }
     VerticalLayout {
         spacing: Space.xxs;
-        padding-left: PlotInkStyle.knob-width / 2;
-        padding-right: PlotInkStyle.knob-width / 2;
         EditorPlot {
             plot: 4;
             height: PlotInkStyle.histogram;

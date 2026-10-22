@@ -283,7 +283,9 @@ export component RootsCatchUpSheet inherits Sheet {
                     alignment: start;
                     StepNumber { number: i + 1; }
                 }
+                // The title's first line level with the number's disc.
                 VerticalLayout {
+                    padding-top: Space.xs;
                     spacing: Space.xxs;
                     horizontal-stretch: 1;
                     Label { text: step.title; wrap: word-wrap; }

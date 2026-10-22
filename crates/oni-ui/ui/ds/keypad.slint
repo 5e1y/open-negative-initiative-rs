@@ -143,8 +143,9 @@ export component LabScreen inherits Rectangle {
         Rectangle { min-height: Space.xs; vertical-stretch: 1; }
         HorizontalLayout {
             spacing: Space.s;
+            // Equal columns, so a value growing a digit never moves the others.
             for cell in root.cells: VerticalLayout {
-                horizontal-stretch: 1;
+                width: (parent.width - (root.cells.length - 1) * Space.s) / max(1, root.cells.length);
                 spacing: Space.xxs;
                 Lcd { text: cell.title; horizontal-alignment: center; }
                 Lcd { text: cell.value; large: true; horizontal-alignment: center; }

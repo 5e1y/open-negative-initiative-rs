@@ -119,16 +119,7 @@ impl Ctl {
         if let Some(marks) = renewed(&c.get_marks(), marks) {
             c.set_marks(marks);
         }
-        let path = |points: &[(f64, f64)], f: (f64, f64, f64, f64)| {
-            let mut out = String::new();
-            for (i, p) in points.iter().enumerate() {
-                out.push_str(&format!("{} {:.2} {:.2} ", if i == 0 { "M" } else { "L" }, f.0 + p.0 * f.2, f.1 + p.1 * f.3));
-            }
-            if points.len() == 1 {
-                out.push_str(&format!("L {:.2} {:.2}", f.0 + points[0].0 * f.2, f.1 + points[0].1 * f.3));
-            }
-            out
-        };
+        let path = live::traced;
         let shapes = |list: &[Shape]| match frame {
             Some(f) => list.iter().map(|(points, radius)| (path(points, f).into(), width(*radius))).collect::<Vec<(SharedString, f32)>>(),
             None => Vec::new(),

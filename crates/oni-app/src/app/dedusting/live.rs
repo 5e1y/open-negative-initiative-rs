@@ -5,6 +5,9 @@ use std::fmt::Write;
 /// A point closer than this to the last kept, in canvas points, adds nothing the eye or the patch sees.
 const MIN_STEP: f64 = 1.0;
 
+/// A lone point's segment, in canvas points: long enough for the renderer to keep and cap it round.
+const DOT: f64 = 0.1;
+
 /// The stroke's points in fractions of the rendered frame, y down, and its path in canvas points;
 /// a move appends one segment, so it costs the same at the stroke's thousandth point as at its first.
 #[derive(Default)]
@@ -68,6 +71,26 @@ pub fn bounding_centre(points: impl Iterator<Item = (f64, f64)> + Clone) -> Opti
     (x0 <= x1).then_some(((x0 + x1) / 2.0, (y0 + y1) / 2.0))
 }
 
+/// The path of a kept stroke laid by the frame `f`, a point within `MIN_STEP` of the last dropped:
+/// a zero-length segment ends a stroke flat and spikes a join; a lone point draws a round dot.
+pub fn traced(points: &[(f64, f64)], f: (f64, f64, f64, f64)) -> String {
+    let mut out = String::new();
+    let mut last: Option<(f64, f64)> = None;
+    for p in points {
+        let at = (f.0 + p.0 * f.2, f.1 + p.1 * f.3);
+        if last.is_some_and(|l| (at.0 - l.0).hypot(at.1 - l.1) < MIN_STEP) {
+            continue;
+        }
+        let verb = if last.is_none() { "M" } else { " L" };
+        let _ = write!(out, "{verb} {:.2} {:.2}", at.0, at.1);
+        last = Some(at);
+    }
+    if let (Some(l), false) = (last, out.contains('L')) {
+        let _ = write!(out, " L {:.2} {:.2}", l.0 + DOT, l.1);
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +124,17 @@ mod tests {
         assert!(live.push((0.503, 0.5), FRAME), "twin: 1.2 points away is kept");
         assert_eq!(live.take().len(), 2);
         assert_eq!(live.commands(), "");
+    }
+
+    #[test]
+    fn a_kept_stroke_drops_repeated_points_and_a_lone_point_draws_a_dot() {
+        let path = traced(&[(0.5, 0.5), (0.5, 0.5), (0.500_625, 0.5), (0.6, 0.5)], FRAME);
+        assert_eq!(path, "M 210.00 120.00 L 250.00 120.00");
+        assert_eq!(path.matches('L').count(), 1, "twin: a repeated point would add a zero-length segment");
+        let dot = traced(&[(0.5, 0.5)], FRAME);
+        assert_eq!(dot, "M 210.00 120.00 L 210.10 120.00");
+        assert_ne!(dot, "M 210.00 120.00 L 210.00 120.00", "twin: a segment onto itself the renderer drops");
+        assert_eq!(traced(&[], FRAME), "");
     }
 
     #[test]

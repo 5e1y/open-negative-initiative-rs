@@ -56,9 +56,10 @@ export component Button inherits Rectangle {
     property <length> pad: root.small ? ButtonStyle.small-padding : ButtonStyle.padding;
     property <length> glyph: root.small ? ButtonStyle.small-icon : ButtonStyle.icon;
     property <bool> worded: root.text != "";
+    property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
     height: root.small ? ButtonStyle.small-height : ButtonStyle.height;
     min-width: root.fixed-width > 0 ? root.fixed-width
-        : root.worded ? max(word.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px)
+        : root.worded ? max(word.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room
         : self.height;
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
@@ -80,6 +81,7 @@ export component Button inherits Rectangle {
     }
     HorizontalLayout {
         alignment: center;
+        padding-right: root.lamp-room;
         // No gap beside an empty word, which would push a lone icon off the key's centre.
         spacing: root.worded && root.has-icon ? Space.xs : 0;
         if root.has-icon: VerticalLayout {
@@ -94,7 +96,9 @@ export component Button inherits Rectangle {
         }
         word := Label {
             visible: root.worded;
-            width: root.worded ? self.preferred-width : 0px;
+            // A fixed key elides a word longer than its room rather than spill past its edge.
+            width: !root.worded ? 0px : root.fixed-width > 0 ? min(self.preferred-width, root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px)) : self.preferred-width;
+            overflow: elide;
             role: TextRole.button;
             tone: ButtonInk.ink(root.kind, root.on);
             text: root.text;
@@ -105,7 +109,7 @@ export component Button inherits Rectangle {
         width: ButtonStyle.lamp;
         height: ButtonStyle.lamp;
         border-radius: self.width / 2;
-        x: parent.width - root.pad / 2 - self.width;
+        x: parent.width - root.pad - self.width;
         y: (parent.height - self.height) / 2;
         background: root.lamp-lit ? Colour.confirm : Colour.track;
     }

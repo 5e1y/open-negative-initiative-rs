@@ -41,7 +41,10 @@ export component CropPane inherits Pane {
         HorizontalLayout {
             spacing: Space.s;
             alignment: start;
-            IconButton { icon: Icons.rotate; help: "Rotate 90° clockwise"; clicked => { Framing.act("rotate"); } }
+            VerticalLayout {
+                alignment: center;
+                IconButton { icon: Icons.rotate; help: "Rotate 90° clockwise"; clicked => { Framing.act("rotate"); } }
+            }
             KeyPlate {
                 IconButton { icon: Icons.mirror; help: Framing.mirrored ? "Unmirror left for right" : "Mirror left for right"; clicked => { Framing.act("mirror"); } }
                 // The same glyph turned a quarter, the icon bank holding no vertical twin.

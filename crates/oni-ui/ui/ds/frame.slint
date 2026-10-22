@@ -235,6 +235,7 @@ export component LiveStroke inherits Path {
     stroke: Colour.stroke-live;
     stroke-width: root.thickness;
     stroke-line-cap: round;
+    stroke-line-join: round;
     fill: transparent;
     // One unit of the commands a point of the canvas: a fitted path shrinks by its stroke's width.
     fit: preserve;
@@ -313,6 +314,7 @@ export component SourceTrace inherits Path {
     stroke: Colour.sharpen;
     stroke-width: root.thickness;
     stroke-line-cap: round;
+    stroke-line-join: round;
     fill: transparent;
     fit: preserve;
 }

@@ -274,7 +274,9 @@ impl PathCache {
             let new_point = Point::new(x, y, flags);
 
             // If last point equals this new point just OR the flags and ignore the new point
-            if let Some(last_point) = self.points.get_mut(contour.point_range.end) {
+            // ONI: the last point is one before the range's end; upstream looks past it and never merges.
+            let last = contour.point_range.end.checked_sub(1).filter(|i| *i >= contour.point_range.start);
+            if let Some(last_point) = last.and_then(|i| self.points.get_mut(i)) {
                 if last_point.approx_eq(&new_point, dist_tol) {
                     last_point.flags |= new_point.flags;
                     return;

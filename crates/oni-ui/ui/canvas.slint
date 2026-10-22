@@ -283,10 +283,10 @@ export component CanvasCard inherits Card {
             height: parent.height;
             dragged(at) => { Canvas.split-dragged(self.x + at); }
         }
-        // `readOnlyBanner`: the frame's settings will not be kept, at the top centre.
+        // `readOnlyBanner`: the frame's settings will not be kept, at the top centre, below Compare's labels.
         if Canvas.read-only: WarningBadge {
             x: (parent.width - self.width) / 2;
-            y: Space.s;
+            y: Canvas.split >= 0 ? Space.l + Space.xs : Space.s;
             text: "Read-only: settings will not be saved";
         }
     }

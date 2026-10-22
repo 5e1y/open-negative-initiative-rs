@@ -28,9 +28,12 @@ export component StockCellView inherits Rectangle {
         padding: Space.xs;
         spacing: Space.xs;
         alignment: start;
-        HorizontalLayout {
-            alignment: center;
+        // The grown icon's room is kept at rest, so a hover never moves the names.
+        Rectangle {
+            height: StockStyle.icon * StockStyle.grow;
             StockIcon {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
                 artwork: root.artwork;
                 has-artwork: root.has-artwork;
                 side: touch.has-hover ? StockStyle.icon * StockStyle.grow : StockStyle.icon;

@@ -1,5 +1,5 @@
 // The Settings sheet the header's gear opens: the app's own choices, kept in the preferences file.
-import { Sheet, SheetKeys, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
+import { Sheet, SheetKeys, SheetStyle, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -17,6 +17,8 @@ export global AppSettings {
 
 export component SettingsSheet inherits Sheet {
     title: "Settings";
+    // Wide enough for its longest toggle and its three Frontier keys on one line each.
+    card-width: SheetStyle.notice-width;
     dismissed => { AppSettings.close(); }
     Section {
         title: "Rendering";
