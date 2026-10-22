@@ -1995,8 +1995,15 @@
   {
     "id": 276,
     "type": "performance",
-    "title": "The sidebar tree and Prepare's cells laid like the gallery",
+    "title": "The sidebar tree laid like the gallery",
     "status": "todo",
-    "detail": "The library and projects trees keep every row (each thumbnail row its own texture, about 270 MB at 1,000 photos); send only the rows in view plus a margin, as publish_tiles does. Prepare's cells model is replaced at each publish and its pictures compared pixel by pixel; keep it as the gallery's (#266)."
+    "detail": "The library and projects trees keep every row (each thumbnail row its own texture, about 270 MB at 1,000 photos); send only the rows in view plus a margin, as publish_tiles does, keeping row indices, selection and keyboard walks working."
+  },
+  {
+    "id": 277,
+    "type": "performance",
+    "title": "Prepare the Roll keeps its cells, and a redrawn scan is laid again",
+    "status": "done",
+    "detail": "publish_prepare, which runs at every pointer move on the base step and every slider notch, set a new cell model each time, so Slint compared every cell's picture pixel by pixel. The model is kept: a cell is written when its photo, its picture's source (none, thumbnail, tile) or its marks change, or its tile was drawn again (fresh_tiles, filled where a tile lands). The scan and the loupe's source, set only on a new path or size since #266, are now also laid again when the preview worker draws them again for the same photo."
   }
 ]

@@ -146,6 +146,10 @@ pub(crate) struct Roll {
     /// would be compared pixel by pixel at every move of the pointer.
     laid_scan: Option<(String, (usize, usize))>,
     laid_loupe: Option<(String, (usize, usize))>,
+    /// Each cell's photo and picture source (0 none, 1 thumbnail, 2 tile) as last laid, and the tiles
+    /// landed since: only those cells are written again, never compared pixel by pixel.
+    laid_cells: Vec<(String, u8)>,
+    fresh_tiles: HashSet<String>,
 }
 
 impl Default for Roll {
@@ -197,6 +201,8 @@ impl Default for Roll {
             tutorial: None,
             laid_scan: None,
             laid_loupe: None,
+            laid_cells: Vec::new(),
+            fresh_tiles: HashSet::new(),
         }
     }
 }

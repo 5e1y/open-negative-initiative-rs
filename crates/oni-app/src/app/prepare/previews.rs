@@ -13,16 +13,20 @@ impl Ctl {
             }
             match out {
                 Out::Tile(path, b) => {
+                    r.fresh_tiles.insert(path.clone());
                     r.tiles.insert(path, picture(&b));
                 }
                 Out::Card(path, b) => r.card = Some((path, picture(&b))),
+                // A picture drawn again for the same photo is laid again, whatever its size.
                 Out::Scan(path, b) => {
                     let size = (b.width, b.height);
                     r.scan = Some((path, picture(&b), size));
+                    (r.laid_scan, r.laid_loupe) = (None, None);
                 }
                 Out::Full(path, b) => {
                     let size = (b.width, b.height);
                     r.full = Some((path, picture(&b), size));
+                    r.laid_loupe = None;
                 }
             }
         }

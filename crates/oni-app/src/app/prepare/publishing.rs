@@ -24,14 +24,18 @@ impl Ctl {
         let settled = s.prepare.frames.iter().filter(|f| s.thumbs.contains(&f.fingerprint) || s.failed.contains(&f.fingerprint)).count();
         let frames = s.prepare.frames.clone();
         let mut pictures = Vec::with_capacity(frames.len());
+        let mut sources = Vec::with_capacity(frames.len());
         for f in &frames {
-            let tile = s.prepare.tiles.get(&f.path).cloned();
-            let picture = match tile {
-                Some(t) => t,
-                None => s.thumbs.get(&f.fingerprint).unwrap_or_default(),
+            let (picture, source) = match (s.prepare.tiles.get(&f.path).cloned(), s.thumbs.get(&f.fingerprint)) {
+                (Some(t), _) => (t, 2),
+                (None, Some(t)) => (t, 1),
+                (None, None) => (Image::default(), 0),
             };
             pictures.push(picture);
+            sources.push((f.path.clone(), source));
         }
+        let fresh = std::mem::take(&mut s.prepare.fresh_tiles);
+        let laid = std::mem::replace(&mut s.prepare.laid_cells, sources.clone());
         let shown_frame = s.prepare.shown_frame().cloned();
         let card = shown_frame.as_ref().map(|f| match &s.prepare.card {
             Some((path, image)) if *path == f.path => image.clone(),
@@ -148,7 +152,7 @@ impl Ctl {
         p.set_frame_name(m.get(at).map(|f| oni_library::paths::name(&f.path)).unwrap_or_default().into());
         p.set_can_previous(at > 0);
         p.set_can_next(at < last);
-        p.set_cells(ModelRc::new(VecModel::from(cells)));
+        lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(action.into());
         p.set_action_enabled(step != Step::Window || ticked > flagged);
@@ -236,3 +240,21 @@ impl Ctl {
         p.set_loupe_picked(l.picked);
     }
 }
+
+/// The roll's cells in one kept model: a cell is written when its photo, picture source or marks
+/// change or its tile was drawn again, so Slint compares and uploads no unchanged picture.
+fn lay_cells(p: &Preparing, cells: Vec<RollCell>, sources: &[(String, u8)], laid: &[(String, u8)], fresh: &HashSet<String>) {
+    use slint::Model;
+    let model = p.get_cells();
+    let Some(kept) = model.as_any().downcast_ref::<VecModel<RollCell>>().filter(|m| m.row_count() == cells.len() && laid.len() == cells.len()) else {
+        return p.set_cells(ModelRc::new(VecModel::from(cells)));
+    };
+    for (at, cell) in cells.into_iter().enumerate() {
+        let Some(old) = kept.row_data(at) else { continue };
+        let marks = (old.marked, old.flagged, old.apart, old.ticked, old.rgb) != (cell.marked, cell.flagged, cell.apart, cell.ticked, cell.rgb);
+        if marks || sources[at] != laid[at] || fresh.contains(&sources[at].0) {
+            kept.set_row_data(at, cell);
+        }
+    }
+}
+
