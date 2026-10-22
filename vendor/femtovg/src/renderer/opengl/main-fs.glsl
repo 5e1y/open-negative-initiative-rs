@@ -133,6 +133,7 @@ vec4 renderImage() {
 
     if (texType == 1) color = vec4(color.xyz * color.w, color.w);
     if (texType == 2) color = vec4(color.x);
+    if (texType == 3) color = vec4(color.w);
 
     // Apply color tint and alpha.
     color *= innerCol;
@@ -143,6 +144,7 @@ vec4 renderPlainTextureCopy() {
     vec4 color = texture2D(tex, ftcoord);
     if (texType == 1) color = vec4(color.xyz * color.w, color.w);
     if (texType == 2) color = vec4(color.x);
+    if (texType == 3) color = vec4(color.w);
     // Apply color tint and alpha.
     color *= innerCol;
     return color;

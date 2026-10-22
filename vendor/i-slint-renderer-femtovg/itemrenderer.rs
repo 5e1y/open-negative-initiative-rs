@@ -1150,7 +1150,8 @@ impl<'a, R: femtovg::Renderer + TextureImporter> GLItemRenderer<'a, R> {
         scaling: ImageRendering,
         tiling: (ImageTiling, ImageTiling),
     ) -> ItemGraphicsCacheEntry<R> {
-        if colorize_brush.is_transparent() {
+        // ONI: a solid colour is drawn as the image's mask (`masked`), with no colourised copy and its passes.
+        if colorize_brush.is_transparent() || masked(&colorize_brush).is_some() {
             return original_cache_entry;
         };
         let original_image = original_cache_entry.as_texture();
@@ -1295,7 +1296,8 @@ impl<'a, R: femtovg::Renderer + TextureImporter> GLItemRenderer<'a, R> {
             // It's possible that our item cache contains an image but it's not colorized yet because it was only
             // placed there via the `image_size` function (which doesn't colorize). So we may have to invalidate our
             // item cache and try again.
-            if !cached_image.is_colorized_image() && !item.colorize().is_transparent() {
+            let colorize = item.colorize();
+            if !cached_image.is_colorized_image() && !colorize.is_transparent() && masked(&colorize).is_none() {
                 self.graphics_cache.release(item_rc);
                 continue;
             }
@@ -1397,15 +1399,12 @@ impl<'a, R: femtovg::Renderer + TextureImporter> GLItemRenderer<'a, R> {
                     (image_id, fit.clip_rect.origin.cast::<f32>(), buf_size)
                 };
             let tiled = fit.tiled.unwrap_or_default();
-            let fill_paint = femtovg::Paint::image(
-                image_id,
-                -origin.x - tiled.x as f32,
-                -origin.y - tiled.y as f32,
-                texture_size.width,
-                texture_size.height,
-                0.0,
-                1.0,
-            )
+            let (cx, cy) = (-origin.x - tiled.x as f32, -origin.y - tiled.y as f32);
+            let (w, h) = (texture_size.width, texture_size.height);
+            let fill_paint = match masked(&item.colorize()) {
+                Some(color) => femtovg::Paint::image_mask(image_id, cx, cy, w, h, 0.0, color),
+                None => femtovg::Paint::image(image_id, cx, cy, w, h, 0.0, 1.0),
+            }
             .with_anti_alias(fit.source_to_target_x != 1. || fit.source_to_target_y != 0.);
 
             let mut path = femtovg::Path::new();
@@ -1470,6 +1469,14 @@ fn to_femtovg_stops(
         .filter(|last| last.position != 1.0)
         .map(|last| (1.0, to_femtovg_color(&last.color)));
     stops.iter().map(|stop| (stop.position, to_femtovg_color(&stop.color))).chain(extra)
+}
+
+/// ONI: the colour a solid, visible colorize brush paints an image's alpha with.
+fn masked(brush: &Brush) -> Option<femtovg::Color> {
+    match brush {
+        Brush::SolidColor(color) if color.alpha() > 0 => Some(to_femtovg_color(color)),
+        _ => None,
+    }
 }
 
 pub fn to_femtovg_color(col: &Color) -> femtovg::Color {

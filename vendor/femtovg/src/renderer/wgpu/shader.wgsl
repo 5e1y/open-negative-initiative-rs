@@ -286,6 +286,7 @@ fn renderImage(vertex: VertexOutput, params: Params) -> vec4<f32> {
 
     if (params.tex_type == 1) { color = vec4(color.xyz * color.w, color.w); }
     if (params.tex_type == 2) { color = vec4(color.x); }
+    if (params.tex_type == 3) { color = vec4(color.w); }
 
     // Apply color tint and alpha.
     color *= params.inner_col;
@@ -297,6 +298,7 @@ fn renderPlainTextureCopy(vertex: VertexOutput, params: Params) -> vec4<f32> {
 
     if (params.tex_type == 1) { color = vec4(color.xyz * color.w, color.w); }
     if (params.tex_type == 2) { color = vec4(color.x); }
+    if (params.tex_type == 3) { color = vec4(color.w); }
     // Apply color tint and alpha.
     color *= params.inner_col;
     return color;

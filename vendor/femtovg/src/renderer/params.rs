@@ -88,6 +88,7 @@ impl Params {
                 height,
                 angle,
                 tint,
+                mask,
             } => {
                 let Some(image_info) = images.info(*id) else {
                     return params;
@@ -133,6 +134,9 @@ impl Params {
                     PixelFormat::Gray8 => 2.0,
                     PixelFormat::Rgb8 => 0.0,
                 };
+                if *mask {
+                    params.tex_type = 3.0;
+                }
             }
             PaintFlavor::LinearGradient {
                 start: Position { x: start_x, y: start_y },

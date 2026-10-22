@@ -17,7 +17,7 @@ pub mod gallery;
 pub mod heal;
 pub mod histogram;
 #[cfg(test)]
-mod interface_slices;
+mod interface_drawing;
 pub mod library;
 pub mod loupe;
 pub mod measuring;

@@ -268,6 +268,8 @@ pub enum PaintFlavor {
         height: f32,
         angle: f32,
         tint: Color,
+        /// ONI: the image's alpha alone, in the tint's colour.
+        mask: bool,
     },
     LinearGradient {
         start: Position,
@@ -553,6 +555,7 @@ impl Paint {
             height,
             angle,
             tint: Color::rgbaf(1.0, 1.0, 1.0, alpha),
+            mask: false,
         })
     }
 
@@ -566,6 +569,21 @@ impl Paint {
             height,
             angle,
             tint,
+            mask: false,
+        })
+    }
+
+    /// ONI: like `image`, but the image's alpha alone filled with `color`: a colourised glyph drawn in
+    /// the current pass, with no colourised copy rendered in a pass of its own.
+    pub fn image_mask(id: ImageId, cx: f32, cy: f32, width: f32, height: f32, angle: f32, color: Color) -> Self {
+        Self::with_flavor(PaintFlavor::Image {
+            id,
+            center: Position { x: cx, y: cy },
+            width,
+            height,
+            angle,
+            tint: color,
+            mask: true,
         })
     }
 

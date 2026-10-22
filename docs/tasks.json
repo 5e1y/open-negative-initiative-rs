@@ -1837,5 +1837,12 @@
     "title": "The interface's frames submitted in slices of 16 passes",
     "status": "done",
     "detail": "Metal keeps about 2.6 MB of driver memory per render pass until its command buffer completes, and wgpu gives each pass a command buffer of its own. The first interface frame draws 222 passes (colourised icons, box shadows and layers rendered offscreen, cached after), so it held 590 to 618 MB of IOAccelerator memory in one buffer. The vendored femtovg now submits a frame every 16 passes and keeps one slice in flight: 60 to 130 MB on the midzoom bench, every later frame (4 passes) unchanged. A check draws 40 layers and finds each in its place and colour, and the first row as one buffer draws it."
+  },
+  {
+    "id": 254,
+    "type": "performance",
+    "title": "Colourised glyphs drawn as masks, with no copy rendered aside",
+    "status": "done",
+    "detail": "Slint's femtovg renderer colourised an image by rendering a copy into a texture of its own, two passes each and again at every change of ink (a hover), 42 icons on the first frame. A solid ink now draws the image's alpha in that colour in the current pass (femtovg Paint::image_mask, tex_type 3 in both shaders): the first frame falls from 222 to 144 passes, and the window reads within 1/255 of the copy on 207 icon pixels. A check draws a glyph both ways and finds them within 1/255, and its twin tells a multiplied tint from them."
   }
 ]
