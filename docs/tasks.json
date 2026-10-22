@@ -1928,5 +1928,12 @@
     "title": "The gallery keeps its cells, and the base step stops resending its whole frame",
     "status": "done",
     "detail": "publish_tiles set a new tile model at every scroll row, pick, medal and landed thumbnail, so Slint rebuilt every visible cell and uploaded every thumbnail again (about 10 MB a publish, some 200 MB while a 38-frame gallery opened). The model is now kept: each photo holds the slot its index gives while it stays in view, a cell is rewritten only when its place, marks or caption change or it gets its first picture, and a landed thumbnail is relayed to the cells showing its photo. The base step set its scan (5 MB) and its loupe's source, the whole frame (97 MB as RGBA8), at every pointer move, which Slint compared pixel by pixel; each is now set when its path or size changes, and the loupe stays instantiated while the pointer is away so its frame is not uploaded again. A check finds a cell kept when only its held picture differs and rewritten on a pick, a move or a first picture."
+  },
+  {
+    "id": 267,
+    "type": "performance",
+    "title": "Auto White Balance over many frames decodes three at once",
+    "status": "done",
+    "detail": "Measured on 12 frames of roll #8: a frame's balance took about 0.4 s, 0.35 s of it the measuring copy's decode at Swift's preview side and only 0.05 s the reads, so reading one sheet for every frame would have saved little. The run now balances BALANCERS = 3 frames at once, each decode off the GPU's lock and behind the hand's in the decode slots, the progress counting frames as they land: 4.55 s to 2.25 s for the 12. Each frame is still measured on its own copy at Swift's side, so its outcome is unchanged."
   }
 ]

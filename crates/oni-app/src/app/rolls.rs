@@ -12,6 +12,11 @@ use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
+
+/// Frames balanced at once: each holds a preview decode, about 100 MB, until its copy is made.
+const BALANCERS: usize = 3;
 
 /// What the Measured Roll block shows: `RollScope`.
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -236,16 +241,34 @@ impl Ctl {
         self.state.borrow_mut().batch = Some(Batch { done: 0, total: frames.len() });
         self.publish_batch();
         std::thread::spawn(move || {
-            let mut outcomes = HashMap::new();
-            for (done, frame) in frames.iter().enumerate() {
-                outcomes.extend(crate::measuring::balance_outcomes(std::slice::from_ref(frame)));
-                with_shell(move |c| {
-                    if let Some(b) = c.state.borrow_mut().batch.as_mut() {
-                        b.done = done + 1;
-                    }
-                    c.publish_batch();
-                });
+            // Each frame's measuring copy is a decode, 0.35 s of the 0.4 s a frame takes, made off the
+            // GPU's lock: a few at once, as Edit Together opens its frames.
+            let frames = Arc::new(frames);
+            let (next, done, outcomes) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)), Arc::new(Mutex::new(HashMap::new())));
+            let workers: Vec<_> = (0..BALANCERS.min(frames.len()))
+                .map(|_| {
+                    let (frames, next, done, outcomes) = (frames.clone(), next.clone(), done.clone(), outcomes.clone());
+                    std::thread::spawn(move || {
+                        crate::decode_gate::in_background();
+                        while let Some(frame) = frames.get(next.fetch_add(1, Ordering::Relaxed)) {
+                            let found = crate::measuring::balance_outcomes(std::slice::from_ref(frame));
+                            outcomes.lock().expect("outcomes").extend(found);
+                            let count = done.fetch_add(1, Ordering::Relaxed) + 1;
+                            with_shell(move |c| {
+                                if let Some(b) = c.state.borrow_mut().batch.as_mut() {
+                                    b.done = b.done.max(count);
+                                }
+                                c.publish_batch();
+                            });
+                        }
+                    })
+                })
+                .collect();
+            for worker in workers {
+                let _ = worker.join();
             }
+            let outcomes = std::mem::take(&mut *outcomes.lock().expect("outcomes"));
+            let frames = Arc::try_unwrap(frames).unwrap_or_else(|f| (*f).clone());
             with_shell(move |c| {
                 let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
                 let measure = |path: &str, _: &PipelineSettings| outcomes.get(path).cloned();
