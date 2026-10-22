@@ -127,3 +127,24 @@ fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
     let p3 = crate::histogram::measure(&pixels, w as usize, h as usize, Screen::DisplayP3);
     assert!(close(&counted, &p3) > 1e-2, "{}", close(&counted, &p3));
 }
+
+/// `pixels` laid in an rgba32float texture the kernel reads, the checks' input.
+pub fn upload(device: &wgpu::Device, queue: &wgpu::Queue, pixels: &[[f32; 4]], width: u32, height: u32) -> wgpu::Texture {
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("linear"),
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba32Float,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        texture.as_image_copy(),
+        bytemuck::cast_slice(pixels),
+        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(width * 16), rows_per_image: None },
+        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+    );
+    texture
+}

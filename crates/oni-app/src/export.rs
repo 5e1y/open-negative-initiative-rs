@@ -219,10 +219,10 @@ pub fn full_decode(path: &Path, reading: crate::render::Reading) -> Result<Decod
 }
 
 /// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and patches, read
-/// back in bands of rows.
+/// back in bands of rows; the decode held in half floats, as the canvas holds it.
 pub fn render_full(engine: &mut Engine, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
     let l = decoded.linear;
-    let source = engine.parts().0.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
+    let source = engine.parts().0.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
     drop(l.pixels);
     let image = engine.unproofed(&source, settings, &Request::default()).map_err(|_| Failure::Render)?;
     let (graph, _) = engine.parts();
