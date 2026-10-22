@@ -6,6 +6,7 @@ mod inputs;
 pub(crate) mod prewarm;
 mod originals;
 mod tiles;
+pub use tiles::Laid;
 mod view;
 
 /// A frame's preview, resident on the GPU, and the full width it was reduced from.

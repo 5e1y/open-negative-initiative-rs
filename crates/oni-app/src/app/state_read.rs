@@ -185,6 +185,9 @@ impl State {
             // Only the decode counts frames; writing, adopting and opening are opaque, so the bar goes busy.
             return Some(if m.step.is_empty() { LoadBar::counted("Making the contact sheet", m.done, m.total) } else { LoadBar::busy(m.step) });
         }
+        if let Some((done, total)) = self.together.as_ref().map(|g| g.loaded()).filter(|(done, total)| done < total) {
+            return Some(LoadBar::counted("Opening the frames together", done, total));
+        }
         self.building_full.as_ref().map(|_| LoadBar::busy("Loading full resolution"))
     }
 

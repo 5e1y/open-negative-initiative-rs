@@ -2,6 +2,7 @@
 //! at a tile's side; the store lays every step on all of them.
 
 use super::*;
+use crate::render::Laid;
 use oni_settings::PipelineSettings;
 use std::sync::atomic::AtomicUsize;
 use std::sync::{Condvar, LazyLock, Mutex};
@@ -24,7 +25,9 @@ pub(in crate::app) struct Group {
     id: u64,
     paths: Vec<String>,
     negatives: Vec<Option<Arc<Negative>>>,
-    asked: Option<(u64, usize, u64, Window)>,
+    /// Each frame's thumbnail on the GPU, shown in its tile until its source is decoded.
+    stand_ins: Vec<Option<oni_graph::Source>>,
+    asked: Option<(u64, usize, usize, u64, Window)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
     shown: Option<((usize, usize), Window, f64)>,
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
@@ -34,12 +37,26 @@ pub(in crate::app) struct Group {
 
 static GROUPS: AtomicU64 = AtomicU64::new(0);
 
-/// A grid to draw: its group, each tile's source and settings in order, the screen it is encoded for.
+impl Group {
+    /// The frames whose sources are decoded, and how many there are.
+    pub(in crate::app) fn loaded(&self) -> (usize, usize) {
+        (self.negatives.iter().flatten().count(), self.paths.len())
+    }
+}
+
+/// What a tile shows: its frame on its settings, or its thumbnail while the frame decodes.
+#[derive(Clone)]
+enum Tile {
+    Frame(Arc<Negative>, PipelineSettings),
+    StandIn(oni_graph::Source),
+}
+
+/// A grid to draw: its group, each tile in order, the screen it is encoded for.
 struct Ask {
     group: u64,
     revision: u64,
     at: Instant,
-    tiles: Vec<Option<(Arc<Negative>, PipelineSettings)>>,
+    tiles: Vec<Option<Tile>>,
     /// The share of the full sheet drawn, as the view shows it, and the box of it drawn.
     scale: f64,
     window: Window,
@@ -75,10 +92,12 @@ impl Ctl {
             (paths.iter().map(kept).collect::<Vec<_>>(), g.is_none())
         };
         let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
-        self.state.borrow_mut().together = Some(Group { id, paths, negatives, asked: None, shown: None, drawn: 0, latencies: Vec::new() });
+        let stand_ins = vec![None; paths.len()];
+        self.state.borrow_mut().together = Some(Group { id, paths, negatives, stand_ins, asked: None, shown: None, drawn: 0, latencies: Vec::new() });
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
+        self.stand_in(id, &lacking);
         self.decode_together(id, lacking);
         self.request_render();
         self.publish_tiles();
@@ -174,10 +193,46 @@ impl Ctl {
         }
     }
 
+    /// Each lacking frame's thumbnail, read from disk and laid on the GPU off this thread: a tile shows
+    /// it at once rather than nothing until its frame decodes.
+    fn stand_in(&self, id: u64, lacking: &[(usize, String)]) {
+        let (support, held): (PathBuf, Vec<(usize, String)>) = {
+            let s = self.state.borrow();
+            (s.support.clone(), lacking.iter().filter_map(|(i, p)| s.fingerprint(p).map(|f| (*i, f.to_string()))).collect())
+        };
+        let engine = self.engine.clone();
+        std::thread::spawn(move || {
+            for (i, fingerprint) in held {
+                if GROUPS.load(Ordering::Relaxed) != id {
+                    return;
+                }
+                let Some((rgba, w, h)) = crate::thumbnails::load(&support, &fingerprint, Screen::Srgb) else { continue };
+                let mut pixels: Vec<[f32; 4]> = rgba.chunks_exact(4).map(|p| [p[0], p[1], p[2], p[3]].map(|v| f32::from(v) / 255.0)).collect();
+                oni_colour::source::Source::of(None, None, false).linearise(&mut pixels, false);
+                let Ok(picture) = engine.lock().and_then(|mut e| e.picture(w as u32, h as u32, &pixels)) else { continue };
+                with_shell(move |c| c.tile_stood_in(id, i, picture));
+            }
+        });
+    }
+
+    fn tile_stood_in(self: &Rc<Self>, id: u64, i: usize, picture: oni_graph::Source) {
+        let landed = match self.state.borrow_mut().together.as_mut() {
+            Some(g) if g.id == id && g.negatives[i].is_none() => {
+                g.stand_ins[i] = Some(picture);
+                true
+            }
+            _ => false,
+        };
+        if landed {
+            self.request_render();
+        }
+    }
+
     fn tile_decoded(self: &Rc<Self>, id: u64, i: usize, negative: Arc<Negative>) {
         let landed = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == id => {
                 g.negatives[i] = Some(negative);
+                g.stand_ins[i] = None;
                 true
             }
             _ => false,
@@ -210,7 +265,7 @@ impl Ctl {
                 (p.visible.0 * k, p.visible.1 * k, p.visible.2 * k, p.visible.3 * k)
             });
             let (shows, window) = seen(g.paths.len(), cell_at(scale), visible);
-            let key = (revision, g.negatives.iter().flatten().count(), (scale * 8.0) as u64, window);
+            let key = (revision, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window);
             if g.asked == Some(key) {
                 return None;
             }
@@ -225,7 +280,15 @@ impl Ctl {
                     n.clone().zip(settings)
                 })
                 .collect();
-            let tiles = all.iter().zip(&shows).map(|(t, shown)| t.clone().filter(|_| *shown)).collect();
+            let tiles = all
+                .iter()
+                .zip(&g.stand_ins)
+                .zip(&shows)
+                .map(|((frame, stand_in), shown)| match frame {
+                    Some((n, s)) => Some(Tile::Frame(n.clone(), s.clone())),
+                    None => stand_in.clone().map(Tile::StandIn),
+                }.filter(|_| *shown))
+                .collect();
             Some(Ask { group: g.id, revision, at: Instant::now(), tiles, scale, window, counted: moved.then_some(all) })
         })();
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
@@ -300,7 +363,15 @@ fn draw_grids(engine: Shared) {
         };
         let started = Instant::now();
         let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
-        let present: Vec<(&Negative, &PipelineSettings)> = ask.tiles.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
+        let present: Vec<Laid> = ask
+            .tiles
+            .iter()
+            .flatten()
+            .map(|t| match t {
+                Tile::Frame(n, s) => Laid::Frame(n.as_ref(), s),
+                Tile::StandIn(picture) => Laid::Shown(picture),
+            })
+            .collect();
         let cell = cell_at(ask.scale);
         let (wx, wy, ww, wh) = ask.window;
         let size = (ww, wh);
@@ -313,7 +384,7 @@ fn draw_grids(engine: Shared) {
         // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
         let counted = ask.counted.as_ref().and_then(|all| {
             let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
-            let present: Vec<(&Negative, &PipelineSettings)> = all.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
+            let present: Vec<Laid> = all.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
             let cell = cell_at(COUNTED_SCALE);
             guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
         });
