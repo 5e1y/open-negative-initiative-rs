@@ -28,22 +28,3 @@ fn detail_rows_px(x: i32, y: i32) -> vec4<f32> {
     }
     return vec4<f32>(chroma, luma, centre);
 }
-
-// MARK: - Buffers
-
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read_write> rows: array<vec4<f32>>;
-
-fn detail_source(x: i32, y: i32) -> vec3<f32> {
-    let w = i32(P.head.w);
-    return src_px[u32(y) * P.head.w + u32(clamp(x, 0, w - 1))].rgb;
-}
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    let wide = P.head.y;
-    rows[i] = detail_rows_px(i32(i % wide) - i32(P.disk_force_amount_halo.x), i32(i / wide));
-}

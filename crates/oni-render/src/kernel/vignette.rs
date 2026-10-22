@@ -51,12 +51,3 @@ pub fn vignette(image: &Image, k: &Vignette) -> Image {
         with_alpha(e, s[3])
     })
 }
-
-const VIGNETTE: Shader = shader!("vignette");
-
-impl Gpu {
-    /// Per pixel, reading each pixel's Core Image coordinate: `image.origin` places the centre.
-    pub fn vignette(&self, image: &Image, k: &Vignette) -> Image {
-        self.per_pixel(VIGNETTE, |band| [vec![[band.origin[0], band.origin[1], 0.0, 0.0]], k.rows()].concat(), &[image], &[], 0)
-    }
-}

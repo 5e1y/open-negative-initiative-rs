@@ -39,13 +39,3 @@ pub fn color_cube(s: V4, k: &ColorCube) -> V4 {
     let c = lerp(lerp(c00, c10, t[1]), lerp(c01, c11, t[1]), t[2]);
     with_alpha(map(c, |_, v| v.max(0.0)), s[3])
 }
-
-const COLOR_CUBE: Shader = shader!("color_cube");
-
-impl Gpu {
-    pub fn color_cube(&self, image: &Image, k: &ColorCube) -> Image {
-        let d = k.cube_dimension;
-        assert!(d >= 2 && k.cube_data.len() == d * d * d, "color cube: {} nodes for dimension {d}", k.cube_data.len());
-        self.per_pixel(COLOR_CUBE, |_| Vec::new(), &[image], &[&k.cube_data], d)
-    }
-}

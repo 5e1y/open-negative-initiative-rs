@@ -4470,12 +4470,7 @@ name = "oni-render"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "oni-decode",
- "oni-fixtures",
  "oni-hack",
- "pollster",
- "serde_json",
- "wgpu",
 ]
 
 [[package]]

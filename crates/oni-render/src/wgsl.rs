@@ -1,5 +1,5 @@
-//! Each kernel's body as a function its buffer entry point and a render-graph stage both call, reading
-//! a uniform `P: Params` and the accessors its caller defines; the graph built-ins read `load`.
+//! Each kernel's body as a function a render-graph stage calls, reading a uniform `P: Params` and the
+//! accessors its caller defines; the graph built-ins read `load`.
 
 /// Shared by every kernel: luminance, the display gamma, the contrast family.
 pub const PRELUDE: &str = include_str!("wgsl/prelude.wgsl");
@@ -55,10 +55,3 @@ pub const AFFINE: &str = include_str!("wgsl/affine.wgsl");
 pub const ORIENT: &str = include_str!("wgsl/orient.wgsl");
 /// `stroke_mask_px(p)`, a stroke's hard mask.
 pub const STROKE_MASK: &str = include_str!("wgsl/stroke_mask.wgsl");
-
-const BUFFERS: &str = "// MARK: - Buffers";
-
-/// A kernel's body without its buffer bindings and entry point; a built-in is all body.
-pub fn body(source: &str) -> &str {
-    source.find(BUFFERS).map_or(source, |at| &source[..at])
-}

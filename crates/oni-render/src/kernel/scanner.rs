@@ -93,23 +93,3 @@ pub fn scanner_encode(s: V4, k: &ScannerEncode) -> V4 {
     });
     with_alpha(map(code, |_, v| v.max(0.0).powf(1.0 / k.root)), s[3])
 }
-
-const SCANNER_DENSITY: Shader = shader!("scanner_density");
-
-const SCANNER_OUTPUT: Shader = shader!("scanner_output");
-
-const SCANNER_ENCODE: Shader = shader!("scanner_encode");
-
-impl Gpu {
-    pub fn scanner_density(&self, image: &Image, k: &ScannerDensity) -> Image {
-        self.per_pixel(SCANNER_DENSITY, |_| k.rows(), &[image], &[], 0)
-    }
-
-    pub fn scanner_output(&self, code: &Image, warmth: &Image, k: &ScannerOutput) -> Image {
-        self.per_pixel(SCANNER_OUTPUT, |_| vec![[k.warmth_share, k.lift, k.contrast, 0.0]], &[code, warmth], &[], 0)
-    }
-
-    pub fn scanner_encode(&self, image: &Image, k: &ScannerEncode) -> Image {
-        self.per_pixel(SCANNER_ENCODE, |_| vec![[k.root, 0.0, 0.0, 0.0]], &[image], &[], 0)
-    }
-}

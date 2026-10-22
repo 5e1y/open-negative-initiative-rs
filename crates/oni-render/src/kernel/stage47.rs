@@ -227,18 +227,3 @@ pub fn stage47(s: [f32; 4], k: &Stage47) -> [f32; 4] {
     }
     [e[0], e[1], e[2], s[3]]
 }
-
-const STAGE47: Shader = shader!("stage47");
-
-impl Gpu {
-    /// Runs the fused kernel on `pixels` and reads the result back, in rgba32float throughout.
-    pub fn stage47(&self, pixels: &[[f32; 4]], k: &Stage47) -> Vec<[f32; 4]> {
-        let chunk = (self.max_binding / 16) as usize;
-        let mut out = Vec::with_capacity(pixels.len());
-        for part in pixels.chunks(chunk.max(1)) {
-            let packed = k.packed(part.len() as u32);
-            out.extend(self.run(STAGE47, bytemuck::bytes_of(&packed), &[part], part.len(), part.len()));
-        }
-        out
-    }
-}

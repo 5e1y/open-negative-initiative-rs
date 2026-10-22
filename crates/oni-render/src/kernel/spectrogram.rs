@@ -84,11 +84,3 @@ pub fn spectrogram(s: V4, k: &Spectrogram) -> V4 {
     let light = (lift * LUMA_STOPS).exp2();
     with_alpha(map(turned, |_, v| (y + (v - y) * gain) * light), s[3])
 }
-
-const SPECTROGRAM: Shader = shader!("spectrogram");
-
-impl Gpu {
-    pub fn spectrogram(&self, image: &Image, k: &Spectrogram) -> Image {
-        self.per_pixel(SPECTROGRAM, |_| k.rows(), &[image], &[], 0)
-    }
-}

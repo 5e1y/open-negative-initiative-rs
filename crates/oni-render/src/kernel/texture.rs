@@ -34,23 +34,3 @@ pub fn texture(s: V4, narrow_luma: V4, coeff: V4, k: &Texture) -> V4 {
     let shaped = y + (n - base) * k.gain;
     with_alpha(map(rgb(s), |_, c| shaped.max(0.0) + (c - y)), s[3])
 }
-
-const TEXTURE_MOMENTS: Shader = shader!("texture_moments", crate::wgsl::TEXTURE_MATH);
-
-const TEXTURE_COEFF: Shader = shader!("texture_coeff", crate::wgsl::TEXTURE_MATH);
-
-const TEXTURE: Shader = shader!("texture");
-
-impl Gpu {
-    pub fn texture_moments(&self, luma: &Image) -> Image {
-        self.per_pixel(TEXTURE_MOMENTS, |_| Vec::new(), &[luma], &[], 0)
-    }
-
-    pub fn texture_coeff(&self, moments: &Image, k: &TextureCoeff) -> Image {
-        self.per_pixel(TEXTURE_COEFF, |_| vec![[k.relative, 0.0, 0.0, 0.0]], &[moments], &[], 0)
-    }
-
-    pub fn texture(&self, image: &Image, narrow_luma: &Image, coeff: &Image, k: &Texture) -> Image {
-        self.per_pixel(TEXTURE, |_| vec![[k.gain, 0.0, 0.0, 0.0]], &[image, narrow_luma, coeff], &[], 0)
-    }
-}

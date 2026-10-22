@@ -191,25 +191,3 @@ pub fn detail(image: &Image, k: &Detail) -> Image {
         with_alpha(e, s[3])
     })
 }
-
-const DETAIL_ROWS: Shader = shader!("detail_rows", DETAIL_TAPS);
-
-const DETAIL_COLUMNS: Shader = shader!("detail_columns", DETAIL_TAPS);
-
-impl Gpu {
-    /// `detailRows` then `detailColumns`, output on `image`'s extent, reading `max(reach)` columns and
-    /// `margin()` rows away through an edge clamp, as `clampedToExtent` and the rows' ROI do.
-    pub fn detail(&self, image: &Image, k: &Detail) -> Image {
-        let (w, h) = (image.width, image.height);
-        if w * h == 0 {
-            return image.clone();
-        }
-        let wide = w + 2 * k.disk as usize;
-        let source = self.upload(&image.pixels);
-        let rows = self.blank(wide * h);
-        self.pass(DETAIL_ROWS, &uniform(head(wide * h, wide, h, w), &k.rows()), &[&source, &rows], wide * h);
-        let output = self.blank(w * h);
-        self.pass(DETAIL_COLUMNS, &uniform(head(w * h, w, h, wide), &k.rows()), &[&source, &rows, &output], w * h);
-        image.with_pixels(self.download(&output, w * h))
-    }
-}

@@ -10,18 +10,3 @@ fn texture_px(s: vec4<f32>, narrow: vec4<f32>, c: vec4<f32>) -> vec4<f32> {
     let shaped = y + (n - base) * P.gain.x;
     return vec4<f32>(max(shaped, 0.0) + chroma, s.a);
 }
-
-// MARK: - Buffers
-
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src_px: array<vec4<f32>>;
-@group(0) @binding(2) var<storage, read> narrow_luma: array<vec4<f32>>;
-@group(0) @binding(3) var<storage, read> coeff: array<vec4<f32>>;
-@group(0) @binding(4) var<storage, read_write> dest: array<vec4<f32>>;
-
-@compute @workgroup_size(64)
-fn main(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) groups: vec3<u32>) {
-    let i = flat_index(id, groups);
-    if (i >= P.head.x) { return; }
-    dest[i] = texture_px(src_px[i], narrow_luma[i], coeff[i]);
-}

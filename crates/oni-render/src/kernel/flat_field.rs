@@ -21,12 +21,3 @@ pub fn flat_field(s: V4, f: V4, k: &FlatField) -> V4 {
     let d = map(m, |c, x| mix(1.0, x, k.amount).powf(k.exponent[c]));
     with_alpha(map(rgb(s), |c, x| x / d[c]), s[3])
 }
-
-const FLAT_FIELD: Shader = shader!("flat_field");
-
-impl Gpu {
-    /// `mask` is the flat-field already fitted to `image`'s extent, as `FlatField.fitted` lays it.
-    pub fn flat_field(&self, image: &Image, mask: &Image, k: &FlatField) -> Image {
-        self.per_pixel(FLAT_FIELD, |_| k.rows(), &[image, mask], &[], 0)
-    }
-}

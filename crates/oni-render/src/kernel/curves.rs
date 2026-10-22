@@ -43,13 +43,3 @@ pub fn curves(s: V4, k: &Curves) -> V4 {
     }
     with_alpha(e, s[3])
 }
-
-const CURVES: Shader = shader!("curves");
-
-impl Gpu {
-    pub fn curves(&self, image: &Image, k: &Curves) -> Image {
-        assert!(k.rgb_lut.len() >= 2 && k.rgb_lut.len() == k.luma_lut.len(), "curves: two tables of one length");
-        let bent = [k.bent[0], k.bent[1], k.bent[2], 0.0];
-        self.per_pixel(CURVES, |_| vec![bent], &[image], &[&k.rgb_lut, &k.luma_lut], k.rgb_lut.len())
-    }
-}

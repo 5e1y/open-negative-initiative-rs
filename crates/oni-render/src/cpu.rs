@@ -1,25 +1,19 @@
 //! The scalar references, each written beside its kernel under `kernel/`, gathered here by name.
 
 pub use crate::kernel::affine::affine;
-pub use crate::kernel::area::{area_average, area_maximum, histogram_bin, histogram_counts, area_histogram};
-pub use crate::kernel::color_clamp::color_clamp;
 pub use crate::kernel::color_cube::color_cube;
 pub use crate::kernel::color_matrix::color_matrix;
-pub use crate::kernel::compositing::{blend_with_mask, source_over};
-pub use crate::kernel::correction::{sampled, correction_cost, correction_bias_field};
+pub use crate::kernel::compositing::blend_with_mask;
 pub use crate::kernel::curves::curves;
 pub use crate::kernel::detail::{detail_rows, detail};
 pub use crate::kernel::exposure_adjust::exposure_adjust;
 pub use crate::kernel::flat_field::flat_field;
 pub use crate::kernel::gaussian::gaussian;
-pub use crate::kernel::gradients::{linear_gradient, radial_gradient, generated};
 pub use crate::kernel::grid::Grid;
 pub use crate::kernel::orient::orient;
 pub use crate::kernel::output_clip::output_clip;
-pub use crate::kernel::rgb_passes::rgb_passes;
 pub use crate::kernel::saturation_curve::saturation_curve;
 pub use crate::kernel::scanner::{scanner_density, scanner_output, scanner_encode};
-pub use crate::kernel::screen_gamut_zebra::screen_gamut_zebra;
 pub use crate::kernel::spectrogram::spectrogram;
 pub use crate::kernel::stage47::stage47;
 pub use crate::kernel::stroke_mask::stroke_mask;

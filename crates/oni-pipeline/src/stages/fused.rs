@@ -71,10 +71,9 @@ fn compose(run: &[PerPixel]) -> String {
     let mut calls = Vec::new();
     for (i, k) in run.iter().enumerate() {
         let (part, call) = k.kernel.alone.expect("only kernels reading their input alone are fused");
-        let body = wgsl::body(part);
-        let names = defined(body);
+        let names = defined(part);
         out.push('\n');
-        out.push_str(&renamed(body, &names, i));
+        out.push_str(&renamed(part, &names, i));
         members.push(format!("k{i}: Params_{i}"));
         calls.push(format!("    v = {};", renamed(call, &names, i)));
     }

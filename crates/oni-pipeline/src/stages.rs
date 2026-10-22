@@ -13,7 +13,7 @@ fn compose(parts: &[&str], wrapper: &str) -> String {
     let mut out = String::from(wgsl::PRELUDE);
     for part in parts {
         out.push('\n');
-        out.push_str(wgsl::body(part));
+        out.push_str(part);
     }
     out.push_str("\n@group(0) @binding(3) var<uniform> P: Params;\n");
     out.push_str(wrapper);
