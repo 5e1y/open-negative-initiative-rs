@@ -1942,5 +1942,12 @@
     "title": "The sidebar's thumbnails no longer compared pixel by pixel",
     "status": "done",
     "detail": "At every gallery publish the sidebar compared each thumbnail row's picture with the cache's, and relaying the column compared every row whole, pictures included; Slint compares images pixel by pixel, about 10 MB read a publish for 38 rows. A row now records whether it holds its thumbnail: a pending one is filled when it lands, a held one only when its photo's thumbnail is drawn again (relay_thumbnail), and the relay compares rows with their pictures set aside."
+  },
+  {
+    "id": 269,
+    "type": "fix",
+    "title": "A hovered preset previews on every frame of Edit Together",
+    "status": "done",
+    "detail": "The single frame's render laid the hovered preset over its settings (preset_preview, Swift's previewedSettings) but Edit Together's grid did not, so a hover showed nothing on the group a click would change. The grid now lays the preview over the lead's and every other frame's live settings, and the hovered preset joins the grid's key so a hover asks a grid. Swift has no grid to copy; the preview follows what the click applies, the whole selection."
   }
 ]

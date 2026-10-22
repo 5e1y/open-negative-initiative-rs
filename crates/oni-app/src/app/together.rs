@@ -9,6 +9,9 @@ use std::sync::{Condvar, LazyLock, Mutex};
 
 #[path = "together/sheet.rs"]
 mod sheet;
+#[path = "together/drawing.rs"]
+mod drawing;
+use drawing::{draw_grids, tile_source};
 use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
@@ -27,7 +30,7 @@ pub(in crate::app) struct Group {
     negatives: Vec<Option<Arc<Negative>>>,
     /// Each frame's thumbnail on the GPU, shown in its tile until its source is decoded.
     stand_ins: Vec<Option<oni_graph::Source>>,
-    asked: Option<(u64, usize, usize, u64, Window)>,
+    asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
     shown: Option<((usize, usize), Window, f64)>,
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
@@ -250,7 +253,14 @@ impl Ctl {
         };
         let live: HashMap<String, PipelineSettings> =
             self.state.borrow().store.editor_ref().map(|e| e.together_live().into_iter().collect()).unwrap_or_default();
+        // A hovered preset previews on every frame, as a click applies it to the whole selection.
+        let (lead, live) = {
+            let s = self.state.borrow();
+            let shown = |settings: PipelineSettings| s.preset_preview(&settings).unwrap_or(settings);
+            (shown(lead), live.into_iter().map(|(path, settings)| (path, shown(settings))).collect::<HashMap<_, _>>())
+        };
         let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
+        let hovered = self.state.borrow().shelf.hovered;
         let ask = (|| {
             let mut s = self.state.borrow_mut();
             let g = s.together.as_mut()?;
@@ -265,11 +275,11 @@ impl Ctl {
                 (p.visible.0 * k, p.visible.1 * k, p.visible.2 * k, p.visible.3 * k)
             });
             let (shows, window) = seen(g.paths.len(), cell_at(scale), visible);
-            let key = (revision, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window);
+            let key = (revision, hovered, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window);
             if g.asked == Some(key) {
                 return None;
             }
-            let moved = g.asked.is_none_or(|a| (a.0, a.1) != (key.0, key.1));
+            let moved = g.asked.is_none_or(|a| (a.0, a.1, a.2) != (key.0, key.1, key.2));
             g.asked = Some(key);
             let all: Vec<_> = g
                 .paths
@@ -337,60 +347,5 @@ impl Ctl {
         self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
         c.set_busy(false);
         c.set_status(format!("{count} frames together").into());
-    }
-}
-
-/// A frame decoded at half size when it can, reduced to a tile and laid on the GPU.
-fn tile_source(engine: &Shared, path: &str) -> Result<Arc<Negative>, String> {
-    let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
-    let mut decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), TILE)?;
-    decoded.linear = reduced(decoded.linear, TILE);
-    Ok(Arc::new(engine.prepare(decoded)?))
-}
-
-/// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
-fn draw_grids(engine: Shared) {
-    loop {
-        let ask = {
-            let mut slot = SLOT.0.lock().expect("together slot");
-            loop {
-                if let Some(ask) = slot.take() {
-                    break ask;
-                }
-                slot = SLOT.1.wait(slot).expect("together slot");
-            }
-        };
-        let started = Instant::now();
-        let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
-        let present: Vec<Laid> = ask
-            .tiles
-            .iter()
-            .flatten()
-            .map(|t| match t {
-                Tile::Frame(n, s) => Laid::Frame(n.as_ref(), s),
-                Tile::StandIn(picture) => Laid::Shown(picture),
-            })
-            .collect();
-        let cell = cell_at(ask.scale);
-        let (wx, wy, ww, wh) = ask.window;
-        let size = (ww, wh);
-        let Ok(mut guard) = engine.lock() else { continue };
-        let at = |i: usize, tile| {
-            let (x, y) = place(cells[i], tile, cell);
-            (x - wx as i32, y - wy as i32)
-        };
-        let Ok(sheet) = guard.render_laid(&present, cell.0, &at, size) else { continue };
-        // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
-        let counted = ask.counted.as_ref().and_then(|all| {
-            let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
-            let present: Vec<Laid> = all.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
-            let cell = cell_at(COUNTED_SCALE);
-            guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
-        });
-        // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
-        drop(guard);
-        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
-        with_shell(move |c| c.grid_landed(group, revision, at, sheet, pipeline, laid, counted));
     }
 }
