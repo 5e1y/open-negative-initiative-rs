@@ -112,3 +112,18 @@ fn a_source_in_half_floats_reads_as_its_full_floats_at_half_the_memory() {
     let c = g.render(&other, other.extent(), None).unwrap();
     assert!(gap(&b, &c) > 2e-3);
 }
+
+#[test]
+fn a_slightly_smaller_shape_takes_a_larger_free_texture() {
+    let Some(mut g) = graph("a_slightly_smaller_shape_takes_a_larger_free_texture") else { return };
+    let s = g.upload(700, 600, &noise(700, 600, 7)).expect("upload");
+    let image = Image::new(&s).then(Gain([2.0; 4])).then(Gain([0.5; 4]));
+    g.render(&image, Rect::new(0, 0, 640, 512), None).expect("render");
+    let created = g.stats().textures_created;
+    // 512 × 512 after 640 × 512: a rounded step narrower, 1.25 times smaller, within `FIT`.
+    g.render(&image, Rect::new(0, 0, 512, 512), None).expect("render");
+    assert_eq!(g.stats().textures_created, created, "a shape a step smaller allocated again");
+    // Twin: 256 × 256, five times smaller, past `FIT`: the free textures are not taken.
+    g.render(&image, Rect::new(0, 0, 256, 256), None).expect("render");
+    assert!(g.stats().textures_created > created, "a shape far smaller took a texture five times its size");
+}

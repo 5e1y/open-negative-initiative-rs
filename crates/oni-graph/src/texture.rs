@@ -48,6 +48,10 @@ impl Meter {
 /// The step pooled textures' sides are rounded up to.
 pub const STEP: u32 = 128;
 
+/// How much larger, in area, a free texture taken for a smaller request may be: a pinch asks a new
+/// size every step, and each one made afresh while the GPU still reads those let go adds 0.1 GB.
+const FIT: f64 = 1.3;
+
 /// Owned outputs kept for reuse: the shown picture, the one in flight, Compare's before.
 const OUTPUTS: usize = 4;
 
@@ -134,12 +138,15 @@ impl Pool {
         Self { device, free: Vec::new(), outputs: Vec::new(), generation: 0, idle_bytes: IDLE_BYTES, created: 0, meter: Arc::default(), max_side }
     }
 
-    /// A texture holding at least this size, recycled when one is free. Sides are rounded up to
-    /// `STEP`, so a chain's stages, each a few pixels apart in reach, share their textures.
+    /// A texture holding at least this size, recycled when one is free: the smallest within `FIT`.
+    /// Sides are rounded up to `STEP`, so a chain's stages, each a few pixels apart in reach, share them.
     pub fn acquire(&mut self, width: u32, height: u32) -> FloatTexture {
         let up = |v: u32| (v.div_ceil(STEP) * STEP).min(self.max_side).max(v);
         let size = (up(width), up(height));
-        if let Some(i) = self.free.iter().position(|f| f.texture.size() == size) {
+        let area = |(w, h): (u32, u32)| f64::from(w) * f64::from(h);
+        let holds = |(w, h): (u32, u32)| w >= size.0 && h >= size.1 && area((w, h)) <= FIT * area(size);
+        let best = self.free.iter().enumerate().filter(|(_, f)| holds(f.texture.size())).min_by(|a, b| area(a.1.texture.size()).total_cmp(&area(b.1.texture.size())));
+        if let Some(i) = best.map(|(i, _)| i) {
             return self.free.swap_remove(i).texture;
         }
         self.create(size.0, size.1, true)

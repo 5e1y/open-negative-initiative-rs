@@ -31,15 +31,10 @@ impl Engine {
         let e = base.extent();
         let long = e.w.max(e.h) as usize;
         let side = ((long as f64 * (scale / base_ratio).min(1.0)).round() as usize).max(1);
-        // Reduced on the way in, so the chain pulls only the region's share of the level it reads; a
-        // reduction the canvas nearly holds whole is kept, so a notch at fit reads it ready.
+        // Reduced on the way in, so the chain pulls only the region's share of the level it reads; the
+        // render cache keeps the reduction for the next notch.
         let (source, reduce) = match side < long {
-            true => {
-                let (level, reduce) = self.level(&base, side, long)?;
-                let e = level.extent();
-                let whole = f64::from(e.w) * f64::from(e.h) * reduce * reduce;
-                if whole <= KEPT_WHOLE * view.size.0 * view.size.1 { (self.reduced(&level, reduce)?, 1.0) } else { (level, reduce) }
-            }
+            true => self.level(&base, side, long)?,
             false => (base, 1.0),
         };
         let request = Request { scale: reduce, ..request };
@@ -131,38 +126,22 @@ impl Engine {
         self.fitted.counted = Some(key);
         Ok(Some(source))
     }
-
-    /// `level` reduced by `reduce` whole, the last one kept.
-    fn reduced(&mut self, level: &Source, reduce: f64) -> Result<Source, String> {
-        let key = (level.id(), reduce.to_bits());
-        if let Some((k, source)) = &self.fitted.kept
-            && *k == key
-        {
-            return Ok(source.clone());
-        }
-        let source = self.graph.materialise(&Image::new(level).lanczos(reduce)).map_err(|e| e.to_string())?;
-        self.fitted.kept = Some((key, source.clone()));
-        Ok(source)
-    }
 }
 
 /// The share of the view rendered past each of its sides, which a pan reveals before its render lands.
 const PAN_MARGIN: f64 = 0.125;
 /// The long side of the picture the histogram counts.
 const COUNTED_SIDE: f64 = 1024.0;
-/// A reduction kept whole when it holds at most this many canvases of pixels.
-const KEPT_WHOLE: f64 = 2.0;
 
 /// The smallest halving kept: under it a reduction costs little from the level above.
 const MIN_HALF: usize = 64;
 /// The bases whose halvings are kept: the preview and the full frame, so neither evicts the other.
 const BASES: usize = 2;
 
-/// The halvings of the bases the canvas reads, and the last whole reduction made from one.
+/// The halvings of the bases the canvas reads.
 #[derive(Default)]
 pub(crate) struct Fitting {
     halves: Vec<(u64, Vec<Source>)>,
-    kept: Option<((u64, u64), Source)>,
     /// The settings and preview the histogram's picture was last made from.
     counted: Option<(PipelineSettings, u64)>,
 }
