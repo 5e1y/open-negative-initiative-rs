@@ -189,7 +189,7 @@ impl Ctl {
                 self.show_phones();
             }
             Some(Outward::Walk(by)) => self.walk(by),
-            Some(Outward::Face(face)) => self.phone_faced(oni_core::command::face_of(face)),
+            Some(Outward::Face(face)) => self.phone_faced(crate::link::face_of(face)),
             None => {}
         }
     }

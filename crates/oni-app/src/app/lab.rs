@@ -212,7 +212,7 @@ impl Ctl {
     fn press(self: &Rc<Self>, link: Link) {
         match link {
             Link::Walk { by } => self.walk(by),
-            _ => Command::try_from(link).into_iter().for_each(|c| self.write(c)),
+            _ => crate::link::command_of(link).into_iter().for_each(|c| self.write(c)),
         }
     }
 

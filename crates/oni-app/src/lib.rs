@@ -19,6 +19,7 @@ pub mod histogram;
 #[cfg(test)]
 mod interface_drawing;
 pub mod library;
+pub mod link;
 pub mod loupe;
 #[cfg(target_os = "macos")]
 pub mod mapped;

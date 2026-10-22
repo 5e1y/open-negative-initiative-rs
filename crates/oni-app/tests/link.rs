@@ -1,7 +1,7 @@
 //! The phone's presses through `oni-link`'s Host land on a store opened on a roll #8 frame, and the
 //! screen the phone draws is the store's.
 
-use oni_core::link::{Link, Move, Outward, drive};
+use oni_app::link::{Link, Move, Outward, drive};
 use oni_core::{Archive, EditorStore, Surface};
 use oni_link::{Command, Display, Effect, Face, Host, Identity, Letter, Machine, PairingCode, Param, Remote, Tab};
 use std::path::Path;
@@ -96,7 +96,7 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
 /// two stops either side.
 struct Exposure;
 
-impl oni_core::link::Sliders for Exposure {
+impl oni_app::link::Sliders for Exposure {
     fn rows(&self, store: &EditorStore) -> Vec<oni_link::Row> {
         let value = format!("{:+.2} EV", store.settings().print.exposure);
         let row = oni_link::Row { param: Param::Exposure, tab: Tab::Color, block: "Lighting".into(), label: "Exposure".into(), value, position: 0.5, modified: false };

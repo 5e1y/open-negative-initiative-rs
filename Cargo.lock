@@ -4220,12 +4220,11 @@ dependencies = [
  "flate2",
  "oni-fixtures",
  "oni-hack",
+ "oni-keys",
  "oni-library",
- "oni-link",
  "oni-settings",
  "serde",
  "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -4359,6 +4358,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-keys"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "oni-library"
 version = "0.1.0"
 dependencies = [
@@ -4376,6 +4382,7 @@ name = "oni-link"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
+ "oni-keys",
  "postcard",
  "rand",
  "serde",

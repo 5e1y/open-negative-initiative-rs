@@ -1,8 +1,8 @@
 //! The phone remote on the store: each press from `oni-link`'s Host becomes a store command, and
 //! the screen, the scanner's and the panel's, is published after every change, from whatever hand.
 
-use crate::command::{Command, face_for, face_of};
-use crate::store::{EditorStore, Surface, channel, machine_for};
+use oni_core::command::{Command, Scan};
+use oni_core::store::{EditorStore, Surface, channel, machine_for};
 use oni_link::{Face, Host, HostEvent, HostEvents, Panel, Param, PublicKey, Receipt, Row, State};
 use oni_settings::Face as SettingsFace;
 use std::sync::Mutex;
@@ -155,7 +155,7 @@ impl Link {
                 store.apply(Command::Face(wanted));
                 return Some(Outward::Face(face));
             }
-            key => Command::try_from(key).ok(),
+            key => command_of(key).ok(),
         };
         store.apply(resolved?).walk.map(Outward::Walk)
     }
@@ -177,5 +177,88 @@ pub async fn drive(
         if let Some(out) = done {
             outward(out);
         }
+    }
+}
+
+/// A phone's key as the store's command; a panel slider's step stays the wire's, for the host app
+/// that knows its sliders to resolve.
+pub fn command_of(command: oni_link::Command) -> Result<Command, oni_link::Command> {
+    {
+        use oni_link::Command as Link;
+        Ok(match command {
+            Link::Step { letter, by } => Command::Scan(Scan::Step { letter, by }),
+            Link::Reset { letter } => Command::Scan(Scan::Reset { letter }),
+            Link::StepEffect { effect, by } => Command::Scan(Scan::StepEffect { effect, by }),
+            Link::ResetEffect { effect } => Command::Scan(Scan::ResetEffect { effect }),
+            Link::Machine(machine) => Command::Scan(Scan::Machine(machine)),
+            Link::Walk { by } => Command::Scan(Scan::Walk { by }),
+            Link::Undo => Command::Undo,
+            Link::Redo => Command::Redo,
+            Link::Face(face) => Command::Face(face_of(face)),
+            Link::StepParam { .. } | Link::ResetParam { .. } | Link::SetParam { .. } | Link::ReleaseParam { .. } => {
+                return Err(command);
+            }
+        })
+    }
+}
+
+pub fn face_of(face: oni_link::Face) -> SettingsFace {
+    match face {
+        oni_link::Face::Pro => SettingsFace::Pro,
+        oni_link::Face::Scanner => SettingsFace::Scanner,
+    }
+}
+
+pub fn face_for(face: SettingsFace) -> oni_link::Face {
+    match face {
+        SettingsFace::Pro => oni_link::Face::Pro,
+        SettingsFace::Scanner => oni_link::Face::Scanner,
+    }
+}
+
+/// The wire's form of a command, where the phone has a key for it.
+pub fn link_of(command: &Command) -> Option<oni_link::Command> {
+    {
+        use oni_link::Command as Link;
+        Some(match *command {
+            Command::Scan(Scan::Step { letter, by }) => Link::Step { letter, by },
+            Command::Scan(Scan::Reset { letter }) => Link::Reset { letter },
+            Command::Scan(Scan::StepEffect { effect, by }) => Link::StepEffect { effect, by },
+            Command::Scan(Scan::ResetEffect { effect }) => Link::ResetEffect { effect },
+            Command::Scan(Scan::Machine(machine)) => Link::Machine(machine),
+            Command::Scan(Scan::Walk { by }) => Link::Walk { by },
+            Command::Undo => Link::Undo,
+            Command::Redo => Link::Redo,
+            Command::Face(face) => Link::Face(face_for(face)),
+            _ => return None,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_link::{Effect, Letter, Machine};
+
+    #[test]
+    fn every_phone_key_crosses_into_the_store_and_back_unchanged() {
+        let keys = [
+            oni_link::Command::Step { letter: Letter::M, by: -2 },
+            oni_link::Command::Reset { letter: Letter::W },
+            oni_link::Command::StepEffect { effect: Effect::Chrome, by: 1 },
+            oni_link::Command::ResetEffect { effect: Effect::Vignette },
+            oni_link::Command::Machine(Machine::Frontier),
+            oni_link::Command::Walk { by: 1 },
+            oni_link::Command::Undo,
+            oni_link::Command::Redo,
+            oni_link::Command::Face(oni_link::Face::Scanner),
+        ];
+        for key in keys {
+            assert_eq!(link_of(&command_of(key).unwrap()), Some(key));
+        }
+        // Twin: a desktop-only command has no key on the phone, and a slider's step no store command.
+        assert_eq!(link_of(&Command::Reset), None);
+        let step = oni_link::Command::StepParam { param: oni_link::Param::Exposure, by: 1 };
+        assert_eq!(command_of(step), Err(step));
     }
 }

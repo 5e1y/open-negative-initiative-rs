@@ -2,7 +2,7 @@
 //! alike, the face switch, and the rule that a gesture on one face never moves the other.
 
 use oni_core::{Archive, Command, EditorStore, Knob, Scan, Surface};
-use oni_link::scanner::{Effect, Letter, Machine};
+use oni_keys::{Effect, Letter, Machine};
 use oni_settings::cg::Point;
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::{ConversionMode, Face, PipelineSettings, ScannerMachine};

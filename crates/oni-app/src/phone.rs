@@ -1,7 +1,7 @@
 //! The phone remote: `oni-link`'s Host on a thread of its own, the desktop's key and the phones it
 //! trusts in the support folder, and the pairing QR code the sheet shows.
 
-use oni_core::link::Link;
+use crate::link::Link;
 use oni_link::{Host, HostEvent, Identity, PairingCode, PublicKey, Receipt};
 use std::net::{IpAddr, SocketAddr, UdpSocket};
 use std::path::{Path, PathBuf};

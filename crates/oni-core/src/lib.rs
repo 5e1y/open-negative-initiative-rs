@@ -7,7 +7,6 @@ pub mod compare;
 pub mod fields;
 pub mod history;
 pub mod knob;
-pub mod link;
 pub mod parameters;
 pub mod preset_parameters;
 pub mod presets;

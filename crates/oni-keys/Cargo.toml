@@ -1,0 +1,12 @@
+[package]
+name = "oni-keys"
+description = "The Scanner face's keys, shared by the editor and the phone link."
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[lib]
+doctest = false

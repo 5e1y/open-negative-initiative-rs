@@ -269,7 +269,7 @@ fn the_bars_reset_keeps_framing_flat_field_and_roll() {
     store.open(&roll.frames[4]).unwrap();
     store.apply_at(Command::Set { knob: Knob::Angle, value: 2.0 }, 0.0);
     store.apply_at(Command::Set { knob: Knob::SharpenAmount, value: 2.5 }, 1.0);
-    store.apply_at(Command::Scan(Scan::Step { letter: oni_link::Letter::D, by: 3 }), 2.0);
+    store.apply_at(Command::Scan(Scan::Step { letter: oni_keys::Letter::D, by: 3 }), 2.0);
     let edited = store.settings().clone();
     store.apply_at(Command::Reset, 3.0);
     let blank = store.settings().clone();

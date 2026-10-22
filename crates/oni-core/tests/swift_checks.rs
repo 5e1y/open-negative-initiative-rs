@@ -318,13 +318,14 @@ fn opened(name: &str, mode: ConversionMode) -> oni_core::EditorStore {
     store
 }
 
-fn press(store: &mut oni_core::EditorStore, key: oni_link::Command) {
-    store.apply(oni_core::Command::try_from(key).expect("a scanner key"));
+fn press(store: &mut oni_core::EditorStore, key: oni_core::Scan) {
+    store.apply(oni_core::Command::Scan(key));
 }
 
 #[test]
 fn every_scanner_key_moves_its_own_count_and_nothing_of_pro() {
-    use oni_link::{Command as Key, Effect, Letter};
+    use oni_core::Scan as Key;
+    use oni_keys::{Effect, Letter};
     let mut store = opened("scanner-keys", ConversionMode::Negative);
     let start = store.settings().clone();
     for _ in 0..3 {

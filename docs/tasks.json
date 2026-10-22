@@ -1989,8 +1989,8 @@
     "id": 275,
     "type": "refactor",
     "title": "The scanner vocabulary leaves the phone link crate",
-    "status": "todo",
-    "detail": "Letter, Effect, Machine, Channel and Face live in oni-link, so oni-core depends on oni-link and tokio and oni-measure pulls in the network stack. Move them to oni-settings with oni-link re-exporting them, and oni-core/src/link.rs into the app's phone module."
+    "status": "done",
+    "detail": "Letter, Effect, Machine and Channel move from oni-link's scanner module into a crate of their own, oni-keys (serde only, outside hakari like the phone crates), which oni-link re-exports so the wire and the phone's code are unchanged. oni-core depends on oni-keys instead of oni-link and loses tokio; the phone's glue on the store (oni-core's link.rs, the command and face conversions, now free functions command_of, link_of, face_of and face_for) moves to oni-app's link module with its tests. Removing the phone link now touches the app alone."
   },
   {
     "id": 276,

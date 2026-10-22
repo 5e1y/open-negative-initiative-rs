@@ -4,7 +4,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::{App, Bar, Lab, Library, MainWindow, PanelState};
-use oni_core::{Archive, Command, EditorStore};
+use oni_core::{Archive, EditorStore};
 use oni_link::scanner::Letter;
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::{Face, ScannerMachine};
@@ -99,7 +99,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     std::fs::write(twin_dir.join("A.NEF"), b"").unwrap();
     phone.open(&twin_dir.join("A.NEF").to_string_lossy()).unwrap();
     for (letter, by) in presses {
-        phone.apply(Command::try_from(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }).unwrap());
+        phone.apply(oni_app::link::command_of(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }).unwrap());
     }
     assert_eq!(phone.settings().scanner, settings().scanner, "the phone's presses and the desktop's keys are one command");
     assert_eq!(cells(w), ["+3", "+3", "−2", "0", "+4"], "the Lab screen reads every letter back");

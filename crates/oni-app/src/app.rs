@@ -19,7 +19,7 @@ use crate::timing::{self, Kind, Notches};
 use crate::{App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::{Command, PasteCheck, Surface};
 use oni_settings::ConversionMode;
-use oni_core::link::Outward;
+use crate::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Spring;
 use crate::system;

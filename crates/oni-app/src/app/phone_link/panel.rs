@@ -4,7 +4,7 @@
 use crate::fields::Field;
 use crate::slider_track::{position_on, stored_on, track_on};
 use crate::track;
-use oni_core::link::{Move, Sliders};
+use crate::link::{Move, Sliders};
 use oni_core::{Command, EditorStore};
 use oni_link::{Param, Row, Tab};
 use oni_settings::frame::FlatFieldMask;

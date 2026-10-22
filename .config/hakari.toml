@@ -29,7 +29,7 @@ platforms = [
 # The phone link builds for Android from the mobile repository: it keeps its own features, so the
 # desktop's never reach a phone build.
 [traversal-excludes]
-workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo"]
+workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo", "oni-keys"]
 
 [final-excludes]
-workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo"]
+workspace-members = ["oni-link-ffi", "oni-link", "oni-localsend", "oni-link-demo", "oni-keys"]
