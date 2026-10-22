@@ -1935,5 +1935,12 @@
     "title": "Auto White Balance over many frames decodes three at once",
     "status": "done",
     "detail": "Measured on 12 frames of roll #8: a frame's balance took about 0.4 s, 0.35 s of it the measuring copy's decode at Swift's preview side and only 0.05 s the reads, so reading one sheet for every frame would have saved little. The run now balances BALANCERS = 3 frames at once, each decode off the GPU's lock and behind the hand's in the decode slots, the progress counting frames as they land: 4.55 s to 2.25 s for the 12. Each frame is still measured on its own copy at Swift's side, so its outcome is unchanged."
+  },
+  {
+    "id": 268,
+    "type": "performance",
+    "title": "The sidebar's thumbnails no longer compared pixel by pixel",
+    "status": "done",
+    "detail": "At every gallery publish the sidebar compared each thumbnail row's picture with the cache's, and relaying the column compared every row whole, pictures included; Slint compares images pixel by pixel, about 10 MB read a publish for 38 rows. A row now records whether it holds its thumbnail: a pending one is filled when it lands, a held one only when its photo's thumbnail is drawn again (relay_thumbnail), and the relay compares rows with their pictures set aside."
   }
 ]

@@ -35,6 +35,7 @@ impl Ctl {
 
     /// A thumbnail drawn again onto the cells already showing its photo, the only ones it changes.
     pub(super) fn relay_thumbnail(&self, fingerprint: &str) {
+        self.fill_tree_thumbnails(Some(fingerprint));
         let Some(w) = self.window() else { return };
         let model = w.global::<Library>().get_tiles();
         let Some(rows) = model.as_any().downcast_ref::<VecModel<Tile>>() else { return };
@@ -54,7 +55,7 @@ impl Ctl {
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
         self.mark_tree();
-        self.fill_tree_thumbnails();
+        self.fill_tree_thumbnails(None);
         // A thumbnail landed reaches the roll's cells too, which read the same memory.
         if self.state.borrow().prepare.shown {
             self.publish_prepare();

@@ -25,8 +25,9 @@ pub(super) struct Laid {
     pub size: (f32, f32),
     pub frames: Vec<Frame>,
     pub total: f32,
-    /// What each row shows as its thumbnail; none for a name.
-    pub pictures: Vec<Option<Image>>,
+    /// Whether each row holds its thumbnail; none for a name. A held one changes only when it is
+    /// drawn again (`fill_tree_thumbnails`), so no picture is compared pixel by pixel.
+    pub pictures: Vec<Option<bool>>,
     /// Each row's depth, whether it is open, whether it is drawn as a thumbnail.
     pub depths: Vec<usize>,
     pub open: Vec<bool>,
@@ -126,7 +127,7 @@ impl Ctl {
             let _ = s.disk.send(fingerprint);
         }
         let laid = s.laid_mut(which);
-        laid.pictures = rows.iter().map(|r| r.thumb.then(|| r.picture.clone())).collect();
+        laid.pictures = rows.iter().map(|r| r.thumb.then(|| r.picture.size().width > 0)).collect();
         laid.open = rows.iter().map(|r| r.expandable && r.expanded).collect();
         (laid.paths, laid.frames, laid.total, laid.depths, laid.photos) = (paths, frames, total, depths, photos);
         drop(guard);
@@ -168,7 +169,7 @@ impl Ctl {
 
     /// A thumbnail landed or drawn again after the rows were laid reaches its row in place; only
     /// the rows whose picture changed are read from the model.
-    pub(super) fn fill_tree_thumbnails(&self) {
+    pub(super) fn fill_tree_thumbnails(&self, redrawn: Option<&str>) {
         for which in [Which::Archive, Which::Projects] {
             let Some(model) = self.column_model(which) else { return };
             let changed: Vec<(usize, Image)> = {
@@ -180,13 +181,15 @@ impl Ctl {
                     Which::Projects => &mut s.project_tree,
                 };
                 let mut changed = Vec::new();
-                for (i, (path, shown)) in laid.paths.iter().zip(laid.pictures.iter_mut()).enumerate() {
-                    let Some(shown) = shown else { continue };
-                    let Some(picture) = path.as_ref().and_then(|p| fingerprints.get(p)).and_then(|f| thumbs.get(f)) else { continue };
-                    if *shown != picture {
-                        *shown = picture.clone();
-                        changed.push((i, picture));
+                for (i, (path, held)) in laid.paths.iter().zip(laid.pictures.iter_mut()).enumerate() {
+                    let Some(held) = held else { continue };
+                    let Some(fingerprint) = path.as_ref().and_then(|p| fingerprints.get(p)) else { continue };
+                    if *held && redrawn != Some(fingerprint.as_str()) {
+                        continue;
                     }
+                    let Some(picture) = thumbs.get(fingerprint) else { continue };
+                    *held = true;
+                    changed.push((i, picture));
                 }
                 changed
             };
@@ -209,8 +212,10 @@ impl Ctl {
         let old: Vec<TreeRow> = model.iter().collect();
         let mut rows = old.clone();
         self.lay_column(which, &mut rows, paths);
+        // Pictures compared by whether they are held, not pixel by pixel: a redraw is relayed apart.
+        let bare = |r: &TreeRow| TreeRow { picture: Image::default(), ..r.clone() };
         for (i, (row, was)) in rows.into_iter().zip(&old).enumerate() {
-            if row != *was {
+            if bare(&row) != bare(was) || (row.picture.size().width > 0) != (was.picture.size().width > 0) {
                 model.set_row_data(i, row);
             }
         }
