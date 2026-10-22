@@ -1,6 +1,9 @@
 //! Roll #8 through the whole pipeline against the Swift app's `--render` dumps at a 1000-pixel side:
 //! fed the Swift decode, the render lands on the Swift one; fed LibRaw's, it moves by a measured amount.
 
+mod common;
+
+use common::{dump, gap};
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::{Inputs, Pipeline, Request};
 use oni_settings::PipelineSettings;
@@ -18,33 +21,6 @@ const SWIFT_P99: f64 = 1e-2;
 /// Fed LibRaw's decode, the decoders' gap is added, 0.025 to 0.07 of mean on the roll: a bound on a
 /// measured move, not a parity check, so it carries no twin.
 const LIBRAW_MEAN: f64 = 0.1;
-
-struct Dump {
-    width: u32,
-    height: u32,
-    pixels: Vec<[f32; 4]>,
-}
-
-/// `RenderDump`'s format: width and height as `Int32`, then RGBA `Float`, top row first.
-fn dump(path: &Path) -> Dump {
-    let b = std::fs::read(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let int = |i: usize| i32::from_le_bytes(b[i..i + 4].try_into().unwrap()) as u32;
-    let (width, height) = (int(0), int(4));
-    let floats: Vec<f32> = b[8..].chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
-    assert_eq!(floats.len(), (width * height * 4) as usize, "{}: truncated", path.display());
-    Dump { width, height, pixels: floats.chunks_exact(4).map(|c| [c[0], c[1], c[2], c[3]]).collect() }
-}
-
-/// Mean and 99th centile of the worst channel's gap, after the output clip both sides share.
-fn gap(a: &[[f32; 4]], b: &[[f32; 4]]) -> (f64, f64) {
-    assert_eq!(a.len(), b.len(), "renders of different sizes");
-    let clip = |x: f32| x.clamp(0.0, 1.0);
-    let mut e: Vec<f64> =
-        a.iter().zip(b).map(|(x, y)| (0..3).map(|c| f64::from((clip(x[c]) - clip(y[c])).abs())).fold(0.0, f64::max)).collect();
-    let mean = e.iter().sum::<f64>() / e.len() as f64;
-    e.sort_by(|x, y| x.total_cmp(y));
-    (mean, e[e.len() * 99 / 100])
-}
 
 fn luma(pixels: &[[f32; 4]]) -> f64 {
     pixels.iter().map(|p| f64::from(0.2627 * p[0] + 0.6780 * p[1] + 0.0593 * p[2])).sum::<f64>() / pixels.len() as f64
@@ -114,7 +90,7 @@ fn roll8_lands_on_the_swift_render() {
             failures.push(format!("{name}: {w}x{h} departs from the Swift render's {}x{}", swift.width, swift.height));
             continue;
         }
-        let (mean, p99) = gap(&ours, &swift.pixels);
+        let (mean, p99, _) = gap(&ours, &swift.pixels);
         println!("{name} {w}x{h}, on the Swift decode: mean {mean:.5}, p99 {p99:.5}; luma {:.4} for {:.4}", luma(&ours), luma(&swift.pixels));
         if mean >= SWIFT_MEAN || p99 >= SWIFT_P99 {
             failures.push(format!("{name}: the pipeline departs from the Swift render, mean {mean:.5}, p99 {p99:.5}"));
@@ -146,7 +122,7 @@ fn roll8_lands_on_the_swift_render() {
             twins.push(("capture stops ignored", render(&mut g, &mut pipeline, &source, &unlifted, &request).2));
         }
         for (what, twin) in twins {
-            let (m, p) = gap(&twin, &swift.pixels);
+            let (m, p, _) = gap(&twin, &swift.pixels);
             println!("  twin, {what}: mean {m:.5}, p99 {p:.5}");
             if m < SWIFT_MEAN && p < SWIFT_P99 {
                 failures.push(format!("{name}: twin {what} passes, so the check cannot see it"));
@@ -171,7 +147,7 @@ fn roll8_lands_on_the_swift_render() {
             (0..ch).flat_map(|y| (0..cw).map(move |x| (y * width + x) as usize)).map(|i| pixels[i]).collect()
         };
         println!("  LibRaw {fw}x{fh} reduced to {lw}x{lh}, compared on {cw}x{ch}");
-        let (m, p) = gap(&common(&libraw, lw), &common(&swift.pixels, swift.width));
+        let (m, p, _) = gap(&common(&libraw, lw), &common(&swift.pixels, swift.width));
         println!("  on LibRaw's decode: mean {m:.5}, p99 {p:.5}; luma {:.4}", luma(&libraw));
         if m >= LIBRAW_MEAN {
             failures.push(format!("{name}: LibRaw's render sits {m:.4} from the Swift one, past the measured move"));

@@ -2,6 +2,9 @@
 //! and a Lumix frame, fed the Swift decode, each settings set rendered by both and compared after
 //! the output clip; the settings are `adversarial/branches.json`, the Swift renders `ONI_ADVERSARIAL`.
 
+mod common;
+
+use common::{Dump, dump, gap};
 use oni_graph::{Graph, Image};
 use oni_pipeline::{Inputs, Pipeline, Request};
 use std::path::{Path, PathBuf};
@@ -11,31 +14,6 @@ const MEAN: f64 = 2e-3;
 const P99: f64 = 1e-2;
 /// A branch's settings move Swift's render's 99th centile this far from the frame at rest, or reach nothing.
 const MOVES: f64 = 5e-3;
-
-struct Dump {
-    width: u32,
-    height: u32,
-    pixels: Vec<[f32; 4]>,
-}
-
-/// `RenderDump`'s format: width and height as `Int32`, then RGBA `Float`, top row first.
-fn dump(path: &Path) -> Dump {
-    let b = std::fs::read(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let int = |i: usize| i32::from_le_bytes(b[i..i + 4].try_into().unwrap()) as u32;
-    let (width, height) = (int(0), int(4));
-    let floats: Vec<f32> = b[8..].chunks_exact(4).map(|c| f32::from_le_bytes(c.try_into().unwrap())).collect();
-    assert_eq!(floats.len(), (width * height * 4) as usize, "{}: truncated", path.display());
-    Dump { width, height, pixels: floats.chunks_exact(4).map(|c| [c[0], c[1], c[2], c[3]]).collect() }
-}
-
-/// Mean, 99th centile and worst of the worst channel's gap, after the output clip both sides share.
-fn gap(a: &[[f32; 4]], b: &[[f32; 4]]) -> (f64, f64, f64) {
-    let clip = |x: f32| x.clamp(0.0, 1.0);
-    let mut e: Vec<f64> = a.iter().zip(b).map(|(x, y)| (0..3).map(|c| f64::from((clip(x[c]) - clip(y[c])).abs())).fold(0.0, f64::max)).collect();
-    let mean = e.iter().sum::<f64>() / e.len() as f64;
-    e.sort_by(|x, y| x.total_cmp(y));
-    (mean, e[e.len() * 99 / 100], *e.last().unwrap())
-}
 
 fn merge(base: &mut serde_json::Value, over: &serde_json::Value) {
     match (base, over) {

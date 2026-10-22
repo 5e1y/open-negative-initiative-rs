@@ -1,6 +1,9 @@
 //! The kernel branches `stages.rs` leaves unreached, on the render graph against oni-render's scalar
 //! reference: each verdict has a twin, a reference deliberately wrong, which the check must refuse.
 
+mod common;
+
+use common::{V4, error, graph, judge, mapped, noise, whole};
 use oni_graph::{Graph, Image, Source};
 use oni_pipeline::stages::{self, DetailColumns, DetailRows};
 use oni_pipeline::scanner;
@@ -9,59 +12,6 @@ use oni_render::{Curves, Detail, FlatField, LUT_SIZE, SaturationCurve, ScannerDe
 use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::{ConversionMode, PipelineSettings};
-
-type V4 = [f32; 4];
-
-/// Largest error accepted, as |gpu - cpu| / (1 + |cpu|): lavapipe's `exp2` and `log2` sit near 1e-6.
-const TOLERANCE: f32 = 1e-4;
-
-fn graph(check: &str) -> Option<Graph> {
-    Graph::new().map_err(|e| println!("SKIPPED {check}: {e}")).ok()
-}
-
-/// Deterministic noise in `low..high`, alpha one.
-fn noise(width: u32, height: u32, seed: u64, low: f32, high: f32) -> Vec<V4> {
-    let mut state = seed.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
-    let mut next = move || {
-        state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
-        low + ((state >> 40) as f32 / (1u64 << 24) as f32) * (high - low)
-    };
-    (0..width * height).map(|_| [next(), next(), next(), 1.0]).collect()
-}
-
-/// Largest relative error; a NaN on one side only is infinite.
-fn error(a: &[V4], b: &[V4]) -> f32 {
-    assert_eq!(a.len(), b.len(), "buffers of different sizes");
-    assert!(!a.is_empty(), "nothing to compare");
-    a.iter()
-        .zip(b)
-        .flat_map(|(p, q)| {
-            (0..4).map(move |c| {
-                if p[c] == q[c] {
-                    return 0.0;
-                }
-                let e = (p[c] - q[c]).abs() / (1.0 + q[c].abs());
-                if e.is_nan() { f32::INFINITY } else { e }
-            })
-        })
-        .fold(0.0, f32::max)
-}
-
-/// The GPU agrees with the reference and refuses the twin.
-fn judge(name: &str, gpu: &[V4], reference: &[V4], twin: &[V4]) {
-    let (e, t) = (error(gpu, reference), error(gpu, twin));
-    println!("{name}: error {e:.2e}, twin {t:.2e}");
-    assert!(e < TOLERANCE, "{name}: the GPU is {e:.2e} off its reference");
-    assert!(t > TOLERANCE, "{name}: the twin passes at {t:.2e}, so the check sees nothing");
-}
-
-fn whole(g: &mut Graph, image: &Image) -> Vec<V4> {
-    g.render(image, image.extent(), None).expect("the stage renders")
-}
-
-fn mapped(pixels: &[V4], f: impl Fn(V4) -> V4) -> Vec<V4> {
-    pixels.iter().map(|&p| f(p)).collect()
-}
 
 /// Every mix of the values a kernel bends at: below zero, zero, a denormal's neighbour, one, past one.
 fn edges() -> (u32, u32, Vec<V4>) {
