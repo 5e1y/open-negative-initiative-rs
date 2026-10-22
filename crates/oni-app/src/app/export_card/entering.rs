@@ -84,6 +84,10 @@ impl Ctl {
             }
             c.shown = false;
             c.stopped = None;
+            // The column goes with the card; the next one lays out its own room.
+            if let Ok(mut room) = c.room.lock() {
+                *room = None;
+            }
             c.pass.fetch_add(1, Ordering::Relaxed);
             c.weighing.fetch_add(1, Ordering::Relaxed);
             c.return_gallery
