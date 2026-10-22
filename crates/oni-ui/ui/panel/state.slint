@@ -154,6 +154,8 @@ export global Dedust {
 // `Loupe`'s band under Details: Rust renders the region the canvas centres and says its size in points.
 export global DetailLoupe {
     in property <image> source;
+    // `Picture.revision` for `source`, a texture each render rewrites in place.
+    in property <int> revision;
     in property <length> shown-width;
     in property <length> shown-height;
     in property <string> ratio;

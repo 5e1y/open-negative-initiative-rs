@@ -21,11 +21,13 @@ pub(super) struct Held {
     shown: Option<Key>,
     /// Renders shown, which a bench counts.
     count: u64,
+    /// The texture the band shows, rewritten in place while the region keeps its size.
+    texture: Option<wgpu::Texture>,
 }
 
 impl Default for Held {
     fn default() -> Self {
-        Held { magnification: loupe::REST, busy: false, again: false, shown: None, count: 0 }
+        Held { magnification: loupe::REST, busy: false, again: false, shown: None, count: 0, texture: None }
     }
 }
 
@@ -133,18 +135,30 @@ impl Ctl {
         let e = source.extent();
         let (w, h) = (e.w, e.h);
         let image = {
-            let s = self.state.borrow();
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
             let g = &s.gpu;
-            let target = display::Gpu::target(&g.device, w, h);
+            let kept = s.loupe.texture.take().filter(|t| (t.width(), t.height()) == (w, h));
+            let fresh = kept.is_none();
+            let target = kept.unwrap_or_else(|| display::Gpu::target(&g.device, w, h));
             g.kernel.run(&g.device, &g.queue, view, &Params::new(key.5, w, h, 0), &target);
-            match g.read_back(&target, (w, h)) {
-                Some(image) => image,
-                None => Image::try_from(target).unwrap_or_default(),
+            // A texture the band refuses is not kept, so the next render imports another.
+            let (image, keep) = match g.read_back(&target, (w, h)) {
+                Some(image) => (Some(image), true),
+                None if fresh => Image::try_from(target.clone()).map_or((Some(Image::default()), false), |i| (Some(i), true)),
+                None => (None, true),
+            };
+            if keep {
+                s.loupe.texture = Some(target);
             }
+            image
         };
         let scale = f64::from(win.window().scale_factor());
         let band = win.global::<DetailLoupe>();
-        band.set_source(image);
+        if let Some(image) = image {
+            band.set_source(image);
+        }
+        band.set_revision(band.get_revision().wrapping_add(1));
         band.set_shown_width((f64::from(w) * m / scale) as f32);
         band.set_shown_height((f64::from(h) * m / scale) as f32);
         let mut s = self.state.borrow_mut();
@@ -156,6 +170,7 @@ impl Ctl {
 impl super::State {
     /// Forgets the loupe's picture once its frame is gone; true when there was one to clear.
     fn shown_loupe_cleared(&mut self) -> bool {
+        self.loupe.texture = None;
         self.loupe.shown.take().is_some()
     }
 
