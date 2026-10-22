@@ -387,7 +387,8 @@ fn images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_res
     let rendered = [g.render(&ia, ia.extent(), None).unwrap(), g.render(&ib, ib.extent(), None).unwrap()];
     let (pa, pb) = ((5, 7), (110, 2));
     let size = (420, 210);
-    let sheet = g.laid_out(&[(&ia, pa), (&ib, pb)], size).unwrap();
+    let (copies, sheet) = (g.stats().copies, g.laid_out(&[(&ia, pa), (&ib, pb)], size).unwrap());
+    assert_eq!(g.stats().copies, copies, "each image's last stage writes on the sheet, with no copy");
     let read = g.read_back(&[&sheet]).remove(0);
     let sheet_rect = Rect::new(0, 0, size.0, size.1);
     for ((image, at), pixels) in [(&ia, pa), (&ib, pb)].into_iter().zip(&rendered) {
@@ -395,6 +396,9 @@ fn images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_res
         assert_eq!(cut(&read, sheet_rect, Rect::new(at.0, at.1, e.w, e.h)), *pixels);
     }
     assert_eq!(read[0], [0.0; 4], "the sheet is clear where nothing lies");
+    // Twin: a bare source has no stage to write on the sheet, so it is copied there.
+    g.laid_out(&[(&Image::new(&a), pa)], size).unwrap();
+    assert!(g.stats().copies > copies);
     // Twin: a place past the sheet's edge is refused rather than cut.
     assert!(g.laid_out(&[(&ib, (400, 0))], size).is_err());
     // Twin: the second sheet reuses nothing of the first under its clear corner.

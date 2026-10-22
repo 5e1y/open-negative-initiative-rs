@@ -86,8 +86,11 @@ impl Graph {
         } else {
             self.pool.create_owned(size.0, size.1, Precision::Full)
         };
-        for (image, (x, y)) in images {
-            let image = &image.readable();
+        // Every image's sources laid first, then all their stages in one compute pass, each last stage
+        // writing at its place on the sheet: one command buffer for the whole sheet.
+        let readable: Vec<Image> = images.iter().map(|(image, _)| image.readable()).collect();
+        let mut laid = Vec::with_capacity(images.len());
+        for (image, (_, (x, y))) in readable.iter().zip(images) {
             let region = image.extent();
             let at = Rect::new(*x, *y, region.w, region.h);
             if !sheet_rect.contains(&at) {
@@ -97,11 +100,20 @@ impl Graph {
             if !self.fits(&plan) {
                 return Err(Error::TooLarge);
             }
-            let (texture, rect) = self.evaluate(&mut encoder, plan, None, false);
-            // The image's own region, shifted to its place on the sheet.
-            let from = Rect::new(rect.x - region.x + x, rect.y - region.y + y, rect.w, rect.h);
-            self.copy(&mut encoder, &texture, from, &sheet, sheet_rect, at);
-            self.pool.release(texture);
+            let staged = matches!(plan.nodes[plan.last].kind, Kind::Stage { .. });
+            let plan = self.lay(&mut encoder, plan);
+            if !staged {
+                let (texture, rect) = plan.results[plan.last].clone().expect("a source is laid");
+                self.copy(&mut encoder, &texture, Rect::new(rect.x - region.x + x, rect.y - region.y + y, rect.w, rect.h), &sheet, sheet_rect, at);
+                continue;
+            }
+            laid.push((plan, [*x, *y]));
+        }
+        {
+            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("sheet"), timestamp_writes: None });
+            for (plan, at) in laid {
+                self.record(&mut pass, plan, None, Last::Sheet(&sheet, at));
+            }
         }
         self.submit(encoder);
         self.ended();
@@ -203,7 +215,18 @@ impl Graph {
     /// Records every node the cache cannot skip, producers first, each texture handed back to the pool
     /// once its last reader has run; returns the last node's result and the rectangle it covers, in a
     /// texture of its own when `owned_last` asks it.
-    pub(super) fn evaluate(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan, mut cache: Option<&mut Cache>, owned_last: bool) -> (FloatTexture, Rect) {
+    pub(super) fn evaluate(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan, cache: Option<&mut Cache>, owned_last: bool) -> (FloatTexture, Rect) {
+        let laid = self.lay(encoder, plan);
+        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("stages"), timestamp_writes: None });
+        let last = if owned_last { Last::Owned } else { Last::Pooled };
+        let result = self.record(&mut pass, laid, cache, last);
+        drop(pass);
+        result.expect("the last node is evaluated")
+    }
+
+    /// The plan with its sources laid, their copies outside the pass: every stage then runs in one
+    /// compute pass, as each pass begun costs Metal a command buffer and its driver memory.
+    fn lay<'a>(&mut self, encoder: &mut wgpu::CommandEncoder, plan: Plan<'a>) -> Laid<'a> {
         let Plan { nodes, last, rects, hits } = plan;
         let n = nodes.len();
         let mut pending = vec![0usize; n];
@@ -216,15 +239,18 @@ impl Graph {
             }
         }
         let mut results = hits;
-        // Sources are laid first, their copies outside the pass: every stage then runs in one compute
-        // pass, as each pass begun costs Metal an encoder, about ten microseconds a stage.
         for i in 0..n {
             if let (Some(need), None, Kind::Source(source)) = (rects[i], &results[i], &nodes[i].kind) {
                 results[i] = Some(self.assemble(encoder, source, need));
             }
         }
-        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("stages"), timestamp_writes: None });
-        for i in 0..n {
+        Laid { nodes, last, rects, results, pending }
+    }
+
+    /// Dispatches every stage of `laid` into `pass`; the last node's result, unless it went into a sheet.
+    fn record(&mut self, pass: &mut wgpu::ComputePass<'_>, laid: Laid, mut cache: Option<&mut Cache>, last_into: Last) -> Option<(FloatTexture, Rect)> {
+        let Laid { nodes, last, rects, mut results, mut pending } = laid;
+        for i in 0..nodes.len() {
             let Some(need) = rects[i] else { continue };
             if results[i].is_some() {
                 continue;
@@ -232,7 +258,11 @@ impl Graph {
             match &nodes[i].kind {
                 Kind::Source(_) => unreachable!("every source is laid before the pass"),
                 Kind::Stage { stage, input, aux } => {
-                    let out = if owned_last && i == last { self.pool.output(need.w, need.h) } else { self.pool.acquire(need.w, need.h) };
+                    let (out, at) = match (&last_into, i == last) {
+                        (Last::Sheet(sheet, at), true) => ((*sheet).clone(), *at),
+                        (Last::Owned, true) => (self.pool.output(need.w, need.h), [0; 2]),
+                        _ => (self.pool.acquire(need.w, need.h), [0; 2]),
+                    };
                     {
                         let main = results[*input].as_ref().expect("the input is evaluated first");
                         let extras: Vec<(&FloatTexture, Rect, Rect)> = aux
@@ -242,14 +272,16 @@ impl Graph {
                                 (t, *r, nodes[a].extent)
                             })
                             .collect();
-                        self.dispatch(&mut pass, *stage, (&main.0, main.1, nodes[*input].extent), &extras, &out, need);
+                        self.dispatch(pass, *stage, (&main.0, main.1, nodes[*input].extent), &extras, (&out, at), need);
                     }
                     if let Some(c) = cache.as_deref_mut()
                         && let Some(old) = c.store(nodes[i].key, need, &out)
                     {
                         self.pool.release(old);
                     }
-                    results[i] = Some((out, need));
+                    if !(matches!(last_into, Last::Sheet(..)) && i == last) {
+                        results[i] = Some((out, need));
+                    }
                     for j in std::iter::once(*input).chain(aux.iter().copied()) {
                         pending[j] -= 1;
                         if pending[j] == 0 && j != last
@@ -261,8 +293,7 @@ impl Graph {
                 }
             }
         }
-        drop(pass);
-        results[last].take().expect("the last node is evaluated")
+        results[last].take()
     }
 
     /// The source pixels of `needed`: a tile itself when one holds them all, else a copy across tiles.
@@ -290,4 +321,21 @@ impl Graph {
         );
         self.copies += 1;
     }
+}
+
+/// A plan whose sources are laid, ready to record.
+struct Laid<'a> {
+    nodes: Vec<Flat<'a>>,
+    last: usize,
+    rects: Vec<Option<Rect>>,
+    results: Vec<Option<(FloatTexture, Rect)>>,
+    pending: Vec<usize>,
+}
+
+/// Where the last node of a plan is written.
+enum Last<'a> {
+    Pooled,
+    Owned,
+    /// At this corner of a sheet the caller holds.
+    Sheet(&'a FloatTexture, [i32; 2]),
 }

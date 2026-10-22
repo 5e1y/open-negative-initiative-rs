@@ -32,9 +32,10 @@ impl Graph {
         stage: &dyn Stage,
         input: (&FloatTexture, Rect, Rect),
         aux: &[(&FloatTexture, Rect, Rect)],
-        output: &FloatTexture,
+        output: (&FloatTexture, [i32; 2]),
         output_rect: Rect,
     ) {
+        let (output, out_at) = output;
         let (texture, input_rect, input_extent) = input;
         let frame = Frame {
             out_origin: [output_rect.x, output_rect.y],
@@ -43,6 +44,8 @@ impl Graph {
             in_max: [input_extent.right(), input_extent.bottom()],
             out_size: [output_rect.w, output_rect.h],
             in_size: [input_rect.w, input_rect.h],
+            out_at,
+            pad: [0; 2],
         };
         let mut params = stage.params();
         // A uniform binding holds at least 16 bytes, in 16-byte steps.

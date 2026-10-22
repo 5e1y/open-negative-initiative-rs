@@ -103,6 +103,9 @@ pub(crate) struct Frame {
     pub out_size: [u32; 2],
     /// The rectangle the input texture holds, which may be smaller than the texture.
     pub in_size: [u32; 2],
+    /// Where the output's corner lies in its texture: a sheet holds many outputs.
+    pub out_at: [i32; 2],
+    pub pad: [i32; 2],
 }
 
 /// Prepended to every stage's shader: bindings, the coordinate change and the entry point.
@@ -114,6 +117,8 @@ struct Frame {
     in_max: vec2<i32>,
     out_size: vec2<u32>,
     in_size: vec2<u32>,
+    out_at: vec2<i32>,
+    pad: vec2<i32>,
 }
 
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -136,6 +141,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (any(id.xy >= frame.out_size)) {
         return;
     }
-    textureStore(dst, vec2<i32>(id.xy), pixel(frame.out_origin + vec2<i32>(id.xy)));
+    textureStore(dst, frame.out_at + vec2<i32>(id.xy), pixel(frame.out_origin + vec2<i32>(id.xy)));
 }
 "#;

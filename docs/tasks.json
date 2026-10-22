@@ -1851,5 +1851,19 @@
     "title": "The allocator's large-block cache off, so freed decodes go back to the system",
     "status": "done",
     "detail": "After a frame opened, 710 MB of MALLOC_LARGE stayed dirty although only 4 MB was live: macOS's allocator keeps freed large blocks (the f32 decode, the cache read, LibRaw's buffers, the upload bands) for reuse, and malloc_zone_pressure_relief returns none of it. libmalloc reads MallocLargeCache only at launch, so the app execs itself once with it at 0 (10 to 15 ms). On the midzoom bench with a prepared support folder: MALLOC_LARGE 710 MB to 4 MB, steady footprint 2.25 GB to 1.5 GB, peak 2.8-3.0 GB to 2.0-2.2 GB, notch renders unchanged."
+  },
+  {
+    "id": 256,
+    "type": "performance",
+    "title": "Edit Together's sheet recorded in one compute pass",
+    "status": "done",
+    "detail": "The sheet evaluated each frame in a compute pass of its own and copied its result into place, and wgpu gives every pass and every copy run a Metal command buffer: about seventy a notch on a 36-frame grid, each with its driver allocation. Every frame's sources are now laid first, then all their stages run in one pass, each last stage writing at its corner of the sheet (Frame.out_at): one command buffer a notch. Grid bench, five interleaved runs on a loaded machine: notch to canvas p50 10.3 to 5.0 ms, p99 unchanged. The sheet check now also counts no copy for staged frames, and its twin counts one for a bare source."
+  },
+  {
+    "id": 257,
+    "type": "performance",
+    "title": "Large Rust blocks mapped directly instead of the allocator's cache switched off",
+    "status": "done",
+    "detail": "Switching macOS's large-block cache off at launch (#255) also took it from the Metal driver, which allocates a large block per command buffer: Edit Together's notch rose from 5.8 to 7.3-10.2 ms. The app's allocator now maps and unmaps blocks of 16 MB and more itself (the f32 decode, the cache read, the upload bands) and leaves the rest to the system's, cache included; the relaunch goes. Midzoom with a prepared support folder: MALLOC_LARGE 710 to 166-181 MB (LibRaw's own blocks stay cached), peak 1.9-2.0 GB, renders unchanged. A check grows a block past 16 MB and shrinks it back with its bytes kept, its twin sees one byte spoiled."
   }
 ]
