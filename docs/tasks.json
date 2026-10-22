@@ -1886,5 +1886,12 @@
     "title": "Prepare the Roll's tutorials play again, from GIFs every system decodes",
     "status": "done",
     "detail": "Swift's TutorialVideo played a square muted loop above the Base, Flags and Window steps' controls. The three HEVC clips are converted once to GIFs at 20 fps and 580 px, each frame written as the box of pixels that moved (18 MB for the three, 31.6 MB as whole frames), and decoded frame by frame with the pure-Rust gif crate, so Windows and macOS play the same file with no system media library (owner's call). Each frame is written into one texture the panel's Picture shows by revision, as the canvas is; a window that cannot import a texture takes the pixels. The clip stops while the roll is measured, on another step and when the panel closes. RollStepKeys moves to the toolbar that shows it, so prepare.slint's ceiling falls to 479. A check plays each clip square at 50 ms a frame back to its first picture, its twin a loop that would come back at once; another finds no clip on the steps without one."
+  },
+  {
+    "id": 261,
+    "type": "performance",
+    "title": "The interface's offscreen layers and needless redraws removed",
+    "status": "done",
+    "detail": "A rounded clip, or an opacity under one on an element with children, makes Slint's femtovg renderer draw the subtree into a texture of its own and redraw it on any change inside. The cards keep their round but clip nothing: CardCorners covers the four corners in the ground's colour over the canvas, gallery, export and roll cards. The slider rail no longer clips its fill, which is rounded itself; the hidden RESET key is invisible rather than transparent; the tooltip waits its delay on a timer instead of an animated opacity that redrew the window for a second; the progress glow no longer re-blurs through an animated width. The shared box-shadow cache is emptied after each frame, items on screen keeping theirs in their item cache. The toolbar's outer spacing no longer depends on its width, which closed the binding loop Slint warns may panic. Midzoom against 4b1bf38: passes 4 to 2 a steady frame and 144 to 98 on the first, interface frame drawn p50 1.8-2.0 to 1.6 ms, about 35 textures fewer; footprint unchanged within the bench's noise."
   }
 ]

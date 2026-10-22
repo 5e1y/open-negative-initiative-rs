@@ -1,5 +1,5 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
-import { DS, Card, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -358,4 +358,5 @@ export component CanvasCard inherits Card {
             }
         }
     }
+    CardCorners { width: parent.width; height: parent.height; }
 }

@@ -266,9 +266,9 @@ export component Slider inherits VerticalLayout {
                 height: SliderStyle.track;
                 border-radius: SliderStyle.track-radius;
                 background: root.fill == SliderFill.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : Colour.track;
-                clip: true;
                 if root.fill != SliderFill.bipolar: Rectangle {
                     x: 0;
+                    border-radius: SliderStyle.track-radius; // its own round: a rail clipping it renders each slider apart
                     width: SliderStyle.knob-width / 2 + root.at * track.width;
                     background: root.fill == SliderFill.metal
                         ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 35%, Colour.metal-light 65%, Colour.metal-dark 100%)

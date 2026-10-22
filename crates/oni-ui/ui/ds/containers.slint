@@ -71,7 +71,7 @@ export component Section inherits VerticalLayout {
                 size: ButtonSize.small;
                 horizontal-stretch: 0;
                 text: "RESET";
-                opacity: root.modified ? 1 : 0;
+                visible: root.modified;
                 enabled: root.modified;
                 clicked => { root.reset(root.block); }
             }

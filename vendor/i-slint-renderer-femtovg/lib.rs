@@ -324,6 +324,9 @@ impl<B: GraphicsBackend> FemtoVGRenderer<B> {
                 // Delete any images and layer images (and their FBOs) before making the context not current anymore, to
                 // avoid GPU memory leaks.
                 self.texture_cache.borrow_mut().drain();
+                // ONI: the shared shadows go each frame; an item on screen keeps its own in its item cache,
+                // so only those of items gone or resized are dropped, up to 16 window-sized textures.
+                self.box_shadow_cache.clear();
                 drop(item_renderer);
                 Ok(())
             })

@@ -197,12 +197,21 @@ export component Surface inherits Rectangle {
     background: Tones.ground(root.ground);
 }
 
-// The canvas card: rounded, its content clipped, darker while a frame is cropped.
+// The canvas card: rounded, darker while a frame is cropped. Its content is not clipped to the round:
+// a rounded clip renders the whole card into a texture of its own, so `CardCorners` covers it instead.
 export component Card inherits Rectangle {
     in property <bool> dimmed;
     background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
     border-radius: CardStyle.radius;
-    clip: true;
+}
+
+// The card's four corners outside its round, in the ground it sits on, laid last over its content.
+export component CardCorners {
+    property <length> r: CardStyle.radius;
+    Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
+    Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
+    Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
+    Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
 
 // `floating(_:)`: a hidden column slid over the card, rounded and raised by its shade.
@@ -252,30 +261,26 @@ export component TipLayer inherits Rectangle {
     y: root.box.y;
     width: root.box.width;
     height: root.box.height;
-    clip: true;
     background: Colour.tip;
     border-radius: TipStyle.radius;
     border-width: Stroke.hairline;
     border-color: Colour.separator;
-    opacity: 0;
-    visible: Tip.text != "";
+    // Shown after the delay by a timer: an animated opacity redraws the window for the whole delay.
+    property <bool> shown: Tip.shown;
+    property <bool> ready;
+    changed shown => { root.ready = false; }
+    visible: Tip.text != "" && Tip.shown && (Tip.at-once || root.ready);
+    Timer {
+        interval: Motion.tip-delay;
+        running: Tip.shown && !Tip.at-once && !root.ready;
+        triggered => { root.ready = true; }
+    }
     tip-text := Label {
         role: TextRole.caption;
         text: Tip.text;
         wrap: word-wrap;
         width: min(self.preferred-width, TipStyle.max-width);
     }
-    states [
-        now when Tip.shown && Tip.at-once: {
-            opacity: 1;
-        }
-        shown when Tip.shown: {
-            opacity: 1;
-            in {
-                animate opacity { delay: Motion.tip-delay; duration: 0ms; }
-            }
-        }
-    ]
 }
 
 // `KeycapSound`: a key's click as it goes down and as it rises; the app decides if it sounds.

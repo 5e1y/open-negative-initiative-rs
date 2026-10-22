@@ -158,7 +158,7 @@ export component Toolbar inherits Surface {
         padding-right: ShellStyle.bar-padding;
         padding-top: ShellStyle.bar-padding;
         padding-bottom: ShellStyle.bar-padding;
-        spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
+        spacing: ShellStyle.bar-gap;
         // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
         mode := Word {
             action: Preparing.shown ? "leave-roll" : "toggle-mode";
