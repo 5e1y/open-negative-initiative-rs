@@ -16,6 +16,8 @@ pub mod framing;
 pub mod gallery;
 pub mod heal;
 pub mod histogram;
+#[cfg(test)]
+mod interface_slices;
 pub mod library;
 pub mod loupe;
 pub mod measuring;

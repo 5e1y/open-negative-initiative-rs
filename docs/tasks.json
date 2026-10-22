@@ -1830,5 +1830,12 @@
     "title": "The export's decode held in half floats, as the canvas's",
     "status": "done",
     "detail": "An export laid its full-resolution decode in rgba32float, 390 MB on a 24 MP frame; it is now held in rgba16float as the canvas holds the same frame (#244), so the file starts from the pixels the canvas showed, at half the GPU memory. The display kernel's upload helper, which only the checks used once the software canvas went, moves into its checks."
+  },
+  {
+    "id": 253,
+    "type": "performance",
+    "title": "The interface's frames submitted in slices of 16 passes",
+    "status": "done",
+    "detail": "Metal keeps about 2.6 MB of driver memory per render pass until its command buffer completes, and wgpu gives each pass a command buffer of its own. The first interface frame draws 222 passes (colourised icons, box shadows and layers rendered offscreen, cached after), so it held 590 to 618 MB of IOAccelerator memory in one buffer. The vendored femtovg now submits a frame every 16 passes and keeps one slice in flight: 60 to 130 MB on the midzoom bench, every later frame (4 passes) unchanged. A check draws 40 layers and finds each in its place and colour, and the first row as one buffer draws it."
   }
 ]

@@ -72,6 +72,7 @@ clipboard-win = "5.4"
 rfd = { version = "0.17", default-features = false }
 
 [dev-dependencies]
+femtovg = { version = "0.27", default-features = false, features = ["swash", "wgpu"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "tiff"] }
 oni-render = { path = "../oni-render" }
 # The phone app's own side of the link, so the window check pairs as the phone does.

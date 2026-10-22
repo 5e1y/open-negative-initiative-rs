@@ -63,7 +63,8 @@ opt-level = 1
 debug = false
 
 
-# femtovg 0.27.0 with its wgpu pipelines kept across flushes (vendor/femtovg, MIT OR Apache-2.0).
+# femtovg 0.27.0 with its wgpu pipelines kept across flushes and a frame submitted in slices of passes
+# (vendor/femtovg, MIT OR Apache-2.0).
 [patch.crates-io]
 femtovg = { path = "vendor/femtovg" }
 i-slint-renderer-femtovg = { path = "vendor/i-slint-renderer-femtovg" }

@@ -67,6 +67,9 @@ const UNIFORM_BYTES: u64 = (UNIFORMARRAY_SIZE * 4 * 4) as u64;
 const UNIFORM_SLOTS_PER_COMMAND: u64 = 2;
 const MIN_UNIFORM_SLOTS: u64 = 64;
 const MIN_VERTEX_BYTES: u64 = 4096;
+// ONI: Metal holds about 2.6 MB of driver memory per render pass until its command buffer completes;
+// a first frame of 222 passes held 590 MB in one buffer, so a frame is submitted in slices.
+const PASSES_PER_SUBMIT: usize = 16;
 
 const UNIFORM_BUFFER_LABEL: &str = "Fragment Uniform Buffer";
 const UNIFORM_BUFFER_USAGE: wgpu::BufferUsages = wgpu::BufferUsages::UNIFORM.union(wgpu::BufferUsages::COPY_DST);
@@ -600,8 +603,13 @@ impl Renderer for WGPURenderer {
         );
 
         let mut current_render_target = RenderTarget::Screen;
+        let mut in_flight = None;
 
         for command in commands {
+            if render_pass_builder.passes >= PASSES_PER_SUBMIT {
+                let staging = &pipeline_and_bindgroup_mapper.uniform_staging;
+                render_pass_builder.submit_slice(&self.queue, &self.uniform_buffer, staging, &mut in_flight);
+            }
             match command.cmd_type {
                 super::CommandType::SetRenderTarget(render_target) => {
                     current_render_target = render_target;
@@ -1670,9 +1678,33 @@ struct RenderPassBuilder<'a> {
     current_pipeline_state: Option<PipelineState>,
     current_stencil_reference: Option<u32>,
     current_bound_offset: Option<u32>,
+    passes: usize,
 }
 
 impl<'a> RenderPassBuilder<'a> {
+    /// ONI: submits the passes recorded so far and goes on drawing into the same target, keeping one
+    /// slice in flight so the driver's per-pass memory stays bounded.
+    fn submit_slice(
+        &mut self,
+        queue: &wgpu::Queue,
+        uniform_buffer: &wgpu::Buffer,
+        staging: &[u8],
+        in_flight: &mut Option<wgpu::SubmissionIndex>,
+    ) {
+        drop(self.rpass.take());
+        let fresh = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+        let slice = std::mem::replace(&mut *self.encoder, fresh);
+        if !staging.is_empty() {
+            queue.write_buffer(uniform_buffer, 0, staging);
+        }
+        let index = queue.submit([slice.finish()]);
+        if let Some(previous) = in_flight.replace(index) {
+            let _ = self.device.poll(wgpu::PollType::Wait { submission_index: Some(previous), timeout: None });
+        }
+        self.passes = 0;
+        self.recreate_render_pass(wgpu::LoadOp::Load);
+    }
+
     fn new(
         device: wgpu::Device,
         encoder: &'a mut wgpu::CommandEncoder,
@@ -1705,6 +1737,7 @@ impl<'a> RenderPassBuilder<'a> {
             current_pipeline_state: None,
             current_stencil_reference: None,
             current_bound_offset: None,
+            passes: 0,
         }
     }
 
@@ -1867,6 +1900,7 @@ impl<'a> RenderPassBuilder<'a> {
         self.current_pipeline_state = None;
         self.current_stencil_reference = None;
         self.current_bound_offset = None;
+        self.passes += 1;
         drop(self.rpass.take());
         let stencil_view = self
             .stencil_buffer
