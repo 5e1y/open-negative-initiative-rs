@@ -192,7 +192,6 @@ impl Ctl {
     /// on a 24 MP frame; the view builds it again once it asks.
     fn leave_editor_memory(&self) {
         self.leave_together();
-        self.drop_spare();
         {
             let mut s = self.state.borrow_mut();
             s.full = None;

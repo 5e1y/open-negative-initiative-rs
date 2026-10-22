@@ -42,7 +42,7 @@ impl Graph {
             in_min: [input_extent.x, input_extent.y],
             in_max: [input_extent.right(), input_extent.bottom()],
             out_size: [output_rect.w, output_rect.h],
-            pad: [0; 2],
+            in_size: [input_rect.w, input_rect.h],
         };
         let mut params = stage.params();
         // A uniform binding holds at least 16 bytes, in 16-byte steps.
@@ -51,7 +51,7 @@ impl Graph {
         let params = self.uniform(&params);
         let mut frames = [AuxFrame::default(); MAX_AUX];
         for (f, (_, rect, extent)) in frames.iter_mut().zip(aux) {
-            *f = AuxFrame { in_origin: [rect.x, rect.y], in_min: [extent.x, extent.y], in_max: [extent.right(), extent.bottom()], pad: [0; 2] };
+            *f = AuxFrame { in_origin: [rect.x, rect.y], in_min: [extent.x, extent.y], in_max: [extent.right(), extent.bottom()], in_size: [rect.w as i32, rect.h as i32] };
         }
         let frames = (!aux.is_empty()).then(|| self.uniform(bytemuck::bytes_of(&frames)));
         let buffer = &self.uniforms.buffer.clone();
@@ -81,7 +81,7 @@ impl Graph {
     }
 
     /// `bytes` staged at the ring's next aligned place; its offset and size there.
-    fn uniform(&mut self, bytes: &[u8]) -> (u64, u64) {
+    pub(super) fn uniform(&mut self, bytes: &[u8]) -> (u64, u64) {
         let size = (bytes.len() as u64).div_ceil(16).max(1) * 16;
         if self.uniforms.at + size > UNIFORM_RING {
             self.flush_uniforms();

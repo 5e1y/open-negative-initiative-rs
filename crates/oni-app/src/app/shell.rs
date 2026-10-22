@@ -103,6 +103,7 @@ impl Shell {
             building_full: None,
             full_failed: HashSet::new(),
             loupe: loupe::Held::default(),
+            together: None,
             healing: HashSet::new(),
             patched: HashSet::new(),
             unhealable: HashSet::new(),

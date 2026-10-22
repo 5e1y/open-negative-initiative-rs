@@ -4271,6 +4271,7 @@ name = "oni-graph"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "half",
  "oni-decode",
  "oni-fixtures",
  "oni-hack",

@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 bytemuck.workspace = true
+half = "2"
 pollster.workspace = true
 wgpu.workspace = true
 oni-hack = { version = "0.1", path = "../oni-hack" }

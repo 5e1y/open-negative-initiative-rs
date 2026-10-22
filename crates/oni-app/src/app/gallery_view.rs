@@ -3,7 +3,7 @@
 use super::*;
 
 #[path = "together.rs"]
-mod together;
+pub(super) mod together;
 
 impl Ctl {
     // MARK: - The gallery

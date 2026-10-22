@@ -56,6 +56,7 @@ impl Graph {
             dispatches: 0,
             copies: 0,
             uniforms,
+            packer: None,
             adapter,
         }
     }
@@ -69,7 +70,8 @@ impl Graph {
             dispatches: self.dispatches,
             copies: self.copies,
             textures_created: self.pool.created,
-            live_bytes: self.pool.live.load(Ordering::Relaxed),
+            live_bytes: self.pool.meter.live.load(Ordering::Relaxed),
+            peak_bytes: self.pool.meter.peak.load(Ordering::Relaxed),
             idle_textures: self.pool.idle(),
             pipelines: self.pipelines.len(),
         }

@@ -11,6 +11,7 @@ impl Graph {
     /// Evaluates `region` of `image` and reads it back, row-major. With a cache, each stage's result
     /// is kept and the deepest one still current is the starting point.
     pub fn render(&mut self, image: &Image, region: Rect, mut cache: Option<&mut Cache>) -> Result<Vec<[f32; 4]>, Error> {
+        let image = &image.readable();
         let extent = image.extent();
         if region.is_empty() || !extent.contains(&region) {
             return Err(Error::RegionOutside { region, extent });
@@ -40,6 +41,7 @@ impl Graph {
 
     /// `materialise_region` starting from what `cache` holds, and leaving in it what it keeps.
     pub fn materialise_cached(&mut self, image: &Image, region: Rect, mut cache: Option<&mut Cache>) -> Result<Source, Error> {
+        let image = &image.readable();
         let extent = image.extent();
         if region.is_empty() || !extent.contains(&region) {
             return Err(Error::RegionOutside { region, extent });
@@ -76,9 +78,10 @@ impl Graph {
     /// all in one submission: many small pictures pay one hand-over to the GPU and no readback.
     pub fn laid_out(&mut self, images: &[(&Image, (i32, i32))], size: (u32, u32)) -> Result<Source, Error> {
         let sheet_rect = Rect::new(0, 0, size.0, size.1);
-        let sheet = self.pool.create_owned(size.0, size.1);
+        let sheet = self.pool.create_owned(size.0, size.1, Precision::Full);
         let mut encoder = self.device.create_command_encoder(&Default::default());
         for (image, (x, y)) in images {
+            let image = &image.readable();
             let region = image.extent();
             let at = Rect::new(*x, *y, region.w, region.h);
             if !sheet_rect.contains(&at) {
@@ -103,7 +106,7 @@ impl Graph {
 
     /// Ends a render: the pool frees what no render took again, and the device lets go of what the GPU
     /// has finished with, which it otherwise keeps (textures destroyed, their zero fills) until polled.
-    fn ended(&mut self) {
+    pub(super) fn ended(&mut self) {
         self.pool.end_render();
         let _ = self.device.poll(wgpu::PollType::Poll);
     }

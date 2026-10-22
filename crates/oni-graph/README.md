@@ -9,8 +9,11 @@ stage needs, runs only those, and reads the region back as `Vec<[f32; 4]>`.
 
 ## The model
 
-- **One format.** Every texture the graph holds is `rgba32float`. Only the internal pool creates
-  textures, stages never see one, and data enters and leaves as `[f32; 4]`: no other format can appear.
+- **Two precisions.** Every stage writes `rgba32float`; a source may be held in `rgba16float`
+  (`upload_half`, `materialise_half`), which stages read alike. Only the internal pool creates
+  textures, stages never see one, and data enters and leaves as `[f32; 4]`.
+- **Pooled sizes.** A stage's texture is taken from the pool with its sides rounded up to `STEP`, so
+  stages a few pixels apart in reach share textures; each dispatch clamps reads to the rectangle held.
 - **Coordinates.** Whole pixels, origin top-left, rows running down as the decoded buffers do. A
   `Rect` is `x, y, w, h`. Extents keep their coordinates through a crop, as Core Image's do.
 - **A stage** is a WGSL function `fn pixel(p: vec2<i32>) -> vec4<f32>` giving the output at image

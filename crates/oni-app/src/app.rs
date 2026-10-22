@@ -343,6 +343,8 @@ pub struct State {
     /// The frames whose full-resolution decode failed under their current reading.
     full_failed: HashSet<String>,
     loupe: loupe::Held,
+    /// The frames edited together, when more than one is.
+    together: Option<gallery_view::together::Group>,
     /// The frames whose dust patches are being generated; the corrections whose patch is on disk,
     /// and those whose generation failed, neither looked for again.
     healing: HashSet<String>,

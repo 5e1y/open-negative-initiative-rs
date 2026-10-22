@@ -42,7 +42,8 @@ pub(crate) struct AuxFrame {
     pub in_origin: [i32; 2],
     pub in_min: [i32; 2],
     pub in_max: [i32; 2],
-    pub pad: [i32; 2],
+    /// The rectangle the texture holds, which may be smaller than the texture.
+    pub in_size: [i32; 2],
 }
 
 /// The bindings and readers of `arity` auxiliary inputs: `src1` with `load1` and `inside1`, and so on.
@@ -56,7 +57,7 @@ struct AuxFrame {{
     in_origin: vec2<i32>,
     in_min: vec2<i32>,
     in_max: vec2<i32>,
-    pad: vec2<i32>,
+    in_size: vec2<i32>,
 }}
 
 struct AuxFrames {{ f: array<AuxFrame, {MAX_AUX}> }}
@@ -65,7 +66,7 @@ struct AuxFrames {{ f: array<AuxFrame, {MAX_AUX}> }}
 
 fn load_from(t: texture_2d<f32>, f: AuxFrame, q: vec2<i32>) -> vec4<f32> {{
     let e = clamp(q, f.in_min, f.in_max - vec2<i32>(1)) - f.in_origin;
-    let c = clamp(e, vec2<i32>(0), vec2<i32>(textureDimensions(t)) - vec2<i32>(1));
+    let c = clamp(e, vec2<i32>(0), f.in_size - vec2<i32>(1));
     return textureLoad(t, c, 0);
 }}
 "#
@@ -100,7 +101,8 @@ pub(crate) struct Frame {
     pub in_min: [i32; 2],
     pub in_max: [i32; 2],
     pub out_size: [u32; 2],
-    pub pad: [u32; 2],
+    /// The rectangle the input texture holds, which may be smaller than the texture.
+    pub in_size: [u32; 2],
 }
 
 /// Prepended to every stage's shader: bindings, the coordinate change and the entry point.
@@ -111,7 +113,7 @@ struct Frame {
     in_min: vec2<i32>,
     in_max: vec2<i32>,
     out_size: vec2<u32>,
-    pad: vec2<u32>,
+    in_size: vec2<u32>,
 }
 
 @group(0) @binding(0) var<uniform> frame: Frame;
@@ -122,10 +124,10 @@ fn inside(q: vec2<i32>) -> bool {
     return all(q >= frame.in_min) && all(q < frame.in_max);
 }
 
-// Clamped to the input's extent, then to the texture, so a stage that under-declares reads defined values.
+// Clamped to the input's extent, then to what its texture holds, so a stage that under-declares reads defined values.
 fn load(q: vec2<i32>) -> vec4<f32> {
     let e = clamp(q, frame.in_min, frame.in_max - vec2<i32>(1)) - frame.in_origin;
-    let t = clamp(e, vec2<i32>(0), vec2<i32>(textureDimensions(src)) - vec2<i32>(1));
+    let t = clamp(e, vec2<i32>(0), vec2<i32>(frame.in_size) - vec2<i32>(1));
     return textureLoad(src, t, 0);
 }
 

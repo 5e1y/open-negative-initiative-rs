@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::stage::{AuxFrame, Frame, MAX_AUX, PRELUDE, aux_prelude};
 use crate::stages::{AnchoredLanczos, Axis, Lanczos};
-use crate::texture::{BYTES_PER_PIXEL, FloatTexture, Pool};
+use crate::texture::{BYTES_PER_PIXEL, FloatTexture, Meter, Pool, Precision};
 use crate::{Rect, Stage};
 
 mod errors;
@@ -19,6 +19,7 @@ mod cache;
 mod device;
 mod rendering;
 mod dispatch;
+mod half;
 
 /// Metal's and Direct3D 12's largest texture side: a pixel-shift frame of 16 736 px goes in tiles.
 pub const TEXTURE_SIDE: u32 = 16_384;
@@ -47,6 +48,8 @@ pub struct Stats {
     pub copies: u64,
     pub textures_created: u64,
     pub live_bytes: i64,
+    /// The most bytes the graph's textures held at once.
+    pub peak_bytes: i64,
     pub idle_textures: usize,
     pub pipelines: usize,
 }
@@ -130,6 +133,8 @@ pub struct Graph {
     dispatches: u64,
     copies: u64,
     uniforms: Uniforms,
+    /// The pass that packs a render into half floats, made at its first use.
+    packer: Option<half::Packer>,
     pub adapter: String,
 }
 

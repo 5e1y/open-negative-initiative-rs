@@ -42,7 +42,7 @@ impl Engine {
         if long > side as f64 {
             image = image.lanczos(side as f64 / long);
         }
-        let preview = self.graph.materialise(&image).map_err(|e| e.to_string())?;
+        let preview = self.graph.materialise_half(&image).map_err(|e| e.to_string())?;
         Ok(Negative { preview, full_width: negative.full_width, undeclared: negative.undeclared })
     }
 }

@@ -263,6 +263,10 @@ impl Engine {
         (&mut self.graph, &mut self.pipeline)
     }
 
+    pub fn stats(&self) -> oni_graph::Stats {
+        self.graph.stats()
+    }
+
     pub fn adapter(&self) -> &str {
         &self.graph.adapter
     }
@@ -271,7 +275,7 @@ impl Engine {
     /// rendered once, so a notch starts from resident pixels.
     pub fn prepare(&mut self, decoded: Decoded) -> Result<Negative, String> {
         let l = decoded.linear;
-        let source = self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())?;
+        let source = self.graph.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())?;
         drop(l.pixels);
         self.reduce(source, (l.width, l.height), decoded.full_width, decoded.undeclared)
     }
@@ -283,7 +287,7 @@ impl Engine {
         if long > PREVIEW_SIDE {
             image = image.lanczos(PREVIEW_SIDE as f64 / long as f64);
         }
-        let preview = self.graph.materialise(&rebuilt_edge(image)).map_err(|e| e.to_string())?;
+        let preview = self.graph.materialise_half(&rebuilt_edge(image)).map_err(|e| e.to_string())?;
         drop(source);
         self.graph.purge();
         Ok(Negative { preview, full_width, undeclared })
@@ -302,7 +306,7 @@ impl Engine {
     /// A frame's full-resolution decode laid on the GPU as it is, for a zoom past the preview.
     pub fn full(&mut self, decoded: Decoded) -> Result<Source, String> {
         let l = decoded.linear;
-        self.graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
+        self.graph.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
     }
 
     /// `Pipeline.apply` on the preview, reduced first to a long side of `side` when given.

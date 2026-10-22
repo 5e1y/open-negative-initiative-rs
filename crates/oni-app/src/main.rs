@@ -63,6 +63,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
     });
     let gate = engine.clone();
+    let meter = engine.clone();
     // Whole decodes kept for the next opening, about 145 MB a 24 Mpx frame.
     oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
@@ -143,8 +144,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Some(mode) = bench::requested() {
         shell.open_first_when_read();
-        bench::start(&shell.ctl, mode, |report| {
+        bench::start(&shell.ctl, mode, move |report| {
             timing::line(&report);
+            if let Ok(e) = meter.lock() {
+                let s = e.stats();
+                timing::line(&format!("graph textures: peak {} MB, {} MB at the end", s.peak_bytes >> 20, s.live_bytes >> 20));
+            }
             let _ = slint::quit_event_loop();
         });
     }

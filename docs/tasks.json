@@ -1767,5 +1767,12 @@
     "title": "De-dust's red stroke has round joins and ends",
     "status": "done",
     "detail": "Owner: the red stroke's ends looked flat and its trace had artefacts. Slint's paths default to mitre joins (limit 4), so every jitter of the hand grew a spike up to twice the stroke's width; Swift draws round caps and joins. Every stroke path now joins round. A kept stroke's path drops a point within a canvas point of the last (a zero-length segment folds a round cap flat), and a lone point draws as a dot. The vendored femtovg merged repeated points by looking one past the contour's last point, so it never merged; it now reads the last."
+  },
+  {
+    "id": 244,
+    "type": "performance",
+    "title": "Sources in half floats; pooled textures shared across a chain's stages",
+    "status": "done",
+    "detail": "Unification, first step (owner's go, 2026-10-22). A decode, its preview and the halvings the canvas reads are held in rgba16float (Graph::upload_half, materialise_half: a render packed by one pass), half the memory; stages still write rgba32float, and a bare half source is read through a pass before any readback or copy. The pool rounded nothing: each stage's region, a few pixels apart in reach, took a texture of its own, so a render's working set needed a 1 GB idle budget. Pooled sides are now rounded up to 128 px and each dispatch clamps its reads to the rectangle held, so a chain's stages share textures; the idle budget falls to 512 MB. midzoom (2 x 24 MP): pinch p50 19.4 -> 7 ms, pan frame gap 10 -> 8.8 ms, graph textures peak 2.2 GB -> 1.4 GB; zoom from fit pinch p50 21.4 -> 1.4 ms. Benches log the graph's texture peak. Edit Together's group lives in the app's state, and the sources of a group left (SPARE) are no longer kept: held in thread-locals, they were freed after the GPU's own at the thread's end."
   }
 ]

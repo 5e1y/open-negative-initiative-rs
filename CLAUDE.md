@@ -9,8 +9,9 @@ wins over any note.
 
 1. **Nothing decides on its own.** No film-base detection, no smart inversion, no preset on import.
    The automatic keys run only on a click and write only what they show.
-2. **Floating point end to end.** Images are `rgba32float` between every stage; the render graph
-   accepts no other texture format.
+2. **Floating point end to end.** Images are `rgba32float` between every stage; a decode and its
+   reductions (preview, halvings) are held in `rgba16float` (owner's call, half the memory); the render
+   graph accepts no other texture format.
 3. **Never a home-made demosaicer.** LibRaw demosaics, with every automatic knob pinned
    (`crates/oni-decode/csrc/pinned.c`). Changing one moves every render.
 4. **Zero anticipation.** A constant before a slider; a slider once use proves the constant wrong.

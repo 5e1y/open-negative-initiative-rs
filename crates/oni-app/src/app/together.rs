@@ -20,7 +20,7 @@ const COUNTED_SCALE: f64 = 0.125;
 const DECODERS: usize = 3;
 
 /// The frames shown together, in the gallery's order, each one's source once decoded.
-struct Group {
+pub(in crate::app) struct Group {
     id: u64,
     paths: Vec<String>,
     negatives: Vec<Option<Arc<Negative>>>,
@@ -30,12 +30,6 @@ struct Group {
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
     drawn: u64,
     latencies: Vec<Duration>,
-}
-
-thread_local! {
-    static GROUP: RefCell<Option<Group>> = const { RefCell::new(None) };
-    /// The sources of the group last left, which the next one takes rather than decoding them again.
-    static SPARE: RefCell<HashMap<String, Arc<Negative>>> = RefCell::new(HashMap::new());
 }
 
 static GROUPS: AtomicU64 = AtomicU64::new(0);
@@ -62,7 +56,7 @@ static DRAWING: std::sync::Once = std::sync::Once::new();
 
 impl Ctl {
     /// Opens `paths` together around the frame just opened, or leaves any group for two frames fewer;
-    /// the selection stays theirs, and the sources a former group decoded are kept.
+    /// the selection stays theirs, and the sources the group shown decoded are kept.
     pub(in crate::app) fn edit_together(self: &Rc<Self>, paths: Vec<String>) {
         if paths.len() < 2 {
             return self.leave_together();
@@ -77,15 +71,14 @@ impl Ctl {
             s.picks.selection = paths.iter().cloned().collect();
         }
         let id = GROUPS.fetch_add(1, Ordering::Relaxed) + 1;
-        let negatives: Vec<Option<Arc<Negative>>> = GROUP.with(|g| {
-            let g = g.borrow();
-            let mut spare = SPARE.with(|s| std::mem::take(&mut *s.borrow_mut()));
-            let kept = |p: &String| g.as_ref().and_then(|g| g.paths.iter().position(|q| q == p).and_then(|i| g.negatives[i].clone()));
-            paths.iter().map(|p| kept(p).or_else(|| spare.remove(p))).collect()
-        });
+        let (negatives, fresh) = {
+            let s = self.state.borrow();
+            let g = s.together.as_ref();
+            let kept = |p: &String| g.and_then(|g| g.paths.iter().position(|q| q == p).and_then(|i| g.negatives[i].clone()));
+            (paths.iter().map(kept).collect::<Vec<_>>(), g.is_none())
+        };
         let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
-        let fresh = GROUP.with(|g| g.borrow().is_none());
-        GROUP.with(|g| *g.borrow_mut() = Some(Group { id, paths, negatives, asked: None, shown: None, drawn: 0, latencies: Vec::new() }));
+        self.state.borrow_mut().together = Some(Group { id, paths, negatives, asked: None, shown: None, drawn: 0, latencies: Vec::new() });
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
@@ -117,14 +110,14 @@ impl Ctl {
 
     /// The frames shown together, for the keys that act on all of them.
     pub(in crate::app) fn together_paths(&self) -> Option<Vec<String>> {
-        GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.clone()))
+        self.state.borrow().together.as_ref().map(|g| g.paths.clone())
     }
 
     /// The sheet where the view lays it, zoomed and panned as a contact sheet: the view reasons on the
     /// full sheet whatever share of it was drawn.
     fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) {
         let Some(view) = self.canvas_size() else { return };
-        let Some(count) = GROUP.with(|g| g.borrow().as_ref().map(|g| g.paths.len())) else { return };
+        let Some(count) = self.state.borrow().together.as_ref().map(|g| g.paths.len()) else { return };
         let (drawn, full) = (sheet_size(count, cell_at(scale)), sheet_size(count, cell_at(1.0)));
         let full = (f64::from(full.0), f64::from(full.1));
         let p = self.state.borrow().viewport.placement(full, view).image;
@@ -137,9 +130,9 @@ impl Ctl {
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
     pub(in crate::app) fn leave_together(&self) {
-        let Some(left) = GROUP.with(|g| g.borrow_mut().take()) else { return };
-        let spare = left.paths.into_iter().zip(left.negatives).filter_map(|(p, n)| Some((p, n?))).collect();
-        SPARE.with(|s| *s.borrow_mut() = spare);
+        if self.state.borrow_mut().together.take().is_none() {
+            return;
+        }
         GROUPS.fetch_add(1, Ordering::Relaxed);
         if let Some(e) = self.state.borrow_mut().store.editor() {
             e.set_together(Vec::new());
@@ -150,13 +143,8 @@ impl Ctl {
         s.requested_view = None;
     }
 
-    /// The editor left: the sources a group kept for the next one go, a few hundred MB of tiles.
-    pub(in crate::app) fn drop_spare(&self) {
-        SPARE.with(|s| s.borrow_mut().clear());
-    }
-
     pub(in crate::app) fn together_shown(&self) -> bool {
-        GROUP.with(|g| g.borrow().is_some())
+        self.state.borrow().together.is_some()
     }
 
     /// Each frame's source at a tile's side, a few at once off this thread: a frame the editor holds
@@ -190,13 +178,13 @@ impl Ctl {
     }
 
     fn tile_decoded(self: &Rc<Self>, id: u64, i: usize, negative: Arc<Negative>) {
-        let landed = GROUP.with(|g| match g.borrow_mut().as_mut() {
+        let landed = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == id => {
                 g.negatives[i] = Some(negative);
                 true
             }
             _ => false,
-        });
+        };
         if landed {
             self.request_render();
         }
@@ -210,13 +198,13 @@ impl Ctl {
         };
         let live: HashMap<String, PipelineSettings> =
             self.state.borrow().store.editor_ref().map(|e| e.together_live().into_iter().collect()).unwrap_or_default();
-        let view = self.canvas_size();
-        let ask = GROUP.with(|g| {
-            let mut g = g.borrow_mut();
-            let g = g.as_mut()?;
+        let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
+        let ask = (|| {
+            let mut s = self.state.borrow_mut();
+            let g = s.together.as_mut()?;
             let full = sheet_size(g.paths.len(), cell_at(1.0));
             let full = (f64::from(full.0), f64::from(full.1));
-            let placed = view.map(|v| self.state.borrow().viewport.placement(full, v));
+            let placed = view.map(|v| viewport.placement(full, v));
             let scale = scale_for(placed.map_or(full.0, |p| p.image.2), full.0);
             // The view's part of the sheet, in the drawn sheet's pixels: only the tiles it meets are drawn.
             let drawn = sheet_size(g.paths.len(), cell_at(scale));
@@ -242,9 +230,10 @@ impl Ctl {
                 .collect();
             let tiles = all.iter().zip(&shows).map(|(t, shown)| t.clone().filter(|_| *shown)).collect();
             Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale, window, counted: moved.then_some(all) })
-        });
+        })();
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
-        if let Some(size) = GROUP.with(|g| g.borrow().as_ref().and_then(|g| g.shown)) {
+        let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
+        if let Some(size) = shown {
             self.lay_sheet(size);
         }
         if let Some(ask) = ask {
@@ -263,11 +252,11 @@ impl Ctl {
 
     /// The frames together, their sources decoded and each grid's latency, for the bench.
     pub(crate) fn together_stats(&self) -> (usize, usize, Vec<Duration>) {
-        GROUP.with(|g| g.borrow().as_ref().map_or((0, 0, Vec::new()), |g| (g.paths.len(), g.negatives.iter().flatten().count(), g.latencies.clone())))
+        self.state.borrow().together.as_ref().map_or((0, 0, Vec::new()), |g| (g.paths.len(), g.negatives.iter().flatten().count(), g.latencies.clone()))
     }
 
     pub(crate) fn together_drawn(&self) -> u64 {
-        GROUP.with(|g| g.borrow().as_ref().map_or(0, |g| g.drawn))
+        self.state.borrow().together.as_ref().map_or(0, |g| g.drawn)
     }
 
     fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
@@ -275,7 +264,7 @@ impl Ctl {
             Picture::Pixels { linear, .. } => (linear.width, linear.height),
             Picture::Resident(sheet) => (sheet.extent().w as usize, sheet.extent().h as usize),
         };
-        let count = GROUP.with(|g| match g.borrow_mut().as_mut() {
+        let count = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == group => {
                 g.shown = Some((size, window, scale));
                 g.drawn = revision;
@@ -283,7 +272,7 @@ impl Ctl {
                 Some(g.paths.len())
             }
             _ => None,
-        });
+        };
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
         self.lay_sheet((size, window, scale));

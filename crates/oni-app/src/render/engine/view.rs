@@ -104,7 +104,7 @@ impl Engine {
                 break;
             }
             if self.fitted.halves[at].1.len() == level {
-                let half = self.graph.materialise(&Image::new(&from).lanczos(0.5)).map_err(|e| e.to_string())?;
+                let half = self.graph.materialise_half(&Image::new(&from).lanczos(0.5)).map_err(|e| e.to_string())?;
                 self.fitted.halves[at].1.push(half);
             }
             from = self.fitted.halves[at].1[level].clone();
