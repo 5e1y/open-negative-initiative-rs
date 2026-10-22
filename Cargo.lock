@@ -4147,6 +4147,7 @@ dependencies = [
  "clipboard-win",
  "femtovg",
  "flate2",
+ "gif",
  "hkdf",
  "image",
  "jpeg-decoder",

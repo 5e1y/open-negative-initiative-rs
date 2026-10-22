@@ -1879,5 +1879,12 @@
     "title": "Edit Together shows each frame's thumbnail until it decodes, and counts the frames in the load bar",
     "status": "done",
     "detail": "A tile stayed empty until its frame decoded. Each lacking frame's gallery thumbnail is now read from disk, carried from sRGB to linear Rec. 2020 and laid on the GPU off the interface thread; the sheet scales it into the tile through the same render (render_laid takes Laid::Frame or Laid::Shown) until the frame's own source replaces it, and the histogram counts only frames. The load bar reads 'Opening the frames together' with the decoded count. A check lays a 40 x 20 picture at a side of 100 and finds it covering 100 x 50 at its place, its twin the sheet clear past it."
+  },
+  {
+    "id": 260,
+    "type": "feature",
+    "title": "Prepare the Roll's tutorials play again, from GIFs every system decodes",
+    "status": "done",
+    "detail": "Swift's TutorialVideo played a square muted loop above the Base, Flags and Window steps' controls. The three HEVC clips are converted once to GIFs at 20 fps and 580 px, each frame written as the box of pixels that moved (18 MB for the three, 31.6 MB as whole frames), and decoded frame by frame with the pure-Rust gif crate, so Windows and macOS play the same file with no system media library (owner's call). Each frame is written into one texture the panel's Picture shows by revision, as the canvas is; a window that cannot import a texture takes the pixels. The clip stops while the roll is measured, on another step and when the panel closes. RollStepKeys moves to the toolbar that shows it, so prepare.slint's ceiling falls to 479. A check plays each clip square at 50 ms a frame back to its first picture, its twin a loop that would come back at once; another finds no clip on the steps without one."
   }
 ]

@@ -34,6 +34,7 @@ mod measure;
 mod previews;
 mod publishing;
 mod flat_masks;
+mod tutorial;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
@@ -140,6 +141,7 @@ pub(crate) struct Roll {
     /// `work.openedAmong`: the selection a load narrowed, when it held the frame opened.
     pub opened_among: HashSet<String>,
     pub require: bool,
+    tutorial: Option<tutorial::Playing>,
 }
 
 impl Default for Roll {
@@ -188,6 +190,7 @@ impl Default for Roll {
             asked: HashSet::new(),
             opened_among: HashSet::new(),
             require: false,
+            tutorial: None,
         }
     }
 }

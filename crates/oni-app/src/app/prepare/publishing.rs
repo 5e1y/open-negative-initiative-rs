@@ -13,6 +13,7 @@ impl Ctl {
         p.set_shown(shown);
         if !shown {
             p.set_measuring(false);
+            self.play_tutorial(None);
             return;
         }
         let mut s = self.state.borrow_mut();
@@ -119,6 +120,7 @@ impl Ctl {
         drop(s);
         p.set_measuring(measuring.is_some());
         p.set_step(step.index() as i32);
+        self.play_tutorial(measuring.is_none().then_some(step.index()));
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
         p.set_heading(heading.into());
         p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail().into() });

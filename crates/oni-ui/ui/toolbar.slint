@@ -1,6 +1,19 @@
 // The top bar in three zones; every key there is a gesture a menu already reaches.
 import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
-import { Preparing, RollStepKeys } from "prepare.slint";
+import { Preparing } from "prepare.slint";
+
+// `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
+export component RollStepKeys inherits ButtonGroup {
+    for name[i] in ["FILM", "FLAT-FIELD", "BASE", "FLAGS", "WINDOW"]: Button {
+        text: name;
+        help: ["Select the Film Type", "Set Up the Flat-Field", "Pick the Film Base", "Flag the Frames Left Out", "Place the Measuring Frame"][i];
+        on: Preparing.step == i;
+        enabled: !Preparing.measuring && !Preparing.skipped[i];
+        lamp-shown: true;
+        lamp-lit: i < Preparing.step && !Preparing.skipped[i];
+        clicked => { Preparing.step-picked(i); }
+    }
+}
 
 export global Bar {
     in property <bool> editing;

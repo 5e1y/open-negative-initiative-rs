@@ -23,11 +23,11 @@ row done with a check. A test marked "crate only" proves the core, not the featu
 | Surface | File | Done | Partial | Missing | Rows with a check |
 |---|---|---|---|---|---|
 | Editor: canvas, panel, bar, menus, keys, history | [editor.md](editor.md) | 145 | 7 | 0 | 144 of 152 |
-| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 90 | 5 | 1 | 93 of 96 |
+| Archive, gallery, rolls, Prepare the Roll, projects | [archive.md](archive.md) | 91 | 5 | 0 | 94 of 96 |
 | Export and colour management | [export-colour.md](export-colour.md) | 37 | 1 | 0 | 38 of 38 |
 | Presets, windows, help, updates, life cycle | [other.md](other.md) | 37 | 8 | 2 | 39 of 47 |
 | Hidden behaviour: models, measurement, interaction, codec | [hidden.md](hidden.md) | 123 | 3 | 5 | 122 of 131 |
-| **All** | | **432** | **23** | **8** | **436 of 464** |
+| **All** | | **433** | **23** | **7** | **437 of 464** |
 
 Within the editor: canvas 18 / 1 / 0, main band 2 / 3 / 0, panel tabs 7 / 0 / 0, Roll tab 19 / 0 / 0,
 Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 / 0, Scanner face
@@ -41,8 +41,8 @@ and Tint track ends, Show Presets Folder and Roll of the N.
 
 ### Swift self-checks
 
-[checks.md](checks.md) lists the 162 checks `--check` runs: **106 have a Rust twin, 33 a partial one,
-10 none, and 13 are blocked on a behaviour the port lacks.**
+[checks.md](checks.md) lists the 162 checks `--check` runs: **106 have a Rust twin, 34 a partial one,
+10 none, and 12 are blocked on a behaviour the port lacks.**
 
 ### Pipeline branches against Swift
 
@@ -63,7 +63,7 @@ tab's block order and the menu titles now read as Swift's.
    European layouts take for AltGr.
 2. **Touch.** No haptic answers; the key clicks play, silent until turned on (the owner's default).
 3. **The watchdog's stack.** Blocks are written and counted; the blocked thread's stack is not read.
-4. **Prepare the Roll's leftovers.** The plate's settle animation and the tutorial videos.
+4. **Prepare the Roll's leftovers.** The plate's settle animation.
 5. **Lens correction.** LibRaw reads no lens profile: a frame Swift corrected (`lensCorrected`) keeps
    its distortion, and its dust patches can sit up to 24 px off (`docs/research/libraw-knobs.md`).
 6. **The design system's interactions.** The pager, slots, the column resizer, nested swipes and

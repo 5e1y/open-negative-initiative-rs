@@ -9,6 +9,9 @@ export global Preparing {
     in property <bool> shown;
     in property <bool> measuring;
     in property <int> step;
+    // The step's tutorial, a texture rewritten in place at each frame (`Picture.revision`); none is empty.
+    in property <image> tutorial;
+    in property <int> tutorial-revision;
     in property <[bool]> skipped: [false, false, false, false, false];
     in property <string> heading;
     in property <string> detail;
@@ -208,6 +211,7 @@ export component RollPanel inherits Surface {
                 width: body.width;
                 alignment: start;
                 spacing: Space.m;
+                if Preparing.tutorial.width > 0: Picture { height: self.width; source: Preparing.tutorial; revision: Preparing.tutorial-revision; rounded: true; }
                 if Preparing.differ != "": VerticalLayout {
                     spacing: Space.xs;
                     Label { text: "Settings differ across the roll"; }
@@ -473,15 +477,3 @@ export component RollFloor inherits Card {
     if Preparing.step != 2 && Preparing.step != 3: FrameCard { width: parent.width; height: parent.height; }
 }
 
-// `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
-export component RollStepKeys inherits ButtonGroup {
-    for name[i] in ["FILM", "FLAT-FIELD", "BASE", "FLAGS", "WINDOW"]: Button {
-        text: name;
-        help: ["Select the Film Type", "Set Up the Flat-Field", "Pick the Film Base", "Flag the Frames Left Out", "Place the Measuring Frame"][i];
-        on: Preparing.step == i;
-        enabled: !Preparing.measuring && !Preparing.skipped[i];
-        lamp-shown: true;
-        lamp-lit: i < Preparing.step && !Preparing.skipped[i];
-        clicked => { Preparing.step-picked(i); }
-    }
-}
