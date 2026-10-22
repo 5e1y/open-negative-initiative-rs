@@ -41,11 +41,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let canvas = match wgpu {
         Ok(()) => {
             timing::line("Slint backend: femtovg-wgpu on the pipeline's device");
-            Some((gpu.device.clone(), gpu.queue.clone()))
+            true
         }
         Err(e) => {
-            timing::line(&format!("no wgpu renderer ({e}); the canvas is encoded on the CPU"));
-            None
+            timing::line(&format!("no wgpu renderer ({e}); the canvas is read back from the GPU"));
+            false
         }
     };
     let engine = Engine::shared(&gpu);

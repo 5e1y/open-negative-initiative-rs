@@ -59,8 +59,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let canvas = Some((gpu.device.clone(), gpu.queue.clone()));
-    let options = Options { support, caches, canvas, picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     rig.window.dispatch_event(slint::platform::WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));

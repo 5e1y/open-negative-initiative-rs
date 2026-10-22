@@ -25,11 +25,6 @@ impl Engine {
         self.graph.laid_out(&placed, size).map_err(|e| e.to_string())
     }
 
-    /// A sheet's pixels, for the software canvas that encodes on the CPU.
-    pub fn read_sheet(&mut self, sheet: &Source) -> Linear {
-        let e = sheet.extent();
-        Linear { width: e.w as usize, height: e.h as usize, pixels: self.graph.read_back(&[sheet]).remove(0) }
-    }
 }
 
 impl Engine {

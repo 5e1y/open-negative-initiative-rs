@@ -61,6 +61,11 @@ impl Graph {
         }
     }
 
+    /// The device and queue the graph records on, for a kernel beside it on the same GPU.
+    pub fn device(&self) -> (wgpu::Device, wgpu::Queue) {
+        (self.device.clone(), self.queue.clone())
+    }
+
     pub fn max_side(&self) -> u32 {
         self.max_side
     }

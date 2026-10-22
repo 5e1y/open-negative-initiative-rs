@@ -36,9 +36,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    // The GPU canvas, which places the render, so the overlays know where the picture lies.
-    let canvas = Some((gpu.device.clone(), gpu.queue.clone()));
-    let options = Options { support: support.clone(), caches, canvas, picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support: support.clone(), caches, picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));

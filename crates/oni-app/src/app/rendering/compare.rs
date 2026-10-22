@@ -10,7 +10,7 @@ impl Ctl {
         let (imported, rect) = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
-            let Some(g) = s.gpu.as_mut() else { return };
+            let g = &mut s.gpu;
             let Some(view) = before.view().cloned() else { return };
             let e = before.extent();
             let reuse = g.before.as_ref().filter(|(t, _)| t.width() == e.w && t.height() == e.h).map(|(t, _)| t.clone());
@@ -18,18 +18,19 @@ impl Ctl {
                 Some(t) => (t, None),
                 None => {
                     let t = display::Gpu::target(&g.device, e.w, e.h);
-                    (t.clone(), Image::try_from(t).ok())
+                    let imported = if g.reads_back { None } else { Image::try_from(t.clone()).ok() };
+                    (t, imported)
                 }
             };
-            let k = zebra(&s, Params::new(screen, e.w, e.h, s.gpu.as_ref().map_or(0, |g| g.seed)), placed, e.w, canvas);
-            let Some(g) = s.gpu.as_mut() else { return };
+            let k = zebra(&s, Params::new(screen, e.w, e.h, s.gpu.seed), placed, e.w, canvas);
+            let g = &mut s.gpu;
             g.kernel.run(&g.device, &g.queue, &view, &k, &target);
+            let imported = imported.or_else(|| g.read_back(&target, (e.w, e.h)));
             if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
                 s.befores += 1;
             }
             s.before_placed = placed;
-            let Some(g) = s.gpu.as_mut() else { return };
-            g.before = Some((target, before));
+            s.gpu.before = Some((target, before));
             (imported, placed)
         };
         let c = w.global::<Canvas>();
@@ -52,10 +53,8 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.split = if s.split.is_some() { None } else { Some(0.5) };
             // The before is a texture the size of the view: Compare off lets it go.
-            if s.split.is_none()
-                && let Some(g) = s.gpu.as_mut()
-            {
-                g.before = None;
+            if s.split.is_none() {
+                s.gpu.before = None;
             }
             s.split
         };

@@ -210,3 +210,30 @@ pub fn upload(device: &wgpu::Device, queue: &wgpu::Queue, pixels: &[[f32; 4]], w
     );
     texture
 }
+
+/// The `w` × `h` corner of an rgba8 texture read back, rows packed: the canvas on a window that cannot
+/// take the GPU's textures, and the checks' reading of the kernel.
+pub fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32) -> Vec<u8> {
+    let row = (w * 4).div_ceil(256) * 256;
+    let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: (row * h) as u64,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    let mut encoder = device.create_command_encoder(&Default::default());
+    encoder.copy_texture_to_buffer(
+        texture.as_image_copy(),
+        wgpu::TexelCopyBufferInfo {
+            buffer: &buffer,
+            layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row), rows_per_image: Some(h) },
+        },
+        wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+    );
+    queue.submit([encoder.finish()]);
+    let slice = buffer.slice(..);
+    slice.map_async(wgpu::MapMode::Read, |r| r.expect("map"));
+    device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+    let mapped = slice.get_mapped_range().expect("mapped range");
+    (0..h as usize).flat_map(|y| mapped[y * row as usize..y * row as usize + w as usize * 4].to_vec()).collect()
+}

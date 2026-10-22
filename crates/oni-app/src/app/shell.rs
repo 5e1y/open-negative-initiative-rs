@@ -8,8 +8,8 @@ impl Shell {
         let window = MainWindow::new()?;
         let caches = engine.lock().ok().and_then(|e| e.caches.clone());
         crate::measuring::set_folders(&options.support, caches);
-        let worker = Worker::new(Box::new(engine.clone()), options.screen, |done| with_shell(move |c| c.deliver(done)));
-        worker.on_gpu.store(options.canvas.is_some(), Ordering::Relaxed);
+        let worker = Worker::new(Box::new(engine.clone()), |done| with_shell(move |c| c.deliver(done)));
+        let (device, queue) = engine.lock().map_err(slint::PlatformError::Other)?.device();
         let index_path = LibraryIndex::default_path(&options.caches);
         let painter: Painter = Arc::default();
         let previews: Arc<Mutex<Previews>> = Arc::default();
@@ -84,10 +84,19 @@ impl Shell {
             brush: Preferences::load(&options.support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64).map_or(oni_settings::frame::Correction::DEFAULT_RADIUS as f32, |r| r as f32),
             // No rendering notifier: Slint flushes femtovg before calling it, which empties femtovg's
             // pipeline cache, so every frame recompiled its pipelines (8 ms of the interface thread on Metal).
-            gpu: options.canvas.map(|(device, queue)| {
-                let kernel = display::Gpu::new(&device);
-                Gpu { device, queue, kernel, target: None, before: None, current: None, uncounted: None, seed: 0, screen: options.screen, counted_at: None }
-            }),
+            gpu: Gpu {
+                kernel: display::Gpu::new(&device),
+                device,
+                queue,
+                target: None,
+                before: None,
+                current: None,
+                reads_back: !options.canvas,
+                uncounted: None,
+                seed: 0,
+                screen: options.screen,
+                counted_at: None,
+            },
             renders: 0,
             opens: 0,
             opened_at: Instant::now(),

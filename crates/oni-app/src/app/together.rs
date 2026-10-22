@@ -40,9 +40,6 @@ struct Ask {
     revision: u64,
     at: Instant,
     tiles: Vec<Option<(Arc<Negative>, PipelineSettings)>>,
-    screen: Screen,
-    /// The canvas encodes on the GPU, which takes the grid as light; the software one takes bytes.
-    gpu: bool,
     /// The share of the full sheet drawn, as the view shows it, and the box of it drawn.
     scale: f64,
     window: Window,
@@ -192,9 +189,9 @@ impl Ctl {
 
     /// The grid asked again once a step or a source moved it; else only laid again where the view is.
     pub(in crate::app) fn render_together(self: &Rc<Self>) {
-        let (revision, screen, gpu, lead, open) = {
+        let (revision, lead, open) = {
             let s = self.state.borrow();
-            (s.store.revision(), s.screen, s.gpu.is_some(), s.store.settings().clone(), s.open.clone())
+            (s.store.revision(), s.store.settings().clone(), s.open.clone())
         };
         let live: HashMap<String, PipelineSettings> =
             self.state.borrow().store.editor_ref().map(|e| e.together_live().into_iter().collect()).unwrap_or_default();
@@ -229,7 +226,7 @@ impl Ctl {
                 })
                 .collect();
             let tiles = all.iter().zip(&shows).map(|(t, shown)| t.clone().filter(|_| *shown)).collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, screen, gpu, scale, window, counted: moved.then_some(all) })
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, scale, window, counted: moved.then_some(all) })
         })();
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
@@ -259,11 +256,8 @@ impl Ctl {
         self.state.borrow().together.as_ref().map_or(0, |g| g.drawn)
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, picture: Picture, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
-        let size = match &picture {
-            Picture::Pixels { linear, .. } => (linear.width, linear.height),
-            Picture::Resident(sheet) => (sheet.extent().w as usize, sheet.extent().h as usize),
-        };
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
+        let size = (sheet.extent().w as usize, sheet.extent().h as usize);
         let count = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == group => {
                 g.shown = Some((size, window, scale));
@@ -276,14 +270,8 @@ impl Ctl {
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
         self.lay_sheet((size, window, scale));
-        let on_gpu = self.state.borrow().gpu.is_some();
-        match picture {
-            Picture::Pixels { rgba8, .. } if !on_gpu => c.set_frame(image(&rgba8, size.0, size.1)),
-            picture => {
-                let frame = format!("{count} frames together");
-                self.encode(picture, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
-            }
-        }
+        let frame = format!("{count} frames together");
+        self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
         c.set_busy(false);
         c.set_status(format!("{count} frames together").into());
     }
@@ -300,7 +288,6 @@ fn tile_source(engine: &Shared, path: &str) -> Result<Arc<Negative>, String> {
 
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
 fn draw_grids(engine: Shared) {
-    let mut seed = 0u32;
     loop {
         let ask = {
             let mut slot = SLOT.0.lock().expect("together slot");
@@ -311,7 +298,6 @@ fn draw_grids(engine: Shared) {
                 slot = SLOT.1.wait(slot).expect("together slot");
             }
         };
-        seed = seed.wrapping_add(1);
         let started = Instant::now();
         let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
         let present: Vec<(&Negative, &PipelineSettings)> = ask.tiles.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
@@ -325,22 +311,15 @@ fn draw_grids(engine: Shared) {
         };
         let Ok(sheet) = guard.render_laid(&present, cell.0, &at, size) else { continue };
         // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
-        let counted = ask.counted.as_ref().filter(|_| ask.gpu).and_then(|all| {
+        let counted = ask.counted.as_ref().and_then(|all| {
             let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
             let present: Vec<(&Negative, &PipelineSettings)> = all.iter().flatten().map(|(n, s)| (n.as_ref(), s)).collect();
             let cell = cell_at(COUNTED_SCALE);
             guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
         });
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
-        let picture = if ask.gpu {
-            Picture::Resident(sheet)
-        } else {
-            let linear = guard.read_sheet(&sheet);
-            let rgba8 = render::encoded(&linear, &Params::new(ask.screen, size.0, size.1, seed), 1);
-            Picture::Pixels { linear, rgba8 }
-        };
         drop(guard);
         let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
-        with_shell(move |c| c.grid_landed(group, revision, at, picture, pipeline, laid, counted));
+        with_shell(move |c| c.grid_landed(group, revision, at, sheet, pipeline, laid, counted));
     }
 }

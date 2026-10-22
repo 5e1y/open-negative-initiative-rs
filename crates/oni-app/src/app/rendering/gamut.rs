@@ -29,22 +29,35 @@ impl Ctl {
     pub(in crate::app) fn restripe(&self) {
         let Some(w) = self.window() else { return };
         let canvas = self.canvas_size();
-        {
+        let (frame, before) = {
             let s = self.state.borrow();
-            let screen = s.screen;
-            let Some(g) = s.gpu.as_ref() else { return };
-            if let (Some(Picture::Resident(source)), Some(target), Some(view)) = (&g.current, &g.target, g.current.as_ref().and_then(picture_view)) {
+            let (screen, g) = (s.screen, &s.gpu);
+            let mut frame = None;
+            if let (Some(source), Some(target)) = (&g.current, &g.target)
+                && let Some(view) = source.view()
+            {
                 let e = source.extent();
                 let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.placed, e.w, canvas);
-                g.kernel.run(&g.device, &g.queue, &view, &k, target);
+                g.kernel.run(&g.device, &g.queue, view, &k, target);
+                frame = g.read_back(target, (e.w, e.h));
             }
+            let mut read = None;
             if let Some((target, before)) = &g.before
                 && let Some(view) = before.view()
             {
                 let e = before.extent();
                 let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.before_placed, e.w, canvas);
                 g.kernel.run(&g.device, &g.queue, view, &k, target);
+                read = g.read_back(target, (e.w, e.h));
             }
+            (frame, read)
+        };
+        let c = w.global::<Canvas>();
+        if let Some(image) = frame {
+            c.set_frame(image);
+        }
+        if let Some(image) = before {
+            c.set_before(image);
         }
         w.window().request_redraw();
     }

@@ -120,7 +120,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
 
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { screen: Screen::DisplayP3, canvas: None, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
+    let options = Options { screen: Screen::DisplayP3, canvas: false, support: support.clone(), caches: root.join("caches"), picker: Box::new(|| None), ..Options::default() };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     window.set_size(PhysicalSize::new(1440, 900));

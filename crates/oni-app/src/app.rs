@@ -7,7 +7,7 @@ use crate::gallery::{self, Layout, Metrics};
 use crate::library::{self, Archive};
 use crate::preferences::{self, Preferences};
 use crate::thumbnails::{self, Memory};
-use crate::render::{self, Delivery, InputHistograms, Job, Negative, Picture, Placed, Previews, Shared, View, Worker};
+use crate::render::{self, Delivery, InputHistograms, Job, Negative, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
 use oni_settings::cg::Rect as Fraction;
@@ -66,7 +66,7 @@ mod tree_clicks;
 mod state_read;
 use state_read::LoadBar;
 pub use workers::tiles;
-use workers::{paint, picture_view, prepared, prepared_keeping, read_disk, zebra};
+use workers::{paint, prepared, prepared_keeping, read_disk, zebra};
 
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.
@@ -113,9 +113,9 @@ pub type Shower = Box<dyn Fn(&Path)>;
 
 pub struct Options {
     pub screen: Screen,
-    /// The device Slint draws the window with, on which the display kernel writes the canvas;
-    /// none on the software renderer.
-    pub canvas: Option<(wgpu::Device, wgpu::Queue)>,
+    /// Slint draws the window on the engine's device and takes the canvas texture as it is; on its
+    /// software renderer the canvas is read back.
+    pub canvas: bool,
     /// `AppFolders.support`: the phone link's keys, the preferences, the thumbnails.
     pub support: PathBuf,
     /// `AppFolders.caches`: the index, which the system may purge.
@@ -153,7 +153,7 @@ impl Default for Options {
     fn default() -> Self {
         Options {
             screen: Screen::Srgb,
-            canvas: None,
+            canvas: false,
             // A check's own folder and no reporter: it never writes the owner's journal nor opens an issue.
             support: std::env::temp_dir().join(format!("oni-support-{}", std::process::id())),
             caches: std::env::temp_dir().join(format!("oni-caches-{}", std::process::id())),
@@ -233,7 +233,9 @@ struct Gpu {
     /// Compare's before, encoded beside the after, and the render it was encoded from.
     before: Option<(wgpu::Texture, oni_graph::Source)>,
     /// The picture the canvas was last encoded from, alive until the next one is encoded.
-    current: Option<Picture>,
+    current: Option<oni_graph::Source>,
+    /// The window cannot take the GPU's textures (Slint's software renderer): the canvas is read back.
+    reads_back: bool,
     /// The whole picture the histogram counts next, at one size whatever the zoom; none once counted.
     uncounted: Option<oni_graph::Source>,
     seed: u32,
@@ -327,7 +329,7 @@ pub struct State {
     masking: masks::Masking,
     status: String,
     brush: f32,
-    gpu: Option<Gpu>,
+    gpu: Gpu,
     renders: usize,
     /// How many times a photo was opened, which the checks count.
     opens: usize,
@@ -421,7 +423,7 @@ pub struct Ctl {
     window: slint::Weak<MainWindow>,
     pub state: RefCell<State>,
     engine: Shared,
-    worker: Worker<Negative>,
+    worker: Worker,
     trailing: Vec<Timer>,
     arrivals: Vec<Timer>,
     pulse: Timer,

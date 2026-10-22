@@ -2,10 +2,10 @@
 
 use super::*;
 
-pub struct Job<I> {
+pub struct Job {
     pub revision: u64,
     pub path: PathBuf,
-    pub negative: Arc<I>,
+    pub negative: Arc<Negative>,
     pub settings: PipelineSettings,
     pub kind: crate::timing::Kind,
     /// When the store asked for it, or the frame was opened, which the end-to-end time starts from.
@@ -18,21 +18,11 @@ pub struct Job<I> {
     pub held: bool,
 }
 
-/// What a render hands the canvas: a texture the display kernel encodes, or for the software
-/// renderer the linear image with its bytes encoded on the render thread.
-pub enum Picture {
-    Resident(Source),
-    Pixels { linear: Linear, rgba8: Vec<u8> },
-}
-
-/// A finished render, with the histogram of what is shown when the render thread measured it.
+/// A finished render: the texture the display kernel encodes into the canvas.
 pub struct Done {
     pub revision: u64,
     pub path: PathBuf,
-    pub picture: Picture,
-    pub width: usize,
-    pub height: usize,
-    pub histogram: Option<oni_measure::histogram::Histogram>,
+    pub picture: Source,
     pub kind: crate::timing::Kind,
     pub asked: Instant,
     pub pipeline: Duration,
@@ -64,34 +54,29 @@ const REST: Duration = Duration::from_millis(150);
 /// `Negative.measureSmall`'s scale of the measuring copy.
 pub(crate) const MEASURE_SMALL: f64 = 0.35;
 
-pub(crate) struct Slot<I> {
-    waiting: Option<Job<I>>,
+pub(crate) struct Slot {
+    waiting: Option<Job>,
     closed: bool,
 }
 
-pub struct Worker<I> {
-    slot: Arc<(Mutex<Slot<I>>, Condvar)>,
-    /// Set while the display kernel draws the canvas, so a notch stays on the GPU end to end.
-    pub on_gpu: Arc<AtomicBool>,
+pub struct Worker {
+    slot: Arc<(Mutex<Slot>, Condvar)>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
 
-impl<I: Send + Sync + 'static> Worker<I> {
-    pub fn new(mut renderer: Box<dyn Renderer<I>>, screen: Screen, deliver: impl Fn(Delivery) + Send + 'static) -> Worker<I> {
+impl Worker {
+    pub fn new(mut renderer: Box<dyn Renderer>, deliver: impl Fn(Delivery) + Send + 'static) -> Worker {
         let slot = Arc::new((Mutex::new(Slot { waiting: None, closed: false }), Condvar::new()));
         let shared = slot.clone();
-        let on_gpu = Arc::new(AtomicBool::new(false));
-        let gpu = on_gpu.clone();
         let thread = std::thread::Builder::new()
             .name("render".into())
             .spawn(move || {
-                let mut seed = 0u32;
                 // The before is kept while its settings and the view hold, so a notch never renders it again.
                 let mut kept: Option<(PathBuf, PipelineSettings, Option<ViewKey>, Source, Option<Placed>)> = None;
                 let mut last_inputs = Instant::now() - Duration::from_secs(1);
                 let mut last_counted = last_inputs;
                 // The last job read on the small copy, read again on the full one once the hand rests.
-                let mut resting: Option<(PathBuf, Arc<I>, PipelineSettings)> = None;
+                let mut resting: Option<(PathBuf, Arc<Negative>, PipelineSettings)> = None;
                 // The distributions read last: they hang on the frame and its settings, never on the view.
                 let mut measured: Option<(PathBuf, PipelineSettings, bool)> = None;
                 loop {
@@ -122,41 +107,33 @@ impl<I: Send + Sync + 'static> Worker<I> {
                         }
                         s.waiting.take().expect("a job")
                     };
-                    seed = seed.wrapping_add(1);
                     let started = Instant::now();
-                    let resident = if gpu.load(Ordering::Relaxed) { renderer.resident(&job.negative, &job.settings, job.view.as_ref()) } else { None };
-                    let done = match resident {
-                        Some(made) => made.map(|(source, placed)| {
-                            let e = source.extent();
-                            let (width, height) = (e.w as usize, e.h as usize);
-                            let picture = Picture::Resident(source);
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram: None, kind: job.kind, asked: job.asked, pipeline: started.elapsed(), placed, before: None }
-                        }),
-                        None => renderer.render(&job.negative, &job.settings).map(|linear| {
-                            let pipeline = started.elapsed();
-                            let rgba8 = encoded(&linear, &Params::new(screen, linear.width as u32, linear.height as u32, seed), 1);
-                            let histogram = Some(crate::histogram::measure(&linear.pixels, linear.width, linear.height, screen));
-                            let (width, height) = (linear.width, linear.height);
-                            let picture = Picture::Pixels { linear, rgba8 };
-                            Done { revision: job.revision, path: job.path.clone(), picture, width, height, histogram, kind: job.kind, asked: job.asked, pipeline, placed: None, before: None }
-                        }),
-                    };
-                    let before = match (&job.reference, gpu.load(Ordering::Relaxed)) {
-                        (Some(reference), true) => {
+                    let done = renderer.resident(&job.negative, &job.settings, job.view.as_ref()).map(|(picture, placed)| Done {
+                        revision: job.revision,
+                        path: job.path.clone(),
+                        picture,
+                        kind: job.kind,
+                        asked: job.asked,
+                        pipeline: started.elapsed(),
+                        placed,
+                        before: None,
+                    });
+                    let before = match &job.reference {
+                        Some(reference) => {
                             let key = job.view.as_ref().map(View::key);
                             match &kept {
                                 Some((p, s, k, source, placed)) if *p == job.path && s == reference && *k == key => Some((source.clone(), *placed)),
                                 _ => match renderer.resident(&job.negative, reference, job.view.as_ref()) {
-                                    Some(Ok((source, placed))) => {
+                                    Ok((source, placed)) => {
                                         kept = Some((job.path.clone(), reference.clone(), key, source.clone(), placed));
                                         Some((source, placed))
                                     }
-                                    _ => None,
+                                    Err(_) => None,
                                 },
                             }
                         }
                         // Compare off lets its kept before go, a canvas of floats.
-                        _ => {
+                        None => {
                             kept = None;
                             None
                         }
@@ -166,7 +143,7 @@ impl<I: Send + Sync + 'static> Worker<I> {
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
                     let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
-                    if drawn && gpu.load(Ordering::Relaxed) && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
+                    if drawn && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_counted = Instant::now();
                         if let Some(picture) = renderer.counted(&job.negative, &job.settings) {
                             deliver(Delivery::Counted { path: job.path.clone(), picture });
@@ -184,18 +161,18 @@ impl<I: Send + Sync + 'static> Worker<I> {
                 }
             })
             .expect("render thread");
-        Worker { slot, on_gpu, thread: Some(thread) }
+        Worker { slot, thread: Some(thread) }
     }
 
     /// Lays `job` in the slot, replacing a job still waiting there.
-    pub fn submit(&self, job: Job<I>) {
+    pub fn submit(&self, job: Job) {
         let (lock, wake) = &*self.slot;
         lock.lock().expect("render slot").waiting = Some(job);
         wake.notify_one();
     }
 }
 
-impl<I> Drop for Worker<I> {
+impl Drop for Worker {
     fn drop(&mut self) {
         let (lock, wake) = &*self.slot;
         lock.lock().expect("render slot").closed = true;

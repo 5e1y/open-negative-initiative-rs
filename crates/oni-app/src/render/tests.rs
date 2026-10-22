@@ -57,26 +57,34 @@ fn a_plain_image_opens_linearised_on_its_own_primaries_and_reduced_to_the_previe
 }
 
 /// Counts its renders and holds each one long enough for jobs to pile up behind it.
-struct Slow(Arc<Mutex<Vec<u64>>>);
+struct Slow(Arc<Mutex<Vec<u64>>>, Shared);
 
-impl Renderer<Linear> for Slow {
-    fn render(&mut self, negative: &Linear, settings: &PipelineSettings) -> Result<Linear, String> {
+impl Renderer for Slow {
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         std::thread::sleep(Duration::from_millis(60));
         self.0.lock().unwrap().push(settings.print.exposure.to_bits() as u64);
-        Ok(negative.clone())
+        self.1.resident(negative, settings, view)
     }
+}
+
+/// A small frame laid on the GPU, or none where no adapter is.
+fn tiny() -> Option<(Shared, Arc<Negative>)> {
+    let engine = Engine::shared(&Device::open().ok()?);
+    let decoded = Decoded { linear: Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] }, full_width: 2.0, undeclared: None };
+    let negative = engine.prepare(decoded).ok()?;
+    Some((engine, Arc::new(negative)))
 }
 
 #[test]
 fn a_burst_of_notches_renders_the_first_and_the_last_only() {
+    let Some((engine, negative)) = tiny() else { return eprintln!("no adapter: the slot is not exercised") };
     let seen = Arc::new(Mutex::new(Vec::new()));
     let (tx, rx) = mpsc::channel();
-    let worker = Worker::new(Box::new(Slow(seen.clone())), Screen::Srgb, move |d| {
+    let worker = Worker::new(Box::new(Slow(seen.clone(), engine)), move |d| {
         if let Delivery::Render(d) = d {
             tx.send(d.map(|d| d.revision)).unwrap();
         }
     });
-    let negative = Arc::new(Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] });
     for revision in 1..=20u64 {
         let mut settings = PipelineSettings::default();
         settings.print.exposure = revision as f32;
@@ -99,14 +107,14 @@ fn the_parallel_encode_writes_what_the_reference_writes() {
     let (w, h) = (37usize, 23usize);
     let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| [(i % w) as f32 / w as f32, (i / w) as f32 / h as f32, 0.3, 1.0]).collect();
     let linear = Linear { width: w, height: h, pixels };
-    let k = Params::new(Screen::Srgb, w as u32, h as u32, 5);
+    let k = Params::new(display::Screen::Srgb, w as u32, h as u32, 5);
     let reference = display::encode(&linear.pixels, &k);
     assert_eq!(encoded(&linear, &k, 1), reference);
     let sample = encoded(&linear, &k, 2);
     assert_eq!(sample.len(), 19 * 12 * 4);
     assert_eq!(sample[4..8], reference[8..12], "the second sample is the third pixel");
     // Twin: another seed moves the dither, so a band encoded with the wrong one is seen.
-    assert_ne!(encoded(&linear, &Params::new(Screen::Srgb, w as u32, h as u32, 6), 1), reference);
+    assert_ne!(encoded(&linear, &Params::new(display::Screen::Srgb, w as u32, h as u32, 6), 1), reference);
 }
 
 #[test]
@@ -355,21 +363,21 @@ fn a_reduced_preview_rebuilds_its_two_outer_rows_from_the_third() {
 
 struct Failing;
 
-impl Renderer<Linear> for Failing {
-    fn render(&mut self, _: &Linear, _: &PipelineSettings) -> Result<Linear, String> {
+impl Renderer for Failing {
+    fn resident(&mut self, _: &Negative, _: &PipelineSettings, _: Option<&View>) -> Result<(Source, Option<Placed>), String> {
         Err("unreadable".into())
     }
 }
 
 #[test]
 fn a_failed_render_names_its_frame() {
+    let Some((_, negative)) = tiny() else { return eprintln!("no adapter: the failure is not exercised") };
     let (tx, rx) = mpsc::channel();
-    let worker = Worker::new(Box::new(Failing), Screen::Srgb, move |d| {
+    let worker = Worker::new(Box::new(Failing), move |d| {
         if let Delivery::Render(Err((path, _))) = d {
             tx.send(path).unwrap();
         }
     });
-    let negative = Arc::new(Linear { width: 2, height: 1, pixels: vec![[0.5; 4]; 2] });
     let (kind, asked) = (crate::timing::Kind::Notch, Instant::now());
     worker.submit(Job { revision: 1, path: PathBuf::from("A.tif"), negative, settings: PipelineSettings::default(), kind, asked, view: None, reference: None, held: false });
     let failed = rx.recv_timeout(Duration::from_secs(10)).expect("a failure delivered");

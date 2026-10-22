@@ -3,8 +3,7 @@
 use super::*;
 
 impl Ctl {
-    /// A render arrived: stale ones are dropped, the GPU path encodes its texture into the canvas,
-    /// the software renderer shows the bytes encoded on the render thread.
+    /// A render arrived: stale ones are dropped, the rest encoded into the canvas.
     pub(in crate::app) fn deliver(self: &Rc<Self>, delivery: Delivery) {
         let done = match delivery {
             // Frames edited together own the canvas; the open one's render waits for the group to end.
@@ -40,30 +39,19 @@ impl Ctl {
             }
         }
         let shown = Shown { kind: done.kind, asked: done.asked, pipeline: done.pipeline, frame: crate::anonymity::token(&done.path.to_string_lossy()) };
-        let (width, height) = (done.width, done.height);
+        let e = done.picture.extent();
+        let (width, height) = (e.w as usize, e.h as usize);
         self.lay(done.placed, (width, height));
         if let Some((before, placed)) = done.before {
             self.encode_before(before, placed);
         }
-        let on_gpu = {
+        {
             let mut s = self.state.borrow_mut();
             s.rendered = done.revision.max(1);
             s.renders += 1;
-            if let Some(h) = done.histogram {
-                s.histogram = Some(h);
-                s.histogram_dirty = true;
-            }
-            s.gpu.is_some()
-        };
-        if on_gpu {
-            self.encode(done.picture, shown, None);
-            w.window().request_redraw();
-        } else {
-            if let Picture::Pixels { rgba8, .. } = done.picture {
-                w.global::<Canvas>().set_frame(image(&rgba8, width, height));
-            }
-            self.shown(shown);
         }
+        self.encode(done.picture, shown, None);
+        w.window().request_redraw();
         let status = {
             let s = self.state.borrow();
             let name = s.open_path().map(stem).unwrap_or_default();
@@ -83,9 +71,8 @@ impl Ctl {
             if s.open_path().map(Path::new) != Some(path) {
                 return;
             }
-            let Some(g) = s.gpu.as_mut() else { return };
-            g.uncounted = Some(picture);
-            g.count_due();
+            s.gpu.uncounted = Some(picture);
+            s.gpu.count_due();
         }
         self.watch_histogram();
     }
@@ -154,33 +141,29 @@ impl Ctl {
         self.publish_dedust();
     }
 
-    /// On a wgpu renderer the display kernel writes the canvas texture, which the next frame draws.
-    pub(in crate::app) fn encode(&self, picture: Picture, shown: Shown, counted: Option<oni_graph::Source>) {
+    /// The display kernel writes the canvas texture, which the next frame draws, or which is read back
+    /// on a window that cannot take it.
+    pub(in crate::app) fn encode(&self, picture: oni_graph::Source, shown: Shown, counted: Option<oni_graph::Source>) {
         let Some(w) = self.window() else { return };
         let canvas = self.canvas_size();
         let mut refused: Option<String> = None;
         let image = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
-            let Some(g) = s.gpu.as_mut() else { return };
-            let uploaded;
-            let (source, wd, ht) = match &picture {
-                Picture::Resident(source) => {
-                    let e = source.extent();
-                    (source.view().expect("a resident render is one texture").clone(), e.w, e.h)
-                }
-                Picture::Pixels { linear, .. } => {
-                    let (w, h) = (linear.width as u32, linear.height as u32);
-                    uploaded = display::upload(&g.device, &g.queue, &linear.pixels, w, h);
-                    (uploaded.create_view(&Default::default()), w, h)
-                }
-            };
+            let g = &mut s.gpu;
+            let e = picture.extent();
+            let (source, wd, ht) = (picture.view().expect("a resident render is one texture").clone(), e.w, e.h);
             // The texture is imported once per step of size, the render written in its corner and shown
             // clipped, so a pan or a pinch rewrites texels only. One Slint refuses is not kept, so the next
             // render tries again rather than drawing nowhere.
             let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
             let (target, imported) = match &g.target {
                 Some(t) if t.width() == bw && t.height() == bh => (t.clone(), None),
+                _ if g.reads_back => {
+                    let t = display::Gpu::target(&g.device, bw, bh);
+                    g.target = Some(t.clone());
+                    (t, None)
+                }
                 _ => {
                     let t = display::Gpu::target(&g.device, bw, bh);
                     match Image::try_from(t.clone()) {
@@ -198,8 +181,9 @@ impl Ctl {
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
             let k = zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas);
-            let Some(g) = s.gpu.as_mut() else { return };
+            let g = &mut s.gpu;
             g.kernel.run(&g.device, &g.queue, &source, &k, &target);
+            let imported = imported.or_else(|| g.read_back(&target, (wd, ht)));
             g.current = Some(picture);
             // The histogram describes the whole picture at one size, never the zoom's part of it.
             if counted.is_some() {

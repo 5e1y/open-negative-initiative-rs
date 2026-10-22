@@ -18,7 +18,7 @@ fn tiles_laid_on_a_sheet_equal_each_render_alone_at_its_place() {
     sb.vignette.stops = 0.6;
     let places = [(0, 0), (320, 10)];
     let sheet = engine.render_laid(&[(&a, &sa), (&b, &sb)], 300, &|i, _| places[i], (640, 320)).unwrap();
-    let read = engine.read_sheet(&sheet);
+    let read = Linear { width: 640, height: 320, pixels: engine.graph.read_back(&[&sheet]).remove(0) };
     let alone = [engine.render(&a, &sa, Some(300)).unwrap(), engine.render(&b, &sb, Some(300)).unwrap()];
     for (l, (x, y)) in alone.iter().zip(places) {
         for row in 0..l.height {

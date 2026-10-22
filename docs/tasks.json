@@ -1781,5 +1781,12 @@
     "title": "No preview copy: the editor always reads the full resolution",
     "status": "done",
     "detail": "Unification (owner's decisions of 2026-10-21). Settings' 'Edit on a preview copy' and 'Read RAW previews at half size' (and its menu item) are gone, with the settled flag, the debounce re-render after a navigation and Swift's MemoryBudget (needs_full_resolution, the budget formula and their checks): the full resolution is built as a photo opens and every render reads it once built, the preview serving only until then. A RAW's opening decode is always whole, so it is the full resolution too. Parity rows: MemoryBudget marked departed."
+  },
+  {
+    "id": 246,
+    "type": "simplification",
+    "title": "No software canvas: every render stays on the GPU",
+    "status": "done",
+    "detail": "Unification (owner's decision of 2026-10-21). The render thread no longer renders pixels on the CPU and encodes them for a window without wgpu: the worker asks the engine's resident render only (Picture, Renderer::render, the on_gpu flag and the generic Worker<I> are gone; Renderer stays the seam a check fills). The canvas's GPU is always there, on the engine's device; on Slint's software renderer, the windows the checks drive, the display kernel's output is read back and shown, so the checks see the very kernel the app runs. Edit Together and Compare follow; Engine::read_sheet goes."
   }
 ]

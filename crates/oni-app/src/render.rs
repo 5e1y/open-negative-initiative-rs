@@ -1,7 +1,7 @@
 //! Decoding and rendering off the interface thread: a frame decoded once is kept on the GPU as its
 //! preview, and a newer job replaces the one waiting in the render slot, so a drag never queues.
 
-use crate::display::{self, Params, Screen};
+use crate::display::{self, Params};
 use oni_graph::stages::Crop;
 use oni_graph::{Graph, Image, Rect, Source, Stage};
 use oni_pipeline::{CustomFlatField, Inputs, Pipeline, Request};
@@ -12,7 +12,6 @@ use oni_settings::PipelineSettings;
 use std::collections::VecDeque;
 use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 

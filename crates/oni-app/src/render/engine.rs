@@ -263,6 +263,10 @@ impl Engine {
         (&mut self.graph, &mut self.pipeline)
     }
 
+    pub fn device(&self) -> (wgpu::Device, wgpu::Queue) {
+        self.graph.device()
+    }
+
     pub fn stats(&self) -> oni_graph::Stats {
         self.graph.stats()
     }

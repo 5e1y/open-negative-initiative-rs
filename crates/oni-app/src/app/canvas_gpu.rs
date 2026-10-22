@@ -3,6 +3,12 @@
 use super::*;
 
 impl Gpu {
+    /// The `size` corner of `target` as a picture, on a window that cannot take the GPU's textures;
+    /// none where Slint draws the texture itself.
+    pub(super) fn read_back(&self, target: &wgpu::Texture, size: (u32, u32)) -> Option<Image> {
+        self.reads_back.then(|| image(&display::read_back(&self.device, &self.queue, target, size.0, size.1), size.0 as usize, size.1 as usize))
+    }
+
     /// The histogram counted on a frame already shown, once its readback has landed; then the
     /// newest frame is counted, if one waits.
     pub(super) fn landed(&mut self) -> Option<(oni_measure::histogram::Histogram, Instant)> {

@@ -21,13 +21,6 @@ pub(super) fn zebra(s: &State, k: Params, placed: Option<Placed>, texels: u32, c
     k.striped(display::Zebra { origin, stretch, canvas_height: height.max(1.0), phase })
 }
 
-pub(super) fn picture_view(picture: &Picture) -> Option<wgpu::TextureView> {
-    match picture {
-        Picture::Resident(source) => source.view().cloned(),
-        Picture::Pixels { .. } => None,
-    }
-}
-
 /// The stripes' clock, as Swift reads `CACurrentMediaTime`.
 static CLOCK: std::sync::OnceLock<Instant> = std::sync::OnceLock::new();
 

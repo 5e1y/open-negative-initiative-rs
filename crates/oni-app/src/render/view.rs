@@ -35,34 +35,25 @@ pub struct Placed {
     pub at_full_resolution: bool,
 }
 
-/// The conversion a canvas copy goes through: settings in, linear Rec. 2020 out.
-pub trait Renderer<I>: Send {
-    fn render(&mut self, negative: &I, settings: &PipelineSettings) -> Result<Linear, String>;
+/// What the render thread asks of the engine; a check stands in its own to watch the slot.
+pub trait Renderer: Send {
+    /// The render kept on the GPU for the display kernel, the view's region when given.
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String>;
 
     /// The levels' and manual curves' input distributions; `None` where nothing measures.
-    fn inputs(&mut self, _negative: &I, _settings: &PipelineSettings, _held: bool) -> Option<InputHistograms> {
-        None
-    }
-
-    /// The same render kept on the GPU for the display kernel, the view's region when given; `None`
-    /// where only pixels are made.
-    fn resident(&mut self, _negative: &I, _settings: &PipelineSettings, _view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
+    fn inputs(&mut self, _negative: &Negative, _settings: &PipelineSettings, _held: bool) -> Option<InputHistograms> {
         None
     }
 
     /// The whole picture at the histogram's size when the settings moved since the last; `None` else.
-    fn counted(&mut self, _negative: &I, _settings: &PipelineSettings) -> Option<Source> {
+    fn counted(&mut self, _negative: &Negative, _settings: &PipelineSettings) -> Option<Source> {
         None
     }
 }
 
-impl Renderer<Negative> for Shared {
-    fn render(&mut self, negative: &Negative, settings: &PipelineSettings) -> Result<Linear, String> {
-        self.lock()?.render(negative, settings, None)
-    }
-
-    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Option<Result<(Source, Option<Placed>), String>> {
-        Some(self.lock().and_then(|mut e| e.resident(negative, settings, view)))
+impl Renderer for Shared {
+    fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
+        self.lock().and_then(|mut e| e.resident(negative, settings, view))
     }
 
     fn inputs(&mut self, negative: &Negative, settings: &PipelineSettings, held: bool) -> Option<InputHistograms> {
