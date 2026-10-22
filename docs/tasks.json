@@ -1809,5 +1809,12 @@
     "title": "The Details loupe goes through the canvas's display kernel",
     "status": "done",
     "detail": "Unification. The loupe's region was read back under the engine's lock and encoded for the screen on the CPU; it now stays on the GPU (Engine::loupe returns the materialised region) and the display kernel encodes it into a texture the band shows, read back only on Slint's software renderer, as the canvas. The engine is held for the render alone. loupe bench: a Sharpening notch reaches the loupe in 6 ms median, as before."
+  },
+  {
+    "id": 250,
+    "type": "performance",
+    "title": "The log is written on a thread of its own",
+    "status": "done",
+    "detail": "Every render's line was written to stderr and the log file on the thread that said it, the interface thread for each landing, where a busy disk could hold a frame. Lines now go to a log thread in order; timing::flush waits for them before the log is read (report, console) and as the app ends (⌘Q or the loop's end)."
   }
 ]

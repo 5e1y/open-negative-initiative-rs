@@ -5,6 +5,7 @@ use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc::{Sender, channel};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -43,15 +44,55 @@ pub fn log_path(support: &Path) -> PathBuf {
     support.join("Logs").join("oni.log")
 }
 
+/// The lines are written on a thread of their own, so a render's line never waits on the disk.
 struct Sink {
     start: Instant,
     file: Mutex<Option<File>>,
+    writer: Mutex<Sender<Written>>,
+}
+
+enum Written {
+    Line(String),
+    /// Answered once every line before it is written.
+    Flush(Sender<()>),
 }
 
 static SINK: OnceLock<Sink> = OnceLock::new();
 
 fn sink() -> &'static Sink {
-    SINK.get_or_init(|| Sink { start: Instant::now(), file: Mutex::new(None) })
+    SINK.get_or_init(|| {
+        let (tx, rx) = channel::<Written>();
+        std::thread::Builder::new()
+            .name("log".into())
+            .spawn(move || {
+                for w in rx {
+                    match w {
+                        Written::Line(stamped) => {
+                            eprintln!("{stamped}");
+                            if let Ok(mut file) = sink().file.lock()
+                                && let Some(f) = file.as_mut()
+                            {
+                                let _ = writeln!(f, "{stamped}");
+                            }
+                        }
+                        Written::Flush(done) => {
+                            let _ = done.send(());
+                        }
+                    }
+                }
+            })
+            .expect("log thread");
+        Sink { start: Instant::now(), file: Mutex::new(None), writer: Mutex::new(tx) }
+    })
+}
+
+/// Waits until every line said so far is written, before the log is read or the run ends.
+pub fn flush() {
+    let (tx, rx) = channel();
+    let sent = sink().writer.lock().map(|w| w.send(Written::Flush(tx)).is_ok()).unwrap_or(false);
+    if sent {
+        let _ = rx.recv_timeout(Duration::from_secs(2));
+    }
 }
 
 /// Opens a fresh log file for the rest of the run, the last run's kept beside it as `oni.previous.log`
@@ -70,11 +111,8 @@ pub fn open_file(path: &Path) -> Result<(), String> {
 pub fn line(text: &str) {
     let s = sink();
     let stamped = format!("[{:9.3}] {text}", s.start.elapsed().as_secs_f64());
-    eprintln!("{stamped}");
-    if let Ok(mut file) = s.file.lock()
-        && let Some(f) = file.as_mut()
-    {
-        let _ = writeln!(f, "{stamped}");
+    if let Ok(w) = s.writer.lock() {
+        let _ = w.send(Written::Line(stamped));
     }
 }
 

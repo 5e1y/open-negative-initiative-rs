@@ -175,6 +175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     oni_app::patches::purge(&oni_app::patches::caches());
     timing::line(&shell.summary());
+    timing::flush();
     Ok(())
 }
 
@@ -214,6 +215,7 @@ impl slint::winit_030::CustomApplicationHandler for Quitting {
         if let Some(failure) = ON_EXIT.with(|e| e.borrow().as_ref().and_then(|write| write())) {
             timing::line(&format!("the open frame's settings could not be saved: {failure}"));
         }
+        timing::flush();
         EventResult::Propagate
     }
 }

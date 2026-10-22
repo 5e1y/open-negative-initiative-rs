@@ -197,7 +197,10 @@ impl Ctl {
             (s.reporter.clone(), crate::timing::log_path(&s.support), s.report_round)
         };
         std::thread::spawn(move || {
-            let sealed = with_log.then(|| report::sealed_log(&log)).flatten();
+            let sealed = with_log.then(|| {
+                crate::timing::flush();
+                report::sealed_log(&log)
+            }).flatten();
             let outcome = reporter(&message, sealed);
             with_shell(move |c| {
                 let Some(w) = c.window() else { return };
@@ -236,6 +239,7 @@ impl Ctl {
                 // Read only while the window is up: closed, it costs nothing.
                 timer.start(TimerMode::Repeated, CONSOLE_REFRESH, move || {
                     if let Some(c) = weak.upgrade().filter(|c| c.window().is_visible()) {
+                        crate::timing::flush();
                         c.set_log(std::fs::read_to_string(&log).unwrap_or_default().into());
                         c.set_blocks(crate::watchdog::blocks() as i32);
                     }
@@ -245,6 +249,7 @@ impl Ctl {
             }
         };
         let log = crate::timing::log_path(&self.state.borrow().support);
+        crate::timing::flush();
         console.set_log(std::fs::read_to_string(log).unwrap_or_default().into());
         console.set_blocks(crate::watchdog::blocks() as i32);
         let _ = console.show();
