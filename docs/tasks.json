@@ -1893,5 +1893,33 @@
     "title": "The interface's offscreen layers and needless redraws removed",
     "status": "done",
     "detail": "A rounded clip, or an opacity under one on an element with children, makes Slint's femtovg renderer draw the subtree into a texture of its own and redraw it on any change inside. The cards keep their round but clip nothing: CardCorners covers the four corners in the ground's colour over the canvas, gallery, export and roll cards. The slider rail no longer clips its fill, which is rounded itself; the hidden RESET key is invisible rather than transparent; the tooltip waits its delay on a timer instead of an animated opacity that redrew the window for a second; the progress glow no longer re-blurs through an animated width. The shared box-shadow cache is emptied after each frame, items on screen keeping theirs in their item cache. The toolbar's outer spacing no longer depends on its width, which closed the binding loop Slint warns may panic. Midzoom against 4b1bf38: passes 4 to 2 a steady frame and 144 to 98 on the first, interface frame drawn p50 1.8-2.0 to 1.6 ms, about 35 textures fewer; footprint unchanged within the bench's noise."
+  },
+  {
+    "id": 262,
+    "type": "cleanup",
+    "title": "Deleted oni-render's storage-buffer GPU path, which the app never ran (b0c62e3)",
+    "status": "done",
+    "detail": "gpu.rs, each kernel's impl Gpu dispatch and WGSL buffer entry point, and the kernels no stage uses (correction cost and bias field, screen gamut zebra, area average, maximum and histogram, colour clamp, linear and radial gradients, RGB passes, source-over) go: 3,193 lines out, 355 in. oni-render keeps only bytemuck and the scalar references the stage tests compare against. Its buffer tests went; the branches oni-pipeline's stage tests missed moved to oni-pipeline/tests/branches.rs on the render graph, each with a twin. Parity citations were repointed."
+  },
+  {
+    "id": 263,
+    "type": "cleanup",
+    "title": "The token generator and the design-system guard leave the app library (b661cb2)",
+    "status": "done",
+    "detail": "tokens.rs moves into the oni-tokens binary, whose tests now run with it, and strict.rs beside the window design-system check; neither is part of the shipped oni-app library."
+  },
+  {
+    "id": 264,
+    "type": "cleanup",
+    "title": "The pipeline tests' duplicated helpers merged, and a blind NaN check fixed (d189f40)",
+    "status": "done",
+    "detail": "noise, judge, error, dump and gap now live once in oni-pipeline/tests/common. The kept error scores a NaN pixel as infinite; fused.rs's copy folded it to 0 with f32::max, so its checks could not see a NaN. A new check asserts the judges fail a NaN pixel, with the blind fold as its twin."
+  },
+  {
+    "id": 265,
+    "type": "cleanup",
+    "title": "The file-size guard tightened (a64a019)",
+    "status": "done",
+    "detail": "Entries for files gone or back under 400 lines are dropped and every remaining ceiling is set to the file's line count, so a grandfathered file can only shrink."
   }
 ]
