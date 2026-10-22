@@ -35,6 +35,8 @@ export component Section inherits VerticalLayout {
     in property <int> block: -1;
     in property <bool> modified;
     in property <bool> separated: true;
+    in property <length> inset: SectionStyle.inset;
+    in property <length> before: SectionStyle.before;
     in-out property <bool> folded;
     // What the block opens as before the hand ever folds it, `.folded(byDefault:)`.
     in property <bool> folded-by-default;
@@ -43,9 +45,9 @@ export component Section inherits VerticalLayout {
     callback fold-toggled(bool);
     if root.separated: Divider { }
     VerticalLayout {
-        padding-left: SectionStyle.inset;
-        padding-right: SectionStyle.inset;
-        padding-top: SectionStyle.before;
+        padding-left: root.inset;
+        padding-right: root.inset;
+        padding-top: root.before;
         padding-bottom: SectionStyle.after;
         spacing: 0;
         if root.title != "": HorizontalLayout {
@@ -210,7 +212,8 @@ export component MenuEntry inherits Rectangle {
 
 // A menu's body: the entries on a raised panel, a rule between groups as a `Divider`.
 export component MenuPanel inherits Rectangle {
-    width: MenuStyle.width;
+    in property <length> span: MenuStyle.width;
+    width: root.span;
     height: column.preferred-height;
     background: Colour.raised;
     border-radius: MenuStyle.radius;
@@ -227,11 +230,14 @@ export component MenuPanel inherits Rectangle {
 export component Menu inherits PopupWindow {
     in property <[string]> entries;
     in property <int> current: -1;
+    // A menu dropped under a field is as wide as it.
+    in property <length> span: MenuStyle.width;
     callback chosen(int);
     // Sized as its panel, so a window's edge pushes it no further than its own width.
     width: panel.width;
     height: panel.height;
     panel := MenuPanel {
+        span: root.span;
         for word[i] in root.entries: MenuEntry {
             text: word;
             checked: i == root.current;

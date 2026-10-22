@@ -82,6 +82,7 @@ export component MenuPicker inherits Picker {
     menu := Menu {
         x: root.field-x;
         y: root.height;
+        span: max(MenuStyle.width, root.field-width);
         entries: root.entries;
         current: root.current;
         chosen(i) => { root.chosen(i); }

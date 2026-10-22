@@ -1816,5 +1816,12 @@
     "title": "The log is written on a thread of its own",
     "status": "done",
     "detail": "Every render's line was written to stderr and the log file on the thread that said it, the interface thread for each landing, where a busy disk could hold a frame. Lines now go to a log thread in order; timing::flush waits for them before the log is read (report, console) and as the app ends (⌘Q or the loop's end)."
+  },
+  {
+    "id": 251,
+    "type": "bug",
+    "title": "The alignment slips left from the audit",
+    "status": "done",
+    "detail": "From the eight UI audits (#242), the ones Swift does not decide: the gallery heading's folder caption elides rather than pushing the title out; the load bar's title is the idle line's 11 px secondary, so the status text no longer grows when loading starts; the status row ends `s` from the card at both ends (the medal's own inset counted); a profile menu dropped under its field is as wide as it (MenuPicker passes its field's width); Settings' sections sit flush with the sheet's title and keys, closer under it; the Paper Profiles sheet's title has the sheets' padding; the Scanner keypad's narrow keys start from one width, so −3 is no wider than −; the Working Space chip is limited to the room the zoom keys leave and elides its hint, the dot spaced evenly. Left as Swift draws them: the crop's edge bars on the frame line, Compare's labels at ±34 from the split."
   }
 ]

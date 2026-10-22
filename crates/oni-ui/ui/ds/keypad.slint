@@ -26,7 +26,8 @@ export component Key inherits Rectangle {
     property <bool> pressed: root.down || root.look == Look.pressed;
     height: ScannerStyle.key-height;
     min-width: root.wide ? ScannerStyle.wide-key : word.preferred-width + 2 * ScannerStyle.key-padding;
-    preferred-width: self.min-width;
+    // Narrow keys start from one width, so a longer legend does not widen its own key.
+    preferred-width: root.wide ? ScannerStyle.wide-key : ScannerStyle.key-height;
     horizontal-stretch: root.wide ? 0 : 1;
     border-radius: ScannerStyle.key-radius;
     background: root.pressed ? root.fill.darker(0.2) : root.hovered ? root.fill.brighter(0.1) : root.fill;

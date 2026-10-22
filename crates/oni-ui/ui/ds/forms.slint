@@ -148,7 +148,9 @@ export component Chip inherits Rectangle {
     in property <string> hint;
     in property <string> help;
     callback clicked();
-    width: row.preferred-width;
+    // As wide as its words, eliding the hint once the canvas's band is short of room.
+    preferred-width: row.preferred-width;
+    width: self.preferred-width;
     height: FormStyle.chip-height;
     border-radius: Radius.badge;
     background: area.has-hover ? Colour.hover : transparent;
@@ -158,8 +160,9 @@ export component Chip inherits Rectangle {
         padding-left: Space.s;
         padding-right: Space.s;
         spacing: Space.xs;
-        Label { text: root.title + " · "; tone: Tone.secondary; }
-        Label { text: root.hint; }
+        Label { text: root.title; tone: Tone.secondary; }
+        Label { text: "·"; tone: Tone.secondary; }
+        Label { text: root.hint; overflow: elide; horizontal-stretch: 1; }
         VerticalLayout {
             alignment: center;
             Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
@@ -232,6 +235,8 @@ export component BoardSheet inherits Rectangle {
             VerticalLayout {
                 HorizontalLayout {
                     padding: Space.m;
+                    padding-left: SheetStyle.padding;
+                    padding-right: SheetStyle.padding;
                     Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
                     Button { text: root.exit; clicked => { root.dismissed(); } }
                 }
@@ -310,7 +315,7 @@ export component LoadBar inherits Rectangle {
         padding-left: Space.s;
         padding-right: Space.s;
         spacing: Space.s;
-        Label { text: root.title; role: TextRole.label; vertical-alignment: center; overflow: elide; }
+        Label { text: root.title; role: TextRole.value; tone: Tone.secondary; vertical-alignment: center; overflow: elide; }
         if root.count != "": VerticalLayout {
             alignment: center;
             LcdReadout { text: root.count; }

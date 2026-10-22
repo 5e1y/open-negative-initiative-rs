@@ -334,7 +334,7 @@ export component TileHeading inherits HorizontalLayout {
     callback committed(string);
     callback cancelled();
     height: TileStyle.heading;
-    if !root.renaming && root.caption != "": Label { role: TextRole.title; tone: Tone.secondary; text: root.caption + " / "; }
+    if !root.renaming && root.caption != "": Label { role: TextRole.title; tone: Tone.secondary; text: root.caption + " / "; overflow: elide; }
     if !root.renaming: Label { role: TextRole.title; text: root.title; overflow: elide; }
     if !root.renaming: Rectangle { horizontal-stretch: 1; }
     if root.renaming: HeadingField {

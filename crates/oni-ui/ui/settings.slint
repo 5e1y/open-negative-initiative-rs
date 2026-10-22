@@ -1,5 +1,5 @@
 // The Settings sheet the header's gear opens: the app's own choices, kept in the preferences file.
-import { Sheet, SheetKeys, SheetStyle, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
+import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -19,6 +19,8 @@ export component SettingsSheet inherits Sheet {
     card-width: SheetStyle.notice-width;
     dismissed => { AppSettings.close(); }
     Section {
+        inset: SectionStyle.flush;
+        before: SectionStyle.sheet-before;
         title: "Rendering";
         separated: false;
         ToggleRow {
@@ -29,6 +31,8 @@ export component SettingsSheet inherits Sheet {
         Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
     }
     Section {
+        inset: SectionStyle.flush;
+        before: SectionStyle.sheet-before;
         title: "Frontier look";
         Note { text: AppSettings.frontier-look; }
         Note { text: "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."; }
@@ -39,6 +43,8 @@ export component SettingsSheet inherits Sheet {
         }
     }
     Section {
+        inset: SectionStyle.flush;
+        before: SectionStyle.sheet-before;
         title: "Sound";
         ToggleRow {
             label: "Key clicks";

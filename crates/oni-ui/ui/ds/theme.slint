@@ -187,6 +187,9 @@ export global SliderStyle {
 
 export global SectionStyle {
     out property <length> inset: Space.m;
+    // In a sheet, flush with its title and keys, closer under the title.
+    out property <length> flush: 0px;
+    out property <length> sheet-before: Space.m;
     out property <length> before: Space.l;
     out property <length> after: Space.l;
     out property <length> gap: Space.s;

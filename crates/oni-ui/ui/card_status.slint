@@ -7,7 +7,8 @@ export component CardStatus inherits HorizontalLayout {
     in property <bool> gallery;
     padding-top: Space.s;
     padding-bottom: Space.s;
-    padding-right: Space.s;
+    // The medal's own inset in its cell makes up the rest, so both ends sit `s` from the card.
+    padding-right: Space.s - Space.xxs;
     // The editor's line, the open frame and its size.
     in property <string> editor-line;
     property <bool> loading: Library.loading != "" && !Preparing.shown;
