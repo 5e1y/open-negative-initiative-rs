@@ -1955,7 +1955,7 @@
     "type": "performance",
     "title": "Edit Together and the canvas wait for the GPU before the next render",
     "status": "todo",
-    "detail": "The GPU audit found renders landing 15 to 80 ms behind their request while the CPU queued more; waiting at most 100 ms for the last render before taking the next halves the latency to photon and frees 250 MB, but the benches, which time the CPU side, read worse (pinch p50 1.4 to 19 ms). Diff kept at the scratchpad's gpu-settle.diff; needs the owner's eye on a real pan before it lands."
+    "detail": "The GPU audit found renders landing 15 to 80 ms behind their request while the CPU queued more; waiting at most 100 ms for the last render before taking the next halves the latency to photon and frees 250 MB, but the benches, which time the CPU side, read worse (pinch p50 1.4 to 19 ms). Diff kept at docs/research/gpu-settle.diff (against 6564fed); needs the owner's eye on a real pan before it lands."
   },
   {
     "id": 271,

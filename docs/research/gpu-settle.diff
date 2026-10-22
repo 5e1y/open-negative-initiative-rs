@@ -1,0 +1,95 @@
+diff --git a/crates/oni-app/src/render/view.rs b/crates/oni-app/src/render/view.rs
+index 286c838..d126fdb 100644
+--- a/crates/oni-app/src/render/view.rs
++++ b/crates/oni-app/src/render/view.rs
+@@ -49,8 +49,14 @@ pub trait Renderer: Send {
+     fn counted(&mut self, _negative: &Negative, _settings: &PipelineSettings) -> Option<Source> {
+         None
+     }
++
++    /// Waits until the GPU has run the renders recorded so far, the engine left unlocked meanwhile.
++    fn settle(&mut self) {}
+ }
+ 
++/// The longest a render waits for the GPU to finish the one before: a few renders' time.
++const SETTLE_WAIT: std::time::Duration = std::time::Duration::from_millis(100);
++
+ impl Renderer for Shared {
+     fn resident(&mut self, negative: &Negative, settings: &PipelineSettings, view: Option<&View>) -> Result<(Source, Option<Placed>), String> {
+         self.lock().and_then(|mut e| e.resident(negative, settings, view))
+@@ -60,6 +66,11 @@ impl Renderer for Shared {
+         self.lock().ok()?.inputs(negative, settings, held)
+     }
+ 
++    fn settle(&mut self) {
++        let Some((index, device)) = self.lock().ok().and_then(|e| Some((e.graph.last_submission()?, e.device().0))) else { return };
++        let _ = device.poll(wgpu::PollType::Wait { submission_index: Some(index), timeout: Some(SETTLE_WAIT) });
++    }
++
+     fn counted(&mut self, negative: &Negative, settings: &PipelineSettings) -> Option<Source> {
+         self.lock().ok()?.counted(negative, settings).ok().flatten()
+     }
+diff --git a/crates/oni-app/src/render/worker.rs b/crates/oni-app/src/render/worker.rs
+index 99dda90..d3f70de 100644
+--- a/crates/oni-app/src/render/worker.rs
++++ b/crates/oni-app/src/render/worker.rs
+@@ -158,6 +158,9 @@ impl Worker {
+                         measured = Some(read);
+                         resting = job.held.then(|| (job.path.clone(), job.negative.clone(), job.settings.clone()));
+                     }
++                    // The next job is taken once the GPU has run this one: a pinch queues no backlog of
++                    // renders, each holding textures the pool let go, 0.6 to 0.9 GB at 24 MP.
++                    renderer.settle();
+                 }
+             })
+             .expect("render thread");
+diff --git a/crates/oni-graph/src/graph.rs b/crates/oni-graph/src/graph.rs
+index 6f6d90b..b333efb 100644
+--- a/crates/oni-graph/src/graph.rs
++++ b/crates/oni-graph/src/graph.rs
+@@ -137,6 +137,8 @@ pub struct Graph {
+     packer: Option<half::Packer>,
+     door: Option<Arc<dyn Door>>,
+     pub adapter: String,
++    /// The last work handed to the queue, which a caller may wait for before it records more.
++    last: Option<wgpu::SubmissionIndex>,
+ }
+ 
+ /// Every dispatch's uniforms written in turn into one buffer, so no stage creates buffers of its own;
+diff --git a/crates/oni-graph/src/graph/device.rs b/crates/oni-graph/src/graph/device.rs
+index 33e4c8d..ca70b0a 100644
+--- a/crates/oni-graph/src/graph/device.rs
++++ b/crates/oni-graph/src/graph/device.rs
+@@ -59,6 +59,7 @@ impl Graph {
+             packer: None,
+             door: None,
+             adapter,
++            last: None,
+         }
+     }
+ 
+@@ -76,6 +77,11 @@ impl Graph {
+         self.max_side
+     }
+ 
++    /// The graph's last submission, for a caller that waits on the GPU without holding the graph.
++    pub fn last_submission(&self) -> Option<wgpu::SubmissionIndex> {
++        self.last.clone()
++    }
++
+     pub fn stats(&self) -> Stats {
+         Stats {
+             dispatches: self.dispatches,
+diff --git a/crates/oni-graph/src/graph/dispatch.rs b/crates/oni-graph/src/graph/dispatch.rs
+index 4b9a6d8..5dbbbaf 100644
+--- a/crates/oni-graph/src/graph/dispatch.rs
++++ b/crates/oni-graph/src/graph/dispatch.rs
+@@ -101,7 +101,7 @@ impl Graph {
+     pub(super) fn submit(&mut self, encoder: wgpu::CommandEncoder) {
+         let door = self.door.clone().filter(|d| d.enter());
+         self.flush_uniforms();
+-        self.queue.submit([encoder.finish()]);
++        self.last = Some(self.queue.submit([encoder.finish()]));
+         if let Some(d) = door {
+             d.leave();
+         }
