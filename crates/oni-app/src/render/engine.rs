@@ -78,7 +78,9 @@ impl Device {
         let instance = wgpu::Instance::default();
         let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
         let adapter = pollster::block_on(instance.request_adapter(&options)).map_err(|e| format!("no GPU adapter: {e}"))?;
-        let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), ..Default::default() };
+        // Clearing a texture in place lets a sheet laid every notch reuse the last one's.
+        let required_features = adapter.features() & wgpu::Features::CLEAR_TEXTURE;
+        let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), required_features, ..Default::default() };
         let (device, queue) = pollster::block_on(adapter.request_device(&descriptor)).map_err(|e| format!("no GPU device: {e}"))?;
         // Logged, not raised: a surface reconfigure that loses a race keeps its old size until the next frame.
         device.on_uncaptured_error(Arc::new(|e: wgpu::Error| crate::timing::line(&format!("wgpu error: {e}"))));
