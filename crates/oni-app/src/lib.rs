@@ -20,6 +20,8 @@ pub mod histogram;
 mod interface_drawing;
 pub mod library;
 pub mod loupe;
+#[cfg(target_os = "macos")]
+pub mod mapped;
 pub mod measuring;
 pub mod motion;
 pub mod organise;
