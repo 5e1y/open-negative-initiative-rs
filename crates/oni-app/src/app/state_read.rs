@@ -30,7 +30,7 @@ impl State {
 
     /// The settings the canvas was last asked to show, a hovered preset's preview included.
     pub fn shown_settings(&self) -> Option<&oni_settings::PipelineSettings> {
-        self.requested_live.as_ref()
+        self.requests.requested_live.as_ref()
     }
 
     pub fn renders(&self) -> usize {
@@ -44,7 +44,7 @@ impl State {
 
     /// The store revision the canvas last showed.
     pub fn rendered(&self) -> u64 {
-        self.rendered
+        self.requests.rendered
     }
 
     pub fn store(&self) -> &dyn Settings {
@@ -160,11 +160,11 @@ impl State {
     }
 
     pub fn split(&self) -> Option<f32> {
-        self.split
+        self.compare.split
     }
 
     pub fn befores(&self) -> usize {
-        self.befores
+        self.compare.befores
     }
 
     pub fn phone(&self) -> Option<&Phone> {

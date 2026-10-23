@@ -1961,8 +1961,8 @@
     "id": 271,
     "type": "refactor",
     "title": "State split per feature, reset by assignment",
-    "status": "todo",
-    "detail": "State holds 117 fields; open_photo resets about 20 by hand and three partial copies of that reset exist, so a new per-frame field leaks into the next photo when one is missed. Group them as Frame (open, negative, full, reading, rendered, requested, placed, inputs, histogram), Dedust and Compare sub-structs, each reset with one assignment; then explicit imports instead of use super::* in feature modules."
+    "status": "done",
+    "detail": "State's per-photo fields are grouped: rendering::Requests (rendered, requested, inputs, inputs_drawn, requested_view, requested_live, hand), dedusting::Dust (numbers, sources, fallback, healing, patched, unhealable) and rendering::Compare (split, before_placed, befores). Opening a photo resets them with Dust::next_photo and one Requests assignment instead of fourteen field writes; leaving Together keeps its two. app.rs ceiling 540 to 517. The use super::* imports stay as they are."
   },
   {
     "id": 272,

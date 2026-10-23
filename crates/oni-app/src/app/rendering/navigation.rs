@@ -40,7 +40,7 @@ impl Ctl {
     /// A move of the hand's (a drag, a wheel, a pinch): the view renders lighter while it lasts, and
     /// sharp once the hand has rested `SETTLE`.
     pub(in crate::app) fn by_hand(self: &Rc<Self>, change: impl FnOnce(&mut Viewport, (f64, f64), (f64, f64))) {
-        self.state.borrow_mut().hand = Some(Instant::now());
+        self.state.borrow_mut().requests.hand = Some(Instant::now());
         slint::Timer::single_shot(SETTLE, || {
             if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
                 me.request_render();

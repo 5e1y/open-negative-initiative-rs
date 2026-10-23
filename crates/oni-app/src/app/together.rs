@@ -158,8 +158,8 @@ impl Ctl {
         }
         self.state.borrow_mut().viewport.fit();
         let mut s = self.state.borrow_mut();
-        s.rendered = 0;
-        s.requested_view = None;
+        s.requests.rendered = 0;
+        s.requests.requested_view = None;
     }
 
     pub(in crate::app) fn together_shown(&self) -> bool {

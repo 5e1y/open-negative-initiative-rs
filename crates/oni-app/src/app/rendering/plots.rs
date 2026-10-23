@@ -152,11 +152,11 @@ impl Ctl {
         };
         let inputs = {
             let mut s = self.state.borrow_mut();
-            if s.inputs_drawn == Some(focus) {
+            if s.requests.inputs_drawn == Some(focus) {
                 return;
             }
-            s.inputs_drawn = Some(focus);
-            s.inputs.clone()
+            s.requests.inputs_drawn = Some(focus);
+            s.requests.inputs.clone()
         };
         let (levels, curves) = (crate::editors::size(self, Plot::LevelsHistogram), crate::editors::size(self, Plot::Curves));
         let Some(i) = inputs else {
@@ -184,7 +184,7 @@ impl Ctl {
     pub(crate) fn plot_resized(&self, plot: Plot) {
         match plot {
             Plot::Curves | Plot::LevelsHistogram => {
-                self.state.borrow_mut().inputs_drawn = None;
+                self.state.borrow_mut().requests.inputs_drawn = None;
                 self.publish_inputs();
             }
             Plot::Saturation => self.state.borrow_mut().histogram_dirty = true,

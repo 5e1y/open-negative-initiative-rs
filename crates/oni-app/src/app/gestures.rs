@@ -183,7 +183,7 @@ impl Ctl {
 
     /// A mode change drops the split, as Swift's does.
     pub(super) fn drop_split(self: &Rc<Self>) {
-        if self.state.borrow().split.is_some() {
+        if self.state.borrow().compare.split.is_some() {
             self.toggle_compare();
         }
     }

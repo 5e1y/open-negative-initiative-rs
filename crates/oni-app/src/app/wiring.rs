@@ -307,11 +307,11 @@ impl Ctl {
         let p = me.clone();
         c.on_split_dragged(move |x| {
             let width = p.window().map_or(0.0, |w| w.global::<Canvas>().get_width());
-            if width <= 0.0 || p.state.borrow().split.is_none() {
+            if width <= 0.0 || p.state.borrow().compare.split.is_none() {
                 return;
             }
             let split = (x / width).clamp(0.0, 1.0);
-            p.state.borrow_mut().split = Some(split);
+            p.state.borrow_mut().compare.split = Some(split);
             if let Some(w) = p.window() {
                 w.global::<Canvas>().set_split(split);
             }

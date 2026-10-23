@@ -34,7 +34,7 @@ impl Ctl {
         {
             let s = self.state.borrow();
             let current = s.open_path().map(PathBuf::from);
-            if current.as_ref() != Some(&done.path) || done.revision < s.rendered {
+            if current.as_ref() != Some(&done.path) || done.revision < s.requests.rendered {
                 return;
             }
         }
@@ -47,7 +47,7 @@ impl Ctl {
         }
         {
             let mut s = self.state.borrow_mut();
-            s.rendered = done.revision.max(1);
+            s.requests.rendered = done.revision.max(1);
             s.renders += 1;
         }
         self.encode(done.picture, shown, None);
@@ -84,8 +84,8 @@ impl Ctl {
             if s.open_path().map(Path::new) != Some(path) {
                 return;
             }
-            s.inputs = Some(inputs);
-            s.inputs_drawn = None;
+            s.requests.inputs = Some(inputs);
+            s.requests.inputs_drawn = None;
         }
         self.publish_inputs();
     }

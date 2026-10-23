@@ -46,7 +46,7 @@ impl Ctl {
                 && let Some(view) = before.view()
             {
                 let e = before.extent();
-                let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.before_placed, e.w, canvas);
+                let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.compare.before_placed, e.w, canvas);
                 g.kernel.run(&g.device, &g.queue, view, &k, target);
                 read = g.read_back(target, (e.w, e.h));
             }

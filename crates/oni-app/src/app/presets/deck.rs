@@ -14,7 +14,7 @@ impl Ctl {
             }
             s.shelf.hovered = id;
             // A new card asks the canvas again, whatever else stands still.
-            s.requested_view = None;
+            s.requests.requested_view = None;
         }
         self.measure_hover_balance();
         self.publish_presets();
@@ -29,7 +29,7 @@ impl Ctl {
                 return;
             }
             s.shelf.hovered = None;
-            s.requested_view = None;
+            s.requests.requested_view = None;
         }
         self.publish_presets();
         // Asked from the loop, as a shelf write reaches here without the shell's handle.
@@ -60,7 +60,7 @@ impl Ctl {
                     let moved = s.store.settings() != &through || s.open.as_deref() != Some(path.as_str());
                     if let Some(o) = outcome.filter(|_| !moved) {
                         s.shelf.hover_balance = Some((path, through, o));
-                        s.requested_view = None;
+                        s.requests.requested_view = None;
                     }
                     moved
                 };

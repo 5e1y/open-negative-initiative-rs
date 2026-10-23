@@ -308,13 +308,8 @@ pub struct State {
     /// `DSGesture`: hands on a control, which hold the thumbnails' decodes back.
     pub(crate) hands: Arc<AtomicUsize>,
     slides: Vec<Slide>,
-    rendered: u64,
-    requested: u64,
     histogram: Option<oni_measure::histogram::Histogram>,
     histogram_dirty: bool,
-    /// The levels' and manual curves' input distributions last read, and the focus each was drawn with.
-    inputs: Option<render::InputHistograms>,
-    inputs_drawn: Option<(Option<usize>, Option<usize>)>,
     last_change: Option<Instant>,
     /// The store revision `publish` last saw, so any edit of the open frame arms its write.
     published_revision: u64,
@@ -345,20 +340,14 @@ pub struct State {
     /// The frames whose full-resolution decode failed under their current reading.
     full_failed: HashSet<String>,
     loupe: loupe::Held,
+    /// What the canvas asked of the open frame and was given, reset whole for another frame.
+    requests: rendering::Requests,
+    dust: dedusting::Dust,
+    compare: rendering::Compare,
     /// The frames edited together, when more than one is.
     together: Option<gallery_view::together::Group>,
-    /// The frames whose dust patches are being generated; the corrections whose patch is on disk,
-    /// and those whose generation failed, neither looked for again.
-    healing: HashSet<String>,
-    patched: HashSet<oni_settings::id::Id>,
-    unhealable: HashSet<oni_settings::id::Id>,
     /// The displayed image's size in full-resolution pixels, from the last render placed.
     full_size: Option<(f64, f64)>,
-    /// What the last render request showed, so a navigation alone asks again.
-    requested_view: Option<(Viewport, (f64, f64), bool, bool, bool, bool)>,
-    hand: Option<Instant>,
-    /// The settings the last render was asked with, so a crop moved while framing renders nothing.
-    requested_live: Option<oni_settings::PipelineSettings>,
     placed: Option<Placed>,
     grab: Option<(f32, f32)>,
     pinch: f32,
@@ -377,13 +366,6 @@ pub struct State {
     route: crate::tabs::Route,
     /// The stroke being painted, in fractions of the rendered frame, y down.
     painting_stroke: dedusting::live::Live,
-    /// The number each correction's marker shows, never its row, which a removal shifts.
-    numbers: HashMap<oni_settings::id::Id, usize>,
-    next_number: usize,
-    /// Where each correction's patch was copied from, in fractions of the rendered frame, y down.
-    sources: HashMap<oni_settings::id::Id, (f64, f64)>,
-    /// The corrections whose search found no match and laid the tile beside the stroke.
-    fallback: std::collections::HashSet<oni_settings::id::Id>,
     brush_start: Option<f32>,
     brush_pressed_at: Option<Instant>,
     /// `Propagation`'s copied measuring window.
@@ -394,13 +376,8 @@ pub struct State {
     pasteboard: Box<dyn crate::pasteboard::Board>,
     /// The board's change count last read, so a menu publication reads only types that moved.
     board_seen: Option<i64>,
-    /// Compare Before/After's split, a fraction of the canvas's width; none while off.
-    split: Option<f32>,
     /// `screenGamutWarning`: the pixels this screen cannot show, striped on the canvas.
     screen_gamut: bool,
-    before_placed: Option<Placed>,
-    /// How many distinct befores the canvas encoded, which a kept one does not add to.
-    befores: usize,
     support: PathBuf,
     phone: Option<Phone>,
     picker: Picker,

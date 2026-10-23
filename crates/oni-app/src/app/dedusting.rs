@@ -3,7 +3,10 @@
 use super::*;
 
 pub(super) mod live;
+mod dust;
 mod originals;
+
+pub(in crate::app) use dust::Dust;
 
 impl Ctl {
     // MARK: - De-dust
@@ -26,10 +29,10 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let corrections = s.store.settings().corrections.clone();
             for c in &corrections {
-                if !s.numbers.contains_key(&c.id) {
-                    let n = s.next_number;
-                    s.numbers.insert(c.id, n);
-                    s.next_number += 1;
+                if !s.dust.numbers.contains_key(&c.id) {
+                    let n = s.dust.next_number;
+                    s.dust.numbers.insert(c.id, n);
+                    s.dust.next_number += 1;
                 }
             }
             if let Some(f) = frame {
@@ -37,14 +40,14 @@ impl Ctl {
             }
             let s = &*s;
             // A heal waiting on the frame's full-resolution build is already under way.
-            let healing = s.open_path().is_some_and(|p| s.healing.contains(p) || s.building_full.as_deref() == Some(p));
-            let pending = |c: &oni_settings::frame::Correction| healing && !s.patched.contains(&c.id) && !s.unhealable.contains(&c.id);
+            let healing = s.open_path().is_some_and(|p| s.dust.healing.contains(p) || s.building_full.as_deref() == Some(p));
+            let pending = |c: &oni_settings::frame::Correction| healing && !s.dust.patched.contains(&c.id) && !s.dust.unhealable.contains(&c.id);
             let rows: Vec<crate::CorrectionRow> = corrections
                 .iter()
                 .map(|c| crate::CorrectionRow {
-                    label: s.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
+                    label: s.dust.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
                     pending: pending(c),
-                    fallback: s.fallback.contains(&c.id),
+                    fallback: s.dust.fallback.contains(&c.id),
                     original: originals::original(c.id),
                 })
                 .collect();
@@ -59,7 +62,7 @@ impl Ctl {
                         let (x0, x1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.x), b.max(p.x)));
                         let (y0, y1) = c.stroke.iter().fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.y), b.max(p.y)));
                         let (x, y, wd, ht) = (x0 - rx, y0 - ry, x1 - x0 + 2.0 * rx, y1 - y0 + 2.0 * ry);
-                        (f.0 + x * f.2, f.1 + y * f.3, wd * f.2, ht * f.3, s.numbers.get(&c.id).copied().unwrap_or(0))
+                        (f.0 + x * f.2, f.1 + y * f.3, wd * f.2, ht * f.3, s.dust.numbers.get(&c.id).copied().unwrap_or(0))
                     })
                     .collect(),
                 _ => Vec::new(),
@@ -68,14 +71,14 @@ impl Ctl {
             let traces: Vec<Shape> = corrections
                 .iter()
                 .filter_map(|c| {
-                    let o = *s.sources.get(&c.id)?;
+                    let o = *s.dust.sources.get(&c.id)?;
                     Some((c.stroke.iter().map(|p| (p.x + o.0, p.y + o.1)).collect(), c.radius))
                 })
                 .collect();
             let lines: Vec<((f64, f64), (f64, f64))> = corrections
                 .iter()
                 .filter_map(|c| {
-                    let o = s.sources.get(&c.id)?;
+                    let o = s.dust.sources.get(&c.id)?;
                     let centre = live::bounding_centre(c.stroke.iter().map(|p| (p.x, p.y)))?;
                     Some((centre, (centre.0 + o.0, centre.1 + o.1)))
                 })
@@ -190,9 +193,9 @@ impl Ctl {
         });
         {
             let mut s = self.state.borrow_mut();
-            s.fallback.remove(&gone.id);
-            s.patched.remove(&gone.id);
-            s.sources.remove(&gone.id);
+            s.dust.fallback.remove(&gone.id);
+            s.dust.patched.remove(&gone.id);
+            s.dust.sources.remove(&gone.id);
         }
         self.write(Command::Write(Box::new(next)));
     }
@@ -209,7 +212,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let built = s.full.as_ref().is_some_and(|(p, _)| *p == path);
-            if built || s.rendered == 0 || s.building_full.is_some() || s.full_failed.contains(&path) {
+            if built || s.requests.rendered == 0 || s.building_full.is_some() || s.full_failed.contains(&path) {
                 return;
             }
             if !ahead(painting, s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0) {
@@ -324,7 +327,7 @@ impl State {
             .settings()
             .corrections
             .iter()
-            .filter(|c| !c.stroke.is_empty() && !self.patched.contains(&c.id) && !self.unhealable.contains(&c.id))
+            .filter(|c| !c.stroke.is_empty() && !self.dust.patched.contains(&c.id) && !self.dust.unhealable.contains(&c.id))
             .map(|c| c.id)
             .collect();
         let mut caches = None;
@@ -332,7 +335,7 @@ impl State {
             if !crate::patches::file(caches.get_or_insert_with(crate::patches::caches), id).exists() {
                 return true;
             }
-            self.patched.insert(id);
+            self.dust.patched.insert(id);
         }
         false
     }

@@ -19,10 +19,10 @@ impl Ctl {
             let revision = s.store.revision();
             let moved_at = s.moved_at.take();
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let coarse = s.hand.is_some_and(|t| t.elapsed() < super::navigation::SETTLE);
-            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.split.is_some(), cropping, coarse));
-            let moved = revision != s.requested || s.rendered == 0;
-            if !moved && view_key == s.requested_view {
+            let coarse = s.requests.hand.is_some_and(|t| t.elapsed() < super::navigation::SETTLE);
+            let view_key = size.map(|size| (s.viewport, size, full.is_some(), s.compare.split.is_some(), cropping, coarse));
+            let moved = revision != s.requests.requested || s.requests.rendered == 0;
+            if !moved && view_key == s.requests.requested_view {
                 return;
             }
             // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
@@ -33,24 +33,24 @@ impl Ctl {
             if cropping {
                 live.geometry = live.geometry.without_crop();
             }
-            if s.rendered != 0 && view_key == s.requested_view && s.requested_live.as_ref() == Some(&live) {
-                s.requested = revision;
+            if s.requests.rendered != 0 && view_key == s.requests.requested_view && s.requests.requested_live.as_ref() == Some(&live) {
+                s.requests.requested = revision;
                 return;
             }
             // A pan `navigate` already laid asks no render while the picture rendered, its margin around the
             // view included, still covers all the view shows: on a 5K canvas each render is 15 MP or more.
             let laid = |k: &Option<(Viewport, (f64, f64), bool, bool, bool, bool)>| k.map(|(v, size, full, split, crop, coarse)| (v.scale, size, full, split, crop, coarse));
             let covered = size.zip(s.placed).is_some_and(|(size, p)| s.viewport.placement(p.full, size).covered_by((p.x, p.y, p.width, p.height)));
-            if !moved && covered && laid(&view_key) == laid(&s.requested_view) && s.requested_live.as_ref() == Some(&live) {
-                s.requested_view = view_key;
+            if !moved && covered && laid(&view_key) == laid(&s.requests.requested_view) && s.requests.requested_live.as_ref() == Some(&live) {
+                s.requests.requested_view = view_key;
                 return;
             }
             let Some(negative) = s.negative.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()) else { return };
-            s.requested = revision;
-            s.requested_view = view_key;
-            s.requested_live = Some(live.clone());
+            s.requests.requested = revision;
+            s.requests.requested_view = view_key;
+            s.requests.requested_live = Some(live.clone());
             // Until the frame's first picture is shown, a render is the opening one, timed from the open.
-            let (kind, asked) = if s.rendered == 0 {
+            let (kind, asked) = if s.requests.rendered == 0 {
                 (Kind::Open, s.opened_at)
             } else if moved {
                 (Kind::Notch, moved_at.unwrap_or_else(Instant::now))
@@ -67,11 +67,11 @@ impl Ctl {
             // The cache is purged at every quit, so each correction's patch is generated as its frame opens;
             // a full resolution being built is waited for, its landing asking again, never decoded twice.
             let building = build.is_some() || s.building_full.as_deref() == Some(path.as_str());
-            let heal = (!building && !s.healing.contains(&path) && s.unhealed()).then(|| {
-                s.healing.insert(path.clone());
+            let heal = (!building && !s.dust.healing.contains(&path) && s.unhealed()).then(|| {
+                s.dust.healing.insert(path.clone());
                 (path.clone(), s.store.settings().clone(), full.clone())
             });
-            let reference = s.split.map(|_| oni_core::compare::reference(&live));
+            let reference = s.compare.split.map(|_| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
             (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
@@ -133,8 +133,8 @@ impl Ctl {
                 let open = c.state.borrow().open_path() == Some(path.as_str());
                 {
                     let mut s = c.state.borrow_mut();
-                    s.healing.remove(&path);
-                    s.unhealable.extend(unhealable);
+                    s.dust.healing.remove(&path);
+                    s.dust.unhealable.extend(unhealable);
                     // `deleteCorrection` cancels the generation: a patch made for a correction removed meanwhile is dropped.
                     if open {
                         let (kept, gone) = landed(made, &s.store.settings().corrections);
@@ -148,12 +148,12 @@ impl Ctl {
                         s.full = Some((path.clone(), full));
                     }
                     for &(id, fell_back, offset) in &made {
-                        s.patched.insert(id);
+                        s.dust.patched.insert(id);
                         if open {
                             if fell_back {
-                                s.fallback.insert(id);
+                                s.dust.fallback.insert(id);
                             }
-                            s.sources.insert(id, offset);
+                            s.dust.sources.insert(id, offset);
                         }
                     }
                 }
@@ -164,7 +164,7 @@ impl Ctl {
                 // Strokes painted meanwhile are generated next, on the full resolution now kept.
                 let more = open && c.state.borrow_mut().unhealed();
                 if open && (!made.is_empty() || more) {
-                    c.state.borrow_mut().requested_view = None;
+                    c.state.borrow_mut().requests.requested_view = None;
                     c.request_render();
                 }
                 if let Some(e) = failed {
@@ -182,12 +182,12 @@ impl Ctl {
             if s.open_path() != Some(path) || !s.store.settings().corrections.iter().any(|c| c.id == id) {
                 return;
             }
-            s.patched.insert(id);
+            s.dust.patched.insert(id);
             if fell_back {
-                s.fallback.insert(id);
+                s.dust.fallback.insert(id);
             }
-            s.sources.insert(id, offset);
-            s.requested_view = None;
+            s.dust.sources.insert(id, offset);
+            s.requests.requested_view = None;
         }
         self.request_render();
         self.publish_dedust();

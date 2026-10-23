@@ -42,8 +42,8 @@ impl Ctl {
     pub(super) fn reproof(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            s.requested = u64::MAX;
-            s.requested_live = None;
+            s.requests.requested = u64::MAX;
+            s.requests.requested_live = None;
         }
         self.request_render();
     }

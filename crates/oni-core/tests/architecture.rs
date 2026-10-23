@@ -7,7 +7,7 @@ const LIMIT: usize = 400;
 
 /// Files already past the limit, each at its size today: a ceiling that only comes down, never a target.
 const GRANDFATHERED: &[(&str, usize)] = &[
-    ("crates/oni-app/src/app.rs", 540),
+    ("crates/oni-app/src/app.rs", 517),
     ("crates/oni-app/src/bin/oni-tokens/tokens.rs", 639),
     ("crates/oni-app/src/editors/mod.rs", 559),
     ("crates/oni-app/src/editors/tests.rs", 466),

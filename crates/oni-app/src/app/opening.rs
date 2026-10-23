@@ -24,23 +24,13 @@ impl Ctl {
             s.open = Some(path.to_string());
             s.opened_at = Instant::now();
             s.opens += 1;
-            // `load(_:)`: numbering restarts per photo, and another photo's patch sources never show.
-            s.numbers.clear();
-            s.next_number = 1;
-            s.sources.clear();
-            s.fallback.clear();
-            // A heal that failed (a drive asleep) is tried again when its photo is opened again.
-            s.unhealable.clear();
-            // Another photo's distributions never stand under this one's handles.
-            s.inputs = None;
+            s.dust.next_photo();
+            // Nothing the canvas asked of the last frame, its distributions included, stands under this one.
+            s.requests = rendering::Requests::default();
             s.shelf.hovered = None;
             s.reading = Some(render::Reading::of(s.store.settings()));
-            s.inputs_drawn = None;
-            s.rendered = 0;
-            s.requested = 0;
             // Fitted, unless Settings keeps the zoom to walk a roll at 100 % comparing grain.
             s.viewport.next_photo(crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed));
-            s.requested_view = None;
             if s.full.as_ref().is_some_and(|(p, _)| p != path) {
                 s.full = None;
             }

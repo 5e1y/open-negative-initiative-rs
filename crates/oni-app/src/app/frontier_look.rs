@@ -92,7 +92,7 @@ impl Ctl {
 
     /// The open frame renders again on the new table, though none of its settings moved.
     fn frontier_changed(&self) {
-        self.state.borrow_mut().requested_view = None;
+        self.state.borrow_mut().requests.requested_view = None;
         crate::app::with_shell(|c| c.request_render());
         self.publish_settings();
     }

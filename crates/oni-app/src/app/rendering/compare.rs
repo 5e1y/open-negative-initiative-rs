@@ -27,9 +27,9 @@ impl Ctl {
             g.kernel.run(&g.device, &g.queue, &view, &k, &target);
             let imported = imported.or_else(|| g.read_back(&target, (e.w, e.h)));
             if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
-                s.befores += 1;
+                s.compare.befores += 1;
             }
-            s.before_placed = placed;
+            s.compare.before_placed = placed;
             s.gpu.before = Some((target, before));
             (imported, placed)
         };
@@ -51,12 +51,12 @@ impl Ctl {
     pub(in crate::app) fn toggle_compare(self: &Rc<Self>) {
         let split = {
             let mut s = self.state.borrow_mut();
-            s.split = if s.split.is_some() { None } else { Some(0.5) };
+            s.compare.split = if s.compare.split.is_some() { None } else { Some(0.5) };
             // The before is a texture the size of the view: Compare off lets it go.
-            if s.split.is_none() {
+            if s.compare.split.is_none() {
                 s.gpu.before = None;
             }
-            s.split
+            s.compare.split
         };
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_split(split.unwrap_or(-1.0));
