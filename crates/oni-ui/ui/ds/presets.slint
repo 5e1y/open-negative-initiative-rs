@@ -3,6 +3,7 @@
 import { Colour, Space, Radius, Stroke, Type, State, SheetStyle } from "theme.slint";
 import { PresetStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
+import { Look } from "controls.slint";
 
 // `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink.
 export component PresetFace inherits Rectangle {
@@ -85,10 +86,11 @@ export component PresetRow inherits Rectangle {
     in property <color> fill;
     in property <color> ink;
     in property <bool> selected;
+    in property <Look> look: Look.live;
     callback clicked();
     height: row.preferred-height;
     border-radius: Radius.badge;
-    background: root.selected ? Colour.row-selected : touch.has-hover ? Colour.hover : Colour.ground.transparentize(1);
+    background: root.selected ? Colour.row-selected : touch.has-hover || root.look != Look.live ? Colour.hover : Colour.ground.transparentize(1);
     row := HorizontalLayout {
         padding: Space.xs;
         spacing: Space.s;

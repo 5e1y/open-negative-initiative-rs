@@ -9,6 +9,8 @@ export component Tabs inherits Rectangle {
     in property <[bool]> marked;
     // A colour per tab drawn in place of its name, which stays the tab's accessible label.
     in property <[color]> swatches;
+    // The tab the state board shows hovered; -1 follows the pointer alone.
+    in property <int> hover-tab: -1;
     callback picked(int);
     height: TabsStyle.height;
     clip: true;
@@ -34,7 +36,7 @@ export component Tabs inherits Rectangle {
         if root.swatches.length == 0: Label {
             text: name;
             centred: true;
-            opacity: (i == root.selected || touch.has-hover) ? 1 : State.idle;
+            opacity: (i == root.selected || touch.has-hover || i == root.hover-tab) ? 1 : State.idle;
         }
         if root.swatches.length > 0: Rectangle {
             width: TabsStyle.swatch;

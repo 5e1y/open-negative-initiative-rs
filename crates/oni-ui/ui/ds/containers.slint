@@ -9,13 +9,14 @@ import { Icons } from "icons.slint";
 // The "?" beside a block's title; its note shows as the tooltip.
 export component HelpMark inherits Rectangle {
     in property <string> note;
+    in property <Look> look: Look.live;
     width: SectionStyle.help-mark + 2 * Space.xxs;
     height: self.width;
     accessible-role: button;
     accessible-label: @tr("What this block does");
     Icon {
         source: Icons.question;
-        tone: area.has-hover ? Tone.secondary : Tone.tertiary;
+        tone: area.has-hover || root.look != Look.live ? Tone.secondary : Tone.tertiary;
         width: SectionStyle.help-mark;
         height: SectionStyle.help-mark;
     }

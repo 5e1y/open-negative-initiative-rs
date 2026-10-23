@@ -165,13 +165,15 @@ export component TrashRow inherits Rectangle {
     in property <bool> opened;
     in property <bool> present: true;
     in property <string> restore-help;
+    in property <Look> look: Look.live;
     callback clicked();
     callback double-clicked();
     callback restore();
     callback menu(length, length);
     height: RowStyle.height;
     border-radius: Radius.badge;
-    background: root.opened ? Colour.row-selected : root.picked || area.has-hover ? Colour.hover : transparent;
+    property <bool> hovered: area.has-hover || root.look != Look.live;
+    background: root.opened ? Colour.row-selected : root.picked || root.hovered ? Colour.hover : transparent;
     opacity: root.present ? 1 : State.disabled;
     area := TouchArea {
         clicked => { root.clicked(); }
@@ -201,7 +203,7 @@ export component TrashRow inherits Rectangle {
         if root.trail != "": Label { text: root.trail; tone: Tone.tertiary; overflow: elide; }
         Label { text: root.title; tone: root.opened || root.picked ? Tone.primary : Tone.secondary; overflow: elide; horizontal-stretch: 1; }
         Label { text: root.count; role: TextRole.value; tone: Tone.tertiary; }
-        if area.has-hover && root.restore-help != "": VerticalLayout {
+        if root.hovered && root.restore-help != "": VerticalLayout {
             alignment: center;
             Button {
                 text: @tr("RESTORE");

@@ -15,10 +15,12 @@ export component ScrollKnob {
     in property <bool> hovered;
     // The pointer across the scrolled axis, so only the edge strip lights the knob.
     in property <length> across;
+    // The board's widened knob: the strip held as if the pointer were on it.
+    in property <Look> look: Look.live;
     // The offset a drag of the knob or a press on its track asks for, within the content.
     callback dragged(length);
     out property <bool> overflows: root.whole - root.page >= ScrollStyle.slack;
-    out property <bool> wide: root.overflows && (strip.has-hover || strip.pressed);
+    out property <bool> wide: root.overflows && (strip.has-hover || strip.pressed || root.look != Look.live);
     out property <bool> lit: root.overflows && (root.moving || root.wide || (root.hovered && root.across >= (root.horizontal ? root.height : root.width) - ScrollStyle.reach));
     property <bool> moving;
     property <length> room: root.page - 2 * ScrollStyle.inset;

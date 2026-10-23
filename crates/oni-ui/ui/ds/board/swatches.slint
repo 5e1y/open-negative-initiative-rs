@@ -1,0 +1,165 @@
+// The board's tokens: every `Colour` and the Scanner's colours by name, each type role in each tone,
+// the space and radius scales, the strokes and the states' opacities.
+import { Colour, Space, Radius, Stroke, State, ScannerStyle, Label, TextRole, Tone } from "../ds.slint";
+import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+
+struct Swatch { name: string, colour: color }
+
+// Named colours laid in rows of `across`, each a chip and its name.
+component Swatches inherits Rectangle {
+    in property <[Swatch]> swatches;
+    in property <int> across: 5;
+    property <length> pitch: BoardStyle.gap * 2;
+    height: ceil(root.swatches.length / root.across) * root.pitch;
+    width: root.across * (BoardStyle.label + BoardStyle.gap);
+    for s[i] in root.swatches: HorizontalLayout {
+        x: Math.mod(i, root.across) * (BoardStyle.label + BoardStyle.gap);
+        y: floor(i / root.across) * root.pitch;
+        width: BoardStyle.label;
+        height: root.pitch - Space.xs;
+        spacing: Space.s;
+        Rectangle {
+            width: root.pitch;
+            background: s.colour;
+            border-radius: Radius.track;
+            border-width: Stroke.hairline;
+            border-color: Colour.separator;
+        }
+        Label { text: s.name; role: TextRole.caption; tone: Tone.secondary; }
+    }
+}
+
+// A role in the five tones, each on the ground its tone is meant for.
+component RoleRow inherits Row {
+    in property <TextRole> role;
+    in property <string> sample;
+    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light]: Fill {
+        span: BoardStyle.field;
+        Rectangle {
+            height: sample.preferred-height + Space.s;
+            background: tone == Tone.on-fill ? Colour.accent : tone == Tone.on-light ? Colour.paper : transparent;
+            border-radius: Radius.track;
+            sample := Label { x: Space.xs; role: root.role; tone: tone; text: root.sample; }
+        }
+    }
+}
+
+export component TokensPage inherits Page {
+    title: "Tokens";
+    note: "Every Colour and ScannerStyle colour, each TextRole in each Tone, the Space and Radius scales, Stroke and State.";
+    Group {
+        title: "Colour";
+        Swatches {
+            swatches: [
+        { name: "ground", colour: Colour.ground }, { name: "canvas", colour: Colour.canvas }, { name: "well", colour: Colour.well },
+        { name: "raised", colour: Colour.raised }, { name: "raised-hover", colour: Colour.raised-hover }, { name: "raised-pressed", colour: Colour.raised-pressed },
+        { name: "ink", colour: Colour.ink }, { name: "ink-secondary", colour: Colour.ink-secondary }, { name: "ink-tertiary", colour: Colour.ink-tertiary },
+        { name: "ink-on-fill", colour: Colour.ink-on-fill }, { name: "ink-on-light", colour: Colour.ink-on-light }, { name: "warning-surface", colour: Colour.warning-surface },
+        { name: "ink-on-warning", colour: Colour.ink-on-warning }, { name: "warning-soft", colour: Colour.warning-soft }, { name: "accent", colour: Colour.accent },
+        { name: "accent-hover", colour: Colour.accent-hover }, { name: "accent-pressed", colour: Colour.accent-pressed }, { name: "on", colour: Colour.on },
+        { name: "on-hover", colour: Colour.on-hover }, { name: "caution", colour: Colour.caution }, { name: "caution-hover", colour: Colour.caution-hover },
+        { name: "caution-pressed", colour: Colour.caution-pressed }, { name: "destructive", colour: Colour.destructive }, { name: "destructive-hover", colour: Colour.destructive-hover },
+        { name: "destructive-pressed", colour: Colour.destructive-pressed }, { name: "confirm", colour: Colour.confirm }, { name: "confirm-hover", colour: Colour.confirm-hover },
+        { name: "confirm-pressed", colour: Colour.confirm-pressed }, { name: "update", colour: Colour.update }, { name: "update-hover", colour: Colour.update-hover },
+        { name: "update-pressed", colour: Colour.update-pressed }, { name: "separator", colour: Colour.separator }, { name: "guide", colour: Colour.guide },
+        { name: "guide-faint", colour: Colour.guide-faint }, { name: "handle-idle", colour: Colour.handle-idle }, { name: "scrim", colour: Colour.scrim },
+        { name: "canvas-cropping", colour: Colour.canvas-cropping }, { name: "unaligned-balance", colour: Colour.unaligned-balance }, { name: "contrast-edge-idle", colour: Colour.contrast-edge-idle },
+        { name: "sharpen", colour: Colour.sharpen }, { name: "stroke-live", colour: Colour.stroke-live }, { name: "handle-active", colour: Colour.handle-active },
+        { name: "contrast-edge", colour: Colour.contrast-edge }, { name: "hover", colour: Colour.hover }, { name: "row-selected", colour: Colour.row-selected },
+        { name: "selected", colour: Colour.selected }, { name: "focus", colour: Colour.focus }, { name: "track", colour: Colour.track },
+        { name: "track-fill", colour: Colour.track-fill }, { name: "skeleton", colour: Colour.skeleton }, { name: "paper", colour: Colour.paper },
+        { name: "white", colour: Colour.white }, { name: "black", colour: Colour.black }, { name: "metal-dark", colour: Colour.metal-dark },
+        { name: "metal-light", colour: Colour.metal-light }, { name: "channel-red", colour: Colour.channel-red }, { name: "channel-cyan", colour: Colour.channel-cyan },
+        { name: "channel-blue", colour: Colour.channel-blue }, { name: "channel-yellow", colour: Colour.channel-yellow }, { name: "channel-green", colour: Colour.channel-green },
+        { name: "channel-magenta", colour: Colour.channel-magenta }, { name: "tip", colour: Colour.tip }, { name: "knob", colour: Colour.knob },
+        { name: "medal[1]", colour: Colour.medal[1] }, { name: "medal[2]", colour: Colour.medal[2] }, { name: "medal[3]", colour: Colour.medal[3] },
+            ];
+        }
+    }
+    Group {
+        title: "ScannerStyle colours";
+        Swatches {
+            swatches: [
+        { name: "socket", colour: ScannerStyle.socket }, { name: "cap-light", colour: ScannerStyle.cap-light }, { name: "cap-dark", colour: ScannerStyle.cap-dark },
+        { name: "band-dark", colour: ScannerStyle.band-dark }, { name: "band-light", colour: ScannerStyle.band-light }, { name: "band-red", colour: ScannerStyle.band-red },
+        { name: "band-cyan", colour: ScannerStyle.band-cyan }, { name: "band-green", colour: ScannerStyle.band-green }, { name: "band-magenta", colour: ScannerStyle.band-magenta },
+        { name: "band-blue", colour: ScannerStyle.band-blue }, { name: "band-yellow", colour: ScannerStyle.band-yellow }, { name: "band-cool", colour: ScannerStyle.band-cool },
+        { name: "band-warm", colour: ScannerStyle.band-warm }, { name: "glass", colour: ScannerStyle.glass }, { name: "lcd-ink", colour: ScannerStyle.lcd-ink },
+        { name: "scanline", colour: ScannerStyle.scanline },
+            ];
+        }
+    }
+    Group {
+        title: "Type";
+        states: ["primary", "secondary", "tertiary", "on-fill (on accent)", "on-light (on paper)"];
+        span: BoardStyle.field;
+        RoleRow { label: "heading"; role: TextRole.heading; sample: "Roll #8"; }
+        RoleRow { label: "title"; role: TextRole.title; sample: "Export"; }
+        RoleRow { label: "section"; role: TextRole.section; sample: "Contrast"; }
+        RoleRow { label: "label"; role: TextRole.label; sample: "White point"; }
+        RoleRow { label: "value"; role: TextRole.value; sample: "+1.50 EV"; }
+        RoleRow { label: "caption"; role: TextRole.caption; sample: "DSC_6432"; }
+        RoleRow { label: "button"; role: TextRole.button; sample: "EXPORT"; }
+    }
+    Group {
+        title: "Space";
+        states: ["xxs", "xs", "s", "m", "l"];
+        Row {
+            label: "a gap's length";
+            for gap in [Space.xxs, Space.xs, Space.s, Space.m, Space.l]: Cell {
+                HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    Rectangle { width: gap; height: Space.l; background: Colour.accent; }
+                    Label { text: gap / 1px + " pt"; role: TextRole.value; tone: Tone.secondary; }
+                }
+            }
+        }
+    }
+    Group {
+        title: "Radius";
+        states: ["track", "badge", "card", "control"];
+        Row {
+            label: "a raised square";
+            for r in [Radius.track, Radius.badge, Radius.card, Radius.control]: Cell {
+                HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    Rectangle { width: BoardStyle.gap * 4; height: self.width; border-radius: r; background: Colour.raised; }
+                    Label { text: r / 1px + " pt"; role: TextRole.value; tone: Tone.secondary; }
+                }
+            }
+        }
+    }
+    Group {
+        title: "Stroke";
+        states: ["hairline", "line", "emphasis", "trace"];
+        Row {
+            label: "a rule and a ring";
+            for w in [Stroke.hairline, Stroke.line, Stroke.emphasis, Stroke.trace]: Cell {
+                HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    VerticalLayout { alignment: center; Rectangle { width: BoardStyle.gap * 3; height: w; background: Colour.ink; } }
+                    Rectangle { width: BoardStyle.gap * 2; height: self.width; border-radius: Radius.badge; border-width: w; border-color: Colour.ink; }
+                    Label { text: w / 1px + " pt"; role: TextRole.value; tone: Tone.secondary; }
+                }
+            }
+        }
+    }
+    Group {
+        title: "State";
+        states: ["full", "disabled", "idle"];
+        Row {
+            label: "the ink at the opacity";
+            for o in [1, State.disabled, State.idle]: Cell {
+                HorizontalLayout {
+                    spacing: Space.s;
+                    alignment: start;
+                    Rectangle { width: BoardStyle.gap * 3; height: self.width; border-radius: Radius.badge; background: Colour.ink.with-alpha(o); }
+                    Label { text: round(o * 100) + " %"; role: TextRole.value; tone: Tone.secondary; }
+                }
+            }
+        }
+    }
+}

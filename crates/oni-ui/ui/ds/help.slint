@@ -33,6 +33,8 @@ export component NewsSeal inherits Rectangle {
 export component TextArea inherits Rectangle {
     in-out property <string> text <=> input.text;
     in property <length> lines-height: DS.control-report-message-height;
+    // The focus's edge without the focus, as `TextField.focused-look`.
+    in property <bool> focused-look;
     callback edited(string);
     // The focus leaving the box, which a typed text commits on.
     callback left(string);
@@ -40,8 +42,8 @@ export component TextArea inherits Rectangle {
     height: root.lines-height;
     border-radius: FieldStyle.radius;
     background: Colour.canvas;
-    border-width: input.has-focus ? Stroke.line : Stroke.hairline;
-    border-color: input.has-focus ? Colour.focus : Colour.separator;
+    border-width: input.has-focus || root.focused-look ? Stroke.line : Stroke.hairline;
+    border-color: input.has-focus || root.focused-look ? Colour.focus : Colour.separator;
     clip: true;
     input := TextInput {
         x: FieldStyle.padding;

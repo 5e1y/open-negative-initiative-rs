@@ -2124,5 +2124,12 @@
     "title": "Every help mark's note is a card with a place for its clip",
     "status": "done",
     "detail": "Owner's call. A \"?\" (HelpMark, Tips.note) shows a card instead of a line: a 4:3 place above, empty on the skeleton ground until its GIF is made (Tip.clip), then the note in medium weight, white. Tooltips stay lines. TipStyle gains card-width, card-padding and card-radius, Type gains medium (500). The catalogue check shoots the card and checks a tooltip stays a line (twin)."
+  },
+  {
+    "id": 295,
+    "type": "feature",
+    "title": "A design-system state board shows every component in every state, one family a page",
+    "status": "done",
+    "detail": "Owner's call, for the design review that brings back the raised and inset 3D effects. Board (ds/board/, exported from app.slint, `oni --board`, arrow keys walk the pages) lays thirteen families: buttons, icon buttons and plates, tabs and toggles, fields, sliders, the Scanner keypad, containers, lists and trees, tiles and pictures, menus, feedback, plots and tokens; each component a group, a row per variant, a column per state, every look forced without a pointer. Forced states added with live defaults, no look changed: `look` on Picker (MenuPicker, LinesPicker), HelpMark, ScrollKnob (widened), TrashRow, FolderRow, GlyphKey, ColumnPill, Chip, PresetRow and PinnedTreeRow; `hover-tab` on Tabs; `focused-look` on TextArea. The window check `board` shoots each family to ONI_SHOTS as board-<nn>-<name>.png at scale 2, sized to the page; twin: an unknown family lays nothing and its blank window is seen as blank. The i18n check skips ds/board/ as it skips the catalogue."
   }
 ]

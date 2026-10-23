@@ -12,6 +12,7 @@ pub(crate) fn the_catalogue_shows_every_component() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let catalogue = Catalogue::new().unwrap();
+    oni_app::language::speak(None);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(PhysicalSize::new(2 * 1440, 2 * 900));
     catalogue.show().unwrap();

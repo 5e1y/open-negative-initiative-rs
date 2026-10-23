@@ -1,0 +1,96 @@
+// The state board's frame: a page per family, a group per component, a row per variant and a
+// column per state, so every state of the design system stands side by side for review.
+import { Colour, Space, ShellStyle, Label, TextRole, Tone, Divider } from "../ds.slint";
+
+// The board's gauges: the row labels' column and the widths a state's column takes.
+export global BoardStyle {
+    out property <length> label: 160px;
+    out property <length> cell: 150px;
+    out property <length> field: 220px;
+    out property <length> wide: 300px;
+    out property <length> panel: ShellStyle.panel-width;
+    out property <length> library: ShellStyle.library-width;
+    out property <length> gap: Space.m;
+}
+
+// Sample pictures already bundled with the app, so a tile or a well shows a photograph.
+export global Samples {
+    out property <image> photo: @image-url("../../splash/1.0.0.jpg");
+    out property <image> other: @image-url("../../splash/1.3.0.jpg");
+    out property <image> stock: @image-url("../../stocks/kodak-portra.svg");
+}
+
+// One family's page: its name, a line on what it holds, then its groups.
+export component Page inherits VerticalLayout {
+    in property <string> title;
+    in property <string> note;
+    padding: Space.l;
+    spacing: Space.l;
+    alignment: start;
+    VerticalLayout {
+        spacing: Space.xs;
+        Label { role: TextRole.heading; text: root.title; }
+        if root.note != "": Label { tone: Tone.secondary; text: root.note; }
+    }
+    @children
+}
+
+// One component: its name over a rule, the states' header, then a row per variant.
+export component Group inherits VerticalLayout {
+    in property <string> title;
+    in property <[string]> states;
+    in property <length> span: BoardStyle.cell;
+    spacing: Space.s;
+    alignment: start;
+    Label { role: TextRole.title; text: root.title; }
+    Divider { }
+    if root.states.length > 0: HorizontalLayout {
+        spacing: BoardStyle.gap;
+        alignment: start;
+        Rectangle { width: BoardStyle.label; }
+        for state in root.states: Label { width: root.span; role: TextRole.caption; tone: Tone.tertiary; text: state; }
+    }
+    @children
+}
+
+// A variant: its name on the left, then a cell per state.
+export component Row inherits HorizontalLayout {
+    in property <string> label;
+    spacing: BoardStyle.gap;
+    alignment: start;
+    Label { width: BoardStyle.label; role: TextRole.caption; tone: Tone.secondary; text: root.label; wrap: word-wrap; }
+    @children
+}
+
+// A state's cell: its component at its own width, centred on the row's height.
+export component Cell inherits VerticalLayout {
+    in property <length> span: BoardStyle.cell;
+    width: root.span;
+    alignment: center;
+    HorizontalLayout {
+        alignment: start;
+        @children
+    }
+}
+
+// A state's cell its component spans; the width is fixed here, as a stretched one asks its content.
+export component Fill inherits VerticalLayout {
+    in property <length> span: BoardStyle.cell;
+    width: root.span;
+    alignment: center;
+}
+
+// A state the component does not draw: a dash, so an empty cell never reads as a missing shot.
+export component Absent inherits Label {
+    in property <length> span: BoardStyle.cell;
+    width: root.span;
+    role: TextRole.caption;
+    tone: Tone.tertiary;
+    text: "— no such state";
+}
+
+// A box on the canvas's dark, for pieces drawn over a picture or the canvas.
+export component Stage inherits Rectangle {
+    background: Colour.canvas;
+    clip: true;
+}

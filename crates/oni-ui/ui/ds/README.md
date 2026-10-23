@@ -12,6 +12,7 @@ and every screen picks it up.
 | `base.slint`, `controls.slint`, `containers.slint`, `collections.slint` | The components | By hand. They read only `theme.slint` |
 | `ds.slint` | The single import screens use | By hand |
 | `catalogue.slint` | Every component in each variant and state | By hand |
+| `board/` | The state board: one family a page, a row per variant, a column per forced state (`Look`, `hover-tab`, `focused-look`) | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
 Swift source, so the generator stays the only source of `DS`.
@@ -27,6 +28,8 @@ Swift source, so the generator stays the only source of `DS`.
 
 To check the result, run `cargo run --release -p oni-app --bin oni -- --catalogue` (or set
 `ONI_CATALOGUE=1`). It opens the catalogue, which shows every component in each state on one page.
+`-- --board` opens the state board (the arrow keys walk its families); the window check `board` shoots
+each family to `ONI_SHOTS` as `board-<nn>-<name>.png`.
 
 ## The rule: screens use only the design system
 

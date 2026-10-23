@@ -1,0 +1,133 @@
+// The board's sliders and the Scanner face: every fill and knob, the step sliders, the keys in each
+// band's colour, the keypad and the scanner's screen.
+import { Colour, PlotStyle, ScannerStyle, Look, SliderFill, Knob, Slider, StepSlider, Key, KeyRow, Keypad, LabScreen, LcdReadout } from "../ds.slint";
+import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+
+// One slider in its four states; Rust drives a live one, so this one holds its place.
+component SliderRow inherits Row {
+    in property <string> name;
+    in property <float> at: 0.62;
+    in property <SliderFill> fill: SliderFill.level;
+    in property <color> tint: Colour.track-fill;
+    in property <color> low;
+    in property <color> high;
+    in property <Knob> knob: Knob.grey;
+    property <string> readout: round(root.at * 100) + " %";
+    Fill { span: BoardStyle.wide; Slider { label: root.name; readout: root.readout; fraction: root.at; fill: root.fill; tint: root.tint; low: root.low; high: root.high; knob: root.knob; } }
+    Fill { span: BoardStyle.wide; Slider { label: root.name; readout: root.readout; fraction: root.at; fill: root.fill; tint: root.tint; low: root.low; high: root.high; knob: root.knob; look: Look.hover; } }
+    Fill { span: BoardStyle.wide; Slider { label: root.name; readout: root.readout; fraction: root.at; fill: root.fill; tint: root.tint; low: root.low; high: root.high; knob: root.knob; look: Look.pressed; } }
+    Fill { span: BoardStyle.wide; Slider { label: root.name; readout: root.readout; fraction: root.at; fill: root.fill; tint: root.tint; low: root.low; high: root.high; knob: root.knob; enabled: false; } }
+}
+
+// A Scanner face's step slider in its four states.
+component StepRow inherits Row {
+    in property <string> title;
+    in property <int> value;
+    in property <int> low: -10;
+    in property <int> high: 10;
+    in property <color> minus;
+    in property <color> plus;
+    property <string> readout: (root.value > 0 ? "+" : "") + root.value;
+    Fill { span: BoardStyle.wide; StepSlider { title: root.title; readout: root.readout; value: root.value; low: root.low; high: root.high; minus: root.minus; plus: root.plus; } }
+    Fill { span: BoardStyle.wide; StepSlider { title: root.title; readout: root.readout; value: root.value; low: root.low; high: root.high; minus: root.minus; plus: root.plus; look: Look.hover; } }
+    Fill { span: BoardStyle.wide; StepSlider { title: root.title; readout: root.readout; value: root.value; low: root.low; high: root.high; minus: root.minus; plus: root.plus; look: Look.pressed; } }
+    Fill { span: BoardStyle.wide; StepSlider { title: root.title; readout: root.readout; value: root.value; low: root.low; high: root.high; minus: root.minus; plus: root.plus; enabled: false; } }
+}
+
+export component SlidersPage inherits Page {
+    title: "Sliders";
+    note: "Slider in each SliderFill and Knob, then the Scanner face's StepSlider; hover and a held press both grow the knob.";
+    property <[string]> states: ["Rest", "Hover", "Pressed (held)", "Disabled"];
+    Group {
+        title: "Slider";
+        states: root.states;
+        span: BoardStyle.wide;
+        SliderRow { label: "level, grey knob"; name: "Exposure"; }
+        SliderRow { label: "level, white knob"; name: "White point"; at: 0.85; knob: Knob.white; }
+        SliderRow { label: "level, black knob"; name: "Black point"; at: 0.15; knob: Knob.black; }
+        SliderRow { label: "ramp, white"; name: "Highlights"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white; }
+        SliderRow { label: "ramp, black"; name: "Shadows"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black; }
+        SliderRow { label: "bipolar"; name: "Temperature"; at: 0.5; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
+        SliderRow { label: "metal"; name: "Grain"; at: 0.4; fill: SliderFill.metal; }
+    }
+    Group {
+        title: "StepSlider";
+        states: root.states;
+        span: BoardStyle.wide;
+        StepRow { label: "D, dark to light"; title: "D"; value: 3; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; }
+        StepRow { label: "C, red to cyan"; title: "C"; value: -2; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; }
+        StepRow { label: "Y, blue to yellow"; title: "Y"; value: 0; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; }
+        StepRow { label: "TEMP, cool to warm"; title: "TEMP"; value: 5; minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; }
+    }
+}
+
+// A key in one fill: rest, hover, pressed, then the wide key at rest and pressed.
+component KeyFillRow inherits Row {
+    in property <color> fill;
+    in property <string> legend: "+3";
+    Cell { Key { legend: root.legend; fill: root.fill; } }
+    Cell { Key { legend: root.legend; fill: root.fill; look: Look.hover; } }
+    Cell { Key { legend: root.legend; fill: root.fill; look: Look.pressed; } }
+    Cell { Key { legend: "D"; fill: root.fill; wide: true; } }
+    Cell { Key { legend: "D"; fill: root.fill; wide: true; look: Look.pressed; } }
+}
+
+export component KeypadPage inherits Page {
+    title: "Scanner keypad";
+    note: "Key in every ScannerStyle fill, then KeyRow, the Keypad socket, LabScreen and LcdReadout.";
+    property <[string]> helps: ["", "", "", "", ""];
+    Group {
+        title: "Key";
+        states: ["Rest", "Hover", "Pressed", "Wide, rest", "Wide, pressed"];
+        KeyFillRow { label: "cap-light"; fill: ScannerStyle.cap-light; legend: "−"; }
+        KeyFillRow { label: "cap-dark"; fill: ScannerStyle.cap-dark; legend: "−"; }
+        KeyFillRow { label: "band-dark"; fill: ScannerStyle.band-dark; }
+        KeyFillRow { label: "band-light"; fill: ScannerStyle.band-light; }
+        KeyFillRow { label: "band-red"; fill: ScannerStyle.band-red; }
+        KeyFillRow { label: "band-cyan"; fill: ScannerStyle.band-cyan; }
+        KeyFillRow { label: "band-green"; fill: ScannerStyle.band-green; }
+        KeyFillRow { label: "band-magenta"; fill: ScannerStyle.band-magenta; }
+        KeyFillRow { label: "band-blue"; fill: ScannerStyle.band-blue; }
+        KeyFillRow { label: "band-yellow"; fill: ScannerStyle.band-yellow; }
+        KeyFillRow { label: "band-cool"; fill: ScannerStyle.band-cool; }
+        KeyFillRow { label: "band-warm"; fill: ScannerStyle.band-warm; }
+    }
+    Group {
+        title: "Keypad and screen";
+        Row {
+            label: "KeyRow";
+            Fill { span: BoardStyle.panel; KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: root.helps; } }
+        }
+        Row {
+            label: "Keypad socket";
+            Fill {
+                span: BoardStyle.panel;
+                Keypad {
+                    KeyRow { title: "D"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: root.helps; }
+                    KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: root.helps; }
+                    KeyRow { title: "M"; minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: root.helps; }
+                    KeyRow { title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: root.helps; }
+                }
+            }
+        }
+        Row {
+            label: "LabScreen";
+            Fill {
+                span: BoardStyle.panel;
+                LabScreen {
+                    height: PlotStyle.main;
+                    frame: "FRAME 09/38";
+                    machine: "FRONTIER · NEGA";
+                    remeasure: true;
+                    cells: [{ title: "D", value: "+3" }, { title: "C", value: "−2" }, { title: "M", value: "0" }, { title: "Y", value: "+24" }, { title: "TEMP", value: "−10" }];
+                    finish: ["CT +20 %", "VIG 0 EV", "CHR 0 %"];
+                }
+            }
+        }
+        Row {
+            label: "LcdReadout";
+            Cell { LcdReadout { text: "12 / 36"; } }
+            Cell { LcdReadout { text: "1"; } }
+        }
+    }
+}

@@ -4,6 +4,7 @@ import { Colour, Stroke, Radius, RowStyle } from "theme.slint";
 import { Icon } from "base.slint";
 import { Icons } from "icons.slint";
 import { ListRow, RowKind } from "collections.slint";
+import { Look } from "controls.slint";
 
 // The archive's row: indented by depth, a chevron when it opens, then its glyph, a photo's included.
 export component TreeItem inherits ListRow {
@@ -48,6 +49,7 @@ export component PinnedTreeRow inherits Rectangle {
     in property <string> caption;
     in property <RowKind> kind;
     in property <bool> selected;
+    in property <Look> look: Look.live;
     // ⌘ (or Ctrl) and ⇧ held on the click.
     callback clicked(bool, bool);
     callback double-clicked();
@@ -63,6 +65,7 @@ export component PinnedTreeRow inherits Rectangle {
         expandable: true;
         expanded: true;
         selected: root.selected;
+        look: root.look;
         clicked => { root.clicked(self.command, self.shift); }
         double-clicked => { root.double-clicked(); }
         folded => { root.folded(); }

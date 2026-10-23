@@ -5,7 +5,7 @@ import { Icons } from "icons.slint";
 
 export enum ButtonKind { plain, accent, caution, destructive, update, confirm }
 export enum ButtonSize { regular, small }
-// What the catalogue forces a control to look like; `live` follows the pointer.
+// What the catalogue and the state board force a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
 export enum SliderFill { level, ramp, bipolar, metal }
 export enum Knob { grey, white, black }
@@ -245,7 +245,6 @@ export component Slider inherits VerticalLayout {
     accessible-action-increment => { root.step(root.field, 1); }
     accessible-action-decrement => { root.step(root.field, -1); }
     property <float> at: clamp(root.fraction, 0, 1);
-
     HorizontalLayout {
         spacing: Space.s;
         opacity: root.enabled ? 1 : State.disabled;
@@ -385,6 +384,7 @@ export component TextField inherits Rectangle {
 export component Picker inherits HorizontalLayout {
     in property <string> label;
     in property <string> value;
+    in property <Look> look: Look.live;
     // Where the field starts, which a menu dropped under it aligns on.
     out property <length> field-x: field.x;
     out property <length> field-width: field.width;
@@ -395,7 +395,7 @@ export component Picker inherits HorizontalLayout {
     field := Rectangle {
         horizontal-stretch: 1;
         border-radius: FieldStyle.radius;
-        background: area.has-hover ? Colour.raised : Colour.canvas;
+        background: area.has-hover || root.look != Look.live ? Colour.raised : Colour.canvas;
         border-width: Stroke.hairline;
         border-color: Colour.separator;
         HorizontalLayout {

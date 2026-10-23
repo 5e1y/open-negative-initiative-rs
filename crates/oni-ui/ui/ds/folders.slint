@@ -3,7 +3,7 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
-import { TextField } from "controls.slint";
+import { TextField, Look } from "controls.slint";
 import { MenuPanel } from "containers.slint";
 import { Icons } from "icons.slint";
 
@@ -33,12 +33,14 @@ export component FolderRow inherits Rectangle {
     in property <bool> opened;
     in property <bool> favourite;
     in property <bool> present: true;
+    in property <Look> look: Look.live;
     callback clicked();
     callback starred();
     callback menu(length, length);
     height: RowStyle.height;
     border-radius: Radius.badge;
-    background: root.opened ? Colour.row-selected : root.picked || area.has-hover ? Colour.hover : transparent;
+    property <bool> hovered: area.has-hover || root.look != Look.live;
+    background: root.opened ? Colour.row-selected : root.picked || root.hovered ? Colour.hover : transparent;
     opacity: root.present ? 1 : NavigatorStyle.absent;
     accessible-role: list-item;
     accessible-label: root.title;
@@ -71,7 +73,7 @@ export component FolderRow inherits Rectangle {
                 }
             }
             Label { text: root.title; tone: root.opened || root.picked ? Tone.primary : Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-            if root.favourite || area.has-hover: VerticalLayout {
+            if root.favourite || root.hovered: VerticalLayout {
                 alignment: center;
                 Rectangle {
                     width: NavigatorStyle.star;
@@ -139,11 +141,12 @@ export component GlyphKey inherits Rectangle {
     in property <string> help;
     in property <bool> enabled: true;
     in property <bool> tinted;
+    in property <Look> look: Look.live;
     callback clicked();
     width: NavigatorStyle.key;
     height: NavigatorStyle.key;
     border-radius: ButtonStyle.small-radius;
-    background: touch.pressed ? Colour.raised-pressed : touch.has-hover ? Colour.raised-hover : Colour.raised;
+    background: touch.pressed || root.look == Look.pressed ? Colour.raised-pressed : touch.has-hover || root.look == Look.hover ? Colour.raised-hover : Colour.raised;
     opacity: root.enabled ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.help;
@@ -168,11 +171,12 @@ export component ColumnPill inherits Rectangle {
     in property <string> help;
     in property <bool> enabled: true;
     in property <bool> pressable;
+    in property <Look> look: Look.live;
     callback clicked();
     // As tall as the key plate beside it, keys and inset alike.
     height: NavigatorStyle.key + 2 * ButtonStyle.plate-inset;
     border-radius: Radius.badge;
-    background: root.pressable && root.enabled && touch.has-hover ? Colour.hover : Colour.canvas;
+    background: root.pressable && root.enabled && (touch.has-hover || root.look != Look.live) ? Colour.hover : Colour.canvas;
     accessible-role: button;
     accessible-label: root.text;
     HorizontalLayout {

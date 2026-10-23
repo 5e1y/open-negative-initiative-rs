@@ -1,0 +1,61 @@
+// The state board: one family of components a page, each component in every state it can show, for
+// a design review side by side; `family` picks the page, the arrow keys walk them.
+import { AppWindow, Scroller } from "../ds.slint";
+import { ButtonsPage, IconsPage } from "buttons.slint";
+import { TabsPage, FieldsPage } from "inputs.slint";
+import { SlidersPage, KeypadPage } from "sliders.slint";
+import { BoxesPage } from "boxes.slint";
+import { ListsPage } from "lists.slint";
+import { TilesPage } from "tiles.slint";
+import { MenusPage } from "menus.slint";
+import { FeedbackPage } from "feedback.slint";
+import { PlotsPage } from "plots.slint";
+import { TokensPage } from "swatches.slint";
+
+export component Board inherits AppWindow {
+    title: "ONI State Board";
+    in-out property <int> family;
+    // Each family's name, in the order `family` counts them, which a shot's file name takes.
+    out property <[string]> families: ["buttons", "icon-buttons", "tabs-toggles", "fields", "sliders", "keypad", "containers", "lists", "tiles", "menus", "feedback", "plots", "tokens"];
+    // The drawn page's size, so a shot is cropped to it.
+    out property <length> content-width: page.preferred-width;
+    out property <length> content-height: page.preferred-height;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 1600px;
+    preferred-height: 1000px;
+    forward-focus: keys;
+    keys := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.RightArrow) {
+                root.family = Math.min(root.family + 1, root.families.length - 1);
+                return accept;
+            }
+            if (event.text == Key.LeftArrow) {
+                root.family = Math.max(root.family - 1, 0);
+                return accept;
+            }
+            reject
+        }
+        Scroller {
+            content-height: page.preferred-height;
+            page := VerticalLayout {
+                width: self.preferred-width;
+                height: self.preferred-height;
+                if root.family == 0: ButtonsPage { }
+                if root.family == 1: IconsPage { }
+                if root.family == 2: TabsPage { }
+                if root.family == 3: FieldsPage { }
+                if root.family == 4: SlidersPage { }
+                if root.family == 5: KeypadPage { }
+                if root.family == 6: BoxesPage { }
+                if root.family == 7: ListsPage { }
+                if root.family == 8: TilesPage { }
+                if root.family == 9: MenusPage { }
+                if root.family == 10: FeedbackPage { }
+                if root.family == 11: PlotsPage { }
+                if root.family == 12: TokensPage { }
+            }
+        }
+    }
+}
