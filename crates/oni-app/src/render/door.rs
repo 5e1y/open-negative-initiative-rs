@@ -66,6 +66,11 @@ pub(crate) fn adopt(device: (wgpu::Device, wgpu::Queue), door: Arc<Door>) {
     let _ = APP.set((device.0, device.1, door));
 }
 
+/// The app's device, queue and door once a window made them, for a kernel run beside the graphs.
+pub(crate) fn app_gpu() -> Option<(wgpu::Device, wgpu::Queue, Arc<Door>)> {
+    APP.get().cloned()
+}
+
 /// A graph of its own on the app's device, each submission through the window's door, so a reader
 /// keeps its textures apart from the canvas's without a device of its own; on a device of its own
 /// where no window made one (tools, checks).

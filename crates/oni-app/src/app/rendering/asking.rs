@@ -118,6 +118,9 @@ impl Ctl {
                         e.purge();
                     }
                     made.push((c.id, patch.fallback, patch.offset));
+                    // Each patch shows as it lands, so a hand painting stroke after stroke sees them come.
+                    let (at, one) = (path.clone(), (c.id, patch.fallback, patch.offset));
+                    with_shell(move |ctl| ctl.patch_landed(&at, one));
                 }
                 Ok(())
             })()
@@ -170,6 +173,24 @@ impl Ctl {
                 c.publish_dedust();
             });
         });
+    }
+
+    /// One patch on the canvas as soon as it is written, unless its frame closed or its stroke went.
+    fn patch_landed(self: &Rc<Self>, path: &str, (id, fell_back, offset): Made) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.open_path() != Some(path) || !s.store.settings().corrections.iter().any(|c| c.id == id) {
+                return;
+            }
+            s.patched.insert(id);
+            if fell_back {
+                s.fallback.insert(id);
+            }
+            s.sources.insert(id, offset);
+            s.requested_view = None;
+        }
+        self.request_render();
+        self.publish_dedust();
     }
 
     /// The open frame decoded again at full resolution off this thread, then shown where the view

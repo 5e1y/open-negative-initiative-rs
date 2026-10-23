@@ -5,6 +5,9 @@
 use oni_pipeline::corrections::{self, Area};
 use oni_settings::frame::Correction;
 
+mod cost;
+use cost::{Candidate, Costs};
+
 /// A region of the framed frame read back to the CPU: its rectangle in the frame, y down, and its pixels.
 pub struct Region {
     pub x: i64,
@@ -130,70 +133,6 @@ fn context_ring(centre: (f64, f64), hole: Rect, e: Rect) -> Rect {
     Rect { x: centre.0 - side / 2.0, y: centre.1 - side / 2.0, w: side, h: side }
 }
 
-#[derive(Clone, Copy, Debug)]
-struct Candidate {
-    offset: (f64, f64),
-    cost: f32,
-}
-
-/// `correctionCost` over a grid of candidate offsets, row-major from the bottom as Core Image
-/// dispatches it: a ring's cells sampled at each, the hole left out on either side.
-#[allow(clippy::too_many_arguments)]
-fn cost_map(src: &Region, f: &Frame, half: (f64, f64), origin: (f64, f64), step: f64, grid_n: usize, size: usize, min_radius: f64) -> Vec<Candidate> {
-    let e = f.extent;
-    let hole = f.hole;
-    let inside = |p: (f64, f64)| p.0 >= hole.x && p.0 <= hole.x + hole.w && p.1 >= hole.y && p.1 <= hole.y + hole.h;
-    let cell = |j: usize| (j as f64 + 0.5) / grid_n as f64 * 2.0 - 1.0;
-    // The stroke's side of every cell is the same for each candidate: sampled once, in the order summed.
-    let cells: Vec<((f64, f64), Option<[f32; 3]>)> = (0..grid_n * grid_n)
-        .map(|n| {
-            let t = (cell(n % grid_n) * half.0, cell(n / grid_n) * half.1);
-            let dest = (f.centre.0 + t.0, f.centre.1 + t.1);
-            (t, (!inside(dest)).then(|| src.sample(dest.0, dest.1)))
-        })
-        .collect();
-    let one = |index: usize| {
-        let (i, j) = (index % size, index / size);
-        let offset = (origin.0 + (i as f64 + 0.5) * step, origin.1 + (j as f64 + 0.5) * step);
-        let cand = (f.centre.0 + offset.0, f.centre.1 + offset.1);
-        if offset.0.hypot(offset.1) < min_radius
-            || cand.0 - half.0 < e.x
-            || cand.0 + half.0 > e.x + e.w
-            || cand.1 - half.1 < e.y
-            || cand.1 + half.1 > e.y + e.h
-        {
-            return Candidate { offset, cost: f32::INFINITY };
-        }
-        let (mut accum, mut counted) = ([0.0f32; 3], 0usize);
-        for &(t, d) in &cells {
-            let from = (cand.0 + t.0, cand.1 + t.1);
-            let Some(d) = d.filter(|_| !inside(from)) else { continue };
-            let s = src.sample(from.0, from.1);
-            for k in 0..3 {
-                let diff = d[k] - s[k];
-                accum[k] += diff * diff / (d[k] * d[k] + 0.001);
-            }
-            counted += 1;
-        }
-        let cost = if counted == 0 { f32::INFINITY } else { (accum[0] + accum[1] + accum[2]) / counted as f32 };
-        Candidate { offset, cost }
-    };
-    let count = size * size;
-    let threads = std::thread::available_parallelism().map_or(1, |n| n.get());
-    let per = count.div_ceil(threads).max(1);
-    let mut out = vec![Candidate { offset: (0.0, 0.0), cost: f32::INFINITY }; count];
-    std::thread::scope(|scope| {
-        for (k, chunk) in out.chunks_mut(per).enumerate() {
-            scope.spawn(move || {
-                for (n, slot) in chunk.iter_mut().enumerate() {
-                    *slot = one(k * per + n);
-                }
-            });
-        }
-    });
-    out
-}
-
 fn lowest(c: &[Candidate]) -> Option<usize> {
     (0..c.len()).filter(|&i| c[i].cost.is_finite()).min_by(|&a, &b| c[a].cost.total_cmp(&c[b].cost))
 }
@@ -251,12 +190,13 @@ impl Plan {
 fn search(src: &Region, c: &Correction, width: f64, height: f64) -> ((f64, f64), bool) {
     let Some(f) = frame(c, width, height) else { return (fallback(&frame_without_stroke(c, width, height)), true) };
     let Plan { half, min_radius, coarse_radius, coarse_size, fine_half, fine_n, fine_radius, fine_size } = Plan::of(&f);
-    let coarse = cost_map(src, &f, half, (-coarse_radius, -coarse_radius), COARSE_STEP, COARSE_N, coarse_size, min_radius);
+    let costs = Costs::of(src);
+    let coarse = costs.map(&f, half, (-coarse_radius, -coarse_radius), COARSE_STEP, COARSE_N, coarse_size, min_radius);
     let Some(best_coarse) = lowest(&coarse).map(|i| coarse[i]) else { return (fallback(&f), true) };
 
     let fine_min = fine_half.0.max(fine_half.1) * 1.2;
     let origin = (best_coarse.offset.0 - fine_radius, best_coarse.offset.1 - fine_radius);
-    let fine = cost_map(src, &f, fine_half, origin, 1.0, fine_n, fine_size, fine_min);
+    let fine = costs.map(&f, fine_half, origin, 1.0, fine_n, fine_size, fine_min);
     let Some(at) = lowest(&fine) else { return ((best_coarse.offset.0.round(), best_coarse.offset.1.round()), false) };
 
     let mut best = fine[at].offset;

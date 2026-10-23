@@ -24,6 +24,7 @@ mod previews;
 mod worker;
 mod histogram;
 pub use door::graph;
+pub(crate) use door::app_gpu;
 pub(crate) use door::Door;
 pub use {decode::*, engine::*, view::*, previews::*, worker::*, histogram::*};
 
