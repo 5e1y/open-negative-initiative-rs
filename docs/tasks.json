@@ -2110,5 +2110,12 @@
     "title": "The app in English, French and Spanish",
     "status": "done",
     "detail": "Every text the app shows is translated. Slint writes @tr (about 540 texts, arguments as {}), bundled from crates/oni-i18n/lang/<lang>/LC_MESSAGES/oni-ui.po with no default context; the Rust side reads the same catalogues through oni-i18n (tr, tr! with named places, trn for plurals with French counting 0 as one, marked for constants; about 390 texts in oni-app, oni-core, oni-library and oni-export). Settings > General picks Automatic (the system's language, English when the app does not speak it), English, Français or Español, kept as the language preference; the interface changes at once and every text the Rust side lays is published again. scripts/i18n lays new texts into the catalogues. Checks: every text in both catalogues with its places kept, no .slint word outside @tr, the extraction's own twins, French plural rule and locale reading; the session check switches to French and back. ONI_LANGUAGE stands in for the system's language, the window checks reading English. Logs, keys, file names, preset defaults and what the Swift app reads stay English; the Scanner face's machine screen keeps the Frontier's own English."
+  },
+  {
+    "id": 293,
+    "type": "feature",
+    "title": "The Scanner face's keypad rows become sliders with step keys",
+    "status": "done",
+    "detail": "Owner's call. On the Scanner face's Color tab, D, C, M, Y, TEMP, Contrast, Vignette and Chrome are each a StepSlider (ds/keypad.slint): the title and its readout above, a rail running from the minus band colour to the plus one in whole steps between the letter's or the effect's range, a mark at rest, and a small keycap either side for one step, three with Shift; a double click on the rail or the title rests it. A slide holds the store (Lab.hold), so it is one step to undo; each step still goes through Link::Step and StepEffect, as the phone's keys do. Rust lays every slider's steps, range and readout (app/lab/sliders.rs, with its test and twin); lab.rs's tests move to lab/tests.rs under the 400-line ceiling."
   }
 ]

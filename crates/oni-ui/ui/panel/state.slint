@@ -104,7 +104,14 @@ export global Lab {
     // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
     in property <[bool]> modified: [false, false, false, false];
     // A letter by its index in `Letter::ALL` (D, C, M, Y, TEMP), an effect in `Effect`'s order.
+    // The sliders, letters then effects (D, C, M, Y, TEMP, Contrast, Vignette, Chrome): each one's
+    // value and range in steps, and its readout.
+    in property <[int]> steps: [0, 0, 0, 0, 0, 0, 0, 0];
+    in property <[int]> lows: [-24, -24, -24, -24, -10, -10, -20, 0];
+    in property <[int]> highs: [24, 24, 24, 24, 10, 10, 20, 30];
+    in property <[string]> readouts;
     callback press(int, int);
+    callback hold(bool);
     callback clear(int);
     callback step-effect(int, int);
     callback clear-effect(int);

@@ -1,6 +1,6 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
-// store, the scrolled pane, and the Scanner keypad's rows.
-import { Slider, Section, Scroller, KeyRow } from "../ds/ds.slint";
+// store, the scrolled pane, and the Scanner's sliders.
+import { Slider, Section, Scroller, StepSlider } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
@@ -10,18 +10,33 @@ export component LabBlock inherits Section {
     reset(b) => { Lab.reset-group(b); }
 }
 
-export component LetterRow inherits KeyRow {
-    in property <int> letter;
-    legends: Lab.legends;
-    stepped(by) => { Lab.press(root.letter, by); }
-    reset => { Lab.clear(root.letter); }
-}
-
-export component EffectRow inherits KeyRow {
-    in property <int> effect;
-    legends: Lab.legends;
-    stepped(by) => { Lab.step-effect(root.effect, by); }
-    reset => { Lab.clear-effect(root.effect); }
+// A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects.
+// `helps` holds the minus key's, the title's and the plus key's tooltips.
+export component LabSlider inherits StepSlider {
+    in property <int> index;
+    in property <[string]> helps;
+    value: Lab.steps[root.index];
+    low: Lab.lows[root.index];
+    high: Lab.highs[root.index];
+    readout: Lab.readouts[root.index];
+    minus-help: root.helps[0];
+    title-help: root.helps[1];
+    plus-help: root.helps[2];
+    held(on) => { Lab.hold(on); }
+    stepped(by) => {
+        if (root.index < 5) {
+            Lab.press(root.index, by);
+        } else {
+            Lab.step-effect(root.index - 5, by);
+        }
+    }
+    reset => {
+        if (root.index < 5) {
+            Lab.clear(root.index);
+        } else {
+            Lab.clear-effect(root.index - 5);
+        }
+    }
 }
 
 export component StoreSlider inherits Slider {

@@ -1,11 +1,11 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, KeyPlate, Label, TextRole, Tone, ScannerStyle, Keypad, Note, Progress } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, KeyPlate, Label, TextRole, Tone, ScannerStyle, Note, Progress } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
 import { Exporting } from "../export.slint";
 import { Plots, PanelState, Lab } from "state.slint";
-import { LabBlock, LetterRow, EffectRow, StoreSlider, Block, EditorBlock, Pane } from "parts.slint";
+import { LabBlock, LabSlider, StoreSlider, Block, EditorBlock, Pane } from "parts.slint";
 
 export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
@@ -28,25 +28,19 @@ export component ColorPane inherits Pane {
         news: News.keypad;
         news-note: News.keypad-note;
         news-read => { News.read("keypad.1.3.1"); }
-        Keypad {
-            LetterRow { letter: 0; title: @tr("D"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("D −3: toward dark"), @tr("D −: toward dark"), "", @tr("D +: toward light"), @tr("D +3: toward light")]; }
-        }
+        LabSlider { index: 0; title: @tr("D"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("D −: toward dark"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("D +: toward light")]; }
     }
     if Lab.shown: LabBlock {
         title: @tr("Color");
         block: 1;
-        Keypad {
-            LetterRow { letter: 1; title: @tr("C"); minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: [@tr("C −3: toward red"), @tr("C −: toward red"), "", @tr("C +: toward cyan"), @tr("C +3: toward cyan")]; }
-            LetterRow { letter: 2; title: @tr("M"); minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: [@tr("M −3: toward green"), @tr("M −: toward green"), "", @tr("M +: toward magenta"), @tr("M +3: toward magenta")]; }
-            LetterRow { letter: 3; title: @tr("Y"); minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: [@tr("Y −3: toward blue"), @tr("Y −: toward blue"), "", @tr("Y +: toward yellow"), @tr("Y +3: toward yellow")]; }
-        }
+        LabSlider { index: 1; title: @tr("C"); minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: [@tr("C −: toward red"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("C +: toward cyan")]; }
+        LabSlider { index: 2; title: @tr("M"); minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: [@tr("M −: toward green"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("M +: toward magenta")]; }
+        LabSlider { index: 3; title: @tr("Y"); minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: [@tr("Y −: toward blue"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("Y +: toward yellow")]; }
     }
     if Lab.shown: LabBlock {
         title: @tr("Look");
         block: 2;
-        Keypad {
-            LetterRow { letter: 4; title: @tr("TEMP"); minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; helps: [@tr("TEMP −3: toward cool"), @tr("TEMP −: toward cool"), "", @tr("TEMP +: toward warm"), @tr("TEMP +3: toward warm")]; }
-        }
+        LabSlider { index: 4; title: @tr("TEMP"); minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; helps: [@tr("TEMP −: toward cool"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("TEMP +: toward warm")]; }
     }
     // `ColorPane`: a black and white film has no colour for this block to move.
     if !Lab.shown && !PanelState.monochrome: Block {
@@ -156,15 +150,9 @@ export component ColorPane inherits Pane {
         news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
         help: @tr("Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.");
-        Keypad {
-            EffectRow { effect: 0; title: @tr("CONTRAST"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Contrast −3: toward softer, +15 %"), @tr("Contrast −: toward softer, +5 %"), @tr("Contrast back to 0 %"), @tr("Contrast +: toward harder, +5 %"), @tr("Contrast +3: toward harder, +15 %")]; }
-        }
-        Keypad {
-            EffectRow { effect: 1; title: @tr("VIGNETTE"); minus: ScannerStyle.band-light; plus: ScannerStyle.band-dark; helps: [@tr("Vignette −3: toward lighter corners, +0.3 EV"), @tr("Vignette −: toward lighter corners, +0.1 EV"), @tr("Vignette back to 0 EV"), @tr("Vignette +: toward darker corners, +0.1 EV"), @tr("Vignette +3: toward darker corners, +0.3 EV")]; }
-        }
-        if !Lab.monochrome: Keypad {
-            EffectRow { effect: 2; title: @tr("CHROME"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Chrome −3: toward less, +15 %"), @tr("Chrome −: toward less, +5 %"), @tr("Chrome back to 0 %"), @tr("Chrome +: toward more, +5 %"), @tr("Chrome +3: toward more, +15 %")]; }
-        }
+        LabSlider { index: 5; title: @tr("Contrast"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Contrast −: toward softer, +5 %"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("Contrast +: toward harder, +5 %")]; }
+        LabSlider { index: 6; title: @tr("Vignette"); minus: ScannerStyle.band-light; plus: ScannerStyle.band-dark; helps: [@tr("Vignette −: toward lighter corners, +0.1 EV"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("Vignette +: toward darker corners, +0.1 EV")]; }
+        if !Lab.monochrome: LabSlider { index: 7; title: @tr("Chrome"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Chrome −: toward less, +5 %"), @tr("Double-click to bring it back to rest; ⇧ with − or + moves three steps."), @tr("Chrome +: toward more, +5 %")]; }
     }
     EditorBlock {
         title: @tr("Curves");

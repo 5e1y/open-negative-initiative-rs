@@ -1,6 +1,6 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Colour, Space, Stroke, State, Motion, ScannerStyle } from "theme.slint";
-import { Label, Tone, Tips, Clicks } from "base.slint";
+import { Colour, Space, Stroke, State, Motion, ScannerStyle, SliderStyle } from "theme.slint";
+import { Label, Tone, Tips, Clicks, TextRole } from "base.slint";
 import { Look } from "controls.slint";
 
 export global KeyInk {
@@ -24,6 +24,8 @@ export component Key inherits Rectangle {
     property <duration> pressed-at;
     property <duration> left;
     property <bool> pressed: root.down || root.look == Look.pressed;
+    // Whether ⇧ held the last press, which a stepper reads as three steps.
+    out property <bool> shift;
     height: ScannerStyle.key-height;
     min-width: root.wide ? ScannerStyle.wide-key : word.preferred-width + 2 * ScannerStyle.key-padding;
     // Narrow keys start from one width, so a longer legend does not widen its own key.
@@ -46,6 +48,11 @@ export component Key inherits Rectangle {
     }
     touch := TouchArea {
         clicked => { root.clicked(); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down) {
+                root.shift = event.modifiers.shift;
+            }
+        }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
         changed pressed => {
             if (self.pressed) {
@@ -162,5 +169,143 @@ export component LabScreen inherits Rectangle {
         y: i * ScannerStyle.scanline-pitch;
         height: Stroke.line;
         background: ScannerStyle.scanline;
+    }
+}
+
+// A letter's or a finish's slider on the Scanner face: whole steps between `low` and `high`, the rail
+// running from `minus` to `plus`, a key either side for one step (three with ⇧); a double click rests it.
+export component StepSlider inherits VerticalLayout {
+    in property <string> title;
+    in property <string> readout;
+    in property <int> value;
+    in property <int> low;
+    in property <int> high;
+    in property <color> minus;
+    in property <color> plus;
+    // The tooltips of the minus key, the title and the plus key.
+    in property <string> minus-help;
+    in property <string> title-help;
+    in property <string> plus-help;
+    in property <bool> enabled: true;
+    in property <Look> look: Look.live;
+    callback stepped(int);
+    callback reset();
+    // A press on the rail holds the edit, so a whole slide is one step to undo.
+    callback held(bool);
+    // The step under the hand while it slides, ahead of the value the store answers.
+    property <int> hand;
+    property <bool> sliding;
+    property <int> shown: root.sliding ? root.hand : root.value;
+    property <float> at: (root.shown - root.low) / max(1, root.high - root.low);
+    spacing: SliderStyle.label-gap;
+    accessible-role: slider;
+    accessible-label: root.title;
+    accessible-value: root.readout;
+    accessible-action-increment => { root.stepped(1); }
+    accessible-action-decrement => { root.stepped(-1); }
+    pure function step-at(x: length, width: length) -> int {
+        root.low + round(clamp(x / max(1px, width), 0, 1) * (root.high - root.low))
+    }
+    HorizontalLayout {
+        spacing: Space.s;
+        opacity: root.enabled ? 1 : State.disabled;
+        Label {
+            text: root.title;
+            overflow: elide;
+            horizontal-stretch: 1;
+            TouchArea {
+                double-clicked => { root.reset(); }
+                changed has-hover => { Tips.hover(self.has-hover, root.title-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+            }
+        }
+        Label { text: root.readout; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
+    }
+    HorizontalLayout {
+        spacing: Space.s;
+        Key {
+            y: (SliderStyle.row - ScannerStyle.step-key) / 2;
+            legend: "−";
+            fill: root.minus;
+            help: root.minus-help;
+            horizontal-stretch: 0;
+            width: ScannerStyle.step-key;
+            height: ScannerStyle.step-key;
+            clicked => { root.stepped(self.shift ? -3 : -1); }
+        }
+        HorizontalLayout {
+            padding-left: SliderStyle.knob-width / 2;
+            padding-right: SliderStyle.knob-width / 2;
+            horizontal-stretch: 1;
+            track := Rectangle {
+                height: SliderStyle.row;
+                opacity: root.enabled ? 1 : State.disabled;
+                Rectangle {
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    y: (parent.height - self.height) / 2;
+                    height: SliderStyle.track;
+                    border-radius: SliderStyle.track-radius;
+                    background: @linear-gradient(90deg, root.minus 0%, root.plus 100%);
+                }
+                // Rest, where the title's double click brings it back.
+                Rectangle {
+                    x: parent.width * (0 - root.low) / max(1, root.high - root.low) - self.width / 2;
+                    y: (parent.height - self.height) / 2;
+                    width: Stroke.line;
+                    height: SliderStyle.knob-height / 2;
+                    background: SliderStyle.grip-ink;
+                }
+                Rectangle {
+                    property <float> grow: (area.has-hover || root.sliding || root.look != Look.live) ? SliderStyle.knob-grow : 1;
+                    width: SliderStyle.knob-width * self.grow;
+                    height: SliderStyle.knob-height * self.grow;
+                    x: parent.width * root.at - self.width / 2;
+                    y: (parent.height - self.height) / 2;
+                    border-radius: SliderStyle.knob-radius;
+                    background: SliderStyle.knob;
+                    border-width: Stroke.line;
+                    border-color: SliderStyle.knob-edge;
+                    animate grow { duration: Motion.quick; easing: ease-out-back; }
+                    animate x { duration: Motion.quick; }
+                }
+                area := TouchArea {
+                    enabled: root.enabled;
+                    mouse-cursor: root.sliding ? MouseCursor.grabbing : MouseCursor.grab;
+                    double-clicked => { root.reset(); }
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            root.hand = root.step-at(self.mouse-x, track.width);
+                            root.sliding = true;
+                            root.held(true);
+                            if (root.hand != root.value) {
+                                root.stepped(root.hand - root.value);
+                            }
+                        } else if (root.sliding && (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel)) {
+                            root.sliding = false;
+                            root.held(false);
+                        }
+                    }
+                    moved => {
+                        if (root.sliding) {
+                            let next = root.step-at(self.mouse-x, track.width);
+                            if (next != root.hand) {
+                                root.stepped(next - root.hand);
+                                root.hand = next;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Key {
+            y: (SliderStyle.row - ScannerStyle.step-key) / 2;
+            legend: "+";
+            fill: root.plus;
+            help: root.plus-help;
+            horizontal-stretch: 0;
+            width: ScannerStyle.step-key;
+            height: ScannerStyle.step-key;
+            clicked => { root.stepped(self.shift ? 3 : 1); }
+        }
     }
 }

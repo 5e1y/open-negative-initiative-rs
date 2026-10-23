@@ -1050,20 +1050,16 @@ msgid "D"
 msgstr "D"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D −3: toward dark"
-msgstr "D −3 : plus sombre"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D −: toward dark"
 msgstr "D − : plus sombre"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +: toward light"
-msgstr "D + : plus clair"
+msgid "Double-click to bring it back to rest; ⇧ with − or + moves three steps."
+msgstr "Double-cliquez pour revenir au repos ; ⇧ avec − ou + avance de trois crans."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "D +3: toward light"
-msgstr "D +3 : plus clair"
+msgid "D +: toward light"
+msgstr "D + : plus clair"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
 msgid "Color"
@@ -1074,10 +1070,6 @@ msgid "C"
 msgstr "C"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C −3: toward red"
-msgstr "C −3 : vers le rouge"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "C −: toward red"
 msgstr "C − : vers le rouge"
 
@@ -1086,16 +1078,8 @@ msgid "C +: toward cyan"
 msgstr "C + : vers le cyan"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "C +3: toward cyan"
-msgstr "C +3 : vers le cyan"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "M"
 msgstr "M"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M −3: toward green"
-msgstr "M −3 : vers le vert"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "M −: toward green"
@@ -1106,16 +1090,8 @@ msgid "M +: toward magenta"
 msgstr "M + : vers le magenta"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "M +3: toward magenta"
-msgstr "M +3 : vers le magenta"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Y"
 msgstr "Y"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y −3: toward blue"
-msgstr "Y −3 : vers le bleu"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Y −: toward blue"
@@ -1126,10 +1102,6 @@ msgid "Y +: toward yellow"
 msgstr "Y + : vers le jaune"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Y +3: toward yellow"
-msgstr "Y +3 : vers le jaune"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Look"
 msgstr "Look"
 
@@ -1138,20 +1110,12 @@ msgid "TEMP"
 msgstr "TEMP"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP −3: toward cool"
-msgstr "TEMP −3 : plus froid"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "TEMP −: toward cool"
 msgstr "TEMP − : plus froid"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "TEMP +: toward warm"
 msgstr "TEMP + : plus chaud"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "TEMP +3: toward warm"
-msgstr "TEMP +3 : plus chaud"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation."
@@ -1238,76 +1202,28 @@ msgid "Chrome"
 msgstr "Chrome"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "CONTRAST"
-msgstr "CONTRASTE"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast −3: toward softer, +15 %"
-msgstr "Contraste −3 : plus doux, +15 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast −: toward softer, +5 %"
 msgstr "Contraste − : plus doux, +5 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast back to 0 %"
-msgstr "Contraste ramené à 0 %"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Contrast +: toward harder, +5 %"
 msgstr "Contraste + : plus dur, +5 %"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Contrast +3: toward harder, +15 %"
-msgstr "Contraste +3 : plus dur, +15 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "VIGNETTE"
-msgstr "VIGNETAGE"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette −3: toward lighter corners, +0.3 EV"
-msgstr "Vignetage −3 : coins plus clairs, +0.3 EV"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette −: toward lighter corners, +0.1 EV"
 msgstr "Vignetage − : coins plus clairs, +0.1 EV"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette back to 0 EV"
-msgstr "Vignetage ramené à 0 EV"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Vignette +: toward darker corners, +0.1 EV"
 msgstr "Vignetage + : coins plus sombres, +0.1 EV"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Vignette +3: toward darker corners, +0.3 EV"
-msgstr "Vignetage +3 : coins plus sombres, +0.3 EV"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "CHROME"
-msgstr "CHROME"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome −3: toward less, +15 %"
-msgstr "Chrome −3 : moins, +15 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome −: toward less, +5 %"
 msgstr "Chrome − : moins, +5 %"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome back to 0 %"
-msgstr "Chrome ramené à 0 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
 msgid "Chrome +: toward more, +5 %"
 msgstr "Chrome + : plus, +5 %"
-
-#: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Chrome +3: toward more, +15 %"
-msgstr "Chrome +3 : plus, +15 %"
 
 #: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
 msgid "Curves"
