@@ -62,7 +62,17 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     lib.invoke_tile_clicked(0, false, false);
     rig.until("P00 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
     rig.shot("column-beside-p00");
-    rig.until("every row's thumbnail", Duration::from_secs(60), || rows(&lib).iter().all(|r| r.kind != 2 || r.picture.size().width > 0));
+    // Rows within a screen of the view hold their pictures; those three screens away and more hold none.
+    let seen = |r: &TreeRow| r.y + r.height > -lib.get_tree_viewport_y() && r.y < -lib.get_tree_viewport_y() + 800.0;
+    // Rows near the column's view hold their pictures, those far below it none; a scroll there swaps them.
+    let held = |title: &str| picture(&lib, title).size().width > 0;
+    rig.until("the thumbnails in view", Duration::from_secs(60), || rows(&lib).iter().filter(|r| r.y < 300.0).all(|r| r.kind != 2 || r.picture.size().width > 0));
+    assert!(!held("P29"), "a row far below the view holds no picture");
+    lib.set_tree_viewport_y(-900.0);
+    rig.until("P29's picture once scrolled near", Duration::from_secs(30), || held("P29"));
+    assert!(!held("P00"), "twin: the row scrolled far away lets its picture go");
+    lib.set_tree_viewport_y(0.0);
+    rig.until("P00's picture back", Duration::from_secs(30), || held("P00"));
     rig.settle();
 
     // A row clicked opens its photo and leaves the column where the hand is; the key centres it.
@@ -78,8 +88,9 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     // The wheel's scroll stays through every notch on the open photo.
     let scrolled = centred + 30.0;
     lib.set_tree_viewport_y(scrolled);
+    rig.until("the rows scrolled near hold their pictures", Duration::from_secs(30), || held("P19") && held("P20"));
     let p20 = picture(&lib, "P20");
-    let p05 = picture(&lib, "P05");
+    let p19 = picture(&lib, "P19");
     for _ in 0..3 {
         w.global::<StoreGlobal>().invoke_step(Field::Exposure.index(), 1);
         rig.pump();
@@ -90,7 +101,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // The edited photo's thumbnail, drawn again, reaches its row; the others keep theirs.
     rig.until("P20's row redrawn", Duration::from_secs(30), || picture(&lib, "P20") != p20);
-    assert!(picture(&lib, "P05") == p05, "twin: a photo not edited keeps its picture");
+    assert!(picture(&lib, "P19") == p19, "twin: a photo not edited keeps its picture");
 
     // Back from the gallery, the column centres on the photo again.
     lib.set_tree_viewport_y(scrolled);
@@ -116,8 +127,9 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // A resize lays the same rows in place and keeps the scroll within the content.
     let model: ModelRc<TreeRow> = lib.get_rows();
-    let before = rows(&lib)[photo_row(&lib, "P05")].clone();
     lib.set_tree_viewport_y(-10.0);
+    rig.until("P05's picture near the top", Duration::from_secs(30), || held("P05"));
+    let before = rows(&lib)[photo_row(&lib, "P05")].clone();
     lib.invoke_tree_resized(320.0, 500.0);
     rig.pump();
     assert!(lib.get_rows() == model, "the rows are relaid, not rebuilt");

@@ -100,6 +100,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let metrics = Self::sidebar_metrics(&w);
         let columns = self.column_layout(which).columns();
+        let near = self.near_view(which);
         let mut guard = self.state.borrow_mut();
         let s = &mut *guard;
         let photos: Vec<bool> = rows.iter().map(|r| columns > 0 && r.kind == 2).collect();
@@ -114,7 +115,7 @@ impl Ctl {
             // `TreeLayers.caption`: a thumbnail is captioned by its stem, a name row by the whole name.
             row.title = stem(&path).into();
             let fingerprint = s.fingerprints.get(&path).cloned();
-            row.picture = fingerprint.as_ref().and_then(|f| s.thumbs.get(f)).unwrap_or_default();
+            row.picture = fingerprint.as_ref().filter(|_| near(frame)).and_then(|f| s.thumbs.get(f)).unwrap_or_default();
             if let Some(f) = flags.get(&path) {
                 (row.medal, row.missing, row.rgb) = *f;
             }
@@ -148,6 +149,14 @@ impl Ctl {
         })
     }
 
+    /// Whether a row lies within a screen of the column's view, the rows that keep their pictures.
+    fn near_view(&self, which: Which) -> impl Fn(&Frame) -> bool + use<> {
+        let top = self.column_top(which);
+        // A column not laid out yet has no view: every row is near until it has one.
+        let height = self.state.borrow().laid(which).size.1;
+        move |f: &Frame| height <= 0.0 || (f.y + f.height > top - height && f.y < top + 2.0 * height)
+    }
+
     /// How far the tree has scrolled, in points from its top.
     fn column_top(&self, which: Which) -> f32 {
         let Some(w) = self.window() else { return 0.0 };
@@ -172,6 +181,7 @@ impl Ctl {
     pub(super) fn fill_tree_thumbnails(&self, redrawn: Option<&str>) {
         for which in [Which::Archive, Which::Projects] {
             let Some(model) = self.column_model(which) else { return };
+            let near = self.near_view(which);
             let changed: Vec<(usize, Image)> = {
                 let mut guard = self.state.borrow_mut();
                 let s = &mut *guard;
@@ -183,6 +193,14 @@ impl Ctl {
                 let mut changed = Vec::new();
                 for (i, (path, held)) in laid.paths.iter().zip(laid.pictures.iter_mut()).enumerate() {
                     let Some(held) = held else { continue };
+                    // A row scrolled far away lets its picture go, and with it the texture Slint kept.
+                    if !laid.frames.get(i).is_some_and(&near) {
+                        if *held {
+                            *held = false;
+                            changed.push((i, Image::default()));
+                        }
+                        continue;
+                    }
                     let Some(fingerprint) = path.as_ref().and_then(|p| fingerprints.get(p)) else { continue };
                     if *held && redrawn != Some(fingerprint.as_str()) {
                         continue;
@@ -330,12 +348,14 @@ impl Ctl {
         lib.on_tree_scrolled(move || {
             if let Some(c) = me.upgrade() {
                 c.pin_column(Which::Archive);
+                c.fill_tree_thumbnails(None);
             }
         });
         let me = Rc::downgrade(self);
         lib.on_project_scrolled(move || {
             if let Some(c) = me.upgrade() {
                 c.pin_column(Which::Projects);
+                c.fill_tree_thumbnails(None);
             }
         });
         let me = Rc::downgrade(self);

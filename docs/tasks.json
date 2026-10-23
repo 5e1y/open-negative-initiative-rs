@@ -1996,8 +1996,8 @@
     "id": 276,
     "type": "performance",
     "title": "The sidebar tree laid like the gallery",
-    "status": "todo",
-    "detail": "The library and projects trees keep every row (each thumbnail row its own texture, about 270 MB at 1,000 photos); send only the rows in view plus a margin, as publish_tiles does, keeping row indices, selection and keyboard walks working."
+    "status": "done",
+    "detail": "The library and projects trees kept every thumbnail row's picture, and Slint the texture of every row once drawn, about 270 MB at 1,000 photos scrolled through. A row now holds its picture only within a screen of the column's view: laying the column gives the rest none, and a scroll (tree-scrolled, project-scrolled) lets the pictures of rows gone far away go and fills those come near. Every row stays in the model, so row indices, selection and keyboard walks are unchanged."
   },
   {
     "id": 277,
