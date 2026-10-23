@@ -3,6 +3,18 @@
 use super::*;
 
 impl Gpu {
+    /// The display kernel's picture of `view` in `kept` when it has `size`, else in a new texture: that
+    /// texture, and the image to show (a new texture's, or the `drawn` corner read back) or why Slint refused it.
+    pub(super) fn encode(&self, kept: Option<&wgpu::Texture>, size: (u32, u32), view: &wgpu::TextureView, k: &Params, drawn: (u32, u32)) -> (wgpu::Texture, Result<Option<Image>, String>) {
+        let reused = kept.filter(|t| (t.width(), t.height()) == size).cloned();
+        let fresh = reused.is_none();
+        let target = reused.unwrap_or_else(|| display::Gpu::target(&self.device, size.0, size.1));
+        let imported = if fresh && !self.reads_back { Image::try_from(target.clone()).map(Some).map_err(|e| e.to_string()) } else { Ok(None) };
+        self.kernel.run(&self.device, &self.queue, view, k, &target);
+        let shown = imported.map(|image| image.or_else(|| self.read_back(&target, drawn)));
+        (target, shown)
+    }
+
     /// The `size` corner of `target` as a picture, on a window that cannot take the GPU's textures;
     /// none where Slint draws the texture itself.
     pub(super) fn read_back(&self, target: &wgpu::Texture, size: (u32, u32)) -> Option<Image> {

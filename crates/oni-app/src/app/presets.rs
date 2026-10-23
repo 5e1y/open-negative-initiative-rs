@@ -134,16 +134,21 @@ impl super::State {
         if self.picks.selection.is_empty() { self.open.clone().into_iter().collect() } else { self.selected() }
     }
 
-    /// `previewedSettings`: the hovered preset laid over the open frame's settings, with the balance
-    /// an automatic one measured when it was measured on these settings.
-    pub(super) fn preset_preview(&self, settings: &PipelineSettings) -> Option<PipelineSettings> {
-        let preset = self.shelf.hovered.and_then(|id| self.shelf.held.iter().find(|p| p.id == id))?;
-        let laid = presets::previewed(Some(preset), settings);
+    /// The open frame's settings as the canvas and the loupe show them, a hovered preset laid over.
+    pub(super) fn live_settings(&self) -> PipelineSettings {
+        self.previewed(self.store.settings().clone())
+    }
+
+    /// `previewedSettings`: the hovered preset laid over `settings`, with the balance an automatic one
+    /// measured when it was measured on these settings; `settings` as they are without one.
+    pub(super) fn previewed(&self, settings: PipelineSettings) -> PipelineSettings {
+        let Some(preset) = self.shelf.hovered.and_then(|id| self.shelf.held.iter().find(|p| p.id == id)) else { return settings };
+        let laid = presets::previewed(Some(preset), &settings);
         match &self.shelf.hover_balance {
-            Some((on, through, outcome)) if self.open.as_ref() == Some(on) && through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
-                Some(balance::applied_outcome(outcome, &laid))
+            Some((on, through, outcome)) if self.open.as_ref() == Some(on) && *through == settings && oni_core::parameters::auto_balances(&preset.parameters) => {
+                balance::applied_outcome(outcome, &laid)
             }
-            _ => Some(laid),
+            _ => laid,
         }
     }
 }

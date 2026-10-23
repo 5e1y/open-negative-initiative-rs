@@ -1,6 +1,7 @@
 //! The render slot: one job in flight and one waiting, a newer one replacing the waiting one.
 
 use super::*;
+use crate::latest::{Latest, Taken};
 
 pub struct Job {
     pub revision: u64,
@@ -54,19 +55,14 @@ const REST: Duration = Duration::from_millis(150);
 /// `Negative.measureSmall`'s scale of the measuring copy.
 pub(crate) const MEASURE_SMALL: f64 = 0.35;
 
-pub(crate) struct Slot {
-    waiting: Option<Job>,
-    closed: bool,
-}
-
 pub struct Worker {
-    slot: Arc<(Mutex<Slot>, Condvar)>,
+    slot: Arc<Latest<Job>>,
     thread: Option<std::thread::JoinHandle<()>>,
 }
 
 impl Worker {
     pub fn new(mut renderer: Box<dyn Renderer>, deliver: impl Fn(Delivery) + Send + 'static) -> Worker {
-        let slot = Arc::new((Mutex::new(Slot { waiting: None, closed: false }), Condvar::new()));
+        let slot: Arc<Latest<Job>> = Arc::new(Latest::new());
         let shared = slot.clone();
         let thread = std::thread::Builder::new()
             .name("render".into())
@@ -80,18 +76,11 @@ impl Worker {
                 // The distributions read last: they hang on the frame and its settings, never on the view.
                 let mut measured: Option<(PathBuf, PipelineSettings, bool)> = None;
                 loop {
-                    let job = {
-                        let (lock, wake) = &*shared;
-                        let mut s = lock.lock().expect("render slot");
-                        while s.waiting.is_none() && !s.closed {
-                            if resting.is_none() {
-                                s = wake.wait(s).expect("render slot");
-                                continue;
-                            }
-                            let (next, waited) = wake.wait_timeout(s, REST).expect("render slot");
-                            s = next;
-                            if waited.timed_out() && s.waiting.is_none() && !s.closed {
-                                drop(s);
+                    let job = loop {
+                        match shared.take(resting.is_some().then_some(REST)) {
+                            Taken::Value(job) => break job,
+                            Taken::Closed => return,
+                            Taken::TimedOut => {
                                 if let Some((path, negative, settings)) = resting.take()
                                     && measured.as_ref() != Some(&(path.clone(), settings.clone(), false))
                                     && let Some(inputs) = renderer.inputs(&negative, &settings, false)
@@ -99,13 +88,8 @@ impl Worker {
                                     measured = Some((path.clone(), settings, false));
                                     deliver(Delivery::Inputs { path, inputs });
                                 }
-                                s = lock.lock().expect("render slot");
                             }
                         }
-                        if s.closed {
-                            return;
-                        }
-                        s.waiting.take().expect("a job")
                     };
                     let started = Instant::now();
                     let done = renderer.resident(&job.negative, &job.settings, job.view.as_ref()).map(|(picture, placed)| Done {
@@ -142,7 +126,7 @@ impl Worker {
                     deliver(Delivery::Render(done.map(|d| Done { before, ..d }).map_err(|e| (job.path.clone(), e))));
                     // At the image's own cadence, and always on the last job of a burst; under the hand on
                     // the small copy, the full one read once the hand has rested.
-                    let quiet = shared.0.lock().map(|s| s.waiting.is_none()).unwrap_or(true);
+                    let quiet = !shared.waiting();
                     if drawn && (quiet || last_counted.elapsed() >= crate::timing::IMAGE_INTERVAL) {
                         last_counted = Instant::now();
                         if let Some(picture) = renderer.counted(&job.negative, &job.settings) {
@@ -166,17 +150,13 @@ impl Worker {
 
     /// Lays `job` in the slot, replacing a job still waiting there.
     pub fn submit(&self, job: Job) {
-        let (lock, wake) = &*self.slot;
-        lock.lock().expect("render slot").waiting = Some(job);
-        wake.notify_one();
+        self.slot.put(job);
     }
 }
 
 impl Drop for Worker {
     fn drop(&mut self) {
-        let (lock, wake) = &*self.slot;
-        lock.lock().expect("render slot").closed = true;
-        wake.notify_one();
+        self.slot.close();
         if let Some(t) = self.thread.take() {
             let _ = t.join();
         }

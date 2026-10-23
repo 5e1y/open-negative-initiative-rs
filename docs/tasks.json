@@ -1968,8 +1968,8 @@
     "id": 272,
     "type": "refactor",
     "title": "One display encode, one latest-value slot, one live-settings builder",
-    "status": "todo",
-    "detail": "The display kernel's target-run-import sequence is written four times (landing, compare, gamut, loupe); three one-in-flight slots exist (the render worker, Edit Together's SLOT, the loupe's busy/again); single frame, loupe and Together build their live settings three ways. One Gpu::encode, one generic slot or Job variants on the render thread, and one State::live_settings(path)."
+    "status": "done",
+    "detail": "Gpu::encode (canvas_gpu.rs) writes the display kernel into a kept texture or a new one and imports or reads it back; the landing, Compare's before, the gamut restripe and the loupe go through it. crate::latest::Latest<T> is the one latest-value slot: the render worker, Edit Together's drawing thread and a new loupe thread (busy/again replaced by the key last asked) take from it. State::live_settings and State::previewed replace the three hovered-preset constructions. Loupe bench: a Sharpening notch reaches the loupe in 8 ms median; grid bench unchanged."
   },
   {
     "id": 273,

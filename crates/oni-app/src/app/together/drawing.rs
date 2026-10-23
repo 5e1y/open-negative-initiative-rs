@@ -2,6 +2,7 @@
 //! laid in rows on one sheet; and a frame decoded into a tile's source.
 
 use super::*;
+use crate::latest::Taken;
 
 /// A frame decoded at half size when it can, reduced to a tile and laid on the GPU.
 pub(super) fn tile_source(engine: &Shared, path: &str) -> Result<Arc<Negative>, String> {
@@ -15,15 +16,7 @@ pub(super) fn tile_source(engine: &Shared, path: &str) -> Result<Arc<Negative>, 
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
 pub(super) fn draw_grids(engine: Shared) {
     loop {
-        let ask = {
-            let mut slot = SLOT.0.lock().expect("together slot");
-            loop {
-                if let Some(ask) = slot.take() {
-                    break ask;
-                }
-                slot = SLOT.1.wait(slot).expect("together slot");
-            }
-        };
+        let Taken::Value(ask) = SLOT.take(None) else { return };
         let started = Instant::now();
         let cells: Vec<usize> = ask.tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
         let present: Vec<Laid> = ask

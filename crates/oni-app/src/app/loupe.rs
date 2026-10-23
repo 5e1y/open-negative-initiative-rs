@@ -3,7 +3,8 @@
 //! for the screen by the canvas's display kernel.
 
 use super::{Ctl, with_shell};
-use crate::display::{self, Params, Screen};
+use crate::display::{Params, Screen};
+use crate::latest::{Latest, Taken};
 use crate::render::Reading;
 use crate::viewport::Viewport;
 use crate::{App, DetailLoupe, PanelState, loupe};
@@ -16,8 +17,8 @@ type Key = (PipelineSettings, Viewport, (f64, f64), f64, u64, Screen);
 
 pub(super) struct Held {
     pub(super) magnification: f64,
-    busy: bool,
-    again: bool,
+    /// The last render asked, which a pulse asking the same does not ask again.
+    asked: Option<Key>,
     shown: Option<Key>,
     /// Renders shown, which a bench counts.
     count: u64,
@@ -27,7 +28,35 @@ pub(super) struct Held {
 
 impl Default for Held {
     fn default() -> Self {
-        Held { magnification: loupe::REST, busy: false, again: false, shown: None, count: 0, texture: None }
+        Held { magnification: loupe::REST, asked: None, shown: None, count: 0, texture: None }
+    }
+}
+
+/// A loupe render: the full frame, its settings, what the render shows and the frame's path.
+struct Ask {
+    full: oni_graph::Source,
+    settings: PipelineSettings,
+    key: Key,
+    path: String,
+}
+
+/// The latest render asked, which the loupe's thread takes; a newer one replaces it unseen.
+static SLOT: Latest<Ask> = Latest::new();
+static RENDERING: std::sync::Once = std::sync::Once::new();
+
+/// The loupe's thread: the latest region asked, rendered, then shown if its frame is still open.
+fn render_loupes(engine: crate::render::Shared) {
+    while let Taken::Value(Ask { full, settings, key, path }) = SLOT.take(None) {
+        let (_, viewport, drawable, m, _, _) = key;
+        let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
+        with_shell(move |c| {
+            let open = c.state.borrow().open_path() == Some(path.as_str());
+            match made {
+                Ok(Some(source)) if open => c.show_loupe(&source, m, key),
+                Ok(_) => {}
+                Err(e) => crate::timing::line(&format!("loupe not rendered: {e}")),
+            }
+        });
     }
 }
 
@@ -70,10 +99,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
-            let mut settings = s.store.settings().clone();
-            if let Some(previewed) = s.preset_preview(&settings) {
-                settings = previewed;
-            }
+            let settings = s.live_settings();
             match full {
                 None => {
                     if s.shown_loupe_cleared() {
@@ -89,14 +115,11 @@ impl Ctl {
                 }
                 Some(full) => {
                     let key: Key = (settings.clone(), s.viewport, drawable, s.loupe.magnification, full.id(), s.screen);
-                    if s.loupe.shown.as_ref() == Some(&key) {
-                        None
-                    } else if s.loupe.busy {
-                        s.loupe.again = true;
+                    if s.loupe.shown.as_ref() == Some(&key) || s.loupe.asked.as_ref() == Some(&key) {
                         None
                     } else {
-                        s.loupe.busy = true;
-                        Some((full, settings, key, path))
+                        s.loupe.asked = Some(key.clone());
+                        Some(Ask { full, settings, key, path })
                     }
                 }
             }
@@ -104,28 +127,12 @@ impl Ctl {
         if let Some((path, reading)) = build {
             self.build_full(path, reading);
         }
-        let Some((full, settings, key, path)) = job else { return };
+        let Some(ask) = job else { return };
         let engine = self.engine.clone();
-        std::thread::spawn(move || {
-            let (_, viewport, drawable, m, _, _) = key;
-            let made = engine.lock().and_then(|mut e| e.loupe(&full, &settings, &viewport, drawable, m)).map(|laid| laid.map(|(source, _)| source));
-            with_shell(move |c| {
-                let again = {
-                    let mut s = c.state.borrow_mut();
-                    s.loupe.busy = false;
-                    std::mem::take(&mut s.loupe.again)
-                };
-                let open = c.state.borrow().open_path() == Some(path.as_str());
-                match made {
-                    Ok(Some(source)) if open => c.show_loupe(&source, m, key),
-                    Ok(_) => {}
-                    Err(e) => crate::timing::line(&format!("loupe not rendered: {e}")),
-                }
-                if again {
-                    c.request_loupe();
-                }
-            });
+        RENDERING.call_once(move || {
+            std::thread::Builder::new().name("loupe".into()).spawn(move || render_loupes(engine)).expect("loupe thread");
         });
+        SLOT.put(ask);
     }
 
     /// The region encoded into a texture of its own, which the band shows.
@@ -138,19 +145,18 @@ impl Ctl {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
             let g = &s.gpu;
-            let kept = s.loupe.texture.take().filter(|t| (t.width(), t.height()) == (w, h));
-            let fresh = kept.is_none();
-            let target = kept.unwrap_or_else(|| display::Gpu::target(&g.device, w, h));
-            g.kernel.run(&g.device, &g.queue, view, &Params::new(key.5, w, h, 0), &target);
+            let (target, shown) = g.encode(s.loupe.texture.as_ref(), (w, h), view, &Params::new(key.5, w, h, 0), (w, h));
             // A texture the band refuses is not kept, so the next render imports another.
-            let (image, keep) = match g.read_back(&target, (w, h)) {
-                Some(image) => (Some(image), true),
-                None if fresh => Image::try_from(target.clone()).map_or((Some(Image::default()), false), |i| (Some(i), true)),
-                None => (None, true),
+            let image = match shown {
+                Ok(image) => {
+                    s.loupe.texture = Some(target);
+                    image
+                }
+                Err(_) => {
+                    s.loupe.texture = None;
+                    Some(Image::default())
+                }
             };
-            if keep {
-                s.loupe.texture = Some(target);
-            }
             image
         };
         let scale = f64::from(win.window().scale_factor());
@@ -171,6 +177,7 @@ impl super::State {
     /// Forgets the loupe's picture once its frame is gone; true when there was one to clear.
     fn shown_loupe_cleared(&mut self) -> bool {
         self.loupe.texture = None;
+        self.loupe.asked = None;
         self.loupe.shown.take().is_some()
     }
 

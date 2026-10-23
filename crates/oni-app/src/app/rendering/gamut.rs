@@ -38,8 +38,7 @@ impl Ctl {
             {
                 let e = source.extent();
                 let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.placed, e.w, canvas);
-                g.kernel.run(&g.device, &g.queue, view, &k, target);
-                frame = g.read_back(target, (e.w, e.h));
+                frame = g.encode(Some(target), (target.width(), target.height()), view, &k, (e.w, e.h)).1.ok().flatten();
             }
             let mut read = None;
             if let Some((target, before)) = &g.before
@@ -47,8 +46,7 @@ impl Ctl {
             {
                 let e = before.extent();
                 let k = zebra(&s, Params::new(screen, e.w, e.h, g.seed), s.compare.before_placed, e.w, canvas);
-                g.kernel.run(&g.device, &g.queue, view, &k, target);
-                read = g.read_back(target, (e.w, e.h));
+                read = g.encode(Some(target), (target.width(), target.height()), view, &k, (e.w, e.h)).1.ok().flatten();
             }
             (frame, read)
         };

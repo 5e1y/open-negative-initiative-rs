@@ -5,7 +5,7 @@ use super::*;
 use crate::render::Laid;
 use oni_settings::PipelineSettings;
 use std::sync::atomic::AtomicUsize;
-use std::sync::{Condvar, LazyLock, Mutex};
+use crate::latest::Latest;
 
 #[path = "together/sheet.rs"]
 mod sheet;
@@ -68,7 +68,7 @@ struct Ask {
 }
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
-static SLOT: LazyLock<(Mutex<Option<Ask>>, Condvar)> = LazyLock::new(|| (Mutex::new(None), Condvar::new()));
+static SLOT: Latest<Ask> = Latest::new();
 static DRAWING: std::sync::Once = std::sync::Once::new();
 
 impl Ctl {
@@ -256,8 +256,7 @@ impl Ctl {
         // A hovered preset previews on every frame, as a click applies it to the whole selection.
         let (lead, live) = {
             let s = self.state.borrow();
-            let shown = |settings: PipelineSettings| s.preset_preview(&settings).unwrap_or(settings);
-            (shown(lead), live.into_iter().map(|(path, settings)| (path, shown(settings))).collect::<HashMap<_, _>>())
+            (s.previewed(lead), live.into_iter().map(|(path, settings)| (path, s.previewed(settings))).collect::<HashMap<_, _>>())
         };
         let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
         let hovered = self.state.borrow().shelf.hovered;
@@ -316,8 +315,7 @@ impl Ctl {
         DRAWING.call_once(move || {
             std::thread::Builder::new().name("together".into()).spawn(move || draw_grids(engine)).expect("together thread");
         });
-        *SLOT.0.lock().expect("together slot") = Some(ask);
-        SLOT.1.notify_one();
+        SLOT.put(ask);
     }
 
     /// The frames together, their sources decoded and each grid's latency, for the bench.

@@ -26,10 +26,7 @@ impl Ctl {
                 return;
             }
             // `NegativeView.live`: while framing the crop is removed, so a crop drag keeps the pixels.
-            let mut live = s.store.settings().clone();
-            if let Some(previewed) = s.preset_preview(&live) {
-                live = previewed;
-            }
+            let mut live = s.live_settings();
             if cropping {
                 live.geometry = live.geometry.without_crop();
             }

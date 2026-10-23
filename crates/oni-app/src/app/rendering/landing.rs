@@ -158,33 +158,21 @@ impl Ctl {
             // clipped, so a pan or a pinch rewrites texels only. One Slint refuses is not kept, so the next
             // render tries again rather than drawing nowhere.
             let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
-            let (target, imported) = match &g.target {
-                Some(t) if t.width() == bw && t.height() == bh => (t.clone(), None),
-                _ if g.reads_back => {
-                    let t = display::Gpu::target(&g.device, bw, bh);
-                    g.target = Some(t.clone());
-                    (t, None)
-                }
-                _ => {
-                    let t = display::Gpu::target(&g.device, bw, bh);
-                    match Image::try_from(t.clone()) {
-                        Ok(image) => {
-                            g.target = Some(t.clone());
-                            (t, Some(image))
-                        }
-                        Err(e) => {
-                            refused = Some(e.to_string());
-                            (t, None)
-                        }
-                    }
-                }
-            };
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
             let k = zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas);
             let g = &mut s.gpu;
-            g.kernel.run(&g.device, &g.queue, &source, &k, &target);
-            let imported = imported.or_else(|| g.read_back(&target, (wd, ht)));
+            let (target, encoded) = g.encode(g.target.as_ref(), (bw, bh), &source, &k, (wd, ht));
+            let imported = match encoded {
+                Ok(image) => {
+                    g.target = Some(target);
+                    image
+                }
+                Err(e) => {
+                    refused = Some(e);
+                    None
+                }
+            };
             g.current = Some(picture);
             // The histogram describes the whole picture at one size, never the zoom's part of it.
             if counted.is_some() {
