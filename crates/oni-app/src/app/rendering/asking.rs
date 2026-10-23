@@ -13,7 +13,7 @@ impl Ctl {
         }
         let size = self.canvas_size();
         let cropping = self.cropping();
-        let (job, build, heal) = {
+        let (job, wants_full, heal) = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
             let revision = s.store.revision();
@@ -54,55 +54,65 @@ impl Ctl {
             } else {
                 (Kind::View, Instant::now())
             };
-            // Full resolution is built as the photo opens; every render reads it once built.
-            let whole = render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed);
-            let build = (whole && full.is_none() && s.building_full.is_none() && !s.full_failed.contains(&path)).then(|| {
-                s.building_full = Some(path.clone());
-                (path.clone(), render::Reading::of(s.store.settings()))
-            });
             let view = size.map(|size| View { viewport: s.viewport, size, full: full.clone(), coarse });
-            // The cache is purged at every quit, so each correction's patch is generated as its frame opens;
-            // a full resolution being built is waited for, its landing asking again, never decoded twice.
-            let building = build.is_some() || s.building_full.as_deref() == Some(path.as_str());
-            let heal = (!building && !s.dust.healing.contains(&path) && s.unhealed()).then(|| {
+            // The cache is purged at every quit, so each correction's patch is generated as its frame opens,
+            // on the full resolution, built first when it is not; its landing asks again.
+            let unhealed = !s.dust.healing.contains(&path) && s.unhealed();
+            let heal = full.clone().filter(|_| unhealed).map(|full| {
                 s.dust.healing.insert(path.clone());
-                (path.clone(), s.store.settings().clone(), full.clone())
+                (path.clone(), s.store.settings().clone(), full)
             });
+            // On the Settings' choice the full resolution is built as the photo opens; every render reads it once built.
+            let wants_full = full.is_none() && (unhealed || render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed));
             let reference = s.compare.split.map(|_| oni_core::compare::reference(&live));
             // A notch is the hand at work: the input histograms read the small copy until it stops.
             let held = kind == Kind::Notch;
-            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, build, heal)
+            (Job { revision, path: PathBuf::from(path), negative, settings: live, kind, asked, view, reference, held }, wants_full, heal)
         };
         self.worker.submit(job);
         self.request_loupe();
-        let pending = build.is_some() || heal.is_some();
-        if let Some((path, converted)) = build {
-            self.build_full(path, converted);
+        if wants_full {
+            self.ensure_full();
         }
         if let Some((path, settings, full)) = heal {
             self.heal(path, settings, full);
-        }
-        if pending {
             self.publish_dedust();
         }
     }
 
+    /// The open frame's full resolution once built; else its build started off this thread, unless one
+    /// runs, failed, or the frame's opening decode has not landed. The build's landing asks a render again.
+    pub(in crate::app) fn ensure_full(self: &Rc<Self>) -> Option<oni_graph::Source> {
+        let asked = {
+            let mut s = self.state.borrow_mut();
+            let path = s.open_path()?.to_string();
+            if let Some((_, full)) = s.full.as_ref().filter(|(p, _)| *p == path) {
+                return Some(full.clone());
+            }
+            let decoded = s.negative.as_ref().is_some_and(|(p, _)| *p == path);
+            if !decoded || s.building_full.is_some() || s.full_failed.contains(&path) {
+                return None;
+            }
+            s.building_full = Some(path.clone());
+            (path, render::Reading::of(s.store.settings()))
+        };
+        self.build_full(asked.0, asked.1);
+        self.publish_dedust();
+        None
+    }
+
     /// `ensureGenerated` for each correction of the open frame that has no patch yet, one after the
     /// other on the full-resolution frame, so each source holds the patches before it healed. `full`
-    /// is the frame's own when built, `fullIfReady`; else it is decoded here and handed back.
-    pub(in crate::app) fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings, full: Option<oni_graph::Source>) {
+    /// is the frame's own, `fullIfReady`.
+    fn heal(self: &Rc<Self>, path: String, settings: oni_settings::PipelineSettings, full: oni_graph::Source) {
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             crate::decode_gate::in_background();
             let started = Instant::now();
             let caches = crate::patches::caches();
             let lacking = |c: &oni_settings::frame::Correction| !c.stroke.is_empty() && !crate::patches::file(&caches, c.id).exists();
-            let (mut made, mut built) = (Vec::new(), None);
+            let mut made = Vec::new();
             let failed = (|| -> Result<(), String> {
-                let (full, decoded) = reused(full, || engine.full(render::decode_full(Path::new(&path), render::Reading::of(&settings))?))?;
-                if decoded {
-                    built = Some(full.clone());
-                }
                 // The engine is taken per correction, so the canvas's renders pass between two.
                 for c in settings.corrections.iter().filter(|c| lacking(c)) {
                     let (region, size) = engine.lock()?.search_region(&full, &settings, c)?;
@@ -122,7 +132,7 @@ impl Ctl {
                 Ok(())
             })()
             .err();
-            let (took, decoded_here) = (started.elapsed(), built.is_some());
+            let took = started.elapsed();
             // A correction left without its patch by a failure is not generated again on every render.
             let unhealable: Vec<oni_settings::id::Id> =
                 if failed.is_some() { settings.corrections.iter().filter(|c| lacking(c)).map(|c| c.id).collect() } else { Vec::new() };
@@ -140,10 +150,6 @@ impl Ctl {
                         }
                         made = kept;
                     }
-                    let current = s.reading.as_ref() == Some(&render::Reading::of(&settings));
-                    if let Some(full) = built.filter(|_| open && current && s.full.is_none()) {
-                        s.full = Some((path.clone(), full));
-                    }
                     for &(id, fell_back, offset) in &made {
                         s.dust.patched.insert(id);
                         if open {
@@ -155,8 +161,7 @@ impl Ctl {
                     }
                 }
                 if !made.is_empty() {
-                    let from = if decoded_here { "decoded for them" } else { "the frame's own" };
-                    timing::line(&format!("{}: {} dust patches generated in {:.0} ms, full resolution {from}", crate::anonymity::token(&path), made.len(), took.as_secs_f64() * 1000.0));
+                    timing::line(&format!("{}: {} dust patches generated in {:.0} ms", crate::anonymity::token(&path), made.len(), took.as_secs_f64() * 1000.0));
                 }
                 // Strokes painted meanwhile are generated next, on the full resolution now kept.
                 let more = open && c.state.borrow_mut().unhealed();
@@ -192,7 +197,7 @@ impl Ctl {
 
     /// The open frame decoded again at full resolution off this thread, then shown where the view
     /// wants it; one decoded under a reading the frame has since left is dropped.
-    pub(in crate::app) fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
+    fn build_full(self: &Rc<Self>, path: String, converted: render::Reading) {
         let engine = self.engine.clone();
         let ticket = crate::decode_gate::FULL.ask();
         std::thread::spawn(move || {
@@ -234,14 +239,6 @@ impl Ctl {
     }
 }
 
-/// The source kept when there is one, else the one `build` makes, and whether it had to.
-fn reused<T>(kept: Option<T>, build: impl FnOnce() -> Result<T, String>) -> Result<(T, bool), String> {
-    match kept {
-        Some(t) => Ok((t, false)),
-        None => build().map(|t| (t, true)),
-    }
-}
-
 type Made = (oni_settings::id::Id, bool, (f64, f64));
 
 /// The patches made for corrections the frame still holds, and the ids of those removed meanwhile.
@@ -255,19 +252,6 @@ mod tests {
     use super::*;
     use oni_settings::frame::Correction;
     use oni_settings::id::Id;
-
-    #[test]
-    fn a_kept_full_resolution_is_reused_and_none_is_decoded() {
-        let decodes = std::cell::Cell::new(0);
-        let decode = || {
-            decodes.set(decodes.get() + 1);
-            Ok(7)
-        };
-        assert_eq!(reused(Some(3), decode), Ok((3, false)));
-        assert_eq!(decodes.get(), 0, "a frame's own full resolution decodes nothing");
-        assert_eq!(reused(None, decode), Ok((7, true)), "twin: none kept decodes one");
-        assert_eq!(decodes.get(), 1);
-    }
 
     #[test]
     fn a_patch_made_for_a_correction_removed_meanwhile_does_not_land() {

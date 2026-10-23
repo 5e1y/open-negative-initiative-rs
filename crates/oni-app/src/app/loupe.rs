@@ -5,7 +5,6 @@
 use super::{Ctl, with_shell};
 use crate::display::{Params, Screen};
 use crate::latest::{Latest, Taken};
-use crate::render::Reading;
 use crate::viewport::Viewport;
 use crate::{App, DetailLoupe, PanelState, loupe};
 use oni_settings::PipelineSettings;
@@ -94,40 +93,23 @@ impl Ctl {
         }
         let scale = f64::from(w.window().scale_factor());
         let drawable = (f64::from(band.get_band_width()) * scale, f64::from(band.get_band_height()) * scale);
-        let mut build = None;
-        let job = {
+        let Some(full) = self.ensure_full() else {
+            if self.state.borrow_mut().shown_loupe_cleared() {
+                band.set_source(Image::default());
+            }
+            return;
+        };
+        let ask = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.open_path().map(str::to_string) else { return };
-            let full = s.full.as_ref().filter(|(p, _)| *p == path).map(|(_, f)| f.clone());
             let settings = s.live_settings();
-            match full {
-                None => {
-                    if s.shown_loupe_cleared() {
-                        band.set_source(Image::default());
-                    }
-                    let decoded = s.negative.as_ref().is_some_and(|(p, _)| *p == path);
-                    // A frame whose decode failed is not asked again on every pulse.
-                    if decoded && s.building_full.as_deref() != Some(path.as_str()) && !s.full_failed.contains(&path) {
-                        s.building_full = Some(path.clone());
-                        build = Some((path, Reading::of(s.store.settings())));
-                    }
-                    None
-                }
-                Some(full) => {
-                    let key: Key = (settings.clone(), s.viewport, drawable, s.loupe.magnification, full.id(), s.screen);
-                    if s.loupe.shown.as_ref() == Some(&key) || s.loupe.asked.as_ref() == Some(&key) {
-                        None
-                    } else {
-                        s.loupe.asked = Some(key.clone());
-                        Some(Ask { full, settings, key, path })
-                    }
-                }
+            let key: Key = (settings.clone(), s.viewport, drawable, s.loupe.magnification, full.id(), s.screen);
+            if s.loupe.shown.as_ref() == Some(&key) || s.loupe.asked.as_ref() == Some(&key) {
+                return;
             }
+            s.loupe.asked = Some(key.clone());
+            Ask { full, settings, key, path }
         };
-        if let Some((path, reading)) = build {
-            self.build_full(path, reading);
-        }
-        let Some(ask) = job else { return };
         let engine = self.engine.clone();
         RENDERING.call_once(move || {
             std::thread::Builder::new().name("loupe".into()).spawn(move || render_loupes(engine)).expect("loupe thread");

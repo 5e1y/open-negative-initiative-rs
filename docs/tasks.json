@@ -1975,8 +1975,8 @@
     "id": 273,
     "type": "refactor",
     "title": "Full resolution built in one place",
-    "status": "todo",
-    "detail": "asking.rs, the loupe, ready_full, opening and heal each build or decode the full frame; ready_full's dwell rule is contradicted by the build on first render, and heal decodes outside decode_gate::FULL. One ensure_full() that heal goes through, ready_full/ahead/DWELL deleted."
+    "status": "done",
+    "detail": "Ctl::ensure_full is the one place a full-resolution build starts (decode_gate::FULL, one at a time, never before the opening decode, never again after a failure): the render (Settings' whole decode, or corrections to heal), the Details loupe and ready_full go through it. The heal no longer decodes a full frame of its own outside the gate: it waits for the build, whose landing asks the render again, and reads that. ready_full and its one-second dwell stay: with RAWs opened at half size (#287) it is what brings a zoom its full resolution. De-dust bench: one decode, one patch in 518 ms."
   },
   {
     "id": 274,

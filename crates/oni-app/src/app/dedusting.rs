@@ -207,22 +207,13 @@ impl Ctl {
         if w.global::<App>().get_gallery() || self.together_shown() {
             return;
         }
-        let painting = self.painting();
-        let asked = {
-            let mut s = self.state.borrow_mut();
-            let Some(path) = s.open_path().map(str::to_string) else { return };
-            let built = s.full.as_ref().is_some_and(|(p, _)| *p == path);
-            if built || s.requests.rendered == 0 || s.building_full.is_some() || s.full_failed.contains(&path) {
-                return;
-            }
-            if !ahead(painting, s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0) {
-                return;
-            }
-            s.building_full = Some(path.clone());
-            (path, render::Reading::of(s.store.settings()))
+        let due = {
+            let s = self.state.borrow();
+            s.requests.rendered != 0 && ahead(self.painting(), s.opened_at.elapsed(), s.hands.load(Ordering::Relaxed) > 0)
         };
-        self.build_full(asked.0, asked.1);
-        self.publish_dedust();
+        if due {
+            self.ensure_full();
+        }
     }
 
     /// The brush slider, held as `DSSlider` holds a value: a double press resets it to the
