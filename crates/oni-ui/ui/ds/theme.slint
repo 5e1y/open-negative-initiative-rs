@@ -105,6 +105,7 @@ export global Type {
     out property <string> family: DS.typo-label-family;
     out property <string> brand-family: DS.typo-box-title-family;
     out property <int> regular: DS.typo-label-weight;
+    out property <int> medium: 500;
     out property <int> strong: 600;
     out property <length> label: DS.typo-label-size;
     out property <length> value: DS.typo-value-size;
@@ -273,6 +274,10 @@ export global TipStyle {
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
+    // A help mark's card: a 4:3 clip over its note.
+    out property <length> card-width: 260px;
+    out property <length> card-padding: Space.s;
+    out property <length> card-radius: Radius.badge;
 }
 
 export global PlotStyle {

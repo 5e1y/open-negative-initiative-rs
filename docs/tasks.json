@@ -2117,5 +2117,12 @@
     "title": "The Scanner face's keypad rows become sliders with step keys",
     "status": "done",
     "detail": "Owner's call. On the Scanner face's Color tab, D, C, M, Y, TEMP, Contrast, Vignette and Chrome are each a StepSlider (ds/keypad.slint): the title and its readout above, a rail running from the minus band colour to the plus one in whole steps between the letter's or the effect's range, a mark at rest, and a small keycap either side for one step, three with Shift; a double click on the rail or the title rests it. A slide holds the store (Lab.hold), so it is one step to undo; each step still goes through Link::Step and StepEffect, as the phone's keys do. Rust lays every slider's steps, range and readout (app/lab/sliders.rs, with its test and twin); lab.rs's tests move to lab/tests.rs under the 400-line ceiling."
+  },
+  {
+    "id": 294,
+    "type": "feature",
+    "title": "Every help mark's note is a card with a place for its clip",
+    "status": "done",
+    "detail": "Owner's call. A \"?\" (HelpMark, Tips.note) shows a card instead of a line: a 4:3 place above, empty on the skeleton ground until its GIF is made (Tip.clip), then the note in medium weight, white. Tooltips stay lines. TipStyle gains card-width, card-padding and card-radius, Type gains medium (500). The catalogue check shoots the card and checks a tooltip stays a line (twin)."
   }
 ]

@@ -26,6 +26,9 @@ export global Tip {
     in-out property <bool> shown;
     // A help mark's note shows at once, as `dsHelpBubble` does; a tooltip waits the system's delay.
     in-out property <bool> at-once;
+    // A help mark's note is a card: its clip above, 4:3, then the note; a tooltip is a line of text.
+    in-out property <bool> card;
+    in-out property <image> clip;
 }
 
 export global Tones {
@@ -256,13 +259,16 @@ export component AppWindow inherits Window {
 export component TipLayer inherits Rectangle {
     in property <length> room;
     in property <length> room-height;
-    property <TipBox> box: Tips.place(Tip.x, Tip.y, tip-text.width + 2 * TipStyle.padding-x, tip-text.preferred-height + 2 * TipStyle.padding-y, root.room, root.room-height);
+    property <TipBox> box: Tip.card
+        ? Tips.place(Tip.x, Tip.y, TipStyle.card-width, card.preferred-height, root.room, root.room-height)
+        : Tips.place(Tip.x, Tip.y, tip-text.width + 2 * TipStyle.padding-x, tip-text.preferred-height + 2 * TipStyle.padding-y, root.room, root.room-height);
     x: root.box.x;
     y: root.box.y;
     width: root.box.width;
     height: root.box.height;
     background: Colour.tip;
-    border-radius: TipStyle.radius;
+    border-radius: Tip.card ? TipStyle.card-radius : TipStyle.radius;
+    clip: Tip.card;
     border-width: Stroke.hairline;
     border-color: Colour.separator;
     // Shown after the delay by a timer: an animated opacity redraws the window for the whole delay.
@@ -276,10 +282,31 @@ export component TipLayer inherits Rectangle {
         triggered => { root.ready = true; }
     }
     tip-text := Label {
+        visible: !Tip.card;
         role: TextRole.caption;
         text: Tip.text;
         wrap: word-wrap;
         width: min(self.preferred-width, TipStyle.max-width);
+    }
+    card := VerticalLayout {
+        visible: Tip.card;
+        width: TipStyle.card-width;
+        padding: TipStyle.card-padding;
+        spacing: TipStyle.card-padding;
+        // The clip's place, empty until its GIF is made.
+        Picture {
+            height: (TipStyle.card-width - 2 * TipStyle.card-padding) * 3 / 4;
+            ground: Ground.skeleton;
+            rounded: true;
+            source: Tip.clip;
+        }
+        Label {
+            role: TextRole.caption;
+            font-weight: Type.medium;
+            tone: Tone.primary;
+            text: Tip.card ? Tip.text : "";
+            wrap: word-wrap;
+        }
     }
 }
 
@@ -304,6 +331,7 @@ export global Tips {
     public function hover(over: bool, text: string, x: length, y: length) {
         if (over && text != "") {
             Tip.at-once = false;
+            Tip.card = false;
             Tip.text = text;
             Tip.x = x;
             Tip.y = y + TipStyle.offset;
@@ -316,5 +344,6 @@ export global Tips {
     public function note(over: bool, text: string, x: length, y: length) {
         self.hover(over, text, x, y);
         Tip.at-once = over;
+        Tip.card = over;
     }
 }
