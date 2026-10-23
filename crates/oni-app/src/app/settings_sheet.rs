@@ -26,7 +26,7 @@ impl Ctl {
     }
 
     pub(super) fn open_settings(&self) {
-        self.publish_settings();
+        self.show_phones();
         if let Some(w) = self.window() {
             w.global::<AppSettings>().set_shown(true);
         }
@@ -46,5 +46,10 @@ impl Ctl {
         s.set_full_decode(crate::render::FULL_DECODE.load(Ordering::Relaxed));
         s.set_frontier_look(self.frontier_look_line().into());
         s.set_frontier_hand(oni_pipeline::frontier_table::current().is_some());
+        s.set_screen_gamut(self.state.borrow().screen_gamut);
+        s.set_version(format!("Version {}", crate::updates::version()).into());
+        let pairing = w.global::<crate::Pairing>();
+        s.set_phones(pairing.get_phones());
+        s.set_can_forget(pairing.get_can_forget());
     }
 }

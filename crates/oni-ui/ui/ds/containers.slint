@@ -35,6 +35,8 @@ export component Section inherits VerticalLayout {
     in property <int> block: -1;
     in property <bool> modified;
     in property <bool> separated: true;
+    // A page of settings lays its sections open, with no key to fold them.
+    in property <bool> foldable: true;
     in property <length> inset: SectionStyle.inset;
     in property <length> before: SectionStyle.before;
     in-out property <bool> folded;
@@ -55,7 +57,7 @@ export component Section inherits VerticalLayout {
             Label {
                 role: TextRole.section;
                 text: root.title;
-                TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
+                if root.foldable: TouchArea { clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); } }
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
@@ -75,7 +77,7 @@ export component Section inherits VerticalLayout {
                 enabled: root.modified;
                 clicked => { root.reset(root.block); }
             }
-            Button {
+            if root.foldable: Button {
                 size: ButtonSize.small;
                 has-icon: true;
                 width: self.height;

@@ -34,6 +34,7 @@ impl Ctl {
             Act::ScreenGamut => {
                 self.toggle_screen_gamut();
                 self.gamut_kept();
+                self.publish_settings();
             }
             Act::BiggerBrush | Act::SmallerBrush if self.painting() => {
                 // `EditorScene.biggerBrush`: four pixels a key, inside the brush's range.

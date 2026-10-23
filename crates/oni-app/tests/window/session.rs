@@ -45,6 +45,13 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
     rig.pump();
     let sheet = first.window.global::<AppSettings>();
     assert!(sheet.get_shown() && first.window.get_sheet_shown());
+    // Each section's page, which the shots show.
+    for (i, name) in ["general", "editor", "frontier", "phone", "about"].iter().enumerate() {
+        sheet.set_section(i as i32);
+        rig.pump();
+        rig.shot(&format!("settings-{name}"));
+    }
+    sheet.set_section(1);
     assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (false, false), "silent and fitted by default");
     sheet.invoke_flip(oni_app::Act::ToggleSound);
     sheet.invoke_flip(oni_app::Act::KeepZoom);

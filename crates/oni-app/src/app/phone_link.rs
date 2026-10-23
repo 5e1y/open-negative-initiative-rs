@@ -50,6 +50,7 @@ impl Ctl {
         let p = w.global::<Pairing>();
         p.set_phones(line.into());
         p.set_can_forget(paired > 0);
+        self.publish_settings();
     }
 
     /// Forget Phones: every paired phone cut and forgotten; the sheet's code still pairs a new one.

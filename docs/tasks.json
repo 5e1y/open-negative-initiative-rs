@@ -2096,5 +2096,12 @@
     "title": "Sheets and the mode as Slint enums, one Ask dialog, one RowTree",
     "status": "todo",
     "detail": "Eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites; six copies of Swift's DSDialogRequest and two near-identical trees (archive, projects) remain. An enum for the sheet and the mode, one Ask dialog, one RowTree."
+  },
+  {
+    "id": 291,
+    "type": "feature",
+    "title": "A Settings window with sections",
+    "status": "done",
+    "detail": "The Settings sheet lists its sections on a rail, as the systems' settings windows do, and shows one page at a time: General (key clicks), Editor (keep the zoom, show what the screen cannot show, decode RAWs whole), Frontier look (export, use a file, measured), Phone (pair, forget, the phones paired or connected) and About (version, check for updates, what's new, welcome, report a problem, console). A key that opens a sheet of its own closes Settings first, so two never stack; the section shown stays while the app runs. Section gains foldable, false on these pages. SheetStyle gains settings-width, settings-rail and settings-height. The session check shoots each page."
   }
 ]

@@ -1,30 +1,60 @@
-// The Settings sheet the header's gear opens: the app's own choices, kept in the preferences file.
+// The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
+// preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
+import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section, ListRow, VerticalRule, Label, Tone, TextRole } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
+    // The section shown, kept while the app runs so the sheet opens where it was left.
+    in-out property <int> section;
     in property <bool> clicks;
     in property <bool> keep-zoom;
     in property <bool> full-decode;
+    in property <bool> screen-gamut;
     // The Frontier look in use, and whether it is the hand's file rather than the measured table.
     in property <string> frontier-look;
     in property <bool> frontier-hand;
-    // A choice by its preference's action: "keep-zoom", "toggle-sound" or a Frontier key's.
+    // The phones connected or paired, empty with none, and whether any can be forgotten.
+    in property <string> phones;
+    in property <bool> can-forget;
+    in property <string> version;
     callback flip(Act);
     callback close();
 }
 
-export component SettingsSheet inherits Sheet {
-    title: "Settings";
-    // Wide enough for its longest toggle and its three Frontier keys on one line each.
-    card-width: SheetStyle.notice-width;
-    dismissed => { AppSettings.close(); }
+// A gesture that opens a sheet of its own closes this one first, so the two never stack.
+component SheetKey inherits Button {
+    in property <Act> act;
+    fills: false;
+    clicked => {
+        AppSettings.close();
+        AppSettings.flip(root.act);
+    }
+}
+
+component GeneralPage inherits VerticalLayout {
     Section {
         inset: SectionStyle.flush;
-        before: SectionStyle.sheet-before;
-        title: "Rendering";
+        foldable: false;
+        before: SectionStyle.flush;
         separated: false;
+        title: "Sound";
+        ToggleRow {
+            label: "Key clicks";
+            on: AppSettings.clicks;
+            toggled => { AppSettings.flip(Act.toggle-sound); }
+        }
+        Note { text: "A click as each key is pressed and released."; }
+    }
+}
+
+component EditorPage inherits VerticalLayout {
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.flush;
+        separated: false;
+        title: "Viewing";
         ToggleRow {
             label: "Keep the zoom from one photo to the next";
             on: AppSettings.keep-zoom;
@@ -32,15 +62,32 @@ export component SettingsSheet inherits Sheet {
         }
         Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
         ToggleRow {
+            label: "Show what this screen cannot show";
+            on: AppSettings.screen-gamut;
+            toggled => { AppSettings.flip(Act.screen-gamut); }
+        }
+        Note { text: "Stripes over the colours this screen cannot show."; }
+    }
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.sheet-before;
+        title: "RAW files";
+        ToggleRow {
             label: "Decode RAW files at full resolution";
             on: AppSettings.full-decode;
             toggled => { AppSettings.flip(Act.full-decode); }
         }
         Note { text: "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."; }
     }
+}
+
+component FrontierPage inherits VerticalLayout {
     Section {
         inset: SectionStyle.flush;
-        before: SectionStyle.sheet-before;
+        foldable: false;
+        before: SectionStyle.flush;
+        separated: false;
         title: "Frontier look";
         Note { text: AppSettings.frontier-look; }
         Note { text: "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."; }
@@ -50,14 +97,75 @@ export component SettingsSheet inherits Sheet {
             Button { text: "MEASURED"; enabled: AppSettings.frontier-hand; clicked => { AppSettings.flip(Act.frontier-measured); } }
         }
     }
+}
+
+component PhonePage inherits VerticalLayout {
     Section {
         inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.flush;
+        separated: false;
+        title: "Phone remote";
+        Note { text: "The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."; }
+        if AppSettings.phones != "": Note { text: AppSettings.phones; }
+        ButtonGroup {
+            SheetKey { text: "PAIR PHONE…"; act: Act.pair-phone; }
+            Button { text: "FORGET PHONES"; fills: false; enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
+        }
+    }
+}
+
+component AboutPage inherits VerticalLayout {
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.flush;
+        separated: false;
+        title: "Open Negative Initiative";
+        Label { text: AppSettings.version; role: TextRole.value; tone: Tone.secondary; }
+        ButtonGroup {
+            SheetKey { text: "CHECK FOR UPDATES"; act: Act.check-updates; }
+            SheetKey { text: "WHAT'S NEW"; act: Act.whats-new; }
+        }
+    }
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
         before: SectionStyle.sheet-before;
-        title: "Sound";
-        ToggleRow {
-            label: "Key clicks";
-            on: AppSettings.clicks;
-            toggled => { AppSettings.flip(Act.toggle-sound); }
+        title: "Help";
+        ButtonGroup {
+            SheetKey { text: "WELCOME"; act: Act.welcome; }
+            SheetKey { text: "REPORT A PROBLEM…"; act: Act.report; }
+            SheetKey { text: "CONSOLE"; act: Act.console; }
+        }
+    }
+}
+
+export component SettingsSheet inherits Sheet {
+    title: "Settings";
+    card-width: SheetStyle.settings-width;
+    dismissed => { AppSettings.close(); }
+    HorizontalLayout {
+        spacing: SheetStyle.gap;
+        VerticalLayout {
+            width: SheetStyle.settings-rail;
+            alignment: start;
+            for name[i] in ["General", "Editor", "Frontier look", "Phone", "About"]: ListRow {
+                title: name;
+                selected: AppSettings.section == i;
+                clicked => { AppSettings.section = i; }
+            }
+        }
+        VerticalRule { }
+        VerticalLayout {
+            horizontal-stretch: 1;
+            min-height: SheetStyle.settings-height;
+            alignment: start;
+            if AppSettings.section == 0: GeneralPage { }
+            if AppSettings.section == 1: EditorPage { }
+            if AppSettings.section == 2: FrontierPage { }
+            if AppSettings.section == 3: PhonePage { }
+            if AppSettings.section == 4: AboutPage { }
         }
     }
     SheetKeys {
