@@ -105,7 +105,7 @@ impl Ctl {
         let film = oni_settings::Film::new(&name);
         let folder = match oni_library::roll_folder::make(&name, &parent, &film) {
             Ok(folder) => folder,
-            Err(e) => return self.say(&format!("The roll's folder could not be made: {e}")),
+            Err(e) => return self.say(&tr!("The roll's folder could not be made: {e}", e = e)),
         };
         let files = oni_library::rgb_passes::expanded(&ordered);
         let failure = self.state.borrow_mut().store.flush();
@@ -114,7 +114,7 @@ impl Ctl {
         }
         let made = oni_library::roll_folder::move_items(&oni_library::roll_folder::moves(&files, &folder));
         if made.len() < files.len() {
-            self.say(&format!("{} of the files could not be moved into the roll.", files.len() - made.len()));
+            self.say(&tr!("{count} of the files could not be moved into the roll.", count = files.len() - made.len()));
         }
         {
             let mut s = self.state.borrow_mut();
@@ -124,7 +124,7 @@ impl Ctl {
             }
             s.rename_request = Some(folder.clone());
             if let Some(store) = s.store.editor() {
-                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, "New Roll");
+                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, tr("New Roll"));
             }
         }
         self.journal_count(oni_library::journal::Kind::Rolled, targets.len());
@@ -269,7 +269,7 @@ impl Ctl {
         match check {
             PasteCheck::Nothing => {}
             PasteCheck::Ready => self.lay_paste(targets),
-            PasteCheck::AnotherRoll => self.confirm("Paste Settings", Pending::Paste(targets)),
+            PasteCheck::AnotherRoll => self.confirm(tr("Paste Settings"), Pending::Paste(targets)),
         }
     }
 
@@ -297,7 +297,7 @@ impl Ctl {
             if roll { store.paste_check(&[open]) } else { PasteCheck::Ready }
         };
         match check {
-            PasteCheck::AnotherRoll => self.confirm("Paste to Roll", Pending::PasteToRoll),
+            PasteCheck::AnotherRoll => self.confirm(tr("Paste to Roll"), Pending::PasteToRoll),
             _ => self.lay_paste_to_roll(),
         }
     }
@@ -356,7 +356,7 @@ impl Ctl {
 
     /// `DSDialogRequest.confirm`: the sheet over the window until a key answers it.
     pub(super) fn confirm(&self, key: &str, pending: Pending) {
-        self.ask(ANOTHER_ROLL.0, ANOTHER_ROLL.1, key, false, pending);
+        self.ask(tr(ANOTHER_ROLL.0), tr(ANOTHER_ROLL.1), key, false, pending);
     }
 
     pub(super) fn answered(self: &Rc<Self>, go: bool) {

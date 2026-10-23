@@ -5,29 +5,29 @@ import { StoreSlider, Block, Pane, DetailSlider } from "parts.slint";
 
 export component DetailsPane inherits Pane {
     Block {
-        title: "Sharpening";
-        help: PanelState.sheet ? PanelState.off-on-sheet : "Sharpens edges without adding color fringing.";
+        title: @tr("Sharpening");
+        help: PanelState.sheet ? PanelState.off-on-sheet : @tr("Sharpens edges without adding color fringing.");
         separated: false;
         block: 6;
         modified: Store.sharpening-modified;
-        DetailSlider { field: 15; label: "Amount"; fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
-        DetailSlider { field: 16; label: "Radius"; fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
-        DetailSlider { field: 17; label: "Halo limit"; fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
+        DetailSlider { field: 15; label: @tr("Amount"); fraction: Store.sharpen-amount-fraction; readout: Store.sharpen-amount-readout; value-text: Store.sharpen-amount-value; }
+        DetailSlider { field: 16; label: @tr("Radius"); fraction: Store.sharpen-radius-fraction; readout: Store.sharpen-radius-readout; value-text: Store.sharpen-radius-value; }
+        DetailSlider { field: 17; label: @tr("Halo limit"); fraction: Store.sharpen-halo-fraction; readout: Store.sharpen-halo-readout; value-text: Store.sharpen-halo-value; }
     }
     // `DetailsPane`: a monochrome frame has no colour noise to smooth.
     if !PanelState.monochrome: Block {
-        title: "Chroma Denoise";
-        help: PanelState.sheet ? PanelState.off-on-sheet : "Smooths color noise from the scan without touching the film grain.";
+        title: @tr("Chroma Denoise");
+        help: PanelState.sheet ? PanelState.off-on-sheet : @tr("Smooths color noise from the scan without touching the film grain.");
         block: 7;
         modified: Store.chroma-denoise-modified;
-        DetailSlider { field: 18; label: "Amount"; fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
-        DetailSlider { field: 19; label: "Radius"; fraction: Store.chroma-radius-fraction; readout: Store.chroma-radius-readout; value-text: Store.chroma-radius-value; }
+        DetailSlider { field: 18; label: @tr("Amount"); fraction: Store.chroma-amount-fraction; readout: Store.chroma-amount-readout; value-text: Store.chroma-amount-value; }
+        DetailSlider { field: 19; label: @tr("Radius"); fraction: Store.chroma-radius-fraction; readout: Store.chroma-radius-readout; value-text: Store.chroma-radius-value; }
     }
     Block {
-        title: "Texture";
-        help: "Contrast at the scale of hair and fabric — leaves grain and overall tone alone.";
+        title: @tr("Texture");
+        help: @tr("Contrast at the scale of hair and fabric — leaves grain and overall tone alone.");
         block: 8;
         modified: Store.texture-modified;
-        StoreSlider { field: 20; label: "Texture"; fraction: Store.texture-fraction; readout: Store.texture-readout; value-text: Store.texture-value; }
+        StoreSlider { field: 20; label: @tr("Texture"); fraction: Store.texture-fraction; readout: Store.texture-readout; value-text: Store.texture-value; }
     }
 }

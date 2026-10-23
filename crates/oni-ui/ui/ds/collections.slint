@@ -276,7 +276,7 @@ export component TileView inherits Rectangle {
             height: TileStyle.caption;
             border-radius: Space.xxs;
             background: Colour.raised;
-            seal := Label { role: TextRole.caption; text: "RGB"; centred: true; }
+            seal := Label { role: TextRole.caption; text: @tr("RGB"); centred: true; }
         }
         Rectangle {
             border-width: root.selected ? TileStyle.selection : 0px;
@@ -314,7 +314,7 @@ component HeadingField inherits FocusScope {
         alignment: center;
         TextField {
             text: root.text;
-            placeholder: "Roll name";
+            placeholder: @tr("Roll name");
             init => { self.take-focus(); }
             edited(t) => { root.edited(t); }
             accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }

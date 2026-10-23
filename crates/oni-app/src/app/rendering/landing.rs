@@ -24,10 +24,10 @@ impl Ctl {
                 // The canvas never keeps another photo's picture under this one's name.
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
-                w.global::<Canvas>().set_failure(format!("{name}: could not be decoded").into());
+                w.global::<Canvas>().set_failure(tr!("{name}: could not be decoded", name = name).into());
                 super::plots::clear(&w, super::plots::Slot::Output);
                 self.state.borrow_mut().histogram_dirty = false;
-                self.say(&format!("Not rendered: {e}"));
+                self.say(&tr!("Not rendered: {e}", e = e));
                 return;
             }
         };
@@ -194,7 +194,7 @@ impl Ctl {
             timing::line(&format!("the canvas cannot take the render's texture: {e}"));
             static SAID: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
             if !SAID.swap(true, std::sync::atomic::Ordering::Relaxed) {
-                self.say("The picture cannot be shown on this graphics card; the log names why.");
+                self.say(tr("The picture cannot be shown on this graphics card; the log names why."));
             }
         }
         self.shown(image.1);

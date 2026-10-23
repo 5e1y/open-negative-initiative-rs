@@ -23,6 +23,7 @@ use crate::link::Outward;
 use oni_link::HostEvent;
 use crate::motion::Spring;
 use crate::system;
+use oni_i18n::{tr, trn};
 use crate::track::{self, Hand, Offer};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
@@ -140,7 +141,7 @@ pub struct Options {
 }
 
 /// `EditorScene.open`'s panel message.
-pub const PICKER_MESSAGE: &str = "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved.";
+pub const PICKER_MESSAGE: &str = oni_i18n::marked("Choose a folder: every photo under it shows in the archive. Nothing is copied or moved.");
 
 impl Options {
     /// The bug reporter the app ships with, posting to the site.
@@ -157,7 +158,7 @@ impl Default for Options {
             // A check's own folder and no reporter: it never writes the owner's journal nor opens an issue.
             support: std::env::temp_dir().join(format!("oni-support-{}", std::process::id())),
             caches: std::env::temp_dir().join(format!("oni-caches-{}", std::process::id())),
-            picker: Box::new(|| system::pick_folder(PICKER_MESSAGE)),
+            picker: Box::new(|| system::pick_folder(tr(PICKER_MESSAGE))),
             discard: Box::new(system::trash),
             reporter: std::sync::Arc::new(|_: &str, _: Option<String>| Err("no reporter in a check".to_string())),
             mask_picker: Box::new(|| system::pick_file(masks::LOAD_MESSAGE, oni_library::library::IMAGE_EXTENSIONS)),
@@ -184,7 +185,7 @@ struct Paint {
 type Painter = Arc<(Mutex<Paint>, Condvar)>;
 
 /// `pasteSettings`'s dialog when a look crosses rolls.
-const ANOTHER_ROLL: (&str, &str) = ("Another Roll", "You are trying to apply settings from one roll to another: results may vary.");
+const ANOTHER_ROLL: (&str, &str) = (oni_i18n::marked("Another Roll"), oni_i18n::marked("You are trying to apply settings from one roll to another: results may vary."));
 
 /// A gesture held until the confirm sheet's key answers.
 enum Pending {

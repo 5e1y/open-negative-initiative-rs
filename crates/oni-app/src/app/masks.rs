@@ -8,17 +8,18 @@ use crate::{App, MaskDialog, PanelState};
 use oni_core::Command;
 use oni_settings::frame::{FlatField, FlatFieldMask};
 use oni_settings::sidecar;
+use oni_i18n::{marked, tr};
 use slint::ComponentHandle;
 use std::path::Path;
 use std::rc::Rc;
 
 /// `FlatFieldBlock.load`'s open panel message.
-pub const LOAD_MESSAGE: &str = "Choose a picture of the empty light panel, shot as the negatives are.";
+pub const LOAD_MESSAGE: &str = marked("Choose a picture of the empty light panel, shot as the negatives are.");
 
 /// `offerToMoveOut`'s dialog.
 pub const MOVE_OUT: (&str, &str) = (
-    "Move This Photo Out of the Library?",
-    "It is now a flat-field mask. The file moves to FlatField Presets in the app's folder, and its settings and thumbnail leave the library.",
+    marked("Move This Photo Out of the Library?"),
+    marked("It is now a flat-field mask. The file moves to FlatField Presets in the app's folder, and its settings and thumbnail leave the library."),
 );
 
 /// What the open dialog goes ahead with once its key is pressed.
@@ -119,7 +120,7 @@ impl Ctl {
                 self.offer_to_move_out(path);
             }
             Ok(_) => {}
-            Err(failure) => self.advise("No Mask Set", failure.message()),
+            Err(failure) => self.advise(tr("No Mask Set"), failure.message()),
         }
         self.publish_roll_tab();
     }
@@ -159,7 +160,7 @@ impl Ctl {
                 });
                 self.offer_to_move_out(&oni_library::paths::canonical(file));
             }
-            Err(failure) => self.advise("No Mask Loaded", failure.message()),
+            Err(failure) => self.advise(tr("No Mask Loaded"), failure.message()),
         }
         self.publish_roll_tab();
     }
@@ -176,7 +177,7 @@ impl Ctl {
             }
         };
         if member {
-            self.ask_mask(MOVE_OUT.0, MOVE_OUT.1, None, "Keep in Library", "Move Out", Asked::MoveOut(path.to_string()));
+            self.ask_mask(tr(MOVE_OUT.0), tr(MOVE_OUT.1), None, tr("Keep in Library"), tr("Move Out"), Asked::MoveOut(path.to_string()));
         }
     }
 
@@ -212,7 +213,7 @@ impl Ctl {
             flat_fields::move_out(path, &flat_fields::presets(&s.support), s.index.as_ref())
         };
         if moved.is_none() {
-            self.say("The photo could not be moved to FlatField Presets.");
+            self.say(tr("The photo could not be moved to FlatField Presets."));
             return;
         }
         {
@@ -253,7 +254,7 @@ impl Ctl {
             let current = s.masks.iter().find(|e| e.id == id).map(|e| e.name.clone()).unwrap_or_default();
             (id, current)
         };
-        self.ask_mask("Rename This Flat-Field Mask", "", Some(&current), "Cancel", "Rename", Asked::Rename { id, current: current.clone() });
+        self.ask_mask(tr("Rename This Flat-Field Mask"), "", Some(&current), tr("Cancel"), tr("Rename"), Asked::Rename { id, current: current.clone() });
     }
 
     /// `openFlatFieldFolder`: FlatField Presets, made when absent, in the Finder.

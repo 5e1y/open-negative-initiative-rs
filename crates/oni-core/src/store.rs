@@ -9,6 +9,7 @@ use crate::parameters;
 use crate::presets::Preset;
 use oni_library::gallery_history::{self, GalleryHistory, Step, Trash};
 use oni_library::{roll_folder, roll_membership, trash};
+use oni_i18n::{tr, trn};
 use oni_keys::{Channel, Effect, Letter, Machine};
 use oni_settings::codec;
 use oni_settings::frame::Geometry;

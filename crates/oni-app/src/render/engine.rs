@@ -1,6 +1,7 @@
 //! The engine: the GPU device, the pipeline on it, its gate, and the frame kept as its preview.
 
 use super::*;
+use oni_i18n::tr;
 
 mod inputs;
 pub(crate) mod prewarm;
@@ -158,7 +159,7 @@ impl Shared {
             Ok(engine) => Ok(EngineGuard { engine: Some(engine), gated }),
             Err(_) => {
                 gated.door.leave();
-                Err("the render engine failed earlier".into())
+                Err(tr("the render engine failed earlier").into())
             }
         }
     }

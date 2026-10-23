@@ -22,7 +22,7 @@ export component ConfirmSheet inherits Sheet {
     SheetKeys {
         if Confirm.cancel-default: Button { text: Confirm.key; clicked => { Confirm.answered(true); } }
         Button {
-            text: "CANCEL";
+            text: @tr("CANCEL");
             kind: Confirm.cancel-default ? ButtonKind.accent : ButtonKind.plain;
             clicked => { Confirm.answered(false); }
         }

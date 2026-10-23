@@ -4,6 +4,7 @@
 use super::{Ctl, Pending, with_shell};
 use crate::updates::{self as feed, Item};
 use crate::{Bar, Confirm};
+use oni_i18n::tr;
 use slint::{ComponentHandle, Timer, TimerMode};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -176,7 +177,7 @@ impl Ctl {
                     let c = w.global::<Confirm>();
                     c.set_title(title.into());
                     c.set_message(message.into());
-                    c.set_key("DOWNLOAD".into());
+                    c.set_key(tr("DOWNLOAD").into());
                     c.set_shown(true);
                     w.invoke_refocus();
                 }
@@ -185,7 +186,7 @@ impl Ctl {
                 let (title, message) = feed::up_to_date();
                 self.advise(&title, &message);
             }
-            Err(_) => self.advise(feed::ERROR_TITLE, feed::CHECK_FAILED),
+            Err(_) => self.advise(tr(feed::ERROR_TITLE), tr(feed::CHECK_FAILED)),
         }
         self.publish_bar();
     }
@@ -205,11 +206,12 @@ impl Ctl {
         };
         self.publish_update_key();
         std::thread::spawn(move || {
-            let kept = fetch(&enclosure.url).map_err(|_| feed::DOWNLOAD_FAILED.to_string()).and_then(|bytes| {
-                feed::checked(&enclosure, &bytes, &key).map_err(str::to_string)?;
-                std::fs::create_dir_all(&folder).map_err(|_| feed::DOWNLOAD_FAILED.to_string())?;
+            let failed = || tr(feed::DOWNLOAD_FAILED).to_string();
+            let kept = fetch(&enclosure.url).map_err(|_| failed()).and_then(|bytes| {
+                feed::checked(&enclosure, &bytes, &key).map_err(|e| tr(e).to_string())?;
+                std::fs::create_dir_all(&folder).map_err(|_| failed())?;
                 let path = free_name(&folder, &feed::file_name(&enclosure.url));
-                std::fs::write(&path, &bytes).map_err(|_| feed::DOWNLOAD_FAILED.to_string())?;
+                std::fs::write(&path, &bytes).map_err(|_| failed())?;
                 Ok(path)
             });
             with_shell(move |c| c.update_downloaded(kept));
@@ -228,9 +230,9 @@ impl Ctl {
                     reveal(&path);
                 }
                 let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                self.say(&format!("{name} is in Downloads, its signature checked: open it to install."));
+                self.say(&tr!("{name} is in Downloads, its signature checked: open it to install.", name = name));
             }
-            Err(message) => self.advise(feed::ERROR_TITLE, &message),
+            Err(message) => self.advise(tr(feed::ERROR_TITLE), &message),
         }
         self.publish_update_key();
     }

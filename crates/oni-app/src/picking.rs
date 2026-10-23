@@ -2,6 +2,7 @@
 //! `GalleryView` that decide what a click, a key or ⌘A picks, on paths and in the order shown.
 
 use oni_settings::Medal;
+use oni_i18n::{tr, trn};
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -182,7 +183,7 @@ pub fn named(draft: &str, was: &str) -> Option<String> {
 
 /// `CellMenu.label`: a verb with its count once it reaches more than one photo.
 pub fn menu_label(verb: &str, count: usize) -> String {
-    if count > 1 { format!("{verb} ({count} photos)") } else { verb.to_owned() }
+    if count > 1 { tr!("{verb} ({count} photos)", verb = verb, count = count) } else { verb.to_owned() }
 }
 
 /// `statusPath`: the one selected photo, else the open photo while editing with nothing selected.
@@ -203,19 +204,19 @@ pub fn status_label(path: &str, size: Option<(u32, u32)>) -> String {
 }
 
 fn photos(n: usize) -> String {
-    format!("{n} photo{}", if n == 1 { "" } else { "s" })
+    trn("{n} photo", "{n} photos", n as u64)
 }
 
 /// `statusLeading`: the ONI Trash's count or selection while it is open, else the status photo,
 /// else the photos shown or the count selected.
 pub fn status_leading(trash: Option<(usize, usize)>, status: Option<String>, selected: usize, shown: usize) -> String {
     if let Some((picked, trashed)) = trash {
-        return if picked > 0 { format!("{picked} selected") } else { format!("{} in the ONI Trash", photos(trashed)) };
+        return if picked > 0 { trn("{n} selected", "{n} selected", picked as u64) } else { tr!("{photos} in the ONI Trash", photos = photos(trashed)) };
     }
     if let Some(label) = status {
         return label;
     }
-    if selected == 0 { photos(shown) } else { format!("{selected} selected") }
+    if selected == 0 { photos(shown) } else { trn("{n} selected", "{n} selected", selected as u64) }
 }
 
 /// `statusMedalTarget`: the status photo's own medal, else the selection's, `None` for a mixed

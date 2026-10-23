@@ -150,13 +150,13 @@ export component SplitGuide inherits Rectangle {
         drop-shadow-blur: SplitStyle.shadow;
     }
     Label {
-        text: "before";
+        text: @tr("before");
         role: TextRole.value;
         x: (parent.width - self.width) / 2 - SplitStyle.label-inset;
         y: Space.s;
     }
     Label {
-        text: "after";
+        text: @tr("after");
         role: TextRole.value;
         x: (parent.width - self.width) / 2 + SplitStyle.label-inset;
         y: Space.s;

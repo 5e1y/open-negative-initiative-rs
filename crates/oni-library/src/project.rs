@@ -310,14 +310,15 @@ pub fn reorder_root(projects: &mut [Project], entries: &[Entry], dragged: &HashS
 pub fn delete_prompt(project: &Project) -> (String, String, &'static str) {
     let count = project.members.len();
     let message = if count > 0 {
-        format!(
-            "It stops grouping its {count} photo{}. The photos, their settings and every other project or roll they belong to are untouched.",
-            if count > 1 { "s" } else { "" }
+        oni_i18n::trn(
+            "It stops grouping its {n} photo. The photos, their settings and every other project or roll they belong to are untouched.",
+            "It stops grouping its {n} photos. The photos, their settings and every other project or roll they belong to are untouched.",
+            count as u64,
         )
     } else {
-        "It holds no photos. Nothing else is affected.".to_owned()
+        oni_i18n::tr("It holds no photos. Nothing else is affected.").to_owned()
     };
-    (format!("Delete \u{201c}{}\u{201d}?", project.name), message, "Delete Project")
+    (oni_i18n::tr!("Delete \u{201c}{name}\u{201d}?", name = project.name), message, oni_i18n::tr("Delete Project"))
 }
 
 /// The one file every project lives in.

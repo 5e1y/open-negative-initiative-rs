@@ -1,6 +1,7 @@
 //! What the export surface shows.
 
 use super::*;
+use oni_i18n::tr;
 
 impl Ctl {
     pub(super) fn publish_lines(&self) {
@@ -60,7 +61,7 @@ impl Ctl {
         e.set_jpeg(c.settings.format() == Format::Jpeg);
         e.set_on_profile(on_profile);
         e.set_pending(c.pending && !on_profile);
-        e.set_pending_note(format!("Until a profile is chosen, the picture stays in {}.", space.title()).into());
+        e.set_pending_note(tr!("Until a profile is chosen, the picture stays in {space}.", space = space.title()).into());
         if let Space::Profile(chosen) = &space {
             let (listed, titles) = c.profile_titles(chosen);
             let at = listed.iter().position(|p| p == chosen).unwrap_or(0);
@@ -85,7 +86,7 @@ impl Ctl {
             format!("{} × {}", ow as i64, oh as i64)
         });
         e.set_dims(dims.unwrap_or_else(|| "—".into()).into());
-        e.set_weight_label(if batch { "estimated total size" } else { "estimated size" }.into());
+        e.set_weight_label(if batch { tr("estimated total size") } else { tr("estimated size") }.into());
         e.set_weight(export::weight(c.estimate, count).into());
         e.set_low_precision(export::low_precision(c.low_precision, count).into());
         e.set_exporting(c.exporting);
@@ -93,7 +94,7 @@ impl Ctl {
         e.set_key_title(label::key(count).into());
         e.set_menu_title(label::menu(if c.shown { count } else { selected }).into());
         e.set_menu_live(if c.shown { count > 0 && !c.exporting } else { has_photo || selected > 0 });
-        e.set_gamut_title(if c.gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into());
+        e.set_gamut_title(if c.gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into());
         e.set_chip_title(space.title().into());
         e.set_chip_hint(space.hint().into());
         e.set_confirm_shown(c.confirm.is_some());

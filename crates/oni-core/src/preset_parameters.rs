@@ -2,6 +2,7 @@
 //! name, grouped by block, and the white balance as one choice of three.
 
 use crate::parameters::{self, AUTO_BALANCE_NAME, WHITE_BALANCE_ROWS};
+use oni_i18n::{marked, tr};
 use oni_settings::PipelineSettings;
 use std::collections::BTreeSet;
 
@@ -24,51 +25,51 @@ const fn entry(id: &'static str, label: &'static str, rows: &'static [&'static s
 pub const BLOCKS: [Block; 4] = [
     Block {
         id: "Settings",
-        title: "Settings",
+        title: marked("Settings"),
         entries: &[
-            entry("sourceEncoding", "Source Encoding", &["sourceEncoding"]),
-            entry("flatField", "Flat-Field", &["flatField"]),
-            entry("separation", "Dye Separation", &["separation"]),
+            entry("sourceEncoding", marked("Source Encoding"), &["sourceEncoding"]),
+            entry("flatField", marked("Flat-Field"), &["flatField"]),
+            entry("separation", marked("Dye Separation"), &["separation"]),
         ],
     },
     Block {
         id: "Colour",
-        title: "Color",
+        title: marked("Color"),
         entries: &[
-            entry("colour", "Color (Temperature, Tint)", &["curves"]),
-            entry("density", "Color Density", &["density"]),
-            entry("chromaDecompression", "Chroma Decompression", &["chromaDecompression"]),
-            entry("lighting", "Lighting", &["levelsGlobal"]),
-            entry("vignette", "Vignette", &["vignette"]),
-            entry("secretSauce", "Chrome", &["secretSauce"]),
-            entry("paperCorrection", "Paper Correction", &["paperCorrection"]),
-            entry("manualCurves", "Curves", &["manualCurves", "manualContrast"]),
-            entry("densityCeiling", "Density Ceiling", &["densityCeiling"]),
-            entry("spectrogram", "Spectrogram Finishing", &["spectrogram"]),
-            entry("saturation", "Saturation Curve", &["saturation"]),
+            entry("colour", marked("Color (Temperature, Tint)"), &["curves"]),
+            entry("density", marked("Color Density"), &["density"]),
+            entry("chromaDecompression", marked("Chroma Decompression"), &["chromaDecompression"]),
+            entry("lighting", marked("Lighting"), &["levelsGlobal"]),
+            entry("vignette", marked("Vignette"), &["vignette"]),
+            entry("secretSauce", marked("Chrome"), &["secretSauce"]),
+            entry("paperCorrection", marked("Paper Correction"), &["paperCorrection"]),
+            entry("manualCurves", marked("Curves"), &["manualCurves", "manualContrast"]),
+            entry("densityCeiling", marked("Density Ceiling"), &["densityCeiling"]),
+            entry("spectrogram", marked("Spectrogram Finishing"), &["spectrogram"]),
+            entry("saturation", marked("Saturation Curve"), &["saturation"]),
         ],
     },
     Block {
         id: "Details",
-        title: "Details",
+        title: marked("Details"),
         entries: &[
-            entry("sharpen", "Sharpening", &["sharpen"]),
-            entry("chroma", "Chroma Denoise", &["chroma"]),
-            entry("texture", "Texture", &["texture"]),
+            entry("sharpen", marked("Sharpening"), &["sharpen"]),
+            entry("chroma", marked("Chroma Denoise"), &["chroma"]),
+            entry("texture", marked("Texture"), &["texture"]),
         ],
     },
     // One gesture: the keypad's clicks mean the scanner's render, so the face travels with them.
-    Block { id: "Scanner", title: "Scanner", entries: &[entry("scanner", "Scanner Keypad", &["scanner", "face"])] },
+    Block { id: "Scanner", title: marked("Scanner"), entries: &[entry("scanner", marked("Scanner Keypad"), &["scanner", "face"])] },
 ];
 
 /// The Color block's note on the white balance choice.
-pub const WHITE_BALANCE_HELP: &str = "Not carried leaves every photo its own balance. Copied WB pastes this photo's gains and per-channel levels as numbers. Automatic WB re-measures each photo it lands on.";
+pub const WHITE_BALANCE_HELP: &str = marked("Not carried leaves every photo its own balance. Copied WB pastes this photo's gains and per-channel levels as numbers. Automatic WB re-measures each photo it lands on.");
 
 /// What both sheets say about framing, absent from the rows rather than unticked.
-pub const CARRIES_HELP: &str = "A preset never carries crop, straightening, rotation or the conversion mode.";
+pub const CARRIES_HELP: &str = marked("A preset never carries crop, straightening, rotation or the conversion mode.");
 
 /// Shown under the boxes when none is ticked.
-pub const CARRIES_NOTHING: &str = "Carries nothing \u{2014} applying it would change no setting.";
+pub const CARRIES_NOTHING: &str = marked("Carries nothing \u{2014} applying it would change no setting.");
 
 pub fn entries() -> impl Iterator<Item = &'static Entry> {
     BLOCKS.iter().flat_map(|b| b.entries.iter())
@@ -89,9 +90,9 @@ impl WhiteBalance {
 
     pub fn label(self) -> &'static str {
         match self {
-            WhiteBalance::None => "Not carried",
-            WhiteBalance::Manual => "Copied WB (gains + per-channel levels)",
-            WhiteBalance::Automatic => "Automatic WB (Temperature, Tint)",
+            WhiteBalance::None => tr("Not carried"),
+            WhiteBalance::Manual => tr("Copied WB (gains + per-channel levels)"),
+            WhiteBalance::Automatic => tr("Automatic WB (Temperature, Tint)"),
         }
     }
 
@@ -160,14 +161,14 @@ pub fn label(parameters: &BTreeSet<String>) -> String {
         covered.insert(AUTO_BALANCE_NAME.to_string());
     }
     for entry in entries().filter(|e| is_on(e, parameters)) {
-        named.push(entry.label.to_string());
+        named.push(tr(entry.label).to_string());
         covered.extend(set(entry.rows));
     }
     named.extend(parameters.difference(&covered).cloned());
     match named.len() {
-        0 => "empty".to_string(),
+        0 => tr("empty").to_string(),
         1 => named.remove(0),
-        n => format!("{} and {}", named[..n - 1].join(", "), named[n - 1]),
+        n => oni_i18n::tr!("{list} and {last}", list = named[..n - 1].join(", "), last = named[n - 1]),
     }
 }
 

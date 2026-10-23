@@ -7,6 +7,7 @@ use oni_library::index::{self as library_index, LibraryIndex};
 use oni_library::roots::Survey;
 use oni_library::film_group::FilmGroup;
 use oni_library::{Entry, folders, library, paths, relink, roots};
+use oni_i18n::tr;
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
 use std::collections::HashSet;
@@ -288,9 +289,9 @@ pub fn shown_under(index: &LibraryIndex, folder: &str) -> Vec<Entry> {
 pub fn medal(label: Medal) -> String {
     match label {
         Medal::None => String::new(),
-        Medal::Bronze => "Bronze".into(),
-        Medal::Silver => "Silver".into(),
-        Medal::Gold => "Gold".into(),
+        Medal::Bronze => tr("Bronze").into(),
+        Medal::Silver => tr("Silver").into(),
+        Medal::Gold => tr("Gold").into(),
     }
 }
 

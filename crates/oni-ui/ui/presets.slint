@@ -90,7 +90,7 @@ export component ChoiceSheet inherits Sheet {
     dismissed => { Choice.chosen(-1); }
     if Choice.message != "": Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
     SheetKeys {
-        Button { text: "Cancel"; clicked => { Choice.chosen(-1); } }
+        Button { text: @tr("Cancel"); clicked => { Choice.chosen(-1); } }
         for key[i] in Choice.keys: Button { text: key; clicked => { Choice.chosen(i); } }
     }
 }
@@ -101,7 +101,7 @@ export component AdviceSheet inherits Sheet {
     dismissed => { Advice.closed(); }
     if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; wrap: word-wrap; }
     SheetKeys {
-        Button { text: "OK"; kind: ButtonKind.accent; clicked => { Advice.closed(); } }
+        Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Advice.closed(); } }
     }
 }
 
@@ -147,7 +147,7 @@ component CarriesPicker inherits VerticalLayout {
         if line.kind == 0: Label { text: line.text; role: TextRole.section; }
         if line.kind == 1: HorizontalLayout {
             spacing: Space.s;
-            Label { text: "White balance"; }
+            Label { text: @tr("White balance"); }
             VerticalLayout { alignment: center; HelpMark { note: Presets.balance-help; } }
         }
         if line.kind == 1: BalancePicker { value: line.text; }
@@ -169,17 +169,17 @@ component PresetForm inherits VerticalLayout {
     callback named(string);
     spacing: Space.l;
     Field {
-        label: "Name";
+        label: @tr("Name");
         name := TextField {
             text: Presets.form-name;
-            placeholder: "Preset name";
+            placeholder: @tr("Preset name");
             edited(t) => { Presets.form-named(t); }
             accepted(t) => { root.named(t); }
         }
     }
     // Three lines, wrapped, as `lineLimit(3, reservesSpace: true)`.
     if root.noted: Field {
-        label: "Description";
+        label: @tr("Description");
         Rectangle {
             height: PresetStyle.note-height;
             note := TextArea {
@@ -191,17 +191,17 @@ component PresetForm inherits VerticalLayout {
             if note.text == "": Label {
                 x: FieldStyle.padding;
                 y: FieldStyle.padding;
-                text: "What this look is for";
+                text: @tr("What this look is for");
                 tone: Tone.tertiary;
             }
         }
     }
     Field {
-        label: "Color";
+        label: @tr("Color");
         TintPicker { }
     }
     Field {
-        label: "Carries";
+        label: @tr("Carries");
         help: Presets.carries-help;
         CarriesPicker { }
     }
@@ -217,7 +217,7 @@ export component PresetSaveSheet inherits PanelSheet {
     VerticalLayout {
         padding: Space.l;
         spacing: Space.m;
-        Label { text: "Save a Preset"; role: TextRole.title; }
+        Label { text: @tr("Save a Preset"); role: TextRole.title; }
         Scroller {
             vertical-stretch: 1;
             content-height: form.preferred-height;
@@ -230,8 +230,8 @@ export component PresetSaveSheet inherits PanelSheet {
         HorizontalLayout {
             alignment: end;
             spacing: Space.s;
-            Button { text: "Cancel"; clicked => { Presets.save-cancelled(); } }
-            Button { text: "Save"; kind: ButtonKind.accent; enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
+            Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
+            Button { text: @tr("Save"); kind: ButtonKind.accent; enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
         }
     }
     init => { form.take-focus(); }
@@ -280,20 +280,20 @@ export component PresetEditorSheet inherits PanelSheet {
             if !Presets.form-shown: VerticalLayout {
                 horizontal-stretch: 1;
                 alignment: center;
-                Label { text: "No preset selected"; role: TextRole.section; centred: true; }
-                Note { text: "Save a photo's settings to create your first preset."; horizontal-alignment: center; }
+                Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
+                Note { text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
             }
         }
         Divider { }
         HorizontalLayout {
             padding: Space.m;
             spacing: Space.s;
-            Button { text: "Duplicate"; enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
-            Button { text: "Share…"; enabled: Presets.form-shown; clicked => { Presets.share(); } }
-            Button { text: "Copy Preset Code"; enabled: Presets.form-shown; help: "Copies the preset as one line of text, to paste in a message."; clicked => { Presets.copy-code(); } }
-            Button { text: "Delete"; kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
+            Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
+            Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
+            Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
+            Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
             Rectangle { horizontal-stretch: 1; }
-            Button { text: "Done"; clicked => { Presets.done(); } }
+            Button { text: @tr("Done"); clicked => { Presets.done(); } }
         }
     }
 }

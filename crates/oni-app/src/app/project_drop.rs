@@ -102,7 +102,7 @@ impl Ctl {
         let s = self.state.borrow();
         let mark = s.org.project_drag.as_ref().map_or_else(TreeDrag::default, |d| {
             let n = d.items.len();
-            let chip = if n == 1 { "1 item".to_string() } else { format!("{n} items") };
+            let chip = trn("{n} item", "{n} items", n as u64);
             let mut mark = TreeDrag { shown: true, chip: chip.into(), x: d.at.0, y: d.at.1, ..TreeDrag::default() };
             let l = s.laid(Which::Projects);
             let (i, ring) = match d.target {

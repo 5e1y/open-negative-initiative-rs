@@ -1,6 +1,7 @@
 //! The canvas's render: the region the view shows, at the scale it shows it, kept as one texture.
 
 use super::*;
+use oni_i18n::tr;
 
 impl Engine {
     /// `Pipeline.apply` left on the GPU in one texture for the display kernel to read. With a view,
@@ -64,7 +65,7 @@ impl Engine {
         let ((x0, x1), (y0, y1)) = (span(vx, vw, extent.x, extent.right()), span(vy, vh, extent.y, extent.bottom()));
         let region = Rect::from_corners(x0, y0, x1, y1);
         if region.is_empty() {
-            return Err("the image is off the canvas".into());
+            return Err(tr("the image is off the canvas").into());
         }
         let placed = Placed {
             x: placement.image.0 + f64::from(region.x - extent.x) * stretch,
@@ -82,7 +83,7 @@ impl Engine {
         let region = region.unwrap_or_else(|| image.extent());
         let source = self.graph.materialise_cached(image, region, Some(&mut self.cache)).map_err(|e| e.to_string())?;
         if source.view().is_none() {
-            return Err("the render is wider than one texture".into());
+            return Err(tr("the render is wider than one texture").into());
         }
         Ok(source)
     }

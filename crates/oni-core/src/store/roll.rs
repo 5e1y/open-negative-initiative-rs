@@ -3,6 +3,7 @@
 
 use super::{EditorStore, Settings};
 use crate::parameters;
+use oni_i18n::trn;
 use oni_library::gallery_history::Trash;
 use oni_library::roll_membership::ResetReach;
 use oni_library::{rgb_passes, trash};
@@ -31,11 +32,11 @@ pub fn split(pass: &PipelineSettings, framing: Option<Geometry>) -> PipelineSett
 
 /// The undo label of a measure, counting frames, never the passes riding with them.
 pub fn measure_label(frames: usize) -> String {
-    if frames == 1 { "Measure the roll".into() } else { format!("Measure the roll of {frames} photos") }
+    trn("Measure the roll", "Measure the roll of {n} photos", frames as u64)
 }
 
 pub fn reset_label(frames: usize) -> String {
-    if frames == 1 { "Reset to Default · 1 photo".into() } else { format!("Reset to Default · {frames} photos") }
+    trn("Reset to Default · {n} photo", "Reset to Default · {n} photos", frames as u64)
 }
 
 impl EditorStore {

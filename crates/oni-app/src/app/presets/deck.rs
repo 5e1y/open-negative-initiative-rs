@@ -106,9 +106,9 @@ impl Ctl {
         let lines: Vec<MenuLine> = CARD_MENU
             .iter()
             .map(|(act, text)| match act {
-                CardAct::Update => line(text, open, false),
-                CardAct::Delete => line(&format!("Delete \u{201c}{name}\u{201d}"), true, true),
-                _ => line(text, true, false),
+                CardAct::Update => line(tr(*text), open, false),
+                CardAct::Delete => line(&tr!("Delete \u{201c}{name}\u{201d}", name = name), true, true),
+                _ => line(tr(*text), true, false),
             })
             .collect();
         w.global::<Presets>().set_menu_lines(ModelRc::new(VecModel::from(lines)));

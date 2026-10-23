@@ -47,7 +47,7 @@ impl Ctl {
             w.global::<Canvas>().set_read_only(read_only);
             w.global::<Canvas>().set_failure("".into());
             w.global::<Canvas>().set_busy(true);
-            w.global::<Canvas>().set_status(format!("{} · decoding", stem(path)).into());
+            w.global::<Canvas>().set_status(tr!("{name} · decoding", name = stem(path)).into());
         }
         self.show_thumbnail(path);
         self.publish_status();

@@ -27,7 +27,7 @@ pub fn show(reveal: impl FnOnce() + 'static) -> Result<(), slint::PlatformError>
     let window = SplashWindow::new()?;
     let chosen = picture(version);
     window.set_picture(chosen as i32);
-    window.set_line(format!("V{version} Loading").into());
+    window.set_line(oni_i18n::tr!("V{version} Loading", version = version).into());
     window.set_credit(PICTURES[chosen].1.trim().into());
     window.show()?;
     window.window().with_winit_window(|w| {

@@ -54,6 +54,7 @@ slotmap = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
 stable_deref_trait = { version = "1", default-features = false, features = ["alloc"] }
 swash = { version = "0.2" }
+sys-locale = { version = "0.3", default-features = false, features = ["js"] }
 thiserror = { version = "2" }
 tinystr = { version = "0.8", default-features = false, features = ["alloc", "zerovec"] }
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }

@@ -54,8 +54,8 @@ impl Ctl {
         let last = m.len().saturating_sub(1);
         let step = r.step;
         let status = match measuring {
-            Some((done, total)) => format!("Measuring the roll · {done} of {total}"),
-            None if settled < frames.len() => format!("Loading the roll's thumbnails · {settled} of {}", frames.len()),
+            Some((done, total)) => tr!("Measuring the roll · {done} of {total}", done = done, total = total),
+            None if settled < frames.len() => tr!("Loading the roll's thumbnails · {settled} of {total}", settled = settled, total = frames.len()),
             None => String::new(),
         };
         let cells: Vec<RollCell> = frames
@@ -77,7 +77,7 @@ impl Ctl {
             .collect();
         let options = crate::app::roll_tab::mask_options(&r.flat, &masks);
         let current = crate::app::roll_tab::chosen(&r.flat);
-        let mask_title = options.iter().find(|(l, _)| *l == current).map_or("None selected".to_string(), |(_, t)| t.clone());
+        let mask_title = options.iter().find(|(l, _)| *l == current).map_or(tr("None selected").to_string(), |(_, t)| t.clone());
         let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, rule: false, opens: false }).collect();
         let fractions: Vec<f32> = (0..5).map(|i| Self::slider_fraction(r, radius, i)).collect();
         let readouts: Vec<SharedString> = (0..5)
@@ -89,14 +89,14 @@ impl Ctl {
             .map(SharedString::from)
             .collect();
         let look = r.look();
-        let base_note = r.base.as_ref().map_or("No base picked yet.".to_string(), |b| format!("On {}", oni_library::paths::name(&b.path)));
-        let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { "NEXT".into() } else { "SKIP".into() };
+        let base_note = r.base.as_ref().map_or(tr("No base picked yet.").to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
+        let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
         let heading = match measuring {
-            Some((done, total)) => format!("Measuring {done} of {total}\u{2026}"),
+            Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title().to_string(),
         };
         let passes_note = if r.capture == Capture::RgbPasses && r.grouping.is_none() {
-            format!("{} frames, grouped when the roll was last measured.", frames.len())
+            tr!("{count} frames, grouped when the roll was last measured.", count = frames.len())
         } else {
             String::new()
         };
@@ -147,7 +147,7 @@ impl Ctl {
         p.set_readouts(ModelRc::new(VecModel::from(readouts)));
         p.set_base_note(base_note.into());
         p.set_has_base(has_base);
-        p.set_flags_note(format!("{} measured, {flagged} flagged", ticked - flagged).into());
+        p.set_flags_note(tr!("{measured} measured, {flagged} flagged", measured = ticked - flagged, flagged = flagged).into());
         p.set_can_clear_flags(flagged > 0);
         p.set_frame_name(m.get(at).map(|f| oni_library::paths::name(&f.path)).unwrap_or_default().into());
         p.set_can_previous(at > 0);

@@ -51,6 +51,15 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
         rig.pump();
         rig.shot(&format!("settings-{name}"));
     }
+    // French from the General page: the interface's words and those the Rust side lays change together.
+    sheet.set_section(0);
+    sheet.invoke_language_picked(2);
+    rig.pump();
+    rig.shot("settings-general-fr");
+    assert_eq!(first.window.global::<Menus>().get_titles().sound.as_str(), "Rétablir les clics des touches");
+    sheet.invoke_language_picked(1);
+    rig.pump();
+    assert_eq!(first.window.global::<Menus>().get_titles().sound.as_str(), "Unmute Key Clicks", "twin: English again");
     sheet.set_section(1);
     assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (false, false), "silent and fitted by default");
     sheet.invoke_flip(oni_app::Act::ToggleSound);

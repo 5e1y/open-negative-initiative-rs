@@ -4,6 +4,7 @@
 use base64::Engine;
 use chacha20poly1305::aead::{Aead, AeadCore, KeyInit, OsRng};
 use chacha20poly1305::{ChaCha20Poly1305, Nonce};
+use oni_i18n::tr;
 use std::io::{Read, Write};
 use x25519_dalek::{EphemeralSecret, PublicKey, StaticSecret};
 
@@ -90,8 +91,8 @@ pub fn sealed_log(log: &std::path::Path) -> Option<String> {
 /// `BugReport.Failure`'s words.
 pub fn failure(code: u16) -> String {
     match code {
-        429 => "Too many reports right now. Try again in an hour.".into(),
-        code => format!("The report was not accepted ({code}). Try again later."),
+        429 => tr("Too many reports right now. Try again in an hour.").into(),
+        code => tr!("The report was not accepted ({code}). Try again later.", code = code),
     }
 }
 

@@ -14,6 +14,7 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 
 use oni_colour::{PaperCorrection, Quantised, Space};
+use oni_i18n::tr;
 
 pub use metadata::{ExifMetadata, Row, capture_date, scan_metadata};
 pub use presets::Preset;
@@ -56,14 +57,13 @@ pub enum Failure {
 impl fmt::Display for Failure {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Failure::Decode => "The RAW file could not be decoded.",
-            Failure::Render => "Full-resolution rendering failed.",
-            Failure::Profile => "The ICC profile chosen for the export can no longer be read.",
-            Failure::Write => "The file could not be written.",
-            Failure::WouldOverwriteSource => {
-                "Exporting there would overwrite the original scan. Pick another folder, or change \
-                 the naming pattern so the output cannot land on its own source."
-            }
+            Failure::Decode => tr("The RAW file could not be decoded."),
+            Failure::Render => tr("Full-resolution rendering failed."),
+            Failure::Profile => tr("The ICC profile chosen for the export can no longer be read."),
+            Failure::Write => tr("The file could not be written."),
+            Failure::WouldOverwriteSource => tr(
+                "Exporting there would overwrite the original scan. Pick another folder, or change the naming pattern so the output cannot land on its own source.",
+            ),
         })
     }
 }

@@ -1,6 +1,7 @@
 //! Writing: the batch off this thread, its clashes, its progress and its journal.
 
 use super::*;
+use oni_i18n::tr;
 
 impl Ctl {
     /// `runExport`: one file asks for its name, a batch for a folder and then for any clash.
@@ -103,7 +104,7 @@ impl Ctl {
                                 {
                                     let mut card = c.export.borrow_mut();
                                     card.exporting = false;
-                                    card.notice = Some(("Export Failed".into(), message));
+                                    card.notice = Some((tr("Export Failed").into(), message));
                                 }
                                 c.publish_export();
                             });

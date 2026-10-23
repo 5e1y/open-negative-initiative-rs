@@ -22,6 +22,7 @@ impl Shell {
         crate::viewport::KEEP_ZOOM.store(keep, Ordering::Relaxed);
         let whole = Preferences::load(&options.support).bool(preferences::FULL_DECODE).unwrap_or(false);
         crate::render::FULL_DECODE.store(whole, Ordering::Relaxed);
+        crate::language::speak(crate::language::chosen(&Preferences::load(&options.support)));
         let state = State {
             store,
             screen: options.screen,

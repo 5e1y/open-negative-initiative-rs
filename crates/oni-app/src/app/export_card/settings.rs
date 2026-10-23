@@ -1,6 +1,7 @@
 //! The export's settings: format, space, size, metadata, and the sheets they open.
 
 use super::*;
+use oni_i18n::tr;
 
 impl Ctl {
     pub(super) fn export_changed(self: &Rc<Self>, weigh: bool) {
@@ -101,9 +102,9 @@ impl Ctl {
             return chooser(what);
         }
         match what {
-            Ask::Save { name, extension } => crate::system::save_file("Export", name, &[extension.as_str()]).into_iter().collect(),
-            Ask::Folder { count } => crate::system::pick_folder(&format!("Where should the {count} files be written?")).into_iter().collect(),
-            Ask::Profiles => crate::system::pick_files("Choose ICC profiles, or the zip a paper maker or a lab ships them in.", &["icc", "icm", "zip"]),
+            Ask::Save { name, extension } => crate::system::save_file(tr("Export"), name, &[extension.as_str()]).into_iter().collect(),
+            Ask::Folder { count } => crate::system::pick_folder(&tr!("Where should the {count} files be written?", count = count)).into_iter().collect(),
+            Ask::Profiles => crate::system::pick_files(tr("Choose ICC profiles, or the zip a paper maker or a lab ships them in."), &["icc", "icm", "zip"]),
         }
     }
 

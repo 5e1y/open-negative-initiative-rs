@@ -20,7 +20,7 @@ impl Ctl {
             let count = s.org.trashed.len();
             let unfolded = count > 0 && s.org.trash_unfolded;
             let mut lines = vec![TrashLine {
-                title: "ONI Trash".into(),
+                title: tr("ONI Trash").into(),
                 trail: SharedString::new(),
                 count: if count > 0 { count.to_string().into() } else { SharedString::new() },
                 depth: 0,
@@ -29,7 +29,7 @@ impl Ctl {
                 picked: s.org.trash_picked.as_deref() == Some(""),
                 opened: s.org.trash_open,
                 present: count > 0,
-                restore_help: if count > 0 { "Restore every photo in the ONI Trash" } else { "" }.into(),
+                restore_help: if count > 0 { tr("Restore every photo in the ONI Trash") } else { "" }.into(),
             }];
             if unfolded {
                 let home = home();
@@ -49,8 +49,7 @@ impl Ctl {
                         picked: s.org.trash_picked.as_deref() == Some(folder.path.as_str()),
                         opened: false,
                         present: Path::new(&folder.path).exists(),
-                        restore_help: if folder.count == 1 { "Restore this photo".to_string() } else { format!("Restore these {} photos", folder.count) }
-                            .into(),
+                        restore_help: trn("Restore this photo", "Restore these {n} photos", folder.count as u64).into(),
                     });
                 }
             }
@@ -108,20 +107,20 @@ impl Ctl {
 
     pub(in crate::app) fn trash_row_menu(self: &Rc<Self>, i: usize) -> bool {
         let count = self.state.borrow().org.trashed.len();
-        let mut items = vec![Item { line: menu_line("Open", true, false, false), act: Act::OpenTrash }];
+        let mut items = vec![Item { line: menu_line(tr("Open"), true, false, false), act: Act::OpenTrash }];
         if i == 0 {
             if count > 0 {
-                items.push(Item { line: menu_line("Restore All…", true, false, false), act: Act::RestoreAll });
+                items.push(Item { line: menu_line(tr("Restore All…"), true, false, false), act: Act::RestoreAll });
             }
         } else if let Some((folder, n)) = self.trash_folder(i) {
             let frames: Vec<String> = {
                 let s = self.state.borrow();
                 oni_library::trash::frames(&folder, &s.org.trashed).into_iter().collect()
             };
-            let word = if n == 1 { "Restore Photo".to_string() } else { format!("Restore {n} Photos") };
+            let word = trn("Restore Photo", "Restore {n} Photos", n as u64);
             items.push(Item { line: menu_line(&word, true, false, false), act: Act::Restore(frames) });
             let present = Path::new(&folder).exists();
-            items.push(Item { line: menu_line("Show in Finder", present, true, false), act: Act::Reveal(vec![folder]) });
+            items.push(Item { line: menu_line(tr("Show in Finder"), present, true, false), act: Act::Reveal(vec![folder]) });
         }
         self.open_menu(items, None)
     }
@@ -171,9 +170,9 @@ impl Ctl {
         if count == 0 {
             return;
         }
-        let (title, key) =
-            if count > 1 { (format!("Restore {count} Photos?"), format!("Restore {count} Photos")) } else { ("Restore This Photo?".into(), "Restore Photo".into()) };
-        self.ask(&title, "Every photo in the ONI Trash goes back to its folder, roll and project.", &key, false, Pending::RestoreAll);
+        let title = trn("Restore This Photo?", "Restore {n} Photos?", count as u64);
+        let key = trn("Restore Photo", "Restore {n} Photos", count as u64);
+        self.ask(&title, tr("Every photo in the ONI Trash goes back to its folder, roll and project."), &key, false, Pending::RestoreAll);
     }
 
     pub(in crate::app) fn restore_all(self: &Rc<Self>) {

@@ -43,25 +43,25 @@ impl Ctl {
         let (title, detail, action) = if !s.order.is_empty() {
             (String::new(), String::new(), String::new())
         } else if s.org.projects_surface {
-            ("No Photos in a Project".into(), "Right-click photos in the library and choose New Project from them.".into(), String::new())
+            (tr("No Photos in a Project").into(), tr("Right-click photos in the library and choose New Project from them.").into(), String::new())
         } else if s.org.trash_open {
-            ("ONI Trash Is Empty".into(), "A photo deleted in ONI waits here, its file untouched, until it is restored.".into(), String::new())
+            (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
         } else if let Some(m) = s.filter {
-            (format!("No {} Photos", library::medal(m)), "Cycle the filter (⌘L) to see the others.".into(), String::new())
+            (tr!("No {medal} Photos", medal = library::medal(m)), tr("Cycle the filter (⌘L) to see the others.").into(), String::new())
         } else if s.opened.is_none() {
             (
-                "No Folder Open".into(),
-                "Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.".into(),
-                "Open Folder…".into(),
+                tr("No Folder Open").into(),
+                tr("Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.").into(),
+                tr("Open Folder…").into(),
             )
         } else {
-            ("No Photos".into(), "No photo under this folder.".into(), "Open Folder…".into())
+            (tr("No Photos").into(), tr("No photo under this folder.").into(), tr("Open Folder…").into())
         };
         let lib = w.global::<Library>();
         lib.set_empty_title(title.into());
         lib.set_empty_detail(detail.into());
         lib.set_empty_action(action.into());
-        lib.set_projects_empty(if s.org.projects.is_empty() { "No Projects" } else { "" }.into());
+        lib.set_projects_empty(if s.org.projects.is_empty() { tr("No Projects") } else { "" }.into());
     }
 
     /// The tile flags the bands carry: medal, missing original, a triplet's lead.

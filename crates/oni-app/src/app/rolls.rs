@@ -7,6 +7,7 @@ use crate::{App, Choice, PanelState};
 use oni_core::balance::Strategy;
 use oni_library::roll_membership::{self, ResetReach};
 use oni_measure::choice;
+use oni_i18n::{tr, trn};
 use oni_settings::PipelineSettings;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::collections::{HashMap, HashSet};
@@ -92,9 +93,9 @@ impl Ctl {
         let note = if !choice::needs_run(count, open_alone) || count == 0 {
             String::new()
         } else if count > 1 {
-            format!("Acts on {count} photos.")
+            tr!("Acts on {count} photos.", count = count)
         } else {
-            "Acts on the selected photo, not the one on screen.".to_string()
+            tr("Acts on the selected photo, not the one on screen.").to_string()
         };
         panel.set_balance_note(note.into());
     }
@@ -133,7 +134,7 @@ impl Ctl {
         if members.is_empty() {
             return;
         }
-        self.gesture(&members, |store| store.set_film(&members, None, "Ungroup"));
+        self.gesture(&members, |store| store.set_film(&members, None, tr("Ungroup")));
     }
 
     // MARK: - Reset to Default
@@ -159,13 +160,13 @@ impl Ctl {
             return;
         }
         let sheets = !reach.sheets.is_empty();
-        let title = if count > 1 { format!("Reset {count} Photos to Default?") } else { "Reset This Photo to Default?".to_string() };
-        let message = format!(
-            "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots{}. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings {}",
-            if sheets { ", and the roll's contact sheet goes to the ONI Trash" } else { "" },
-            if sheets { "both back." } else { "the settings back." }
-        );
-        let key = if count > 1 { format!("Reset {count} Photos") } else { "Reset Photo".to_string() };
+        let title = trn("Reset This Photo to Default?", "Reset {n} Photos to Default?", count as u64);
+        let message = if sheets {
+            tr("Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings both back.")
+        } else {
+            tr("Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings the settings back.")
+        };
+        let key = trn("Reset Photo", "Reset {n} Photos", count as u64);
         self.ask(&title, &message, &key, true, Pending::ResetToDefault(reach));
     }
 

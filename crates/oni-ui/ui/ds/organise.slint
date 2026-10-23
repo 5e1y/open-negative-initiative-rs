@@ -17,7 +17,7 @@ export component MedalPicker inherits HorizontalLayout {
         width: TileStyle.medal + 2 * Space.xxs;
         height: self.width;
         accessible-role: button;
-        accessible-label: medal == 1 ? "Bronze" : medal == 2 ? "Silver" : "Gold";
+        accessible-label: medal == 1 ? @tr("Bronze") : medal == 2 ? @tr("Silver") : @tr("Gold");
         Rectangle {
             width: TileStyle.medal * (touch.pressed ? DS.control-medal-press : 1);
             height: self.width;
@@ -134,11 +134,11 @@ export component DateFields inherits HorizontalLayout {
     callback committed(string, string, string);
     spacing: Space.xs;
     height: FieldStyle.height;
-    m := DateBox { width: DS.control-date-field-width; placeholder: "MM"; text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
+    m := DateBox { width: DS.control-date-field-width; placeholder: @tr("MM"); text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
     Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    d := DateBox { width: DS.control-date-field-width; placeholder: "DD"; text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
+    d := DateBox { width: DS.control-date-field-width; placeholder: @tr("DD"); text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
     Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    y := DateBox { width: DS.control-year-field-width; placeholder: "YYYY"; text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
+    y := DateBox { width: DS.control-year-field-width; placeholder: @tr("YYYY"); text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
     changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
 }
 
@@ -204,7 +204,7 @@ export component TrashRow inherits Rectangle {
         if area.has-hover && root.restore-help != "": VerticalLayout {
             alignment: center;
             Button {
-                text: "RESTORE";
+                text: @tr("RESTORE");
                 size: ButtonSize.small;
                 help: root.restore-help;
                 clicked => { root.restore(); }

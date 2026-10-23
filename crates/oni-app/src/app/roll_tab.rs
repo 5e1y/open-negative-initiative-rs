@@ -4,6 +4,7 @@
 
 use super::Ctl;
 use crate::{MenuLine, PanelState};
+use oni_i18n::tr;
 use oni_core::Command;
 use oni_settings::blocks::SeparationFamily;
 use oni_settings::frame::{FlatField, FlatFieldMask};
@@ -28,11 +29,11 @@ pub(super) enum MaskLine {
 
 /// `FlatFieldBlock.options`: none, the shipped mask while it is the frame's, a missing one, then each loaded.
 pub(super) fn mask_options(flat: &FlatField, entries: &[crate::flat_fields::Entry]) -> Vec<(MaskLine, String)> {
-    let mut list = vec![(MaskLine::None, "None selected".to_string())];
+    let mut list = vec![(MaskLine::None, tr("None selected").to_string())];
     if flat.mask == FlatFieldMask::ValoiEasy35V1 {
         list.push((MaskLine::Shipped, "Valoi 35v1".to_string()));
     } else if let Some(id) = flat.custom.as_ref().filter(|id| !entries.iter().any(|e| &e.id == *id)) {
-        list.push((MaskLine::Custom(id.clone()), "Missing mask".to_string()));
+        list.push((MaskLine::Custom(id.clone()), tr("Missing mask").to_string()));
     }
     list.extend(entries.iter().map(|e| (MaskLine::Custom(e.id.clone()), e.name.clone())));
     list
@@ -147,7 +148,7 @@ impl Ctl {
         panel.set_masked(flat.mask != FlatFieldMask::None && !(flat.mask == FlatFieldMask::Custom && flat.custom.is_none()));
         let options = mask_options(flat, &entries);
         let current = chosen(flat);
-        panel.set_mask_title(options.iter().find(|(l, _)| *l == current).map_or("None selected".to_string(), |(_, t)| t.clone()).into());
+        panel.set_mask_title(options.iter().find(|(l, _)| *l == current).map_or(tr("None selected").to_string(), |(_, t)| t.clone()).into());
         let lines: Vec<MenuLine> = options.iter().map(|(_, t)| MenuLine { text: t.as_str().into(), enabled: true, rule: false, opens: false }).collect();
         panel.set_mask_lines(ModelRc::new(VecModel::from(lines)));
         panel.set_masks_empty(entries.is_empty());

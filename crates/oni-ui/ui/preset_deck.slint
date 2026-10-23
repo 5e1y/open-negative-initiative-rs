@@ -53,7 +53,7 @@ export component PresetDeck inherits Rectangle {
                         height: PresetStyle.lift + PresetStyle.card-height;
                         enabled: Presets.can-update;
                         clicked => { Presets.create(); }
-                        changed has-hover => { Tips.hover(self.has-hover, "Save this photo’s settings as a preset…", self.absolute-position.x, self.absolute-position.y + self.height); }
+                        changed has-hover => { Tips.hover(self.has-hover, @tr("Save this photo’s settings as a preset…"), self.absolute-position.x, self.absolute-position.y + self.height); }
                     }
                 }
                 roll-view := Scroller {

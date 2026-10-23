@@ -147,15 +147,15 @@ component Rows inherits Scroller {
 component Welcome inherits VerticalLayout {
     padding: Space.m;
     spacing: Space.s;
-    Label { text: "The archive shows a folder of your disk and everything under it."; tone: Tone.secondary; wrap: word-wrap; }
-    if Navigator.welcome.length > 0: Label { text: "Your photos were in:"; }
+    Label { text: @tr("The archive shows a folder of your disk and everything under it."); tone: Tone.secondary; wrap: word-wrap; }
+    if Navigator.welcome.length > 0: Label { text: @tr("Your photos were in:"); }
     for line[i] in Navigator.welcome: Button {
-        text: "ADD " + line.title;
+        text: @tr("ADD {}", line.title);
         help: line.path;
         clicked => { Navigator.welcome-added(i); }
     }
     Button {
-        text: "ADD FOLDER…";
+        text: @tr("ADD FOLDER…");
         clicked => { Navigator.welcome-chose(); }
     }
 }
@@ -184,13 +184,13 @@ export component NavigatorSection inherits Rectangle {
                 mini: true;
                 GlyphKey {
                     icon: Icons.parent;
-                    help: "Parent folder";
+                    help: @tr("Parent folder");
                     enabled: Navigator.can-go-up;
                     clicked => { Navigator.go-up(); }
                 }
                 GlyphKey {
                     icon: Icons.favourite;
-                    help: Navigator.favourites-only ? "Show every folder" : "Show the favourites alone";
+                    help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
                     tinted: Navigator.favourites-only;
                     clicked => { Navigator.favourites-toggled(); }
                 }
@@ -217,8 +217,8 @@ export component NavigatorSection inherits Rectangle {
             if Navigator.no-favourites: EmptyState {
                 y: 0;
                 height: self.preferred-height;
-                title: "No Favourites";
-                detail: "Star a folder to keep it here; its photos stay indexed.";
+                title: @tr("No Favourites");
+                detail: @tr("Star a folder to keep it here; its photos stay indexed.");
             }
         }
         if root.beside-photo: Rectangle {
@@ -234,8 +234,8 @@ export component NavigatorSection inherits Rectangle {
             if Navigator.no-favourites: EmptyState {
                 y: 0;
                 height: self.preferred-height;
-                title: "No Favourites";
-                detail: "Star a folder to keep it here; its photos stay indexed.";
+                title: @tr("No Favourites");
+                detail: @tr("Star a folder to keep it here; its photos stay indexed.");
             }
         }
         if root.beside-photo: RowsDivider {
@@ -270,13 +270,13 @@ export component RootsCatchUpSheet inherits Sheet {
     // Its groups a wider step apart than a plain sheet's lines, the steps a medium one.
     VerticalLayout {
         spacing: Space.l;
-        Label { text: "Your Library Now Follows Your Disk"; role: TextRole.title; wrap: word-wrap; }
+        Label { text: @tr("Your Library Now Follows Your Disk"); role: TextRole.title; wrap: word-wrap; }
         VerticalLayout {
             spacing: Space.m;
             for step[i] in [
-                { title: "Pick the folder that holds all your scans", detail: "ONI reads it straight from your disk." },
-                { title: "Every folder inside it comes in", detail: "All the way down, nothing to import." },
-                { title: "Not your whole disk", detail: "Too wide and ONI reads everything; too narrow and photos stay out." },
+                { title: @tr("Pick the folder that holds all your scans"), detail: @tr("ONI reads it straight from your disk.") },
+                { title: @tr("Every folder inside it comes in"), detail: @tr("All the way down, nothing to import.") },
+                { title: @tr("Not your whole disk"), detail: @tr("Too wide and ONI reads everything; too narrow and photos stay out.") },
             ]: HorizontalLayout {
                 spacing: Space.s;
                 VerticalLayout {
@@ -304,7 +304,7 @@ export component RootsCatchUpSheet inherits Sheet {
                 spacing: Space.s;
                 Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
                 Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
-                Button { text: "ADD"; fills: false; clicked => { Navigator.catch-up-added(i); } }
+                Button { text: @tr("ADD"); fills: false; clicked => { Navigator.catch-up-added(i); } }
             }
             if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
         }
@@ -312,7 +312,7 @@ export component RootsCatchUpSheet inherits Sheet {
         HorizontalLayout {
             alignment: end;
             Button {
-                text: "DONE";
+                text: @tr("DONE");
                 clicked => { Navigator.catch-up-done(); }
             }
         }

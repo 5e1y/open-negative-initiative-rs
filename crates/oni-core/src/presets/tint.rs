@@ -32,10 +32,11 @@ impl Tint {
         Tint::ALL.into_iter().find(|t| t.raw_value() == raw)
     }
 
-    /// The swatch's name, the raw value capitalised.
+    /// The swatch's name, the raw value capitalised, in the language spoken.
     pub fn label(self) -> String {
-        let raw = self.raw_value();
-        raw[..1].to_uppercase() + &raw[1..]
+        use oni_i18n::marked;
+        let names = [marked("Slate"), marked("Rust"), marked("Amber"), marked("Moss"), marked("Teal"), marked("Indigo"), marked("Plum"), marked("Rose")];
+        oni_i18n::tr(names[self as usize]).to_string()
     }
 
     /// Components rather than a colour, so the ink is derived.

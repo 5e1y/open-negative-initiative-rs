@@ -16,10 +16,10 @@ impl Ctl {
             let mut items = Vec::new();
             if let [ArchiveNode::Folder(folder)] = targets.as_slice() {
                 let roll = s.nav.rolls().contains(folder);
-                items.push(Item { line: menu_line("Rename…", true, false, false), act: Act::RenameFolder(folder.clone()) });
-                let text = if roll { "Back to a Folder" } else { "Make a Roll" };
+                items.push(Item { line: menu_line(tr("Rename…"), true, false, false), act: Act::RenameFolder(folder.clone()) });
+                let text = if roll { tr("Back to a Folder") } else { tr("Make a Roll") };
                 items.push(Item { line: menu_line(text, true, false, false), act: Act::Roll(folder.clone(), !roll) });
-                items.push(Item { line: menu_line("New Folder Inside", true, false, false), act: Act::NewFolder(folder.clone()) });
+                items.push(Item { line: menu_line(tr("New Folder Inside"), true, false, false), act: Act::NewFolder(folder.clone()) });
             }
             let photos: Vec<String> = targets.iter().filter_map(|t| if let ArchiveNode::Photo(p) = t { Some(p.clone()) } else { None }).collect();
             if !photos.is_empty() && photos.len() == targets.len() {
@@ -35,7 +35,7 @@ impl Ctl {
                     })
                     .collect();
                 let rule = !items.is_empty();
-                items.push(Item { line: menu_line("Show in Finder", true, rule, false), act: Act::Reveal(paths) });
+                items.push(Item { line: menu_line(tr("Show in Finder"), true, rule, false), act: Act::Reveal(paths) });
                 (items, None)
             }
         };
@@ -66,7 +66,7 @@ impl Ctl {
                     let scope: HashSet<String> = photos.into_iter().collect();
                     (self.cell_items(&s, &first, &scope, true, can_paste), Some(first))
                 }
-                [project] => (vec![Item { line: menu_line("Delete Project", true, false, false), act: Act::DeleteProject(*project) }], None),
+                [project] => (vec![Item { line: menu_line(tr("Delete Project"), true, false, false), act: Act::DeleteProject(*project) }], None),
                 _ => return false,
             }
         };

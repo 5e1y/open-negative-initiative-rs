@@ -12,7 +12,7 @@ export component HelpMark inherits Rectangle {
     width: SectionStyle.help-mark + 2 * Space.xxs;
     height: self.width;
     accessible-role: button;
-    accessible-label: "What this block does";
+    accessible-label: @tr("What this block does");
     Icon {
         source: Icons.question;
         tone: area.has-hover ? Tone.secondary : Tone.tertiary;
@@ -72,7 +72,7 @@ export component Section inherits VerticalLayout {
             if root.block >= 0: Button {
                 size: ButtonSize.small;
                 horizontal-stretch: 0;
-                text: "RESET";
+                text: @tr("RESET");
                 visible: root.modified;
                 enabled: root.modified;
                 clicked => { root.reset(root.block); }
@@ -83,7 +83,7 @@ export component Section inherits VerticalLayout {
                 width: self.height;
                 horizontal-stretch: 0;
                 icon: root.folded ? Icons.chevron-right : Icons.chevron-down;
-                help: root.folded ? "Show " + root.title : "Hide " + root.title;
+                help: root.folded ? @tr("Show {}", root.title) : @tr("Hide {}", root.title);
                 clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); }
             }
         }

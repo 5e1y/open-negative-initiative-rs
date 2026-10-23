@@ -20,7 +20,7 @@ export component Tree inherits Surface {
             padding-top: Space.s;
             padding-bottom: Space.s;
             Tabs {
-                tabs: ["Archive", "Projects"];
+                tabs: [@tr("Archive"), @tr("Projects")];
                 selected <=> Library.surface;
                 picked(i) => { Library.surface-picked(i); }
             }
@@ -48,10 +48,10 @@ export component Tree inherits Surface {
             spacing: Space.s;
             KeyPlate {
                 mini: true;
-                GlyphKey { icon: Icons.target; help: "Show the selected photo"; clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
+                GlyphKey { icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
                 if Library.surface == 1: GlyphKey {
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
-                    help: Library.projects-any-open ? "Fold every folder" : "Open every folder";
+                    help: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder");
                     clicked => { Library.project-fold-all(); }
                 }
                 GlyphKey {
@@ -62,7 +62,7 @@ export component Tree inherits Surface {
             }
             ColumnPill {
                 horizontal-stretch: 1;
-                text: Library.surface == 1 ? "ONI Projects" : Navigator.opened-title;
+                text: Library.surface == 1 ? @tr("ONI Projects") : Navigator.opened-title;
                 help: Library.surface == 1 ? "" : Navigator.opened-help;
             }
         }
@@ -165,7 +165,7 @@ export component Tree inherits Surface {
     }
     if Library.surface == 1 && Library.projects-empty != "": EmptyState {
         title: Library.projects-empty;
-        detail: "Right-click photos in the library and choose New Project from them.";
+        detail: @tr("Right-click photos in the library and choose New Project from them.");
     }
     // The menu at a point in window coordinates.
     function open-menu(x: length, y: length) {

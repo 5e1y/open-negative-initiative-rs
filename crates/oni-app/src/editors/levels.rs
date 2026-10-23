@@ -3,6 +3,7 @@
 
 use super::geometry::{Drawing, Ink, Line, Size, dashed, ds};
 use crate::track;
+use oni_i18n::tr;
 use oni_settings::ConversionMode;
 use oni_settings::levels::{Levels, LevelsChannel, LevelsSet};
 
@@ -23,18 +24,18 @@ impl Grip {
 
     pub fn label(self) -> &'static str {
         match self {
-            Grip::Shadows => "Shadows",
-            Grip::Mid => "Midpoint",
-            Grip::Highlights => "Highlights",
-            Grip::Black => "Black",
-            Grip::White => "White",
+            Grip::Shadows => tr("Shadows"),
+            Grip::Mid => tr("Midpoint"),
+            Grip::Highlights => tr("Highlights"),
+            Grip::Black => tr("Black"),
+            Grip::White => tr("White"),
         }
     }
 
     pub fn readout_name(self) -> &'static str {
         match self {
-            Grip::Mid => "Mid",
-            Grip::Highlights => "Highs",
+            Grip::Mid => tr("Mid"),
+            Grip::Highlights => tr("Highs"),
             other => other.label(),
         }
     }

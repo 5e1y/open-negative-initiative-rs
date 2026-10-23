@@ -77,7 +77,7 @@ export component FolderRow inherits Rectangle {
                     width: NavigatorStyle.star;
                     height: NavigatorStyle.star;
                     accessible-role: button;
-                    accessible-label: root.favourite ? "Remove from the favourites" : "Add to the favourites";
+                    accessible-label: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
                     // Sized to its key: an image left unsized draws at its file's 24 px.
                     Icon {
                         width: parent.width;
@@ -88,7 +88,7 @@ export component FolderRow inherits Rectangle {
                     star := TouchArea {
                         clicked => { root.starred(); }
                         changed has-hover => {
-                            Tips.hover(self.has-hover, root.favourite ? "Remove from the favourites" : "Add to the favourites", root.absolute-position.x, root.absolute-position.y + root.height);
+                            Tips.hover(self.has-hover, root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites"), root.absolute-position.x, root.absolute-position.y + root.height);
                         }
                     }
                 }
@@ -124,7 +124,7 @@ export component RenameRow inherits FocusScope {
         field := TextField {
             horizontal-stretch: 1;
             text: root.text;
-            placeholder: "Name";
+            placeholder: @tr("Name");
             init => { self.take-focus(); }
             edited(t) => { root.edited(t); }
             accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }

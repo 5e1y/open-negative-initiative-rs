@@ -2,6 +2,7 @@
 //! the selection, its anchor and the keyboard's cursor, kept by path so a relayout keeps them.
 
 use crate::picking::{self, Click, ClickTracker, SpaceKey, Step};
+use oni_i18n::tr;
 use std::collections::HashSet;
 
 /// A grid as the keys read it: its photos in the order shown and its bands, each named.
@@ -179,10 +180,10 @@ pub struct CellLine {
 pub fn medal_name(medal: oni_settings::Medal) -> &'static str {
     use oni_settings::Medal;
     match medal {
-        Medal::None => "None",
-        Medal::Bronze => "Bronze",
-        Medal::Silver => "Silver",
-        Medal::Gold => "Gold",
+        Medal::None => tr("None"),
+        Medal::Bronze => tr("Bronze"),
+        Medal::Silver => tr("Silver"),
+        Medal::Gold => tr("Gold"),
     }
 }
 
@@ -217,26 +218,29 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     let joined: HashSet<String> = scope.intersection(facts.rolled).cloned().collect();
     let line = |text: String, enabled: bool, rule: bool, action: CellAction, on: &HashSet<String>| CellLine { text, enabled, rule, action, scope: sorted(on, order) };
     let n = scope.len();
+    // `menu_label`'s words: the verb alone for one photo, counted past it.
+    let counted = |count: usize, one: &'static str, many: String| if count > 1 { many } else { tr(one).to_owned() };
     let mut lines = vec![
-        line(picking::menu_label("Paste Settings", n), facts.can_paste, false, CellAction::Paste, scope),
-        line(picking::menu_label("Reset Settings", n), true, false, CellAction::Reset, scope),
-        line(picking::menu_label("Reset to Default\u{2026}", n), true, false, CellAction::ResetToDefault, scope),
+        line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste, false, CellAction::Paste, scope),
+        line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), true, false, CellAction::Reset, scope),
+        line(counted(n, "Reset to Default…", tr!("Reset to Default… ({count} photos)", count = n)), true, false, CellAction::ResetToDefault, scope),
     ];
     for (i, medal) in [Medal::None, Medal::Bronze, Medal::Silver, Medal::Gold].into_iter().enumerate() {
         lines.push(line(medal_name(medal).into(), true, i == 0, CellAction::Medal(medal), scope));
     }
-    lines.push(line(picking::menu_label("New Roll from", n), true, true, CellAction::NewRoll, scope));
-    lines.push(line(picking::menu_label("Ungroup", joined.len()), !joined.is_empty(), false, CellAction::Ungroup, &joined));
-    lines.push(line(picking::menu_label("New Project from", n), true, false, CellAction::NewProject, scope));
+    lines.push(line(counted(n, "New Roll from", tr!("New Roll from ({count} photos)", count = n)), true, true, CellAction::NewRoll, scope));
+    let (j, e) = (joined.len(), exportable.len());
+    lines.push(line(counted(j, "Ungroup", tr!("Ungroup ({count} photos)", count = j)), !joined.is_empty(), false, CellAction::Ungroup, &joined));
+    lines.push(line(counted(n, "New Project from", tr!("New Project from ({count} photos)", count = n)), true, false, CellAction::NewProject, scope));
     if !facts.projects.is_empty() {
-        lines.push(line("Add to Project".into(), true, false, CellAction::AddTo, scope));
+        lines.push(line(tr("Add to Project").into(), true, false, CellAction::AddTo, scope));
     }
     if !facts.member_of.is_empty() {
-        lines.push(line("Remove from Project".into(), true, false, CellAction::RemoveFrom, scope));
+        lines.push(line(tr("Remove from Project").into(), true, false, CellAction::RemoveFrom, scope));
     }
-    lines.push(line(picking::menu_label("Export\u{2026}", exportable.len()), !exportable.is_empty(), true, CellAction::Export, &exportable));
-    lines.push(line(picking::menu_label("Show in Finder", exportable.len()), !exportable.is_empty(), false, CellAction::Reveal, &exportable));
-    let trash = if n > 1 { format!("Move {n} Photos to ONI Trash") } else { "Move to ONI Trash".into() };
+    lines.push(line(counted(e, "Export…", tr!("Export… ({count} photos)", count = e)), !exportable.is_empty(), true, CellAction::Export, &exportable));
+    lines.push(line(counted(e, "Show in Finder", tr!("Show in Finder ({count} photos)", count = e)), !exportable.is_empty(), false, CellAction::Reveal, &exportable));
+    let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
     lines.push(CellLine { text: trash, enabled: true, rule: true, action: CellAction::Trash, scope: all });
     lines
 }
@@ -255,7 +259,7 @@ pub fn submenu(opener: &CellLine, facts: &CellFacts) -> Vec<CellLine> {
 pub fn trash_menu(scope: &HashSet<String>, order: &[String]) -> Vec<(String, bool, Vec<String>)> {
     let n = scope.len();
     let on = sorted(scope, order);
-    vec![(if n > 1 { format!("Restore {n} Photos") } else { "Restore".into() }, false, on.clone()), ("Show in Finder".into(), true, on)]
+    vec![(if n > 1 { tr!("Restore {count} Photos", count = n) } else { tr("Restore").into() }, false, on.clone()), (tr("Show in Finder").into(), true, on)]
 }
 
 #[cfg(test)]

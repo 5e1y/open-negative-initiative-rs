@@ -32,7 +32,7 @@ fn every_field_has_its_place_in_the_slint_store() {
     let panel = panel_source();
     for f in Field::ALL {
         // Source Balance names each row by the ends the mode gives it, so its label is the panel's.
-        let named = |l: &str| l.contains(&format!("label: \"{}\";", f.spec().label)) || f.block() == Some(Block::SourceBalance);
+        let named = |l: &str| l.contains(&format!("label: @tr(\"{}\");", f.spec().label)) || f.block() == Some(Block::SourceBalance);
         let wired = panel.lines().any(|l| {
             l.contains(&format!("field: {}; label: ", f.index())) && l.contains(&format!("fraction: Store.{}-fraction;", f.slint_name())) && named(l)
         });
@@ -91,7 +91,7 @@ fn pane_titles(panel: &str, pane: &str) -> Vec<String> {
     let body = &panel[panel.find(&format!("component {pane} ")).expect("the pane")..];
     let next = ["\ncomponent ", "\nexport component "].iter().filter_map(|m| body[1..].find(m)).min();
     let body = &body[..next.map_or(body.len(), |i| i + 1)];
-    body.lines().filter_map(|l| l.trim().strip_prefix("title: \"")?.split('"').next().map(str::to_string)).collect()
+    body.lines().filter_map(|l| l.trim().strip_prefix("title: @tr(\"")?.split('"').next().map(str::to_string)).collect()
 }
 
 /// Whether `shown` keeps `order`'s relative order, every one of its blocks found there.

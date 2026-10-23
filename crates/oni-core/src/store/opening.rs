@@ -3,7 +3,7 @@
 use super::*;
 
 /// What a photo whose original cannot be found says as it opens read-only.
-pub const UNREACHABLE: &str = "The original cannot be found; its disk may be disconnected. The photo opens read-only, and nothing is saved.";
+pub const UNREACHABLE: &str = oni_i18n::marked("The original cannot be found; its disk may be disconnected. The photo opens read-only, and nothing is saved.");
 
 impl EditorStore {
     /// Opens a frame on its sidecar, writing the previous one first; its history starts here, so
@@ -22,7 +22,7 @@ impl EditorStore {
         let read = if Path::new(path).exists() {
             sidecar::read(Path::new(path), self.mosaic(path), true)
         } else {
-            Err(sidecar::Error::Io(std::io::Error::new(std::io::ErrorKind::NotFound, UNREACHABLE)))
+            Err(sidecar::Error::Io(std::io::Error::new(std::io::ErrorKind::NotFound, tr(UNREACHABLE))))
         };
         let (mut settings, writable, persisted, result) = match read {
             Ok(loaded) => {

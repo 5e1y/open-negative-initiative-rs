@@ -135,6 +135,13 @@ first on the simplified design system; the real interface work comes after.
   other surface scroll by wheel or trackpad only, never by grab-dragging (`mouse-drag-pan-enabled: false`);
   the one exception is the scroll knob on the edge, which drags and pages as AppKit's scroller.
 - `docs/ui-spec.md` maps every Swift interface item to its Slint construct.
+- **Every text the app shows is translated**: English in the source, French and Spanish in
+  `crates/oni-i18n/lang/<lang>/LC_MESSAGES/oni-ui.po`, which Slint bundles and the Rust side reads. Slint
+  writes `@tr("…")` (arguments as `{}`), Rust `tr("…")`, `tr!("… {name}", name = …)`, `trn(one, many, n)` and
+  `marked("…")` for a constant. `scripts/i18n` adds new texts to the catalogues; the catalogue check fails
+  while one lacks a translation, loses a placeholder, or a `.slint` word sits outside `@tr`. Logs, keys and
+  what files or the Swift app read stay English. The language is Settings > General's, else the system's
+  (`ONI_LANGUAGE` for the checks, which read English).
 
 ## Working loop
 

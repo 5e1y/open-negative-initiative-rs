@@ -44,7 +44,7 @@ impl Ctl {
         let facts = CellFacts { missing: &s.org.missing, rolled: &rolled, can_paste, projects, member_of };
         let mut items = Vec::new();
         if edit && scope.len() == 1 {
-            items.push(Item { line: menu_line("Edit", true, false, false), act: Act::Edit(path.to_owned()) });
+            items.push(Item { line: menu_line(tr("Edit"), true, false, false), act: Act::Edit(path.to_owned()) });
         }
         for (i, line) in organise::cell_menu(scope, &s.order, &facts).into_iter().enumerate() {
             let opens = matches!(line.action, CellAction::AddTo | CellAction::RemoveFrom);
@@ -138,7 +138,7 @@ impl Ctl {
             CellAction::NewRoll => self.new_roll(),
             CellAction::Ungroup => {
                 let paths = line.scope.clone();
-                self.gesture(&paths, |store| store.set_film(&paths, None, "Ungroup"));
+                self.gesture(&paths, |store| store.set_film(&paths, None, tr("Ungroup")));
             }
             CellAction::NewProject => self.new_project(&scope),
             CellAction::AddToProject(id) => {

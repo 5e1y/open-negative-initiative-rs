@@ -11,6 +11,7 @@ use oni_library::project::{self, Project, ProjectsFile};
 use oni_library::project_tree::{self, Node, NodeId};
 use oni_settings::film::{default_stock_id, film_stock};
 use oni_settings::{Date, Film, Id, Medal};
+use oni_i18n::{tr, trn};
 use slint::{ComponentHandle, Image, ModelRc, SharedString, VecModel};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;

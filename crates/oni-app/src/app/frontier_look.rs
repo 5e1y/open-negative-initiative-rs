@@ -31,24 +31,24 @@ impl Ctl {
         if let Some(path) = kept
             && let Err(e) = self.load_frontier_look(&path)
         {
-            self.say(&format!("The Frontier look could not be read again: {e}. The measured table is used."));
+            self.say(&tr!("The Frontier look could not be read again: {e}. The measured table is used.", e = e));
         }
     }
 
     /// Writes the look in use, else ONI's own as a start, where the hand chooses.
     pub(super) fn export_frontier_look(&self) {
         let cube = oni_pipeline::frontier_table::current().map(|(_, c)| (*c).clone()).unwrap_or_else(oni_pipeline::frontier_table::starting);
-        let Some(path) = crate::system::save_file("Export the Frontier look", "ONI Frontier look.cube", &["cube"]) else { return };
+        let Some(path) = crate::system::save_file(tr("Export the Frontier look"), "ONI Frontier look.cube", &["cube"]) else { return };
         if let Err(e) = oni_library::write_atomically(&path, oni_pipeline::frontier_table::write(&cube).as_bytes()) {
-            self.say(&format!("The look could not be written: {e}"));
+            self.say(&tr!("The look could not be written: {e}", e = e));
         }
     }
 
     pub(super) fn choose_frontier_look(self: &Rc<Self>) {
-        let Some(path) = crate::system::pick_file("Use a Frontier look", &["cube"]) else { return };
+        let Some(path) = crate::system::pick_file(tr("Use a Frontier look"), &["cube"]) else { return };
         match self.load_frontier_look(&path) {
             Ok(()) => self.remember(preferences::FRONTIER_LOOK, path.to_string_lossy().into_owned().into()),
-            Err(e) => self.say(&format!("This file cannot be the Frontier look: {e}")),
+            Err(e) => self.say(&tr!("This file cannot be the Frontier look: {e}", e = e)),
         }
     }
 
@@ -77,7 +77,7 @@ impl Ctl {
         if let Some(path) = due
             && let Err(e) = self.load_frontier_look(&path)
         {
-            self.say(&format!("The Frontier look's last save cannot be read: {e}"));
+            self.say(&tr!("The Frontier look's last save cannot be read: {e}", e = e));
         }
     }
 
@@ -100,8 +100,8 @@ impl Ctl {
     /// What the sheet says of the look in use.
     pub(super) fn frontier_look_line(&self) -> String {
         WATCHED.with(|w| match w.borrow().as_ref() {
-            Some(w) => format!("From \u{201c}{}\u{201d}, read again each time it is saved.", w.path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default()),
-            None => "The measured Frontier table.".into(),
+            Some(w) => tr!("From \u{201c}{file}\u{201d}, read again each time it is saved.", file = w.path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default()),
+            None => tr("The measured Frontier table.").into(),
         })
     }
 }

@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 oni-colour.workspace = true
 oni-settings.workspace = true
+oni-i18n = { path = "../oni-i18n" }
 flate2 = "1"
 half = "2"
 jpeg-encoder = "0.7"

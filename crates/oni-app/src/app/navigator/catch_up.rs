@@ -24,10 +24,10 @@ impl Ctl {
             let mut outside: Vec<(String, usize)> = counts.into_iter().collect();
             outside.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
             let total: usize = outside.iter().map(|(_, n)| n).sum();
-            let choose = if roots.is_empty() { "Add Folder…" } else { "Add Another Folder…" }.to_uppercase();
-            let left = if outside.is_empty() { String::new() } else { format!("{total} photos of your library are not in it yet:") };
-            let more = if outside.len() > CATCH_UP_SHOWN { format!("and {} more folders", outside.len() - CATCH_UP_SHOWN) } else { String::new() };
-            let all_in = if outside.is_empty() && !roots.is_empty() { "Every photo of your library is in." } else { "" };
+            let choose = if roots.is_empty() { tr("Add Folder…") } else { tr("Add Another Folder…") }.to_uppercase();
+            let left = if outside.is_empty() { String::new() } else { tr!("{total} photos of your library are not in it yet:", total = total) };
+            let more = if outside.len() > CATCH_UP_SHOWN { tr!("and {count} more folders", count = outside.len() - CATCH_UP_SHOWN) } else { String::new() };
+            let all_in = if outside.is_empty() && !roots.is_empty() { tr("Every photo of your library is in.") } else { "" };
             outside.truncate(CATCH_UP_SHOWN);
             s.nav.catch_up_folders = outside.iter().map(|(f, _)| f.clone()).collect();
             let lines: Vec<CatchUpLine> = outside.into_iter().map(|(f, n)| CatchUpLine { folder: f.into(), count: n.to_string().into() }).collect();

@@ -8,185 +8,185 @@ import { StoreSlider, Block, EditorBlock, Pane } from "parts.slint";
 export component RollPane inherits Pane {
     property <bool> flat-settings;
     Block {
-        title: "Measured Roll";
-        help: "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.";
+        title: @tr("Measured Roll");
+        help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.");
         separated: false;
         // `rollBlock`: the rows a small gap apart, as Swift stacks them.
         VerticalLayout {
             spacing: Space.s;
-            if PanelState.roll-state == 0: WarningBand { text: "This photo was never measured with its roll, so these settings act on it alone."; }
+            if PanelState.roll-state == 0: WarningBand { text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
-                text: "PREPARE THE ROLL…";
+                text: @tr("PREPARE THE ROLL…");
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
             }
             if PanelState.roll-state == 1: Note {
-                text: PanelState.roll-measured == 1 ? "Acts on this photo, the only one measured with its roll." : "Acts on the \{PanelState.roll-measured} photos measured with this roll.";
+                text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one measured with its roll.") : @tr("Acts on the {} photos measured with this roll.", PanelState.roll-measured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: WarningBand {
-                text: PanelState.roll-unmeasured == 1 ? "1 photo of this folder was not measured with the roll." : "\{PanelState.roll-unmeasured} photos of this folder were not measured with the roll.";
+                text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this folder was not measured with the roll.") : @tr("{} photos of this folder were not measured with the roll.", PanelState.roll-unmeasured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: KeyPlate {
                 fills: true;
                 Button {
                     fills: true;
-                    text: PanelState.roll-unmeasured == 1 ? "JOIN THE ROLL" : "JOIN THE \{PanelState.roll-unmeasured}";
-                    help: "Gives them this roll's measurement and settings, their own look kept.";
+                    text: PanelState.roll-unmeasured == 1 ? @tr("JOIN THE ROLL") : @tr("JOIN THE {}", PanelState.roll-unmeasured);
+                    help: @tr("Gives them this roll's measurement and settings, their own look kept.");
                     clicked => { PanelState.join-roll(); }
                 }
                 Button {
                     fills: true;
-                    text: "ROLL OF THE \{PanelState.roll-measured}";
-                    help: "Makes the photos measured together a roll of their own.";
+                    text: @tr("ROLL OF THE {}", PanelState.roll-measured);
+                    help: @tr("Makes the photos measured together a roll of their own.");
                     clicked => { PanelState.make-roll(); }
                 }
             }
-            if PanelState.roll-state == 2: Note { text: "Finding the photos measured with this roll…"; }
+            if PanelState.roll-state == 2: Note { text: @tr("Finding the photos measured with this roll…"); }
         }
     }
     Block {
-        title: "Film Type";
-        help: "What the film is: a colour negative, a slide or black and white.";
+        title: @tr("Film Type");
+        help: @tr("What the film is: a colour negative, a slide or black and white.");
         Tabs {
-            tabs: ["Negative", "Positive", "B&W"];
+            tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];
             selected <=> PanelState.film-type;
             picked(i) => { PanelState.film-type-picked(i); }
         }
     }
     Block {
-        title: "Flat-Field";
-        help: "Evens out uneven lighting from the scanner, whatever you crop to.";
+        title: @tr("Flat-Field");
+        help: @tr("Evens out uneven lighting from the scanner, whatever you crop to.");
         block: 11;
         modified: Store.flat-field-modified;
         folded-by-default: true;
         // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
         HorizontalLayout {
             spacing: Space.s;
-            ToggleRow { label: "Flat-field"; on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
+            ToggleRow { label: @tr("Flat-field"); on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
-                IconButton { size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.flat-settings = !root.flat-settings; } }
+                IconButton { size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.flat-settings = !root.flat-settings; } }
             }
         }
         if PanelState.flat-field-on: Field {
-            label: "Mask";
+            label: @tr("Mask");
             LinesPicker {
                 value: PanelState.mask-title;
                 lines: PanelState.mask-lines;
                 chosen(i) => { PanelState.mask-chosen(i); }
             }
         }
-        if PanelState.flat-field-on && PanelState.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
+        if PanelState.flat-field-on && PanelState.masks-empty: Note { text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
         Button {
-            text: PanelState.taking-mask ? "SETTING…" : "USE THIS PHOTO AS FLAT-FIELD";
+            text: PanelState.taking-mask ? @tr("SETTING…") : @tr("USE THIS PHOTO AS FLAT-FIELD");
             enabled: PanelState.can-take-mask;
             clicked => { PanelState.take-mask(); }
         }
         if root.flat-settings: StoreSlider {
-            field: 27; label: "Amount"; fraction: Store.flat-amount-fraction; readout: Store.flat-amount-readout; value-text: Store.flat-amount-value;
+            field: 27; label: @tr("Amount"); fraction: Store.flat-amount-fraction; readout: Store.flat-amount-readout; value-text: Store.flat-amount-value;
             enabled: PanelState.masked;
         }
         if root.flat-settings && !PanelState.monochrome: StoreSlider {
-            field: 28; label: "Temperature"; fraction: Store.flat-temperature-fraction; readout: Store.flat-temperature-readout; value-text: Store.flat-temperature-value;
+            field: 28; label: @tr("Temperature"); fraction: Store.flat-temperature-fraction; readout: Store.flat-temperature-readout; value-text: Store.flat-temperature-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
         if root.flat-settings && !PanelState.monochrome: StoreSlider {
-            field: 29; label: "Tint"; fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
+            field: 29; label: @tr("Tint"); fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         if root.flat-settings: KeyPlate {
             fills: true;
-            Button { fills: true; text: PanelState.loading-mask ? "LOADING…" : "LOAD…"; enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
-            Button { fills: true; text: "RENAME"; enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
-            Button { fills: true; text: "FOLDER"; clicked => { PanelState.mask-folder(); } }
+            Button { fills: true; text: PanelState.loading-mask ? @tr("LOADING…") : @tr("LOAD…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { fills: true; text: @tr("RENAME"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { fills: true; text: @tr("FOLDER"); clicked => { PanelState.mask-folder(); } }
         }
         if root.flat-settings: Button {
-            text: "APPLY TO SELECTION";
+            text: @tr("APPLY TO SELECTION");
             enabled: PanelState.flat-picked > 0;
             clicked => { PanelState.flat-apply-selection(); }
         }
     }
     if PanelState.undeclared: Block {
-        title: "Source Encoding";
-        help: "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.";
+        title: @tr("Source Encoding");
+        help: @tr("This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.");
         // No store block: the key writes no encoding, so any index only shows it.
         block: 0;
         modified: PanelState.encoding-modified;
         reset(b) => { PanelState.encoding-reset(); }
         folded-by-default: true;
         Field {
-            label: "Read as";
+            label: @tr("Read as");
             Tabs {
-                tabs: PanelState.grey-source ? ["sRGB", "Linear"] : ["sRGB", "Linear", "Display P3"];
+                tabs: PanelState.grey-source ? [@tr("sRGB"), @tr("Linear")] : [@tr("sRGB"), @tr("Linear"), @tr("Display P3")];
                 selected <=> PanelState.encoding;
                 picked(i) => { PanelState.encoding-picked(i); }
             }
         }
     }
     Block {
-        title: "Source Balance";
+        title: @tr("Source Balance");
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
         StoreSlider {
-            field: 24; label: PanelState.gains-inverted ? "Red ↔ Cyan" : "Cyan ↔ Red"; fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
+            field: 24; label: PanelState.gains-inverted ? @tr("Red ↔ Cyan") : @tr("Cyan ↔ Red"); fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;
         }
         StoreSlider {
-            field: 25; label: PanelState.gains-inverted ? "Green ↔ Magenta" : "Magenta ↔ Green"; fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
+            field: 25; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
         }
         StoreSlider {
-            field: 26; label: PanelState.gains-inverted ? "Blue ↔ Yellow" : "Yellow ↔ Blue"; fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
+            field: 26; label: PanelState.gains-inverted ? @tr("Blue ↔ Yellow") : @tr("Yellow ↔ Blue"); fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
         }
     }
     // Between the balance that feeds it and the windows placed on it, where it acts.
     Block {
-        title: "Density Ceiling";
-        help: "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.";
+        title: @tr("Density Ceiling");
+        help: @tr("Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.");
         block: 4;
         modified: Store.density-ceiling-modified;
         folded-by-default: true;
-        StoreSlider { field: 12; label: "Ceiling"; fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
+        StoreSlider { field: 12; label: @tr("Ceiling"); fraction: Store.density-ceiling-fraction; readout: Store.density-ceiling-readout; value-text: Store.density-ceiling-value; }
     }
     if !Editors.scanner-face: EditorBlock {
-        title: "Per-Channel Levels";
+        title: @tr("Per-Channel Levels");
         block: 1;
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;
         LevelsEditor { histogram: Plots.levels; revision: Plots.levels-revision; }
         if Editors.low-precision: HorizontalLayout {
             alignment: start;
-            WarningBadge { text: "8-bit source — 256 levels per channel"; }
+            WarningBadge { text: @tr("8-bit source — 256 levels per channel"); }
         }
     }
     // After the per-channel windows: a balanced grey is its fixed point. Monochrome, RGB passes and
     // the Scanner face run none.
     if PanelState.separation-shown: Block {
-        title: "Dye Separation";
-        help: "Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.";
+        title: @tr("Dye Separation");
+        help: @tr("Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");
         block: 5;
         modified: Store.dye-separation-modified;
         folded-by-default: true;
         Field {
-            label: "Dyes";
+            label: @tr("Dyes");
             Tabs {
-                tabs: ["Kodak", "Fuji", "Generic", "ECN-2", "E-6"];
+                tabs: [@tr("Kodak"), @tr("Fuji"), @tr("Generic"), @tr("ECN-2"), @tr("E-6")];
                 selected <=> PanelState.dye-family;
                 picked(i) => { PanelState.dye-family-picked(i); }
             }
         }
-        StoreSlider { field: 13; label: "Dye separation"; fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
+        StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }
     }
     if PanelState.separation-shown: Block {
-        title: "Balance Strength";
-        help: "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.";
+        title: @tr("Balance Strength");
+        help: @tr("The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.");
         block: 3;
         modified: Store.balance-strength-modified;
         folded-by-default: true;
-        StoreSlider { field: 11; label: "Strength"; fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
+        StoreSlider { field: 11; label: @tr("Strength"); fraction: Store.balance-strength-fraction; readout: Store.balance-strength-readout; value-text: Store.balance-strength-value; }
     }
 }

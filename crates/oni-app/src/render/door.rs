@@ -2,6 +2,7 @@
 //! reconfigure closes, since wgpu refuses one that another thread submits work during.
 
 use super::*;
+use oni_i18n::tr;
 use std::sync::OnceLock;
 
 #[derive(Default)]
@@ -20,9 +21,9 @@ pub(crate) struct Door {
 impl Door {
     /// Waits while the door is held, then counts the caller inside.
     pub(crate) fn enter(&self) -> Result<(), String> {
-        let mut g = self.gate.lock().map_err(|_| "the render gate failed earlier")?;
+        let mut g = self.gate.lock().map_err(|_| tr("the render gate failed earlier"))?;
         while g.held {
-            g = self.turn.wait(g).map_err(|_| "the render gate failed earlier")?;
+            g = self.turn.wait(g).map_err(|_| tr("the render gate failed earlier"))?;
         }
         g.inside += 1;
         Ok(())

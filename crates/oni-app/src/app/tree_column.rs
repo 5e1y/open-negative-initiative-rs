@@ -92,7 +92,7 @@ impl Ctl {
         let layout = self.column_layout(self.shown_tree());
         let lib = w.global::<Library>();
         lib.set_tree_layout(Layout::ALL.iter().position(|l| *l == layout).unwrap_or(0) as i32);
-        lib.set_tree_layout_help(format!("{} — next: {}", layout.name(), layout.next().name()).into());
+        lib.set_tree_layout_help(tr!("{layout} — next: {next}", layout = layout.name(), next = layout.next().name()).into());
     }
 
     /// Lays `rows`, whose photos are `paths`, in the tree's column, and asks the thumbnails they lack.

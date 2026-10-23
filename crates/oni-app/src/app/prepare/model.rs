@@ -23,21 +23,21 @@ impl Step {
 
     pub fn title(self) -> &'static str {
         match self {
-            Step::Film => "Select the Film Type",
-            Step::FlatField => "Set Up the Flat-Field",
-            Step::Base => "Pick the Film Base",
-            Step::Flags => "Flag the Frames Left Out",
-            Step::Window => "Place the Measuring Frame",
+            Step::Film => tr("Select the Film Type"),
+            Step::FlatField => tr("Set Up the Flat-Field"),
+            Step::Base => tr("Pick the Film Base"),
+            Step::Flags => tr("Flag the Frames Left Out"),
+            Step::Window => tr("Place the Measuring Frame"),
         }
     }
 
     pub fn detail(self) -> &'static str {
         match self {
-            Step::Film => "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong.",
-            Step::FlatField => "Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame.",
-            Step::Base => "Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll.",
-            Step::Flags => "Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll.",
-            Step::Window => "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll.",
+            Step::Film => tr("Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."),
+            Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
+            Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
+            Step::Flags => tr("Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."),
+            Step::Window => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."),
         }
     }
 
@@ -178,14 +178,13 @@ pub fn fitted_image(image: (f64, f64), size: (f64, f64)) -> (f64, f64, f64, f64)
 
 /// The key's title on the window step.
 pub fn measure_title(n: usize) -> String {
-    if n == 1 { "MEASURE 1 FRAME".into() } else { format!("MEASURE {n} FRAMES") }
+    trn("MEASURE {n} FRAME", "MEASURE {n} FRAMES", n as u64)
 }
 
 pub fn left_out_text(n: usize) -> String {
     match n {
         0 => String::new(),
-        1 => "1 frame of this folder, measured on another roll, is left out.".into(),
-        n => format!("{n} frames of this folder, measured on another roll, are left out."),
+        n => trn("{n} frame of this folder, measured on another roll, is left out.", "{n} frames of this folder, measured on another roll, are left out.", n as u64),
     }
 }
 
@@ -201,11 +200,11 @@ pub fn apart(frames: &[Frame]) -> (Option<CaptureExposure>, HashSet<String>) {
 pub fn differ_text(frames: &[Frame]) -> String {
     let (common, apart) = apart(frames);
     let Some(common) = common.filter(|_| !apart.is_empty()) else { return String::new() };
-    format!(
-        "{} of {} frames, marked, were digitised with other settings than the roll's {}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll.",
-        apart.len(),
-        frames.len(),
-        common.label()
+    tr!(
+        "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll.",
+        apart = apart.len(),
+        count = frames.len(),
+        capture = common.label(),
     )
 }
 

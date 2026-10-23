@@ -45,7 +45,7 @@ impl Ctl {
             let rows: Vec<crate::CorrectionRow> = corrections
                 .iter()
                 .map(|c| crate::CorrectionRow {
-                    label: s.dust.numbers.get(&c.id).map_or("Correction".to_string(), |n| format!("Correction {n}")).into(),
+                    label: s.dust.numbers.get(&c.id).map_or(tr("Correction").to_string(), |n| tr!("Correction {n}", n = n)).into(),
                     pending: pending(c),
                     fallback: s.dust.fallback.contains(&c.id),
                     original: originals::original(c.id),

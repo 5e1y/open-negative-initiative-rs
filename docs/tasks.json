@@ -2103,5 +2103,12 @@
     "title": "A Settings window with sections",
     "status": "done",
     "detail": "The Settings sheet lists its sections on a rail, as the systems' settings windows do, and shows one page at a time: General (key clicks), Editor (keep the zoom, show what the screen cannot show, decode RAWs whole), Frontier look (export, use a file, measured), Phone (pair, forget, the phones paired or connected) and About (version, check for updates, what's new, welcome, report a problem, console). A key that opens a sheet of its own closes Settings first, so two never stack; the section shown stays while the app runs. Section gains foldable, false on these pages. SheetStyle gains settings-width, settings-rail and settings-height. The session check shoots each page."
+  },
+  {
+    "id": 292,
+    "type": "feature",
+    "title": "The app in English, French and Spanish",
+    "status": "done",
+    "detail": "Every text the app shows is translated. Slint writes @tr (about 540 texts, arguments as {}), bundled from crates/oni-i18n/lang/<lang>/LC_MESSAGES/oni-ui.po with no default context; the Rust side reads the same catalogues through oni-i18n (tr, tr! with named places, trn for plurals with French counting 0 as one, marked for constants; about 390 texts in oni-app, oni-core, oni-library and oni-export). Settings > General picks Automatic (the system's language, English when the app does not speak it), English, Français or Español, kept as the language preference; the interface changes at once and every text the Rust side lays is published again. scripts/i18n lays new texts into the catalogues. Checks: every text in both catalogues with its places kept, no .slint word outside @tr, the extraction's own twins, French plural rule and locale reading; the session check switches to French and back. ONI_LANGUAGE stands in for the system's language, the window checks reading English. Logs, keys, file names, preset defaults and what the Swift app reads stay English; the Scanner face's machine screen keeps the Frontier's own English."
   }
 ]

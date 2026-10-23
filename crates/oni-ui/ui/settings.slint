@@ -1,13 +1,16 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section, ListRow, VerticalRule, Label, Tone, TextRole } from "ds/ds.slint";
+import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section, Tabs, ListRow, VerticalRule, Label, Tone, TextRole } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
     // The section shown, kept while the app runs so the sheet opens where it was left.
     in-out property <int> section;
     in property <bool> clicks;
+    // 0 the system's language, then English, French and Spanish, each named in its own language.
+    in property <int> language;
+    callback language-picked(int);
     in property <bool> keep-zoom;
     in property <bool> full-decode;
     in property <bool> screen-gamut;
@@ -38,13 +41,25 @@ component GeneralPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.flush;
         separated: false;
-        title: "Sound";
+        title: @tr("Language");
+        Tabs {
+            tabs: [@tr("Automatic"), "English", "Français", "Español"];
+            selected: AppSettings.language;
+            picked(i) => { AppSettings.language-picked(i); }
+        }
+        Note { text: @tr("Automatic follows the system's language when the app speaks it, English otherwise."); }
+    }
+    Section {
+        inset: SectionStyle.flush;
+        foldable: false;
+        before: SectionStyle.sheet-before;
+        title: @tr("Sound");
         ToggleRow {
-            label: "Key clicks";
+            label: @tr("Key clicks");
             on: AppSettings.clicks;
             toggled => { AppSettings.flip(Act.toggle-sound); }
         }
-        Note { text: "A click as each key is pressed and released."; }
+        Note { text: @tr("A click as each key is pressed and released."); }
     }
 }
 
@@ -54,31 +69,31 @@ component EditorPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.flush;
         separated: false;
-        title: "Viewing";
+        title: @tr("Viewing");
         ToggleRow {
-            label: "Keep the zoom from one photo to the next";
+            label: @tr("Keep the zoom from one photo to the next");
             on: AppSettings.keep-zoom;
             toggled => { AppSettings.flip(Act.keep-zoom); }
         }
-        Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
+        Note { text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
         ToggleRow {
-            label: "Show what this screen cannot show";
+            label: @tr("Show what this screen cannot show");
             on: AppSettings.screen-gamut;
             toggled => { AppSettings.flip(Act.screen-gamut); }
         }
-        Note { text: "Stripes over the colours this screen cannot show."; }
+        Note { text: @tr("Stripes over the colours this screen cannot show."); }
     }
     Section {
         inset: SectionStyle.flush;
         foldable: false;
         before: SectionStyle.sheet-before;
-        title: "RAW files";
+        title: @tr("RAW files");
         ToggleRow {
-            label: "Decode RAW files at full resolution";
+            label: @tr("Decode RAW files at full resolution");
             on: AppSettings.full-decode;
             toggled => { AppSettings.flip(Act.full-decode); }
         }
-        Note { text: "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."; }
+        Note { text: @tr("Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."); }
     }
 }
 
@@ -88,13 +103,13 @@ component FrontierPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.flush;
         separated: false;
-        title: "Frontier look";
+        title: @tr("Frontier look");
         Note { text: AppSettings.frontier-look; }
-        Note { text: "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."; }
+        Note { text: @tr("A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."); }
         ButtonGroup {
-            Button { text: "EXPORT…"; clicked => { AppSettings.flip(Act.frontier-export); } }
-            Button { text: "USE A FILE…"; clicked => { AppSettings.flip(Act.frontier-choose); } }
-            Button { text: "MEASURED"; enabled: AppSettings.frontier-hand; clicked => { AppSettings.flip(Act.frontier-measured); } }
+            Button { text: @tr("EXPORT…"); clicked => { AppSettings.flip(Act.frontier-export); } }
+            Button { text: @tr("USE A FILE…"); clicked => { AppSettings.flip(Act.frontier-choose); } }
+            Button { text: @tr("MEASURED"); enabled: AppSettings.frontier-hand; clicked => { AppSettings.flip(Act.frontier-measured); } }
         }
     }
 }
@@ -105,12 +120,12 @@ component PhonePage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.flush;
         separated: false;
-        title: "Phone remote";
-        Note { text: "The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."; }
+        title: @tr("Phone remote");
+        Note { text: @tr("The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."); }
         if AppSettings.phones != "": Note { text: AppSettings.phones; }
         ButtonGroup {
-            SheetKey { text: "PAIR PHONE…"; act: Act.pair-phone; }
-            Button { text: "FORGET PHONES"; fills: false; enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
+            SheetKey { text: @tr("PAIR PHONE…"); act: Act.pair-phone; }
+            Button { text: @tr("FORGET PHONES"); fills: false; enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
         }
     }
 }
@@ -121,28 +136,28 @@ component AboutPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.flush;
         separated: false;
-        title: "Open Negative Initiative";
+        title: @tr("Open Negative Initiative");
         Label { text: AppSettings.version; role: TextRole.value; tone: Tone.secondary; }
         ButtonGroup {
-            SheetKey { text: "CHECK FOR UPDATES"; act: Act.check-updates; }
-            SheetKey { text: "WHAT'S NEW"; act: Act.whats-new; }
+            SheetKey { text: @tr("CHECK FOR UPDATES"); act: Act.check-updates; }
+            SheetKey { text: @tr("WHAT'S NEW"); act: Act.whats-new; }
         }
     }
     Section {
         inset: SectionStyle.flush;
         foldable: false;
         before: SectionStyle.sheet-before;
-        title: "Help";
+        title: @tr("Help");
         ButtonGroup {
-            SheetKey { text: "WELCOME"; act: Act.welcome; }
-            SheetKey { text: "REPORT A PROBLEM…"; act: Act.report; }
-            SheetKey { text: "CONSOLE"; act: Act.console; }
+            SheetKey { text: @tr("WELCOME"); act: Act.welcome; }
+            SheetKey { text: @tr("REPORT A PROBLEM…"); act: Act.report; }
+            SheetKey { text: @tr("CONSOLE"); act: Act.console; }
         }
     }
 }
 
 export component SettingsSheet inherits Sheet {
-    title: "Settings";
+    title: @tr("Settings");
     card-width: SheetStyle.settings-width;
     dismissed => { AppSettings.close(); }
     HorizontalLayout {
@@ -150,7 +165,7 @@ export component SettingsSheet inherits Sheet {
         VerticalLayout {
             width: SheetStyle.settings-rail;
             alignment: start;
-            for name[i] in ["General", "Editor", "Frontier look", "Phone", "About"]: ListRow {
+            for name[i] in [@tr("General"), @tr("Editor"), @tr("Frontier look"), @tr("Phone"), @tr("About")]: ListRow {
                 title: name;
                 selected: AppSettings.section == i;
                 clicked => { AppSettings.section = i; }
@@ -170,7 +185,7 @@ export component SettingsSheet inherits Sheet {
     }
     SheetKeys {
         Button {
-            text: "DONE";
+            text: @tr("DONE");
             clicked => { AppSettings.close(); }
         }
     }

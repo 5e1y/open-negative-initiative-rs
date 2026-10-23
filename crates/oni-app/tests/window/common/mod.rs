@@ -150,6 +150,8 @@ pub fn rig(shots: PathBuf) -> Rig {
         // SAFETY: set before the shell or any worker thread of this process starts.
         unsafe { std::env::set_var("ONI_CACHES", std::env::temp_dir().join(format!("oni-window-caches-{}", std::process::id()))) };
     }
+    // SAFETY: set before the shell or any worker thread of this process starts.
+    unsafe { std::env::set_var("ONI_LANGUAGE", "en") };
     let window = MinimalSoftwareWindow::new(slint::platform::software_renderer::RepaintBufferType::NewBuffer);
     let queue: Arc<Mutex<Vec<Queued>>> = Arc::default();
     slint::platform::set_platform(Box::new(Headless { window: window.clone(), queue: queue.clone(), start: Instant::now() })).unwrap();

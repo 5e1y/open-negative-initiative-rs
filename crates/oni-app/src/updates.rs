@@ -2,6 +2,7 @@
 //! against the EdDSA key before it is kept. It looks on its own and never installs.
 
 use base64::Engine as _;
+use oni_i18n::{marked, tr};
 
 pub mod prior;
 use std::cmp::Ordering;
@@ -228,26 +229,30 @@ pub fn file_name(url: &str) -> String {
 
 /// `"UPDATE TO 0.2.0"`: the export slot's face while an update waits, and it says to what.
 pub fn key_title(display: &str) -> String {
-    format!("UPDATE TO {display}")
+    tr!("UPDATE TO {version}", version = display)
 }
 
 pub fn key_help(display: &str) -> String {
-    format!("Download version {display} · export stays on ⌘E")
+    tr!("Download version {version} · export stays on ⌘E", version = display)
 }
 
 /// Sparkle's own wording for the dialogs a check that was asked for ends on.
 pub fn found(item: &Item) -> (String, String) {
-    (format!("A new version of {APP} is available!"), format!("{APP} {} is now available\u{2014}you have {}. Would you like to download it now?", item.display, version()))
+    (
+        tr!("A new version of {app} is available!", app = APP),
+        tr!("{app} {version} is now available—you have {current}. Would you like to download it now?", app = APP, version = item.display, current = version()),
+    )
 }
 
 pub fn up_to_date() -> (String, String) {
-    ("You\u{2019}re up-to-date!".into(), format!("{APP} {} is currently the newest version available.", version()))
+    (tr("You’re up-to-date!").into(), tr!("{app} {version} is currently the newest version available.", app = APP, version = version()))
 }
 
-pub const ERROR_TITLE: &str = "Update Error!";
-pub const CHECK_FAILED: &str = "An error occurred in retrieving update information. Please try again later.";
-pub const DOWNLOAD_FAILED: &str = "An error occurred while downloading the update. Please try again later.";
-pub const IMPROPERLY_SIGNED: &str = "The update is improperly signed and could not be validated. Please try again later or contact the app developer.";
+/// The dialogs' English, translated where shown.
+pub const ERROR_TITLE: &str = marked("Update Error!");
+pub const CHECK_FAILED: &str = marked("An error occurred in retrieving update information. Please try again later.");
+pub const DOWNLOAD_FAILED: &str = marked("An error occurred while downloading the update. Please try again later.");
+pub const IMPROPERLY_SIGNED: &str = marked("The update is improperly signed and could not be validated. Please try again later or contact the app developer.");
 
 #[cfg(test)]
 mod tests {

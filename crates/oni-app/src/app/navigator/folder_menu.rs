@@ -13,12 +13,12 @@ impl Ctl {
             let favourite = s.nav.favourites.contains(&path);
             let roll = s.nav.rolls().contains(&path);
             let items = [
-                (line("Open", present, false), Act::Open),
-                (line(if favourite { "Remove from Favourites" } else { "Add to Favourites" }, true, false), Act::Favourite),
-                (line("Rename…", present, true), Act::Rename),
-                (line(if roll { "Back to a Folder" } else { "Make a Roll" }, present, false), Act::Roll(!roll)),
-                (line("New Folder Inside", present, false), Act::NewFolder),
-                (line("Show in Finder", true, true), Act::Reveal),
+                (line(tr("Open"), present, false), Act::Open),
+                (line(if favourite { tr("Remove from Favourites") } else { tr("Add to Favourites") }, true, false), Act::Favourite),
+                (line(tr("Rename…"), present, true), Act::Rename),
+                (line(if roll { tr("Back to a Folder") } else { tr("Make a Roll") }, present, false), Act::Roll(!roll)),
+                (line(tr("New Folder Inside"), present, false), Act::NewFolder),
+                (line(tr("Show in Finder"), true, true), Act::Reveal),
             ];
             s.nav.menu = items.iter().map(|(_, a)| *a).collect();
             s.nav.menu_path = Some(path);
@@ -98,18 +98,18 @@ impl Ctl {
         // The open frame's settings reach its sidecar before the folder holding it moves.
         let unsaved = self.state.borrow_mut().store.flush();
         if let Some(e) = unsaved {
-            self.went_wrong(&format!("The folder was not renamed, as the open photo's settings could not be saved: {e}"));
+            self.went_wrong(&tr!("The folder was not renamed, as the open photo's settings could not be saved: {error}", error = e));
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
         // `moveItem` refuses an existing target; `rename(2)` would replace an empty folder.
         let moved = if Path::new(&target).exists() && !same_item(path, &target) {
-            Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, format!("an item named “{trimmed}” already exists")))
+            Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, tr!("an item named “{name}” already exists", name = trimmed)))
         } else {
             std::fs::rename(path, &target)
         };
         if let Err(e) = moved {
-            self.went_wrong(&format!("The folder could not be renamed: {e}"));
+            self.went_wrong(&tr!("The folder could not be renamed: {error}", error = e));
             return self.publish_navigator();
         }
         let failure = {
@@ -177,7 +177,7 @@ impl Ctl {
         if make {
             let film = oni_settings::Film::new(&paths::name(folder));
             if folders::set_roll(Some(&film), folder).is_err() {
-                return self.went_wrong("The folder could not be made a roll: it cannot be written to.");
+                return self.went_wrong(tr("The folder could not be made a roll: it cannot be written to."));
             }
         } else if folders::set_roll(None, folder).is_err() {
             return;
@@ -191,7 +191,7 @@ impl Ctl {
     pub(super) fn went_wrong(&self, message: &str) {
         let Some(w) = self.window() else { return };
         let a = w.global::<Advice>();
-        a.set_title("Something Went Wrong".into());
+        a.set_title(tr("Something Went Wrong").into());
         a.set_message(message.into());
         a.set_shown(true);
     }

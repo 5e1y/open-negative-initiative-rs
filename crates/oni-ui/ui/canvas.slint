@@ -290,7 +290,7 @@ export component CanvasCard inherits Card {
         if Canvas.read-only: WarningBadge {
             x: (parent.width - self.width) / 2;
             y: Canvas.split >= 0 ? Space.l + Space.xs : Space.s;
-            text: "Read-only: settings will not be saved";
+            text: @tr("Read-only: settings will not be saved");
         }
     }
     // A frame decoding with no thumbnail standing in, then one that never decoded.
@@ -329,7 +329,7 @@ export component CanvasCard inherits Card {
         IconButton {
             size: ButtonSize.small;
             icon: Icons.menu-left;
-            help: root.library-hidden ? "Show the Library (⌥⌘[)" : "Hide the Library (⌥⌘[)";
+            help: root.library-hidden ? @tr("Show the Library (⌥⌘[)") : @tr("Hide the Library (⌥⌘[)");
             clicked => {
                 root.column-toggled(true);
                 root.menu(Act.hide-library);
@@ -348,14 +348,14 @@ export component CanvasCard inherits Card {
         Label { text: Canvas.zoom-label; role: TextRole.value; }
         ButtonGroup {
             alignment: center;
-            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { root.menu(Act.smaller); } }
-            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { root.menu(Act.larger); } }
+            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: @tr("Zoom out (⌘−)"); clicked => { root.menu(Act.smaller); } }
+            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in (⌘+)"); clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
         IconButton {
             size: ButtonSize.small;
             icon: Icons.menu-right;
-            help: root.panel-hidden ? "Show the Panel (⌥⌘])" : "Hide the Panel (⌥⌘])";
+            help: root.panel-hidden ? @tr("Show the Panel (⌥⌘])") : @tr("Hide the Panel (⌥⌘])");
             clicked => {
                 root.column-toggled(false);
                 root.menu(Act.hide-panel);

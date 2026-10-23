@@ -10,51 +10,51 @@ import { LabBlock, LetterRow, EffectRow, StoreSlider, Block, EditorBlock, Pane }
 export component ColorPane inherits Pane {
     // `labKeypad`: on the Scanner face the machine and the keypad stand where Color and Lighting stand.
     if Lab.shown: Section {
-        title: "Machine";
+        title: @tr("Machine");
         separated: false;
         news: News.machine;
         news-note: News.machine-note;
         news-read => { News.read("machine.1.3.1"); }
         Tabs {
-            tabs: ["ONI", "Frontier"];
+            tabs: [@tr("ONI"), @tr("Frontier")];
             marked: [false, false];
             selected <=> Lab.machine;
             picked(i) => { Lab.machine-picked(i); }
         }
     }
     if Lab.shown: LabBlock {
-        title: "Density";
+        title: @tr("Density");
         block: 0;
         news: News.keypad;
         news-note: News.keypad-note;
         news-read => { News.read("keypad.1.3.1"); }
         Keypad {
-            LetterRow { letter: 0; title: "D"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["D −3: toward dark", "D −: toward dark", "", "D +: toward light", "D +3: toward light"]; }
+            LetterRow { letter: 0; title: @tr("D"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("D −3: toward dark"), @tr("D −: toward dark"), "", @tr("D +: toward light"), @tr("D +3: toward light")]; }
         }
     }
     if Lab.shown: LabBlock {
-        title: "Color";
+        title: @tr("Color");
         block: 1;
         Keypad {
-            LetterRow { letter: 1; title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: ["C −3: toward red", "C −: toward red", "", "C +: toward cyan", "C +3: toward cyan"]; }
-            LetterRow { letter: 2; title: "M"; minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: ["M −3: toward green", "M −: toward green", "", "M +: toward magenta", "M +3: toward magenta"]; }
-            LetterRow { letter: 3; title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: ["Y −3: toward blue", "Y −: toward blue", "", "Y +: toward yellow", "Y +3: toward yellow"]; }
+            LetterRow { letter: 1; title: @tr("C"); minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: [@tr("C −3: toward red"), @tr("C −: toward red"), "", @tr("C +: toward cyan"), @tr("C +3: toward cyan")]; }
+            LetterRow { letter: 2; title: @tr("M"); minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: [@tr("M −3: toward green"), @tr("M −: toward green"), "", @tr("M +: toward magenta"), @tr("M +3: toward magenta")]; }
+            LetterRow { letter: 3; title: @tr("Y"); minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: [@tr("Y −3: toward blue"), @tr("Y −: toward blue"), "", @tr("Y +: toward yellow"), @tr("Y +3: toward yellow")]; }
         }
     }
     if Lab.shown: LabBlock {
-        title: "Look";
+        title: @tr("Look");
         block: 2;
         Keypad {
-            LetterRow { letter: 4; title: "TEMP"; minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; helps: ["TEMP −3: toward cool", "TEMP −: toward cool", "", "TEMP +: toward warm", "TEMP +3: toward warm"]; }
+            LetterRow { letter: 4; title: @tr("TEMP"); minus: ScannerStyle.band-cool; plus: ScannerStyle.band-warm; helps: [@tr("TEMP −3: toward cool"), @tr("TEMP −: toward cool"), "", @tr("TEMP +: toward warm"), @tr("TEMP +3: toward warm")]; }
         }
     }
     // `ColorPane`: a black and white film has no colour for this block to move.
     if !Lab.shown && !PanelState.monochrome: Block {
-        title: "Color";
+        title: @tr("Color");
         separated: false;
         block: 0;
         modified: Store.color-modified;
-        help: "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.";
+        help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.");
         if PanelState.balancing: VerticalLayout {
             spacing: Space.xs;
             Progress { fraction: PanelState.balance-fraction; }
@@ -67,7 +67,7 @@ export component ColorPane inherits Pane {
                 if PanelState.crop-first: VerticalLayout {
                     padding: Space.s;
                     Label {
-                        text: "Crop before using the automatic balance";
+                        text: @tr("Crop before using the automatic balance");
                         role: TextRole.section;
                         tone: Tone.on-fill;
                         centred: true;
@@ -75,123 +75,123 @@ export component ColorPane inherits Pane {
                     }
                 }
                 Button {
-                    text: "AUTO WHITE BALANCE";
-                    help: "The frame's light toward grey with Temperature and Tint, scaled by Balance strength";
+                    text: @tr("AUTO WHITE BALANCE");
+                    help: @tr("The frame's light toward grey with Temperature and Tint, scaled by Balance strength");
                     clicked => { PanelState.auto-balance(); }
                 }
             }
         }
         if !PanelState.balancing && PanelState.balance-note != "": Note { text: PanelState.balance-note; }
         StoreSlider {
-            field: 0; label: "Temperature"; fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
+            field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
         }
         StoreSlider {
-            field: 1; label: "Tint"; fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
+            field: 1; label: @tr("Tint"); fraction: Store.tint-fraction; readout: Store.tint-readout; value-text: Store.tint-value;
             fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        StoreSlider { field: 2; label: "Color density (same as saturation)"; fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
+        StoreSlider { field: 2; label: @tr("Color density (same as saturation)"); fraction: Store.color-density-fraction; readout: Store.color-density-readout; value-text: Store.color-density-value; }
     }
     // Only on a paper: in any other working space the gains do nothing.
     if Exporting.on-paper: Block {
-        title: "Paper Correction";
+        title: @tr("Paper Correction");
         block: 9;
         modified: Store.paper-correction-modified;
-        help: "Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.";
+        help: @tr("Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.");
         KeyPlate {
             fills: true;
             Button {
-                text: "AUTO PAPER CORRECTION";
-                help: "Sets the three gains from the paper profile alone";
+                text: @tr("AUTO PAPER CORRECTION");
+                help: @tr("Sets the three gains from the paper profile alone");
                 clicked => { Exporting.auto-paper(); }
             }
         }
         StoreSlider {
-            field: 21; label: "Red"; fraction: Store.paper-red-fraction; readout: Store.paper-red-readout; value-text: Store.paper-red-value;
+            field: 21; label: @tr("Red"); fraction: Store.paper-red-fraction; readout: Store.paper-red-readout; value-text: Store.paper-red-value;
             fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red;
         }
         StoreSlider {
-            field: 22; label: "Green"; fraction: Store.paper-green-fraction; readout: Store.paper-green-readout; value-text: Store.paper-green-value;
+            field: 22; label: @tr("Green"); fraction: Store.paper-green-fraction; readout: Store.paper-green-readout; value-text: Store.paper-green-value;
             fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green;
         }
         StoreSlider {
-            field: 23; label: "Blue"; fraction: Store.paper-blue-fraction; readout: Store.paper-blue-readout; value-text: Store.paper-blue-value;
+            field: 23; label: @tr("Blue"); fraction: Store.paper-blue-fraction; readout: Store.paper-blue-readout; value-text: Store.paper-blue-value;
             fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue;
         }
     }
     if !Lab.shown: Block {
-        title: "Lighting";
+        title: @tr("Lighting");
         block: 1;
         news: News.lighting;
         news-note: News.lighting-note;
         news-read => { News.read("lighting.1.3.1"); }
         modified: Store.lighting-modified;
-        help: "The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself.";
-        StoreSlider { field: 3; label: "Exposure"; fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
-        StoreSlider { field: 4; label: "Highlights"; fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
-        StoreSlider { field: 5; label: "Shadows"; fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
+        help: @tr("The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself.");
+        StoreSlider { field: 3; label: @tr("Exposure"); fraction: Store.exposure-fraction; readout: Store.exposure-readout; value-text: Store.exposure-value; }
+        StoreSlider { field: 4; label: @tr("Highlights"); fraction: Store.highlights-fraction; readout: Store.highlights-readout; value-text: Store.highlights-value; }
+        StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
         StoreSlider {
-            field: 6; label: "White point"; fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
+            field: 6; label: @tr("White point"); fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
             fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white;
         }
         StoreSlider {
-            field: 7; label: "Black point"; fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
+            field: 7; label: @tr("Black point"); fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
             fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black;
         }
     }
     if !Lab.shown: Block {
-        title: "Effects";
+        title: @tr("Effects");
         block: 2;
         modified: Store.effects-modified;
-        help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
-        StoreSlider { field: 8; label: "Contrast"; fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
-        StoreSlider { field: 9; label: "Vignette"; fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
-        if !PanelState.monochrome: StoreSlider { field: 10; label: "Chrome"; fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
+        help: @tr("Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.");
+        StoreSlider { field: 8; label: @tr("Contrast"); fraction: Store.contrast-fraction; readout: Store.contrast-readout; value-text: Store.contrast-value; }
+        StoreSlider { field: 9; label: @tr("Vignette"); fraction: Store.vignette-fraction; readout: Store.vignette-readout; value-text: Store.vignette-value; }
+        if !PanelState.monochrome: StoreSlider { field: 10; label: @tr("Chrome"); fraction: Store.chrome-fraction; readout: Store.chrome-readout; value-text: Store.chrome-value; fill: SliderFill.metal; }
     }
     // `LabStepKeys`: on the Scanner face its own finishing, a click a step, the title back to rest.
     if Lab.shown: LabBlock {
-        title: "Effects";
+        title: @tr("Effects");
         news: News.effects-scanner;
         news-note: News.effects-scanner-note;
         news-read => { News.read("effects.scanner.1.3.1"); }
         block: 3;
-        help: "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.";
+        help: @tr("Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle.");
         Keypad {
-            EffectRow { effect: 0; title: "CONTRAST"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["Contrast −3: toward softer, +15 %", "Contrast −: toward softer, +5 %", "Contrast back to 0 %", "Contrast +: toward harder, +5 %", "Contrast +3: toward harder, +15 %"]; }
+            EffectRow { effect: 0; title: @tr("CONTRAST"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Contrast −3: toward softer, +15 %"), @tr("Contrast −: toward softer, +5 %"), @tr("Contrast back to 0 %"), @tr("Contrast +: toward harder, +5 %"), @tr("Contrast +3: toward harder, +15 %")]; }
         }
         Keypad {
-            EffectRow { effect: 1; title: "VIGNETTE"; minus: ScannerStyle.band-light; plus: ScannerStyle.band-dark; helps: ["Vignette −3: toward lighter corners, +0.3 EV", "Vignette −: toward lighter corners, +0.1 EV", "Vignette back to 0 EV", "Vignette +: toward darker corners, +0.1 EV", "Vignette +3: toward darker corners, +0.3 EV"]; }
+            EffectRow { effect: 1; title: @tr("VIGNETTE"); minus: ScannerStyle.band-light; plus: ScannerStyle.band-dark; helps: [@tr("Vignette −3: toward lighter corners, +0.3 EV"), @tr("Vignette −: toward lighter corners, +0.1 EV"), @tr("Vignette back to 0 EV"), @tr("Vignette +: toward darker corners, +0.1 EV"), @tr("Vignette +3: toward darker corners, +0.3 EV")]; }
         }
         if !Lab.monochrome: Keypad {
-            EffectRow { effect: 2; title: "CHROME"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: ["Chrome −3: toward less, +15 %", "Chrome −: toward less, +5 %", "Chrome back to 0 %", "Chrome +: toward more, +5 %", "Chrome +3: toward more, +15 %"]; }
+            EffectRow { effect: 2; title: @tr("CHROME"); minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: [@tr("Chrome −3: toward less, +15 %"), @tr("Chrome −: toward less, +5 %"), @tr("Chrome back to 0 %"), @tr("Chrome +: toward more, +5 %"), @tr("Chrome +3: toward more, +15 %")]; }
         }
     }
     EditorBlock {
-        title: "Curves";
+        title: @tr("Curves");
         block: 0;
         news: Lab.shown ? News.curves-scanner : "";
         news-note: News.curves-scanner-note;
         news-read => { News.read("curves.scanner.1.3.1"); }
         modified: Editors.curves-modified;
         folded <=> Editors.curves-folded;
-        help: "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.";
+        help: @tr("Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone.");
         CurvesEditor { histogram: Plots.curves; revision: Plots.curves-revision; }
     }
     // The grade's blocks: a monochrome photo has no colour for them to move.
     if !Editors.monochrome: EditorBlock {
-        title: "Spectrogram Finishing";
+        title: @tr("Spectrogram Finishing");
         block: 2;
         modified: Editors.spectrogram-modified;
         folded <=> Editors.spectrogram-folded;
-        help: "Shifts one color range at a time without touching the others: turn a point around the wheel to move that color's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.";
+        help: @tr("Shifts one color range at a time without touching the others: turn a point around the wheel to move that color's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys.");
         SpectrogramEditor { }
     }
     if !Editors.monochrome: EditorBlock {
-        title: "Saturation Curve";
+        title: @tr("Saturation Curve");
         block: 3;
         modified: Editors.saturation-modified;
         folded <=> Editors.saturation-folded;
-        help: "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.";
+        help: @tr("Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves.");
         SaturationEditor { histogram: Plots.saturation; revision: Plots.saturation-revision; }
     }
 }

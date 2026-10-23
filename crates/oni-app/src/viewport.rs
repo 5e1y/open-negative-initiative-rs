@@ -174,7 +174,8 @@ pub fn take_wheel() -> Option<Wheel> {
 
 /// `AppBar.zoomLabel`.
 pub fn zoom_label(scale: f64, at_full_resolution: bool) -> String {
-    format!("{:.0}%{}", scale * 100.0, if at_full_resolution { "" } else { " · preview" })
+    let percent = format!("{:.0}%", scale * 100.0);
+    if at_full_resolution { percent } else { format!("{percent} · {}", oni_i18n::tr("preview")) }
 }
 
 /// Where the image lands in a `view`, and the part of it the view shows, in drawable pixels.

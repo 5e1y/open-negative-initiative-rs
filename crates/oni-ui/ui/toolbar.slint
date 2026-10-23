@@ -5,9 +5,9 @@ import { Preparing } from "prepare.slint";
 
 // `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
 export component RollStepKeys inherits ButtonGroup {
-    for name[i] in ["FILM", "FLAT-FIELD", "BASE", "FLAGS", "WINDOW"]: Button {
+    for name[i] in [@tr("FILM"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
         text: name;
-        help: ["Select the Film Type", "Set Up the Flat-Field", "Pick the Film Base", "Flag the Frames Left Out", "Place the Measuring Frame"][i];
+        help: [@tr("Select the Film Type"), @tr("Set Up the Flat-Field"), @tr("Pick the Film Base"), @tr("Flag the Frames Left Out"), @tr("Place the Measuring Frame")][i];
         on: Preparing.step == i;
         enabled: !Preparing.measuring && !Preparing.skipped[i];
         lamp-shown: true;
@@ -27,16 +27,16 @@ export global Bar {
     in property <int> targets: 1;
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
     in property <bool> can-sheet;
-    in property <string> sheet-title: "New Contact Sheet";
+    in property <string> sheet-title: @tr("New Contact Sheet");
     in property <bool> can-prepare;
-    in property <string> export-title: "EXPORT";
+    in property <string> export-title: @tr("EXPORT");
     // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
     in property <string> update-title;
     in property <string> update-help;
     in property <bool> updating;
-    in property <string> filter: "ALL";
-    in property <string> undo-title: "Undo";
-    in property <string> redo-title: "Redo";
+    in property <string> filter: @tr("ALL");
+    in property <string> undo-title: @tr("Undo");
+    in property <string> redo-title: @tr("Redo");
     // The face the open photo is edited on: 0 Pro, 1 Scanner.
     in-out property <int> face;
     // Room the window's traffic lights take on macOS, read from the window, zero elsewhere.
@@ -64,10 +64,10 @@ component Word inherits Button {
 component ResetScan inherits Word {
     in property <bool> compact;
     action: Act.reset;
-    text: root.compact ? "" : "RESET SCAN";
+    text: root.compact ? "" : @tr("RESET SCAN");
     has-icon: root.compact;
     icon: Icons.reset;
-    help: "Reset to Imported State";
+    help: @tr("Reset to Imported State");
     kind: ButtonKind.caution;
     enabled: Bar.can-reset;
 }
@@ -76,8 +76,8 @@ component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     ButtonGroup {
-        Item { action: Act.framing; icon: Icons.framing; help: "Crop and Straighten (⌘K)"; enabled: Bar.has-photo; }
-        Item { action: Act.compare; icon: Icons.compare; help: "Compare"; enabled: Bar.has-photo; }
+        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten (⌘K)"); enabled: Bar.has-photo; }
+        Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
         Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     }
     ButtonGroup {
@@ -87,32 +87,32 @@ component EditorKeys inherits HorizontalLayout {
     // `faceBinding`: the faces ride beside the history, present only while a photograph is worked.
     Tabs {
         width: ScannerStyle.face-bar;
-        tabs: ["Pro", "Scanner"];
+        tabs: [@tr("Pro"), @tr("Scanner")];
         marked: [false, false];
         selected <=> Bar.face;
         picked(i) => { Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup {
-        Item { action: Act.copy; icon: Icons.copy; help: "Copy settings (⌘⇧C)"; enabled: Bar.has-photo; }
+        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings (⌘⇧C)"); enabled: Bar.has-photo; }
         Item {
             action: Act.paste;
             icon: Icons.paste;
-            help: Bar.targets > 1 ? "Paste settings to " + Bar.targets + " photos (⌘⇧V)" : "Paste settings (⌘⇧V)";
+            help: Bar.targets > 1 ? @tr("Paste settings to {} photos (⌘⇧V)", Bar.targets) : @tr("Paste settings (⌘⇧V)");
             enabled: Bar.can-paste;
         }
         Word {
             action: Act.paste-to-roll;
-            text: root.compact ? "" : "PASTE TO ROLL";
+            text: root.compact ? "" : @tr("PASTE TO ROLL");
             has-icon: root.compact;
             icon: Icons.film-roll;
-            help: "Paste to the Roll";
+            help: @tr("Paste to the Roll");
             enabled: Bar.can-paste;
         }
     }
     Item {
         action: Act.correction;
         icon: Bar.dedust ? Icons.done : Icons.correction;
-        help: Bar.dedust ? "Leave De-dust" : "De-dust";
+        help: Bar.dedust ? @tr("Leave De-dust") : @tr("De-dust");
         on: Bar.dedust;
         enabled: Bar.has-photo;
     }
@@ -131,12 +131,12 @@ component GalleryKeys inherits HorizontalLayout {
         action: Act.cycle-filter;
         text: Bar.filter;
         fixed-width: ShellStyle.filter-width;
-        help: Bar.filter == "ALL" ? "Filter: All" : "Filter: " + Bar.filter;
+        help: Bar.filter == @tr("ALL") ? @tr("Filter: All") : @tr("Filter: {}", Bar.filter);
     }
-    Word { action: Act.prepare-roll; text: "PREPARE ROLL"; help: "Prepare the Roll"; enabled: Bar.can-prepare; }
+    Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
     ButtonGroup {
         ResetScan { compact: root.compact; }
-        Item { action: Act.remove; icon: Icons.remove; help: "Move to ONI Trash"; kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
+        Item { action: Act.remove; icon: Icons.remove; help: @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }
 }
 
@@ -163,9 +163,9 @@ export component Toolbar inherits Surface {
         // While a roll is prepared the key leaves it, as Cancel does, except while it measures.
         mode := Word {
             action: Preparing.shown ? Act.leave-roll : Act.toggle-mode;
-            text: Bar.editing || Preparing.shown ? "GALLERY" : "EDITOR";
-            widest: "GALLERY";
-            help: Bar.editing || Preparing.shown ? "Gallery (⌘G)" : "Editor (⌘G)";
+            text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
+            widest: @tr("GALLERY");
+            help: Bar.editing || Preparing.shown ? @tr("Gallery (⌘G)") : @tr("Editor (⌘G)");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
         // Hidden copies of both sets hold the zone at the wider one's width, short of room at the shown
@@ -178,7 +178,7 @@ export component Toolbar inherits Surface {
             gallery-sizing := GalleryKeys { visible: false; }
             compact-sizing := EditorKeys { visible: false; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
-            feedback-sizing := Word { visible: false; text: "FEEDBACKS"; }
+            feedback-sizing := Word { visible: false; text: @tr("FEEDBACKS"); }
             glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
             glyphs := Item { visible: false; icon: Icons.settings; }
             if Preparing.shown: RollStepKeys { x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
@@ -195,25 +195,25 @@ export component Toolbar inherits Surface {
                 width: self.preferred-width;
                 x: parent.width - self.width;
                 action: Act.report;
-                text: root.compact ? "" : "FEEDBACKS";
+                text: root.compact ? "" : @tr("FEEDBACKS");
                 has-icon: root.compact;
                 icon: Icons.chat;
-                help: "Report a Bug / Give Feedback";
+                help: @tr("Report a Bug / Give Feedback");
             }
         }
-        Item { action: Act.pair-phone; icon: Icons.phone; help: "Phone Remote"; }
-        Item { action: Act.settings; icon: Icons.settings; help: "Settings"; }
+        Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
+        Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
         if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? Act.export : Act.open;
-            text: Bar.editing ? Bar.export-title : "ADD FOLDER (⌘+O)";
+            text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER (⌘+O)");
             kind: ButtonKind.accent;
             fixed-width: ShellStyle.export-width;
-            help: Bar.editing ? "" : "Add a folder of scans (⌘O) · export stays on ⌘E";
+            help: Bar.editing ? "" : @tr("Add a folder of scans (⌘O) · export stays on ⌘E");
             enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
         }
         if !Preparing.shown && Bar.update-title != "": Word {
             action: Act.update;
-            text: Bar.updating ? "UPDATING" : Bar.update-title;
+            text: Bar.updating ? @tr("UPDATING") : Bar.update-title;
             kind: ButtonKind.update;
             fixed-width: ShellStyle.export-width;
             help: Bar.update-help;

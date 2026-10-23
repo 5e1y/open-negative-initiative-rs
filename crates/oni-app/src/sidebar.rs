@@ -1,6 +1,8 @@
 //! `SidebarLayout` and `TreeEngineLayout`: the library column's photos as names, two thumbnails a
 //! line or one, folders and rolls keeping their rows; and where the column scrolls to show a row.
 
+use oni_i18n::tr;
+
 /// How the column shows its photos, stored per mode under `sidebarLayout.<mode>`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Layout {
@@ -23,9 +25,9 @@ impl Layout {
 
     pub fn name(self) -> &'static str {
         match self {
-            Layout::List => "Names only",
-            Layout::Pairs => "Two thumbnails a line",
-            Layout::Singles => "One thumbnail a line",
+            Layout::List => tr("Names only"),
+            Layout::Pairs => tr("Two thumbnails a line"),
+            Layout::Singles => tr("One thumbnail a line"),
         }
     }
 

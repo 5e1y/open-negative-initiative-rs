@@ -21,8 +21,8 @@ export component StockPickerSheet inherits PanelSheet {
     VerticalLayout {
         HorizontalLayout {
             padding: Space.m;
-            Label { text: "Select Roll Type"; role: TextRole.title; horizontal-stretch: 1; }
-            Button { text: "Done"; clicked => { Stocks.chosen(-1); } }
+            Label { text: @tr("Select Roll Type"); role: TextRole.title; horizontal-stretch: 1; }
+            Button { text: @tr("Done"); clicked => { Stocks.chosen(-1); } }
         }
         Divider { }
         Scroller {

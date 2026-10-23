@@ -82,7 +82,7 @@ export component RollCellView inherits Rectangle {
     if root.rgb: Seal {
         x: parent.width - Space.xs - self.width;
         y: parent.height - Space.xs - self.height;
-        word: "RGB";
+        word: @tr("RGB");
     }
     // The rings follow the picture's corners: the inner one just inside the outer.
     if root.marked && !root.outset: Rectangle {
@@ -111,7 +111,7 @@ export component RollCellView inherits Rectangle {
     if root.outset && root.flagged: Seal {
         x: Space.xs;
         y: Space.xs;
-        word: "FLAGGED";
+        word: @tr("FLAGGED");
         red: true;
     }
     TouchArea { clicked => { root.clicked(); } }

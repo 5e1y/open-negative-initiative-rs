@@ -39,7 +39,7 @@ export component Panel inherits Surface {
             frame: Lab.frame;
             machine: Lab.machine-line;
             remeasure: Lab.remeasure;
-            remeasure-help: "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess.";
+            remeasure-help: @tr("This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess.");
             cells: Lab.cells;
             finish: Lab.finish;
         }
@@ -49,7 +49,7 @@ export component Panel inherits Surface {
             padding-top: Space.s;
             padding-bottom: Space.s;
             Tabs {
-                tabs: ["Roll", "Crop", "Color", "Details"];
+                tabs: [@tr("Roll"), @tr("Crop"), @tr("Color"), @tr("Details")];
                 marked: [false, false, false, false];
                 selected <=> PanelState.tab;
                 picked(i) => { PanelState.tab-picked(i); }

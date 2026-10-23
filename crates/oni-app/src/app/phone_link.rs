@@ -16,7 +16,7 @@ impl Ctl {
         let support = self.state.borrow().support.clone();
         match Phone::start(&support, |event| with_shell(move |c| c.phone_said(event))) {
             Ok(p) => self.state.borrow_mut().phone = Some(p),
-            Err(e) => self.pairing_status(&format!("The phone link cannot start: {e}")),
+            Err(e) => self.pairing_status(&tr!("The phone link cannot start: {error}", error = e)),
         }
     }
 
@@ -28,7 +28,7 @@ impl Ctl {
             p.set_uri(SharedString::new());
             p.set_shown(true);
         }
-        self.pairing_status("Starting the link…");
+        self.pairing_status(tr("Starting the link…"));
         self.start_phone();
         self.show_code();
         self.show_phones();
@@ -43,9 +43,8 @@ impl Ctl {
         };
         let line = match (names.len(), paired) {
             (0, 0) => String::new(),
-            (0, 1) => "One phone paired, none connected.".to_string(),
-            (0, n) => format!("{n} phones paired, none connected."),
-            _ => format!("Connected: {}.", names.join(", ")),
+            (0, n) => trn("One phone paired, none connected.", "{n} phones paired, none connected.", n as u64),
+            _ => tr!("Connected: {phones}.", phones = names.join(", ")),
         };
         let p = w.global::<Pairing>();
         p.set_phones(line.into());
@@ -61,7 +60,7 @@ impl Ctl {
             None => phone::forget(&support),
         };
         if let Err(e) = done {
-            self.pairing_status(&format!("The paired phones cannot be forgotten: {e}"));
+            self.pairing_status(&tr!("The paired phones cannot be forgotten: {error}", error = e));
         }
         self.show_phones();
     }
@@ -74,7 +73,7 @@ impl Ctl {
         let code = self.state.borrow().phone.as_ref().and_then(Phone::open_pairing);
         let Some(code) = code else { return };
         if code.addresses.is_empty() {
-            return self.pairing_status("No local network: join the phone's Wi-Fi network, then pair again.");
+            return self.pairing_status(tr("No local network: join the phone's Wi-Fi network, then pair again."));
         }
         let uri = code.to_uri();
         match phone::qr(&uri) {
@@ -83,9 +82,9 @@ impl Ctl {
                 p.set_code(image(&rgba, side, side));
                 p.set_uri(uri.into());
                 let at: Vec<String> = code.addresses.iter().map(ToString::to_string).collect();
-                self.pairing_status(&format!("Scan it from the phone app on the same network. One phone, two minutes · {}", at.join(", ")));
+                self.pairing_status(&tr!("Scan it from the phone app on the same network. One phone, two minutes · {addresses}", addresses = at.join(", ")));
             }
-            Err(e) => self.pairing_status(&format!("The code cannot be drawn: {e}")),
+            Err(e) => self.pairing_status(&tr!("The code cannot be drawn: {error}", error = e)),
         }
     }
 
@@ -132,7 +131,7 @@ impl Ctl {
             phone::Event::Failed(e) => {
                 timing::line(&format!("phone link failed: {e}"));
                 self.state.borrow_mut().phone = None;
-                self.pairing_status(&format!("The phone link cannot listen: {e}"));
+                self.pairing_status(&tr!("The phone link cannot listen: {error}", error = e));
             }
             phone::Event::Host(event, receipt) => self.phone_event(event, receipt),
         }
@@ -169,13 +168,13 @@ impl Ctl {
             Some(Outward::Paired { phone, name }) => {
                 let support = self.state.borrow().support.clone();
                 if let Err(e) = phone::trust(&support, phone) {
-                    self.say(&format!("{name} is paired for this session only: {e}"));
+                    self.say(&tr!("{name} is paired for this session only: {error}", name = name, error = e));
                 }
-                self.pairing_status(&format!("Paired with {name}."));
+                self.pairing_status(&tr!("Paired with {name}.", name = name));
             }
             Some(Outward::Connected { phone, name }) => {
                 timing::line("phone connected");
-                self.say(&format!("{name} connected"));
+                self.say(&tr!("{name} connected", name = name));
                 if let Some(p) = self.state.borrow_mut().phone.as_mut() {
                     p.connected(phone, name);
                 }
@@ -183,7 +182,7 @@ impl Ctl {
             }
             Some(Outward::Disconnected { phone }) => {
                 timing::line("phone disconnected");
-                self.say("The phone disconnected");
+                self.say(tr("The phone disconnected"));
                 if let Some(p) = self.state.borrow_mut().phone.as_mut() {
                     p.disconnected(phone);
                 }

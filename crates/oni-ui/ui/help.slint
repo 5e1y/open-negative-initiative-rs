@@ -65,31 +65,31 @@ export component WelcomeSheet inherits Sheet {
         spacing: Space.l;
         VerticalLayout {
             spacing: Space.s;
-            Label { text: "What's new in ONI " + Help.release; role: TextRole.heading; wrap: word-wrap; }
-            Label { text: "Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."; tone: Tone.secondary; wrap: word-wrap; }
+            Label { text: @tr("What's new in ONI {}", Help.release); role: TextRole.heading; wrap: word-wrap; }
+            Label { text: @tr("Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."); tone: Tone.secondary; wrap: word-wrap; }
         }
-        Point { title: "Colours shift slightly"; text: "Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."; }
-        Point { title: "Browse your folders"; text: "The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."; }
-        Point { title: "Prepare the Roll, step by step"; text: "It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."; }
-        Point { title: "Deleting is reversible"; text: "Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."; }
-        Point { title: "Smoother"; text: "Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."; }
+        Point { title: @tr("Colours shift slightly"); text: @tr("Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."); }
+        Point { title: @tr("Browse your folders"); text: @tr("The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."); }
+        Point { title: @tr("Prepare the Roll, step by step"); text: @tr("It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."); }
+        Point { title: @tr("Deleting is reversible"); text: @tr("Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."); }
+        Point { title: @tr("Smoother"); text: @tr("Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."); }
         HorizontalLayout {
             spacing: Space.s;
-            Button { text: "Website"; fills: false; clicked => { Help.website(); } }
-            Button { text: "Feedback"; fills: false; help: "Report a Bug / Give Feedback"; clicked => { Help.feedback(); } }
+            Button { text: @tr("Website"); fills: false; clicked => { Help.website(); } }
+            Button { text: @tr("Feedback"); fills: false; help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
             Rectangle { horizontal-stretch: 1; }
-            Button { text: "GET STARTED"; fills: false; kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
+            Button { text: @tr("GET STARTED"); fills: false; kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
         }
     }
 }
 
 // `ReportSheet`: the message, the sealed log's switch, and Send; then a thank-you.
 export component ReportSheet inherits Sheet {
-    title: Help.report-sent ? "Thank You" : "Report a Bug or Give Feedback";
+    title: Help.report-sent ? @tr("Thank You") : @tr("Report a Bug or Give Feedback");
     card-width: SheetStyle.notice-width;
     dismissed => { Help.report-closed(); }
-    if Help.report-sent: Note { text: "Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."; }
-    if !Help.report-sent: Note { text: "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."; }
+    if Help.report-sent: Note { text: @tr("Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."); }
+    if !Help.report-sent: Note { text: @tr("Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."); }
     // Both ways: typing reaches Send's gate, and Rust's cut at the site's limit reaches the field.
     if !Help.report-sent: message := TextArea {
         text <=> Help.report-message;
@@ -102,10 +102,10 @@ export component ReportSheet inherits Sheet {
         // On the first line of its words, which wrap to two.
         VerticalLayout {
             alignment: start;
-            Toggle { label: "Encrypted console log"; on: Help.report-log; toggled(on) => { Help.report-log = on; } }
+            Toggle { label: @tr("Encrypted console log"); on: Help.report-log; toggled(on) => { Help.report-log = on; } }
         }
         Label {
-            text: "Encrypted console log, readable by ONI's maintainers only";
+            text: @tr("Encrypted console log, readable by ONI's maintainers only");
             horizontal-stretch: 1;
             wrap: word-wrap;
             TouchArea { clicked => { Help.report-log = !Help.report-log; } }
@@ -114,14 +114,14 @@ export component ReportSheet inherits Sheet {
     if !Help.report-sent && Help.report-failure != "": Warning { text: Help.report-failure; }
     HorizontalLayout {
         spacing: Space.s;
-        Button { text: "See Community Feedbacks"; fills: false; clicked => { Help.community(); } }
+        Button { text: @tr("See Community Feedbacks"); fills: false; clicked => { Help.community(); } }
         Rectangle { horizontal-stretch: 1; }
-        if Help.report-sent: Button { text: "Done"; fills: false; clicked => { Help.report-closed(); } }
+        if Help.report-sent: Button { text: @tr("Done"); fills: false; clicked => { Help.report-closed(); } }
         if !Help.report-sent: KeyPlate {
-            Button { text: "Cancel"; clicked => { Help.report-closed(); } }
+            Button { text: @tr("Cancel"); clicked => { Help.report-closed(); } }
             Button {
-                text: Help.report-sending ? "Sending…" : "Send";
-                widest: "Sending…";
+                text: Help.report-sending ? @tr("Sending…") : @tr("Send");
+                widest: @tr("Sending…");
                 kind: ButtonKind.accent;
                 enabled: !Help.report-sending && Help.report-message != "";
                 clicked => { Help.report-send(); }
@@ -132,7 +132,7 @@ export component ReportSheet inherits Sheet {
 
 // `ConsoleView`: the diagnostics log, polled; Copy and Reveal Log in Finder.
 export component ConsoleWindow inherits AppWindow {
-    title: "Console";
+    title: @tr("Console");
     in property <string> log;
     in property <int> blocks;
     callback copy();
@@ -145,17 +145,17 @@ export component ConsoleWindow inherits AppWindow {
             spacing: Space.s;
             HorizontalLayout {
                 spacing: Space.s;
-                Badge { text: root.blocks == 0 ? "No block recorded" : root.blocks == 1 ? "1 block recorded" : "\{root.blocks} blocks recorded"; }
+                Badge { text: root.blocks == 0 ? @tr("No block recorded") : root.blocks == 1 ? @tr("1 block recorded") : @tr("{} blocks recorded", root.blocks); }
                 Rectangle { horizontal-stretch: 1; }
-                Button { text: "Copy"; clicked => { root.copy(); } }
-                Button { text: "Reveal Log in Finder"; clicked => { root.reveal(); } }
+                Button { text: @tr("Copy"); clicked => { root.copy(); } }
+                Button { text: @tr("Reveal Log in Finder"); clicked => { root.reveal(); } }
             }
             Scroller {
                 vertical-stretch: 1;
                 content-height: view.preferred-height;
-                view := LogText { width: parent.width; text: root.log == "" ? "Nothing recorded yet." : root.log; }
+                view := LogText { width: parent.width; text: root.log == "" ? @tr("Nothing recorded yet.") : root.log; }
             }
-            Note { text: "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."; }
+            Note { text: @tr("Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."); }
         }
     }
 }

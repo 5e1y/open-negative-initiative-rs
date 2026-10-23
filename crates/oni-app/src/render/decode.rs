@@ -1,6 +1,7 @@
 //! Decoding a frame: the RAW engine, a linear scan, a plain file, RGB passes laid as one, and the reduced preview.
 
 use super::*;
+use oni_i18n::tr;
 
 /// The editor's RAWs decoded whole as they open (the Settings' choice); off, at LibRaw's half size.
 pub static FULL_DECODE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -56,7 +57,7 @@ pub(crate) fn alone(path: &Path, reading: Reading) -> Result<Decoded, String> {
     match oni_decode::route(path) {
         oni_decode::Branch::Mosaic => mosaic(path, if FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed) { 0 } else { oni_decode::HALF }),
         oni_decode::Branch::LinearRgb => {
-            let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
+            let (full, _) = oni_decode::container::pixel_size(path).ok_or(tr("its container is unreadable"))?;
             linear_scan(path, Some(PREVIEW_SIDE as f64), reading, full)
         }
         oni_decode::Branch::Plain => plain(path, Some(PREVIEW_SIDE as f64), reading),
@@ -92,7 +93,7 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
 /// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor.
 fn mosaic(path: &Path, side: usize) -> Result<Decoded, String> {
     let _slot = crate::decode_gate::slot();
-    let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| format!("LibRaw cannot decode it (code {})", e.0))?;
+    let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| tr!("LibRaw cannot decode it (code {code})", code = e.0))?;
     let full_width = (d.width * factor) as f64;
     Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
 }
@@ -103,7 +104,7 @@ pub fn decode_alone(path: &Path, side: Option<f64>) -> Result<Decoded, String> {
     let mut d = match oni_decode::route(path) {
         oni_decode::Branch::Mosaic => mosaic(path, side.map_or(0, |s| s.ceil() as usize))?,
         oni_decode::Branch::LinearRgb => {
-            let (full, _) = oni_decode::container::pixel_size(path).ok_or("its container is unreadable")?;
+            let (full, _) = oni_decode::container::pixel_size(path).ok_or(tr("its container is unreadable"))?;
             linear_scan(path, side, reading, full)?
         }
         oni_decode::Branch::Plain => plain(path, side, reading)?,
@@ -152,9 +153,9 @@ pub fn shrunk(l: &Linear, side: f64) -> Linear {
 /// green pass's extent, the red and blue laid by their registration; a missing pass fails the frame.
 pub(crate) fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl Fn(&Path) -> Result<Decoded, String>) -> Result<Decoded, String> {
     let beside = |name: &str| lead.parent().map_or_else(|| PathBuf::from(name), |f| f.join(name));
-    let green = decode(&beside(&passes.green)).map_err(|e| format!("its green pass: {e}"))?;
-    let red = decode(&beside(&passes.red)).map_err(|e| format!("its red pass: {e}"))?;
-    let blue = decode(&beside(&passes.blue)).map_err(|e| format!("its blue pass: {e}"))?;
+    let green = decode(&beside(&passes.green)).map_err(|e| tr!("its green pass: {error}", error = e))?;
+    let red = decode(&beside(&passes.red)).map_err(|e| tr!("its red pass: {error}", error = e))?;
+    let blue = decode(&beside(&passes.blue)).map_err(|e| tr!("its blue pass: {error}", error = e))?;
     let fits = passes.registration.clone().unwrap_or_default();
     let (w, h) = (green.linear.width, green.linear.height);
     let r = laid(&red.linear, &fits.red, w, h, 0);
@@ -204,9 +205,9 @@ pub(crate) fn laid(pass: &Linear, fit: &oni_settings::frame::Fit, w: usize, h: u
 /// so; a file naming no matrix is in the working space already. `full` 0 reads the decode's width.
 pub(crate) fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full: usize) -> Result<Decoded, String> {
     let _slot = crate::decode_gate::slot();
-    let mut d = oni_decode::container::linear(path, side).ok_or("its samples are unreadable")?;
+    let mut d = oni_decode::container::linear(path, side).ok_or(tr("its samples are unreadable"))?;
     if reading.primaries_converted {
-        let (matrix, illuminant) = oni_decode::container::calibration(path).ok_or("its container is unreadable")?;
+        let (matrix, illuminant) = oni_decode::container::calibration(path).ok_or(tr("its container is unreadable"))?;
         if let Some(m) = oni_colour::source::calibrated_to_working(&matrix, illuminant) {
             for p in &mut d.pixels {
                 let v = oni_colour::pcs::mul_f32(&m, [p[0], p[1], p[2]]);
@@ -221,7 +222,7 @@ pub(crate) fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full
 /// `plainLinear`: the file's curve undone in its profile, else the chosen encoding, else sRGB.
 pub(crate) fn plain(path: &Path, side: Option<f64>, reading: Reading) -> Result<Decoded, String> {
     let _slot = crate::decode_gate::slot();
-    let mut e = oni_decode::plain::read(path, side).ok_or("no image reader takes it")?;
+    let mut e = oni_decode::plain::read(path, side).ok_or(tr("no image reader takes it"))?;
     oni_colour::source::Source::of(e.icc.as_deref(), reading.source_encoding, e.grey).linearise(&mut e.pixels, !reading.primaries_converted);
     let undeclared = e.icc.is_none().then_some(e.grey);
     Ok(Decoded { linear: Linear { width: e.width, height: e.height, pixels: e.pixels }, full_width: e.full.0 as f64, undeclared })

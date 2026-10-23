@@ -227,7 +227,7 @@ fn swift_help(source: &str, title: &str) -> String {
 
 /// A Slint block's help: the last literal on the `help:` line under its title.
 fn slint_help(source: &str, title: &str) -> String {
-    let at = source.find(&format!("title: \"{title}\";")).unwrap_or_else(|| panic!("{title} in Slint"));
+    let at = source.find(&format!("title: @tr(\"{title}\");")).unwrap_or_else(|| panic!("{title} in Slint"));
     let from = at + source[at..].find("help:").unwrap();
     let line = source[from..].lines().next().unwrap();
     line.rsplit('"').nth(1).unwrap_or_default().to_string()
@@ -260,6 +260,6 @@ pub(crate) fn every_block_says_swifts_own_help() {
     }
     let details = std::fs::read_to_string(swift.join("UI/DetailsPane.swift")).unwrap();
     let off = literals(details.split("offOnSheet = ").nth(1).unwrap().split('\n').take(2).collect::<Vec<_>>().join("").as_str());
-    assert!(panel.contains(&format!("off-on-sheet: \"{off}\";")), "{off}");
+    assert!(panel.contains(&format!("off-on-sheet: @tr(\"{off}\");")), "{off}");
 }
 

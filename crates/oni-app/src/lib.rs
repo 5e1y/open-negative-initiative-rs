@@ -19,6 +19,7 @@ pub mod histogram;
 pub mod hz;
 #[cfg(test)]
 mod interface_drawing;
+pub mod language;
 pub mod latest;
 pub mod library;
 pub mod link;

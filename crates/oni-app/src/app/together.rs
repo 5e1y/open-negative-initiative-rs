@@ -344,6 +344,6 @@ impl Ctl {
         let frame = format!("{count} frames together");
         self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
         c.set_busy(false);
-        c.set_status(format!("{count} frames together").into());
+        c.set_status(tr!("{count} frames together", count = count).into());
     }
 }

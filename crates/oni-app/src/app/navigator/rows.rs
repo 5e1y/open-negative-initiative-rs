@@ -48,8 +48,8 @@ impl Ctl {
             let header = (
                 model.can_go_up(),
                 model.favourites_only,
-                if model.favourites_only { "Favourites".to_string() } else { walk::title(base.as_deref()) },
-                base.as_deref().map(|b| format!("{b} — click to jump to a folder above")).unwrap_or_else(|| "The home folder and every volume".into()),
+                if model.favourites_only { tr("Favourites").to_string() } else { walk::title(base.as_deref()) },
+                base.as_deref().map(|b| tr!("{folder} — click to jump to a folder above", folder = b)).unwrap_or_else(|| tr("The home folder and every volume").into()),
                 model.favourites_only && favourites.is_empty(),
                 !model.favourites_only && base.is_none(),
             );
@@ -57,7 +57,7 @@ impl Ctl {
                 .nav
                 .welcome
                 .iter()
-                .map(|p| WelcomeLine { title: format!("Add {}", paths::name(p)).to_uppercase().into(), path: p.clone().into() })
+                .map(|p| WelcomeLine { title: tr!("Add {name}", name = paths::name(p)).to_uppercase().into(), path: p.clone().into() })
                 .collect();
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
             let opened_pill = (s.opened.as_deref().map(paths::name).unwrap_or_default(), s.opened.clone().unwrap_or_default());

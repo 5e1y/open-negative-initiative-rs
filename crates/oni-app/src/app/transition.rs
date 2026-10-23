@@ -5,6 +5,7 @@
 use super::{Ctl, with_shell};
 use crate::{MainWindow, Transition as Sheet, TransitionLine};
 use oni_transition::{AppleDecode, Event, Summary};
+use oni_i18n::{tr, trn};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -43,11 +44,11 @@ impl Transition {
 /// A camera's match as the sheet prints it: the density error left, as a share of the light.
 pub fn residual_line(residual: &[f64; 3]) -> String {
     let worst = residual.iter().cloned().fold(0.0, f64::max);
-    format!("matched, within {:.1} %", (10f64.powf(worst) - 1.0) * 100.0)
+    tr!("matched, within {share} %", share = format!("{:.1}", (10f64.powf(worst) - 1.0) * 100.0))
 }
 
 fn photos(n: usize) -> String {
-    if n == 1 { "1 photo".into() } else { format!("{n} photos") }
+    trn("{n} photo", "{n} photos", n as u64)
 }
 
 impl Ctl {
@@ -116,7 +117,7 @@ impl Ctl {
             let t = w.global::<Sheet>();
             t.set_done(false);
             t.set_progress(-1.0);
-            t.set_stage("Looking for the cameras of your photos…".into());
+            t.set_stage(tr("Looking for the cameras of your photos…").into());
             t.set_cameras(ModelRc::default());
             t.set_left(ModelRc::default());
             t.set_summary("".into());
@@ -152,13 +153,13 @@ impl Ctl {
             Event::Found { cameras } => {
                 let mut s = self.state.borrow_mut();
                 s.transition.measured = (0, cameras.len());
-                s.transition.cameras = cameras.into_iter().map(|(name, n)| (name, n, "waiting".into())).collect();
+                s.transition.cameras = cameras.into_iter().map(|(name, n)| (name, n, tr("waiting").into())).collect();
                 drop(s);
                 self.publish_cameras();
             }
             Event::Measuring { camera } => {
-                t.set_stage(format!("Matching the {camera} to the earlier version…").into());
-                self.set_camera_detail(&camera, "matching…".into());
+                t.set_stage(tr!("Matching the {camera} to the earlier version…", camera = camera).into());
+                self.set_camera_detail(&camera, tr("matching…").into());
             }
             Event::Measured { camera, residual } => {
                 let (done, of) = {
@@ -167,7 +168,7 @@ impl Ctl {
                     s.transition.measured
                 };
                 t.set_progress(done as f32 / of.max(1) as f32);
-                self.set_camera_detail(&camera, residual.as_ref().map_or_else(|_| "not matched".into(), residual_line));
+                self.set_camera_detail(&camera, residual.as_ref().map_or_else(|_| tr("not matched").into(), residual_line));
             }
         }
     }
@@ -193,20 +194,20 @@ impl Ctl {
         let summary = match result {
             Ok(summary) => summary,
             Err(e) => {
-                t.set_stage("Stopped".into());
-                t.set_summary(format!("The cameras could not be matched: {e}. RAW files show LibRaw's own colours until the next launch.").into());
+                t.set_stage(tr("Stopped").into());
+                t.set_summary(tr!("The cameras could not be matched: {error}. RAW files show LibRaw's own colours until the next launch.", error = e).into());
                 return;
             }
         };
-        t.set_stage("Done".into());
+        t.set_stage(tr("Done").into());
         let matched = summary.cameras.iter().filter(|c| c.residual.is_ok()).count();
         let mut text = match matched {
-            0 => "No camera could be matched.".to_string(),
-            1 => "1 camera matched.".to_string(),
-            n => format!("{n} cameras matched."),
+            0 => tr("No camera could be matched.").to_string(),
+            n => trn("{n} camera matched.", "{n} cameras matched.", n as u64),
         };
         if !summary.unreachable.is_empty() {
-            text += " Some folders could not be reached: their cameras are matched when they come back.";
+            text.push(' ');
+            text += tr("Some folders could not be reached: their cameras are matched when they come back.");
         }
         t.set_summary(text.into());
         let left: Vec<slint::SharedString> =

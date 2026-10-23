@@ -4,6 +4,7 @@
 use super::super::{Ctl, with_shell};
 use crate::{Exporting, PaperRow};
 use oni_colour::{InstallRecord, PaperSource, Reach, Space};
+use oni_i18n::{tr, trn};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -154,7 +155,7 @@ impl Ctl {
                             p.installed = offered.iter().filter(|u| !record.installed_files(u, &folder).is_empty()).cloned().collect();
                             p.offered = offered;
                         }
-                        Err(e) => p.message = Some(format!("The page could not be read: {e}")),
+                        Err(e) => p.message = Some(tr!("The page could not be read: {error}", error = e)),
                     }
                 }
                 c.publish_papers();
@@ -178,7 +179,7 @@ impl Ctl {
             c.papers.installing = Some(link.clone());
             (c.papers.web.download.clone(), scratch(&c.support))
         };
-        self.say(&format!("Downloading {}", PaperSource::title(&link)));
+        self.say(&tr!("Downloading {source}", source = PaperSource::title(&link)));
         self.publish_papers();
         std::thread::spawn(move || {
             let file = download(link.as_str(), &folder);
@@ -195,17 +196,24 @@ impl Ctl {
                         c.keep_record(&record);
                         if let Some(first) = installed.first() {
                             c.export.borrow_mut().papers.installed.insert(link.clone());
-                            let s = if installed.len() == 1 { "" } else { "s" };
-                            let message = format!("Installed {} profile{s} — the export now uses “{}”.", installed.len(), first.name);
+                            let message = trn(
+                                "Installed {n} profile — the export now uses “{name}”.",
+                                "Installed {n} profiles — the export now uses “{name}”.",
+                                installed.len() as u64,
+                            )
+                            .replace("{name}", &first.name);
                             c.choose_profile(first.clone());
                             c.list_profiles();
                             message
                         } else {
-                            let cmyk = if refused > 0 { " (CMYK profiles are not supported)." } else { "." };
-                            format!("Nothing to install: the file held no RGB printer profile{cmyk}")
+                            if refused > 0 {
+                                tr("Nothing to install: the file held no RGB printer profile (CMYK profiles are not supported).").into()
+                            } else {
+                                tr("Nothing to install: the file held no RGB printer profile.").into()
+                            }
                         }
                     }
-                    Err(e) => format!("The download failed: {e}"),
+                    Err(e) => tr!("The download failed: {error}", error = e),
                 };
                 let _ = std::fs::remove_dir_all(&folder);
                 {
@@ -232,9 +240,9 @@ impl Ctl {
             let mut c = self.export.borrow_mut();
             c.papers.installed.remove(&link);
             c.papers.message = Some(if removed.is_empty() {
-                "Nothing was left to remove.".into()
+                tr("Nothing was left to remove.").into()
             } else {
-                format!("Moved {} to the Trash.", PaperSource::title(&link))
+                tr!("Moved {source} to the Trash.", source = PaperSource::title(&link))
             });
         }
         let in_use = matches!(self.export.borrow().settings.space(), Space::Profile(p) if removed.contains(&p.path));

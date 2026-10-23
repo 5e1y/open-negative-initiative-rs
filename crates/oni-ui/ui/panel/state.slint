@@ -30,7 +30,7 @@ export global PanelState {
     // A contact sheet's frames are reduced copies, so the grain blocks say they are off.
     in property <bool> sheet;
     // `DetailsPane.offOnSheet`.
-    out property <string> off-on-sheet: "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.";
+    out property <string> off-on-sheet: @tr("Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them.");
     // `ConversionMode.allCases`' index of the targets' mode.
     in-out property <int> film-type;
     // How many photos a paste reaches.
@@ -95,7 +95,7 @@ export global Lab {
     in property <bool> shown;
     in-out property <int> machine;
     in property <bool> monochrome;
-    in property <string> frame: "FRAME --/--";
+    in property <string> frame: @tr("FRAME --/--");
     in property <string> machine-line;
     in property <bool> remeasure;
     in property <[LabCell]> cells;

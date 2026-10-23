@@ -118,7 +118,7 @@ pub fn children(folder: &str) -> Option<Vec<String>> {
 /// `Navigator.title`: Computer for none, else the folder's name.
 pub fn title(path: Option<&str>) -> String {
     match path {
-        None => "Computer".into(),
+        None => oni_i18n::tr("Computer").into(),
         Some(path) => paths::name(path),
     }
 }

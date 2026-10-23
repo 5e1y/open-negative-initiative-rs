@@ -4164,6 +4164,7 @@ dependencies = [
  "oni-fixtures",
  "oni-graph",
  "oni-hack",
+ "oni-i18n",
  "oni-library",
  "oni-link",
  "oni-link-ffi",
@@ -4220,6 +4221,7 @@ dependencies = [
  "flate2",
  "oni-fixtures",
  "oni-hack",
+ "oni-i18n",
  "oni-keys",
  "oni-library",
  "oni-settings",
@@ -4252,6 +4254,7 @@ dependencies = [
  "oni-decode",
  "oni-fixtures",
  "oni-hack",
+ "oni-i18n",
  "oni-render",
  "oni-settings",
  "serde",
@@ -4338,6 +4341,7 @@ dependencies = [
  "swash",
  "syn 2.0.119",
  "syn 3.0.9",
+ "sys-locale",
  "thiserror 2.0.21",
  "tinystr",
  "tokio",
@@ -4358,6 +4362,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-i18n"
+version = "0.1.0"
+dependencies = [
+ "oni-hack",
+ "sys-locale",
+]
+
+[[package]]
 name = "oni-keys"
 version = "0.1.0"
 dependencies = [
@@ -4371,6 +4383,7 @@ dependencies = [
  "chrono",
  "oni-fixtures",
  "oni-hack",
+ "oni-i18n",
  "oni-settings",
  "rusqlite",
  "serde",

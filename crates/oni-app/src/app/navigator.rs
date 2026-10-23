@@ -3,6 +3,7 @@
 
 use super::{Ctl, State, with_shell};
 use crate::{Advice, App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
+use oni_i18n::tr;
 use oni_library::favourites::{self, Area, Favourites, Surveys};
 use oni_library::gallery_history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
@@ -178,7 +179,7 @@ impl State {
     }
 
     fn save_favourites(&mut self) -> Option<String> {
-        self.nav.favourites.save(&self.support).err().map(|e| format!("The favourites cannot be saved: {e}"))
+        self.nav.favourites.save(&self.support).err().map(|e| tr!("The favourites cannot be saved: {error}", error = e))
     }
 }
 

@@ -5,13 +5,14 @@ use super::{Ctl, with_shell};
 use oni_measure::sheet::{self, Layout, Picture};
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{Date, Film, PipelineSettings};
+use oni_i18n::{marked, tr};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 /// `SheetStep`: the opaque steps after the decode, named so a silent wait never reads as a hang.
-pub const WRITING: &str = "Writing the file";
-pub const ADOPTING: &str = "Adding it to the library";
-pub const OPENING: &str = "Opening it";
+pub const WRITING: &str = marked("Writing the file");
+pub const ADOPTING: &str = marked("Adding it to the library");
+pub const OPENING: &str = marked("Opening it");
 
 /// `makingSheet`, `sheetDone`, `sheetTotal`, `sheetStep`: a run under way bars a second.
 #[derive(Clone, Copy, Debug, Default)]
@@ -29,11 +30,11 @@ pub fn can_make(making: bool, selected: usize) -> bool {
 /// `sheetTitle`: says how many frames the long run will grind through.
 pub fn title(making: bool, selected: usize) -> String {
     if making {
-        "Making Contact Sheet…".into()
+        tr("Making Contact Sheet…").into()
     } else if selected > 1 {
-        format!("New Contact Sheet from {selected} Photos")
+        tr!("New Contact Sheet from {count} Photos", count = selected)
     } else {
-        "New Contact Sheet".into()
+        tr("New Contact Sheet").into()
     }
 }
 
@@ -129,7 +130,7 @@ impl Ctl {
         };
         let (paths, lead, donor, earliest, film, support) = plan;
         let Some(donor) = donor.filter(|d| d.roll_reference.is_some()) else {
-            return self.advise("Something Went Wrong", "Prepare this roll first: a contact sheet carries the window its roll was measured on.");
+            return self.advise(tr("Something Went Wrong"), tr("Prepare this roll first: a contact sheet carries the window its roll was measured on."));
         };
         let destination = sheet::destination(Path::new(&lead), &named(film.as_ref(), earliest), Path::exists);
         self.state.borrow_mut().making_sheet = Some(Making { done: 0, total: paths.len(), step: "" });
@@ -152,10 +153,13 @@ impl Ctl {
 
     fn sheet_progressed(self: &Rc<Self>, done: usize, step: &'static str) {
         if let Some(m) = self.state.borrow_mut().making_sheet.as_mut() {
+            // Kept translated for the bar; the empty step, the decode's count, never goes through `tr`.
             if step.is_empty() {
                 m.done = done;
+                m.step = step;
+            } else {
+                m.step = tr(step);
             }
-            m.step = step;
         }
         self.publish_bar();
     }
@@ -164,7 +168,7 @@ impl Ctl {
         let Some(sheet) = made else {
             self.state.borrow_mut().making_sheet = None;
             self.publish_bar();
-            return self.advise("Something Went Wrong", "The contact sheet could not be written.");
+            return self.advise(tr("Something Went Wrong"), tr("The contact sheet could not be written."));
         };
         self.sheet_progressed(0, ADOPTING);
         self.adopt_sheet(&sheet, &donor, true);

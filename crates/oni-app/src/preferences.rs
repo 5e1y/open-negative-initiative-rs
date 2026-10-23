@@ -21,6 +21,8 @@ pub const FULL_DECODE: &str = "fullDecode";
 pub const KEEP_ZOOM: &str = "keepZoom";
 /// The `.cube` the hand's Frontier look is read from, a choice this build adds.
 pub const FRONTIER_LOOK: &str = "frontierLook";
+/// The language the app speaks, `en`, `fr` or `es`, a choice this build adds; the system's without it.
+pub const LANGUAGE: &str = "language";
 
 pub struct Preferences {
     file: PathBuf,

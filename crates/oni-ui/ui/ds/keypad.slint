@@ -133,7 +133,7 @@ export component LabScreen inherits Rectangle {
             Lcd { text: root.frame; }
             Rectangle { horizontal-stretch: 1; }
             if root.remeasure: Lcd {
-                text: "REMEASURE ROLL";
+                text: @tr("REMEASURE ROLL");
                 TouchArea {
                     changed has-hover => { Tips.hover(self.has-hover, root.remeasure-help, self.absolute-position.x, self.absolute-position.y + self.height); }
                 }

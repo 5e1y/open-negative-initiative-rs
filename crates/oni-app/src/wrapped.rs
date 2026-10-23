@@ -1,5 +1,6 @@
 //! `WrappedView.cards`: what the year's summary says, card by card, in Swift's wording.
 
+use oni_i18n::{tr, trn};
 use oni_library::wrapped::WrappedYear;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,8 +26,8 @@ pub fn figure(value: usize) -> String {
 
 /// A row's rank in `Parameters.all`, named as the preset editor's box that carries it.
 pub fn row_name(rank: usize) -> String {
-    let Some(row) = oni_core::parameters::all().get(rank) else { return "Settings".into() };
-    oni_core::preset_parameters::entries().find(|e| e.rows.contains(&row.id)).map_or_else(|| row.id.to_string(), |e| e.label.to_string())
+    let Some(row) = oni_core::parameters::all().get(rank) else { return tr("Settings").into() };
+    oni_core::preset_parameters::entries().find(|e| e.rows.contains(&row.id)).map_or_else(|| row.id.to_string(), |e| tr(e.label).to_string())
 }
 
 fn file_name(path: &str) -> String {
@@ -39,35 +40,41 @@ pub fn cards(year: &WrappedYear) -> Vec<Card> {
         out.push(Card { eyebrow: eyebrow.into(), figure, caption, photos });
     };
     if year.photos > 0 {
-        let caption = if year.photos == 1 { "negative brought back to life" } else { "negatives brought back to life" };
-        add("This year", Some(figure(year.photos)), caption.into(), Vec::new());
+        let caption = trn("negative brought back to life", "negatives brought back to life", year.photos as u64);
+        add(tr("This year"), Some(figure(year.photos)), caption, Vec::new());
     }
     if let Some((path, edits)) = &year.most_edited {
-        add("Your most edited photo", Some(format!("{} gestures", figure(*edits))), format!("{} \u{2014} overcooked?", file_name(path)), vec![path.clone()]);
+        add(
+            tr("Your most edited photo"),
+            Some(tr!("{count} gestures", count = figure(*edits))),
+            tr!("{name} — overcooked?", name = file_name(path)),
+            vec![path.clone()],
+        );
     }
     if !year.favourite_rows.is_empty() {
         let names: Vec<String> = year.favourite_rows.iter().map(|(row, _)| row_name(*row)).collect();
-        add("Your hands knew the way", None, names.join("  \u{b7}  "), Vec::new());
+        add(tr("Your hands knew the way"), None, names.join("  \u{b7}  "), Vec::new());
     }
     if !year.gold.is_empty() {
-        let caption = if year.gold.len() == 1 { "photo earned its gold" } else { "photos earned their gold" };
-        add("The only thing I see is gold", Some(figure(year.gold.len())), caption.into(), year.gold.iter().take(9).cloned().collect());
+        let caption = trn("photo earned its gold", "photos earned their gold", year.gold.len() as u64);
+        add(tr("The only thing I see is gold"), Some(figure(year.gold.len())), caption, year.gold.iter().take(9).cloned().collect());
     }
     if let Some((_, count)) = year.favourite_balance {
-        add("Your go-to balance", Some("Balance".into()), format!("pressed {} times", figure(count)), Vec::new());
+        add(tr("Your go-to balance"), Some(tr("Balance").into()), tr!("pressed {count} times", count = figure(count)), Vec::new());
     }
     if let Some((name, count)) = &year.favourite_preset {
-        add("Your signature look", Some(name.clone()), format!("laid on {} photos", figure(*count)), Vec::new());
+        add(tr("Your signature look"), Some(name.clone()), tr!("laid on {count} photos", count = figure(*count)), Vec::new());
     }
     if year.exported > 0 || year.rolls > 0 {
-        let exports = if year.exported == 1 { "export" } else { "exports" };
-        let rolls = if year.rolls == 1 { "roll made" } else { "rolls made" };
-        add("Out into the world", Some(figure(year.exported)), format!("{exports}, and {} {rolls}", figure(year.rolls)), Vec::new());
+        let exports = trn("export", "exports", year.exported as u64);
+        let rolls = trn("roll made", "rolls made", year.rolls as u64);
+        let caption = tr!("{exports}, and {count} {rolls}", exports = exports, count = figure(year.rolls), rolls = rolls);
+        add(tr("Out into the world"), Some(figure(year.exported)), caption, Vec::new());
     }
     if year.hours >= 1.0 {
-        add("Time in the darkroom", Some(format!("{} h", figure(year.hours.round() as usize))), "spent with your negatives".into(), Vec::new());
+        add(tr("Time in the darkroom"), Some(format!("{} h", figure(year.hours.round() as usize))), tr("spent with your negatives").into(), Vec::new());
     }
-    add("See you next year", None, "on film.".into(), Vec::new());
+    add(tr("See you next year"), None, tr("on film.").into(), Vec::new());
     out
 }
 

@@ -38,7 +38,7 @@ export component WrappedTitle inherits Rectangle {
     column := VerticalLayout {
         spacing: Space.m;
         alignment: center;
-        for line in ["YOUR YEAR", "ON FILM"]: Text {
+        for line in [@tr("YOUR YEAR"), @tr("ON FILM")]: Text {
             text: line;
             font-family: DS.typo-wrapped-title-family;
             font-size: DS.typo-wrapped-title-size * (root.shown ? 1 : WrappedStyle.title-start);

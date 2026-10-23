@@ -1,0 +1,6 @@
+#!/bin/bash
+# Lays every text the sources show into crates/oni-i18n/lang/*/LC_MESSAGES/oni-ui.po: new ones empty,
+# translations kept, texts no source uses dropped. Then the check lists what remains to translate.
+set -e
+cd "$(dirname "$0")/.."
+ONI_I18N_WRITE=1 cargo test -q -p oni-i18n --test catalogue "$@"

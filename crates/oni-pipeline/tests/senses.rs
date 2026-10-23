@@ -88,7 +88,7 @@ fn temperature_and_tint_reach_the_colours_their_tracks_end_on() {
     let colour = panel("color_tab.slint");
     let track = |label: &str| {
         let lines: Vec<&str> = colour.lines().collect();
-        let at = lines.iter().position(|l| l.contains(&format!("label: \"{label}\""))).expect("the slider");
+        let at = lines.iter().position(|l| l.contains(&format!("label: @tr(\"{label}\")"))).expect("the slider");
         lines[at + 1].split("high: ").nth(1).unwrap_or_default().trim_end_matches(';').to_string()
     };
     assert_eq!((track("Temperature").as_str(), track("Tint").as_str()), ("Colour.channel-yellow", "Colour.channel-magenta"));

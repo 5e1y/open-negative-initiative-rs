@@ -12,7 +12,7 @@ impl Ctl {
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
         let (painting, canvas) = (self.painting(), self.canvas_size());
-        let (titles, live, film_type, targets) = {
+        let (titles, live, film_type, targets, filter_word) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.is_some();
             let selected = s.picks.selection.len();
@@ -51,39 +51,38 @@ impl Ctl {
                 .map_or(0, |m| m.len() - usize::from(open_path.as_ref().is_some_and(|p| m.contains(p))));
             let (can_undo, can_redo, undo_title, redo_title) = match (gallery, gallery_history) {
                 (true, Some((u, r, ul, rl))) => {
-                    (u, r, ul.map_or("Undo".into(), |l| format!("Undo {l}")), rl.map_or("Redo".into(), |l| format!("Redo {l}")))
+                    (u, r, ul.map_or(tr("Undo").into(), |l| tr!("Undo {action}", action = l)), rl.map_or(tr("Redo").into(), |l| tr!("Redo {action}", action = l)))
                 }
-                (true, None) => (false, false, "Undo".to_string(), "Redo".to_string()),
-                (false, _) => (editor_undo.0, editor_undo.1, "Undo".to_string(), "Redo".to_string()),
+                (true, None) => (false, false, tr("Undo").to_string(), tr("Redo").to_string()),
+                (false, _) => (editor_undo.0, editor_undo.1, tr("Undo").to_string(), tr("Redo").to_string()),
             };
             let can_reset = count > 0 && (count != 1 || !open || settings != oni_core::parameters::reset_blank(&settings, scanner_face));
             let (exporting, writing) = {
                 let c = self.export.borrow();
                 (c.shown.then_some(c.targets.len()), c.exporting)
             };
-            let plural = |n: usize, one: &str, many: String| if n > 1 { many } else { one.to_string() };
             let titles = MenuTitles {
-                mode: if gallery { "Editor" } else { "Gallery" }.into(),
+                mode: if gallery { tr("Editor") } else { tr("Gallery") }.into(),
                 export: crate::export::label::menu(exporting.unwrap_or(selected)).into(),
-                remove: plural(count, "Move to ONI Trash", format!("Move {count} Photos to ONI Trash")).into(),
-                restore: plural(restoring, "Restore", format!("Restore {restoring} Photos")).into(),
-                paste: plural(count, "Paste Settings", format!("Paste Settings to {count} Photos")).into(),
-                paste_to_roll: if reach > 0 { format!("Paste to Roll ({} Photos)", reach + 1) } else { "Paste to Roll".into() }.into(),
+                remove: if count > 1 { tr!("Move {count} Photos to ONI Trash", count = count) } else { tr("Move to ONI Trash").into() }.into(),
+                restore: if restoring > 1 { tr!("Restore {count} Photos", count = restoring) } else { tr("Restore").into() }.into(),
+                paste: if count > 1 { tr!("Paste Settings to {count} Photos", count = count) } else { tr("Paste Settings").into() }.into(),
+                paste_to_roll: if reach > 0 { tr!("Paste to Roll ({count} Photos)", count = reach + 1) } else { tr("Paste to Roll").into() }.into(),
                 undo: undo_title.into(),
                 redo: redo_title.into(),
-                smaller: if gallery { "Smaller Thumbnails" } else { "Zoom Out" }.into(),
-                larger: if gallery { "Larger Thumbnails" } else { "Zoom In" }.into(),
-                sound: if muted { "Unmute Key Clicks" } else { "Mute Key Clicks" }.into(),
-                compare: if split { "Close Comparison" } else { "Compare Before/After" }.into(),
-                library: if library_hidden { "Show the Library" } else { "Hide the Library" }.into(),
-                panel: if panel_hidden { "Show the Panel" } else { "Hide the Panel" }.into(),
-                correcting: if dedust { "Done Correcting" } else { "Remove Dust & Scratches" }.into(),
-                mirror: if settings.geometry.mirrored { "Unmirror" } else { "Mirror Horizontally" }.into(),
-                filter: filter.map_or("Filter: All".into(), |m| format!("Filter: {}", library::medal(m))).into(),
-                roll: plural(count, "New Roll from Selection", format!("New Roll from {count} Photos")).into(),
-                ungroup: plural(members, "Ungroup", format!("Ungroup {members} Photos")).into(),
+                smaller: if gallery { tr("Smaller Thumbnails") } else { tr("Zoom Out") }.into(),
+                larger: if gallery { tr("Larger Thumbnails") } else { tr("Zoom In") }.into(),
+                sound: if muted { tr("Unmute Key Clicks") } else { tr("Mute Key Clicks") }.into(),
+                compare: if split { tr("Close Comparison") } else { tr("Compare Before/After") }.into(),
+                library: if library_hidden { tr("Show the Library") } else { tr("Hide the Library") }.into(),
+                panel: if panel_hidden { tr("Show the Panel") } else { tr("Hide the Panel") }.into(),
+                correcting: if dedust { tr("Done Correcting") } else { tr("Remove Dust & Scratches") }.into(),
+                mirror: if settings.geometry.mirrored { tr("Unmirror") } else { tr("Mirror Horizontally") }.into(),
+                filter: filter.map_or(tr("Filter: All").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
+                roll: if count > 1 { tr!("New Roll from {count} Photos", count = count) } else { tr("New Roll from Selection").into() }.into(),
+                ungroup: if members > 1 { tr!("Ungroup {count} Photos", count = members) } else { tr("Ungroup").into() }.into(),
                 sheet: sheets::title(s.making_sheet.is_some(), selected).into(),
-                screen_gamut: if screen_gamut { "Hide What This Screen Cannot Show" } else { "Show What This Screen Cannot Show" }.into(),
+                screen_gamut: if screen_gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into(),
             };
             // A gesture this build lacks stays dark, whatever Swift's rule would say.
             let live = MenuLive {
@@ -149,7 +148,8 @@ impl Ctl {
             // A sheet is modal: nothing behind it moves until it closes.
             let live = if sheet { MenuLive::default() } else { live };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
-            (titles, live, film_type, count)
+            let filter_word = filter.map_or(tr("ALL").to_string(), |m| library::medal(m).to_uppercase());
+            (titles, live, film_type, count, filter_word)
         };
         let menus = w.global::<Menus>();
         menus.set_titles(titles);
@@ -166,6 +166,6 @@ impl Ctl {
         self.publish_presets();
         self.publish_rolls();
         self.publish_roll_tab();
-        bar.set_filter(menus.get_titles().filter.trim_start_matches("Filter: ").to_uppercase().into());
+        bar.set_filter(filter_word.into());
     }
 }

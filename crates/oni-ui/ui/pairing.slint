@@ -15,7 +15,7 @@ export global Pairing {
 }
 
 export component PairingSheet inherits Sheet {
-    title: "Pair Phone";
+    title: @tr("Pair Phone");
     dismissed => { Pairing.close(); }
     HorizontalLayout {
         alignment: center;
@@ -39,13 +39,13 @@ export component PairingSheet inherits Sheet {
     }
     SheetKeys {
         if Pairing.can-forget: Button {
-            text: "FORGET PHONES";
+            text: @tr("FORGET PHONES");
             kind: ButtonKind.destructive;
-            help: "Every paired phone is cut and pairs again from a new code.";
+            help: @tr("Every paired phone is cut and pairs again from a new code.");
             clicked => { Pairing.forget(); }
         }
         Button {
-            text: "DONE";
+            text: @tr("DONE");
             clicked => { Pairing.close(); }
         }
     }

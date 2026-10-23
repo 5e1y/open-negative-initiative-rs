@@ -5,12 +5,12 @@ import { Pane } from "parts.slint";
 
 export component DedustPane inherits Pane {
     Section {
-        title: "Dust & Scratches";
-        help: "Paint over a defect; the tool duplicates a matching patch of the same photo over it.";
+        title: @tr("Dust & Scratches");
+        help: @tr("Paint over a defect; the tool duplicates a matching patch of the same photo over it.");
         separated: false;
         Slider {
             field: -1;
-            label: "Brush Size";
+            label: @tr("Brush Size");
             fraction: Dedust.fraction;
             readout: Dedust.readout;
             value-text: Dedust.value-text;
@@ -30,12 +30,12 @@ export component DedustPane inherits Pane {
                     Label { text: row.label; horizontal-stretch: 1; }
                     if row.fallback: VerticalLayout {
                         alignment: center;
-                        HelpMark { note: "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."; }
+                        HelpMark { note: @tr("No good match was found nearby — this patch is a plain shifted tile, not a real structural match."); }
                     }
-                    if row.pending: Label { text: "Generating…"; tone: Tone.secondary; }
+                    if row.pending: Label { text: @tr("Generating…"); tone: Tone.secondary; }
                     VerticalLayout {
                         alignment: center;
-                        IconButton { icon: Icons.remove; help: "Remove this correction"; clicked => { Dedust.remove(i); } }
+                        IconButton { icon: Icons.remove; help: @tr("Remove this correction"); clicked => { Dedust.remove(i); } }
                     }
                 }
             }

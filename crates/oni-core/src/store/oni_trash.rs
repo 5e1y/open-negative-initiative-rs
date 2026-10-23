@@ -21,11 +21,10 @@ impl EditorStore {
         let outcome = trash::mark(&files, date, &|p: &Path| mosaic(p));
         self.took(&outcome, date.is_some());
         let frames = paths.iter().filter(|p| outcome.done.contains(p)).count();
-        let label = match (date.is_some(), frames) {
-            (true, 1) => "Move to ONI Trash".to_string(),
-            (true, n) => format!("Move {n} Photos to ONI Trash"),
-            (false, 1) => "Restore 1 Photo".to_string(),
-            (false, n) => format!("Restore {n} Photos"),
+        let label = if date.is_some() {
+            trn("Move to ONI Trash", "Move {n} Photos to ONI Trash", frames as u64)
+        } else {
+            trn("Restore {n} Photo", "Restore {n} Photos", frames as u64)
         };
         let marks = Trash { paths: outcome.done.iter().cloned().collect(), marked: date.is_some() };
         self.gallery.record_trash(marks, &label);

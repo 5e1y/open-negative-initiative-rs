@@ -3,6 +3,7 @@
 
 use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
+use oni_i18n::{marked, tr};
 use slint::{ComponentHandle, Timer, TimerMode};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -20,14 +21,14 @@ const SITE: &str = "https://open-negative-initiative.com";
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
 
-/// `WhatsNew.notes`: (id, word, note), in Swift's order.
+/// `WhatsNew.notes`: (id, word, note), in Swift's order; the word and note translated where shown.
 pub const NOTES: [(&str, &str, &str); 6] = [
-    ("machine.1.3.1", "New", "Two machines: the Frontier as measured, and ONI's own, Pro's conversion with ONI's look. A photo converted before keeps the Frontier."),
-    ("keypad.1.3.1", "Updated", "A simpler Scanner, after your feedback: three blocks that fold, D, C, M and Y on half steps, W now TEMP. The S look and CMY CANCEL are gone."),
-    ("effects.scanner.1.3.1", "Updated", "Contrast, Vignette and Chrome are five keys each, read on the machine's screen."),
-    ("curves.scanner.1.3.1", "Updated", "Curves, Spectrogram and the saturation curve now act on the Scanner face too, after the machine's render."),
-    ("lighting.1.3.1", "Updated", "Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays."),
-    ("space.1.3.1", "New", "ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips."),
+    ("machine.1.3.1", marked("New"), marked("Two machines: the Frontier as measured, and ONI's own, Pro's conversion with ONI's look. A photo converted before keeps the Frontier.")),
+    ("keypad.1.3.1", marked("Updated"), marked("A simpler Scanner, after your feedback: three blocks that fold, D, C, M and Y on half steps, W now TEMP. The S look and CMY CANCEL are gone.")),
+    ("effects.scanner.1.3.1", marked("Updated"), marked("Contrast, Vignette and Chrome are five keys each, read on the machine's screen.")),
+    ("curves.scanner.1.3.1", marked("Updated"), marked("Curves, Spectrogram and the saturation curve now act on the Scanner face too, after the machine's render.")),
+    ("lighting.1.3.1", marked("Updated"), marked("Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays.")),
+    ("space.1.3.1", marked("New"), marked("ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips.")),
 ];
 
 /// `1.2` of `1.2.1`: the release an edition belongs to, as the menu and the sheet's heading name it.
@@ -80,7 +81,7 @@ impl Ctl {
         let seen: Vec<String> = self.state.borrow().preferences.value(SEEN_KEY).and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
         let shown = |id: &str| -> (slint::SharedString, slint::SharedString) {
             let note = NOTES.iter().find(|(i, _, _)| *i == id).filter(|(i, _, _)| !seen.iter().any(|s| s == i) || self.state.borrow().news_kept.contains(*i));
-            note.map_or_else(Default::default, |(_, word, text)| (word.to_uppercase().into(), (*text).into()))
+            note.map_or_else(Default::default, |&(_, word, text)| (tr(word).to_uppercase().into(), tr(text).into()))
         };
         let n = w.global::<News>();
         let (word, note) = shown("machine.1.3.1");
@@ -116,7 +117,7 @@ impl Ctl {
             s.preferences.set(SEEN_KEY, seen.into())
         };
         if let Err(e) = written {
-            self.say(&format!("The note cannot be marked read: {e}"));
+            self.say(&tr!("The note cannot be marked read: {error}", error = e));
         }
     }
 
@@ -128,7 +129,7 @@ impl Ctl {
             s.preferences.set(SEEN_KEY, serde_json::Value::Array(Vec::new()))
         };
         if let Err(e) = removed {
-            self.say(&format!("The notes cannot be shown again: {e}"));
+            self.say(&tr!("The notes cannot be shown again: {error}", error = e));
         }
         self.publish_news();
     }
@@ -157,7 +158,7 @@ impl Ctl {
         w.global::<Help>().set_welcome_shown(false);
         let written = self.state.borrow_mut().preferences.set(WELCOME_KEY, EDITION.into());
         if let Err(e) = written {
-            self.say(&format!("The welcome cannot be marked seen: {e}"));
+            self.say(&tr!("The welcome cannot be marked seen: {error}", error = e));
         }
         w.invoke_refocus();
     }
@@ -228,7 +229,7 @@ impl Ctl {
         let console = match existing {
             Some(c) => c,
             None => {
-                let Ok(console) = ConsoleWindow::new() else { return self.say("The console cannot open.") };
+                let Ok(console) = ConsoleWindow::new() else { return self.say(tr("The console cannot open.")) };
                 let log = crate::timing::log_path(&self.state.borrow().support);
                 let copied = log.clone();
                 console.on_copy(move || system::set_text(&std::fs::read_to_string(&copied).unwrap_or_default()));

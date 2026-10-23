@@ -2,6 +2,7 @@
 //! on every frame naming them; `FlatField.remember`, the three sliders a hand last left, per machine.
 
 use crate::preferences::Preferences;
+use oni_i18n::tr;
 use oni_library::index::LibraryIndex;
 use oni_pipeline::flat_field::Mask;
 use oni_settings::frame::{FlatField, RgbPasses};
@@ -30,8 +31,8 @@ pub enum Failure {
 impl Failure {
     pub fn message(self) -> &'static str {
         match self {
-            Failure::Undecodable => "This file could not be decoded as a picture.",
-            Failure::Unwritable => "The mask could not be saved in the app's folder.",
+            Failure::Undecodable => tr("This file could not be decoded as a picture."),
+            Failure::Unwritable => tr("The mask could not be saved in the app's folder."),
         }
     }
 }
@@ -178,7 +179,7 @@ fn moved(from: &Path, to: &Path) -> std::io::Result<()> {
             let copied = std::fs::copy(from, to);
             if copied.as_ref().ok() != Some(&std::fs::metadata(from)?.len()) {
                 let _ = std::fs::remove_file(to);
-                return Err(copied.err().unwrap_or_else(|| std::io::Error::other("the copy came out short")));
+                return Err(copied.err().unwrap_or_else(|| std::io::Error::other(tr("the copy came out short"))));
             }
             std::fs::remove_file(from)
         }

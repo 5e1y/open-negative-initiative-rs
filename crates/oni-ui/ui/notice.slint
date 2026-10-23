@@ -12,18 +12,18 @@ export component NoticeSheet inherits Sheet {
     // Its groups a wider step apart than a plain sheet's lines.
     VerticalLayout {
         spacing: Space.l;
-        Label { text: "RAW Color, Recalibrated"; role: TextRole.title; wrap: word-wrap; }
+        Label { text: @tr("RAW Color, Recalibrated"); role: TextRole.title; wrap: word-wrap; }
         VerticalLayout {
             spacing: Space.s;
             for line in [
-                "Camera RAW files now render truer color, especially on unusual film stocks.",
-                "Your existing photos have already been nudged to compensate automatically.",
-                "Still looks a touch off? One press of your usual balance button settles it.",
+                @tr("Camera RAW files now render truer color, especially on unusual film stocks."),
+                @tr("Your existing photos have already been nudged to compensate automatically."),
+                @tr("Still looks a touch off? One press of your usual balance button settles it."),
             ]: BulletLine { text: line; }
         }
         HorizontalLayout {
             alignment: end;
-            Button { text: "GOT IT"; clicked => { Notice.close(); } }
+            Button { text: @tr("GOT IT"); clicked => { Notice.close(); } }
         }
     }
 }

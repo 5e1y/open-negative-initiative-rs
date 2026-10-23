@@ -8,6 +8,7 @@ use crate::Preparing;
 use oni_library::rgb_passes::{self, Grouping};
 use oni_settings::Date;
 use oni_settings::frame::PassOrder;
+use oni_i18n::{tr, trn};
 use slint::{Image, ModelRc, SharedString, VecModel};
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -17,7 +18,7 @@ pub(super) type Known = HashMap<String, (Option<Date>, bool)>;
 
 /// The count under the Pass Order.
 pub fn grouping_note(g: &Grouping) -> String {
-    format!("{} frames from {} files", g.frames.len(), g.frames.len() * 3 + g.left_over.len())
+    tr!("{frames} frames from {files} files", frames = g.frames.len(), files = g.frames.len() * 3 + g.left_over.len())
 }
 
 /// `groupingRemark`: the files left out and the stretched frames, empty when there are none.
@@ -25,16 +26,21 @@ pub fn grouping_remark(g: &Grouping) -> String {
     let mut parts = Vec::new();
     if !g.left_over.is_empty() {
         let n = g.left_over.len();
-        parts.push(format!("{n} file{} left out, the files not falling into threes.", if n == 1 { " is" } else { "s are" }));
+        parts.push(trn("{n} file is left out, the files not falling into threes.", "{n} files are left out, the files not falling into threes.", n as u64));
     }
     if !g.stretched.is_empty() {
         let n = g.stretched.len();
-        parts.push(format!("{n} frame{} passes lie further apart than the frames do, which a missing or extra pass causes.", if n == 1 { "'s" } else { "s'" }));
+        parts.push(trn(
+            "{n} frame's passes lie further apart than the frames do, which a missing or extra pass causes.",
+            "{n} frames' passes lie further apart than the frames do, which a missing or extra pass causes.",
+            n as u64,
+        ));
     }
     if parts.is_empty() {
         return String::new();
     }
-    parts.join(" ") + " Shift the grouping by one file, or leave a stray file out of the selection before preparing the roll."
+    parts.push(tr("Shift the grouping by one file, or leave a stray file out of the selection before preparing the roll.").to_string());
+    parts.join(" ")
 }
 
 /// `DSSlots.moved` on the order's bands: the band at `from` dropped at `to`, `None` past the slots.

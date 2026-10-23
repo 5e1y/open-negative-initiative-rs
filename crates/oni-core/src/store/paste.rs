@@ -38,7 +38,7 @@ impl EditorStore {
         // `before.count`: Swift counts the open frame among the targets whether or not the paste moved it.
         let open_unmoved = self.path().is_some_and(|p| targets.iter().any(|t| t == p)) && look_settings::copied(&donor, &self.settings) == self.settings;
         let laid = self.lay_on(targets, |_, s| look_settings::copied(&donor, s), |n| {
-            if n == 1 { "Paste settings".into() } else { format!("Paste settings to {n} photos") }
+            trn("Paste settings", "Paste settings to {n} photos", n as u64)
         });
         laid + usize::from(open_unmoved)
     }
@@ -83,7 +83,7 @@ impl EditorStore {
                 }
                 PipelineSettings { geometry, ..s.clone() }
             },
-            |n| if n == 1 { "Paste framing".into() } else { format!("Paste framing to {n} photos") },
+            |n| trn("Paste framing", "Paste framing to {n} photos", n as u64),
         )
     }
 

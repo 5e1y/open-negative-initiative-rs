@@ -9,6 +9,7 @@ use oni_core::balance::{self, Outcome};
 use oni_core::preset_parameters::{self as carries, WhiteBalance};
 use oni_core::presets::{self, Preset, Tint};
 use oni_settings::{Id, PipelineSettings};
+use oni_i18n::{marked, tr, trn};
 use slint::{Color, ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -60,12 +61,12 @@ enum CardAct {
 }
 
 const CARD_MENU: [(CardAct, &str); 6] = [
-    (CardAct::Edit, "Edit…"),
-    (CardAct::Update, "Update with Current Settings"),
-    (CardAct::Duplicate, "Duplicate"),
-    (CardAct::Share, "Share Preset…"),
-    (CardAct::CopyCode, "Copy Preset Code"),
-    (CardAct::Delete, "Delete"),
+    (CardAct::Edit, marked("Edit…")),
+    (CardAct::Update, marked("Update with Current Settings")),
+    (CardAct::Duplicate, marked("Duplicate")),
+    (CardAct::Share, marked("Share Preset…")),
+    (CardAct::CopyCode, marked("Copy Preset Code")),
+    (CardAct::Delete, marked("Delete")),
 ];
 
 fn colour(c: [f64; 3]) -> Color {
@@ -93,12 +94,12 @@ fn card(p: &Preset) -> PresetCard {
 fn carries_lines(parameters: &std::collections::BTreeSet<String>) -> Vec<CarriesLine> {
     let mut lines = Vec::new();
     for block in &carries::BLOCKS {
-        lines.push(CarriesLine { kind: 0, text: block.title.into(), on: false });
+        lines.push(CarriesLine { kind: 0, text: tr(block.title).into(), on: false });
         if block.id == "Colour" {
             lines.push(CarriesLine { kind: 1, text: carries::white_balance(parameters).label().into(), on: false });
         }
         for entry in block.entries {
-            lines.push(CarriesLine { kind: 2, text: entry.label.into(), on: carries::is_on(entry, parameters) });
+            lines.push(CarriesLine { kind: 2, text: tr(entry.label).into(), on: carries::is_on(entry, parameters) });
         }
     }
     lines

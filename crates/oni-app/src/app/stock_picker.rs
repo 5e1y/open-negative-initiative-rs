@@ -3,6 +3,7 @@
 
 use super::Ctl;
 use crate::{Exporting, StockBrand, StockCell, StockRow, Stocks};
+use oni_i18n::tr;
 use oni_settings::film::FILM_STOCKS;
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
@@ -61,7 +62,7 @@ impl Ctl {
         let target = self.state.borrow_mut().stock_target.take();
         let kind = i.and_then(|i| FILM_STOCKS.get(i));
         match (target, kind) {
-            (Some(StockTarget::Roll), Some(kind)) => self.update_roll("Set Film Stock", |f| f.stock = Some(kind.id.to_string())),
+            (Some(StockTarget::Roll), Some(kind)) => self.update_roll(tr("Set Film Stock"), |f| f.stock = Some(kind.id.to_string())),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
             _ => {}
         }

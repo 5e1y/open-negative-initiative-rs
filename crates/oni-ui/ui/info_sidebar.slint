@@ -16,13 +16,13 @@ export component Info inherits Surface {
             }
             if Library.info-kind == 1: VerticalLayout {
                 Section {
-                    title: "Roll";
+                    title: @tr("Roll");
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Roll name"; committed(t) => { Library.title-committed(t); } }
+                    EditableTitle { text: Library.info-title; placeholder: @tr("Roll name"); committed(t) => { Library.title-committed(t); } }
                 }
                 Section {
-                    title: "Film Stock";
-                    help: "What this roll was shot on — never guessed, only ever what a hand picks.";
+                    title: @tr("Film Stock");
+                    help: @tr("What this roll was shot on — never guessed, only ever what a hand picks.");
                     // `heroStock`: the artwork, the name, and where a default came from.
                     HorizontalLayout {
                         alignment: center;
@@ -30,11 +30,11 @@ export component Info inherits Surface {
                     }
                     if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
                     if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
-                    Button { text: "Select Roll Type"; clicked => { Library.select-roll-type(); } }
+                    Button { text: @tr("Select Roll Type"); clicked => { Library.select-roll-type(); } }
                 }
                 Section {
-                    title: "Shot Date";
-                    help: "When the roll was actually shot. Organisational only — never a photo's own capture date.";
+                    title: @tr("Shot Date");
+                    help: @tr("When the roll was actually shot. Organisational only — never a photo's own capture date.");
                     HorizontalLayout {
                         spacing: Space.s;
                         alignment: start;
@@ -46,17 +46,17 @@ export component Info inherits Surface {
                         }
                         if Library.shot-date-set: IconButton {
                             icon: Icons.reset;
-                            help: "Clear shot date";
+                            help: @tr("Clear shot date");
                             clicked => { Library.shot-date-cleared(); }
                         }
                     }
-                    if Library.shot-date-default: Label { text: "Default, from this roll's first photo"; tone: Tone.secondary; }
+                    if Library.shot-date-default: Label { text: @tr("Default, from this roll's first photo"); tone: Tone.secondary; }
                 }
                 Section {
-                    title: "Camera Body";
-                    help: "The body this roll was shot on, hand-entered — never read off a scan's own EXIF.";
+                    title: @tr("Camera Body");
+                    help: @tr("The body this roll was shot on, hand-entered — never read off a scan's own EXIF.");
                     TextField {
-                        placeholder: "e.g. Leica M6";
+                        placeholder: @tr("e.g. Leica M6");
                         text <=> Library.camera-body;
                         accepted(t) => { Library.camera-body-committed(t); }
                         left(t) => { Library.camera-body-committed(t); }
@@ -65,15 +65,15 @@ export component Info inherits Surface {
             }
             if Library.info-kind == 2: VerticalLayout {
                 Section {
-                    title: "Project";
+                    title: @tr("Project");
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: "Project name"; committed(t) => { Library.title-committed(t); } }
+                    EditableTitle { text: Library.info-title; placeholder: @tr("Project name"); committed(t) => { Library.title-committed(t); } }
                 }
                 CardStack { pictures: Library.stack; }
                 Section {
-                    title: "Film Stocks";
-                    help: "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.";
-                    if Library.stocks.length == 0: Label { text: "No stock set yet"; tone: Tone.secondary; }
+                    title: @tr("Film Stocks");
+                    help: @tr("Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll.");
+                    if Library.stocks.length == 0: Label { text: @tr("No stock set yet"); tone: Tone.secondary; }
                     for row in Library.stocks: HorizontalLayout {
                         spacing: Space.s;
                         StockIcon { artwork: row.artwork; has-artwork: row.has-artwork; side: StockStyle.row; }
@@ -82,7 +82,7 @@ export component Info inherits Surface {
                     }
                 }
                 Section {
-                    title: "Description";
+                    title: @tr("Description");
                     TextArea {
                         lines-height: ShellStyle.info-description;
                         text <=> Library.description;

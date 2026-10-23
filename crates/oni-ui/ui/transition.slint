@@ -26,13 +26,13 @@ export component TransitionSheet inherits Sheet {
     }
     VerticalLayout {
         spacing: Space.l;
-        Label { text: "Matching Your Cameras"; role: TextRole.title; wrap: word-wrap; }
+        Label { text: @tr("Matching Your Cameras"); role: TextRole.title; wrap: word-wrap; }
         VerticalLayout {
             spacing: Space.s;
             for line in [
-                "ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version.",
-                "Each camera is matched once to the earlier version's colours, on a few of your photos.",
-                "Nothing in your photos' settings is changed.",
+                @tr("ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version."),
+                @tr("Each camera is matched once to the earlier version's colours, on a few of your photos."),
+                @tr("Nothing in your photos' settings is changed."),
             ]: BulletLine { text: line; }
         }
         VerticalLayout {
@@ -53,11 +53,11 @@ export component TransitionSheet inherits Sheet {
             Label { text: Transition.summary; wrap: word-wrap; }
             for line in Transition.left: Label { text: line; role: TextRole.caption; tone: Tone.tertiary; wrap: word-wrap; }
         }
-        if !Transition.done: Note { text: "Quitting now is safe: the work resumes at the next launch."; }
+        if !Transition.done: Note { text: @tr("Quitting now is safe: the work resumes at the next launch."); }
         HorizontalLayout {
             alignment: end;
             Button {
-                text: "CONTINUE";
+                text: @tr("CONTINUE");
                 kind: ButtonKind.accent;
                 enabled: Transition.done;
                 clicked => { Transition.continue-pressed(); }

@@ -39,7 +39,7 @@ impl Ctl {
     /// `sharePreset`: the preset's own file, wherever the save panel says.
     pub(super) fn share_preset(&self, id: Id) {
         let Some(preset) = self.held(id) else { return };
-        let Some(destination) = system::save_file("Share Preset", &presets::file_name(&preset), &["json"]) else { return };
+        let Some(destination) = system::save_file(tr("Share Preset"), &presets::file_name(&preset), &["json"]) else { return };
         let written = presets::shareable(&preset).map_err(|e| e.to_string()).and_then(|t| std::fs::write(&destination, t).map_err(|e| e.to_string()));
         if let Err(e) = written {
             self.say(&e);
@@ -63,23 +63,23 @@ impl Ctl {
     pub fn adopt_preset_code(&self, text: &str) {
         let Some(incoming) = presets::from_share_code(text) else {
             let message = if text.contains(presets::SHARE_CODE_PREFIX) {
-                "The code is incomplete or was changed on the way. Ask for it to be copied again.".to_string()
+                tr("The code is incomplete or was changed on the way. Ask for it to be copied again.").to_string()
             } else {
-                format!("Copy a code starting with {}, then paste it here.", presets::SHARE_CODE_PREFIX)
+                tr!("Copy a code starting with {prefix}, then paste it here.", prefix = presets::SHARE_CODE_PREFIX)
             };
-            return self.advise("No Preset Code on the Clipboard", &message);
+            return self.advise(tr("No Preset Code on the Clipboard"), &message);
         };
         let name = incoming.name.clone();
         let taken = presets::adopting(vec![incoming], &self.presets_folder());
         self.reload_presets();
         if taken.is_empty() {
-            self.advise(&format!("\u{201c}{name}\u{201d} Is Already in Your Presets"), "");
+            self.advise(&tr!("\u{201c}{name}\u{201d} Is Already in Your Presets", name = name), "");
         }
     }
 
     /// `importPresets`: files from the open panel, never overwriting, and a notice for those left out.
     pub(in crate::app) fn import_presets(&self) {
-        let paths = system::pick_files("Import Presets", &["json"]);
+        let paths = system::pick_files(tr("Import Presets"), &["json"]);
         if !paths.is_empty() {
             self.import_preset_files(&paths);
         }
@@ -92,12 +92,12 @@ impl Ctl {
         if skipped == 0 {
             return;
         }
-        let title = if taken.is_empty() { "No Preset Imported".to_string() } else { format!("{} of {} Presets Imported", taken.len(), paths.len()) };
-        let message = if skipped == 1 {
-            "One file was left out: it is already in your presets, or it is not a preset.".to_string()
-        } else {
-            format!("{skipped} files were left out: they are already in your presets, or they are not presets.")
-        };
+        let title = if taken.is_empty() { tr("No Preset Imported").to_string() } else { tr!("{taken} of {total} Presets Imported", taken = taken.len(), total = paths.len()) };
+        let message = trn(
+            "One file was left out: it is already in your presets, or it is not a preset.",
+            "{n} files were left out: they are already in your presets, or they are not presets.",
+            skipped as u64,
+        );
         self.advise(&title, &message);
     }
 
@@ -111,9 +111,9 @@ impl Ctl {
     pub(super) fn ask_update_preset(self: &Rc<Self>, id: Id) {
         let Some(p) = self.held(id) else { return };
         self.ask(
-            &format!("Replace \u{201c}{}\u{201d} with This Photo\u{2019}s Settings?", p.name),
-            "The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are.",
-            "Replace",
+            &tr!("Replace \u{201c}{name}\u{201d} with This Photo\u{2019}s Settings?", name = p.name),
+            tr("The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are."),
+            tr("Replace"),
             true,
             Pending::UpdatePreset(id),
         );
@@ -122,9 +122,9 @@ impl Ctl {
     pub(super) fn ask_delete_preset(self: &Rc<Self>, id: Id) {
         let Some(p) = self.held(id) else { return };
         self.ask(
-            &format!("Delete the Preset \u{201c}{}\u{201d}?", p.name),
-            "Its file goes to the Trash, where it can be put back. Photos it was applied to keep their settings.",
-            "Delete",
+            &tr!("Delete the Preset \u{201c}{name}\u{201d}?", name = p.name),
+            tr("Its file goes to the Trash, where it can be put back. Photos it was applied to keep their settings."),
+            tr("Delete"),
             true,
             Pending::DeletePreset(id),
         );

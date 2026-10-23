@@ -5,6 +5,7 @@ use crate::render::{Decoded, Engine, Negative, Shared};
 use oni_colour::{OutputProfile, Space};
 use oni_export::{ExifMetadata, Failure, Format, Image, Resize, Row, Settings};
 use oni_graph::Image as Recipe;
+use oni_i18n::{tr, trn};
 use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
 use oni_settings::film::{Film, film_stock};
@@ -33,19 +34,21 @@ pub fn targets(order: &[String], selection: &BTreeSet<usize>, open: Option<&str>
 
 /// The four places an export names its count, each as the Swift app words it.
 pub mod label {
+    use oni_i18n::tr;
+
     /// `exportLabel`, the File menu's item.
     pub fn menu(count: usize) -> String {
-        if count > 1 { format!("Export {count} Photos…") } else { "Export…".into() }
+        if count > 1 { tr!("Export {count} Photos…", count = count) } else { tr("Export…").into() }
     }
 
     /// `AppBar.ExportButton.title` and the card's own key.
     pub fn key(count: usize) -> String {
-        if count > 1 { format!("EXPORT {count} PHOTOS") } else { "EXPORT".into() }
+        if count > 1 { tr!("EXPORT {count} PHOTOS", count = count) } else { tr("EXPORT").into() }
     }
 
     /// `GalleryView.label`, the photo's context menu.
     pub fn context(count: usize) -> String {
-        if count > 1 { format!("Export… ({count} photos)") } else { "Export…".into() }
+        if count > 1 { tr!("Export… ({count} photos)", count = count) } else { tr("Export…").into() }
     }
 }
 
@@ -80,27 +83,31 @@ pub fn cropped_size(full: (f64, f64), settings: &PipelineSettings) -> (f64, f64)
 
 /// The panel's first summary line.
 pub fn bits(format: Format) -> &'static str {
-    if format == Format::Tiff16 { "16 bits per channel" } else { "8 bits per channel" }
+    if format == Format::Tiff16 { tr("16 bits per channel") } else { tr("8 bits per channel") }
 }
 
 /// `ExportPanel.weight`: one frame's estimate times the count, an order of magnitude only.
 pub fn weight(estimate: Option<u64>, count: usize) -> String {
-    let Some(estimate) = estimate.filter(|e| *e > 0) else { return "estimating…".into() };
+    let Some(estimate) = estimate.filter(|e| *e > 0) else { return tr("estimating…").into() };
     let total = estimate as f64 * count.max(1) as f64;
-    if total >= 1e9 { format!("≈ {:.1} GB", total / 1e9) } else { format!("≈ {:.0} MB", total / 1e6) }
+    if total >= 1e9 {
+        tr!("≈ {size} GB", size = format!("{:.1}", total / 1e9))
+    } else {
+        tr!("≈ {size} MB", size = format!("{:.0}", total / 1e6))
+    }
 }
 
 /// `ExportPanel.header`'s second line.
 pub fn subtitle(targets: &[Target], exporting: bool, progress: usize, stopped: Option<usize>) -> String {
     let batch = targets.len() > 1;
     if exporting {
-        return if batch { format!("Writing {progress} of {}…", targets.len()) } else { "Writing…".into() };
+        return if batch { tr!("Writing {progress} of {count}…", progress = progress, count = targets.len()) } else { tr("Writing…").into() };
     }
     if let Some(n) = stopped {
-        return if n == 1 { "Stopped after 1 file was written.".into() } else { format!("Stopped after {n} files were written.") };
+        return trn("Stopped after {n} file was written.", "Stopped after {n} files were written.", n as u64);
     }
     if batch {
-        return format!("{} photos. You will be asked for a folder; each file takes the name beside its preview.", targets.len());
+        return tr!("{count} photos. You will be asked for a folder; each file takes the name beside its preview.", count = targets.len());
     }
     targets.first().and_then(|t| t.path.file_name()).map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
 }
@@ -109,8 +116,8 @@ pub fn subtitle(targets: &[Target], exporting: bool, progress: usize, stopped: O
 pub fn low_precision(count: usize, of: usize) -> String {
     match count {
         0 => String::new(),
-        n if n == of => "8-bit source: shadows may band once inverted".into(),
-        n => format!("{n} of {of} sources are 8-bit: their shadows may band once inverted"),
+        n if n == of => tr("8-bit source: shadows may band once inverted").into(),
+        n => tr!("{count} of {of} sources are 8-bit: their shadows may band once inverted", count = n, of = of),
     }
 }
 
@@ -170,9 +177,9 @@ pub fn profile_titles(listed: &[OutputProfile]) -> Vec<String> {
 /// The note under the profile picker, empty when there is nothing to say.
 pub fn profile_note(chosen: &OutputProfile, installed: &[OutputProfile]) -> &'static str {
     if !chosen.is_usable() {
-        "This profile can no longer be read. Choose another one."
+        tr("This profile can no longer be read. Choose another one.")
     } else if installed.is_empty() {
-        "No printer or paper profile is installed yet: load one, or get your paper's below."
+        tr("No printer or paper profile is installed yet: load one, or get your paper's below.")
     } else {
         ""
     }
@@ -184,15 +191,15 @@ pub fn import_report(installed: usize, refused: usize) -> Option<(String, String
         return None;
     }
     let title = match installed {
-        0 => "No Profile Installed".to_owned(),
-        1 => "1 Profile Installed".to_owned(),
-        n => format!("{n} Profiles Installed"),
+        0 => tr("No Profile Installed").to_owned(),
+        n => trn("{n} Profile Installed", "{n} Profiles Installed", n as u64),
     };
     let message = if installed == 0 && refused == 0 {
-        "No ICC profile was found in what you chose.".to_owned()
+        tr("No ICC profile was found in what you chose.").to_owned()
     } else {
-        format!(
-            "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs."
+        tr!(
+            "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs.",
+            refused = refused
         )
     };
     Some((title, message))
@@ -201,12 +208,10 @@ pub fn import_report(installed: usize, refused: usize) -> Option<(String, String
 /// The note under the space when the previews show another space than the one edited in.
 pub fn edited_in_note(edited_in: Option<&Space>, space: &Space, batch: bool) -> String {
     match edited_in {
-        Some(e) if e != space => format!(
-            "{} edited in {}. The previews show them in {}.",
-            if batch { "These images were" } else { "This image was" },
-            e.title(),
-            space.title()
-        ),
+        Some(e) if e != space && batch => {
+            tr!("These images were edited in {edited}. The previews show them in {space}.", edited = e.title(), space = space.title())
+        }
+        Some(e) if e != space => tr!("This image was edited in {edited}. The previews show them in {space}.", edited = e.title(), space = space.title()),
         _ => String::new(),
     }
 }
@@ -286,11 +291,11 @@ pub fn clash_notice(clashes: usize, of: usize) -> Option<(String, String)> {
     if clashes == 0 {
         return None;
     }
-    let title = if clashes == 1 { "1 File Already Exists in That Folder".to_owned() } else { format!("{clashes} Files Already Exist in That Folder") };
+    let title = trn("{n} File Already Exists in That Folder", "{n} Files Already Exist in That Folder", clashes as u64);
     let message = if clashes == of {
-        "Exporting will replace them. The originals are not touched.".to_owned()
+        tr("Exporting will replace them. The originals are not touched.").to_owned()
     } else {
-        format!("Exporting will replace {clashes} of the {of} files. The originals are not touched.")
+        tr!("Exporting will replace {clashes} of the {of} files. The originals are not touched.", clashes = clashes, of = of)
     };
     Some((title, message))
 }

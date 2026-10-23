@@ -23,7 +23,7 @@ export global Preparing {
     in property <string> passes-note;
     // RGB Passes grouped: the first frame's files under their bands, the count, and what to check.
     in property <bool> grouped;
-    in property <[string]> pass-letters: ["B", "G", "R"];
+    in property <[string]> pass-letters: [@tr("B"), @tr("G"), @tr("R")];
     in property <[int]> pass-bands: [2, 1, 0];
     in property <[image]> pass-pictures: [];
     in property <[string]> pass-names: ["", "", ""];
@@ -49,7 +49,7 @@ export global Preparing {
     in property <bool> can-next;
     in property <[RollCell]> cells;
     in property <bool> back-shown;
-    in property <string> action-title: "NEXT";
+    in property <string> action-title: @tr("NEXT");
     in property <bool> action-enabled: true;
     // The card: where the picture and the window stand in it.
     in-out property <length> card-width;
@@ -169,23 +169,23 @@ component FlatFieldBlock inherits VerticalLayout {
     spacing: Space.s;
     HorizontalLayout {
         spacing: Space.s;
-        Label { text: "Flat-field"; horizontal-stretch: 1; }
-        VerticalLayout { alignment: center; Toggle { label: "Flat-field"; on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } } }
-        IconButton { icon: Icons.settings; help: root.settings ? "Hide Amount and Color" : "Show Amount and Color"; clicked => { root.settings = !root.settings; } }
+        Label { text: @tr("Flat-field"); horizontal-stretch: 1; }
+        VerticalLayout { alignment: center; Toggle { label: @tr("Flat-field"); on: Preparing.flat-on; toggled(on) => { Preparing.flat-toggled(on); } } }
+        IconButton { icon: Icons.settings; help: root.settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.settings = !root.settings; } }
     }
-    if Preparing.flat-on: LinesPicker { label: "Mask"; value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
-    if Preparing.flat-on && Preparing.masks-empty: Note { text: "No mask yet: take a frame of the empty light panel, shot on this rig."; }
-    Button { text: Preparing.taking-flat ? "Setting…" : "Use This Frame as Flat-Field"; horizontal-stretch: 1; enabled: Preparing.can-take-flat && !Preparing.taking-flat; clicked => { Preparing.take-flat(); } }
-    if root.settings: RollSlider { field: 0; label: "Amount"; enabled: Preparing.flat-masked; }
+    if Preparing.flat-on: LinesPicker { label: @tr("Mask"); value: Preparing.mask-title; lines: Preparing.mask-lines; chosen(i) => { Preparing.mask-chosen(i); } }
+    if Preparing.flat-on && Preparing.masks-empty: Note { text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
+    Button { text: Preparing.taking-flat ? @tr("Setting…") : @tr("Use This Frame as Flat-Field"); horizontal-stretch: 1; enabled: Preparing.can-take-flat && !Preparing.taking-flat; clicked => { Preparing.take-flat(); } }
+    if root.settings: RollSlider { field: 0; label: @tr("Amount"); enabled: Preparing.flat-masked; }
     if root.settings && !Preparing.monochrome: RollSlider {
-        field: 1; label: "Temperature"; enabled: Preparing.flat-masked;
+        field: 1; label: @tr("Temperature"); enabled: Preparing.flat-masked;
         fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
     }
     if root.settings && !Preparing.monochrome: RollSlider {
-        field: 2; label: "Tint"; enabled: Preparing.flat-masked;
+        field: 2; label: @tr("Tint"); enabled: Preparing.flat-masked;
         fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
     }
-    if root.settings: Button { text: Preparing.loading-flat ? "Loading…" : "Load…"; horizontal-stretch: 1; enabled: !Preparing.loading-flat; clicked => { Preparing.load-flat(); } }
+    if root.settings: Button { text: Preparing.loading-flat ? @tr("Loading…") : @tr("Load…"); horizontal-stretch: 1; enabled: !Preparing.loading-flat; clicked => { Preparing.load-flat(); } }
 }
 
 // `RollPanel`: the step's title and detail, its body scrolling, then Cancel, Back and the step's key.
@@ -214,33 +214,33 @@ export component RollPanel inherits Surface {
                 if Preparing.tutorial.width > 0: Picture { height: self.width; source: Preparing.tutorial; revision: Preparing.tutorial-revision; rounded: true; }
                 if Preparing.differ != "": VerticalLayout {
                     spacing: Space.xs;
-                    Label { text: "Settings differ across the roll"; }
+                    Label { text: @tr("Settings differ across the roll"); }
                     Warning { text: Preparing.differ; }
                 }
                 if Preparing.step == 0: VerticalLayout {
                     spacing: Space.m;
                     if Preparing.left-out != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.left-out; wrap: word-wrap; }
                     Field {
-                        label: "Film";
+                        label: @tr("Film");
                         Tabs {
-                            tabs: ["Negative", "Positive", "B&W"];
+                            tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
                             marked: [false, false, false];
                             selected <=> Preparing.film;
                             picked(i) => { Preparing.film-picked(i); }
                         }
                     }
                     Field {
-                        label: "Digitised with";
+                        label: @tr("Digitised with");
                         Tabs {
-                            tabs: ["Scanner", "DSLR Scan", "RGB Passes"];
+                            tabs: [@tr("Scanner"), @tr("DSLR Scan"), @tr("RGB Passes")];
                             marked: [false, false, false];
                             selected <=> Preparing.capture;
                             picked(i) => { Preparing.capture-picked(i); }
                         }
                     }
                     if Preparing.grouped: Field {
-                        label: "Pass Order";
-                        help: "The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.";
+                        label: @tr("Pass Order");
+                        help: @tr("The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll.");
                         PassReorder {
                             letters: Preparing.pass-letters;
                             bands: Preparing.pass-bands;
@@ -252,11 +252,11 @@ export component RollPanel inherits Surface {
                     if Preparing.grouped: HorizontalLayout {
                         spacing: Space.s;
                         Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.grouping-note; horizontal-stretch: 1; vertical-alignment: center; }
-                        Button { text: "Shift by One File"; enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
+                        Button { text: @tr("Shift by One File"); enabled: !Preparing.measuring; clicked => { Preparing.shift-grouping(); } }
                     }
                     if Preparing.grouped && Preparing.grouping-remark != "": VerticalLayout {
                         spacing: Space.xs;
-                        Label { text: "Check the grouping"; }
+                        Label { text: @tr("Check the grouping"); }
                         Warning { text: Preparing.grouping-remark; }
                     }
                     if Preparing.passes-note != "": Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.passes-note; wrap: word-wrap; }
@@ -272,26 +272,26 @@ export component RollPanel inherits Surface {
                     HorizontalLayout {
                         spacing: Space.s; min-height: ButtonStyle.height;
                         Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-note; horizontal-stretch: 1; overflow: elide; }
-                        if Preparing.has-base: Button { text: "Clear"; enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
+                        if Preparing.has-base: Button { text: @tr("Clear"); enabled: !Preparing.measuring; clicked => { Preparing.clear-base(); } }
                     }
-                    RollSlider { field: 3; label: "Picker Size"; enabled: !Preparing.measuring; }
+                    RollSlider { field: 3; label: @tr("Picker Size"); enabled: !Preparing.measuring; }
                     FrameGrid { }
                 }
                 if Preparing.step == 3: HorizontalLayout {
                     spacing: Space.s;
                     Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.flags-note; horizontal-stretch: 1; }
-                    Button { text: "Clear Flags"; enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
+                    Button { text: @tr("Clear Flags"); enabled: Preparing.can-clear-flags && !Preparing.measuring; clicked => { Preparing.clear-flags(); } }
                 }
                 if Preparing.step == 4: VerticalLayout {
                     spacing: Space.m;
-                    RollSlider { field: 4; label: "Frame"; enabled: !Preparing.measuring; }
+                    RollSlider { field: 4; label: @tr("Frame"); enabled: !Preparing.measuring; }
                     HorizontalLayout {
                         spacing: Space.s;
-                        Button { text: "Previous"; widest: "Previous"; enabled: Preparing.can-previous && !Preparing.measuring; clicked => { Preparing.previous(); } }
+                        Button { text: @tr("Previous"); widest: @tr("Previous"); enabled: Preparing.can-previous && !Preparing.measuring; clicked => { Preparing.previous(); } }
                         Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.frame-name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
-                        Button { text: "Next"; widest: "Previous"; enabled: Preparing.can-next && !Preparing.measuring; clicked => { Preparing.next(); } }
+                        Button { text: @tr("Next"); widest: @tr("Previous"); enabled: Preparing.can-next && !Preparing.measuring; clicked => { Preparing.next(); } }
                     }
-                    CautionNote { text: "EPILEPSY WARNING: scrubbing flashes the frames quickly."; }
+                    CautionNote { text: @tr("EPILEPSY WARNING: scrubbing flashes the frames quickly."); }
                 }
             }
           }
@@ -308,10 +308,10 @@ export component RollPanel inherits Surface {
             changed y => { self.laid(); }
             init => { self.laid(); }
             // One width for the three, whichever words they carry.
-            Button { text: Preparing.measuring ? "Stop" : "Cancel"; widest: "Measuring…"; horizontal-stretch: 1; clicked => { Preparing.cancel(); } }
-            if Preparing.back-shown: Button { text: "Back"; widest: "Measuring…"; horizontal-stretch: 1; clicked => { Preparing.back(); } }
+            Button { text: Preparing.measuring ? @tr("Stop") : @tr("Cancel"); widest: @tr("Measuring…"); horizontal-stretch: 1; clicked => { Preparing.cancel(); } }
+            if Preparing.back-shown: Button { text: @tr("Back"); widest: @tr("Measuring…"); horizontal-stretch: 1; clicked => { Preparing.back(); } }
             Button {
-                text: Preparing.measuring ? "Measuring…" : Preparing.action-title; widest: "Measuring…";
+                text: Preparing.measuring ? @tr("Measuring…") : Preparing.action-title; widest: @tr("Measuring…");
                 kind: ButtonKind.accent;
                 horizontal-stretch: 1;
                 enabled: Preparing.action-enabled && !Preparing.measuring;
@@ -365,9 +365,9 @@ component BaseSurface inherits VerticalLayout {
     HorizontalLayout {
         spacing: Space.s;
         alignment: center;
-        Button { text: "Previous"; widest: "Previous"; enabled: Preparing.base-can-previous; clicked => { Preparing.base-previous(); } }
+        Button { text: @tr("Previous"); widest: @tr("Previous"); enabled: Preparing.base-can-previous; clicked => { Preparing.base-previous(); } }
         Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.base-name; width: RollStyle.name-width; horizontal-alignment: center; overflow: elide; }
-        Button { text: "Next"; widest: "Previous"; enabled: Preparing.base-can-next; clicked => { Preparing.base-next(); } }
+        Button { text: @tr("Next"); widest: @tr("Previous"); enabled: Preparing.base-can-next; clicked => { Preparing.base-next(); } }
     }
     area := Rectangle {
         vertical-stretch: 1;
@@ -384,8 +384,8 @@ component BaseSurface inherits VerticalLayout {
         if !Preparing.scan-ready: EmptyState {
             width: parent.width;
             height: parent.height;
-            title: "Reading the Scan";
-            detail: "The whole scan, its rebate included, shows here.";
+            title: @tr("Reading the Scan");
+            detail: @tr("The whole scan, its rebate included, shows here.");
         }
         if Preparing.scan-ready: Picture {
             x: Preparing.scan-x;

@@ -138,7 +138,7 @@ impl Ctl {
     pub(super) fn remember(&self, key: &str, value: serde_json::Value) {
         let written = self.state.borrow_mut().preferences.set(key, value);
         if let Err(e) = written {
-            self.say(&format!("The preference cannot be kept: {e}"));
+            self.say(&tr!("The preference cannot be kept: {e}", e = e));
         }
     }
 
@@ -153,9 +153,9 @@ impl Ctl {
         let failure = self.state.borrow_mut().store.flush();
         let Some(message) = failure else { return slint::CloseRequestResponse::HideWindow };
         self.ask(
-            "Your latest settings could not be saved",
-            &format!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on."),
-            "Quit Anyway",
+            tr("Your latest settings could not be saved"),
+            &tr!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on.", message = message),
+            tr("Quit Anyway"),
             false,
             Pending::QuitAnyway,
         );

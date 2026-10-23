@@ -140,7 +140,7 @@ impl Ctl {
                 store.forget_measured();
             }
             if !stopped {
-                self.advise("Something Went Wrong", "No frame of this roll could be measured: the files could not be read, or the measuring frame holds nothing to balance.");
+                self.advise(tr("Something Went Wrong"), tr("No frame of this roll could be measured: the files could not be read, or the measuring frame holds nothing to balance."));
             }
             self.publish_prepare();
             self.publish_bar();
@@ -162,7 +162,7 @@ impl Ctl {
         }
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
-        let message = failure.or_else(|| (written.len() < asked).then(|| format!("{} of {asked} frames could not be measured and were left as they were.", asked - written.len())));
+        let message = failure.or_else(|| (written.len() < asked).then(|| tr!("{missed} of {asked} frames could not be measured and were left as they were.", missed = asked - written.len(), asked = asked)));
         let open = self.state.borrow().open.clone();
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
@@ -186,7 +186,7 @@ impl Ctl {
             self.publish_tiles();
         }
         if let Some(m) = message {
-            self.advise("Something Went Wrong", &m);
+            self.advise(tr("Something Went Wrong"), &m);
         }
         self.publish_prepare();
         self.publish_bar();

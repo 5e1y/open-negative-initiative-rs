@@ -7,7 +7,7 @@ impl EditorStore {
     pub fn reset_frames(&mut self, targets: &[String]) -> usize {
         let scanner = self.scanner_face;
         self.lay_on(targets, |_, s| parameters::reset_blank(s, scanner), |n| {
-            if n == 1 { "Reset 1 photo".into() } else { format!("Reset {n} photos") }
+            trn("Reset {n} photo", "Reset {n} photos", n as u64)
         })
     }
 
@@ -17,7 +17,7 @@ impl EditorStore {
             return usize::from(!self.apply(Command::Mode(mode)).changed.is_empty());
         }
         self.lay_on(targets, |_, s| parameters::carried(s, mode), |n| {
-            if n == 1 { "Mode on 1 photo".into() } else { format!("Mode on {n} photos") }
+            trn("Mode on {n} photo", "Mode on {n} photos", n as u64)
         })
     }
 
@@ -25,7 +25,7 @@ impl EditorStore {
     pub fn apply_preset(&mut self, preset: &Preset, targets: &[String], measure: Option<&dyn Measure>) -> usize {
         let name = preset.name.clone();
         let count = self.lay_on(targets, |_, s| preset.apply(s), |n| {
-            if n == 1 { format!("Apply \u{201c}{name}\u{201d}") } else { format!("Apply \u{201c}{name}\u{201d} to {n} photos") }
+            trn("Apply \u{201c}{name}\u{201d}", "Apply \u{201c}{name}\u{201d} to {n} photos", n as u64).replace("{name}", &name)
         });
         if parameters::auto_balances(&preset.parameters)
             && let Some(measure) = measure
@@ -69,7 +69,7 @@ impl EditorStore {
                 Some(serial) => self.history.attach(Companion { before: was, after: now }, serial),
                 None => {
                     let n = was.len();
-                    let label = if n == 1 { "Balance 1 photo".into() } else { format!("Balance {n} photos") };
+                    let label = trn("Balance {n} photo", "Balance {n} photos", n as u64);
                     self.gallery.record(&was, &now, &label, None);
                 }
             }
@@ -94,7 +94,7 @@ impl EditorStore {
         });
         let n = was.len();
         if n > 0 {
-            let label = if n == 1 { "Flat-field on 1 photo".into() } else { format!("Flat-field on {n} photos") };
+            let label = trn("Flat-field on {n} photo", "Flat-field on {n} photos", n as u64);
             self.gallery.record(&was, &now, &label, None);
         }
         n
@@ -115,7 +115,7 @@ impl EditorStore {
         let n = was.len();
         if n > 0 {
             self.measured.entry(reference.id).or_default().extend(now.keys().cloned());
-            let label = if n == 1 { "Join the roll".into() } else { format!("Join the roll with {n} photos") };
+            let label = trn("Join the roll", "Join the roll with {n} photos", n as u64);
             self.gallery.record(&was, &now, &label, None);
         }
         n

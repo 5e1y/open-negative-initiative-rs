@@ -79,7 +79,7 @@ export component CurvesEditor inherits VerticalLayout {
     in property <int> revision;
     spacing: Space.s;
     Tabs {
-        tabs: ["RGB", "Luma", "R", "G", "B"];
+        tabs: [@tr("RGB"), @tr("Luma"), @tr("R"), @tr("G"), @tr("B")];
         marked: Editors.curve-marked;
         selected <=> Editors.curve-channel;
         picked(i) => { Editors.pick(0, i); }
@@ -102,7 +102,7 @@ export component LevelsEditor inherits VerticalLayout {
     padding-left: PlotInkStyle.knob-width / 2;
     padding-right: PlotInkStyle.knob-width / 2;
     Tabs {
-        tabs: ["R", "G", "B"];
+        tabs: [@tr("R"), @tr("G"), @tr("B")];
         marked: Editors.levels-marked;
         selected <=> Editors.levels-channel;
         picked(i) => { Editors.pick(1, i); }
@@ -151,22 +151,22 @@ export component SpectrogramEditor inherits VerticalLayout {
         dots: Editors.wheel-dots;
     }
     Tabs {
-        tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
+        tabs: [@tr("Red"), @tr("Orange"), @tr("Yellow"), @tr("Green"), @tr("Aqua"), @tr("Blue"), @tr("Purple"), @tr("Magenta")];
         marked: Editors.band-marked;
         swatches: PlotInkStyle.bands;
         selected <=> Editors.band;
         picked(i) => { Editors.pick(2, i); }
     }
     BandSlider {
-        field: 0; label: "Hue"; fraction: Editors.band-fractions[0]; readout: Editors.band-readouts[0]; value-text: Editors.band-readouts[0];
+        field: 0; label: @tr("Hue"); fraction: Editors.band-fractions[0]; readout: Editors.band-readouts[0]; value-text: Editors.band-readouts[0];
         fill: SliderFill.bipolar; low: Editors.hue-low; high: Editors.hue-high;
     }
     BandSlider {
-        field: 1; label: "Saturation"; fraction: Editors.band-fractions[1]; readout: Editors.band-readouts[1]; value-text: Editors.band-readouts[1];
+        field: 1; label: @tr("Saturation"); fraction: Editors.band-fractions[1]; readout: Editors.band-readouts[1]; value-text: Editors.band-readouts[1];
         fill: SliderFill.bipolar; low: PlotInkStyle.grey-half; high: PlotInkStyle.bands[Editors.band];
     }
     BandSlider {
-        field: 2; label: "Luminance"; fraction: Editors.band-fractions[2]; readout: Editors.band-readouts[2]; value-text: Editors.band-readouts[2];
+        field: 2; label: @tr("Luminance"); fraction: Editors.band-fractions[2]; readout: Editors.band-readouts[2]; value-text: Editors.band-readouts[2];
         fill: SliderFill.bipolar; low: Colour.black; high: Colour.white;
     }
 }
@@ -176,7 +176,7 @@ export component SaturationEditor inherits VerticalLayout {
     in property <image> histogram;
     in property <int> revision;
     spacing: Space.xs;
-    AxisCaptions { start: "Black point"; end: "White point"; }
+    AxisCaptions { start: @tr("Black point"); end: @tr("White point"); }
     EditorPlot {
         plot: 3;
         height: PlotInkStyle.histogram;
@@ -186,9 +186,9 @@ export component SaturationEditor inherits VerticalLayout {
         dots: Editors.saturation-dots;
         VerticalLayout {
             padding: Space.s;
-            Label { text: "Saturated"; role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
+            Label { text: @tr("Saturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
             Rectangle { vertical-stretch: 1; }
-            Label { text: "Desaturated"; role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
+            Label { text: @tr("Desaturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
         }
     }
 }

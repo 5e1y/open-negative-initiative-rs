@@ -88,7 +88,7 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                     Next::Redraw(path, known) => {
                         let Some(fingerprint) = known.or_else(|| oni_library::relink::fingerprint(Path::new(&path))) else {
                             let name = stem(&path);
-                            with_shell(move |c| c.thumb_landed(None, String::new(), Err("its file is unreachable".into()), name));
+                            with_shell(move |c| c.thumb_landed(None, String::new(), Err(tr("its file is unreachable").into()), name));
                             continue;
                         };
                         (None, path, fingerprint)
@@ -119,7 +119,7 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
     if !crate::scans::is_converted(&settings)
         && let Some(jpeg) = crate::scans::scan(Path::new(path))
     {
-        let tile = thumbnails::decoded(&jpeg, screen).ok_or("the scan cannot be read back")?;
+        let tile = thumbnails::decoded(&jpeg, screen).ok_or(tr("the scan cannot be read back"))?;
         timing::render(Kind::Thumbnail, &crate::anonymity::token(path), Duration::ZERO, asked.elapsed());
         return Ok((jpeg, tile));
     }
@@ -137,15 +137,15 @@ pub(super) fn drawn(engine: &Shared, previews: &Arc<Mutex<Previews>>, path: &str
             n
         }
     };
-    let mut guard = engine.lock().map_err(|_| "the render engine failed earlier")?;
+    let mut guard = engine.lock().map_err(|_| tr("the render engine failed earlier"))?;
     let started = Instant::now();
     let linear = guard.render(&negative, &settings.per_pixel_only(), Some(thumbnails::SIDE))?;
     let pipeline = started.elapsed();
     drop(guard);
     let (w, h) = (linear.width, linear.height);
     let srgb = render::encoded(&linear, &Params::new(Screen::Srgb, w as u32, h as u32, seed), 1);
-    let jpeg = thumbnails::jpeg(&srgb, w, h).ok_or("the thumbnail cannot be encoded")?;
-    let tile = thumbnails::decoded(&jpeg, screen).ok_or("the thumbnail cannot be read back")?;
+    let jpeg = thumbnails::jpeg(&srgb, w, h).ok_or(tr("the thumbnail cannot be encoded"))?;
+    let tile = thumbnails::decoded(&jpeg, screen).ok_or(tr("the thumbnail cannot be read back"))?;
     timing::render(Kind::Thumbnail, &crate::anonymity::token(path), pipeline, asked.elapsed());
     Ok((jpeg, tile))
 }

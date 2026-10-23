@@ -40,7 +40,7 @@ impl Ctl {
                     f.ticked = false;
                 }
             }
-            Err(failure) => self.advise("No Mask Set", failure.message()),
+            Err(failure) => self.advise(tr("No Mask Set"), failure.message()),
         }
         self.publish_prepare();
         self.publish_roll_tab();
@@ -79,7 +79,7 @@ impl Ctl {
                 r.flat.mask = FlatFieldMask::Custom;
                 r.flat.custom = Some(entry.id);
             }
-            Err(failure) => self.advise("No Mask Loaded", failure.message()),
+            Err(failure) => self.advise(tr("No Mask Loaded"), failure.message()),
         }
         self.publish_prepare();
         self.publish_roll_tab();

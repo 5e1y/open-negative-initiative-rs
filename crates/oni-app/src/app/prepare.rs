@@ -7,6 +7,7 @@ use crate::fields::Field;
 use crate::framing::Handle;
 use crate::roll_previews::{Bitmap, Look, Out, Previews};
 use crate::{App, MenuLine, Preparing, RollCell};
+use oni_i18n::{tr, trn};
 use oni_library::capture::CaptureExposure;
 use oni_library::{rgb_passes, roll_membership};
 use oni_measure::{key, pipette, roll};

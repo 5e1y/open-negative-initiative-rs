@@ -5,6 +5,7 @@ use crate::film_group::{self, FilmGroup, FilmKey};
 use crate::folders;
 use crate::index::Entry;
 use crate::paths::{self, holds};
+use oni_i18n::{tr, trn};
 use oni_settings::{Date, sidecar};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -40,14 +41,18 @@ pub fn mark(files: &[String], date: Option<Date>, mosaic: &dyn Fn(&Path) -> bool
 }
 
 pub fn report(outcome: &Outcome, restoring: bool) -> Option<String> {
-    let verb = if restoring { "restored" } else { "moved to the ONI Trash" };
     if !outcome.refused.is_empty() {
-        let count = outcome.refused.len();
-        let head =
-            if count == 1 { format!("One photo was not {verb}") } else { format!("{count} photos were not {verb}") };
-        return Some(format!("{head}: a newer version of ONI wrote their settings, and this one never rewrites them."));
+        let count = outcome.refused.len() as u64;
+        let head = if restoring {
+            trn("One photo was not restored", "{n} photos were not restored", count)
+        } else {
+            trn("One photo was not moved to the ONI Trash", "{n} photos were not moved to the ONI Trash", count)
+        };
+        return Some(tr!("{head}: a newer version of ONI wrote their settings, and this one never rewrites them.", head = head));
     }
-    outcome.failure.as_ref().map(|f| format!("Some photos were not {verb}: {f}"))
+    outcome.failure.as_ref().map(|f| {
+        if restoring { tr!("Some photos were not restored: {failure}", failure = f) } else { tr!("Some photos were not moved to the ONI Trash: {failure}", failure = f) }
+    })
 }
 
 /// The folders holding trashed photos, latest deletion first, each counting its own photos.

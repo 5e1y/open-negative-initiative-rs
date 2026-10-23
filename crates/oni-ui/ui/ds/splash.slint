@@ -46,7 +46,7 @@ export component SplashCaption inherits Rectangle {
     if root.credit != "": Text {
         x: root.width - SplashStyle.inset-trailing * root.scale - self.preferred-width;
         y: root.height - SplashStyle.inset-bottom * root.scale - credit.preferred-height - DS.space-xxs * root.scale - self.preferred-height;
-        text: "Photo";
+        text: @tr("Photo");
         color: DS.palette-selected;
         font-family: DS.typo-splash-caption-family;
         font-size: DS.typo-splash-caption-size * root.scale;

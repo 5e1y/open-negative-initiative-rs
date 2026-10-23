@@ -54,7 +54,7 @@ impl Ctl {
         if let Some(folder) = chosen {
             self.add(&[folder]);
         } else if !system::HAS_PICKER {
-            self.say("This system has no folder picker: pass the folder on the command line");
+            self.say(tr("This system has no folder picker: pass the folder on the command line"));
         }
     }
 
@@ -100,7 +100,7 @@ impl Ctl {
             .name("library".into())
             .spawn(move || {
                 let Some(index) = LibraryIndex::open(&index_path) else {
-                    return with_shell(|c| c.say("The library index cannot be opened"));
+                    return with_shell(|c| c.say(tr("The library index cannot be opened")));
                 };
                 let alive = || current.load(Ordering::Relaxed) == generation;
                 library::read_rows(&folder, &index, &alive, &mut |rows, done, survey| {
@@ -285,7 +285,7 @@ impl Ctl {
         }
         let support = self.state.borrow().support.clone();
         if let Err(e) = Preferences::load(&support).set(preferences::NEUTRAL_DECODE_NOTICE_SHOWN, true.into()) {
-            self.say(&format!("The notice cannot be marked seen: {e}"));
+            self.say(&tr!("The notice cannot be marked seen: {error}", error = e));
         }
     }
 

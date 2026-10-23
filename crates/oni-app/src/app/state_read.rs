@@ -175,20 +175,20 @@ impl State {
     pub fn load_bar(&self) -> Option<LoadBar> {
         let (done, total) = self.creating;
         if done < total {
-            return Some(LoadBar::counted("Creating thumbnails", done, total));
+            return Some(LoadBar::counted(tr("Creating thumbnails"), done, total));
         }
         if !self.read_done && self.opened.is_some() {
             let waiting = self.rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
-            return Some(LoadBar::counted("Reading the library", self.rows.len() - waiting, self.rows.len()));
+            return Some(LoadBar::counted(tr("Reading the library"), self.rows.len() - waiting, self.rows.len()));
         }
         if let Some(m) = self.making_sheet {
             // Only the decode counts frames; writing, adopting and opening are opaque, so the bar goes busy.
-            return Some(if m.step.is_empty() { LoadBar::counted("Making the contact sheet", m.done, m.total) } else { LoadBar::busy(m.step) });
+            return Some(if m.step.is_empty() { LoadBar::counted(tr("Making the contact sheet"), m.done, m.total) } else { LoadBar::busy(tr(m.step)) });
         }
         if let Some((done, total)) = self.together.as_ref().map(|g| g.loaded()).filter(|(done, total)| done < total) {
-            return Some(LoadBar::counted("Opening the frames together", done, total));
+            return Some(LoadBar::counted(tr("Opening the frames together"), done, total));
         }
-        self.building_full.as_ref().map(|_| LoadBar::busy("Loading full resolution"))
+        self.building_full.as_ref().map(|_| LoadBar::busy(tr("Loading full resolution")))
     }
 
     /// The open frame's place in its group, one-based, and the group's count.

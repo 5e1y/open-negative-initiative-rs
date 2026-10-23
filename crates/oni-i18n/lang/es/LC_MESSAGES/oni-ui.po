@@ -1,0 +1,3772 @@
+# Open Negative Initiative, Spanish. English is the source; scripts/i18n adds every new word here.
+msgid ""
+msgstr ""
+"Language: es\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Gallery"
+msgstr "Galería"
+
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/export_state.slint
+msgid "Export…"
+msgstr "Exportar…"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "Move to ONI Trash"
+msgstr "Mover a la Papelera de ONI"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
+msgid "Restore"
+msgstr "Restaurar"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Paste Settings"
+msgstr "Pegar ajustes"
+
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Paste to Roll"
+msgstr "Pegar en el rollo"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "Undo"
+msgstr "Deshacer"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "Redo"
+msgstr "Rehacer"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Zoom Out"
+msgstr "Alejar"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Zoom In"
+msgstr "Acercar"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Mute Key Clicks"
+msgstr "Silenciar clics de las teclas"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Compare Before/After"
+msgstr "Comparar antes/después"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Hide the Library"
+msgstr "Ocultar la fototeca"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Hide the Panel"
+msgstr "Ocultar el panel"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Remove Dust & Scratches"
+msgstr "Eliminar polvo y arañazos"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "Mirror Horizontally"
+msgstr "Reflejar horizontalmente"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "Filter: All"
+msgstr "Filtro: Todas"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
+msgid "New Roll from Selection"
+msgstr "Nuevo rollo a partir de la selección"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/app.slint
+msgid "Ungroup"
+msgstr "Desagrupar"
+
+#: crates/oni-app/src/app/sheets.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "New Contact Sheet"
+msgstr "Nueva hoja de contactos"
+
+#: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/export_state.slint
+msgid "Show What This Screen Cannot Show"
+msgstr "Mostrar lo que esta pantalla no puede mostrar"
+
+#: crates/oni-app/src/app/presets/shelf.rs crates/oni-ui/ui/app.slint
+msgid "Apply"
+msgstr "Aplicar"
+
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint
+msgid "Open Negative Initiative"
+msgstr "Open Negative Initiative"
+
+#: crates/oni-ui/ui/app.slint
+msgid "File"
+msgstr "Archivo"
+
+#: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/app.slint
+msgid "Open Folder…"
+msgstr "Abrir carpeta…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Pair Phone…"
+msgstr "Vincular teléfono…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Settings…"
+msgstr "Ajustes…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Recheck Originals"
+msgstr "Volver a comprobar los originales"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Read the Folders Again"
+msgstr "Volver a leer las carpetas"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Show the Selected Photo"
+msgstr "Mostrar la foto seleccionada"
+
+#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+msgid "Edit"
+msgstr "Edición"
+
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+msgid "Reset to Imported State"
+msgstr "Restablecer al estado importado"
+
+#: crates/oni-ui/ui/app.slint
+msgid "View"
+msgstr "Visualización"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Crop and Straighten"
+msgstr "Recortar y enderezar"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Bigger Brush"
+msgstr "Pincel más grande"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Smaller Brush"
+msgstr "Pincel más pequeño"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Scanner Emulator"
+msgstr "Emulador de escáner"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Labels"
+msgstr "Etiquetas"
+
+#: crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
+msgid "None"
+msgstr "Ninguna"
+
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+msgid "Bronze"
+msgstr "Bronce"
+
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+msgid "Silver"
+msgstr "Plata"
+
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+msgid "Gold"
+msgstr "Oro"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Rolls"
+msgstr "Rollos"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Prepare the Roll…"
+msgstr "Preparar el rollo…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Reset to Default…"
+msgstr "Restablecer valores predeterminados…"
+
+#: crates/oni-app/src/wrapped.rs crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint crates/oni-ui/ui/toolbar.slint
+msgid "Settings"
+msgstr "Ajustes"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Copy Settings"
+msgstr "Copiar ajustes"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Save as Preset…"
+msgstr "Guardar como preajuste…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Edit Presets…"
+msgstr "Editar preajustes…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Import Presets…"
+msgstr "Importar preajustes…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Paste Preset Code"
+msgstr "Pegar código de preajuste"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Show Presets Folder"
+msgstr "Mostrar carpeta de preajustes"
+
+#: crates/oni-ui/ui/app.slint
+msgid "No presets"
+msgstr "Sin preajustes"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Delete a Preset"
+msgstr "Eliminar un preajuste"
+
+#: crates/oni-ui/ui/app.slint crates/oni-ui/ui/settings.slint
+msgid "Help"
+msgstr "Ayuda"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Check for Updates…"
+msgstr "Buscar actualizaciones…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Show Console"
+msgstr "Mostrar consola"
+
+#: crates/oni-ui/ui/app.slint
+msgid "What's New in ONI {}"
+msgstr "Novedades de ONI {}"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Show What's New Again"
+msgstr "Volver a mostrar las novedades"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Report a Bug / Give Feedback…"
+msgstr "Informar de un error / Enviar comentarios…"
+
+#: crates/oni-ui/ui/app.slint
+msgid "Show My Year on Film"
+msgstr "Mostrar mi año en película"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Read-only: settings will not be saved"
+msgstr "Solo lectura: los ajustes no se guardarán"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Show the Library (⌥⌘[)"
+msgstr "Mostrar la fototeca (⌥⌘[)"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Hide the Library (⌥⌘[)"
+msgstr "Ocultar la fototeca (⌥⌘[)"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Zoom out (⌘−)"
+msgstr "Alejar (⌘−)"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Zoom in (⌘+)"
+msgstr "Acercar (⌘+)"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Show the Panel (⌥⌘])"
+msgstr "Mostrar el panel (⌥⌘])"
+
+#: crates/oni-ui/ui/canvas.slint
+msgid "Hide the Panel (⌥⌘])"
+msgstr "Ocultar el panel (⌥⌘])"
+
+#: crates/oni-ui/ui/confirm.slint
+msgid "CANCEL"
+msgstr "CANCELAR"
+
+#: crates/oni-ui/ui/ds/base.slint
+msgid "before"
+msgstr "antes"
+
+#: crates/oni-ui/ui/ds/base.slint
+msgid "after"
+msgstr "después"
+
+#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/ds/roll.slint crates/oni-ui/ui/editors.slint
+msgid "RGB"
+msgstr "RGB"
+
+#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/info_sidebar.slint
+msgid "Roll name"
+msgstr "Nombre del rollo"
+
+#: crates/oni-ui/ui/ds/containers.slint
+msgid "What this block does"
+msgstr "Qué hace este bloque"
+
+#: crates/oni-ui/ui/ds/containers.slint
+msgid "RESET"
+msgstr "RESTABLECER"
+
+#: crates/oni-ui/ui/ds/containers.slint
+msgid "Show {}"
+msgstr "Mostrar {}"
+
+#: crates/oni-ui/ui/ds/containers.slint
+msgid "Hide {}"
+msgstr "Ocultar {}"
+
+#: crates/oni-ui/ui/ds/folders.slint
+msgid "Remove from the favourites"
+msgstr "Quitar de favoritos"
+
+#: crates/oni-ui/ui/ds/folders.slint
+msgid "Add to the favourites"
+msgstr "Añadir a favoritos"
+
+#: crates/oni-ui/ui/ds/folders.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "Name"
+msgstr "Nombre"
+
+#: crates/oni-ui/ui/ds/forms.slint
+msgid "could not be rendered"
+msgstr "no se pudo mostrar"
+
+#: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/stocks.slint
+msgid "Done"
+msgstr "OK"
+
+#: crates/oni-ui/ui/ds/keypad.slint
+msgid "REMEASURE ROLL"
+msgstr "VOLVER A MEDIR"
+
+#: crates/oni-ui/ui/ds/organise.slint
+msgid "MM"
+msgstr "MM"
+
+#: crates/oni-ui/ui/ds/organise.slint
+msgid "DD"
+msgstr "DD"
+
+#: crates/oni-ui/ui/ds/organise.slint
+msgid "YYYY"
+msgstr "AAAA"
+
+#: crates/oni-ui/ui/ds/organise.slint
+msgid "RESTORE"
+msgstr "RESTAURAR"
+
+#: crates/oni-ui/ui/ds/roll.slint
+msgid "FLAGGED"
+msgstr "MARCADO"
+
+#: crates/oni-ui/ui/ds/splash.slint
+msgid "Photo"
+msgstr "Foto"
+
+#: crates/oni-ui/ui/ds/wrapped.slint
+msgid "YOUR YEAR"
+msgstr "TU AÑO"
+
+#: crates/oni-ui/ui/ds/wrapped.slint
+msgid "ON FILM"
+msgstr "EN PELÍCULA"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Luma"
+msgstr "Luma"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+msgid "R"
+msgstr "R"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+msgid "G"
+msgstr "G"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+msgid "B"
+msgstr "B"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Red"
+msgstr "Rojo"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Orange"
+msgstr "Naranja"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Yellow"
+msgstr "Amarillo"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Green"
+msgstr "Verde"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Aqua"
+msgstr "Aguamarina"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Blue"
+msgstr "Azul"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Purple"
+msgstr "Morado"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Magenta"
+msgstr "Magenta"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Hue"
+msgstr "Tono"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Saturation"
+msgstr "Saturación"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Luminance"
+msgstr "Luminancia"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "Black point"
+msgstr "Punto negro"
+
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/panel/color_tab.slint
+msgid "White point"
+msgstr "Punto blanco"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Saturated"
+msgstr "Saturado"
+
+#: crates/oni-ui/ui/editors.slint
+msgid "Desaturated"
+msgstr "Desaturado"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Camera"
+msgstr "Cámara"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Leica M6"
+msgstr "Leica M6"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Lens"
+msgstr "Objetivo"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Summicron 50 mm"
+msgstr "Summicron 50 mm"
+
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/prepare.slint
+msgid "Film"
+msgstr "Película"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Pick a film…"
+msgstr "Elige una película…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "ISO"
+msgstr "ISO"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Date"
+msgstr "Fecha"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Artist"
+msgstr "Artista"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Your name"
+msgstr "Tu nombre"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Copyright"
+msgstr "Copyright"
+
+#: crates/oni-ui/ui/export.slint
+msgid "© 2026 Your name"
+msgstr "© 2026 Tu nombre"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Quality"
+msgstr "Calidad"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Space"
+msgstr "Espacio"
+
+#: crates/oni-ui/ui/export.slint
+msgid "The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation."
+msgstr "La imagen se edita en este espacio y se exporta en él. Cada uno conserva el nombre que pedirá un laboratorio o una imprenta. Personalizado convierte a un perfil ICC instalado, colorimétrico relativo con compensación del punto negro."
+
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "sRGB"
+msgstr "sRGB"
+
+#: crates/oni-ui/ui/export.slint
+msgid "DP3"
+msgstr "DP3"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Adobe RGB"
+msgstr "Adobe RGB"
+
+#: crates/oni-ui/ui/export.slint
+msgid "ProPhoto"
+msgstr "ProPhoto"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Custom"
+msgstr "Personalizado"
+
+#: crates/oni-ui/ui/export.slint
+msgid "TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."
+msgstr "Solo TIFF de 16 bits: en ocho bits, un espacio tan amplio produce bandas. Al elegirlo, la exportación pasa a TIFF."
+
+#: crates/oni-ui/ui/export.slint
+msgid "Profile"
+msgstr "Perfil"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Show only color variation (not recommended)"
+msgstr "Mostrar solo la variación de color (no recomendado)"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Choose a profile…"
+msgstr "Elige un perfil…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Load a Profile…"
+msgstr "Cargar un perfil…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Get Paper Profiles…"
+msgstr "Obtener perfiles de papel…"
+
+#: crates/oni-app/src/app/export_card/settings.rs crates/oni-ui/ui/export.slint
+msgid "Export"
+msgstr "Exportar"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Instagram"
+msgstr "Instagram"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Display"
+msgstr "Pantalla"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Print"
+msgstr "Impresión"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Format"
+msgstr "Formato"
+
+#: crates/oni-ui/ui/export.slint
+msgid "TIFF 16-bit"
+msgstr "TIFF 16 bits"
+
+#: crates/oni-ui/ui/export.slint
+msgid "JPEG"
+msgstr "JPEG"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Compression"
+msgstr "Compresión"
+
+#: crates/oni-ui/ui/export.slint
+msgid "ZIP, lossless"
+msgstr "ZIP, sin pérdida"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Size"
+msgstr "Tamaño"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution."
+msgstr "Píxeles de la primera foto. El lado que escribes es el que limita cada foto del lote: el ancho de una horizontal es su lado largo. Nunca se amplía; vacío significa resolución completa."
+
+#: crates/oni-ui/ui/export.slint
+msgid "W"
+msgstr "An"
+
+#: crates/oni-ui/ui/export.slint
+msgid "H"
+msgstr "Al"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Full resolution"
+msgstr "Resolución completa"
+
+#: crates/oni-ui/ui/export.slint
+msgid "HDR hack"
+msgstr "Truco HDR"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map."
+msgstr "Escribe un mapa de ganancia para que las pantallas HDR muestren la imagen hasta dos pasos por encima del blanco de la página; los demás ven exactamente esta imagen. Publícala sin recortar, desde un navegador de escritorio y en su proporción original. Solo JPEG: ningún lector de TIFF respeta un mapa de ganancia."
+
+#: crates/oni-ui/ui/export.slint
+msgid "Brighter on HDR screens"
+msgstr "Más brillante en pantallas HDR"
+
+#: crates/oni-ui/ui/export.slint
+msgid "EXIF as set beside each photo; nothing of the scanner unless left there"
+msgstr "EXIF tal como se definió junto a cada foto; nada del escáner salvo lo que se dejó ahí"
+
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/prepare.slint
+msgid "Stop"
+msgstr "Detener"
+
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Exporting…"
+msgstr "Exportando…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "The color space the picture is edited and exported in"
+msgstr "El espacio de color en el que se edita y se exporta la imagen"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Working Space"
+msgstr "Espacio de trabajo"
+
+#: crates/oni-app/src/app/presets/gestures.rs crates/oni-ui/ui/export.slint
+msgid "Replace"
+msgstr "Reemplazar"
+
+#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "OK"
+msgstr "Aceptar"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Paper Profiles"
+msgstr "Perfiles de papel"
+
+#: crates/oni-ui/ui/export.slint
+msgid "DOWNLOAD HERE"
+msgstr "DESCARGAR AQUÍ"
+
+#: crates/oni-ui/ui/export.slint
+msgid "ON THE MAKER’S SITE"
+msgstr "EN LA WEB DEL FABRICANTE"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Open the Maker’s Page"
+msgstr "Abrir la página del fabricante"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not."
+msgstr "Descarga en la página el perfil de tu impresora y tu papel; luego elige Cargar un perfil… y selecciona el archivo descargado, comprimido o no."
+
+#: crates/oni-ui/ui/export.slint
+msgid "Reading the maker’s page…"
+msgstr "Leyendo la página del fabricante…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "The page lists no profile right now. Open it to look by hand."
+msgstr "La página no muestra ningún perfil por ahora. Ábrela para buscar a mano."
+
+#: crates/oni-ui/ui/export.slint
+msgid "Filter, e.g. P900 matte"
+msgstr "Filtrar, p. ej. P900 mate"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Installing…"
+msgstr "Instalando…"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Uninstall"
+msgstr "Desinstalar"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Install"
+msgstr "Instalar"
+
+#: crates/oni-app/src/export.rs crates/oni-ui/ui/export_state.slint crates/oni-ui/ui/toolbar.slint
+msgid "EXPORT"
+msgstr "EXPORTAR"
+
+#: crates/oni-ui/ui/help.slint
+msgid "What's new in ONI {}"
+msgstr "Novedades de ONI {}"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."
+msgstr "Tus carpetas tal como están en el disco, una forma más sencilla de preparar un rollo y una red de seguridad para las fotos eliminadas."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Colours shift slightly"
+msgstr "Los colores cambian ligeramente"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."
+msgstr "La separación de tintes reposa ahora en 60 % en lugar de 18 %. Las fotos que estaban en el valor anterior pasan al nuevo: rojos algo más intensos, amarillos algo más suaves y la saturación general sin cambios. Un valor que hayas definido tú se mantiene."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Browse your folders"
+msgstr "Explora tus carpetas"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."
+msgstr "La barra lateral muestra las carpetas de tus discos. Haz clic en una carpeta para abrirla, marca con una estrella las que usas a menudo y sube con Carpeta superior. Solo se lee la carpeta que abres, así que un disco enorme nunca te ralentiza. Las fotos aún no convertidas aparecen como escaneadas."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Prepare the Roll, step by step"
+msgstr "Preparar el rollo, paso a paso"
+
+#: crates/oni-ui/ui/help.slint
+msgid "It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."
+msgstr "Se abre en el editor, en pasos más cortos con un breve vídeo cada uno. Elegir los fotogramas y marcar los raros son pasos distintos, y un rollo que dejas a medias continúa donde lo dejaste."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Deleting is reversible"
+msgstr "Eliminar es reversible"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."
+msgstr "Eliminar oculta una foto en la Papelera de ONI, en la barra lateral, y Restaurar la recupera. Nada se mueve ni se borra de tu disco."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Smoother"
+msgstr "Más fluido"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."
+msgstr "Cambiar entre Pro y Escáner, arrastrar Temperatura y Matiz y abrir una carpeta ya no dan tirones. La pestaña Escáner luce ahora el aspecto propio de ONI."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Website"
+msgstr "Sitio web"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Feedback"
+msgstr "Comentarios"
+
+#: crates/oni-ui/ui/help.slint crates/oni-ui/ui/toolbar.slint
+msgid "Report a Bug / Give Feedback"
+msgstr "Informar de un error / Enviar comentarios"
+
+#: crates/oni-ui/ui/help.slint
+msgid "GET STARTED"
+msgstr "EMPEZAR"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Thank You"
+msgstr "Gracias"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Report a Bug or Give Feedback"
+msgstr "Informar de un error o enviar comentarios"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."
+msgstr "Tu mensaje va de camino a quienes hacen ONI. Aparece con los demás en GitHub, donde puedes seguirlo."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."
+msgstr "Tu mensaje y la versión de la app se convierten en una incidencia pública en GitHub, así que no incluyas nada personal. El registro se cifra en este Mac antes de enviarse."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Encrypted console log"
+msgstr "Registro de consola cifrado"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Encrypted console log, readable by ONI's maintainers only"
+msgstr "Registro de consola cifrado, legible solo por los responsables de ONI"
+
+#: crates/oni-ui/ui/help.slint
+msgid "See Community Feedbacks"
+msgstr "Ver comentarios de la comunidad"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Sending…"
+msgstr "Enviando…"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Send"
+msgstr "Enviar"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Console"
+msgstr "Consola"
+
+#: crates/oni-ui/ui/help.slint
+msgid "No block recorded"
+msgstr "Ningún bloque registrado"
+
+#: crates/oni-ui/ui/help.slint
+msgid "1 block recorded"
+msgstr "1 bloque registrado"
+
+#: crates/oni-ui/ui/help.slint
+msgid "{} blocks recorded"
+msgstr "{} bloques registrados"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Copy"
+msgstr "Copiar"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Reveal Log in Finder"
+msgstr "Mostrar registro en el Finder"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Nothing recorded yet."
+msgstr "Aún no hay nada registrado."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."
+msgstr "Deja esto abierto, reproduce el fallo y pulsa Copiar. Si hay que forzar la salida de la app, el archivo de arriba lo conserva todo."
+
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
+msgid "Roll"
+msgstr "Rollo"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Film Stock"
+msgstr "Tipo de película"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "What this roll was shot on — never guessed, only ever what a hand picks."
+msgstr "En qué se fotografió este rollo: nunca se adivina, solo lo que elige una mano."
+
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/stocks.slint
+msgid "Select Roll Type"
+msgstr "Seleccionar tipo de rollo"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Shot Date"
+msgstr "Fecha de toma"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "When the roll was actually shot. Organisational only — never a photo's own capture date."
+msgstr "Cuándo se fotografió realmente el rollo. Solo sirve para organizar: nunca es la fecha de captura de una foto."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Clear shot date"
+msgstr "Borrar fecha de toma"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Default, from this roll's first photo"
+msgstr "Por defecto, la de la primera foto de este rollo"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Camera Body"
+msgstr "Cuerpo de cámara"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "The body this roll was shot on, hand-entered — never read off a scan's own EXIF."
+msgstr "El cuerpo con el que se fotografió este rollo, introducido a mano: nunca se lee del EXIF de un escaneo."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "e.g. Leica M6"
+msgstr "p. ej. Leica M6"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Project"
+msgstr "Proyecto"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Project name"
+msgstr "Nombre del proyecto"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Film Stocks"
+msgstr "Tipos de película"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Every stock among this project's own photos — counted by photo, since a project rarely holds a whole roll."
+msgstr "Cada película presente en las fotos de este proyecto, contada por foto, ya que un proyecto rara vez contiene un rollo entero."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "No stock set yet"
+msgstr "Aún no hay película definida"
+
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/presets.slint
+msgid "Description"
+msgstr "Descripción"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Archive"
+msgstr "Archivo"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Projects"
+msgstr "Proyectos"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Show the selected photo"
+msgstr "Mostrar la foto seleccionada"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Fold every folder"
+msgstr "Contraer todas las carpetas"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "Open every folder"
+msgstr "Expandir todas las carpetas"
+
+#: crates/oni-ui/ui/library_tree.slint
+msgid "ONI Projects"
+msgstr "Proyectos de ONI"
+
+#: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/library_tree.slint
+msgid "Right-click photos in the library and choose New Project from them."
+msgstr "Haz clic derecho en fotos de la fototeca y elige Nuevo proyecto para crear uno con ellas."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "The archive shows a folder of your disk and everything under it."
+msgstr "El archivo muestra una carpeta de tu disco y todo lo que contiene."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Your photos were in:"
+msgstr "Tus fotos estaban en:"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "ADD {}"
+msgstr "AÑADIR {}"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "ADD FOLDER…"
+msgstr "AÑADIR CARPETA…"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Parent folder"
+msgstr "Carpeta superior"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Show every folder"
+msgstr "Mostrar todas las carpetas"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Show the favourites alone"
+msgstr "Mostrar solo los favoritos"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "No Favourites"
+msgstr "Sin favoritos"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Star a folder to keep it here; its photos stay indexed."
+msgstr "Marca una carpeta con una estrella para tenerla aquí; sus fotos siguen indexadas."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Your Library Now Follows Your Disk"
+msgstr "Tu fototeca ahora sigue a tu disco"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Pick the folder that holds all your scans"
+msgstr "Elige la carpeta que contiene todos tus escaneos"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "ONI reads it straight from your disk."
+msgstr "ONI la lee directamente de tu disco."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Every folder inside it comes in"
+msgstr "Entran todas las carpetas que contiene"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "All the way down, nothing to import."
+msgstr "Hasta el fondo, sin nada que importar."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Not your whole disk"
+msgstr "No todo tu disco"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Too wide and ONI reads everything; too narrow and photos stay out."
+msgstr "Demasiado amplia y ONI lo lee todo; demasiado estrecha y quedan fotos fuera."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "ADD"
+msgstr "AÑADIR"
+
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/settings.slint
+msgid "DONE"
+msgstr "OK"
+
+#: crates/oni-ui/ui/notice.slint
+msgid "RAW Color, Recalibrated"
+msgstr "Color RAW recalibrado"
+
+#: crates/oni-ui/ui/notice.slint
+msgid "Camera RAW files now render truer color, especially on unusual film stocks."
+msgstr "Los archivos RAW de cámara muestran ahora un color más fiel, sobre todo con películas poco habituales."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "Your existing photos have already been nudged to compensate automatically."
+msgstr "Tus fotos existentes ya se han ajustado automáticamente para compensarlo."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "Still looks a touch off? One press of your usual balance button settles it."
+msgstr "¿Todavía se ve algo raro? Una pulsación de tu botón de balance habitual lo resuelve."
+
+#: crates/oni-ui/ui/notice.slint
+msgid "GOT IT"
+msgstr "ENTENDIDO"
+
+#: crates/oni-ui/ui/pairing.slint
+msgid "Pair Phone"
+msgstr "Vincular teléfono"
+
+#: crates/oni-ui/ui/pairing.slint crates/oni-ui/ui/settings.slint
+msgid "FORGET PHONES"
+msgstr "OLVIDAR TELÉFONOS"
+
+#: crates/oni-ui/ui/pairing.slint
+msgid "Every paired phone is cut and pairs again from a new code."
+msgstr "Todos los teléfonos vinculados se desconectan y vuelven a vincularse con un código nuevo."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Machine"
+msgstr "Máquina"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "ONI"
+msgstr "ONI"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Frontier"
+msgstr "Frontier"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Density"
+msgstr "Densidad"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D"
+msgstr "D"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D −3: toward dark"
+msgstr "D −3: hacia oscuro"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D −: toward dark"
+msgstr "D −: hacia oscuro"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +: toward light"
+msgstr "D +: hacia claro"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "D +3: toward light"
+msgstr "D +3: hacia claro"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/presets.slint
+msgid "Color"
+msgstr "Color"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C"
+msgstr "C"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C −3: toward red"
+msgstr "C −3: hacia rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C −: toward red"
+msgstr "C −: hacia rojo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C +: toward cyan"
+msgstr "C +: hacia cian"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "C +3: toward cyan"
+msgstr "C +3: hacia cian"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M"
+msgstr "M"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M −3: toward green"
+msgstr "M −3: hacia verde"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M −: toward green"
+msgstr "M −: hacia verde"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M +: toward magenta"
+msgstr "M +: hacia magenta"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "M +3: toward magenta"
+msgstr "M +3: hacia magenta"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y"
+msgstr "Y"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y −3: toward blue"
+msgstr "Y −3: hacia azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y −: toward blue"
+msgstr "Y −: hacia azul"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y +: toward yellow"
+msgstr "Y +: hacia amarillo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Y +3: toward yellow"
+msgstr "Y +3: hacia amarillo"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Look"
+msgstr "Aspecto"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP"
+msgstr "TEMP"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP −3: toward cool"
+msgstr "TEMP −3: hacia frío"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP −: toward cool"
+msgstr "TEMP −: hacia frío"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP +: toward warm"
+msgstr "TEMP +: hacia cálido"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "TEMP +3: toward warm"
+msgstr "TEMP +3: hacia cálido"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation."
+msgstr "El balance de blancos automático lee la luz del fotograma tal como se imprime, con más peso para sus zonas claras que para un sujeto cálido grande, y la corrige con Temperatura y Matiz; los niveles quedan donde los puso la medición del rollo, y la pestaña Rollo contiene la intensidad del balance, la parte de esa corrección que asumen los dos reguladores. Temperatura y Matiz solo mueven el color, nunca la luminosidad de la fotografía. La densidad de color es el mismo control que la saturación."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Crop before using the automatic balance"
+msgstr "Recorta antes de usar el balance automático"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "AUTO WHITE BALANCE"
+msgstr "BALANCE DE BLANCOS AUTOMÁTICO"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The frame's light toward grey with Temperature and Tint, scaled by Balance strength"
+msgstr "La luz del fotograma hacia el gris con Temperatura y Matiz, según la intensidad del balance"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Temperature"
+msgstr "Temperatura"
+
+#: crates/oni-ui/ui/panel/color_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Tint"
+msgstr "Matiz"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Color density (same as saturation)"
+msgstr "Densidad de color (igual que la saturación)"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Paper Correction"
+msgstr "Corrección de papel"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips."
+msgstr "Ganancias aplicadas al final, tanto en una copia en color como en blanco y negro, según el papel con el que se hace la prueba de la imagen, y solo en ese papel: en cualquier otro espacio de trabajo no hacen nada. La corrección de papel automática lee el blanco propio del papel en su perfil, nunca en la imagen, y define las ganancias que imprimen un gris como gris; la más fuerte se queda en 0 para que nada se recorte."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "AUTO PAPER CORRECTION"
+msgstr "CORRECCIÓN DE PAPEL AUTOMÁTICA"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Sets the three gains from the paper profile alone"
+msgstr "Define las tres ganancias solo a partir del perfil del papel"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Lighting"
+msgstr "Luz"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "The negative back to light along a straight line: the black point on pure black, the white on pure white. Every slider brightens to the right; Black point and White point move the ends of the scan itself."
+msgstr "El negativo devuelto a la luz a lo largo de una línea recta: el punto negro en negro puro y el blanco en blanco puro. Cada regulador aclara hacia la derecha; Punto negro y Punto blanco mueven los extremos del propio escaneo."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Exposure"
+msgstr "Exposición"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Highlights"
+msgstr "Luces"
+
+#: crates/oni-app/src/editors/levels.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shadows"
+msgstr "Sombras"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Effects"
+msgstr "Efectos"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast bends the print into an S about a middle grey, its ends held. Vignette darkens the corners in stops, without shifting their color; below zero it lightens them. Chrome lays a saturation curve over everything, greying the ends and keeping color in the middle."
+msgstr "Contraste curva la copia en una S alrededor de un gris medio, con los extremos fijos. Viñeta oscurece las esquinas en pasos, sin alterar su color; por debajo de cero las aclara. Chrome aplica una curva de saturación a todo, agrisando los extremos y conservando el color en los medios."
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast"
+msgstr "Contraste"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette"
+msgstr "Viñeta"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome"
+msgstr "Chrome"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "CONTRAST"
+msgstr "CONTRASTE"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast −3: toward softer, +15 %"
+msgstr "Contraste −3: hacia más suave, +15 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast −: toward softer, +5 %"
+msgstr "Contraste −: hacia más suave, +5 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast back to 0 %"
+msgstr "Contraste de vuelta a 0 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast +: toward harder, +5 %"
+msgstr "Contraste +: hacia más duro, +5 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Contrast +3: toward harder, +15 %"
+msgstr "Contraste +3: hacia más duro, +15 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "VIGNETTE"
+msgstr "VIÑETA"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette −3: toward lighter corners, +0.3 EV"
+msgstr "Viñeta −3: hacia esquinas más claras, +0.3 EV"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette −: toward lighter corners, +0.1 EV"
+msgstr "Viñeta −: hacia esquinas más claras, +0.1 EV"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette back to 0 EV"
+msgstr "Viñeta de vuelta a 0 EV"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette +: toward darker corners, +0.1 EV"
+msgstr "Viñeta +: hacia esquinas más oscuras, +0.1 EV"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Vignette +3: toward darker corners, +0.3 EV"
+msgstr "Viñeta +3: hacia esquinas más oscuras, +0.3 EV"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "CHROME"
+msgstr "CHROME"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome −3: toward less, +15 %"
+msgstr "Chrome −3: hacia menos, +15 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome −: toward less, +5 %"
+msgstr "Chrome −: hacia menos, +5 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome back to 0 %"
+msgstr "Chrome de vuelta a 0 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome +: toward more, +5 %"
+msgstr "Chrome +: hacia más, +5 %"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Chrome +3: toward more, +15 %"
+msgstr "Chrome +3: hacia más, +15 %"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Curves"
+msgstr "Curvas"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Curves drawn by hand, one point at a time: a channel's own tints its highlights or its shadows alone."
+msgstr "Curvas dibujadas a mano, punto a punto: la de un canal tiñe solo sus luces o solo sus sombras."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Spectrogram Finishing"
+msgstr "Acabado espectrográfico"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Shifts one color range at a time without touching the others: turn a point around the wheel to move that color's hue, out or in to make it stronger or greyer. Click a point, then use the arrow keys."
+msgstr "Desplaza una gama de color cada vez sin tocar las demás: gira un punto alrededor de la rueda para mover el tono de ese color, y hacia fuera o hacia dentro para intensificarlo o agrisarlo. Haz clic en un punto y usa las flechas del teclado."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/color_tab.slint
+msgid "Saturation Curve"
+msgstr "Curva de saturación"
+
+#: crates/oni-ui/ui/panel/color_tab.slint
+msgid "Saturation by light, from the black point to the white: raise a point to strengthen color in its tones, lower it toward grey. Drag a point along the light to choose its tones; double-click to return it to neutral. Brightness never moves."
+msgstr "Saturación según la luz, del punto negro al blanco: sube un punto para intensificar el color en sus tonos y bájalo para llevarlo hacia el gris. Arrastra un punto a lo largo de la luz para elegir sus tonos; haz doble clic para devolverlo a neutro. La luminosidad nunca se mueve."
+
+#: crates/oni-ui/ui/panel.slint crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Crop"
+msgstr "Recorte"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does."
+msgstr "Arrastra las esquinas sobre la foto para recortarla. Copiar y Pegar llevan todo el encuadre a otras fotos, y Pegar en el rollo a cada fotograma del rollo; pegar los ajustes nunca lo hace."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "COPY"
+msgstr "COPIAR"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Copies this photo's crop."
+msgstr "Copia el recorte de esta foto."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "PASTE"
+msgstr "PEGAR"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Pastes the copied crop on the {} selected photos."
+msgstr "Pega el recorte copiado en las {} fotos seleccionadas."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Pastes the copied crop on this photo."
+msgstr "Pega el recorte copiado en esta foto."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint crates/oni-ui/ui/toolbar.slint
+msgid "PASTE TO ROLL"
+msgstr "PEGAR EN EL ROLLO"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Pastes the copied crop on every photo measured with this roll."
+msgstr "Pega el recorte copiado en todas las fotos medidas con este rollo."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Aspect Ratio"
+msgstr "Proporción"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Free"
+msgstr "Libre"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Vertical"
+msgstr "Vertical"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Straighten"
+msgstr "Enderezar"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Angle"
+msgstr "Ángulo"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Rotate & Mirror"
+msgstr "Girar y reflejar"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Rotate 90° clockwise"
+msgstr "Girar 90° a la derecha"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Unmirror left for right"
+msgstr "Quitar el reflejo horizontal"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Mirror left for right"
+msgstr "Reflejar horizontalmente"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Unmirror top for bottom"
+msgstr "Quitar el reflejo vertical"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Mirror top for bottom"
+msgstr "Reflejar verticalmente"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Measuring Window"
+msgstr "Ventana de medición"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Reset measure window"
+msgstr "Restablecer la ventana de medición"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "APPLY WINDOW"
+msgstr "APLICAR VENTANA"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "MEASURING WINDOW"
+msgstr "VENTANA DE MEDICIÓN"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it."
+msgstr "Muestra un marco sobre la foto; las teclas de balance y el histograma solo leen lo que contiene. Si no se toca, sigue al recorte; el recorte nunca la mueve."
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Copy measure window"
+msgstr "Copiar ventana de medición"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Paste measure window"
+msgstr "Pegar ventana de medición"
+
+#: crates/oni-ui/ui/panel/crop_tab.slint
+msgid "Kept"
+msgstr "Conservado"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Dust & Scratches"
+msgstr "Polvo y arañazos"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Paint over a defect; the tool duplicates a matching patch of the same photo over it."
+msgstr "Pinta sobre un defecto; la herramienta coloca encima un parche similar de la misma foto."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Brush Size"
+msgstr "Tamaño del pincel"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."
+msgstr "No se encontró ninguna buena coincidencia cerca: este parche es un simple mosaico desplazado, no una coincidencia estructural real."
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Generating…"
+msgstr "Generando…"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Remove this correction"
+msgstr "Eliminar esta corrección"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
+msgid "Sharpening"
+msgstr "Enfoque"
+
+#: crates/oni-ui/ui/panel/details_tab.slint
+msgid "Sharpens edges without adding color fringing."
+msgstr "Enfoca los bordes sin añadir halos de color."
+
+#: crates/oni-ui/ui/panel/details_tab.slint crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Amount"
+msgstr "Cantidad"
+
+#: crates/oni-ui/ui/panel/details_tab.slint
+msgid "Radius"
+msgstr "Radio"
+
+#: crates/oni-ui/ui/panel/details_tab.slint
+msgid "Halo limit"
+msgstr "Límite de halo"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
+msgid "Chroma Denoise"
+msgstr "Reducción de ruido cromático"
+
+#: crates/oni-ui/ui/panel/details_tab.slint
+msgid "Smooths color noise from the scan without touching the film grain."
+msgstr "Suaviza el ruido de color del escaneo sin tocar el grano de la película."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/details_tab.slint
+msgid "Texture"
+msgstr "Textura"
+
+#: crates/oni-ui/ui/panel/details_tab.slint
+msgid "Contrast at the scale of hair and fabric — leaves grain and overall tone alone."
+msgstr "Contraste a la escala del cabello y los tejidos: no toca el grano ni el tono general."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Measured Roll"
+msgstr "Rollo medido"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own."
+msgstr "Todos los ajustes de aquí son del rollo: si se cambian en esta foto, llegan a todas las fotos medidas con él, y cada una conserva su propio aspecto. Una foto de la carpeta que quedó fuera de esa medición puede unirse a ella, o las fotos medidas pueden formar un rollo propio."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "This photo was never measured with its roll, so these settings act on it alone."
+msgstr "Esta foto nunca se midió con su rollo, así que estos ajustes solo actúan sobre ella."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "PREPARE THE ROLL…"
+msgstr "PREPARAR EL ROLLO…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Acts on this photo, the only one measured with its roll."
+msgstr "Actúa sobre esta foto, la única medida con su rollo."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Acts on the {} photos measured with this roll."
+msgstr "Actúa sobre las {} fotos medidas con este rollo."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "1 photo of this folder was not measured with the roll."
+msgstr "1 foto de esta carpeta no se midió con el rollo."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "{} photos of this folder were not measured with the roll."
+msgstr "{} fotos de esta carpeta no se midieron con el rollo."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "JOIN THE ROLL"
+msgstr "UNIR AL ROLLO"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "JOIN THE {}"
+msgstr "UNIR LAS {}"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Gives them this roll's measurement and settings, their own look kept."
+msgstr "Les da la medición y los ajustes de este rollo, conservando su propio aspecto."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "ROLL OF THE {}"
+msgstr "ROLLO CON LAS {}"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Makes the photos measured together a roll of their own."
+msgstr "Convierte las fotos medidas juntas en un rollo propio."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Finding the photos measured with this roll…"
+msgstr "Buscando las fotos medidas con este rollo…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Film Type"
+msgstr "Tipo de película"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "What the film is: a colour negative, a slide or black and white."
+msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Negative"
+msgstr "Negativo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Positive"
+msgstr "Positivo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "B&W"
+msgstr "B/N"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Flat-Field"
+msgstr "Flat-field"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Evens out uneven lighting from the scanner, whatever you crop to."
+msgstr "Corrige la iluminación desigual del escáner, sea cual sea el recorte."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Flat-field"
+msgstr "Flat-field"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Hide Amount and Color"
+msgstr "Ocultar cantidad y color"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Show Amount and Color"
+msgstr "Mostrar cantidad y color"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "Mask"
+msgstr "Máscara"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
+msgid "No mask yet: take a frame of the empty light panel, shot on this rig."
+msgstr "Aún no hay máscara: toma un fotograma del panel de luz vacío, fotografiado con este montaje."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "SETTING…"
+msgstr "APLICANDO…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "USE THIS PHOTO AS FLAT-FIELD"
+msgstr "USAR ESTA FOTO COMO FLAT-FIELD"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "LOADING…"
+msgstr "CARGANDO…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "LOAD…"
+msgstr "CARGAR…"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "RENAME"
+msgstr "RENOMBRAR"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "FOLDER"
+msgstr "CARPETA"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "APPLY TO SELECTION"
+msgstr "APLICAR A LA SELECCIÓN"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Source Encoding"
+msgstr "Codificación de origen"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again."
+msgstr "Este archivo no indica ningún perfil de color, así que se lee como sRGB. La salida bruta de un escáner suele ser lineal: elige lo que escribió el software de escaneo y la fotografía se vuelve a leer."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Read as"
+msgstr "Leer como"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Linear"
+msgstr "Lineal"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Display P3"
+msgstr "Display P3"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Source Balance"
+msgstr "Balance de origen"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rojo ↔ Cian"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Cyan ↔ Red"
+msgstr "Cian ↔ Rojo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Green ↔ Magenta"
+msgstr "Verde ↔ Magenta"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Magenta ↔ Green"
+msgstr "Magenta ↔ Verde"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Blue ↔ Yellow"
+msgstr "Azul ↔ Amarillo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Yellow ↔ Blue"
+msgstr "Amarillo ↔ Azul"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Density Ceiling"
+msgstr "Techo de densidad"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Reveals more detail in the densest parts of the negative, at the cost of more visible noise there."
+msgstr "Revela más detalle en las partes más densas del negativo, a costa de más ruido visible en ellas."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Ceiling"
+msgstr "Techo"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Per-Channel Levels"
+msgstr "Niveles por canal"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "8-bit source — 256 levels per channel"
+msgstr "Origen de 8 bits: 256 niveles por canal"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Dye Separation"
+msgstr "Separación de tintes"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with."
+msgstr "Resta lo que cada tinte filtra a los otros dos canales, para que los colores se separen mientras los grises no se mueven. La familia indica el juego de tintes de la película; la dosis depende de la luz y del sensor con que se capturó."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Dyes"
+msgstr "Tintes"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Kodak"
+msgstr "Kodak"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Fuji"
+msgstr "Fuji"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Generic"
+msgstr "Genérico"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "ECN-2"
+msgstr "ECN-2"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "E-6"
+msgstr "E-6"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Dye separation"
+msgstr "Separación de tintes"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Balance Strength"
+msgstr "Intensidad del balance"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's."
+msgstr "La parte de la corrección del balance de blancos automático que asumen Temperatura y Matiz. Cada foto conserva su propia corrección; la proporción es la del rollo."
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Strength"
+msgstr "Intensidad"
+
+#: crates/oni-ui/ui/panel/state.slint
+msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
+msgstr "Desactivado en una hoja de contactos: sus fotogramas son copias reducidas. Los ajustes se conservan para cuando una fotografía los reciba."
+
+#: crates/oni-ui/ui/panel/state.slint
+msgid "FRAME --/--"
+msgstr "FOTOGRAMA --/--"
+
+#: crates/oni-ui/ui/panel.slint
+msgid "This roll was measured before the scanner kept its median: measure it again in Prepare the Roll, or the scanner centres on a guess."
+msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelve a medirlo en Preparar el rollo, o el escáner se centrará en una estimación."
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/panel.slint
+msgid "Details"
+msgstr "Detalles"
+
+#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare.slint
+msgid "NEXT"
+msgstr "SIGUIENTE"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Setting…"
+msgstr "Aplicando…"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Use This Frame as Flat-Field"
+msgstr "Usar este fotograma como flat-field"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Loading…"
+msgstr "Cargando…"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Load…"
+msgstr "Cargar…"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Settings differ across the roll"
+msgstr "Los ajustes varían a lo largo del rollo"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Digitised with"
+msgstr "Digitalizado con"
+
+#: crates/oni-core/src/preset_parameters.rs crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/toolbar.slint
+msgid "Scanner"
+msgstr "Escáner"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "DSLR Scan"
+msgstr "Escaneo con cámara"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "RGB Passes"
+msgstr "Pasadas RGB"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Pass Order"
+msgstr "Orden de pasadas"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "The first frame's three files in the order they were taken, each under the band it is read as. The order is read off the files when RGB Passes is chosen; drag a band between two others to move it. The order holds for the whole roll."
+msgstr "Los tres archivos del primer fotograma en el orden en que se tomaron, cada uno bajo la banda con la que se lee. El orden se lee de los archivos al elegir Pasadas RGB; arrastra una banda entre otras dos para moverla. El orden se aplica a todo el rollo."
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Shift by One File"
+msgstr "Desplazar un archivo"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Check the grouping"
+msgstr "Revisa la agrupación"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Clear"
+msgstr "Borrar"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Picker Size"
+msgstr "Tamaño del selector"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Clear Flags"
+msgstr "Borrar marcas"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Frame"
+msgstr "Fotograma"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Previous"
+msgstr "Anterior"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Next"
+msgstr "Siguiente"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "EPILEPSY WARNING: scrubbing flashes the frames quickly."
+msgstr "AVISO DE EPILEPSIA: al desplazarse, los fotogramas parpadean rápidamente."
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Measuring…"
+msgstr "Midiendo…"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Back"
+msgstr "Atrás"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Reading the Scan"
+msgstr "Lectura del escaneo"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "The whole scan, its rebate included, shows here."
+msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
+
+#: crates/oni-ui/ui/preset_deck.slint
+msgid "Save this photo’s settings as a preset…"
+msgstr "Guardar los ajustes de esta foto como preajuste…"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "White balance"
+msgstr "Balance de blancos"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Preset name"
+msgstr "Nombre del preajuste"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "What this look is for"
+msgstr "Para qué sirve este aspecto"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Carries"
+msgstr "Incluye"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Save a Preset"
+msgstr "Guardar un preajuste"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Save"
+msgstr "Guardar"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "No preset selected"
+msgstr "Ningún preajuste seleccionado"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Save a photo's settings to create your first preset."
+msgstr "Guarda los ajustes de una foto para crear tu primer preajuste."
+
+#: crates/oni-app/src/app/presets.rs crates/oni-ui/ui/presets.slint
+msgid "Duplicate"
+msgstr "Duplicar"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Share…"
+msgstr "Compartir…"
+
+#: crates/oni-app/src/app/presets.rs crates/oni-ui/ui/presets.slint
+msgid "Copy Preset Code"
+msgstr "Copiar código del preajuste"
+
+#: crates/oni-ui/ui/presets.slint
+msgid "Copies the preset as one line of text, to paste in a message."
+msgstr "Copia el preajuste como una línea de texto para pegarla en un mensaje."
+
+#: crates/oni-app/src/app/presets.rs crates/oni-app/src/app/presets/gestures.rs crates/oni-ui/ui/presets.slint
+msgid "Delete"
+msgstr "Eliminar"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Language"
+msgstr "Idioma"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Automatic"
+msgstr "Automático"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Automatic follows the system's language when the app speaks it, English otherwise."
+msgstr "Automático sigue el idioma del sistema cuando la app lo habla; si no, usa el inglés."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Sound"
+msgstr "Sonido"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Key clicks"
+msgstr "Clics de teclas"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "A click as each key is pressed and released."
+msgstr "Un clic al pulsar y al soltar cada tecla."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Viewing"
+msgstr "Visualización"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Keep the zoom from one photo to the next"
+msgstr "Mantener el zoom de una foto a la siguiente"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."
+msgstr "Desactivado, cada foto se abre ajustada al lienzo. Activado, se abre con el zoom de la anterior, centrada, para comparar el grano a lo largo de un rollo."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Show what this screen cannot show"
+msgstr "Mostrar lo que esta pantalla no puede mostrar"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Stripes over the colours this screen cannot show."
+msgstr "Rayas sobre los colores que esta pantalla no puede mostrar."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "RAW files"
+msgstr "Archivos RAW"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Decode RAW files at full resolution"
+msgstr "Decodificar los archivos RAW a resolución completa"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."
+msgstr "Desactivado, un RAW se lee a la mitad de su tamaño, de 3 a 5 veces más rápido, y se ve así con cualquier zoom. Activado, se lee entero, para el grano más fino por encima del 50 %. Detalles, Eliminar polvo y todas las exportaciones leen siempre el RAW completo. Se aplica a la siguiente foto que se abra."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Frontier look"
+msgstr "Aspecto Frontier"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."
+msgstr "Un LUT sobre la inversión de ONI, con sRGB de pantalla a la entrada y a la salida. Expórtalo, edítalo con cualquier herramienta de LUT y usa el archivo: cada vez que lo guardas, el cambio se ve al instante."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "EXPORT…"
+msgstr "EXPORTAR…"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "USE A FILE…"
+msgstr "USAR UN ARCHIVO…"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "MEASURED"
+msgstr "MEDIDO"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Phone remote"
+msgstr "Control desde el teléfono"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."
+msgstr "La app ONI en un teléfono de la misma red edita la foto abierta aquí, una vez vinculado escaneando un código."
+
+#: crates/oni-ui/ui/settings.slint
+msgid "PAIR PHONE…"
+msgstr "VINCULAR TELÉFONO…"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "CHECK FOR UPDATES"
+msgstr "BUSCAR ACTUALIZACIONES"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "WHAT'S NEW"
+msgstr "NOVEDADES"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "WELCOME"
+msgstr "BIENVENIDA"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "REPORT A PROBLEM…"
+msgstr "INFORMAR DE UN PROBLEMA…"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "CONSOLE"
+msgstr "CONSOLA"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "General"
+msgstr "General"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/settings.slint
+msgid "Editor"
+msgstr "Editor"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "Phone"
+msgstr "Teléfono"
+
+#: crates/oni-ui/ui/settings.slint
+msgid "About"
+msgstr "Acerca de"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "FILM"
+msgstr "PELÍCULA"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "FLAT-FIELD"
+msgstr "FLAT-FIELD"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "BASE"
+msgstr "BASE"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "FLAGS"
+msgstr "MARCAS"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "WINDOW"
+msgstr "VENTANA"
+
+#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+msgid "Select the Film Type"
+msgstr "Seleccionar el tipo de película"
+
+#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+msgid "Set Up the Flat-Field"
+msgstr "Configurar el flat-field"
+
+#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+msgid "Pick the Film Base"
+msgstr "Elegir la base de la película"
+
+#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+msgid "Flag the Frames Left Out"
+msgstr "Marcar los fotogramas excluidos"
+
+#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+msgid "Place the Measuring Frame"
+msgstr "Colocar el marco de medición"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/toolbar.slint
+msgid "ALL"
+msgstr "TODAS"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "RESET SCAN"
+msgstr "RESTABLECER ESCANEO"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Crop and Straighten (⌘K)"
+msgstr "Recortar y enderezar (⌘K)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Compare"
+msgstr "Comparar"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Pro"
+msgstr "Pro"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Copy settings (⌘⇧C)"
+msgstr "Copiar ajustes (⌘⇧C)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Paste settings to {} photos (⌘⇧V)"
+msgstr "Pegar ajustes en {} fotos (⌘⇧V)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Paste settings (⌘⇧V)"
+msgstr "Pegar ajustes (⌘⇧V)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Paste to the Roll"
+msgstr "Pegar en el rollo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Leave De-dust"
+msgstr "Salir de Eliminar polvo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "De-dust"
+msgstr "Eliminar polvo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Filter: {}"
+msgstr "Filtro: {}"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "PREPARE ROLL"
+msgstr "PREPARAR ROLLO"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Prepare the Roll"
+msgstr "Preparar el rollo"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "GALLERY"
+msgstr "GALERÍA"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "EDITOR"
+msgstr "EDITOR"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Gallery (⌘G)"
+msgstr "Galería (⌘G)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Editor (⌘G)"
+msgstr "Editor (⌘G)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "FEEDBACKS"
+msgstr "COMENTARIOS"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Phone Remote"
+msgstr "Control desde el teléfono"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "ADD FOLDER (⌘+O)"
+msgstr "AÑADIR CARPETA (⌘+O)"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Add a folder of scans (⌘O) · export stays on ⌘E"
+msgstr "Añadir una carpeta de escaneos (⌘O) · exportar sigue en ⌘E"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "UPDATING"
+msgstr "ACTUALIZANDO"
+
+#: crates/oni-ui/ui/transition.slint
+msgid "Matching Your Cameras"
+msgstr "Igualando tus cámaras"
+
+#: crates/oni-ui/ui/transition.slint
+msgid "ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version."
+msgstr "ONI lee ahora los archivos RAW con LibRaw, que ve los colores de cada cámara de forma algo distinta a la versión anterior."
+
+#: crates/oni-ui/ui/transition.slint
+msgid "Each camera is matched once to the earlier version's colours, on a few of your photos."
+msgstr "Cada cámara se iguala una vez con los colores de la versión anterior, usando algunas de tus fotos."
+
+#: crates/oni-ui/ui/transition.slint
+msgid "Nothing in your photos' settings is changed."
+msgstr "No se cambia nada en los ajustes de tus fotos."
+
+#: crates/oni-ui/ui/transition.slint
+msgid "Quitting now is safe: the work resumes at the next launch."
+msgstr "Salir ahora es seguro: el trabajo se reanuda en el próximo inicio."
+
+#: crates/oni-ui/ui/transition.slint
+msgid "CONTINUE"
+msgstr "CONTINUAR"
+
+#: crates/oni-ui/ui/wrapped.slint
+msgid "Click or press → to turn · ← to go back · Esc to leave"
+msgstr "Haz clic o pulsa → para avanzar · ← para volver · Esc para salir"
+
+#: crates/oni-app/src/app/actions.rs
+msgid "Your latest settings could not be saved"
+msgstr "No se han podido guardar tus últimos ajustes"
+
+#: crates/oni-app/src/app/actions.rs
+msgid "Quit Anyway"
+msgstr "Salir de todos modos"
+
+#: crates/oni-app/src/app/actions.rs
+msgid "The preference cannot be kept: {e}"
+msgstr "No se puede conservar la preferencia: {e}"
+
+#: crates/oni-app/src/app/actions.rs
+msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
+msgstr "{message}\n\nSi sales ahora, se descartan los cambios hechos desde el último guardado correcto. Cancela para mantener la app abierta y resolver el problema; por ejemplo, liberando espacio o volviendo a conectar el volumen donde están los originales."
+
+#: crates/oni-app/src/app/archive_view.rs
+msgid "This system has no folder picker: pass the folder on the command line"
+msgstr "Este sistema no tiene selector de carpetas: indica la carpeta en la línea de comandos"
+
+#: crates/oni-app/src/app/archive_view.rs
+msgid "The library index cannot be opened"
+msgstr "No se puede abrir el índice de la fototeca"
+
+#: crates/oni-app/src/app/archive_view.rs
+msgid "The notice cannot be marked seen: {error}"
+msgstr "No se puede marcar el aviso como visto: {error}"
+
+#: crates/oni-app/src/app/dedusting.rs
+msgid "Correction"
+msgstr "Corrección"
+
+#: crates/oni-app/src/app/dedusting.rs
+msgid "Correction {n}"
+msgstr "Corrección {n}"
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Nothing to install: the file held no RGB printer profile (CMYK profiles are not supported)."
+msgstr "Nada que instalar: el archivo no contenía ningún perfil de impresora RGB (los perfiles CMYK no son compatibles)."
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Nothing to install: the file held no RGB printer profile."
+msgstr "Nada que instalar: el archivo no contenía ningún perfil de impresora RGB."
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Nothing was left to remove."
+msgstr "No quedaba nada por eliminar."
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "The page could not be read: {error}"
+msgstr "No se pudo leer la página: {error}"
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Downloading {source}"
+msgstr "Descargando {source}"
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "The download failed: {error}"
+msgstr "La descarga ha fallado: {error}"
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Moved {source} to the Trash."
+msgstr "{source} se ha movido a la Papelera."
+
+#: crates/oni-app/src/app/export_card/paper_sheet.rs
+msgid "Installed {n} profile — the export now uses “{name}”."
+msgid_plural "Installed {n} profiles — the export now uses “{name}”."
+msgstr[0] "Se ha instalado {n} perfil: la exportación usa ahora “{name}”."
+msgstr[1] "Se han instalado {n} perfiles: la exportación usa ahora “{name}”."
+
+#: crates/oni-app/src/app/export_card/publishing.rs
+msgid "estimated total size"
+msgstr "tamaño total estimado"
+
+#: crates/oni-app/src/app/export_card/publishing.rs
+msgid "estimated size"
+msgstr "tamaño estimado"
+
+#: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs
+msgid "Hide What This Screen Cannot Show"
+msgstr "Ocultar lo que esta pantalla no puede mostrar"
+
+#: crates/oni-app/src/app/export_card/publishing.rs
+msgid "Until a profile is chosen, the picture stays in {space}."
+msgstr "Hasta que se elija un perfil, la imagen se queda en {space}."
+
+#: crates/oni-app/src/app/export_card/settings.rs
+msgid "Choose ICC profiles, or the zip a paper maker or a lab ships them in."
+msgstr "Elige perfiles ICC, o el zip en el que los distribuye un fabricante de papel o un laboratorio."
+
+#: crates/oni-app/src/app/export_card/settings.rs
+msgid "Where should the {count} files be written?"
+msgstr "¿Dónde se deben guardar los {count} archivos?"
+
+#: crates/oni-app/src/app/export_card/writing.rs
+msgid "Export Failed"
+msgstr "No se pudo exportar"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "Export the Frontier look"
+msgstr "Exportar el aspecto Frontier"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "Use a Frontier look"
+msgstr "Usar un aspecto Frontier"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "The measured Frontier table."
+msgstr "La tabla Frontier medida."
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "The Frontier look could not be read again: {e}. The measured table is used."
+msgstr "No se pudo volver a leer el aspecto Frontier: {e}. Se usa la tabla medida."
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "The look could not be written: {e}"
+msgstr "No se pudo escribir el aspecto: {e}"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "This file cannot be the Frontier look: {e}"
+msgstr "Este archivo no puede ser el aspecto Frontier: {e}"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "The Frontier look's last save cannot be read: {e}"
+msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
+
+#: crates/oni-app/src/app/frontier_look.rs
+msgid "From “{file}”, read again each time it is saved."
+msgstr "De “{file}”, que se vuelve a leer cada vez que se guarda."
+
+#: crates/oni-app/src/app/gestures.rs
+msgid "New Roll"
+msgstr "Nuevo rollo"
+
+#: crates/oni-app/src/app/gestures.rs
+msgid "The roll's folder could not be made: {e}"
+msgstr "No se pudo crear la carpeta del rollo: {e}"
+
+#: crates/oni-app/src/app/gestures.rs
+msgid "{count} of the files could not be moved into the roll."
+msgstr "{count} de los archivos no se pudieron mover al rollo."
+
+#: crates/oni-app/src/app/help.rs
+msgid "The console cannot open."
+msgstr "No se puede abrir la consola."
+
+#: crates/oni-app/src/app/help.rs
+msgid "The note cannot be marked read: {error}"
+msgstr "No se puede marcar la nota como leída: {error}"
+
+#: crates/oni-app/src/app/help.rs
+msgid "The notes cannot be shown again: {error}"
+msgstr "No se pueden volver a mostrar las notas: {error}"
+
+#: crates/oni-app/src/app/help.rs
+msgid "The welcome cannot be marked seen: {error}"
+msgstr "No se puede marcar la bienvenida como vista: {error}"
+
+#: crates/oni-app/src/app/help.rs
+msgid "New"
+msgstr "Nuevo"
+
+#: crates/oni-app/src/app/help.rs
+msgid "Two machines: the Frontier as measured, and ONI's own, Pro's conversion with ONI's look. A photo converted before keeps the Frontier."
+msgstr "Dos máquinas: la Frontier tal como se midió y la propia de ONI, la conversión de Pro con el aspecto de ONI. Una foto convertida antes conserva la Frontier."
+
+#: crates/oni-app/src/app/help.rs
+msgid "Updated"
+msgstr "Actualizado"
+
+#: crates/oni-app/src/app/help.rs
+msgid "A simpler Scanner, after your feedback: three blocks that fold, D, C, M and Y on half steps, W now TEMP. The S look and CMY CANCEL are gone."
+msgstr "Un Escáner más sencillo, gracias a tus comentarios: tres bloques plegables, D, C, M e Y en medios pasos y W, que ahora es TEMP. El aspecto S y CMY CANCEL desaparecen."
+
+#: crates/oni-app/src/app/help.rs
+msgid "Contrast, Vignette and Chrome are five keys each, read on the machine's screen."
+msgstr "Contraste, Viñeta y Chrome tienen cinco teclas cada uno, que se leen en la pantalla de la máquina."
+
+#: crates/oni-app/src/app/help.rs
+msgid "Curves, Spectrogram and the saturation curve now act on the Scanner face too, after the machine's render."
+msgstr "Las curvas, el acabado espectrográfico y la curva de saturación actúan ahora también en la cara Escáner, después del render de la máquina."
+
+#: crates/oni-app/src/app/help.rs
+msgid "Shadows and Highlights reach ±0.50, the curve still rising at the ends. Auto Exposure is gone; Auto White Balance stays."
+msgstr "Sombras y Luces llegan a ±0.50, con la curva aún subiendo en los extremos. La exposición automática desaparece; el balance de blancos automático se queda."
+
+#: crates/oni-app/src/app/help.rs
+msgid "ProPhoto RGB, the widest space, in 16-bit TIFF: it keeps colours Adobe RGB clips."
+msgstr "ProPhoto RGB, el espacio más amplio, en TIFF de 16 bits: conserva los colores que Adobe RGB recorta."
+
+#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/prepare/flat_masks.rs
+msgid "No Mask Set"
+msgstr "Ninguna máscara definida"
+
+#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/prepare/flat_masks.rs
+msgid "No Mask Loaded"
+msgstr "Ninguna máscara cargada"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Keep in Library"
+msgstr "Mantener en la fototeca"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Move Out"
+msgstr "Sacar"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "The photo could not be moved to FlatField Presets."
+msgstr "No se pudo mover la foto a FlatField Presets."
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Rename This Flat-Field Mask"
+msgstr "Renombrar esta máscara de flat-field"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Rename"
+msgstr "Renombrar"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Choose a picture of the empty light panel, shot as the negatives are."
+msgstr "Elige una imagen del panel de luz vacío, fotografiado igual que los negativos."
+
+#: crates/oni-app/src/app/masks.rs
+msgid "Move This Photo Out of the Library?"
+msgstr "¿Sacar esta foto de la fototeca?"
+
+#: crates/oni-app/src/app/masks.rs
+msgid "It is now a flat-field mask. The file moves to FlatField Presets in the app's folder, and its settings and thumbnail leave the library."
+msgstr "Ahora es una máscara de flat-field. El archivo pasa a FlatField Presets, en la carpeta de la app, y sus ajustes y su miniatura salen de la fototeca."
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Smaller Thumbnails"
+msgstr "Miniaturas más pequeñas"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Larger Thumbnails"
+msgstr "Miniaturas más grandes"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Unmute Key Clicks"
+msgstr "Activar clics de las teclas"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Close Comparison"
+msgstr "Cerrar comparación"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Show the Library"
+msgstr "Mostrar la fototeca"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Show the Panel"
+msgstr "Mostrar el panel"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Done Correcting"
+msgstr "Terminar corrección"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Unmirror"
+msgstr "Quitar reflejo"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Undo {action}"
+msgstr "Deshacer {action}"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Redo {action}"
+msgstr "Rehacer {action}"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs
+msgid "Move {count} Photos to ONI Trash"
+msgstr "Mover {count} fotos a la Papelera de ONI"
+
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs
+msgid "Restore {count} Photos"
+msgstr "Restaurar {count} fotos"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Paste Settings to {count} Photos"
+msgstr "Pegar ajustes en {count} fotos"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Paste to Roll ({count} Photos)"
+msgstr "Pegar en el rollo ({count} fotos)"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Filter: {medal}"
+msgstr "Filtro: {medal}"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "New Roll from {count} Photos"
+msgstr "Nuevo rollo con {count} fotos"
+
+#: crates/oni-app/src/app/menus.rs
+msgid "Ungroup {count} Photos"
+msgstr "Desagrupar {count} fotos"
+
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "Add Folder…"
+msgstr "Añadir carpeta…"
+
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "Add Another Folder…"
+msgstr "Añadir otra carpeta…"
+
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "Every photo of your library is in."
+msgstr "Todas las fotos de tu fototeca están dentro."
+
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "{total} photos of your library are not in it yet:"
+msgstr "{total} fotos de tu fototeca aún no están en ella:"
+
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "and {count} more folders"
+msgstr "y {count} carpetas más"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Open"
+msgstr "Abrir"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Remove from Favourites"
+msgstr "Quitar de favoritos"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Add to Favourites"
+msgstr "Añadir a favoritos"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+msgid "Rename…"
+msgstr "Renombrar…"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+msgid "Back to a Folder"
+msgstr "Volver a carpeta"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+msgid "Make a Roll"
+msgstr "Convertir en rollo"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+msgid "New Folder Inside"
+msgstr "Nueva carpeta dentro"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise.rs
+msgid "Show in Finder"
+msgstr "Mostrar en el Finder"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be made a roll: it cannot be written to."
+msgstr "No se pudo convertir la carpeta en rollo: no se puede escribir en ella."
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+msgid "Something Went Wrong"
+msgstr "Algo ha fallado"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder was not renamed, as the open photo's settings could not be saved: {error}"
+msgstr "No se ha renombrado la carpeta porque no se pudieron guardar los ajustes de la foto abierta: {error}"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "an item named “{name}” already exists"
+msgstr "ya existe un elemento llamado “{name}”"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be renamed: {error}"
+msgstr "No se pudo renombrar la carpeta: {error}"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "Favourites"
+msgstr "Favoritos"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "The home folder and every volume"
+msgstr "La carpeta de inicio y todos los volúmenes"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "{folder} — click to jump to a folder above"
+msgstr "{folder} — haz clic para ir a una carpeta superior"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "Add {name}"
+msgstr "Añadir {name}"
+
+#: crates/oni-app/src/app/navigator.rs
+msgid "The favourites cannot be saved: {error}"
+msgstr "No se pueden guardar los favoritos: {error}"
+
+#: crates/oni-app/src/app/opening.rs
+msgid "{name} · decoding"
+msgstr "{name} · decodificando"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No Photos in a Project"
+msgstr "Ninguna foto en un proyecto"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "ONI Trash Is Empty"
+msgstr "La Papelera de ONI está vacía"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "A photo deleted in ONI waits here, its file untouched, until it is restored."
+msgstr "Una foto eliminada en ONI espera aquí, con su archivo intacto, hasta que se restaura."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "Cycle the filter (⌘L) to see the others."
+msgstr "Cambia el filtro (⌘L) para ver las demás."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No Folder Open"
+msgstr "Ninguna carpeta abierta"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved."
+msgstr "Haz doble clic en una carpeta de la columna para abrirla: aquí aparecen todas las fotos que contiene. No se copia ni se mueve nada."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No Photos"
+msgstr "Sin fotos"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No photo under this folder."
+msgstr "No hay ninguna foto en esta carpeta."
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No Projects"
+msgstr "Sin proyectos"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "No {medal} Photos"
+msgstr "Sin fotos de {medal}"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Select a project"
+msgstr "Selecciona un proyecto"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Select a roll"
+msgstr "Selecciona un rollo"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "No stock set"
+msgstr "Sin película definida"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Rename Roll"
+msgstr "Renombrar rollo"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Shot Date"
+msgstr "Definir fecha de toma"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Camera Body"
+msgstr "Definir cuerpo de cámara"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Default, from this roll's {mode} mode"
+msgstr "Por defecto, según el modo {mode} de este rollo"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "The roll could not be written in its folder: {error}"
+msgstr "No se pudo escribir el rollo en su carpeta: {error}"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "ONI Trash"
+msgstr "Papelera de ONI"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Restore every photo in the ONI Trash"
+msgstr "Restaurar todas las fotos de la Papelera de ONI"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Restore All…"
+msgstr "Restaurar todo…"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Every photo in the ONI Trash goes back to its folder, roll and project."
+msgstr "Todas las fotos de la Papelera de ONI vuelven a su carpeta, su rollo y su proyecto."
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Restore this photo"
+msgid_plural "Restore these {n} photos"
+msgstr[0] "Restaurar esta foto"
+msgstr[1] "Restaurar estas {n} fotos"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Restore Photo"
+msgid_plural "Restore {n} Photos"
+msgstr[0] "Restaurar foto"
+msgstr[1] "Restaurar {n} fotos"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Restore This Photo?"
+msgid_plural "Restore {n} Photos?"
+msgstr[0] "¿Restaurar esta foto?"
+msgstr[1] "¿Restaurar {n} fotos?"
+
+#: crates/oni-app/src/app/organising/projects.rs
+msgid "The projects could not be saved: {error}"
+msgstr "No se pudieron guardar los proyectos: {error}"
+
+#: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
+msgid "Delete Project"
+msgstr "Eliminar proyecto"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "Starting the link…"
+msgstr "Iniciando la conexión…"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "No local network: join the phone's Wi-Fi network, then pair again."
+msgstr "No hay red local: conéctate a la red Wi-Fi del teléfono y vuelve a vincularlo."
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "The phone disconnected"
+msgstr "El teléfono se ha desconectado"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "The phone link cannot start: {error}"
+msgstr "No se puede iniciar la conexión con el teléfono: {error}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "Connected: {phones}."
+msgstr "Conectado: {phones}."
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "The paired phones cannot be forgotten: {error}"
+msgstr "No se pueden olvidar los teléfonos vinculados: {error}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "Scan it from the phone app on the same network. One phone, two minutes · {addresses}"
+msgstr "Escanéalo desde la app del teléfono, en la misma red. Un teléfono, dos minutos · {addresses}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "The code cannot be drawn: {error}"
+msgstr "No se puede dibujar el código: {error}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "The phone link cannot listen: {error}"
+msgstr "La conexión con el teléfono no puede escuchar: {error}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "{name} is paired for this session only: {error}"
+msgstr "{name} está vinculado solo para esta sesión: {error}"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "Paired with {name}."
+msgstr "Vinculado con {name}."
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "{name} connected"
+msgstr "{name} conectado"
+
+#: crates/oni-app/src/app/phone_link.rs
+msgid "One phone paired, none connected."
+msgid_plural "{n} phones paired, none connected."
+msgstr[0] "Un teléfono vinculado, ninguno conectado."
+msgstr[1] "{n} teléfonos vinculados, ninguno conectado."
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "No frame of this roll could be measured: the files could not be read, or the measuring frame holds nothing to balance."
+msgstr "No se pudo medir ningún fotograma de este rollo: no se pudieron leer los archivos, o el marco de medición no contiene nada que equilibrar."
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "{missed} of {asked} frames could not be measured and were left as they were."
+msgstr "{missed} de {asked} fotogramas no se pudieron medir y se dejaron como estaban."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
+msgstr "Elige la película y con qué la digitalizaste. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."
+msgstr "Haz clic en la toma del panel de luz vacío, o elige una que ya hayas cargado. Omite este paso si tu luz es uniforme; si no, la luz desigual oscurece o tiñe las esquinas de cada fotograma."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."
+msgstr "Elige un escaneo y haz clic en la película sin imagen: el borde o el espacio entre dos fotogramas. Un clic en la imagen, en cambio, desplaza los negros y los colores de todo el rollo."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."
+msgstr "Marca las fugas de luz, el primer fotograma cortado y las tomas extremas: se siguen convirtiendo, pero sin marcar, una sola puede apagar o teñir todo el rollo."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."
+msgstr "Dibuja el marco dentro de la imagen, lejos del soporte y de los bordes de la película, y usa el control deslizante para comprobarlo en cada escaneo. Un borde que quede dentro desvía todo el rollo."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "{apart} of {count} frames, marked, were digitised with other settings than the roll's {capture}. Their exposure is evened out to it; a different aperture also changes the vignetting the flat-field measured, so re-shoot them in manual for the cleanest roll."
+msgstr "{apart} de {count} fotogramas, marcados, se digitalizaron con ajustes distintos de los del rollo ({capture}). Su exposición se iguala a la del rollo; una apertura distinta cambia además el viñeteado que midió el flat-field, así que vuelve a fotografiarlos en manual para obtener el rollo más limpio."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "MEASURE {n} FRAME"
+msgid_plural "MEASURE {n} FRAMES"
+msgstr[0] "MEDIR {n} FOTOGRAMA"
+msgstr[1] "MEDIR {n} FOTOGRAMAS"
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "{n} frame of this folder, measured on another roll, is left out."
+msgid_plural "{n} frames of this folder, measured on another roll, are left out."
+msgstr[0] "{n} fotograma de esta carpeta, medido con otro rollo, queda fuera."
+msgstr[1] "{n} fotogramas de esta carpeta, medidos con otro rollo, quedan fuera."
+
+#: crates/oni-app/src/app/prepare/passes.rs
+msgid "Shift the grouping by one file, or leave a stray file out of the selection before preparing the roll."
+msgstr "Desplaza la agrupación un archivo, o deja fuera de la selección un archivo suelto antes de preparar el rollo."
+
+#: crates/oni-app/src/app/prepare/passes.rs
+msgid "{frames} frames from {files} files"
+msgstr "{frames} fotogramas a partir de {files} archivos"
+
+#: crates/oni-app/src/app/prepare/passes.rs
+msgid "{n} file is left out, the files not falling into threes."
+msgid_plural "{n} files are left out, the files not falling into threes."
+msgstr[0] "{n} archivo queda fuera, porque los archivos no se agrupan de tres en tres."
+msgstr[1] "{n} archivos quedan fuera, porque los archivos no se agrupan de tres en tres."
+
+#: crates/oni-app/src/app/prepare/passes.rs
+msgid "{n} frame's passes lie further apart than the frames do, which a missing or extra pass causes."
+msgid_plural "{n} frames' passes lie further apart than the frames do, which a missing or extra pass causes."
+msgstr[0] "Las pasadas de {n} fotograma están más separadas que los propios fotogramas, señal de una pasada que falta o que sobra."
+msgstr[1] "Las pasadas de {n} fotogramas están más separadas que los propios fotogramas, señal de una pasada que falta o que sobra."
+
+#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-app/src/app/roll_tab.rs
+msgid "None selected"
+msgstr "Ninguna seleccionada"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "No base picked yet."
+msgstr "Aún no se ha elegido ninguna base."
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "SKIP"
+msgstr "OMITIR"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "Measuring the roll · {done} of {total}"
+msgstr "Midiendo el rollo · {done} de {total}"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "Loading the roll's thumbnails · {settled} of {total}"
+msgstr "Cargando las miniaturas del rollo · {settled} de {total}"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "On {name}"
+msgstr "En {name}"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "Measuring {done} of {total}…"
+msgstr "Midiendo {done} de {total}…"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "{count} frames, grouped when the roll was last measured."
+msgstr "{count} fotogramas, agrupados en la última medición del rollo."
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "{measured} measured, {flagged} flagged"
+msgstr "{measured} medidos, {flagged} marcados"
+
+#: crates/oni-app/src/app/presets/deck.rs
+msgid "Delete “{name}”"
+msgstr "Eliminar “{name}”"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Share Preset"
+msgstr "Compartir preajuste"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "The code is incomplete or was changed on the way. Ask for it to be copied again."
+msgstr "El código está incompleto o se modificó por el camino. Pide que te lo vuelvan a copiar."
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "No Preset Code on the Clipboard"
+msgstr "No hay ningún código de preajuste en el portapapeles"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Import Presets"
+msgstr "Importar preajustes"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "No Preset Imported"
+msgstr "No se ha importado ningún preajuste"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "The settings it stored are replaced. Its name, color, description and the rows it carries stay as they are."
+msgstr "Los ajustes que guardaba se reemplazan. Su nombre, color, descripción y las filas que incluye se mantienen."
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Its file goes to the Trash, where it can be put back. Photos it was applied to keep their settings."
+msgstr "Su archivo va a la Papelera, desde donde se puede recuperar. Las fotos a las que se aplicó conservan sus ajustes."
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Copy a code starting with {prefix}, then paste it here."
+msgstr "Copia un código que empiece por {prefix} y pégalo aquí."
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "“{name}” Is Already in Your Presets"
+msgstr "“{name}” ya está en tus preajustes"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "{taken} of {total} Presets Imported"
+msgstr "{taken} de {total} preajustes importados"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Replace “{name}” with This Photo’s Settings?"
+msgstr "¿Reemplazar “{name}” con los ajustes de esta foto?"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "Delete the Preset “{name}”?"
+msgstr "¿Eliminar el preajuste “{name}”?"
+
+#: crates/oni-app/src/app/presets/gestures.rs
+msgid "One file was left out: it is already in your presets, or it is not a preset."
+msgid_plural "{n} files were left out: they are already in your presets, or they are not presets."
+msgstr[0] "Se ha omitido un archivo: ya está en tus preajustes o no es un preajuste."
+msgstr[1] "Se han omitido {n} archivos: ya están en tus preajustes o no son preajustes."
+
+#: crates/oni-app/src/app/presets/shelf.rs
+msgid "Hover to preview · click applies"
+msgstr "Pasa el puntero para previsualizar · clic para aplicar"
+
+#: crates/oni-app/src/app/presets/shelf.rs
+msgid "The retired presets cannot be recorded: {error}"
+msgstr "No se pueden registrar los preajustes retirados: {error}"
+
+#: crates/oni-app/src/app/presets/shelf.rs
+msgid "Apply to “{name}”"
+msgstr "Aplicar a “{name}”"
+
+#: crates/oni-app/src/app/presets/shelf.rs
+msgid "Apply to {count} Photos"
+msgstr "Aplicar a {count} fotos"
+
+#: crates/oni-app/src/app/presets/shelf.rs
+msgid "Hover to preview · click applies to {count} photos"
+msgstr "Pasa el puntero para previsualizar · clic para aplicar a {count} fotos"
+
+#: crates/oni-app/src/app/presets.rs
+msgid "Edit…"
+msgstr "Editar…"
+
+#: crates/oni-app/src/app/presets.rs
+msgid "Update with Current Settings"
+msgstr "Actualizar con los ajustes actuales"
+
+#: crates/oni-app/src/app/presets.rs
+msgid "Share Preset…"
+msgstr "Compartir preajuste…"
+
+#: crates/oni-app/src/app/project_drop.rs
+msgid "{n} item"
+msgid_plural "{n} items"
+msgstr[0] "{n} elemento"
+msgstr[1] "{n} elementos"
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "The picture cannot be shown on this graphics card; the log names why."
+msgstr "La imagen no se puede mostrar con esta tarjeta gráfica; el registro indica el motivo."
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "{name}: could not be decoded"
+msgstr "{name}: no se pudo decodificar"
+
+#: crates/oni-app/src/app/rendering/landing.rs
+msgid "Not rendered: {e}"
+msgstr "No se pudo mostrar: {e}"
+
+#: crates/oni-app/src/app/roll_tab.rs
+msgid "Missing mask"
+msgstr "Falta la máscara"
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Acts on the selected photo, not the one on screen."
+msgstr "Actúa sobre la foto seleccionada, no sobre la que está en pantalla."
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots, and the roll's contact sheet goes to the ONI Trash. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings both back."
+msgstr "Se eliminan la medición de su rollo y todos los ajustes de su aspecto, un fotograma tomado en pasadas RGB vuelve a separarse en sus tres tomas y la hoja de contactos del rollo va a la Papelera de ONI. Los recortes, las correcciones de polvo, los flat-fields, las medallas y el EXIF se mantienen. Deshacer recupera ambas cosas."
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings the settings back."
+msgstr "Se eliminan la medición de su rollo y todos los ajustes de su aspecto, y un fotograma tomado en pasadas RGB vuelve a separarse en sus tres tomas. Los recortes, las correcciones de polvo, los flat-fields, las medallas y el EXIF se mantienen. Deshacer recupera los ajustes."
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Acts on {count} photos."
+msgstr "Actúa sobre {count} fotos."
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Reset This Photo to Default?"
+msgid_plural "Reset {n} Photos to Default?"
+msgstr[0] "¿Restablecer los valores predeterminados de esta foto?"
+msgstr[1] "¿Restablecer los valores predeterminados de {n} fotos?"
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Reset Photo"
+msgid_plural "Reset {n} Photos"
+msgstr[0] "Restablecer foto"
+msgstr[1] "Restablecer {n} fotos"
+
+#: crates/oni-app/src/app/settings_sheet.rs
+msgid "Version {version}"
+msgstr "Versión {version}"
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "Making Contact Sheet…"
+msgstr "Creando hoja de contactos…"
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "Prepare this roll first: a contact sheet carries the window its roll was measured on."
+msgstr "Prepara antes este rollo: una hoja de contactos lleva la ventana con la que se midió su rollo."
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "The contact sheet could not be written."
+msgstr "No se pudo escribir la hoja de contactos."
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "New Contact Sheet from {count} Photos"
+msgstr "Nueva hoja de contactos con {count} fotos"
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "Writing the file"
+msgstr "Escribiendo el archivo"
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "Adding it to the library"
+msgstr "Añadiéndola a la fototeca"
+
+#: crates/oni-app/src/app/sheets.rs
+msgid "Opening it"
+msgstr "Abriéndola"
+
+#: crates/oni-app/src/app/state_read.rs
+msgid "Creating thumbnails"
+msgstr "Creando miniaturas"
+
+#: crates/oni-app/src/app/state_read.rs
+msgid "Reading the library"
+msgstr "Leyendo la fototeca"
+
+#: crates/oni-app/src/app/state_read.rs
+msgid "Making the contact sheet"
+msgstr "Creando la hoja de contactos"
+
+#: crates/oni-app/src/app/state_read.rs
+msgid "Opening the frames together"
+msgstr "Abriendo los fotogramas juntos"
+
+#: crates/oni-app/src/app/state_read.rs
+msgid "Loading full resolution"
+msgstr "Cargando la resolución completa"
+
+#: crates/oni-app/src/app/stock_picker.rs
+msgid "Set Film Stock"
+msgstr "Definir tipo de película"
+
+#: crates/oni-app/src/app/together.rs
+msgid "{count} frames together"
+msgstr "{count} fotogramas juntos"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "Looking for the cameras of your photos…"
+msgstr "Buscando las cámaras de tus fotos…"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "waiting"
+msgstr "en espera"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "matching…"
+msgstr "igualando…"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "not matched"
+msgstr "sin igualar"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "Stopped"
+msgstr "Detenido"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "No camera could be matched."
+msgstr "No se pudo igualar ninguna cámara."
+
+#: crates/oni-app/src/app/transition.rs
+msgid "Some folders could not be reached: their cameras are matched when they come back."
+msgstr "No se pudo acceder a algunas carpetas: sus cámaras se igualarán cuando vuelvan a estar disponibles."
+
+#: crates/oni-app/src/app/transition.rs
+msgid "matched, within {share} %"
+msgstr "igualada, con un margen de {share} %"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "Matching the {camera} to the earlier version…"
+msgstr "Igualando la {camera} con la versión anterior…"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "The cameras could not be matched: {error}. RAW files show LibRaw's own colours until the next launch."
+msgstr "No se pudieron igualar las cámaras: {error}. Los archivos RAW muestran los colores propios de LibRaw hasta el próximo inicio."
+
+#: crates/oni-app/src/app/transition.rs crates/oni-app/src/picking.rs
+msgid "{n} photo"
+msgid_plural "{n} photos"
+msgstr[0] "{n} foto"
+msgstr[1] "{n} fotos"
+
+#: crates/oni-app/src/app/transition.rs
+msgid "{n} camera matched."
+msgid_plural "{n} cameras matched."
+msgstr[0] "{n} cámara igualada."
+msgstr[1] "{n} cámaras igualadas."
+
+#: crates/oni-app/src/app/tree_column.rs
+msgid "{layout} — next: {next}"
+msgstr "{layout} — siguiente: {next}"
+
+#: crates/oni-app/src/app/updates.rs
+msgid "DOWNLOAD"
+msgstr "DESCARGAR"
+
+#: crates/oni-app/src/app/updates.rs
+msgid "{name} is in Downloads, its signature checked: open it to install."
+msgstr "{name} está en Descargas, con su firma verificada: ábrelo para instalarlo."
+
+#: crates/oni-app/src/app/workers.rs
+msgid "its file is unreachable"
+msgstr "no se puede acceder a su archivo"
+
+#: crates/oni-app/src/app/workers.rs
+msgid "the scan cannot be read back"
+msgstr "no se puede volver a leer el escaneo"
+
+#: crates/oni-app/src/app/workers.rs crates/oni-app/src/render/engine.rs
+msgid "the render engine failed earlier"
+msgstr "el motor de renderizado falló antes"
+
+#: crates/oni-app/src/app/workers.rs
+msgid "the thumbnail cannot be encoded"
+msgstr "no se puede codificar la miniatura"
+
+#: crates/oni-app/src/app/workers.rs
+msgid "the thumbnail cannot be read back"
+msgstr "no se puede volver a leer la miniatura"
+
+#: crates/oni-app/src/app.rs
+msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
+msgstr "Elige una carpeta: todas las fotos que contiene aparecen en el archivo. No se copia ni se mueve nada."
+
+#: crates/oni-app/src/app.rs
+msgid "Another Roll"
+msgstr "Otro rollo"
+
+#: crates/oni-app/src/app.rs
+msgid "You are trying to apply settings from one roll to another: results may vary."
+msgstr "Estás intentando aplicar los ajustes de un rollo a otro: los resultados pueden variar."
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "Midpoint"
+msgstr "Punto medio"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "Black"
+msgstr "Negro"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "White"
+msgstr "Blanco"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "Mid"
+msgstr "Medios"
+
+#: crates/oni-app/src/editors/levels.rs
+msgid "Highs"
+msgstr "Altas"
+
+#: crates/oni-app/src/export.rs
+msgid "16 bits per channel"
+msgstr "16 bits por canal"
+
+#: crates/oni-app/src/export.rs
+msgid "8 bits per channel"
+msgstr "8 bits por canal"
+
+#: crates/oni-app/src/export.rs
+msgid "estimating…"
+msgstr "estimando…"
+
+#: crates/oni-app/src/export.rs
+msgid "Writing…"
+msgstr "Escribiendo…"
+
+#: crates/oni-app/src/export.rs
+msgid "8-bit source: shadows may band once inverted"
+msgstr "Origen de 8 bits: las sombras pueden mostrar bandas una vez invertidas"
+
+#: crates/oni-app/src/export.rs
+msgid "This profile can no longer be read. Choose another one."
+msgstr "Este perfil ya no se puede leer. Elige otro."
+
+#: crates/oni-app/src/export.rs
+msgid "No printer or paper profile is installed yet: load one, or get your paper's below."
+msgstr "Aún no hay ningún perfil de impresora o de papel instalado: carga uno u obtén el de tu papel abajo."
+
+#: crates/oni-app/src/export.rs
+msgid "No Profile Installed"
+msgstr "Ningún perfil instalado"
+
+#: crates/oni-app/src/export.rs
+msgid "No ICC profile was found in what you chose."
+msgstr "No se encontró ningún perfil ICC en lo que elegiste."
+
+#: crates/oni-app/src/export.rs
+msgid "Exporting will replace them. The originals are not touched."
+msgstr "La exportación los reemplazará. Los originales no se tocan."
+
+#: crates/oni-app/src/export.rs
+msgid "Export {count} Photos…"
+msgstr "Exportar {count} fotos…"
+
+#: crates/oni-app/src/export.rs
+msgid "EXPORT {count} PHOTOS"
+msgstr "EXPORTAR {count} FOTOS"
+
+#: crates/oni-app/src/export.rs crates/oni-app/src/organise.rs
+msgid "Export… ({count} photos)"
+msgstr "Exportar… ({count} fotos)"
+
+#: crates/oni-app/src/export.rs
+msgid "≈ {size} GB"
+msgstr "≈ {size} GB"
+
+#: crates/oni-app/src/export.rs
+msgid "≈ {size} MB"
+msgstr "≈ {size} MB"
+
+#: crates/oni-app/src/export.rs
+msgid "Writing {progress} of {count}…"
+msgstr "Escribiendo {progress} de {count}…"
+
+#: crates/oni-app/src/export.rs
+msgid "{count} photos. You will be asked for a folder; each file takes the name beside its preview."
+msgstr "{count} fotos. Se te pedirá una carpeta; cada archivo recibe el nombre que aparece junto a su vista previa."
+
+#: crates/oni-app/src/export.rs
+msgid "{count} of {of} sources are 8-bit: their shadows may band once inverted"
+msgstr "{count} de {of} originales son de 8 bits: sus sombras pueden mostrar bandas una vez invertidas"
+
+#: crates/oni-app/src/export.rs
+msgid "{refused} left out: Custom takes RGB printer and paper profiles. CMYK profiles are not supported, and sRGB, Display P3, Adobe RGB and ProPhoto have their own tabs."
+msgstr "{refused} omitidos: Personalizado admite perfiles RGB de impresora y de papel. Los perfiles CMYK no son compatibles, y sRGB, Display P3, Adobe RGB y ProPhoto tienen sus propias pestañas."
+
+#: crates/oni-app/src/export.rs
+msgid "These images were edited in {edited}. The previews show them in {space}."
+msgstr "Estas imágenes se editaron en {edited}. Las vistas previas las muestran en {space}."
+
+#: crates/oni-app/src/export.rs
+msgid "This image was edited in {edited}. The previews show them in {space}."
+msgstr "Esta imagen se editó en {edited}. Las vistas previas la muestran en {space}."
+
+#: crates/oni-app/src/export.rs
+msgid "Exporting will replace {clashes} of the {of} files. The originals are not touched."
+msgstr "La exportación reemplazará {clashes} de los {of} archivos. Los originales no se tocan."
+
+#: crates/oni-app/src/export.rs
+msgid "Stopped after {n} file was written."
+msgid_plural "Stopped after {n} files were written."
+msgstr[0] "Detenido tras escribir {n} archivo."
+msgstr[1] "Detenido tras escribir {n} archivos."
+
+#: crates/oni-app/src/export.rs
+msgid "{n} Profile Installed"
+msgid_plural "{n} Profiles Installed"
+msgstr[0] "{n} perfil instalado"
+msgstr[1] "{n} perfiles instalados"
+
+#: crates/oni-app/src/export.rs
+msgid "{n} File Already Exists in That Folder"
+msgid_plural "{n} Files Already Exist in That Folder"
+msgstr[0] "{n} archivo ya existe en esa carpeta"
+msgstr[1] "{n} archivos ya existen en esa carpeta"
+
+#: crates/oni-app/src/flat_fields.rs
+msgid "This file could not be decoded as a picture."
+msgstr "Este archivo no se pudo decodificar como imagen."
+
+#: crates/oni-app/src/flat_fields.rs
+msgid "The mask could not be saved in the app's folder."
+msgstr "No se pudo guardar la máscara en la carpeta de la app."
+
+#: crates/oni-app/src/flat_fields.rs
+msgid "the copy came out short"
+msgstr "la copia quedó incompleta"
+
+#: crates/oni-app/src/organise.rs
+msgid "Add to Project"
+msgstr "Añadir al proyecto"
+
+#: crates/oni-app/src/organise.rs
+msgid "Remove from Project"
+msgstr "Quitar del proyecto"
+
+#: crates/oni-app/src/organise.rs
+msgid "Paste Settings ({count} photos)"
+msgstr "Pegar ajustes ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "Reset Settings ({count} photos)"
+msgstr "Restablecer ajustes ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "Reset to Default… ({count} photos)"
+msgstr "Restablecer valores predeterminados… ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "New Roll from ({count} photos)"
+msgstr "Nuevo rollo con ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "Ungroup ({count} photos)"
+msgstr "Desagrupar ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "New Project from ({count} photos)"
+msgstr "Nuevo proyecto con ({count} fotos)"
+
+#: crates/oni-app/src/organise.rs
+msgid "Show in Finder ({count} photos)"
+msgstr "Mostrar en el Finder ({count} fotos)"
+
+#: crates/oni-app/src/picking.rs
+msgid "{verb} ({count} photos)"
+msgstr "{verb} ({count} fotos)"
+
+#: crates/oni-app/src/picking.rs
+msgid "{photos} in the ONI Trash"
+msgstr "{photos} en la Papelera de ONI"
+
+#: crates/oni-app/src/picking.rs
+msgid "{n} selected"
+msgid_plural "{n} selected"
+msgstr[0] "{n} seleccionada"
+msgstr[1] "{n} seleccionadas"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "its container is unreadable"
+msgstr "su contenedor es ilegible"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "its samples are unreadable"
+msgstr "sus muestras son ilegibles"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "no image reader takes it"
+msgstr "ningún lector de imágenes lo admite"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "LibRaw cannot decode it (code {code})"
+msgstr "LibRaw no puede decodificarlo (código {code})"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "its green pass: {error}"
+msgstr "su pasada verde: {error}"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "its red pass: {error}"
+msgstr "su pasada roja: {error}"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "its blue pass: {error}"
+msgstr "su pasada azul: {error}"
+
+#: crates/oni-app/src/render/door.rs
+msgid "the render gate failed earlier"
+msgstr "la compuerta de renderizado falló antes"
+
+#: crates/oni-app/src/render/engine/view.rs
+msgid "the image is off the canvas"
+msgstr "la imagen está fuera del lienzo"
+
+#: crates/oni-app/src/render/engine/view.rs
+msgid "the render is wider than one texture"
+msgstr "el renderizado es más ancho que una textura"
+
+#: crates/oni-app/src/report.rs
+msgid "Too many reports right now. Try again in an hour."
+msgstr "Demasiados informes ahora mismo. Inténtalo de nuevo dentro de una hora."
+
+#: crates/oni-app/src/report.rs
+msgid "The report was not accepted ({code}). Try again later."
+msgstr "No se aceptó el informe ({code}). Inténtalo de nuevo más tarde."
+
+#: crates/oni-app/src/sidebar.rs
+msgid "Names only"
+msgstr "Solo nombres"
+
+#: crates/oni-app/src/sidebar.rs
+msgid "Two thumbnails a line"
+msgstr "Dos miniaturas por línea"
+
+#: crates/oni-app/src/sidebar.rs
+msgid "One thumbnail a line"
+msgstr "Una miniatura por línea"
+
+#: crates/oni-app/src/splash.rs
+msgid "V{version} Loading"
+msgstr "V{version} Cargando"
+
+#: crates/oni-app/src/updates.rs
+msgid "You’re up-to-date!"
+msgstr "¡Estás al día!"
+
+#: crates/oni-app/src/updates.rs
+msgid "UPDATE TO {version}"
+msgstr "ACTUALIZAR A {version}"
+
+#: crates/oni-app/src/updates.rs
+msgid "Download version {version} · export stays on ⌘E"
+msgstr "Descargar la versión {version} · exportar sigue en ⌘E"
+
+#: crates/oni-app/src/updates.rs
+msgid "A new version of {app} is available!"
+msgstr "¡Hay una nueva versión de {app} disponible!"
+
+#: crates/oni-app/src/updates.rs
+msgid "{app} {version} is now available—you have {current}. Would you like to download it now?"
+msgstr "{app} {version} ya está disponible (tienes la {current}). ¿Quieres descargarla ahora?"
+
+#: crates/oni-app/src/updates.rs
+msgid "{app} {version} is currently the newest version available."
+msgstr "{app} {version} es la versión más reciente disponible."
+
+#: crates/oni-app/src/updates.rs
+msgid "Update Error!"
+msgstr "¡Error de actualización!"
+
+#: crates/oni-app/src/updates.rs
+msgid "An error occurred in retrieving update information. Please try again later."
+msgstr "Se ha producido un error al obtener la información de la actualización. Inténtalo de nuevo más tarde."
+
+#: crates/oni-app/src/updates.rs
+msgid "An error occurred while downloading the update. Please try again later."
+msgstr "Se ha producido un error al descargar la actualización. Inténtalo de nuevo más tarde."
+
+#: crates/oni-app/src/updates.rs
+msgid "The update is improperly signed and could not be validated. Please try again later or contact the app developer."
+msgstr "La actualización no está firmada correctamente y no se ha podido validar. Inténtalo de nuevo más tarde o ponte en contacto con el desarrollador de la app."
+
+#: crates/oni-app/src/viewport.rs
+msgid "preview"
+msgstr "vista previa"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "This year"
+msgstr "Este año"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Your most edited photo"
+msgstr "Tu foto más editada"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Your hands knew the way"
+msgstr "Tus manos sabían el camino"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "The only thing I see is gold"
+msgstr "Solo veo oro"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Your go-to balance"
+msgstr "Tu balance de cabecera"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Balance"
+msgstr "Balance"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Your signature look"
+msgstr "Tu sello personal"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Out into the world"
+msgstr "Rumbo al mundo"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "Time in the darkroom"
+msgstr "Tiempo en el cuarto oscuro"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "spent with your negatives"
+msgstr "con tus negativos"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "See you next year"
+msgstr "Hasta el año que viene"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "on film."
+msgstr "en película."
+
+#: crates/oni-app/src/wrapped.rs
+msgid "{count} gestures"
+msgstr "{count} gestos"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "{name} — overcooked?"
+msgstr "{name} — ¿te pasaste?"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "pressed {count} times"
+msgstr "pulsado {count} veces"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "laid on {count} photos"
+msgstr "aplicado a {count} fotos"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "{exports}, and {count} {rolls}"
+msgstr "{exports} y {count} {rolls}"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "negative brought back to life"
+msgid_plural "negatives brought back to life"
+msgstr[0] "negativo devuelto a la vida"
+msgstr[1] "negativos devueltos a la vida"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "photo earned its gold"
+msgid_plural "photos earned their gold"
+msgstr[0] "foto se ganó su oro"
+msgstr[1] "fotos se ganaron su oro"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "export"
+msgid_plural "exports"
+msgstr[0] "exportación"
+msgstr[1] "exportaciones"
+
+#: crates/oni-app/src/wrapped.rs
+msgid "roll made"
+msgid_plural "rolls made"
+msgstr[0] "rollo creado"
+msgstr[1] "rollos creados"
+
+#: crates/oni-core/src/balance.rs
+msgid "{name}: nothing to balance. The file could not be read, or one of its channels is too flat to place points in."
+msgstr "{name}: nada que equilibrar. No se pudo leer el archivo, o uno de sus canales es demasiado plano para colocar puntos."
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Not carried"
+msgstr "No incluido"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Copied WB (gains + per-channel levels)"
+msgstr "Balance de blancos copiado (ganancias + niveles por canal)"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Automatic WB (Temperature, Tint)"
+msgstr "Balance de blancos automático (Temperatura, Matiz)"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "empty"
+msgstr "vacío"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "{list} and {last}"
+msgstr "{list} y {last}"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Color (Temperature, Tint)"
+msgstr "Color (Temperatura, Matiz)"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Color Density"
+msgstr "Densidad de color"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Chroma Decompression"
+msgstr "Descompresión de croma"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Scanner Keypad"
+msgstr "Teclado del escáner"
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Not carried leaves every photo its own balance. Copied WB pastes this photo's gains and per-channel levels as numbers. Automatic WB re-measures each photo it lands on."
+msgstr "No incluido deja a cada foto su propio balance. Balance de blancos copiado pega las ganancias y los niveles por canal de esta foto como números. Balance de blancos automático vuelve a medir cada foto en la que se aplica."
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "A preset never carries crop, straightening, rotation or the conversion mode."
+msgstr "Un preajuste nunca incluye el recorte, el enderezado, la rotación ni el modo de conversión."
+
+#: crates/oni-core/src/preset_parameters.rs
+msgid "Carries nothing — applying it would change no setting."
+msgstr "No incluye nada: aplicarlo no cambiaría ningún ajuste."
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Slate"
+msgstr "Pizarra"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Rust"
+msgstr "Óxido"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Amber"
+msgstr "Ámbar"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Moss"
+msgstr "Musgo"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Teal"
+msgstr "Verde azulado"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Indigo"
+msgstr "Índigo"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Plum"
+msgstr "Ciruela"
+
+#: crates/oni-core/src/presets/tint.rs
+msgid "Rose"
+msgstr "Rosa"
+
+#: crates/oni-core/src/store/oni_trash.rs
+msgid "Restore {n} Photo"
+msgid_plural "Restore {n} Photos"
+msgstr[0] "Restaurar {n} foto"
+msgstr[1] "Restaurar {n} fotos"
+
+#: crates/oni-core/src/store/opening.rs
+msgid "The original cannot be found; its disk may be disconnected. The photo opens read-only, and nothing is saved."
+msgstr "No se encuentra el original; puede que su disco esté desconectado. La foto se abre en solo lectura y no se guarda nada."
+
+#: crates/oni-core/src/store/paste.rs
+msgid "Paste settings"
+msgid_plural "Paste settings to {n} photos"
+msgstr[0] "Pegar ajustes"
+msgstr[1] "Pegar ajustes en {n} fotos"
+
+#: crates/oni-core/src/store/paste.rs
+msgid "Paste framing"
+msgid_plural "Paste framing to {n} photos"
+msgstr[0] "Pegar encuadre"
+msgstr[1] "Pegar encuadre en {n} fotos"
+
+#: crates/oni-core/src/store/roll.rs
+msgid "Measure the roll"
+msgid_plural "Measure the roll of {n} photos"
+msgstr[0] "Medir el rollo"
+msgstr[1] "Medir el rollo de {n} fotos"
+
+#: crates/oni-core/src/store/roll.rs
+msgid "Reset to Default · {n} photo"
+msgid_plural "Reset to Default · {n} photos"
+msgstr[0] "Restablecer valores predeterminados · {n} foto"
+msgstr[1] "Restablecer valores predeterminados · {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Reset {n} photo"
+msgid_plural "Reset {n} photos"
+msgstr[0] "Restablecer {n} foto"
+msgstr[1] "Restablecer {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Mode on {n} photo"
+msgid_plural "Mode on {n} photos"
+msgstr[0] "Modo en {n} foto"
+msgstr[1] "Modo en {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Apply “{name}”"
+msgid_plural "Apply “{name}” to {n} photos"
+msgstr[0] "Aplicar “{name}”"
+msgstr[1] "Aplicar “{name}” a {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Balance {n} photo"
+msgid_plural "Balance {n} photos"
+msgstr[0] "Balance de {n} foto"
+msgstr[1] "Balance de {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Flat-field on {n} photo"
+msgid_plural "Flat-field on {n} photos"
+msgstr[0] "Flat-field en {n} foto"
+msgstr[1] "Flat-field en {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Join the roll"
+msgid_plural "Join the roll with {n} photos"
+msgstr[0] "Unir al rollo"
+msgstr[1] "Unir al rollo con {n} fotos"
+
+#: crates/oni-library/src/navigator.rs
+msgid "Computer"
+msgstr "Ordenador"
+
+#: crates/oni-library/src/project.rs
+msgid "It holds no photos. Nothing else is affected."
+msgstr "No contiene fotos. No se ve afectado nada más."
+
+#: crates/oni-library/src/project.rs
+msgid "Delete “{name}”?"
+msgstr "¿Eliminar “{name}”?"
+
+#: crates/oni-library/src/project.rs
+msgid "It stops grouping its {n} photo. The photos, their settings and every other project or roll they belong to are untouched."
+msgid_plural "It stops grouping its {n} photos. The photos, their settings and every other project or roll they belong to are untouched."
+msgstr[0] "Deja de agrupar su única foto. La foto, sus ajustes y cualquier otro proyecto o rollo al que pertenezca no se modifican."
+msgstr[1] "Deja de agrupar sus {n} fotos. Las fotos, sus ajustes y cualquier otro proyecto o rollo al que pertenezcan no se modifican."
+
+#: crates/oni-library/src/trash.rs
+msgid "{head}: a newer version of ONI wrote their settings, and this one never rewrites them."
+msgstr "{head}: una versión más reciente de ONI escribió sus ajustes, y esta nunca los reescribe."
+
+#: crates/oni-library/src/trash.rs
+msgid "Some photos were not restored: {failure}"
+msgstr "Algunas fotos no se restauraron: {failure}"
+
+#: crates/oni-library/src/trash.rs
+msgid "Some photos were not moved to the ONI Trash: {failure}"
+msgstr "Algunas fotos no se movieron a la Papelera de ONI: {failure}"
+
+#: crates/oni-library/src/trash.rs
+msgid "One photo was not restored"
+msgid_plural "{n} photos were not restored"
+msgstr[0] "Una foto no se restauró"
+msgstr[1] "{n} fotos no se restauraron"
+
+#: crates/oni-library/src/trash.rs
+msgid "One photo was not moved to the ONI Trash"
+msgid_plural "{n} photos were not moved to the ONI Trash"
+msgstr[0] "Una foto no se movió a la Papelera de ONI"
+msgstr[1] "{n} fotos no se movieron a la Papelera de ONI"
+
+#: crates/oni-export/src/lib.rs
+msgid "The RAW file could not be decoded."
+msgstr "No se pudo decodificar el archivo RAW."
+
+#: crates/oni-export/src/lib.rs
+msgid "Full-resolution rendering failed."
+msgstr "Ha fallado el renderizado a resolución completa."
+
+#: crates/oni-export/src/lib.rs
+msgid "The ICC profile chosen for the export can no longer be read."
+msgstr "El perfil ICC elegido para la exportación ya no se puede leer."
+
+#: crates/oni-export/src/lib.rs
+msgid "The file could not be written."
+msgstr "No se pudo escribir el archivo."
+
+#: crates/oni-export/src/lib.rs
+msgid "Exporting there would overwrite the original scan. Pick another folder, or change the naming pattern so the output cannot land on its own source."
+msgstr "Exportar ahí sobrescribiría el escaneo original. Elige otra carpeta o cambia el patrón de nombres para que el resultado no pueda caer sobre su propio original."
