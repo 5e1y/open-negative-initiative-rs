@@ -74,7 +74,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     assert!(panel.get_separation_shown(), "Pro's Roll tab holds Dye Separation");
 
     // The bar's Scanner tab: the face, one undo step, remembered.
-    bar.invoke_act("face-scanner".into());
+    bar.invoke_act(oni_app::Act::FaceScanner);
     rig.pump();
     assert!(lab.get_shown() && bar.get_face() == 1);
     assert_eq!(settings().face, Face::Scanner);
@@ -112,7 +112,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     lab.invoke_reset_group(1);
     rig.pump();
     assert_eq!(settings().scanner, ScannerClicks::new(0, 0, 0, 0, 4));
-    w.global::<App>().invoke_menu("undo".into());
+    w.global::<App>().invoke_menu(oni_app::Act::Undo);
     rig.pump();
     assert_eq!(settings().scanner, ScannerClicks::new(0, 3, -2, 0, 4), "the block's reset is one undo step");
 
@@ -166,10 +166,10 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     // Space takes Pro's editor to the gallery and back; View > Scanner Emulator toggles the face.
     rig.key(" ");
     assert!(w.global::<App>().get_gallery());
-    w.global::<App>().invoke_menu("toggle-mode".into());
+    w.global::<App>().invoke_menu(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(!w.global::<App>().get_gallery());
-    w.global::<App>().invoke_menu("emulator".into());
+    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
     rig.pump();
     assert!(lab.get_shown());
     // `columnKeys`: a bare Space leaves the Lab for the gallery; the menu item is lit beside a photo only.
@@ -177,7 +177,7 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
     rig.key(" ");
     assert!(w.global::<App>().get_gallery() && !lab.get_shown(), "Space leaves the Lab, which is not on screen over the gallery");
     assert!(!w.global::<oni_app::Menus>().get_live().emulator, "twin: the item is dark in the gallery");
-    w.global::<App>().invoke_menu("emulator".into());
+    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
     rig.pump();
     assert_eq!(bar.get_face(), 1, "the menu item is off in the gallery, the face kept");
     drop(first);

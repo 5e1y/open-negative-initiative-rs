@@ -239,7 +239,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 let settled = !matches!(mode, Mode::Settled | Mode::Long) || ctl.state.borrow().loaded() >= ctl.state.borrow().photos();
                 if ctl.state.borrow().renders() >= 1 && settled {
                     if mode == Mode::Compare && ctl.state.borrow().split().is_none() {
-                        ctl.act("compare");
+                        ctl.act(crate::Act::Compare);
                         return;
                     }
                     if mode == Mode::Compare && ctl.state.borrow().befores() == 0 {
@@ -312,7 +312,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     let s = ctl.state.borrow();
                     report.push_str(&format!("\ncompare: {} before rendered over the drag, split at {:.2}", s.befores(), s.split().unwrap_or(-1.0)));
                 }
-                ctl.act("undo");
+                ctl.act(crate::Act::Undo);
                 ctl.flush();
                 finish(report);
             }

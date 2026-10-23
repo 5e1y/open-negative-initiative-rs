@@ -34,9 +34,9 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     step.set(0);
                     return;
                 }
-                ctl.act("correction");
+                ctl.act(crate::Act::Correction);
                 for _ in 0..if strokes() > 1 { 40 } else { 2 } {
-                    ctl.act("bigger-brush");
+                    ctl.act(crate::Act::BiggerBrush);
                 }
             }
             1 => {
@@ -95,7 +95,7 @@ pub(super) fn dedust(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
                 let gone = id.is_some_and(|id| !crate::patches::file(&crate::patches::caches(), id).exists());
                 lines.borrow_mut().push(format!("removed: {} corrections left, patch gone {gone}", corrections().len()));
-                ctl.act("correction");
+                ctl.act(crate::Act::Correction);
                 lines.borrow_mut().push(format!("left De-dust: painting {}", c.get_painting()));
                 ctl.flush();
                 finish(timer, &done, &lines, "done");

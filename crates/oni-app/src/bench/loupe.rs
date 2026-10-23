@@ -66,7 +66,7 @@ pub(super) fn loupe(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     if ctl.state.borrow().store().get(Field::SharpenAmount) == start.get() {
                         break;
                     }
-                    ctl.act("undo");
+                    ctl.act(crate::Act::Undo);
                 }
                 let back = ctl.state.borrow().store().get(Field::SharpenAmount) == start.get();
                 lines.borrow_mut().push(format!("undone to the amount it started from: {back}"));

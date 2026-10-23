@@ -8,9 +8,9 @@ use std::sync::atomic::Ordering;
 impl Ctl {
     pub(super) fn wire_settings(me: &Rc<Self>, window: &MainWindow) {
         let p = me.clone();
-        window.global::<AppSettings>().on_flip(move |action| p.act(&action));
+        window.global::<AppSettings>().on_flip(move |action| p.act(action));
         let p = me.clone();
-        window.global::<AppSettings>().on_close(move || p.act("close-settings"));
+        window.global::<AppSettings>().on_close(move || p.act(crate::Act::CloseSettings));
         let p = me.clone();
         window.global::<crate::Clicks>().on_press(move || {
             if !p.state.borrow().muted {

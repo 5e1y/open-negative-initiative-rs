@@ -330,13 +330,13 @@ impl Ctl {
         let p = me.clone();
         lib.on_menu_chosen(move |i| p.menu_chosen(index(i)));
         let p = me.clone();
-        lib.on_empty_acted(move || p.act("open"));
+        lib.on_empty_acted(move || p.act(crate::Act::Open));
         let p = me.clone();
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
         let p = me.clone();
-        lib.on_select_roll_type(move || p.act("select-roll-type"));
+        lib.on_select_roll_type(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();
         lib.on_shot_date_committed(move |m, d, y| p.shot_date_committed(&m, &d, &y));
         let p = me.clone();

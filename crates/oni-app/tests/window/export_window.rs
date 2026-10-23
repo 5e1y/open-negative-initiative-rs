@@ -299,7 +299,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert!(prefs["exportSettings"].as_str().unwrap().contains("tiff16"), "{}", prefs["exportSettings"]);
 
     // A batch from the gallery: the selection in its order, a folder, then the clash.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     assert!(w.global::<App>().get_gallery());
     let lib = w.global::<Library>();
     lib.invoke_tile_clicked(0, false, false);
@@ -307,7 +307,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(e.get_menu_title(), "Export 2 Photos…");
     assert_eq!(w.global::<Bar>().get_export_title(), "EXPORT 2 PHOTOS");
     assert_eq!(label::context(2), "Export… (2 photos)");
-    ctl.act("export");
+    ctl.act(oni_app::Act::Export);
     assert!(e.get_shown());
     assert_eq!(e.get_key_title(), "EXPORT 2 PHOTOS");
     assert_eq!(e.get_menu_title(), "Export 2 Photos…");

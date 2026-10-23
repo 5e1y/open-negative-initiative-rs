@@ -16,7 +16,7 @@ use oni_settings::geometry::{self as geom, Framing as Remembered};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
-use crate::{App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
+use crate::{Act, App, Bar, Canvas, Confirm, Heading, Mark, Library, MainWindow, MenuLive, MenuTitles, Menus, Pairing, PanelState, Plots, Store as StoreGlobal, Tile, TreeRow};
 use oni_core::{Command, PasteCheck, Surface};
 use oni_settings::ConversionMode;
 use crate::link::Outward;

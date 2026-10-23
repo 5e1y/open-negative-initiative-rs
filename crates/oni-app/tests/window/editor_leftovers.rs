@@ -105,12 +105,12 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     panel.invoke_fold_changed("Curves".into(), false);
 
     // New Roll from Selection: B moved into a dated roll, whose name the column beside the photo asks.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     lib.invoke_tile_clicked(1, false, false);
     rig.pump();
-    ctl.act("new-roll");
+    ctl.act(oni_app::Act::NewRoll);
     let scans = PathBuf::from(oni_library::paths::canonical(&folder));
     let dated = oni_library::roll_folder::dated(oni_settings::Date::now());
     assert!(scans.join(&dated).join("B.tif").exists(), "B moved into the roll");
@@ -120,7 +120,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
         (0..rows.row_count()).find(|&i| rows.row_data(i).is_some_and(|r| r.renaming))
     };
     assert_eq!(renaming(), None, "the gallery's column leaves the request waiting");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     let row = renaming().expect("the roll's row is named in place beside the photo");
     assert_eq!(lib.get_rows().row_data(row).unwrap().title.as_str(), dated);
@@ -138,7 +138,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     w.global::<oni_app::Store>().invoke_step(Field::Exposure.index(), 5);
     rig.pump();
     let donor = ctl.state.borrow().store().get(Field::Exposure);
-    ctl.act("copy");
+    ctl.act(oni_app::Act::Copy);
     let seen = board();
     let text = String::from_utf8(seen.data(pasteboard::SETTINGS).expect("the settings on the board")).unwrap();
     let decoded = oni_settings::codec::decode(text.as_bytes()).unwrap().settings;
@@ -162,7 +162,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     assert!((exposure() - before - 10.0 / span as f32).abs() < 1e-5, "a wheel line is ten points, not Slint's sixty");
     std::thread::sleep(Duration::from_millis(250));
     rig.pump();
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.settle();
     assert!((exposure() - rest).abs() < 1e-5, "the three events were one step");
     // The hand stays raised until 0.16 s pass without an event; each event restarts that wait.
@@ -178,7 +178,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     std::thread::sleep(Duration::from_millis(150));
     rig.pump();
     assert!(!held(), "past the idle window");
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.settle();
 
     // A relaunch: a fresh store on the same board pastes the copy onto B.
@@ -206,7 +206,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
         }
         let before = ctl.state.borrow().store().get(Field::Exposure);
         assert!((before - donor).abs() > 1e-3, "B starts elsewhere");
-        ctl.act("paste");
+        ctl.act(oni_app::Act::Paste);
         rig.pump();
         assert!((ctl.state.borrow().store().get(Field::Exposure) - donor).abs() < 1e-6, "the copy crossed the relaunch");
     }

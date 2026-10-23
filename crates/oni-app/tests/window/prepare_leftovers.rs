@@ -60,7 +60,7 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     let prepare = |name: &str, frames: usize| {
         lib.invoke_tile_clicked(index(name), false, false);
         rig.pump();
-        w.global::<Bar>().invoke_act("prepare-roll".into());
+        w.global::<Bar>().invoke_act(oni_app::Act::PrepareRoll);
         rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == frames);
         rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
     };

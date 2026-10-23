@@ -1,4 +1,5 @@
 // The Settings sheet the header's gear opens: the app's own choices, kept in the preferences file.
+import { Act } from "act.slint";
 import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section } from "ds/ds.slint";
 
 export global AppSettings {
@@ -10,7 +11,7 @@ export global AppSettings {
     in property <string> frontier-look;
     in property <bool> frontier-hand;
     // A choice by its preference's action: "keep-zoom", "toggle-sound" or a Frontier key's.
-    callback flip(string);
+    callback flip(Act);
     callback close();
 }
 
@@ -27,13 +28,13 @@ export component SettingsSheet inherits Sheet {
         ToggleRow {
             label: "Keep the zoom from one photo to the next";
             on: AppSettings.keep-zoom;
-            toggled => { AppSettings.flip("keep-zoom"); }
+            toggled => { AppSettings.flip(Act.keep-zoom); }
         }
         Note { text: "Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."; }
         ToggleRow {
             label: "Decode RAW files at full resolution";
             on: AppSettings.full-decode;
-            toggled => { AppSettings.flip("full-decode"); }
+            toggled => { AppSettings.flip(Act.full-decode); }
         }
         Note { text: "Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."; }
     }
@@ -44,9 +45,9 @@ export component SettingsSheet inherits Sheet {
         Note { text: AppSettings.frontier-look; }
         Note { text: "A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."; }
         ButtonGroup {
-            Button { text: "EXPORT…"; clicked => { AppSettings.flip("frontier-export"); } }
-            Button { text: "USE A FILE…"; clicked => { AppSettings.flip("frontier-choose"); } }
-            Button { text: "MEASURED"; enabled: AppSettings.frontier-hand; clicked => { AppSettings.flip("frontier-measured"); } }
+            Button { text: "EXPORT…"; clicked => { AppSettings.flip(Act.frontier-export); } }
+            Button { text: "USE A FILE…"; clicked => { AppSettings.flip(Act.frontier-choose); } }
+            Button { text: "MEASURED"; enabled: AppSettings.frontier-hand; clicked => { AppSettings.flip(Act.frontier-measured); } }
         }
     }
     Section {
@@ -56,7 +57,7 @@ export component SettingsSheet inherits Sheet {
         ToggleRow {
             label: "Key clicks";
             on: AppSettings.clicks;
-            toggled => { AppSettings.flip("toggle-sound"); }
+            toggled => { AppSettings.flip(Act.toggle-sound); }
         }
     }
     SheetKeys {

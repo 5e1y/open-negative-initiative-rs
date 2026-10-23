@@ -98,7 +98,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     assert_eq!((panel.get_roll_measured(), panel.get_roll_unmeasured()), (4, 0));
     rig.chord(slint::platform::Key::Control, "g");
     rest();
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!(settings_of(&canonical("C.tif")).roll_reference.is_none(), "one undo takes the join back");
 
@@ -106,13 +106,13 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     lib.invoke_tile_clicked(tile("B"), false, false);
     rig.pump();
     assert!(menus.get_live().reset_to_default);
-    ctl.act("reset-to-default");
+    ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
     assert_eq!(w.global::<Confirm>().get_title().as_str(), "Reset 2 Photos to Default?");
     assert_eq!(w.global::<Confirm>().get_key().as_str(), "RESET 2 PHOTOS");
     rig.key("\u{1b}");
     assert!(settings_of(&canonical("A.tif")).roll_reference.is_some(), "twin: Cancel resets nothing");
-    ctl.act("reset-to-default");
+    ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the reach", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
     rig.key("\r");
     assert!(w.global::<Confirm>().get_shown(), "Reset is destructive: Return does not reach it");
@@ -122,7 +122,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     for name in ["A.tif", "B.tif"] {
         rig.until(&format!("{name} reset"), Duration::from_secs(5), || settings_of(&canonical(name)).roll_reference.is_none());
     }
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     rig.until("the roll back", Duration::from_secs(5), || settings_of(&canonical("A.tif")).roll_reference.is_some());
     rest();
@@ -133,7 +133,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.pump();
     assert_eq!(panel.get_balance_note().as_str(), "Acts on 2 photos.");
     let before = settings_of(&canonical("C.tif"));
-    ctl.act("auto-balance");
+    ctl.act(oni_app::Act::AutoBalance);
     rig.pump();
     let choice = w.global::<Choice>();
     assert!(choice.get_shown());
@@ -143,7 +143,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     rig.key("\u{1b}");
     assert!(!choice.get_shown() && !panel.get_balancing());
     assert_eq!(settings_of(&canonical("C.tif")), before, "twin: Cancel balances nothing");
-    ctl.act("auto-balance");
+    ctl.act(oni_app::Act::AutoBalance);
     rig.pump();
     choice.invoke_chosen(0);
     rig.until("the run", Duration::from_secs(120), || !panel.get_balancing());

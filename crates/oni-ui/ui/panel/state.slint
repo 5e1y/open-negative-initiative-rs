@@ -1,4 +1,5 @@
 // The panel's globals: what Rust publishes to the tabs and the callbacks they answer with.
+import { Act } from "../act.slint";
 import { PlotStyle, ShellStyle, LabCell, MenuLine } from "../ds/ds.slint";
 
 // What changes on its own rhythm, published apart so a tick touches no panel binding.
@@ -73,7 +74,6 @@ export global PanelState {
     // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
     in property <bool> separation-shown: true;
     callback auto-balance();
-    callback pick(string);
     callback tab-picked(int);
     // `RollScope`: 0 never measured, 1 measured, 2 its frames still being found.
     in property <int> roll-state: 1;
@@ -127,7 +127,7 @@ export global Framing {
     in property <bool> can-paste-window;
     callback ratio-picked(int);
     callback portrait-toggled(bool);
-    callback act(string);
+    callback act(Act);
 }
 
 // One correction of the open frame, as `CorrectionsPanel` lists it.

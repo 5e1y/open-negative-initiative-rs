@@ -39,15 +39,15 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
     let first = shell(&support);
     assert!(first.window.global::<App>().get_gallery());
     assert!(first.window.global::<Menus>().get_live().smaller, "the film rung has a denser one");
-    first.ctl.act("smaller");
+    first.ctl.act(oni_app::Act::Smaller);
     // The header's gear opens the sheet; its switches are the menu's own preferences.
-    first.window.global::<Bar>().invoke_act("settings".into());
+    first.window.global::<Bar>().invoke_act(oni_app::Act::Settings);
     rig.pump();
     let sheet = first.window.global::<AppSettings>();
     assert!(sheet.get_shown() && first.window.get_sheet_shown());
     assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (false, false), "silent and fitted by default");
-    sheet.invoke_flip("toggle-sound".into());
-    sheet.invoke_flip("keep-zoom".into());
+    sheet.invoke_flip(oni_app::Act::ToggleSound);
+    sheet.invoke_flip(oni_app::Act::KeepZoom);
     rig.pump();
     assert_eq!((sheet.get_clicks(), sheet.get_keep_zoom()), (true, true));
     assert_eq!(first.window.global::<Menus>().get_titles().sound.as_str(), "Mute Key Clicks");
@@ -62,7 +62,7 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
     let menus = second.window.global::<Menus>();
     assert!(!menus.get_live().smaller, "the next session opens on the dense rung");
     assert_eq!(menus.get_titles().sound.as_str(), "Mute Key Clicks");
-    second.ctl.act("settings");
+    second.ctl.act(oni_app::Act::Settings);
     assert!(second.window.global::<AppSettings>().get_clicks(), "the sheet reads the kept choice");
     drop(second);
 

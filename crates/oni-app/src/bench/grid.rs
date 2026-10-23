@@ -34,7 +34,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if ctl.state.borrow().renders() < 1 {
                     return;
                 }
-                ctl.act("toggle-mode");
+                ctl.act(crate::Act::ToggleMode);
                 let lib = w.global::<crate::Library>();
                 let mut tiles = crate::app::tiles(&w);
                 tiles.sort_by_key(|t| t.index);
@@ -91,7 +91,7 @@ pub(super) fn grid(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 // The interface's own pace over the drag: each frame drawn, its gaps and spikes.
                 let text = format!("{text}\n{}", ctl.state.borrow().notches().cadence(notched.get()));
                 let text = format!("{text}\n{}", frames_since(&drawn.borrow(), dragged.get().unwrap_or_else(Instant::now)));
-                ctl.act("undo");
+                ctl.act(crate::Act::Undo);
                 ctl.flush();
                 held.stop();
                 if let Some(done) = done.borrow_mut().take() {

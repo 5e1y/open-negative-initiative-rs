@@ -70,7 +70,7 @@ pub(crate) fn the_key_balances_the_open_frame_off_the_interface_thread_and_one_u
     assert!((0..3).all(|c| (laid[c] - filters[c] * after.balance_strength).abs() < 1e-6), "{laid:?} for {filters:?}");
     assert_eq!(after.roll_reference, before.roll_reference, "a frame on its roll keeps its reference");
 
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert_eq!(*ctl.state.borrow().store().settings(), before, "one undo takes the press back whole");
     let _ = std::fs::remove_dir_all(folder.parent().unwrap());

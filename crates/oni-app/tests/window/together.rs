@@ -97,17 +97,17 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let set = ctl.state.borrow().store().settings().print.exposure;
     rig.until("the others written", Duration::from_secs(10), || ["A", "C"].iter().all(|n| (exposure(&path(n)) - set).abs() < 1e-6));
     assert_eq!(exposure(&path("D")), left_out, "twin: a frame not selected keeps its own");
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     let back = ctl.state.borrow().store().settings().print.exposure;
     // Auto White Balance over frames together lays their average on all of them, without asking.
     let filters = |p: &Path| sidecar::read(p, false, true).ok().and_then(|l| l.settings.balance_filters);
-    ctl.act("auto-balance");
+    ctl.act(oni_app::Act::AutoBalance);
     rig.until("the balance landed", Duration::from_secs(60), || filters(&path("A")).is_some() && filters(&path("C")).is_some());
     let lead = ctl.state.borrow().store().settings().balance_filters;
     assert!(lead.is_some() && filters(&path("A")) == lead && filters(&path("C")) == lead, "{lead:?}, {:?}", filters(&path("A")));
     assert_eq!(filters(&path("D")), None, "twin: a frame left out keeps its own");
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!((back - set).abs() > 1e-6, "the drag was undone");
     for n in ["A", "C"] {
@@ -115,7 +115,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     }
 
     // Back to the gallery and into one frame: the grid gives the canvas back to that frame alone.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     lib.invoke_tile_clicked(tile("D"), false, false);
     lib.invoke_tile_opened(tile("D"));

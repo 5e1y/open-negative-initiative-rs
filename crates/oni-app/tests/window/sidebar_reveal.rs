@@ -184,7 +184,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
     let trip = || project_rows().into_iter().position(|r| r.kind == 1 && r.title == "Trip").expect("Trip has a row");
     assert!(!project_rows()[trip()].expanded, "Trip starts folded");
     assert_eq!(lib.get_project_viewport_y(), 0.0);
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     open_tile(&rig, w, "B05");
     rig.until("B05 open", Duration::from_secs(30), || open_name(&ctl) == "B05");
     rig.drawn();

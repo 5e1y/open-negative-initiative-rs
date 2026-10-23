@@ -48,7 +48,7 @@ pub(crate) fn a_point_dragged_on_the_curves_reaches_the_store_as_one_step() {
     assert!(g.get_curves_modified() && g.get_curve_marked().row_data(0) == Some(true), "the block shows its reset");
 
     // One undo takes the press and its drag back; a second finds nothing of theirs.
-    w.global::<Bar>().invoke_act("undo".into());
+    w.global::<Bar>().invoke_act(oni_app::Act::Undo);
     rig.settle();
     assert!(curves().is_neutral(), "one step took the whole drag back");
     assert!(!ctl.state.borrow().store().can_undo(), "the drag was a single step");
@@ -72,7 +72,7 @@ pub(crate) fn a_double_click_on_a_point_removes_it_with_its_move_as_one_step() {
     // A double click on a point: the second press lands inside the settle delay, so the move the
     // first made and the removal are one step, and one undo puts the point back where it stood.
     let undo = || {
-        w.global::<Bar>().invoke_act("undo".into());
+        w.global::<Bar>().invoke_act(oni_app::Act::Undo);
         rig.settle();
     };
     press(&rig, start);

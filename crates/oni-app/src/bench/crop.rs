@@ -40,11 +40,11 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             }
             2 => {
                 note("1:1");
-                f.invoke_act("rotate".into());
+                f.invoke_act(crate::Act::Rotate);
             }
             3 => {
                 note("rotated");
-                f.invoke_act("mirror".into());
+                f.invoke_act(crate::Act::Mirror);
             }
             4 => {
                 note("mirrored");
@@ -76,7 +76,7 @@ pub(super) fn crop(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 g.invoke_release(field);
             }
             6 => note("straightened"),
-            7..=12 => ctl.act("undo"),
+            7..=12 => ctl.act(crate::Act::Undo),
             13 => {
                 note("undone");
                 let back = start.borrow().clone() == Some(geometry());

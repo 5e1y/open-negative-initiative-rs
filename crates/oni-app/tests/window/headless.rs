@@ -237,7 +237,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     assert_eq!(selected, vec![5]);
 
     // A Scanner-face frame opened on the Scanner face renders on the canvas, through the Frontier's table.
-    w.global::<oni_app::Bar>().invoke_act("face-scanner".into());
+    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FaceScanner);
     let scanner = tiles
         .iter()
         .find(|t| oni_settings::sidecar::read(&folder.join(format!("{}.NEF", t.caption)), true, true).unwrap().settings.face == oni_settings::Face::Scanner)
@@ -252,7 +252,7 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     rig.settle();
     println!("shot {}", rig.shot("editor-scanner-face").display());
     assert_eq!(ctl.state.borrow().store().settings().face, oni_settings::Face::Scanner);
-    w.global::<oni_app::Bar>().invoke_act("face-pro".into());
+    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::FacePro);
 
     // The bench: sixty notches scripted on Exposure, their centiles, and the drag undone.
     let before = ctl.state.borrow().store().get(Field::Exposure);

@@ -148,9 +148,9 @@ impl Ctl {
         });
 
         let p = me.clone();
-        window.global::<Bar>().on_act(move |a| p.act(&a));
+        window.global::<Bar>().on_act(move |a| p.act(a));
         let p = me.clone();
-        window.global::<App>().on_menu(move |a| p.act(&a));
+        window.global::<App>().on_menu(move |a| p.act(a));
         let p = me.clone();
         window.global::<App>().on_sheet_changed(move || p.publish_menus());
         let p = me.clone();
@@ -163,18 +163,16 @@ impl Ctl {
         me.adopt_remembered_face();
         me.adopt_frontier_look();
         let p = me.clone();
-        window.global::<Pairing>().on_close(move || p.act("close-pairing"));
+        window.global::<Pairing>().on_close(move || p.act(crate::Act::ClosePairing));
         let p = me.clone();
-        window.global::<Pairing>().on_forget(move || p.act("forget-phones"));
+        window.global::<Pairing>().on_forget(move || p.act(crate::Act::ForgetPhones));
         let p = me.clone();
         window.global::<crate::Notice>().on_close(move || p.neutral_decode_notice_dismissed());
         let p = me.clone();
         window.global::<PanelState>().on_auto_balance(move || {
             p.journal_balanced();
-            p.act("auto-balance");
+            p.act(crate::Act::AutoBalance);
         });
-        let p = me.clone();
-        window.global::<PanelState>().on_pick(move |what| p.act(&what));
         let p = me.clone();
         window.global::<PanelState>().on_film_type_picked(move |i| {
             p.film_type(i);
@@ -283,7 +281,7 @@ impl Ctl {
         let p = me.clone();
         f.on_portrait_toggled(move |on| p.choose_framing(|g| g.portrait = on));
         let p = me.clone();
-        f.on_act(move |action| p.framing_act(&action));
+        f.on_act(move |action| p.act(action));
         let p = me.clone();
         window.global::<PanelState>().on_tab_picked(move |tab| p.tab_opened(tab));
         let c = window.global::<Canvas>();

@@ -4,11 +4,11 @@ use super::*;
 
 impl Ctl {
     /// Menu, bar and ⌘E: on the surface they confirm, everywhere else they open it.
-    pub(in crate::app) fn export_act(self: &Rc<Self>, action: &str) {
-        match action {
-            "export" if self.export.borrow().shown => self.run_export(),
-            "export" => self.export_now(),
-            _ => {}
+    pub(in crate::app) fn export_act(self: &Rc<Self>) {
+        if self.export.borrow().shown {
+            self.run_export();
+        } else {
+            self.export_now();
         }
     }
 

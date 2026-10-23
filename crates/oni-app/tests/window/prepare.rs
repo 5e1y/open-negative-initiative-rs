@@ -73,7 +73,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     rig.pump();
     assert!(menus.get_live().measure_roll && w.global::<Bar>().get_can_prepare());
     assert!(menus.get_live().export && menus.get_live().medal, "twin: in the gallery the selection's items are live");
-    w.global::<Bar>().invoke_act("prepare-roll".into());
+    w.global::<Bar>().invoke_act(oni_app::Act::PrepareRoll);
     rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && names() == 3);
     rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
     assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, measured on another roll, is left out.");
@@ -170,7 +170,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     // B picked brings the same roll back where it stood.
     lib.invoke_tile_clicked(tile("B"), false, false);
     rig.pump();
-    ctl.act("prepare-roll");
+    ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll resumed", Duration::from_secs(10), || p.get_shown() && p.get_step() == 4);
     rig.until("every frame placed", Duration::from_secs(10), || p.get_action_title() == "MEASURE 2 FRAMES");
     assert!(p.get_cells().row_data(2).unwrap().flagged);
@@ -189,10 +189,10 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(["B.tif", "C.tif"].iter().all(|n| loaded(&canonical(n)).roll_draft.is_none()), "a measure clears the draft");
     assert_eq!(ctl.state.borrow().store().settings().roll_reference.as_ref().map(|r| r.id), ids[0], "A, open, landed in memory");
     assert!(loaded(&canonical("D.tif")).settings.roll_reference.map(|r| r.id) != ids[0], "twin: D keeps its own roll");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Measure the roll of 3 photos");
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!(loaded(&canonical("B.tif")).settings.roll_reference.is_none(), "one undo takes the whole measure back");
     rig.until("A back at rest", Duration::from_secs(5), || loaded(&canonical("A.tif")).settings.roll_reference.is_none());

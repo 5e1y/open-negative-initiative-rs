@@ -49,7 +49,7 @@ fn a_bare_key_answers_only_while_the_window_holds_the_focus() {
     let keys = bare_keys(&app);
     assert!(keys.len() >= 6 && keys.iter().all(|(_, guarded)| *guarded), "{keys:?}");
     // Twin: a medal line written without the guard is caught.
-    let open = app.replace("enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(\"medal-2\"); }", "enabled: Menus.live.medal; activated => { App.menu(\"medal-2\"); }");
+    let open = app.replace("enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-silver); }", "enabled: Menus.live.medal; activated => { App.menu(Act.medal-silver); }");
     assert_ne!(open, app);
     assert!(bare_keys(&open).iter().any(|(chord, guarded)| chord == "\"2\"" && !guarded));
 }

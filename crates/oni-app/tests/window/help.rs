@@ -69,7 +69,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.2.1"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.
-    first.ctl.act("report");
+    first.ctl.act(oni_app::Act::Report);
     rig.pump();
     assert!(help.get_report_shown() && !help.get_report_sent());
     help.set_report_message("The export stops at the third photo.".into());
@@ -92,7 +92,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     let news = second.window.global::<News>();
     assert_eq!((news.get_lighting().as_str(), news.get_machine().as_str()), ("", "NEW"));
     assert!(!second.ctl.welcome_due());
-    second.ctl.act("whats-new");
+    second.ctl.act(oni_app::Act::WhatsNew);
     rig.pump();
     assert_eq!(news.get_lighting().as_str(), "UPDATED", "Show What's New Again brings every note back");
     let _ = std::fs::remove_dir_all(&root);

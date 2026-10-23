@@ -53,7 +53,7 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 g.invoke_drag(Field::Exposure.index(), 30.0, SPAN, false);
                 g.invoke_release(Field::Exposure.index());
                 saved.set(exposure());
-                ctl.act("save-preset");
+                ctl.act(crate::Act::SavePreset);
                 presets.invoke_form_named("Bench".into());
                 presets.invoke_save_confirmed();
                 ctl.set(Field::Exposure, rest);
@@ -96,7 +96,7 @@ pub(super) fn deck(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             Deck::Applied => {
                 let applied = (exposure() - saved.get()).abs() < 1e-4;
                 // Taken back, so the test copy's sidecar reads as it did.
-                ctl.act("undo");
+                ctl.act(crate::Act::Undo);
                 finish(if applied {
                     format!("presets: the deck rose, the card previewed {:.2} EV under the pointer and its click applied it, no failure", saved.get())
                 } else {

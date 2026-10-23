@@ -86,7 +86,7 @@ impl Ctl {
         }
         // `keyboardShortcut("+")` answers ⌘= too, the key that carries + unshifted.
         if command && !shift && text == "=" && w.global::<Menus>().get_live().larger {
-            self.act("larger");
+            self.act(crate::Act::Larger);
             return true;
         }
         false

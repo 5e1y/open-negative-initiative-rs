@@ -46,7 +46,7 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     shell.window.show().unwrap();
 
     let first = generation().expect("the file's look stands in at launch");
-    shell.ctl.act("settings");
+    shell.ctl.act(oni_app::Act::Settings);
     let sheet = shell.window.global::<AppSettings>();
     assert!(sheet.get_frontier_look().contains("My Frontier.cube") && sheet.get_frontier_hand());
 
@@ -68,7 +68,7 @@ pub(crate) fn a_frontier_look_file_is_read_again_on_each_save() {
     rig.settle();
     assert_eq!(generation(), saved, "a broken file never stands in");
 
-    shell.ctl.act("frontier-measured");
+    shell.ctl.act(oni_app::Act::FrontierMeasured);
     assert_eq!(generation(), None);
     assert!(!sheet.get_frontier_hand() && sheet.get_frontier_look().contains("measured"));
     assert_eq!(Preferences::load(&support).string(preferences::FRONTIER_LOOK), None);

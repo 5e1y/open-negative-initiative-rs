@@ -1981,9 +1981,9 @@
   {
     "id": 274,
     "type": "refactor",
-    "title": "Menus, sheets and the mode as Slint enums",
-    "status": "todo",
-    "detail": "Sixty menu actions are strings dispatched in actions.rs, eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites; a deleted feature leaves a menu item that silently does nothing. Enums for the action, the sheet and the mode; one Ask dialog for the six copies of Swift's DSDialogRequest; one RowTree for the archive and projects trees."
+    "title": "Every gesture a Slint enum, Act",
+    "status": "done",
+    "detail": "The bar keys, menu items, Settings rows, Crop's keys and shortcuts ask an Act (ui/act.slint, 74 gestures) instead of a string, and Ctl::act matches it exhaustively: a gesture no arm answers no longer compiles, where a string fell to \"not in this build yet\" (Compare, De-dust, Crop, New Roll and Reset to Default did so when their moment refused them). Crop's keys go through act; export_act and lab_act take no string; the medals are medal-none to medal-gold; PanelState.pick and confirm-yes/no, asked by nothing, are gone. The sheets, the mode, one Ask dialog and one RowTree move to #290."
   },
   {
     "id": 275,
@@ -2089,5 +2089,12 @@
     "title": "Dust patches searched on the GPU and shown as each lands",
     "status": "done",
     "detail": "A run of patches showed nothing until its last was written (79 strokes at the largest brush: 65 s with no patch on screen), and each search scored every candidate on the CPU: the fine pass's 100,000 candidates times up to 4,096 ring cells. The search's costs now run on the GPU as Swift's correctionCost does (heal/cost.wgsl, the region laid once for both passes through the app's door), with the CPU's cost_map kept beside it as reference and as fallback, and each patch lands on the canvas as soon as it is written (patch_landed). 20 strokes at the bench's largest brush: 6.5 s to 2.9 s, a patch every 110-150 ms. heal.rs's cost map moves to heal/cost.rs. A check scores a grid on both and finds every finite cost within 1e-3, its twin a ring of another size that differs."
+  },
+  {
+    "id": 290,
+    "type": "refactor",
+    "title": "Sheets and the mode as Slint enums, one Ask dialog, one RowTree",
+    "status": "todo",
+    "detail": "Eighteen sheet flags are ORed in app.slint and mounted one by one, and the mode is three booleans read at 25 sites; six copies of Swift's DSDialogRequest and two near-identical trees (archive, projects) remain. An enum for the sheet and the mode, one Ask dialog, one RowTree."
   }
 ]

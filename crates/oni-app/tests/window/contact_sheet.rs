@@ -77,7 +77,7 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     assert_eq!(bar.get_sheet_title(), menus.get_titles().sheet);
 
     // A roll never measured has no window to carry: the gesture says so and writes nothing.
-    ctl.act("contact-sheet");
+    ctl.act(oni_app::Act::ContactSheet);
     rig.pump();
     assert!(advice.get_shown());
     assert_eq!(advice.get_message().as_str(), "Prepare this roll first: a contact sheet carries the window its roll was measured on.");
@@ -87,7 +87,7 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     // Prepare the Roll measures the four frames and lays their sheet beside the first, adopted unopened.
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
-    ctl.act("prepare-roll");
+    ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll's surface", Duration::from_secs(60), || p.get_shown());
     rig.until("every frame read", Duration::from_secs(60), || p.get_capture() == 0);
     p.invoke_step_picked(4);
@@ -122,14 +122,14 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     assert!(gutter[3] < 1e-3, "{gutter:?}");
 
     // New Contact Sheet over three photos: counted per frame, written beside the first, then opened.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     lib.invoke_tile_clicked(tile("B"), false, false);
     lib.invoke_tile_clicked(tile("C"), true, false);
     lib.invoke_tile_clicked(tile("D"), true, false);
     rig.pump();
     assert_eq!(menus.get_titles().sheet.as_str(), "New Contact Sheet from 3 Photos");
-    bar.invoke_act("contact-sheet".into());
+    bar.invoke_act(oni_app::Act::ContactSheet);
     assert!(!menus.get_live().contact_sheet, "a run under way bars a second");
     assert_eq!(menus.get_titles().sheet.as_str(), "Making Contact Sheet…");
     let second = folder.join(format!("{} 2.tif", day.trim_end_matches(".tif")));
@@ -147,18 +147,18 @@ pub(crate) fn a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimm
     panel.set_tab(3);
     rig.settle();
     println!("shot {}", rig.shot("sheet-details").display());
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     lib.invoke_tile_opened(tile("A"));
     rig.until("A open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("A.tif")));
     assert!(!panel.get_sheet(), "twin: a photograph's details stay live");
 
     // A second measure of the roll writes over its former sheet instead of adding a third.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     lib.invoke_tile_clicked(tile("A"), false, false);
     rig.pump();
-    ctl.act("prepare-roll");
+    ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll again", Duration::from_secs(60), || p.get_shown());
     rig.until("every frame read", Duration::from_secs(60), || p.get_capture() == 0);
     p.invoke_step_picked(4);

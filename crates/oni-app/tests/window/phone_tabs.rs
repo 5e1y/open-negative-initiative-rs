@@ -71,7 +71,7 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     let shell = launch(&rig, &engine, &root);
     let ctl = shell.ctl.clone();
 
-    shell.window.global::<App>().invoke_menu("pair-phone".into());
+    shell.window.global::<App>().invoke_menu(oni_app::Act::PairPhone);
     let pairing = shell.window.global::<Pairing>();
     rig.until("the pairing code", WAIT, || !pairing.get_uri().is_empty());
     let port = ctl.state.borrow().phone().unwrap().bound().unwrap().port();
@@ -122,7 +122,7 @@ pub(crate) fn the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face() {
     println!("shot {}", rig.shot("phone-scanner-face").display());
 
     // The bar's switch back to Pro reaches the phone, as any hand's change does.
-    shell.window.global::<Bar>().invoke_act("face-pro".into());
+    shell.window.global::<Bar>().invoke_act(oni_app::Act::FacePro);
     let pro = until_shown(&rig, &session, "Pro from the desktop", |d| d.panel.face == Face::Pro);
     assert!(tab(&pro, PanelTab::Color).contains(&Param::Exposure));
 

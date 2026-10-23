@@ -202,7 +202,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     // The export on the paper: a JPEG declaring the paper's own profile, the correction laid.
     // 2000 px on the long edge unless a preset sized it: a full frame does not fit the check's memory.
     let export = |name: &str, sized: bool| -> PathBuf {
-        ctl.act("export");
+        ctl.act(oni_app::Act::Export);
         assert!(e.get_shown());
         rig.until("the lines", LONG, || export_card::lines(w).iter().all(|l| l.ready) && e.get_size_enabled());
         if sized {
@@ -222,7 +222,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     assert_eq!(icc, std::fs::read(&pearl).unwrap(), "the file declares the paper's profile");
 
     // Instagram writes every row: a JPEG in sRGB, 1440 across the narrow way, the proof following.
-    ctl.act("export");
+    ctl.act(oni_app::Act::Export);
     let n = renders();
     e.invoke_preset(0);
     assert_eq!((e.get_format(), e.get_space_tab()), (1, 0));
@@ -237,7 +237,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
 
     // The correction undone: the sRGB canvas and file stay as they were, the paper's move.
     let n = renders();
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     assert_eq!(stops(), [0.0; 3]);
     settled_after(n, "the correction undone");
     assert!(differing(&srgb_corrected, &frame(w)) * 1000 < pixels, "the correction moved a canvas off the paper");
@@ -245,7 +245,7 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     let off_paper = worst_block(sw as usize, sh as usize, &srgb_pixels, &srgb_plain);
     println!("sRGB with and without the correction: worst block {off_paper:.4}");
     assert!(off_paper < 0.002, "the correction is laid off the paper: {off_paper}");
-    ctl.act("export");
+    ctl.act(oni_app::Act::Export);
     e.invoke_space_picked(4);
     assert!(e.get_on_paper(), "Custom lands on the profile last chosen");
     e.invoke_cancel();

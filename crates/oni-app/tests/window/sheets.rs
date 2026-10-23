@@ -70,7 +70,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     assert_eq!(help.get_release().as_str(), "1.2", "the menu and the welcome's heading name one release");
 
     // Report a Bug: its field takes the keys, the menus go dark behind it.
-    ctl.act("report");
+    ctl.act(oni_app::Act::Report);
     rig.pump();
     println!("shot {}", rig.shot("report-sheet").display());
     assert!(help.get_report_shown());
@@ -89,7 +89,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     assert!(w.get_keys_focused() && menus.get_live().remove, "closed, the keys and the menus come back");
 
     // The welcome is as modal as Swift's sheet: a click beside it leaves it, Return closes it.
-    ctl.act("welcome");
+    ctl.act(oni_app::Act::Welcome);
     rig.pump();
     assert!(help.get_welcome_shown());
     click(&rig, 12.0, 400.0);
@@ -99,13 +99,13 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
 
     // A post answered after its sheet closed and opened again does not thank the new report.
     hold.store(true, Ordering::Relaxed);
-    ctl.act("report");
+    ctl.act(oni_app::Act::Report);
     rig.pump();
     help.set_report_message("The first report.".into());
     help.invoke_report_send();
     assert!(help.get_report_sending());
     help.invoke_report_closed();
-    ctl.act("report");
+    ctl.act(oni_app::Act::Report);
     rig.pump();
     hold.store(false, Ordering::Relaxed);
     rig.until("the first post", Duration::from_secs(10), || posted.load(Ordering::Relaxed) == 1);
@@ -120,7 +120,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
 
     // A Confirm over the gallery: ⌘⌫ and a medal key reach nothing behind it; Escape cancels.
     let tiles = || oni_app::app::tiles(w);
-    ctl.act("reset-to-default");
+    ctl.act(oni_app::Act::ResetToDefault);
     rig.until("the confirm", Duration::from_secs(10), || w.global::<Confirm>().get_shown());
     assert!(w.get_keys_focused());
     let backspace: SharedString = Key::Backspace.into();
@@ -165,7 +165,7 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     lib.invoke_tile_clicked(0, false, false);
     lib.invoke_tile_clicked(1, true, false);
-    ctl.act("export");
+    ctl.act(oni_app::Act::Export);
     assert!(e.get_shown());
     rig.until("the batch's lines", Duration::from_secs(120), || export_card::lines(w).iter().all(|l| l.ready));
     let names: Vec<String> = export_card::lines(w).iter().map(|l| l.name.to_string()).collect();

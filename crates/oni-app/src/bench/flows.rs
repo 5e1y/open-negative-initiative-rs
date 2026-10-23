@@ -77,7 +77,7 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     // `requireRoll`: a roll never prepared opens every frame on Prepare the Roll.
                     finish("flows: the roll was never prepared, so each frame opens on Prepare the Roll; run the flow on a prepared roll".into());
                 } else if ctl.state.borrow().renders() >= 1 && ctl.state.borrow().placed().is_some() {
-                    ctl.act("toggle-mode");
+                    ctl.act(crate::Act::ToggleMode);
                     phase.set(Flow::Gallery { frame: 0 });
                 } else if started.elapsed() > LOADING {
                     finish("flows: no frame rendered".into());
@@ -131,8 +131,8 @@ pub(super) fn flows(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     return;
                 }
                 // The edit undone, so the test copy's sidecar reads as it did.
-                ctl.act("undo");
-                ctl.act("toggle-mode");
+                ctl.act(crate::Act::Undo);
+                ctl.act(crate::Act::ToggleMode);
                 phase.set(Flow::Back { frame, since: Instant::now() });
             }
             Flow::Back { frame, since } => {

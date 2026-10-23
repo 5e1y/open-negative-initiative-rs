@@ -77,7 +77,7 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
     let moved = ctl.state.borrow().store().get(Field::Exposure);
     assert!((moved - rest).abs() > 0.1, "{moved} against {rest}");
     assert!(menus.get_live().save_preset);
-    ctl.act("save-preset");
+    ctl.act(oni_app::Act::SavePreset);
     rig.pump();
     assert!(presets.get_saving());
     assert_eq!(presets.get_form_name().as_str(), "Preset 01");
@@ -156,14 +156,14 @@ pub(crate) fn a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_s
         assert!((exposure_of(&canonical(name)) - moved).abs() < 1e-4, "{name}");
     }
     assert!((exposure_of(&canonical("A.tif")) - own[0]).abs() < 1e-6, "twin: A, not picked, keeps its own");
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     for (name, was) in [("B.tif", own[1]), ("C.tif", own[2])] {
         assert!((exposure_of(&canonical(name)) - was).abs() < 1e-6, "{name}: one undo takes the apply back on both");
     }
 
     // The editor: a rename is written once the hand rests, its file following the new name.
-    ctl.act("edit-presets");
+    ctl.act(oni_app::Act::EditPresets);
     rig.pump();
     assert!(presets.get_editing() && presets.get_form_shown());
     rig.settle();

@@ -94,9 +94,9 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // Back from the gallery, the column centres on the photo again.
     lib.set_tree_viewport_y(scrolled);
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.shot("column-gallery");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.shot("column-back");
     assert_eq!(lib.get_tree_viewport_y(), centred, "a screen change centres the column");
 

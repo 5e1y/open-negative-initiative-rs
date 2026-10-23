@@ -25,7 +25,7 @@ pub(super) fn sheet(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 if ctl.state.borrow().renders() < 1 {
                     return;
                 }
-                ctl.act("toggle-mode");
+                ctl.act(crate::Act::ToggleMode);
                 let lib = w.global::<crate::Library>();
                 let mut tiles = crate::app::tiles(&w);
                 tiles.sort_by_key(|t| t.index);
@@ -33,7 +33,7 @@ pub(super) fn sheet(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     lib.invoke_tile_clicked(t.index, i > 0, false);
                 }
                 let title = w.global::<crate::Menus>().get_titles().sheet.to_string();
-                w.global::<crate::Bar>().invoke_act("contact-sheet".into());
+                w.global::<crate::Bar>().invoke_act(crate::Act::ContactSheet);
                 asked.set(Some((Instant::now(), ctl.state.borrow().renders())));
                 eprintln!("bench, sheet: {title} asked");
             }

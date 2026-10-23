@@ -74,7 +74,7 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     let prepare = |roll: &str| {
         lib.invoke_tile_clicked(index(roll, "A.tif"), false, false);
         rig.pump();
-        w.global::<Bar>().invoke_act("prepare-roll".into());
+        w.global::<Bar>().invoke_act(oni_app::Act::PrepareRoll);
         rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == 3);
         rig.until("every frame read", Duration::from_secs(10), || p.get_capture() == 0);
         p.invoke_capture_picked(1);

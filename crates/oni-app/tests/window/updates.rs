@@ -100,7 +100,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     println!("shot {}", rig.shot("updates-key").display());
 
     // The key asks again and the dialog offers the download; a forged archive is refused and never kept.
-    bar.invoke_act("update".into());
+    bar.invoke_act(oni_app::Act::Update);
     let confirm = first.window.global::<Confirm>();
     rig.until("the dialog", Duration::from_secs(10), || confirm.get_shown());
     assert_eq!(confirm.get_title().as_str(), "A new version of Open Negative Initiative is available!");
@@ -116,7 +116,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
 
     // The genuine archive is kept in Downloads, shown, and nothing is installed or opened.
     *body.lock().unwrap() = Ok(archive.clone());
-    bar.invoke_act("update".into());
+    bar.invoke_act(oni_app::Act::Update);
     rig.until("the dialog again", Duration::from_secs(10), || confirm.get_shown());
     confirm.invoke_answered(true);
     let kept = downloads.join("OpenNegative-9.1.0.zip");
@@ -125,7 +125,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     assert_eq!(*revealed.lock().unwrap(), [kept.clone()]);
     assert!(!bar.get_updating());
     // A second download keeps both files rather than writing over the first.
-    bar.invoke_act("update".into());
+    bar.invoke_act(oni_app::Act::Update);
     rig.until("the third dialog", Duration::from_secs(10), || confirm.get_shown());
     confirm.invoke_answered(true);
     rig.until("the second copy", Duration::from_secs(10), || revealed.lock().unwrap().len() == 2);
@@ -134,21 +134,21 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
 
     // Check for Updates… with a feed that went down: the error, and the key still standing.
     *served.lock().unwrap() = "<rss><channel><item>".into();
-    first.ctl.act("check-updates");
+    first.ctl.act(oni_app::Act::CheckUpdates);
     rig.until("the error", Duration::from_secs(10), || advice.get_shown());
     assert_eq!((advice.get_title().as_str(), advice.get_message().as_str()), ("Update Error!", oni_app::updates::CHECK_FAILED));
     assert_eq!(bar.get_update_title().as_str(), "UPDATE TO 9.1.0");
     advice.invoke_closed();
     // Nothing newer than this build: up to date, and the key goes back to export.
     *served.lock().unwrap() = feed(&[("1400", "1.2.0", 1, "AAAA")]);
-    first.ctl.act("check-updates");
+    first.ctl.act(oni_app::Act::CheckUpdates);
     rig.until("up to date", Duration::from_secs(10), || advice.get_shown());
     assert_eq!(advice.get_title().as_str(), "You\u{2019}re up-to-date!");
     assert_eq!(bar.get_update_title().as_str(), "");
     advice.invoke_closed();
 
     // FEEDBACKS opens Report a Bug.
-    bar.invoke_act("report".into());
+    bar.invoke_act(oni_app::Act::Report);
     assert!(first.window.global::<Help>().get_report_shown());
     drop(first);
 
@@ -165,7 +165,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     assert_eq!(asked.lock().unwrap().len(), asked_before);
     drop(manual);
     let offline = shell(None);
-    offline.ctl.act("check-updates");
+    offline.ctl.act(oni_app::Act::CheckUpdates);
     rig.pump();
     let advice = offline.window.global::<Advice>();
     assert_eq!((advice.get_shown(), advice.get_title().as_str()), (true, "Update Error!"));

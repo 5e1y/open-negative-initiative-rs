@@ -123,11 +123,11 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     assert!(dialled > 0.05, "{dialled}");
     let kept = || oni_app::preferences::Preferences::load(&support).value(flat_fields::SLIDERS_KEY).cloned();
     assert_eq!(kept().and_then(|v| v.as_array().and_then(|a| a[1].as_f64())).map(|t| t as f32), Some(dialled));
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert_eq!(settings().flat_field.temperature, 0.0);
     assert_eq!(kept().and_then(|v| v.as_array().and_then(|a| a[1].as_f64())).map(|t| t as f32), Some(dialled), "twin: an undo remembers nothing");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     lib.invoke_tile_clicked(1, false, false);
     lib.invoke_tile_clicked(1, false, false);
     rig.until("B open", Duration::from_secs(60), || ctl.state.borrow().open_path() == Some(canonical("B.tif").as_str()));

@@ -160,7 +160,7 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     rig.until("twin: the preview back", Duration::from_secs(30), || ctl.state.borrow().shown_settings() == Some(&laid(2)));
     let menus = w.global::<Menus>();
     assert!(menus.get_live().save_preset);
-    ctl.act("save-preset");
+    ctl.act(oni_app::Act::SavePreset);
     rig.pump();
     assert_eq!(deck.get_hovered(), -1, "the save sheet takes the preview");
     rig.until("the preview gone under the sheet", Duration::from_secs(30), || ctl.state.borrow().shown_settings().is_some_and(|s| exposure(s) == exposure(&settings)));
@@ -202,7 +202,7 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     assert!(menus.get_live().save_preset, "twin: and lit once it is closed");
 
     // The editor updates its rows in place as a name is typed, so hover and scroll hold.
-    ctl.act("edit-presets");
+    ctl.act(oni_app::Act::EditPresets);
     rig.settle();
     println!("shot {}", rig.shot("preset-editor").display());
     let rows = deck.get_rows();

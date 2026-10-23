@@ -41,17 +41,17 @@ pub(crate) fn a_phone_step_reaches_the_canvas_with_the_panel_folded() {
     shell.window.global::<oni_app::Library>().invoke_tile_opened(0);
     rig.until("the frame rendered", WAIT, || ctl.state.borrow().renders() >= 1);
 
-    shell.window.global::<App>().invoke_menu("pair-phone".into());
+    shell.window.global::<App>().invoke_menu(oni_app::Act::PairPhone);
     let pairing = shell.window.global::<Pairing>();
     rig.until("the pairing code", WAIT, || !pairing.get_uri().is_empty());
     let port = ctl.state.borrow().phone().unwrap().bound().unwrap().port();
     let uri = format!("{},127.0.0.1:{port}", pairing.get_uri());
     let session = phone(RemoteSession::pair(uri, generate_identity(), "Test Phone".into())).expect("the phone pairs");
-    ctl.act("close-pairing");
+    ctl.act(oni_app::Act::ClosePairing);
 
     for folded in [false, true] {
         if folded {
-            ctl.act("hide-panel");
+            ctl.act(oni_app::Act::HidePanel);
             rig.pump();
             assert!(shell.window.global::<App>().get_panel_hidden());
         }

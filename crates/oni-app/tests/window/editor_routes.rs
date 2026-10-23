@@ -84,7 +84,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.chord(Key::Control, "k");
     rig.chord(Key::Control, "k");
     assert_eq!(panel.get_tab(), 1, "⌘K never leaves the crop");
-    framing.invoke_act("window-arm".into());
+    framing.invoke_act(oni_app::Act::WindowArm);
     assert!(framing.get_armed() && canvas.get_window_shown());
     rig.key("\r");
     assert_eq!((panel.get_tab(), framing.get_armed()), (1, false));
@@ -99,10 +99,10 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert_eq!(panel.get_tab(), 2, "twin: the panel picked last, not Details where ⌘K was pressed");
     // Leaving the crop disarms the window, leaving Color does not.
     pick(1);
-    framing.invoke_act("window-arm".into());
+    framing.invoke_act(oni_app::Act::WindowArm);
     pick(2);
     assert!(!framing.get_armed(), "leaving the crop disarms");
-    framing.invoke_act("window-arm".into());
+    framing.invoke_act(oni_app::Act::WindowArm);
     pick(3);
     assert!(framing.get_armed(), "twin: leaving Color keeps it armed");
     pick(2);
@@ -110,17 +110,17 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
 
     // De-dust leaves the Lab first; the brush is the size the last session left, and kept.
     assert_eq!(ctl.state.borrow().brush(), 40.0, "not the default 12");
-    w.global::<App>().invoke_menu("emulator".into());
+    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
     rig.pump();
     assert!(w.global::<Lab>().get_shown());
-    ctl.act("correction");
+    ctl.act(oni_app::Act::Correction);
     rig.pump();
     assert!(!w.global::<Lab>().get_shown() && panel.get_tab() == 4, "De-dust on Pro's face");
     rig.key("]");
     assert_eq!(ctl.state.borrow().brush(), 44.0);
     let kept = Preferences::load(&support).value(preferences::BRUSH_RADIUS).and_then(serde_json::Value::as_f64);
     assert_eq!(kept, Some(44.0), "twin: the 40 read at launch is written over");
-    ctl.act("correction");
+    ctl.act(oni_app::Act::Correction);
     rig.pump();
     assert_eq!(panel.get_tab(), 2);
 
@@ -130,7 +130,7 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert_eq!(*ctl.state.borrow().picked(), names.iter().cloned().collect::<HashSet<_>>());
 
     // Space leaves the Lab for the gallery, the menu item lit beside a photo only.
-    w.global::<App>().invoke_menu("emulator".into());
+    w.global::<App>().invoke_menu(oni_app::Act::Emulator);
     rig.pump();
     assert!(w.global::<Menus>().get_live().emulator);
     rig.key(" ");

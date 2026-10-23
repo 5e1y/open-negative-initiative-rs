@@ -1,4 +1,5 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
+import { Act } from "act.slint";
 import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
@@ -99,7 +100,7 @@ export global Canvas {
 export component CanvasCard inherits Card {
     in property <bool> library-hidden;
     in property <bool> panel-hidden;
-    callback menu(string);
+    callback menu(Act);
     callback refocused();
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
     callback column-toggled(bool);
@@ -331,7 +332,7 @@ export component CanvasCard inherits Card {
             help: root.library-hidden ? "Show the Library (⌥⌘[)" : "Hide the Library (⌥⌘[)";
             clicked => {
                 root.column-toggled(true);
-                root.menu("hide-library");
+                root.menu(Act.hide-library);
             }
         }
     }
@@ -347,8 +348,8 @@ export component CanvasCard inherits Card {
         Label { text: Canvas.zoom-label; role: TextRole.value; }
         ButtonGroup {
             alignment: center;
-            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { root.menu("smaller"); } }
-            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { root.menu("larger"); } }
+            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: "Zoom out (⌘−)"; clicked => { root.menu(Act.smaller); } }
+            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: "Zoom in (⌘+)"; clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
         IconButton {
@@ -357,7 +358,7 @@ export component CanvasCard inherits Card {
             help: root.panel-hidden ? "Show the Panel (⌥⌘])" : "Hide the Panel (⌥⌘])";
             clicked => {
                 root.column-toggled(false);
-                root.menu("hide-panel");
+                root.menu(Act.hide-panel);
             }
         }
     }

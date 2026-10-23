@@ -49,7 +49,7 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         match phase.get() {
             Prep::Loading => {
                 if ctl.state.borrow().renders() >= 1 {
-                    ctl.act("toggle-mode");
+                    ctl.act(crate::Act::ToggleMode);
                     since.set(Instant::now());
                     phase.set(Prep::Picked);
                 } else if started.elapsed() > LOADING {
@@ -59,7 +59,7 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
             Prep::Picked => {
                 let Some(t) = tile(&w, 0).filter(|_| lib.get_grid_x() > 0.0) else { return };
                 click_at(&w, slint::LogicalPosition::new(lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0));
-                w.global::<crate::Bar>().invoke_act("prepare-roll".into());
+                w.global::<crate::Bar>().invoke_act(crate::Act::PrepareRoll);
                 phase.set(Prep::Entering);
             }
             Prep::Entering => {
@@ -122,10 +122,10 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
             }
             Prep::Landed => {
-                ctl.act("toggle-mode");
+                ctl.act(crate::Act::ToggleMode);
                 let label = w.global::<crate::Menus>().get_titles().undo.to_string();
                 // Taken back, so the test copy reads its own measure again.
-                ctl.act("undo");
+                ctl.act(crate::Act::Undo);
                 finish(format!("prepare: {label} landed and undone in {:.1} s, no failure", started.elapsed().as_secs_f64()));
             }
         }

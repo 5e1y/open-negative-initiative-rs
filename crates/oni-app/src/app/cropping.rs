@@ -132,25 +132,17 @@ impl Ctl {
         self.write_geometry(g);
     }
 
-    pub(super) fn framing_act(self: &Rc<Self>, action: &str) {
+    pub(super) fn framing_act(self: &Rc<Self>, action: crate::Act) {
         let Some(image) = self.image_size() else { return };
         let mut g = self.state.borrow().store.settings().geometry.clone();
         match action {
             // Three quarters counter-clockwise is one clockwise, as the key says: the render turns the other way.
-            "rotate" => g.rotate(3, image),
-            "mirror" => g.mirror(),
-            "mirror-vertically" => g.mirror_vertically(),
-            "reset-crop" => g = Geometry::reset_keeping(&g),
-            "copy-framing" => {
-                if let Some(e) = self.state.borrow_mut().store.editor() {
-                    e.copy_framing();
-                }
-                self.board_out(crate::pasteboard::FRAMING);
-                return self.publish_framing();
-            }
-            "paste-framing" | "paste-framing-to-roll" => return self.paste_framing(action == "paste-framing-to-roll"),
-            "window-reset" => g.measure_window = None,
-            "window-arm" => {
+            crate::Act::Rotate => g.rotate(3, image),
+            crate::Act::Mirror => g.mirror(),
+            crate::Act::MirrorVertically => g.mirror_vertically(),
+            crate::Act::ResetCrop => g = Geometry::reset_keeping(&g),
+            crate::Act::WindowReset => g.measure_window = None,
+            crate::Act::WindowArm => {
                 let armed = {
                     let mut s = self.state.borrow_mut();
                     s.route.armed = !s.route.armed;
@@ -160,13 +152,13 @@ impl Ctl {
                     g.propose_measure_window(self.state.borrow().store.settings().sheet.is_some());
                 }
             }
-            "window-copy" => {
+            crate::Act::WindowCopy => {
                 let window = g.measure_window;
                 self.state.borrow_mut().window_board = window;
                 self.board_out(crate::pasteboard::MEASURE_WINDOW);
                 return self.publish_framing();
             }
-            "window-paste" => {
+            crate::Act::WindowPaste => {
                 self.board_in();
                 let Some(window) = self.state.borrow().window_board else { return };
                 if g.measure_window == Some(window) {

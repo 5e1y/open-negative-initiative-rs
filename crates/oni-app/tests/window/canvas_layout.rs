@@ -138,7 +138,7 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     hover(&rig, 600.0, 400.0);
 
     // The gallery lists the library whatever the editor hid.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     assert!(app.get_gallery() && app.get_library_hidden());
     rig.shot("layout-gallery-library-hidden");
@@ -154,13 +154,13 @@ pub(crate) fn the_shell_lays_its_pieces_where_swift_does() {
     assert!(!app.get_library_hidden(), "the key shows the Library again");
 
     // A file that never decodes says so on the canvas; a fine one says nothing.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     open(&rig, w, "Bad");
     rig.until("Bad refused", Duration::from_secs(60), || !canvas.get_failure().is_empty());
     assert_eq!(canvas.get_failure(), "Bad.tif: could not be decoded");
     rig.shot("layout-undecodable");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.settle();
     open(&rig, w, "B00");
     assert_eq!(canvas.get_failure(), "", "twin: a fine frame clears the message");

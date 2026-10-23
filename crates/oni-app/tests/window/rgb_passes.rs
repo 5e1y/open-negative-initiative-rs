@@ -101,7 +101,7 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     // One frame picked brings the folder; the files stand alone until RGB Passes is chosen.
     lib.invoke_tile_clicked(tile("P0").index, false, false);
     rig.pump();
-    ctl.act("prepare-roll");
+    ctl.act(oni_app::Act::PrepareRoll);
     rig.until("the roll's surface", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == 7);
     rig.until("the first frame read", Duration::from_secs(10), || p.get_capture() == 0);
     rig.settle();
@@ -165,7 +165,7 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     assert!(ctl.state.borrow().store().settings().rgb_passes.as_ref().is_some_and(|p| p.registration.is_some()), "the open lead landed in memory");
 
     // The gallery shows each frame by its lead and the stray file; the seal names a lone lead.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     // The measure also lays the roll's contact sheet, which joins the library beside the frames.
     let frames = || oni_app::app::tiles(w).into_iter().filter(|t| !t.caption.ends_with("\u{2014} contact sheet")).collect::<Vec<_>>();
@@ -184,7 +184,7 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     println!("shot {}", rig.shot("rgb-passes-gallery").display());
 
     // One undo takes the measure back, the passes' names of their lead with it.
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert!(loaded(&canonical("P4.tif")).settings.pass_of.is_none(), "one undo unjoins the passes");
     assert!(loaded(&canonical("P3.tif")).settings.rgb_passes.is_none());

@@ -30,7 +30,7 @@ pub(crate) fn a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_und
     let x_of = |v: f32| f64::from(position(v)) * size.w;
     assert!((white_x() - x_of(after.white)).abs() < 1e-3, "the handle let go stands where the hand left it");
     // The undo is a value from elsewhere: the handle springs back over frames instead of jumping.
-    w.global::<Bar>().invoke_act("undo".into());
+    w.global::<Bar>().invoke_act(oni_app::Act::Undo);
     rig.pump();
     let flying = white_x();
     assert!((flying - x_of(before.white)).abs() > 1.0, "the handle jumped back: {flying}");
@@ -161,7 +161,7 @@ pub(crate) fn the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have() {
     rig.until("the frame in the editor", Duration::from_secs(60), || {
         !fourth.window.global::<App>().get_gallery() && fourth.ctl.state.borrow().open_path().is_some()
     });
-    fourth.window.global::<Bar>().invoke_act("face-scanner".into());
+    fourth.window.global::<Bar>().invoke_act(oni_app::Act::FaceScanner);
     let g4 = fourth.window.global::<Editors>();
     fourth.window.global::<PanelState>().set_tab(0);
     g4.set_levels_folded(false);

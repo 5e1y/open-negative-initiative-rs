@@ -8,7 +8,7 @@ pub(super) fn console(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
     let started = Instant::now();
     let me = Rc::downgrade(ctl);
     let held = timer.clone();
-    ctl.act("console");
+    ctl.act(crate::Act::Console);
     timer.start(TimerMode::Repeated, Duration::from_millis(100), move || {
         let Some(ctl) = me.upgrade() else { return held.stop() };
         let shown = ctl.console_log();

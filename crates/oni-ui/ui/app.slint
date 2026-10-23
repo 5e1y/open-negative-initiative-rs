@@ -1,4 +1,5 @@
 // The editor window: the bar, the library column, the canvas card or the gallery, the panel.
+import { Act } from "act.slint";
 import { DS, SplashWindow, Clicks, Tip, Tips, TipBox, Icons, AppWindow, TipLayer, Card, CardCorners, Picture, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, ButtonKind, Label, WarningBadge, Warning, Progress, FloatingColumn, Motion, TextRole, Tone, Sheet, Space, Ground, StatusLine, SealedStatusLine, CardStyle, StatusStyle, ShellStyle, LabCell, MenuLine } from "ds/ds.slint";
 import { Catalogue } from "ds/catalogue.slint";
 import { Store } from "store.slint";
@@ -30,7 +31,7 @@ export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWi
 export { MaskDialog, Confirm, Transition, TransitionLine }
 export { Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell }
-export { Canvas, Mark }
+export { Canvas, Mark, Act }
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/ds.slint";
 
 export global App {
@@ -40,7 +41,7 @@ export global App {
     // A key with control, meta, shift and alt, then whether it repeats; Rust reads ⌘ as meta on
     // macOS, control elsewhere, and answers whether the key was claimed.
     callback key(string, bool, bool, bool, bool, bool) -> bool;
-    callback menu(string);
+    callback menu(Act);
     // A sheet shown or closed, so the menus go dark behind it or come back.
     callback sheet-changed();
 }
@@ -156,75 +157,75 @@ export component MainWindow inherits AppWindow {
     MenuBar {
         Menu {
             title: "File";
-            MenuItem { title: "Open Folder…"; shortcut: @keys(Control + "o"); enabled: Menus.live.open; activated => { App.menu("open"); } }
-            MenuItem { title: "Pair Phone…"; activated => { App.menu("pair-phone"); } }
-            MenuItem { title: "Settings…"; shortcut: @keys(Control + ","); activated => { App.menu("settings"); } }
+            MenuItem { title: "Open Folder…"; shortcut: @keys(Control + "o"); enabled: Menus.live.open; activated => { App.menu(Act.open); } }
+            MenuItem { title: "Pair Phone…"; activated => { App.menu(Act.pair-phone); } }
+            MenuItem { title: "Settings…"; shortcut: @keys(Control + ","); activated => { App.menu(Act.settings); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu("toggle-mode"); } }
-            MenuItem { title: Menus.titles.export; shortcut: @keys(Control + "e"); enabled: Menus.live.export; activated => { App.menu("export"); } }
+            MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu(Act.toggle-mode); } }
+            MenuItem { title: Menus.titles.export; shortcut: @keys(Control + "e"); enabled: Menus.live.export; activated => { App.menu(Act.export); } }
             MenuSeparator { }
-            MenuItem { title: "Recheck Originals"; shortcut: @keys(Control + "r"); enabled: Menus.live.recheck; activated => { App.menu("recheck"); } }
-            MenuItem { title: "Read the Folders Again"; enabled: Menus.live.read-folders; activated => { App.menu("read-folders"); } }
-            MenuItem { title: "Show the Selected Photo"; enabled: Menus.live.show-selected; activated => { App.menu("show-selected"); } }
+            MenuItem { title: "Recheck Originals"; shortcut: @keys(Control + "r"); enabled: Menus.live.recheck; activated => { App.menu(Act.recheck); } }
+            MenuItem { title: "Read the Folders Again"; enabled: Menus.live.read-folders; activated => { App.menu(Act.read-folders); } }
+            MenuItem { title: "Show the Selected Photo"; enabled: Menus.live.show-selected; activated => { App.menu(Act.show-selected); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.has-focus; activated => { App.menu("remove"); } }
-            MenuItem { title: Menus.titles.restore; shortcut: @keys(Control + Shift + Backspace); enabled: Menus.live.restore && keys.has-focus; activated => { App.menu("restore"); } }
+            MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.has-focus; activated => { App.menu(Act.remove); } }
+            MenuItem { title: Menus.titles.restore; shortcut: @keys(Control + Shift + Backspace); enabled: Menus.live.restore && keys.has-focus; activated => { App.menu(Act.restore); } }
         }
         Menu {
             title: "Edit";
-            MenuItem { title: Menus.titles.undo; shortcut: @keys(Control + "z"); enabled: Menus.live.undo; activated => { App.menu("undo"); } }
-            MenuItem { title: Menus.titles.redo; shortcut: @keys(Control + Shift + "z"); enabled: Menus.live.redo; activated => { App.menu("redo"); } }
+            MenuItem { title: Menus.titles.undo; shortcut: @keys(Control + "z"); enabled: Menus.live.undo; activated => { App.menu(Act.undo); } }
+            MenuItem { title: Menus.titles.redo; shortcut: @keys(Control + Shift + "z"); enabled: Menus.live.redo; activated => { App.menu(Act.redo); } }
             MenuSeparator { }
-            MenuItem { title: "Reset to Imported State"; shortcut: @keys(Control + Shift + "r"); enabled: Menus.live.reset; activated => { App.menu("reset"); } }
+            MenuItem { title: "Reset to Imported State"; shortcut: @keys(Control + Shift + "r"); enabled: Menus.live.reset; activated => { App.menu(Act.reset); } }
         }
         Menu {
             title: "View";
-            MenuItem { title: Menus.titles.smaller; shortcut: @keys(Control + "-"); enabled: Menus.live.smaller; activated => { App.menu("smaller"); } }
-            MenuItem { title: Menus.titles.larger; shortcut: @keys(Control + Shift? + "+"); enabled: Menus.live.larger; activated => { App.menu("larger"); } }
+            MenuItem { title: Menus.titles.smaller; shortcut: @keys(Control + "-"); enabled: Menus.live.smaller; activated => { App.menu(Act.smaller); } }
+            MenuItem { title: Menus.titles.larger; shortcut: @keys(Control + Shift? + "+"); enabled: Menus.live.larger; activated => { App.menu(Act.larger); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.compare; enabled: Menus.live.compare; activated => { App.menu("compare"); } }
-            MenuItem { title: Menus.titles.library; shortcut: @keys(Control + Alt + "["); enabled: Menus.live.hide-library; activated => { App.menu("hide-library"); } }
-            MenuItem { title: Menus.titles.panel; shortcut: @keys(Control + Alt + "]"); enabled: Menus.live.hide-panel; activated => { App.menu("hide-panel"); } }
-            MenuItem { title: "Crop and Straighten"; shortcut: @keys(Control + "k"); enabled: Menus.live.framing; activated => { App.menu("framing"); } }
-            MenuItem { title: Menus.titles.correcting; enabled: Menus.live.correction; activated => { App.menu("correction"); } }
-            MenuItem { title: "Bigger Brush"; shortcut: @keys("]"); enabled: Menus.live.bigger-brush && keys.has-focus; activated => { App.menu("bigger-brush"); } }
-            MenuItem { title: "Smaller Brush"; shortcut: @keys("["); enabled: Menus.live.smaller-brush && keys.has-focus; activated => { App.menu("smaller-brush"); } }
-            MenuItem { title: Menus.titles.mirror; shortcut: @keys(Control + Shift + "m"); enabled: Menus.live.mirror; activated => { App.menu("mirror"); } }
+            MenuItem { title: Menus.titles.compare; enabled: Menus.live.compare; activated => { App.menu(Act.compare); } }
+            MenuItem { title: Menus.titles.library; shortcut: @keys(Control + Alt + "["); enabled: Menus.live.hide-library; activated => { App.menu(Act.hide-library); } }
+            MenuItem { title: Menus.titles.panel; shortcut: @keys(Control + Alt + "]"); enabled: Menus.live.hide-panel; activated => { App.menu(Act.hide-panel); } }
+            MenuItem { title: "Crop and Straighten"; shortcut: @keys(Control + "k"); enabled: Menus.live.framing; activated => { App.menu(Act.framing); } }
+            MenuItem { title: Menus.titles.correcting; enabled: Menus.live.correction; activated => { App.menu(Act.correction); } }
+            MenuItem { title: "Bigger Brush"; shortcut: @keys("]"); enabled: Menus.live.bigger-brush && keys.has-focus; activated => { App.menu(Act.bigger-brush); } }
+            MenuItem { title: "Smaller Brush"; shortcut: @keys("["); enabled: Menus.live.smaller-brush && keys.has-focus; activated => { App.menu(Act.smaller-brush); } }
+            MenuItem { title: Menus.titles.mirror; shortcut: @keys(Control + Shift + "m"); enabled: Menus.live.mirror; activated => { App.menu(Act.mirror); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.sound; activated => { App.menu("toggle-sound"); } }
-            MenuItem { title: Menus.titles.screen-gamut; shortcut: @keys(Control + Shift + "y"); enabled: Menus.live.screen-gamut; activated => { App.menu("screen-gamut"); } }
+            MenuItem { title: Menus.titles.sound; activated => { App.menu(Act.toggle-sound); } }
+            MenuItem { title: Menus.titles.screen-gamut; shortcut: @keys(Control + Shift + "y"); enabled: Menus.live.screen-gamut; activated => { App.menu(Act.screen-gamut); } }
             MenuSeparator { }
-            MenuItem { title: "Scanner Emulator"; enabled: Menus.live.emulator; activated => { App.menu("emulator"); } }
+            MenuItem { title: "Scanner Emulator"; enabled: Menus.live.emulator; activated => { App.menu(Act.emulator); } }
         }
         Menu {
             title: "Labels";
-            MenuItem { title: "None"; shortcut: @keys("0"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-0"); } }
-            MenuItem { title: "Bronze"; shortcut: @keys("1"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-1"); } }
-            MenuItem { title: "Silver"; shortcut: @keys("2"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-2"); } }
-            MenuItem { title: "Gold"; shortcut: @keys("3"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu("medal-3"); } }
+            MenuItem { title: "None"; shortcut: @keys("0"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-none); } }
+            MenuItem { title: "Bronze"; shortcut: @keys("1"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-bronze); } }
+            MenuItem { title: "Silver"; shortcut: @keys("2"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-silver); } }
+            MenuItem { title: "Gold"; shortcut: @keys("3"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-gold); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.filter; shortcut: @keys(Control + "l"); enabled: Menus.live.cycle-filter; activated => { App.menu("cycle-filter"); } }
+            MenuItem { title: Menus.titles.filter; shortcut: @keys(Control + "l"); enabled: Menus.live.cycle-filter; activated => { App.menu(Act.cycle-filter); } }
         }
         Menu {
             title: "Rolls";
-            MenuItem { title: Menus.titles.roll; shortcut: @keys(Control + Shift + "g"); enabled: Menus.live.new-roll; activated => { App.menu("new-roll"); } }
-            MenuItem { title: Menus.titles.ungroup; shortcut: @keys(Control + Shift + Alt + "g"); enabled: Menus.live.ungroup; activated => { App.menu("ungroup"); } }
+            MenuItem { title: Menus.titles.roll; shortcut: @keys(Control + Shift + "g"); enabled: Menus.live.new-roll; activated => { App.menu(Act.new-roll); } }
+            MenuItem { title: Menus.titles.ungroup; shortcut: @keys(Control + Shift + Alt + "g"); enabled: Menus.live.ungroup; activated => { App.menu(Act.ungroup); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.sheet; enabled: Menus.live.contact-sheet; activated => { App.menu("contact-sheet"); } }
-            MenuItem { title: "Prepare the Roll…"; enabled: Menus.live.measure-roll; activated => { App.menu("prepare-roll"); } }
-            MenuItem { title: "Reset to Default…"; enabled: Menus.live.reset-to-default; activated => { App.menu("reset-to-default"); } }
+            MenuItem { title: Menus.titles.sheet; enabled: Menus.live.contact-sheet; activated => { App.menu(Act.contact-sheet); } }
+            MenuItem { title: "Prepare the Roll…"; enabled: Menus.live.measure-roll; activated => { App.menu(Act.prepare-roll); } }
+            MenuItem { title: "Reset to Default…"; enabled: Menus.live.reset-to-default; activated => { App.menu(Act.reset-to-default); } }
         }
         Menu {
             title: "Settings";
-            MenuItem { title: "Copy Settings"; shortcut: @keys(Control + Shift + "c"); enabled: Menus.live.copy-settings; activated => { App.menu("copy"); } }
-            MenuItem { title: Menus.titles.paste; shortcut: @keys(Control + Shift + "v"); enabled: Menus.live.paste-settings; activated => { App.menu("paste"); } }
-            MenuItem { title: Menus.titles.paste-to-roll; enabled: Menus.live.paste-to-roll; activated => { App.menu("paste-to-roll"); } }
+            MenuItem { title: "Copy Settings"; shortcut: @keys(Control + Shift + "c"); enabled: Menus.live.copy-settings; activated => { App.menu(Act.copy); } }
+            MenuItem { title: Menus.titles.paste; shortcut: @keys(Control + Shift + "v"); enabled: Menus.live.paste-settings; activated => { App.menu(Act.paste); } }
+            MenuItem { title: Menus.titles.paste-to-roll; enabled: Menus.live.paste-to-roll; activated => { App.menu(Act.paste-to-roll); } }
             MenuSeparator { }
-            MenuItem { title: "Save as Preset…"; enabled: Menus.live.save-preset; activated => { App.menu("save-preset"); } }
-            MenuItem { title: "Edit Presets…"; enabled: Menus.live.edit-presets; activated => { App.menu("edit-presets"); } }
-            MenuItem { title: "Import Presets…"; enabled: Menus.live.import-presets; activated => { App.menu("import-presets"); } }
-            MenuItem { title: "Paste Preset Code"; enabled: Menus.live.paste-preset-code; activated => { App.menu("paste-preset-code"); } }
-            MenuItem { title: "Show Presets Folder"; enabled: Menus.live.show-presets; activated => { App.menu("show-presets"); } }
+            MenuItem { title: "Save as Preset…"; enabled: Menus.live.save-preset; activated => { App.menu(Act.save-preset); } }
+            MenuItem { title: "Edit Presets…"; enabled: Menus.live.edit-presets; activated => { App.menu(Act.edit-presets); } }
+            MenuItem { title: "Import Presets…"; enabled: Menus.live.import-presets; activated => { App.menu(Act.import-presets); } }
+            MenuItem { title: "Paste Preset Code"; enabled: Menus.live.paste-preset-code; activated => { App.menu(Act.paste-preset-code); } }
+            MenuItem { title: "Show Presets Folder"; enabled: Menus.live.show-presets; activated => { App.menu(Act.show-presets); } }
             MenuSeparator { }
             if Menus.presets.length == 0: MenuItem { title: "No presets"; enabled: false; }
             if Menus.presets.length > 0: MenuItem { title: Menus.apply-title; enabled: false; }
@@ -238,13 +239,13 @@ export component MainWindow inherits AppWindow {
         Menu {
             title: "Help";
             // Slint builds the macOS application menu itself, so the item Swift lays after About is here.
-            MenuItem { title: "Check for Updates…"; activated => { App.menu("check-updates"); } }
+            MenuItem { title: "Check for Updates…"; activated => { App.menu(Act.check-updates); } }
             MenuSeparator { }
-            MenuItem { title: "Show Console"; activated => { App.menu("console"); } }
-            MenuItem { title: "What's New in ONI " + Help.release; activated => { App.menu("welcome"); } }
-            MenuItem { title: "Show What's New Again"; activated => { App.menu("whats-new"); } }
-            MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu("report"); } }
-            MenuItem { title: "Show My Year on Film"; enabled: !Wrapped.shown; activated => { App.menu("wrapped"); } }
+            MenuItem { title: "Show Console"; activated => { App.menu(Act.console); } }
+            MenuItem { title: "What's New in ONI " + Help.release; activated => { App.menu(Act.welcome); } }
+            MenuItem { title: "Show What's New Again"; activated => { App.menu(Act.whats-new); } }
+            MenuItem { title: "Report a Bug / Give Feedback…"; activated => { App.menu(Act.report); } }
+            MenuItem { title: "Show My Year on Film"; enabled: !Wrapped.shown; activated => { App.menu(Act.wrapped); } }
         }
     }
 

@@ -83,7 +83,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.settle();
     assert!(!settings().geometry.portrait && !framing.get_portrait(), "the undo takes the switch back");
     vertical();
@@ -91,8 +91,8 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     assert!(settings().geometry.portrait, "the switch followed the undo, so its click turns it on");
 
     // Crop's RESET: all of the geometry but the measuring window.
-    framing.invoke_act("window-arm".into());
-    framing.invoke_act("window-arm".into());
+    framing.invoke_act(oni_app::Act::WindowArm);
+    framing.invoke_act(oni_app::Act::WindowArm);
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
@@ -117,7 +117,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
-    ctl.act("undo");
+    ctl.act(oni_app::Act::Undo);
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::None);
     flat();
@@ -145,7 +145,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     let named = |key: Key| slint::SharedString::from(key);
 
     // 48 typed into W; Full resolution then writes 96, which the box shows, so Return asks nothing.
-    ctl.act("export");
+    ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click gives the focus with the caret first, so the digits go forward.
     let width_box = || click(&rig, 935.0, 529.0);

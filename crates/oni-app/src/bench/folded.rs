@@ -103,17 +103,17 @@ pub(super) fn folded(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     paired.set(true);
                     phone(format!("{uri},127.0.0.1:{port}"), pressed.clone(), fold.clone());
                 }
-                _ if !w.global::<crate::Pairing>().get_shown() => ctl.act("pair-phone"),
+                _ if !w.global::<crate::Pairing>().get_shown() => ctl.act(crate::Act::PairPhone),
                 _ => {}
             }
             return;
         }
         if pressed.load(Ordering::Relaxed) > 0 && w.global::<crate::Pairing>().get_shown() {
-            ctl.act("close-pairing");
+            ctl.act(crate::Act::ClosePairing);
         }
         let hidden = w.global::<crate::App>().get_panel_hidden();
         if fold.load(Ordering::Relaxed) && !hidden {
-            ctl.act("hide-panel");
+            ctl.act(crate::Act::HidePanel);
         }
         if pressed.load(Ordering::Relaxed) > seen.get() && watching.get().is_none() && landed.get().is_none() {
             seen.set(seen.get() + 1);
@@ -151,7 +151,7 @@ pub(super) fn folded(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         }
         if lines.borrow().len() >= STEPS || started.elapsed() > Duration::from_secs(45) {
             held.stop();
-            ctl.act("hide-panel");
+            ctl.act(crate::Act::HidePanel);
             ctl.flush();
             if let Some(done) = done.borrow_mut().take() {
                 done(format!("folded:\n{}", lines.borrow().join("\n")));

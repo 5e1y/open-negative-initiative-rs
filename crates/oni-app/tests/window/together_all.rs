@@ -77,9 +77,9 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     let first = drag("gallery, opened on C");
     let second = drag("gallery, a second drag");
     // Back to the gallery and in again with the editor's key.
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.until("five together again", Duration::from_secs(30), || canvas.get_status().as_str() == "5 frames together");
     let third = drag("back in by the key");
     // The column: D alone, then ⌘ on A and E.

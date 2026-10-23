@@ -216,21 +216,19 @@ impl Ctl {
         }
     }
 
-    /// Bar keys and menu items the Scanner face answers; anything else is left to `act`.
-    pub(super) fn lab_act(self: &Rc<Self>, action: &str) -> bool {
+    /// Bar keys and menu items the Scanner face answers.
+    pub(super) fn lab_act(self: &Rc<Self>, action: crate::Act) {
         match action {
-            "face-scanner" => self.set_face(Face::Scanner),
-            "face-pro" => self.set_face(Face::Pro),
+            crate::Act::FaceScanner => self.set_face(Face::Scanner),
+            crate::Act::FacePro => self.set_face(Face::Pro),
             // `live(.emulator)`: a photograph worked, never from the gallery.
-            "emulator" => {
+            _ => {
                 let gallery = self.window().is_some_and(|w| w.global::<crate::App>().get_gallery());
                 if !gallery {
                     self.set_face(if self.in_lab() { Face::Pro } else { Face::Scanner });
                 }
             }
-            _ => return false,
         }
-        true
     }
 
     /// `labEscape` and `walkKeys`: Esc leaves the Lab, a bare arrow walks the open frame's group,
@@ -246,7 +244,7 @@ impl Ctl {
             UP | LEFT if bare => self.walk(-1),
             DOWN | RIGHT if bare => self.walk(1),
             // `walkKeys` and `columnKeys`: Space reaches the gallery from the Lab, and from Pro outside De-dust.
-            SPACE if bare && !repeat && (self.in_lab() || !dedust) => self.act("toggle-mode"),
+            SPACE if bare && !repeat && (self.in_lab() || !dedust) => self.act(crate::Act::ToggleMode),
             _ => return false,
         }
         true

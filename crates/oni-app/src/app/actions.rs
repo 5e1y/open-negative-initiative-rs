@@ -5,39 +5,39 @@ use super::*;
 impl Ctl {
     // MARK: - Gestures
 
-    /// Bar keys, menu items and shortcuts meet here; what this build does not carry says so.
-    pub fn act(self: &Rc<Self>, action: &str) {
+    /// Bar keys, menu items and shortcuts meet here.
+    pub fn act(self: &Rc<Self>, action: Act) {
         let Some(w) = self.window() else { return };
         let app = w.global::<App>();
         match action {
-            "undo" | "redo" if app.get_gallery() => self.gallery_step(action == "undo"),
-            "prepare-roll" => self.prepare_roll(),
-            "leave-roll" => self.leave_roll(),
-            "toggle-mode" if self.state.borrow().prepare.shown => {}
-            "undo" => self.write(Command::Undo),
-            "redo" => self.write(Command::Redo),
-            "reset" => self.reset_all(),
-            "toggle-mode" if self.export.borrow().shown => {}
-            "export" => self.export_act(action),
-            "toggle-mode" => self.toggle_mode(),
-            "hide-panel" => app.set_panel_hidden(!app.get_panel_hidden()),
-            "hide-library" => app.set_library_hidden(!app.get_library_hidden()),
-            "smaller" | "larger" if app.get_gallery() => {
-                let by = if action == "larger" { 1 } else { -1 };
+            Act::Undo | Act::Redo if app.get_gallery() => self.gallery_step(action == Act::Undo),
+            Act::PrepareRoll => self.prepare_roll(),
+            Act::LeaveRoll => self.leave_roll(),
+            Act::ToggleMode if self.state.borrow().prepare.shown => {}
+            Act::Undo => self.write(Command::Undo),
+            Act::Redo => self.write(Command::Redo),
+            Act::Reset => self.reset_all(),
+            Act::ToggleMode if self.export.borrow().shown => {}
+            Act::Export => self.export_act(),
+            Act::ToggleMode => self.toggle_mode(),
+            Act::HidePanel => app.set_panel_hidden(!app.get_panel_hidden()),
+            Act::HideLibrary => app.set_library_hidden(!app.get_library_hidden()),
+            Act::Smaller | Act::Larger if app.get_gallery() => {
+                let by = if action == Act::Larger { 1 } else { -1 };
                 let columns = gallery::column_step(self.state.borrow().columns, by);
                 self.state.borrow_mut().columns = columns;
                 self.remember(preferences::GALLERY_COLUMNS, columns.into());
                 self.relayout();
             }
-            "smaller" | "larger" => self.step_zoom(if action == "larger" { 1 } else { -1 }),
-            "compare" if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
-            "screen-gamut" => {
+            Act::Smaller | Act::Larger => self.step_zoom(if action == Act::Larger { 1 } else { -1 }),
+            Act::Compare if !app.get_gallery() && self.state.borrow().open.is_some() => self.toggle_compare(),
+            Act::ScreenGamut => {
                 self.toggle_screen_gamut();
                 self.gamut_kept();
             }
-            "bigger-brush" | "smaller-brush" if self.painting() => {
+            Act::BiggerBrush | Act::SmallerBrush if self.painting() => {
                 // `EditorScene.biggerBrush`: four pixels a key, inside the brush's range.
-                let by = if action == "bigger-brush" { 4.0 } else { -4.0 };
+                let by = if action == Act::BiggerBrush { 4.0 } else { -4.0 };
                 let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
                 {
                     let mut s = self.state.borrow_mut();
@@ -46,89 +46,89 @@ impl Ctl {
                 self.keep_brush();
                 self.publish_dedust();
             }
-            "bigger-brush" | "smaller-brush" => {}
-            "correction" if self.state.borrow().open.is_some() => self.toggle_correcting(),
-            "framing" if self.state.borrow().open.is_some() => self.open_crop(),
-            "mirror" => self.framing_act("mirror"),
-            "toggle-sound" => {
+            Act::BiggerBrush | Act::SmallerBrush => {}
+            Act::Correction if self.state.borrow().open.is_some() => self.toggle_correcting(),
+            Act::Framing if self.state.borrow().open.is_some() => self.open_crop(),
+            Act::Mirror => self.framing_act(action),
+            Act::ToggleSound => {
                 let muted = !self.state.borrow().muted;
                 self.state.borrow_mut().muted = muted;
                 self.remember(preferences::SOUND_MUTED, muted.into());
                 self.publish_settings();
             }
-            "full-decode" => {
+            Act::FullDecode => {
                 let whole = !crate::render::FULL_DECODE.load(std::sync::atomic::Ordering::Relaxed);
                 crate::render::FULL_DECODE.store(whole, std::sync::atomic::Ordering::Relaxed);
                 self.remember(preferences::FULL_DECODE, whole.into());
                 self.publish_settings();
             }
-            "keep-zoom" => {
+            Act::KeepZoom => {
                 let keep = !crate::viewport::KEEP_ZOOM.load(std::sync::atomic::Ordering::Relaxed);
                 crate::viewport::KEEP_ZOOM.store(keep, std::sync::atomic::Ordering::Relaxed);
                 self.remember(preferences::KEEP_ZOOM, keep.into());
                 self.publish_settings();
             }
-            "cycle-filter" => self.cycle_filter(),
-            "show-selected" => self.show_selected(),
-            "copy" => {
+            Act::CycleFilter => self.cycle_filter(),
+            Act::ShowSelected => self.show_selected(),
+            Act::Copy => {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_settings();
                 }
                 self.board_out(crate::pasteboard::SETTINGS);
             }
-            "paste" => self.paste(),
-            "paste-to-roll" => self.paste_to_roll(),
-            "copy-framing" => {
+            Act::Paste => self.paste(),
+            Act::PasteToRoll => self.paste_to_roll(),
+            Act::CopyFraming => {
                 if let Some(store) = self.state.borrow_mut().store.editor() {
                     store.copy_framing();
                 }
                 self.board_out(crate::pasteboard::FRAMING);
                 self.publish_framing();
             }
-            "paste-framing" | "paste-framing-to-roll" => self.paste_framing(action == "paste-framing-to-roll"),
-            "remove" => self.move_to_trash(),
-            "restore" => {
+            Act::PasteFraming | Act::PasteFramingToRoll => self.paste_framing(action == Act::PasteFramingToRoll),
+            Act::Remove => self.move_to_trash(),
+            Act::Restore => {
                 let picked: Vec<String> = {
                     let s = self.state.borrow();
                     s.order.iter().filter(|p| s.trash_picks.selection.contains(*p)).cloned().collect()
                 };
                 self.restore(&picked);
             }
-            "new-roll" if app.get_gallery() => self.new_roll(),
-            "contact-sheet" => self.make_contact_sheet(),
-            "reset-to-default" if app.get_gallery() => self.ask_reset_to_default(),
-            "ungroup" => self.ungroup(),
-            "confirm-yes" | "confirm-no" => self.answered(action == "confirm-yes"),
-            "open" => self.pick(),
-            "recheck" | "read-folders" => self.read_again(),
-            "auto-balance" => self.auto_balance(),
-            "select-roll-type" => self.select_roll_type(),
-            "save-preset" => self.save_preset(),
-            "edit-presets" => self.edit_presets(None),
-            "import-presets" => self.import_presets(),
-            "paste-preset-code" => self.paste_preset_code(),
-            "show-presets" => self.show_presets_folder(),
-            "console" => self.open_console(),
-            "welcome" => self.open_welcome(),
-            "whats-new" => self.show_whats_new_again(),
-            "report" => self.open_report(),
-            "check-updates" | "update" => self.check_for_updates(true),
-            "wrapped" => self.show_wrapped(oni_library::wrapped::today().0),
-            "pair-phone" => self.pair_phone(),
-            "settings" => self.open_settings(),
-            "frontier-export" => self.export_frontier_look(),
-            "frontier-choose" => self.choose_frontier_look(),
-            "frontier-measured" => self.measured_frontier(),
-            "close-settings" => self.close_settings(),
-            "close-pairing" => self.close_pairing(),
-            "forget-phones" => self.forget_phones(),
-            a if a.starts_with("medal-") => {
-                if let Ok(m) = a[6..].parse::<i32>() {
-                    self.label(m);
-                }
-            }
-            a if self.lab_act(a) => {}
-            other => self.say(&format!("“{other}” is not in this build yet")),
+            Act::NewRoll if app.get_gallery() => self.new_roll(),
+            Act::ContactSheet => self.make_contact_sheet(),
+            Act::ResetToDefault if app.get_gallery() => self.ask_reset_to_default(),
+            Act::Ungroup => self.ungroup(),
+            Act::Open => self.pick(),
+            Act::Recheck | Act::ReadFolders => self.read_again(),
+            Act::AutoBalance => self.auto_balance(),
+            Act::SelectRollType => self.select_roll_type(),
+            Act::SavePreset => self.save_preset(),
+            Act::EditPresets => self.edit_presets(None),
+            Act::ImportPresets => self.import_presets(),
+            Act::PastePresetCode => self.paste_preset_code(),
+            Act::ShowPresets => self.show_presets_folder(),
+            Act::Console => self.open_console(),
+            Act::Welcome => self.open_welcome(),
+            Act::WhatsNew => self.show_whats_new_again(),
+            Act::Report => self.open_report(),
+            Act::CheckUpdates | Act::Update => self.check_for_updates(true),
+            Act::Wrapped => self.show_wrapped(oni_library::wrapped::today().0),
+            Act::PairPhone => self.pair_phone(),
+            Act::Settings => self.open_settings(),
+            Act::FrontierExport => self.export_frontier_look(),
+            Act::FrontierChoose => self.choose_frontier_look(),
+            Act::FrontierMeasured => self.measured_frontier(),
+            Act::CloseSettings => self.close_settings(),
+            Act::ClosePairing => self.close_pairing(),
+            Act::ForgetPhones => self.forget_phones(),
+            Act::MedalNone => self.label(0),
+            Act::MedalBronze => self.label(1),
+            Act::MedalSilver => self.label(2),
+            Act::MedalGold => self.label(3),
+            Act::FaceScanner | Act::FacePro | Act::Emulator => self.lab_act(action),
+            Act::Rotate | Act::MirrorVertically | Act::ResetCrop | Act::WindowArm | Act::WindowCopy | Act::WindowPaste | Act::WindowReset => self.framing_act(action),
+            // A gesture its moment does not allow.
+            Act::Compare | Act::Correction | Act::Framing | Act::NewRoll | Act::ResetToDefault => {}
         }
         self.publish_bar();
     }

@@ -115,7 +115,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     lib.invoke_tree_layout_next();
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb) && project_rows(&lib).iter().any(|r| r.title == "B00.tif"), "names, in full");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb), "the gallery's projects start as names");
     lib.invoke_tree_layout_next();
@@ -123,7 +123,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     assert!(project_rows(&lib).iter().any(|r| r.thumb), "the gallery's key gives two a line");
     let prefs = Preferences::load(&support);
     assert_eq!((prefs.string("sidebarLayout.gallery"), prefs.string("sidebarLayout.editor")), (Some("pairs"), Some("list")));
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(project_rows(&lib).iter().all(|r| !r.thumb), "twin: beside a photo the editor's names stay");
 

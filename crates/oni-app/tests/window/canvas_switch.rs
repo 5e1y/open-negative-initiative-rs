@@ -74,7 +74,7 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     rig.until("A on the canvas", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1 && c.get_frame().size().width > 0);
     rig.until("A's patch", Duration::from_secs(60), || healed(w));
     assert_eq!(labels(w), ["Correction 1"]);
-    ctl.act("compare");
+    ctl.act(oni_app::Act::Compare);
     rig.until("A's before", Duration::from_secs(60), || c.get_before().size().width > 0);
 
     // B has no thumbnail yet: the canvas empties, A's before with it, until B's render lands.
@@ -90,12 +90,12 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     assert_eq!(labels(w), ["Correction 1", "Correction 2"], "B's corrections number from one, as A's did");
 
     // The De-dust key goes dark when the tab bar leaves De-dust.
-    ctl.act("correction");
+    ctl.act(oni_app::Act::Correction);
     assert!(w.global::<Bar>().get_dedust(), "the key lights on De-dust");
     w.global::<PanelState>().set_tab(2);
     w.global::<PanelState>().invoke_tab_picked(2);
     assert!(!w.global::<Bar>().get_dedust(), "twin: the tab bar leaving De-dust darkens it");
-    ctl.act("correction");
+    ctl.act(oni_app::Act::Correction);
 
     // A double press on the brush resets its size at once, before the release.
     let rested = format!("{} px", Correction::DEFAULT_RADIUS);

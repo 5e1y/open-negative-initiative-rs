@@ -83,7 +83,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
 
     // ⌥⌘] hides the panel and the title says how to bring it back; ⌘K opens the Crop tab.
     // Windows reads a bare Ctrl+Alt as AltGr when the event names no unmodified text, as this rig's do.
-    let hide_panel = || if cfg!(windows) { ctl.act("hide-panel") } else { rig.chord_with(&[Key::Control, Key::Alt], "]") };
+    let hide_panel = || if cfg!(windows) { ctl.act(oni_app::Act::HidePanel) } else { rig.chord_with(&[Key::Control, Key::Alt], "]") };
     hide_panel();
     assert!(w.global::<App>().get_panel_hidden());
     assert_eq!(menus.get_titles().panel.as_str(), "Show the Panel");
@@ -120,7 +120,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
 
     // The framing travels by its own Copy and Paste, never with the settings.
     assert!(!w.global::<Framing>().get_can_paste());
-    w.global::<Framing>().invoke_act("copy-framing".into());
+    w.global::<Framing>().invoke_act(oni_app::Act::CopyFraming);
     rig.pump();
     assert!(w.global::<Framing>().get_can_paste());
 
@@ -169,7 +169,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Reset 2 photos");
 
     // The framing pasted on the selection: geometry alone, the exposure untouched.
-    w.global::<Framing>().invoke_act("paste-framing".into());
+    w.global::<Framing>().invoke_act(oni_app::Act::PasteFraming);
     rig.pump();
     assert!(settings_of(&b).geometry.mirrored && settings_of(&c).geometry.mirrored);
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Paste framing to 2 photos");

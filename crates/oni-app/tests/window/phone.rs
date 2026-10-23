@@ -70,7 +70,7 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     assert!(ctl.state.borrow().phone().is_none(), "nothing listens before the menu is used");
 
     // File > Pair Phone…: the sheet, then the code once the Host listens; its pixels are the URI's QR.
-    shell.window.global::<App>().invoke_menu("pair-phone".into());
+    shell.window.global::<App>().invoke_menu(oni_app::Act::PairPhone);
     let pairing = shell.window.global::<Pairing>();
     assert!(pairing.get_shown());
     rig.until("the pairing code", WAIT, || !pairing.get_uri().is_empty());
@@ -157,7 +157,7 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     assert!(matches!(stranger, Err(LinkError::Refused)), "a stranger is refused");
 
     // Forget Phones cuts the paired phone at once; it then needs a new code.
-    shell.window.global::<App>().invoke_menu("pair-phone".into());
+    shell.window.global::<App>().invoke_menu(oni_app::Act::PairPhone);
     let pairing = shell.window.global::<Pairing>();
     rig.until("the sheet's forget key", WAIT, || pairing.get_can_forget());
     pairing.invoke_forget();

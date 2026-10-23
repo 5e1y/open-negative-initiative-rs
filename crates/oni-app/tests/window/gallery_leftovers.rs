@@ -79,7 +79,7 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     rig.pump();
     assert!(!app.get_gallery());
     assert_eq!(lib.get_scroll(), 0.0, "twin: the grid hidden behind the editor keeps its place");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(app.get_gallery());
     let tile = app::tiles(w).into_iter().find(|t| t.caption == "A48").expect("the open photo is laid");
@@ -91,7 +91,7 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     assert_eq!(lib.get_scroll(), stop);
     lib.invoke_tile_opened(0);
     rig.pump();
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert_eq!(lib.get_scroll(), 0.0, "the first photo clamps the landing to the top");
 
@@ -178,13 +178,13 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     rig.pump();
     assert!(!ctl.dropped(&[elsewhere.join("E1.tif")]), "twin: the editor takes no drop");
     assert!(ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Scans")));
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(ctl.dropped(&[elsewhere.join("notes.txt"), elsewhere.join("E2.tif")]));
     rig.until("the dropped photo open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("E2.tif")));
     assert!(ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Elsewhere")), "the first item's folder opens");
     assert!(!app.get_gallery(), "the first photo among the items opens in the editor");
-    ctl.act("toggle-mode");
+    ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     assert!(ctl.dropped(&[scans.join("Trip")]));
     rig.until("the dropped folder read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Trip")));

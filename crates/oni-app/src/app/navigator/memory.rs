@@ -61,9 +61,9 @@ impl Ctl {
             }
         });
         let p = me.clone();
-        n.on_welcome_chose(move || p.act("open"));
+        n.on_welcome_chose(move || p.act(crate::Act::Open));
         let p = me.clone();
-        n.on_catch_up_chose(move || p.act("open"));
+        n.on_catch_up_chose(move || p.act(crate::Act::Open));
         let p = me.clone();
         n.on_catch_up_added(move |i| {
             let folder = p.state.borrow().nav.catch_up_folders.get(index(i)).cloned();

@@ -124,7 +124,7 @@ pub(super) fn midzoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
                 let dragged = s.notches().histogram_count() - held;
                 drop(s);
-                ctl.act("undo");
+                ctl.act(crate::Act::Undo);
                 ctl.flush();
                 let moved = text.borrow().clone();
                 finish(format!("{moved}

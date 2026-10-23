@@ -27,7 +27,7 @@ const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-settings/src/lighting_catch_up.rs", 504),
     ("crates/oni-settings/src/tone.rs", 479),
     ("crates/oni-settings/tests/codec_checks.rs", 735),
-    ("crates/oni-ui/ui/app.slint", 427),
+    ("crates/oni-ui/ui/app.slint", 428),
     ("crates/oni-ui/ui/ds/controls.slint", 413),
     ("crates/oni-ui/ui/export.slint", 401),
     ("crates/oni-ui/ui/prepare.slint", 480),

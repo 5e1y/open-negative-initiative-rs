@@ -133,7 +133,7 @@ impl Ctl {
         match line.action {
             CellAction::Paste => self.paste(),
             CellAction::Reset => self.reset_all(),
-            CellAction::ResetToDefault => self.act("reset-to-default"),
+            CellAction::ResetToDefault => self.act(crate::Act::ResetToDefault),
             CellAction::Medal(m) => self.label_paths(&line.scope, m),
             CellAction::NewRoll => self.new_roll(),
             CellAction::Ungroup => {
@@ -159,7 +159,7 @@ impl Ctl {
                 }
                 self.save_projects();
             }
-            CellAction::Export => self.act("export"),
+            CellAction::Export => self.act(crate::Act::Export),
             CellAction::Reveal => system::reveal_all(&line.scope.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             CellAction::Trash => self.move_paths_to_trash(&line.scope),
             CellAction::AddTo | CellAction::RemoveFrom => {}

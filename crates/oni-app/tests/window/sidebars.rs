@@ -112,7 +112,7 @@ pub(crate) fn the_sidebars_lay_their_keys_on_plates_as_swift() {
     // The Crop tab's first plate spans its block: COPY and PASTE hug, PASTE TO ROLL takes the rest.
     panel.set_tab(1);
     panel.invoke_tab_picked(1);
-    w.global::<Framing>().invoke_act("copy-framing".into());
+    w.global::<Framing>().invoke_act(oni_app::Act::CopyFraming);
     rig.settle();
     rig.shot("sidebars-crop");
     let (left, right) = (1280.0 - 340.0, 1280.0);

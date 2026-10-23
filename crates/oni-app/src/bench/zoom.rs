@@ -117,7 +117,7 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                     phase.set(Zoomed::Pinching { event: 0, from, pinch_from: ctl.state.borrow().views().count() });
                     return;
                 }
-                ctl.act(if rung < RUNGS_UP { "larger" } else { "smaller" });
+                ctl.act(if rung < RUNGS_UP { crate::Act::Larger } else { crate::Act::Smaller });
                 phase.set(Zoomed::Ladder { rung: rung + 1, at: Instant::now(), from });
             }
             Zoomed::Pinching { event, from, pinch_from } => {
@@ -138,7 +138,7 @@ pub(super) fn zoom(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 // A pinch back to the fitted scale is not the fit itself: the ladder's last rung is.
                 if !s.viewport().is_fitted() {
                     drop(s);
-                    ctl.act("smaller");
+                    ctl.act(crate::Act::Smaller);
                     return;
                 }
                 if !s.placed().is_some_and(|p| p.whole) {
