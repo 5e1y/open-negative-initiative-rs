@@ -204,8 +204,8 @@ impl EditorStore {
         self.board.settings.is_some()
     }
 
-    /// The frames naming reference `id`, scanned once per reference; the open frame counts by its
-    /// settings in memory, its sidecar possibly lagging.
+    /// The frames naming reference `id` beside the open frame, scanned once per reference: a copy of
+    /// the roll elsewhere is not reached. The open frame counts by its settings in memory.
     pub fn measured_with(&mut self, id: Id) -> BTreeSet<String> {
         let mut found = match self.measured.get(&id) {
             Some(known) => known.clone(),
@@ -216,6 +216,8 @@ impl EditorStore {
             }
         };
         if let Some(open) = &self.open {
+            let folder = oni_library::paths::parent(&open.path);
+            found.retain(|p| oni_library::paths::parent(p) == folder);
             if self.settings.roll_reference.as_ref().map(|r| r.id) == Some(id) {
                 found.insert(open.path.clone());
             } else {

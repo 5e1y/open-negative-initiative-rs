@@ -238,6 +238,8 @@ impl Shell {
 impl Ctl {
     /// The roll's draft, then the open frame's settings, as closing the window writes them.
     pub fn last_writes(&self) -> Option<String> {
+        // A frame's move under way ends whole before the process does.
+        gestures::wait_for_disk();
         self.flush_drafts();
         // The journal's thread writes what it was handed before the process ends.
         let _ = year::journal_in(&self.state.borrow().support).read();

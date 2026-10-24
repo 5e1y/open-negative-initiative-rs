@@ -2875,6 +2875,41 @@
     "detail": "LibraryIndex::open sets a 5 s busy timeout explicitly (the Swift app shares index.sqlite and sets none); prepare_schema treats an unreadable user_version as an error instead of -1, which dropped the table (a_write_waits_for_the_other_apps_write, with an integrity check; twin: a connection with no busy handler, as Swift opens it, is refused at once)."
   },
   {
+    "id": 470,
+    "type": "fix",
+    "title": "New Roll asks first, names the folder it makes and counts the files it moves; photos of two folders are refused with the reason",
+    "status": "done",
+    "detail": "The plan is laid off the interface's thread (roll_folder::plan: the dated folder's name, each frame, every file it carries), then the confirm says “ONI makes the folder “2026-10-24” in “Scans” and moves 4 files into it…”, its key MOVE 2 PHOTOS; Cancel moves nothing. roll_folder::one_folder refuses a selection spread over several folders before anything is asked, so a roll is always made inside its photos' own folder and never crosses a disk (a_new_roll_asks_names_the_folder_and_counts_files, window; twins: two folders refused with no folder made, Cancel leaves every file in place; new_roll_takes_the_photos_of_one_folder_only)."
+  },
+  {
+    "id": 471,
+    "type": "fix",
+    "title": "A frame moves whole or not at all: its passes, its RAW+JPEG pair, its sidecars and other apps' never split, never replace a file",
+    "status": "done",
+    "detail": "roll_folder::carry moves each unit (an RGB triplet, a RAW with its same-stem JPEG, each photo with its .json and the .xmp/.pp3/.dop/.on1 kept by other apps, a RAW's <stem>.xmp) once every place is free, through an injectable rename; a refusal halfway moves back what already moved and names the frame and the cause. rename_new never replaces (renamex_np RENAME_EXCL on macOS, a look first where the volume refuses the flag or elsewhere). A stray sidecar at the destination is a taken name: planned past it, refused when the place is fixed, never overwritten. A cross-volume rename is said as “it lies on another disk” (a_triplet_moves_whole_or_not_at_all with a locked green pass; a_stray_sidecar_at_the_destination_is_a_taken_name, twin: the plain rename replaces it; a_raw_takes_its_jpeg_and_the_sidecars_of_other_apps; rename_new_never_replaces_a_file)."
+  },
+  {
+    "id": 472,
+    "type": "fix",
+    "title": "Undo of New Roll removes its folder on exFAT; a redo into a folder made meanwhile is refused and its step kept",
+    "status": "done",
+    "detail": "remove_if_left counts macOS's ._ twins, .DS_Store and Thumbs.db as leftovers, removes them with this roll's own marker, then the folder with remove_dir only; a marker of another roll keeps the folder. lay refuses a folder of the roll's name it did not make (no marker of this roll): nothing moves, no marker is written, the notice says why and GalleryHistory::give_back offers the redo again; the roll's own folder left by an undo is taken again (undo_on_exfat_removes_the_folder_and_its_appledouble on an hdiutil exFAT image, twin: the literal marker-only check finds the folder not empty; redo_into_a_folder_made_meanwhile_is_refused, twin: the roll's own folder takes the photo again)."
+  },
+  {
+    "id": 473,
+    "type": "fix",
+    "title": "Move to ONI Trash, Restore and the undo or redo of a roll's moves run off the interface's thread",
+    "status": "done",
+    "detail": "Ctl::on_disk runs one gesture's writes or moves at a time on a thread, its name on the status bar, and lands the outcome back (rows, notice, followed moves). EditorStore splits the mark (mark_begun closes a trashed open frame before, mark_run off the thread, mark_landed records the step) and hands a disk step to the host as a Walk. While one runs, every other gesture, a medal and opening the editor are refused and said; a quit waits for it (wait_for_disk), so no frame is cut halfway. The window checks wait on disk_busy (Rig::landed, Rig::roll_confirmed)."
+  },
+  {
+    "id": 474,
+    "type": "fix",
+    "title": "A roll's reference reaches its own folder: a copy of the roll beside it is never reset nor written",
+    "status": "done",
+    "detail": "roll_membership::beside bounds reset_reach to the folders of the photos picked, and measured_with to the open frame's folder, so Reset to Default, Paste to Roll, Roll Settings and Roll of the N leave a Finder copy or a backup naming the same RollReference untouched (a_copy_of_a_roll_beside_it_is_out_of_reach; twin: a pick in both folders reaches both)."
+  },
+  {
     "id": 480,
     "type": "feature",
     "title": "Locate… follows a folder gone to the folder picked, once its photos are recognised there",

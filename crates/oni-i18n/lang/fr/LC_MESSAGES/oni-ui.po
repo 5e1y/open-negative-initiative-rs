@@ -125,7 +125,7 @@ msgstr "Relire les dossiers"
 msgid "Show the Selected Photo"
 msgstr "Afficher la photo sélectionnée"
 
-#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Édition"
 
@@ -2301,17 +2301,77 @@ msgstr "Le dernier enregistrement du look Frontier est illisible : {e}"
 msgid "From “{file}”, read again each time it is saved."
 msgstr "Depuis « {file} », relu à chaque enregistrement."
 
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "It stopped halfway: read the folder again to see where each file is."
+msgstr "Le geste s’est arrêté en cours de route : relisez le dossier pour voir où se trouve chaque fichier."
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "It could not start: nothing was changed."
+msgstr "Le geste n’a pas pu démarrer : rien n’a été modifié."
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Moving to the ONI Trash"
+msgstr "Mise dans la Corbeille ONI"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Restoring from the ONI Trash"
+msgstr "Restauration depuis la Corbeille ONI"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Putting the photos back"
+msgstr "Remise en place des photos"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Moving the photos into the roll again"
+msgstr "Remise des photos dans la pellicule"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "“{gesture}” is still under way: try again once it is done."
+msgstr "« {gesture} » est encore en cours : réessayez une fois terminé."
+
 #: crates/oni-app/src/app/gestures/disk.rs
 msgid "New Roll"
 msgstr "Nouvelle pellicule"
 
 #: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing could move: every name is taken in the roll's folder."
+msgstr "Rien n’a pu être déplacé : tous les noms sont déjà pris dans le dossier de la pellicule."
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Moving the photos into the roll"
+msgstr "Déplacement des photos dans la pellicule"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "ONI makes the folder “{folder}” in “{parent}” and moves {files} into it: the photos, their sidecars and what other apps keep beside them. Undo puts them back."
+msgstr "ONI crée le dossier « {folder} » dans « {parent} » et y déplace {files} : les photos, leurs fichiers de réglages et ceux que d’autres apps gardent à côté. Annuler les remet en place."
+
+#: crates/oni-app/src/app/gestures/disk.rs crates/oni-library/src/roll_folder.rs
 msgid "The roll's folder could not be made: {e}"
 msgstr "Le dossier de la pellicule n’a pas pu être créé : {e}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
-msgid "{count} of the files could not be moved into the roll."
-msgstr "Impossible de déplacer {count} des fichiers dans la pellicule."
+msgid "Move This Photo into a New Roll?"
+msgid_plural "Move {n} Photos into a New Roll?"
+msgstr[0] "Déplacer cette photo dans une nouvelle pellicule ?"
+msgstr[1] "Déplacer {n} photos dans une nouvelle pellicule ?"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "one file"
+msgid_plural "{n} files"
+msgstr[0] "un fichier"
+msgstr[1] "{n} fichiers"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "One photo stays out: its original cannot be found."
+msgid_plural "{n} photos stay out: their originals cannot be found."
+msgstr[0] "Une photo reste à l’écart : son original est introuvable."
+msgstr[1] "{n} photos restent à l’écart : leurs originaux sont introuvables."
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Move Photo"
+msgid_plural "Move {n} Photos"
+msgstr[0] "Déplacer la photo"
+msgstr[1] "Déplacer {n} photos"
 
 #: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder"
@@ -4139,17 +4199,55 @@ msgid_plural "{n} photos were left out"
 msgstr[0] "Une photo a été laissée de côté"
 msgstr[1] "{n} photos ont été laissées de côté"
 
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "it lies on another disk"
+msgstr "il se trouve sur un autre disque"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "another app is using it"
+msgstr "une autre app l’utilise"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "“{name}” is already there"
+msgstr "« {name} » s’y trouve déjà"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "{file}: {cause}"
+msgstr "{file} : {cause}"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "; {file} could not go back to “{folder}” ({cause})"
+msgstr " ; {file} n’a pas pu revenir dans « {folder} » ({cause})"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "“{frame}” stayed where it was: {why}."
+msgstr "« {frame} » est resté à sa place : {why}."
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "And one other frame."
+msgid_plural "And {n} other frames."
+msgstr[0] "Et une autre vue."
+msgstr[1] "Et {n} autres vues."
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "New Roll moves the photos of one folder into a folder made inside it, and these lie in {count} folders. Pick the photos of one folder, then make the roll."
+msgstr "Nouvelle pellicule déplace les photos d’un seul dossier dans un dossier créé à l’intérieur, et celles-ci sont dans {count} dossiers. Choisissez les photos d’un seul dossier, puis créez la pellicule."
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "Nothing moved: a folder “{name}” was made in “{parent}” since, and ONI moves no photo into a folder it did not make."
+msgstr "Rien n’a été déplacé : un dossier « {name} » a été créé depuis dans « {parent} », et ONI ne déplace aucune photo dans un dossier qu’il n’a pas créé."
+
 #: crates/oni-library/src/roll_folder.rs
 msgid "One item could not be put back: its folder moved or a file took its name."
 msgid_plural "{n} of the items could not be put back: their folder moved or a file took their name."
-msgstr[0] "Un élément n’a pas pu être remis en place : son dossier a été déplacé ou un fichier a pris son nom."
-msgstr[1] "{n} éléments n’ont pas pu être remis en place : leur dossier a été déplacé ou un fichier a pris leur nom."
+msgstr[0] "Un élément n’a pas pu être remis en place : son dossier a été déplacé ou un fichier a pris son nom."
+msgstr[1] "{n} éléments n’ont pas pu être remis en place : leur dossier a été déplacé ou un fichier a pris leur nom."
 
 #: crates/oni-library/src/roll_folder.rs
 msgid "One item could not be moved into the roll again: its folder moved or a file took its name."
 msgid_plural "{n} of the items could not be moved into the roll again: their folder moved or a file took their name."
-msgstr[0] "Un élément n’a pas pu être remis dans la pellicule : son dossier a été déplacé ou un fichier a pris son nom."
-msgstr[1] "{n} éléments n’ont pas pu être remis dans la pellicule : leur dossier a été déplacé ou un fichier a pris leur nom."
+msgstr[0] "Un élément n’a pas pu être remis dans la pellicule : son dossier a été déplacé ou un fichier a pris son nom."
+msgstr[1] "{n} éléments n’ont pas pu être remis dans la pellicule : leur dossier a été déplacé ou un fichier a pris leur nom."
 
 #: crates/oni-library/src/trash.rs
 msgid "{head}: a newer version of ONI wrote their settings, and this one never rewrites them."

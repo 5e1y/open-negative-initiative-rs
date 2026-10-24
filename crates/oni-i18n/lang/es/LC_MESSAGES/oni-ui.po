@@ -125,7 +125,7 @@ msgstr "Volver a leer las carpetas"
 msgid "Show the Selected Photo"
 msgstr "Mostrar la foto seleccionada"
 
-#: crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Edición"
 
@@ -2301,17 +2301,77 @@ msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
 msgid "From “{file}”, read again each time it is saved."
 msgstr "De “{file}”, que se vuelve a leer cada vez que se guarda."
 
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "It stopped halfway: read the folder again to see where each file is."
+msgstr "Se detuvo a medias: vuelve a leer la carpeta para ver dónde está cada archivo."
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "It could not start: nothing was changed."
+msgstr "No pudo empezar: no se ha cambiado nada."
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Moving to the ONI Trash"
+msgstr "Moviendo a la Papelera de ONI"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Restoring from the ONI Trash"
+msgstr "Restaurando desde la Papelera de ONI"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Putting the photos back"
+msgstr "Devolviendo las fotos a su sitio"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "Moving the photos into the roll again"
+msgstr "Volviendo a mover las fotos al rollo"
+
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "“{gesture}” is still under way: try again once it is done."
+msgstr "«{gesture}» sigue en curso: inténtalo de nuevo cuando termine."
+
 #: crates/oni-app/src/app/gestures/disk.rs
 msgid "New Roll"
 msgstr "Nuevo rollo"
 
 #: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing could move: every name is taken in the roll's folder."
+msgstr "No se pudo mover nada: todos los nombres ya están ocupados en la carpeta del rollo."
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Moving the photos into the roll"
+msgstr "Moviendo las fotos al rollo"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "ONI makes the folder “{folder}” in “{parent}” and moves {files} into it: the photos, their sidecars and what other apps keep beside them. Undo puts them back."
+msgstr "ONI crea la carpeta «{folder}» en «{parent}» y mueve a ella {files}: las fotos, sus archivos de ajustes y los que otras apps guardan a su lado. Deshacer las devuelve a su sitio."
+
+#: crates/oni-app/src/app/gestures/disk.rs crates/oni-library/src/roll_folder.rs
 msgid "The roll's folder could not be made: {e}"
 msgstr "No se pudo crear la carpeta del rollo: {e}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
-msgid "{count} of the files could not be moved into the roll."
-msgstr "{count} de los archivos no se pudieron mover al rollo."
+msgid "Move This Photo into a New Roll?"
+msgid_plural "Move {n} Photos into a New Roll?"
+msgstr[0] "¿Mover esta foto a un rollo nuevo?"
+msgstr[1] "¿Mover {n} fotos a un rollo nuevo?"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "one file"
+msgid_plural "{n} files"
+msgstr[0] "un archivo"
+msgstr[1] "{n} archivos"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "One photo stays out: its original cannot be found."
+msgid_plural "{n} photos stay out: their originals cannot be found."
+msgstr[0] "Una foto se queda fuera: no se encuentra su original."
+msgstr[1] "{n} fotos se quedan fuera: no se encuentran sus originales."
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Move Photo"
+msgid_plural "Move {n} Photos"
+msgstr[0] "Mover la foto"
+msgstr[1] "Mover {n} fotos"
 
 #: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder"
@@ -4138,6 +4198,44 @@ msgid "One photo was left out"
 msgid_plural "{n} photos were left out"
 msgstr[0] "Se dejó fuera una foto"
 msgstr[1] "Se dejaron fuera {n} fotos"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "it lies on another disk"
+msgstr "está en otro disco"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "another app is using it"
+msgstr "otra app lo está usando"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "“{name}” is already there"
+msgstr "«{name}» ya está ahí"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "{file}: {cause}"
+msgstr "{file}: {cause}"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "; {file} could not go back to “{folder}” ({cause})"
+msgstr "; {file} no pudo volver a «{folder}» ({cause})"
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "“{frame}” stayed where it was: {why}."
+msgstr "«{frame}» se quedó donde estaba: {why}."
+
+#: crates/oni-library/src/roll_folder/carry.rs
+msgid "And one other frame."
+msgid_plural "And {n} other frames."
+msgstr[0] "Y otro fotograma."
+msgstr[1] "Y {n} fotogramas más."
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "New Roll moves the photos of one folder into a folder made inside it, and these lie in {count} folders. Pick the photos of one folder, then make the roll."
+msgstr "Nuevo rollo mueve las fotos de una sola carpeta a una carpeta creada dentro de ella, y estas están en {count} carpetas. Elige las fotos de una sola carpeta y crea el rollo."
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "Nothing moved: a folder “{name}” was made in “{parent}” since, and ONI moves no photo into a folder it did not make."
+msgstr "No se movió nada: desde entonces se creó una carpeta «{name}» en «{parent}», y ONI no mueve ninguna foto a una carpeta que no creó."
 
 #: crates/oni-library/src/roll_folder.rs
 msgid "One item could not be put back: its folder moved or a file took its name."

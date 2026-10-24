@@ -162,6 +162,8 @@ pub struct Organising {
     pub(in crate::app) project_drag: Option<super::project_drop::Drag>,
     /// The folder the notice's Show in Finder key reveals.
     pub(in crate::app) told_folder: Option<String>,
+    /// The gesture whose writes or moves run off this thread, named; the others wait for it.
+    pub(in crate::app) disk_busy: Option<String>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.

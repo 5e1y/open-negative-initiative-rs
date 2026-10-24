@@ -1,21 +1,27 @@
-//! A roll made on the disk the Finder's way: a folder beside the photos, the photos moved in with
-//! their sidecars, and the same moves walked back. The disk is the truth; the app only reads it.
+//! A roll made on the disk the Finder's way: a folder beside the photos, each frame moved in whole
+//! with its sidecars and companions, and the same moves walked back. The disk is the truth.
 
-use crate::folders::{self, name};
+use crate::folders;
 use crate::gallery_history::{Disk, Move};
-use crate::{paths, rgb_passes};
+use crate::paths;
 use chrono::{DateTime, Local};
-use oni_i18n::trn;
-use oni_settings::{Date, Film, roll_folder, sidecar};
-use std::collections::{HashMap, HashSet};
+use oni_i18n::{tr, trn};
+use oni_settings::{Date, Film};
+use std::io;
 use std::path::Path;
+
+mod carry;
+mod units;
+
+pub use carry::{Carried, Rename, carry, rename_new, said};
+pub use units::{Unit, files, plan_units};
 
 /// The earliest capture as year, month, day in local time, numbered past the names taken beside it.
 pub fn name_for(earliest: Date, parent: &str) -> String {
     let base = dated(earliest);
     let mut name = base.clone();
     let mut rank = 2;
-    while Path::new(&paths::join(parent, &name)).exists() {
+    while std::fs::symlink_metadata(paths::join(parent, &name)).is_ok() {
         name = format!("{base} {rank}");
         rank += 1;
     }
@@ -30,57 +36,209 @@ pub fn dated(date: Date) -> String {
         .to_string()
 }
 
-/// The folder made and marked a roll; an error when the disk refuses, leaving nothing behind.
-pub fn make(name: &str, parent: &str, film: &Film) -> std::io::Result<String> {
-    roll_folder::make(name, Path::new(parent), film).map(|p| crate::paths::normal(&p.to_string_lossy()).into_owned())
+/// The folder made and marked a roll; a name already there is refused, never reused, and a marker
+/// the disk refuses leaves no folder behind.
+pub fn make(name: &str, parent: &str, film: &Film) -> io::Result<String> {
+    let folder = paths::join(parent, name);
+    std::fs::create_dir(&folder)?;
+    if let Err(e) = folders::set_roll(Some(film), &folder) {
+        let _ = folders::set_roll(None, &folder);
+        let _ = std::fs::remove_dir(&folder);
+        return Err(e);
+    }
+    Ok(folder)
 }
 
-/// Each photo to its new path with its sidecar; a path already taken keeps that photo where it
-/// was. The moves made, in order.
-pub fn move_items(moves: &[Move]) -> Vec<Move> {
-    moves
+/// The one folder New Roll gathers from; photos spread over several are refused, in words.
+pub fn one_folder(photos: &[String]) -> Result<String, String> {
+    let mut folders: Vec<String> = photos.iter().map(|p| paths::parent(p)).collect();
+    folders.sort();
+    folders.dedup();
+    match folders.as_slice() {
+        [one] => Ok(one.clone()),
+        many => Err(tr!(
+            "New Roll moves the photos of one folder into a folder made inside it, and these lie in {count} folders. Pick the photos of one folder, then make the roll.",
+            count = many.len()
+        )),
+    }
+}
+
+/// What New Roll will do, said in its confirm before anything moves.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Plan {
+    pub parent: String,
+    pub name: String,
+    pub film: Film,
+    pub units: Vec<Unit>,
+    /// The photos picked that move, a RAW's JPEG or a frame's other passes aside.
+    pub picked: usize,
+    /// Every file that moves: the photos, their sidecars and the files other apps keep beside them.
+    pub files: usize,
+    /// The photos picked whose original is not there, left out.
+    pub absent: usize,
+}
+
+impl Plan {
+    pub fn folder(&self) -> String {
+        paths::join(&self.parent, &self.name)
+    }
+}
+
+/// New Roll laid out on the disk as it stands: the folder's name, each frame and the files it carries.
+pub fn plan(photos: &[String], earliest: Date, parent: &str) -> Plan {
+    let present: Vec<String> = photos.iter().filter(|p| std::fs::symlink_metadata(p).is_ok()).cloned().collect();
+    let name = name_for(earliest, parent);
+    let units = plan_units(&present, &paths::join(parent, &name));
+    let moving: std::collections::HashSet<&str> = units.iter().flat_map(|u| u.moves.iter().map(|m| m.from.as_str())).collect();
+    Plan {
+        parent: parent.to_owned(),
+        film: Film::new(&name),
+        name,
+        files: files(&units),
+        picked: present.iter().filter(|p| moving.contains(p.as_str())).count(),
+        absent: photos.len() - present.len(),
+        units,
+    }
+}
+
+/// What New Roll did: its folder, and the frames it carried or left.
+#[derive(Debug, Clone)]
+pub struct Made {
+    pub disk: Disk,
+    pub carried: Carried,
+}
+
+/// The planned folder made, then each frame moved in whole; a folder that took nothing goes again.
+pub fn carry_out(plan: &Plan, rename: &Rename) -> io::Result<Made> {
+    let folder = make(&plan.name, &plan.parent, &plan.film)?;
+    let carried = carry(&plan.units, rename);
+    if carried.made.is_empty() {
+        remove_if_left(&folder, Some(&plan.film));
+    }
+    let disk = Disk { folder: Some(folder), film: Some(plan.film.clone()), moves: carried.moves(), units: carried.sizes() };
+    Ok(Made { disk, carried })
+}
+
+/// An undo or a redo of a roll on the disk, run off the interface's thread.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Walk {
+    pub disk: Disk,
+    pub undoing: bool,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Walked {
+    pub made: Vec<Move>,
+    /// The folder holding what could not move, when some could not.
+    pub left_in: Option<String>,
+    pub said: Option<String>,
+    /// Nothing moved and the step stays to walk again.
+    pub refused: bool,
+}
+
+pub fn walk(walk: &Walk, rename: &Rename) -> Walked {
+    if walk.undoing { take_back(&walk.disk, rename) } else { lay(&walk.disk, rename) }
+}
+
+/// The disk's frames as recorded, each whole; a record without frames moves item by item.
+fn units_of(disk: &Disk) -> Vec<Unit> {
+    let sizes = if disk.units.iter().sum::<usize>() == disk.moves.len() && !disk.units.is_empty() {
+        disk.units.clone()
+    } else {
+        vec![1; disk.moves.len()]
+    };
+    let mut rest = disk.moves.as_slice();
+    sizes
         .iter()
-        .filter(|m| {
-            let (from, to) = (Path::new(&m.from), Path::new(&m.to));
-            let (side_from, side_to) = (sidecar::url_for(from), sidecar::url_for(to));
-            if to.exists() {
-                return false;
-            }
-            // The settings go first and come back if the photo cannot follow, so a photo never
-            // lands without them.
-            let carries = side_from.exists();
-            if carries && std::fs::rename(&side_from, &side_to).is_err() {
-                return false;
-            }
-            if std::fs::rename(from, to).is_err() {
-                if carries {
-                    let _ = std::fs::rename(&side_to, &side_from);
-                }
-                return false;
-            }
-            true
+        .map(|n| {
+            let (unit, after) = rest.split_at(*n);
+            rest = after;
+            Unit { moves: unit.to_vec() }
         })
-        .cloned()
         .collect()
 }
 
-/// Every item back where it was, then the roll's marker and the folder the gesture made, only
-/// once nothing else lies in it: a file added there meanwhile keeps the folder.
-pub fn take_back(disk: &Disk) -> (Vec<Move>, bool) {
-    let reversed: Vec<Move> =
-        disk.moves.iter().rev().map(|m| Move { from: m.to.clone(), to: m.from.clone() }).collect();
-    let back = move_items(&reversed);
-    let Some(folder) = &disk.folder else { return (back, false) };
-    let left: Vec<String> = std::fs::read_dir(folder)
-        .map(|l| l.filter_map(|e| e.ok().map(|e| e.file_name().to_string_lossy().into_owned())).collect())
-        .unwrap_or_default();
-    if !left.iter().all(|n| n == folders::ROLL_MARKER) {
-        return (back, false);
+/// Every frame back where it was, then the roll's marker and the folder the gesture made, once
+/// nothing else lies in it: a file added there meanwhile keeps the folder.
+pub fn take_back(disk: &Disk, rename: &Rename) -> Walked {
+    let reversed: Vec<Unit> = units_of(disk)
+        .into_iter()
+        .rev()
+        .map(|u| Unit { moves: u.moves.iter().rev().map(|m| Move { from: m.to.clone(), to: m.from.clone() }).collect() })
+        .collect();
+    let made = carry(&reversed, rename).moves();
+    if let Some(folder) = &disk.folder {
+        remove_if_left(folder, disk.film.as_ref());
+    }
+    walked(disk, made, true)
+}
+
+/// The roll's folder made again, or found as this roll left it, then every frame moved in again.
+/// A folder of that name made meanwhile is never taken over: the redo is refused.
+pub fn lay(disk: &Disk, rename: &Rename) -> Walked {
+    let refused = |said: String| Walked { said: Some(said), refused: true, ..Walked::default() };
+    let mut made_here = false;
+    if let Some(folder) = &disk.folder {
+        let film = disk.film.as_ref();
+        match std::fs::create_dir(folder) {
+            Ok(()) => {
+                made_here = true;
+                if let Err(e) = folders::set_roll(film, folder) {
+                    remove_if_left(folder, None);
+                    return refused(tr!("The roll's folder could not be made: {e}", e = crate::refusal::cause(&e)));
+                }
+            }
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists && ours(folder, film) => {}
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => {
+                return refused(tr!(
+                    "Nothing moved: a folder “{name}” was made in “{parent}” since, and ONI moves no photo into a folder it did not make.",
+                    name = paths::name(folder),
+                    parent = paths::name(&paths::parent(folder))
+                ));
+            }
+            Err(e) => return refused(tr!("The roll's folder could not be made: {e}", e = crate::refusal::cause(&e))),
+        }
+    }
+    let made = carry(&units_of(disk), rename).moves();
+    if made.is_empty() && made_here && let Some(folder) = &disk.folder {
+        remove_if_left(folder, disk.film.as_ref());
+    }
+    walked(disk, made, false)
+}
+
+fn walked(disk: &Disk, made: Vec<Move>, undoing: bool) -> Walked {
+    let missed = disk.moves.len().saturating_sub(made.len());
+    let left_in = if undoing { disk.folder.clone() } else { disk.moves.first().map(|m| paths::parent(&m.from)) };
+    Walked { made, left_in: left_in.filter(|_| missed > 0), said: (missed > 0).then(|| shortfall(missed, undoing)), refused: false }
+}
+
+/// The folder carries this roll's own marker.
+fn ours(folder: &str, film: Option<&Film>) -> bool {
+    film.is_some_and(|film| folders::roll(folder).is_some_and(|f| f.id == film.id))
+}
+
+/// What a disk lays beside every file and folder on its own: macOS's `._` twins on exFAT, the
+/// Finder's `.DS_Store`, Windows' `Thumbs.db`. None of them keeps a folder.
+pub fn leftover(name: &str) -> bool {
+    name.starts_with("._") || name == ".DS_Store" || name.eq_ignore_ascii_case("Thumbs.db")
+}
+
+/// The folder removed when it holds nothing but this roll's marker and what the disk lays there.
+pub fn remove_if_left(folder: &str, film: Option<&Film>) -> bool {
+    let Ok(listing) = std::fs::read_dir(folder) else { return false };
+    let names: Vec<String> = listing.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
+    if !names.iter().all(|n| n == folders::ROLL_MARKER || leftover(n)) {
+        return false;
+    }
+    if names.iter().any(|n| n == folders::ROLL_MARKER) && !ours(folder, film) {
+        return false;
+    }
+    for twin in names.iter().filter(|n| leftover(n)).map(|n| Path::new(folder).join(n)) {
+        let _ = std::fs::remove_file(twin);
     }
     let _ = folders::set_roll(None, folder);
     // Only an empty folder goes: `remove_dir` refuses one that still holds anything.
-    let removed = std::fs::remove_dir(folder).is_ok();
-    (back, removed)
+    std::fs::remove_dir(folder).is_ok()
 }
 
 /// What an undo or a redo of a roll says for the `missed` items it could not move, as Swift's `takeBack`.
@@ -100,193 +258,10 @@ pub fn shortfall(missed: usize, undoing: bool) -> String {
     }
 }
 
-pub fn lay(disk: &Disk) -> Vec<Move> {
-    if let Some(folder) = &disk.folder {
-        let _ = std::fs::create_dir(folder);
-        let _ = folders::set_roll(disk.film.as_ref(), folder);
-    }
-    move_items(&disk.moves)
-}
-
-/// Each item into `folder`, a name taken there or by another item of the batch numbered as the
-/// Finder numbers a copy: `Tokyo 2`, `P107 2.RW2`.
-pub fn moves(items: &[String], folder: &str) -> Vec<Move> {
-    let mut claimed: HashSet<String> = HashSet::new();
-    let exists = |n: &str| Path::new(&paths::join(folder, n)).exists();
-    // A pass keeps its name or stays: its frame finds the other two by name, so one taken name
-    // keeps the whole triplet where it is.
-    let mut groups: HashMap<String, Vec<String>> = HashMap::new();
-    for item in items {
-        if let Some(group) = rgb_passes::group(item) {
-            groups.entry(item.clone()).or_insert(group);
-        }
-    }
-    let blocked: HashSet<String> =
-        groups.values().filter(|g| g.iter().any(|p| exists(&name(p)))).flatten().cloned().collect();
-    items
-        .iter()
-        .filter_map(|item| {
-            if groups.contains_key(item) {
-                if blocked.contains(item) {
-                    return None;
-                }
-                claimed.insert(name(item));
-                return Some(Move { from: item.clone(), to: paths::join(folder, &name(item)) });
-            }
-            let file = name(item);
-            let ext = if Path::new(item).is_dir() { String::new() } else { paths::extension(&file) };
-            let stem = if ext.is_empty() { file.clone() } else { paths::stem(&file) };
-            let mut free = file.clone();
-            let mut rank = 2;
-            while claimed.contains(&free) || exists(&free) {
-                free = if ext.is_empty() { format!("{stem} {rank}") } else { format!("{stem} {rank}.{ext}") };
-                rank += 1;
-            }
-            claimed.insert(free.clone());
-            Some(Move { from: item.clone(), to: paths::join(folder, &free) })
-        })
-        .collect()
+/// Exists for the path itself, a link that leads nowhere included.
+fn there(path: &str) -> bool {
+    std::fs::symlink_metadata(Path::new(path)).is_ok()
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::scratch::Scratch;
-    use oni_settings::PipelineSettings;
-    use oni_settings::frame::RgbPasses;
-    use oni_settings::sidecar::WriteOptions;
-
-    fn touch(path: &str, bytes: &[u8]) {
-        std::fs::create_dir_all(paths::parent(path)).unwrap();
-        std::fs::write(path, bytes).unwrap();
-    }
-
-    fn exists(path: &str) -> bool {
-        Path::new(path).exists()
-    }
-
-    fn side(path: &str) -> String {
-        crate::paths::normal(&sidecar::url_for(Path::new(path)).to_string_lossy()).into_owned()
-    }
-
-    #[test]
-    fn a_roll_folder_takes_its_photos_and_gives_them_back() {
-        let scratch = Scratch::new("roll-folder");
-        let parent = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let photos: Vec<String> = ["a.RW2", "b.tif"].iter().map(|n| paths::join(&parent, n)).collect();
-        for p in &photos {
-            touch(p, p.as_bytes());
-            touch(&side(p), b"{}");
-        }
-        let day = crate::relink::date("2026:01:14 12:00:00").unwrap();
-        std::fs::create_dir(paths::join(&parent, "2026-01-14")).unwrap();
-        let name = name_for(day, &parent);
-        assert_eq!(name, "2026-01-14 2");
-
-        let film = Film::new(&name);
-        let folder = make(&name, &parent, &film).unwrap();
-        let made = move_items(&moves(&photos, &folder));
-        assert_eq!(made.len(), 2);
-        assert!(made.iter().all(|m| exists(&m.to) && exists(&side(&m.to))));
-        assert_eq!(folders::roll(&folder).map(|f| f.id), Some(film.id));
-        assert!(!photos.iter().any(|p| exists(p)));
-
-        let disk = Disk { folder: Some(folder.clone()), film: Some(film.clone()), moves: made };
-        let (back, removed) = take_back(&disk);
-        assert_eq!(back.len(), 2);
-        assert!(photos.iter().all(|p| exists(p) && exists(&side(p))) && removed && !exists(&folder));
-
-        let redone = lay(&disk);
-        assert_eq!(redone.len(), 2);
-        assert_eq!(folders::roll(&folder).map(|f| f.id), Some(film.id));
-        // Twin: a file put in the folder since keeps it, the photos still go back.
-        let kept = paths::join(&folder, "notes.txt");
-        touch(&kept, b"mine");
-        let (again, removed) = take_back(&disk);
-        assert!(!removed && exists(&kept) && again.len() == 2);
-    }
-
-    #[test]
-    fn a_taken_name_is_numbered_as_the_finder_numbers_a_copy() {
-        let scratch = Scratch::new("roll-folder-names");
-        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let p = |r: &str| paths::join(&root, r);
-        for dir in ["Dest/Trip", "Elsewhere", "Other", "Trip"] {
-            std::fs::create_dir_all(p(dir)).unwrap();
-        }
-        for file in ["Dest/x.RW2", "Elsewhere/x.RW2", "Elsewhere/y.RW2", "Other/y.RW2", "Trip/t.RW2"] {
-            touch(&p(file), file.as_bytes());
-        }
-        touch(&side(&p("Trip/t.RW2")), b"{}");
-        let items = [p("Elsewhere/x.RW2"), p("Elsewhere/y.RW2"), p("Other/y.RW2"), p("Trip")];
-        let planned = moves(&items, &p("Dest"));
-        assert_eq!(planned.iter().map(|m| name(&m.to)).collect::<Vec<_>>(), ["x 2.RW2", "y.RW2", "y 2.RW2", "Trip 2"]);
-        // Twin: kept on their own names, two collide and one is taken.
-        let plain: Vec<String> = items.iter().map(|i| paths::join(&p("Dest"), &name(i))).collect();
-        assert!(plain.iter().collect::<HashSet<_>>().len() < plain.len() && plain.iter().any(|x| exists(x)));
-        let carried = move_items(&planned);
-        assert_eq!(carried.len(), 4);
-        assert!(exists(&p("Dest/Trip 2/t.RW2")) && exists(&side(&p("Dest/Trip 2/t.RW2"))));
-        let (back, removed) = take_back(&Disk { moves: carried, ..Disk::default() });
-        assert!(back.len() == 4 && !removed && exists(&p("Dest/x.RW2")) && items.iter().all(|i| exists(i)));
-    }
-
-    #[test]
-    fn a_triplet_moves_whole_on_its_names_or_stays_whole() {
-        let scratch = Scratch::new("roll-folder-passes");
-        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let p = |r: &str| paths::join(&root, r);
-        for dir in ["Passes", "Clear", "Dest"] {
-            std::fs::create_dir_all(p(dir)).unwrap();
-        }
-        let triplet = [p("Passes/b.ARW"), p("Passes/g.ARW"), p("Passes/r.ARW")];
-        for f in &triplet {
-            touch(f, f.as_bytes());
-        }
-        let lead = PipelineSettings {
-            rgb_passes: Some(RgbPasses {
-                red: "r.ARW".into(),
-                green: "g.ARW".into(),
-                blue: "b.ARW".into(),
-                registration: None,
-            }),
-            ..PipelineSettings::default()
-        };
-        sidecar::write(&lead, Path::new(&triplet[0]), WriteOptions::default()).unwrap();
-        for f in &triplet[1..] {
-            let pass = PipelineSettings { pass_of: Some("b.ARW".into()), ..PipelineSettings::default() };
-            sidecar::write(&pass, Path::new(f), WriteOptions::default()).unwrap();
-        }
-        let order = vec![triplet[2].clone(), triplet[1].clone(), triplet[0].clone()];
-        assert_eq!(rgb_passes::expanded(&[triplet[0].clone()]), order);
-        assert_eq!(rgb_passes::expanded(&[triplet[2].clone()]), order);
-        touch(&p("Dest/g.ARW"), b"taken");
-        assert!(moves(&triplet, &p("Dest")).is_empty(), "one taken name keeps the three where they are");
-        // Twin: with every name free, the three move on their own names.
-        let clear = moves(&triplet, &p("Clear"));
-        assert_eq!(clear.iter().map(|m| name(&m.to)).collect::<Vec<_>>(), ["b.ARW", "g.ARW", "r.ARW"]);
-    }
-
-    /// A photo whose settings cannot follow it stays with them; the old order moved the photo first
-    /// and left it without its settings. A stale file in the settings' place is replaced, as before.
-    #[test]
-    fn a_photo_never_lands_without_its_settings() {
-        let scratch = Scratch::new("roll-folder-sidecars");
-        let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let (a, b) = (paths::join(&root, "a.RW2"), paths::join(&root, "b.RW2"));
-        for (p, settings) in [(&a, &b"{\"a\": 1}"[..]), (&b, &b"{\"b\": 1}"[..])] {
-            touch(p, b"frame");
-            touch(&side(p), settings);
-        }
-        let into = paths::join(&root, "Roll");
-        // A folder where a's settings would go, which no rename may replace; a stale file where b's go.
-        std::fs::create_dir_all(side(&paths::join(&into, "a.RW2"))).unwrap();
-        touch(&side(&paths::join(&into, "b.RW2")), b"{\"stale\": 1}");
-        let asked = [Move { from: a.clone(), to: paths::join(&into, "a.RW2") }, Move { from: b.clone(), to: paths::join(&into, "b.RW2") }];
-        let done = move_items(&asked);
-        assert!(exists(&a) && std::fs::read(side(&a)).unwrap() == b"{\"a\": 1}", "a stayed with its settings");
-        assert!(!exists(&paths::join(&into, "a.RW2")), "twin: a never landed without them");
-        assert_eq!(done.len(), 1);
-        assert_eq!(std::fs::read(side(&paths::join(&into, "b.RW2"))).unwrap(), b"{\"b\": 1}", "b took its settings");
-    }
-}
+mod tests;

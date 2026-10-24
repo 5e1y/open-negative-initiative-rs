@@ -31,6 +31,7 @@ mod locate;
 mod masks;
 mod missing_original;
 mod navigator;
+mod new_roll;
 mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
@@ -115,6 +116,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::an_undo_that_cannot_put_every_photo_back_says_how_many", told::an_undo_that_cannot_put_every_photo_back_says_how_many),
     ("told::a_new_folder_refused_by_the_disk_is_said", told::a_new_folder_refused_by_the_disk_is_said),
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
+    ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),

@@ -147,20 +147,14 @@ impl Ctl {
         s.trash_picks = Picks::default();
     }
 
-    /// `restoreFromOniTrash`: the marks cleared on the trashed among `paths`, one gallery step.
+    /// `restoreFromOniTrash`: the marks cleared on the trashed among `paths` off this thread, one gallery step.
     pub(in crate::app) fn restore(self: &Rc<Self>, paths: &[String]) {
         let targets: Vec<String> = {
             let s = self.state.borrow();
             let trashed: HashSet<&str> = s.org.trashed.iter().map(|e| e.path.as_str()).collect();
             paths.iter().filter(|p| trashed.contains(p.as_str())).cloned().collect()
         };
-        if targets.is_empty() {
-            return;
-        }
-        self.gesture_as(tr("Restore"), &targets, |store| store.restore_from_trash(&targets));
-        let gone: HashSet<String> = targets.into_iter().collect();
-        self.state.borrow_mut().trash_picks.forget(&gone);
-        self.lay_grid();
+        self.mark_off_thread(tr("Restore"), targets, None);
     }
 
     /// `askRestoreAll`: every photo in the ONI Trash, once a key confirms.

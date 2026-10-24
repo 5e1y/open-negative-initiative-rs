@@ -180,12 +180,14 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!(menus.get_titles().remove.as_str(), "Move to ONI Trash");
     let backspace: slint::SharedString = Key::Backspace.into();
     rig.chord(Key::Control, &backspace);
+    rig.landed(&ctl);
     assert_eq!(app::tiles(w).len(), 2);
     assert!(app::tiles(w).iter().all(|t| t.caption != "C"));
     let row = |p: &Path| LibraryIndex::open(&LibraryIndex::default_path(&caches)).unwrap().all().into_iter().find(|e| e.path == p.to_str().unwrap()).unwrap();
     assert!(row(&c).trashed_at.is_some() && c.exists(), "marked, never moved");
     assert_eq!(menus.get_titles().undo.as_str(), "Undo Move to ONI Trash");
     rig.chord(Key::Control, "z");
+    rig.landed(&ctl);
     assert_eq!(app::tiles(w).len(), 3);
     assert!(row(&c).trashed_at.is_none());
 
@@ -211,6 +213,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     assert_eq!(menus.get_titles().roll.as_str(), "New Roll from 2 Photos");
     assert!(menus.get_live().new_roll);
     rig.chord_with(&[Key::Control, Key::Shift], "g");
+    rig.roll_confirmed(&ctl, w);
     let roll = PathBuf::from(oni_library::paths::canonical(&folder)).join(oni_library::roll_folder::dated(oni_settings::Date::now()));
     assert!(roll.join("B.tif").exists() && roll.join("C.tif").exists(), "{roll:?}");
     assert!(sidecar::url_for(&roll.join("B.tif")).exists(), "the sidecar moves with its photo");
@@ -219,6 +222,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     rig.until("the roll read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert_eq!(app::tiles(w).len(), 3, "the moved photos stay in the gallery");
     rig.chord(Key::Control, "z");
+    rig.landed(&ctl);
     assert!(b.exists() && c.exists() && !roll.exists(), "the undo puts them back and takes the folder away");
     rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert_eq!(app::tiles(w).len(), 3);

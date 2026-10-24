@@ -34,6 +34,8 @@ pub struct Disk {
     pub folder: Option<String>,
     pub film: Option<Film>,
     pub moves: Vec<Move>,
+    /// How many of `moves`, in order, make each frame that moves whole or not at all; none, one each.
+    pub units: Vec<usize>,
 }
 
 impl Step {
@@ -145,6 +147,15 @@ impl GalleryHistory {
             disk: None,
             trash: Some(trash),
         });
+    }
+
+    /// A walk refused before anything moved gives its step back, so the same key offers it again.
+    pub fn give_back(&mut self, undoing: bool) {
+        if undoing && self.can_redo() {
+            self.cursor += 1;
+        } else if !undoing && self.can_undo() {
+            self.cursor -= 1;
+        }
     }
 
     pub fn undo_step(&mut self) -> Option<Step> {

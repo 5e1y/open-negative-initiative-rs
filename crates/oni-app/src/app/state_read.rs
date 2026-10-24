@@ -78,6 +78,11 @@ impl State {
         self.read_done
     }
 
+    /// Whether a gesture's writes or moves are still running off the interface's thread.
+    pub fn disk_busy(&self) -> bool {
+        self.org.disk_busy.is_some()
+    }
+
     /// Whether Prepare the Roll is shown.
     pub fn preparing(&self) -> bool {
         self.prepare.shown
@@ -173,6 +178,9 @@ impl State {
 
     /// `loadBar`: what the bar under the card shows loading, in every mode but export.
     pub fn load_bar(&self) -> Option<LoadBar> {
+        if let Some(gesture) = &self.org.disk_busy {
+            return Some(LoadBar::busy(gesture));
+        }
         let (done, total) = self.creating;
         if done < total {
             return Some(LoadBar::counted(tr("Creating thumbnails"), done, total));

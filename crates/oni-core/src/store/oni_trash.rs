@@ -16,10 +16,28 @@ impl EditorStore {
         if self.path().is_some_and(|p| paths.iter().any(|t| t == p)) {
             self.flush();
         }
-        let files = oni_library::rgb_passes::expanded(paths);
         let mosaic = &self.archive.mosaic;
-        let outcome = trash::mark(&files, date, &|p: &Path| mosaic(p));
-        self.took(&outcome, date.is_some());
+        let outcome = mark_run(paths, date, &|p: &Path| mosaic(p));
+        self.mark_landed(paths, &outcome, date)
+    }
+
+    /// Before a mark runs off the host's thread: the open frame among `paths` written, and closed
+    /// when it goes to the ONI Trash, so no edit lands on it meanwhile.
+    pub fn mark_begun(&mut self, paths: &[String], date: Option<Date>) {
+        if !self.path().is_some_and(|p| paths.iter().any(|t| t == p)) {
+            return;
+        }
+        self.flush();
+        if date.is_some() {
+            self.open = None;
+            self.history = History::default();
+            self.replace(PipelineSettings::default());
+        }
+    }
+
+    /// Once the mark has run: its failures said and one gallery step recorded; the frames marked.
+    pub fn mark_landed(&mut self, paths: &[String], outcome: &trash::Outcome, date: Option<Date>) -> usize {
+        self.took(outcome, date.is_some());
         let frames = paths.iter().filter(|p| outcome.done.contains(p)).count();
         let label = if date.is_some() {
             trn("Move to ONI Trash", "Move {n} Photos to ONI Trash", frames as u64)
@@ -52,4 +70,10 @@ impl EditorStore {
             self.replace(PipelineSettings::default());
         }
     }
+}
+
+/// The mark itself, every pass of a frame of passes with it: sidecar writes only, safe off the
+/// interface's thread.
+pub fn mark_run(paths: &[String], date: Option<Date>, mosaic: &dyn Fn(&Path) -> bool) -> trash::Outcome {
+    trash::mark(&oni_library::rgb_passes::expanded(paths), date, mosaic)
 }

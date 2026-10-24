@@ -2,8 +2,11 @@
 
 use super::*;
 
+mod busy;
 mod disk;
 mod told;
+
+pub(in crate::app) use busy::wait_for_disk;
 
 impl Ctl {
     /// `propagationTargets`: the selection, else the open photo; the ONI Trash's never are.
@@ -23,6 +26,9 @@ impl Ctl {
 
     /// `gesture`, a failure told under the gesture's own name, as Swift's `reportFailure(_:as:)`.
     pub(super) fn gesture_as(self: &Rc<Self>, title: &str, touched: &[String], run: impl FnOnce(&mut oni_core::EditorStore) -> usize) {
+        if self.busy_said(title) {
+            return;
+        }
         let failure = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
@@ -66,9 +72,12 @@ impl Ctl {
     }
 
     /// `undo()`/`redo()` in the gallery: the gallery's own stack, whichever photos it touched; a
-    /// roll walked back in part says how many items stayed, with a key to the folder holding them.
+    /// roll's moves walk off this thread, and one walked back in part says how many items stayed.
     pub(super) fn gallery_step(self: &Rc<Self>, undo: bool) {
         let title = if undo { tr("Undo") } else { tr("Redo") };
+        if self.busy_said(title) {
+            return;
+        }
         let (touched, disk): (Vec<String>, bool) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
@@ -84,19 +93,19 @@ impl Ctl {
                 self.told(title, &message);
             }
         }
-        let (failure, walked) = {
+        let (failure, walk) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             if undo { store.undo(Surface::Gallery) } else { store.redo(Surface::Gallery) };
-            (store.failure.take(), store.walked.take())
+            (store.failure.take(), store.walking.take())
         };
+        if let Some(walk) = walk {
+            return self.walk_off_thread(title, walk, touched);
+        }
         if let Some(message) = failure {
-            self.told_with(title, &message, walked.as_ref().and_then(|w| w.left_in.clone()));
+            self.told(title, &message);
         }
         self.landed(&touched);
-        if let Some(walked) = walked {
-            self.followed(&walked.made);
-        }
     }
 
     /// `resetAll()`: every target back to its imported state, one gallery step.
@@ -263,12 +272,9 @@ impl Ctl {
         self.move_paths_to_trash(&targets);
     }
 
+    /// The marks written off this thread: a roll of three hundred on a slow disk never stalls the window.
     pub(super) fn move_paths_to_trash(self: &Rc<Self>, targets: &[String]) {
-        let targets = targets.to_vec();
-        if targets.is_empty() {
-            return;
-        }
-        self.gesture_as(tr("Move to ONI Trash"), &targets, |store| store.move_to_trash(&targets));
+        self.mark_off_thread(tr("Move to ONI Trash"), targets.to_vec(), Some(oni_settings::Date::now()));
     }
 
     /// The film type's tabs: `applyMode` on the selection, else the open photo.
@@ -296,6 +302,7 @@ impl Ctl {
             Some(Pending::DeletePreset(id)) => self.delete_preset(id),
             Some(Pending::UpdatePreset(id)) => self.update_preset(id),
             Some(Pending::ResetToDefault(reach)) => self.reset_to_default(reach),
+            Some(Pending::NewRoll(plan)) => self.lay_new_roll(*plan),
             Some(Pending::QuitAnyway) => {
                 self.state.borrow_mut().quitting = true;
                 let _ = slint::quit_event_loop();

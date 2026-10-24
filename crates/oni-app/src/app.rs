@@ -195,6 +195,7 @@ enum Pending {
     DeletePreset(oni_settings::Id),
     UpdatePreset(oni_settings::Id),
     ResetToDefault(oni_library::roll_membership::ResetReach),
+    NewRoll(Box<oni_library::roll_folder::Plan>),
     QuitAnyway,
     DownloadUpdate,
     Locate(navigator::Asked),
@@ -501,9 +502,7 @@ fn set_modified(g: &StoreGlobal, b: Block, on: bool) {
     }
 }
 
-fn image(bytes: &[u8], w: usize, h: usize) -> Image {
-    Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32))
-}
+fn image(bytes: &[u8], w: usize, h: usize) -> Image { Image::from_rgba8(SharedPixelBuffer::<Rgba8Pixel>::clone_from_slice(bytes, w as u32, h as u32)) }
 
 use oni_library::paths::stem;
 

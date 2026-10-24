@@ -1,15 +1,7 @@
 //! Undo and redo, on the editor's history or the gallery's.
 
 use super::*;
-use oni_library::gallery_history::Move;
-
-/// An undo or a redo of a roll on the disk: the moves made, and the folder holding what could not
-/// move when some could not.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Walked {
-    pub made: Vec<Move>,
-    pub left_in: Option<String>,
-}
+use oni_library::roll_folder::Walk;
 
 impl EditorStore {
     pub fn undo(&mut self, surface: Surface) -> FieldSet {
@@ -50,21 +42,22 @@ impl EditorStore {
         }
     }
 
+    /// A step that moved files is handed to the host as a walk, which runs it off its interface's
+    /// thread; the rest is laid here.
     pub(super) fn take_back(&mut self, step: Step, undoing: bool) -> FieldSet {
-        if let Some(disk) = &step.disk {
-            let made = if undoing { roll_folder::take_back(disk).0 } else { roll_folder::lay(disk) };
-            let missed = disk.moves.len().saturating_sub(made.len());
-            if missed > 0 {
-                self.failure = Some(roll_folder::shortfall(missed, undoing));
-            }
-            let left_in = disk.folder.clone().filter(|_| missed > 0);
-            self.walked = Some(Walked { made, left_in });
+        if let Some(disk) = step.disk {
+            self.walking = Some(Walk { disk, undoing });
             return FieldSet::EMPTY;
         }
         if let Some(marks) = &step.trash {
             self.lay_trash(marks, undoing);
         }
         self.write_back(if undoing { &step.before } else { &step.after })
+    }
+
+    /// A walk that moved nothing gives its step back, so the same key offers it again.
+    pub fn walk_refused(&mut self, undoing: bool) {
+        self.gallery.give_back(undoing);
     }
 
     /// Lays restored settings back: the open frame in memory, so the panel never lags, the others

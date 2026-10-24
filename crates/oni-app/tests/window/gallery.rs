@@ -309,6 +309,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.click("C", &[]);
     let backspace: SharedString = Key::Backspace.into();
     rig.chord(Key::Control, &backspace);
+    rig.landed(&ctl);
     assert_eq!(hand.shown(), ["A", "B", "D"]);
     let trash = lib.get_trash_rows();
     assert_eq!((trash.row_data(0).unwrap().title.as_str(), trash.row_data(0).unwrap().count.as_str()), ("ONI Trash", "1"));
@@ -331,6 +332,7 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     hand.right_click("C");
     assert_eq!(hand.menu(), ["Restore", "Show in Finder"]);
     hand.choose("Restore");
+    rig.landed(&ctl);
     assert!(row(&canonical("C.tif")).trashed_at.is_none() && Path::new(&canonical("C.tif")).exists());
     assert_eq!(lib.get_empty_title().as_str(), "ONI Trash Is Empty");
     assert!(!menus.get_live().restore, "twin: nothing left to restore");

@@ -3,55 +3,106 @@
 
 use super::*;
 use oni_library::archive_tree::NodeId as TreeId;
+use oni_library::roll_folder;
 use oni_library::project_tree::NodeId as ProjectNode;
 
 impl Ctl {
-    /// `rollFolder(from:)`: a dated folder beside the first target, the photos, their passes and
-    /// sidecars moved in, one gallery step that ⌘Z walks back.
+    /// `rollFolder(from:)`, asked first: a dated folder in the photos' folder, the photos, their
+    /// passes and every file beside them moved in, one gallery step that ⌘Z walks back.
     pub(in crate::app) fn new_roll(self: &Rc<Self>) {
         let targets: HashSet<String> = self.targets().into_iter().collect();
         self.new_roll_from(&targets);
     }
 
-    /// `rollFolder(from:)`: the photos moved into a dated roll folder beside the first, one step.
+    /// The photos of one folder laid out off this thread, then the confirm naming the folder made
+    /// and counting the files moved; photos of several folders are refused, with the reason.
     pub(in crate::app) fn new_roll_from(self: &Rc<Self>, targets: &HashSet<String>) {
+        if self.busy_said(tr("New Roll")) {
+            return;
+        }
         let (ordered, earliest) = {
             let s = self.state.borrow();
             let ordered: Vec<String> = s.order.iter().filter(|p| targets.contains(*p)).cloned().collect();
             let dates = s.rows.iter().filter(|e| targets.contains(&e.path)).filter_map(|e| e.captured_at);
             (ordered, dates.reduce(|a, b| if b < a { b } else { a }))
         };
-        let Some(first) = ordered.first() else { return };
-        let parent = oni_library::paths::parent(first);
-        let name = oni_library::roll_folder::name_for(earliest.unwrap_or_else(oni_settings::Date::now), &parent);
-        let film = oni_settings::Film::new(&name);
-        let folder = match oni_library::roll_folder::make(&name, &parent, &film) {
-            Ok(folder) => folder,
-            Err(e) => return self.told(tr("New Roll"), &tr!("The roll's folder could not be made: {e}", e = oni_library::refusal::cause(&e))),
+        if ordered.is_empty() {
+            return;
+        }
+        let parent = match roll_folder::one_folder(&ordered) {
+            Ok(parent) => parent,
+            Err(why) => return self.told(tr("New Roll"), &why),
         };
-        let files = oni_library::rgb_passes::expanded(&ordered);
+        let earliest = earliest.unwrap_or_else(oni_settings::Date::now);
+        let _ = std::thread::Builder::new().name("planning a roll".into()).spawn(move || {
+            let plan = roll_folder::plan(&ordered, earliest, &parent);
+            with_shell(move |c| c.ask_new_roll(plan));
+        });
+    }
+
+    fn ask_new_roll(self: &Rc<Self>, plan: roll_folder::Plan) {
+        if plan.units.is_empty() {
+            let why = if plan.absent > 0 { oni_library::refusal::left_out(plan.absent) } else { tr("Nothing could move: every name is taken in the roll's folder.").into() };
+            return self.told(tr("New Roll"), &why);
+        }
+        let title = trn("Move This Photo into a New Roll?", "Move {n} Photos into a New Roll?", plan.picked as u64);
+        let files = trn("one file", "{n} files", plan.files as u64);
+        let mut message = tr!(
+            "ONI makes the folder “{folder}” in “{parent}” and moves {files} into it: the photos, their sidecars and what other apps keep beside them. Undo puts them back.",
+            folder = plan.name,
+            parent = oni_library::paths::name(&plan.parent),
+            files = files
+        );
+        if plan.absent > 0 {
+            message.push(' ');
+            message.push_str(&trn("One photo stays out: its original cannot be found.", "{n} photos stay out: their originals cannot be found.", plan.absent as u64));
+        }
+        let key = trn("Move Photo", "Move {n} Photos", plan.picked as u64);
+        self.ask(&title, &message, &key, false, Pending::NewRoll(Box::new(plan)));
+    }
+
+    /// The confirmed roll: its folder made and each frame moved whole, off this thread.
+    pub(in crate::app) fn lay_new_roll(self: &Rc<Self>, plan: roll_folder::Plan) {
+        if self.busy_said(tr("New Roll")) {
+            return;
+        }
         let failure = self.state.borrow_mut().store.flush();
         if let Some(message) = failure {
             self.told(tr("New Roll"), &message);
         }
-        let made = oni_library::roll_folder::move_items(&oni_library::roll_folder::moves(&files, &folder));
-        if made.len() < files.len() {
-            self.told(tr("New Roll"), &tr!("{count} of the files could not be moved into the roll.", count = files.len() - made.len()));
+        let parent = plan.parent.clone();
+        self.on_disk(
+            tr("Moving the photos into the roll"),
+            move || roll_folder::carry_out(&plan, &roll_folder::rename_new).map_err(|e| oni_library::refusal::cause(&e)),
+            move |c, made| c.new_roll_landed(&parent, made),
+        );
+    }
+
+    fn new_roll_landed(self: &Rc<Self>, parent: &str, made: Result<roll_folder::Made, String>) {
+        let made = match made {
+            Ok(made) => made,
+            Err(e) => return self.told(tr("New Roll"), &tr!("The roll's folder could not be made: {e}", e = e)),
+        };
+        if let Some(said) = roll_folder::said(&made.carried) {
+            self.told_with(tr("New Roll"), &said, Some(parent.to_owned()));
         }
+        let moves = made.disk.moves.clone();
+        let Some(folder) = made.disk.folder.clone().filter(|_| !moves.is_empty()) else { return };
         {
             let mut s = self.state.borrow_mut();
             if let Some(archive) = s.archive.as_mut() {
-                archive.expanded.insert(TreeId::Folder(parent.clone()));
+                archive.expanded.insert(TreeId::Folder(parent.to_owned()));
                 archive.expanded.insert(TreeId::Folder(folder.clone()));
             }
-            s.rename_request = Some(folder.clone());
+            s.rename_request = Some(folder);
             if let Some(store) = s.store.editor() {
-                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, tr("New Roll"));
+                store.record_disk(made.disk, tr("New Roll"));
+                store.forget_measured();
             }
         }
-        self.journal_count(oni_library::journal::Kind::Rolled, targets.len());
-
-        self.followed(&made);
+        self.journal_count(oni_library::journal::Kind::Rolled, moves.len());
+        self.followed(&moves);
+        self.publish_bar();
     }
 
     /// `followed(_:)`: the index, the rows held, the picks, the rings, the folds, the projects'

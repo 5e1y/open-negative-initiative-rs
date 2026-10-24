@@ -111,6 +111,7 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     lib.invoke_tile_clicked(1, false, false);
     rig.pump();
     ctl.act(oni_app::Act::NewRoll);
+    rig.roll_confirmed(&ctl, w);
     let scans = PathBuf::from(oni_library::paths::canonical(&folder));
     let dated = oni_library::roll_folder::dated(oni_settings::Date::now());
     assert!(scans.join(&dated).join("B.tif").exists(), "B moved into the roll");

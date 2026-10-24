@@ -156,6 +156,10 @@ impl Ctl {
 
     /// `takeOff`: `load(_:)` unless the photo is the one open, then `mode = .editor`.
     pub(super) fn open_in_editor(self: &Rc<Self>, path: &str) {
+        // A photo may be on its way to another folder: it opens once the move has landed.
+        if self.busy_said(tr("Edit")) {
+            return;
+        }
         let reopened = self.state.borrow().open.as_deref() == Some(path);
         let together = self.state.borrow().selected();
         let together = if together.len() > 1 && together.iter().any(|p| p == path) { together } else { Vec::new() };
@@ -179,6 +183,9 @@ impl Ctl {
     }
 
     pub(super) fn label_paths(self: &Rc<Self>, targets: &[String], label: Medal) {
+        if self.busy_said(tr("Something Went Wrong")) {
+            return;
+        }
         let mut written = Vec::new();
         let (mut gone, mut said) = (0, Vec::new());
         for path in targets {
