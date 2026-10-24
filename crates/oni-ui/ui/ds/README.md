@@ -9,7 +9,7 @@ and every screen picks it up.
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
-| `base.slint`, `controls.slint`, `containers.slint`, `collections.slint` | The components | By hand. They read only `theme.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint` | The components | By hand. They read only `theme.slint` |
 | `ds.slint` | The single import screens use | By hand |
 | `catalogue.slint` | Every component in each variant and state | By hand |
 | `board/` | The board: one base component a page, a row per variant, a live column then one per forced state (`Look`, `hover-tab`, `focused-look`, `on`, `enabled`) | By hand |

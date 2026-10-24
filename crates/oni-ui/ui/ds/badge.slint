@@ -1,0 +1,75 @@
+// The badges: a short word on a capsule, a tag, a disc, a tint or a foil seal.
+import { DS } from "tokens.slint";
+import { Colour, Space, Radius, Type } from "theme.slint";
+import { Label, Tips } from "base.slint";
+
+// `DSBadge`'s and `DSGoldSealView`'s gauges, and each seal's foil as one flat colour.
+export global BadgeStyle {
+    out property <length> padding: DS.control-badge-padding;
+    out property <length> radius: Radius.badge / 2;
+    out property <length> seal-height: DS.control-seal-height * 1px;
+    out property <length> seal-padding: DS.control-seal-padding * 1px;
+    out property <length> seal-size: DS.typo-seal-size;
+    out property <length> tracking: DS.control-seal-tracking * 1px;
+    // `DSFoil.Metal`'s gold as the medal's, the holographic foil's body, the red foil's as the destructive tint.
+    out property <[color]> foil: [Colour.medal[3], #c7ccdb, Colour.destructive];
+}
+
+// What a badge says by its colour: a caution on the canvas, a value over the photo, a foil seal, a
+// step's number in its disc, a preset's monogram on its tint.
+export enum BadgeTone { warning, dark, seal, step, tint }
+
+// `DSFoil.Metal`: the foil a seal is struck in.
+export enum Metal { gold, holographic, red }
+
+// A short word on a capsule, a tag, a disc or a tint; a note shows on hover and marks it read.
+export component Badge inherits Rectangle {
+    in property <string> text;
+    in property <BadgeTone> tone: BadgeTone.dark;
+    in property <Metal> metal: Metal.gold;
+    // A tint's own fill and ink, as a preset carries them.
+    in property <color> fill;
+    in property <color> ink;
+    in property <string> note;
+    callback read();
+    property <bool> fixed: root.tone == BadgeTone.step || root.tone == BadgeTone.tint;
+    property <bool> seal: root.tone == BadgeTone.seal;
+    width: root.tone == BadgeTone.step ? DS.control-keycap-mini-height
+        : root.tone == BadgeTone.tint ? DS.control-preset-badge-width
+        : root.tone == BadgeTone.warning ? label.preferred-width + 2 * Space.s
+        // `DSFoil.size`: the last letter's tracking taken off, rounded up to a point.
+        : root.seal ? ceil((label.preferred-width - BadgeStyle.tracking + 2 * BadgeStyle.seal-padding) / 1px) * 1px
+        : label.preferred-width + 2 * BadgeStyle.padding;
+    height: root.tone == BadgeTone.step ? self.width
+        : root.tone == BadgeTone.tint ? DS.control-preset-badge-height
+        : root.tone == BadgeTone.warning ? label.preferred-height + 2 * Space.xs
+        : root.seal ? BadgeStyle.seal-height
+        : label.preferred-height + 2 * BadgeStyle.padding;
+    border-radius: root.tone == BadgeTone.tint ? Radius.badge : root.tone == BadgeTone.dark ? BadgeStyle.radius : self.height / 2;
+    background: root.tone == BadgeTone.warning ? Colour.warning-surface
+        : root.seal ? BadgeStyle.foil[root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0]
+        : root.tone == BadgeTone.step ? Colour.raised
+        : root.tone == BadgeTone.tint ? root.fill
+        : Colour.contrast-edge;
+    label := Label {
+        x: root.seal ? BadgeStyle.seal-padding : (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.fixed ? parent.width : self.preferred-width;
+        height: root.fixed || root.seal ? parent.height : self.preferred-height;
+        text: root.text;
+        font-size: root.tone == BadgeTone.warning ? Type.value : root.seal ? BadgeStyle.seal-size
+            : root.tone == BadgeTone.step ? Type.label : Type.chip;
+        font-weight: root.seal ? Type.strong : Type.regular;
+        spaced: root.seal;
+        // `DSFoil` prints every seal in one dark ink.
+        ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? Colour.ink-on-light
+            : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.handle-active;
+        centred: root.fixed;
+    }
+    if root.note != "": TouchArea {
+        changed has-hover => {
+            Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
+            if (self.has-hover) { root.read(); }
+        }
+    }
+}

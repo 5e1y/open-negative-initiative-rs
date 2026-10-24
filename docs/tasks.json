@@ -2214,7 +2214,7 @@
     "type": "refactor",
     "title": "Badge holds no literal size",
     "status": "done",
-    "detail": "BadgeStyle (base.slint) holds DSBadge's padding, its radius (Radius.badge / 2), and the seal's height, padding, size and tracking; the badge's 11 px is Type.chip. The Badge's own text is a Label with an ink."
+    "detail": "BadgeStyle (base.slint) holds DSBadge's padding, its radius (Radius.badge / 2), and the seal's height, padding, size and tracking; the badge's 11 px is Type.chip. The Badge's own text is a Label with an ink. Badge, BadgeTone, Metal and BadgeStyle live in ds/badge.slint, so base.slint stays under its 400 line ceiling."
   },
   {
     "id": 308,
