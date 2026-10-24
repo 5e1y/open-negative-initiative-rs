@@ -148,6 +148,8 @@ impl Ctl {
                     with_shell(move |c| {
                         c.state.borrow_mut().nav.model.volumes = volumes;
                         c.publish_navigator();
+                        // Edits a disk gone refused are written as it comes back.
+                        c.retry_unsaved(false);
                     });
                 }
             }

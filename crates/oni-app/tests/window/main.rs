@@ -27,6 +27,7 @@ mod keycap;
 mod launch;
 mod library_column;
 mod masks;
+mod missing_original;
 mod navigator;
 mod panel_bindings;
 mod paper_sheet_window;
@@ -99,6 +100,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
+    ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
+    ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
     ("panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset", panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset),
     ("panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window", panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window),

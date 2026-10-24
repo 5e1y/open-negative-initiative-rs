@@ -171,3 +171,68 @@ fn a_frame_whose_original_is_gone_opens_read_only_and_writes_nothing() {
     assert!(store.writable());
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// A frame on a disk of its own, edited, then the disk taken away as the hand opens another photo.
+fn edited_then_switched(label: &str, unplug: bool) -> (EditorStore, std::path::PathBuf, String, String) {
+    let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("T7/Roll")).unwrap();
+    let a = dir.join("T7/Roll/A.tif").to_string_lossy().into_owned();
+    let b = dir.join("B.tif").to_string_lossy().into_owned();
+    std::fs::write(&a, b"a").unwrap();
+    std::fs::write(&b, b"b").unwrap();
+    let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
+    store.open(&a).unwrap();
+    store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.5 }, 0.0);
+    if unplug {
+        std::fs::rename(dir.join("T7"), dir.join("T7 away")).unwrap();
+    }
+    store.open(&b).unwrap();
+    (store, dir, a, b)
+}
+
+#[test]
+fn a_flush_refused_on_switch_keeps_the_edits_and_asks() {
+    let (mut store, dir, a, b) = edited_then_switched("unsaved", true);
+    let kept: Vec<_> = store.unsaved().iter().map(|u| (u.path.clone(), Knob::Vignette.get(&u.settings))).collect();
+    assert_eq!(kept, [(a.clone(), 0.5)], "the edits stay in memory, and their presence is the host's cue to ask");
+    assert!(!store.unsaved()[0].message.is_empty(), "with the disk's refusal");
+    assert!(store.retry_unsaved().is_some() && store.unsaved().len() == 1, "a retry while the disk is away keeps them");
+    // Opened again while away, the frame shows the kept edits, read-only and deaf to every hand.
+    assert!(store.open(&a).is_err());
+    assert_eq!(Knob::Vignette.get(store.settings()), 0.5);
+    assert!(store.inert() && !store.writable());
+    store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.9 }, 1.0);
+    assert_eq!(Knob::Vignette.get(store.settings()), 0.5, "a hand on a frame out of sight moves nothing");
+    store.open(&b).unwrap();
+    assert_eq!(store.unsaved().len(), 1, "leaving it again keeps its edits");
+    // A disk of the same name holding another A.tif takes none of them.
+    std::fs::create_dir_all(dir.join("T7/Roll")).unwrap();
+    std::fs::write(&a, b"another photo").unwrap();
+    assert_eq!(store.retry_unsaved().as_deref(), Some(super::opening::ANOTHER));
+    assert!(!sidecar::url_for(Path::new(&a)).exists() && store.unsaved().len() == 1);
+    std::fs::remove_dir_all(dir.join("T7")).unwrap();
+    std::fs::rename(dir.join("T7 away"), dir.join("T7")).unwrap();
+    assert_eq!(store.retry_unsaved(), None, "the disk back, the retry writes");
+    assert!(store.unsaved().is_empty());
+    let written = sidecar::read(Path::new(&a), false, true).unwrap().settings;
+    assert_eq!(Knob::Vignette.get(&written), 0.5);
+    // Discard drops what a refusal kept.
+    store.open(&a).unwrap();
+    store.apply_at(Command::Set { knob: Knob::Vignette, value: 0.7 }, 2.0);
+    std::fs::rename(dir.join("T7"), dir.join("T7 away")).unwrap();
+    store.open(&b).unwrap();
+    store.discard_unsaved();
+    assert!(store.unsaved().is_empty());
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_flush_taken_on_switch_stays_silent() {
+    // Twin: the disk there, the write takes the edits and nothing is kept to ask about.
+    let (store, dir, a, _) = edited_then_switched("saved", false);
+    assert!(store.unsaved().is_empty() && !store.inert());
+    let written = sidecar::read(Path::new(&a), false, true).unwrap().settings;
+    assert_eq!(Knob::Vignette.get(&written), 0.5);
+    let _ = std::fs::remove_dir_all(&dir);
+}

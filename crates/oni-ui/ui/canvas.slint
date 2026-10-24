@@ -4,6 +4,7 @@ import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, Frame
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
+import { Absent, AbsentNote } from "missing.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 // A correction's marker on the canvas: its ring's rectangle in points and its number.
@@ -308,6 +309,12 @@ export component CanvasCard inherits Card {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         wrap: no-wrap;
+    }
+    // Below the read-only badge, so the cached thumbnail stays in view.
+    if Absent.title != "": AbsentNote {
+        x: (parent.width - self.width) / 2;
+        y: Space.l * 4;
+        height: self.preferred-height;
     }
     // The deck rises over the picture's bottom edge; Crop's handles use that edge.
     // On the canvas's own bottom edge, full width, as Swift's overlay on `NegativeView`.

@@ -25,8 +25,7 @@ impl Ctl {
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
                 w.global::<Canvas>().set_failure(tr!("{name}: could not be decoded", name = name).into());
-                super::plots::clear(&w, super::plots::Slot::Output);
-                self.state.borrow_mut().histogram_dirty = false;
+                self.clear_output();
                 self.say(&tr!("Not rendered: {e}", e = e));
                 return;
             }
@@ -62,6 +61,14 @@ impl Ctl {
         };
         w.global::<Canvas>().set_busy(false);
         w.global::<Canvas>().set_status(status.into());
+    }
+
+    /// The output histogram emptied, for a frame with no render to count.
+    pub(in crate::app) fn clear_output(&self) {
+        if let Some(w) = self.window() {
+            super::plots::clear(&w, super::plots::Slot::Output);
+        }
+        self.state.borrow_mut().histogram_dirty = false;
     }
 
     /// The histogram's picture of the open frame, counted at the image's cadence; another photo's is dropped.

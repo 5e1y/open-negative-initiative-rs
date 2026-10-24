@@ -81,6 +81,9 @@ impl EditorStore {
             Command::Scan(Scan::Walk { by }) => return Applied { changed: FieldSet::EMPTY, walk: Some(by) },
             _ => {}
         }
+        if self.inert() {
+            return Applied::default();
+        }
         let by_hand = !matches!(command, Command::Reset);
         let next = self.commanded(command);
         let changed = self.replace(next);

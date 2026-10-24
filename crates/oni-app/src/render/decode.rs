@@ -153,6 +153,14 @@ pub fn shrunk(l: &Linear, side: f64) -> Linear {
 /// green pass's extent, the red and blue laid by their registration; a missing pass fails the frame.
 pub(crate) fn composed(lead: &Path, passes: &oni_settings::frame::RgbPasses, decode: impl Fn(&Path) -> Result<Decoded, String>) -> Result<Decoded, String> {
     let beside = |name: &str| lead.parent().map_or_else(|| PathBuf::from(name), |f| f.join(name));
+    // A pass gone is named, never left to a decoder that would only say it cannot read it.
+    let missing = [&passes.red, &passes.green, &passes.blue].map(|n| !beside(n).exists());
+    match missing {
+        [true, ..] => return Err(tr!("Its red pass “{pass}” is missing beside it.", pass = passes.red)),
+        [_, true, _] => return Err(tr!("Its green pass “{pass}” is missing beside it.", pass = passes.green)),
+        [.., true] => return Err(tr!("Its blue pass “{pass}” is missing beside it.", pass = passes.blue)),
+        _ => {}
+    }
     let green = decode(&beside(&passes.green)).map_err(|e| tr!("its green pass: {error}", error = e))?;
     let red = decode(&beside(&passes.red)).map_err(|e| tr!("its red pass: {error}", error = e))?;
     let blue = decode(&beside(&passes.blue)).map_err(|e| tr!("its blue pass: {error}", error = e))?;

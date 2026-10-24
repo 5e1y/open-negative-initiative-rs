@@ -1,0 +1,41 @@
+// A photo the canvas cannot show, said in the hand's words, and the edits a refused write kept.
+import { Inset, Gap, Label, TextRole, Tone, Button, ButtonGroup, GroupAlign, SheetStyle, AskSheet, AskRole } from "ds/ds.slint";
+
+// Why the open photo is not drawn: its title empty while it is.
+export global Absent {
+    in property <string> title;
+    in property <string> detail;
+    // The nearest folder still on the disk, which Show the Folder opens.
+    in property <string> folder;
+    callback show-folder();
+    callback back();
+}
+
+// Over the cached thumbnail, centred: the cause, what to do, and the two ways out.
+export component AbsentNote inherits Inset {
+    width: SheetStyle.notice-width;
+    pad: Gap.m;
+    gap: Gap.s;
+    Label { role: TextRole.section; text: Absent.title; wrap: word-wrap; }
+    if Absent.detail != "": Label { tone: Tone.secondary; text: Absent.detail; wrap: word-wrap; }
+    ButtonGroup { align: GroupAlign.end;
+        if Absent.folder != "": Button { text: @tr("SHOW THE FOLDER"); clicked => { Absent.show-folder(); } }
+        Button { text: @tr("BACK TO THE GALLERY"); clicked => { Absent.back(); } }
+    }
+}
+
+// Edits a sidecar refused as the hand left their photo: written again, or let go.
+export global Unsaved {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    // 0 discards, 1 retries, -1 (Escape) keeps them in memory for the disk's return.
+    callback answered(int);
+}
+
+export component UnsavedSheet inherits AskSheet {
+    title: Unsaved.title;
+    message: Unsaved.message;
+    keys: [{ text: @tr("DISCARD"), role: AskRole.destructive }, { text: @tr("RETRY"), role: AskRole.confirm }];
+    answered(i) => { Unsaved.answered(i); }
+}

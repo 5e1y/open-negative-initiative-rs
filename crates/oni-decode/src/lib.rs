@@ -244,6 +244,11 @@ pub fn route(path: &Path) -> Branch {
     }
 }
 
+/// The format of a file neither LibRaw, the linear container nor an image reader takes: `HEIC`, `PSD`.
+pub fn unsupported_format(path: &Path) -> Option<String> {
+    (route(path) == Branch::Plain).then(|| plain::unsupported(path)).flatten()
+}
+
 /// `RawDecode.decodesViaMosaic`, which the settings' migration shares with the decode.
 pub fn decodes_via_mosaic(path: &Path) -> bool {
     route(path) == Branch::Mosaic
