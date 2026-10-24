@@ -200,7 +200,14 @@ export component Slider inherits VerticalLayout {
     }
 }
 
-// `DSTextField`: the field on the canvas's dark, its edge lit while it holds the focus.
+// The serial of the last field entered, so a window's return to its field keeps its selection.
+global FieldFocus {
+    in-out property <int> serial;
+}
+
+// `DSTextField`: the field on the canvas's dark, its edge lit while it holds the focus. Entered by a
+// click, Tab or its owner, it selects its whole value, as AppKit's field does; once in, a click
+// places the caret, a double click selects a word and a triple click the line.
 export component TextField inherits HorizontalLayout {
     in-out property <string> text <=> input.text;
     // The owner's text, pushed in at each change: a binding on `text` dies at the first key typed.
@@ -220,6 +227,8 @@ export component TextField inherits HorizontalLayout {
     callback left(string);
     public function take-focus() { input.focus(); }
     public function take-focus-selecting() { input.focus(); input.select-all(); }
+    // The `FieldFocus` serial this field took when last entered; -1 before it ever was.
+    property <int> held: -1;
     init => { if (root.value != "") { input.text = root.value; } }
     changed value => { input.text = root.value; }
     spacing: Space.xxs;
@@ -246,7 +255,16 @@ export component TextField inherits HorizontalLayout {
             enabled: root.enabled;
             edited => { root.edited(self.text); }
             accepted => { root.accepted(self.text); }
-            changed has-focus => { if (!self.has-focus) { root.left(self.text); } }
+            changed has-focus => {
+                if (self.has-focus) {
+                    // A return with no other field entered meanwhile is the window's coming back.
+                    if (root.held != FieldFocus.serial) { self.select-all(); }
+                    FieldFocus.serial += 1;
+                    root.held = FieldFocus.serial;
+                } else {
+                    root.left(self.text);
+                }
+            }
         }
         if !root.multiline && input.text == "" && !input.has-focus: Label {
             x: FieldStyle.padding;
@@ -254,11 +272,17 @@ export component TextField inherits HorizontalLayout {
             text: root.placeholder;
             tone: Tone.tertiary;
         }
-        if !root.multiline: TouchArea {
-            clicked => { input.focus(); }
+        // Over the field until it holds the focus: the press enters it, then the input takes the clicks.
+        TouchArea {
+            enabled: root.enabled && !input.has-focus;
             mouse-cursor: MouseCursor.text;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                    input.focus();
+                    input.select-all();
+                }
+            }
         }
     }
     if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
 }
-

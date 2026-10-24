@@ -52,6 +52,7 @@ mod sidebar_reveal;
 mod sidebars;
 mod space_chip;
 mod stocks;
+mod text_fields;
 mod together;
 mod together_all;
 mod toolbar;
@@ -129,6 +130,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
+    ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
