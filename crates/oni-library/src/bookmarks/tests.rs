@@ -27,7 +27,7 @@ fn a_swift_launch_keeps_the_volume_identities() {
     Bookmarks::default().noted(&favourites.paths, place).save(&support).unwrap();
     let noted = Bookmarks::load(&support).places[&path].clone();
     assert!(noted.file_id.is_some());
-    if cfg!(target_os = "macos") {
+    if cfg!(any(target_os = "macos", windows)) {
         assert!(noted.volume.as_ref().is_some_and(|v| v.uuid.is_some()), "{noted:?}");
     }
     swift_launch(&support);
