@@ -59,11 +59,12 @@ if [ -s "$out/skipped" ]; then
         {
             why = $3
             if (match(why, /\(set [A-Z_]+\)/)) why = "no " substr(why, RSTART + 5, RLENGTH - 6)
-            else if (why ~ /roll #8 is absent/) why = "no ONI_RAW_DIR"
             else if (why ~ /ONI_SKIP_HEAVY/) why = "ONI_SKIP_HEAVY set"
+            else if (match(why, /ONI_[A-Z_]+/)) why = "no " substr(why, RSTART, RLENGTH)
+            else if (why ~ /[Rr]oll #8/) why = "no ONI_RAW_DIR"
             else if (why ~ /GPU|[Aa]dapter|device/) why = "no GPU"
             else if (why ~ /running as root|under root/) why = "root"
-            else { sub(/^(SKIPPED|skipped)[^:]*: */, "", why); why = substr(why, 1, 48) }
+            else { sub(/^(SKIPPED|skipped)[^:]*: */, "", why); sub(/:.*/, "", why) }
             count[why]++; total++
         }
         END {
