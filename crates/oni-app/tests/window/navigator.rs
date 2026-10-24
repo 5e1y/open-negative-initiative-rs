@@ -106,7 +106,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     // A former library: the catch-up sheet counts the photos no folder holds, and the welcome offers
     // the folders they were in, per volume, never the home itself.
     assert!(n.get_catch_up_shown());
-    assert_eq!(n.get_catch_up_left().as_str(), "3 photos of your library are not in it yet:");
+    assert_eq!(n.get_catch_up_left().as_str(), "3 photos of your former library lie outside your favourites:");
     let caught = n.get_catch_up_lines();
     let caught: Vec<(String, String)> = (0..caught.row_count()).filter_map(|i| caught.row_data(i)).map(|l| (l.folder.to_string(), l.count.to_string())).collect();
     assert_eq!(caught, [(p(&home.join("Old")), "2".to_string()), (p(&home.join("Scans/Roll 1")), "1".to_string())]);
@@ -119,7 +119,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     n.invoke_catch_up_added(0);
     rig.until("Old opened", Duration::from_secs(30), || ctl.state.borrow().read_done() && opened().is_some());
     assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()));
-    assert_eq!(n.get_catch_up_left().as_str(), "1 photos of your library are not in it yet:");
+    assert_eq!(n.get_catch_up_left().as_str(), "One photo of your former library lies outside your favourites:");
     assert_eq!(n.get_catch_up_choose().as_str(), "ADD ANOTHER FOLDER…", "twin: a folder in, the key asks for another");
     rig.settle();
     println!("shot {}", rig.shot("roots-catch-up").display());

@@ -346,3 +346,53 @@ fn undo_on_exfat_removes_the_folder_and_its_appledouble() {
     assert!(names.iter().all(|n| n == folders::ROLL_MARKER || leftover(n)));
     assert!(remove_if_left(&folder, made.disk.film.as_ref()) && !exists(&folder));
 }
+
+#[test]
+fn a_locked_file_is_retried_then_named() {
+    use crate::names::Platform::{Mac, Windows};
+    use std::sync::Mutex;
+    let sharing = || io::Error::from_raw_os_error(32);
+    // A hold lifted on the third try: two pauses, then the move.
+    let tries = Mutex::new(0);
+    let waited = Mutex::new(Vec::new());
+    let lifts = |_: &Path, _: &Path| {
+        let mut n = tries.lock().unwrap();
+        *n += 1;
+        if *n < 3 { Err(sharing()) } else { Ok(()) }
+    };
+    let pause = |d: std::time::Duration| waited.lock().unwrap().push(d);
+    assert!(retried(Path::new("/a"), Path::new("/b"), &lifts, &pause, Windows).is_ok());
+    assert_eq!((*tries.lock().unwrap(), waited.lock().unwrap().clone()), (3, PAUSES[..2].to_vec()));
+
+    // A hold never lifted: every pause spent, then the frame stays and its file is named.
+    let scratch = Scratch::new("roll-held");
+    let parent = root(&scratch);
+    let photo = paths::join(&parent, "DSC_0001.NEF");
+    touch(&photo, b"raw");
+    let units = plan_units(std::slice::from_ref(&photo), &paths::join(&parent, "Roll"));
+    std::fs::create_dir(paths::join(&parent, "Roll")).unwrap();
+    let held = |f: &Path, t: &Path| retried(f, t, &|_: &Path, _: &Path| Err(io::Error::from(io::ErrorKind::ResourceBusy)), &|_| {}, Windows);
+    let carried = carry(&units, &held);
+    let said = said(&carried).unwrap_or_default();
+    assert!(carried.made.is_empty() && exists(&photo), "nothing moved");
+    assert_eq!(said, "“DSC_0001.NEF” stayed where it was: DSC_0001.NEF: another app is using it.");
+
+    // Twin: a refusal that is no hold is said at once, and a Mac reads no Windows code as one.
+    for (error, platform) in [(io::Error::from(io::ErrorKind::NotFound), Windows), (sharing(), Mac), (io::Error::from_raw_os_error(5), Mac)] {
+        let calls = Mutex::new(0);
+        let refuses = |_: &Path, _: &Path| {
+            *calls.lock().unwrap() += 1;
+            Err(io::Error::from_raw_os_error(error.raw_os_error().unwrap_or(2)))
+        };
+        let _ = retried(Path::new("/a"), Path::new("/b"), &refuses, &|_| panic!("no pause"), platform);
+        assert_eq!(*calls.lock().unwrap(), 1, "{error:?} on {platform:?}");
+    }
+    // Twin: Windows' denial on a folder with a file open inside is tried again.
+    let denials = Mutex::new(0);
+    let denies = |_: &Path, _: &Path| {
+        *denials.lock().unwrap() += 1;
+        Err(io::Error::from_raw_os_error(5))
+    };
+    assert!(retried(Path::new("/a"), Path::new("/b"), &denies, &|_| {}, Windows).is_err());
+    assert_eq!(*denials.lock().unwrap(), PAUSES.len() + 1);
+}

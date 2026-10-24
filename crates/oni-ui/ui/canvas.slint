@@ -5,6 +5,7 @@ import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
 import { Absent, AbsentNote } from "missing.slint";
+import { KeyWords } from "key_words.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 // A correction's marker on the canvas: its ring's rectangle in points and its number.
@@ -339,7 +340,7 @@ export component CanvasCard inherits Card {
         Button { has-icon: true; square: true;
             size: ButtonSize.small;
             icon: Icons.menu-left;
-            help: root.library-hidden ? @tr("Show the Library (⌥⌘[)") : @tr("Hide the Library (⌥⌘[)");
+            help: root.library-hidden ? @tr("Show the Library ({})", KeyWords.option-command + "[") : @tr("Hide the Library ({})", KeyWords.option-command + "[");
             clicked => {
                 root.column-toggled(true);
                 root.menu(Act.hide-library);
@@ -358,14 +359,14 @@ export component CanvasCard inherits Card {
         Label { text: Canvas.zoom-label; role: TextRole.value; }
         ButtonGroup {
             align: GroupAlign.center;
-            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: @tr("Zoom out (⌘−)"); clicked => { root.menu(Act.smaller); } }
-            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in (⌘+)"); clicked => { root.menu(Act.larger); } }
+            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: @tr("Zoom out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
+            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
         Button { has-icon: true; square: true;
             size: ButtonSize.small;
             icon: Icons.menu-right;
-            help: root.panel-hidden ? @tr("Show the Panel (⌥⌘])") : @tr("Hide the Panel (⌥⌘])");
+            help: root.panel-hidden ? @tr("Show the Panel ({})", KeyWords.option-command + "]") : @tr("Hide the Panel ({})", KeyWords.option-command + "]");
             clicked => {
                 root.column-toggled(false);
                 root.menu(Act.hide-panel);

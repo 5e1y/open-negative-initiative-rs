@@ -2,22 +2,17 @@
 
 use crate::film_group::FilmGroup;
 use crate::index::Entry;
-use oni_settings::{Date, Id};
 use std::collections::HashSet;
 
-/// A day is its local midnight in whole seconds since 1970, as `FilmKey::Day` holds it.
+/// The archive is folders and the photos in them, as the disk lays them out.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum NodeId {
-    Roll(Id),
-    Day(i64),
     Photo(String),
     Folder(String),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
-    Roll { id: Id, group: FilmGroup },
-    Day { day: Date, group: FilmGroup },
     Photo(Entry),
     Folder { path: String, group: Option<FilmGroup>, children: Vec<Node> },
 }
@@ -25,8 +20,6 @@ pub enum Node {
 impl Node {
     pub fn id(&self) -> NodeId {
         match self {
-            Node::Roll { id, .. } => NodeId::Roll(*id),
-            Node::Day { day, .. } => NodeId::Day(day.unix_seconds() as i64),
             Node::Photo(entry) => NodeId::Photo(entry.path.clone()),
             Node::Folder { path, .. } => NodeId::Folder(path.clone()),
         }
@@ -34,7 +27,6 @@ impl Node {
 
     pub fn entries(&self) -> Vec<Entry> {
         match self {
-            Node::Roll { group, .. } | Node::Day { group, .. } => group.entries.clone(),
             Node::Photo(entry) => vec![entry.clone()],
             Node::Folder { group, children, .. } => {
                 let mut out: Vec<Entry> = children.iter().flat_map(Node::entries).collect();
@@ -47,7 +39,6 @@ impl Node {
     /// The photographs under here, summed rather than counted on `entries`, which copies them all.
     pub fn count(&self) -> usize {
         match self {
-            Node::Roll { group, .. } | Node::Day { group, .. } => group.entries.len(),
             Node::Photo(_) => 1,
             Node::Folder { group, children, .. } => {
                 children.iter().fold(group.as_ref().map_or(0, |g| g.entries.len()), |n, c| n + c.count())
@@ -56,7 +47,7 @@ impl Node {
     }
 }
 
-/// The group or folder node `id` names, searched through every folder; a photo in a group has none.
+/// The folder node `id` names, searched through every folder; a photo in a folder has none.
 pub fn find<'a>(nodes: &'a [Node], id: &NodeId) -> Option<&'a Node> {
     nodes.iter().find_map(|node| match node {
         _ if node.id() == *id => Some(node),
@@ -65,19 +56,17 @@ pub fn find<'a>(nodes: &'a [Node], id: &NodeId) -> Option<&'a Node> {
     })
 }
 
-/// `firstPath`: a photo itself, a group's first photo, a folder's own first before its children's.
+/// `firstPath`: a photo itself, a folder's own first photo before its children's.
 pub fn first_path(node: &Node) -> Option<&str> {
     match node {
         Node::Photo(entry) => Some(&entry.path),
-        Node::Roll { group, .. } | Node::Day { group, .. } => group.entries.first().map(|e| e.path.as_str()),
         Node::Folder { group, children, .. } => {
             group.as_ref().and_then(|g| g.entries.first()).map(|e| e.path.as_str()).or_else(|| children.iter().find_map(first_path))
         }
     }
 }
 
-/// Laid flat with each node's depth: a roll or day opens into its photos, a folder into its
-/// children then its own photos.
+/// Laid flat with each node's depth: a folder opens into its children then its own photos.
 pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<(Node, usize)> {
     let mut rows = Vec::new();
     for node in nodes {
@@ -87,9 +76,6 @@ pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<
         }
         match node {
             Node::Photo(_) => {}
-            Node::Roll { group, .. } | Node::Day { group, .. } => {
-                rows.extend(group.entries.iter().map(|e| (Node::Photo(e.clone()), depth + 1)));
-            }
             Node::Folder { group, children, .. } => {
                 rows.extend(flatten(children, expanded, depth + 1));
                 rows.extend(group.iter().flat_map(|g| g.entries.iter().map(|e| (Node::Photo(e.clone()), depth + 1))));
@@ -103,6 +89,7 @@ pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<
 mod tests {
     use super::*;
     use crate::film_group::FilmKey;
+    use oni_settings::Date;
 
     fn group(folder: &str, paths: &[&str]) -> FilmGroup {
         let base = Date::since_reference_date(8e8);

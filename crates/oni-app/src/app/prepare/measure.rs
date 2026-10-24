@@ -202,8 +202,11 @@ impl Ctl {
             let r = &mut self.state.borrow_mut().prepare;
             let Some(drafts) = r.drafts() else { return };
             let job: Job = Box::new(move || {
-                for (path, draft) in drafts {
-                    let _ = sidecar::set_roll_draft(Some(draft), Path::new(&path), mosaic(&path));
+                let refused: Vec<String> =
+                    drafts.into_iter().filter_map(|(path, draft)| sidecar::set_roll_draft(Some(draft), Path::new(&path), mosaic(&path)).err()).map(|e| oni_library::refusal::said(&e)).collect();
+                if let Some(cause) = refused.first().cloned() {
+                    let n = refused.len() as u64;
+                    with_shell(move |c| c.told(tr("Prepare the Roll"), &trn("One frame's preparation could not be saved: {cause}", "{n} frames' preparation could not be saved: {cause}", n).replace("{cause}", &cause)));
                 }
             });
             job
@@ -219,6 +222,15 @@ impl Ctl {
             return;
         }
         self.save_draft();
+        self.drain_drafts();
+    }
+
+    /// The draft writes already queued, waited for before a gesture moves their frames' folder,
+    /// where a later write finds no photo; at most `DRAFT_FLUSH`, and never behind a measure.
+    pub(in crate::app) fn drain_drafts(&self) {
+        if self.state.borrow().prepare.progress.is_some() {
+            return;
+        }
         let (done, waited) = mpsc::channel::<()>();
         self.state.borrow().prepare.post(Box::new(move || {
             let _ = done.send(());

@@ -147,10 +147,6 @@ impl Archive {
                         let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
                         Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
                     }
-                    Node::Roll { group, .. } | Node::Day { group, .. } => {
-                        let title = group.film.as_ref().map(|f| f.name.clone()).or(group.heading.clone()).unwrap_or_default();
-                        Row { id, depth, title, caption: count.to_string(), kind: 1, expandable: count > 0, expanded, stock: Some(default_stock(group)) }
-                    }
                 }
             })
             .collect()
@@ -176,11 +172,6 @@ impl Archive {
                     Node::Folder { group, children, .. } => {
                         walk(children, path, label);
                         for e in group.iter_mut().flat_map(|g| g.entries.iter_mut()).filter(|e| e.path == path) {
-                            e.label = label;
-                        }
-                    }
-                    Node::Roll { group, .. } | Node::Day { group, .. } => {
-                        for e in group.entries.iter_mut().filter(|e| e.path == path) {
                             e.label = label;
                         }
                     }

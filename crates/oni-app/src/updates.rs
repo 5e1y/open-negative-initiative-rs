@@ -233,7 +233,8 @@ pub fn key_title(display: &str) -> String {
 }
 
 pub fn key_help(display: &str) -> String {
-    tr!("Download version {version} · export stays on ⌘E", version = display)
+    let key = format!("{}E", crate::platform::keys(crate::platform::Platform::THIS).command);
+    tr!("Download version {version} · export stays on {key}", version = display, key = key)
 }
 
 /// Sparkle's own wording for the dialogs a check that was asked for ends on.

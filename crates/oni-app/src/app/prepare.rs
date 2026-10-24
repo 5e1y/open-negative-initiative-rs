@@ -36,6 +36,7 @@ mod previews;
 mod publishing;
 mod flat_masks;
 mod tutorial;
+mod draft_base;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
@@ -292,7 +293,8 @@ impl Roll {
             self.capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
             self.pass_order = d.pass_order.unwrap_or(self.pass_order);
             self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());
-            self.base = d.base.as_ref().map(|b| BasePick { path: b.path.clone(), unit: (b.x, b.y), radius: b.radius });
+            // Written back in this machine's spelling with the next draft.
+            self.base = d.base.as_ref().and_then(|b| Some(BasePick { path: draft_base::found(&b.path, &self.frames)?, unit: (b.x, b.y), radius: b.radius }));
             self.window = d.window.unwrap_or(self.window);
             let draftless = std::mem::take(&mut self.draftless);
             for f in self.frames.iter_mut().filter(|f| draftless.contains(&f.path)) {

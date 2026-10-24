@@ -3139,5 +3139,61 @@
     "title": "The file system's parity rows say what the code does",
     "status": "done",
     "detail": "archive.md: Favourites partial (the empty view promises indexing; a refused favourites.json is reseeded and replaced); rows added for a disk leaving or coming back (done), an unreadable member waiting for Refresh (partial), and port-only rows for Locate…, Remove from Library…, other apps' changes, the instance lock and the files merged with Swift's; the checks of the rename, trash, project and missing-tile rows point at today's tests; window checks cited at their tests/window path. checks.md: #20 and #61 partial with their gaps named, #60, #84 and #120 cite their new twins. README counts recounted: editor 147 of 153 with a check, archive 98 / 7 / 0 and 104 of 105, all 441 / 26 / 7 and 450 of 474; checks 104 twin, 36 partial, 9 none, 12 blocked. Closes parity-doc-archive-wrong-done."
+  },
+  {
+    "id": 540,
+    "type": "fix",
+    "title": "One name check for every folder and roll name, refused in words before the disk is asked",
+    "status": "done",
+    "detail": "oni-library names.rs: refused(name, Platform) holds the separators, the leading dot and, on Windows, the reserved characters, control characters, a trailing dot or space and the device names (CON, NUL, COM1, with or without an extension); file_names.rs keeps the export's portable() on the same tables. Rename (navigator, tree, band heading) and the New Roll folder (roll_folder::make) go through it. Check a_trailing_dot_or_con_is_refused_in_words, twin: the same names pass on a Mac, CONTACT and Roll 8.5 pass on Windows. Closes windows-rename-names."
+  },
+  {
+    "id": 541,
+    "type": "fix",
+    "title": "A move or rename another app holds is tried again for half a second, then names the file",
+    "status": "done",
+    "detail": "roll_folder::retried: a busy file, Windows' sharing or lock violation (32, 33) and its access denied on a folder (5) are tried again after 30, 60, 120 and 240 ms; any other refusal returns at once. rename_new (New Roll, its undo and redo) and the folder rename use it; refusal::cause says 'another app is using it' and the folder rename says a file in it is open in another app. Check a_locked_file_is_retried_then_named with an injected rename, twins: a NotFound and a Windows code on a Mac are tried once, a denial on Windows is tried five times. Closes the retries of windows-file-locking."
+  },
+  {
+    "id": 542,
+    "type": "fix",
+    "title": "A roll draft's base is found again by its file name once its folder moved",
+    "status": "done",
+    "detail": "prepare/draft_base.rs: on resume the stored absolute path matches a frame's own path first, else the one frame of that file name; none or two give no base, so the note never says 'On DSC_0001.NEF' for a base the measure lacks. The next draft writes the path back in this machine's spelling; Swift's field is unchanged. Check a_draft_base_moved_with_its_folder_is_found_by_name, twin: an unknown name and a name twice find nothing. Closes windows-draft-base-absolute."
+  },
+  {
+    "id": 543,
+    "type": "fix",
+    "title": "The draft writes queued are waited for before a rename or a New Roll moves their frames, and a refused one is said",
+    "status": "done",
+    "detail": "prepare/measure.rs drain_drafts (at most DRAFT_FLUSH, never behind a measure) runs before rename_folder and New Roll; a draft write the disk refuses is now told with its cause instead of dropped. The read-modify-write race of set_roll_draft against a main-thread label lives in oni-settings sidecar.rs and needs a per-file lock there. Partly closes safety-draft-thread-races."
+  },
+  {
+    "id": 544,
+    "type": "fix",
+    "title": "Windows says Explorer and Ctrl+ everywhere; one place words the two systems",
+    "status": "done",
+    "detail": "oni-app platform.rs: reveal, reveal_photos, reveal_log and keys(Platform) are the only sources of Finder, ⌘, ⌥ and ⇧; the cell menu, the ONI Trash cell menu, the console's Reveal Log, the filter's empty state, the update key and Slint's KeyWords global (toolbar, canvas tooltips, the colour tab's Shift hint) read them. trash::heading shows a Windows drive as 'D: › Scans/One'. Check windows_labels_say_explorer_and_ctrl scans every label source, twin: a planted Mac word is caught in Rust and Slint, a comment and a check's literal are not. Closes ux-platform-wording and windows-finder-wording."
+  },
+  {
+    "id": 545,
+    "type": "cleanup",
+    "title": "The archive tree's dead Roll and Day nodes are gone",
+    "status": "done",
+    "detail": "archive_tree.rs keeps Folder and Photo only; the match arms in library.rs, tree_pick.rs, tree_menu.rs and gestures/disk.rs follow. No serialised field depended on them; FilmKey::Day stays for Prepare's grouping. Closes model-11."
+  },
+  {
+    "id": 546,
+    "type": "fix",
+    "title": "Words: the catch-up under D3, New Roll says it moves, a folder row's Restore can be undone, a partial restore says what came back",
+    "status": "done",
+    "detail": "The catch-up says 'N photos of your former library lie outside your favourites' (plural) and 'Every photo of your former library lies in a favourite.'. The menus and the cell menu say 'Move into a New Roll…'. A folder row's RESTORE says what came back with UNDO, which walks the gallery step back only while it is still the last one. trash::report drops 'Nothing was changed.' when other photos went ahead and says how many did."
+  },
+  {
+    "id": 547,
+    "type": "fix",
+    "title": "Windows notes a favourite's volume by its serial number, so a drive under another letter is offered to follow",
+    "status": "done",
+    "detail": "bookmarks.rs: on Windows the volume is GetVolumePathNameW's mount and the serial number GetFileInformationByHandle reads (the same as GetVolumeInformationW), the approach of win-ci2 #367; Bookmarks::lead then finds the drive under its new letter as it finds a renamed Mac volume. Closes windows-drive-letter-drift's identity."
   }
 ]

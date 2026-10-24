@@ -210,7 +210,7 @@ pub(crate) fn the_menus_name_what_they_do_and_the_gestures_reach_every_target() 
     lib.invoke_tile_clicked(1, false, false);
     lib.invoke_tile_clicked(2, true, false);
     rig.pump();
-    assert_eq!(menus.get_titles().roll.as_str(), "New Roll from 2 Photos");
+    assert_eq!(menus.get_titles().roll.as_str(), "Move 2 Photos into a New Roll…");
     assert!(menus.get_live().new_roll);
     rig.chord_with(&[Key::Control, Key::Shift], "g");
     rig.roll_confirmed(&ctl, w);

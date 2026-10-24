@@ -67,14 +67,19 @@ impl Ctl {
     }
 
     fn marks_landed(self: &Rc<Self>, title: &str, targets: &[String], outcome: &oni_library::trash::Outcome, date: Option<oni_settings::Date>) {
-        let failure = {
+        let (failure, frames, folder) = {
             let mut s = self.state.borrow_mut();
+            let folder = s.org.restore_told.take().filter(|(_, asked)| asked == targets).map(|(f, _)| f);
             let Some(store) = s.store.editor() else { return };
-            store.mark_landed(targets, outcome, date);
-            store.failure.take()
+            let frames = store.mark_landed(targets, outcome, date);
+            (store.failure.take(), frames, folder)
         };
         if let Some(message) = failure {
             self.told(title, &message);
+        } else if let Some(folder) = folder.filter(|_| date.is_none() && frames > 0) {
+            // A folder row's RESTORE asks nothing first, and its row goes: the notice brings it back.
+            let said = trn("One photo of “{folder}” is back in its folder.", "{n} photos of “{folder}” are back in their folder.", frames as u64);
+            self.told_step(title, &said.replace("{folder}", &oni_library::paths::name(&folder)));
         }
         self.landed(targets);
         if date.is_none() {

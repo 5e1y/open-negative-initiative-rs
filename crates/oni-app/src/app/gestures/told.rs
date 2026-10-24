@@ -1,5 +1,5 @@
-//! What a gesture could not do or did only in part, said one way wherever the hand is: a transient
-//! notice over the gallery, the organiser and the editor alike. A success says nothing.
+//! What a gesture could not do or did only in part, in one notice over every surface; a success
+//! speaks only to offer its Undo, or to say where a located folder went.
 
 use super::*;
 use crate::Told;
@@ -26,6 +26,7 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             s.org.told_folder = folder;
+            s.org.told_step = None;
             s.nav.unstarred = None;
         }
         let t = w.global::<Told>();
@@ -45,10 +46,25 @@ impl Ctl {
         }
     }
 
-    fn told_acted(self: &Rc<Self>) {
-        let (folder, unstarred) = {
+    /// The notice saying a gallery step landed, its key walking that step back while it is the last.
+    pub(in crate::app) fn told_step(&self, title: &str, message: &str) {
+        self.told(title, message);
+        let step = {
             let mut s = self.state.borrow_mut();
-            (s.org.told_folder.take(), s.nav.unstarred.take())
+            let Some(store) = s.store.editor() else { return };
+            let history = store.gallery_history();
+            history.undo_label().map(|label| (label.to_owned(), history.undo_paths()))
+        };
+        self.state.borrow_mut().org.told_step = step;
+        if let Some(w) = self.window() {
+            w.global::<Told>().set_action(tr("UNDO").into());
+        }
+    }
+
+    fn told_acted(self: &Rc<Self>) {
+        let (folder, unstarred, step) = {
+            let mut s = self.state.borrow_mut();
+            (s.org.told_folder.take(), s.nav.unstarred.take(), s.org.told_step.take())
         };
         self.told_closed();
         if let Some(folder) = folder {
@@ -57,12 +73,26 @@ impl Ctl {
         if let Some(favourite) = unstarred {
             self.star(&favourite);
         }
+        if let Some((label, paths)) = step {
+            // A step taken since stands on top: Undo here would walk back that one instead.
+            let last = {
+                let mut s = self.state.borrow_mut();
+                s.store.editor().is_some_and(|store| {
+                    let history = store.gallery_history();
+                    history.undo_label() == Some(label.as_str()) && history.undo_paths() == paths
+                })
+            };
+            if last {
+                self.gallery_step(true);
+            }
+        }
     }
 
     pub(in crate::app) fn told_closed(&self) {
         {
             let mut s = self.state.borrow_mut();
             s.org.told_folder = None;
+            s.org.told_step = None;
             s.nav.unstarred = None;
         }
         if let Some(w) = self.window() {
