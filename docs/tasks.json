@@ -2518,6 +2518,34 @@
     "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
   },
   {
+    "id": 360,
+    "type": "fix",
+    "title": "Edit Together's every-way check counts only the frames together and presses past the double-click interval",
+    "status": "done",
+    "detail": "together_all failed on Windows from its first run (0cd7755, #221) and on the Mac when it ran beside together: a press within the system's double-click interval of the last resets the slider to its base, so whether a drag was a drag hung on the machine's speed, and the column scenario counted B and C, never together, as lagging. Each drag now rests past system::double_click(), swings the other way so every step moves the value (asserted), counts only the frames together, and its twin asserts the frames left out keep their own (a wrong set, A and D without E, fails)."
+  },
+  {
+    "id": 361,
+    "type": "fix",
+    "title": "Edit Together's zoom check waits for the sheet's render to land",
+    "status": "done",
+    "detail": "Frames together move on the canvas only when their render lands; together read the frame width after one pump, which the Mac's GPU answers in time and Windows' software adapter (WARP, seconds a render) does not: 'twin: back to fitted' failed there from df870fd (#217). Both double clicks now wait up to 60 s for the width to change, then to come back to fitted."
+  },
+  {
+    "id": 362,
+    "type": "fix",
+    "title": "Windows binaries take an 8 MB main-thread stack, as the Mac's",
+    "status": "done",
+    "detail": "The design-system board (#295) overflowed Windows' 1 MB main-thread stack ('thread main has overflowed its stack' in four runs until #300 split it into pages); Slint builds a window's tree on that thread. .cargo/config.toml links every MSVC binary with /STACK:8388608, the size macOS gives its main thread."
+  },
+  {
+    "id": 363,
+    "type": "fix",
+    "title": "One GPU device a process: every graph, kernel and check records on oni_graph::gpu()",
+    "status": "done",
+    "detail": "Nearly every Windows run since 2026-10-20 lost one or two test binaries (oni-app's lib, graph, fused, stages, senses, branches, swift_checks) to STATUS_ACCESS_VIOLATION, whatever the commit. Measured on the runner (Microsoft's software adapter, WARP): the graph checks crashed in 4 runs of 15 with every backend, 2 of 15 on DX12 alone, and in none with one test thread; the stages checks 1 of 15 and none. Each check opened a device of its own beside the others. oni_graph::gpu() now opens the high-performance adapter's device once a process, at the adapter's limits with CLEAR_TEXTURE where offered; Graph::new, Graph::with_max_side and oni-app's render::Device::open take it, as do the display kernels' and the interface drawing's checks; the shared-device check now asks the graph to follow that device's limit both above and under it. The app already shared one device (render::door), so its behaviour does not move."
+  },
+  {
     "id": 370,
     "type": "fix",
     "title": "An export never lands on an original",

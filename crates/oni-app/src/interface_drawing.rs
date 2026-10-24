@@ -8,9 +8,7 @@ const CELL: u32 = 8;
 const COLUMNS: u32 = 8;
 
 fn device() -> Option<(wgpu::Device, wgpu::Queue)> {
-    let instance = wgpu::Instance::default();
-    let adapter = pollster::block_on(instance.request_adapter(&Default::default())).ok()?;
-    pollster::block_on(adapter.request_device(&Default::default())).ok()
+    oni_graph::gpu().ok().map(|g| (g.device, g.queue))
 }
 
 fn colour(i: u32) -> [u8; 3] {

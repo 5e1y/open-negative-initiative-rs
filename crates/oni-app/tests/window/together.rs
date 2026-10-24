@@ -75,12 +75,11 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
 
     // Zoomed and panned as a contact sheet: a double click takes the sheet to its own pixels.
     let fitted = canvas.get_frame_width();
+    // The sheet moves when its render lands, which a software GPU takes seconds to do.
     canvas.invoke_double_clicked();
-    rig.pump();
-    assert!((canvas.get_frame_width() - fitted).abs() > 1.0, "the sheet zooms: {fitted} then {}", canvas.get_frame_width());
+    rig.until("the sheet zoomed", Duration::from_secs(60), || (canvas.get_frame_width() - fitted).abs() > 1.0);
     canvas.invoke_double_clicked();
-    rig.pump();
-    assert!((canvas.get_frame_width() - fitted).abs() < 1.0, "twin: back to fitted");
+    rig.until("twin: the sheet back to fitted", Duration::from_secs(60), || (canvas.get_frame_width() - fitted).abs() < 1.0);
     rig.settle();
     println!("shot {}", rig.shot("together-grid").display());
 

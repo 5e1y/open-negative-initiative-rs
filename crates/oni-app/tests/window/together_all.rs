@@ -48,12 +48,21 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     let tile = |name: &str| oni_app::app::tiles(w).iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     let path = |name: &str| folder.join(format!("{name}.tif"));
     let field = Field::Exposure.index();
-    let mut notch = 0.0f32;
-    let mut drag = |label: &str| {
-        notch += 25.0;
+    let mut sign = -1.0f32;
+    // Each drag swings the other way, so every step moves the value and the check sees it.
+    let mut drag = |label: &str, together: &[&str]| {
+        sign = -sign;
+        let before: Vec<f32> = names.iter().map(|n| exposure(&path(n))).collect();
+        let was = ctl.state.borrow().store().settings().print.exposure;
+        // A press within the double-click interval of the last one resets the slider instead.
+        let rest = std::time::Instant::now();
+        while rest.elapsed() < oni_app::system::double_click() + Duration::from_millis(50) {
+            rig.pump();
+            std::thread::sleep(Duration::from_millis(16));
+        }
         g.invoke_press(field, false);
         for k in 1..=5 {
-            g.invoke_drag(field, notch * k as f32 / 5.0, 300.0, false);
+            g.invoke_drag(field, sign * 25.0 * k as f32 / 5.0, 300.0, false);
             rig.pump();
         }
         g.invoke_release(field);
@@ -61,9 +70,12 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
         shell.flush();
         let set = ctl.state.borrow().store().settings().print.exposure;
         let open = ctl.state.borrow().open_path().map(str::to_string).unwrap_or_default();
-        let lagging: Vec<&str> = names.iter().copied().filter(|n| !open.ends_with(&format!("{n}.tif")) && (exposure(&path(n)) - set).abs() > 1e-6).collect();
-        println!("{label}: open {open}, set {set}, lagging {lagging:?}, {:?}", names.iter().map(|n| exposure(&path(n))).collect::<Vec<_>>());
-        lagging.len()
+        let after: Vec<f32> = names.iter().map(|n| exposure(&path(n))).collect();
+        println!("{label}: open {open}, set {was} to {set}, {after:?}");
+        assert!((set - was).abs() > 1e-6, "{label}: the drag moved nothing, so the check sees nothing");
+        let left_out: Vec<&str> = (0..names.len()).filter(|&i| !together.contains(&names[i]) && after[i] != before[i]).map(|i| names[i]).collect();
+        assert!(left_out.is_empty(), "{label}: twin: a frame left out keeps its own, {left_out:?} moved");
+        together.iter().filter(|n| !open.ends_with(&format!("{n}.tif")) && (exposure(&path(n)) - set).abs() > 1e-6).count()
     };
 
     // The gallery: a click then ⌘-clicks, a double click on the third.
@@ -74,14 +86,14 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     rig.pump();
     lib.invoke_tile_opened(tile("C"));
     rig.until("five together", Duration::from_secs(30), || canvas.get_status().as_str() == "5 frames together");
-    let first = drag("gallery, opened on C");
-    let second = drag("gallery, a second drag");
+    let first = drag("gallery, opened on C", &names);
+    let second = drag("gallery, a second drag", &names);
     // Back to the gallery and in again with the editor's key.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     ctl.act(oni_app::Act::ToggleMode);
     rig.until("five together again", Duration::from_secs(30), || canvas.get_status().as_str() == "5 frames together");
-    let third = drag("back in by the key");
+    let third = drag("back in by the key", &names);
     // The column: D alone, then ⌘ on A and E.
     let row = |n: &str| lib.get_rows().iter().position(|r| r.kind == 2 && r.title == n).unwrap_or_else(|| panic!("{n}'s row")) as i32;
     lib.invoke_row_clicked(row("D"), false, false);
@@ -89,7 +101,7 @@ pub(crate) fn every_frame_together_takes_every_step_whichever_way_they_were_open
     lib.invoke_row_clicked(row("A"), true, false);
     lib.invoke_row_clicked(row("E"), true, false);
     rig.until("three together", Duration::from_secs(30), || canvas.get_status().as_str() == "3 frames together");
-    let fourth = drag("column, D then ⌘A ⌘E");
+    let fourth = drag("column, D then ⌘A ⌘E", &["A", "D", "E"]);
     assert_eq!((first, second, third, fourth), (0, 0, 0, 0), "a frame together lags behind the step");
     let _ = std::fs::remove_dir_all(&root);
 }

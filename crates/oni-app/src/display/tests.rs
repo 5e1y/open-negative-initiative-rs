@@ -33,15 +33,13 @@ fn the_dither_breaks_a_ramp_into_noise_around_the_right_level() {
     assert!(levels.iter().any(|&v| v != first));
 }
 
-/// The kernel on the first adapter wgpu finds, lavapipe included; skipped where there is none.
+/// The kernel on the process's GPU, lavapipe included; skipped where there is none.
 #[test]
 fn the_kernel_writes_what_its_cpu_reference_writes() {
-    let instance = wgpu::Instance::default();
-    let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
+    let Ok(oni_graph::Gpu { device, queue, .. }) = oni_graph::gpu() else {
         eprintln!("no adapter: the display kernel is not exercised");
         return;
     };
-    let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
     let (w, h) = (64u32, 16u32);
     let pixels: Vec<[f32; 4]> = (0..w * h)
         .map(|i| {
@@ -69,12 +67,10 @@ fn the_kernel_writes_what_its_cpu_reference_writes() {
 /// The zebra on the GPU against its CPU reference, on colours sRGB cannot hold and one it can.
 #[test]
 fn the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does() {
-    let instance = wgpu::Instance::default();
-    let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
+    let Ok(oni_graph::Gpu { device, queue, .. }) = oni_graph::gpu() else {
         eprintln!("no adapter: the zebra is not exercised");
         return;
     };
-    let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
     let (w, h) = (48u32, 20u32);
     // The left half a saturated Rec. 2020 green sRGB cannot show, the right half a grey it can.
     let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| if i % w < w / 2 { [0.05, 0.6, 0.05, 1.0] } else { [0.3, 0.3, 0.3, 1.0] }).collect();
@@ -99,12 +95,10 @@ fn the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does() {
 /// The GPU count against `histogram::measure` on the same picture, sampled down to its copy.
 #[test]
 fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
-    let instance = wgpu::Instance::default();
-    let Ok(adapter) = pollster::block_on(instance.request_adapter(&Default::default())) else {
+    let Ok(oni_graph::Gpu { device, queue, .. }) = oni_graph::gpu() else {
         eprintln!("no adapter: the histogram kernel is not exercised");
         return;
     };
-    let Ok((device, queue)) = pollster::block_on(adapter.request_device(&Default::default())) else { return };
     let (w, h) = (1300u32, 700u32);
     // Ramps past both ends and a green no sRGB screen shows, so the clip and the end bins are read.
     let pixels: Vec<[f32; 4]> =

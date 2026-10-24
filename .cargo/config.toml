@@ -1,0 +1,4 @@
+# Windows gives the main thread 1 MB of stack where macOS gives 8 MB, and Slint builds a window's tree
+# on it (the design-system board overflowed 1 MB): every Windows binary takes the Mac's 8 MB.
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = ["-C", "link-arg=/STACK:8388608"]
