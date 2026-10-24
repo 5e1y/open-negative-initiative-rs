@@ -73,10 +73,12 @@ pub fn open_url(url: &str) {
 /// The system Trash, for files the app owns outright (preset files); a library member is never
 /// trashed, it is marked in the ONI Trash.
 pub fn trash(path: &Path) -> io::Result<()> {
-    if !path.exists() {
-        return Err(io::Error::new(io::ErrorKind::NotFound, path.display().to_string()));
-    }
-    platform::trash(path)
+    guarded(path, platform::trash)
+}
+
+/// NotFound before the platform is asked, which may answer otherwise for a missing file.
+fn guarded(path: &Path, platform: impl FnOnce(&Path) -> io::Result<()>) -> io::Result<()> {
+    if path.exists() { platform(path) } else { Err(io::Error::new(io::ErrorKind::NotFound, path.display().to_string())) }
 }
 
 /// A word in a window of the system's, said before the app's own window exists.
@@ -325,14 +327,15 @@ mod tests {
 
     #[test]
     fn a_missing_file_is_never_reported_trashed() {
-        let gone = std::env::temp_dir().join(format!("oni-trash-{}-absent", std::process::id()));
-        assert_eq!(trash(&gone).unwrap_err().kind(), io::ErrorKind::NotFound);
-        // Twin: an existing file passes the guard and reaches the platform, which never says NotFound.
-        let here = std::env::temp_dir().join(format!("oni-trash-{}-here", std::process::id()));
+        let asked = std::cell::Cell::new(0);
+        let platform = |_: &Path| io::Result::Ok(asked.set(asked.get() + 1));
+        let [gone, here] = ["absent", "here"].map(|n| std::env::temp_dir().join(format!("oni-trash-{}-{n}", std::process::id())));
+        assert_eq!(guarded(&gone, platform).unwrap_err().kind(), io::ErrorKind::NotFound);
+        assert_eq!(asked.get(), 0, "the platform is never asked about a missing file");
+        // Twin: an existing file passes the guard, reaches the platform once, and its answer comes back.
         std::fs::write(&here, b"x").unwrap();
-        if cfg!(not(any(target_os = "macos", target_os = "windows"))) {
-            assert_ne!(trash(&here).unwrap_err().kind(), io::ErrorKind::NotFound);
-        }
+        assert!(guarded(&here, platform).is_ok() && asked.get() == 1);
+        assert_eq!(guarded(&here, |_| Err(io::Error::other("refused"))).unwrap_err().to_string(), "refused");
         let _ = std::fs::remove_file(&here);
     }
 

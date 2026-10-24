@@ -1,5 +1,5 @@
-//! The archive on roll #8, the reference roll: its sidecars and roll marker copied into a folder of
-//! the test's own, an empty placeholder standing for each NEF. The staged files are only ever read.
+//! The archive on roll #8's own sidecars and marker, copied beside an empty placeholder per NEF and
+//! only ever read; what holds on any roll is proven again in `made_roll.rs` and `trash/round_trip.rs`.
 
 use oni_library::{
     Id, LibraryIndex, film_group, folders, index, library, project, relink, roll_membership, roots, trash,
@@ -12,8 +12,9 @@ const ROLL_ID: &str = "BC402E4A-035E-4A3A-B279-FB7E35D1DDEA";
 const REFERENCE_ID: &str = "16399A5F-7AED-48E4-A01C-F5F0E7266154";
 const FRAMES: usize = 38;
 
-fn staged() -> Option<PathBuf> {
-    let folder = oni_fixtures::raw_dir("roll #8 archive check")?;
+/// The reference roll, or `None` after a line naming the check skipped.
+fn staged(check: &str) -> Option<PathBuf> {
+    let folder = oni_fixtures::raw_dir(&format!("roll #8 {check}"))?;
     assert!(folder.join(".oni-roll.json").exists(), "{} holds no roll marker", folder.display());
     Some(folder)
 }
@@ -62,7 +63,7 @@ impl Copy {
 
     /// With `real`, each NEF the staged roll holds is copied whole instead of left empty.
     fn made(label: &str, real: bool) -> Option<Copy> {
-        let staged = staged()?;
+        let staged = staged(label)?;
         let before = snapshot(&staged);
         let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
         let root = std::env::temp_dir().join(format!("oni-library-roll8-{label}-{}-{stamp}", std::process::id()));
@@ -234,15 +235,6 @@ fn the_trash_marks_sidecars_and_never_moves_a_file() {
     assert_eq!(index.shown().len(), FRAMES);
     assert!(picked.iter().all(|p| !String::from_utf8(bytes(p)).unwrap().contains("trashedAt")));
 
-    // A sidecar from a newer version is refused, its bytes left as they were, and the gesture says so.
-    let future = &members[5];
-    let side = sidecar::url_for(Path::new(future));
-    std::fs::write(&side, br#"{"version": 99, "settings": {}}"#).unwrap();
-    let refused = trash::mark(std::slice::from_ref(future), Some(when), &|_| true);
-    assert_eq!((refused.refused.clone(), refused.done.len()), (vec![future.clone()], 0));
-    assert_eq!(std::fs::read(&side).unwrap(), br#"{"version": 99, "settings": {}}"#);
-    assert!(trash::report(&refused, false).is_some());
-
     // Twin: the listing sees a move, so a trash that moved its file would fail above.
     let moved_to = copy.root.join("Trash");
     std::fs::create_dir(&moved_to).unwrap();
@@ -266,7 +258,7 @@ const ORACLE: [(&str, &str); 10] = [
 
 #[test]
 fn the_real_nefs_and_rw2s_stamp_their_capture_and_fingerprint() {
-    let Some(folder) = staged() else { return };
+    let Some(folder) = staged("capture stamps") else { return };
     let before = snapshot(&folder);
     let mut prints = HashSet::new();
     for (name, date) in ORACLE {
@@ -296,7 +288,7 @@ fn the_real_nefs_and_rw2s_stamp_their_capture_and_fingerprint() {
     ] {
         let path = calibration.join(name);
         if !path.exists() {
-            eprintln!("{name} not found: not exercised");
+            println!("SKIPPED {name}: not in {}", calibration.display());
             continue;
         }
         assert_eq!(oni_library::exif::capture_date(&path).as_deref(), Some(date), "{name}");
@@ -367,7 +359,7 @@ fn the_real_frames_index_by_their_own_capture_and_keep_their_print_once_moved() 
 #[test]
 fn roll8_capture_stops_read_off_the_exif_are_those_swift_wrote() {
     use oni_library::capture::CaptureExposure;
-    let Some(folder) = staged() else { return };
+    let Some(folder) = staged("capture stops") else { return };
     let mut names: Vec<String> = std::fs::read_dir(&folder)
         .unwrap()
         .filter_map(Result::ok)

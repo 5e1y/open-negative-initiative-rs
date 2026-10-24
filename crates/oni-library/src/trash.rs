@@ -158,6 +158,9 @@ pub fn heading(folder: &str, home: &str) -> String {
 }
 
 #[cfg(test)]
+mod round_trip;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

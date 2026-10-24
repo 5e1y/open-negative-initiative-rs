@@ -44,6 +44,8 @@ pub fn run(checks: &[(&str, fn())]) {
                     if shown || !out.status.success() {
                         let _ = stdout.write_all(&out.stdout);
                         let _ = stdout.write_all(&out.stderr);
+                    } else {
+                        let _ = stdout.write_all(&skips(name, &out.stdout, &out.stderr));
                     }
                     if !out.status.success() {
                         failed.lock().unwrap().push(name);
@@ -65,4 +67,15 @@ pub fn run(checks: &[(&str, fn())]) {
         failed.iter().for_each(|n| println!("    {n}"));
         std::process::exit(101);
     }
+}
+
+/// A passing check's skip lines under libtest's header for its output, so `scripts/check` reads which
+/// checks returned early and why, as it does for every other binary.
+fn skips(name: &str, stdout: &[u8], stderr: &[u8]) -> Vec<u8> {
+    let text = [String::from_utf8_lossy(stdout), String::from_utf8_lossy(stderr)].concat();
+    let lines: Vec<&str> = text.lines().filter(|l| l.starts_with("SKIPPED") || l.contains("not exercised")).collect();
+    if lines.is_empty() {
+        return Vec::new();
+    }
+    format!("---- {name} stdout ----\n{}\n", lines.join("\n")).into_bytes()
 }

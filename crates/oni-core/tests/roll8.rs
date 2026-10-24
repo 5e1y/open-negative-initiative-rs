@@ -20,7 +20,7 @@ impl Drop for Roll {
 
 impl Roll {
     fn copy(label: &str) -> Option<Roll> {
-        let source = oni_fixtures::raw_dir(label)?;
+        let source = oni_fixtures::raw_dir(&format!("roll #8 {label}"))?;
         let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
         let dir = std::env::temp_dir().join(format!("oni-core-{label}-{}-{stamp}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
@@ -32,7 +32,9 @@ impl Roll {
                 continue;
             }
             std::fs::copy(entry.path(), dir.join(&name)).unwrap();
+            // An empty placeholder for each NEF: no sidecar is ever written beside a missing original.
             if let Some(original) = name.strip_suffix(".json").filter(|_| !name.starts_with('.')) {
+                std::fs::write(dir.join(original), b"").unwrap();
                 frames.push(dir.join(original).to_string_lossy().into_owned());
             }
         }
@@ -52,6 +54,17 @@ impl Roll {
 
     fn bytes(&self) -> BTreeMap<String, Vec<u8>> {
         self.frames.iter().map(|f| (f.clone(), std::fs::read(sidecar::url_for(Path::new(f))).unwrap())).collect()
+    }
+
+    /// Every file of the copy but the sidecars, by name and bytes.
+    fn originals(&self) -> BTreeMap<String, Vec<u8>> {
+        std::fs::read_dir(&self.dir)
+            .unwrap()
+            .filter_map(Result::ok)
+            .map(|e| e.file_name().to_string_lossy().into_owned())
+            .filter(|n| !n.ends_with(".json"))
+            .map(|n| (n.clone(), std::fs::read(self.dir.join(&n)).unwrap()))
+            .collect()
     }
 
     fn settings(&self, frame: &str) -> PipelineSettings {
@@ -246,19 +259,24 @@ fn the_balance_key_writes_only_on_a_press_and_one_undo_takes_it_back() {
 fn the_trash_marks_the_sidecar_and_never_moves_the_file() {
     let Some(roll) = Roll::copy("trash") else { return };
     let frame = roll.frames[7].clone();
-    std::fs::write(&frame, b"stand-in original").unwrap();
-    let before = roll.bytes();
+    for other in &roll.frames {
+        std::fs::write(other, format!("stand-in for {other}")).unwrap();
+    }
     let mut store = roll.store();
     roll.open(&mut store, &frame);
+    store.flush();
+    let (before, files, settings) = (roll.bytes(), roll.originals(), roll.settings(&frame));
     assert_eq!(store.move_to_trash(std::slice::from_ref(&frame)), 1);
     assert!(store.path().is_none(), "the open frame closes");
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_some());
-    assert_eq!(std::fs::read(&frame).unwrap(), b"stand-in original");
+    assert_eq!(moved(&before, &roll.bytes()), [frame.clone()], "the marked frame's sidecar alone is written");
+    assert_eq!(roll.originals(), files, "no original moves, vanishes or changes, nor any other member's");
     store.undo(Surface::Gallery);
     assert!(sidecar::read(Path::new(&frame), true, true).unwrap().trashed_at.is_none());
-    // Twin: the mark and its removal leave the settings themselves untouched.
-    assert_eq!(roll.settings(&frame), sidecar::read(Path::new(&frame), true, true).unwrap().settings);
-    let _ = before;
+    assert_eq!(roll.settings(&frame), settings, "the mark and its removal leave the settings untouched");
+    // Twin: a member's original moved away is seen, so a trash that moved a file would fail above.
+    std::fs::rename(&roll.frames[3], roll.dir.join("moved.bin")).unwrap();
+    assert_ne!(roll.originals(), files);
 }
 
 #[test]

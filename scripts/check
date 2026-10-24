@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Every check of the workspace in one build, then every test binary at once, each threading its own
-# tests; prints the failures whole and exits non-zero on any. Usage: scripts/check [cargo test args].
+# Every check in one build, then every test binary at once; prints the failures whole, then each check
+# skipped and why, and exits non-zero on any failure. Usage: scripts/check [cargo test args].
 set -uo pipefail
 cd "$(dirname "$0")/.."
 started=$(date +%s)
@@ -20,7 +20,7 @@ fi
 run() {
     local exe=$1 manifest=$2 log pid watchdog
     log="$out/$(basename "$exe").log"
-    (cd "$(dirname "$manifest")" && CARGO_MANIFEST_DIR=$(dirname "$manifest") exec "$exe" -q) >"$log" 2>&1 &
+    (cd "$(dirname "$manifest")" && CARGO_MANIFEST_DIR=$(dirname "$manifest") exec "$exe" -q --show-output) >"$log" 2>&1 &
     pid=$!
     (sleep "${ONI_CHECK_LIMIT:-240}" && kill "$pid" 2>/dev/null && echo "stopped after ${ONI_CHECK_LIMIT:-240} s" >>"$log") &
     watchdog=$!
@@ -42,5 +42,38 @@ while IFS=$'\t' read -r exe _; do
         grep -vE '^(test .* \.\.\. ok|running [0-9]+ tests?|\.+)$' "$log" | tail -40
     fi
 done <"$out/bins"
+# A check that returns early on a missing fixture or GPU passes: its own line says so, read off the
+# output each check printed (`--show-output`), so a green run never hides what did not run.
+while IFS=$'\t' read -r exe manifest; do
+    log="$out/$(basename "$exe").log"
+    binary="$(basename "$(dirname "$manifest")")/$(basename "$exe" | sed -E 's/-[0-9a-f]{16}$//')"
+    awk -v binary="$binary" '
+        /^---- .* stdout ----$/ { check = $2; next }
+        /^SKIPPED|^skipped |not exercised/ { print binary "\t" check "\t" $0 }
+    ' "$log"
+done <"$out/bins" | sort -u >"$out/skipped"
+if [ -s "$out/skipped" ]; then
+    echo "=== SKIPPED"
+    awk -F '\t' '{ print "  " $1 " " $2 ": " $3 }' "$out/skipped"
+    awk -F '\t' '
+        {
+            why = $3
+            if (match(why, /\(set [A-Z_]+\)/)) why = "no " substr(why, RSTART + 5, RLENGTH - 6)
+            else if (why ~ /roll #8 is absent/) why = "no ONI_RAW_DIR"
+            else if (why ~ /ONI_SKIP_HEAVY/) why = "ONI_SKIP_HEAVY set"
+            else if (why ~ /GPU|[Aa]dapter|device/) why = "no GPU"
+            else if (why ~ /running as root|under root/) why = "root"
+            else { sub(/^(SKIPPED|skipped)[^:]*: */, "", why); why = substr(why, 1, 48) }
+            count[why]++; total++
+        }
+        END {
+            line = ""
+            for (w in count) line = line (line == "" ? "" : ", ") count[w] " " w
+            print "SKIPPED " total " checks: " line
+        }
+    ' "$out/skipped"
+else
+    echo "SKIPPED 0 checks"
+fi
 echo "$(wc -l <"$out/bins" | tr -d ' ') binaries, $failed failed, $(($(date +%s) - started)) s"
 [ "$failed" -eq 0 ]

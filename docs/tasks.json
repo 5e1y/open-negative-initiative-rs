@@ -2964,5 +2964,47 @@
     "title": "A disk back within the session, and a rename changing only a letter's case",
     "status": "done",
     "detail": "a_disk_back_reopens_the_opened_folder: unplugged and plugged back in one session, the opened folder lists the photo added meanwhile, read once (twin: another disk arriving reads nothing). a_rename_changing_only_case_renames_and_a_true_collision_is_refused (twin: another folder's name is refused)."
+  },
+  {
+    "id": 520,
+    "type": "tests",
+    "title": "scripts/check says which checks skipped and why",
+    "status": "done",
+    "detail": "Every binary runs with --show-output, and the window runner forwards a passing check's skip lines under libtest's header, so the script reads each SKIPPED or 'not exercised' line with its check's name. It lists them under === SKIPPED and prints one summary line, SKIPPED N checks: n no ONI_RAW_DIR, n no GPU..., on its own line before the unchanged 'N binaries, M failed' line. The roll8 checks name themselves in their skip line (roll #8 rebuild, trash, membership...). Closes the silent-skip half of tests-10."
+  },
+  {
+    "id": 521,
+    "type": "tests",
+    "title": "The roll #8 archive proofs that hold on any roll run on one the checks make",
+    "status": "done",
+    "detail": "oni-library trash/round_trip.rs: the mark rides in the sidecar alone (date, settings and EXIF round-trip, the original untouched by a byte, a later write keeps it, the key itself goes on restore; twins: a write without the read-back loses it, a file moved away is seen), a newer sidecar is left byte for byte and said (twin: one of this version is marked), a triplet goes and comes back whole (twin: unexpanded, the lead alone), every listing leaves it out and a project keeps it a member. made_roll.rs: the index rebuilt from the sidecars, the marker's roll and heading, a disk away inventing no row, and the roll membership by reference, each with roll8's twins. The newer-sidecar proof leaves roll8.rs. oni-core roll8's copies get a placeholder per NEF, as no sidecar is written beside a missing original since #390. Parity row #60 now rests on proofs that always run. Closes tests-10."
+  },
+  {
+    "id": 522,
+    "type": "tests",
+    "title": "A folder the disk refuses is neither empty nor gone",
+    "status": "done",
+    "detail": "oni-library tests/refused_folders.rs (unix, skipped under root): a folder at mode 000 lists None in the navigator, is unreadable and Offline(Denied) in the survey, its photo Denied, the folder itself present. Twins: a readable empty folder says empty, a folder gone is Missing, the same folder opened again lists its subfolder and photo. Shown to fail with children() reading a refusal as empty. Closes tests-07's navigator and survey part; the favourites read is reported, not changed (favourites.rs is lot 13's)."
+  },
+  {
+    "id": 523,
+    "type": "tests",
+    "title": "The two blind trash twins can fail",
+    "status": "done",
+    "detail": "system::trash's guard takes the platform call injected (guarded): a missing file never reaches it, an existing one reaches it once and its answer comes back, on every platform. oni-core roll8's trash check compares every sidecar but the marked one, every original, and the settings read before against those after (twins: an original moved is seen). Shown to fail: a guard refusing everything, a mark that renames its original, a mark that rewrites the settings (on a stand-in roll under ONI_RAW_DIR). Closes tests-14."
+  },
+  {
+    "id": 524,
+    "type": "tests",
+    "title": "Rust twins of OniTrash.selfCheck, OniTrash.wiringCheck, GalleryHistory.selfCheck and galleryCellSelfCheck",
+    "status": "done",
+    "detail": "oni-core tests/oni_trash.rs: a triplet's lead moved to the ONI Trash through the store marks its three files, one undo restores them, redo marks again, a restore from a pass brings all three back, the settings and originals untouched. oni-core tests/gallery_steps.rs: every batch gesture of the store reaches a gallery record through any chain of its own methods (twin: with the record calls taken out every gesture is named). oni-library tests/trash_wiring.rs: Move to ONI Trash asks no dialog and lays its step, the opened ONI Trash selects into its own set and a tile opens nothing, a trash row restores under the hover and has no star (each with its adverse twin). oni-app window gallery_cell.rs: a tile's pick, medal and picture, and a slot re-filled for another folder's photo of the same name keeping nothing of it (shown to fail with the cell comparison ignoring its marks). Closes parity-checks-twins-incomplete."
+  },
+  {
+    "id": 525,
+    "type": "docs",
+    "title": "The file system's parity rows say what the code does",
+    "status": "done",
+    "detail": "archive.md: Favourites partial (the empty view promises indexing; a refused favourites.json is reseeded and replaced); rows added for a disk leaving or coming back (done), an unreadable member waiting for Refresh (partial), and port-only rows for Locate…, Remove from Library…, other apps' changes, the instance lock and the files merged with Swift's; the checks of the rename, trash, project and missing-tile rows point at today's tests; window checks cited at their tests/window path. checks.md: #20 and #61 partial with their gaps named, #60, #84 and #120 cite their new twins. README counts recounted: editor 147 of 153 with a check, archive 98 / 7 / 0 and 104 of 105, all 441 / 26 / 7 and 450 of 474; checks 104 twin, 36 partial, 9 none, 12 blocked. Closes parity-doc-archive-wrong-done."
   }
 ]
