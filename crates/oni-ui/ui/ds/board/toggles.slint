@@ -1,0 +1,58 @@
+// The board's switches: Toggle bare and labelled, then Tabs of two, four and eight swatches, each
+// live under the hand beside its forced states.
+import { PlotInkStyle, Toggle, Tabs } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
+
+// A switch live, off, on, and disabled off and on.
+component ToggleStates inherits Line {
+    in property <bool> labelled;
+    live := Cell {
+        property <bool> lit;
+        Toggle { labelled: root.labelled; label: "Clipping"; on: live.lit; toggled(v) => { live.lit = v; } }
+    }
+    Cell { Toggle { labelled: root.labelled; label: "Clipping"; } }
+    Cell { Toggle { labelled: root.labelled; label: "Clipping"; on: true; } }
+    Cell { Toggle { labelled: root.labelled; label: "Clipping"; enabled: false; } }
+    Cell { Toggle { labelled: root.labelled; label: "Clipping"; on: true; enabled: false; } }
+}
+
+// A set of tabs live, another tab selected, a tab hovered, a tab marked.
+component TabsStates inherits Line {
+    in property <[string]> tabs;
+    in property <int> selected;
+    in property <int> other;
+    in property <int> hovered;
+    in property <[bool]> marked;
+    in property <[color]> swatches;
+    Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; } }
+    Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.other; swatches: root.swatches; } }
+    Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; hover-tab: root.hovered; } }
+    Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; marked: root.marked; } }
+}
+
+export component TogglePage inherits Page {
+    title: "Toggle and Tabs";
+    note: "Toggle: on, labelled, label, enabled. Tabs: tabs, selected, swatches, marked, hover-tab.";
+    Group {
+        title: "Toggle";
+        states: ["Live", "Off", "On", "Disabled, off", "Disabled, on"];
+        ToggleStates { label: "bare"; }
+        ToggleStates { label: "labelled"; labelled: true; }
+    }
+    Group {
+        title: "Tabs";
+        states: ["Live", "Another selected", "A tab hovered", "A tab marked"];
+        span: BoardStyle.field;
+        TabsStates { label: "two tabs"; tabs: ["Negative", "Positive"]; other: 1; hovered: 1; marked: [false, true]; }
+        TabsStates { label: "four tabs"; tabs: ["Roll", "Crop", "Color", "Details"]; selected: 2; other: 3; hovered: 0; marked: [true, false, false, false]; }
+        TabsStates {
+            label: "eight swatches (their names as tooltips)";
+            tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
+            swatches: PlotInkStyle.bands;
+            selected: 1;
+            other: 6;
+            hovered: 4;
+            marked: [false, false, false, true, false, false, false, false];
+        }
+    }
+}

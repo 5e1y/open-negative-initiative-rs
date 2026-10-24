@@ -223,6 +223,17 @@ impl Ctl {
         self.state.borrow().console.as_ref().filter(|(c, _)| c.window().is_visible()).map(|(c, _)| c.get_log().to_string())
     }
 
+    /// The design system's board, every component in every state, live: a developer's window.
+    pub(super) fn open_board(&self) {
+        let existing = self.state.borrow().board.as_ref().map(|b| b.clone_strong());
+        let board = match existing.map_or_else(crate::Board::new, Ok) {
+            Ok(board) => board,
+            Err(e) => return crate::timing::line(&format!("the board cannot open: {e}")),
+        };
+        let _ = board.show();
+        self.state.borrow_mut().board = Some(board);
+    }
+
     /// `openWindow(id: "console")`: one window, polled while it shows.
     pub(super) fn open_console(self: &Rc<Self>) {
         let existing = self.state.borrow().console.as_ref().map(|c| c.0.clone_strong());

@@ -1,124 +1,131 @@
-// The board's buttons: every kind of key in each state, then the glyph keys, their groups and plates.
-import { ShellStyle, Icons, ButtonKind, ButtonSize, Look, Button, ButtonGroup } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
+// The board's keys: Button in every kind at every size, then its variants, each in the five states a
+// key shows, the first one live under the hand.
+import { ShellStyle, ScannerStyle, Colour, Icons, ButtonKind, ButtonSize, Button } from "../ds.slint";
+import { PresetStyle, NavigatorStyle } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Looks } from "kit.slint";
 
-// One key in the six states it shows: rest, hover, pressed, held on, on under the pointer, disabled.
-component ButtonRow inherits Line {
+// One key live, hovered, pressed, held on and disabled.
+component KeyStates inherits Line {
+    in property <length> span: BoardStyle.cell;
     in property <ButtonKind> kind;
     in property <ButtonSize> size;
     in property <string> text: "EXPORT";
     in property <bool> has-icon;
     in property <image> icon;
+    in property <bool> square;
+    in property <bool> turned;
     in property <bool> lamp-shown;
     in property <bool> lamp-lit;
     in property <length> fixed-width;
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; } }
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; look: Look.hover; } }
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; look: Look.pressed; } }
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; on: true; } }
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; on: true; look: Look.hover; } }
-    Cell { Button { text: root.text; kind: root.kind; size: root.size; has-icon: root.has-icon; icon: root.icon; lamp-shown: root.lamp-shown; lamp-lit: root.lamp-lit; fixed-width: root.fixed-width; enabled: false; } }
-}
-
-// The six states of a square glyph key.
-component IconRow inherits Line {
-    in property <ButtonKind> kind;
-    in property <ButtonSize> size;
-    in property <image> icon: Icons.undo;
-    in property <bool> turned;
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; help: "Undo"; } }
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; look: Look.hover; } }
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; look: Look.pressed; } }
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; on: true; } }
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; on: true; look: Look.hover; } }
-    Cell { Button { has-icon: true; square: true; icon: root.icon; kind: root.kind; size: root.size; turned: root.turned; enabled: false; } }
-}
-
-export component ButtonsPage inherits Page {
-    title: "Buttons";
-    note: "Button: every ButtonKind at both sizes, then its variants, each in the six states a key shows.";
-    property <[string]> states: ["Rest", "Hover", "Pressed", "On", "On, hover", "Disabled"];
-    Group {
-        title: "Button, regular";
-        states: root.states;
-        ButtonRow { label: "plain"; kind: ButtonKind.plain; }
-        ButtonRow { label: "accent"; kind: ButtonKind.accent; }
-        ButtonRow { label: "caution"; kind: ButtonKind.caution; }
-        ButtonRow { label: "destructive"; kind: ButtonKind.destructive; text: "DELETE"; }
-        ButtonRow { label: "update"; kind: ButtonKind.update; text: "UPDATE"; }
-        ButtonRow { label: "confirm"; kind: ButtonKind.confirm; text: "DONE"; }
-    }
-    Group {
-        title: "Button, small";
-        states: root.states;
-        ButtonRow { label: "plain"; size: ButtonSize.small; text: "RESET"; }
-        ButtonRow { label: "accent"; size: ButtonSize.small; kind: ButtonKind.accent; text: "RESET"; }
-        ButtonRow { label: "caution"; size: ButtonSize.small; kind: ButtonKind.caution; text: "RESET"; }
-        ButtonRow { label: "destructive"; size: ButtonSize.small; kind: ButtonKind.destructive; text: "DELETE"; }
-        ButtonRow { label: "update"; size: ButtonSize.small; kind: ButtonKind.update; text: "UPDATE"; }
-        ButtonRow { label: "confirm"; size: ButtonSize.small; kind: ButtonKind.confirm; text: "DONE"; }
-    }
-    Group {
-        title: "Button variants";
-        states: root.states;
-        ButtonRow { label: "glyph and word"; text: "OPEN"; has-icon: true; icon: Icons.folder-open; }
-        ButtonRow { label: "glyph and word, small"; size: ButtonSize.small; text: "OPEN"; has-icon: true; icon: Icons.folder-open; }
-        ButtonRow { label: "glyph alone"; text: ""; has-icon: true; icon: Icons.copy; }
-        ButtonRow { label: "lamp shown, off"; text: "AUTO"; lamp-shown: true; }
-        ButtonRow { label: "lamp shown, lit"; text: "AUTO"; lamp-shown: true; lamp-lit: true; }
-        ButtonRow { label: "fixed width, eliding"; text: "ALL PHOTOS SHOWN"; fixed-width: ShellStyle.filter-width; }
-        ButtonRow { label: "accent, glyph and word"; kind: ButtonKind.accent; text: "EXPORT"; has-icon: true; icon: Icons.paste; }
+    in property <color> fill: transparent;
+    in property <bool> wide;
+    in property <color> glyph-ink: transparent;
+    for state in 5: Cell {
+        span: root.span;
+        Button {
+            kind: root.kind;
+            size: root.size;
+            text: root.text;
+            has-icon: root.has-icon;
+            icon: root.icon;
+            square: root.square;
+            turned: root.turned;
+            lamp-shown: root.lamp-shown;
+            lamp-lit: root.lamp-lit;
+            fixed-width: root.fixed-width;
+            fill: root.fill;
+            wide: root.wide;
+            glyph-ink: root.glyph-ink;
+            help: "The key's tooltip";
+            look: Looks.of(state);
+            on: state == 3;
+            enabled: state != 4;
+        }
     }
 }
 
-export component IconsPage inherits Page {
-    title: "Icon buttons and plates";
-    note: "IconButton in each state, then ButtonGroup and KeyPlate holding keys.";
-    property <[string]> states: ["Rest", "Hover", "Pressed", "On", "On, hover", "Disabled"];
+// A tint's swatch in the same five states; `on` rings it.
+component SwatchStates inherits Line {
+    in property <color> fill;
+    in property <color> glyph-ink: transparent;
+    for state in 5: Cell {
+        Button {
+            square: true;
+            width: PresetStyle.swatch;
+            height: PresetStyle.swatch;
+            fill: root.fill;
+            glyph-ink: root.glyph-ink;
+            help: "The tint's name";
+            look: Looks.of(state);
+            on: state == 3;
+            enabled: state != 4;
+        }
+    }
+}
+
+export component ButtonPage inherits Page {
+    title: "Button";
+    note: "Button: kind × size (regular, small, mini, key); text, icon, square, turned, lamp, fixed-width, fill, wide, glyph-ink; on, enabled, look.";
+    property <[string]> states: ["Live", "Hover", "Pressed", "On", "Disabled"];
     Group {
-        title: "IconButton";
+        title: "Regular";
         states: root.states;
-        IconRow { label: "regular"; }
-        IconRow { label: "small"; size: ButtonSize.small; icon: Icons.chevron-down; }
-        IconRow { label: "accent"; kind: ButtonKind.accent; icon: Icons.correction; }
-        IconRow { label: "destructive"; kind: ButtonKind.destructive; icon: Icons.remove; }
-        IconRow { label: "glyph turned"; icon: Icons.compare; turned: true; }
+        KeyStates { label: "plain"; }
+        KeyStates { label: "accent"; kind: ButtonKind.accent; }
+        KeyStates { label: "caution"; kind: ButtonKind.caution; }
+        KeyStates { label: "destructive"; kind: ButtonKind.destructive; text: "DELETE"; }
+        KeyStates { label: "update"; kind: ButtonKind.update; text: "UPDATE"; }
+        KeyStates { label: "confirm"; kind: ButtonKind.confirm; text: "DONE"; }
     }
     Group {
-        title: "ButtonGroup";
-        states: ["Rest", "One key hovered", "One key on"];
-        span: BoardStyle.wide;
-        Line {
-            label: "glyphs and a word";
-            Cell { span: BoardStyle.wide; ButtonGroup { Button { has-icon: true; square: true; icon: Icons.framing; } Button { has-icon: true; square: true; icon: Icons.compare; } Button { text: "PASTE TO ROLL"; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { Button { has-icon: true; square: true; icon: Icons.framing; look: Look.hover; } Button { has-icon: true; square: true; icon: Icons.compare; } Button { text: "PASTE TO ROLL"; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { Button { has-icon: true; square: true; icon: Icons.framing; on: true; } Button { has-icon: true; square: true; icon: Icons.compare; } Button { text: "PASTE TO ROLL"; } } }
-        }
+        title: "Small";
+        states: root.states;
+        KeyStates { label: "plain"; size: ButtonSize.small; text: "RESET"; }
+        KeyStates { label: "accent"; size: ButtonSize.small; kind: ButtonKind.accent; text: "RESET"; }
+        KeyStates { label: "caution"; size: ButtonSize.small; kind: ButtonKind.caution; text: "RESET"; }
+        KeyStates { label: "destructive"; size: ButtonSize.small; kind: ButtonKind.destructive; text: "DELETE"; }
+        KeyStates { label: "update"; size: ButtonSize.small; kind: ButtonKind.update; text: "UPDATE"; }
+        KeyStates { label: "confirm"; size: ButtonSize.small; kind: ButtonKind.confirm; text: "DONE"; }
     }
     Group {
-        title: "KeyPlate";
-        states: ["Rest", "One key hovered", "One key pressed", "One key on"];
-        span: BoardStyle.wide;
-        Line {
-            label: "hugging its keys";
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; look: Look.hover; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; look: Look.pressed; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; on: true; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
-        }
-        Line {
-            label: "filling the block";
-            Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
-            Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; look: Look.hover; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
-            Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; look: Look.pressed; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
-            Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; on: true; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
-        }
-        Line {
-            label: "mini, small keys";
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; look: Look.hover; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; look: Look.pressed; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }
-            Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; on: true; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }
-        }
+        title: "Mini (a column header's glyph key)";
+        states: root.states;
+        KeyStates { label: "glyph"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.list; }
+        KeyStates { label: "glyph in its own ink (the star)"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: NavigatorStyle.favourite; }
+        KeyStates { label: "destructive glyph"; size: ButtonSize.mini; kind: ButtonKind.destructive; text: ""; has-icon: true; square: true; icon: Icons.remove; }
+        KeyStates { label: "word"; size: ButtonSize.mini; text: "ALL"; }
+    }
+    Group {
+        title: "Key (a Scanner keycap; live, a press holds it down a beat)";
+        states: root.states;
+        KeyStates { label: "no fill (its kind's)"; size: ButtonSize.key; text: "+1"; }
+        KeyStates { label: "fill cap-light"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
+        KeyStates { label: "fill cap-dark"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-dark; }
+        KeyStates { label: "fill band-dark"; size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-dark; }
+        KeyStates { label: "fill band-light"; size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-light; }
+        KeyStates { label: "fill band-red"; size: ButtonSize.key; text: "C"; fill: ScannerStyle.band-red; }
+        KeyStates { label: "fill band-cyan"; size: ButtonSize.key; text: "C"; fill: ScannerStyle.band-cyan; }
+        KeyStates { label: "fill band-yellow"; size: ButtonSize.key; text: "Y"; fill: ScannerStyle.band-yellow; }
+        KeyStates { label: "fill band-warm"; size: ButtonSize.key; text: "T"; fill: ScannerStyle.band-warm; }
+        KeyStates { label: "wide keycap"; size: ButtonSize.key; text: "D"; fill: ScannerStyle.band-dark; wide: true; }
+    }
+    Group {
+        title: "Variants";
+        states: root.states;
+        KeyStates { label: "glyph and word"; text: "OPEN"; has-icon: true; icon: Icons.folder-open; }
+        KeyStates { label: "glyph and word, small"; size: ButtonSize.small; text: "OPEN"; has-icon: true; icon: Icons.folder-open; }
+        KeyStates { label: "accent, glyph and word"; kind: ButtonKind.accent; text: "PASTE"; has-icon: true; icon: Icons.paste; }
+        KeyStates { label: "glyph alone, square"; text: ""; has-icon: true; square: true; icon: Icons.undo; }
+        KeyStates { label: "glyph alone, square, small"; size: ButtonSize.small; text: ""; has-icon: true; square: true; icon: Icons.chevron-down; }
+        KeyStates { label: "glyph turned a quarter"; text: ""; has-icon: true; square: true; icon: Icons.compare; turned: true; }
+        KeyStates { label: "lamp shown, off"; text: "AUTO"; lamp-shown: true; }
+        KeyStates { label: "lamp shown, lit"; text: "AUTO"; lamp-shown: true; lamp-lit: true; }
+        KeyStates { label: "fixed width, eliding"; text: "ALL PHOTOS SHOWN"; fixed-width: ShellStyle.filter-width; }
+    }
+    Group {
+        title: "Fill: a tint's swatch (on rings it)";
+        states: root.states;
+        SwatchStates { label: "a dark tint"; fill: ScannerStyle.band-red; }
+        SwatchStates { label: "a light tint, ringed in its ink"; fill: Colour.paper; glyph-ink: Colour.ink-on-light; }
     }
 }

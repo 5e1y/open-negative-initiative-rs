@@ -139,6 +139,7 @@ impl Shell {
             news_kept: HashSet::new(),
             report_round: 0,
             console: None,
+            board: None,
             nav: navigator::Nav::new(options.computer),
             prepare: prepare::Roll::new(options.require_roll),
             making_sheet: None,
@@ -170,6 +171,7 @@ impl Shell {
         ctl.restore_gamut();
         // The app opens on the gallery; nothing opens in the editor until a hand asks.
         window.global::<App>().set_gallery(true);
+        window.global::<App>().set_dev(!crate::updates::stamped());
         ctl.publish(true);
         ctl.publish_bar();
         ctl.start_updates();

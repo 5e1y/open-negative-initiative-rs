@@ -1,59 +1,99 @@
-// The board's tiles and pictures: the gallery's tile in each state, a picture on every ground, the
-// roll's cells, the presets' cards and rows, the swatches, the stocks and the fanned stack.
-import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, StockCellView, StockIcon, Button, PresetStyle, Row } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
+// The board's tiles: the gallery's heading and tile, a picture on every ground, the presets' cards,
+// the roll's cells, the stocks' cells, a reorder's ghost and a project's stack.
+import { Colour, Space, ScannerStyle, TileStyle, Picture, Ground, TileView, TileHeading, TileGhost, CardStack, RollCellView, PresetFace, StockCellView, StockIcon } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
-// A tile in its seven looks, all on one picture.
-component TileRow inherits Line {
+// A tile in its looks, all on one picture; it draws no hover of its own.
+component TileStates inherits Line {
     in property <image> picture;
     in property <bool> captioned;
     property <length> high: BoardStyle.cell * 2 / 3;
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; selected: true; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; medal: 1; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; medal: 2; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; medal: 3; selected: true; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; missing: true; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.captioned ? "DSC_6432" : ""; rgb: true; medal: 2; } }
+    property <string> caption: root.captioned ? "DSC_6432" : "";
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; selected: true; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 1; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 2; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 3; selected: true; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; medal: 2; } }
 }
 
 // A picture on each of the six grounds.
-component GroundRow inherits Line {
+component GroundStates inherits Line {
     in property <image> source;
     in property <bool> rounded;
-    property <length> high: BoardStyle.cell * 2 / 3;
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.ground; } }
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.canvas; } }
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.canvas-cropping; } }
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.well; } }
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.paper; } }
-    Fill { Picture { height: root.high; source: root.source; rounded: root.rounded; ground: Ground.skeleton; } }
+    for ground in [Ground.ground, Ground.canvas, Ground.canvas-cropping, Ground.well, Ground.paper, Ground.skeleton]: Fill {
+        Picture { height: BoardStyle.cell * 2 / 3; source: root.source; rounded: root.rounded; ground: ground; }
+    }
+}
+
+// A preset's card live, lit and disabled; only the new card lights.
+component FaceStates inherits Line {
+    in property <bool> new;
+    in property <string> abbreviation;
+    in property <string> name;
+    in property <color> fill;
+    in property <color> ink;
+    Cell { PresetFace { new: root.new; abbreviation: root.abbreviation; name: root.name; fill: root.fill; ink: root.ink; } }
+    if root.new: Cell { PresetFace { new: true; lit: true; } }
+    if !root.new: Absent { text: "— only the new card lights"; }
+    Cell { PresetFace { new: root.new; abbreviation: root.abbreviation; name: root.name; fill: root.fill; ink: root.ink; enabled: false; } }
 }
 
 export component TilesPage inherits Page {
-    title: "Tiles and pictures";
-    note: "TileView, Picture's grounds, RollCellView, the presets' faces and rows, Swatch, the stocks, TileGhost and CardStack.";
+    title: "Tiles";
+    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing, rgb. PresetFace: new, lit, enabled. RollCellView, StockCellView, TileGhost, CardStack.";
+    Group {
+        title: "TileHeading (on the canvas)";
+        states: ["Live"];
+        span: BoardStyle.wide * 2;
+        Line { label: "inline, its folder before it"; Fill { span: BoardStyle.wide * 2; Stage { height: TileStyle.heading; TileHeading { title: "Roll #8"; caption: "Negs"; } } } }
+        Line { label: "pinned at the gallery's top"; Fill { span: BoardStyle.wide * 2; Stage { height: TileStyle.heading; TileHeading { pinned: true; title: "Roll #8"; caption: "Negs"; } } } }
+        Line {
+            label: "renaming (Return keeps, Escape drops)";
+            heading := Fill {
+                span: BoardStyle.wide * 2;
+                property <string> draft: "Roll #8";
+                Stage {
+                    height: TileStyle.heading;
+                    TileHeading { renaming: true; title: heading.draft; draft: heading.draft; committed(t) => { heading.draft = t; } }
+                }
+            }
+        }
+    }
     Group {
         title: "TileView";
-        states: ["Rest", "Selected", "Bronze", "Silver", "Gold, selected", "Missing original", "RGB seal, silver"];
-        TileRow { label: "photo, captioned"; picture: Samples.photo; captioned: true; }
-        TileRow { label: "photo, no caption"; picture: Samples.other; }
-        TileRow { label: "empty well"; captioned: true; }
+        states: ["Live (rest)", "Selected", "Bronze", "Silver", "Gold, selected", "Missing original", "RGB seal, silver"];
+        TileStates { label: "photo, captioned"; picture: Samples.photo; captioned: true; }
+        TileStates { label: "photo, no caption"; picture: Samples.other; }
+        TileStates { label: "empty well"; captioned: true; }
     }
     Group {
         title: "Picture";
         states: ["ground", "canvas", "canvas-cropping", "well", "paper", "skeleton"];
-        GroundRow { label: "empty"; }
-        GroundRow { label: "empty, rounded"; rounded: true; }
-        GroundRow { label: "photo, rounded"; source: Samples.photo; rounded: true; }
+        GroundStates { label: "empty"; }
+        GroundStates { label: "empty, rounded"; rounded: true; }
+        GroundStates { label: "photo, rounded"; source: Samples.photo; rounded: true; }
+    }
+    Group {
+        title: "PresetFace";
+        states: ["Live", "Lit", "Disabled"];
+        FaceStates { label: "a dark tint"; abbreviation: "Pt"; name: "Portra warm"; fill: ScannerStyle.band-dark; ink: Colour.ink; }
+        FaceStates { label: "a light tint"; abbreviation: "Hp"; name: "HP5 crisp"; fill: Colour.paper; ink: Colour.ink-on-light; }
+        FaceStates { label: "a warm tint"; abbreviation: "Fr"; name: "Frontier"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; }
+        FaceStates { label: "new (the deck's last card)"; new: true; }
     }
     Group {
         title: "RollCellView";
-        states: ["Rest", "Marked", "Marked, flagged", "Apart (dot)", "RGB seal", "Sheet: marked", "Sheet: flagged", "Unticked"];
+        states: ["Live (click marks)", "Marked", "Marked, flagged", "Apart (dot)", "RGB seal", "Sheet: marked", "Sheet: flagged", "Unticked"];
         span: BoardStyle.cell - Space.l;
         Line {
             label: "a frame of the roll";
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; } }
+            frame := Fill {
+                span: BoardStyle.cell - Space.l;
+                property <bool> marked;
+                RollCellView { picture: Samples.photo; marked: frame.marked; clicked => { frame.marked = !frame.marked; } }
+            }
             Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; marked: true; } }
             Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; marked: true; flagged: true; } }
             Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; apart: true; } }
@@ -64,58 +104,30 @@ export component TilesPage inherits Page {
         }
     }
     Group {
-        title: "Presets";
-        states: ["Dark tint", "Light tint", "Warm tint", "New: rest", "New: lit", "New: disabled"];
+        title: "StockCellView and StockIcon";
+        states: ["Live (hover, click)", "Picked"];
         Line {
-            label: "PresetFace, PresetNewFace";
-            Cell { PresetFace { abbreviation: "Pt"; name: "Portra warm"; fill: ScannerStyle.band-dark; ink: Colour.ink; } }
-            Cell { PresetFace { abbreviation: "Hp"; name: "HP5 crisp"; fill: Colour.paper; ink: Colour.ink-on-light; } }
-            Cell { PresetFace { abbreviation: "Fr"; name: "Frontier"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; } }
-            Cell { PresetFace { new: true; } }
-            Cell { PresetFace { new: true; lit: true; } }
-            Cell { PresetFace { new: true; enabled: false; } }
-        }
-    }
-    Group {
-        title: "PresetRow";
-        states: ["Rest", "Hover", "Selected"];
-        span: BoardStyle.library;
-        Line {
-            label: "the editor's list";
-            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; } }
-            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; look: Look.hover; } }
-            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; selected: true; } }
-        }
-    }
-    Group {
-        title: "Swatch and stocks";
-        states: ["Rest", "Picked", "Rest, light", "Picked, light"];
-        Line {
-            label: "Swatch";
-            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; } }
-            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; on: true; } }
-            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; } }
-            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; on: true; } }
-        }
-        Line {
-            label: "StockCellView";
-            Fill { StockCellView { artwork: Samples.stock; has-artwork: true; name: "Kodak Portra 400"; } }
+            label: "a stock's artwork";
+            portra := Fill { property <bool> picked; StockCellView { artwork: Samples.stock; has-artwork: true; name: "Kodak Portra 400"; picked: portra.picked; clicked => { portra.picked = !portra.picked; } } }
             Fill { StockCellView { artwork: Samples.stock; has-artwork: true; name: "Kodak Portra 400"; picked: true; } }
-            Fill { StockCellView { name: "Generic C-41"; } }
+        }
+        Line {
+            label: "no artwork (the glyph)";
+            generic := Fill { property <bool> picked; StockCellView { name: "Generic C-41"; picked: generic.picked; clicked => { generic.picked = !generic.picked; } } }
             Fill { StockCellView { name: "Generic C-41"; picked: true; } }
         }
         Line {
-            label: "StockIcon";
+            label: "StockIcon: artwork, glyph";
             Cell { StockIcon { artwork: Samples.stock; has-artwork: true; } }
             Cell { StockIcon { } }
         }
     }
     Group {
-        title: "Carried and stacked";
-        states: ["TileGhost", "CardStack"];
+        title: "TileGhost and CardStack";
+        states: ["TileGhost (a reorder's tile)", "CardStack (a project's three)"];
         span: BoardStyle.wide;
         Line {
-            label: "a reorder's ghost, a project's stack";
+            label: "as drawn";
             Cell { span: BoardStyle.wide; TileGhost { width: BoardStyle.cell; height: BoardStyle.cell * 2 / 3; source: Samples.photo; } }
             Fill { span: BoardStyle.wide; CardStack { pictures: [Samples.photo, Samples.other, Samples.photo]; } }
         }

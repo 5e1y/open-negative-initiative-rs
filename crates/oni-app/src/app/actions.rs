@@ -109,6 +109,7 @@ impl Ctl {
             Act::PastePresetCode => self.paste_preset_code(),
             Act::ShowPresets => self.show_presets_folder(),
             Act::Console => self.open_console(),
+            Act::DesignSystem => self.open_board(),
             Act::Welcome => self.open_welcome(),
             Act::WhatsNew => self.show_whats_new_again(),
             Act::Report => self.open_report(),

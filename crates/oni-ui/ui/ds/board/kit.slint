@@ -1,9 +1,10 @@
-// The state board's frame: a page per family, a group per component, a row per variant and a
-// column per state, so every state of the design system stands side by side for review.
-import { Colour, Space, ShellStyle, Label, TextRole, Tone, Divider } from "../ds.slint";
+// The board's frame: a page per base component, a group per part of it, a row per variant and a
+// column per state, the first one live under the hand, the others forced, side by side for review.
+import { Colour, Space, ShellStyle, Label, TextRole, Tone, Divider, Look } from "../ds.slint";
 
 // The board's gauges: the row labels' column and the widths a state's column takes.
 export global BoardStyle {
+    out property <length> nav: 200px;
     out property <length> label: 160px;
     out property <length> cell: 150px;
     out property <length> field: 220px;
@@ -20,7 +21,14 @@ export global Samples {
     out property <image> stock: @image-url("../../stocks/kodak-portra.svg");
 }
 
-// One family's page: its name, a line on what it holds, then its groups.
+// A state column's forced look: 0 live, 1 hovered, 2 pressed, any other live.
+export global Looks {
+    public pure function of(state: int) -> Look {
+        state == 1 ? Look.hover : state == 2 ? Look.pressed : Look.live
+    }
+}
+
+// One component's page: its name, the props its variants are made of, then its groups.
 export component Page inherits VerticalLayout {
     in property <string> title;
     in property <string> note;
@@ -35,7 +43,7 @@ export component Page inherits VerticalLayout {
     @children
 }
 
-// One component: its name over a rule, the states' header, then a row per variant.
+// One part of the component: its name over a rule, the states' header, then a row per variant.
 export component Group inherits VerticalLayout {
     in property <string> title;
     in property <[string]> states;
@@ -48,7 +56,7 @@ export component Group inherits VerticalLayout {
         spacing: BoardStyle.gap;
         alignment: start;
         Rectangle { width: BoardStyle.label; }
-        for state in root.states: Label { width: root.span; role: TextRole.caption; tone: Tone.tertiary; text: state; }
+        for state in root.states: Label { width: root.span; role: TextRole.caption; tone: Tone.tertiary; text: state; wrap: word-wrap; }
     }
     @children
 }
@@ -86,6 +94,7 @@ export component Absent inherits Label {
     width: root.span;
     role: TextRole.caption;
     tone: Tone.tertiary;
+    wrap: word-wrap;
     text: "— no such state";
 }
 

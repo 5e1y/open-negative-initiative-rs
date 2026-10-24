@@ -1,0 +1,129 @@
+// The board's words and marks: every Label role in every tone, the glyphs in each tone, and the Badge
+// in each of its tones.
+import { Colour, Space, Radius, ButtonStyle, Icons, Label, TextRole, Tone, Icon, Badge, BadgeTone } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Stage } from "kit.slint";
+
+struct Glyph { name: string, source: image }
+
+// The tones a column each, as the ground their ink is meant for paints them.
+component ToneGround inherits Rectangle {
+    in property <Tone> tone;
+    background: root.tone == Tone.on-fill ? Colour.accent : root.tone == Tone.on-light ? Colour.paper : transparent;
+    border-radius: Radius.track;
+}
+
+// A role in the seven tones.
+component RoleRow inherits Line {
+    in property <TextRole> role;
+    in property <string> sample;
+    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution]: Fill {
+        ToneGround {
+            tone: tone;
+            height: sample.preferred-height + Space.s;
+            sample := Label { x: Space.xs; width: parent.width - 2 * Space.xs; role: root.role; tone: tone; text: root.sample; }
+        }
+    }
+}
+
+// A glyph in the seven tones.
+component GlyphRow inherits Line {
+    in property <image> source;
+    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution]: Fill {
+        ToneGround {
+            tone: tone;
+            height: ButtonStyle.icon + Space.s;
+            Icon { x: Space.xs; width: ButtonStyle.icon; height: ButtonStyle.icon; source: root.source; tone: tone; }
+        }
+    }
+}
+
+export component TextPage inherits Page {
+    title: "Text";
+    note: "Label: role (label, value, caption, title, section, heading, button, note) × tone; Icon: source, tone or ink.";
+    property <[string]> tones: ["primary", "secondary", "tertiary", "on-fill (on accent)", "on-light (on paper)", "warning", "caution"];
+    property <[Glyph]> glyphs: [
+        { name: "framing", source: Icons.framing }, { name: "compare", source: Icons.compare }, { name: "contact-sheet", source: Icons.contact-sheet },
+        { name: "undo", source: Icons.undo }, { name: "redo", source: Icons.redo }, { name: "copy", source: Icons.copy },
+        { name: "paste", source: Icons.paste }, { name: "correction", source: Icons.correction }, { name: "done", source: Icons.done },
+        { name: "remove", source: Icons.remove }, { name: "question", source: Icons.question }, { name: "chevron-right", source: Icons.chevron-right },
+        { name: "chevron-down", source: Icons.chevron-down }, { name: "folder", source: Icons.folder }, { name: "folder-open", source: Icons.folder-open },
+        { name: "favourite", source: Icons.favourite }, { name: "parent", source: Icons.parent }, { name: "film-roll", source: Icons.film-roll },
+        { name: "film", source: Icons.film }, { name: "sticky-note", source: Icons.sticky-note }, { name: "rotate", source: Icons.rotate },
+        { name: "mirror", source: Icons.mirror }, { name: "warning", source: Icons.warning }, { name: "reset", source: Icons.reset },
+        { name: "chat", source: Icons.chat }, { name: "archive", source: Icons.archive }, { name: "arrow-right", source: Icons.arrow-right },
+        { name: "settings", source: Icons.settings }, { name: "phone", source: Icons.phone }, { name: "target", source: Icons.target },
+        { name: "list", source: Icons.list }, { name: "gallery", source: Icons.gallery }, { name: "single", source: Icons.single },
+        { name: "expand-all", source: Icons.expand-all }, { name: "collapse-all", source: Icons.collapse-all }, { name: "menu-left", source: Icons.menu-left },
+        { name: "menu-right", source: Icons.menu-right },
+    ];
+    Group {
+        title: "Label";
+        states: root.tones;
+        RoleRow { label: "label"; role: TextRole.label; sample: "White point"; }
+        RoleRow { label: "value"; role: TextRole.value; sample: "+1.50 EV"; }
+        RoleRow { label: "caption"; role: TextRole.caption; sample: "DSC_6432"; }
+        RoleRow { label: "title"; role: TextRole.title; sample: "Export"; }
+        RoleRow { label: "section"; role: TextRole.section; sample: "Contrast"; }
+        RoleRow { label: "heading"; role: TextRole.heading; sample: "Roll #8"; }
+        RoleRow { label: "button"; role: TextRole.button; sample: "EXPORT"; }
+        RoleRow { label: "note (wraps)"; role: TextRole.note; sample: "A quiet line under a field, wrapping when it runs long."; }
+    }
+    Group {
+        title: "Icon in each tone";
+        states: root.tones;
+        GlyphRow { label: "folder"; source: Icons.folder; }
+        GlyphRow { label: "favourite"; source: Icons.favourite; }
+        GlyphRow { label: "warning"; source: Icons.warning; }
+    }
+    Group {
+        title: "Icons, every glyph (secondary tone)";
+        grid := Rectangle {
+            property <int> across: 6;
+            property <length> pitch: 2 * BoardStyle.gap;
+            width: grid.across * (BoardStyle.cell + BoardStyle.gap);
+            height: ceil(root.glyphs.length / self.across) * self.pitch;
+            for glyph[i] in root.glyphs: HorizontalLayout {
+                x: Math.mod(i, grid.across) * (BoardStyle.cell + BoardStyle.gap);
+                y: floor(i / grid.across) * grid.pitch;
+                width: BoardStyle.cell;
+                height: grid.pitch - Space.xs;
+                spacing: Space.s;
+                VerticalLayout { alignment: center; Icon { width: ButtonStyle.icon; height: ButtonStyle.icon; source: glyph.source; } }
+                Label { text: glyph.name; role: TextRole.caption; tone: Tone.secondary; }
+            }
+        }
+    }
+}
+
+// A badge on the ground, a longer word, and on the canvas's dark it is mostly drawn over.
+component BadgeRow inherits Line {
+    in property <BadgeTone> tone;
+    in property <string> text;
+    in property <string> long;
+    in property <string> note;
+    Cell { Badge { tone: root.tone; text: root.text; note: root.note; } }
+    Cell { Badge { tone: root.tone; text: root.long; } }
+    Cell {
+        Stage {
+            width: BoardStyle.cell;
+            height: 3 * BoardStyle.gap;
+            border-radius: Radius.badge;
+            Badge { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; tone: root.tone; text: root.text; }
+        }
+    }
+}
+
+export component BadgePage inherits Page {
+    title: "Badge";
+    note: "Badge: tone (warning, dark, seal, alert, news, step), text, note (news: shown on hover, then read).";
+    Group {
+        title: "Badge";
+        states: ["Live", "A longer word", "On the canvas"];
+        BadgeRow { label: "warning"; tone: BadgeTone.warning; text: "8-bit"; long: "8-bit source"; }
+        BadgeRow { label: "dark (over the photo)"; tone: BadgeTone.dark; text: "1:1"; long: "200 %"; }
+        BadgeRow { label: "seal"; tone: BadgeTone.seal; text: "RGB"; long: "3 PASSES"; }
+        BadgeRow { label: "alert"; tone: BadgeTone.alert; text: "FLAGGED"; long: "FLAGGED FRAME"; }
+        BadgeRow { label: "news, its note on hover"; tone: BadgeTone.news; text: "NEW"; long: "UPDATED"; note: "Grain now follows the film's own size."; }
+        BadgeRow { label: "step"; tone: BadgeTone.step; text: "1"; long: "12"; }
+    }
+}

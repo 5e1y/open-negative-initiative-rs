@@ -234,6 +234,10 @@ msgid "Show Console"
 msgstr "Mostrar consola"
 
 #: crates/oni-ui/ui/app.slint
+msgid "Design System…"
+msgstr "Sistema de diseño…"
+
+#: crates/oni-ui/ui/app.slint
 msgid "What's New in ONI {}"
 msgstr "Novedades de ONI {}"
 
@@ -313,18 +317,6 @@ msgstr "Mostrar {}"
 msgid "Hide {}"
 msgstr "Ocultar {}"
 
-#: crates/oni-ui/ui/ds/folders.slint
-msgid "Remove from the favourites"
-msgstr "Quitar de favoritos"
-
-#: crates/oni-ui/ui/ds/folders.slint
-msgid "Add to the favourites"
-msgstr "Añadir a favoritos"
-
-#: crates/oni-ui/ui/ds/folders.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
-msgid "Name"
-msgstr "Nombre"
-
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
 msgstr "no se pudo mostrar"
@@ -349,13 +341,21 @@ msgstr "DD"
 msgid "YYYY"
 msgstr "AAAA"
 
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "RESTORE"
-msgstr "RESTAURAR"
-
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "FLAGGED"
 msgstr "MARCADO"
+
+#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "Name"
+msgstr "Nombre"
+
+#: crates/oni-ui/ui/ds/row.slint
+msgid "Remove from the favourites"
+msgstr "Quitar de favoritos"
+
+#: crates/oni-ui/ui/ds/row.slint
+msgid "Add to the favourites"
+msgstr "Añadir a favoritos"
 
 #: crates/oni-ui/ui/ds/splash.slint
 msgid "Photo"
@@ -924,6 +924,10 @@ msgstr "Proyectos de ONI"
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/library_tree.slint
 msgid "Right-click photos in the library and choose New Project from them."
 msgstr "Haz clic derecho en fotos de la fototeca y elige Nuevo proyecto para crear uno con ellas."
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "RESTORE"
+msgstr "RESTAURAR"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "The archive shows a folder of your disk and everything under it."

@@ -1,61 +1,89 @@
-// The state board: one family of components a page, each component in every state it can show, for
-// a design review side by side; `family` picks the page, the arrow keys walk them.
-import { AppWindow, Scroller } from "../ds.slint";
-import { ButtonsPage, IconsPage } from "buttons.slint";
-import { TabsPage, FieldsPage } from "inputs.slint";
-import { SlidersPage, KeypadPage } from "sliders.slint";
-import { BoxesPage } from "boxes.slint";
-import { ListsPage } from "lists.slint";
+// The design system's board: one base component a page, each variant a row, its live state and every
+// state it can be forced into a column; the list on the left or the arrow keys pick the page.
+import { Space, AppWindow, Scroller, Row, VerticalRule, TipLayer } from "../ds.slint";
+import { BoardStyle } from "kit.slint";
+import { TextPage, BadgePage } from "text.slint";
+import { ButtonPage } from "buttons.slint";
+import { ButtonGroupPage } from "groups.slint";
+import { TogglePage } from "toggles.slint";
+import { SliderPage } from "sliders.slint";
+import { FieldPage } from "fields.slint";
+import { MenuPage } from "menus.slint";
+import { RowPage } from "rows.slint";
 import { TilesPage } from "tiles.slint";
-import { MenusPage } from "menus.slint";
-import { FeedbackPage } from "feedback.slint";
+import { ContainersPage } from "boxes.slint";
+import { ScannerPage } from "scanner.slint";
 import { PlotsPage } from "plots.slint";
 import { TokensPage } from "swatches.slint";
 
 export component Board inherits AppWindow {
-    title: "ONI State Board";
+    title: "ONI Design System";
     in-out property <int> family;
-    // Each family's name, in the order `family` counts them, which a shot's file name takes.
-    out property <[string]> families: ["buttons", "icon-buttons", "tabs-toggles", "fields", "sliders", "keypad", "containers", "lists", "tiles", "menus", "feedback", "plots", "tokens"];
-    // The drawn page's size, so a shot is cropped to it.
-    out property <length> content-width: page.preferred-width;
-    out property <length> content-height: page.preferred-height;
+    // Each page's name, in the order `family` counts them, which a shot's file name takes.
+    out property <[string]> families: ["text", "badge", "button", "button-group", "toggle-tabs", "slider", "text-field", "picker-menu", "row", "tiles", "containers", "scanner-overlays", "plots", "tokens"];
+    property <[string]> titles: ["Text", "Badge", "Button", "ButtonGroup", "Toggle and Tabs", "Slider", "TextField and forms", "Picker and Menu", "Row", "Tiles", "Containers", "Scanner and overlays", "Plots", "Tokens"];
+    // The drawn board's size, so a shot is cropped to it; the page starts at `page-x`, past the list.
+    out property <length> page-x: nav.width + rule.width;
+    out property <length> page-height: page.preferred-height;
+    out property <length> content-width: root.page-x + page.preferred-width;
+    out property <length> content-height: max(page.preferred-height, nav.preferred-height);
     min-width: 0;
     min-height: 0;
     preferred-width: 1600px;
     preferred-height: 1000px;
     forward-focus: keys;
+    changed family => { scroller.content-y = 0; }
     keys := FocusScope {
         key-pressed(event) => {
-            if (event.text == Key.RightArrow) {
+            if (event.text == Key.RightArrow || event.text == Key.DownArrow) {
                 root.family = Math.min(root.family + 1, root.families.length - 1);
                 return accept;
             }
-            if (event.text == Key.LeftArrow) {
+            if (event.text == Key.LeftArrow || event.text == Key.UpArrow) {
                 root.family = Math.max(root.family - 1, 0);
                 return accept;
             }
             reject
         }
-        Scroller {
-            content-height: page.preferred-height;
-            page := VerticalLayout {
-                width: self.preferred-width;
-                height: self.preferred-height;
-                if root.family == 0: ButtonsPage { }
-                if root.family == 1: IconsPage { }
-                if root.family == 2: TabsPage { }
-                if root.family == 3: FieldsPage { }
-                if root.family == 4: SlidersPage { }
-                if root.family == 5: KeypadPage { }
-                if root.family == 6: BoxesPage { }
-                if root.family == 7: ListsPage { }
-                if root.family == 8: TilesPage { }
-                if root.family == 9: MenusPage { }
-                if root.family == 10: FeedbackPage { }
-                if root.family == 11: PlotsPage { }
-                if root.family == 12: TokensPage { }
+        HorizontalLayout {
+            nav := VerticalLayout {
+                width: BoardStyle.nav;
+                padding: Space.s;
+                alignment: start;
+                for name[i] in root.titles: Row {
+                    rounded: true;
+                    title: name;
+                    selected: i == root.family;
+                    clicked => {
+                        root.family = i;
+                        keys.focus();
+                    }
+                }
+            }
+            rule := VerticalRule { }
+            scroller := Scroller {
+                horizontal-stretch: 1;
+                content-height: page.preferred-height;
+                page := VerticalLayout {
+                    width: self.preferred-width;
+                    height: self.preferred-height;
+                    if root.family == 0: TextPage { }
+                    if root.family == 1: BadgePage { }
+                    if root.family == 2: ButtonPage { }
+                    if root.family == 3: ButtonGroupPage { }
+                    if root.family == 4: TogglePage { }
+                    if root.family == 5: SliderPage { }
+                    if root.family == 6: FieldPage { }
+                    if root.family == 7: MenuPage { }
+                    if root.family == 8: RowPage { }
+                    if root.family == 9: TilesPage { }
+                    if root.family == 10: ContainersPage { }
+                    if root.family == 11: ScannerPage { }
+                    if root.family == 12: PlotsPage { }
+                    if root.family == 13: TokensPage { }
+                }
             }
         }
     }
+    TipLayer { room: root.width; room-height: root.height; }
 }

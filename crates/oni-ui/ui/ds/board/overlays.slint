@@ -1,0 +1,160 @@
+// The marks drawn over the canvas: the crop's and the window's frame, dragged live as Rust drags
+// them, the compare split, the well, the brush, the corrections, the loupe, the rings and drop marks.
+import { Space, Stroke, Ground, Picture, FrameOverlay, FrameStyle, SplitGuide, Well, BrushDisc, CorrectionMark, LoupeBand, DustOriginal, LiveStroke, SourceTrace, Ring, DropRing, DropLine, Row, RowKind } from "../ds.slint";
+import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
+
+// A photo on the canvas with something drawn over it.
+component OverPhoto inherits Stage {
+    width: BoardStyle.wide;
+    height: BoardStyle.wide * 2 / 3;
+    Picture { source: Samples.photo; ground: Ground.canvas; }
+}
+
+// A frame the hand moves by its body and sizes by its corners and edges, never under a third of the cell.
+component LiveFrame inherits OverPhoto {
+    in property <FrameStyle> look;
+    property <length> fx: BoardStyle.wide / 6;
+    property <length> fy: BoardStyle.wide / 10;
+    property <length> fw: BoardStyle.wide * 2 / 3;
+    property <length> fh: BoardStyle.wide * 7 / 15;
+    property <[length]> from;
+    property <length> least: BoardStyle.wide / 6;
+    FrameOverlay {
+        look: root.look;
+        frame-x: root.fx;
+        frame-y: root.fy;
+        frame-width: root.fw;
+        frame-height: root.fh;
+        grabbed(h) => { root.from = [root.fx, root.fy, root.fw, root.fh]; }
+        dragged(h, dx, dy) => {
+            if (h == 0) {
+                root.fx = clamp(root.from[0] + dx, 0, root.width - root.fw);
+                root.fy = clamp(root.from[1] + dy, 0, root.height - root.fh);
+                return;
+            }
+            if (h == 1 || h == 3 || h == 5) { root.fx = clamp(root.from[0] + dx, 0, root.from[0] + root.from[2] - root.least); root.fw = root.from[0] + root.from[2] - root.fx; }
+            if (h == 2 || h == 4 || h == 6) { root.fw = clamp(root.from[2] + dx, root.least, root.width - root.from[0]); }
+            if (h == 1 || h == 2 || h == 7) { root.fy = clamp(root.from[1] + dy, 0, root.from[1] + root.from[3] - root.least); root.fh = root.from[1] + root.from[3] - root.fy; }
+            if (h == 3 || h == 4 || h == 8) { root.fh = clamp(root.from[3] + dy, root.least, root.height - root.from[1]); }
+        }
+    }
+}
+
+export component OverlayGroups inherits VerticalLayout {
+    spacing: Space.l;
+    Group {
+        title: "FrameOverlay and SplitGuide";
+        states: ["Live (drag)", "At rest"];
+        span: BoardStyle.wide;
+        Line {
+            label: "FrameOverlay, crop";
+            Cell { span: BoardStyle.wide; LiveFrame { look: FrameStyle.crop; } }
+            Cell { span: BoardStyle.wide; OverPhoto { FrameOverlay { frame-x: BoardStyle.wide / 6; frame-y: BoardStyle.wide / 10; frame-width: BoardStyle.wide * 2 / 3; frame-height: BoardStyle.wide * 7 / 15; } } }
+        }
+        Line {
+            label: "FrameOverlay, measuring window";
+            Cell { span: BoardStyle.wide; LiveFrame { look: FrameStyle.window; } }
+            Cell { span: BoardStyle.wide; OverPhoto { FrameOverlay { look: FrameStyle.window; frame-x: BoardStyle.wide / 6; frame-y: BoardStyle.wide / 10; frame-width: BoardStyle.wide * 2 / 3; frame-height: BoardStyle.wide * 7 / 15; } } }
+        }
+        Line {
+            label: "SplitGuide (compare)";
+            split := Cell {
+                span: BoardStyle.wide;
+                property <length> at: BoardStyle.wide / 2;
+                OverPhoto { SplitGuide { x: split.at - self.width / 2; height: parent.height; dragged(x) => { split.at = clamp(self.x + x, 0, parent.width); } } }
+            }
+            Cell { span: BoardStyle.wide; OverPhoto { SplitGuide { x: (parent.width - self.width) / 2; height: parent.height; } } }
+        }
+    }
+    Group {
+        title: "Canvas marks";
+        states: ["Well", "BrushDisc (live)", "CorrectionMark", "LiveStroke, SourceTrace", "DustOriginal", "Ring"];
+        Line {
+            label: "as the canvas draws them";
+            Cell { Well { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; } }
+            Cell {
+                brush := Stage {
+                    width: BoardStyle.cell - Space.l;
+                    height: BoardStyle.cell / 2;
+                    property <length> side: self.height * 2 / 3;
+                    BrushDisc {
+                        x: (hand.has-hover ? hand.mouse-x : parent.width / 2) - self.width / 2;
+                        y: (hand.has-hover ? hand.mouse-y : parent.height / 2) - self.height / 2;
+                        width: brush.side;
+                        height: self.width;
+                    }
+                    hand := TouchArea { mouse-cursor: none; }
+                }
+            }
+            Cell {
+                Stage {
+                    width: BoardStyle.cell / 2 + Space.l;
+                    height: BoardStyle.cell / 2;
+                    CorrectionMark { x: Space.s; y: Space.l; width: BoardStyle.cell / 4; height: self.width; number: 3; }
+                }
+            }
+            Cell {
+                Stage {
+                    width: BoardStyle.cell - Space.l;
+                    height: BoardStyle.cell / 2;
+                    LiveStroke { width: parent.width; height: parent.height; thickness: Space.s; commands: "M 12 50 L 40 20 L 70 45 L 110 15"; }
+                    SourceTrace { width: parent.width; height: parent.height; thickness: Stroke.line; commands: "M 12 64 L 110 64"; }
+                }
+            }
+            Cell { DustOriginal { source: Samples.photo; } }
+            Cell {
+                Stage {
+                    width: BoardStyle.cell / 2;
+                    height: BoardStyle.cell / 2;
+                    Ring { centre-x: parent.width / 2; centre-y: parent.height / 2; diameter: parent.width / 2; }
+                }
+            }
+        }
+    }
+    Group {
+        title: "LoupeBand";
+        states: ["Live (its badge swaps the ratio)", "Ratio hidden"];
+        span: BoardStyle.panel;
+        Line {
+            label: "the Details band";
+            loupe := Fill {
+                span: BoardStyle.panel;
+                property <bool> close;
+                LoupeBand {
+                    height: BoardStyle.cell;
+                    source: Samples.photo;
+                    shown-width: BoardStyle.cell * (loupe.close ? 2 : 3 / 2);
+                    shown-height: BoardStyle.cell * (loupe.close ? 4 / 3 : 1);
+                    ratio: loupe.close ? "1:1" : "2:1";
+                    ratio-shown: true;
+                    toggled => { loupe.close = !loupe.close; }
+                }
+            }
+            Fill { span: BoardStyle.panel; LoupeBand { height: BoardStyle.cell; source: Samples.photo; shown-width: BoardStyle.cell * 3 / 2; shown-height: BoardStyle.cell; } }
+        }
+    }
+    Group {
+        title: "DropRing and DropLine";
+        states: ["Over a row", "Between rows"];
+        span: BoardStyle.library;
+        Line {
+            label: "where a drop lands";
+            Fill {
+                span: BoardStyle.library;
+                Rectangle {
+                    height: ring.height;
+                    ring := Row { title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; }
+                    DropRing { width: parent.width; height: parent.height; }
+                }
+            }
+            Fill {
+                span: BoardStyle.library;
+                VerticalLayout {
+                    Row { title: "DSC_6431"; depth: 2; kind: RowKind.photo; }
+                    DropLine { height: Stroke.emphasis; }
+                    Row { title: "DSC_6432"; depth: 2; kind: RowKind.photo; }
+                }
+            }
+        }
+    }
+}

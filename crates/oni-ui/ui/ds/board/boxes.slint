@@ -1,7 +1,8 @@
-// The board's containers: the block's section in each of its forms, the help mark, the sheets, the
-// cards and the panels, and a still copy of the help card and the tooltip `TipLayer` draws.
+// The board's containers: the block's Section in each form, the help mark and a still copy of the
+// card and the tooltip `TipLayer` draws, the sheets, the cards and the panels; notices.slint the rest.
 import { Colour, Space, Stroke, Type, TipStyle, SheetStyle, FormStyle, Look, Label, TextRole, Tone, Picture, Ground, Surface, Card, FloatingColumn, Button, ButtonKind, Tabs, HelpMark, Section, Dialog, PanelSheet, BoardSheet, BoardCard, PopoverPanel, TextField, Toggle, ButtonGroup, FormRow } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill, Stage } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage } from "kit.slint";
+import { NoticeGroups } from "notices.slint";
 
 // A section on the panel's ground at the panel's width.
 component SectionCell inherits Fill {
@@ -42,85 +43,136 @@ component TipLine inherits Rectangle {
     line := Label { x: TipStyle.padding-x; y: TipStyle.padding-y; role: TextRole.caption; text: root.text; }
 }
 
-export component BoxesPage inherits Page {
+// A sheet's card in the room `Sheet` hangs it in.
+component Hung inherits Rectangle {
+    width: SheetStyle.width + 2 * Space.l;
+}
+
+export component ContainersPage inherits Page {
     title: "Containers";
-    note: "Section in each form, HelpMark, Dialog and SheetKeys, Card, FloatingColumn, the help card and the tooltip, PanelSheet, BoardSheet, BoardCard and PopoverPanel.";
+    note: "Section: title, help, news, block + modified, folded, foldable, separated. Sheet (Dialog: question, wide), PanelSheet, BoardSheet, Card, FloatingColumn, PopoverPanel, notices, status, progress.";
     Group {
-        title: "Section";
-        states: ["As drawn on the panel"];
+        title: "Section (on the panel)";
+        states: ["Live (fold, RESET, ?)", "Folded"];
         span: BoardStyle.panel;
-        Line { label: "titled"; SectionCell { Section { title: "Exposure"; Label { text: "Content"; tone: Tone.secondary; } } } }
-        Line { label: "with a help mark"; SectionCell { Section { title: "Contrast"; help: "Contrast bends the print into an S."; Label { text: "Content"; tone: Tone.secondary; } } } }
-        Line { label: "with a news seal"; SectionCell { Section { title: "Grain"; help: "Grain lays film's own texture."; news: "NEW"; Label { text: "Content"; tone: Tone.secondary; } } } }
-        Line { label: "modified, RESET shown"; SectionCell { Section { title: "Levels"; block: 0; modified: true; Label { text: "Content"; tone: Tone.secondary; } } } }
-        Line { label: "resettable, unmodified"; SectionCell { Section { title: "Levels"; block: 0; Label { text: "Content"; tone: Tone.secondary; } } } }
-        Line { label: "folded"; SectionCell { Section { title: "Curves"; folded: true; Label { text: "Hidden"; } } } }
-        Line { label: "unfoldable (a settings page)"; SectionCell { Section { title: "Clicks"; foldable: false; FormRow { spread: true; label: "Keys click"; Toggle { on: true; } } } } }
-        Line { label: "not separated"; SectionCell { Section { title: "First block"; separated: false; Label { text: "Content"; tone: Tone.secondary; } } } }
-    }
-    Group {
-        title: "HelpMark";
-        states: ["Rest", "Hover"];
-        Line { label: "the \"?\""; Cell { HelpMark { note: "A block's note."; } } Cell { HelpMark { note: "A block's note."; look: Look.hover; } } }
-    }
-    Group {
-        title: "Notes over the window";
-        states: ["Help card (a help mark's note)", "Tooltip (a control's name)"];
-        span: BoardStyle.wide;
         Line {
-            label: "TipLayer, drawn still";
-            Cell { span: BoardStyle.wide; HelpCard { text: "Contrast bends the print into an S about a middle grey, its ends held."; } }
-            Cell { span: BoardStyle.wide; TipLine { text: "Zoom in (⌘+)"; } }
+            label: "titled";
+            SectionCell { Section { title: "Exposure"; Label { text: "Content"; tone: Tone.secondary; } } }
+            SectionCell { Section { title: "Exposure"; folded: true; Label { text: "Content"; } } }
+        }
+        Line {
+            label: "with a help mark";
+            SectionCell { Section { title: "Contrast"; help: "Contrast bends the print into an S."; Label { text: "Content"; tone: Tone.secondary; } } }
+            SectionCell { Section { title: "Contrast"; help: "Contrast bends the print into an S."; folded: true; Label { text: "Content"; } } }
+        }
+        Line {
+            label: "with news, its note on hover";
+            SectionCell { Section { title: "Grain"; news: "NEW"; news-note: "Grain now follows the film's own size."; Label { text: "Content"; tone: Tone.secondary; } } }
+            SectionCell { Section { title: "Grain"; news: "NEW"; folded: true; Label { text: "Content"; } } }
+        }
+        Line {
+            label: "modified, RESET shown";
+            levels := SectionCell {
+                property <bool> modified: true;
+                Section { title: "Levels"; block: 0; modified: levels.modified; reset => { levels.modified = false; } Label { text: "RESET clears it"; tone: Tone.secondary; } }
+            }
+            SectionCell { Section { title: "Levels"; block: 0; modified: true; folded: true; Label { text: "Content"; } } }
+        }
+        Line {
+            label: "resettable, unmodified";
+            SectionCell { Section { title: "Levels"; block: 0; Label { text: "Content"; tone: Tone.secondary; } } }
+            SectionCell { Section { title: "Levels"; block: 0; folded: true; Label { text: "Content"; } } }
+        }
+        Line {
+            label: "unfoldable (a settings page)";
+            SectionCell { Section { title: "Clicks"; foldable: false; FormRow { spread: true; label: "Keys click"; Toggle { on: true; } } } }
+            Absent { span: BoardStyle.panel; text: "— it never folds"; }
+        }
+        Line {
+            label: "not separated (a panel's first)";
+            SectionCell { Section { title: "First block"; separated: false; Label { text: "Content"; tone: Tone.secondary; } } }
+            SectionCell { Section { title: "First block"; separated: false; folded: true; Label { text: "Content"; } } }
+        }
+    }
+    Group {
+        title: "HelpMark, its card and the tooltip";
+        states: ["Live (hover)", "Hover", "The card it shows", "A control's tooltip"];
+        span: TipStyle.card-width;
+        Line {
+            label: "the \"?\" and what TipLayer draws, held still";
+            Cell { span: TipStyle.card-width; HelpMark { note: "A block's note, shown at once as a card."; } }
+            Cell { span: TipStyle.card-width; HelpMark { note: "A block's note."; look: Look.hover; } }
+            Cell { span: TipStyle.card-width; HelpCard { text: "Contrast bends the print into an S about a middle grey, its ends held."; } }
+            Cell { span: TipStyle.card-width; TipLine { text: "Zoom in (⌘+)"; } }
         }
     }
     Group {
         title: "Sheets";
-        states: ["Question", "Full sheet"];
-        span: SheetStyle.width + 2 * Space.l;
+        states: ["As hung from the window's top"];
+        span: FormStyle.paper-width + 2 * Space.l;
         Line {
-            label: "Dialog and SheetKeys";
-            Cell {
-                span: SheetStyle.width + 2 * Space.l;
-                Rectangle {
-                    width: SheetStyle.width + 2 * Space.l;
-                    height: question.height + 2 * Space.l;
-                    question := Dialog {
-                        title: "Move 3 photos to the ONI Trash?";
-                        question: true;
-                        Label { text: "They stay there until the trash is emptied."; tone: Tone.secondary; wrap: word-wrap; }
-                        ButtonGroup { plate: true; trailing: true; Button { text: "Cancel"; } Button { text: "Move"; kind: ButtonKind.destructive; } }
-                    }
+            label: "Sheet: a question";
+            Hung {
+                height: question.height + 2 * Space.l;
+                question := Dialog {
+                    title: "Move 3 photos to the ONI Trash?";
+                    question: true;
+                    Label { text: "They stay there until the trash is emptied."; tone: Tone.secondary; wrap: word-wrap; }
+                    ButtonGroup { plate: true; trailing: true; Button { text: "CANCEL"; } Button { text: "MOVE"; kind: ButtonKind.destructive; } }
                 }
             }
-            Cell {
-                span: SheetStyle.width + 2 * Space.l;
-                Rectangle {
-                    width: SheetStyle.width + 2 * Space.l;
-                    height: sheet.height + 2 * Space.l;
-                    sheet := Dialog {
-                        title: "Export";
-                        Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
-                        TextField { value: "Roll #8"; }
-                        ButtonGroup { plate: true; trailing: true; Button { text: "Cancel"; } Button { text: "Export"; kind: ButtonKind.accent; } }
+        }
+        Line {
+            label: "Sheet: a full sheet, wide";
+            Hung {
+                width: SheetStyle.wide-width + 2 * Space.l;
+                height: full.height + 2 * Space.l;
+                full := Dialog {
+                    title: "Export";
+                    wide: true;
+                    Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
+                    TextField { value: "Roll #8"; }
+                    ButtonGroup { plate: true; trailing: true; Button { text: "CANCEL"; } Button { text: "EXPORT"; kind: ButtonKind.accent; } }
+                }
+            }
+        }
+        Line {
+            label: "PanelSheet: its own gauge";
+            Hung {
+                height: 5 * BoardStyle.gap + 2 * SheetStyle.margin;
+                PanelSheet {
+                    panel-width: SheetStyle.width;
+                    panel-height: 5 * BoardStyle.gap;
+                    VerticalLayout {
+                        padding: Space.l;
+                        spacing: Space.s;
+                        Label { role: TextRole.title; text: "Save Preset"; }
+                        Label { text: "A sheet at its own gauge."; tone: Tone.secondary; }
                     }
                 }
             }
         }
         Line {
-            label: "PanelSheet";
-            Cell {
-                span: SheetStyle.width + 2 * Space.l;
-                Rectangle {
-                    width: SheetStyle.width + 2 * Space.l;
-                    height: 5 * BoardStyle.gap + 2 * SheetStyle.margin;
-                    PanelSheet {
-                        panel-width: SheetStyle.width;
-                        panel-height: 5 * BoardStyle.gap;
-                        VerticalLayout {
-                            padding: Space.l;
-                            spacing: Space.s;
-                            Label { role: TextRole.title; text: "Save Preset"; }
-                            Label { text: "A sheet at its own gauge."; tone: Tone.secondary; }
+            label: "BoardSheet holding a BoardCard";
+            Rectangle {
+                width: FormStyle.paper-width + 2 * Space.l;
+                height: 20 * BoardStyle.gap;
+                BoardSheet {
+                    title: "Paper";
+                    VerticalLayout {
+                        width: FormStyle.paper-list;
+                        padding: Space.l;
+                        spacing: Space.s;
+                        Label { tone: Tone.tertiary; text: "MAKERS"; }
+                        Label { text: "Hahnemühle"; }
+                        Label { text: "Canson"; tone: Tone.secondary; }
+                    }
+                    VerticalLayout {
+                        padding-right: Space.l;
+                        padding-bottom: Space.l;
+                        BoardCard {
+                            Label { role: TextRole.title; text: "Photo Rag 308"; }
+                            Label { text: "A card on the canvas's dark."; tone: Tone.secondary; }
                         }
                     }
                 }
@@ -129,17 +181,17 @@ export component BoxesPage inherits Page {
     }
     Group {
         title: "Cards and panels";
-        states: ["Rest", "Dimmed (cropping)"];
-        span: BoardStyle.wide;
+        states: ["Live", "Dimmed (cropping)"];
+        span: FormStyle.panel-width;
         Line {
             label: "Card";
-            Cell { span: BoardStyle.wide; Card { width: BoardStyle.wide; height: BoardStyle.cell; } }
-            Cell { span: BoardStyle.wide; Card { width: BoardStyle.wide; height: BoardStyle.cell; dimmed: true; } }
+            Cell { span: FormStyle.panel-width; Card { width: BoardStyle.wide; height: BoardStyle.cell; } }
+            Cell { span: FormStyle.panel-width; Card { width: BoardStyle.wide; height: BoardStyle.cell; dimmed: true; } }
         }
         Line {
-            label: "FloatingColumn";
+            label: "FloatingColumn over the card";
             Cell {
-                span: BoardStyle.wide;
+                span: FormStyle.panel-width;
                 Stage {
                     width: BoardStyle.wide;
                     height: BoardStyle.cell + 2 * Space.l;
@@ -162,37 +214,20 @@ export component BoxesPage inherits Page {
                 }
             }
         }
-    }
-    Group {
-        title: "BoardSheet and BoardCard";
         Line {
-            label: "a board: sidebar and card";
+            label: "Surface on each ground";
             Cell {
-                span: FormStyle.paper-width + 2 * Space.l;
-                Rectangle {
-                    width: FormStyle.paper-width + 2 * Space.l;
-                    height: 20 * BoardStyle.gap;
-                    BoardSheet {
-                        title: "Paper";
-                        VerticalLayout {
-                            width: FormStyle.paper-list;
-                            padding: Space.l;
-                            spacing: Space.s;
-                            Label { tone: Tone.tertiary; text: "MAKERS"; }
-                            Label { text: "Hahnemühle"; }
-                            Label { text: "Canson"; tone: Tone.secondary; }
-                        }
-                        VerticalLayout {
-                            padding-right: Space.l;
-                            padding-bottom: Space.l;
-                            BoardCard {
-                                Label { role: TextRole.title; text: "Photo Rag 308"; }
-                                Label { text: "A card on the canvas's dark."; tone: Tone.secondary; }
-                            }
-                        }
+                span: FormStyle.panel-width;
+                HorizontalLayout {
+                    spacing: BoardStyle.gap;
+                    for ground[i] in [Ground.ground, Ground.canvas, Ground.well, Ground.paper]: VerticalLayout {
+                        spacing: Space.xxs;
+                        Surface { width: 4 * BoardStyle.gap; height: self.width; ground: ground; }
+                        Label { role: TextRole.caption; tone: Tone.tertiary; text: ["ground", "canvas", "well", "paper"][i]; }
                     }
                 }
             }
         }
     }
+    NoticeGroups { }
 }

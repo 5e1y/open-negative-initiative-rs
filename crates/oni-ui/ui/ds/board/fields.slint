@@ -1,0 +1,98 @@
+// The board's typed boxes and their forms: TextField in each variant, FormRow, Field, DateFields and
+// EditableTitle; the live column takes the focus and the keys.
+import { FormStyle, TextField, Toggle, FormRow, Field, DateFields, EditableTitle } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent } from "kit.slint";
+
+// A field live, drawn with the focus, and disabled.
+component FieldStates inherits Line {
+    in property <string> value;
+    in property <string> placeholder;
+    in property <string> suffix;
+    in property <bool> multiline;
+    for state in 3: Fill {
+        span: BoardStyle.field;
+        TextField {
+            value: root.value;
+            placeholder: root.placeholder;
+            suffix: root.suffix;
+            multiline: root.multiline;
+            lines-height: 4 * BoardStyle.gap;
+            focused-look: state == 1;
+            enabled: state != 2;
+        }
+    }
+}
+
+// A number's field at its own width, in the same three states.
+component NumberStates inherits Line {
+    for state in 3: Cell {
+        span: BoardStyle.field;
+        TextField { width: FormStyle.size-field; value: "3000"; suffix: "px"; focused-look: state == 1; enabled: state != 2; }
+    }
+}
+
+export component FieldPage inherits Page {
+    title: "TextField and forms";
+    note: "TextField: value, placeholder, suffix, width, multiline, lines-height, focused-look, enabled. FormRow: label, spread. Field: label, help.";
+    Group {
+        title: "TextField";
+        states: ["Live (type in it)", "Focus", "Disabled"];
+        span: BoardStyle.field;
+        FieldStates { label: "single line, a value"; value: "Kodak Portra 400"; }
+        FieldStates { label: "single line, its placeholder"; placeholder: "Description"; }
+        FieldStates { label: "suffix"; value: "DSC_6432"; suffix: ".tif"; }
+        NumberStates { label: "a number (FormStyle.size-field)"; }
+        FieldStates { label: "multiline"; multiline: true; value: "The scan shows banding in the sky after the Color tab's curve."; }
+    }
+    Group {
+        title: "FormRow";
+        states: ["Live"];
+        span: BoardStyle.wide;
+        Line {
+            label: "fixed label column";
+            Fill { span: BoardStyle.wide; FormRow { label: "Camera"; TextField { value: "Nikon Z f"; horizontal-stretch: 1; } } }
+        }
+        Line {
+            label: "spread (label pushes the control to the end)";
+            grain := Fill {
+                span: BoardStyle.wide;
+                property <bool> lit: true;
+                FormRow { spread: true; label: "Show the grain"; Toggle { on: grain.lit; toggled(v) => { grain.lit = v; } } }
+            }
+        }
+    }
+    Group {
+        title: "Field";
+        states: ["Live (hover the ?)", "Its box focused"];
+        span: BoardStyle.wide;
+        Line {
+            label: "a label over a box, with a note";
+            Fill { span: BoardStyle.wide; Field { label: "Long edge"; help: "The exported picture's longest side, in pixels."; TextField { value: "3000"; } } }
+            Fill { span: BoardStyle.wide; Field { label: "Long edge"; help: "The exported picture's longest side, in pixels."; TextField { value: "3000"; focused-look: true; } } }
+        }
+        Line {
+            label: "without a note";
+            Fill { span: BoardStyle.wide; Field { label: "Long edge"; TextField { value: "3000"; } } }
+            Fill { span: BoardStyle.wide; Field { label: "Long edge"; TextField { value: "3000"; focused-look: true; } } }
+        }
+    }
+    Group {
+        title: "DateFields and EditableTitle";
+        states: ["Live", "Filled"];
+        span: BoardStyle.wide;
+        Line {
+            label: "DateFields";
+            Cell { span: BoardStyle.wide; DateFields { } }
+            Cell { span: BoardStyle.wide; DateFields { month: "4"; day: "15"; year: "2026"; } }
+        }
+        Line {
+            label: "EditableTitle (click to retype)";
+            retitled := Cell {
+                span: BoardStyle.wide;
+                property <string> name: "Roll #8";
+                EditableTitle { text: retitled.name; placeholder: "Roll name"; committed(t) => { retitled.name = t; } }
+            }
+            Absent { span: BoardStyle.wide; text: "— empty, it draws nothing"; }
+        }
+    }
+}

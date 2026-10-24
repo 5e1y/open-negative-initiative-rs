@@ -36,6 +36,8 @@ export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice } from "ds/
 
 export global App {
     in-out property <bool> gallery;
+    // A build without a release's stamp: the developer's menu items show.
+    in property <bool> dev;
     in property <bool> panel-hidden;
     in property <bool> library-hidden;
     // A key with control, meta, shift and alt, then whether it repeats; Rust reads ⌘ as meta on
@@ -242,6 +244,7 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: @tr("Check for Updates…"); activated => { App.menu(Act.check-updates); } }
             MenuSeparator { }
             MenuItem { title: @tr("Show Console"); activated => { App.menu(Act.console); } }
+            if App.dev: MenuItem { title: @tr("Design System…"); activated => { App.menu(Act.design-system); } }
             MenuItem { title: @tr("What's New in ONI {}", Help.release); activated => { App.menu(Act.welcome); } }
             MenuItem { title: @tr("Show What's New Again"); activated => { App.menu(Act.whats-new); } }
             MenuItem { title: @tr("Report a Bug / Give Feedback…"); activated => { App.menu(Act.report); } }

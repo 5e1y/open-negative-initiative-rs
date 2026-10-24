@@ -1,7 +1,7 @@
-// The board's plots and canvas marks: the histogram's frame, the plot screen, the track's knobs in
-// each ink and state, every ink, the crop and window frames, and the marks drawn over a photo.
-import { Colour, Space, Stroke, PlotInkStyle, SplitStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Picture, Ink, Inks, PlotKnob, Plot, TrackKnob, LevelsTrack, PlotReadouts, AxisCaptions, FrameOverlay, FrameStyle, Well, BrushDisc, CorrectionMark, Badge, LoupeBand, SplitGuide, LiveStroke, SourceTrace, DustOriginal } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
+// The board's plots: the histogram's frame, the plot screen with its captions and readouts, the
+// track's knobs in each ink and state, the levels track and every ink.
+import { Colour, Space, Stroke, PlotInkStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Ink, Inks, PlotKnob, Plot, TrackKnob, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
 
@@ -21,16 +21,9 @@ component KnobRow inherits Line {
     }
 }
 
-// A photo on the canvas with something drawn over it.
-component OverPhoto inherits Stage {
-    width: BoardStyle.wide;
-    height: BoardStyle.wide * 2 / 3;
-    Picture { source: Samples.photo; ground: Ground.canvas; }
-}
-
 export component PlotsPage inherits Page {
     title: "Plots";
-    note: "HistogramFrame, Plot, TrackKnob in each ink, LevelsTrack, AxisCaptions, PlotReadouts, every Ink, FrameOverlay, and the marks the canvas draws.";
+    note: "HistogramFrame: size, ground. Plot: lines, dots, grid, screen. TrackKnob: ink, held, over. LevelsTrack, AxisCaptions, PlotReadouts, every Ink.";
     property <[Named]> inks: [
         { name: "guide", ink: Ink.guide }, { name: "guide-faint", ink: Ink.guide-faint }, { name: "marker", ink: Ink.marker },
         { name: "separator", ink: Ink.separator }, { name: "active", ink: Ink.active }, { name: "idle", ink: Ink.idle },
@@ -122,75 +115,6 @@ export component PlotsPage inherits Page {
                     border-color: Colour.separator;
                 }
                 Label { text: named.name; role: TextRole.caption; tone: Tone.secondary; }
-            }
-        }
-    }
-    Group {
-        title: "Frames over a photo";
-        states: ["FrameOverlay, crop", "FrameOverlay, measuring window", "SplitGuide (compare)"];
-        span: BoardStyle.wide;
-        Line {
-            label: "at rest";
-            Cell {
-                span: BoardStyle.wide;
-                OverPhoto {
-                    FrameOverlay { frame-x: BoardStyle.wide / 6; frame-y: BoardStyle.wide / 10; frame-width: BoardStyle.wide * 2 / 3; frame-height: BoardStyle.wide * 7 / 15; }
-                }
-            }
-            Cell {
-                span: BoardStyle.wide;
-                OverPhoto {
-                    FrameOverlay { look: FrameStyle.window; frame-x: BoardStyle.wide / 3; frame-y: BoardStyle.wide / 6; frame-width: BoardStyle.wide / 3; frame-height: BoardStyle.wide / 3; }
-                }
-            }
-            Cell {
-                span: BoardStyle.wide;
-                OverPhoto {
-                    SplitGuide { x: (parent.width - self.width) / 2; height: parent.height; }
-                }
-            }
-        }
-    }
-    Group {
-        title: "Canvas marks";
-        states: ["Well", "BrushDisc", "CorrectionMark", "Strokes", "DustOriginal", "Badge"];
-        Line {
-            label: "as the canvas draws them";
-            Cell { Well { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; } }
-            Cell { Stage { width: BoardStyle.cell / 2; height: BoardStyle.cell / 2; BrushDisc { width: parent.width * 2 / 3; height: self.width; } } }
-            Cell {
-                Stage {
-                    width: BoardStyle.cell / 2 + Space.l;
-                    height: BoardStyle.cell / 2;
-                    CorrectionMark { x: Space.s; y: Space.l; width: BoardStyle.cell / 4; height: self.width; number: 3; }
-                }
-            }
-            Cell {
-                Stage {
-                    width: BoardStyle.cell - Space.l;
-                    height: BoardStyle.cell / 2;
-                    LiveStroke { width: parent.width; height: parent.height; thickness: Space.s; commands: "M 12 50 L 40 20 L 70 45 L 110 15"; }
-                    SourceTrace { width: parent.width; height: parent.height; thickness: Stroke.line; commands: "M 12 64 L 110 64"; }
-                }
-            }
-            Cell { DustOriginal { source: Samples.photo; } }
-            Cell { Stage { width: BoardStyle.cell / 2; height: BoardStyle.cell / 4; Badge { text: "1:1"; } } }
-        }
-    }
-    Group {
-        title: "LoupeBand";
-        Line {
-            label: "the Details band, its ratio badge";
-            Fill {
-                span: BoardStyle.panel;
-                LoupeBand {
-                    height: BoardStyle.cell;
-                    source: Samples.photo;
-                    shown-width: BoardStyle.cell * 3 / 2;
-                    shown-height: BoardStyle.cell;
-                    ratio: "2:1";
-                    ratio-shown: true;
-                }
             }
         }
     }

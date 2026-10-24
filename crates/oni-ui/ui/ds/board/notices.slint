@@ -1,0 +1,114 @@
+// The containers page's second half: the notices and blocks of text, the status lines, the progress
+// bars, and the scroller with its knob, live and forced.
+import { Space, Look, Label, TextRole, Tone, StatusLine, SealedStatusLine, WarningBand, SummaryBox, EmptyState, BulletLine, PreviewSlot, Progress, LoadBar, Scroller, ScrollKnob } from "../ds.slint";
+import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
+
+// The knob over a strip of the canvas, a third of its content shown.
+component KnobStage inherits Stage {
+    in property <bool> hovered;
+    in property <Look> look: Look.live;
+    width: BoardStyle.cell / 2;
+    height: BoardStyle.cell;
+    ScrollKnob {
+        width: parent.width;
+        height: parent.height;
+        page: parent.height;
+        whole: 3 * parent.height;
+        offset: parent.height / 2;
+        hovered: root.hovered;
+        across: parent.width;
+        look: root.look;
+    }
+}
+
+export component NoticeGroups inherits VerticalLayout {
+    spacing: Space.l;
+    Group {
+        title: "Notices and blocks of text";
+        states: ["Live"];
+        span: BoardStyle.wide;
+        Line { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
+        Line {
+            label: "SummaryBox";
+            Fill {
+                span: BoardStyle.wide;
+                SummaryBox {
+                    Label { text: "3 photos · TIFF 16-bit"; }
+                    Label { text: "Display P3 · 3000 px"; tone: Tone.secondary; role: TextRole.value; }
+                }
+            }
+        }
+        Line {
+            label: "EmptyState, its key live";
+            empty := Fill {
+                span: BoardStyle.wide;
+                property <int> shown;
+                EmptyState { title: "No Gold Photos"; detail: empty.shown == 0 ? "Cycle the filter (⌘L) to see the others." : "SHOW ALL pressed " + empty.shown + " times."; action: "SHOW ALL"; acted => { empty.shown += 1; } }
+            }
+        }
+        Line { label: "BulletLine"; Fill { span: BoardStyle.wide; BulletLine { text: "Every frame keeps its own settings, written beside the scan."; } } }
+    }
+    Group {
+        title: "PreviewSlot";
+        states: ["Rendering", "Shown", "Failed"];
+        Line {
+            label: "an export preview";
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 0; } }
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 1; source: Samples.photo; } }
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 2; } }
+        }
+    }
+    Group {
+        title: "StatusLine and SealedStatusLine";
+        states: ["Plain", "With its seal"];
+        span: BoardStyle.wide;
+        Line {
+            label: "under the viewer";
+            Cell { span: BoardStyle.wide; StatusLine { text: "DSC_6432 · 6048 × 4032 · Nikon Z f"; } }
+            Fill { span: BoardStyle.wide; SealedStatusLine { text: "Frame 09 · 3 passes"; seal: "RGB"; } }
+        }
+    }
+    Group {
+        title: "Progress and LoadBar";
+        states: ["Empty", "40 %", "Full", "Uncounted (sweeping)"];
+        span: BoardStyle.field;
+        Line {
+            label: "Progress";
+            Fill { span: BoardStyle.field; Progress { fraction: 0; } }
+            Fill { span: BoardStyle.field; Progress { fraction: 0.4; } }
+            Fill { span: BoardStyle.field; Progress { fraction: 1; } }
+            Fill { span: BoardStyle.field; Progress { fraction: -1; } }
+        }
+        Line {
+            label: "LoadBar";
+            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "0 / 36"; fraction: 0; } }
+            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "14 / 36"; fraction: 0.4; } }
+            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "36 / 36"; fraction: 1; } }
+            Fill { span: BoardStyle.field; LoadBar { title: "Reading"; } }
+        }
+    }
+    Group {
+        title: "Scroller and its knob";
+        states: ["Live (wheel, knob)", "Rest (hidden)", "Lit (hovered)", "Wide (on its strip)"];
+        Line {
+            label: "over the canvas";
+            Cell {
+                Stage {
+                    width: BoardStyle.cell;
+                    height: BoardStyle.cell;
+                    Scroller {
+                        content-height: lines.preferred-height;
+                        lines := VerticalLayout {
+                            padding: Space.s;
+                            spacing: Space.xs;
+                            for i in 24: Label { text: "Line " + (i + 1); role: TextRole.value; tone: Tone.secondary; }
+                        }
+                    }
+                }
+            }
+            Cell { KnobStage { } }
+            Cell { KnobStage { hovered: true; } }
+            Cell { KnobStage { hovered: true; look: Look.hover; } }
+        }
+    }
+}

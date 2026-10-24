@@ -1,5 +1,5 @@
-// The board's tokens: every `Colour` and the Scanner's colours by name, each type role in each tone,
-// the space and radius scales, the strokes and the states' opacities.
+// The board's tokens: every `Colour` and the Scanner's colours by name, the space and radius scales,
+// the strokes and the states' opacities; the type roles are the Text page's.
 import { Colour, Space, Radius, Stroke, State, ScannerStyle, Label, TextRole, Tone, Button, PresetStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
@@ -29,24 +29,9 @@ component Swatches inherits Rectangle {
     }
 }
 
-// A role in the five tones, each on the ground its tone is meant for.
-component RoleRow inherits Line {
-    in property <TextRole> role;
-    in property <string> sample;
-    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light]: Fill {
-        span: BoardStyle.field;
-        Rectangle {
-            height: sample.preferred-height + Space.s;
-            background: tone == Tone.on-fill ? Colour.accent : tone == Tone.on-light ? Colour.paper : transparent;
-            border-radius: Radius.track;
-            sample := Label { x: Space.xs; role: root.role; tone: tone; text: root.sample; }
-        }
-    }
-}
-
 export component TokensPage inherits Page {
     title: "Tokens";
-    note: "Every Colour and ScannerStyle colour, each TextRole in each Tone, the Space and Radius scales, Stroke and State.";
+    note: "Every Colour and ScannerStyle colour, the Space and Radius scales, Stroke and State.";
     Group {
         title: "Colour";
         Swatches {
@@ -55,7 +40,7 @@ export component TokensPage inherits Page {
         { name: "raised", colour: Colour.raised }, { name: "raised-hover", colour: Colour.raised-hover }, { name: "raised-pressed", colour: Colour.raised-pressed },
         { name: "ink", colour: Colour.ink }, { name: "ink-secondary", colour: Colour.ink-secondary }, { name: "ink-tertiary", colour: Colour.ink-tertiary },
         { name: "ink-on-fill", colour: Colour.ink-on-fill }, { name: "ink-on-light", colour: Colour.ink-on-light }, { name: "warning-surface", colour: Colour.warning-surface },
-        { name: "ink-on-warning", colour: Colour.ink-on-warning }, { name: "warning-soft", colour: Colour.warning-soft }, { name: "accent", colour: Colour.accent },
+        { name: "ink-on-warning", colour: Colour.ink-on-warning }, { name: "warning", colour: Colour.warning }, { name: "warning-soft", colour: Colour.warning-soft }, { name: "accent", colour: Colour.accent },
         { name: "accent-hover", colour: Colour.accent-hover }, { name: "accent-pressed", colour: Colour.accent-pressed }, { name: "on", colour: Colour.on },
         { name: "on-hover", colour: Colour.on-hover }, { name: "caution", colour: Colour.caution }, { name: "caution-hover", colour: Colour.caution-hover },
         { name: "caution-pressed", colour: Colour.caution-pressed }, { name: "destructive", colour: Colour.destructive }, { name: "destructive-hover", colour: Colour.destructive-hover },
@@ -88,18 +73,6 @@ export component TokensPage inherits Page {
         { name: "scanline", colour: ScannerStyle.scanline },
             ];
         }
-    }
-    Group {
-        title: "Type";
-        states: ["primary", "secondary", "tertiary", "on-fill (on accent)", "on-light (on paper)"];
-        span: BoardStyle.field;
-        RoleRow { label: "heading"; role: TextRole.heading; sample: "Roll #8"; }
-        RoleRow { label: "title"; role: TextRole.title; sample: "Export"; }
-        RoleRow { label: "section"; role: TextRole.section; sample: "Contrast"; }
-        RoleRow { label: "label"; role: TextRole.label; sample: "White point"; }
-        RoleRow { label: "value"; role: TextRole.value; sample: "+1.50 EV"; }
-        RoleRow { label: "caption"; role: TextRole.caption; sample: "DSC_6432"; }
-        RoleRow { label: "button"; role: TextRole.button; sample: "EXPORT"; }
     }
     Group {
         title: "Space";

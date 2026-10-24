@@ -1,63 +1,94 @@
-// The board's menus: a menu's line in each state, the panel, the context menu's and the folder pill's
-// lines drawn as their popups lay them, the pickers that drop them, and the medal picker.
-import { Colour, Space, Stroke, ButtonStyle, MenuStyle, RowStyle, Icons, Look, Label, Icon, Tone, Divider, MenuEntry, MenuPanel, MedalPicker, NavigatorStyle, Menu, Picker } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
+// The board's pickers and menus: Picker in each form, its menu dropping in the live column, MenuEntry
+// in each state, MenuPanel holding them, then ColumnPill, Chip and MedalPicker.
+import { MenuStyle, Look, Divider, MenuLine, MenuEntry, MenuPanel, Picker, ColumnPill, Chip, MedalPicker } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent } from "kit.slint";
 
-// One menu line in its six states.
-component EntryRow inherits Line {
+// A menu line live (a click checks it), hovered, disabled, checked.
+component EntryStates inherits Line {
     in property <string> text;
     in property <string> shortcut;
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; look: Look.hover; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; enabled: false; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; checked: true; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; checked: true; look: Look.hover; } }
+    in property <bool> folder;
+    live := Fill {
+        span: MenuStyle.width;
+        property <bool> checked;
+        MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; checked: live.checked; activated => { live.checked = !live.checked; } }
+    }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; look: Look.hover; } }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; enabled: false; } }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; checked: true; } }
 }
 
-// `FolderMenu`'s line as its popup draws it: a folder's glyph, its name, a check on the current one.
-component FolderLine inherits Rectangle {
-    in property <string> title;
-    in property <bool> current;
-    in property <bool> hovered;
-    height: MenuStyle.row;
-    border-radius: ButtonStyle.small-radius;
-    background: root.hovered ? Colour.hover : transparent;
-    HorizontalLayout {
-        padding-left: Space.xs;
-        padding-right: Space.xs;
-        spacing: Space.s;
-        VerticalLayout { alignment: center; Icon { source: Icons.folder; width: RowStyle.icon; height: RowStyle.icon; } }
-        Label { text: root.title; overflow: elide; horizontal-stretch: 1; }
-        if root.current: VerticalLayout {
-            alignment: center;
-            Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
+export component MenuPage inherits Page {
+    title: "Picker and Menu";
+    note: "Picker: label, value, entries + current, lines, look; open and chosen. MenuEntry: text, shortcut, checked, folder, enabled, look.";
+    property <[MenuLine]> lines: [
+        { text: "Negs", enabled: true, rule: false, opens: false },
+        { text: "Pictures", enabled: true, rule: false, opens: false },
+        { text: "Roll #8", enabled: false, rule: false, opens: false },
+        { text: "Elsewhere", enabled: true, rule: true, opens: true },
+    ];
+    Group {
+        title: "Picker";
+        states: ["Live (click it)", "Hover"];
+        span: BoardStyle.field;
+        Line {
+            label: "plain, its open callback counted";
+            opened := Fill {
+                span: BoardStyle.field;
+                property <int> count;
+                Picker { value: opened.count == 0 ? "Generic C-41" : "Opened " + opened.count + " times"; open => { opened.count += 1; } }
+            }
+            Fill { span: BoardStyle.field; Picker { value: "Generic C-41"; look: Look.hover; } }
+        }
+        Line {
+            label: "entries, the current one checked";
+            words := Fill {
+                span: BoardStyle.field;
+                property <[string]> entries: ["sRGB", "Display P3", "Rec. 2020"];
+                property <int> current: 1;
+                Picker { value: words.entries[words.current]; entries: words.entries; current: words.current; chosen(i) => { words.current = i; } }
+            }
+            Fill { span: BoardStyle.field; Picker { value: "Display P3"; entries: ["sRGB", "Display P3", "Rec. 2020"]; current: 1; look: Look.hover; } }
+        }
+        Line {
+            label: "lines (a rule, one out of reach)";
+            folders := Fill {
+                span: BoardStyle.field;
+                property <string> value: "Negs";
+                Picker { value: folders.value; lines: root.lines; chosen(i) => { folders.value = root.lines[i].text; } }
+            }
+            Fill { span: BoardStyle.field; Picker { value: "Negs"; lines: root.lines; look: Look.hover; } }
+        }
+        Line {
+            label: "with a label";
+            dyes := Fill {
+                span: BoardStyle.field;
+                property <int> current;
+                Picker { label: "Dyes"; value: ["Generic C-41", "Portra"][dyes.current]; entries: ["Generic C-41", "Portra"]; current: dyes.current; chosen(i) => { dyes.current = i; } }
+            }
+            Fill { span: BoardStyle.field; Picker { label: "Dyes"; value: "Generic C-41"; look: Look.hover; } }
         }
     }
-}
-
-export component MenusPage inherits Page {
-    title: "Menus";
-    note: "MenuEntry in each state, MenuPanel, ContextMenu's and FolderMenu's lines as their popups draw them, MenuPicker, LinesPicker and MedalPicker.";
     Group {
         title: "MenuEntry";
-        states: ["Rest", "Hover", "Disabled", "Checked", "Checked, hover"];
+        states: ["Live (click checks)", "Hover", "Disabled", "Checked"];
         span: MenuStyle.width;
-        EntryRow { label: "a word"; text: "Reveal in Finder"; }
-        EntryRow { label: "with a shortcut"; text: "Copy Settings"; shortcut: "⌘⇧C"; }
-        EntryRow { label: "opening a submenu"; text: "Move to"; shortcut: "›"; }
+        EntryStates { label: "a word"; text: "Reveal in Finder"; }
+        EntryStates { label: "with a shortcut"; text: "Copy Settings"; shortcut: "⌘⇧C"; }
+        EntryStates { label: "opening a submenu"; text: "Move to"; shortcut: "›"; }
+        EntryStates { label: "folder"; text: "Negs"; folder: true; }
     }
     Group {
-        title: "Panels";
-        states: ["MenuPanel (a Menu)", "ContextMenu's lines", "FolderMenu's lines"];
+        title: "MenuPanel";
+        states: ["Live", "Each state, a rule", "Folder lines"];
         span: MenuStyle.width;
         Line {
-            label: "as their popups draw them";
-            Cell {
+            label: "as a Menu draws it";
+            panel := Cell {
                 span: MenuStyle.width;
+                property <int> current: 1;
                 MenuPanel {
-                    MenuEntry { text: "sRGB"; }
-                    MenuEntry { text: "Display P3"; checked: true; look: Look.hover; }
-                    MenuEntry { text: "Rec. 2020"; }
+                    for word[i] in ["sRGB", "Display P3", "Rec. 2020"]: MenuEntry { text: word; checked: i == panel.current; activated => { panel.current = i; } }
                 }
             }
             Cell {
@@ -68,40 +99,50 @@ export component MenusPage inherits Page {
                     Divider { }
                     MenuEntry { text: "Move to"; shortcut: "›"; }
                     MenuEntry { text: "Paste Settings"; enabled: false; }
-                    Divider { }
-                    MenuEntry { text: "Move to the ONI Trash"; }
+                    MenuEntry { text: "Clipping"; checked: true; }
                 }
             }
             Cell {
                 span: MenuStyle.width;
                 MenuPanel {
-                    FolderLine { title: "Negs"; current: true; }
-                    FolderLine { title: "Pictures"; hovered: true; }
-                    FolderLine { title: "Computer"; }
+                    MenuEntry { folder: true; text: "Negs"; checked: true; }
+                    MenuEntry { folder: true; text: "Pictures"; look: Look.hover; }
+                    MenuEntry { folder: true; text: "Computer"; }
                 }
             }
         }
     }
     Group {
-        title: "Pickers that drop a menu";
-        states: ["Rest", "Hover"];
-        span: BoardStyle.field;
+        title: "ColumnPill and Chip";
+        states: ["Live", "Hover", "Disabled"];
         Line {
-            label: "MenuPicker";
-            Fill { span: BoardStyle.field; Picker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
-            Fill { span: BoardStyle.field; Picker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
+            label: "ColumnPill, pressable";
+            Fill { ColumnPill { text: "Negs"; help: "~/Pictures/Negs"; pressable: true; } }
+            Fill { ColumnPill { text: "Negs"; pressable: true; look: Look.hover; } }
+            Fill { ColumnPill { text: "Negs"; pressable: true; enabled: false; } }
         }
         Line {
-            label: "LinesPicker";
-            Fill { span: BoardStyle.field; Picker { value: "Negs / Roll #8"; } }
-            Fill { span: BoardStyle.field; Picker { value: "Negs / Roll #8"; look: Look.hover; } }
+            label: "ColumnPill, a name alone";
+            Fill { ColumnPill { text: "Negs"; help: "~/Pictures/Negs"; } }
+            Fill { ColumnPill { text: "Negs"; look: Look.hover; } }
+            Fill { ColumnPill { text: "Negs"; enabled: false; } }
+        }
+        Line {
+            label: "Chip";
+            Cell { Chip { title: "Space"; hint: "Display P3"; help: "Working Space"; } }
+            Cell { Chip { title: "Space"; hint: "Display P3"; look: Look.hover; } }
+            Absent { }
         }
     }
     Group {
         title: "MedalPicker";
-        states: ["None", "Bronze", "Silver", "Gold"];
+        states: ["Live (click picks)", "None", "Bronze", "Silver", "Gold"];
         Line {
             label: "the three foils";
+            medals := Cell {
+                property <int> current: -1;
+                MedalPicker { current: medals.current; picked(m) => { medals.current = medals.current == m ? -1 : m; } }
+            }
             Cell { MedalPicker { } }
             Cell { MedalPicker { current: 1; } }
             Cell { MedalPicker { current: 2; } }

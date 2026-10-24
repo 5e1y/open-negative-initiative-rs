@@ -1,5 +1,5 @@
-//! The design system's state board on the headless window: each family's page is drawn at its own
-//! size and shot to `ONI_SHOTS` as `board-<nn>-<name>.png`, for a review of every state side by side.
+//! The design system's board on the headless window: each component's page is drawn at its own size,
+//! the page list beside it, and shot to `ONI_SHOTS` as `board-<nn>-<name>.png` for a review side by side.
 
 use oni_app::Board;
 use slint::platform::WindowEvent;
@@ -14,13 +14,13 @@ const SCALE: f32 = 2.0;
 /// Fewer distinct pixels than this is a blank page; any drawn page antialiases far more.
 const INKS: usize = 64;
 
-/// How many distinct pixels the window draws now.
-fn inks(rig: &common::Rig) -> usize {
-    let (_, drawn) = rig.drawn();
-    drawn.iter().map(|p| p.0).collect::<std::collections::HashSet<u16>>().len()
+/// How many distinct pixels the window draws now right of `from`, in physical pixels: the page alone.
+fn inks(rig: &common::Rig, from: usize) -> usize {
+    let (w, drawn) = rig.drawn();
+    drawn.chunks(w).flat_map(|row| row[from.min(w)..].iter().map(|p| p.0)).collect::<std::collections::HashSet<u16>>().len()
 }
 
-pub(crate) fn the_board_shows_every_family_in_every_state() {
+pub(crate) fn the_board_shows_every_component_in_every_state() {
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
@@ -31,7 +31,8 @@ pub(crate) fn the_board_shows_every_family_in_every_state() {
     rig.window.set_size(PhysicalSize::new(3200, 2000));
     board.show().unwrap();
     let families: Vec<String> = board.get_families().iter().map(|s| s.to_string()).collect();
-    assert_eq!(families.len(), 13, "one page a family");
+    assert_eq!(families.len(), 14, "one page a base component");
+    let from = (board.get_page_x() * SCALE).ceil() as usize;
     let mut lowest = f32::MAX;
     for (i, name) in families.iter().enumerate() {
         board.set_family(i as i32);
@@ -39,18 +40,19 @@ pub(crate) fn the_board_shows_every_family_in_every_state() {
         rig.drawn();
         let (w, h) = (board.get_content_width(), board.get_content_height());
         assert!(w > 0.0 && h > 0.0, "{name} draws a page");
-        lowest = lowest.min(h);
+        lowest = lowest.min(board.get_page_height());
         rig.window.set_size(PhysicalSize::new((w.min(CAP.0) * SCALE).ceil() as u32, (h.min(CAP.1) * SCALE).ceil() as u32));
         rig.settle();
         let path = rig.shot(&format!("board-{i:02}-{name}"));
         println!("shot {} ({w:.0} × {h:.0} pt)", path.display());
-        assert!(inks(&rig) > INKS, "{name}'s page is drawn, not blank");
+        assert!(inks(&rig, from) > INKS, "{name}'s page is drawn, not blank");
     }
-    // Twin: a family the board lacks lays no page and draws the bare ground, which both checks see.
+    // Twin: a page the board lacks lays nothing and draws the bare ground beside the list, which both
+    // checks see.
     board.set_family(99);
     rig.drawn();
-    assert!(board.get_content_height() < lowest, "an unknown family lays nothing");
-    rig.window.set_size(PhysicalSize::new(800, 800));
+    assert!(board.get_page_height() < lowest, "an unknown page lays nothing");
+    rig.window.set_size(PhysicalSize::new(1600, 800));
     rig.settle();
-    assert!(inks(&rig) <= INKS, "a blank page is seen as blank");
+    assert!(inks(&rig, from) <= INKS, "a blank page is seen as blank");
 }

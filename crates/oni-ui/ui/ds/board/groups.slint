@@ -1,0 +1,55 @@
+// The board's key groups: ButtonGroup bare, on its plate, mini, filling its row and at the row's end,
+// its first key in each state.
+import { Icons, ButtonKind, ButtonSize, Button, ButtonGroup } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Fill, Looks } from "kit.slint";
+
+// A glyph key and two words, the glyph key live, hovered, pressed and on.
+component GroupStates inherits Line {
+    in property <bool> plate;
+    in property <bool> mini;
+    in property <bool> fills;
+    in property <bool> trailing;
+    property <ButtonSize> size: root.mini ? ButtonSize.small : ButtonSize.regular;
+    for state in 4: Fill {
+        span: BoardStyle.wide;
+        ButtonGroup {
+            plate: root.plate;
+            mini: root.mini;
+            fills: root.fills;
+            trailing: root.trailing;
+            Button { has-icon: true; square: true; icon: Icons.undo; size: root.size; help: "Undo"; look: Looks.of(state); on: state == 3; }
+            Button { text: "COPY"; size: root.size; fills: root.fills; }
+            Button { text: "PASTE"; size: root.size; fills: root.fills; }
+        }
+    }
+}
+
+// A sheet's keys at the row's end, its Cancel key in each state.
+component SheetKeysStates inherits Line {
+    for state in 4: Fill {
+        span: BoardStyle.wide;
+        ButtonGroup {
+            plate: true;
+            trailing: true;
+            Button { text: "CANCEL"; look: Looks.of(state); on: state == 3; }
+            Button { text: "DELETE"; kind: ButtonKind.destructive; }
+        }
+    }
+}
+
+export component ButtonGroupPage inherits Page {
+    title: "ButtonGroup";
+    note: "ButtonGroup: plate, mini, fills, trailing; holding Buttons (a key's fills shares the row).";
+    Group {
+        title: "ButtonGroup";
+        states: ["Live", "First key hovered", "First key pressed", "First key on"];
+        span: BoardStyle.wide;
+        GroupStates { label: "bare (keys a hairline apart)"; }
+        GroupStates { label: "plate"; plate: true; }
+        GroupStates { label: "plate, mini (small keys)"; plate: true; mini: true; }
+        GroupStates { label: "plate, fills"; plate: true; fills: true; }
+        GroupStates { label: "bare, fills"; fills: true; }
+        GroupStates { label: "plate, trailing"; plate: true; trailing: true; }
+        SheetKeysStates { label: "a sheet's keys: plate, trailing"; }
+    }
+}
