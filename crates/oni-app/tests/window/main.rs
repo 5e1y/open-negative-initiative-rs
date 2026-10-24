@@ -117,6 +117,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
+    ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),

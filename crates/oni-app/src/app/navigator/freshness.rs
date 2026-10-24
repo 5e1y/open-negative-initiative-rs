@@ -69,6 +69,12 @@ impl Ctl {
         watch.set(deep, flat);
     }
 
+    /// The watches made again whole, as a disk back needs: a watch on a folder away was dropped.
+    pub(super) fn rewatch_anew(&self) {
+        self.state.borrow_mut().nav.fresh.watched = Default::default();
+        self.rewatch();
+    }
+
     /// Watching on or off, for a check that proves the window's return alone.
     pub fn set_watching(&self, on: bool) {
         {
@@ -135,6 +141,7 @@ impl Ctl {
             s.opened.clone()
         };
         self.list_wanted();
+        self.rewatch_anew();
         if opened.is_some() {
             self.read_again();
             self.note_listing();

@@ -179,6 +179,48 @@ pub(crate) fn a_disk_back_reopens_the_opened_folder() {
     let _ = std::fs::remove_dir_all(&d.root);
 }
 
+pub(crate) fn a_watch_comes_back_with_its_disk() {
+    let Some(gpu) = gpu("a watch back") else { return };
+    let d = disk("rewatch", &["Volumes/T7/Scans/A.tif"]);
+    let rig = rig();
+    let shell = d.launch(&gpu);
+    let ctl = shell.ctl.clone();
+    let scans = d.path("Volumes/T7/Scans");
+    opened(&rig, &shell, &scans, 1);
+    let state = || ctl.state.borrow().opened_presence();
+    std::fs::rename(d.root.join("Volumes/T7"), d.root.join("T7 away")).unwrap();
+    rig.until("the disk gone", Duration::from_secs(20), || !state().is_present());
+    std::fs::rename(d.root.join("T7 away"), d.root.join("Volumes/T7")).unwrap();
+    rig.until("the disk back", Duration::from_secs(30), || state() == Presence::Present && ctl.state.borrow().read_done());
+
+    // Watched again once back: a photo dropped there shows with no command.
+    let n = std::cell::Cell::new(0);
+    rig.until("a photo dropped on the disk back shows", Duration::from_secs(30), || {
+        if n.get() % 50 == 0 && names(&shell).len() < 2 {
+            d.drop_in(&format!("Volumes/T7/Scans/B{}.tif", n.get() / 50));
+        }
+        n.set(n.get() + 1);
+        names(&shell).len() >= 2
+    });
+    // Twin: with no watch, the same drop waits for a command.
+    ctl.set_watching(false);
+    rig.until("the read landed", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    let held = names(&shell).len();
+    let (_witness, heard) = witness(&d.computer, &scans);
+    let k = std::cell::Cell::new(0);
+    rig.until("the witness heard", Duration::from_secs(30), || {
+        if heard.load(Ordering::Relaxed) == 0 && k.get() % 50 == 0 {
+            d.drop_in(&format!("Volumes/T7/Scans/C{}.tif", k.get() / 50));
+        }
+        k.set(k.get() + 1);
+        heard.load(Ordering::Relaxed) > 0
+    });
+    rig.settle();
+    assert_eq!(names(&shell).len(), held, "unwatched, nothing shows by itself");
+    drop((ctl, shell));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
 pub(crate) fn focus_rereads_the_opened_folder() {
     let Some(gpu) = gpu("the window's return") else { return };
     let d = disk("focus", &["Home/Scans/Roll 8/A.tif", "Home/Scans/Roll 8/B.tif"]);
