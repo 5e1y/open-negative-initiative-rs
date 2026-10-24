@@ -264,16 +264,17 @@ export component Banner inherits Raised {
             alignment: start;
             Icon { source: Reaches.glyph(root.reach); width: ButtonStyle.icon; height: ButtonStyle.icon; }
         }
+        // The keys under the words, so a narrow view never squeezes them to a column.
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: Space.xxs;
             Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
             Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
-        }
-        if root.keys.length > 0: VerticalLayout {
-            alignment: center;
-            ButtonGroup { plate: true; align: GroupAlign.end;
-                for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
+            if root.keys.length > 0: VerticalLayout {
+                padding-top: Space.s;
+                ButtonGroup { plate: true; align: GroupAlign.end;
+                    for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
+                }
             }
         }
     }
