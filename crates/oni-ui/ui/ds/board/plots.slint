@@ -1,6 +1,6 @@
 // The board's plots: the histogram's frame, the plot screen with its captions and readouts, the
 // track's knobs in each ink and state, the levels track and every ink.
-import { Colour, Space, Stroke, PlotInkStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Ink, Inks, PlotKnob, Plot, TrackKnob, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
+import { Colour, Space, Stroke, PlotInkStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Ink, Inks, PlotKnob, Plot, Knob, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
@@ -12,10 +12,11 @@ component KnobRow inherits Line {
         Rectangle {
             width: BoardStyle.cell / 2;
             height: PlotInkStyle.knob-height * 1.5;
-            TrackKnob {
-                y: (parent.height - PlotInkStyle.knob-height) / 2;
-                knob: { x: BoardStyle.cell / 4, ink: root.ink, held: state == 2, label: "" };
-                over: state == 1;
+            Knob {
+                centre: BoardStyle.cell / 4;
+                across: parent.height;
+                fill: Inks.of(root.ink);
+                grown: state != 0;
             }
         }
     }
@@ -23,7 +24,7 @@ component KnobRow inherits Line {
 
 export component PlotsPage inherits Page {
     title: "Plots";
-    note: "HistogramFrame: size, ground. Plot: lines, dots, grid, screen. TrackKnob: ink, held, over. LevelsTrack, AxisCaptions, PlotReadouts, every Ink.";
+    note: "HistogramFrame: size, ground. Plot: lines, dots, grid, screen. Knob: centre, fill, grip, grown, slide. LevelsTrack, AxisCaptions, PlotReadouts, every Ink.";
     property <[Named]> inks: [
         { name: "guide", ink: Ink.guide }, { name: "guide-faint", ink: Ink.guide-faint }, { name: "marker", ink: Ink.marker },
         { name: "separator", ink: Ink.separator }, { name: "active", ink: Ink.active }, { name: "idle", ink: Ink.idle },
@@ -65,7 +66,7 @@ export component PlotsPage inherits Page {
         }
     }
     Group {
-        title: "TrackKnob";
+        title: "Knob";
         states: ["Rest", "Under the pointer", "Held"];
         KnobRow { label: "grey-quarter"; ink: Ink.grey-quarter; }
         KnobRow { label: "grey-half"; ink: Ink.grey-half; }

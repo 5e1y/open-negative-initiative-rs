@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -126,11 +126,11 @@ export component ColorPane inherits Pane {
         StoreSlider { field: 5; label: @tr("Shadows"); fraction: Store.shadows-fraction; readout: Store.shadows-readout; value-text: Store.shadows-value; }
         StoreSlider {
             field: 6; label: @tr("White point"); fraction: Store.white-point-fraction; readout: Store.white-point-readout; value-text: Store.white-point-value;
-            fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white;
+            fill: SliderFill.ramp; tint: Colour.white; knob: Colour.white;
         }
         StoreSlider {
             field: 7; label: @tr("Black point"); fraction: Store.black-point-fraction; readout: Store.black-point-readout; value-text: Store.black-point-value;
-            fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black;
+            fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black;
         }
     }
     if !Lab.shown: Block {

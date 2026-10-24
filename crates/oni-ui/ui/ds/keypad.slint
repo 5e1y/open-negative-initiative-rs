@@ -2,6 +2,7 @@
 import { Colour, Space, Stroke, State, Motion, ScannerStyle, SliderStyle } from "theme.slint";
 import { Label, Tone, Tips, Clicks, TextRole } from "base.slint";
 import { Look, Button, ButtonSize } from "controls.slint";
+import { SliderFill, Knob, Rail, ValueHeader } from "slider.slint";
 
 export struct LabCell { title: string, value: string }
 
@@ -96,19 +97,13 @@ export component StepSlider inherits VerticalLayout {
     pure function step-at(x: length, width: length) -> int {
         root.low + round(clamp(x / max(1px, width), 0, 1) * (root.high - root.low))
     }
-    HorizontalLayout {
-        spacing: Space.s;
-        opacity: root.enabled ? 1 : State.disabled;
-        Label {
-            text: root.title;
-            overflow: elide;
-            horizontal-stretch: 1;
-            TouchArea {
-                double-clicked => { root.reset(); }
-                changed has-hover => { Tips.hover(self.has-hover, root.title-help, self.absolute-position.x, self.absolute-position.y + self.height); }
-            }
-        }
-        Label { text: root.readout; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
+    ValueHeader {
+        label: root.title;
+        value: root.readout;
+        enabled: root.enabled;
+        resets: true;
+        help: root.title-help;
+        reset => { root.reset(); }
     }
     HorizontalLayout {
         spacing: Space.s;
@@ -130,34 +125,22 @@ export component StepSlider inherits VerticalLayout {
             track := Rectangle {
                 height: SliderStyle.row;
                 opacity: root.enabled ? 1 : State.disabled;
-                Rectangle {
+                Rail {
                     x: -SliderStyle.knob-width / 2;
                     width: parent.width + SliderStyle.knob-width;
                     y: (parent.height - self.height) / 2;
-                    height: SliderStyle.track;
-                    border-radius: SliderStyle.track-radius;
-                    background: @linear-gradient(90deg, root.minus 0%, root.plus 100%);
+                    overhang: SliderStyle.knob-width / 2;
+                    fill: SliderFill.bipolar;
+                    low: root.minus;
+                    high: root.plus;
+                    // Rest, where the title's double click brings it back.
+                    rest: (0 - root.low) / max(1, root.high - root.low);
                 }
-                // Rest, where the title's double click brings it back.
-                Rectangle {
-                    x: parent.width * (0 - root.low) / max(1, root.high - root.low) - self.width / 2;
-                    y: (parent.height - self.height) / 2;
-                    width: Stroke.line;
-                    height: SliderStyle.knob-height / 2;
-                    background: SliderStyle.grip-ink;
-                }
-                Rectangle {
-                    property <float> grow: (area.has-hover || root.sliding || root.look != Look.live) ? SliderStyle.knob-grow : 1;
-                    width: SliderStyle.knob-width * self.grow;
-                    height: SliderStyle.knob-height * self.grow;
-                    x: parent.width * root.at - self.width / 2;
-                    y: (parent.height - self.height) / 2;
-                    border-radius: SliderStyle.knob-radius;
-                    background: SliderStyle.knob;
-                    border-width: Stroke.line;
-                    border-color: SliderStyle.knob-edge;
-                    animate grow { duration: Motion.quick; easing: ease-out-back; }
-                    animate x { duration: Motion.quick; }
+                Knob {
+                    centre: parent.width * root.at;
+                    grip: false;
+                    grown: area.has-hover || root.sliding || root.look != Look.live;
+                    slide: true;
                 }
                 area := TouchArea {
                     enabled: root.enabled;

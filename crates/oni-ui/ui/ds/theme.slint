@@ -182,7 +182,10 @@ export global SliderStyle {
     out property <length> grip-gap: DS.control-knob-line-gap * 1px;
     out property <color> knob: Colour.raised-hover;
     out property <color> knob-edge: DS.palette-track-line;
-    out property <color> grip-ink: Colour.ink-secondary;
+    // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
+    out property <color> grip-ink: Colour.ink-on-fill;
+    // A stepped slider's rest, ticked on its rail.
+    out property <color> rest-ink: Colour.ink-secondary;
     out property <float> ramp-start: 0.45;
     out property <float> ramp-end: 0.9;
     out property <length> label-gap: Space.xs;

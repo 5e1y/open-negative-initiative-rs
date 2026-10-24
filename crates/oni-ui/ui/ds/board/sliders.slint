@@ -1,6 +1,6 @@
 // The board's sliders: Slider in each fill and knob, then the Scanner face's StepSlider in each band's
 // colours; the live column holds its own value, as Rust does in the app.
-import { Colour, ScannerStyle, SliderFill, Knob, Slider, StepSlider } from "../ds.slint";
+import { Colour, ScannerStyle, SliderStyle, SliderFill, Slider, StepSlider } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Fill, Looks } from "kit.slint";
 
 // One slider live (dragged, Option for a tenth of the travel), hovered, pressed, disabled.
@@ -11,7 +11,7 @@ component SliderStates inherits Line {
     in property <color> tint: Colour.track-fill;
     in property <color> low;
     in property <color> high;
-    in property <Knob> knob: Knob.grey;
+    in property <color> knob: SliderStyle.knob;
     live := Fill {
         span: BoardStyle.wide;
         property <float> at: root.at;
@@ -101,10 +101,10 @@ export component SliderPage inherits Page {
         states: root.states;
         span: BoardStyle.wide;
         SliderStates { label: "level, grey knob"; name: "Exposure"; }
-        SliderStates { label: "level, white knob"; name: "White point"; at: 0.85; knob: Knob.white; }
-        SliderStates { label: "level, black knob"; name: "Black point"; at: 0.15; knob: Knob.black; }
-        SliderStates { label: "ramp, white"; name: "Highlights"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white; }
-        SliderStates { label: "ramp, black"; name: "Shadows"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black; }
+        SliderStates { label: "level, white knob"; name: "White point"; at: 0.85; knob: Colour.white; }
+        SliderStates { label: "level, black knob"; name: "Black point"; at: 0.15; knob: Colour.black; }
+        SliderStates { label: "ramp, white"; name: "Highlights"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Colour.white; }
+        SliderStates { label: "ramp, black"; name: "Shadows"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black; }
         SliderStates { label: "bipolar"; name: "Temperature"; at: 0.5; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
         SliderStates { label: "metal"; name: "Grain"; at: 0.4; fill: SliderFill.metal; }
     }

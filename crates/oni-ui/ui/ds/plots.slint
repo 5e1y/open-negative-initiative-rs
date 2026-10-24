@@ -2,6 +2,7 @@
 // track whose handles a press catches; every gesture is handed to Rust with its place in points.
 import { Colour, Space, Stroke, State, Motion, SliderStyle, PlotInkStyle } from "theme.slint";
 import { Label, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Knob, Rail } from "slider.slint";
 
 export enum Ink {
     guide, guide-faint, marker, separator, active, idle, track, primary, canvas, black, white,
@@ -165,34 +166,6 @@ export component Plot inherits Rectangle {
     }
 }
 
-// `DSBarHandle` flattened: the slider's knob, tinted with the value it carries, grown under the hand.
-export component TrackKnob inherits Rectangle {
-    in property <PlotKnob> knob;
-    in property <bool> over;
-    property <float> grow: (root.over || root.knob.held) ? SliderStyle.knob-grow : 1;
-    width: PlotInkStyle.knob-width * self.grow;
-    height: PlotInkStyle.knob-height * self.grow;
-    x: root.knob.x - self.width / 2;
-    y: (PlotInkStyle.knob-height - self.height) / 2;
-    border-radius: SliderStyle.knob-radius;
-    background: Inks.of(root.knob.ink);
-    border-width: Stroke.line;
-    border-color: SliderStyle.knob-edge;
-    accessible-role: slider;
-    accessible-label: root.knob.label;
-    animate grow { duration: Motion.quick; easing: ease-out-back; }
-    HorizontalLayout {
-        alignment: center;
-        spacing: SliderStyle.grip-gap - Stroke.line;
-        padding-top: (parent.height - SliderStyle.grip) / 2;
-        padding-bottom: (parent.height - SliderStyle.grip) / 2;
-        for _ in 2: Rectangle {
-            width: Stroke.line;
-            background: root.knob.ink == Ink.white ? Colour.ink-on-light : Colour.white;
-        }
-    }
-}
-
 // `LevelsView`'s track: the slider's rail, its handles in drawing order, the ends in front; the
 // row is a handle tall, as the handle overhangs the rail.
 export component LevelsTrack inherits Rectangle {
@@ -209,17 +182,19 @@ export component LevelsTrack inherits Rectangle {
     changed window-x => { root.placed(root.plot, self.window-x, self.window-y); }
     changed window-y => { root.placed(root.plot, self.window-x, self.window-y); }
     init => { root.resized(root.plot, self.width, self.height); root.placed(root.plot, self.window-x, self.window-y); }
-    Rectangle {
-        x: -PlotInkStyle.knob-width / 2;
-        width: parent.width + PlotInkStyle.knob-width;
+    Rail {
+        x: -SliderStyle.knob-width / 2;
+        width: parent.width + SliderStyle.knob-width;
         y: (parent.height - self.height) / 2;
-        height: PlotInkStyle.track;
-        border-radius: SliderStyle.track-radius;
-        background: Colour.track;
+        overhang: SliderStyle.knob-width / 2;
     }
-    for knob in root.knobs: TrackKnob {
-        knob: knob;
-        over: area.has-hover && abs(area.mouse-x - knob.x) <= PlotInkStyle.grab / 2;
+    // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand.
+    for knob in root.knobs: Knob {
+        centre: knob.x;
+        fill: Inks.of(knob.ink);
+        grown: knob.held || (area.has-hover && abs(area.mouse-x - knob.x) <= PlotInkStyle.grab / 2);
+        accessible-role: slider;
+        accessible-label: knob.label;
     }
     area := TouchArea {
         x: -PlotInkStyle.knob-width / 2;

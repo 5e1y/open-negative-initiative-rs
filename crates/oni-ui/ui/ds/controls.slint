@@ -1,10 +1,11 @@
-// The controls: buttons, the toggle, the slider, the field and the picker; the tabs are `tabs.slint`.
+// The controls: buttons, the toggle and the field; the slider is `slider.slint`, the tabs `tabs.slint`.
 import { DS } from "tokens.slint";
 import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
 import { Icons } from "icons.slint";
-import { ButtonKind, ButtonSize, Look, SliderFill, Knob, KeyInk, ButtonInk, Button } from "button.slint";
-export { ButtonKind, ButtonSize, Look, SliderFill, Knob, KeyInk, ButtonInk, Button }
+import { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button } from "button.slint";
+import { SliderFill, Knob, Slider } from "slider.slint";
+export { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button, SliderFill, Knob, Slider }
 
 // `KeycapPlate`: keys side by side as one family, on a socket when `plate`, flush a hairline apart;
 // `fills` spans the row, its worded keys sharing the width; `trailing` sits it at the row's end.
@@ -79,124 +80,6 @@ export component Toggle inherits HorizontalLayout {
         text: root.label;
         tone: root.enabled ? Tone.primary : Tone.secondary;
         TouchArea { enabled: root.enabled; clicked => { root.toggled(!root.on); } }
-    }
-}
-
-// `DSSlider`: the readout, then a track whose whole row grabs; Rust holds the value and its timing.
-export component Slider inherits VerticalLayout {
-    in property <int> field;
-    in property <string> label;
-    in property <string> readout;
-    // The settings' value, which accessibility reads where the readout shows the hand's.
-    in property <string> value-text;
-    in property <float> fraction;
-    in property <SliderFill> fill: SliderFill.level;
-    in property <color> tint: Colour.track-fill;
-    in property <color> low;
-    in property <color> high;
-    in property <Knob> knob: Knob.grey;
-    in property <bool> enabled: true;
-    in property <Look> look: Look.live;
-    // Rust answers whether this press is the second of a double click.
-    callback press(int, bool) -> bool;
-    callback drag(int, length, length, bool);
-    callback release(int);
-    // Rust answers whether the scroll runs along the track; one across it is left to the panel.
-    callback scroll(int, length, length, length, bool) -> bool;
-    callback step(int, int);
-    spacing: SliderStyle.label-gap;
-    accessible-role: slider;
-    accessible-label: root.label;
-    accessible-value: root.value-text;
-    accessible-enabled: root.enabled;
-    accessible-action-increment => { root.step(root.field, 1); }
-    accessible-action-decrement => { root.step(root.field, -1); }
-    property <float> at: clamp(root.fraction, 0, 1);
-    HorizontalLayout {
-        spacing: Space.s;
-        opacity: root.enabled ? 1 : State.disabled;
-        Label { text: root.label; overflow: elide; horizontal-stretch: 1; }
-        Label { text: root.readout; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
-    }
-    HorizontalLayout {
-        padding-left: SliderStyle.knob-width / 2;
-        padding-right: SliderStyle.knob-width / 2;
-        track := Rectangle {
-            height: SliderStyle.row;
-            opacity: root.enabled ? 1 : State.disabled;
-            // Drawn past the travel by the knob's half-width at both ends, filled up to the value.
-            rail := Rectangle {
-                x: -SliderStyle.knob-width / 2;
-                width: parent.width + SliderStyle.knob-width;
-                y: (parent.height - self.height) / 2;
-                height: SliderStyle.track;
-                border-radius: SliderStyle.track-radius;
-                background: root.fill == SliderFill.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : Colour.track;
-                if root.fill != SliderFill.bipolar: Rectangle {
-                    x: 0;
-                    border-radius: SliderStyle.track-radius; // its own round: a rail clipping it renders each slider apart
-                    width: SliderStyle.knob-width / 2 + root.at * track.width;
-                    background: root.fill == SliderFill.metal
-                        ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 35%, Colour.metal-light 65%, Colour.metal-dark 100%)
-                        : root.fill == SliderFill.ramp
-                        ? @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
-                        : root.tint;
-                }
-            }
-            Rectangle {
-                property <float> grow: (area.over-knob || area.held || root.look != Look.live) ? SliderStyle.knob-grow : 1;
-                width: SliderStyle.knob-width * self.grow;
-                height: SliderStyle.knob-height * self.grow;
-                x: parent.width * root.at - self.width / 2;
-                y: (parent.height - self.height) / 2;
-                border-radius: SliderStyle.knob-radius;
-                background: root.knob == Knob.white ? Colour.white : root.knob == Knob.black ? Colour.black : SliderStyle.knob;
-                border-width: Stroke.line;
-                border-color: SliderStyle.knob-edge;
-                animate grow { duration: Motion.quick; easing: ease-out-back; }
-                HorizontalLayout {
-                    alignment: center;
-                    spacing: SliderStyle.grip-gap - Stroke.line;
-                    padding-top: (parent.height - SliderStyle.grip) / 2;
-                    padding-bottom: (parent.height - SliderStyle.grip) / 2;
-                    for _ in 2: Rectangle {
-                        width: Stroke.line;
-                        background: root.knob == Knob.white ? Colour.ink-on-light : SliderStyle.grip-ink;
-                    }
-                }
-            }
-            area := TouchArea {
-                enabled: root.enabled;
-                in-out property <bool> held;
-                property <bool> fine;
-                out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.at) <= SliderStyle.knob-width / 2;
-                mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                pointer-event(event) => {
-                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                        self.fine = event.modifiers.alt;
-                        self.held = !root.press(root.field, self.fine);
-                    } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
-                        if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
-                            self.held = false;
-                            root.release(root.field);
-                        }
-                    } else if (event.kind == PointerEventKind.move) {
-                        self.fine = event.modifiers.alt;
-                    }
-                }
-                moved => {
-                    if (self.held) {
-                        root.drag(root.field, self.mouse-x - self.pressed-x, track.width, self.fine);
-                    }
-                }
-                scroll-event(event) => {
-                    if (root.scroll(root.field, event.delta-x, event.delta-y, track.width, event.modifiers.alt)) {
-                        return EventResult.accept;
-                    }
-                    EventResult.reject
-                }
-            }
-        }
     }
 }
 
