@@ -1,0 +1,238 @@
+// Every line of a list or a tree: a title, its kind's glyph and chevron, a caption, a path before it,
+// a second line, a tint's badge, a star, a key on hover, and the title typed over while renamed.
+import { Colour, Space, Radius, Stroke, Type, State, RowStyle, FieldStyle } from "theme.slint";
+import { PresetStyle } from "theme_views.slint";
+import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
+import { Icons } from "icons.slint";
+import { Look, Button, ButtonSize, TextField } from "controls.slint";
+import { NavigatorStyle } from "folders.slint";
+import { FormStyle } from "forms.slint";
+
+// `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders.
+export enum RowKind { none, folder, opened, roll, photo, project, trash }
+
+export component Row inherits Rectangle {
+    in property <string> title;
+    // At the end in the tertiary ink, a count or a size.
+    in property <string> caption;
+    // Before the title, the folder a trashed photo came from.
+    in property <string> trail;
+    // A second line under the title, as what a preset carries.
+    in property <string> detail;
+    // The tooltip, as a folder's whole path.
+    in property <string> help;
+    in property <int> depth;
+    in property <RowKind> kind: RowKind.none;
+    in property <bool> expandable;
+    in property <bool> expanded;
+    // A folder's glyph drawn open, as it is while its rows show; a navigator folder opens it only when opened.
+    in property <bool> open: root.expanded;
+    // A press on the chevron folds the row instead of clicking it.
+    in property <bool> folds: root.expandable;
+    // `TreeRowChrome.RowIcon.stock`: a roll's stock artwork in place of its glyph.
+    in property <image> stock;
+    in property <bool> has-stock;
+    // A list line's mark before its title, as the papers' download or link.
+    in property <image> glyph;
+    in property <bool> has-glyph;
+    in property <bool> selected;
+    // The hover band held, as a navigator folder picked or a trash line chosen.
+    in property <bool> picked;
+    // The title in the secondary ink unless selected or picked.
+    in property <bool> quiet;
+    in property <bool> rounded;
+    // Pinned at the top of its tree: the ground under it, a rule below.
+    in property <bool> pinned;
+    in property <bool> present: true;
+    in property <float> absent: State.disabled;
+    // The star: lit on a favourite, shown under the pointer on any row that can be starred.
+    in property <bool> starrable;
+    in property <bool> favourite;
+    // A key the hovered row shows, as RESTORE.
+    in property <string> action;
+    in property <string> action-help;
+    // A tint's badge before the title, its abbreviation inked over its fill.
+    in property <string> badge;
+    in property <color> badge-fill;
+    in property <color> badge-ink;
+    // The title typed over, Return or a click elsewhere keeping it, Escape dropping it.
+    in property <bool> renaming;
+    in property <Look> look: Look.live;
+    callback clicked();
+    callback double-clicked();
+    callback folded();
+    // A right click, at the pointer in the row's own coordinates.
+    callback menu(length, length);
+    // A left press moved, from its press to the pointer in the row's coordinates; its release or cancel.
+    callback dragged(length, length, length, length);
+    callback released(bool);
+    callback starred();
+    callback acted();
+    callback committed(string);
+    callback cancelled();
+    // Each keystroke's text, so a click elsewhere can commit what the field holds.
+    callback edited(string);
+    // What the last left press held, ⌘ (or Ctrl) and ⇧, for `clicked` to read.
+    out property <bool> command;
+    out property <bool> shift;
+    property <bool> hovered: area.has-hover || root.look != Look.live;
+    property <bool> tree: root.kind != RowKind.none;
+    property <bool> badged: root.badge != "";
+    property <length> indent: root.depth * RowStyle.indent;
+    property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
+    property <bool> done;
+    height: root.detail != "" ? row.preferred-height : RowStyle.height;
+    border-radius: root.rounded ? Radius.badge : 0px;
+    property <brush> band: root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
+    // A pinned row covers the rows scrolled under it, its band laid over the ground.
+    background: root.pinned ? Colour.ground : root.band;
+    opacity: root.present ? 1 : root.absent;
+    accessible-role: list-item;
+    accessible-label: root.title;
+    if root.pinned: Rectangle { background: root.band; }
+    area := TouchArea {
+        property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
+        enabled: !root.renaming;
+        clicked => {
+            if (self.folding) {
+                root.folded();
+            } else {
+                root.clicked();
+            }
+        }
+        double-clicked => {
+            if (!self.folding) {
+                root.double-clicked();
+            }
+        }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                root.command = event.modifiers.control || event.modifiers.meta;
+                root.shift = event.modifiers.shift;
+            }
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                root.menu(self.mouse-x, self.mouse-y);
+            }
+            if ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel) {
+                root.released(event.kind == PointerEventKind.up);
+            }
+        }
+        moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
+        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+    }
+    row := HorizontalLayout {
+        // Renamed, the typed name starts where the title stood.
+        padding-left: root.badged ? Space.xs
+            : root.renaming ? RowStyle.padding + root.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.padding
+            : RowStyle.padding + root.indent;
+        padding-right: root.badged ? Space.xs : RowStyle.padding;
+        padding-top: root.badged ? Space.xs : 0px;
+        padding-bottom: root.badged ? Space.xs : 0px;
+        spacing: root.badged ? Space.s : RowStyle.gap;
+        if root.badged: VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: PresetStyle.badge-width;
+                height: PresetStyle.badge-height;
+                border-radius: Radius.badge;
+                background: root.badge-fill;
+                Text { text: root.badge; font-family: Type.family; font-size: Type.chip; color: root.badge-ink; }
+            }
+        }
+        if root.tree && !root.renaming: Rectangle {
+            width: RowStyle.chevron-zone;
+            if root.expandable: Icon {
+                source: root.expanded ? Icons.chevron-down : Icons.chevron-right;
+                width: RowStyle.chevron;
+                height: RowStyle.chevron;
+            }
+        }
+        if root.tree && !root.renaming: Rectangle {
+            width: RowStyle.slot;
+            if root.has-stock: Image {
+                source: root.stock;
+                width: RowStyle.slot;
+                height: RowStyle.slot;
+            }
+            if !root.has-stock: Icon {
+                source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note
+                    : root.kind == RowKind.roll ? Icons.film-roll : root.kind == RowKind.trash ? (root.depth == 0 ? Icons.remove : Icons.folder)
+                    : root.kind == RowKind.opened || (root.kind == RowKind.folder && root.open) ? Icons.folder-open : Icons.folder;
+                width: RowStyle.icon;
+                height: RowStyle.icon;
+            }
+        }
+        if !root.tree && root.has-glyph: VerticalLayout {
+            alignment: center;
+            Icon { source: root.glyph; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
+        }
+        if root.trail != "" && !root.renaming: Label { text: root.trail; tone: Tone.tertiary; overflow: elide; }
+        if !root.renaming: VerticalLayout {
+            horizontal-stretch: 1;
+            Label {
+                text: root.title;
+                tone: root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
+                overflow: elide;
+            }
+            if root.detail != "": Label { text: root.detail; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
+        }
+        if root.renaming: FocusScope {
+            horizontal-stretch: 1;
+            key-pressed(event) => {
+                if (event.text == Key.Escape) {
+                    root.done = true;
+                    root.cancelled();
+                    return accept;
+                }
+                reject
+            }
+            TextField {
+                width: parent.width;
+                height: parent.height;
+                text: root.title;
+                placeholder: @tr("Name");
+                init => { self.take-focus(); }
+                edited(t) => { root.edited(t); }
+                accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+                left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+            }
+        }
+        if root.caption != "" && !root.renaming: Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
+        if root.starrable && (root.favourite || root.hovered): VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: NavigatorStyle.star;
+                height: NavigatorStyle.star;
+                accessible-role: button;
+                accessible-label: root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites");
+                // Sized to its key: an image left unsized draws at its file's 24 px.
+                Icon {
+                    width: parent.width;
+                    height: parent.height;
+                    source: Icons.favourite;
+                    ink: root.favourite ? NavigatorStyle.favourite : Colour.ink-tertiary;
+                }
+                TouchArea {
+                    clicked => { root.starred(); }
+                    changed has-hover => {
+                        Tips.hover(self.has-hover, root.favourite ? @tr("Remove from the favourites") : @tr("Add to the favourites"), root.absolute-position.x, root.absolute-position.y + root.height);
+                    }
+                }
+            }
+        }
+        if root.action != "" && root.hovered: VerticalLayout {
+            alignment: center;
+            Button {
+                text: root.action;
+                size: ButtonSize.small;
+                help: root.action-help;
+                clicked => { root.acted(); }
+            }
+        }
+    }
+    if root.pinned: Rectangle {
+        y: parent.height - Stroke.hairline;
+        height: Stroke.hairline;
+        background: Colour.separator;
+    }
+}

@@ -1,5 +1,5 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, TextArea, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup } from "ds/ds.slint";
+import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField } from "ds/ds.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -91,7 +91,7 @@ export component ReportSheet inherits Sheet {
     if Help.report-sent: Label { role: TextRole.note; text: @tr("Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."); }
     if !Help.report-sent: Label { role: TextRole.note; text: @tr("Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."); }
     // Both ways: typing reaches Send's gate, and Rust's cut at the site's limit reaches the field.
-    if !Help.report-sent: message := TextArea {
+    if !Help.report-sent: message := TextField { multiline: true;
         text <=> Help.report-message;
         edited(t) => { Help.report-edited(t); }
         init => { self.take-focus(); }

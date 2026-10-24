@@ -153,68 +153,6 @@ export component TileGhost inherits Picture {
     opacity: 0.85;
 }
 
-// The ONI Trash's row and its folders' rows: a count, and a Restore key under the hover.
-export component TrashRow inherits Rectangle {
-    in property <string> title;
-    in property <string> trail;
-    in property <string> count;
-    in property <int> depth;
-    in property <bool> foldable;
-    in property <bool> unfolded;
-    in property <bool> picked;
-    in property <bool> opened;
-    in property <bool> present: true;
-    in property <string> restore-help;
-    in property <Look> look: Look.live;
-    callback clicked();
-    callback double-clicked();
-    callback restore();
-    callback menu(length, length);
-    height: RowStyle.height;
-    border-radius: Radius.badge;
-    property <bool> hovered: area.has-hover || root.look != Look.live;
-    background: root.opened ? Colour.row-selected : root.picked || root.hovered ? Colour.hover : transparent;
-    opacity: root.present ? 1 : State.disabled;
-    area := TouchArea {
-        clicked => { root.clicked(); }
-        double-clicked => { root.double-clicked(); }
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
-                root.menu(self.mouse-x, self.mouse-y);
-            }
-        }
-    }
-    HorizontalLayout {
-        padding-left: RowStyle.padding + root.depth * RowStyle.indent;
-        padding-right: RowStyle.padding;
-        spacing: RowStyle.gap;
-        Rectangle {
-            width: RowStyle.chevron-zone;
-            if root.foldable: Icon {
-                source: root.unfolded ? Icons.chevron-down : Icons.chevron-right;
-                width: RowStyle.chevron;
-                height: RowStyle.chevron;
-            }
-        }
-        Rectangle {
-            width: RowStyle.slot;
-            Icon { source: root.depth == 0 ? Icons.remove : Icons.folder; width: RowStyle.icon; height: RowStyle.icon; }
-        }
-        if root.trail != "": Label { text: root.trail; tone: Tone.tertiary; overflow: elide; }
-        Label { text: root.title; tone: root.opened || root.picked ? Tone.primary : Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-        Label { text: root.count; role: TextRole.value; tone: Tone.tertiary; }
-        if root.hovered && root.restore-help != "": VerticalLayout {
-            alignment: center;
-            Button {
-                text: @tr("RESTORE");
-                size: ButtonSize.small;
-                help: root.restore-help;
-                clicked => { root.restore(); }
-            }
-        }
-    }
-}
-
 // `InfoSidebar.cardStack`: a project's first three photos fanned behind one another, the first in front.
 export component CardStack inherits Rectangle {
     in property <[image]> pictures;

@@ -1,10 +1,10 @@
 // The board's tiles and pictures: the gallery's tile in each state, a picture on every ground, the
 // roll's cells, the presets' cards and rows, the swatches, the stocks and the fanned stack.
-import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, PresetNewFace, PresetRow, StockCellView, StockIcon, Button, PresetStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill, Samples } from "kit.slint";
+import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, PresetNewFace, StockCellView, StockIcon, Button, PresetStyle, Row } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
 
 // A tile in its seven looks, all on one picture.
-component TileRow inherits Row {
+component TileRow inherits Line {
     in property <image> picture;
     in property <bool> captioned;
     property <length> high: BoardStyle.cell * 2 / 3;
@@ -18,7 +18,7 @@ component TileRow inherits Row {
 }
 
 // A picture on each of the six grounds.
-component GroundRow inherits Row {
+component GroundRow inherits Line {
     in property <image> source;
     in property <bool> rounded;
     property <length> high: BoardStyle.cell * 2 / 3;
@@ -51,7 +51,7 @@ export component TilesPage inherits Page {
         title: "RollCellView";
         states: ["Rest", "Marked", "Marked, flagged", "Apart (dot)", "RGB seal", "Sheet: marked", "Sheet: flagged", "Unticked"];
         span: BoardStyle.cell - Space.l;
-        Row {
+        Line {
             label: "a frame of the roll";
             Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; } }
             Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; marked: true; } }
@@ -66,7 +66,7 @@ export component TilesPage inherits Page {
     Group {
         title: "Presets";
         states: ["Dark tint", "Light tint", "Warm tint", "New: rest", "New: lit", "New: disabled"];
-        Row {
+        Line {
             label: "PresetFace, PresetNewFace";
             Cell { PresetFace { abbreviation: "Pt"; name: "Portra warm"; fill: ScannerStyle.band-dark; ink: Colour.ink; } }
             Cell { PresetFace { abbreviation: "Hp"; name: "HP5 crisp"; fill: Colour.paper; ink: Colour.ink-on-light; } }
@@ -80,31 +80,31 @@ export component TilesPage inherits Page {
         title: "PresetRow";
         states: ["Rest", "Hover", "Selected"];
         span: BoardStyle.library;
-        Row {
+        Line {
             label: "the editor's list";
-            Fill { span: BoardStyle.library; PresetRow { abbreviation: "Pt"; name: "Portra warm"; carries: "Color, Curves"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; } }
-            Fill { span: BoardStyle.library; PresetRow { abbreviation: "Pt"; name: "Portra warm"; carries: "Color, Curves"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; look: Look.hover; } }
-            Fill { span: BoardStyle.library; PresetRow { abbreviation: "Pt"; name: "Portra warm"; carries: "Color, Curves"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; selected: true; } }
+            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; } }
+            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; look: Look.hover; } }
+            Fill { span: BoardStyle.library; Row { rounded: true; badge: "Pt"; title: "Portra warm"; detail: "Color, Curves"; badge-fill: ScannerStyle.band-warm; badge-ink: Colour.ink-on-light; selected: true; } }
         }
     }
     Group {
         title: "Swatch and stocks";
         states: ["Rest", "Picked", "Rest, light", "Picked, light"];
-        Row {
+        Line {
             label: "Swatch";
             Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; } }
             Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; on: true; } }
             Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; } }
             Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; on: true; } }
         }
-        Row {
+        Line {
             label: "StockCellView";
             Fill { StockCellView { artwork: Samples.stock; has-artwork: true; name: "Kodak Portra 400"; } }
             Fill { StockCellView { artwork: Samples.stock; has-artwork: true; name: "Kodak Portra 400"; picked: true; } }
             Fill { StockCellView { name: "Generic C-41"; } }
             Fill { StockCellView { name: "Generic C-41"; picked: true; } }
         }
-        Row {
+        Line {
             label: "StockIcon";
             Cell { StockIcon { artwork: Samples.stock; has-artwork: true; } }
             Cell { StockIcon { } }
@@ -114,7 +114,7 @@ export component TilesPage inherits Page {
         title: "Carried and stacked";
         states: ["TileGhost", "CardStack"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "a reorder's ghost, a project's stack";
             Cell { span: BoardStyle.wide; TileGhost { width: BoardStyle.cell; height: BoardStyle.cell * 2 / 3; source: Samples.photo; } }
             Fill { span: BoardStyle.wide; CardStack { pictures: [Samples.photo, Samples.other, Samples.photo]; } }

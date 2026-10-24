@@ -1,10 +1,10 @@
 // The board's sliders and the Scanner face: every fill and knob, the step sliders, the keys in each
 // band's colour, the keypad and the scanner's screen.
 import { Colour, PlotStyle, ScannerStyle, Look, SliderFill, Knob, Slider, StepSlider, LabScreen, LcdReadout, Button, ButtonSize } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // One slider in its four states; Rust drives a live one, so this one holds its place.
-component SliderRow inherits Row {
+component SliderRow inherits Line {
     in property <string> name;
     in property <float> at: 0.62;
     in property <SliderFill> fill: SliderFill.level;
@@ -20,7 +20,7 @@ component SliderRow inherits Row {
 }
 
 // A Scanner face's step slider in its four states.
-component StepRow inherits Row {
+component StepRow inherits Line {
     in property <string> title;
     in property <int> value;
     in property <int> low: -10;
@@ -62,7 +62,7 @@ export component SlidersPage inherits Page {
 }
 
 // A key in one fill: rest, hover, pressed, then the wide key at rest and pressed.
-component KeyFillRow inherits Row {
+component KeyFillRow inherits Line {
     in property <color> fill;
     in property <string> legend: "+3";
     Cell { Button { size: ButtonSize.key; text: root.legend; fill: root.fill; } }
@@ -94,7 +94,7 @@ export component KeypadPage inherits Page {
     }
     Group {
         title: "Keypad and screen";
-        Row {
+        Line {
             label: "LabScreen";
             Fill {
                 span: BoardStyle.panel;
@@ -108,7 +108,7 @@ export component KeypadPage inherits Page {
                 }
             }
         }
-        Row {
+        Line {
             label: "LcdReadout";
             Cell { LcdReadout { text: "12 / 36"; } }
             Cell { LcdReadout { text: "1"; } }

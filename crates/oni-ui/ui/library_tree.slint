@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, Scroller, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu, PinnedTreeRow, Button, ButtonSize, ButtonGroup } from "ds/ds.slint";
+import { ColumnPill, Scroller, Icons, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu, Button, ButtonSize, ButtonGroup, Row } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { ProjectTree } from "project_tree.slint";
 
@@ -91,7 +91,7 @@ export component Tree inherits Surface {
                         y: row.y;
                         width: row.width;
                         height: row.height;
-                        if !row.thumb && !row.renaming: TreeItem {
+                        if !row.thumb && !row.renaming: Row {
                             width: parent.width;
                             depth: row.depth;
                             title: row.title;
@@ -134,9 +134,10 @@ export component Tree inherits Surface {
                             clicked => { Library.row-clicked(i, self.command, self.shift); }
                             double-clicked => { Library.row-double-clicked(i); }
                         }
-                        if row.renaming: RenameRow {
+                        if row.renaming: Row {
+                            renaming: true;
                             width: parent.width;
-                            text: row.title;
+                            title: row.title;
                             depth: row.depth;
                             committed(t) => { Library.row-rename-committed(i, t); }
                             cancelled => { Library.row-rename-cancelled(); }
@@ -144,7 +145,10 @@ export component Tree inherits Surface {
                         }
                     }
                 }
-                if Library.tree-pin.shown: PinnedTreeRow {
+                if Library.tree-pin.shown: Row {
+                    pinned: true;
+                    expandable: true;
+                    expanded: true;
                     y: Library.tree-pin.push;
                     width: parent.width;
                     depth: Library.tree-pin.row.depth;
@@ -152,7 +156,7 @@ export component Tree inherits Surface {
                     caption: Library.tree-pin.row.caption;
                     kind: Library.tree-pin.row.kind == 1 ? RowKind.roll : RowKind.folder;
                     selected: Library.tree-pin.row.selected;
-                    clicked(command, shift) => { Library.tree-pin-clicked(command, shift); }
+                    clicked => { Library.tree-pin-clicked(self.command, self.shift); }
                     double-clicked => { Library.row-double-clicked(Library.tree-pin.index); }
                     folded => { Library.row-folded(Library.tree-pin.index); }
                 }

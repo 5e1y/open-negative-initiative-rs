@@ -1,9 +1,9 @@
 // The board's inputs: the tabs and the switches, then every field, picker and typed box.
-import { Colour, PlotInkStyle, Look, Tabs, Toggle, ToggleRow, LabelledRow, TextField, Picker, MenuPicker, LinesPicker, NumberField, SuffixField, DateFields, EditableTitle, TextArea, Field, FormRow } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill, Absent } from "kit.slint";
+import { Colour, PlotInkStyle, Look, Tabs, Toggle, ToggleRow, TextField, Picker, MenuPicker, LinesPicker, DateFields, EditableTitle, Field, FormRow, FormStyle } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent } from "kit.slint";
 
 // One set of tabs at rest, with another tab hovered, and with a tab marked.
-component TabsRow inherits Row {
+component TabsRow inherits Line {
     in property <[string]> tabs;
     in property <int> selected;
     in property <[color]> swatches;
@@ -36,7 +36,7 @@ export component TabsPage inherits Page {
     Group {
         title: "Toggle";
         states: ["Off", "On", "Disabled, off", "Disabled, on", "Hover"];
-        Row {
+        Line {
             label: "Toggle";
             Cell { Toggle { } }
             Cell { Toggle { on: true; } }
@@ -44,7 +44,7 @@ export component TabsPage inherits Page {
             Cell { Toggle { on: true; enabled: false; } }
             Absent { }
         }
-        Row {
+        Line {
             label: "ToggleRow";
             Cell { ToggleRow { label: "Clipping"; } }
             Cell { ToggleRow { label: "Clipping"; on: true; } }
@@ -52,9 +52,9 @@ export component TabsPage inherits Page {
             Cell { ToggleRow { label: "Clipping"; on: true; enabled: false; } }
             Absent { }
         }
-        Row {
+        Line {
             label: "LabelledRow";
-            Fill { span: BoardStyle.wide; LabelledRow { label: "Show the grain"; Toggle { on: true; } } }
+            Fill { span: BoardStyle.wide; FormRow { spread: true; label: "Show the grain"; Toggle { on: true; } } }
         }
     }
 }
@@ -67,7 +67,7 @@ export component FieldsPage inherits Page {
         title: "Typed boxes";
         states: root.states;
         span: BoardStyle.field;
-        Row {
+        Line {
             label: "TextField";
             Fill { span: BoardStyle.field; TextField { placeholder: "Description"; } }
             Fill { span: BoardStyle.field; TextField { value: "Kodak Portra 400, box speed"; } }
@@ -75,28 +75,28 @@ export component FieldsPage inherits Page {
             Fill { span: BoardStyle.field; TextField { value: "Kodak Portra 400"; focused-look: true; } }
             Fill { span: BoardStyle.field; TextField { value: "Kodak Portra 400"; enabled: false; } }
         }
-        Row {
+        Line {
             label: "NumberField";
-            Cell { span: BoardStyle.field; NumberField { placeholder: "Width"; } }
-            Cell { span: BoardStyle.field; NumberField { value: "3000"; } }
+            Cell { span: BoardStyle.field; TextField { width: FormStyle.size-field; placeholder: "Width"; } }
+            Cell { span: BoardStyle.field; TextField { width: FormStyle.size-field; value: "3000"; } }
             Absent { span: BoardStyle.field; }
-            Cell { span: BoardStyle.field; NumberField { value: "3000"; focused-look: true; } }
-            Cell { span: BoardStyle.field; NumberField { value: "3000"; enabled: false; } }
+            Cell { span: BoardStyle.field; TextField { width: FormStyle.size-field; value: "3000"; focused-look: true; } }
+            Cell { span: BoardStyle.field; TextField { width: FormStyle.size-field; value: "3000"; enabled: false; } }
         }
-        Row {
+        Line {
             label: "SuffixField";
-            Fill { span: BoardStyle.field; SuffixField { placeholder: "File name"; suffix: ".tif"; } }
-            Fill { span: BoardStyle.field; SuffixField { value: "DSC_6432"; suffix: ".tif"; } }
+            Fill { span: BoardStyle.field; TextField { placeholder: "File name"; suffix: ".tif"; } }
+            Fill { span: BoardStyle.field; TextField { value: "DSC_6432"; suffix: ".tif"; } }
             Absent { span: BoardStyle.field; }
             Absent { span: BoardStyle.field; }
-            Fill { span: BoardStyle.field; SuffixField { value: "DSC_6432"; suffix: ".tif"; enabled: false; } }
+            Fill { span: BoardStyle.field; TextField { value: "DSC_6432"; suffix: ".tif"; enabled: false; } }
         }
-        Row {
+        Line {
             label: "TextArea";
-            Fill { span: BoardStyle.field; TextArea { lines-height: 4 * BoardStyle.gap; } }
-            Fill { span: BoardStyle.field; TextArea { lines-height: 4 * BoardStyle.gap; text: "The scan shows banding in the sky after the Color tab's curve."; } }
+            Fill { span: BoardStyle.field; TextField { multiline: true; lines-height: 4 * BoardStyle.gap; } }
+            Fill { span: BoardStyle.field; TextField { multiline: true; lines-height: 4 * BoardStyle.gap; text: "The scan shows banding in the sky after the Color tab's curve."; } }
             Absent { span: BoardStyle.field; }
-            Fill { span: BoardStyle.field; TextArea { lines-height: 4 * BoardStyle.gap; text: "The scan shows banding."; focused-look: true; } }
+            Fill { span: BoardStyle.field; TextField { multiline: true; lines-height: 4 * BoardStyle.gap; text: "The scan shows banding."; focused-look: true; } }
             Absent { span: BoardStyle.field; }
         }
     }
@@ -104,21 +104,21 @@ export component FieldsPage inherits Page {
         title: "Pickers";
         states: ["Rest", "Hover", "With a label", "With a label, hover"];
         span: BoardStyle.field;
-        Row {
+        Line {
             label: "Picker";
             Fill { span: BoardStyle.field; Picker { value: "Generic C-41"; } }
             Fill { span: BoardStyle.field; Picker { value: "Generic C-41"; look: Look.hover; } }
             Fill { span: BoardStyle.field; Picker { label: "Dyes"; value: "Generic C-41"; } }
             Fill { span: BoardStyle.field; Picker { label: "Dyes"; value: "Generic C-41"; look: Look.hover; } }
         }
-        Row {
+        Line {
             label: "MenuPicker, closed";
             Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
             Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
             Fill { span: BoardStyle.field; MenuPicker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
             Fill { span: BoardStyle.field; MenuPicker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
         }
-        Row {
+        Line {
             label: "LinesPicker, closed";
             Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; } }
             Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; look: Look.hover; } }
@@ -130,12 +130,12 @@ export component FieldsPage inherits Page {
         title: "Dates and titles";
         states: ["Empty", "Filled"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "DateFields";
             Cell { span: BoardStyle.wide; DateFields { } }
             Cell { span: BoardStyle.wide; DateFields { month: "4"; day: "15"; year: "2026"; } }
         }
-        Row {
+        Line {
             label: "EditableTitle at rest (empty draws nothing)";
             Cell { span: BoardStyle.wide; EditableTitle { placeholder: "Roll name"; } }
             Cell { span: BoardStyle.wide; EditableTitle { text: "Roll #8"; placeholder: "Roll name"; } }
@@ -145,7 +145,7 @@ export component FieldsPage inherits Page {
         title: "Field wrappers";
         states: ["Field with a note", "Field", "FormRow"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "a label over a box";
             Fill { span: BoardStyle.wide; Field { label: "Long edge"; help: "The exported picture's longest side, in pixels."; TextField { value: "3000"; } } }
             Fill { span: BoardStyle.wide; Field { label: "Long edge"; TextField { value: "3000"; } } }

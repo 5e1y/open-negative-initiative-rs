@@ -182,68 +182,6 @@ export component Scroller {
 // directly in an element named `ListView` that carries the content and visible lengths.
 export component ListView inherits Scroller { }
 
-export enum RowKind { folder, roll, photo, project }
-
-// A line of a list: a title, a caption at the end, the hover and selection bands.
-export component ListRow inherits Rectangle {
-    in property <string> title;
-    in property <string> caption;
-    in property <bool> selected;
-    in property <Look> look: Look.live;
-    in property <length> indent;
-    // `chevronZone`: the width after the indent where a click folds instead of clicking.
-    in property <length> fold-zone;
-    callback clicked();
-    callback double-clicked();
-    callback folded();
-    // A right click, at the pointer in the row's own coordinates.
-    callback menu(length, length);
-    // A left press moved, from its press to the pointer in the row's coordinates; its release or cancel.
-    callback dragged(length, length, length, length);
-    callback released(bool);
-    // What the last left press held, ⌘ (or Ctrl) and ⇧, for `clicked` to read.
-    out property <bool> command;
-    out property <bool> shift;
-    height: RowStyle.height;
-    background: root.selected ? Colour.row-selected : (area.has-hover || root.look != Look.live) ? Colour.hover : transparent;
-    HorizontalLayout {
-        padding-left: RowStyle.padding + root.indent;
-        padding-right: RowStyle.padding;
-        spacing: RowStyle.gap;
-        @children
-        Label { text: root.title; overflow: elide; horizontal-stretch: 1; }
-        Label { text: root.caption; role: TextRole.value; tone: Tone.tertiary; }
-    }
-    area := TouchArea {
-        property <bool> folds: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
-        clicked => {
-            if (self.folds) {
-                root.folded();
-            } else {
-                root.clicked();
-            }
-        }
-        double-clicked => {
-            if (!self.folds) {
-                root.double-clicked();
-            }
-        }
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                root.command = event.modifiers.control || event.modifiers.meta;
-                root.shift = event.modifiers.shift;
-            }
-            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
-                root.menu(self.mouse-x, self.mouse-y);
-            }
-            if ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel) {
-                root.released(event.kind == PointerEventKind.up);
-            }
-        }
-        moved => { if (self.pressed) { root.dragged(self.pressed-x, self.pressed-y, self.mouse-x, self.mouse-y); } }
-    }
-}
-
 // A gallery cell: the picture in its well, the medal, the RGB seal, the selection ring, and a
 // caption under it only when one is given. A missing original shows faded.
 export component TileView inherits Rectangle {
@@ -325,49 +263,32 @@ component HeadingField inherits FocusScope {
     }
 }
 
-// `RollHeaderContent`: a band's title over its tiles, the folders above it first, in secondary;
-// while renamed, the field typed over it, opened on `draft`.
-export component TileHeading inherits HorizontalLayout {
+// A group's heading over its tiles, its roll's folder before its name, typed over while renamed;
+// `pinned`, it stays at the top of the gallery on the canvas, inset as the tiles are.
+export component Heading inherits Rectangle {
     in property <string> title;
     in property <string> caption;
     in property <bool> renaming;
     in property <string> draft;
+    in property <bool> pinned;
     callback edited(string);
     callback committed(string);
     callback cancelled();
     height: TileStyle.heading;
-    if !root.renaming && root.caption != "": Label { role: TextRole.title; tone: Tone.secondary; text: root.caption + " / "; overflow: elide; }
-    if !root.renaming: Label { role: TextRole.title; text: root.title; overflow: elide; }
-    if !root.renaming: Rectangle { horizontal-stretch: 1; }
-    if root.renaming: HeadingField {
-        horizontal-stretch: 1;
-        text: root.draft;
-        edited(t) => { root.edited(t); }
-        committed(t) => { root.committed(t); }
-        cancelled => { root.cancelled(); }
+    background: root.pinned ? Colour.canvas : Colour.canvas.transparentize(1);
+    HorizontalLayout {
+        x: root.pinned ? Space.l : 0px;
+        width: parent.width - (root.pinned ? 2 * Space.l : 0px);
+        if !root.renaming && root.caption != "": Label { role: TextRole.title; tone: Tone.secondary; text: root.caption + " / "; overflow: elide; }
+        if !root.renaming: Label { role: TextRole.title; text: root.title; overflow: elide; }
+        if !root.renaming: Rectangle { horizontal-stretch: 1; }
+        if root.renaming: HeadingField {
+            horizontal-stretch: 1;
+            text: root.draft;
+            edited(t) => { root.edited(t); }
+            committed(t) => { root.committed(t); }
+            cancelled => { root.cancelled(); }
+        }
     }
 }
 
-// `PinnedGalleryHeader`: the band's heading held at the grid's top, on the canvas the tiles pass under.
-export component PinnedHeading inherits Rectangle {
-    in property <string> title;
-    in property <string> caption;
-    in property <bool> renaming;
-    in property <string> draft;
-    callback edited(string);
-    callback committed(string);
-    callback cancelled();
-    background: Colour.canvas;
-    height: TileStyle.heading;
-    TileHeading {
-        x: Space.l;
-        width: parent.width - 2 * Space.l;
-        title: root.title;
-        caption: root.caption;
-        renaming: root.renaming;
-        draft: root.draft;
-        edited(t) => { root.edited(t); }
-        committed(t) => { root.committed(t); }
-        cancelled => { root.cancelled(); }
-    }
-}

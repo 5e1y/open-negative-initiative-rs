@@ -1,12 +1,12 @@
 // The board's plots and canvas marks: the histogram's frame, the plot screen, the track's knobs in
 // each ink and state, every ink, the crop and window frames, and the marks drawn over a photo.
 import { Colour, Space, Stroke, PlotInkStyle, SplitStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Picture, Ink, Inks, PlotKnob, Plot, TrackKnob, LevelsTrack, PlotReadouts, AxisCaptions, FrameOverlay, FrameStyle, Well, BrushDisc, CorrectionMark, Badge, LoupeBand, SplitGuide, LiveStroke, SourceTrace, DustOriginal } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill, Stage, Samples } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
 
 // A track knob in one ink: at rest, under the pointer, held.
-component KnobRow inherits Row {
+component KnobRow inherits Line {
     in property <Ink> ink;
     for state in 3: Cell {
         Rectangle {
@@ -46,7 +46,7 @@ export component PlotsPage inherits Page {
         title: "Plot screens";
         states: ["HistogramFrame, main", "HistogramFrame, block", "Plot: grid, curve, dots"];
         span: BoardStyle.panel;
-        Row {
+        Line {
             label: "frames (Rust paints the histogram)";
             Fill { span: BoardStyle.panel; HistogramFrame { size: PlotSize.main; ground: Ground.canvas; } }
             Fill { span: BoardStyle.panel; HistogramFrame { size: PlotSize.block; ground: Ground.canvas; } }
@@ -85,7 +85,7 @@ export component PlotsPage inherits Page {
     }
     Group {
         title: "LevelsTrack";
-        Row {
+        Line {
             label: "five handles, the middle held";
             Fill {
                 span: BoardStyle.panel;
@@ -129,7 +129,7 @@ export component PlotsPage inherits Page {
         title: "Frames over a photo";
         states: ["FrameOverlay, crop", "FrameOverlay, measuring window", "SplitGuide (compare)"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "at rest";
             Cell {
                 span: BoardStyle.wide;
@@ -154,7 +154,7 @@ export component PlotsPage inherits Page {
     Group {
         title: "Canvas marks";
         states: ["Well", "BrushDisc", "CorrectionMark", "Strokes", "DustOriginal", "Badge"];
-        Row {
+        Line {
             label: "as the canvas draws them";
             Cell { Well { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; } }
             Cell { Stage { width: BoardStyle.cell / 2; height: BoardStyle.cell / 2; BrushDisc { width: parent.width * 2 / 3; height: self.width; } } }
@@ -179,7 +179,7 @@ export component PlotsPage inherits Page {
     }
     Group {
         title: "LoupeBand";
-        Row {
+        Line {
             label: "the Details band, its ratio badge";
             Fill {
                 span: BoardStyle.panel;

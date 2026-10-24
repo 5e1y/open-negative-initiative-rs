@@ -73,34 +73,12 @@ export component SummaryBox inherits Rectangle {
 // One EXIF line: the label at a fixed width, the control stretching after it.
 export component FormRow inherits HorizontalLayout {
     in property <string> label;
+    // The label takes the room between it and the control, in the primary ink, where a form's column is fixed.
+    in property <bool> spread;
     spacing: Space.s;
-    Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }
+    if root.spread: Label { text: root.label; horizontal-stretch: 1; }
+    if !root.spread: Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }
     @children
-}
-
-// A text field with a fixed word after the typing, as a file name takes its extension.
-export component SuffixField inherits HorizontalLayout {
-    in-out property <string> text <=> field.text;
-    in property <string> value;
-    in property <string> placeholder;
-    in property <string> suffix;
-    in property <bool> enabled: true;
-    callback edited(string);
-    spacing: Space.xxs;
-    opacity: root.enabled ? 1 : State.disabled;
-    field := TextField {
-        horizontal-stretch: 1;
-        value: root.value;
-        placeholder: root.placeholder;
-        enabled: root.enabled;
-        edited(t) => { root.edited(t); }
-    }
-    if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
-}
-
-// A digit field centred at the size field's width.
-export component NumberField inherits TextField {
-    width: FormStyle.size-field;
 }
 
 // An export preview: the picture fitted whole, a dash while it renders, a word when it never will.

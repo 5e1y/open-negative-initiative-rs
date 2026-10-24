@@ -29,37 +29,6 @@ export component NewsSeal inherits Rectangle {
     }
 }
 
-// `TextEditor` in `dsTextField(multiline:)`: several lines, wrapped, the edge lit while it is typed in.
-export component TextArea inherits Rectangle {
-    in-out property <string> text <=> input.text;
-    in property <length> lines-height: DS.control-report-message-height;
-    // The focus's edge without the focus, as `TextField.focused-look`.
-    in property <bool> focused-look;
-    callback edited(string);
-    // The focus leaving the box, which a typed text commits on.
-    callback left(string);
-    public function take-focus() { input.focus(); }
-    height: root.lines-height;
-    border-radius: FieldStyle.radius;
-    background: Colour.canvas;
-    border-width: input.has-focus || root.focused-look ? Stroke.line : Stroke.hairline;
-    border-color: input.has-focus || root.focused-look ? Colour.focus : Colour.separator;
-    clip: true;
-    input := TextInput {
-        x: FieldStyle.padding;
-        y: FieldStyle.padding;
-        width: parent.width - 2 * FieldStyle.padding;
-        height: parent.height - 2 * FieldStyle.padding;
-        single-line: false;
-        wrap: word-wrap;
-        font-family: Type.family;
-        font-size: Type.label;
-        color: Colour.ink;
-        edited => { root.edited(self.text); }
-        changed has-focus => { if (!self.has-focus) { root.left(self.text); } }
-    }
-}
-
 // The console's log: monospaced so aligned figures stay in column, selectable, on the panel's ground.
 export component LogText inherits Rectangle {
     in property <string> text;

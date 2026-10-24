@@ -57,40 +57,6 @@ export component PresetNewFace inherits Rectangle {
     }
 }
 
-// The editor's list row: the monogram badge, the name, what it carries.
-export component PresetRow inherits Rectangle {
-    in property <string> abbreviation;
-    in property <string> name;
-    in property <string> carries;
-    in property <color> fill;
-    in property <color> ink;
-    in property <bool> selected;
-    in property <Look> look: Look.live;
-    callback clicked();
-    height: row.preferred-height;
-    border-radius: Radius.badge;
-    background: root.selected ? Colour.row-selected : touch.has-hover || root.look != Look.live ? Colour.hover : Colour.ground.transparentize(1);
-    row := HorizontalLayout {
-        padding: Space.xs;
-        spacing: Space.s;
-        VerticalLayout {
-            alignment: center;
-            Rectangle {
-                width: PresetStyle.badge-width;
-                height: PresetStyle.badge-height;
-                border-radius: Radius.badge;
-                background: root.fill;
-                Text { text: root.abbreviation; font-family: Type.family; font-size: Type.chip; color: root.ink; }
-            }
-        }
-        VerticalLayout {
-            Label { text: root.name; overflow: elide; }
-            Label { text: root.carries; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
-        }
-    }
-    touch := TouchArea { clicked => { root.clicked(); } }
-}
-
 // A sheet at its own gauge hung from the window's top, modal as `Sheet`: no scrim, a click beside
 // it reaches nothing; Escape dismisses it.
 export component PanelSheet inherits Rectangle {

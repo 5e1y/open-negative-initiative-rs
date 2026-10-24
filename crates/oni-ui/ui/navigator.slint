@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, FolderRow, FolderKind, RenameRow, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, StepNumber, ButtonSize, Colour, ButtonGroup } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, ColumnPill, FolderChoice, FolderMenu, RowsDivider, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, StepNumber, ButtonSize, Colour, ButtonGroup, Row, RowKind } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -100,43 +100,55 @@ component Rows inherits Scroller {
         padding-left: Space.s;
         padding-right: Space.s;
         for row[i] in Navigator.rows: VerticalLayout {
-            if !row.renaming: FolderRow {
+            if !row.renaming: Row {
+                rounded: true;
+                quiet: true;
+                starrable: true;
+                folds: false;
+                open: false;
+                absent: NavigatorStyle.absent;
                 title: row.title;
-                path: row.path;
+                help: row.path;
                 depth: row.depth;
-                chevron: row.chevron;
-                unfolded: row.unfolded;
-                kind: row.kind == 1 ? FolderKind.roll : row.kind == 2 ? FolderKind.opened : FolderKind.folder;
+                expandable: row.chevron;
+                expanded: row.unfolded;
+                kind: row.kind == 1 ? RowKind.roll : row.kind == 2 ? RowKind.opened : RowKind.folder;
                 picked: row.picked;
-                opened: row.opened;
+                selected: row.opened;
                 favourite: row.favourite;
                 present: row.present;
                 clicked => { Navigator.row-clicked(i); }
                 starred => { Navigator.star-clicked(i); }
                 menu(x, y) => { root.folder-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
-            if row.renaming: RenameRow {
-                text: row.title;
+            if row.renaming: Row {
+                renaming: true;
+                title: row.title;
                 depth: row.depth;
                 committed(t) => { Navigator.rename-committed(i, t); }
                 cancelled => { Navigator.rename-cancelled(); }
             }
         }
         if Navigator.at-computer: VerticalLayout {
-            for line[i] in root.trash-rows: TrashRow {
+            for line[i] in root.trash-rows: Row {
+                kind: RowKind.trash;
+                rounded: true;
+                quiet: true;
+                folds: false;
                 title: line.title;
                 trail: line.trail;
-                count: line.count;
+                caption: line.count;
                 depth: line.depth;
-                foldable: line.foldable;
-                unfolded: line.unfolded;
+                expandable: line.foldable;
+                expanded: line.unfolded;
                 picked: line.picked;
-                opened: line.opened;
+                selected: line.opened;
                 present: line.present;
-                restore-help: line.restore-help;
+                action: line.restore-help != "" ? @tr("RESTORE") : "";
+                action-help: line.restore-help;
                 clicked => { root.trash-clicked(i); }
                 double-clicked => { root.trash-double-clicked(i); }
-                restore => { root.trash-restore(i); }
+                acted => { root.trash-restore(i); }
                 menu(x, y) => { root.trash-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
         }

@@ -1,7 +1,7 @@
 // The board's feedback: warnings and notes, progress and status lines, seals, badges and chips, the
 // header's small keys, the empty state, the summary box and the notices' lines.
 import { Space, Look, Label, TextRole, Tone, WarningBadge, StatusLine, WarningBand, Badge, Chip, Progress, LoadBar, SealedStatusLine, NewsSeal, Seal, Ring, EmptyState, SummaryBox, BulletLine, StepNumber, ColumnPill, PreviewSlot, Icons, Button, ButtonSize, NavigatorStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
 export component FeedbackPage inherits Page {
     title: "Feedback";
@@ -10,25 +10,25 @@ export component FeedbackPage inherits Page {
         title: "Warnings and notes";
         states: ["As drawn"];
         span: BoardStyle.wide;
-        Row { label: "Warning"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; tone: Tone.warning; text: "8-bit source: 256 levels per channel."; } } }
-        Row { label: "WarningBadge"; Cell { span: BoardStyle.wide; WarningBadge { text: "8-bit source"; } } }
-        Row { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
-        Row { label: "CautionNote"; Fill { span: BoardStyle.wide; Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: "Clipped highlights in the blue channel."; } } }
-        Row { label: "Note"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; text: "A quiet line under a field, wrapping when it runs long."; } } }
-        Row { label: "GroupHeading"; Cell { span: BoardStyle.wide; Label { tone: Tone.tertiary; text: "MAKERS"; } } }
+        Line { label: "Warning"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; tone: Tone.warning; text: "8-bit source: 256 levels per channel."; } } }
+        Line { label: "WarningBadge"; Cell { span: BoardStyle.wide; WarningBadge { text: "8-bit source"; } } }
+        Line { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
+        Line { label: "CautionNote"; Fill { span: BoardStyle.wide; Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: "Clipped highlights in the blue channel."; } } }
+        Line { label: "Note"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; text: "A quiet line under a field, wrapping when it runs long."; } } }
+        Line { label: "GroupHeading"; Cell { span: BoardStyle.wide; Label { tone: Tone.tertiary; text: "MAKERS"; } } }
     }
     Group {
         title: "Progress";
         states: ["Empty", "40 %", "Full", "Uncounted (sweeping)"];
         span: BoardStyle.field;
-        Row {
+        Line {
             label: "Progress";
             Fill { span: BoardStyle.field; Progress { fraction: 0; } }
             Fill { span: BoardStyle.field; Progress { fraction: 0.4; } }
             Fill { span: BoardStyle.field; Progress { fraction: 1; } }
             Fill { span: BoardStyle.field; Progress { fraction: -1; } }
         }
-        Row {
+        Line {
             label: "LoadBar";
             Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "0 / 36"; fraction: 0; } }
             Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "14 / 36"; fraction: 0.4; } }
@@ -40,7 +40,7 @@ export component FeedbackPage inherits Page {
         title: "Status lines";
         states: ["Plain", "With a seal"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "StatusLine, SealedStatusLine";
             Cell { span: BoardStyle.wide; StatusLine { text: "DSC_6432 · 6048 × 4032 · Nikon Z f"; } }
             Fill { span: BoardStyle.wide; SealedStatusLine { text: "Frame 09 · 3 passes"; seal: "RGB"; } }
@@ -49,15 +49,15 @@ export component FeedbackPage inherits Page {
     Group {
         title: "Seals and badges";
         states: ["Plain", "Variant"];
-        Row { label: "NewsSeal"; Cell { NewsSeal { word: "NEW"; } } Cell { NewsSeal { word: "UPDATED"; } } }
-        Row { label: "Seal"; Cell { Seal { word: "RGB"; } } Cell { Seal { word: "FLAGGED"; red: true; } } }
-        Row { label: "Badge (canvas)"; Cell { Badge { text: "1:1"; } } Cell { Badge { text: "200 %"; } } }
-        Row { label: "StepNumber"; Cell { StepNumber { number: 1; } } Cell { StepNumber { number: 3; } } }
+        Line { label: "NewsSeal"; Cell { NewsSeal { word: "NEW"; } } Cell { NewsSeal { word: "UPDATED"; } } }
+        Line { label: "Seal"; Cell { Seal { word: "RGB"; } } Cell { Seal { word: "FLAGGED"; red: true; } } }
+        Line { label: "Badge (canvas)"; Cell { Badge { text: "1:1"; } } Cell { Badge { text: "200 %"; } } }
+        Line { label: "StepNumber"; Cell { StepNumber { number: 1; } } Cell { StepNumber { number: 3; } } }
     }
     Group {
         title: "Small keys and chips";
         states: ["Rest", "Hover", "Pressed", "Disabled", "Tinted / not pressable"];
-        Row {
+        Line {
             label: "GlyphKey";
             Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; } }
             Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; look: Look.hover; } }
@@ -65,7 +65,7 @@ export component FeedbackPage inherits Page {
             Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; enabled: false; } }
             Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: true ? NavigatorStyle.favourite : transparent; } }
         }
-        Row {
+        Line {
             label: "ColumnPill";
             Fill { ColumnPill { text: "Negs"; pressable: true; } }
             Fill { ColumnPill { text: "Negs"; pressable: true; look: Look.hover; } }
@@ -73,7 +73,7 @@ export component FeedbackPage inherits Page {
             Fill { ColumnPill { text: "Negs"; pressable: true; enabled: false; } }
             Fill { ColumnPill { text: "Negs"; look: Look.hover; } }
         }
-        Row {
+        Line {
             label: "Chip";
             Cell { Chip { title: "Space"; hint: "Display P3"; } }
             Cell { Chip { title: "Space"; hint: "Display P3"; look: Look.hover; } }
@@ -85,7 +85,7 @@ export component FeedbackPage inherits Page {
     Group {
         title: "Ring";
         states: ["Over the canvas"];
-        Row {
+        Line {
             label: "the base pick's ring";
             Cell {
                 Stage {
@@ -100,8 +100,8 @@ export component FeedbackPage inherits Page {
         title: "Blocks of text";
         states: ["As drawn"];
         span: BoardStyle.wide;
-        Row { label: "EmptyState"; Fill { span: BoardStyle.wide; EmptyState { title: "No Gold Photos"; detail: "Cycle the filter (⌘L) to see the others."; action: "SHOW ALL"; } } }
-        Row {
+        Line { label: "EmptyState"; Fill { span: BoardStyle.wide; EmptyState { title: "No Gold Photos"; detail: "Cycle the filter (⌘L) to see the others."; action: "SHOW ALL"; } } }
+        Line {
             label: "SummaryBox";
             Fill {
                 span: BoardStyle.wide;
@@ -111,12 +111,12 @@ export component FeedbackPage inherits Page {
                 }
             }
         }
-        Row { label: "BulletLine"; Fill { span: BoardStyle.wide; BulletLine { text: "Every frame keeps its own settings, written beside the scan."; } } }
+        Line { label: "BulletLine"; Fill { span: BoardStyle.wide; BulletLine { text: "Every frame keeps its own settings, written beside the scan."; } } }
     }
     Group {
         title: "PreviewSlot";
         states: ["Rendering", "Shown", "Failed"];
-        Row {
+        Line {
             label: "an export preview";
             Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 0; } }
             Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 1; source: Samples.photo; } }

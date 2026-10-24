@@ -2,12 +2,13 @@
 import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
-import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
+import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, Slider, TextField, Picker } from "controls.slint";
 import { Tabs } from "tabs.slint";
+import { FormRow } from "forms.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
-import { ListRow, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
-import { TreeItem } from "tree.slint";
-import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost, TrashRow } from "organise.slint";
+import { TileView, Heading, Scroller } from "collections.slint";
+import { RowKind, Row } from "row.slint";
+import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { PlotInkStyle } from "theme.slint";
 import { LabScreen } from "keypad.slint";
@@ -209,9 +210,9 @@ export component Catalogue inherits AppWindow {
                         swatches: PlotInkStyle.bands;
                         marked: [false, true, false, false, false, false, false, false];
                     }
-                    LabelledRow { label: "Toggle off"; DemoToggle { label: "off"; } }
-                    LabelledRow { label: "Toggle on"; DemoToggle { label: "on"; on: true; } }
-                    LabelledRow { label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
+                    FormRow { spread: true; label: "Toggle off"; DemoToggle { label: "off"; } }
+                    FormRow { spread: true; label: "Toggle on"; DemoToggle { label: "on"; on: true; } }
+                    FormRow { spread: true; label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
                 }
                 Group {
                     title: "Field and picker";
@@ -309,12 +310,12 @@ export component Catalogue inherits AppWindow {
                 alignment: start;
                 Group {
                     title: "Rows";
-                    ListRow { title: "List row"; caption: "12"; }
-                    ListRow { title: "Hovered"; caption: "3"; look: Look.hover; }
-                    ListRow { title: "Selected"; selected: true; }
-                    TreeItem { title: "Folder"; caption: "2"; kind: RowKind.folder; expandable: true; expanded: true; }
-                    TreeItem { title: "Roll #8"; caption: "10"; depth: 1; kind: RowKind.roll; expandable: true; }
-                    TreeItem { title: "DSC_6432"; depth: 2; kind: RowKind.photo; selected: true; }
+                    Row { title: "List row"; caption: "12"; }
+                    Row { title: "Hovered"; caption: "3"; look: Look.hover; }
+                    Row { title: "Selected"; selected: true; }
+                    Row { title: "Folder"; caption: "2"; kind: RowKind.folder; expandable: true; expanded: true; }
+                    Row { title: "Roll #8"; caption: "10"; depth: 1; kind: RowKind.roll; expandable: true; }
+                    Row { title: "DSC_6432"; depth: 2; kind: RowKind.photo; selected: true; }
                 }
                 Group {
                     title: "Scroller";
@@ -323,13 +324,13 @@ export component Catalogue inherits AppWindow {
                         content-height: fits.preferred-height;
                         fits := VerticalLayout {
                             width: parent.width;
-                            ListRow { title: "Content that fits: no knob"; }
+                            Row { title: "Content that fits: no knob"; }
                         }
                     }
                 }
                 Group {
                     title: "Tiles";
-                    TileHeading { title: "Roll #8"; caption: "10 photos"; }
+                    Heading { title: "Roll #8"; caption: "10 photos"; }
                     HorizontalLayout {
                         spacing: Space.s;
                         for m in [0, 1, 2, 3]: TileView {
@@ -352,8 +353,8 @@ export component Catalogue inherits AppWindow {
                     MedalPicker { current: 2; }
                     MedalPicker { current: -1; }
                     DateFields { month: "4"; day: "15"; year: "2026"; }
-                    TrashRow { title: "ONI Trash"; count: "3"; foldable: true; unfolded: true; restore-help: "Restore every photo in the ONI Trash"; }
-                    TrashRow { title: "Roll #8"; trail: "Negs/"; count: "2"; depth: 1; picked: true; }
+                    Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: "ONI Trash"; caption: "3"; expandable: true; expanded: true; action: "RESTORE"; action-help: "Restore every photo in the ONI Trash"; }
+                    Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: "Roll #8"; trail: "Negs/"; caption: "2"; depth: 1; picked: true; }
                     EmptyState { title: "No Gold Photos"; detail: "Cycle the filter (⌘L) to see the others."; }
                 }
                 Group {

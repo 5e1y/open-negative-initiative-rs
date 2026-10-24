@@ -1,7 +1,7 @@
 // The board's tokens: every `Colour` and the Scanner's colours by name, each type role in each tone,
 // the space and radius scales, the strokes and the states' opacities.
 import { Colour, Space, Radius, Stroke, State, ScannerStyle, Label, TextRole, Tone, Button, PresetStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -30,7 +30,7 @@ component Swatches inherits Rectangle {
 }
 
 // A role in the five tones, each on the ground its tone is meant for.
-component RoleRow inherits Row {
+component RoleRow inherits Line {
     in property <TextRole> role;
     in property <string> sample;
     for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light]: Fill {
@@ -104,7 +104,7 @@ export component TokensPage inherits Page {
     Group {
         title: "Space";
         states: ["xxs", "xs", "s", "m", "l"];
-        Row {
+        Line {
             label: "a gap's length";
             for gap in [Space.xxs, Space.xs, Space.s, Space.m, Space.l]: Cell {
                 HorizontalLayout {
@@ -119,7 +119,7 @@ export component TokensPage inherits Page {
     Group {
         title: "Radius";
         states: ["track", "badge", "card", "control"];
-        Row {
+        Line {
             label: "a raised square";
             for r in [Radius.track, Radius.badge, Radius.card, Radius.control]: Cell {
                 HorizontalLayout {
@@ -134,7 +134,7 @@ export component TokensPage inherits Page {
     Group {
         title: "Stroke";
         states: ["hairline", "line", "emphasis", "trace"];
-        Row {
+        Line {
             label: "a rule and a ring";
             for w in [Stroke.hairline, Stroke.line, Stroke.emphasis, Stroke.trace]: Cell {
                 HorizontalLayout {
@@ -150,7 +150,7 @@ export component TokensPage inherits Page {
     Group {
         title: "State";
         states: ["full", "disabled", "idle"];
-        Row {
+        Line {
             label: "the ink at the opacity";
             for o in [1, State.disabled, State.idle]: Cell {
                 HorizontalLayout {

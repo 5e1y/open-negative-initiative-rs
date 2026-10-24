@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, FieldStyle, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, HelpMark, ButtonGroup } from "ds/ds.slint";
+import { Space, PresetStyle, FieldStyle, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, HelpMark, ButtonGroup, FormRow, Row } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -151,7 +151,7 @@ component CarriesPicker inherits VerticalLayout {
             VerticalLayout { alignment: center; HelpMark { note: Presets.balance-help; } }
         }
         if line.kind == 1: BalancePicker { value: line.text; }
-        if line.kind == 2: LabelledRow {
+        if line.kind == 2: FormRow { spread: true;
             label: line.text;
             Toggle {
                 on: line.on;
@@ -182,7 +182,7 @@ component PresetForm inherits VerticalLayout {
         label: @tr("Description");
         Rectangle {
             height: PresetStyle.note-height;
-            note := TextArea {
+            note := TextField { multiline: true;
                 width: parent.width;
                 lines-height: parent.height;
                 text: Presets.form-note;
@@ -253,12 +253,13 @@ export component PresetEditorSheet inherits PanelSheet {
                     padding: Space.s;
                     spacing: Space.xxs;
                     alignment: start;
-                    for card[i] in Presets.rows: PresetRow {
-                        abbreviation: card.abbreviation;
-                        name: card.name;
-                        carries: card.carries;
-                        fill: card.fill;
-                        ink: card.ink;
+                    for card[i] in Presets.rows: Row {
+                        rounded: true;
+                        badge: card.abbreviation;
+                        title: card.name;
+                        detail: card.carries;
+                        badge-fill: card.fill;
+                        badge-ink: card.ink;
                         selected: i == Presets.selected;
                         clicked => { Presets.picked(i); }
                     }

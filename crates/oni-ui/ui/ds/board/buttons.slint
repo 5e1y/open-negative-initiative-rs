@@ -1,9 +1,9 @@
 // The board's buttons: every kind of key in each state, then the glyph keys, their groups and plates.
 import { ShellStyle, Icons, ButtonKind, ButtonSize, Look, Button, ButtonGroup } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // One key in the six states it shows: rest, hover, pressed, held on, on under the pointer, disabled.
-component ButtonRow inherits Row {
+component ButtonRow inherits Line {
     in property <ButtonKind> kind;
     in property <ButtonSize> size;
     in property <string> text: "EXPORT";
@@ -21,7 +21,7 @@ component ButtonRow inherits Row {
 }
 
 // The six states of a square glyph key.
-component IconRow inherits Row {
+component IconRow inherits Line {
     in property <ButtonKind> kind;
     in property <ButtonSize> size;
     in property <image> icon: Icons.undo;
@@ -88,7 +88,7 @@ export component IconsPage inherits Page {
         title: "ButtonGroup";
         states: ["Rest", "One key hovered", "One key on"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "glyphs and a word";
             Cell { span: BoardStyle.wide; ButtonGroup { Button { has-icon: true; square: true; icon: Icons.framing; } Button { has-icon: true; square: true; icon: Icons.compare; } Button { text: "PASTE TO ROLL"; } } }
             Cell { span: BoardStyle.wide; ButtonGroup { Button { has-icon: true; square: true; icon: Icons.framing; look: Look.hover; } Button { has-icon: true; square: true; icon: Icons.compare; } Button { text: "PASTE TO ROLL"; } } }
@@ -99,21 +99,21 @@ export component IconsPage inherits Page {
         title: "KeyPlate";
         states: ["Rest", "One key hovered", "One key pressed", "One key on"];
         span: BoardStyle.wide;
-        Row {
+        Line {
             label: "hugging its keys";
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; look: Look.hover; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; look: Look.pressed; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; Button { text: "CANCEL"; on: true; } Button { text: "DELETE"; kind: ButtonKind.destructive; } } }
         }
-        Row {
+        Line {
             label: "filling the block";
             Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
             Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; look: Look.hover; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
             Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; look: Look.pressed; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
             Fill { span: BoardStyle.wide; ButtonGroup { plate: true; fills: true; Button { text: "AUTO"; fills: true; on: true; } Button { text: "COPY"; fills: true; } Button { has-icon: true; square: true; icon: Icons.undo; } } }
         }
-        Row {
+        Line {
             label: "mini, small keys";
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }
             Cell { span: BoardStyle.wide; ButtonGroup { plate: true; mini: true; Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.undo; look: Look.hover; } Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.redo; } Button { size: ButtonSize.small; text: "ALL"; } } }

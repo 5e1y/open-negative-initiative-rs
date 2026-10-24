@@ -1,10 +1,10 @@
 // The board's lists and trees: the archive's rows of every kind, the navigator's and the trash's,
 // the headings, the rename field, the drop marks and the scroll knob.
-import { Colour, Space, Stroke, Look, RowKind, ListRow, TreeItem, PinnedTreeRow, DropRing, TrashRow, FolderKind, FolderRow, RenameRow, TileHeading, PinnedHeading, DropLine, ScrollKnob } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill, Stage, Samples } from "kit.slint";
+import { Colour, Space, Stroke, Look, RowKind, DropRing, DropLine, ScrollKnob, Row, Heading, NavigatorStyle } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 // A tree row of one kind at rest, hovered and selected.
-component TreeRow inherits Row {
+component TreeRow inherits Line {
     in property <string> title;
     in property <string> caption;
     in property <int> depth;
@@ -12,38 +12,38 @@ component TreeRow inherits Row {
     in property <bool> expandable;
     in property <bool> expanded;
     in property <bool> has-stock;
-    Fill { span: BoardStyle.library; TreeItem { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; } }
-    Fill { span: BoardStyle.library; TreeItem { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; look: Look.hover; } }
-    Fill { span: BoardStyle.library; TreeItem { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; selected: true; } }
+    Fill { span: BoardStyle.library; Row { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; } }
+    Fill { span: BoardStyle.library; Row { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; look: Look.hover; } }
+    Fill { span: BoardStyle.library; Row { title: root.title; caption: root.caption; depth: root.depth; kind: root.kind; expandable: root.expandable; expanded: root.expanded; has-stock: root.has-stock; stock: Samples.stock; selected: true; } }
 }
 
 // A navigator row: rest, hovered (its star shown), picked, opened, on an absent volume.
-component NavigatorRow inherits Row {
+component NavigatorRow inherits Line {
     in property <string> title;
-    in property <FolderKind> kind;
+    in property <RowKind> kind;
     in property <bool> chevron;
     in property <bool> unfolded;
     in property <bool> favourite;
     in property <int> depth;
-    Fill { span: BoardStyle.library; FolderRow { title: root.title; kind: root.kind; chevron: root.chevron; unfolded: root.unfolded; favourite: root.favourite; depth: root.depth; } }
-    Fill { span: BoardStyle.library; FolderRow { title: root.title; kind: root.kind; chevron: root.chevron; unfolded: root.unfolded; favourite: root.favourite; depth: root.depth; look: Look.hover; } }
-    Fill { span: BoardStyle.library; FolderRow { title: root.title; kind: root.kind; chevron: root.chevron; unfolded: root.unfolded; favourite: root.favourite; depth: root.depth; picked: true; } }
-    Fill { span: BoardStyle.library; FolderRow { title: root.title; kind: root.kind; chevron: root.chevron; unfolded: root.unfolded; favourite: root.favourite; depth: root.depth; opened: true; } }
-    Fill { span: BoardStyle.library; FolderRow { title: root.title; kind: root.kind; chevron: root.chevron; unfolded: root.unfolded; favourite: root.favourite; depth: root.depth; present: false; } }
+    Fill { span: BoardStyle.library; Row { rounded: true; quiet: true; starrable: true; folds: false; open: false; absent: NavigatorStyle.absent; title: root.title; kind: root.kind; expandable: root.chevron; expanded: root.unfolded; favourite: root.favourite; depth: root.depth; } }
+    Fill { span: BoardStyle.library; Row { rounded: true; quiet: true; starrable: true; folds: false; open: false; absent: NavigatorStyle.absent; title: root.title; kind: root.kind; expandable: root.chevron; expanded: root.unfolded; favourite: root.favourite; depth: root.depth; look: Look.hover; } }
+    Fill { span: BoardStyle.library; Row { rounded: true; quiet: true; starrable: true; folds: false; open: false; absent: NavigatorStyle.absent; title: root.title; kind: root.kind; expandable: root.chevron; expanded: root.unfolded; favourite: root.favourite; depth: root.depth; picked: true; } }
+    Fill { span: BoardStyle.library; Row { rounded: true; quiet: true; starrable: true; folds: false; open: false; absent: NavigatorStyle.absent; title: root.title; kind: root.kind; expandable: root.chevron; expanded: root.unfolded; favourite: root.favourite; depth: root.depth; selected: true; } }
+    Fill { span: BoardStyle.library; Row { rounded: true; quiet: true; starrable: true; folds: false; open: false; absent: NavigatorStyle.absent; title: root.title; kind: root.kind; expandable: root.chevron; expanded: root.unfolded; favourite: root.favourite; depth: root.depth; present: false; } }
 }
 
 // A trash row: rest, hovered (its Restore key shown), picked, opened, its folder gone.
-component BinRow inherits Row {
+component BinRow inherits Line {
     in property <string> title;
     in property <string> trail;
     in property <string> count;
     in property <int> depth;
     in property <bool> foldable;
-    Fill { span: BoardStyle.library; TrashRow { title: root.title; trail: root.trail; count: root.count; depth: root.depth; foldable: root.foldable; unfolded: true; restore-help: "Restore"; } }
-    Fill { span: BoardStyle.library; TrashRow { title: root.title; trail: root.trail; count: root.count; depth: root.depth; foldable: root.foldable; unfolded: true; restore-help: "Restore"; look: Look.hover; } }
-    Fill { span: BoardStyle.library; TrashRow { title: root.title; trail: root.trail; count: root.count; depth: root.depth; foldable: root.foldable; unfolded: true; restore-help: "Restore"; picked: true; } }
-    Fill { span: BoardStyle.library; TrashRow { title: root.title; trail: root.trail; count: root.count; depth: root.depth; foldable: root.foldable; unfolded: true; restore-help: "Restore"; opened: true; } }
-    Fill { span: BoardStyle.library; TrashRow { title: root.title; trail: root.trail; count: root.count; depth: root.depth; foldable: root.foldable; unfolded: true; restore-help: "Restore"; present: false; } }
+    Fill { span: BoardStyle.library; Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: root.title; trail: root.trail; caption: root.count; depth: root.depth; expandable: root.foldable; expanded: true; action: "RESTORE"; action-help: "Restore"; } }
+    Fill { span: BoardStyle.library; Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: root.title; trail: root.trail; caption: root.count; depth: root.depth; expandable: root.foldable; expanded: true; action: "RESTORE"; action-help: "Restore"; look: Look.hover; } }
+    Fill { span: BoardStyle.library; Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: root.title; trail: root.trail; caption: root.count; depth: root.depth; expandable: root.foldable; expanded: true; action: "RESTORE"; action-help: "Restore"; picked: true; } }
+    Fill { span: BoardStyle.library; Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: root.title; trail: root.trail; caption: root.count; depth: root.depth; expandable: root.foldable; expanded: true; action: "RESTORE"; action-help: "Restore"; selected: true; } }
+    Fill { span: BoardStyle.library; Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: root.title; trail: root.trail; caption: root.count; depth: root.depth; expandable: root.foldable; expanded: true; action: "RESTORE"; action-help: "Restore"; present: false; } }
 }
 
 // The knob over a strip of the canvas, a third of its content shown.
@@ -71,11 +71,11 @@ export component ListsPage inherits Page {
         title: "ListRow, TreeItem, PinnedTreeRow";
         states: ["Rest", "Hover", "Selected"];
         span: BoardStyle.library;
-        Row {
+        Line {
             label: "ListRow";
-            Fill { span: BoardStyle.library; ListRow { title: "Gold photos"; caption: "12"; } }
-            Fill { span: BoardStyle.library; ListRow { title: "Gold photos"; caption: "12"; look: Look.hover; } }
-            Fill { span: BoardStyle.library; ListRow { title: "Gold photos"; caption: "12"; selected: true; } }
+            Fill { span: BoardStyle.library; Row { title: "Gold photos"; caption: "12"; } }
+            Fill { span: BoardStyle.library; Row { title: "Gold photos"; caption: "12"; look: Look.hover; } }
+            Fill { span: BoardStyle.library; Row { title: "Gold photos"; caption: "12"; selected: true; } }
         }
         TreeRow { label: "folder, folded"; title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; }
         TreeRow { label: "folder, open"; title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; expanded: true; }
@@ -83,11 +83,11 @@ export component ListsPage inherits Page {
         TreeRow { label: "roll with its stock"; title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; expandable: true; has-stock: true; }
         TreeRow { label: "photo"; title: "DSC_6432"; depth: 2; kind: RowKind.photo; }
         TreeRow { label: "project"; title: "Summer prints"; caption: "9"; kind: RowKind.project; }
-        Row {
+        Line {
             label: "PinnedTreeRow";
-            Fill { span: BoardStyle.library; PinnedTreeRow { title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; } }
-            Fill { span: BoardStyle.library; PinnedTreeRow { title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; look: Look.hover; } }
-            Fill { span: BoardStyle.library; PinnedTreeRow { title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; selected: true; } }
+            Fill { span: BoardStyle.library; Row { pinned: true; expandable: true; expanded: true; title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; } }
+            Fill { span: BoardStyle.library; Row { pinned: true; expandable: true; expanded: true; title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; look: Look.hover; } }
+            Fill { span: BoardStyle.library; Row { pinned: true; expandable: true; expanded: true; title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; selected: true; } }
         }
     }
     Group {
@@ -95,8 +95,8 @@ export component ListsPage inherits Page {
         states: ["Rest", "Hover", "Picked", "Opened", "Absent"];
         span: BoardStyle.library;
         NavigatorRow { label: "folder, folded"; title: "Negs"; chevron: true; }
-        NavigatorRow { label: "folder, open"; title: "Negs"; chevron: true; unfolded: true; kind: FolderKind.opened; }
-        NavigatorRow { label: "roll, favourite"; title: "Roll #8"; depth: 1; kind: FolderKind.roll; favourite: true; }
+        NavigatorRow { label: "folder, open"; title: "Negs"; chevron: true; unfolded: true; kind: RowKind.opened; }
+        NavigatorRow { label: "roll, favourite"; title: "Roll #8"; depth: 1; kind: RowKind.roll; favourite: true; }
         BinRow { label: "the ONI Trash"; title: "ONI Trash"; count: "3"; foldable: true; }
         BinRow { label: "a trashed folder"; title: "Roll #8"; trail: "Negs/"; count: "2"; depth: 1; }
     }
@@ -104,28 +104,28 @@ export component ListsPage inherits Page {
         title: "Headings, renaming and drops";
         states: ["As drawn"];
         span: BoardStyle.wide;
-        Row { label: "TileHeading"; Fill { span: BoardStyle.wide; TileHeading { title: "Roll #8"; caption: "Negs"; } } }
-        Row { label: "PinnedHeading"; Fill { span: BoardStyle.wide; PinnedHeading { title: "Roll #8"; caption: "Negs"; } } }
-        Row { label: "RenameRow (focused)"; Fill { span: BoardStyle.wide; RenameRow { text: "Roll #8"; depth: 1; } } }
-        Row {
+        Line { label: "TileHeading"; Fill { span: BoardStyle.wide; Heading { title: "Roll #8"; caption: "Negs"; } } }
+        Line { label: "PinnedHeading"; Fill { span: BoardStyle.wide; Heading { pinned: true; title: "Roll #8"; caption: "Negs"; } } }
+        Line { label: "RenameRow (focused)"; Fill { span: BoardStyle.wide; Row { renaming: true; title: "Roll #8"; depth: 1; } } }
+        Line {
             label: "DropRing over a row";
             Fill {
                 span: BoardStyle.wide;
                 Rectangle {
                     height: ring.height;
-                    ring := TreeItem { title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; }
+                    ring := Row { title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; }
                     DropRing { width: parent.width; height: parent.height; }
                 }
             }
         }
-        Row {
+        Line {
             label: "DropLine between rows";
             Fill {
                 span: BoardStyle.wide;
                 VerticalLayout {
-                    TreeItem { title: "DSC_6431"; depth: 2; kind: RowKind.photo; }
+                    Row { title: "DSC_6431"; depth: 2; kind: RowKind.photo; }
                     DropLine { height: Stroke.emphasis; }
-                    TreeItem { title: "DSC_6432"; depth: 2; kind: RowKind.photo; }
+                    Row { title: "DSC_6432"; depth: 2; kind: RowKind.photo; }
                 }
             }
         }
@@ -133,7 +133,7 @@ export component ListsPage inherits Page {
     Group {
         title: "ScrollKnob";
         states: ["Rest (hidden)", "Lit (scrolled, hovered)", "Wide (on its strip)"];
-        Row {
+        Line {
             label: "over the canvas";
             Cell { KnobStage { } }
             Cell { KnobStage { hovered: true; } }

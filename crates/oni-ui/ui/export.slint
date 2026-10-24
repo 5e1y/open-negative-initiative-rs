@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, Icon, CardStyle, NewsSeal, ButtonGroup } from "ds/ds.slint";
+import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, FormRow, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, Icon, CardStyle, NewsSeal, ButtonGroup, Row } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -13,7 +13,7 @@ component FrameFields inherits VerticalLayout {
     width: FormStyle.fields-width;
     FormRow {
         label: @tr("Name");
-        SuffixField {
+        TextField {
             value: root.line.name;
             suffix: Exporting.extension;
             enabled: root.line.ready;
@@ -140,7 +140,7 @@ export component SpaceField inherits VerticalLayout {
         }
         if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
-    if Exporting.on-profile && root.compact: LabelledRow {
+    if Exporting.on-profile && root.compact: FormRow { spread: true;
         label: @tr("Show only color variation (not recommended)");
         Toggle {
             label: @tr("Show only color variation (not recommended)");
@@ -206,7 +206,7 @@ export component ExportPanel inherits Surface {
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
                 if Exporting.format == 0: Field {
                     label: @tr("Compression");
-                    LabelledRow {
+                    FormRow { spread: true;
                         label: @tr("ZIP, lossless");
                         Toggle { label: @tr("ZIP, lossless"); on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
                     }
@@ -218,7 +218,7 @@ export component ExportPanel inherits Surface {
                     HorizontalLayout {
                         spacing: Space.s;
                         alignment: start;
-                        width-box := NumberField {
+                        width-box := TextField { width: FormStyle.size-field;
                             value: Exporting.width-text;
                             placeholder: @tr("W");
                             enabled: Exporting.size-enabled;
@@ -226,7 +226,7 @@ export component ExportPanel inherits Surface {
                             left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
                         }
                         Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
-                        height-box := NumberField {
+                        height-box := TextField { width: FormStyle.size-field;
                             value: Exporting.height-text;
                             placeholder: @tr("H");
                             enabled: Exporting.size-enabled;
@@ -239,7 +239,7 @@ export component ExportPanel inherits Surface {
                 Field {
                     label: @tr("HDR hack");
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
-                    LabelledRow {
+                    FormRow { spread: true;
                         label: @tr("Brighter on HDR screens");
                         Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                     }
@@ -325,26 +325,22 @@ export component PaperSheet inherits BoardSheet {
             alignment: start;
             VerticalLayout {
                 HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("DOWNLOAD HERE"); } }
-                for name[i] in Exporting.paper-direct: ListRow {
+                for name[i] in Exporting.paper-direct: Row {
                     title: name;
                     selected: i == Exporting.paper-source;
                     clicked => { Exporting.paper-picked(i); }
-                    VerticalLayout {
-                        alignment: center;
-                        Icon { source: Icons.archive; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
-                    }
+                    glyph: Icons.archive;
+                    has-glyph: true;
                 }
             }
             VerticalLayout {
                 HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("ON THE MAKER’S SITE"); } }
-                for name[i] in Exporting.paper-browsed: ListRow {
+                for name[i] in Exporting.paper-browsed: Row {
                     title: name;
                     selected: i + Exporting.paper-direct-count == Exporting.paper-source;
                     clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
-                    VerticalLayout {
-                        alignment: center;
-                        Icon { source: Icons.arrow-right; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
-                    }
+                    glyph: Icons.arrow-right;
+                    has-glyph: true;
                 }
             }
         }

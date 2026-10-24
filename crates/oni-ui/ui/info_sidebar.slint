@@ -1,5 +1,5 @@
 // `InfoSidebar` beside the gallery: the roll a selection stands on, or its project.
-import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack, TextArea } from "ds/ds.slint";
+import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 export component Info inherits Surface {
@@ -83,7 +83,7 @@ export component Info inherits Surface {
                 }
                 Section {
                     title: @tr("Description");
-                    TextArea {
+                    TextField { multiline: true;
                         lines-height: ShellStyle.info-description;
                         text <=> Library.description;
                         left(t) => { Library.description-committed(t); }

@@ -2140,6 +2140,13 @@
     "detail": "Owner's call: the app uses instances of a few components whose props give them their look. Text: Note, Warning, CautionNote and GroupHeading are Label roles and tones (TextRole.note wraps in the tertiary ink; Tone.warning, Tone.caution). Keys: IconButton, the Scanner's Key, GlyphKey and Swatch are Button variants (ButtonSize.mini and .key, fill for a band or a tint, square, wide, glyph-ink, the keycap's hold and Shift read), Button moving to ds/button.slint. Groups: KeyPlate and SheetKeys are ButtonGroup with plate, mini, fills and trailing; KeyRow and Keypad, asked by nothing since the Scanner sliders, are gone. Every window check shot before and after: the app's screens match pixel for pixel but for run-to-run noise (temporary folder names, render dither); the catalogue and the board lose the keypad."
   },
   {
+    "id": 298,
+    "type": "refactor",
+    "title": "Design system: one TextField, one FormRow, one Row, one Heading",
+    "status": "done",
+    "detail": "Part of #296. TextField takes a suffix (SuffixField), a width for numbers (NumberField) and multiline with its own height (TextArea); FormRow takes spread for LabelledRow. ds/row.slint's Row is every line of a list or a tree: ListRow, TreeItem, PinnedTreeRow, FolderRow, TrashRow, PresetRow and RenameRow become instances (kind, depth, expandable, folds, open, stock or glyph, trail, caption, detail, badge, selected, picked, quiet, rounded, pinned, present, star, a hovered action, renaming); RowKind gains none, opened and trash, FolderKind goes. TileHeading and PinnedHeading are one Heading. Every window check's shot matches the one before but for a board line."
+  },
+  {
     "id": 297,
     "type": "refactor",
     "title": "Design system consolidation: fields, rows, sheets and menus, tiles and badges, the board in the app",

@@ -1,6 +1,6 @@
 // `TreeEngine` on the projects: Rust lays every row, a photo as a name or a thumbnail, holds the
 // open project under the top and resolves where a drag of rows would land.
-import { Scroller, TreeItem, RenameRow, RowKind, TileView, CardStyle, PinnedTreeRow, DropRing, DropLine, Badge } from "ds/ds.slint";
+import { Scroller, RowKind, TileView, CardStyle, DropRing, DropLine, Badge, Row } from "ds/ds.slint";
 import { Library } from "library.slint";
 
 export component ProjectTree inherits HorizontalLayout {
@@ -28,7 +28,7 @@ export component ProjectTree inherits HorizontalLayout {
                 y: row.y;
                 width: row.width;
                 height: row.height;
-                if !row.thumb && !row.renaming: TreeItem {
+                if !row.thumb && !row.renaming: Row {
                     width: parent.width;
                     depth: row.depth;
                     title: row.title;
@@ -76,9 +76,10 @@ export component ProjectTree inherits HorizontalLayout {
                     double-clicked => { Library.project-row-double-clicked(i); }
                 }
                 // `rename`: a project's double click types over its name.
-                if row.renaming: RenameRow {
+                if row.renaming: Row {
+                    renaming: true;
                     width: parent.width;
-                    text: row.title;
+                    title: row.title;
                     depth: row.depth;
                     committed(t) => { Library.project-row-rename-committed(i, t); }
                     cancelled => { Library.project-row-rename-cancelled(); }
@@ -105,7 +106,10 @@ export component ProjectTree inherits HorizontalLayout {
                 text: Library.project-drag.chip;
             }
         }
-        if Library.project-pin.shown: PinnedTreeRow {
+        if Library.project-pin.shown: Row {
+                    pinned: true;
+                    expandable: true;
+                    expanded: true;
             y: Library.project-pin.push;
             width: parent.width;
             depth: Library.project-pin.row.depth;
@@ -113,7 +117,7 @@ export component ProjectTree inherits HorizontalLayout {
             caption: Library.project-pin.row.caption;
             kind: RowKind.project;
             selected: Library.project-pin.row.selected;
-            clicked(command, shift) => { Library.project-pin-clicked(command, shift); }
+            clicked => { Library.project-pin-clicked(self.command, self.shift); }
             double-clicked => { Library.project-row-double-clicked(Library.project-pin.index); }
             folded => { Library.project-row-folded(Library.project-pin.index); }
         }

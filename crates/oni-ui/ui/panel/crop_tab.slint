@@ -1,6 +1,6 @@
 // The Crop tab: the frame, its ratio, rotation, mirror and straightening.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonKind, ToggleRow, LabelledRow, LcdReadout, ButtonGroup } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonKind, ToggleRow, LcdReadout, ButtonGroup, FormRow } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -71,7 +71,7 @@ export component CropPane inherits Pane {
         }
     }
     Section {
-        LabelledRow {
+        FormRow { spread: true;
             label: @tr("Kept");
             LcdReadout { text: Framing.kept; }
         }

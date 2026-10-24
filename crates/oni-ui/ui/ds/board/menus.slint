@@ -1,10 +1,10 @@
 // The board's menus: a menu's line in each state, the panel, the context menu's and the folder pill's
 // lines drawn as their popups lay them, the pickers that drop them, and the medal picker.
 import { Colour, Space, Stroke, ButtonStyle, MenuStyle, RowStyle, Icons, Look, Label, Icon, Tone, Divider, MenuEntry, MenuPanel, MenuPicker, LinesPicker, MedalPicker, NavigatorStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
+import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // One menu line in its six states.
-component EntryRow inherits Row {
+component EntryRow inherits Line {
     in property <string> text;
     in property <string> shortcut;
     Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; } }
@@ -50,7 +50,7 @@ export component MenusPage inherits Page {
         title: "Panels";
         states: ["MenuPanel (a Menu)", "ContextMenu's lines", "FolderMenu's lines"];
         span: MenuStyle.width;
-        Row {
+        Line {
             label: "as their popups draw them";
             Cell {
                 span: MenuStyle.width;
@@ -86,12 +86,12 @@ export component MenusPage inherits Page {
         title: "Pickers that drop a menu";
         states: ["Rest", "Hover"];
         span: BoardStyle.field;
-        Row {
+        Line {
             label: "MenuPicker";
             Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
             Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
         }
-        Row {
+        Line {
             label: "LinesPicker";
             Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; } }
             Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; look: Look.hover; } }
@@ -100,7 +100,7 @@ export component MenusPage inherits Page {
     Group {
         title: "MedalPicker";
         states: ["None", "Bronze", "Silver", "Gold"];
-        Row {
+        Line {
             label: "the three foils";
             Cell { MedalPicker { } }
             Cell { MedalPicker { current: 1; } }
