@@ -46,7 +46,7 @@ impl Ctl {
             }
             Act::Roll(make) => self.make_roll(&path, make),
             Act::NewFolder => self.new_folder(&path, true),
-            Act::Reveal => crate::system::reveal(Path::new(&path)),
+            Act::Reveal => self.reveal_folder(&path),
         }
     }
 
@@ -62,7 +62,7 @@ impl Ctl {
             failure
         };
         if let Some(message) = failure {
-            self.say(&message);
+            self.told(tr("Something Went Wrong"), &message);
         }
         self.start_pass();
         self.publish_navigator();
@@ -90,15 +90,18 @@ impl Ctl {
     /// folder, a roll's name and the index rows follow it, then the folder is read again.
     pub(in crate::app) fn rename_folder(self: &Rc<Self>, path: &str, name: &str) {
         let trimmed = trim_spaces(name);
-        // A separator would move the folder rather than name it: `\` is one on Windows.
-        let separator = trimmed.contains('/') || (cfg!(windows) && trimmed.contains('\\'));
-        if trimmed.is_empty() || separator || trimmed == paths::name(path) {
+        if trimmed.is_empty() || trimmed == paths::name(path) {
+            return self.publish_navigator();
+        }
+        // A separator would move the folder rather than name it, a leading dot would hide it.
+        if let Some(why) = oni_library::file_names::refused(trimmed, cfg!(windows)) {
+            self.told(tr("Rename"), &why);
             return self.publish_navigator();
         }
         // The open frame's settings reach its sidecar before the folder holding it moves.
         let unsaved = self.state.borrow_mut().store.flush();
         if let Some(e) = unsaved {
-            self.went_wrong(&tr!("The folder was not renamed, as the open photo's settings could not be saved: {error}", error = e));
+            self.told(tr("Rename"), &tr!("The folder was not renamed, as the open photo's settings could not be saved: {error}", error = e));
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
@@ -109,7 +112,7 @@ impl Ctl {
             std::fs::rename(path, &target)
         };
         if let Err(e) = moved {
-            self.went_wrong(&tr!("The folder could not be renamed: {error}", error = e));
+            self.told(tr("Rename"), &tr!("The folder could not be renamed: {error}", error = oni_library::refusal::cause(&e)));
             return self.publish_navigator();
         }
         let failure = {
@@ -125,7 +128,7 @@ impl Ctl {
             failure
         };
         if let Some(message) = failure {
-            self.say(&message);
+            self.told(tr("Something Went Wrong"), &message);
         }
         if let Some(mut film) = folders::roll(&target) {
             film.name = trimmed.to_owned();
@@ -148,8 +151,9 @@ impl Ctl {
             rank += 1;
         }
         let path = paths::join(folder, &name);
-        if std::fs::create_dir(&path).is_err() {
-            return;
+        if let Err(e) = std::fs::create_dir(&path) {
+            let cause = oni_library::refusal::cause(&e);
+            return self.told(tr("New Folder"), &tr!("The folder could not be made inside “{folder}”: {cause}.", folder = paths::name(folder), cause = cause));
         }
         let made = paths::canonical(Path::new(&path));
         let inside = {
@@ -176,12 +180,14 @@ impl Ctl {
     pub(in crate::app) fn make_roll(self: &Rc<Self>, folder: &str, make: bool) {
         if make {
             let film = oni_settings::Film::new(&paths::name(folder));
-            if folders::set_roll(Some(&film), folder).is_err() {
-                return self.went_wrong(tr("The folder could not be made a roll: it cannot be written to."));
+            if let Err(e) = folders::set_roll(Some(&film), folder) {
+                let cause = oni_library::refusal::cause(&e);
+                return self.told(tr("Make a Roll"), &tr!("The folder could not be made a roll: {cause}.", cause = cause));
             }
             self.roll_written(folder, Some(film));
-        } else if folders::set_roll(None, folder).is_err() {
-            return;
+        } else if let Err(e) = folders::set_roll(None, folder) {
+            let cause = oni_library::refusal::cause(&e);
+            return self.told(tr("Back to a Folder"), &tr!("The roll could not be made a folder again: {cause}.", cause = cause));
         } else {
             self.roll_written(folder, None);
         }
@@ -190,21 +196,13 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// `reportFailure(as: "Something Went Wrong")`.
-    pub(super) fn went_wrong(&self, message: &str) {
-        let Some(w) = self.window() else { return };
-        let a = w.global::<Advice>();
-        a.set_title(tr("Something Went Wrong").into());
-        a.set_message(message.into());
-        a.set_shown(true);
-    }
-
-    /// `add(_:)`'s `folderNavigation.reveal`: a folder opened from elsewhere is picked in the column.
-    pub(in crate::app) fn navigator_reveal(&self, folder: &Path) {
+    /// `add(_:)`'s `folderNavigation.reveal`: a folder opened from elsewhere is picked in the column,
+    /// spelt as `looked` made it canonical off this thread.
+    pub(in crate::app) fn navigator_reveal(&self, folder: &str) {
         {
             let mut s = self.state.borrow_mut();
             let computer = s.nav.computer.clone();
-            s.nav.model.reveal(&paths::canonical(folder), &computer);
+            s.nav.model.reveal(folder, &computer);
         }
         self.publish_navigator();
     }

@@ -91,7 +91,7 @@ impl Ctl {
                 Some(folder) => {
                     match oni_library::folders::set_roll(Some(&film), folder) {
                         Ok(()) => self.roll_written(folder, Some(film.clone())),
-                        Err(e) => self.say(&tr!("The roll could not be written in its folder: {error}", error = e)),
+                        Err(e) => self.told(tr("Something Went Wrong"), &tr!("The roll could not be written in its folder: {error}", error = oni_library::refusal::cause(&e))),
                     }
                     self.lay_archive();
                 }

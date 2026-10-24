@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::Preferences;
-use oni_app::{Advice, App, FolderLine, Navigator};
+use oni_app::{App, FolderLine, Navigator, Told};
 use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use oni_library::paths::{self, canonical};
@@ -247,11 +247,11 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     choose(&rig, w, "New Folder 2", "Rename…");
     n.invoke_rename_committed(at(w, "New Folder 2") as i32, "Roll 3".into());
     rig.pump();
-    let advice = w.global::<Advice>();
-    assert!(advice.get_shown() && advice.get_title() == "Something Went Wrong");
-    assert!(advice.get_message().starts_with("The folder could not be renamed:"), "{}", advice.get_message());
+    let told = w.global::<Told>();
+    assert!(told.get_shown() && told.get_title() == "Rename");
+    assert_eq!(told.get_message(), "The folder could not be renamed: an item of that name is already there");
     assert!(home.join("Scans/New Folder 2").is_dir() && home.join("Scans/Roll 3").is_dir());
-    advice.invoke_closed();
+    told.invoke_closed();
     // Make a Roll writes the folder's marker, Back to a Folder takes it away.
     choose(&rig, w, "Roll 3", "Make a Roll");
     let roll3 = p(&home.join("Scans/Roll 3"));

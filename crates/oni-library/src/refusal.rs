@@ -13,6 +13,20 @@ pub fn said(error: &Error) -> String {
     }
 }
 
+/// What a refusal of the disk means, in words a reader knows; the system's own message for the rest.
+pub fn cause(error: &std::io::Error) -> String {
+    use std::io::ErrorKind;
+    match error.kind() {
+        ErrorKind::NotFound => tr("it is no longer there").into(),
+        ErrorKind::PermissionDenied => tr("it cannot be written to").into(),
+        ErrorKind::AlreadyExists => tr("an item of that name is already there").into(),
+        ErrorKind::ReadOnlyFilesystem => tr("its disk is read-only").into(),
+        ErrorKind::StorageFull | ErrorKind::QuotaExceeded => tr("the disk is full").into(),
+        ErrorKind::InvalidFilename => tr("the disk refuses that name").into(),
+        _ => error.to_string(),
+    }
+}
+
 /// Why photos were left out because their originals are not on disk.
 pub fn why_gone(count: usize) -> String {
     trn(

@@ -5,6 +5,7 @@ use crate::folders::{self, name};
 use crate::gallery_history::{Disk, Move};
 use crate::{paths, rgb_passes};
 use chrono::{DateTime, Local};
+use oni_i18n::trn;
 use oni_settings::{Date, Film, roll_folder, sidecar};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -80,6 +81,23 @@ pub fn take_back(disk: &Disk) -> (Vec<Move>, bool) {
     // Only an empty folder goes: `remove_dir` refuses one that still holds anything.
     let removed = std::fs::remove_dir(folder).is_ok();
     (back, removed)
+}
+
+/// What an undo or a redo of a roll says for the `missed` items it could not move, as Swift's `takeBack`.
+pub fn shortfall(missed: usize, undoing: bool) -> String {
+    if undoing {
+        trn(
+            "One item could not be put back: its folder moved or a file took its name.",
+            "{n} of the items could not be put back: their folder moved or a file took their name.",
+            missed as u64,
+        )
+    } else {
+        trn(
+            "One item could not be moved into the roll again: its folder moved or a file took its name.",
+            "{n} of the items could not be moved into the roll again: their folder moved or a file took their name.",
+            missed as u64,
+        )
+    }
 }
 
 pub fn lay(disk: &Disk) -> Vec<Move> {

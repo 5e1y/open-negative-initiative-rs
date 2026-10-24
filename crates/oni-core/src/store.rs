@@ -30,6 +30,7 @@ mod scanner;
 mod together;
 
 pub use opening::Unsaved;
+pub use undo::Walked;
 pub use scanner::{channel, machine_for, machine_of};
 
 pub mod roll;
@@ -120,6 +121,8 @@ pub struct EditorStore {
     epoch: Instant,
     /// The last failure a gesture met, for the host to show.
     pub failure: Option<String>,
+    /// What the last undo or redo of a roll moved on the disk, for the host to follow.
+    pub walked: Option<Walked>,
     /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
     unsaved: Vec<opening::Unsaved>,
 }
@@ -145,6 +148,7 @@ impl EditorStore {
             last_change: None,
             epoch: Instant::now(),
             failure: None,
+            walked: None,
             unsaved: Vec::new(),
         }
     }

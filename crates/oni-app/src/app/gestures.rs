@@ -2,6 +2,8 @@
 
 use super::*;
 
+mod told;
+
 impl Ctl {
     /// `propagationTargets`: the selection, else the open photo; the ONI Trash's never are.
     pub(super) fn targets(&self) -> Vec<String> {
@@ -15,6 +17,11 @@ impl Ctl {
     /// A gesture on several photos through the core, then what it wrote read back: the rows, the
     /// open frame's sliders, the others' thumbnails.
     pub(super) fn gesture(self: &Rc<Self>, touched: &[String], run: impl FnOnce(&mut oni_core::EditorStore) -> usize) {
+        self.gesture_as(tr("Something Went Wrong"), touched, run);
+    }
+
+    /// `gesture`, a failure told under the gesture's own name, as Swift's `reportFailure(_:as:)`.
+    pub(super) fn gesture_as(self: &Rc<Self>, title: &str, touched: &[String], run: impl FnOnce(&mut oni_core::EditorStore) -> usize) {
         let failure = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
@@ -22,7 +29,7 @@ impl Ctl {
             store.failure.take()
         };
         if let Some(message) = failure {
-            self.say(&message);
+            self.told(title, &message);
         }
         self.landed(touched);
     }
@@ -57,30 +64,37 @@ impl Ctl {
         }
     }
 
-    /// `undo()`/`redo()` in the gallery: the gallery's own stack, whichever photos it touched.
+    /// `undo()`/`redo()` in the gallery: the gallery's own stack, whichever photos it touched; a
+    /// roll walked back in part says how many items stayed, with a key to the folder holding them.
     pub(super) fn gallery_step(self: &Rc<Self>, undo: bool) {
-        let (touched, moves): (Vec<String>, Vec<Move>) = {
+        let title = if undo { tr("Undo") } else { tr("Redo") };
+        let (touched, disk): (Vec<String>, bool) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             let history = store.gallery_history();
             let paths = if undo { history.undo_paths() } else { history.redo_paths() };
             let moves = if undo { history.undo_moves() } else { history.redo_moves() };
-            (paths.into_iter().collect(), moves)
+            (paths.into_iter().collect(), !moves.is_empty())
         };
-        if !moves.is_empty() {
+        if disk {
             // The open frame's pending write lands before its file moves.
             let failure = self.state.borrow_mut().store.flush();
             if let Some(message) = failure {
-                self.say(&message);
+                self.told(title, &message);
             }
         }
-        self.gesture(&touched, |store| {
+        let (failure, walked) = {
+            let mut s = self.state.borrow_mut();
+            let Some(store) = s.store.editor() else { return };
             if undo { store.undo(Surface::Gallery) } else { store.redo(Surface::Gallery) };
-            0
-        });
-        if !moves.is_empty() {
-            let made: Vec<Move> = moves.into_iter().filter(|m| Path::new(&m.to).exists() && !Path::new(&m.from).exists()).collect();
-            self.followed(&made);
+            (store.failure.take(), store.walked.take())
+        };
+        if let Some(message) = failure {
+            self.told_with(title, &message, walked.as_ref().and_then(|w| w.left_in.clone()));
+        }
+        self.landed(&touched);
+        if let Some(walked) = walked {
+            self.followed(&walked.made);
         }
     }
 
@@ -105,16 +119,16 @@ impl Ctl {
         let film = oni_settings::Film::new(&name);
         let folder = match oni_library::roll_folder::make(&name, &parent, &film) {
             Ok(folder) => folder,
-            Err(e) => return self.say(&tr!("The roll's folder could not be made: {e}", e = e)),
+            Err(e) => return self.told(tr("New Roll"), &tr!("The roll's folder could not be made: {e}", e = oni_library::refusal::cause(&e))),
         };
         let files = oni_library::rgb_passes::expanded(&ordered);
         let failure = self.state.borrow_mut().store.flush();
         if let Some(message) = failure {
-            self.say(&message);
+            self.told(tr("New Roll"), &message);
         }
         let made = oni_library::roll_folder::move_items(&oni_library::roll_folder::moves(&files, &folder));
         if made.len() < files.len() {
-            self.say(&tr!("{count} of the files could not be moved into the roll.", count = files.len() - made.len()));
+            self.told(tr("New Roll"), &tr!("{count} of the files could not be moved into the roll.", count = files.len() - made.len()));
         }
         {
             let mut s = self.state.borrow_mut();
@@ -344,7 +358,7 @@ impl Ctl {
         if targets.is_empty() {
             return;
         }
-        self.gesture(&targets, |store| store.move_to_trash(&targets));
+        self.gesture_as(tr("Move to ONI Trash"), &targets, |store| store.move_to_trash(&targets));
     }
 
     /// The film type's tabs: `applyMode` on the selection, else the open photo.

@@ -68,6 +68,10 @@ impl Ctl {
             }
             return true;
         }
+        if text == "\u{1b}" && w.global::<crate::Told>().get_shown() {
+            self.told_closed();
+            return true;
+        }
         if text == "\u{1b}" && self.export_escape() {
             return true;
         }
