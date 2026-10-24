@@ -65,6 +65,7 @@ export component Badge inherits Rectangle {
         ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? Colour.ink-on-light
             : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.handle-active;
         centred: root.fixed;
+        vertical-alignment: root.fixed || root.seal ? TextVerticalAlignment.center : TextVerticalAlignment.top;
     }
     if root.note != "": TouchArea {
         changed has-hover => {
