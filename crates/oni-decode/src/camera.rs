@@ -1,12 +1,13 @@
 //! The camera a RAW names, read from its metadata by LibRaw without decoding a pixel.
 
 use crate::DecodeError;
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int};
+use crate::source::{Route, Source};
+use std::ffi::CStr;
+use std::os::raw::{c_char, c_int, c_void};
 use std::path::Path;
 
 unsafe extern "C" {
-    fn oni_identify(path: *const c_char, make: *mut c_char, model: *mut c_char, dng: *mut c_int) -> c_int;
+    fn oni_identify(path: *const c_char, stream: *mut c_void, make: *mut c_char, model: *mut c_char, dng: *mut c_int) -> c_int;
 }
 
 /// Maker and model as LibRaw names them, so two files of one body always share a key.
@@ -30,9 +31,13 @@ impl Camera {
 
 /// The camera `path` was made by; an error for a file LibRaw cannot open.
 pub fn identify(path: &Path) -> Result<Camera, DecodeError> {
-    let c_path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
+    identify_by(path, Route::PLATFORM)
+}
+
+pub(crate) fn identify_by(path: &Path, route: Route) -> Result<Camera, DecodeError> {
+    let mut source = Source::open(path, route)?;
     let (mut make, mut model, mut dng) = ([0 as c_char; 64], [0 as c_char; 64], 0 as c_int);
-    let rc = unsafe { oni_identify(c_path.as_ptr(), make.as_mut_ptr(), model.as_mut_ptr(), &mut dng) };
+    let rc = unsafe { oni_identify(source.name(), source.take(), make.as_mut_ptr(), model.as_mut_ptr(), &mut dng) };
     if rc != 0 {
         return Err(DecodeError(rc));
     }

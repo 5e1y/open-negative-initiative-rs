@@ -245,21 +245,30 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut 
 /// The folders of a previous library, offered and never added: per volume, the deepest folder
 /// holding them all, or its children holding photos when that folder is a volume or the home.
 pub fn suggested(members: &[String], home: &str) -> Vec<String> {
-    // A path laid back from its parts: rooted at `/`, or at the drive Windows names first.
+    // A path's parts, a share's `//server/share` standing as one, as a drive does.
+    let parts_of = |path: &str| -> Vec<String> {
+        let mut parts: Vec<String> = path.split('/').filter(|p| !p.is_empty()).map(str::to_owned).collect();
+        if path.starts_with("//") && parts.len() > 1 {
+            let share = format!("//{}/{}", parts[0], parts[1]);
+            parts.splice(..2, [share]);
+        }
+        parts
+    };
+    // A path laid back from its parts: rooted at `/`, or at the drive or the share Windows names first.
     let rebuilt = |parts: &[String]| match parts.first() {
-        Some(first) if first.ends_with(':') => parts.join("/"),
+        Some(first) if first.ends_with(':') || first.starts_with("//") => parts.join("/"),
         _ => format!("/{}", parts.join("/")),
     };
     let volume = |path: &str| -> String {
-        let parts: Vec<&str> = path.split('/').filter(|p| !p.is_empty()).collect();
-        if parts.first() == Some(&"Volumes") && parts.len() > 1 {
+        let parts = parts_of(path);
+        if parts.first().map(String::as_str) == Some("Volumes") && parts.len() > 1 {
             return format!("/Volumes/{}", parts[1]);
         }
         if holds(home, path) {
             return home.to_owned();
         }
-        match parts.first().filter(|d| d.ends_with(':')) {
-            Some(drive) => (*drive).to_owned(),
+        match parts.first().filter(|d| d.ends_with(':') || d.starts_with("//")) {
+            Some(root) => root.clone(),
             None => "/".to_owned(),
         }
     };
@@ -270,8 +279,7 @@ pub fn suggested(members: &[String], home: &str) -> Vec<String> {
     }
     let mut out = Vec::new();
     for (base, group) in groups {
-        let split: Vec<Vec<String>> =
-            group.iter().map(|f| f.split('/').filter(|p| !p.is_empty()).map(str::to_owned).collect()).collect();
+        let split: Vec<Vec<String>> = group.iter().map(|f| parts_of(f)).collect();
         let mut common = split[0].clone();
         for parts in &split[1..] {
             let shared = common.iter().zip(parts).take_while(|(a, b)| a == b).count();

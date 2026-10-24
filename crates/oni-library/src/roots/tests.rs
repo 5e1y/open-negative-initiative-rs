@@ -126,3 +126,13 @@ fn a_former_library_on_windows_drives_is_offered_per_drive() {
     assert_eq!(suggested(&members, "C:/Users/a"), ["C:/Users/a/Old", "C:/Users/a/Scans", "D:/Scans"]);
     assert_eq!(suggested(&["/Volumes/T7/Scans/A/1.NEF".to_string()], "/Users/a"), ["/Volumes/T7/Scans/A"]);
 }
+
+/// A share keeps its two slashes: `/nas/film` would name a folder of the current drive.
+#[test]
+fn a_former_library_on_a_share_is_offered_on_that_share() {
+    assert_eq!(suggested(&["//nas/film/Scans/A/1.NEF".to_string()], "C:/Users/a"), ["//nas/film/Scans/A"]);
+    let spread = ["//nas/film/A/1.NEF", "//nas/film/B/2.NEF", "//nas/other/C/3.NEF"].map(String::from);
+    assert_eq!(suggested(&spread, "C:/Users/a"), ["//nas/film/A", "//nas/film/B", "//nas/other/C"]);
+    // Twin: a path rooted at one slash stays there, and never becomes a share.
+    assert_eq!(suggested(&["/nas/film/Scans/A/1.NEF".to_string()], "/Users/a"), ["/nas/film/Scans/A"]);
+}

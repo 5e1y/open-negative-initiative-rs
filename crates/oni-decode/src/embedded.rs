@@ -1,7 +1,7 @@
 //! The preview a RAW carries, read without demosaicing: what Swift's ImageIO hands out for a frame
 //! not yet converted, in about a hundredth of a decode's time.
 
-use std::ffi::CString;
+use crate::source::{Route, Source};
 use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::path::Path;
 
@@ -19,7 +19,7 @@ struct Thumb {
 }
 
 unsafe extern "C" {
-    fn oni_thumbnail(path: *const c_char, out: *mut Thumb) -> c_int;
+    fn oni_thumbnail(path: *const c_char, stream: *mut c_void, out: *mut Thumb) -> c_int;
     fn oni_thumb_release(t: *mut Thumb);
 }
 
@@ -41,11 +41,15 @@ pub struct Embedded {
 
 /// The largest preview LibRaw finds in the file; `None` for a file that carries none it reads.
 pub fn embedded(path: &Path) -> Option<Embedded> {
-    let c_path = CString::new(path.to_string_lossy().as_bytes()).ok()?;
+    embedded_by(path, Route::PLATFORM)
+}
+
+pub(crate) fn embedded_by(path: &Path, route: Route) -> Option<Embedded> {
+    let mut source = Source::open(path, route).ok()?;
     let mut t: Thumb = unsafe { std::mem::zeroed() };
     let rc = {
         let _held = crate::DNG_UNPACK.lock().unwrap_or_else(|e| e.into_inner());
-        unsafe { oni_thumbnail(c_path.as_ptr(), &mut t) }
+        unsafe { oni_thumbnail(source.name(), source.take(), &mut t) }
     };
     if rc != 0 {
         return None;

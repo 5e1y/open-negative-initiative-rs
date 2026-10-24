@@ -23,22 +23,59 @@ pub const MEMORY_LIMIT: usize = 1000;
 /// `Library.waitingMark`'s photos are not read yet and have no file.
 pub const PENDING: &str = oni_library::library::WAITING_MARK;
 
-/// `Thumbnails.directory`: durable, not the purgeable caches, or a large library redraws for hours.
+/// `Thumbnails.directory`: durable, not the purgeable caches, or a large library redraws for hours;
+/// kept off a Windows profile that roams.
 pub fn directory(support: &Path) -> PathBuf {
-    support.join("Thumbnails")
+    crate::system::local_support(support).join("Thumbnails")
 }
 
-/// `fileName(fingerprint:)`: the fingerprint and nothing else, made safe for a file name.
+/// `fileName(fingerprint:)`, the fingerprint and nothing else, in a name every file system takes: a
+/// byte outside letters, digits, `-`, `.` and the space is written `_` and its hex, an EXIF date's `:` too.
 pub fn file_name(fingerprint: &str) -> String {
+    let mut name = String::with_capacity(fingerprint.len() + 4);
+    for byte in fingerprint.bytes() {
+        match byte {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b' ' => name.push(char::from(byte)),
+            _ => name.push_str(&format!("_{byte:02x}")),
+        }
+    }
+    name + ".jpg"
+}
+
+/// Swift's name, colons kept: Swift writes it and an earlier build did, so it is still read where
+/// the system allows it.
+fn swift_name(fingerprint: &str) -> String {
     format!("{}.jpg", fingerprint.replace('/', "_"))
 }
 
+/// Where a thumbnail is written.
 pub fn file(support: &Path, fingerprint: &str) -> PathBuf {
     directory(support).join(file_name(fingerprint))
 }
 
+/// The file a tile reads: the newer of the portable name and Swift's, Windows having only the first.
+fn held(support: &Path, fingerprint: &str) -> Option<PathBuf> {
+    let portable = file(support, fingerprint);
+    let swift = (!cfg!(windows)).then(|| directory(support).join(swift_name(fingerprint))).filter(|s| *s != portable);
+    let modified = |p: &Path| std::fs::metadata(p).ok().map(|m| m.modified().unwrap_or(std::time::UNIX_EPOCH));
+    match (modified(&portable), swift.as_deref().and_then(|s| modified(s).map(|t| (s, t)))) {
+        (Some(mine), Some((s, theirs))) if theirs > mine => Some(s.to_path_buf()),
+        (Some(_), _) => Some(portable),
+        (None, Some((s, _))) => Some(s.to_path_buf()),
+        (None, None) => None,
+    }
+}
+
 pub fn is_held(support: &Path, fingerprint: &str) -> bool {
-    file(support, fingerprint).exists()
+    held(support, fingerprint).is_some()
+}
+
+/// Both names gone, so neither app shows a tile older than the photo's settings.
+pub fn forget(support: &Path, fingerprint: &str) {
+    let _ = std::fs::remove_file(file(support, fingerprint));
+    if !cfg!(windows) {
+        let _ = std::fs::remove_file(directory(support).join(swift_name(fingerprint)));
+    }
 }
 
 /// The sRGB JPEG of an encoded frame at `COMPRESSION`, alpha dropped.
@@ -60,13 +97,18 @@ pub fn persist(support: &Path, fingerprint: &str, data: &[u8]) -> std::io::Resul
     let target = folder.join(file_name(fingerprint));
     let staged = target.with_extension("jpg.part");
     std::fs::write(&staged, data)?;
-    std::fs::rename(&staged, &target)
+    std::fs::rename(&staged, &target)?;
+    // Swift's copy is older than this one now: gone, so Swift draws the photo afresh.
+    if !cfg!(windows) && swift_name(fingerprint) != file_name(fingerprint) {
+        let _ = std::fs::remove_file(folder.join(swift_name(fingerprint)));
+    }
+    Ok(())
 }
 
 /// A held file decoded to RGBA for `screen`, its sRGB carried to the screen's primaries once here
 /// so the grid never matches a tile at each frame.
 pub fn load(support: &Path, fingerprint: &str, screen: Screen) -> Option<(Vec<u8>, usize, usize)> {
-    let data = std::fs::read(file(support, fingerprint)).ok()?;
+    let data = std::fs::read(held(support, fingerprint)?).ok()?;
     decoded(&data, screen)
 }
 
@@ -182,11 +224,41 @@ mod tests {
     fn a_thumbnails_file_is_its_photos_fingerprint_and_nothing_else() {
         // `Thumbnails.selfCheck`: a date, a size or the version in the name would redraw a library on every edit.
         let name = file_name("4096-2026:06:18 14:32:10");
-        assert_eq!(name, "4096-2026:06:18 14:32:10.jpg");
+        assert_eq!(name, "4096-2026_3a06_3a18 14_3a32_3a10.jpg");
         assert_ne!(file_name("9999-2026:06:18 15:00:00"), name);
         assert!(!name.contains(&RENDER_VERSION.to_string()) && !name.contains(&SIDE.to_string()));
         // Twin: a separator in a fingerprint never reaches the name, which would open a folder.
         assert!(!file_name("a/b").trim_end_matches(".jpg").contains('/'));
+        // Two fingerprints never share a name: the escape's own `_` is escaped.
+        assert_ne!(file_name("a:b"), file_name("a_3ab"));
+    }
+
+    /// Windows refuses `:` in a name (NTFS reads a stream after it), so a dated photo had no tile there.
+    #[test]
+    fn a_dated_fingerprint_persists_on_every_platform() {
+        let support = std::env::temp_dir().join(format!("oni-app-dated-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&support);
+        let dated = "25331200-2026:06:18 14:32:10-9f3a";
+        let rgba = vec![200u8; 16 * 16 * 4];
+        let data = jpeg(&rgba, 16, 16).unwrap();
+        persist(&support, dated, &data).expect("a dated fingerprint persists");
+        assert!(is_held(&support, dated) && load(&support, dated, Screen::Srgb).is_some());
+        let name = file_name(dated);
+        assert!(name.bytes().all(|b| b.is_ascii_alphanumeric() || b"-. _".contains(&b)), "{name}");
+        // Twin: the name Swift writes keeps the colons, which every Windows volume refuses.
+        assert!(swift_name(dated).contains(':'));
+        if !cfg!(windows) {
+            // A tile Swift or an earlier build left reads on, and the next persist takes its place.
+            let older = "25331200-2025:01:02 03:04:05-77";
+            std::fs::write(directory(&support).join(swift_name(older)), &data).unwrap();
+            assert!(load(&support, older, Screen::Srgb).is_some(), "Swift's tile still shows");
+            assert!(!is_held(&support, "25331200-2025:01:02 03:04:06-77"), "another photo's is not taken");
+            persist(&support, older, &data).unwrap();
+            assert!(!directory(&support).join(swift_name(older)).exists() && file(&support, older).exists());
+            forget(&support, older);
+            assert!(!is_held(&support, older));
+        }
+        let _ = std::fs::remove_dir_all(&support);
     }
 
     #[test]

@@ -2705,5 +2705,26 @@
     "title": "A folder away is laid as it was last seen",
     "status": "done",
     "detail": "kept.rs keeps each opened folder's last whole shape (subfolders, creation dates, roll markers) under the caches' Surveys folder; a survey whose folder the disk refuses wears it, so roll headings and empty folders stay. The ONI Trash reads only its rows (index.in_trash), a roll marker written by the app is laid without being read back, the Survey is shared by Arc across landings. Closes missing-unreadable-roll-loses-rolls and the disk part of scale-ui-lay-archive-disk."
+  },
+  {
+    "id": 430,
+    "type": "fix",
+    "title": "Windows reads a RAW by a handle Rust opened: any folder name, any path length, the file left free to rename",
+    "status": "done",
+    "detail": "LibRaw's char* open goes through the ANSI code page and MAX_PATH and denies FILE_SHARE_DELETE, so an accented or long path failed and a rename during the thumbnails pass was refused. On Windows the decode, the preview and identify now hand LibRaw a stream (csrc/stream.cpp, LibRaw's own FILE* stream over a handle std opened, shared for delete); macOS and Linux keep libraw_open_file, unchanged. Every pinned knob is set before either open. Checks a_dng_in_an_ete_folder_decodes (a mosaic DNG built in the check, in 'Été 🎞' and past 260 characters; twin: the name route fails there on Windows), the_handle_route_decodes_bit_for_bit_as_the_name_route (full and half size, preview, identify; twin: 1.007 gain differs), a_file_being_read_renames (Windows; twin: a handle without share-delete refuses). The fixture's decode hashes identically before and after the change on macOS."
+  },
+  {
+    "id": 431,
+    "type": "fix",
+    "title": "Thumbnail names are portable: a dated photo keeps its tile on Windows, and Swift's tiles still read on macOS",
+    "status": "done",
+    "detail": "file_name escapes every byte outside letters, digits, '-', '.' and the space as '_' and its hex, so an EXIF date's ':' (refused by NTFS and exFAT) never reaches a name. Where the system allows it, Swift's colon name is still read (the newer of the two wins), a persist removes it and forget removes both, so no tile is lost and none shows stale. Check a_dated_fingerprint_persists_on_every_platform; twin: Swift's name contains ':'."
+  },
+  {
+    "id": 432,
+    "type": "fix",
+    "title": "Explorer gets backslashes, a share keeps its two slashes, and thumbnails leave the roaming profile",
+    "status": "done",
+    "detail": "reveal and show_folder hand explorer.exe the path with backslashes and no \\\\?\\ prefix (reveal_hands_explorer_backslashes; twin: the archive spelling holds '/'). suggested() keeps //server/share as one root (a_former_library_on_a_share_is_offered_on_that_share; twin: a one-slash path never becomes a share). On Windows the Thumbnails folder sits under LOCALAPPDATA when the support folder is the roaming default (windows_keeps_rebuildable_files_off_the_roaming_profile; twin: a check's own folder and other systems keep it)."
   }
 ]

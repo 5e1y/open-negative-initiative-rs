@@ -233,8 +233,7 @@ impl Ctl {
         let index = self.state.borrow().index_path.clone();
         if let Some(index) = oni_library::index::LibraryIndex::open(&index) {
             for e in index.all().into_iter().filter(|e| matched.contains(&e.path)) {
-                let stale_thumbnail = crate::thumbnails::file(&support, &e.fingerprint);
-                let _ = std::fs::remove_file(stale_thumbnail);
+                crate::thumbnails::forget(&support, &e.fingerprint);
             }
         }
         if let Some(open) = open {
