@@ -94,7 +94,7 @@ pub(crate) fn a_refused_trash_in_the_gallery_opens_a_notice() {
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     shell.ctl.act(oni_app::Act::Remove);
-    rig.pump();
+    rig.landed(&shell.ctl);
     assert_eq!(told(&shell), None, "a success stays silent");
     let a = sidecar_of(&scans.join("A.tif"));
     assert!(oni_settings::sidecar::read(&scans.join("A.tif"), false, true).unwrap().trashed_at.is_some(), "{a}");
@@ -106,7 +106,7 @@ pub(crate) fn a_refused_trash_in_the_gallery_opens_a_notice() {
     lib.invoke_tile_clicked(0, false, false);
     rig.pump();
     shell.ctl.act(oni_app::Act::Remove);
-    rig.pump();
+    rig.landed(&shell.ctl);
     let (title, message, action) = told(&shell).expect("the refusal is told in the gallery");
     assert_eq!((title.as_str(), action.as_str()), ("Move to ONI Trash", ""));
     assert!(message.starts_with("One photo was not moved to the ONI Trash") && message.contains("newer version"), "{message}");
@@ -137,6 +137,7 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
         rig.until("the photos read", Duration::from_secs(30), || ctl.state.borrow().read_done() && ctl.state.borrow().order().len() == 3);
         pick_all(&rig, &shell, 3);
         ctl.act(oni_app::Act::NewRoll);
+        rig.roll_confirmed(&ctl, &shell.window);
         rig.until("the roll read", Duration::from_secs(30), || ctl.state.borrow().read_done());
         assert!(names.iter().all(|n| roll.join(n).exists()), "the three moved into the roll");
         assert_eq!(told(&shell), None, "a whole New Roll says nothing");
@@ -145,6 +146,7 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
     // Twin: an undo that puts every photo back stays silent, and the folder it made goes.
     rolled();
     ctl.act(oni_app::Act::Undo);
+    rig.landed(&ctl);
     rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
     assert!(names.iter().all(|n| scans.join(n).exists()) && !roll.exists(), "every photo back, the roll folder gone");
     assert_eq!(told(&shell), None, "a complete undo stays silent");
@@ -155,7 +157,7 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
         std::fs::write(scans.join(taken), b"another file").unwrap();
     }
     ctl.act(oni_app::Act::Undo);
-    rig.pump();
+    rig.landed(&ctl);
     let (title, message, action) = told(&shell).expect("the shortfall is told");
     assert_eq!((title.as_str(), action.as_str()), ("Undo", "Show in Finder"));
     assert_eq!(message, "2 of the items could not be put back: their folder moved or a file took their name.");

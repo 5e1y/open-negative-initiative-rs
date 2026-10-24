@@ -72,6 +72,20 @@ impl Rig {
         println!("{what}: {:.1} s", start.elapsed().as_secs_f64());
     }
 
+    /// Waits for the writes or moves a gesture runs off the interface's thread to land.
+    pub fn landed(&self, ctl: &oni_app::app::Ctl) {
+        self.until("the gesture's writes", Duration::from_secs(30), || !ctl.state.borrow().disk_busy());
+    }
+
+    /// The confirm New Roll opens, answered with its key, then its moves landed.
+    pub fn roll_confirmed(&self, ctl: &oni_app::app::Ctl, window: &oni_app::MainWindow) {
+        use slint::ComponentHandle;
+        let confirm = window.global::<oni_app::Confirm>();
+        self.until("New Roll's confirm", Duration::from_secs(10), || confirm.get_shown());
+        confirm.invoke_answered(true);
+        self.landed(ctl);
+    }
+
     /// Lets springs and the tooltip delay finish, as a person waits before looking.
     pub fn settle(&self) {
         let start = Instant::now();

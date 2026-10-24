@@ -123,7 +123,7 @@ fn restore_all(rig: &common::Rig, shell: &Shell) {
     let confirm = shell.window.global::<Confirm>();
     assert!(confirm.get_shown(), "Restore All asks first");
     confirm.invoke_answered(true);
-    rig.pump();
+    rig.landed(&shell.ctl);
 }
 
 pub(crate) fn a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it() {
@@ -137,7 +137,7 @@ pub(crate) fn a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it(
         rest(&rig);
         click(&rig, &shell, photo, false);
         shell.ctl.act(oni_app::Act::Remove);
-        rig.pump();
+        rig.landed(&shell.ctl);
     }
     assert!(trashed(&a1) && trashed(&c1));
 
@@ -193,7 +193,7 @@ pub(crate) fn a_project_from_a_still_lists_after_b_opens() {
     rest(&rig);
     click(&rig, &shell, "A2", false);
     shell.ctl.act(oni_app::Act::Remove);
-    rig.pump();
+    rig.landed(&shell.ctl);
     std::fs::rename(d.root.join("Home/A/A3.tif"), d.root.join("A3 elsewhere.tif")).unwrap();
 
     opened(&rig, &shell, &d.root.join("Home/B"));

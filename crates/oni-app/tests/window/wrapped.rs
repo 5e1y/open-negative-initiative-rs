@@ -141,6 +141,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
 
     // A photo in the ONI Trash counts for nothing: A was the only one opened.
     ctl.act(oni_app::Act::Remove);
+    rig.landed(&ctl);
     rig.settle();
     ctl.act(oni_app::Act::Wrapped);
     rig.until("the summary without A", Duration::from_secs(10), || wrapped.get_shown());
@@ -162,6 +163,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     assert!(w.global::<oni_app::App>().get_gallery(), "the trashed photo left the editor");
     lib.invoke_tile_clicked(0, false, false);
     ctl.act(oni_app::Act::NewRoll);
+    rig.roll_confirmed(&ctl, w);
     rig.until("the roll noted", Duration::from_secs(10), || kinds().contains(&Kind::Rolled));
     assert_eq!(journal.read().0.iter().find(|r| r.kind == Kind::Rolled).unwrap().value, 1);
     let _ = std::fs::remove_dir_all(&root);

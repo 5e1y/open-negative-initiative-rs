@@ -8,7 +8,7 @@ use crate::history::{Companion, History};
 use crate::parameters;
 use crate::presets::Preset;
 use oni_library::gallery_history::{self, GalleryHistory, Step, Trash};
-use oni_library::{refusal, roll_folder, roll_membership, trash};
+use oni_library::{refusal, roll_membership, trash};
 use oni_i18n::{tr, trn};
 use oni_keys::{Channel, Effect, Letter, Machine};
 use oni_settings::codec;
@@ -30,7 +30,8 @@ mod scanner;
 mod together;
 
 pub use opening::Unsaved;
-pub use undo::Walked;
+pub use oni_library::roll_folder::{Walk, Walked};
+pub use oni_trash::mark_run;
 pub use scanner::{channel, machine_for, machine_of};
 
 pub mod roll;
@@ -44,12 +45,13 @@ type Settings = BTreeMap<String, PipelineSettings>;
 /// which the host reads off the bytes.
 pub struct Archive {
     pub paths: Vec<String>,
-    pub mosaic: Box<dyn Fn(&Path) -> bool + Send + Sync>,
+    /// Shared, so a mark run off the host's thread reads the same rule.
+    pub mosaic: std::sync::Arc<dyn Fn(&Path) -> bool + Send + Sync>,
 }
 
 impl Archive {
     pub fn new(paths: Vec<String>, mosaic: impl Fn(&Path) -> bool + Send + Sync + 'static) -> Archive {
-        Archive { paths, mosaic: Box::new(mosaic) }
+        Archive { paths, mosaic: std::sync::Arc::new(mosaic) }
     }
 }
 
@@ -121,8 +123,8 @@ pub struct EditorStore {
     epoch: Instant,
     /// The last failure a gesture met, for the host to show.
     pub failure: Option<String>,
-    /// What the last undo or redo of a roll moved on the disk, for the host to follow.
-    pub walked: Option<Walked>,
+    /// The last undo or redo of a roll on the disk, for the host to run off its thread.
+    pub walking: Option<oni_library::roll_folder::Walk>,
     /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
     unsaved: Vec<opening::Unsaved>,
 }
@@ -148,7 +150,7 @@ impl EditorStore {
             last_change: None,
             epoch: Instant::now(),
             failure: None,
-            walked: None,
+            walking: None,
             unsaved: Vec::new(),
         }
     }
@@ -214,6 +216,11 @@ impl EditorStore {
 
     fn mosaic(&self, path: &str) -> bool {
         (self.archive.mosaic)(Path::new(path))
+    }
+
+    /// The archive's rule for a mosaic, for a mark run off this thread.
+    pub fn mosaic_rule(&self) -> std::sync::Arc<dyn Fn(&Path) -> bool + Send + Sync> {
+        self.archive.mosaic.clone()
     }
 
     pub fn record_disk(&mut self, disk: Disk, label: &str) {
