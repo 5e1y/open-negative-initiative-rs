@@ -42,6 +42,7 @@ export global Colour {
     out property <color> separator: DS.palette-separator;
     out property <color> guide: DS.palette-guide;
     out property <color> guide-faint: DS.palette-guide-faint;
+    out property <color> marker: DS.palette-marker;
     out property <color> handle-idle: DS.palette-handle-idle;
     out property <color> scrim: DS.palette-scrim;
     out property <color> canvas-cropping: DS.palette-canvas-cropping;
@@ -189,6 +190,8 @@ export global SliderStyle {
     out property <float> ramp-start: 0.45;
     out property <float> ramp-end: 0.9;
     out property <length> label-gap: Space.xs;
+    // `DS.Control.grabSize`: a handle's catch on a track several handles share.
+    out property <length> grab: DS.control-grab-size;
 }
 
 export global SectionStyle {
@@ -285,9 +288,18 @@ export global TipStyle {
     out property <length> card-radius: Radius.badge;
 }
 
+// The plots: the panel's main histogram and an editor's screen, its round, then the handles' and
+// bands' inks Swift's views write as literals, which no token holds.
 export global PlotStyle {
     out property <length> main: DS.control-main-histogram-height;
     out property <length> block: DS.control-histogram-height;
+    out property <length> radius: Radius.card;
+    // `LevelsView.Grip.tint`: the three inner handles' greys, `Color(white:)` in the Swift view.
+    out property <color> grey-quarter: #404040;
+    out property <color> grey-half: #808080;
+    out property <color> grey-three-quarters: #bfbfbf;
+    // `SpectrogramPanel.tint`: each band's centre at saturation 0.85 and full brightness.
+    out property <[color]> bands: [#ff2626, #ff9326, #ffff26, #26ff26, #26ffff, #2626ff, #9326ff, #ff26ff];
 }
 
 export global CardStyle {
@@ -310,7 +322,7 @@ export global CropStyle {
 
 // Compare's split guide: a grab the width of a handle, a line that grows under the hand.
 export global SplitStyle {
-    out property <length> grab: DS.control-grab-size;
+    out property <length> grab: SliderStyle.grab;
     out property <length> grow: DS.control-guide-grow;
     out property <length> label-inset: DS.control-split-label-inset;
     out property <length> shadow: 2px;
@@ -334,29 +346,6 @@ export global ShellStyle {
     out property <length> panel-width: DS.control-panel-width;
     out property <length> info-width: DS.control-info-sidebar-width;
     out property <length> info-description: DS.control-project-description-height;
-}
-
-// The editors' plots: their inks and the sizes they draw handles at.
-export global PlotInkStyle {
-    // `LevelsChannel.tint`'s red: the system red on the dark appearance, which no token holds.
-    out property <color> channel-red: #ff453a;
-    // `LevelsView.Grip.tint`: the three inner handles' greys, `Color(white:)` in the Swift view.
-    out property <color> grey-quarter: #404040;
-    out property <color> grey-half: #808080;
-    out property <color> grey-three-quarters: #bfbfbf;
-    // `SpectrogramPanel.tint`: each band's centre at saturation 0.85 and full brightness.
-    out property <[color]> bands: [#ff2626, #ff9326, #ffff26, #26ff26, #26ffff, #2626ff, #9326ff, #ff26ff];
-    out property <length> histogram: DS.control-histogram-height;
-    out property <length> track: DS.control-track-height;
-    out property <length> knob-width: DS.control-handle-thickness;
-    out property <length> knob-height: DS.control-handle-length;
-    out property <length> grab: DS.control-grab-size;
-    out property <length> radius: Radius.card;
-    out property <color> guide: DS.palette-guide;
-    out property <color> guide-faint: DS.palette-guide-faint;
-    out property <color> marker: DS.palette-marker;
-    out property <color> handle-active: DS.palette-handle-active;
-    out property <color> handle-idle: DS.palette-handle-idle;
 }
 
 // `DS.Scanner`: the Lab keypad's keys and bands, the face bar, the scanner's screen.

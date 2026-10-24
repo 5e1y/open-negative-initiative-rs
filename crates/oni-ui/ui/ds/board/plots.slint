@@ -1,6 +1,6 @@
 // The board's plots: the main histogram's plot and the editors' screen with their captions and
 // readouts, the levels track live and every ink; the knob and the rail are on the Slider page.
-import { Colour, Space, Stroke, PlotStyle, PlotInkStyle, Label, Tone, TextRole, Ink, Inks, PlotKnob, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
+import { Colour, Space, Stroke, PlotStyle, SliderStyle, Label, Tone, TextRole, Ink, Inks, PlotKnob, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
@@ -41,7 +41,7 @@ export component PlotsPage inherits Page {
                     spacing: Space.xs;
                     AxisCaptions { start: "Black point"; end: "White point"; }
                     Plot {
-                        height: PlotInkStyle.histogram;
+                        height: PlotStyle.block;
                         lines: [
                             { commands: "M 0 96 L 340 0", ink: Ink.separator, width: Stroke.hairline, opacity: 1 },
                             { commands: "M 0 90 L 85 72 L 170 44 L 255 22 L 340 6", ink: Ink.active, width: Stroke.trace, opacity: 1 },
@@ -57,7 +57,7 @@ export component PlotsPage inherits Page {
             Fill {
                 span: BoardStyle.panel;
                 Plot {
-                    height: PlotInkStyle.histogram;
+                    height: PlotStyle.block;
                     AxisCaptions { axis: Orientation.vertical; start: "Saturated"; end: "Desaturated"; tone: Tone.tertiary; }
                 }
             }
@@ -72,8 +72,8 @@ export component PlotsPage inherits Page {
             Fill {
                 span: BoardStyle.panel;
                 VerticalLayout {
-                    padding-left: PlotInkStyle.knob-width / 2;
-                    padding-right: PlotInkStyle.knob-width / 2;
+                    padding-left: SliderStyle.knob-width / 2;
+                    padding-right: SliderStyle.knob-width / 2;
                     LevelsTrack {
                         knobs: [
                             { x: 70px, ink: Ink.grey-quarter, held: false, label: "Shadows" },

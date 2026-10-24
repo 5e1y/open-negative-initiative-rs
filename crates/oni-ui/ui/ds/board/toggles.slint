@@ -1,6 +1,6 @@
 // The board's switches: Toggle bare and labelled, then Tabs of two, four and eight swatches, each
 // live under the hand beside its forced states.
-import { PlotInkStyle, Toggle, Tabs } from "../ds.slint";
+import { PlotStyle, Toggle, Tabs } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // A switch live, off, on, and disabled off and on.
@@ -48,7 +48,7 @@ export component TogglePage inherits Page {
         TabsStates {
             label: "eight swatches (their names as tooltips)";
             tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
-            swatches: PlotInkStyle.bands;
+            swatches: PlotStyle.bands;
             selected: 1;
             other: 6;
             hovered: 4;
