@@ -196,6 +196,7 @@ impl Ctl {
         }
         if arrived {
             self.survey_favourites();
+            self.rewatch_anew();
         }
         self.publish_navigator();
         if moved {

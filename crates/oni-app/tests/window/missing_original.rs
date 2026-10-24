@@ -52,6 +52,8 @@ fn bench(label: &str, extra: impl Fn(&Path)) -> Option<Bench> {
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     shell.window.show().unwrap();
+    // An original taken away stays a missing tile: no watch reads the folder again behind the check.
+    shell.ctl.set_watching(false);
     shell.open_folder(&root.join("Volumes/T7/Scans"));
     let ctl = shell.ctl.clone();
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());

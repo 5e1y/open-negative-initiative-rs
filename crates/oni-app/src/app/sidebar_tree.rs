@@ -87,7 +87,7 @@ impl Ctl {
         let me = Rc::downgrade(self);
         lib.on_tree_reload(move || {
             if let Some(c) = me.upgrade() {
-                c.act(crate::Act::ReadFolders);
+                c.act(crate::Act::Refresh);
             }
         });
         self.wire_tree_column(lib);

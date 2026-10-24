@@ -232,6 +232,8 @@ pub(crate) fn a_missing_tile_is_grey_on_its_own_layer() {
     let rig = rig();
     let shell = d.launch(&gpu);
     let ctl = shell.ctl.clone();
+    // B taken away stays a missing tile: no watch reads the folder again behind the check.
+    ctl.set_watching(false);
     shell.open_folder(&d.root.join("Home/Scans"));
     rig.until("Scans read and drawn", Duration::from_secs(60), || ctl.state.borrow().read_done() && ctl.state.borrow().loaded() >= 2);
     rig.until("both pictures", Duration::from_secs(20), || ["A", "B"].iter().all(|c| tile(&shell, c).picture.size().width > 0));

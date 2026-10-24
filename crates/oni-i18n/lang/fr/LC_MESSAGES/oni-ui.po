@@ -113,13 +113,9 @@ msgstr "Jumeler un téléphone…"
 msgid "Settings…"
 msgstr "Réglages…"
 
-#: crates/oni-ui/ui/app.slint
-msgid "Recheck Originals"
-msgstr "Revérifier les originaux"
-
-#: crates/oni-ui/ui/app.slint
-msgid "Read the Folders Again"
-msgstr "Relire les dossiers"
+#: crates/oni-app/src/app/navigator/freshness.rs crates/oni-ui/ui/app.slint
+msgid "Refresh"
+msgstr "Actualiser"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Show the Selected Photo"
@@ -2628,6 +2624,32 @@ msgstr "Le dossier n’a pas pu devenir une pellicule : {cause}."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The roll could not be made a folder again: {cause}."
 msgstr "La pellicule n’a pas pu redevenir un dossier : {cause}."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "The folders were read again."
+msgstr "Les dossiers ont été relus."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "Nothing changed."
+msgstr "Rien n'a changé."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo added."
+msgid_plural "{n} photos added."
+msgstr[0] "{n} photo ajoutée."
+msgstr[1] "{n} photos ajoutées."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo no longer in the folder."
+msgid_plural "{n} photos no longer in the folder."
+msgstr[0] "{n} photo n'est plus dans le dossier."
+msgstr[1] "{n} photos ne sont plus dans le dossier."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo cannot be found."
+msgid_plural "{n} photos cannot be found."
+msgstr[0] "{n} photo introuvable."
+msgstr[1] "{n} photos introuvables."
 
 #: crates/oni-app/src/app/navigator/locate.rs
 msgid "Locate"

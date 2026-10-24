@@ -78,8 +78,7 @@ export struct MenuLive {
     open: bool,
     toggle-mode: bool,
     export: bool,
-    recheck: bool,
-    read-folders: bool,
+    refresh: bool,
     show-selected: bool,
     remove: bool,
     restore: bool,
@@ -166,8 +165,7 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu(Act.toggle-mode); } }
             MenuItem { title: Menus.titles.export; shortcut: @keys(Control + "e"); enabled: Menus.live.export; activated => { App.menu(Act.export); } }
             MenuSeparator { }
-            MenuItem { title: @tr("Recheck Originals"); shortcut: @keys(Control + "r"); enabled: Menus.live.recheck; activated => { App.menu(Act.recheck); } }
-            MenuItem { title: @tr("Read the Folders Again"); enabled: Menus.live.read-folders; activated => { App.menu(Act.read-folders); } }
+            MenuItem { title: @tr("Refresh"); shortcut: @keys(Control + "r"); enabled: Menus.live.refresh; activated => { App.menu(Act.refresh); } }
             MenuItem { title: @tr("Show the Selected Photo"); enabled: Menus.live.show-selected; activated => { App.menu(Act.show-selected); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.has-focus; activated => { App.menu(Act.remove); } }

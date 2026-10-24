@@ -113,13 +113,9 @@ msgstr "Vincular teléfono…"
 msgid "Settings…"
 msgstr "Ajustes…"
 
-#: crates/oni-ui/ui/app.slint
-msgid "Recheck Originals"
-msgstr "Volver a comprobar los originales"
-
-#: crates/oni-ui/ui/app.slint
-msgid "Read the Folders Again"
-msgstr "Volver a leer las carpetas"
+#: crates/oni-app/src/app/navigator/freshness.rs crates/oni-ui/ui/app.slint
+msgid "Refresh"
+msgstr "Actualizar"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Show the Selected Photo"
@@ -2628,6 +2624,32 @@ msgstr "La carpeta no se pudo convertir en rollo: {cause}."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The roll could not be made a folder again: {cause}."
 msgstr "El rollo no se pudo volver a convertir en carpeta: {cause}."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "The folders were read again."
+msgstr "Se han vuelto a leer las carpetas."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "Nothing changed."
+msgstr "No ha cambiado nada."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo added."
+msgid_plural "{n} photos added."
+msgstr[0] "{n} foto añadida."
+msgstr[1] "{n} fotos añadidas."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo no longer in the folder."
+msgid_plural "{n} photos no longer in the folder."
+msgstr[0] "{n} foto ya no está en la carpeta."
+msgstr[1] "{n} fotos ya no están en la carpeta."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo cannot be found."
+msgid_plural "{n} photos cannot be found."
+msgstr[0] "{n} foto no se encuentra."
+msgstr[1] "{n} fotos no se encuentran."
 
 #: crates/oni-app/src/app/navigator/locate.rs
 msgid "Locate"

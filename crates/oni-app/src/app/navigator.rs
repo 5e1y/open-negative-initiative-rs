@@ -27,6 +27,7 @@ mod reading;
 mod catch_up;
 mod locate;
 pub(in crate::app) use locate::{Asked, lead_words};
+mod freshness;
 
 /// `FolderNavigation`'s preference keys, as Swift's `UserDefaults` holds them.
 pub const BASE: &str = "navigatorBase";
@@ -96,6 +97,7 @@ pub(super) struct Nav {
     /// Names the volumes a favourite lives on, which `bookmarks.json` keeps beside its path.
     identify: oni_library::bookmarks::Identify,
     leads: locate::Leads,
+    fresh: freshness::Fresh,
 }
 
 impl Nav {
@@ -127,6 +129,7 @@ impl Nav {
             presence: HashMap::new(),
             identify,
             leads: locate::Leads::default(),
+            fresh: Default::default(),
         }
     }
 

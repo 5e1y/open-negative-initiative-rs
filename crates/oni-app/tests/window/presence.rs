@@ -90,6 +90,8 @@ pub(crate) fn lay_grid_touches_no_disk() {
     let rig = rig();
     let shell = d.launch(&gpu);
     let ctl = shell.ctl.clone();
+    // B taken away is found by the looks alone: no watch reads the folder again behind the check.
+    ctl.set_watching(false);
     shell.open_folder(&d.root.join("Home/Scans"));
     rig.until("Scans read", Duration::from_secs(30), || ctl.state.borrow().read_done() && app::tiles(&shell.window).len() == 2);
     let b = d.path("Home/Scans/B.tif");

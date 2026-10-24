@@ -364,7 +364,7 @@ reset is a callback that reads Rust state when called, so that trap disappears.
 
 All in Slint's `MenuBar` (native via muda). The shortcuts are exact. Several titles are computed
 (`menus.modeTitle`, `exportTitle`, `undoTitle`, …), so the table names them by role; items without a
-shortcut (Read the Folders Again, Show the Selected Photo, Compare, Scanner Emulator, Prepare the
+shortcut (Show the Selected Photo, Compare, Scanner Emulator, Prepare the
 Roll…, Save as Preset…, …) are not listed.
 
 | Shortcut | Item |
@@ -372,7 +372,7 @@ Roll…, Save as Preset…, …) are not listed.
 | ⌘O | Open Folder |
 | ⌘G | Gallery / Editor |
 | ⌘E | Export |
-| ⌘R | Recheck Originals |
+| ⌘R | Refresh (Swift's Recheck Originals and Read the Folders Again in one, saying what moved) |
 | ⌘⌫ | Move to ONI Trash |
 | ⇧⌘⌫ | Restore |
 | ⌘− / ⌘+ | Zoom Out / Zoom In |
