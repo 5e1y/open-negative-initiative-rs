@@ -67,8 +67,12 @@ impl Computer {
         paths::parent(path) == self.volumes
     }
 
-    /// On a disk that may come and go: under `/Volumes`, or on Windows a drive other than the home's.
+    /// On a disk that may come and go: under `/Volumes`, or on Windows a drive other than the home's;
+    /// never with no volumes' folder known, which would hold every path.
     pub fn is_on_volume(&self, path: &str) -> bool {
+        if self.volumes.is_empty() {
+            return false;
+        }
         if self.volumes == DRIVES {
             let drive = |p: &str| p.get(..2).map(str::to_ascii_uppercase);
             return path.as_bytes().get(1) == Some(&b':') && drive(path) != drive(&self.home);

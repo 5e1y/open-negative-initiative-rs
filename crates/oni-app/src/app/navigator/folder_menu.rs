@@ -1,4 +1,5 @@
-//! The folder menu: open, favourite, rename, new folder, make a roll or back to a folder, show in Finder.
+//! The folder menu: open, favourite, rename, new folder, make a roll or back to a folder, show in
+//! Finder; on a folder out of reach, only what touches no disk under it.
 
 use super::*;
 
@@ -9,16 +10,18 @@ impl Ctl {
         let lines = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return false };
-            let present = s.present(&path);
+            let present = s.row_presence(&path).is_present();
             let favourite = s.nav.favourites.contains(&path);
             let roll = s.nav.rolls().contains(&path);
+            // Out of reach, Open shows its state, and the folder above it stands in for it in the Finder.
+            let shown = if present { (tr("Show in Finder"), Act::Reveal) } else { (tr("Show the Parent Folder"), Act::RevealParent) };
             let items = [
-                (line(tr("Open"), present, false), Act::Open),
+                (line(tr("Open"), true, false), Act::Open),
                 (line(if favourite { tr("Remove from Favourites") } else { tr("Add to Favourites") }, true, false), Act::Favourite),
                 (line(tr("Rename…"), present, true), Act::Rename),
                 (line(if roll { tr("Back to a Folder") } else { tr("Make a Roll") }, present, false), Act::Roll(!roll)),
                 (line(tr("New Folder Inside"), present, false), Act::NewFolder),
-                (line(tr("Show in Finder"), true, true), Act::Reveal),
+                (line(shown.0, true, true), shown.1),
             ];
             s.nav.menu = items.iter().map(|(_, a)| *a).collect();
             s.nav.menu_path = Some(path);
@@ -47,6 +50,7 @@ impl Ctl {
             Act::Roll(make) => self.make_roll(&path, make),
             Act::NewFolder => self.new_folder(&path, true),
             Act::Reveal => self.reveal_folder(&path),
+            Act::RevealParent => self.reveal_folder(&paths::parent(&path)),
         }
     }
 

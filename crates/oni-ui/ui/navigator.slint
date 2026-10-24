@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
-// Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle } from "ds/ds.slint";
+// Parent, the favourites key and the base's pill over the folders, then the ONI Trash in every view.
+import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm, FormStyle, Reach } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -28,10 +28,15 @@ export struct FolderLine {
     opened: bool,
     favourite: bool,
     present: bool,
+    // Out of reach: its state, the words saying it and the tooltip saying where.
+    reach: Reach,
+    caption: string,
+    help: string,
     renaming: bool,
 }
 
-export struct WelcomeLine { title: string, path: string }
+// A former library's folder; one on a disk away is shown, not offered.
+export struct WelcomeLine { title: string, path: string, enabled: bool }
 export struct CatchUpLine { folder: string, count: string }
 
 export global Navigator {
@@ -42,8 +47,11 @@ export global Navigator {
     in property <string> pill-help;
     in property <[FolderChoice]> ancestors;
     in property <bool> no-favourites;
-    // Computer's view, under which the ONI Trash's rows stand.
+    // Computer's view, the home and the volumes.
     in property <bool> at-computer;
+    // The base out of reach or holding no folder, said in place of its rows.
+    in property <string> blank-title;
+    in property <string> blank-detail;
     // The rows' height beside a photograph, dragged by the line under them.
     in-out property <length> height;
     in property <int> reveal-row: -1;
@@ -104,7 +112,9 @@ component Rows inherits Scroller {
                 form: RowForm.navigator;
                 starrable: true;
                 title: row.title;
-                help: row.path;
+                help: row.help != "" ? row.help : row.path;
+                caption: row.caption;
+                reach: row.reach;
                 depth: row.depth;
                 expandable: row.chevron;
                 expanded: row.unfolded;
@@ -125,7 +135,15 @@ component Rows inherits Scroller {
                 cancelled => { Navigator.rename-cancelled(); }
             }
         }
-        if Navigator.at-computer: VerticalLayout {
+        if Navigator.no-favourites: EmptyState {
+            title: @tr("No Favourites");
+            detail: @tr("Star a folder to keep it here; its photos stay indexed.");
+        }
+        if Navigator.blank-title != "": EmptyState {
+            title: Navigator.blank-title;
+            detail: Navigator.blank-detail;
+        }
+        VerticalLayout {
             for line[i] in root.trash-rows: Row {
                 kind: RowKind.trash;
                 form: RowForm.navigator;
@@ -156,8 +174,9 @@ component Welcome inherits VerticalLayout {
     Label { text: @tr("The archive shows a folder of your disk and everything under it."); tone: Tone.secondary; wrap: word-wrap; }
     if Navigator.welcome.length > 0: Label { text: @tr("Your photos were in:"); }
     for line[i] in Navigator.welcome: Button {
-        text: @tr("ADD {}", line.title);
+        text: line.enabled ? @tr("ADD {}", line.title) : line.title;
         help: line.path;
+        enabled: line.enabled;
         clicked => { Navigator.welcome-added(i); }
     }
     Button {
@@ -221,12 +240,6 @@ export component NavigatorSection inherits Rectangle {
                 trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
                 folder-menu(i, x, y) => { root.show-menu(i, x, y); }
             }
-            if Navigator.no-favourites: EmptyState {
-                y: 0;
-                height: self.preferred-height;
-                title: @tr("No Favourites");
-                detail: @tr("Star a folder to keep it here; its photos stay indexed.");
-            }
         }
         if root.beside-photo: Rectangle {
             height: Navigator.height;
@@ -237,12 +250,6 @@ export component NavigatorSection inherits Rectangle {
                 trash-restore(i) => { root.trash-restore(i); }
                 trash-menu(i, x, y) => { root.trash-menu(i, x, y); }
                 folder-menu(i, x, y) => { root.show-menu(i, x, y); }
-            }
-            if Navigator.no-favourites: EmptyState {
-                y: 0;
-                height: self.preferred-height;
-                title: @tr("No Favourites");
-                detail: @tr("Star a folder to keep it here; its photos stay indexed.");
             }
         }
         if root.beside-photo: RowsDivider {

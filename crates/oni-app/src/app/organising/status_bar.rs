@@ -23,7 +23,10 @@ impl Ctl {
             } else {
                 let path = picking::status_path(&s.picks.selection, false, s.open.as_deref());
                 let status = path.as_deref().map(|p| picking::status_label(p, None));
-                let leading = picking::status_leading(None, status, s.picks.selection.len(), shown);
+                let mut leading = picking::status_leading(None, status, s.picks.selection.len(), shown);
+                if let Some(missing) = s.missing_words() {
+                    leading = format!("{leading} · {missing}");
+                }
                 (leading, picking::medal_target(path.as_deref(), &s.picks.selection, &label), editor_target, seals)
             }
         };

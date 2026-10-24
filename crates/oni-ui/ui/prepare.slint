@@ -229,7 +229,7 @@ component FlagSheet inherits Scroller {
                     flagged: Preparing.cells[parent.at].flagged;
                     apart: Preparing.cells[parent.at].apart;
                     rgb: Preparing.cells[parent.at].rgb;
-                    missing: !Preparing.cells[parent.at].ticked;
+                    left-out: !Preparing.cells[parent.at].ticked;
                     clicked => { Preparing.sheet-clicked(parent.at); }
                 }
             }

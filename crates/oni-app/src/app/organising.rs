@@ -20,6 +20,7 @@ use std::time::Instant;
 
 mod grid;
 mod presence;
+pub(in crate::app) mod reach;
 mod pointer;
 mod grid_keys;
 mod cell_menu;
@@ -129,6 +130,7 @@ pub struct Organising {
     /// Each photo's state as the reads and the looks off this thread last published it.
     pub presence: HashMap<String, oni_library::presence::Presence>,
     pub opened_presence: oni_library::presence::Presence,
+    pub seen: reach::Seen,
     /// The volumes gone since the last listing, whose paths stay offline whatever lands later.
     pub left: Vec<String>,
     /// The opened folder's reads started, which the checks count.

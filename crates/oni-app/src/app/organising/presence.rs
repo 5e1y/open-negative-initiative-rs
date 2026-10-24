@@ -56,22 +56,36 @@ impl Ctl {
         if paths.is_empty() {
             return;
         }
-        let computer = self.state.borrow().nav.computer.clone();
+        let (computer, leads) = {
+            let s = self.state.borrow();
+            let leads: HashSet<String> = s.rows.iter().filter(|e| e.leads_passes).map(|e| e.path.clone()).collect();
+            (s.nav.computer.clone(), leads)
+        };
         let _ = std::thread::Builder::new().name("presence".into()).spawn(move || {
-            let found: Vec<(String, Presence)> = paths.into_iter().map(|p| {
-                let state = presence::of(&p, &computer);
-                (p, state)
-            }).collect();
-            super::super::with_shell(move |c| c.presence_landed(found));
+            let found: Vec<(String, Presence)> = paths.iter().map(|p| (p.clone(), presence::of(p, &computer))).collect();
+            // A lead there whose triplet lost a pass: the first one gone, by its channel.
+            let passes: Vec<(String, Option<(usize, String)>)> = found
+                .iter()
+                .filter(|(p, state)| state.is_present() && leads.contains(p))
+                .map(|(lead, _)| (lead.clone(), gone_pass(lead, &computer)))
+                .collect();
+            super::super::with_shell(move |c| c.presence_landed(found, passes));
         });
     }
 
-    fn presence_landed(self: &Rc<Self>, found: Vec<(String, Presence)>) {
+    fn presence_landed(self: &Rc<Self>, found: Vec<(String, Presence)>, passes: Vec<(String, Option<(usize, String)>)>) {
         let moved = {
             let mut s = self.state.borrow_mut();
             let mut moved = false;
             for (path, state) in found {
                 moved |= s.org.presence.insert(path, state) != Some(state);
+            }
+            for (lead, gone) in passes {
+                let was = match gone {
+                    Some(gone) => s.org.seen.gone_passes.insert(lead, gone.clone()) != Some(gone),
+                    None => s.org.seen.gone_passes.remove(&lead).is_some(),
+                };
+                moved |= was;
             }
             moved
         };
@@ -79,4 +93,14 @@ impl Ctl {
             self.lay_grid();
         }
     }
+}
+
+/// The first of `lead`'s passes its sidecar names that is not beside it. Reads the disk.
+fn gone_pass(lead: &str, computer: &oni_library::navigator::Computer) -> Option<(usize, String)> {
+    let passes = oni_library::rgb_passes::named_by(lead)?;
+    let names = [&passes.red, &passes.green, &passes.blue];
+    oni_library::rgb_passes::paths_beside(&passes, lead)
+        .iter()
+        .position(|p| !presence::of(p, computer).is_present())
+        .map(|channel| (channel, names[channel].clone()))
 }

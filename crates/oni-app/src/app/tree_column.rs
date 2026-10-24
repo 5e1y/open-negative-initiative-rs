@@ -2,6 +2,7 @@
 //! photo as a name or a thumbnail by `SidebarLayout`, the open row held under the top while its children pass.
 
 use super::*;
+use super::organising::reach;
 use crate::TreePin;
 use crate::sidebar::{self, Frame, Layout, Metrics};
 
@@ -115,10 +116,12 @@ impl Ctl {
             // `TreeLayers.caption`: a thumbnail is captioned by its stem, a name row by the whole name.
             row.title = stem(&path).into();
             let fingerprint = s.fingerprints.get(&path).cloned();
-            row.picture = fingerprint.as_ref().filter(|_| near(frame)).and_then(|f| s.thumbs.get(f)).unwrap_or_default();
             if let Some(f) = flags.get(&path) {
                 (row.medal, row.missing, row.rgb) = *f;
             }
+            (row.away, row.note, row.gone_pass) = s.tile_marks(&path);
+            let missing = row.missing;
+            row.picture = fingerprint.as_ref().filter(|_| near(frame)).and_then(|f| Some(reach::shown(&s.org.seen, f, s.thumbs.get(f)?, missing))).unwrap_or_default();
             if let Some(f) = fingerprint.filter(|f| !f.starts_with(thumbnails::PENDING) && !s.thumbs.contains(f) && !s.asked.contains(f)) {
                 asking.push(f);
             }
@@ -182,7 +185,7 @@ impl Ctl {
         for which in [Which::Archive, Which::Projects] {
             let Some(model) = self.column_model(which) else { return };
             let near = self.near_view(which);
-            let changed: Vec<(usize, Image)> = {
+            let changed: Vec<(usize, Image, String)> = {
                 let mut guard = self.state.borrow_mut();
                 let s = &mut *guard;
                 let (fingerprints, thumbs) = (&s.fingerprints, &s.thumbs);
@@ -197,7 +200,7 @@ impl Ctl {
                     if !laid.frames.get(i).is_some_and(&near) {
                         if *held {
                             *held = false;
-                            changed.push((i, Image::default()));
+                            changed.push((i, Image::default(), String::new()));
                         }
                         continue;
                     }
@@ -207,13 +210,13 @@ impl Ctl {
                     }
                     let Some(picture) = thumbs.get(fingerprint) else { continue };
                     *held = true;
-                    changed.push((i, picture));
+                    changed.push((i, picture, fingerprint.clone()));
                 }
                 changed
             };
-            for (i, picture) in changed {
+            for (i, picture, fingerprint) in changed {
                 if let Some(mut row) = model.row_data(i) {
-                    row.picture = picture;
+                    row.picture = reach::shown(&self.state.borrow().org.seen, &fingerprint, picture, row.missing);
                     model.set_row_data(i, row);
                 }
             }

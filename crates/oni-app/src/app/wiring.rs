@@ -226,6 +226,8 @@ impl Ctl {
             }
         });
         let p = me.clone();
+        lib.on_banner_acted(move |i| p.banner_acted(i.max(0) as usize));
+        let p = me.clone();
         lib.on_resized(move |w, h| {
             let changed = {
                 let mut s = p.state.borrow_mut();

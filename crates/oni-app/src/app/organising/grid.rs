@@ -41,6 +41,7 @@ impl Ctl {
         self.publish_status();
         self.publish_info();
         self.publish_empty();
+        self.publish_banner();
     }
 
     pub(super) fn publish_empty(&self) {
@@ -60,6 +61,9 @@ impl Ctl {
                 tr("Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.").into(),
                 tr("Open Folder…").into(),
             )
+        } else if !s.opened_presence().is_present() {
+            // Out of reach, a folder is not empty: the banner over the grid says what it is.
+            (String::new(), String::new(), String::new())
         } else {
             (tr("No Photos").into(), tr("No photo under this folder.").into(), tr("Open Folder…").into())
         };

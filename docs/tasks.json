@@ -2770,6 +2770,48 @@
     "detail": "reveal and show_folder hand explorer.exe the path with backslashes and no \\\\?\\ prefix (reveal_hands_explorer_backslashes; twin: the archive spelling holds '/'). suggested() keeps //server/share as one root (a_former_library_on_a_share_is_offered_on_that_share; twin: a one-slash path never becomes a share). On Windows the Thumbnails folder sits under LOCALAPPDATA when the support folder is the roaming default (windows_keeps_rebuildable_files_off_the_roaming_profile; twin: a check's own folder and other systems keep it)."
   },
   {
+    "id": 440,
+    "type": "fix",
+    "title": "A favourite or a folder out of reach fades with its state in words, and a click shows it in the gallery",
+    "status": "done",
+    "detail": "The navigator's rows read row_presence: offline or missing, the title and glyph fade, a mark (a disc struck through, a caution, a question) and a caption say it (\"T7 not connected\", \"Not found\", \"Access denied\"), a tooltip says where, and no chevron promises a folder inside. A click opens the folder in the gallery instead of waiting on a listing that never answers. Its menu keeps Open and the favourite, greys Rename, the roll and New Folder Inside, and offers Show the Parent Folder; the archive tree's folder menu greys the same inside an opened folder out of reach. The base out of reach or holding no folder says so in the column; the welcome shows a former folder on a disk away without offering it (a_favourite_moved_away_on_the_home_fades_and_its_menu_greys; twin: a favourite there stays whole, its menu whole). With no volumes' folder known (Computer::none, every check's default), no path is on a volume, so the home's folders never read offline (twin in navigator/tests.rs)."
+  },
+  {
+    "id": 441,
+    "type": "feature",
+    "title": "The ONI Trash stands in every view of the navigator",
+    "status": "done",
+    "detail": "Owner's decision D5: the trash's rows sit under the folders in Favourites, a base and Computer alike, published from the launch; No Favourites lies in the column above it rather than over it."
+  },
+  {
+    "id": 442,
+    "type": "feature",
+    "title": "An opened folder out of reach is said by a banner over its kept tiles, never as an empty folder",
+    "status": "done",
+    "detail": "A design-system Banner (Raised, its state's glyph, a title, words, keys) stands over the grid while the opened folder is offline or missing: \"T7 Not Connected\" with the last thumbnails kept, \"No Access\", or \"Folder Not Found\" with Remove from Favourites; the empty state says nothing then, and \"No Photos\" stays for a folder there and empty. The status bar adds \"N originals missing\". Shown on the board's Notices (an_opened_folder_gone_is_not_an_empty_folder; twin: a real empty folder says No Photos and shows no banner)."
+  },
+  {
+    "id": 443,
+    "type": "fix",
+    "title": "A missing original's tile greys its picture alone, as Swift's faded layer",
+    "status": "done",
+    "detail": "TileLayers' faded layer: the thumbnail greyed to its luma in Rust (kept per buffer, made again once redrawn) and faded on the picture alone, the well, medal, seal, ring and rounded corners whole, in the gallery and the tree's thumbnails; a corner disc marks its state and the tooltip says where it was. A frame left out of the roll keeps the whole tile's fade (left-out) (a_missing_tile_is_grey_on_its_own_layer, twin of galleryCellSelfCheck's faded layer; twins: the photo there keeps its colour, and its picture is drawn otherwise while the medal and the corner are drawn alike)."
+  },
+  {
+    "id": 444,
+    "type": "fix",
+    "title": "The cell menu on missing originals counts them first and leaves them out of every write",
+    "status": "done",
+    "detail": "A greyed \"N photos missing\" line opens the menu; Paste, Reset, Reset to Default, the medals, New Roll, Ungroup and the ONI Trash act on the photos there, are greyed when none is, and say once how many they left out; projects still name every photo, Export and Show in Finder kept to the present ones. The cell menu moved to organise/cells.rs, so organise.rs leaves its grandfathered ceiling."
+  },
+  {
+    "id": 445,
+    "type": "fix",
+    "title": "A triplet with a pass gone wears the seal that names it",
+    "status": "done",
+    "detail": "The presence looks behind the interface read each lead's passes from its sidecar: one gone turns the lead's seal to the destructive foil reading \"R MISSING\" (G, B), its tooltip naming the file; back beside it, the RGB seal returns (a_triplet_with_a_pass_gone_is_marked; twin: the whole triplet keeps its plain seal)."
+  },
+  {
     "id": 450,
     "type": "fix",
     "title": "The ONI Trash is the whole library's: a photo trashed in one folder is listed and restored from any other, one on a disk away says so",

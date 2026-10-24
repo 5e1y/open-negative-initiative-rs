@@ -10,7 +10,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **blocked**: the check guards a behaviour the port does not have yet, named beside it.
 - **departed**: the check guards a behaviour the owner chose to leave; not counted.
 
-Of 161 checks: 106 twin, 32 partial, 10 none, 13 blocked; one departed.
+Of 161 checks: 106 twin, 33 partial, 9 none, 13 blocked; one departed.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -133,7 +133,7 @@ Of 161 checks: 106 twin, 32 partial, 10 none, 13 blocked; one departed.
 | 117 | `DSHover.selfCheck` | `Checks/DesignSystem/DSHover+Checks.swift:4` | hover fallback holds | blocked: no external hover state | none |
 | 118 | `GalleryView.selfCheck` | `Checks/UI/GalleryView+Checks.swift:31` | gallery grid holds | twin | `oni-app/src/gallery.rs::the_tile_follows_the_width_and_the_cells_sit_on_the_swift_grid` |
 | 119 | `galleryEngineSelfCheck` | `Checks/UI/GalleryEngine+Checks.swift:53` | gallery engine holds | partial | `oni-app/src/gallery.rs::a_scroll_asks_only_for_the_rows_in_view` |
-| 120 | `galleryCellSelfCheck` | `Checks/UI/GalleryEngine+Checks.swift:120` | gallery cell holds | none | none |
+| 120 | `galleryCellSelfCheck` | `Checks/UI/GalleryEngine+Checks.swift:120` | gallery cell holds | partial: a missing original's picture is faded on its own layer, the ground left whole; the rest of the cell's layers unchecked | `oni-app/tests/window/visible.rs::a_missing_tile_is_grey_on_its_own_layer` |
 | 121 | `galleryEngineSelectAllSelfCheck` | `Checks/UI/GalleryEngine+Checks.swift:58` | gallery engine select-all holds | twin | `oni-app/src/picking.rs::command_a_completes_the_groups_the_selection_touches_else_the_focus_else_the_last` |
 | 122 | `Propagation.selfCheck` | `Checks/Pipeline/Propagation+Checks.swift:9` | propagation holds | partial | `oni-core/tests/swift_checks.rs::a_paste_lays_the_look_and_leaves_the_framing_balance_and_film_type`, `::each_former_group_carries_its_rows_and_none_falls_between_two`, `::a_new_preset_is_offered_the_lowest_free_number`, `::presets_live_one_file_each_and_a_damaged_one_takes_none_down`, `::an_import_never_overwrites_and_a_duplicate_says_so`, `oni-core/tests/roll8.rs::paste_to_roll_is_one_editor_step_over_the_whole_roll`; no Rust code for the mode targets, the measure-window board, share codes, retiring the shipped presets or the preview isolation, and the automatic balance is the measurement wave's |
 | 123 | `AutoLevels.selfCheck` | `Checks/Pipeline/AutoLevels+Checks.swift:10` | automatic placement holds | twin | `oni-measure/tests/auto_levels.rs::the_threshold_skips_isolated_pixels_and_bites_when_raised`, `::a_known_shift_comes_back_and_classic_moves_no_median_or_white`, `::placing_writes_all_five_handles_on_the_mode_s_own_window`, `::step_one_recentres_on_green_and_the_gain_sense_follows_the_mode`, `::two_steps_recover_a_channel_piled_on_the_window_s_top_and_change_nothing_on_a_sane_one`, `::the_bound_holds_recentring_to_the_room_between_the_tail_and_the_window`, `::a_selection_balances_each_or_on_the_mean_and_an_unreadable_frame_stops_it` |

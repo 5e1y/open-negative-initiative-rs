@@ -39,7 +39,7 @@ export component EmptyState inherits VerticalLayout {
     alignment: center;
     spacing: Space.s;
     padding: Space.l;
-    Label { role: TextRole.title; text: root.title; centred: true; }
+    Label { role: TextRole.title; text: root.title; centred: true; wrap: word-wrap; }
     if root.detail != "": Label { tone: Tone.secondary; text: root.detail; centred: true; wrap: word-wrap; }
     if root.action != "": HorizontalLayout {
         alignment: center;

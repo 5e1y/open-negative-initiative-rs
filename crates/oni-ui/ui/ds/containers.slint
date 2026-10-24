@@ -1,10 +1,12 @@
-// The containers: a block's section, the help mark, the sheet and the question a sheet asks.
+// The containers: a block's section, the help mark, the sheet, the question a sheet asks, the
+// notice that passes and the banner that stays.
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
+import { Reach, Reaches } from "reach.slint";
 
 // The "?" beside a block's title: a ghost key whose note shows as a card.
 export component HelpMark inherits Button {
@@ -240,6 +242,39 @@ export component Toast inherits Rectangle {
             ButtonGroup { plate: true; align: GroupAlign.end;
                 if root.action != "": Button { text: root.action; clicked => { root.acted(); } }
                 Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }
+            }
+        }
+    }
+}
+
+// A band over a view that says why what it shows is out of reach, the view kept under it: the
+// state's glyph, a title and its words, then the keys acting on the place it names.
+export component Banner inherits Raised {
+    in property <Reach> reach: Reach.offline;
+    in property <string> title;
+    in property <string> message;
+    in property <[string]> keys;
+    callback acted(int);
+    pad: Gap.m;
+    accessible-role: text;
+    accessible-label: root.title;
+    HorizontalLayout {
+        spacing: Space.m;
+        VerticalLayout {
+            alignment: start;
+            Icon { source: Reaches.glyph(root.reach); width: ButtonStyle.icon; height: ButtonStyle.icon; }
+        }
+        // The keys under the words, so a narrow view never squeezes them to a column.
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Space.xxs;
+            Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
+            Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
+            if root.keys.length > 0: VerticalLayout {
+                padding-top: Space.s;
+                ButtonGroup { plate: true; align: GroupAlign.end;
+                    for key[i] in root.keys: Button { text: key; clicked => { root.acted(i); } }
+                }
             }
         }
     }

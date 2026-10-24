@@ -19,6 +19,8 @@ fn the_navigator_climbs_one_folder_at_a_time_up_to_computer() {
     assert_eq!(c.parent("/Volumes/T7/Scans").as_deref(), Some("/Volumes/T7"));
     assert_eq!(c.ancestors("/Volumes/T7/Scans/2026"), ["/Volumes/T7/Scans/2026", "/Volumes/T7/Scans", "/Volumes/T7"]);
     assert!(c.is_on_volume("/Volumes/T7/a") && !c.is_on_volume("/Volumesque/a") && !c.is_on_volume("/Users/someone"));
+    // Twin: no volumes' folder known, no path is on a volume, the home's least of all.
+    assert!(!Computer::none().is_on_volume("/Users/someone/Scans"));
 }
 
 #[test]

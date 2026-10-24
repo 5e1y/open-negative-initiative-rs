@@ -1,7 +1,7 @@
 // The board's tiles: the gallery's heading and tile, the roll's frame on the same tile, a picture on
 // every ground and fit, the selection's rings, the discs and medals, the presets' cards, the stocks'
 // cells, a reorder's ghost and a project's stack.
-import { Colour, Space, Radius, ScannerStyle, TileStyle, TabsStyle, ButtonStyle, Picture, Ground, Fit, TileView, TileMarks, TileHeading, CardStack, PresetFace, StockCellView, StockIcon, RingPlacement, SelectionTone, SelectionRing, Dot, Medal } from "../ds.slint";
+import { Colour, Space, Radius, ScannerStyle, TileStyle, TabsStyle, ButtonStyle, Picture, Ground, Fit, TileView, TileMarks, TileHeading, CardStack, PresetFace, StockCellView, StockIcon, RingPlacement, SelectionTone, SelectionRing, Dot, Medal, Reach } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
 // A tile in its looks, all on one picture; it draws no hover of its own.
@@ -15,8 +15,10 @@ component TileStates inherits Line {
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 1; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 2; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 3; selected: true; } }
-    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; medal: 1; note: "Original not found at ~/Scans/DSC_6432.NEF"; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; away: Reach.offline; rgb: true; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; medal: 2; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; gone-pass: "R MISSING"; } }
 }
 
 // A frame of Prepare the Roll on the tile: its marks apart, its picture rounded.
@@ -51,7 +53,7 @@ component FaceStates inherits Line {
 
 export component TilesPage inherits Page {
     title: "Tiles";
-    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing, rgb, marks (medal, apart), apart, flagged, ring (inset, outset), rounded, clicked. Picture: ground, rounded, radius, fit. SelectionRing: placement, tone, radius. Dot: size, ink; Medal: rank. PresetFace: new, lit, enabled. StockCellView, StockIcon, CardStack.";
+    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing (away, note), left-out, rgb, gone-pass, marks (medal, apart), apart, flagged, ring (inset, outset), rounded, clicked. Picture: ground, rounded, radius, fit. SelectionRing: placement, tone, radius. Dot: size, ink; Medal: rank. PresetFace: new, lit, enabled. StockCellView, StockIcon, CardStack.";
     Group {
         title: "TileHeading (on the canvas)";
         states: ["Live"];
@@ -72,7 +74,7 @@ export component TilesPage inherits Page {
     }
     Group {
         title: "TileView";
-        states: ["Live (rest)", "Selected", "Bronze", "Silver", "Gold, selected", "Missing original", "RGB seal, silver"];
+        states: ["Live (rest)", "Selected", "Bronze", "Silver", "Gold, selected", "Missing original, bronze", "Offline original, RGB", "RGB seal, silver", "A pass gone"];
         TileStates { label: "photo, captioned"; picture: Samples.photo; captioned: true; }
         TileStates { label: "photo, no caption"; picture: Samples.other; }
         TileStates { label: "empty well"; captioned: true; }
@@ -94,7 +96,7 @@ export component TilesPage inherits Page {
             Fill { span: BoardStyle.cell - Space.l; Frame { rgb: true; } }
             Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; selected: true; } }
             Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; flagged: true; } }
-            Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; missing: true; apart: true; rgb: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; left-out: true; apart: true; rgb: true; } }
         }
     }
     Group {

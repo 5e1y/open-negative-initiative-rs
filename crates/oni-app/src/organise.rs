@@ -2,8 +2,10 @@
 //! the selection, its anchor and the keyboard's cursor, kept by path so a relayout keeps them.
 
 use crate::picking::{self, Click, ClickTracker, SpaceKey, Step};
-use oni_i18n::tr;
 use std::collections::HashSet;
+
+mod cells;
+pub use cells::*;
 
 /// A grid as the keys read it: its photos in the order shown and its bands, each named.
 pub struct Shown<'a> {
@@ -146,122 +148,6 @@ impl Picks {
     }
 }
 
-/// What a line of the cell menu does, `CellMenu`'s buttons in its order.
-#[derive(Clone, Debug, PartialEq)]
-pub enum CellAction {
-    Paste,
-    Reset,
-    ResetToDefault,
-    Medal(oni_settings::Medal),
-    NewRoll,
-    Ungroup,
-    NewProject,
-    /// Opens the projects to add to; the chosen one comes back as `AddToProject`.
-    AddTo,
-    AddToProject(oni_settings::Id),
-    RemoveFrom,
-    RemoveFromProject(oni_settings::Id),
-    Export,
-    Reveal,
-    Trash,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct CellLine {
-    pub text: String,
-    pub enabled: bool,
-    pub rule: bool,
-    pub action: CellAction,
-    /// The photos it acts on, which also become the selection.
-    pub scope: Vec<String>,
-}
-
-/// `Medal.label`.
-pub fn medal_name(medal: oni_settings::Medal) -> &'static str {
-    use oni_settings::Medal;
-    match medal {
-        Medal::None => tr("None"),
-        Medal::Bronze => tr("Bronze"),
-        Medal::Silver => tr("Silver"),
-        Medal::Gold => tr("Gold"),
-    }
-}
-
-/// `CellMenu.targets`: the selection when the pointed photo is in it, else the photo alone.
-pub fn cell_scope(path: &str, selection: &HashSet<String>) -> HashSet<String> {
-    if selection.contains(path) { selection.clone() } else { HashSet::from([path.to_owned()]) }
-}
-
-/// Where the menu's facts come from, read only when the menu opens.
-pub struct CellFacts<'a> {
-    pub missing: &'a HashSet<String>,
-    pub rolled: &'a HashSet<String>,
-    pub can_paste: bool,
-    /// Every project, then those holding any photo of the scope, as (id, name).
-    pub projects: Vec<(oni_settings::Id, String)>,
-    pub member_of: Vec<(oni_settings::Id, String)>,
-}
-
-fn sorted(set: &HashSet<String>, order: &[String]) -> Vec<String> {
-    let mut v: Vec<String> = order.iter().filter(|p| set.contains(*p)).cloned().collect();
-    let mut rest: Vec<String> = set.iter().filter(|p| !v.contains(p)).cloned().collect();
-    rest.sort();
-    v.extend(rest);
-    v
-}
-
-/// `CellMenu.body`, line by line; a submenu's opener is a line whose action is `AddTo` or `RemoveFrom`.
-pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -> Vec<CellLine> {
-    use oni_settings::Medal;
-    let all = sorted(scope, order);
-    let exportable: HashSet<String> = scope.difference(facts.missing).cloned().collect();
-    let joined: HashSet<String> = scope.intersection(facts.rolled).cloned().collect();
-    let line = |text: String, enabled: bool, rule: bool, action: CellAction, on: &HashSet<String>| CellLine { text, enabled, rule, action, scope: sorted(on, order) };
-    let n = scope.len();
-    // `menu_label`'s words: the verb alone for one photo, counted past it.
-    let counted = |count: usize, one: &'static str, many: String| if count > 1 { many } else { tr(one).to_owned() };
-    let mut lines = vec![
-        line(counted(n, "Paste Settings", tr!("Paste Settings ({count} photos)", count = n)), facts.can_paste, false, CellAction::Paste, scope),
-        line(counted(n, "Reset Settings", tr!("Reset Settings ({count} photos)", count = n)), true, false, CellAction::Reset, scope),
-        line(counted(n, "Reset to Default…", tr!("Reset to Default… ({count} photos)", count = n)), true, false, CellAction::ResetToDefault, scope),
-    ];
-    for (i, medal) in [Medal::None, Medal::Bronze, Medal::Silver, Medal::Gold].into_iter().enumerate() {
-        lines.push(line(medal_name(medal).into(), true, i == 0, CellAction::Medal(medal), scope));
-    }
-    lines.push(line(counted(n, "New Roll from", tr!("New Roll from ({count} photos)", count = n)), true, true, CellAction::NewRoll, scope));
-    let (j, e) = (joined.len(), exportable.len());
-    lines.push(line(counted(j, "Ungroup", tr!("Ungroup ({count} photos)", count = j)), !joined.is_empty(), false, CellAction::Ungroup, &joined));
-    lines.push(line(counted(n, "New Project from", tr!("New Project from ({count} photos)", count = n)), true, false, CellAction::NewProject, scope));
-    if !facts.projects.is_empty() {
-        lines.push(line(tr("Add to Project").into(), true, false, CellAction::AddTo, scope));
-    }
-    if !facts.member_of.is_empty() {
-        lines.push(line(tr("Remove from Project").into(), true, false, CellAction::RemoveFrom, scope));
-    }
-    lines.push(line(counted(e, "Export…", tr!("Export… ({count} photos)", count = e)), !exportable.is_empty(), true, CellAction::Export, &exportable));
-    lines.push(line(counted(e, "Show in Finder", tr!("Show in Finder ({count} photos)", count = e)), !exportable.is_empty(), false, CellAction::Reveal, &exportable));
-    let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
-    lines.push(CellLine { text: trash, enabled: true, rule: true, action: CellAction::Trash, scope: all });
-    lines
-}
-
-/// The submenu a line opens: the projects to add to, or those to leave.
-pub fn submenu(opener: &CellLine, facts: &CellFacts) -> Vec<CellLine> {
-    let (list, make): (&[(oni_settings::Id, String)], fn(oni_settings::Id) -> CellAction) = match opener.action {
-        CellAction::AddTo => (&facts.projects, CellAction::AddToProject),
-        CellAction::RemoveFrom => (&facts.member_of, CellAction::RemoveFromProject),
-        _ => return Vec::new(),
-    };
-    list.iter().map(|(id, name)| CellLine { text: name.clone(), enabled: true, rule: false, action: make(*id), scope: opener.scope.clone() }).collect()
-}
-
-/// The ONI Trash's cell menu: Restore, then Show in Finder.
-pub fn trash_menu(scope: &HashSet<String>, order: &[String]) -> Vec<(String, bool, Vec<String>)> {
-    let n = scope.len();
-    let on = sorted(scope, order);
-    vec![(if n > 1 { tr!("Restore {count} Photos", count = n) } else { tr("Restore").into() }, false, on.clone()), (tr("Show in Finder").into(), true, on)]
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -363,39 +249,5 @@ mod tests {
         let mut last = Picks::default();
         last.key(GridKey::SelectAll, false, &g.shown(), None, None);
         assert_eq!(last.selection, set(&["b1", "b2", "b3"]));
-    }
-
-    #[test]
-    fn the_cell_menu_acts_on_the_selection_it_points_into_and_counts_each_verbs_own_scope() {
-        let order = paths(&["a", "b", "c"]);
-        let selection = set(&["a", "b"]);
-        assert_eq!(cell_scope("a", &selection), selection);
-        assert_eq!(cell_scope("c", &selection), set(&["c"]), "a photo outside the selection is its own scope");
-        let (missing, rolled) = (set(&["b"]), set(&["a"]));
-        let trip = oni_settings::Id::new();
-        let facts = CellFacts { missing: &missing, rolled: &rolled, can_paste: false, projects: vec![(trip, "Trip".into())], member_of: vec![] };
-        let lines = cell_menu(&selection, &order, &facts);
-        let texts: Vec<&str> = lines.iter().map(|l| l.text.as_str()).collect();
-        assert_eq!(
-            texts,
-            [
-                "Paste Settings (2 photos)", "Reset Settings (2 photos)", "Reset to Default\u{2026} (2 photos)",
-                "None", "Bronze", "Silver", "Gold",
-                "New Roll from (2 photos)", "Ungroup", "New Project from (2 photos)", "Add to Project",
-                "Export\u{2026}", "Show in Finder", "Move 2 Photos to ONI Trash"
-            ]
-        );
-        assert!(!lines[0].enabled, "Paste waits for copied settings");
-        assert_eq!(lines[8].scope, paths(&["a"]), "Ungroup reaches only the photos in a roll");
-        assert_eq!(lines[11].scope, paths(&["a"]), "a missing original is not exported");
-        let rules: Vec<usize> = lines.iter().enumerate().filter(|(_, l)| l.rule).map(|(i, _)| i).collect();
-        assert_eq!(rules, [3, 7, 11, 13]);
-        let sub = submenu(&lines[10], &facts);
-        assert_eq!((sub[0].text.as_str(), sub[0].action.clone()), ("Trip", CellAction::AddToProject(trip)));
-        // Twin: no project at all offers no Add to Project, and a scope in none no Remove.
-        let bare = CellFacts { projects: vec![], ..facts };
-        assert!(!cell_menu(&set(&["c"]), &order, &bare).iter().any(|l| matches!(l.action, CellAction::AddTo | CellAction::RemoveFrom)));
-        assert_eq!(trash_menu(&set(&["a"]), &order)[0].0, "Restore");
-        assert_eq!(trash_menu(&selection, &order)[0].0, "Restore 2 Photos");
     }
 }

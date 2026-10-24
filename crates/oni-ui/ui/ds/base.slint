@@ -110,6 +110,8 @@ export component Picture inherits Rectangle {
     // The texels of `source` shown from its corner, a texture larger than its picture; 0 shows it whole.
     in property <int> clip-width;
     in property <int> clip-height;
+    // The picture's own opacity, its ground and what lies over it left whole.
+    in property <float> picture-opacity: 1;
     background: Tones.ground(root.ground);
     border-radius: root.rounded ? root.radius : 0px;
     clip: root.rounded;
@@ -121,6 +123,7 @@ export component Picture inherits Rectangle {
         source-clip-height: root.clip-height > 0 ? root.clip-height : root.source.height;
         image-fit: root.revision < 0 || root.fit == Fit.fill ? ImageFit.fill : root.fit == Fit.cover ? ImageFit.cover : ImageFit.contain;
         image-rendering: root.pixelated ? ImageRendering.pixelated : ImageRendering.smooth;
+        opacity: root.picture-opacity;
     }
 }
 
