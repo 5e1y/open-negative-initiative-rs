@@ -103,7 +103,28 @@ impl Ctl {
                 self.open_in_editor(&path);
             }
             self.wrapped_after_read();
+            self.read_once_settled();
         }
+    }
+
+    /// A read that left files still being written reads the folder again once they may rest, so a
+    /// copy that ends with no further change is still printed whole.
+    fn read_once_settled(self: &Rc<Self>) {
+        let (settling, generation) = {
+            let s = self.state.borrow();
+            (!s.survey.settling.is_empty(), s.generation.load(Ordering::Relaxed))
+        };
+        if !settling {
+            return;
+        }
+        let me = Rc::downgrade(self);
+        Timer::single_shot(oni_library::roots::SETTLE * 2, move || {
+            if let Some(me) = me.upgrade()
+                && me.state.borrow().generation.load(Ordering::Relaxed) == generation
+            {
+                me.read_again();
+            }
+        });
     }
 
     /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
@@ -238,7 +259,7 @@ impl Ctl {
                 }
                 Err(e) => {
                     s.failed.insert(fingerprint.clone());
-                    Some(format!("{name}: {e}"))
+                    (!e.is_empty()).then(|| format!("{name}: {e}"))
                 }
             }
         };

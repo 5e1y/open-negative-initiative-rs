@@ -3,6 +3,7 @@
 
 use super::*;
 use oni_library::paths::holds;
+use std::path::Path;
 use oni_library::presence::{self, Away, Presence};
 
 impl State {
@@ -69,11 +70,17 @@ impl Ctl {
                 .filter(|(p, state)| state.is_present() && leads.contains(p))
                 .map(|(lead, _)| (lead.clone(), gone_pass(lead, &computer)))
                 .collect();
-            super::super::with_shell(move |c| c.presence_landed(found, passes));
+            // A file no reader of ONI takes, by its format's name: only one its name leaves in doubt is opened.
+            let unsupported: Vec<(String, Option<String>)> = found
+                .iter()
+                .filter(|(p, state)| state.is_present() && !oni_decode::named_decodable(Path::new(p)))
+                .map(|(p, _)| (p.clone(), oni_decode::unsupported_format(Path::new(p))))
+                .collect();
+            super::super::with_shell(move |c| c.presence_landed(found, passes, unsupported));
         });
     }
 
-    fn presence_landed(self: &Rc<Self>, found: Vec<(String, Presence)>, passes: Vec<(String, Option<(usize, String)>)>) {
+    fn presence_landed(self: &Rc<Self>, found: Vec<(String, Presence)>, passes: Vec<(String, Option<(usize, String)>)>, unsupported: Vec<(String, Option<String>)>) {
         let moved = {
             let mut s = self.state.borrow_mut();
             let mut moved = false;
@@ -86,6 +93,12 @@ impl Ctl {
                     None => s.org.seen.gone_passes.remove(&lead).is_some(),
                 };
                 moved |= was;
+            }
+            for (path, format) in unsupported {
+                moved |= match format {
+                    Some(format) => s.org.seen.unsupported.insert(path, format.clone()) != Some(format),
+                    None => s.org.seen.unsupported.remove(&path).is_some(),
+                };
             }
             moved
         };

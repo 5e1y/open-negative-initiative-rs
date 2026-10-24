@@ -17,6 +17,8 @@ const GREYS: usize = 256;
 pub struct Seen {
     /// Each lead whose triplet lost a pass: the first gone, by channel (0 red) and name.
     pub gone_passes: HashMap<String, (usize, String)>,
+    /// Each photo no reader of ONI takes, by its format's name in capitals (`HEIC`).
+    pub unsupported: HashMap<String, String>,
     greys: Greys,
 }
 
@@ -151,7 +153,8 @@ impl State {
         self.row_presence(path)
     }
 
-    /// A tile's marks beyond its flags: its state, its tooltip and its seal's words for a pass gone.
+    /// A tile's marks beyond its flags: its state, its tooltip and its seal's words for a pass gone
+    /// or a format no reader of ONI takes.
     pub(in crate::app) fn tile_marks(&self, path: &str) -> (crate::Reach, SharedString, SharedString) {
         let presence = self.presence(path);
         if !presence.is_present() {
@@ -159,6 +162,10 @@ impl State {
         }
         if self.survey.cloud.contains(path) {
             return (crate::Reach::Here, tr("In the cloud: opening it downloads it").into(), SharedString::new());
+        }
+        if let Some(format) = self.org.seen.unsupported.get(path) {
+            let note = tr!("Format not supported ({format})", format = format);
+            return (crate::Reach::Here, note.into(), format.into());
         }
         match self.org.seen.gone_passes.get(path) {
             Some((channel, name)) => {

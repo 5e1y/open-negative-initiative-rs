@@ -4,7 +4,7 @@
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::UNIX_EPOCH;
 
 use serde::{Deserialize, Serialize};
 
@@ -140,10 +140,7 @@ pub fn put(destination: &Path, bytes: &[u8], ledger: &Ledger, replacing: bool) -
 
 /// The bytes written and flushed beside `destination` under a hidden name no archive lists.
 fn staged(destination: &Path, bytes: &[u8]) -> io::Result<PathBuf> {
-    let folder = destination.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-    let staged = folder.join(format!(".{name}.{}.{stamp}.tmp", std::process::id()));
+    let staged = oni_settings::atomic::temporary(destination);
     let written = (|| {
         let mut file = OpenOptions::new().write(true).create_new(true).open(&staged)?;
         file.write_all(bytes)?;

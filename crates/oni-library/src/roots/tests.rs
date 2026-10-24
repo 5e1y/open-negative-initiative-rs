@@ -136,3 +136,120 @@ fn a_former_library_on_a_share_is_offered_on_that_share() {
     // Twin: a path rooted at one slash stays there, and never becomes a share.
     assert_eq!(suggested(&["/nas/film/Scans/A/1.NEF".to_string()], "/Users/a"), ["/nas/film/Scans/A"]);
 }
+
+fn files(root: &Path, relatives: &[&str]) {
+    for relative in relatives {
+        let path = root.join(relative);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, [0u8]).unwrap();
+    }
+}
+
+/// The Finder's bundle bit, `kHasBundle` in the Finder flags, as the Photo Booth library carries.
+#[cfg(target_os = "macos")]
+fn bundled(folder: &Path) {
+    use std::os::unix::ffi::OsStrExt;
+    let mut info = [0u8; 32];
+    info[8] = 0x20;
+    let name = std::ffi::CString::new(folder.as_os_str().as_bytes()).unwrap();
+    // SAFETY: a valid C string and 32 bytes of attribute.
+    let set = unsafe { libc::setxattr(name.as_ptr(), c"com.apple.FinderInfo".as_ptr(), info.as_ptr().cast(), 32, 0, 0) };
+    assert_eq!(set, 0);
+}
+
+#[test]
+fn photo_booth_library_is_a_package() {
+    let scratch = Scratch::new("roots-packages");
+    files(scratch.path(), &["Photo Booth Library/Pictures/a.jpg", "Photo Booth Library/Contents/PkgInfo", "Lr.lrlibrary/b.jpg", "Album.photoslibrary/c.jpg", "Film/d.RW2"]);
+    let root = paths::canonical(scratch.path());
+    let booth = scratch.path().join("Photo Booth Library");
+    let listed = |root: &str| scan(&[root.to_owned()]).into_iter().map(|p| p[root.len() + 1..].to_owned()).collect::<BTreeSet<_>>();
+    // Twin: without its bundle bit the library is a plain folder, its photo listed.
+    assert!(!is_package(&booth) && listed(&root).contains("Photo Booth Library/Pictures/a.jpg"));
+    #[cfg(target_os = "macos")]
+    {
+        bundled(&booth);
+        assert!(is_package(&booth), "a package with no extension");
+        assert_eq!(package_holding(&booth.join("Pictures")), Some(booth.clone()));
+        // A `.lrlibrary` no installed app declares is a folder, as the Finder shows it.
+        assert_eq!(listed(&root), BTreeSet::from(["Film/d.RW2", "Lr.lrlibrary/b.jpg"].map(String::from)));
+        let rows = crate::navigator::children(&root).unwrap();
+        assert_eq!(rows, [paths::join(&root, "Film"), paths::join(&root, "Lr.lrlibrary")]);
+    }
+    assert!(is_package(&scratch.path().join("Album.photoslibrary")));
+    assert_eq!(package_holding(&scratch.path().join("Film")), None);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_symlinked_folder_is_listed_and_a_loop_is_not_followed() {
+    use std::os::unix::fs::symlink;
+    let scratch = Scratch::new("roots-links");
+    files(scratch.path(), &["Archive/Real/a.NEF", "T7/Scans/b.NEF", "T7/Scans/Deep/c.NEF"]);
+    let archive = scratch.path().join("Archive");
+    let scans = scratch.path().join("T7/Scans");
+    symlink(&scans, archive.join("Scans")).unwrap();
+    // Loops: to the root itself, to a folder inside it, and from inside the linked folder back to it.
+    symlink(&archive, archive.join("Up")).unwrap();
+    symlink(archive.join("Real"), archive.join("Again")).unwrap();
+    symlink(&scans, scans.join("Deep/Back")).unwrap();
+    symlink(scratch.path().join("gone"), archive.join("Dangling")).unwrap();
+    let root = paths::canonical(&archive);
+    let surveyed = survey(std::slice::from_ref(&root), &|| true);
+    let images: BTreeSet<String> = surveyed.images.iter().map(|p| p[root.len() + 1..].to_owned()).collect();
+    assert_eq!(images, BTreeSet::from(["Real/a.NEF", "Scans/b.NEF", "Scans/Deep/c.NEF"].map(String::from)), "each photo once, under the link's name");
+    assert!(surveyed.folders.contains(&paths::join(&root, "Scans")));
+    let rows = crate::navigator::children(&root).unwrap();
+    assert_eq!(rows, [paths::join(&root, "Real"), paths::canonical(&scans)], "a link by its folder");
+    // Twin: the link's own folder never lists itself back, and an unfolded loop shows once.
+    assert!(!rows.contains(&root));
+    let back = crate::navigator::children(&paths::join(&paths::canonical(&scans), "Deep")).unwrap();
+    assert!(back.is_empty(), "{back:?}");
+    let mut nav = crate::navigator::Navigation::new(Some(root.clone()), false, BTreeSet::from([root.clone(), "/x".to_owned(), "/y".to_owned()]), Vec::new());
+    nav.listed(&root, vec!["/x".to_owned()]);
+    nav.listed("/x", vec!["/y".to_owned()]);
+    nav.listed("/y", vec!["/x".to_owned()]);
+    let laid: Vec<String> = nav.rows(&[]).into_iter().map(|(p, _)| p).collect();
+    assert_eq!(laid, ["/x", "/y", "/x"]);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn a_finder_alias_to_a_folder_is_listed_by_its_folder() {
+    let scratch = Scratch::new("roots-alias");
+    files(scratch.path(), &["Home/note.txt", "T7/Scans/b.NEF"]);
+    let scans = scratch.path().join("T7/Scans");
+    assert!(make_alias(&scans, &scratch.path().join("Home/Scans alias")));
+    let home = paths::canonical(&scratch.path().join("Home"));
+    assert_eq!(crate::navigator::children(&home), Some(vec![paths::canonical(&scans)]));
+    // Twin: a plain file of that name is no row.
+    assert_eq!(alias_target(&scratch.path().join("Home/note.txt")), None);
+}
+
+#[test]
+fn a_file_still_being_written_is_settling_until_it_rests() {
+    use std::io::Write;
+    let scratch = Scratch::new("roots-settling");
+    files(scratch.path(), &["Roll/a.NEF", "Roll/b.NEF", "Roll/c.NEF"]);
+    let roll = scratch.path().join("Roll");
+    let future = SystemTime::now() + std::time::Duration::from_secs(365 * 86_400);
+    // A camera's clock a year ahead: a date to come is no copy.
+    std::fs::OpenOptions::new().write(true).open(roll.join("c.NEF")).unwrap().set_modified(future).unwrap();
+    // A copy in progress: `a.NEF` grows while the survey looks.
+    let growing = roll.join("a.NEF");
+    let copying = std::thread::spawn(move || {
+        let mut file = std::fs::OpenOptions::new().append(true).open(growing).unwrap();
+        for _ in 0..40 {
+            file.write_all(&[1; 4096]).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    });
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    let root = paths::canonical(scratch.path());
+    let surveyed = survey(std::slice::from_ref(&root), &|| true);
+    copying.join().unwrap();
+    let settling: BTreeSet<String> = surveyed.settling.iter().map(|p| paths::name(p)).collect();
+    assert_eq!(settling, BTreeSet::from(["a.NEF".to_owned()]), "b.NEF, written as recently, rests");
+    // Twin: once the copy ends, every file is read, the one just written too.
+    assert!(survey(std::slice::from_ref(&root), &|| true).settling.is_empty());
+}

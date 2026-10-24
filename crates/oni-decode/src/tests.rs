@@ -132,3 +132,17 @@ fn a_singular_matrix_is_refused() {
     // Twin: the Z f matrix is accepted.
     assert!(converted_by(&Z_F, 0.0, Colours::Sensor).is_some());
 }
+
+#[test]
+fn every_plain_extension_has_its_reader_compiled_in() {
+    for ext in PLAIN_EXTENSIONS {
+        // `jpe` and `jfif` name a JPEG the reader finds by its bytes.
+        let named = if matches!(*ext, "jpe" | "jfif") { "jpg" } else { ext };
+        let format = image::ImageFormat::from_extension(named).unwrap_or_else(|| panic!("{ext}"));
+        assert!(format.reading_enabled(), "{ext}: its `image` feature is off");
+    }
+    assert!(named_decodable(Path::new("a.NEF")) && named_decodable(Path::new("a.JPG")));
+    // Twin: a format the reader knows but ONI does not build, and one it never knew, are not.
+    assert!(!image::ImageFormat::from_extension("avif").unwrap().reading_enabled());
+    assert!(!named_decodable(Path::new("a.avif")) && !named_decodable(Path::new("a.HEIC")) && !named_decodable(Path::new("a.psd")));
+}

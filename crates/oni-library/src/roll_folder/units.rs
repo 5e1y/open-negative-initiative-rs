@@ -21,12 +21,9 @@ const BY_NAME: &[&str] = &[".json", ".xmp", ".pp3", ".dop", ".on1"];
 const BY_STEM: &[&str] = &[".xmp"];
 
 /// The camera RAWs among the importable images: the one half of a RAW+JPEG pair.
-const RAW: &[&str] = &[
-    "dng", "cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "rw2", "raw", "rwl", "orf", "raf", "pef", "srw", "3fr",
-    "fff", "iiq", "mos", "mrw", "x3f", "erf", "kdc", "dcr", "mef", "dcs", "gpr",
-];
+const RAW: &[&str] = crate::library::RAW_EXTENSIONS;
 
-const JPEG: &[&str] = &["jpg", "jpeg"];
+const JPEG: &[&str] = crate::library::JPEG_EXTENSIONS;
 
 fn is(path: &str, kinds: &[&str]) -> bool {
     let ext = paths::extension(path).to_ascii_lowercase();

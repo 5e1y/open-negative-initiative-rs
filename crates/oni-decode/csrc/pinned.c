@@ -30,7 +30,16 @@ typedef struct {
     char make[64], model[64];
     // The handle's stream, freed once LibRaw lets the file go; NULL for a file opened by name.
     void *stream;
+    // 1 once LibRaw read past the file's end: a copy cut short, never a picture to show.
+    int cut;
 } oni_decoded;
+
+// LibRaw tells a data error at the file's end by an offset of -1; others are left to its decoders.
+static void oni_data_error(void *data, const char *file, const INT64 offset)
+{
+    (void)file;
+    if (offset < 0) ((oni_decoded *)data)->cut = 1;
+}
 
 void oni_release(oni_decoded *d)
 {
@@ -49,6 +58,7 @@ int oni_open(const char *path, void *stream, float exposure_gain, int min_side, 
     out->stream = stream;
     libraw_data_t *lr = libraw_init(0);
     if (!lr) { oni_release(out); return -1; }
+    libraw_set_dataerror_handler(lr, oni_data_error, out);
     libraw_output_params_t *p = &lr->params;
     p->use_camera_wb = 0;
     p->use_auto_wb = 0;
@@ -90,7 +100,12 @@ int oni_open(const char *path, void *stream, float exposure_gain, int min_side, 
     return 0;
 }
 
-int oni_unpack(oni_decoded *d) { return libraw_unpack(d->raw); }
+// -5 for a file that ends before its pixels do, whatever LibRaw's own code for it.
+int oni_unpack(oni_decoded *d)
+{
+    int rc = libraw_unpack(d->raw);
+    return d->cut ? -5 : rc;
+}
 
 // Demosaics on the given multipliers, then hands out the camera-space 16-bit image.
 int oni_process(oni_decoded *d, const float mul[3])

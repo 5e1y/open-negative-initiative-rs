@@ -3139,5 +3139,75 @@
     "title": "The file system's parity rows say what the code does",
     "status": "done",
     "detail": "archive.md: Favourites partial (the empty view promises indexing; a refused favourites.json is reseeded and replaced); rows added for a disk leaving or coming back (done), an unreadable member waiting for Refresh (partial), and port-only rows for Locate…, Remove from Library…, other apps' changes, the instance lock and the files merged with Swift's; the checks of the rename, trash, project and missing-tile rows point at today's tests; window checks cited at their tests/window path. checks.md: #20 and #61 partial with their gaps named, #60, #84 and #120 cite their new twins. README counts recounted: editor 147 of 153 with a check, archive 98 / 7 / 0 and 104 of 105, all 441 / 26 / 7 and 450 of 474; checks 104 twin, 36 partial, 9 none, 12 blocked. Closes parity-doc-archive-wrong-done."
+  },
+  {
+    "id": 530,
+    "type": "fix",
+    "title": "Packages are told by the system, and a dropped one opens nothing",
+    "status": "done",
+    "detail": "roots/finder.rs: is_package asks CoreFoundation (kCFURLIsPackageKey) on macOS, which knows the bundle bit (the Photo Booth library, no extension) and each installed app's declared extensions (a .lrlibrary no app declares lists as the folder it is); the extension list stays the answer on Windows or when the query fails. package_holding refuses a package, or a photo inside one, handed by a drop, the picker or the command line (Added::Package, said in words). Checks: roots/tests.rs photo_booth_library_is_a_package (twin: the folder without its bundle bit is listed), archive_view/adding.rs a_dropped_package_opens_nothing (twin: a folder beside it opens). Closes names-packages-by-extension."
+  },
+  {
+    "id": 531,
+    "type": "fix",
+    "title": "A format no reader of ONI takes is listed with its seal",
+    "status": "done",
+    "detail": "Decision: listed as the Finder lists it rather than hidden, so a folder of iPhone HEICs never reads as empty and moves keep it with its roll. oni-decode PLAIN_EXTENSIONS and named_decodable are the one table of what the image reader takes; the presence probe looks at the files their name leaves in doubt (unsupported_format) off the interface thread; tile_marks seals the tile with its format (HEIC) in the destructive foil and says \"Format not supported (HEIC)\" under the pointer; the thumbnail pass never tries it and says nothing. Lot 2 already says it on the canvas. Check: oni-decode tests.rs every_plain_extension_has_its_reader_compiled_in (twin: avif, HEIC and psd are not). Closes the listing part of names-unsupported-formats-listed."
+  },
+  {
+    "id": 532,
+    "type": "fix",
+    "title": "CR3, RAF, HEIF and PNG carry their capture date",
+    "status": "done",
+    "detail": "exif.rs moves to oni-settings (oni_library::exif re-exports it) with exif/containers.rs: a RAF's embedded JPEG (offset at 84), a CR3's CMT2 box under Canon's uuid (its first directory the EXIF IFD), a HEIF or AVIF's Exif item (iinf then iloc), a PNG's eXIf chunk. DateTimeOriginal only, as ImageIO's fingerprint text reads it, so both apps' prints match; LibRaw is not opened for it. A photo with no import date in its sidecar now sorts by its file's modification date, never by the read's now(). Checks: exif/tests.rs raf_and_cr3_carry_their_date (twins: a RAF offset off its JPEG, a CR3 under another uuid carry none), a_heic_and_a_png_carry_their_date (twins: an item typed mime, a tEXt chunk). Closes names-capture-date-formats."
+  },
+  {
+    "id": 533,
+    "type": "fix",
+    "title": "A file still being copied waits, and a RAW cut short says so",
+    "status": "done",
+    "detail": "roots.rs: a file the Finder marks busy (birth in 1946) or written within SETTLE (2 s) is looked at again 50 ms after the walk; one that grew or changed is settling, neither printed nor decoded (read_rows keeps it waiting and its row as it was), and the folder is read again 4 s after a read that left one (archive_view read_once_settled). A date ahead of the clock never settles. pinned.c registers LibRaw's data-error handler: an offset of -1, the file's end, makes oni_unpack return CUT_SHORT (-5); the decode says \"the file ends before its picture does: an interrupted copy?\" and the canvas \"{name}: cut short\". Checks: roots/tests.rs a_file_still_being_written_is_settling_until_it_rests (twin: once the copy ends nothing settles), oni-decode source/tests.rs a_truncated_raw_says_so (twins: the whole file decodes, a garbled head is refused otherwise). Closes names-growing-truncated-files."
+  },
+  {
+    "id": 534,
+    "type": "data-safety",
+    "title": "A stray sidecar is never adopted by a new namesake",
+    "status": "done",
+    "detail": "sidecar/identity.rs: each write stores the original's print (size-date-digest, the library's fingerprint, now computed in one place that relink uses) under originalPrint, a key Swift skips and a Swift rewrite drops. A sidecar is foreign when both prints carry a date and both the date and the digest differ: a date set right in place keeps its bytes, a file saved over keeps its date, a file with no date is never told foreign. A foreign sidecar reads as none (sidecar::read, the index's envelope, refreshed) and is set aside whole at the first write as \"X.NEF (orphan).json\", numbered when taken, which no survey reads as a sidecar; a cloud-held original is never read for it. Check: oni-settings tests/foreign_sidecar.rs a_foreign_sidecar_is_not_adopted (twins: saved over, redated in place, a Swift sidecar with no key, a second stray). Closes the identity part of names-orphan-sidecar-adopted."
+  },
+  {
+    "id": 535,
+    "type": "feature",
+    "title": "A RAW+JPEG pair is one tile, the RAW leading",
+    "status": "done",
+    "detail": "folders::paired: a JPEG beside a RAW of its stem (case and composition aside) with no ONI sidecar of its own stands behind the RAW, in the tree and the gallery; the RAW is read off the survey's files, so one in the ONI Trash still keeps its JPEG hidden. The RAW's tile carries a +JPG badge (TileView companion, Tile.companion). Lot 10 moves both. Swift shows two tiles. Check: folders.rs a_raw_jpeg_pair_is_one_tile (twins: a JPEG with settings of its own stays, unpaired every file is a tile). Closes names-raw-jpeg-pairs."
+  },
+  {
+    "id": 536,
+    "type": "feature",
+    "title": "Links, junctions and Finder aliases to folders are shown and followed",
+    "status": "done",
+    "detail": "navigator::children lists a symbolic link, a Windows junction (std reads it as a link) or a Finder alias (its kIsAlias flag, then CFURLCreateByResolvingBookmarkData with no UI and no mount) by the folder it leads to, never one holding the listed folder; Navigation::walk never unfolds a row already above it. The survey walks a link under its own name, once, never one holding the root, inside it or inside a folder a link reached already. Checks: roots/tests.rs a_symlinked_folder_is_listed_and_a_loop_is_not_followed (twins: the loop rows, a dangling link), a_finder_alias_to_a_folder_is_listed_by_its_folder. Closes names-symlinks-aliases-invisible and windows-junctions-hidden."
+  },
+  {
+    "id": 537,
+    "type": "fix",
+    "title": "A long name saves its settings, and one too long says so",
+    "status": "done",
+    "detail": "atomic::temporary names every temporary .oni-<hash>-<pid>-<stamp>.tmp, about 45 bytes, for sidecars, the support files and exports; a photo whose name with .json passes 255 characters is refused as sidecar::Error::TooLong, said in words. Checks: atomic.rs a_long_name_writes_through_a_short_temporary (twin: the former temporary's name is refused by the disk), tests/foreign_sidecar.rs a_name_too_long_for_its_sidecar_says_so (twin: four characters shorter it writes). Closes names-long-name-sidecar-temp."
+  },
+  {
+    "id": 538,
+    "type": "windows",
+    "title": "Home from USERPROFILE on Windows; move_out and flush cost looked at",
+    "status": "done",
+    "detail": "navigator::home_folder reads USERPROFILE before HOME on Windows (HOME first elsewhere), for Computer, support, caches and the trash headings. safety-dead-move-out and parity-move-out-duplicate: lot 16 already removed library::move_out; flat_fields::move_out is the one left. windows-flush-cost: not measured, no Windows machine here; each sidecar write still flushes (FlushFileBuffers on Windows), the batch left until a measure says it costs."
+  },
+  {
+    "id": 539,
+    "type": "docs",
+    "title": "Parity rows for packages, links, copies, stray sidecars, pairs and formats",
+    "status": "done",
+    "detail": "archive.md: Packages left out (done, counted), and port-only rows for links and aliases, a file still being copied, a stray sidecar, a RAW+JPEG pair and a format ONI cannot read; the relink row names the capture dates read. editor.md: a RAW cut short says so. README counts: archive 99 / 7 / 0 and 105 of 106, all 442 / 26 / 7 and 451 of 475."
   }
 ]

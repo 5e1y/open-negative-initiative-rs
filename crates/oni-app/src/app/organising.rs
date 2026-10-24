@@ -171,7 +171,7 @@ fn uptime() -> f64 {
 }
 
 fn home() -> String {
-    std::env::var("HOME").unwrap_or_default()
+    oni_library::navigator::home_folder().to_string_lossy().into_owned()
 }
 
 fn menu_line(text: &str, enabled: bool, rule: bool, opens: bool) -> MenuLine {

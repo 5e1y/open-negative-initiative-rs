@@ -2194,6 +2194,10 @@ msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder 
 msgstr "No se abrió: {folder} es un disco entero o la carpeta de inicio. Abre la carpeta de escaneos que contiene."
 
 #: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: “{name}” is another app's library, which keeps its photos inside. ONI changes nothing in it."
+msgstr "No se abrió: «{name}» es la biblioteca de otra app, que guarda sus fotos dentro. ONI no cambia nada en ella."
+
+#: crates/oni-app/src/app/archive_view/adding.rs
 msgid "One item from another folder was left out: ONI opens one folder at a time."
 msgid_plural "{n} items from other folders were left out: ONI opens one folder at a time."
 msgstr[0] "Un elemento de otra carpeta se dejó fuera: ONI abre una carpeta cada vez."
@@ -2851,7 +2855,7 @@ msgstr "“{name}” está vacío (0 bytes)"
 msgid "“{name}” cannot be read"
 msgstr "No se puede leer “{name}”"
 
-#: crates/oni-app/src/app/opening/missing.rs
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/app/organising/reach.rs
 msgid "Format not supported ({format})"
 msgstr "Formato no compatible ({format})"
 
@@ -3426,6 +3430,10 @@ msgid "The picture cannot be shown on this graphics card; the log names why."
 msgstr "La imagen no se puede mostrar con esta tarjeta gráfica; el registro indica el motivo."
 
 #: crates/oni-app/src/app/rendering/landing.rs
+msgid "{name}: cut short"
+msgstr "{name}: archivo incompleto"
+
+#: crates/oni-app/src/app/rendering/landing.rs
 msgid "{name}: could not be decoded"
 msgstr "{name}: no se pudo decodificar"
 
@@ -3840,6 +3848,10 @@ msgstr[1] "{n} seleccionadas"
 #: crates/oni-app/src/render/decode.rs
 msgid "its container is unreadable"
 msgstr "su contenedor es ilegible"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "the file ends before its picture does: an interrupted copy? Copy it again from its source."
+msgstr "el archivo termina antes que su imagen: ¿una copia interrumpida? Cópialo de nuevo desde su origen."
 
 #: crates/oni-app/src/render/decode.rs
 msgid "its samples are unreadable"
@@ -4276,6 +4288,10 @@ msgstr "No se encuentra el original: su disco está desconectado o el archivo se
 #: crates/oni-library/src/refusal.rs
 msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
 msgstr "Una versión más reciente de ONI escribió estos ajustes, y esta nunca los reescribe."
+
+#: crates/oni-library/src/refusal.rs
+msgid "The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."
+msgstr "El nombre de la foto es demasiado largo para un archivo de ajustes a su lado. Acórtalo para conservar sus cambios."
 
 #: crates/oni-library/src/refusal.rs
 msgid "it is no longer there"

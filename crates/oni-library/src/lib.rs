@@ -5,7 +5,7 @@ pub mod absence;
 pub mod archive_tree;
 pub mod bookmarks;
 pub mod capture;
-pub mod exif;
+pub use oni_settings::exif;
 pub mod favourites;
 pub mod file_names;
 pub mod film_group;
@@ -57,10 +57,7 @@ pub fn later(date: Date, by: f64) -> Date {
 /// Writes beside the target, then renames: a reader never sees half a file.
 pub fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
     use std::io::Write;
-    let directory = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(std::path::Path::new("."));
-    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-    let temporary = directory.join(format!(".{name}.{}.{stamp}.tmp", std::process::id()));
+    let temporary = oni_settings::atomic::temporary(path);
     let result = (|| {
         let mut file = std::fs::File::create(&temporary)?;
         file.write_all(bytes)?;

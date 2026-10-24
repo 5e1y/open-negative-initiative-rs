@@ -98,6 +98,12 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                 while hands.load(Ordering::Relaxed) > 0 {
                     std::thread::sleep(Duration::from_millis(20));
                 }
+                // A format no reader takes fails without a word: its tile's seal says why.
+                if !oni_decode::named_decodable(Path::new(&path)) && oni_decode::unsupported_format(Path::new(&path)).is_some() {
+                    let name = stem(&path);
+                    with_shell(move |c| c.thumb_landed(pass, fingerprint, Err(String::new()), name));
+                    continue;
+                }
                 seed = seed.wrapping_add(1);
                 let drawn = drawn(&engine, &previews, &path, screen, seed).and_then(|(jpeg, srgb)| {
                     thumbnails::persist(&support, &fingerprint, &jpeg).map_err(|e| e.to_string())?;

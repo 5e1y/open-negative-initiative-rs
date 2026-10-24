@@ -102,6 +102,7 @@ impl Ctl {
                     note,
                     rgb: flags.get(path).is_some_and(|f| f.2),
                     gone_pass,
+                    companion: companion(&s, path).into(),
                 })
             })
             .collect();
@@ -312,13 +313,19 @@ fn lay_tiles(lib: &Library, tiles: Vec<Tile>, slots: usize) {
     }
 }
 
+/// A RAW+JPEG pair's mark on its RAW's tile, its JPEG's extension: `+JPG`.
+fn companion(s: &State, path: &str) -> String {
+    let jpeg = s.archive.as_ref().and_then(|a| a.companions.get(path));
+    jpeg.map(|j| format!("+{}", oni_library::paths::extension(j).to_uppercase())).unwrap_or_default()
+}
+
 /// The same cell but for its picture, which only a landing thumbnail changes (`relay_thumbnail`)
 /// once the cell holds one; comparing pictures would read every pixel of every tile.
 fn same_tile(old: &Tile, new: &Tile) -> bool {
     let held = old.picture.size().width > 0 || new.picture.size().width == 0;
     let place = (old.index, old.x, old.y, old.width, old.height) == (new.index, new.x, new.y, new.width, new.height);
     let marks = (old.selected, old.medal, old.missing, old.rgb) == (new.selected, new.medal, new.missing, new.rgb);
-    let words = (old.away, &old.note, &old.gone_pass) == (new.away, &new.note, &new.gone_pass);
+    let words = (old.away, &old.note, &old.gone_pass, &old.companion) == (new.away, &new.note, &new.gone_pass, &new.companion);
     held && place && marks && words && old.caption == new.caption
 }
 

@@ -17,6 +17,8 @@ use std::path::{Path, PathBuf};
 pub(crate) use crate::atomic::write_atomically;
 use std::time::{Duration, SystemTime};
 
+pub mod identity;
+
 /// The EXIF a hand set for the export; every key is required, as the document writes them all.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct ExifMetadata {
@@ -86,6 +88,9 @@ pub struct Loaded {
     pub exif: Option<ExifMetadata>,
     pub roll_draft: Option<RollDraft>,
     pub trashed_at: Option<Date>,
+    /// The sidecar beside it was written for another file of that name: read as none, and set aside
+    /// at the first write.
+    pub foreign: bool,
 }
 
 #[derive(Debug)]
@@ -97,6 +102,8 @@ pub enum Error {
     Unreachable,
     /// The sidecar on disk is from a newer format, which this version never rewrites.
     Newer,
+    /// The photo's name and `.json` pass the 255 characters a file system allows a name.
+    TooLong,
 }
 
 impl fmt::Display for Error {
@@ -107,6 +114,7 @@ impl fmt::Display for Error {
             Error::Encode(e) => write!(f, "{e}"),
             Error::Unreachable => f.write_str("The original cannot be found; its disk may be disconnected. Nothing was saved."),
             Error::Newer => f.write_str("A newer version of ONI wrote these settings, and this one never rewrites them."),
+            Error::TooLong => f.write_str("The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."),
         }
     }
 }
@@ -144,19 +152,27 @@ pub fn original_present(original: &Path) -> Result<(), Error> {
 /// Absent and unreadable stay apart: an unreadable sidecar is an error, never a new photo.
 pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, Error> {
     let path = url_for(original);
+    let fresh = |foreign: bool| Loaded {
+        settings: PipelineSettings::rest(ConversionMode::Negative, mosaic),
+        writable: true,
+        is_new: true,
+        imported_at: None,
+        label: Medal::None,
+        exif: None,
+        roll_draft: None,
+        trashed_at: None,
+        foreign,
+    };
     if !path.exists() {
-        return Ok(Loaded {
-            settings: PipelineSettings::rest(ConversionMode::Negative, mosaic),
-            writable: true,
-            is_new: true,
-            imported_at: None,
-            label: Medal::None,
-            exif: None,
-            roll_draft: None,
-            trashed_at: None,
-        });
+        return Ok(fresh(false));
     }
     let data = std::fs::read(&path)?;
+    if let Ok(value) = serde_json::from_slice::<Value>(&data)
+        && value.get(identity::KEY).is_some()
+        && identity::foreign(&value, identity::of(original).as_deref())
+    {
+        return Ok(fresh(true));
+    }
     let source = Source { mosaic: &|| mosaic, plain: &|| !mosaic };
     let decoded = codec::decode_with(&data, &source, catching_up)?;
     Ok(Loaded {
@@ -168,6 +184,7 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
         exif: decoded.exif,
         roll_draft: decoded.roll_draft,
         trashed_at: decoded.trashed_at,
+        foreign: false,
     })
 }
 
@@ -218,7 +235,16 @@ fn standing(path: &Path) -> Result<Option<(Value, Decoded)>, Error> {
 pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
     original_present(original)?;
     let path = url_for(original);
-    let prior = if options.preserving_revision { modified(&path) } else { None };
+    if path.file_name().is_some_and(|n| n.to_string_lossy().chars().count() > 255) {
+        return Err(Error::TooLong);
+    }
+    let print = identity::of(original);
+    // Another file's settings are kept aside whole, never written over nor taken for this one's.
+    let aside = identity::stored(&path)?.is_some_and(|v| identity::foreign(&v, print.as_deref()));
+    if aside {
+        identity::set_aside(&path)?;
+    }
+    let prior = if options.preserving_revision && !aside { modified(&path) } else { None };
     let standing = standing(&path)?;
     let existing = standing.as_ref().map(|(_, decoded)| decoded);
     let document = codec::document(
@@ -229,7 +255,7 @@ pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions
         options.roll_draft.unwrap_or_else(|| existing.and_then(|e| e.roll_draft.clone())),
         options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
     );
-    let text = crate::kept::encoded(&document, standing.as_ref())?;
+    let text = crate::kept::encoded(&document, standing.as_ref(), print.as_deref().map(|p| (identity::KEY, p)))?;
     write_atomically(&path, text.as_bytes())?;
     restore_modified(&path, prior);
     Ok(())
