@@ -43,6 +43,9 @@ export global Bar {
     in property <length> traffic-lights;
     // The bar's height, which the traffic lights are centred in.
     out property <length> height: ShellStyle.bar-height;
+    // A shortcut's modifiers as the system writes them: ⌘ and ⌘⇧, or Ctrl+ and Ctrl+Shift+ on Windows.
+    in property <string> command: "⌘";
+    in property <string> command-shift: "⌘⇧";
     callback act(Act);
     // A press on the bar's empty room: on macOS it stands for the title bar.
     callback room-pressed();
@@ -76,13 +79,13 @@ component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     ButtonGroup {
-        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten (⌘K)"); enabled: Bar.has-photo; }
+        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", Bar.command + "K"); enabled: Bar.has-photo; }
         Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
         Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     }
     ButtonGroup {
-        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
-        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
+        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + Bar.command + "Z)"; enabled: Bar.can-undo; }
+        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + Bar.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
     // `faceBinding`: the faces ride beside the history, present only while a photograph is worked.
     Tabs {
@@ -93,11 +96,11 @@ component EditorKeys inherits HorizontalLayout {
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup {
-        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings (⌘⇧C)"); enabled: Bar.has-photo; }
+        Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings ({})", Bar.command-shift + "C"); enabled: Bar.has-photo; }
         Item {
             action: Act.paste;
             icon: Icons.paste;
-            help: Bar.targets > 1 ? @tr("Paste settings to {} photos (⌘⇧V)", Bar.targets) : @tr("Paste settings (⌘⇧V)");
+            help: Bar.targets > 1 ? @tr("Paste settings to {} photos ({})", Bar.targets, Bar.command-shift + "V") : @tr("Paste settings ({})", Bar.command-shift + "V");
             enabled: Bar.can-paste;
         }
         Word {
@@ -124,8 +127,8 @@ component GalleryKeys inherits HorizontalLayout {
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     ButtonGroup {
-        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (⌘Z)"; enabled: Bar.can-undo; }
-        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (⌘⇧Z)"; enabled: Bar.can-redo; }
+        Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + Bar.command + "Z)"; enabled: Bar.can-undo; }
+        Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + Bar.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
     Word {
         action: Act.cycle-filter;
@@ -136,7 +139,7 @@ component GalleryKeys inherits HorizontalLayout {
     Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
     ButtonGroup {
         ResetScan { compact: root.compact; }
-        Item { action: Act.remove; icon: Icons.remove; help: @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
+        Item { action: Act.remove; icon: Icons.remove; help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash", Bar.targets) : @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }
 }
 
@@ -165,7 +168,7 @@ export component Toolbar inherits Surface {
             action: Preparing.shown ? Act.leave-roll : Act.toggle-mode;
             text: Bar.editing || Preparing.shown ? @tr("GALLERY") : @tr("EDITOR");
             widest: @tr("GALLERY");
-            help: Bar.editing || Preparing.shown ? @tr("Gallery (⌘G)") : @tr("Editor (⌘G)");
+            help: Bar.editing || Preparing.shown ? @tr("Gallery ({})", Bar.command + "G") : @tr("Editor ({})", Bar.command + "G");
             enabled: Preparing.shown ? !Preparing.measuring : Bar.editing || Bar.has-photo;
         }
         // Hidden copies of both sets hold the zone at the wider one's width, short of room at the shown
@@ -204,11 +207,11 @@ export component Toolbar inherits Surface {
         Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
         if !Preparing.shown && Bar.update-title == "": Word {
-            action: Bar.editing ? Act.export : Act.open;
-            text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER (⌘+O)");
+            action: Bar.editing ? Act.export : Act.add-folder;
+            text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");
             kind: ButtonKind.accent;
             fixed-width: ShellStyle.export-width;
-            help: Bar.editing ? "" : @tr("Add a folder of scans (⌘O) · export stays on ⌘E");
+            help: Bar.editing ? "" : @tr("Star a folder of scans and open it · export stays on {}", Bar.command + "E");
             enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
         }
         if !Preparing.shown && Bar.update-title != "": Word {

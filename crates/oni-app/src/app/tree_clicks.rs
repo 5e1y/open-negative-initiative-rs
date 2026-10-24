@@ -89,17 +89,12 @@ impl Ctl {
         self.publish_organising();
     }
 
-    /// `takeOff` on a photo row's double click; on a folder's, `rename` types over its name.
+    /// `takeOff` on a photo row's double click; a folder's is its first click again, and never
+    /// types over its name, which its menu renames.
     pub(super) fn row_double_clicked(self: &Rc<Self>, i: usize) {
         let id = self.state.borrow().archive.as_ref().and_then(|a| a.rows().get(i).map(|r| r.id.clone()));
-        match id {
-            Some(NodeId::Photo(path)) => self.open_in_editor(&path),
-            Some(NodeId::Folder(path)) => {
-                self.exit_tree_editing();
-                self.state.borrow_mut().tree_renaming = Some(path);
-                self.publish_tree();
-            }
-            _ => {}
+        if let Some(NodeId::Photo(path)) = id {
+            self.open_in_editor(&path);
         }
     }
 

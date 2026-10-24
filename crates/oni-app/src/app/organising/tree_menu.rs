@@ -5,29 +5,21 @@ use super::*;
 use oni_library::archive_tree::NodeId as ArchiveNode;
 
 impl Ctl {
-    /// `filmContextMenu` (`EditorScene+Gallery.swift:112`): a folder alone is renamed, made a roll
-    /// or given a folder inside; photos alone take the cell menu; the rest shows in the Finder.
+    /// `filmContextMenu` (`EditorScene+Gallery.swift:112`): a folder alone takes the navigator's
+    /// folder menu; photos alone take the cell menu; the rest shows in the Finder.
     pub(in crate::app) fn row_menu(self: &Rc<Self>, i: usize) -> bool {
         let can_paste = self.can_paste();
         let (items, path) = {
             let s = self.state.borrow();
             let Some(id) = s.org.tree_ids.get(i).cloned() else { return false };
             let targets = s.org.tree_pick.targets(&id, &s.org.tree_ids);
-            let mut items = Vec::new();
-            if let [ArchiveNode::Folder(folder)] = targets.as_slice() {
-                let roll = s.nav.rolls().contains(folder);
-                // Out of reach, a folder takes nothing that writes in it.
-                let here = s.folder_presence(folder).is_present();
-                items.push(Item { line: menu_line(tr("Rename…"), here, false, false), act: Act::RenameFolder(folder.clone()) });
-                let text = if roll { tr("Back to a Folder") } else { tr("Make a Roll") };
-                items.push(Item { line: menu_line(text, here, false, false), act: Act::Roll(folder.clone(), !roll) });
-                items.push(Item { line: menu_line(tr("New Folder Inside"), here, false, false), act: Act::NewFolder(folder.clone()) });
-            }
             let photos: Vec<String> = targets.iter().filter_map(|t| if let ArchiveNode::Photo(p) = t { Some(p.clone()) } else { None }).collect();
-            if !photos.is_empty() && photos.len() == targets.len() {
+            if let [ArchiveNode::Folder(folder)] = targets.as_slice() {
+                let lines = s.folder_lines(folder, s.folder_presence(folder));
+                (lines.into_iter().map(|(line, act)| Item { line, act: Act::Folder(act, folder.clone()) }).collect(), None)
+            } else if !photos.is_empty() && photos.len() == targets.len() {
                 let scope: HashSet<String> = photos.iter().cloned().collect();
-                items.extend(self.cell_items(&s, &photos[0], &scope, true, can_paste));
-                (items, Some(photos[0].clone()))
+                (self.cell_items(&s, &photos[0], &scope, true, can_paste), Some(photos[0].clone()))
             } else {
                 let paths: Vec<String> = targets
                     .iter()
@@ -36,9 +28,7 @@ impl Ctl {
                         ArchiveNode::Roll(_) | ArchiveNode::Day(_) => None,
                     })
                     .collect();
-                let rule = !items.is_empty();
-                items.push(Item { line: menu_line(tr("Show in Finder"), true, rule, false), act: Act::Reveal(paths) });
-                (items, None)
+                (vec![Item { line: menu_line(crate::app::navigator::reveal_word(), true, false, false), act: Act::Reveal(paths) }], None)
             }
         };
         self.open_menu(items, path)

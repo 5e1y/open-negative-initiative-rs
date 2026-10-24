@@ -188,7 +188,10 @@ impl Ctl {
         lib.on_row_clicked(move |i, command, shift| p.row_clicked(i.max(0) as usize, command, shift));
         me.wire_tree(&lib);
         let p = me.clone();
-        lib.on_tile_clicked(move |i, toggle, extend| p.tile_clicked(i.max(0) as usize, toggle, extend));
+        lib.on_tile_clicked(move |i, toggle, extend| {
+            p.grid_took_keys();
+            p.tile_clicked(i.max(0) as usize, toggle, extend);
+        });
         let p = me.clone();
         lib.on_tile_opened(move |i| p.tile_opened(i.max(0) as usize));
         Ctl::wire_organising(me, window);

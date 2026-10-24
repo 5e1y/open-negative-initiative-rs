@@ -5,7 +5,9 @@ use crate::paths::{self, holds, same};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
+mod names;
 mod probe;
+pub use names::{split_end, trails};
 
 /// The ONI Trash's row in `selected` and `unfolded`: never a folder's path, which starts with `/`.
 pub const TRASH_ROW: &str = "oni-trash";
@@ -107,32 +109,12 @@ pub fn children(folder: &str) -> Option<Vec<String>> {
     Some(out)
 }
 
-/// `Navigator.title`: Computer for none, else the folder's name.
-pub fn title(path: Option<&str>) -> String {
+/// `Navigator.title`: Computer for none, else the folder's name as the system words it.
+pub fn title(path: Option<&str>, computer: &Computer) -> String {
     match path {
         None => oni_i18n::tr("Computer").into(),
-        Some(path) => paths::name(path),
+        Some(path) => computer.name(path),
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Clicked {
-    Open,
-    Toggle,
-    Read,
-    Nothing,
-}
-
-/// A roll or a folder holding none opens on the first click; one holding others unfolds, and opens
-/// on the second. `Read` while its children are not listed yet: they decide.
-pub fn clicked(count: usize, roll: bool, children: Option<&[String]>) -> Clicked {
-    if roll || children.is_some_and(<[String]>::is_empty) {
-        return if count == 1 { Clicked::Open } else { Clicked::Nothing };
-    }
-    if count >= 2 {
-        return Clicked::Open;
-    }
-    if children.is_none() { Clicked::Read } else { Clicked::Toggle }
 }
 
 /// `FolderNavigation`: where the navigator stands and the folders listed. A listing is asked
@@ -149,17 +131,13 @@ pub struct Navigation {
     pub volumes: Vec<String>,
     listing: HashSet<String>,
     wanted: Vec<String>,
-    /// Folders clicked before their children were listed, which open or unfold once they are.
-    deciding: HashSet<String>,
     /// Folders the disk refused, left unlisted rather than empty until `retry` or a click.
     pub refused: BTreeSet<String>,
 }
 
-/// What a landed listing asks of the app: the folder clicked before it was listed, to open.
+/// What a landed listing asks of the app: never an open, so no listing lands over a newer one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Landed {
-    Open(String),
-    Toggled,
     Nothing,
     /// The listing was held already, so the rows need no new publish.
     Same,
@@ -191,28 +169,18 @@ impl Navigation {
         }
     }
 
-    /// A listing landed; a folder clicked while unlisted opens when it holds none, else unfolds.
+    /// A listing landed: the rows it lays, whatever was clicked or opened while it was read.
     pub fn listed(&mut self, folder: &str, children: Vec<String>) -> Landed {
         self.listing.remove(folder);
         self.refused.remove(folder);
-        let empty = children.is_empty();
         let same = self.listings.get(folder) == Some(&children);
         self.listings.insert(folder.to_owned(), children);
-        if !self.deciding.remove(folder) {
-            return if same { Landed::Same } else { Landed::Nothing };
-        }
-        if empty {
-            Landed::Open(folder.to_owned())
-        } else {
-            self.toggle(folder);
-            Landed::Toggled
-        }
+        if same { Landed::Same } else { Landed::Nothing }
     }
 
     /// The disk refused the folder: it stays unlisted with its chevron, and a click reads it again.
     pub fn refused(&mut self, folder: &str) -> Landed {
         self.listing.remove(folder);
-        self.deciding.remove(folder);
         let had = self.listings.remove(folder).is_some();
         if self.refused.insert(folder.to_owned()) || had { Landed::Nothing } else { Landed::Same }
     }
@@ -252,23 +220,14 @@ impl Navigation {
         }
     }
 
-    /// A click on a folder's row: picked, then opened, unfolded, or read first. `Some` to open.
-    pub fn click(&mut self, folder: &str, count: usize, roll: bool) -> Option<String> {
+    /// The Finder sidebar's click: the row picked and its folder opened at once, whatever it holds;
+    /// a double click's second opens nothing more. A refused folder is read again for its chevron.
+    pub fn click(&mut self, folder: &str, count: usize) -> Option<String> {
         self.selected = Some(folder.to_owned());
-        match clicked(count, roll, self.listings.get(folder).map(Vec::as_slice)) {
-            Clicked::Open => Some(folder.to_owned()),
-            Clicked::Toggle => {
-                self.toggle(folder);
-                None
-            }
-            Clicked::Nothing => None,
-            Clicked::Read => {
-                if self.deciding.insert(folder.to_owned()) && !self.listing.contains(folder) {
-                    self.wanted.push(folder.to_owned());
-                }
-                None
-            }
+        if self.refused.contains(folder) {
+            self.list(folder, true);
         }
+        (count == 1).then(|| folder.to_owned())
     }
 
     pub fn toggle(&mut self, folder: &str) {

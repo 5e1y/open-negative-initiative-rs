@@ -22,8 +22,12 @@ impl Ctl {
     /// The notice, with a Show in Finder key on `folder` when what could not move was left there.
     pub(in crate::app) fn told_with(&self, title: &str, message: &str, folder: Option<String>) {
         let Some(w) = self.window() else { return };
-        let key = if folder.is_some() { tr("Show in Finder") } else { "" };
-        self.state.borrow_mut().org.told_folder = folder;
+        let key = if folder.is_some() { crate::app::navigator::reveal_word() } else { "" };
+        {
+            let mut s = self.state.borrow_mut();
+            s.org.told_folder = folder;
+            s.nav.unstarred = None;
+        }
         let t = w.global::<Told>();
         t.set_title(title.into());
         t.set_message(message.into());
@@ -32,16 +36,35 @@ impl Ctl {
         t.set_shown(true);
     }
 
+    /// The notice saying a favourite went, its key starring it again.
+    pub(in crate::app) fn told_undo(&self, title: &str, message: &str, favourite: &str) {
+        self.told(title, message);
+        self.state.borrow_mut().nav.unstarred = Some(favourite.to_owned());
+        if let Some(w) = self.window() {
+            w.global::<Told>().set_action(tr("UNDO").into());
+        }
+    }
+
     fn told_acted(self: &Rc<Self>) {
-        let folder = self.state.borrow_mut().org.told_folder.take();
+        let (folder, unstarred) = {
+            let mut s = self.state.borrow_mut();
+            (s.org.told_folder.take(), s.nav.unstarred.take())
+        };
         self.told_closed();
         if let Some(folder) = folder {
             self.reveal_folder(&folder);
         }
+        if let Some(favourite) = unstarred {
+            self.star(&favourite);
+        }
     }
 
     pub(in crate::app) fn told_closed(&self) {
-        self.state.borrow_mut().org.told_folder = None;
+        {
+            let mut s = self.state.borrow_mut();
+            s.org.told_folder = None;
+            s.nav.unstarred = None;
+        }
         if let Some(w) = self.window() {
             w.global::<Told>().set_shown(false);
         }
@@ -66,7 +89,7 @@ impl Ctl {
                 Absence::Denied => tr!("“{name}” cannot be shown: ONI has no access to it.", name = name),
                 Absence::Empty | Absence::Unreadable(_) => tr!("“{name}” cannot be shown: {cause}.", name = name, cause = refusal::cause(&refused)),
             };
-            with_shell(move |c| c.told(tr("Show in Finder"), &said));
+            with_shell(move |c| c.told(crate::app::navigator::reveal_word(), &said));
         });
     }
 }

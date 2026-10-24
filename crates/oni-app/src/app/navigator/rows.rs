@@ -1,5 +1,5 @@
 //! The navigator's rows: Computer, the base's folders and the favourites, each one's state, a click
-//! unfolding and a second opening.
+//! opening and the chevron folding.
 
 use super::*;
 
@@ -18,13 +18,20 @@ impl Ctl {
             let rolls = s.nav.rolls();
             let opened = if s.org.trash_open { None } else { s.opened.clone() };
             let model = &s.nav.model;
+            // Two favourites named alike carry the folders above them, only there: siblings never are.
+            let trails = if model.favourites_only { walk::trails(&favourites) } else { HashMap::new() };
             let lines: Vec<FolderLine> = rows
                 .iter()
                 .map(|(path, depth)| {
                     let presence = s.row_presence(path);
                     let (caption, help) = reach::row_words(presence, path, &s.nav.computer);
+                    let title = s.nav.computer.name(path);
+                    let (head, tail) = walk::split_end(&title);
                     FolderLine {
-                    title: paths::name(path).into(),
+                    title: title.into(),
+                    head: head.into(),
+                    tail: tail.into(),
+                    trail: trails.get(path).filter(|_| *depth == 0).cloned().unwrap_or_default().into(),
                     path: path.clone().into(),
                     depth: *depth as i32,
                     // Out of reach, it promises no folder inside.
@@ -53,11 +60,11 @@ impl Ctl {
                 base.as_deref().map(|b| s.nav.computer.ancestors(b)).unwrap_or_default().into_iter().map(Some).collect();
             ancestors.push(None);
             let choices: Vec<FolderChoice> =
-                ancestors.iter().map(|a| FolderChoice { title: walk::title(a.as_deref()).into(), current: *a == base }).collect();
+                ancestors.iter().map(|a| FolderChoice { title: walk::title(a.as_deref(), &s.nav.computer).into(), current: *a == base }).collect();
             let header = (
                 model.can_go_up(),
                 model.favourites_only,
-                if model.favourites_only { tr("Favourites").to_string() } else { walk::title(base.as_deref()) },
+                if model.favourites_only { tr("Favourites").to_string() } else { walk::title(base.as_deref(), &s.nav.computer) },
                 base.as_deref().map(|b| tr!("{folder} — click to jump to a folder above", folder = b)).unwrap_or_else(|| tr("The home folder and every volume").into()),
                 model.favourites_only && favourites.is_empty(),
                 !model.favourites_only && base.is_none(),
@@ -69,17 +76,18 @@ impl Ctl {
                 .map(|p| {
                     // A folder on a disk away is shown for what it is, never offered to open on nothing.
                     let away = !s.present(p);
+                    let name = s.nav.computer.name(p);
                     let title = if away {
                         let state = reach::row_words(Presence::Offline(Away::Disconnected), p, &s.nav.computer).0;
-                        tr!("{name} — {state}", name = paths::name(p), state = state)
+                        tr!("{name} — {state}", name = name, state = state)
                     } else {
-                        tr!("Add {name}", name = paths::name(p)).to_uppercase()
+                        tr!("Add {name}", name = name).to_uppercase()
                     };
                     WelcomeLine { title: title.into(), path: p.clone().into(), enabled: !away }
                 })
                 .collect();
             let welcome_shown = s.opened.is_none() && !s.nav.welcome.is_empty();
-            let opened_pill = (s.opened.as_deref().map(paths::name).unwrap_or_default(), s.opened.clone().unwrap_or_default());
+            let opened_pill = (s.opened.as_deref().map(|o| s.nav.computer.name(o)).unwrap_or_default(), s.opened.clone().unwrap_or_default());
             s.nav.rows = rows.into_iter().map(|(p, _)| p).collect();
             let mut refused: Vec<String> = s.nav.model.refused.iter().cloned().collect();
             refused.extend(s.opened.clone().filter(|o| s.survey.unreadable.contains(o)));
@@ -136,32 +144,27 @@ impl Ctl {
         }
     }
 
+    /// The listings landed lay their rows and open nothing: the folder opened last stays opened.
     pub(super) fn listed(self: &Rc<Self>, listed: Vec<(String, Option<Vec<String>>)>) {
-        let (opening, moved) = {
+        let moved = {
             let mut s = self.state.borrow_mut();
             let mut moved = false;
-            let mut opening = Vec::new();
             for (folder, children) in listed {
                 let landed = match children {
                     Some(children) => s.nav.model.listed(&folder, children),
                     None => s.nav.model.refused(&folder),
                 };
                 moved |= landed != Landed::Same;
-                if let Landed::Open(folder) = landed {
-                    opening.push(folder);
-                }
             }
-            (opening, moved)
+            moved
         };
         if moved {
             self.publish_navigator();
         }
-        for folder in opening {
-            self.open_folder(Path::new(&folder));
-        }
     }
 
-    /// `NavigatorRow.onTapGesture`: the click's count read as AppKit counts it, then `click`.
+    /// `NavigatorRow.onTapGesture`: a click opens its folder, out of reach too, where the gallery
+    /// says its state; the second of a double click opens nothing more. The arrows follow it.
     pub(super) fn navigator_row_clicked(self: &Rc<Self>, i: usize) {
         let open = {
             let mut s = self.state.borrow_mut();
@@ -172,21 +175,51 @@ impl Ctl {
                 _ => 1,
             };
             s.nav.clicks = Some((path.clone(), now, count));
-            let roll = s.nav.rolls().contains(&path);
+            s.nav.keys = true;
             s.org.trash_picked = None;
-            // Out of reach, a click shows its state in the gallery, as no listing will answer it.
-            if s.row_presence(&path).is_present() {
-                s.nav.model.click(&path, count, roll)
-            } else {
-                s.nav.model.selected = Some(path.clone());
-                (count == 1).then_some(path)
-            }
+            s.nav.model.click(&path, count)
         };
         self.publish_trash_rows();
         self.publish_navigator();
         if let Some(folder) = open {
-            self.open_folder(Path::new(&folder));
+            self.open_asked(&folder);
         }
+    }
+
+    /// The chevron alone: the row folds or unfolds, and nothing opens.
+    pub(super) fn navigator_row_folded(self: &Rc<Self>, i: usize) {
+        {
+            let mut s = self.state.borrow_mut();
+            let Some(path) = s.nav.rows.get(i).cloned() else { return };
+            s.nav.keys = true;
+            s.nav.model.toggle(&path);
+        }
+        self.publish_navigator();
+    }
+
+    /// A folder opened by the hand; the home or a whole disk is unfolded and asked about first, as
+    /// opening one reads every folder on the disk.
+    pub(in crate::app) fn open_asked(self: &Rc<Self>, folder: &str) {
+        let wide = self.state.borrow().nav.computer.is_wide(folder);
+        if !wide {
+            return self.open_folder(Path::new(folder));
+        }
+        {
+            let mut s = self.state.borrow_mut();
+            if !s.nav.model.unfolded.contains(folder) {
+                s.nav.model.toggle(folder);
+            }
+        }
+        self.publish_navigator();
+        let name = self.state.borrow().nav.computer.name(folder);
+        let target = folder.to_owned();
+        self.ask(
+            &tr!("Show Every Photo on “{name}”?", name = name),
+            &tr("ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."),
+            tr("Show Every Photo"),
+            false,
+            Pending::Run(Box::new(move |c| c.open_folder(Path::new(&target)))),
+        );
     }
 
     pub(super) fn ancestor_chosen(&self, i: usize) {

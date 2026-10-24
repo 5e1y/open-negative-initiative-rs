@@ -10,6 +10,8 @@ impl Ctl {
         let p = me.clone();
         n.on_row_clicked(move |i| p.navigator_row_clicked(index(i)));
         let p = me.clone();
+        n.on_row_folded(move |i| p.navigator_row_folded(index(i)));
+        let p = me.clone();
         n.on_star_clicked(move |i| {
             let path = p.state.borrow().nav.rows.get(index(i)).cloned();
             if let Some(path) = path {
@@ -21,11 +23,15 @@ impl Ctl {
         let p = me.clone();
         n.on_menu_chosen(move |i| p.navigator_menu_chosen(index(i)));
         let p = me.clone();
-        n.on_rename_committed(move |i, draft| p.rename_committed(index(i), &draft));
+        n.on_rename_committed(move |i, draft| {
+            p.rename_committed(index(i), &draft);
+            p.keys_back();
+        });
         let p = me.clone();
         n.on_rename_cancelled(move || {
             p.state.borrow_mut().nav.model.renaming = None;
             p.publish_navigator();
+            p.keys_back();
         });
         let p = me.clone();
         n.on_go_up(move || {
@@ -54,22 +60,22 @@ impl Ctl {
         let p = me.clone();
         n.on_mode_changed(move || p.follow_open_photo());
         let p = me.clone();
+        // Add, wherever it is written: the folder starred, then opened.
         n.on_welcome_added(move |i| {
             let folder = p.state.borrow().nav.welcome.get(index(i)).cloned();
             if let Some(folder) = folder {
-                p.add(&[std::path::PathBuf::from(&folder)]);
+                p.add_starred(&[std::path::PathBuf::from(&folder)]);
             }
         });
         let p = me.clone();
-        n.on_welcome_chose(move || p.act(crate::Act::Open));
+        n.on_welcome_chose(move || p.act(crate::Act::AddFolder));
         let p = me.clone();
-        n.on_catch_up_chose(move || p.act(crate::Act::Open));
+        n.on_catch_up_chose(move || p.act(crate::Act::AddFolder));
         let p = me.clone();
         n.on_catch_up_added(move |i| {
             let folder = p.state.borrow().nav.catch_up_folders.get(index(i)).cloned();
             if let Some(folder) = folder {
-                p.toggle_favourite(&folder);
-                p.open_folder(Path::new(&folder));
+                p.add_starred(&[std::path::PathBuf::from(&folder)]);
             }
         });
         let p = me.clone();

@@ -184,7 +184,7 @@ mod tests {
         // Twin: a photo dropped onto a photo joins nothing; only a project takes a member.
         assert!(!join(&mut projects, &rows, &c, &photo("a", one)));
         assert!(join(&mut projects, &rows, &c, &NodeId::Project(one)));
-        assert_eq!(projects.len(), 1, "Two, emptied, goes");
+        assert!(projects.len() == 2 && projects[1].members.is_empty(), "Two, emptied, stays with its name");
         assert_eq!(projects[0].members, ["f-a", "f-b", "f-c"]);
         assert!(reorder(&mut projects, &rows, &c, &photo("a", one)));
         assert_eq!(projects[0].members, ["f-c", "f-a", "f-b"], "before a photo, in its place");

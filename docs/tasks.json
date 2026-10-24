@@ -2964,5 +2964,68 @@
     "title": "A disk back within the session, and a rename changing only a letter's case",
     "status": "done",
     "detail": "a_disk_back_reopens_the_opened_folder: unplugged and plugged back in one session, the opened folder lists the photo added meanwhile, read once (twin: another disk arriving reads nothing). a_rename_changing_only_case_renames_and_a_true_collision_is_refused (twin: another folder's name is refused)."
+  },
+  {
+    "id": 510,
+    "type": "feature",
+    "title": "A click opens a folder, the chevron alone folds, a late listing opens nothing (D4)",
+    "status": "done",
+    "detail": "ux-click-semantics, model-06, bench-delayed-open-race: Navigation::click opens any folder on the first click, whatever it holds, and the second of a double click opens nothing more; the navigator's rows take the chevron's zone as the tree's do (Row.folds), wired to row-folded. The `deciding` set, Clicked::Read and Landed::Open are gone, so no listing lands as an open. The grid's empty state says click. Checks a_click_opens_and_the_chevron_folds and a_late_listing_never_opens_over_a_newer_open, each with its twin; the navigator's window check walks the new gestures."
+  },
+  {
+    "id": 511,
+    "type": "feature",
+    "title": "Renaming is by the menu or Return, never by a double click; the arrows walk the navigator",
+    "status": "done",
+    "detail": "ux-click-semantics, ux-no-keyboard-in-columns: the archive tree's double click on a folder no longer types over its name. A click on a navigator row gives the rows the keys until a click on the grid: ↑ ↓ walk the pick, → ← unfold and fold (← on a folded row climbs to its parent's), Space folds, Return renames as in the Finder's sidebar, ⌘↓ opens, ⌘↑ is Parent. Return keeps D4's meaning (rename), so opening is ⌘↓. Check return_renames_and_double_click_does_not (twin: once the grid is clicked, Return opens the photo); library_column's and the navigator's checks keep their intent through the menu."
+  },
+  {
+    "id": 512,
+    "type": "feature",
+    "title": "Add means star and open everywhere; Open Folder… opens alone; ADD ADD fixed (D7)",
+    "status": "done",
+    "detail": "ux-add-means-open, model-08: the welcome's ADD {name} and ADD FOLDER…, the catch-up's ADD and its ADD FOLDER…, and the toolbar's ADD FOLDER… (Act.add-folder) star the folder, then open it; Open Folder… (⌘O), a drop and the command line open without starring. The welcome key no longer prefixes ADD to a title that holds it (ADD ADD SCANS)."
+  },
+  {
+    "id": 513,
+    "type": "feature",
+    "title": "One folder menu for the navigator and the tree; New Folder named where it was asked",
+    "status": "done",
+    "detail": "ux-folder-menus-differ: State::folder_lines builds Open, Add to/Remove from Favourites, Locate… when gone, Rename…, Make a Roll / Back to a Folder, New Folder Inside, Show in Finder (or the parent's) and Remove from Library…, with the same presence rules, for both columns; folder_acted runs them, renaming in the column asked from. New Folder Inside from the tree now types over the new row in the tree (rename_request). tree_hand's check expects the shared menu."
+  },
+  {
+    "id": 514,
+    "type": "fix",
+    "title": "The gallery's bar and menus act on the selection alone, never on the photo opened last",
+    "status": "done",
+    "detail": "ux-invisible-target: Ctl::targets, State::target_count (bar and menus alike) and export_now fall back on the open photo beside it only; in the gallery an empty selection reaches nothing, so Trash, Reset, Paste, Prepare and Export go dark. The Trash key's help counts (Move 3 Photos to ONI Trash). Check the_gallery_bar_acts_on_the_selection_only (twin: a photo picked is the one trashed)."
+  },
+  {
+    "id": 515,
+    "type": "fix",
+    "title": "Add to Project asks before taking photos from another project, and an emptied project stays",
+    "status": "done",
+    "detail": "ux-add-to-project-moves: project::leave and remove_from no longer drop a project left empty (name and description kept, Delete Project still asks); project::leaving names each project a photo would leave, and the menu's Add to Project asks 'Move to “Print”?' before such a move. Check adding_to_a_project_never_drops_another_silently, its twin the old rule losing the project."
+  },
+  {
+    "id": 516,
+    "type": "feature",
+    "title": "The home or a whole disk asks before it is read whole; a drop says what it refused or left out",
+    "status": "done",
+    "detail": "ux-wide-open, critic 2: a click or Open on the home, a volume's top or `/` unfolds the row and asks 'Show Every Photo on “T7”?'; a drop or the picker's choice of one asks alike (Added::Open.wide). A drop under a sheet, the export or a roll being prepared says 'Go back to the gallery to open these files.'; from the editor the gallery comes back for it. Items outside the opened folder are counted and said ('2 items from other folders were left out…'), and a dropped photo opens in the editor only from inside that folder. Pending::Run carries a confirmed gesture. Checks a_drop_from_two_folders_says_what_it_left (window) and its unit twin in adding.rs; gallery_leftovers' drop check updated."
+  },
+  {
+    "id": 517,
+    "type": "feature",
+    "title": "Names: the system's words for standard folders, a trail for two favourites alike, middle elision",
+    "status": "done",
+    "detail": "names-localized-standard-folders, ux-favourite-names-ambiguous (+ names-favourites-same-name, bench-favourites-same-name), names-long-names-elided-at-end: Computer::name words the home's Desktop, Documents, Downloads, Movies (Videos on Windows), Music and Pictures in the reader's language (Images in French), from the path alone, rows and pill alike; navigator::trails gives two favourites named alike the folders above them as the row's trail; split_end cuts a long title so its head elides and its last eight characters stay (Row.head/tail, FolderLine and TreeRow)."
+  },
+  {
+    "id": 518,
+    "type": "feature",
+    "title": "Wording: the Forget sheet without 'indexed', Open the ONI Trash, Undo on a favourite removed, Explorer and Ctrl on Windows",
+    "status": "done",
+    "detail": "ux-wording-polish: the Forget sheet says 'the photos it knows in'; the No Favourites state says 'ready to open'; Open on a trash folder's row reads Open the ONI Trash; taking a favourite away says so with UNDO, which stars it again; Show in Finder reads Show in Explorer on Windows in the folder menus, the tree, the trash rows and the notices (reveal_word); the toolbar's shortcuts read Bar.command, Ctrl+ and Ctrl+Shift+ on Windows. The cell menu's Show in Finder and the Help's Reveal Log stay for lot 18."
   }
 ]

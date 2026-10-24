@@ -84,9 +84,10 @@ impl Ctl {
         self.reveal_project();
         self.publish_menus();
         let bar = w.global::<Bar>();
-        let (has_photo, selected) = {
+        let gallery = w.global::<App>().get_gallery();
+        let (has_photo, selected, targets) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.picks.selection.len())
+            (s.open.is_some(), s.picks.selection.len(), s.target_count(gallery))
         };
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
@@ -95,11 +96,14 @@ impl Ctl {
         bar.set_undo_title(titles.undo);
         bar.set_redo_title(titles.redo);
         bar.set_can_reset(live.reset);
-        bar.set_targets(selected.max(usize::from(has_photo)) as i32);
-        bar.set_export_title(crate::export::label::key(selected.max(usize::from(has_photo))).into());
-        bar.set_editing(!w.global::<App>().get_gallery());
+        bar.set_targets(targets as i32);
+        bar.set_export_title(crate::export::label::key(targets).into());
+        bar.set_editing(!gallery);
+        let (command, shift) = if cfg!(windows) { ("Ctrl+", "Ctrl+Shift+") } else { ("⌘", "⌘⇧") };
+        bar.set_command(command.into());
+        bar.set_command_shift(shift.into());
         self.publish_lab();
-        self.publish_export_menu(selected, has_photo);
+        self.publish_export_menu(selected, has_photo && !gallery);
     }
 
     pub(super) fn place(&self, f: Field, at: f32) {

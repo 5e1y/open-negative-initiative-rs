@@ -19,6 +19,11 @@ export struct TrashLine {
 // A folder's row: `kind` 0 a folder, 1 a roll, 2 the opened folder.
 export struct FolderLine {
     title: string,
+    // The title cut for a narrow column: its head elides, its tail stays whole; no tail, no cut.
+    head: string,
+    tail: string,
+    // Before the title, the folders above a favourite whose name another shares.
+    trail: string,
     path: string,
     depth: int,
     chevron: bool,
@@ -69,6 +74,8 @@ export global Navigator {
     in property <string> catch-up-more;
     in property <string> catch-up-all-in;
     callback row-clicked(int);
+    // The chevron alone: the row folds or unfolds, and nothing opens.
+    callback row-folded(int);
     callback star-clicked(int);
     callback row-menu(int) -> bool;
     callback menu-chosen(int);
@@ -112,6 +119,9 @@ component Rows inherits Scroller {
                 form: RowForm.navigator;
                 starrable: true;
                 title: row.title;
+                head: row.head;
+                tail: row.tail;
+                trail: row.trail;
                 help: row.help != "" ? row.help : row.path;
                 caption: row.caption;
                 reach: row.reach;
@@ -124,6 +134,7 @@ component Rows inherits Scroller {
                 favourite: row.favourite;
                 present: row.present;
                 clicked => { Navigator.row-clicked(i); }
+                folded => { Navigator.row-folded(i); }
                 starred => { Navigator.star-clicked(i); }
                 menu(x, y) => { root.folder-menu(i, self.absolute-position.x + x, self.absolute-position.y + y); }
             }
@@ -137,7 +148,7 @@ component Rows inherits Scroller {
         }
         if Navigator.no-favourites: EmptyState {
             title: @tr("No Favourites");
-            detail: @tr("Star a folder to keep it here; its photos stay indexed.");
+            detail: @tr("Star a folder to keep it here, ready to open.");
         }
         if Navigator.blank-title != "": EmptyState {
             title: Navigator.blank-title;
@@ -174,7 +185,7 @@ component Welcome inherits VerticalLayout {
     Label { text: @tr("The archive shows a folder of your disk and everything under it."); tone: Tone.secondary; wrap: word-wrap; }
     if Navigator.welcome.length > 0: Label { text: @tr("Your photos were in:"); }
     for line[i] in Navigator.welcome: Button {
-        text: line.enabled ? @tr("ADD {}", line.title) : line.title;
+        text: line.title;
         help: line.path;
         enabled: line.enabled;
         clicked => { Navigator.welcome-added(i); }

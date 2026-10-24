@@ -229,7 +229,7 @@ pub(crate) fn forget_touches_no_file() {
     press(&rig, &shell, "REMOVE FROM LIBRARY…");
     let (title, message) = confirm(&shell).expect("the sheet asks first");
     assert_eq!(title, "Remove “Roll 12” from the Library?");
-    assert_eq!(message, format!("ONI forgets the 2 photos indexed under “{roll}”. No file is touched: if the folder comes back, its photos return with their settings."));
+    assert_eq!(message, format!("ONI forgets the 2 photos it knows in “{roll}”. No file is touched: if the folder comes back, its photos return with their settings."));
     assert_eq!(d.index().under(&roll).len(), 2, "nothing forgotten before the key");
     shell.window.global::<Confirm>().invoke_answered(true);
     rig.pump();

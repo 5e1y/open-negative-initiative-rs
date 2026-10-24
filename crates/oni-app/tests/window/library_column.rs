@@ -143,7 +143,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     lib.invoke_tree_layout_next();
     assert!(lib.get_rows() != model, "twin: a new layout lays new rows");
 
-    // The chevron folds a group; a double click on its name types over it, the folder's own name.
+    // The chevron folds a group; a double click on its name renames nothing, its menu does.
     let group = rows(&lib).iter().position(|r| r.kind != 2 && r.expandable).expect("a group row") as i32;
     let unfolded = rows(&lib)[group as usize].expanded;
     lib.invoke_row_folded(group);
@@ -155,8 +155,13 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     lib.invoke_row_clicked(group, false, false);
     lib.invoke_row_double_clicked(group);
     rig.pump();
+    assert!(!rows(&lib)[group as usize].renaming, "a double click never types over a folder's name");
+    assert!(lib.invoke_row_menu(group));
+    let rename = lib.get_menu_lines().iter().position(|l| l.text == "Rename…").expect("Rename… in the folder's menu");
+    lib.invoke_menu_chosen(rename as i32);
+    rig.pump();
     let renamed = rows(&lib)[group as usize].clone();
-    assert!(renamed.renaming && renamed.title == "Scans", "a double click types over the folder's name: {}", renamed.title);
+    assert!(renamed.renaming && renamed.title == "Scans", "Rename… types over the folder's name: {}", renamed.title);
     assert_eq!(renamed.expanded, unfolded, "and folds nothing");
     lib.invoke_row_rename_cancelled();
     assert!(!rows(&lib)[group as usize].renaming, "twin: Escape leaves the name as it was");

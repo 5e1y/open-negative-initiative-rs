@@ -32,6 +32,9 @@ export struct Heading {
 export struct TreeRow {
     depth: int,
     title: string,
+    // The title cut for a narrow column, its tail kept whole; no tail, no cut.
+    head: string,
+    tail: string,
     caption: string,
     // 0 a folder, 1 a roll, 2 a photo.
     kind: int,

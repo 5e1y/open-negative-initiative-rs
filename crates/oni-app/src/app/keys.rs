@@ -1,4 +1,4 @@
-//! The keys no menu item carries: Escape and Return on a sheet, the Lab's, the grid's and the walk keys.
+//! The keys no menu item carries: Escape and Return on a sheet, the Lab's, the rows', the grid's and the walk keys.
 
 use super::*;
 
@@ -83,6 +83,10 @@ impl Ctl {
         }
         if !w.global::<App>().get_gallery() && command && !shift && matches!(text, "a" | "A") {
             self.column_select_all();
+            return true;
+        }
+        // A click on a folder's row gives the rows the arrows until a click on the grid.
+        if w.global::<App>().get_gallery() && self.navigator_key(text, command) {
             return true;
         }
         if w.global::<App>().get_gallery() && self.grid_key(text, command, shift, bare, repeat) {

@@ -173,14 +173,20 @@ pub(crate) fn the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes
     lib.invoke_surface_picked(0);
     rig.pump();
 
-    // A drop is refused beside a photo, then taken in the gallery as ⌘O takes it.
+    // Under a sheet a drop waits and says why; beside a photo the gallery comes back for it, and it
+    // opens as ⌘O opens it.
+    let confirm = w.global::<oni_app::Confirm>();
+    confirm.set_shown(true);
+    assert!(!ctl.dropped(&[elsewhere.join("E1.tif")]), "twin: under a sheet nothing opens");
+    let told = w.global::<oni_app::Told>();
+    assert!(told.get_shown() && told.get_message() == "Go back to the gallery to open these files.", "{}", told.get_message());
+    confirm.set_shown(false);
+    told.invoke_closed();
+    assert!(ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Scans")));
     lib.invoke_tile_opened(0);
     rig.pump();
-    assert!(!ctl.dropped(&[elsewhere.join("E1.tif")]), "twin: the editor takes no drop");
-    assert!(ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Scans")));
-    ctl.act(oni_app::Act::ToggleMode);
-    rig.pump();
-    assert!(ctl.dropped(&[elsewhere.join("notes.txt"), elsewhere.join("E2.tif")]));
+    assert!(!app.get_gallery());
+    assert!(ctl.dropped(&[elsewhere.join("notes.txt"), elsewhere.join("E2.tif")]), "beside a photo, the gallery comes back for the drop");
     rig.until("the dropped photo open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("E2.tif")));
     assert!(ctl.state.borrow().opened().is_some_and(|o| o.ends_with("Elsewhere")), "the first item's folder opens");
     assert!(!app.get_gallery(), "the first photo among the items opens in the editor");
