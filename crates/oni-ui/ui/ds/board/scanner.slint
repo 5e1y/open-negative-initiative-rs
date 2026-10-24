@@ -1,29 +1,31 @@
 // The board's Scanner face: its screen reading the letters' step sliders live, the LCD count, and
 // the Prepare the Roll pieces; overlays.slint holds the marks drawn over the canvas.
-import { Space, PlotStyle, ScannerStyle, LabScreen, LcdReadout, StepSlider, PassReorder, Loupe, RollStyle } from "../ds.slint";
+import { Space, PlotStyle, ScannerStyle, LabScreen, LcdReadout, Slider, SliderFill, PassReorder, Loupe, RollStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
 import { OverlayGroups } from "overlays.slint";
 
 // A letter's slider on the face, its value the screen reads.
-component Letter inherits StepSlider {
+component Letter inherits Slider {
     in-out property <int> at;
+    stepped: true;
+    fill: SliderFill.bipolar;
     value: root.at;
     readout: (root.at > 0 ? "+" : "") + root.at;
-    low: -10;
-    high: 10;
-    stepped(by) => { root.at = clamp(root.at + by, root.low, root.high); }
+    lowest: -10;
+    highest: 10;
+    step(f, by) => { root.at = clamp(root.at + by, root.lowest, root.highest); }
     reset => { root.at = 0; }
 }
 
 export component ScannerPage inherits Page {
     title: "Scanner and canvas overlays";
-    note: "LabScreen: frame, machine, remeasure, cells, finish. LcdReadout: text. StepSlider in its face. FrameOverlay, SplitGuide, the canvas's marks and the Prepare pieces.";
+    note: "LabScreen: frame, machine, remeasure, cells, finish. LcdReadout: text. The stepped Slider in its face. FrameOverlay, SplitGuide, the canvas's marks and the Prepare pieces.";
     Group {
         title: "The Scanner face (live: the screen reads the sliders)";
         states: ["Live"];
         span: BoardStyle.panel;
         Line {
-            label: "LabScreen over its StepSliders";
+            label: "LabScreen over its stepped sliders";
             Fill {
                 span: BoardStyle.panel;
                 spacing: Space.m;
@@ -39,10 +41,10 @@ export component ScannerPage inherits Page {
                     ];
                     finish: ["CT +20 %", "VIG 0 EV", "CHR 0 %"];
                 }
-                d := Letter { title: "D"; at: 3; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; }
-                c := Letter { title: "C"; at: -2; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; }
-                m := Letter { title: "M"; minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; }
-                y := Letter { title: "Y"; at: 1; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; }
+                d := Letter { label: "D"; at: 3; low: ScannerStyle.band-dark; high: ScannerStyle.band-light; }
+                c := Letter { label: "C"; at: -2; low: ScannerStyle.band-red; high: ScannerStyle.band-cyan; }
+                m := Letter { label: "M"; low: ScannerStyle.band-green; high: ScannerStyle.band-magenta; }
+                y := Letter { label: "Y"; at: 1; low: ScannerStyle.band-blue; high: ScannerStyle.band-yellow; }
             }
         }
     }

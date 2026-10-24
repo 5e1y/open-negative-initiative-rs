@@ -1,6 +1,6 @@
 // The pieces every tab is built from: a block wired to the store's reset, a slider wired to the
 // store, the scrolled pane, and the Scanner's sliders.
-import { Slider, Section, Scroller, StepSlider } from "../ds/ds.slint";
+import { Slider, SliderFill, Section, Scroller } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors } from "../editors.slint";
 import { PanelState, Lab } from "state.slint";
@@ -11,19 +11,22 @@ export component LabBlock inherits Section {
 }
 
 // A Scanner slider by its index in `Lab.steps`: the letters D, C, M, Y and TEMP, then the effects.
-// `helps` holds the minus key's, the title's and the plus key's tooltips.
-export component LabSlider inherits StepSlider {
+// `helps` holds the minus key's, the name's and the plus key's tooltips.
+export component LabSlider inherits Slider {
     in property <int> index;
     in property <[string]> helps;
+    stepped: true;
+    fill: SliderFill.bipolar;
     value: Lab.steps[root.index];
-    low: Lab.lows[root.index];
-    high: Lab.highs[root.index];
+    lowest: Lab.lows[root.index];
+    highest: Lab.highs[root.index];
     readout: Lab.readouts[root.index];
+    value-text: self.readout;
     minus-help: root.helps[0];
-    title-help: root.helps[1];
+    help: root.helps[1];
     plus-help: root.helps[2];
     held(on) => { Lab.hold(on); }
-    stepped(by) => {
+    step(f, by) => {
         if (root.index < 5) {
             Lab.press(root.index, by);
         } else {
