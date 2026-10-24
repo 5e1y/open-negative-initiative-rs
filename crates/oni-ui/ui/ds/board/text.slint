@@ -1,6 +1,6 @@
 // The board's words and marks: every Label role in every tone, the glyphs in each tone, and the Badge
 // in each of its tones.
-import { Colour, Space, Radius, ButtonStyle, Icons, Label, TextRole, Tone, Icon, Badge, BadgeTone } from "../ds.slint";
+import { Colour, Space, Radius, ButtonStyle, ScannerStyle, Icons, Label, TextRole, Tone, Icon, Badge, BadgeTone, Metal } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Stage } from "kit.slint";
 
 struct Glyph { name: string, source: image }
@@ -8,15 +8,16 @@ struct Glyph { name: string, source: image }
 // The tones a column each, as the ground their ink is meant for paints them.
 component ToneGround inherits Rectangle {
     in property <Tone> tone;
-    background: root.tone == Tone.on-fill ? Colour.accent : root.tone == Tone.on-light ? Colour.paper : transparent;
+    background: root.tone == Tone.on-fill ? Colour.accent : root.tone == Tone.on-light ? Colour.paper
+        : root.tone == Tone.on-warning ? Colour.warning-soft : root.tone == Tone.lcd ? ScannerStyle.glass : transparent;
     border-radius: Radius.track;
 }
 
-// A role in the seven tones.
+// A role in the nine tones.
 component RoleRow inherits Line {
     in property <TextRole> role;
     in property <string> sample;
-    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution]: Fill {
+    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution, Tone.on-warning, Tone.lcd]: Fill {
         ToneGround {
             tone: tone;
             height: sample.preferred-height + Space.s;
@@ -25,10 +26,10 @@ component RoleRow inherits Line {
     }
 }
 
-// A glyph in the seven tones.
+// A glyph in the nine tones.
 component GlyphRow inherits Line {
     in property <image> source;
-    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution]: Fill {
+    for tone in [Tone.primary, Tone.secondary, Tone.tertiary, Tone.on-fill, Tone.on-light, Tone.warning, Tone.caution, Tone.on-warning, Tone.lcd]: Fill {
         ToneGround {
             tone: tone;
             height: ButtonStyle.icon + Space.s;
@@ -39,8 +40,8 @@ component GlyphRow inherits Line {
 
 export component TextPage inherits Page {
     title: "Text";
-    note: "Label: role (label, value, caption, title, section, heading, button, note) × tone; Icon: source, tone or ink.";
-    property <[string]> tones: ["primary", "secondary", "tertiary", "on-fill (on accent)", "on-light (on paper)", "warning", "caution"];
+    note: "Label: role (label, value, caption, title, section, heading, button, note) × tone, or ink; spaced; centred. Icon: source, tone or ink.";
+    property <[string]> tones: ["primary", "secondary", "tertiary", "on-fill (on accent)", "on-light (on paper)", "warning", "caution", "on-warning (on its band)", "lcd (on the glass)"];
     property <[Glyph]> glyphs: [
         { name: "framing", source: Icons.framing }, { name: "compare", source: Icons.compare }, { name: "contact-sheet", source: Icons.contact-sheet },
         { name: "undo", source: Icons.undo }, { name: "redo", source: Icons.redo }, { name: "copy", source: Icons.copy },
@@ -67,6 +68,18 @@ export component TextPage inherits Page {
         RoleRow { label: "heading"; role: TextRole.heading; sample: "Roll #8"; }
         RoleRow { label: "button"; role: TextRole.button; sample: "EXPORT"; }
         RoleRow { label: "note (wraps)"; role: TextRole.note; sample: "A quiet line under a field, wrapping when it runs long."; }
+    }
+    Group {
+        title: "Label with an ink, or spaced";
+        states: ["ink: red", "ink: green", "ink: blue", "ink: a tint's", "spaced (caption, strong)"];
+        Line {
+            label: "label";
+            Cell { Label { text: "R"; ink: Colour.channel-red; } }
+            Cell { Label { text: "G"; ink: Colour.channel-green; } }
+            Cell { Label { text: "B"; ink: Colour.channel-blue; } }
+            Cell { Label { text: "Portra 400"; ink: Colour.caution; } }
+            Cell { Label { text: "FRAMES SHOT"; role: TextRole.caption; tone: Tone.secondary; font-weight: 600; spaced: true; } }
+        }
     }
     Group {
         title: "Icon in each tone";
@@ -98,32 +111,36 @@ export component TextPage inherits Page {
 // A badge on the ground, a longer word, and on the canvas's dark it is mostly drawn over.
 component BadgeRow inherits Line {
     in property <BadgeTone> tone;
+    in property <Metal> metal;
+    in property <color> fill;
+    in property <color> ink;
     in property <string> text;
     in property <string> long;
     in property <string> note;
-    Cell { Badge { tone: root.tone; text: root.text; note: root.note; } }
-    Cell { Badge { tone: root.tone; text: root.long; } }
+    Cell { Badge { tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; note: root.note; } }
+    Cell { Badge { tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.long; } }
     Cell {
         Stage {
             width: BoardStyle.cell;
             height: 3 * BoardStyle.gap;
             border-radius: Radius.badge;
-            Badge { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; tone: root.tone; text: root.text; }
+            Badge { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; }
         }
     }
 }
 
 export component BadgePage inherits Page {
     title: "Badge";
-    note: "Badge: tone (warning, dark, seal, alert, news, step), text, note (news: shown on hover, then read).";
+    note: "Badge: tone (warning, dark, seal, step, tint), metal (a seal's gold, holographic, red), fill and ink (a tint's), text, note (shown on hover, then read).";
     Group {
         title: "Badge";
         states: ["Live", "A longer word", "On the canvas"];
         BadgeRow { label: "warning"; tone: BadgeTone.warning; text: "8-bit"; long: "8-bit source"; }
         BadgeRow { label: "dark (over the photo)"; tone: BadgeTone.dark; text: "1:1"; long: "200 %"; }
-        BadgeRow { label: "seal"; tone: BadgeTone.seal; text: "RGB"; long: "3 PASSES"; }
-        BadgeRow { label: "alert"; tone: BadgeTone.alert; text: "FLAGGED"; long: "FLAGGED FRAME"; }
-        BadgeRow { label: "news, its note on hover"; tone: BadgeTone.news; text: "NEW"; long: "UPDATED"; note: "Grain now follows the film's own size."; }
+        BadgeRow { label: "seal, gold, its note on hover"; tone: BadgeTone.seal; text: "NEW"; long: "2026"; note: "Grain now follows the film's own size."; }
+        BadgeRow { label: "seal, holographic"; tone: BadgeTone.seal; metal: Metal.holographic; text: "RGB"; long: "3 PASSES"; }
+        BadgeRow { label: "seal, red"; tone: BadgeTone.seal; metal: Metal.red; text: "FLAGGED"; long: "FLAGGED FRAME"; }
         BadgeRow { label: "step"; tone: BadgeTone.step; text: "1"; long: "12"; }
+        BadgeRow { label: "tint (a preset's fill and ink)"; tone: BadgeTone.tint; fill: Colour.caution; ink: Colour.ink-on-light; text: "Pt"; long: "Ek"; }
     }
 }

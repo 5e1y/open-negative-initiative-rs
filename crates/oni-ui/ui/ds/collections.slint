@@ -1,6 +1,6 @@
 // The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
 import { Colour, Space, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone, Badge, BadgeTone, Metal, BadgeStyle } from "base.slint";
 import { Look, TextField } from "controls.slint";
 import { Icons } from "icons.slint";
 
@@ -203,20 +203,18 @@ export component TileView inherits Rectangle {
         // The medal's centre level with the seal's.
         if root.medal > 0: Rectangle {
             x: TileStyle.badge-inset;
-            y: parent.height - TileStyle.badge-inset - (TileStyle.caption + self.height) / 2;
+            y: parent.height - TileStyle.badge-inset - (BadgeStyle.seal-height + self.height) / 2;
             width: TileStyle.medal;
             height: TileStyle.medal;
             border-radius: self.width / 2;
             background: Colour.medal[root.medal];
         }
-        if root.rgb: Rectangle {
+        if root.rgb: Badge {
             x: parent.width - self.width - TileStyle.badge-inset;
             y: parent.height - self.height - TileStyle.badge-inset;
-            width: seal.preferred-width + 2 * Space.xs;
-            height: TileStyle.caption;
-            border-radius: Space.xxs;
-            background: Colour.raised;
-            seal := Label { role: TextRole.caption; text: @tr("RGB"); centred: true; }
+            tone: BadgeTone.seal;
+            metal: Metal.holographic;
+            text: @tr("RGB");
         }
         Rectangle {
             border-width: root.selected ? TileStyle.selection : 0px;

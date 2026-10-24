@@ -1,8 +1,8 @@
 // Prepare the Roll's pieces: a frame's cell with its marks, the base pick's ring, the loupe on the
 // scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, TileStyle, Motion } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks, Badge, BadgeTone } from "base.slint";
+import { Colour, Space, Radius, Stroke, State, TileStyle, Motion, StatusStyle } from "theme.slint";
+import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks, Badge, BadgeTone, Metal } from "base.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -27,9 +27,11 @@ export component SealedStatusLine inherits HorizontalLayout {
     in property <string> seal;
     spacing: Space.s;
     StatusLine { horizontal-stretch: 0; text: root.text; }
-    if root.seal != "": VerticalLayout {
-        alignment: center;
-        Badge { tone: BadgeTone.seal; text: root.seal; }
+    // The seal stands out of the row by its own height, as Swift's overlay does, so the bar keeps its height.
+    if root.seal != "": Rectangle {
+        width: seal.width;
+        height: StatusStyle.height;
+        seal := Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: root.seal; }
     }
     Rectangle { horizontal-stretch: 1; }
 }
@@ -60,7 +62,7 @@ export component RollCellView inherits Rectangle {
         border-radius: self.width / 2;
         background: Colour.caution;
     }
-    if root.rgb: Badge { tone: BadgeTone.seal;
+    if root.rgb: Badge { tone: BadgeTone.seal; metal: Metal.holographic;
         x: parent.width - Space.xs - self.width;
         y: parent.height - Space.xs - self.height;
         text: @tr("RGB");
@@ -89,7 +91,7 @@ export component RollCellView inherits Rectangle {
         border-width: Stroke.emphasis;
         border-color: root.flagged ? Colour.destructive : Colour.selected;
     }
-    if root.outset && root.flagged: Badge { tone: true ? BadgeTone.alert : BadgeTone.seal;
+    if root.outset && root.flagged: Badge { tone: BadgeTone.seal; metal: Metal.red;
         x: Space.xs;
         y: Space.xs;
         text: @tr("FLAGGED");

@@ -1,6 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
-import { DS, Colour, CropStyle, Space, Radius, Stroke, Type } from "theme.slint";
+import { DS, Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "base.slint";
 
 export enum FrameStyle { crop, window }
@@ -251,18 +251,10 @@ export component CorrectionMark inherits Rectangle {
         border-color: Colour.sharpen;
     }
     // Half an `xxs` clear of the ring, as Swift's alignment guides set it.
-    if root.number > 0: Rectangle {
+    if root.number > 0: Badge {
         x: parent.width + Space.xxs / 2;
         y: -self.height - Space.xxs / 2;
-        width: badge.preferred-width + DS.control-badge-padding;
-        height: badge.preferred-height + Space.xxs;
-        background: Colour.contrast-edge;
-        border-radius: Radius.badge / 2;
-        badge := Text {
-            text: root.number;
-            color: Colour.handle-active;
-            font-size: Type.chip;
-        }
+        text: root.number;
     }
 }
 

@@ -65,7 +65,7 @@ export component Section inherits VerticalLayout {
             }
             if root.news != "": VerticalLayout {
                 alignment: center;
-                Badge { tone: BadgeTone.news; text: root.news; note: root.news-note; read => { root.news-read(); } }
+                Badge { tone: BadgeTone.seal; text: root.news; note: root.news-note; read => { root.news-read(); } }
             }
             Rectangle { horizontal-stretch: 1; }
             // Always laid out, only invisible, so the row keeps its height on a slider's first touch.

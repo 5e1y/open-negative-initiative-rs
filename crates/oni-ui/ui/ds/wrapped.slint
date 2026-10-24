@@ -2,7 +2,7 @@
 // its photos, and the line saying how to turn the cards.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
-import { Label, Tone, TextRole } from "base.slint";
+import { Label, Tone, TextRole, Badge, BadgeTone } from "base.slint";
 
 export global WrappedStyle {
     // `Color.black`, the ground the year is told on, whatever the theme.
@@ -49,20 +49,7 @@ export component WrappedTitle inherits Rectangle {
         }
         HorizontalLayout {
             alignment: center;
-            Rectangle {
-                height: DS.control-seal-height * 1px;
-                width: seal.preferred-width + 2 * DS.control-seal-padding * 1px;
-                border-radius: self.height / 2;
-                background: Colour.medal[3];
-                seal := Text {
-                    text: root.year;
-                    font-family: Type.family;
-                    font-size: DS.typo-seal-size;
-                    font-weight: Type.strong;
-                    letter-spacing: DS.control-seal-tracking * 1px;
-                    color: Colour.ink-on-light;
-                }
-            }
+            Badge { tone: BadgeTone.seal; text: root.year; }
         }
     }
 }

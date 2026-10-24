@@ -2,7 +2,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle } from "theme.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
@@ -99,47 +99,56 @@ export component Label inherits Text {
     wrap: root.role == TextRole.note ? word-wrap : no-wrap;
 }
 
-// What a badge says by its colour: a caution on the canvas, a value over the photo, a tile's seal and
-// its red alert, a block's news, a step's number in its disc.
-export enum BadgeTone { warning, dark, seal, alert, news, step }
+// What a badge says by its colour: a caution on the canvas, a value over the photo, a foil seal, a
+// step's number in its disc, a preset's monogram on its tint.
+export enum BadgeTone { warning, dark, seal, step, tint }
 
-// A short word on a capsule, a tag or a disc; a news badge's note shows on hover and marks it read.
+// `DSFoil.Metal`: the foil a seal is struck in.
+export enum Metal { gold, holographic, red }
+
+// A short word on a capsule, a tag, a disc or a tint; a note shows on hover and marks it read.
 export component Badge inherits Rectangle {
     in property <string> text;
     in property <BadgeTone> tone: BadgeTone.dark;
+    in property <Metal> metal: Metal.gold;
+    // A tint's own fill and ink, as a preset carries them.
+    in property <color> fill;
+    in property <color> ink;
     in property <string> note;
     callback read();
-    property <bool> sealed: root.tone == BadgeTone.seal || root.tone == BadgeTone.alert;
+    property <bool> fixed: root.tone == BadgeTone.step || root.tone == BadgeTone.tint;
+    property <bool> seal: root.tone == BadgeTone.seal;
     width: root.tone == BadgeTone.step ? DS.control-keycap-mini-height
+        : root.tone == BadgeTone.tint ? DS.control-preset-badge-width
         : root.tone == BadgeTone.warning ? label.preferred-width + 2 * Space.s
-        : root.tone == BadgeTone.news ? label.preferred-width + 2 * DS.control-seal-padding * 1px
-        : root.sealed ? label.preferred-width + 2 * Space.xs
-        : label.preferred-width + 10px;
+        // `DSFoil.size`: the last letter's tracking taken off, rounded up to a point.
+        : root.seal ? ceil((label.preferred-width - BadgeStyle.tracking + 2 * BadgeStyle.seal-padding) / 1px) * 1px
+        : label.preferred-width + 2 * BadgeStyle.padding;
     height: root.tone == BadgeTone.step ? self.width
+        : root.tone == BadgeTone.tint ? DS.control-preset-badge-height
         : root.tone == BadgeTone.warning ? label.preferred-height + 2 * Space.xs
-        : root.tone == BadgeTone.news ? DS.control-seal-height * 1px
-        : root.sealed ? TileStyle.caption
-        : label.preferred-height + 4px;
-    border-radius: root.tone == BadgeTone.step || root.tone == BadgeTone.warning || root.tone == BadgeTone.news ? self.height / 2
-        : root.sealed ? Space.xxs : 4px;
+        : root.seal ? BadgeStyle.seal-height
+        : label.preferred-height + 2 * BadgeStyle.padding;
+    border-radius: root.tone == BadgeTone.tint ? Radius.badge : root.tone == BadgeTone.dark ? BadgeStyle.radius : self.height / 2;
     background: root.tone == BadgeTone.warning ? Colour.warning-surface
-        : root.tone == BadgeTone.news ? Colour.medal[3]
-        : root.tone == BadgeTone.alert ? Colour.destructive
-        : root.tone == BadgeTone.seal || root.tone == BadgeTone.step ? Colour.raised
+        : root.seal ? BadgeStyle.foil[root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0]
+        : root.tone == BadgeTone.step ? Colour.raised
+        : root.tone == BadgeTone.tint ? root.fill
         : Colour.contrast-edge;
-    label := Text {
-        width: root.sealed || root.tone == BadgeTone.step ? parent.width : self.preferred-width;
-        height: root.sealed || root.tone == BadgeTone.step ? parent.height : self.preferred-height;
+    label := Label {
+        x: root.seal ? BadgeStyle.seal-padding : (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: root.fixed ? parent.width : self.preferred-width;
+        height: root.fixed || root.seal ? parent.height : self.preferred-height;
         text: root.text;
-        font-family: Type.family;
-        font-size: root.tone == BadgeTone.warning ? Type.value : root.tone == BadgeTone.news ? DS.typo-seal-size
-            : root.sealed ? Type.chip : root.tone == BadgeTone.step ? Type.label : 11px;
-        font-weight: root.tone == BadgeTone.news ? Type.strong : Type.regular;
-        letter-spacing: root.tone == BadgeTone.news ? DS.control-seal-tracking * 1px : 0px;
-        color: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.tone == BadgeTone.news ? Colour.ink-on-light
-            : root.tone == BadgeTone.alert ? Colour.ink-on-fill : root.sealed || root.tone == BadgeTone.step ? Colour.ink : Colour.handle-active;
-        horizontal-alignment: root.sealed || root.tone == BadgeTone.step ? center : left;
-        vertical-alignment: root.sealed || root.tone == BadgeTone.step ? center : top;
+        font-size: root.tone == BadgeTone.warning ? Type.value : root.seal ? BadgeStyle.seal-size
+            : root.tone == BadgeTone.step ? Type.label : Type.chip;
+        font-weight: root.seal ? Type.strong : Type.regular;
+        spaced: root.seal;
+        // `DSFoil` prints every seal in one dark ink.
+        ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? Colour.ink-on-light
+            : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.handle-active;
+        centred: root.fixed;
     }
     if root.note != "": TouchArea {
         changed has-hover => {
