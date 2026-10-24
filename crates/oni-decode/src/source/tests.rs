@@ -124,7 +124,7 @@ fn a_dng_in_an_ete_folder_decodes() {
     mosaic_dng(&accented);
     let long = long_folder(&root).join("Frame.DNG");
     mosaic_dng(&long);
-    assert!(long.as_os_str().len() > 260, "{}", long.display());
+    assert!(long.to_string_lossy().chars().count() > 260, "{}", long.display());
     let here = crate::decode(&accented, 1.0).expect("the accented folder decodes");
     assert_eq!((here.width, here.height), (W, H));
     let greens: Vec<u32> = here.pixels.iter().map(|p| p[1].to_bits()).collect();
