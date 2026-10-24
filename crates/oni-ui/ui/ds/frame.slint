@@ -1,6 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
-import { DS, Colour, CropStyle, Space, Stroke } from "theme.slint";
+import { Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "badge.slint";
 import { TextRole } from "base.slint";
 import { RingTone, Ring } from "marks.slint";
@@ -120,7 +120,7 @@ export component FrameOverlay inherits Rectangle {
     for i in (root.crop ? 2 : 0): Rectangle {
         x: root.frame-x + root.frame-width * (i + 1) / 3;
         y: root.frame-y;
-        width: CropStyle.hairline;
+        width: Stroke.hairline;
         height: root.frame-height;
         background: Colour.guide-faint;
     }
@@ -128,7 +128,7 @@ export component FrameOverlay inherits Rectangle {
         x: root.frame-x;
         y: root.frame-y + root.frame-height * (i + 1) / 3;
         width: root.frame-width;
-        height: CropStyle.hairline;
+        height: Stroke.hairline;
         background: Colour.guide-faint;
     }
     Rectangle {
@@ -136,7 +136,7 @@ export component FrameOverlay inherits Rectangle {
         y: root.frame-y;
         width: root.frame-width;
         height: root.frame-height;
-        border-width: body.has-hover || root.held == 0 ? CropStyle.hairline + 1px : CropStyle.hairline;
+        border-width: body.has-hover || root.held == 0 ? Stroke.hairline + 1px : Stroke.hairline;
         border-color: body.has-hover || root.held == 0 ? Colour.handle-active : root.rest;
     }
     body := Grab {

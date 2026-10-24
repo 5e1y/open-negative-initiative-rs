@@ -1,7 +1,7 @@
 // The board's tokens: every `Colour` and the Scanner's colours by name, the space and radius scales,
 // the strokes and the states' opacities; the type roles are the Text page's.
-import { Colour, Space, Radius, Stroke, State, ScannerStyle, Label, TextRole, Tone, Button, PresetStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
+import { Colour, Space, Radius, Stroke, State, ScannerStyle, Label, TextRole, Tone } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Cell } from "kit.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -48,8 +48,8 @@ export component TokensPage inherits Page {
         { name: "canvas-cropping", colour: Colour.canvas-cropping }, { name: "unaligned-balance", colour: Colour.unaligned-balance }, { name: "contrast-edge-idle", colour: Colour.contrast-edge-idle },
         { name: "sharpen", colour: Colour.sharpen }, { name: "stroke-live", colour: Colour.stroke-live }, { name: "handle-active", colour: Colour.handle-active },
         { name: "contrast-edge", colour: Colour.contrast-edge }, { name: "hover", colour: Colour.hover }, { name: "row-selected", colour: Colour.row-selected },
-        { name: "selected", colour: Colour.selected }, { name: "focus", colour: Colour.focus }, { name: "track", colour: Colour.track },
-        { name: "track-fill", colour: Colour.track-fill }, { name: "skeleton", colour: Colour.skeleton }, { name: "paper", colour: Colour.paper },
+        { name: "selected", colour: Colour.selected }, { name: "track", colour: Colour.track },
+        { name: "track-fill", colour: Colour.track-fill }, { name: "skeleton", colour: Colour.skeleton },
         { name: "white", colour: Colour.white }, { name: "black", colour: Colour.black }, { name: "metal-dark", colour: Colour.metal-dark },
         { name: "metal-light", colour: Colour.metal-light }, { name: "channel-red", colour: Colour.channel-red }, { name: "channel-cyan", colour: Colour.channel-cyan },
         { name: "channel-blue", colour: Colour.channel-blue }, { name: "channel-yellow", colour: Colour.channel-yellow }, { name: "channel-green", colour: Colour.channel-green },
@@ -62,7 +62,7 @@ export component TokensPage inherits Page {
         title: "ScannerStyle colours";
         Swatches {
             swatches: [
-        { name: "socket", colour: ScannerStyle.socket }, { name: "cap-light", colour: ScannerStyle.cap-light }, { name: "cap-dark", colour: ScannerStyle.cap-dark },
+        { name: "cap-light", colour: ScannerStyle.cap-light }, { name: "cap-dark", colour: ScannerStyle.cap-dark },
         { name: "band-dark", colour: ScannerStyle.band-dark }, { name: "band-light", colour: ScannerStyle.band-light }, { name: "band-red", colour: ScannerStyle.band-red },
         { name: "band-cyan", colour: ScannerStyle.band-cyan }, { name: "band-green", colour: ScannerStyle.band-green }, { name: "band-magenta", colour: ScannerStyle.band-magenta },
         { name: "band-blue", colour: ScannerStyle.band-blue }, { name: "band-yellow", colour: ScannerStyle.band-yellow }, { name: "band-cool", colour: ScannerStyle.band-cool },

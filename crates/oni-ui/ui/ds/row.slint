@@ -1,6 +1,6 @@
 // Every line of a list or a tree: a title, its kind's glyph and chevron, a caption, a path before it,
 // a second line, a tint's badge, a star, a key on hover, and the title typed over while renamed.
-import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, MenuStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, ButtonStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Icons } from "icons.slint";
@@ -91,7 +91,7 @@ export component Row inherits Rectangle {
     property <bool> badged: root.badge != "";
     property <length> indent: root.depth * RowStyle.indent;
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
-    height: root.choice ? MenuStyle.row : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
+    height: root.choice ? ButtonStyle.height : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
     border-radius: root.form != RowForm.list ? Radius.badge : 0px;
     property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.

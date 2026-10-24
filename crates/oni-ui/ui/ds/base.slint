@@ -2,7 +2,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, ButtonStyle, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle, MenuStyle, SheetStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, SplitStyle, ShellStyle, ScannerStyle, SheetStyle } from "theme.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
@@ -58,7 +58,7 @@ export global Tones {
         if (ground == Ground.canvas) { return Colour.canvas; }
         if (ground == Ground.canvas-cropping) { return Colour.canvas-cropping; }
         if (ground == Ground.well) { return Colour.well; }
-        if (ground == Ground.paper) { return Colour.paper; }
+        if (ground == Ground.paper) { return Colour.white; }
         if (ground == Ground.skeleton) { return Colour.skeleton; }
         Colour.ground
     }
@@ -149,7 +149,7 @@ export component SplitGuide inherits Rectangle {
         height: parent.height;
         background: grab.has-hover || grab.pressed ? Colour.handle-active : Colour.guide;
         drop-shadow-color: Colour.contrast-edge;
-        drop-shadow-blur: SplitStyle.shadow;
+        drop-shadow-blur: Stroke.emphasis;
     }
     Label {
         text: @tr("before");
@@ -231,7 +231,7 @@ export component Raised inherits Rectangle {
     in property <Gap> gap: Gap.none;
     height: column.preferred-height;
     background: root.menu ? Colour.raised : Colour.ground;
-    border-radius: root.menu ? MenuStyle.radius : Radius.card;
+    border-radius: root.menu ? Radius.badge : Radius.card;
     border-width: root.lift == Lift.float ? 0px : Stroke.hairline;
     border-color: Colour.separator;
     clip: root.lift != Lift.none;
@@ -278,7 +278,7 @@ export component TipCard inherits Rectangle {
     in property <bool> card;
     in property <string> text;
     in property <image> picture;
-    out property <length> natural-width: root.card ? TipStyle.card-width : tip-text.width + 2 * TipStyle.padding-x;
+    out property <length> natural-width: root.card ? TipStyle.card-width : tip-text.width + 2 * TipStyle.padding;
     out property <length> natural-height: root.card ? column.preferred-height : tip-text.preferred-height + 2 * TipStyle.padding-y;
     width: root.natural-width;
     height: root.natural-height;
@@ -297,11 +297,11 @@ export component TipCard inherits Rectangle {
     column := VerticalLayout {
         visible: root.card;
         width: TipStyle.card-width;
-        padding: TipStyle.card-padding;
-        spacing: TipStyle.card-padding;
+        padding: TipStyle.padding;
+        spacing: TipStyle.padding;
         // The clip's place, empty until its GIF is made.
         Picture {
-            height: (TipStyle.card-width - 2 * TipStyle.card-padding) * 3 / 4;
+            height: (TipStyle.card-width - 2 * TipStyle.padding) * 3 / 4;
             ground: Ground.skeleton;
             rounded: true;
             source: root.picture;

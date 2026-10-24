@@ -1,4 +1,4 @@
-//! `Splash`: a borderless picture centred on the screen at launch, held `SplashStyle.minimum`
+//! `Splash`: a borderless picture centred on the screen at launch, held `DS.Motion.splashMinimum`
 //! while the first folder loads underneath, then the main window shown in its place.
 
 use crate::SplashWindow;

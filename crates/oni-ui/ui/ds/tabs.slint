@@ -1,5 +1,5 @@
 // `DSTabBar`, the segmented tabs.
-import { Colour, Space, State, Motion, TabsStyle } from "theme.slint";
+import { Colour, Space, State, Motion, TabsStyle, ButtonStyle } from "theme.slint";
 import { Label, Tips, Clicks } from "base.slint";
 import { Dot } from "marks.slint";
 
@@ -14,9 +14,9 @@ export component Tabs inherits Rectangle {
     // The tab the state board shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
-    height: TabsStyle.height;
+    height: ButtonStyle.height;
     clip: true;
-    border-radius: TabsStyle.radius;
+    border-radius: ButtonStyle.radius;
     background: Colour.canvas;
     property <length> pitch: (self.width - 2 * TabsStyle.inset) / max(1, root.tabs.length);
     Rectangle {

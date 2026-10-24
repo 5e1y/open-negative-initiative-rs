@@ -8,7 +8,7 @@ struct Glyph { name: string, source: image }
 // The tones a column each, as the ground their ink is meant for paints them.
 component ToneGround inherits Rectangle {
     in property <Tone> tone;
-    background: root.tone == Tone.on-fill ? Colour.accent : root.tone == Tone.on-light ? Colour.paper
+    background: root.tone == Tone.on-fill ? Colour.accent : root.tone == Tone.on-light ? Colour.white
         : root.tone == Tone.on-warning ? Colour.warning-soft : root.tone == Tone.lcd ? ScannerStyle.glass : transparent;
     border-radius: Radius.track;
 }

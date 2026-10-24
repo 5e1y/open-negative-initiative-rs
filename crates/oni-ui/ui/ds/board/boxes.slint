@@ -1,12 +1,12 @@
 // The board's containers: the block's Section in each form, the help mark and the `TipCard` that
 // `TipLayer` draws, the sheets and their questions, the raised and sunk surfaces; notices.slint the rest.
-import { Colour, Space, Radius, Stroke, TipStyle, SheetStyle, FormStyle, MenuStyle, Look, Label, TextRole, Tone, Gap, Ground, Divider, Surface, Card, Raised, Lift, Inset, TipCard, Button, ButtonKind, Tabs, HelpMark, Section, Sheet, SheetHeader, AskSheet, AskRole, PopupPanel, PopupKind, MenuEntry, TextField, Toggle, ButtonGroup, GroupAlign, Field, FieldLayout } from "../ds.slint";
+import { Colour, Space, Radius, Stroke, TipStyle, SheetStyle, FormStyle, MenuStyle, Look, Label, TextRole, Tone, Gap, Ground, Divider, Surface, Card, Raised, Lift, Inset, TipCard, Button, ButtonKind, Tabs, HelpMark, Section, Sheet, SheetHeader, AskSheet, AskRole, PopupPanel, PopupKind, MenuEntry, TextField, Toggle, ButtonGroup, GroupAlign, Field, FieldLayout, ShellStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage } from "kit.slint";
 import { NoticeGroups } from "notices.slint";
 
 // A section on the panel's ground at the panel's width.
 component SectionCell inherits Fill {
-    span: BoardStyle.panel;
+    span: ShellStyle.panel-width;
     Surface {
         height: holder.preferred-height;
         holder := VerticalLayout { @children }
@@ -24,7 +24,7 @@ export component ContainersPage inherits Page {
     Group {
         title: "Section (on the panel)";
         states: ["Live (fold, RESET, ?)", "Folded"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "titled";
             SectionCell { Section { title: "Exposure"; Label { text: "Content"; tone: Tone.secondary; } } }
@@ -56,7 +56,7 @@ export component ContainersPage inherits Page {
         Line {
             label: "unfoldable (a settings page)";
             SectionCell { Section { title: "Clicks"; foldable: false; Field { layout: FieldLayout.spread; label: "Keys click"; Toggle { on: true; } } } }
-            Absent { span: BoardStyle.panel; text: "— it never folds"; }
+            Absent { span: ShellStyle.panel-width; text: "— it never folds"; }
         }
         Line {
             label: "not separated (a panel's first)";

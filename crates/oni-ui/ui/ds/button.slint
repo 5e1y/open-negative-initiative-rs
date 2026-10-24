@@ -1,7 +1,7 @@
 // The key every screen presses: its kinds and sizes, a glyph, a word or both, a keycap's band or a swatch.
-import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
-import { Icons } from "icons.slint";
+
 import { Dot } from "marks.slint";
 
 // `ghost` is a glyph alone on no ground, its tone lifting under the hand, as a help mark or a star.
@@ -89,7 +89,7 @@ export component Button inherits Rectangle {
         : root.kind == ButtonKind.caution ? Tone.on-light
         : root.tinted ? Tone.on-fill
         : root.on ? Tone.on-light : Tone.primary;
-    height: root.keycap ? ScannerStyle.step-key : root.small ? ButtonStyle.small-height : ButtonStyle.height;
+    height: root.keycap || root.small ? ButtonStyle.small-height : ButtonStyle.height;
     min-width: root.square || root.keycap ? self.height
         : root.fixed-width > 0 ? root.fixed-width
         : root.worded ? max(word-label.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room
@@ -142,7 +142,7 @@ export component Button inherits Rectangle {
             tone: root.ink;
             text: root.word;
             font-size: root.keycap ? ScannerStyle.legend : Type.chip;
-            font-weight: root.keycap ? ScannerStyle.label-weight : Type.strong;
+            font-weight: root.keycap ? Type.medium : Type.strong;
         }
     }
     if root.lamp-shown: Dot {

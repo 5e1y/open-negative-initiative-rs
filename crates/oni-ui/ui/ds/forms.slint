@@ -1,11 +1,11 @@
 // The forms of export and colour management: a labelled field, a note, a preview slot, progress, the
 // status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, SectionStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
+import { Colour, Space, Radius, FieldStyle, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle } from "theme.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
-import { TextField, RenameField, Button, Look } from "controls.slint";
+import { RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
 import { SliderFill, Rail } from "slider.slint";
 
@@ -18,7 +18,6 @@ export global FormStyle {
     // `SizeFields`: Swift's width is the digits' own, the hollow's padding laid outside it.
     out property <length> size-field: DS.control-export-size-field-width + 2 * FieldStyle.padding;
     out property <length> progress: DS.control-inline-progress-width;
-    out property <length> chip-height: DS.control-canvas-padding;
     out property <length> chip-icon: DS.control-icon-size * 0.7;
     out property <length> paper-width: DS.control-paper-sheet-width;
     out property <length> paper-height: DS.control-paper-sheet-height;

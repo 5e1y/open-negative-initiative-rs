@@ -2474,5 +2474,12 @@
     "title": "The board shows the merged components",
     "status": "done",
     "detail": "Row page: the four forms, the heading kind, the menu form's check, the Picked column's meaning. Tiles page: TileView as the gallery's tile and as Prepare the Roll's frame (marks apart, rounded, every state of the old RollCellView), SelectionRing in each placement, tone and radius, Picture's fit, Dot and Medal, the ghost as a Picture. Scanner page: the canvas marks in cells of one size over a photo (the Well with rows, Ring in both tones, Trace live and source with its dashed line, DustOriginal on a scene), and the measuring window's teal corners. Picker page: the pill's folders as menu-form Rows."
+  },
+  {
+    "id": 350,
+    "type": "refactor",
+    "title": "Every duplicate design token folded into the one it equals",
+    "status": "done",
+    "detail": "Tabs', fields' and menu rows' heights and the tabs' and fields' radii read ButtonStyle's, the menu panel's Radius.badge; NavigatorStyle.key and ScannerStyle.step-key are ButtonStyle.small-height; SheetStyle.panel-width is FormStyle's, RollStyle's and the board's panel width ShellStyle's; RollStyle.canvas-padding and FormStyle.chip-height are CardStyle.padding; ScannerStyle.label-weight is Type.medium; both sockets are Colour.well; Colour.paper is white and focus the accent; channel blue is the accent's token, not a literal; TipStyle has one padding; CropStyle.hairline is Stroke.hairline; the split guide's shadow is Stroke.emphasis as the ring's, the preset deck's peek Space.m. Dead tokens removed (SplashStyle.minimum, RollStyle.plate, PresetStyle's badge sizes, ButtonStyle.label and weight, SheetStyle.radius, ScannerStyle.key-gap and socket-radius, NavigatorStyle.rest), and the unused imports of every file touched, keypad.slint's among them. No pixel moves."
   }
 ]

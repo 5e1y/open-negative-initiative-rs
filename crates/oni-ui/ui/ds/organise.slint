@@ -1,9 +1,9 @@
 // The archive's organising controls: the medal picker, an empty grid's state, a context menu with
 // rules and submenus, the date fields, the drop line and ghost of a reorder, the ONI Trash's row.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, Type, MenuStyle, RowStyle, TileStyle, FieldStyle, ButtonStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone, Divider, Clicks } from "base.slint";
-import { Button, ButtonSize, Look, TextField } from "controls.slint";
+import { Colour, Space, State, TileStyle, ButtonStyle } from "theme.slint";
+import { Label, Picture, TextRole, Tone, Clicks } from "base.slint";
+import { Button, TextField } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 
@@ -55,7 +55,7 @@ export component DateFields inherits HorizontalLayout {
     out property <bool> editing: m.editing || d.editing || y.editing;
     callback committed(string, string, string);
     spacing: Space.xs;
-    height: FieldStyle.height;
+    height: ButtonStyle.height;
     m := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("MM"); text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
     Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
     d := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("DD"); text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }

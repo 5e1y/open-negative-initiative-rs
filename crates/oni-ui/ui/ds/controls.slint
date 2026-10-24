@@ -1,8 +1,8 @@
 // The controls: buttons, the toggle and the field; the slider is `slider.slint`, the tabs `tabs.slint`.
 import { DS } from "tokens.slint";
-import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
-import { Icons } from "icons.slint";
+import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, ToggleStyle, FieldStyle } from "theme.slint";
+import { Label, TextRole, Tone, Clicks } from "base.slint";
+
 import { Dot } from "marks.slint";
 import { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button } from "button.slint";
 import { SliderFill, Knob, Slider } from "slider.slint";
@@ -25,7 +25,7 @@ export component ButtonGroup inherits HorizontalLayout {
         preferred-width: row.preferred-width;
         min-height: row.min-height;
         max-height: row.max-height;
-        background: root.plate ? ButtonStyle.socket : transparent;
+        background: root.plate ? Colour.well : transparent;
         border-radius: root.plate ? (root.small ? ButtonStyle.small-radius : ButtonStyle.radius) + ButtonStyle.plate-inset : 0px;
         row := HorizontalLayout {
             padding: root.plate ? ButtonStyle.plate-inset : 0px;
@@ -138,11 +138,11 @@ export component TextField inherits HorizontalLayout {
     opacity: root.enabled ? 1 : State.disabled;
     box := Rectangle {
         horizontal-stretch: 1;
-        height: root.multiline ? root.lines-height : FieldStyle.height;
-        border-radius: FieldStyle.radius;
+        height: root.multiline ? root.lines-height : ButtonStyle.height;
+        border-radius: ButtonStyle.radius;
         background: Colour.canvas;
         border-width: (input.has-focus || root.focused-look) ? Stroke.line : Stroke.hairline;
-        border-color: (input.has-focus || root.focused-look) ? Colour.focus : Colour.separator;
+        border-color: (input.has-focus || root.focused-look) ? Colour.accent : Colour.separator;
         clip: root.multiline;
         // A centred box spans its whole width, so a date's digits never meet its padding.
         input := TextInput {

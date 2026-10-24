@@ -48,19 +48,17 @@ export global Colour {
     out property <color> hover: DS.palette-hover;
     out property <color> row-selected: DS.palette-track;
     out property <color> selected: DS.palette-selected;
-    out property <color> focus: DS.palette-accent;
     out property <color> track: DS.palette-track;
     out property <color> track-fill: DS.palette-track-fill;
     out property <color> skeleton: DS.palette-skeleton;
-    out property <color> paper: DS.system-white;
     out property <color> white: DS.system-white;
     out property <color> black: DS.system-black;
     out property <color> metal-dark: DS.scanner-metal-dark;
     out property <color> metal-light: DS.scanner-metal-light;
-    // `GainChannel`'s hues and complements: the sensor's own channels, no Swift token holds them.
+    // `GainChannel`'s hues and complements: the system's, which no Swift token holds but the blue, the accent's.
     out property <color> channel-red: #ff453a;
     out property <color> channel-cyan: #64d2ff;
-    out property <color> channel-blue: #0a84ff;
+    out property <color> channel-blue: DS.palette-accent;
     out property <color> channel-yellow: #ffd60a;
     out property <color> channel-green: #30d158;
     out property <color> channel-magenta: #ff00ff;
@@ -153,13 +151,9 @@ export global ButtonStyle {
     out property <length> padding: Space.m;
     out property <length> small-padding: Space.s;
     out property <length> group-gap: Space.xxs;
-    // `KeycapPlate`'s socket: the base keys sit flush on, a hairline showing between them.
-    out property <color> socket: DS.palette-tile;
     out property <length> plate-inset: Stroke.hairline;
     out property <length> icon: DS.control-icon-size;
     out property <length> small-icon: DS.control-toggle-glyph;
-    out property <length> label: Type.chip;
-    out property <int> weight: Type.strong;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
     // A tinted key's ground pressed and hovered: darker by `press`, brighter by `lift`.
@@ -202,8 +196,6 @@ export global SectionStyle {
 }
 
 export global TabsStyle {
-    out property <length> height: ButtonStyle.height;
-    out property <length> radius: ButtonStyle.radius;
     out property <length> inset: Space.xxs;
     out property <length> pill-radius: Radius.track;
     out property <length> mark: Space.xs;
@@ -217,8 +209,6 @@ export global ToggleStyle {
 }
 
 export global FieldStyle {
-    out property <length> height: DS.control-field-height;
-    out property <length> radius: ButtonStyle.radius;
     out property <length> padding: Space.s;
 }
 
@@ -252,14 +242,12 @@ export global TileStyle {
 export global SheetStyle {
     out property <length> width: DS.control-dialog-width;
     out property <length> wide-width: DS.control-dialog-wide-width;
-    out property <length> radius: Radius.card;
     out property <length> padding: Space.l;
     out property <length> gap: Space.m;
     // Room a sheet leaves above and below it in the window.
     out property <length> margin: Space.l;
-    // `noticeWidth` and `exportPanelWidth`: the notices' and the catch-up's gauges.
+    // `noticeWidth`: the notices' gauge.
     out property <length> notice-width: DS.control-notice-width;
-    out property <length> panel-width: DS.control-export-panel-width;
     // The card's lift off the window, with no scrim under it.
     out property <length> shadow: Space.l;
     // The pairing code's side, wide enough for a phone's camera across a desk.
@@ -272,19 +260,16 @@ export global SheetStyle {
 
 export global MenuStyle {
     out property <length> width: DS.control-export-fields-width;
-    out property <length> row: ButtonStyle.height;
-    out property <length> radius: Radius.badge;
 }
 
 export global TipStyle {
     out property <length> radius: Radius.badge / 2;
-    out property <length> padding-x: Space.s;
+    out property <length> padding: Space.s;
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
     // A help mark's card: a 4:3 clip over its note.
     out property <length> card-width: 260px;
-    out property <length> card-padding: Space.s;
     out property <length> card-radius: Radius.badge;
 }
 
@@ -314,7 +299,6 @@ export global CropStyle {
     out property <length> edge: DS.control-crop-edge;
     out property <length> stroke: DS.control-crop-stroke;
     out property <length> halo: DS.control-crop-halo;
-    out property <length> hairline: Stroke.hairline;
     out property <length> well-radius: Radius.control;
     // A De-dust reminder's side in the tab.
     out property <length> dust-original: 56px;
@@ -325,7 +309,6 @@ export global SplitStyle {
     out property <length> grab: SliderStyle.grab;
     out property <length> grow: DS.control-guide-grow;
     out property <length> label-inset: DS.control-split-label-inset;
-    out property <length> shadow: 2px;
 }
 
 export global StatusStyle {
@@ -354,11 +337,8 @@ export global ScannerStyle {
     out property <length> legend: DS.scanner-key-legend-size;
     out property <length> key-padding: DS.scanner-key-padding-h;
     out property <length> key-radius: Radius.track;
-    out property <length> key-gap: Space.xxs;
     // `KeycapStyle.minHold`: the shortest time a cap stays down, or a tap plays a tenth of the press.
     out property <duration> key-hold: 140ms;
-    out property <length> socket-radius: Radius.badge;
-    out property <color> socket: DS.palette-tile;
     // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.
     out property <color> cap-light: DS.palette-keycap;
     out property <color> cap-dark: DS.palette-canvas;
@@ -384,7 +364,4 @@ export global ScannerStyle {
     // The screen's face, the system's monospaced design.
     out property <string> mono: "monospace";
     out property <int> value-weight: 700;
-    out property <int> label-weight: 500;
-    // A slider's step keys, square beside its rail.
-    out property <length> step-key: 24px;
 }

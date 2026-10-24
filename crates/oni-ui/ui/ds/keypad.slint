@@ -1,6 +1,6 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Colour, Space, Stroke, State, Motion, ScannerStyle, SliderStyle } from "theme.slint";
-import { Label, Tone, Tips, Clicks, TextRole } from "base.slint";
+import { Space, Stroke, ScannerStyle, Type } from "theme.slint";
+import { Label, Tone, Tips } from "base.slint";
 
 export struct LabCell { title: string, value: string }
 
@@ -8,7 +8,7 @@ component Lcd inherits Label {
     in property <bool> large;
     font-family: ScannerStyle.mono;
     font-size: root.large ? ScannerStyle.screen-value : ScannerStyle.screen-label;
-    font-weight: root.large ? ScannerStyle.value-weight : ScannerStyle.label-weight;
+    font-weight: root.large ? ScannerStyle.value-weight : Type.medium;
     tone: Tone.lcd;
 }
 

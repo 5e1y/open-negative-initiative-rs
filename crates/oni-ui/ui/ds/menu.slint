@@ -1,9 +1,9 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
-import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, CardStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips, Divider, Raised, Gap } from "base.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
-import { NavigatorStyle } from "folders.slint";
+
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 
@@ -21,7 +21,7 @@ export component MenuEntry inherits Rectangle {
     in property <Look> look: Look.live;
     callback activated();
     property <bool> hovered: root.enabled && (area.has-hover || root.look != Look.live);
-    height: MenuStyle.row;
+    height: ButtonStyle.height;
     border-radius: ButtonStyle.small-radius;
     background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
     opacity: root.enabled ? 1 : State.disabled;
@@ -129,11 +129,11 @@ export component Picker inherits HorizontalLayout {
     property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
     spacing: Space.s;
     // A pill as tall as the key plate beside it, keys and inset alike.
-    height: root.pill ? NavigatorStyle.key + 2 * ButtonStyle.plate-inset : root.chip ? FormStyle.chip-height : FieldStyle.height;
+    height: root.pill ? ButtonStyle.small-height + 2 * ButtonStyle.plate-inset : root.chip ? CardStyle.padding : ButtonStyle.height;
     if root.label != "": Label { text: root.label; }
     field := Rectangle {
         horizontal-stretch: 1;
-        border-radius: root.face == PickerFace.field ? FieldStyle.radius : Radius.badge;
+        border-radius: root.face == PickerFace.field ? ButtonStyle.radius : Radius.badge;
         background: root.hovered ? Colour.hover : root.chip ? Colour.hover.transparentize(1) : Colour.canvas;
         border-width: root.face == PickerFace.field ? Stroke.hairline : 0px;
         border-color: Colour.separator;

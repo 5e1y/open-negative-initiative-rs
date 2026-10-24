@@ -1,13 +1,11 @@
 // The navigator's gauges and the line dragged to size the rows beside a photograph.
 import { DS } from "tokens.slint";
-import { Colour, Space, Stroke, ButtonStyle } from "theme.slint";
+import { Colour, Space, Stroke } from "theme.slint";
 
 export global NavigatorStyle {
-    // `DS.Control.navigatorEditorRest` and `navigatorMaxHeight`: the rows beside a photograph.
-    out property <length> rest: DS.control-navigator-editor-rest;
+    // `DS.Control.navigatorMaxHeight`: the rows beside a photograph at their tallest.
     out property <length> max: DS.control-navigator-max-height;
     out property <length> star: DS.control-icon-size * 0.8;
-    out property <length> key: ButtonStyle.small-height;
     out property <color> favourite: DS.tint-favourite;
 }
 

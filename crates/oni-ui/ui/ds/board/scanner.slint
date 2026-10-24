@@ -1,7 +1,7 @@
 // The board's Scanner face: its screen reading the letters' step sliders live, the LCD count, and
 // the Prepare the Roll pieces; overlays.slint holds the marks drawn over the canvas.
-import { Space, PlotStyle, ScannerStyle, LabScreen, LcdReadout, Slider, SliderFill, PassReorder, Loupe, RollStyle } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
+import { Space, PlotStyle, ScannerStyle, LabScreen, LcdReadout, Slider, SliderFill, PassReorder, Loupe, RollStyle, ShellStyle } from "../ds.slint";
+import { Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
 import { OverlayGroups } from "overlays.slint";
 
 // A letter's slider on the face, its value the screen reads.
@@ -23,11 +23,11 @@ export component ScannerPage inherits Page {
     Group {
         title: "The Scanner face (live: the screen reads the sliders)";
         states: ["Live"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "LabScreen over its stepped sliders";
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 spacing: Space.m;
                 LabScreen {
                     height: PlotStyle.main;
@@ -60,11 +60,11 @@ export component ScannerPage inherits Page {
     Group {
         title: "Prepare the Roll: PassReorder and Loupe";
         states: ["Live (drag a chip)", "Loupe on the scan's pixels"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "a frame's three passes";
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 PassReorder {
                     letters: ["R", "G", "B"];
                     bands: [0, 1, 2];
@@ -73,7 +73,7 @@ export component ScannerPage inherits Page {
                 }
             }
             Cell {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 Loupe {
                     source: Samples.photo;
                     cut-x: 400;

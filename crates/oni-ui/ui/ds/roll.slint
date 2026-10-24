@@ -1,9 +1,9 @@
 // Prepare the Roll's pieces: the pager, the sealed status line, the loupe on the scan's own pixels
 // and the passes' order; a frame's cell is a `TileView`.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion, StatusStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Motion } from "theme.slint";
 import { Label, Picture, Ground, TextRole, Tone, Clicks } from "base.slint";
-import { Badge, BadgeTone, Metal } from "badge.slint";
+
 import { Button } from "controls.slint";
 import { Ring } from "marks.slint";
 
@@ -11,9 +11,6 @@ export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
     out property <int> sheet-columns: DS.control-roll-sheet-columns;
     out property <length> loupe: DS.control-base-loupe-side;
-    out property <length> panel-width: DS.control-panel-width;
-    out property <length> plate: DS.control-keycap-plate-height;
-    out property <length> canvas-padding: DS.control-canvas-padding;
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
     out property <length> hollow: DS.control-tab-bar-height;

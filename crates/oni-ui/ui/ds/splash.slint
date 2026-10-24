@@ -1,7 +1,7 @@
 // `Splash`: a picture per version over the window's corners, the logo, the version line and the
 // photo's credit along its foot, held while the gallery loads underneath.
 import { DS } from "tokens.slint";
-import { Colour } from "theme.slint";
+
 import { Picture, Ground, Fit } from "base.slint";
 
 export global SplashStyle {
@@ -15,7 +15,6 @@ export global SplashStyle {
     out property <length> inset-bottom: DS.space-lg + DS.space-xs;
     out property <length> lines: DS.space-sm + DS.space-xs;
     out property <length> line-indent: DS.space-xs;
-    out property <duration> minimum: DS.motion-splash-minimum;
     // `welcomeCaptionScale` and `welcomePhotoAspect`: the welcome's photo carries a smaller caption.
     out property <float> welcome-scale: DS.control-welcome-caption-scale / 1px;
     out property <float> welcome-aspect: DS.control-welcome-photo-aspect / 1px;

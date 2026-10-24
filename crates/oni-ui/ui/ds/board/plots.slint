@@ -1,7 +1,7 @@
 // The board's plots: the main histogram's plot and the editors' screen with their captions and
 // readouts, the levels track live and every ink; the knob and the rail are on the Slider page.
-import { Colour, Space, Stroke, PlotStyle, SliderStyle, Label, Tone, TextRole, Ink, Inks, PlotKnob, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
-import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
+import { Colour, Space, Stroke, PlotStyle, SliderStyle, Label, Tone, TextRole, Ink, Inks, Plot, LevelsTrack, PlotReadouts, AxisCaptions, ShellStyle } from "../ds.slint";
+import { BoardStyle, Page, Group, Line, Fill } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
 
@@ -22,11 +22,11 @@ export component PlotsPage inherits Page {
     Group {
         title: "Plot screens";
         states: ["The main histogram (screen: false)", "An editor's screen", "Vertical captions"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "Rust paints the histogram";
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 Plot {
                     height: PlotStyle.main;
                     screen: false;
@@ -36,7 +36,7 @@ export component PlotsPage inherits Page {
                 }
             }
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 VerticalLayout {
                     spacing: Space.xs;
                     AxisCaptions { start: "Black point"; end: "White point"; }
@@ -55,7 +55,7 @@ export component PlotsPage inherits Page {
                 }
             }
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 Plot {
                     height: PlotStyle.block;
                     AxisCaptions { axis: Orientation.vertical; start: "Saturated"; end: "Desaturated"; tone: Tone.tertiary; }
@@ -66,11 +66,11 @@ export component PlotsPage inherits Page {
     Group {
         title: "LevelsTrack";
         states: ["Live (hover a handle)"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "five handles, the middle held";
             Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 VerticalLayout {
                     padding-left: SliderStyle.knob-width / 2;
                     padding-right: SliderStyle.knob-width / 2;

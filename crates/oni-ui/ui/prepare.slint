@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, MenuLine, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, StatusStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit } from "ds/ds.slint";
+import { Colour, Space, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 
@@ -67,7 +67,7 @@ component FlatFieldBlock inherits VerticalLayout {
 
 // `RollPanel`: the step's title and detail, its body scrolling, then Cancel, Back and the step's key.
 export component RollPanel inherits Surface {
-    width: RollStyle.panel-width;
+    width: ShellStyle.panel-width;
     VerticalLayout {
         padding: Space.l;
         spacing: Space.m;
@@ -239,7 +239,7 @@ component FlagSheet inherits Scroller {
 
 // `RollBaseSurface`: Previous, the frame's name, Next, then its whole scan to click the bare film on.
 component BaseSurface inherits VerticalLayout {
-    padding: RollStyle.canvas-padding;
+    padding: CardStyle.padding;
     spacing: Space.s;
     Pager {
         name: Preparing.base-name; name-width: RollStyle.name-width; can-previous: Preparing.base-can-previous; can-next: Preparing.base-can-next;
@@ -308,20 +308,20 @@ component BaseSurface inherits VerticalLayout {
 // window over the whole scan on the window step.
 component FrameCard inherits Rectangle {
     function laid() {
-        Preparing.card-width = self.width - 2 * RollStyle.canvas-padding;
-        Preparing.card-height = self.height - 2 * RollStyle.canvas-padding;
-        Preparing.card-origin-x = self.absolute-position.x + RollStyle.canvas-padding;
-        Preparing.card-origin-y = self.absolute-position.y + RollStyle.canvas-padding;
+        Preparing.card-width = self.width - 2 * CardStyle.padding;
+        Preparing.card-height = self.height - 2 * CardStyle.padding;
+        Preparing.card-origin-x = self.absolute-position.x + CardStyle.padding;
+        Preparing.card-origin-y = self.absolute-position.y + CardStyle.padding;
         Preparing.card-resized();
     }
     changed width => { self.laid(); }
     changed height => { self.laid(); }
     init => { self.laid(); }
     Rectangle {
-        x: RollStyle.canvas-padding;
-        y: RollStyle.canvas-padding;
-        width: parent.width - 2 * RollStyle.canvas-padding;
-        height: parent.height - 2 * RollStyle.canvas-padding;
+        x: CardStyle.padding;
+        y: CardStyle.padding;
+        width: parent.width - 2 * CardStyle.padding;
+        height: parent.height - 2 * CardStyle.padding;
         Picture {
             x: Preparing.picture-x;
             y: Preparing.picture-y;

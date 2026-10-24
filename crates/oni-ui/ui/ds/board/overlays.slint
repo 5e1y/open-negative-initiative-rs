@@ -1,6 +1,6 @@
 // The marks drawn over the canvas: the crop's and the window's frame, dragged live as Rust drags
 // them, the compare split, the corrections' inset, the rings, the traces, the loupe and the drop marks.
-import { Space, Stroke, Radius, Gap, Inset, Ground, Fit, Picture, Label, TextRole, Tone, FrameOverlay, FrameStyle, SplitGuide, CorrectionMark, LoupeBand, DustOriginal, Ring, Trace, TraceTone, SelectionRing, DropLine, Row, RowKind } from "../ds.slint";
+import { Space, Stroke, Radius, Gap, Inset, Ground, Fit, Picture, Label, TextRole, Tone, FrameOverlay, FrameStyle, SplitGuide, CorrectionMark, LoupeBand, DustOriginal, Ring, Trace, TraceTone, SelectionRing, DropLine, Row, RowKind, ShellStyle } from "../ds.slint";
 import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 // A canvas mark's cell: a photo under it, every cell the same size.
@@ -130,11 +130,11 @@ export component OverlayGroups inherits VerticalLayout {
     Group {
         title: "LoupeBand";
         states: ["Live (its badge swaps the ratio)", "Ratio hidden"];
-        span: BoardStyle.panel;
+        span: ShellStyle.panel-width;
         Line {
             label: "the Details band";
             loupe := Fill {
-                span: BoardStyle.panel;
+                span: ShellStyle.panel-width;
                 property <bool> close;
                 LoupeBand {
                     height: BoardStyle.cell;
@@ -146,7 +146,7 @@ export component OverlayGroups inherits VerticalLayout {
                     toggled => { loupe.close = !loupe.close; }
                 }
             }
-            Fill { span: BoardStyle.panel; LoupeBand { height: BoardStyle.cell; source: Samples.photo; shown-width: BoardStyle.cell * 3 / 2; shown-height: BoardStyle.cell; } }
+            Fill { span: ShellStyle.panel-width; LoupeBand { height: BoardStyle.cell; source: Samples.photo; shown-width: BoardStyle.cell * 3 / 2; shown-height: BoardStyle.cell; } }
         }
     }
     Group {
