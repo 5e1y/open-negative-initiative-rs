@@ -67,7 +67,7 @@ component SwatchStates inherits Line {
 
 export component ButtonPage inherits Page {
     title: "Button";
-    note: "Button: kind (plain, the tints, ghost) × size (regular, small, key); text in capitals unless capitals is off, icon, square, turned, lamp, fixed-width, fill (a tint of its own), glyph-ink, glyph-size, note; on, enabled, look. A tint hovers 0.1 brighter, presses 0.2 darker, takes its ink by its lightness; on rings it.";
+    note: "Button: kind (plain, the tints, ghost) × size (regular, small, key); text in capitals unless capitals is off, icon, square, turned, lamp, fixed-width, fill (a tint of its own), glyph-ink, glyph-size, note; on, enabled, look. No face changes colour: hovered the cap sinks a quarter, pressed it shrinks to 0.95 over its black socket, its word a step lower; a tint takes its ink by its lightness; on rings it.";
     property <[string]> states: ["Live", "Hover", "Pressed", "On", "Disabled"];
     Group {
         title: "Regular";

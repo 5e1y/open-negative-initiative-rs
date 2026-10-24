@@ -2495,5 +2495,26 @@
     "title": "One showcase: the catalogue gives way to the board",
     "status": "done",
     "detail": "ds/catalogue.slint, its window check and the --catalogue flag (ONI_CATALOGUE) are gone; the board already showed every piece it held but a scroller whose content fits, now a line of the Containers page. The checks that clicked into the catalogue read probe windows beside FieldProbe: ScrollProbe (a page taller than the window over a scroller that fits) for the scroll checks, KeyProbe (a step keycap) for the keycap's hold, and the help card's shot and its twin moved to the board's check. README, ui-spec, the parity rows and the Lab plan name the board."
+  },
+  {
+    "id": 353,
+    "type": "fix",
+    "title": "A key hovers and presses as Swift's keycap, never by a fill",
+    "status": "done",
+    "detail": "KeycapPress: no face changes colour, plain, tinted or on. A depth of 0 at rest, KeycapStyle.hoverPressFraction (0.25) under the hand and 1 pressed shrinks the face toward scalePressed (0.95) over the black socket and sinks its word and lamp by the small variant's travel (0.525 pt). The pressed plain key, #272727 on the #282828 ground, was invisible; the hover equalled the separator; brighter() turned the accent's and the update's hue. Colour.raised-hover, raised-pressed and on-hover and ButtonStyle.press and lift are gone; the slider's knob keeps its own lifted grey."
+  },
+  {
+    "id": 354,
+    "type": "fix",
+    "title": "A heading is Swift's DS.Typo.heading: Inter 24",
+    "status": "done",
+    "detail": "Type.heading read the box title's Enriqueta 26, which Swift never uses; Swift's Export, Prepare the Roll's steps, a paper profile's name and What's new are all set in DS.Typo.heading, the sans at 24. Type.brand-family, no longer read, is gone."
+  },
+  {
+    "id": 355,
+    "type": "fix",
+    "title": "Tips round on the radius scale",
+    "status": "done",
+    "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
   }
 ]

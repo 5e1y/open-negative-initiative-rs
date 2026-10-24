@@ -72,7 +72,7 @@ export component Label inherits Text {
     in property <bool> centred;
     // Letters set apart by the seal's tracking, as a stamp in capitals reads.
     in property <bool> spaced;
-    font-family: root.role == TextRole.heading ? Type.brand-family : Type.family;
+    font-family: Type.family;
     font-size: root.role == TextRole.value || root.role == TextRole.note ? Type.value
         : root.role == TextRole.caption ? Type.chip
         : root.role == TextRole.button ? Type.chip

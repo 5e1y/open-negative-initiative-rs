@@ -97,26 +97,34 @@ export component Button inherits Rectangle {
     preferred-width: self.min-width;
     horizontal-stretch: root.fills ? 1 : 0;
     border-radius: root.keycap ? ScannerStyle.key-radius : root.small ? ButtonStyle.small-radius : ButtonStyle.radius;
-    background: root.ghost ? transparent
-        : root.tinted ? (root.pressed ? root.tint.darker(ButtonStyle.press) : root.hovered ? root.tint.brighter(ButtonStyle.lift) : root.tint)
-        : root.on ? (root.hovered ? Colour.on-hover : Colour.on)
-        : root.pressed ? Colour.raised-pressed : root.hovered ? Colour.raised-hover : Colour.raised;
-    border-width: root.tinted && root.on ? Stroke.emphasis : 0px;
-    border-color: root.glyph-ink.alpha > 0 ? root.glyph-ink : Colour.ink;
+    // `KeycapPress`: the cap sinks, a quarter under the hand and whole pressed, its face never changing
+    // colour; shrunk, it shows its socket round it.
+    property <float> depth: root.ghost ? 0 : root.pressed ? 1 : root.hovered ? ButtonStyle.hover-depth : 0;
+    property <float> scale: 1 - (1 - ButtonStyle.pressed-scale) * root.depth;
+    background: root.depth > 0 ? ButtonStyle.bezel : transparent;
     opacity: root.enabled ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.worded ? root.text : root.help;
     accessible-enabled: root.enabled;
     accessible-checked: root.on;
     accessible-action-default => { root.clicked(); }
-    animate background { duration: Motion.quick; }
+    animate depth { duration: Motion.quick; easing: ease-out; }
 
+    Rectangle {
+        width: parent.width * root.scale;
+        height: parent.height * root.scale;
+        border-radius: parent.border-radius * root.scale;
+        background: root.ghost ? transparent : root.tinted ? root.tint : root.on ? Colour.on : Colour.raised;
+        border-width: root.tinted && root.on ? Stroke.emphasis : 0px;
+        border-color: root.glyph-ink.alpha > 0 ? root.glyph-ink : Colour.ink;
+    }
     measure := Label {
         visible: false;
         role: TextRole.button;
         text: root.capitals ? root.widest.to-uppercase() : root.widest;
     }
     HorizontalLayout {
+        y: ButtonStyle.travel * root.depth;
         alignment: center;
         padding-right: root.lamp-room;
         // No gap beside an empty word, which would push a lone icon off the key's centre.
@@ -148,7 +156,7 @@ export component Button inherits Rectangle {
     if root.lamp-shown: Dot {
         size: ButtonStyle.lamp;
         x: parent.width - root.pad - self.width;
-        y: (parent.height - self.height) / 2;
+        y: (parent.height - self.height) / 2 + ButtonStyle.travel * root.depth;
         ink: root.lamp-lit ? Colour.confirm : Colour.track;
     }
     touch := TouchArea {

@@ -9,8 +9,6 @@ export global Colour {
     out property <color> canvas: DS.palette-canvas;
     out property <color> well: DS.palette-tile;
     out property <color> raised: DS.palette-keycap;
-    out property <color> raised-hover: DS.palette-keycap.brighter(0.25);
-    out property <color> raised-pressed: DS.palette-keycap.darker(0.25);
     out property <color> ink: DS.system-primary;
     out property <color> ink-secondary: DS.palette-text-secondary;
     out property <color> ink-tertiary: DS.palette-text-tertiary;
@@ -23,7 +21,6 @@ export global Colour {
     out property <color> warning-soft: DS.palette-warning-soft;
     out property <color> accent: DS.palette-accent;
     out property <color> on: DS.system-primary;
-    out property <color> on-hover: DS.system-white;
     out property <color> caution: DS.tint-undoable;
     out property <color> destructive: DS.tint-destructive;
     out property <color> confirm: DS.tint-confirm;
@@ -95,7 +92,6 @@ export global Stroke {
 
 export global Type {
     out property <string> family: DS.typo-label-family;
-    out property <string> brand-family: DS.typo-box-title-family;
     out property <int> regular: DS.typo-label-weight;
     out property <int> medium: 500;
     out property <int> strong: 600;
@@ -104,7 +100,7 @@ export global Type {
     out property <length> chip: DS.typo-chip-size;
     out property <length> title: DS.typo-title-size;
     out property <length> section: DS.typo-section-size;
-    out property <length> heading: DS.typo-box-title-size;
+    out property <length> heading: DS.typo-heading-size;
 }
 
 // Opacities of a state, never of a colour.
@@ -156,9 +152,12 @@ export global ButtonStyle {
     out property <length> small-icon: DS.control-toggle-glyph;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
-    // A tinted key's ground pressed and hovered: darker by `press`, brighter by `lift`.
-    out property <float> press: 0.2;
-    out property <float> lift: 0.1;
+    // `KeycapStyle` at the small variant: a press shrinks the cap to `pressed-scale` over its black
+    // socket and sinks its word by `travel`; the hand over it presses it `hover-depth` of the way.
+    out property <float> pressed-scale: 0.95;
+    out property <float> hover-depth: 0.25;
+    out property <length> travel: 0.525px;
+    out property <color> bezel: DS.system-black;
 }
 
 export global SliderStyle {
@@ -171,7 +170,8 @@ export global SliderStyle {
     out property <float> knob-grow: DS.control-knob-grow;
     out property <length> grip: DS.control-knob-line * 1px;
     out property <length> grip-gap: DS.control-knob-line-gap * 1px;
-    out property <color> knob: Colour.raised-hover;
+    // The slider's cap, a keycap's grey lifted a quarter so it reads over its rail.
+    out property <color> knob: DS.palette-keycap.brighter(0.25);
     out property <color> knob-edge: DS.palette-track-line;
     // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
     out property <color> grip-ink: Colour.ink-on-fill;
@@ -263,14 +263,16 @@ export global MenuStyle {
 }
 
 export global TipStyle {
-    out property <length> radius: Radius.badge / 2;
+    // A control's tooltip, the system's in Swift, on the scale's smallest round; a help mark's card
+    // rounds as `DSHelpBubble`.
+    out property <length> radius: Radius.track;
     out property <length> padding: Space.s;
     out property <length> padding-y: Space.xs;
     out property <length> offset: Space.xs;
     out property <length> max-width: 320px;
     // A help mark's card: a 4:3 clip over its note.
     out property <length> card-width: 260px;
-    out property <length> card-radius: Radius.badge;
+    out property <length> card-radius: Radius.control;
 }
 
 // The plots: the panel's main histogram and an editor's screen, its round, then the handles' and
