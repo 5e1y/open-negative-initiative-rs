@@ -2166,5 +2166,61 @@
     "title": "The design system's board: one base component a page, live beside its forced states, opened from Help in dev builds",
     "status": "done",
     "detail": "Owner's call, for the review before the raised and inset 3D effects. Help > Design System… shows when updates::stamped() is false (App.dev, Act.design-system) and opens the Board window, one kept in State.board; `oni --board` still opens it alone. The board is rebuilt on #296's base components: fourteen pages (Text, Badge, Button, ButtonGroup, Toggle and Tabs, Slider, TextField and forms, Picker and Menu, Row, Tiles, Containers, Scanner and overlays, Plots, Tokens), each a title, the variant props, a row per variant and a column per state, the first live under the hand (the live column holds its own state: a toggle flips, a slider drags, a step slider steps, a picker drops its menu, a row selects, folds and stars, a crop frame drags, the Scanner screen reads its sliders), the others forced through look, focused-look, hover-tab, on and enabled. The window, titled ONI Design System, lists the pages on its left, scrolls the page and draws the tooltips and help cards. No component's look changed. The window check `board` shoots each page as board-<nn>-<name>.png and counts inks right of the list alone (page-x), so a blank page is still seen; twin: an unknown page lays nothing and its blank page is seen as blank."
+  },
+  {
+    "id": 301,
+    "type": "refactor",
+    "title": "Label takes an ink of its own and a spaced tracking; the last raw Text in the design system's badges, preset faces and passes become Labels",
+    "status": "done",
+    "detail": "Label gets `ink` (a colour over its tone's, as Icon's) and `spaced` (the seal's 1.2 px tracking). PresetFace's monogram, name and \"+\", PassReorder's R, G and B letters (each its channel's ink) and WrappedCard's eyebrow are Labels, each keeping its face, size, weight and alignment. No pixel moves."
+  },
+  {
+    "id": 302,
+    "type": "refactor",
+    "title": "Two inks become tones: on-warning for the warning band, lcd for the scanner's glass",
+    "status": "done",
+    "detail": "Tone.on-warning (Colour.ink-on-warning) and Tone.lcd (ScannerStyle.lcd-ink). WarningBand's sentence and glyph, the keypad's Lcd (mono, as LabScreen) and LcdReadout (Inter at the value's size, as DSLCD) read them instead of a colour written in place. No pixel moves."
+  },
+  {
+    "id": 303,
+    "type": "refactor",
+    "title": "WrappedHint is a Label, caption role, secondary, centred",
+    "status": "done",
+    "detail": "The hint under the Wrapped deck inherited Text with its own face, size and ink; it is now a caption Label. The card's eyebrow keeps Swift's seal tracking (1.2 px) through `spaced`. No pixel moves."
+  },
+  {
+    "id": 304,
+    "type": "design",
+    "title": "One seal, as Swift's DSGoldSealView: every seal a capsule 20 high, padded 9, 9.5 strong with 1.2 tracking, its foil gold, holographic or red",
+    "status": "done",
+    "detail": "Badge's seal, alert and news tones were three geometries (14 high on a 2 px radius, 20 high, the Wrapped year's hand copy); they become one `seal` tone with `metal` (DSFoil.Metal: gold, holographic, red) at DSFoil.size's width (the last letter's tracking off, rounded up), printed in one dark ink as DSFoil prints them. Flat foils: the medal's gold, the holographic foil's body (#c7ccdb), the destructive red. The gallery tile's RGB seal (hand-drawn) and RollCellView's, SealedStatusLine's (standing out of the 18 high bar as Swift's overlay does), the FLAGGED seal (its dead `true ?` ternary gone), the news seals and the Wrapped year are all Badge seals. The tile's medal stays level with the seal's centre, so it moves 3 px up. Visible: every seal is taller, its letters heavier and dark."
+  },
+  {
+    "id": 305,
+    "type": "design",
+    "title": "The dark badge takes Swift's DSBadge padding, and CorrectionMark's number is that badge",
+    "status": "done",
+    "detail": "Swift draws the correction's number, the loupe's ratio, the crop's size, the preset hint and the tree's drag count with one DSBadge, padded DS.Control.badgePadding (6) on every side. The Rust dark badge was padded 5 by 2 and CorrectionMark drew its own (3 by 1); both are now Badge dark at 6. Visible: those badges grow 2 px across and 8 px in height (the correction's 6 and 10). Swift's rounded badge also differs in radius (8 against 4), face (value, label for the correction), fill (overlay, 60 % black) and ink (on-fill): left for the owner."
+  },
+  {
+    "id": 306,
+    "type": "fix",
+    "title": "The preset editor's tint badge is a Badge tint, its monogram centred as Swift's frame centres it",
+    "status": "done",
+    "detail": "Row's badge was a 30×22 rectangle with its Text at the top left; Badge tone `tint` takes the preset's fill and ink, at DS.Control.presetBadgeWidth × presetBadgeHeight on Radius.badge, the monogram centred. Visible: \"Pt\" recentred."
+  },
+  {
+    "id": 307,
+    "type": "refactor",
+    "title": "Badge holds no literal size",
+    "status": "done",
+    "detail": "BadgeStyle (base.slint) holds DSBadge's padding, its radius (Radius.badge / 2), and the seal's height, padding, size and tracking; the badge's 11 px is Type.chip. The Badge's own text is a Label with an ink."
+  },
+  {
+    "id": 308,
+    "type": "docs",
+    "title": "The board shows the new tones, a Label's ink and spacing, and every Badge tone with the seals' three metals and the tint",
+    "status": "done",
+    "detail": "Text page: on-warning on its band and lcd on the glass in every role and glyph row, and a row of Labels with an ink or spaced. Badge page: warning, dark, seal gold with its note, holographic and red, step, tint. The Tiles and Scanner pages show the seals through TileView, RollCellView and SealedStatusLine."
   }
 ]

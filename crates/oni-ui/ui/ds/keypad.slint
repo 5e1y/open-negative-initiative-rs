@@ -10,7 +10,7 @@ component Lcd inherits Label {
     font-family: ScannerStyle.mono;
     font-size: root.large ? ScannerStyle.screen-value : ScannerStyle.screen-label;
     font-weight: root.large ? ScannerStyle.value-weight : ScannerStyle.label-weight;
-    color: ScannerStyle.lcd-ink;
+    tone: Tone.lcd;
 }
 
 // `LabScreen`: the scanner's screen in the plot band, its frame, its machine, every letter's count

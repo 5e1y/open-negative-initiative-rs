@@ -2,7 +2,7 @@
 // its photos, and the line saying how to turn the cards.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
-import { Label, Tone } from "base.slint";
+import { Label, Tone, TextRole } from "base.slint";
 
 export global WrappedStyle {
     // `Color.black`, the ground the year is told on, whatever the theme.
@@ -89,14 +89,14 @@ export component WrappedCard inherits Rectangle {
         padding: Space.l;
         spacing: Space.m;
         alignment: center;
-        Text {
+        Label {
             text: root.eyebrow;
-            font-family: Type.family;
-            font-size: Type.chip;
+            role: TextRole.caption;
+            tone: Tone.secondary;
             font-weight: Type.strong;
-            letter-spacing: DS.control-seal-tracking * 1px;
-            color: Colour.ink-secondary;
-            horizontal-alignment: center;
+            spaced: true;
+            centred: true;
+            vertical-alignment: TextVerticalAlignment.top;
         }
         if root.figure != "": Text {
             text: root.figure;
@@ -126,9 +126,9 @@ export component WrappedCard inherits Rectangle {
     }
 }
 
-export component WrappedHint inherits Text {
-    font-family: Type.family;
-    font-size: Type.chip;
-    color: Colour.ink-secondary;
-    horizontal-alignment: center;
+export component WrappedHint inherits Label {
+    role: TextRole.caption;
+    tone: Tone.secondary;
+    centred: true;
+    vertical-alignment: TextVerticalAlignment.top;
 }

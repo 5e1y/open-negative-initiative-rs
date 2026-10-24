@@ -2,11 +2,12 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle } from "theme.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
-export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution }
+// `on-warning` reads on the warning's band, `lcd` on the scanner's glass.
+export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, on-warning, lcd }
 export enum Gap { none, xxs, xs, s, m, l }
 export enum Ground { ground, canvas, canvas-cropping, well, paper, skeleton }
 export enum PlotSize { main, block }
@@ -40,6 +41,8 @@ export global Tones {
         if (tone == Tone.on-light) { return Colour.ink-on-light; }
         if (tone == Tone.warning) { return Colour.warning; }
         if (tone == Tone.caution) { return Colour.caution; }
+        if (tone == Tone.on-warning) { return Colour.ink-on-warning; }
+        if (tone == Tone.lcd) { return ScannerStyle.lcd-ink; }
         Colour.ink
     }
     public pure function gap(gap: Gap) -> length {
@@ -60,11 +63,26 @@ export global Tones {
     }
 }
 
-// Every word on screen: its role sets the face and size, its tone the ink.
+// `DSBadge`'s and `DSGoldSealView`'s gauges, and each seal's foil as one flat colour.
+export global BadgeStyle {
+    out property <length> padding: DS.control-badge-padding;
+    out property <length> radius: Radius.badge / 2;
+    out property <length> seal-height: DS.control-seal-height * 1px;
+    out property <length> seal-padding: DS.control-seal-padding * 1px;
+    out property <length> seal-size: DS.typo-seal-size;
+    out property <length> tracking: DS.control-seal-tracking * 1px;
+    // `DSFoil.Metal`'s gold as the medal's, the holographic foil's body, the red foil's as the destructive tint.
+    out property <[color]> foil: [Colour.medal[3], #c7ccdb, Colour.destructive];
+}
+
+// Every word on screen: its role sets the face and size, its tone the ink, unless it has an ink of its own.
 export component Label inherits Text {
     in property <TextRole> role: TextRole.label;
     in property <Tone> tone: root.role == TextRole.note ? Tone.tertiary : Tone.primary;
+    in property <color> ink: Tones.ink(root.tone);
     in property <bool> centred;
+    // Letters set apart by the seal's tracking, as a stamp in capitals reads.
+    in property <bool> spaced;
     font-family: root.role == TextRole.heading ? Type.brand-family : Type.family;
     font-size: root.role == TextRole.value || root.role == TextRole.note ? Type.value
         : root.role == TextRole.caption ? Type.chip
@@ -74,7 +92,8 @@ export component Label inherits Text {
         : root.role == TextRole.heading ? Type.heading
         : Type.label;
     font-weight: root.role == TextRole.button ? Type.strong : Type.regular;
-    color: Tones.ink(root.tone);
+    letter-spacing: root.spaced ? BadgeStyle.tracking : 0px;
+    color: root.ink;
     vertical-alignment: center;
     horizontal-alignment: root.centred ? center : left;
     wrap: root.role == TextRole.note ? word-wrap : no-wrap;

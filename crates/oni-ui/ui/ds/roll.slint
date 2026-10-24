@@ -1,7 +1,7 @@
 // Prepare the Roll's pieces: a frame's cell with its marks, the base pick's ring, the loupe on the
 // scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, TileStyle, Motion } from "theme.slint";
 import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks, Badge, BadgeTone } from "base.slint";
 
 export global RollStyle {
@@ -202,13 +202,10 @@ export component PassReorder inherits VerticalLayout {
             border-radius: self.height / 2;
             background: i == root.held ? Colour.selected : Colour.track;
             animate x { duration: i == root.held ? 0ms : Motion.slide; easing: ease-out; }
-            Text {
+            Label {
                 text: letter;
-                font-family: Type.family;
-                font-size: Type.label;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-                color: i == root.held ? Colour.canvas : [Colour.channel-red, Colour.channel-green, Colour.channel-blue][root.bands[i]];
+                centred: true;
+                ink: i == root.held ? Colour.canvas : [Colour.channel-red, Colour.channel-green, Colour.channel-blue][root.bands[i]];
             }
         }
         // One hand over the whole hollow, so the chip moving under it never moves its reading.

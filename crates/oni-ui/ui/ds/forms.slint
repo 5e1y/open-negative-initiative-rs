@@ -53,9 +53,9 @@ export component WarningBand inherits Rectangle {
         spacing: Space.xs;
         HorizontalLayout {
             alignment: start;
-            Icon { source: Icons.warning; width: ButtonStyle.icon; height: ButtonStyle.icon; ink: Colour.ink-on-warning; }
+            Icon { source: Icons.warning; width: ButtonStyle.icon; height: ButtonStyle.icon; tone: Tone.on-warning; }
         }
-        Label { text: root.text; wrap: word-wrap; color: Colour.ink-on-warning; }
+        Label { text: root.text; wrap: word-wrap; tone: Tone.on-warning; }
     }
 }
 
@@ -258,7 +258,7 @@ export component LcdReadout inherits Rectangle {
     readout := Label {
         text: root.text;
         role: TextRole.value;
-        color: ScannerStyle.lcd-ink;
+        tone: Tone.lcd;
     }
 }
 
