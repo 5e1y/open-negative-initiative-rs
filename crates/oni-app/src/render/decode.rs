@@ -90,10 +90,15 @@ pub fn decode_full(path: &Path, reading: Reading) -> Result<Decoded, String> {
     }
 }
 
+/// What a RAW whose file ends before its pixels do says, as a copy interrupted or still running leaves it.
+pub fn cut_short() -> String {
+    tr("the file ends before its picture does: an interrupted copy? Copy it again from its source.").into()
+}
+
 /// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor.
 fn mosaic(path: &Path, side: usize) -> Result<Decoded, String> {
     let _slot = crate::decode_gate::slot();
-    let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| tr!("LibRaw cannot decode it (code {code})", code = e.0))?;
+    let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| if e.is_cut_short() { cut_short() } else { tr!("LibRaw cannot decode it (code {code})", code = e.0) })?;
     let full_width = (d.width * factor) as f64;
     Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
 }

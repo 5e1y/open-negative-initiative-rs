@@ -32,6 +32,7 @@ struct Decoded {
     make: [c_char; 64],
     model: [c_char; 64],
     stream: *mut c_void,
+    cut: c_int,
 }
 
 unsafe extern "C" {
@@ -86,6 +87,14 @@ pub struct DecodeError(pub i32);
 
 /// The file is not a three-colour sensor with a colour matrix, so no balance can be derived.
 pub const NO_COLOUR_MATRIX: i32 = -4;
+/// The file ends before its pixels do: a copy interrupted or still running.
+pub const CUT_SHORT: i32 = -5;
+
+impl DecodeError {
+    pub fn is_cut_short(&self) -> bool {
+        self.0 == CUT_SHORT
+    }
+}
 
 /// The multipliers LibRaw demosaics on and the matrix from its 16-bit output to Rec. 2020.
 #[derive(Debug)]
@@ -244,6 +253,15 @@ pub fn route(path: &Path) -> Branch {
         _ if is_raw(path) => Branch::Mosaic,
         _ => Branch::Plain,
     }
+}
+
+/// The extensions the image reader takes, its features in `Cargo.toml`: a file named otherwise
+/// that no RAW engine reads is looked at for `unsupported_format`.
+pub const PLAIN_EXTENSIONS: &[&str] = &["jpg", "jpeg", "jpe", "jfif", "png", "tif", "tiff", "gif", "bmp", "ico", "webp"];
+
+/// Whether `path`'s name alone says a reader of ONI takes it; its bytes still decide (`route`).
+pub fn named_decodable(path: &Path) -> bool {
+    is_raw(path) || path.extension().and_then(|e| e.to_str()).is_some_and(|e| PLAIN_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
 }
 
 /// The format of a file neither LibRaw, the linear container nor an image reader takes: `HEIC`, `PSD`.

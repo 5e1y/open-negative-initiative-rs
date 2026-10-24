@@ -3,8 +3,8 @@
 
 use crate::index::{Entry, LibraryIndex};
 use crate::relink;
-use oni_settings::codec::{self, Envelope};
-use oni_settings::{ConversionMode, Date, Medal, sidecar};
+use oni_settings::codec::Envelope;
+use oni_settings::{Date, sidecar};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -32,6 +32,13 @@ pub const IMAGE_EXTENSIONS: &[&str] = &[
     "sr2", "rw2", "raw", "rwl", "orf", "raf", "pef", "srw", "3fr", "fff", "iiq", "mos", "mrw", "x3f", "erf", "kdc",
     "dcr", "mef", "dcs", "gpr",
 ];
+
+/// The camera RAWs among them: the one half of a RAW+JPEG pair, the JPEG the other.
+pub const RAW_EXTENSIONS: &[&str] = &[
+    "dng", "cr2", "cr3", "crw", "nef", "nrw", "arw", "srf", "sr2", "rw2", "raw", "rwl", "orf", "raf", "pef", "srw", "3fr",
+    "fff", "iiq", "mos", "mrw", "x3f", "erf", "kdc", "dcr", "mef", "dcs", "gpr",
+];
+pub const JPEG_EXTENSIONS: &[&str] = &["jpg", "jpeg"];
 
 pub fn is_importable(path: &Path) -> bool {
     path.extension().map(|e| e.to_string_lossy().to_lowercase()).is_some_and(|e| IMAGE_EXTENSIONS.contains(&e.as_str()))
@@ -64,28 +71,21 @@ pub fn waiting(path: &str, dated: Option<Date>) -> Entry {
 pub fn indexed(path: &str) -> Option<Entry> {
     let original = Path::new(path);
     let stamp = relink::stamp(original)?;
-    // The envelope alone, not the settings: a rebuild reads every member. No sidecar reads as a fresh one.
+    // The envelope alone, not the settings: a rebuild reads every member. No sidecar, or another
+    // file's, reads as a fresh one.
     let side = sidecar::url_for(original);
     let loaded: Option<Envelope> = if side.exists() {
-        std::fs::read(&side).ok().and_then(|data| codec::envelope(&data))
+        std::fs::read(&side).ok().and_then(|data| sidecar::identity::envelope(&data, original))
     } else {
-        Some(Envelope {
-            imported_at: None,
-            label: Medal::None,
-            exif: None,
-            roll_draft: None,
-            trashed_at: None,
-            film: None,
-            manual_order: None,
-            mode: ConversionMode::default(),
-            pass_of: None,
-            leads_passes: false,
-        })
+        Some(sidecar::identity::blank())
     };
+    // A photo with no import date in its sidecar sorts by its file's own date, never by the read's.
+    let dated = std::fs::metadata(original).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok());
+    let dated = dated.map(|d| Date::from_unix_seconds(d.as_secs_f64()));
     Some(Entry {
         path: path.to_owned(),
         // A member with no readable sidecar still has its file, hence its own dates.
-        imported_at: loaded.as_ref().and_then(|l| l.imported_at).unwrap_or_else(Date::now),
+        imported_at: loaded.as_ref().and_then(|l| l.imported_at).or(dated).unwrap_or_else(Date::now),
         captured_at: stamp.captured_at,
         fingerprint: stamp.fingerprint,
         label: loaded.as_ref().map(|l| l.label).unwrap_or_default(),

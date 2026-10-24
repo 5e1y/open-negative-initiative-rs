@@ -67,7 +67,8 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
             let _ = index.remove(&row.path);
             continue;
         }
-        let Some(now) = stamped(&survey, &row.path) else { continue };
+        // A file still being written keeps its row as it was until it rests.
+        let Some(now) = stamped(&survey, &row.path).filter(|_| !survey.settling.contains(&row.path)) else { continue };
         match stamps.get(&row.path) {
             // A row written before its stamp was kept takes the disk's word once.
             None => adopted.push((row.path.clone(), now)),
@@ -92,8 +93,10 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
     let mut noted: Vec<(String, Stamped)> = Vec::new();
     while alive() {
         if let Some(path) = waiting.pop_front() {
-            // A file that cannot be read whole, or that the cloud keeps away, waits with no print.
-            match library::indexed(&path) {
+            // A file that cannot be read whole, that the cloud keeps away or that is still being
+            // written, waits with no print.
+            let read = if survey.settling.contains(&path) { None } else { library::indexed(&path) };
+            match read {
                 Some(entry) => {
                     let _ = index.upsert(&entry);
                     noted.extend(stamped(&survey, &path).map(|s| (path, s)));
@@ -148,7 +151,7 @@ pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &
 pub fn refreshed(row: &Entry) -> Entry {
     let original = Path::new(&row.path);
     let envelope = match std::fs::read(oni_settings::sidecar::url_for(original)) {
-        Ok(data) => oni_settings::codec::envelope(&data),
+        Ok(data) => oni_settings::sidecar::identity::envelope(&data, original),
         // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
             return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, ..row.clone() };

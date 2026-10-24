@@ -207,6 +207,8 @@ export component TileView inherits Rectangle {
     in property <bool> rgb;
     // A triplet's pass gone: the seal says which, in the destructive foil, in place of RGB.
     in property <string> gone-pass;
+    // A RAW+JPEG pair's JPEG behind its RAW, by its extension (`+JPG`), where no seal stands.
+    in property <string> companion;
     in property <length> picture-height;
     in property <TileMarks> marks: TileMarks.medal;
     // A frame kept out of the measure, its dot in the corner.
@@ -251,6 +253,11 @@ export component TileView inherits Rectangle {
             tone: BadgeTone.seal;
             metal: root.gone-pass != "" ? Metal.red : Metal.holographic;
             text: root.gone-pass != "" ? root.gone-pass : @tr("RGB");
+        }
+        if root.companion != "" && !root.rgb && root.gone-pass == "": Badge {
+            x: parent.width - self.width - root.inset;
+            y: parent.height - self.height - root.inset;
+            text: root.companion;
         }
         if root.missing: Rectangle {
             x: parent.width - self.width - root.inset;

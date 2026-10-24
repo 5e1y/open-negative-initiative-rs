@@ -2,13 +2,14 @@
 //! a stored version still needs, and the roll marker, written as the Swift app writes them.
 
 pub mod collation;
-mod atomic;
+pub mod atomic;
 pub mod axis;
 pub mod blocks;
 pub mod cg;
 pub mod codec;
 pub mod curves;
 pub mod date;
+pub mod exif;
 pub mod density_migration;
 pub mod film;
 pub mod frame;

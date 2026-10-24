@@ -28,7 +28,7 @@ pub fn support() -> PathBuf {
     if let Some(dir) = std::env::var_os("ONI_SUPPORT") {
         return PathBuf::from(dir);
     }
-    let home = || std::env::var_os("HOME").map(PathBuf::from).unwrap_or_default();
+    let home = oni_library::navigator::home_folder;
     let base = if cfg!(target_os = "macos") {
         home().join("Library/Application Support")
     } else if cfg!(windows) {

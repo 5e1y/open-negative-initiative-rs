@@ -10,6 +10,7 @@ pub fn said(error: &Error) -> String {
     match error {
         Error::Unreachable => tr("The original cannot be found, its disk disconnected or the file moved. Nothing was changed.").into(),
         Error::Newer => tr("A newer version of ONI wrote these settings, and this one never rewrites them.").into(),
+        Error::TooLong => tr("The photo's name is too long for a settings file beside it. Shorten the name to keep its edits.").into(),
         other => other.to_string(),
     }
 }

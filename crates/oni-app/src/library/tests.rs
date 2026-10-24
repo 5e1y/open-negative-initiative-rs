@@ -281,3 +281,25 @@ fn a_sidecar_edited_by_another_app_is_read_again() {
     assert_eq!(index.row(&path).unwrap().label, Medal::Silver);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A RAW+JPEG pair read off the disk lays one tile, the RAW's, its JPEG named behind it.
+#[test]
+fn a_raw_jpeg_pair_is_one_tile_in_the_archive() {
+    let root = std::env::temp_dir().join(format!("oni-app-pairs-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Roll");
+    for (name, bytes) in [("DSC_1.NEF", &b"raw one"[..]), ("DSC_1.JPG", b"jpeg one"), ("DSC_2.JPG", b"jpeg two")] {
+        write(&folder.join(name), bytes);
+    }
+    let names = |a: &Archive| a.entries().iter().map(|e| paths::name(&e.path)).collect::<Vec<_>>();
+    let archive = Archive::load(&folder);
+    let mut shown = names(&archive);
+    shown.sort();
+    assert_eq!(shown, ["DSC_1.NEF", "DSC_2.JPG"]);
+    let raw = paths::join(&paths::canonical(&folder), "DSC_1.NEF");
+    assert_eq!(archive.companions.get(&raw).map(|j| paths::name(j)), Some("DSC_1.JPG".to_owned()));
+    // Twin: the JPEG edited before, its own sidecar beside it, stays a tile of its own.
+    write(&folder.join("DSC_1.JPG.json"), b"{}");
+    assert_eq!(names(&Archive::load(&folder)).len(), 3);
+    let _ = std::fs::remove_dir_all(&root);
+}

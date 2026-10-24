@@ -197,3 +197,27 @@ fn a_file_being_read_renames() {
     drop(denying);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A copy stopped half way through its pixels says it is cut short, by either route, never a
+/// picture filled with black.
+#[test]
+fn a_truncated_raw_says_so() {
+    let root = scratch("cut");
+    let whole = root.join("Whole.DNG");
+    mosaic_dng(&whole);
+    let bytes = std::fs::read(&whole).unwrap();
+    let cut = root.join("Cut.DNG");
+    // The header and its directory, then half of the 12 288 bytes of the strip.
+    std::fs::write(&cut, &bytes[..bytes.len() - W * H]).unwrap();
+    for route in [Route::Name, Route::Handle] {
+        let refused = decode_by(&cut, route, 0, 1.0).err();
+        assert!(refused.as_ref().is_some_and(DecodeError::is_cut_short), "{route:?}: {refused:?}");
+        // Twin: the whole file decodes, so the refusal is the cut's.
+        assert!(decode_by(&whole, route, 0, 1.0).is_ok());
+    }
+    // Twin: a file whose head is not a RAW's is refused otherwise, never as cut short.
+    let garbled = root.join("Garbled.DNG");
+    std::fs::write(&garbled, vec![7u8; bytes.len()]).unwrap();
+    assert!(decode_by(&garbled, Route::Name, 0, 1.0).is_err_and(|e| !e.is_cut_short()));
+    let _ = std::fs::remove_dir_all(&root);
+}

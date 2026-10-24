@@ -82,6 +82,38 @@ pub struct Survey {
     pub sidecars: HashMap<String, Date>,
     /// The images whose bytes the cloud keeps away (`relink::in_cloud`), never read to be indexed.
     pub cloud: HashSet<String>,
+    /// The images still being written (`settled`): never stamped nor decoded until a later survey.
+    pub settling: HashSet<String>,
+}
+
+/// How long a file stays unwritten before it is read: a copy in progress writes far more often.
+pub const SETTLE: std::time::Duration = std::time::Duration::from_secs(2);
+/// The pause before a file written within `SETTLE` is looked at again: a copy grows meanwhile.
+const LOOK_AGAIN: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// A file the Finder marks busy while it copies it, its birth set to a date in 1946.
+fn busy(metadata: &std::fs::Metadata) -> bool {
+    let year_1946 = |c: SystemTime| UNIX_EPOCH.duration_since(c).is_ok_and(|d| (725_846_400..757_382_400).contains(&d.as_secs()));
+    cfg!(target_os = "macos") && metadata.created().is_ok_and(year_1946)
+}
+
+/// A file busy, or written within `SETTLE`, which `settled` looks at again. A date ahead of the
+/// clock, a camera's set wrong, is no copy: it would never rest.
+fn maybe_settling(metadata: &std::fs::Metadata, now: SystemTime) -> bool {
+    busy(metadata) || metadata.modified().is_ok_and(|m| now.duration_since(m).is_ok_and(|d| d < SETTLE))
+}
+
+/// The files still being written: busy, or grown or rewritten since the walk looked at them.
+fn settled(out: &mut Survey) {
+    if out.settling.is_empty() {
+        return;
+    }
+    std::thread::sleep(LOOK_AGAIN);
+    let (sizes, dated) = (&out.sizes, &out.dated);
+    out.settling.retain(|image| match std::fs::metadata(image) {
+        Ok(m) => busy(&m) || sizes.get(image) != Some(&(m.len() as i64)) || dated.get(image) != date(m.modified()).as_ref(),
+        Err(_) => false,
+    });
 }
 
 impl Survey {
@@ -94,40 +126,10 @@ impl Survey {
     }
 }
 
-/// Directories the Finder shows as one file: their contents belong to their app, not the archive.
-pub const PACKAGE_EXTENSIONS: &[&str] = &[
-    "app",
-    "bundle",
-    "framework",
-    "plugin",
-    "kext",
-    "photoslibrary",
-    "photolibrary",
-    "migratedphotolibrary",
-    "aplibrary",
-    "fcpbundle",
-    "imovielibrary",
-    "tvlibrary",
-    "musiclibrary",
-    "theater",
-    "rtfd",
-    "pages",
-    "numbers",
-    "key",
-    "xcodeproj",
-    "xcworkspace",
-    "playground",
-    "logicx",
-    "band",
-    "lrdata",
-    "lrlibrary",
-];
-
-pub(crate) fn is_package(path: &Path) -> bool {
-    path.extension()
-        .map(|e| e.to_string_lossy().to_lowercase())
-        .is_some_and(|e| PACKAGE_EXTENSIONS.contains(&e.as_str()))
-}
+mod finder;
+pub use finder::{PACKAGE_EXTENSIONS, alias_target, is_package, package_holding};
+#[cfg(target_os = "macos")]
+pub use finder::macos::make_alias;
 
 pub(crate) fn is_hidden(path: &Path, metadata: &std::fs::Metadata) -> bool {
     let dotted = path.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.'));
@@ -176,12 +178,15 @@ pub fn surveyed(roots: &[String], alive: &dyn Fn() -> bool, computer: &Computer)
             continue;
         }
         // A survey stopped part way still lists every later root the disk refuses.
-        out.stopped |= !walk(Path::new(root), &canonical(Path::new(root)), alive, computer, &mut out);
+        let spelt = canonical(Path::new(root));
+        let mut links = Links { root: spelt.clone(), followed: Vec::new() };
+        out.stopped |= !walk(Path::new(root), &spelt, alive, computer, &mut links, &mut out);
         // A disk that left during the walk refused what it had not listed: none of it is gone.
         if let Err(e) = std::fs::read_dir(root) {
             refuse(&mut out, root.clone(), &e, computer);
         }
     }
+    settled(&mut out);
     out.rolls = crate::folders::rolls(&out.images);
     out
 }
@@ -194,9 +199,59 @@ fn refuse(out: &mut Survey, folder: String, error: &std::io::Error, computer: &C
     out.unreadable.push(folder);
 }
 
-/// Depth first, names in Finder order, false once `alive` turns false. No link is followed, so each
-/// child is its name joined to `spelt`, and no entry pays a `realpath` (six times a look, on an SSD).
-fn walk(folder: &Path, spelt: &str, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut Survey) -> bool {
+/// The folders a walk reached through a link, by their real paths, so none is walked twice.
+struct Links {
+    root: String,
+    followed: Vec<String>,
+}
+
+impl Links {
+    /// A link's folder, walked under the link's name unless it holds the root, lies inside it (walked
+    /// by its own path) or inside a folder a link reached already: no loop, no photo twice.
+    fn follows(&mut self, link: &Path) -> bool {
+        if !std::fs::metadata(link).is_ok_and(|m| m.is_dir()) || is_package(link) {
+            return false;
+        }
+        let real = canonical(link);
+        if holds(&real, &self.root) || holds(&self.root, &real) || self.followed.iter().any(|f| holds(f, &real) || holds(&real, f)) {
+            return false;
+        }
+        if whole(&real) {
+            return false;
+        }
+        self.followed.push(real);
+        true
+    }
+}
+
+/// A disk's root, `/` or a folder holding the home: a link to one would walk a whole disk.
+fn whole(real: &str) -> bool {
+    let home = paths::normal(&crate::navigator::home_folder().to_string_lossy()).into_owned();
+    if real == "/" || real.trim_end_matches('/').ends_with(':') || (!home.is_empty() && holds(real, &home)) {
+        return true;
+    }
+    mount_point(real)
+}
+
+/// A folder on another device than its parent's: where a volume is mounted.
+#[cfg(unix)]
+fn mount_point(real: &str) -> bool {
+    use std::os::unix::fs::MetadataExt;
+    let Some(parent) = Path::new(real).parent() else { return true };
+    match (std::fs::metadata(real), std::fs::metadata(parent)) {
+        (Ok(here), Ok(up)) => here.dev() != up.dev(),
+        _ => false,
+    }
+}
+
+#[cfg(not(unix))]
+fn mount_point(_: &str) -> bool {
+    false
+}
+
+/// Depth first, names in Finder order, false once `alive` turns false. Each child is its name
+/// joined to `spelt`, a link's too, and only a link pays a `realpath` (six times a look, on an SSD).
+fn walk(folder: &Path, spelt: &str, alive: &dyn Fn() -> bool, computer: &Computer, links: &mut Links, out: &mut Survey) -> bool {
     presence::looked(spelt);
     let listing = match std::fs::read_dir(folder) {
         Ok(listing) => listing,
@@ -224,22 +279,27 @@ fn walk(folder: &Path, spelt: &str, alive: &dyn Fn() -> bool, computer: &Compute
         if is_hidden(&child, &metadata) {
             continue;
         }
-        if metadata.is_dir() {
-            if is_package(&child) {
+        // A symbolic link or a Windows junction to a folder is walked as the folder it leads to.
+        let linked = metadata.file_type().is_symlink() && links.follows(&child);
+        if metadata.is_dir() || linked {
+            if !linked && is_package(&child) {
                 continue;
             }
             let folder = paths::join(spelt, &name);
             out.folders.push(folder.clone());
-            if let Some(made) = date(metadata.created()) {
+            if let Some(made) = date(if linked { std::fs::metadata(&child).and_then(|m| m.created()) } else { metadata.created() }) {
                 out.made.insert(folder.clone(), made);
             }
-            if !walk(&child, &folder, alive, computer, out) {
+            if !walk(&child, &folder, alive, computer, links, out) {
                 return false;
             }
         } else if metadata.is_file() && crate::library::is_importable(&child) {
             let image = paths::join(spelt, &name);
             if crate::relink::in_cloud(&metadata) {
                 out.cloud.insert(image.clone());
+            }
+            if maybe_settling(&metadata, SystemTime::now()) {
+                out.settling.insert(image.clone());
             }
             out.images.push(image.clone());
             if let Some(dated) = date(metadata.modified()) {

@@ -11,10 +11,20 @@ const ENVELOPE: [&str; 7] = ["version", "importedAt", "label", "exif", "rollDraf
 /// A key the stored document holds and this version does not write, by its path of object keys.
 type Unknown = (Vec<String>, Value);
 
-/// `document`'s text, with the keys `stored` holds that this version does not know.
-pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>) -> Result<String, json::Error> {
+/// `document`'s text, with the keys `stored` holds that this version does not know, and `own`, a
+/// key this version writes beside the document, set over any stored one.
+pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>, own: Option<(&str, &str)>) -> Result<String, json::Error> {
+    let mut node = carried(document, stored)?;
+    if let (Some((key, value)), Node::Obj(entries)) = (own, &mut node) {
+        entries.retain(|(k, _)| k != key);
+        entries.push((key.to_owned(), Node::Str(value.to_owned())));
+    }
+    Ok(json::pretty_sorted(&node))
+}
+
+fn carried(document: &SettingsDocument, stored: Option<&(Value, Decoded)>) -> Result<Node, json::Error> {
     let mut node = json::to_node(document)?;
-    let bare = json::pretty_sorted(&node);
+    let bare = node.clone();
     // An older document's extra keys are the ones its migrations consumed, never to be read twice.
     let Some((stored, decoded)) = stored.filter(|(_, d)| d.version == VERSION) else { return Ok(bare) };
     let known = json::to_node(&codec::document(
@@ -34,10 +44,10 @@ pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decod
     for (path, value) in &found {
         graft(&mut node, path, value);
     }
-    let text = json::pretty_sorted(&node);
     // A carried key must change nothing this version reads, as a retired key would; else none is.
-    let same = matches!((codec::decode(bare.as_bytes()), codec::decode(text.as_bytes())), (Ok(a), Ok(b)) if a == b);
-    Ok(if same { text } else { bare })
+    let (plain, text) = (json::pretty_sorted(&bare), json::pretty_sorted(&node));
+    let same = matches!((codec::decode(plain.as_bytes()), codec::decode(text.as_bytes())), (Ok(a), Ok(b)) if a == b);
+    Ok(if same { node } else { bare })
 }
 
 fn unknown(stored: &Value, known: &Value, path: &mut Vec<String>, found: &mut Vec<Unknown>) {

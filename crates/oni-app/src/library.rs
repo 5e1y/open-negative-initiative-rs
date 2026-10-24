@@ -10,7 +10,7 @@ use oni_library::{Entry, folders, paths};
 use oni_i18n::tr;
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::time::Duration;
 
@@ -60,6 +60,8 @@ pub struct Archive {
     pub nodes: Vec<Node>,
     pub groups: Vec<Group>,
     pub expanded: HashSet<NodeId>,
+    /// Each RAW whose JPEG of a RAW+JPEG pair stands behind it, by path: one tile, marked.
+    pub companions: HashMap<String, String>,
 }
 
 impl Archive {
@@ -77,6 +79,8 @@ impl Archive {
     pub fn from_rows(folder: &str, entries: &[Entry], survey: &Survey, filter: Option<Medal>) -> Archive {
         let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
         let rolls = &survey.rolls;
+        let (entries, companions) = folders::paired(entries, &survey.images, &survey.sidecars);
+        let entries = &entries[..];
         let nodes = folders::tree(&root, entries, rolls, &survey.folders, &survey.made);
         let filtered: Vec<Entry> = entries.iter().filter(|e| filter.is_none_or(|m| e.label == m)).cloned().collect();
         let groups = folders::groups(&root, &filtered, rolls, &survey.made)
@@ -101,7 +105,7 @@ impl Archive {
         // `openFolder`: every folder under the opened one starts unfolded, the opened one included.
         let mut expanded = HashSet::new();
         folder_ids(&nodes, &mut expanded);
-        Archive { root, nodes, groups, expanded }
+        Archive { root, nodes, groups, expanded, companions }
     }
 
     /// `expandAncestors`: every folder above `path` up to the opened one unfolds; answers whether

@@ -17,6 +17,8 @@ pub enum Added {
     Refused { path: String, state: Presence },
     /// A file lying at the top of a whole disk or of the home, which is never read for one file.
     Wide { folder: String },
+    /// Another app's package, a Photos or Photo Booth library: its photos are its app's to change.
+    Package { package: String },
 }
 
 /// The first item's folder, the item itself when a folder, and the first photo among them. Reads the disk.
@@ -35,6 +37,9 @@ pub fn looked(items: &[PathBuf], computer: &Computer) -> Option<Added> {
         }
         Err(e) => return Some(Added::Refused { state: presence::refused(&spelt, &e, computer), path: spelt }),
     };
+    if let Some(package) = oni_library::roots::package_holding(Path::new(&folder)) {
+        return Some(Added::Package { package: paths::normal(&package.to_string_lossy()).into_owned() });
+    }
     let inside = |p: &PathBuf| paths::holds(&folder, &paths::canonical(p));
     let opening = items.iter().find(|p| p.is_file() && oni_library::library::is_importable(p) && inside(p)).map(|p| paths::canonical(p));
     let left = items[1..].iter().filter(|p| !inside(p)).count();
@@ -80,6 +85,10 @@ impl Ctl {
             Some(Added::Refused { path, .. }) => self.told(tr("Open"), &tr!("Not found: {path}", path = path)),
             Some(Added::Wide { folder }) => {
                 self.told(tr("Open"), &tr!("Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it.", folder = folder))
+            }
+            Some(Added::Package { package }) => {
+                let name = paths::name(&package);
+                self.told(tr("Open"), &tr!("Not opened: “{name}” is another app's library, which keeps its photos inside. ONI changes nothing in it.", name = name))
             }
             None => {}
         }
@@ -203,6 +212,25 @@ mod tests {
         let wide = |item: &str| matches!(looked(&[root.join(item)], &computer), Some(Added::Open { wide: true, .. }));
         assert!(wide("Home") && wide("Volumes/T7"), "the home and a disk dropped whole ask first");
         assert!(!wide("Volumes/T7/Roll"), "twin: a folder on the disk opens as it is");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    /// A Photos library dropped, or a photo inside it, opens nothing: its photos are its app's.
+    #[test]
+    fn a_dropped_package_opens_nothing() {
+        let root = std::env::temp_dir().join(format!("oni-app-package-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        for file in ["Home/P.photoslibrary/originals/1.jpg", "Home/Scans/2.tif"] {
+            std::fs::create_dir_all(root.join(file).parent().unwrap()).unwrap();
+            std::fs::write(root.join(file), b"a").unwrap();
+        }
+        let p = |rel: &str| paths::canonical(&root.join(rel));
+        let computer = Computer { home: p("Home"), volumes: p("Volumes") };
+        let package = Added::Package { package: p("Home/P.photoslibrary") };
+        assert_eq!(looked(&[root.join("Home/P.photoslibrary")], &computer), Some(package.clone()));
+        assert_eq!(looked(&[root.join("Home/P.photoslibrary/originals/1.jpg")], &computer), Some(package));
+        // Twin: a folder of scans beside it opens.
+        assert!(matches!(looked(&[root.join("Home/Scans")], &computer), Some(Added::Open { .. })));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

@@ -1,9 +1,11 @@
 //! The EXIF capture date of a file, `DateTimeOriginal` as stored, read from the TIFF structure its
-//! bytes carry: a TIFF-based RAW (NEF, DNG, RW2, ORF, ARW, CR2, PEF...), a TIFF, or a JPEG.
+//! bytes carry: a TIFF-based RAW, a TIFF, a JPEG, a RAF, a CR3, a HEIF or AVIF, a PNG.
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+
+mod containers;
 
 const EXIF_IFD: u16 = 0x8769;
 const DATE_TIME_ORIGINAL: u16 = 0x9003;
@@ -52,12 +54,22 @@ impl Reader {
     }
 }
 
-/// The file's EXIF directory, past a JPEG's APP1 or a TIFF-based header.
+/// Where a file's TIFF header sits, and whether its first directory is IFD0 or EXIF's own.
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Found {
+    /// IFD0 first, pointing to the EXIF IFD: a TIFF, a JPEG's APP1, a HEIF item, a PNG chunk.
+    Tiff(u64),
+    /// The EXIF IFD first, as a CR3's `CMT2` box stores it.
+    Exif(u64),
+}
+
+/// The file's EXIF directory, wherever its container keeps the TIFF structure.
 fn exif_directory(path: &Path) -> Option<(Reader, u64)> {
     let mut file = File::open(path).ok()?;
-    let mut head = [0u8; 4];
-    file.read_exact(&mut head).ok()?;
-    let base = if head[0] == 0xFF && head[1] == 0xD8 { jpeg_exif(&mut file)? } else { 0 };
+    let found = containers::locate(&mut file)?;
+    let base = match found {
+        Found::Tiff(base) | Found::Exif(base) => base,
+    };
     let mut reader = Reader { file, base, little: true };
     let order = reader.bytes(0, 4)?;
     reader.little = match &order[..2] {
@@ -71,6 +83,9 @@ fn exif_directory(path: &Path) -> Option<(Reader, u64)> {
         return None;
     }
     let first = u64::from(reader.u32(4)?);
+    if matches!(found, Found::Exif(_)) {
+        return Some((reader, first));
+    }
     let (_, _, pointer) = reader.entry(first, EXIF_IFD)?;
     let exif = u64::from(reader.u32(pointer)?);
     Some((reader, exif))
@@ -120,87 +135,5 @@ pub fn exposure(path: &Path) -> Option<(f64, f64, f64)> {
     Some((shutter, aperture, iso))
 }
 
-/// The offset of the TIFF header inside a JPEG's `Exif` APP1 segment.
-fn jpeg_exif(file: &mut File) -> Option<u64> {
-    let mut at = 2u64;
-    loop {
-        file.seek(SeekFrom::Start(at)).ok()?;
-        let mut marker = [0u8; 4];
-        file.read_exact(&mut marker).ok()?;
-        if marker[0] != 0xFF || marker[1] == 0xDA || marker[1] == 0xD9 {
-            return None;
-        }
-        let length = u64::from(u16::from_be_bytes([marker[2], marker[3]]));
-        if marker[1] == 0xE1 {
-            let mut name = [0u8; 6];
-            file.read_exact(&mut name).ok()?;
-            if &name == b"Exif\0\0" {
-                return Some(at + 10);
-            }
-        }
-        at += 2 + length;
-    }
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::scratch::Scratch;
-
-    /// A little or big-endian TIFF whose EXIF IFD holds `date`, built byte by byte.
-    fn tiff(little: bool, date: &str) -> Vec<u8> {
-        let w16 = |v: u16| if little { v.to_le_bytes() } else { v.to_be_bytes() };
-        let w32 = |v: u32| if little { v.to_le_bytes() } else { v.to_be_bytes() };
-        let mut out = Vec::new();
-        out.extend_from_slice(if little { b"II" } else { b"MM" });
-        out.extend_from_slice(&w16(42));
-        out.extend_from_slice(&w32(8));
-        // IFD0 at 8: one entry, the EXIF pointer to 26.
-        out.extend_from_slice(&w16(1));
-        out.extend_from_slice(&w16(EXIF_IFD));
-        out.extend_from_slice(&w16(4));
-        out.extend_from_slice(&w32(1));
-        out.extend_from_slice(&w32(26));
-        out.extend_from_slice(&w32(0));
-        // EXIF IFD at 26: DateTimeOriginal, its 20 bytes at 44.
-        out.extend_from_slice(&w16(1));
-        out.extend_from_slice(&w16(DATE_TIME_ORIGINAL));
-        out.extend_from_slice(&w16(ASCII));
-        out.extend_from_slice(&w32(20));
-        out.extend_from_slice(&w32(44));
-        out.extend_from_slice(&w32(0));
-        out.extend_from_slice(date.as_bytes());
-        out.push(0);
-        out
-    }
-
-    #[test]
-    fn a_tiff_and_a_jpeg_give_their_original_date_in_either_byte_order() {
-        let scratch = Scratch::new("exif");
-        let date = "2026:06:18 14:32:10";
-        for little in [true, false] {
-            let path = scratch.path().join(format!("t{little}.tif"));
-            std::fs::write(&path, tiff(little, date)).unwrap();
-            assert_eq!(capture_date(&path).as_deref(), Some(date));
-        }
-        let body = tiff(true, date);
-        let mut jpeg = vec![0xFF, 0xD8, 0xFF, 0xE0, 0, 4, 0, 0, 0xFF, 0xE1];
-        jpeg.extend_from_slice(&((body.len() + 8) as u16).to_be_bytes());
-        jpeg.extend_from_slice(b"Exif\0\0");
-        jpeg.extend_from_slice(&body);
-        let path = scratch.path().join("t.jpg");
-        std::fs::write(&path, &jpeg).unwrap();
-        assert_eq!(capture_date(&path).as_deref(), Some(date));
-
-        // Twin: the same bytes with the byte-order mark flipped read nothing sensible.
-        let mut flipped = tiff(true, date);
-        flipped[..2].copy_from_slice(b"MM");
-        let path = scratch.path().join("flipped.tif");
-        std::fs::write(&path, flipped).unwrap();
-        assert_ne!(capture_date(&path).as_deref(), Some(date));
-        // Twin: an empty file carries no date.
-        let path = scratch.path().join("empty.NEF");
-        std::fs::write(&path, b"").unwrap();
-        assert_eq!(capture_date(&path), None);
-    }
-}
+mod tests;

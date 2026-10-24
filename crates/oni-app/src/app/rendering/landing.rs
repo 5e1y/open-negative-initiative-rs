@@ -24,7 +24,8 @@ impl Ctl {
                 // The canvas never keeps another photo's picture under this one's name.
                 self.blank_canvas();
                 w.global::<Canvas>().set_busy(false);
-                w.global::<Canvas>().set_failure(tr!("{name}: could not be decoded", name = name).into());
+                let failure = if e == crate::render::cut_short() { tr!("{name}: cut short", name = name) } else { tr!("{name}: could not be decoded", name = name) };
+                w.global::<Canvas>().set_failure(failure.into());
                 self.clear_output();
                 self.say(&tr!("Not rendered: {e}", e = e));
                 return;

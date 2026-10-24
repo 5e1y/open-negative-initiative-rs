@@ -178,6 +178,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("visible::an_opened_folder_gone_is_not_an_empty_folder", visible::an_opened_folder_gone_is_not_an_empty_folder),
     ("visible::a_missing_tile_is_grey_on_its_own_layer", visible::a_missing_tile_is_grey_on_its_own_layer),
     ("gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another", gallery_cell::a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_another),
+    ("gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed", gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed),
     ("visible::a_triplet_with_a_pass_gone_is_marked", visible::a_triplet_with_a_pass_gone_is_marked),
     ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
 ];

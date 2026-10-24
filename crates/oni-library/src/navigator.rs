@@ -28,10 +28,17 @@ pub fn is_drive_root(path: &str) -> bool {
     b.len() == 3 && b[0].is_ascii_alphabetic() && b[1] == b':' && (b[2] == b'\\' || b[2] == b'/')
 }
 
+/// The person's home folder as the system names it: on Windows `USERPROFILE`, as a `HOME` that Git
+/// Bash or MSYS2 sets reads `/c/Users/a`, which no Windows call takes.
+pub fn home_folder() -> std::path::PathBuf {
+    let (first, second) = if cfg!(windows) { ("USERPROFILE", "HOME") } else { ("HOME", "USERPROFILE") };
+    std::env::var_os(first).filter(|h| !h.is_empty()).or_else(|| std::env::var_os(second)).unwrap_or_default().into()
+}
+
 impl Computer {
     /// This machine's: `NSHomeDirectory()` resolved, and `/Volumes`, or the drives on Windows.
     pub fn system() -> Computer {
-        let home = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")).unwrap_or_default();
+        let home = home_folder();
         let volumes = if cfg!(windows) { DRIVES } else { "/Volumes" };
         Computer { home: paths::canonical(Path::new(&home)), volumes: volumes.into() }
     }
@@ -90,25 +97,53 @@ impl Computer {
     }
 }
 
-/// A folder's subfolders in the Finder's order, hidden ones and packages left out; `None` while the
-/// disk refuses it (asleep, unmounted, access not granted yet), which is not empty. Reads the disk.
+/// A folder's subfolders in the Finder's order, hidden ones and packages out, a link by the folder it
+/// leads to; `None` while the disk refuses it (asleep, unmounted, denied), never empty. Reads the disk.
 pub fn children(folder: &str) -> Option<Vec<String>> {
     crate::presence::looked(folder);
     let listing = std::fs::read_dir(folder).ok()?;
-    // The listing's own type (`d_type`) leaves files out with no look each; folders alone are looked at.
-    let mut out: Vec<String> = listing
-        .filter_map(|e| e.ok())
-        .filter(|e| {
-            let path = e.path();
-            let dotted = e.file_name().to_string_lossy().starts_with('.');
-            let maybe = e.file_type().is_ok_and(|t| t.is_dir());
-            let directory = || std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir() && !crate::roots::is_hidden(&path, &m));
-            !dotted && maybe && !crate::roots::is_package(&path) && directory()
-        })
-        .map(|e| paths::join(folder, &e.file_name().to_string_lossy()))
-        .collect();
+    let mut out = Vec::new();
+    for entry in listing.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        // The listing's own type (`d_type`) leaves files out with no look each; folders alone are looked at.
+        let Ok(kind) = entry.file_type() else { continue };
+        if name.starts_with('.') {
+            continue;
+        }
+        let path = entry.path();
+        if kind.is_dir() {
+            let shown = std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir() && !crate::roots::is_hidden(&path, &m));
+            if shown && !crate::roots::is_package(&path) {
+                out.push(paths::join(folder, &name));
+            }
+        } else if let Some(target) = linked(folder, &path, &kind, &name) {
+            out.push(target);
+        }
+    }
     out.sort_by(|a, b| paths::standard_order(&paths::name(a), &paths::name(b)));
+    out.dedup();
     Some(out)
+}
+
+/// Files beside photos that are never an alias, so a folder of sidecars on a share pays no look each.
+const SIDE_FILES: &[&str] = &[".json", ".xmp", ".pp3", ".dop", ".on1", ".txt", ".pdf", ".mov", ".mp4"];
+
+/// The folder a symbolic link, a Windows junction or a Finder alias leads to, by its real path;
+/// never one holding `folder`, which would list itself inside itself.
+fn linked(folder: &str, path: &Path, kind: &std::fs::FileType, name: &str) -> Option<String> {
+    let target = if kind.is_symlink() {
+        path.to_path_buf()
+    } else if kind.is_file() && !crate::library::is_importable(path) && !SIDE_FILES.iter().any(|e| name.to_ascii_lowercase().ends_with(e)) {
+        crate::roots::alias_target(path)?
+    } else {
+        return None;
+    };
+    let hidden = std::fs::symlink_metadata(path).is_ok_and(|m| crate::roots::is_hidden(path, &m));
+    if hidden || !std::fs::metadata(&target).is_ok_and(|m| m.is_dir()) || crate::roots::is_package(&target) {
+        return None;
+    }
+    let real = paths::canonical(&target);
+    (!holds(&real, &paths::canonical(Path::new(folder)))).then_some(real)
 }
 
 /// `Navigator.title`: Computer for none, else the folder's name as the system words it.
@@ -207,17 +242,20 @@ impl Navigation {
     pub fn rows(&mut self, favourites: &[String]) -> Vec<(String, usize)> {
         let top = self.top(favourites);
         let mut out = Vec::new();
-        self.walk(&top, 0, &mut out);
+        self.walk(&top, 0, &mut out, &mut Vec::new());
         out
     }
 
-    fn walk(&mut self, folders: &[String], depth: usize, out: &mut Vec<(String, usize)>) {
+    /// `chain` holds the rows above: a link back to one of them shows, and never unfolds again.
+    fn walk(&mut self, folders: &[String], depth: usize, out: &mut Vec<(String, usize)>, chain: &mut Vec<String>) {
         for path in folders {
             out.push((path.clone(), depth));
-            if self.unfolded.contains(path) {
+            if self.unfolded.contains(path) && !chain.iter().any(|c| same(c, path)) {
                 self.list(path, false);
                 let children = self.listings.get(path).cloned().unwrap_or_default();
-                self.walk(&children, depth + 1, out);
+                chain.push(path.clone());
+                self.walk(&children, depth + 1, out, chain);
+                chain.pop();
             }
         }
     }

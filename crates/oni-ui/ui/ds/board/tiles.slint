@@ -19,6 +19,7 @@ component TileStates inherits Line {
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; away: Reach.offline; rgb: true; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; medal: 2; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; gone-pass: "R MISSING"; } }
+    Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; companion: "+JPG"; medal: 1; } }
 }
 
 // A frame of Prepare the Roll on the tile: its marks apart, its picture rounded.
@@ -53,7 +54,7 @@ component FaceStates inherits Line {
 
 export component TilesPage inherits Page {
     title: "Tiles";
-    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing (away, note), left-out, rgb, gone-pass, marks (medal, apart), apart, flagged, ring (inset, outset), rounded, clicked. Picture: ground, rounded, radius, fit. SelectionRing: placement, tone, radius. Dot: size, ink; Medal: rank. PresetFace: new, lit, enabled. StockCellView, StockIcon, CardStack.";
+    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing (away, note), left-out, rgb, gone-pass, companion, marks (medal, apart), apart, flagged, ring (inset, outset), rounded, clicked. Picture: ground, rounded, radius, fit. SelectionRing: placement, tone, radius. Dot: size, ink; Medal: rank. PresetFace: new, lit, enabled. StockCellView, StockIcon, CardStack.";
     Group {
         title: "TileHeading (on the canvas)";
         states: ["Live"];

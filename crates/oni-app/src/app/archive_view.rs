@@ -103,7 +103,28 @@ impl Ctl {
                 self.open_in_editor(&path);
             }
             self.wrapped_after_read();
+            self.read_once_settled();
         }
+    }
+
+    /// A read that left files still being written reads the folder again once they may rest, so a
+    /// copy that ends with no further change is still printed whole.
+    fn read_once_settled(self: &Rc<Self>) {
+        let (settling, generation) = {
+            let s = self.state.borrow();
+            (!s.survey.settling.is_empty(), s.generation.load(Ordering::Relaxed))
+        };
+        if !settling {
+            return;
+        }
+        let me = Rc::downgrade(self);
+        Timer::single_shot(oni_library::roots::SETTLE * 2, move || {
+            if let Some(me) = me.upgrade()
+                && me.state.borrow().generation.load(Ordering::Relaxed) == generation
+            {
+                me.read_again();
+            }
+        });
     }
 
     /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
@@ -155,11 +176,13 @@ impl Ctl {
     pub(super) fn fill(&self) {
         let s = self.state.borrow();
         let generation = s.generation.load(Ordering::Relaxed);
+        // A pair's JPEG stands behind its RAW: no tile shows it, so none is drawn.
+        let behind: HashSet<&String> = s.archive.as_ref().map(|a| a.companions.values().collect()).unwrap_or_default();
         let (rows, gone): (Vec<_>, Vec<_>) = s
             .rows
             .iter()
             // A file the cloud keeps away is drawn once opened, never downloaded by the pass.
-            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path))
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path) && !behind.contains(&e.path))
             .map(|e| (e.path.clone(), s.tile_key(e)))
             .partition(|(path, _)| s.presence(path).is_present());
         let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();
@@ -238,7 +261,7 @@ impl Ctl {
                 }
                 Err(e) => {
                     s.failed.insert(fingerprint.clone());
-                    Some(format!("{name}: {e}"))
+                    (!e.is_empty()).then(|| format!("{name}: {e}"))
                 }
             }
         };

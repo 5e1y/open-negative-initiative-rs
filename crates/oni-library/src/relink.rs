@@ -1,10 +1,7 @@
 //! A file's identity: its fingerprint leaves the file name out, so a renamed or moved file keeps it.
 
-use crate::exif;
 use chrono::{Local, NaiveDateTime, TimeZone};
 use oni_settings::Date;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
 /// The two facts an index row needs, off one reading of the metadata.
@@ -23,18 +20,9 @@ pub fn fingerprint(path: &Path) -> Option<String> {
 /// `None` for a file that cannot be read whole or that the cloud keeps away: a print made of what
 /// was not read would be shared by every such file of one size.
 pub fn stamp(path: &Path) -> Option<Stamp> {
-    let metadata = std::fs::metadata(path).ok()?;
-    if in_cloud(&metadata) {
-        return None;
-    }
-    let size = metadata.len() as i64;
-    let digest = sample_digest(path, size)?;
-    let text = exif::capture_date(path);
-    // A literal marker fills the date slot when there is no EXIF date, so it cannot collide with one.
-    Some(Stamp {
-        fingerprint: format!("{size}-{}-{digest}", text.as_deref().unwrap_or("no-date")),
-        captured_at: text.as_deref().and_then(date),
-    })
+    // One print for the index and the sidecar's identity, read the same way.
+    let (fingerprint, text) = oni_settings::sidecar::identity::print(path)?;
+    Some(Stamp { fingerprint, captured_at: text.as_deref().and_then(date) })
 }
 
 /// Whether a fingerprint was stamped off another size of its file, as a scan read while still
@@ -69,60 +57,18 @@ pub fn recognised(rows: &[(String, String)], old: &str, new: &str) -> Recognised
     out
 }
 
-/// `SF_DATALESS`: iCloud keeps the file's bytes away until it is read.
-#[cfg(target_os = "macos")]
-const DATALESS: u32 = 0x4000_0000;
-/// `FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS`, `RECALL_ON_OPEN` and `OFFLINE`: OneDrive's placeholders.
-#[cfg(windows)]
-const PLACEHOLDER: u32 = 0x0040_0000 | 0x0004_0000 | 0x0000_1000;
+pub use oni_settings::sidecar::identity::in_cloud;
+#[cfg(test)]
+use oni_settings::sidecar::identity::digest_at;
 
-/// A file whose bytes live in the cloud: reading a block of it downloads it whole, so it is not
-/// stamped until it is opened.
-pub fn in_cloud(metadata: &std::fs::Metadata) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        use std::os::macos::fs::MetadataExt;
-        if metadata.st_flags() & DATALESS != 0 {
-            return true;
-        }
-    }
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::MetadataExt;
-        if metadata.file_attributes() & PLACEHOLDER != 0 {
-            return true;
-        }
-    }
-    let _ = metadata;
-    false
-}
-
-const BLOCK: usize = 16 * 1024;
+#[cfg(test)]
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
 
 /// FNV-1a over three blocks from the middle of the file, `"0"` for an empty one; `None` when the
 /// file or a block refuses to be read.
+#[cfg(test)]
 fn sample_digest(path: &Path, size: i64) -> Option<String> {
     digest_at(path, size, &FRACTIONS)
-}
-
-fn digest_at(path: &Path, size: i64, fractions: &[f64]) -> Option<String> {
-    let mut file = File::open(path).ok()?;
-    if size <= 0 {
-        return Some("0".into());
-    }
-    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for fraction in fractions {
-        let offset = (size as f64 - BLOCK as f64).min(size as f64 * fraction).max(0.0) as u64;
-        file.seek(SeekFrom::Start(offset)).ok()?;
-        let mut data = Vec::with_capacity(BLOCK);
-        (&mut file).take(BLOCK as u64).read_to_end(&mut data).ok()?;
-        for byte in data {
-            hash ^= u64::from(byte);
-            hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
-        }
-    }
-    Some(format!("{hash:x}"))
 }
 
 /// EXIF's `2026:06:18 14:32:10`, colons in the date too, read in the local time zone.

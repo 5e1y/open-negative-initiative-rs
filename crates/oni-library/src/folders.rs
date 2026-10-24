@@ -174,6 +174,40 @@ pub fn groups(
     out
 }
 
+/// A name as a case-insensitive, composed disk compares it, its extension cut.
+fn stem_key(path: &str) -> String {
+    format!("{}/{}", parent(path), paths::composed(&paths::stem(path)).to_lowercase())
+}
+
+fn is_kind(path: &str, kinds: &[&str]) -> bool {
+    let ext = paths::extension(path).to_ascii_lowercase();
+    !ext.is_empty() && kinds.contains(&ext.as_str())
+}
+
+/// A RAW+JPEG pair as one photo: a JPEG with no sidecar beside a RAW of its stem among `images`, the
+/// disk's files (a RAW in the ONI Trash too), is left out and named as the RAW's companion.
+pub fn paired(entries: &[Entry], images: &[String], sidecars: &HashMap<String, Date>) -> (Vec<Entry>, HashMap<String, String>) {
+    use crate::library::{JPEG_EXTENSIONS, RAW_EXTENSIONS};
+    let mut raws: HashMap<String, &String> = HashMap::new();
+    for image in images.iter().filter(|i| is_kind(i, RAW_EXTENSIONS)) {
+        raws.entry(stem_key(image)).and_modify(|r| *r = (*r).min(image)).or_insert(image);
+    }
+    let mut companions = HashMap::new();
+    let kept = entries
+        .iter()
+        .filter(|e| {
+            if !is_kind(&e.path, JPEG_EXTENSIONS) || sidecars.contains_key(&e.path) {
+                return true;
+            }
+            let Some(raw) = raws.get(&stem_key(&e.path)) else { return true };
+            companions.entry((*raw).clone()).or_insert_with(|| e.path.clone());
+            false
+        })
+        .cloned()
+        .collect();
+    (kept, companions)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,6 +245,29 @@ mod tests {
             .collect();
         assert!(plain.contains(&"2026/Juin".to_owned()) && !plain.contains(&"Portra".to_owned()));
         assert!(!groups.iter().flat_map(|g| &g.entries).any(|e| e.path == "/Elsewhere/y.RW2"));
+    }
+
+    #[test]
+    fn a_raw_jpeg_pair_is_one_tile() {
+        let rows: Vec<Entry> = ["Roll/DSC_1.NEF", "Roll/dsc_1.JPG", "Roll/DSC_2.JPG", "Roll/DSC_3.nef", "Roll/DSC_3.jpeg", "Other/DSC_1.JPG"]
+            .iter()
+            .map(|p| entry(p, 1.0))
+            .collect();
+        let images: Vec<String> = rows.iter().map(|e| e.path.clone()).collect();
+        let (kept, companions) = paired(&rows, &images, &HashMap::new());
+        let names: Vec<String> = kept.iter().map(|e| e.path[3..].to_owned()).collect();
+        assert_eq!(names, ["Roll/DSC_1.NEF", "Roll/DSC_2.JPG", "Roll/DSC_3.nef", "Other/DSC_1.JPG"], "a JPEG alone, or in another folder, stays");
+        assert_eq!(companions.get("/R/Roll/DSC_1.NEF").map(String::as_str), Some("/R/Roll/dsc_1.JPG"));
+        assert_eq!(companions.len(), 2);
+        // A RAW in the ONI Trash, out of the rows, still keeps its JPEG behind it.
+        let shown: Vec<Entry> = rows.iter().filter(|e| !e.path.ends_with("DSC_1.NEF")).cloned().collect();
+        assert!(!paired(&shown, &images, &HashMap::new()).0.iter().any(|e| e.path == "/R/Roll/dsc_1.JPG"));
+        // Twin: a JPEG with settings of its own, edited before, stays a photo of its own.
+        let edited = HashMap::from([("/R/Roll/dsc_1.JPG".to_owned(), Date::since_reference_date(1.0))]);
+        let (kept, companions) = paired(&rows, &images, &edited);
+        assert!(kept.iter().any(|e| e.path == "/R/Roll/dsc_1.JPG") && !companions.contains_key("/R/Roll/DSC_1.NEF"));
+        // Twin: unpaired, every file is a tile.
+        assert_eq!(paired(&rows, &[], &HashMap::new()).0.len(), rows.len());
     }
 
     #[test]

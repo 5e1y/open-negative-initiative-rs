@@ -20,6 +20,8 @@ export struct Tile {
     rgb: bool,
     // A triplet's pass gone, the seal's words.
     gone-pass: string,
+    // A RAW+JPEG pair's mark, `+JPG`, its JPEG behind the RAW.
+    companion: string,
 }
 
 export struct Heading {
@@ -306,6 +308,7 @@ export component Grid inherits Surface {
                 note: t.note;
                 rgb: t.rgb;
                 gone-pass: t.gone-pass;
+                companion: t.companion;
                 hovered: t.note != "" && pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
                     && pointer.mouse-y + Library.scroll >= t.y && pointer.mouse-y + Library.scroll < t.y + t.height;
             }

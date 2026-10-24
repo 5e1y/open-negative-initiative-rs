@@ -2190,6 +2190,10 @@ msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder 
 msgstr "Pas ouvert : {folder} est un disque entier ou le dossier de départ. Ouvrez le dossier des scans qu’il contient."
 
 #: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: “{name}” is another app's library, which keeps its photos inside. ONI changes nothing in it."
+msgstr "Non ouvert : « {name} » est la bibliothèque d’une autre app, qui garde ses photos à l’intérieur. ONI n’y change rien."
+
+#: crates/oni-app/src/app/archive_view/adding.rs
 msgid "One item from another folder was left out: ONI opens one folder at a time."
 msgid_plural "{n} items from other folders were left out: ONI opens one folder at a time."
 msgstr[0] "Un élément d’un autre dossier laissé de côté : ONI ouvre un dossier à la fois."
@@ -2851,7 +2855,7 @@ msgstr "« {name} » est vide (0 octet)"
 msgid "“{name}” cannot be read"
 msgstr "« {name} » ne peut pas être lu"
 
-#: crates/oni-app/src/app/opening/missing.rs
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/app/organising/reach.rs
 msgid "Format not supported ({format})"
 msgstr "Format non pris en charge ({format})"
 
@@ -3432,6 +3436,10 @@ msgid "The picture cannot be shown on this graphics card; the log names why."
 msgstr "L’image ne peut pas être affichée sur cette carte graphique ; le journal en indique la raison."
 
 #: crates/oni-app/src/app/rendering/landing.rs
+msgid "{name}: cut short"
+msgstr "{name} : fichier incomplet"
+
+#: crates/oni-app/src/app/rendering/landing.rs
 msgid "{name}: could not be decoded"
 msgstr "{name} : décodage impossible"
 
@@ -3866,6 +3874,10 @@ msgstr "Afficher dans l’Explorateur ({count} photos)"
 #: crates/oni-app/src/render/decode.rs
 msgid "its container is unreadable"
 msgstr "son conteneur est illisible"
+
+#: crates/oni-app/src/render/decode.rs
+msgid "the file ends before its picture does: an interrupted copy? Copy it again from its source."
+msgstr "le fichier s’arrête avant la fin de son image : une copie interrompue ? Copiez-le à nouveau depuis sa source."
 
 #: crates/oni-app/src/render/decode.rs
 msgid "its samples are unreadable"
@@ -4308,6 +4320,10 @@ msgid "another app is using it"
 msgstr "une autre app l’utilise"
 
 #: crates/oni-library/src/refusal.rs
+msgid "The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."
+msgstr "Le nom de la photo est trop long pour un fichier de réglages à côté d’elle. Raccourcissez-le pour garder ses modifications."
+
+#: crates/oni-library/src/refusal.rs
 msgid "it is no longer there"
 msgstr "il n’est plus là"
 
@@ -4338,14 +4354,14 @@ msgstr "{head} : {why}"
 #: crates/oni-library/src/refusal.rs
 msgid "its original cannot be found, its disk disconnected or the file moved. Nothing was changed."
 msgid_plural "their originals cannot be found, their disk disconnected or the files moved. Nothing was changed."
-msgstr[0] "son original est introuvable : son disque est débranché ou le fichier a été déplacé. Rien n’a été modifié."
-msgstr[1] "leurs originaux sont introuvables : leur disque est débranché ou les fichiers ont été déplacés. Rien n’a été modifié."
+msgstr[0] "son original est introuvable (disque débranché ou fichier déplacé). Rien n’a été modifié."
+msgstr[1] "leurs originaux sont introuvables (disque débranché ou fichiers déplacés). Rien n’a été modifié."
 
 #: crates/oni-library/src/refusal.rs
 msgid "its original cannot be found, its disk disconnected or the file moved."
 msgid_plural "their originals cannot be found, their disk disconnected or the files moved."
-msgstr[0] "son original est introuvable : son disque est débranché ou le fichier a été déplacé."
-msgstr[1] "leurs originaux sont introuvables : leur disque est débranché ou les fichiers ont été déplacés."
+msgstr[0] "son original est introuvable (disque débranché ou fichier déplacé)."
+msgstr[1] "leurs originaux sont introuvables (disque débranché ou fichiers déplacés)."
 
 #: crates/oni-library/src/refusal.rs
 msgid "One photo was left out"
