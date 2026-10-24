@@ -245,6 +245,16 @@ impl Ctl {
         self.remember(preferences::BRUSH_RADIUS, radius.into());
     }
 
+    /// `DSScrollAdjust` on the brush: its size moved along the track, kept once the scroll rests.
+    pub(super) fn brush_scroll(self: &Rc<Self>, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
+        let (low, high) = oni_settings::frame::Correction::RADIUS_RANGE;
+        let from = ((f64::from(self.state.borrow().brush) - low) / (high - low)) as f32;
+        let Some(at) = self.slider_scrolled(from, dx, dy, span, fine, |c| c.keep_brush()) else { return false };
+        self.state.borrow_mut().brush = (low + f64::from(at) * (high - low)) as f32;
+        self.publish_dedust();
+        true
+    }
+
     pub(super) fn brush_drag(&self, translation: f32, span: f32, fine: bool) {
         {
             let mut s = self.state.borrow_mut();

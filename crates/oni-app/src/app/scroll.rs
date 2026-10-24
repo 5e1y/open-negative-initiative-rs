@@ -4,9 +4,14 @@
 use super::Ctl;
 use crate::track::{self, SCROLL_IDLE};
 use crate::viewport;
-use slint::TimerMode;
+use slint::{Timer, TimerMode};
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
+
+thread_local! {
+    /// The rest of a scroll on a slider outside the store, after which its release runs.
+    static RESTING: Timer = Timer::default();
+}
 
 impl Ctl {
     /// The travel one scroll event asks of a track, from the platform's own delta when the window
@@ -34,6 +39,23 @@ impl Ctl {
                 me.scroll_ended();
             }
         });
+    }
+
+    /// `DSScrollAdjust` on a slider Rust holds outside the store: the fraction `from` moved along the
+    /// track, `None` for a scroll across it, left to the panel; `rested` runs once events stop.
+    pub(super) fn slider_scrolled(self: &Rc<Self>, from: f32, dx: f32, dy: f32, span: f32, fine: bool, rested: fn(&Rc<Ctl>)) -> Option<f32> {
+        if dx == 0.0 || dx.abs() <= dy.abs() {
+            return None;
+        }
+        let me = Rc::downgrade(self);
+        RESTING.with(|t| {
+            t.start(TimerMode::SingleShot, SCROLL_IDLE, move || {
+                if let Some(me) = me.upgrade() {
+                    rested(&me);
+                }
+            });
+        });
+        Some(track::clamped(track::asked(from, Self::scroll_travel(dx), span, fine)))
     }
 
     fn scroll_ended(self: &Rc<Self>) {

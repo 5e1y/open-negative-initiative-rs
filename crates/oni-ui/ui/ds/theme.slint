@@ -126,6 +126,8 @@ export global State {
 export global Motion {
     out property <duration> quick: DS.motion-curtain-duration;
     out property <duration> slide: DS.motion-reveal-response * 1s;
+    // `DS.Motion.settle`'s response: a value arriving from elsewhere, a reset or an undo, eases in.
+    out property <duration> settle: DS.motion-settle-response * 1s;
     // The system tooltip's delay before it shows.
     out property <duration> tip-delay: 1000ms;
 }

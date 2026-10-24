@@ -2194,5 +2194,12 @@
     "title": "Design system: PlotInkStyle folded into PlotStyle, Colour and SliderStyle",
     "status": "done",
     "detail": "Phase of #297. PlotInkStyle repeated other groups: its track, knob-width and knob-height are SliderStyle's, its grab is SliderStyle.grab (DS.Control.grabSize, which SplitStyle.grab now reads), its histogram is PlotStyle.block, its guide, guide-faint, handle-active, handle-idle and channel-red are Colour's, and its marker is the new Colour.marker. PlotStyle now holds the plots' own: main, block, radius, and the inks Swift's views write as literals (the levels greys and the spectrogram's bands). No value changed, so no pixel."
+  },
+  {
+    "id": 324,
+    "type": "fix",
+    "title": "Sliders as Swift's DSSlider: the knob's hover, settle and the wheel everywhere",
+    "status": "done",
+    "detail": "Seen on the board after #320 and #321. A disabled slider never grows its knob (the board's Disabled column did). The stepped slider grows its knob and shows the grab cursor over the knob alone, as DSSlider and the continuous one; its name's double click and tooltip are off while disabled, and its ± keys dim with it. The knob follows the hand unsprung and settles on a value arriving from elsewhere (a reset, an undo, another photo) along Motion.settle (DS.Motion.settle's 0.38 s response, eased out), never while held or within Motion.settle of a scroll event; the stepped slider used to lag its slide by 0.14 s. The levels track shows the grab cursor within a handle's grab, its hover measured from the track's origin (it was a half-knob off), and its handles settle the same way while no hand is on it. Every slider takes the wheel as DSScrollAdjust does: the Brush Size (now a BrushSlider wrapper), the export's Quality and Prepare the Roll's sliders, which ignored it, move along their track and run their release's work (the brush and Picker Size kept, the export weighed) once the scroll rests, through Ctl::slider_scrolled; a scroll across a track is still left to the pane. Ink.primary has its own branch in Inks.of. Window checks: the brush, the quality and the Picker Size scroll along and refuse a scroll across (twins), the Picker Size written only once the scroll rests."
   }
 ]

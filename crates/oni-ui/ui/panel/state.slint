@@ -152,6 +152,8 @@ export global Dedust {
     callback press(bool) -> bool;
     callback drag(length, length, bool);
     callback release();
+    // A scroll along the track sets the size; one across it is left to the panel.
+    callback scroll(length, length, length, bool) -> bool;
     callback remove(int);
 }
 

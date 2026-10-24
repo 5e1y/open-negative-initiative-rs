@@ -8,7 +8,7 @@ import { Look, Button, ButtonSize } from "button.slint";
 export enum SliderFill { level, ramp, bipolar, metal, none }
 
 // `DSBarHandle`: a cap set across the track, edged in black, two grip lines on its face; it grows
-// under the hand and, with `slide`, eases to a value that moves.
+// under the hand and, with `slide`, settles on a value arriving from elsewhere, never under the hand.
 export component Knob inherits Rectangle {
     // Its centre along the travel, and the height of the row whose middle it sits on.
     in property <length> centre;
@@ -29,7 +29,7 @@ export component Knob inherits Rectangle {
     border-width: Stroke.line;
     border-color: SliderStyle.knob-edge;
     animate grow { duration: Motion.quick; easing: ease-out-back; }
-    animate x { duration: root.slide ? Motion.quick : 0ms; }
+    animate x { duration: root.slide ? Motion.settle : 0ms; easing: ease-out; }
     HorizontalLayout {
         alignment: center;
         spacing: SliderStyle.grip-gap - Stroke.line;
@@ -96,6 +96,7 @@ export component ValueHeader inherits HorizontalLayout {
         overflow: elide;
         horizontal-stretch: 1;
         if root.resets: TouchArea {
+            enabled: root.enabled;
             double-clicked => { root.reset(); }
             changed has-hover => { Tips.hover(self.has-hover, root.help, self.absolute-position.x, self.absolute-position.y + self.height); }
         }
@@ -176,6 +177,7 @@ export component Slider inherits VerticalLayout {
             text: "−";
             fill: root.low;
             help: root.minus-help;
+            enabled: root.enabled;
             clicked => { root.step(root.field, self.shift ? -3 : -1); }
         }
         HorizontalLayout {
@@ -202,15 +204,17 @@ export component Slider inherits VerticalLayout {
                     centre: parent.width * root.at;
                     fill: root.knob;
                     grip: !root.stepped;
-                    grown: (root.stepped ? area.has-hover : area.over-knob) || area.held || root.look != Look.live;
-                    slide: root.stepped;
+                    grown: root.enabled && (area.over-knob || area.held || root.look != Look.live);
+                    slide: !area.held && !area.scrolling;
                 }
                 area := TouchArea {
                     enabled: root.enabled;
                     in-out property <bool> held;
                     property <bool> fine;
+                    // A scroll's events, and `settle` after the last, which the knob follows unsprung.
+                    in-out property <bool> scrolling;
                     out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.at) <= SliderStyle.knob-width / 2;
-                    mouse-cursor: self.held ? MouseCursor.grabbing : (root.stepped || self.over-knob) ? MouseCursor.grab : MouseCursor.default;
+                    mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
                     double-clicked => {
                         if (root.stepped) { root.reset(); }
                     }
@@ -254,10 +258,17 @@ export component Slider inherits VerticalLayout {
                     }
                     scroll-event(event) => {
                         if (!root.stepped && root.scroll(root.field, event.delta-x, event.delta-y, track.width, event.modifiers.alt)) {
+                            self.scrolling = true;
+                            still.restart();
                             return EventResult.accept;
                         }
                         EventResult.reject
                     }
+                }
+                still := Timer {
+                    interval: Motion.settle;
+                    running: area.scrolling;
+                    triggered => { area.scrolling = false; }
                 }
             }
         }
@@ -265,6 +276,7 @@ export component Slider inherits VerticalLayout {
             text: "+";
             fill: root.high;
             help: root.plus-help;
+            enabled: root.enabled;
             clicked => { root.step(root.field, self.shift ? 3 : 1); }
         }
     }

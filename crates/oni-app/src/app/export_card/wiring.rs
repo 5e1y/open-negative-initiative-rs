@@ -126,6 +126,13 @@ impl Ctl {
             p.weigh_export();
         });
         let p = me.clone();
+        e.on_quality_scroll(move |dx, dy, span, fine| {
+            let from = Ctl::quality_fraction(p.export.borrow().settings.jpeg_quality);
+            let Some(at) = p.slider_scrolled(from, dx, dy, span, fine, |c| c.weigh_export()) else { return false };
+            p.set_quality(QUALITY.0 + f64::from(at) * (QUALITY.1 - QUALITY.0), false);
+            true
+        });
+        let p = me.clone();
         e.on_quality_step(move |d| {
             let q = p.export.borrow().settings.jpeg_quality + f64::from(d) * (QUALITY.1 - QUALITY.0) / 100.0;
             p.set_quality(q, true);

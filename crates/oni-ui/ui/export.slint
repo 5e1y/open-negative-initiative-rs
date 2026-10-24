@@ -99,6 +99,7 @@ component QualitySlider inherits Slider {
     press(f, fine) => { return Exporting.quality-press(fine); }
     drag(f, t, s, fine) => { Exporting.quality-drag(t, s, fine); }
     release(f) => { Exporting.quality-release(); }
+    scroll(f, dx, dy, s, fine) => { return Exporting.quality-scroll(dx, dy, s, fine); }
     step(f, d) => { Exporting.quality-step(d); }
 }
 

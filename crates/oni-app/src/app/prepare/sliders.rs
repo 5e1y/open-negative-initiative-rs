@@ -64,15 +64,30 @@ impl Ctl {
             return;
         }
         let at = crate::track::clamped(crate::track::asked(start, translation, span, fine));
-        let value = match i {
+        self.slider_set(i, self.slider_value_at(i, at));
+    }
+
+    /// `DSScrollAdjust` on a step's slider: moved along its track, the Picker Size kept once it rests.
+    pub(in crate::app) fn slider_scroll(self: &Rc<Self>, i: usize, dx: f32, dy: f32, span: f32, fine: bool) -> bool {
+        let from = {
+            let s = self.state.borrow();
+            Self::slider_fraction(&s.prepare, base_radius(&s), i)
+        };
+        let Some(at) = self.slider_scrolled(from, dx, dy, span, fine, |c| c.keep_picker()) else { return false };
+        self.slider_set(i, self.slider_value_at(i, at));
+        true
+    }
+
+    /// The value a slider's knob at `at` stands for: the flat-field's on their own tracks, the others linear.
+    fn slider_value_at(&self, i: usize, at: f32) -> f32 {
+        match i {
             AMOUNT | TEMPERATURE | TINT => stored_at(flat_field(i), at),
             PICKER => (pipette::RADIUS_RANGE.0 + f64::from(at) * (pipette::RADIUS_RANGE.1 - pipette::RADIUS_RANGE.0)) as f32,
             _ => {
                 let last = measured(&self.state.borrow().prepare.frames).len().saturating_sub(1).max(1);
                 at * last as f32
             }
-        };
-        self.slider_set(i, value);
+        }
     }
 
     pub(in crate::app) fn slider_set(self: &Rc<Self>, i: usize, value: f32) {

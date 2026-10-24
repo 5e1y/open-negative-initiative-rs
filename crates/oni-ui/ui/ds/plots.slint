@@ -26,6 +26,7 @@ export global Inks {
         if (ink == Ink.active) { return Colour.handle-active; }
         if (ink == Ink.idle) { return Colour.handle-idle; }
         if (ink == Ink.track) { return Colour.track; }
+        if (ink == Ink.primary) { return Colour.ink; }
         if (ink == Ink.canvas) { return Colour.canvas; }
         if (ink == Ink.black) { return Colour.black; }
         if (ink == Ink.white) { return Colour.white; }
@@ -182,24 +183,32 @@ export component LevelsTrack inherits Rectangle {
     changed window-x => { root.placed(root.plot, self.window-x, self.window-y); }
     changed window-y => { root.placed(root.plot, self.window-x, self.window-y); }
     init => { root.resized(root.plot, self.width, self.height); root.placed(root.plot, self.window-x, self.window-y); }
+    // Whether the pointer is within a grab of one of the five handles `LevelsView` draws.
+    pure function near(i: int) -> bool {
+        i < root.knobs.length && abs(area.mouse-x + area.x - root.knobs[i].x) <= SliderStyle.grab / 2
+    }
+    property <bool> over: area.has-hover && (root.near(0) || root.near(1) || root.near(2) || root.near(3) || root.near(4));
     Rail {
         x: -SliderStyle.knob-width / 2;
         width: parent.width + SliderStyle.knob-width;
         y: (parent.height - self.height) / 2;
         overhang: SliderStyle.knob-width / 2;
     }
-    // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand.
+    // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand,
+    // settling on a value from elsewhere while no hand is on the track.
     for knob in root.knobs: Knob {
         centre: knob.x;
         fill: Inks.of(knob.ink);
-        grown: knob.held || (area.has-hover && abs(area.mouse-x - knob.x) <= SliderStyle.grab / 2);
+        grown: knob.held || (area.has-hover && abs(area.mouse-x + area.x - knob.x) <= SliderStyle.grab / 2);
+        slide: !area.pressed && !area.scrolling;
         accessible-role: slider;
         accessible-label: knob.label;
     }
     area := TouchArea {
         x: -SliderStyle.knob-width / 2;
         width: parent.width + SliderStyle.knob-width;
-        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.default;
+        in-out property <bool> scrolling;
+        mouse-cursor: self.pressed ? MouseCursor.grabbing : root.over ? MouseCursor.grab : MouseCursor.default;
         pointer-event(event) => {
             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
                 root.pointer(root.plot, 0, self.mouse-x + self.x, self.mouse-y, event.modifiers.alt);
@@ -213,10 +222,17 @@ export component LevelsTrack inherits Rectangle {
         }
         scroll-event(event) => {
             if (root.scrolled(root.plot, self.mouse-x + self.x, event.delta-x, event.delta-y, event.modifiers.alt)) {
+                self.scrolling = true;
+                still.restart();
                 return EventResult.accept;
             }
             EventResult.reject
         }
+    }
+    still := Timer {
+        interval: Motion.settle;
+        running: area.scrolling;
+        triggered => { area.scrolling = false; }
     }
 }
 

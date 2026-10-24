@@ -110,7 +110,7 @@ export global Preparing {
     callback take-flat(); callback load-flat();
     callback press(int, bool) -> bool;
     callback drag(int, length, length, bool);
-    callback release(int);
+    callback release(int); callback scroll(int, length, length, length, bool) -> bool;
     callback clear-base();
     callback clear-flags();
     callback previous();
@@ -138,7 +138,7 @@ component RollSlider inherits Slider {
     press(f, fine) => { return Preparing.press(f, fine); }
     drag(f, t, s, fine) => { Preparing.drag(f, t, s, fine); }
     release(f) => { Preparing.release(f); }
-    scroll(f, dx, dy, s, fine) => { return false; }
+    scroll(f, dx, dy, s, fine) => { return Preparing.scroll(f, dx, dy, s, fine); }
 }
 
 // `RollPanel.frameGrid`: three to a row, the step's own mark on each.

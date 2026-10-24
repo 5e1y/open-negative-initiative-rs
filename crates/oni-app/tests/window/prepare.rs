@@ -106,6 +106,15 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert_eq!(radius(), before, "a drag writes no preference at each notch");
     p.invoke_release(3);
     assert!(radius().is_some_and(|r| Some(r) != before), "the release writes the size: {:?}", radius());
+    // The wheel along it moves it too, written once the scroll rests; a scroll across is the pane's.
+    let dragged = radius();
+    assert!(!p.invoke_scroll(3, 0.0, 80.0, 200.0, false), "a scroll across the track is the pane's");
+    assert!(p.invoke_scroll(3, 80.0, 0.0, 200.0, false));
+    rig.pump();
+    assert_eq!(radius(), dragged, "a scroll writes no preference at each event");
+    std::thread::sleep(Duration::from_millis(250));
+    rig.pump();
+    assert!(radius().is_some_and(|r| Some(r) != dragged), "the rest writes the size: {:?}", radius());
 
     // A click on the scan picks the bare film there and moves on to the flags.
     rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
