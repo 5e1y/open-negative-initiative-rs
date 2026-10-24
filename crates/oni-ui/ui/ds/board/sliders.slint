@@ -151,7 +151,7 @@ component StepStates inherits Line {
 
 export component SliderPage inherits Page {
     title: "Slider, Knob and Rail";
-    note: "Knob: centre, fill, grip, grip-ink, grown, slide. Rail: fill (level, ramp, bipolar, metal, none), at, from, tint, low, high, overhang, rest, glow. Slider: fill × knob, tint, low, high; stepped: value, lowest, highest, the keys' and the name's helps.";
+    note: "Knob: centre, fill, grip, grip-ink, grown, slide. Rail: fill (level, ramp, bipolar, metal, none), at, from, tint, low, high, overhang, rest, glow. Slider: fill × knob, tint, low, high, enabled (off, the words fade, the rail stays); stepped: value, lowest, highest, the keys' and the name's helps.";
     property <[string]> states: ["Live", "Hover", "Pressed", "Disabled"];
     Group {
         title: "Knob";

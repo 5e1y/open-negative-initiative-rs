@@ -7,7 +7,7 @@ struct Named { name: string, ink: Ink }
 
 export component PlotsPage inherits Page {
     title: "Plots";
-    note: "Plot: histogram, lines, dots, grid, screen, interactive. AxisCaptions: start, end, tone, axis. LevelsTrack: knobs. PlotReadouts, every Ink.";
+    note: "Plot: histogram, lines, dots, grid, screen, interactive. AxisCaptions: start, end, tone, axis. LevelsTrack: knobs, placed by Rust, which springs all but the one held. PlotReadouts, every Ink.";
     property <[Named]> inks: [
         { name: "guide", ink: Ink.guide }, { name: "guide-faint", ink: Ink.guide-faint }, { name: "marker", ink: Ink.marker },
         { name: "separator", ink: Ink.separator }, { name: "active", ink: Ink.active }, { name: "idle", ink: Ink.idle },

@@ -2481,5 +2481,12 @@
     "title": "Every duplicate design token folded into the one it equals",
     "status": "done",
     "detail": "Tabs', fields' and menu rows' heights and the tabs' and fields' radii read ButtonStyle's, the menu panel's Radius.badge; NavigatorStyle.key and ScannerStyle.step-key are ButtonStyle.small-height; SheetStyle.panel-width is FormStyle's, RollStyle's and the board's panel width ShellStyle's; RollStyle.canvas-padding and FormStyle.chip-height are CardStyle.padding; ScannerStyle.label-weight is Type.medium; both sockets are Colour.well; Colour.paper is white and focus the accent; channel blue is the accent's token, not a literal; TipStyle has one padding; CropStyle.hairline is Stroke.hairline; the split guide's shadow is Stroke.emphasis as the ring's, the preset deck's peek Space.m. Dead tokens removed (SplashStyle.minimum, RollStyle.plate, PresetStyle's badge sizes, ButtonStyle.label and weight, SheetStyle.radius, ScannerStyle.key-gap and socket-radius, NavigatorStyle.rest), and the unused imports of every file touched, keypad.slint's among them. No pixel moves."
+  },
+  {
+    "id": 351,
+    "type": "fix",
+    "title": "A disabled slider keeps its rail opaque, and the levels' handles slide once",
+    "status": "done",
+    "detail": "As DSSlider: off limits, the readout fades and the track stays opaque. LevelsTrack no longer animates its knobs on top of Rust, which already springs every handle but the one held or scrolled with DS.Motion.settle, as DSTrackHandle; the Slint slide doubled that spring. The board's slider and plots pages say so."
   }
 ]

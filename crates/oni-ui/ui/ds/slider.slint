@@ -182,9 +182,9 @@ export component Slider inherits VerticalLayout {
             padding-left: SliderStyle.knob-width / 2;
             padding-right: SliderStyle.knob-width / 2;
             horizontal-stretch: 1;
+            // Off limits, the words fade and the rail stays opaque, as `DSSlider`'s.
             track := Rectangle {
                 height: SliderStyle.row;
-                opacity: root.enabled ? 1 : State.disabled;
                 Rail {
                     x: -SliderStyle.knob-width / 2;
                     width: parent.width + SliderStyle.knob-width;

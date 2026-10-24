@@ -1,6 +1,6 @@
 // The editors' plots: a recessed screen holding a histogram, lines and dots Rust lays out, and the
 // track whose handles a press catches; every gesture is handed to Rust with its place in points.
-import { Colour, Space, Stroke, State, Motion, SliderStyle, PlotStyle } from "theme.slint";
+import { Colour, Space, Stroke, SliderStyle, PlotStyle } from "theme.slint";
 import { Label, Picture, Ground, Fit, TextRole, Tone } from "base.slint";
 import { Knob, Rail } from "slider.slint";
 
@@ -194,20 +194,18 @@ export component LevelsTrack inherits Rectangle {
         y: (parent.height - self.height) / 2;
         overhang: SliderStyle.knob-width / 2;
     }
-    // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand,
-    // settling on a value from elsewhere while no hand is on the track.
+    // `DSTrackHandle`: the slider's knob, tinted with the value it carries, grown under the hand; Rust
+    // springs every handle but the one held or scrolled, so none slides here on top of it.
     for knob in root.knobs: Knob {
         centre: knob.x;
         fill: Inks.of(knob.ink);
         grown: knob.held || (area.has-hover && abs(area.mouse-x + area.x - knob.x) <= SliderStyle.grab / 2);
-        slide: !area.pressed && !area.scrolling;
         accessible-role: slider;
         accessible-label: knob.label;
     }
     area := TouchArea {
         x: -SliderStyle.knob-width / 2;
         width: parent.width + SliderStyle.knob-width;
-        in-out property <bool> scrolling;
         mouse-cursor: self.pressed ? MouseCursor.grabbing : root.over ? MouseCursor.grab : MouseCursor.default;
         pointer-event(event) => {
             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
@@ -222,17 +220,10 @@ export component LevelsTrack inherits Rectangle {
         }
         scroll-event(event) => {
             if (root.scrolled(root.plot, self.mouse-x + self.x, event.delta-x, event.delta-y, event.modifiers.alt)) {
-                self.scrolling = true;
-                still.restart();
                 return EventResult.accept;
             }
             EventResult.reject
         }
-    }
-    still := Timer {
-        interval: Motion.settle;
-        running: area.scrolling;
-        triggered => { area.scrolling = false; }
     }
 }
 
