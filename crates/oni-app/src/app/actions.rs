@@ -100,7 +100,7 @@ impl Ctl {
             Act::ResetToDefault if app.get_gallery() => self.ask_reset_to_default(),
             Act::Ungroup => self.ungroup(),
             Act::Open => self.pick(),
-            Act::Recheck | Act::ReadFolders => self.read_again(),
+            Act::Refresh => self.refresh(),
             Act::AutoBalance => self.auto_balance(),
             Act::SelectRollType => self.select_roll_type(),
             Act::SavePreset => self.save_preset(),

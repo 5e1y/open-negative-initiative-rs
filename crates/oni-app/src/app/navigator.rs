@@ -25,6 +25,7 @@ mod rows;
 mod folder_menu;
 mod reading;
 mod catch_up;
+mod freshness;
 
 /// `FolderNavigation`'s preference keys, as Swift's `UserDefaults` holds them.
 pub const BASE: &str = "navigatorBase";
@@ -89,6 +90,7 @@ pub(super) struct Nav {
     refused: Arc<std::sync::Mutex<Vec<String>>>,
     /// The rows' folders a listing or a favourite's read found offline or missing, looked at off this thread.
     presence: HashMap<String, Presence>,
+    fresh: freshness::Fresh,
 }
 
 impl Nav {
@@ -118,6 +120,7 @@ impl Nav {
             watcher: Arc::new(()),
             refused: Arc::default(),
             presence: HashMap::new(),
+            fresh: Default::default(),
         }
     }
 

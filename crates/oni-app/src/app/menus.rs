@@ -90,8 +90,8 @@ impl Ctl {
                 toggle_mode: !gallery || anchor,
                 // On the surface ⌘E confirms; elsewhere it opens on the selection, else the open photo.
                 export: exporting.map_or(open || selected > 0, |n| n > 0 && !writing),
-                recheck: read_done || !opened,
-                read_folders: opened,
+                // A read under way is the refresh already.
+                refresh: read_done || !opened,
                 show_selected: gallery && (open || selected > 0),
                 remove: count > 0,
                 restore: trash && restoring > 0,
@@ -132,8 +132,7 @@ impl Ctl {
             let live = if preparing {
                 MenuLive {
                     open: live.open,
-                    recheck: live.recheck,
-                    read_folders: live.read_folders,
+                    refresh: live.refresh,
                     screen_gamut: live.screen_gamut,
                     cycle_filter: live.cycle_filter,
                     edit_presets: live.edit_presets,

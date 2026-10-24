@@ -2873,5 +2873,40 @@
     "title": "The index waits for the Swift app's writes and never drops its table on a version it cannot read",
     "status": "done",
     "detail": "LibraryIndex::open sets a 5 s busy timeout explicitly (the Swift app shares index.sqlite and sets none); prepare_schema treats an unreadable user_version as an error instead of -1, which dropped the table (a_write_waits_for_the_other_apps_write, with an integrity check; twin: a connection with no busy handler, as Swift opens it, is refused at once)."
+  },
+  {
+    "id": 490,
+    "type": "feature",
+    "title": "A photo or a folder another app adds, removes or renames under the opened folder shows by itself",
+    "status": "done",
+    "detail": "oni-library watching: the notify crate (FSEvents on macOS, ReadDirectoryChangesW on Windows) watches the opened folder whole and the navigator's base and unfolded rows a level down, on a thread of its own; a burst is told once the disk is quiet for 500 ms (3 s at most), so a copy of 300 files is one read; sidecars, hidden files and tags count for nothing; never a volume, the home or a folder holding either. The opened folder is read again (once more if the read was running), a listed folder listed again (a_file_dropped_in_the_opened_folder_appears, twin: a folder not opened is not read once the disk has spoken of it; three_hundred_photos_copied_are_told_in_one_or_two_calls; a_burst_waits_for_the_disk_to_quiet, twin: no quiet is 300 calls; neither_a_disk_nor_the_home_is_ever_watched)."
+  },
+  {
+    "id": 491,
+    "type": "feature",
+    "title": "The window's return looks at the opened folder again",
+    "status": "done",
+    "detail": "Going to the back keeps the opened folder's listing (names only, off the interface thread); coming back lists it again and reads it again only when a photo or a folder moved, else only looks at its photos (probe_presence). It covers disks whose changes no event tells, as a network share (focus_rereads_the_opened_folder, twin: nothing moved reads nothing)."
+  },
+  {
+    "id": 492,
+    "type": "fix",
+    "title": "Recheck Originals and Read the Folders Again become one Refresh, ⌘R, that says what moved",
+    "status": "done",
+    "detail": "Refresh reads the opened folder, every favourite (as Swift's rescanAll) and every navigator listing again, then says through the notice: Nothing changed, or N photos added, N no longer in the folder, N cannot be found. Dark while a read runs; the tree's reload asks it too (refresh_says_what_changed, twin: nothing moved says so). Parity rows updated."
+  },
+  {
+    "id": 493,
+    "type": "fix",
+    "title": "The volumes' probe never waits on a drive or a mount that sleeps",
+    "status": "done",
+    "detail": "Computer::computer looks at each Windows drive letter and each /Volumes mount's realpath on a thread of its own, 400 ms at most: one that does not answer gives its last answer and is not asked again until its look lands, so an offline mapped drive or a dead network mount never holds the volumes' thread (a_mount_that_hangs_is_left_out_and_asked_once_until_it_answers, twin: the same mount answering is listed)."
+  },
+  {
+    "id": 494,
+    "type": "test",
+    "title": "A disk back within the session, and a rename changing only a letter's case",
+    "status": "done",
+    "detail": "a_disk_back_reopens_the_opened_folder: unplugged and plugged back in one session, the opened folder lists the photo added meanwhile, read once (twin: another disk arriving reads nothing). a_rename_changing_only_case_renames_and_a_true_collision_is_refused (twin: another folder's name is refused)."
   }
 ]

@@ -17,6 +17,7 @@ mod editors;
 mod export_paper_window;
 mod export_window;
 mod extended;
+mod freshness;
 mod frontier_look;
 mod gallery;
 mod gallery_leftovers;
@@ -114,6 +115,11 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::an_undo_that_cannot_put_every_photo_back_says_how_many", told::an_undo_that_cannot_put_every_photo_back_says_how_many),
     ("told::a_new_folder_refused_by_the_disk_is_said", told::a_new_folder_refused_by_the_disk_is_said),
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
+    ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
+    ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
+    ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
+    ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
+    ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),

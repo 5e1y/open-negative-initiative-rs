@@ -110,6 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ON_EXIT.with(|e| *e.borrow_mut() = Some(Box::new(move || quitting.last_writes())));
     let (pressed, cursor) = (shell.ctl.clone(), std::cell::Cell::new((0.0, 0.0)));
     let lit = shell.window.as_weak();
+    let focus = shell.ctl.clone();
     // winit names each file of one drop in turn: the drop is taken whole once every name is in.
     let (dropping, drops) = (shell.ctl.clone(), std::rc::Rc::new(std::cell::RefCell::new(Vec::<PathBuf>::new())));
     // Slint reconfigures the surface while it handles these two events: no other thread submits meanwhile.
@@ -120,6 +121,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let WindowEvent::MouseInput { state: ElementState::Pressed, button: MouseButton::Left, .. } = event {
             let (scale, (x, y)) = (f64::from(window.scale_factor()), cursor.get());
             oni_app::editors::pressed_anywhere(&pressed, (x / scale, y / scale));
+        }
+        if let WindowEvent::Focused(focused) = event {
+            focus.focus_changed(*focused);
         }
         if let WindowEvent::DroppedFile(path) = event {
             let first = drops.borrow().is_empty();

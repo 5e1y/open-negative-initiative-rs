@@ -5,6 +5,8 @@ use crate::paths::{self, holds, same};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
+mod probe;
+
 /// The ONI Trash's row in `selected` and `unfolded`: never a folder's path, which starts with `/`.
 pub const TRASH_ROW: &str = "oni-trash";
 
@@ -37,27 +39,12 @@ impl Computer {
         Computer { home: String::new(), volumes: String::new() }
     }
 
-    /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk.
+    /// The home folder, then every volume but the boot one, in the Finder's order. Reads the disk,
+    /// each drive or mount on a thread of its own: one that does not answer is left out until it does.
     pub fn computer(&self) -> Vec<String> {
-        if self.volumes == DRIVES {
-            let drives = (b'A'..=b'Z').map(|l| format!("{}:/", l as char)).filter(|d| Path::new(d).is_dir());
-            return Some(self.home.clone()).filter(|h| !h.is_empty()).into_iter().chain(drives).collect();
-        }
-        let mut mounted: Vec<String> = std::fs::read_dir(&self.volumes)
-            .map(|listing| {
-                listing
-                    .filter_map(|e| e.ok().map(|e| e.path()))
-                    .filter(|p| !p.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.')))
-                    .map(|p| paths::canonical(&p))
-                    .filter(|p| p != "/" && self.is_volume_root(p))
-                    .collect()
-            })
-            .unwrap_or_default();
-        mounted.sort_by(|a, b| paths::standard_order(a, b));
-        mounted.dedup();
-        let mut out: Vec<String> = Some(self.home.clone()).filter(|h| !h.is_empty()).into_iter().collect();
-        out.extend(mounted);
-        out
+        let home = Some(self.home.clone()).filter(|h| !h.is_empty());
+        let volumes = if self.volumes == DRIVES { probe::drives() } else { probe::mounted(&self.volumes) };
+        home.into_iter().chain(volumes).collect()
     }
 
     pub fn is_volume_root(&self, path: &str) -> bool {

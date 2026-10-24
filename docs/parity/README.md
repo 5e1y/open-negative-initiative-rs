@@ -34,7 +34,7 @@ Crop tab 8 / 0 / 0, Color tab 13 / 0 / 0, Details tab 4 / 0 / 0, De-dust 7 / 0 /
 7 / 0 / 0, bar 11 / 1 / 0, menus 35 / 1 / 0, keys 8 / 0 / 0, history 6 / 1 / 0 (done / partial /
 missing).
 
-Fourteen rows are done with no check: the traffic lights' inset, Recheck Originals and Read the Folders Again (three rows), bare
+Eleven rows are done with no check: the traffic lights' inset, bare
 keys yielding to a text field, the exclusive key surfaces, the thumbnails' proof, the ground behind
 the frame, Space held for the hand tool, the offline `--check`, the bare medal keys, the Temperature
 and Tint track ends, Show Presets Folder and Roll of the N.

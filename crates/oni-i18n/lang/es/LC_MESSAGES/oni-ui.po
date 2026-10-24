@@ -113,13 +113,9 @@ msgstr "Vincular teléfono…"
 msgid "Settings…"
 msgstr "Ajustes…"
 
-#: crates/oni-ui/ui/app.slint
-msgid "Recheck Originals"
-msgstr "Volver a comprobar los originales"
-
-#: crates/oni-ui/ui/app.slint
-msgid "Read the Folders Again"
-msgstr "Volver a leer las carpetas"
+#: crates/oni-app/src/app/navigator/freshness.rs crates/oni-ui/ui/app.slint
+msgid "Refresh"
+msgstr "Actualizar"
 
 #: crates/oni-ui/ui/app.slint
 msgid "Show the Selected Photo"
@@ -2301,6 +2297,18 @@ msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
 msgid "From “{file}”, read again each time it is saved."
 msgstr "De “{file}”, que se vuelve a leer cada vez que se guarda."
 
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "New Roll"
+msgstr "Nuevo rollo"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "The roll's folder could not be made: {e}"
+msgstr "No se pudo crear la carpeta del rollo: {e}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "{count} of the files could not be moved into the roll."
+msgstr "{count} de los archivos no se pudieron mover al rollo."
+
 #: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder"
 msgstr "Mostrar en el Finder"
@@ -2320,18 +2328,6 @@ msgstr "No se puede mostrar «{name}»: ONI no tiene acceso."
 #: crates/oni-app/src/app/gestures/told.rs
 msgid "“{name}” cannot be shown: {cause}."
 msgstr "No se puede mostrar «{name}»: {cause}."
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "New Roll"
-msgstr "Nuevo rollo"
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "The roll's folder could not be made: {e}"
-msgstr "No se pudo crear la carpeta del rollo: {e}"
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "{count} of the files could not be moved into the roll."
-msgstr "{count} de los archivos no se pudieron mover al rollo."
 
 #: crates/oni-app/src/app/help.rs
 msgid "The console cannot open."
@@ -2560,6 +2556,32 @@ msgstr "La carpeta no se pudo convertir en rollo: {cause}."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The roll could not be made a folder again: {cause}."
 msgstr "El rollo no se pudo volver a convertir en carpeta: {cause}."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "The folders were read again."
+msgstr "Se han vuelto a leer las carpetas."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "Nothing changed."
+msgstr "No ha cambiado nada."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo added."
+msgid_plural "{n} photos added."
+msgstr[0] "{n} foto añadida."
+msgstr[1] "{n} fotos añadidas."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo no longer in the folder."
+msgid_plural "{n} photos no longer in the folder."
+msgstr[0] "{n} foto ya no está en la carpeta."
+msgstr[1] "{n} fotos ya no están en la carpeta."
+
+#: crates/oni-app/src/app/navigator/freshness.rs
+msgid "{n} photo cannot be found."
+msgid_plural "{n} photos cannot be found."
+msgstr[0] "{n} foto no se encuentra."
+msgstr[1] "{n} fotos no se encuentran."
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "Favourites"

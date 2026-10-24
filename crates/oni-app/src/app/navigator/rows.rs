@@ -105,6 +105,7 @@ impl Ctl {
         n.set_opened_title(opened_pill.0.into());
         n.set_opened_help(opened_pill.1.into());
         self.publish_catch_up();
+        self.rewatch();
     }
 
     /// The listings asked and not under way, read on a few threads; each thread lands its share at once.

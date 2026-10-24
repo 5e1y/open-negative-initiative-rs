@@ -14,7 +14,7 @@ impl Ctl {
     }
 
     /// The opened folder read whole: its rolls known, then the favourites read in turn.
-    pub(in crate::app) fn navigator_read(&self) {
+    pub(in crate::app) fn navigator_read(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
             let rolls: HashSet<String> = s.survey.rolls.keys().cloned().collect();
@@ -26,6 +26,7 @@ impl Ctl {
         }
         self.start_pass();
         self.publish_navigator();
+        self.fresh_read();
     }
 
     pub(super) fn start_pass(&self) {
