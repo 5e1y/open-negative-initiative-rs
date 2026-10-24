@@ -7,7 +7,7 @@ use crate::{App, Confirm, Library, MenuLine, StockCount, TrashLine, TreeRow};
 use crate::{library, picking, system};
 use crate::tree_pick::TreePick;
 use oni_library::Entry;
-use oni_library::project::{self, Project, ProjectsFile};
+use oni_library::project::{self, Project};
 use oni_library::project_tree::{self, Node, NodeId};
 use oni_settings::film::{default_stock_id, film_stock};
 use oni_settings::{Date, Film, Id, Medal};
@@ -114,6 +114,8 @@ pub struct Organising {
     pub trash_picked: Option<String>,
     pub trashed: Vec<Entry>,
     pub projects: Vec<Project>,
+    /// `projects.json` as last read or written, which tells this app's changes from another's.
+    pub projects_read: Vec<Project>,
     pub project_ring: Option<NodeId>,
     pub project_expanded: HashSet<NodeId>,
     pub project_nodes: Vec<NodeId>,

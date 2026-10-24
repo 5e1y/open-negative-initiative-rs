@@ -210,7 +210,7 @@ impl Ctl {
         }
         let moved = {
             let s = self.state.borrow();
-            flat_fields::move_out(path, &flat_fields::presets(&s.support), s.index.as_ref())
+            flat_fields::move_out(path, &flat_fields::presets(&s.support), s.index.as_ref(), &flat_fields::Moving::through(&*s.discard))
         };
         if moved.is_none() {
             self.say(tr("The photo could not be moved to FlatField Presets."));

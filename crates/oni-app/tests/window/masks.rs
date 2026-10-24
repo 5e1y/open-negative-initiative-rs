@@ -40,12 +40,16 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
     let (asked, seen) = (chosen.clone(), shown.clone());
+    // The check's own Trash: the owner's never receives a fixture.
+    let bin = root.join("Trash");
+    std::fs::create_dir_all(&bin).unwrap();
     let options = Options {
         support: support.clone(),
         caches,
         picker: Box::new(|| None),
         mask_picker: Box::new(move || asked.borrow().clone()),
         show_folder: Box::new(move |p| seen.borrow_mut().push(p.to_path_buf())),
+        discard: Box::new(move |p| std::fs::rename(p, bin.join(p.file_name().unwrap()))),
         ..Options::default()
     };
     let shell = Shell::new(Box::new(store), engine, options).unwrap();
@@ -155,6 +159,7 @@ pub(crate) fn the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_o
     rig.pump();
     assert!(!folder.join("B.tif").exists() && !oni_settings::sidecar::url_for(&folder.join("B.tif")).exists());
     assert!(flat_fields::presets(&support).join("B.tif").exists(), "the file moved, never deleted");
+    assert!(root.join("Trash").join(oni_settings::sidecar::url_for(&folder.join("B.tif")).file_name().unwrap()).exists(), "its settings can be taken back");
     assert_eq!(ctl.state.borrow().open_path(), Some(canonical("C.tif").as_str()), "the next frame of the roll opens");
     assert_eq!(settings().flat_field, carried);
     assert!(!w.global::<App>().get_gallery());

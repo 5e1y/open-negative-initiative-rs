@@ -21,6 +21,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
     let support = timing::support();
+    // Before any write, the log included: a second launch on the same folder leaves it as it is.
+    let _instance = match oni_app::instance::hold(&support) {
+        oni_app::instance::Held::Mine(instance) => Some(instance),
+        oni_app::instance::Held::Elsewhere => {
+            oni_app::instance::refused(&support);
+            std::process::exit(2);
+        }
+        oni_app::instance::Held::Unknown(e) => {
+            eprintln!("no instance lock in {} ({e})", support.display());
+            None
+        }
+    };
     let log = timing::log_path(&support);
     match timing::open_file(&log) {
         Ok(()) => timing::line("log: oni.log, in the app's support folder"),

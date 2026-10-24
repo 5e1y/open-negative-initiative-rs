@@ -100,7 +100,9 @@ impl Ctl {
             s.nav.remembered = Some(s.nav.model.remembered());
             s.org.trash_unfolded = s.nav.model.unfolded.contains(TRASH_ROW);
             let roots = Roots::load(&s.support);
-            s.nav.favourites = Favourites::load(&s.support).unwrap_or_else(|| Favourites::seeded(&roots));
+            let read = Favourites::load(&s.support);
+            s.nav.favourites_read = read.clone().unwrap_or_default();
+            s.nav.favourites = read.unwrap_or_else(|| Favourites::seeded(&roots));
             let failure = s.save_favourites();
             let former = oni_library::library::load(&s.support).files;
             let opened = remembered_opened.or_else(|| roots.current().map(str::to_owned));

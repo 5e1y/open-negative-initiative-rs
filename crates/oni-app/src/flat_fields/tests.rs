@@ -143,27 +143,107 @@ fn a_fresh_frame_opens_on_the_colour_last_dialled_and_a_dialled_one_keeps_its_ow
     let _ = std::fs::remove_dir_all(&support);
 }
 
-#[test]
-fn a_photo_moved_out_leaves_its_sidecar_and_index_row_and_takes_a_free_name() {
-    let root = scratch("move-out");
-    let (scans, presets) = (root.join("Scans"), presets(&root));
+thread_local! {
+    /// Where the checks' Trash lays what it is handed, and each step a move took, in order.
+    static TRASH: std::cell::RefCell<(PathBuf, Vec<String>)> = std::cell::RefCell::new((PathBuf::new(), Vec::new()));
+}
+
+fn step(name: String) {
+    TRASH.with(|t| t.borrow_mut().1.push(name));
+}
+
+fn steps() -> Vec<String> {
+    TRASH.with(|t| std::mem::take(&mut t.borrow_mut().1))
+}
+
+fn named(path: &Path) -> String {
+    path.file_name().unwrap().to_string_lossy().into_owned()
+}
+
+/// A Trash of the check's own, which the user's never sees.
+fn trashed(path: &Path) -> std::io::Result<()> {
+    step(format!("trash {}", named(path)));
+    let bin = TRASH.with(|t| t.borrow().0.clone());
+    std::fs::rename(path, bin.join(named(path)))
+}
+
+fn across(_: &Path, _: &Path) -> std::io::Result<()> {
+    Err(std::io::Error::from(std::io::ErrorKind::CrossesDevices))
+}
+
+fn copied(from: &Path, to: &Path) -> std::io::Result<()> {
+    step("copy".into());
+    synced_copy(from, to)
+}
+
+fn short(from: &Path, to: &Path) -> std::io::Result<()> {
+    let bytes = std::fs::read(from)?;
+    std::fs::write(to, &bytes[..bytes.len() / 2])
+}
+
+fn flipped(from: &Path, to: &Path) -> std::io::Result<()> {
+    let mut bytes = std::fs::read(from)?;
+    bytes[3] ^= 1;
+    std::fs::write(to, &bytes)
+}
+
+/// A photo in `Scans` with its sidecar and index row, and the check's own Trash.
+fn panel(root: &Path) -> (PathBuf, String, LibraryIndex) {
+    let scans = root.join("Scans");
     std::fs::create_dir_all(&scans).unwrap();
+    std::fs::create_dir_all(root.join("Trash")).unwrap();
+    TRASH.with(|t| *t.borrow_mut() = (root.join("Trash"), Vec::new()));
     let photo = scans.join("Panel.NEF");
     std::fs::write(&photo, b"panel bytes").unwrap();
     sidecar::write(&oni_settings::PipelineSettings::default(), &photo, Default::default()).unwrap();
     let path = oni_library::paths::canonical(&photo);
     let index = LibraryIndex::open(&root.join("index.sqlite")).unwrap();
     index.upsert(&oni_library::index::Entry::new(&path, oni_settings::Date::now(), "f")).unwrap();
+    (photo, path, index)
+}
+
+#[test]
+fn a_photo_moved_out_trashes_its_sidecar_clears_its_row_and_takes_a_free_name() {
+    let root = scratch("move-out");
+    let presets = presets(&root);
+    let (photo, path, index) = panel(&root);
     std::fs::create_dir_all(&presets).unwrap();
     std::fs::write(presets.join("Panel.NEF"), b"an earlier panel").unwrap();
-    let target = move_out(&path, &presets, Some(&index)).expect("moved");
+    let same_volume = Moving::through(&trashed);
+    let target = move_out(&path, &presets, Some(&index), &same_volume).expect("moved");
     assert_eq!(target, presets.join("Panel 2.NEF"));
     assert_eq!(std::fs::read(&target).unwrap(), b"panel bytes");
     assert!(!photo.exists() && !sidecar::url_for(&photo).exists() && index.all().is_empty());
+    assert!(root.join("Trash").join(named(&sidecar::url_for(&photo))).exists(), "the settings can be taken back");
     assert_eq!(std::fs::read(presets.join("Panel.NEF")).unwrap(), b"an earlier panel", "the one already there stays");
     // Twin: a path with no file moves nothing and leaves the folder as it was.
-    assert!(move_out(&path, &presets, Some(&index)).is_none());
+    assert!(move_out(&path, &presets, Some(&index), &same_volume).is_none());
     assert_eq!(std::fs::read_dir(&presets).unwrap().count(), 2);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_move_across_volumes_syncs_checks_then_trashes_the_source() {
+    let root = scratch("move-across");
+    let presets = presets(&root);
+    let (photo, path, index) = panel(&root);
+    let target = move_out(&path, &presets, Some(&index), &Moving { rename: across, copy: copied, trash: &trashed }).expect("moved");
+    assert_eq!(std::fs::read(&target).unwrap(), b"panel bytes");
+    assert_eq!(steps(), ["copy".to_string(), "trash Panel.NEF".into(), format!("trash {}", named(&sidecar::url_for(&photo)))]);
+    assert_eq!(std::fs::read(root.join("Trash/Panel.NEF")).unwrap(), b"panel bytes", "the original sits in the Trash");
+    assert!(!photo.exists() && index.all().is_empty());
+    // Twin: a short copy, or one of the right length with a byte changed, keeps the original and its sidecar.
+    for wrong in [short as fn(&Path, &Path) -> std::io::Result<()>, flipped] {
+        let root = scratch("move-across-wrong");
+        let (photo, path, index) = panel(&root);
+        let presets = super::presets(&root);
+        assert!(move_out(&path, &presets, Some(&index), &Moving { rename: across, copy: wrong, trash: &trashed }).is_none());
+        assert_eq!(std::fs::read(&photo).unwrap(), b"panel bytes");
+        assert!(sidecar::url_for(&photo).exists() && index.all().len() == 1);
+        assert_eq!(std::fs::read_dir(&presets).unwrap().count(), 0, "the bad copy is removed");
+        assert!(steps().is_empty(), "nothing went to the Trash");
+        let _ = std::fs::remove_dir_all(&root);
+    }
     let _ = std::fs::remove_dir_all(&root);
 }
 

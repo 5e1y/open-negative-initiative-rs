@@ -204,3 +204,38 @@ fn an_index_row_keyed_in_another_spelling_is_respelt_and_never_lost() {
     index.set_label(Medal::Bronze, &stale("c.NEF")).unwrap();
     assert_eq!(index.all().iter().find(|e| e.path == spelt("c.NEF")).unwrap().label, Medal::Bronze);
 }
+
+/// The Swift app shares the file and sets no busy handler: a write of ours meeting its lock waits.
+#[test]
+fn a_write_waits_for_the_other_apps_write() {
+    let scratch = Scratch::new("index-busy");
+    let path = scratch.path().join("index.sqlite");
+    let index = LibraryIndex::open(&path).unwrap();
+    let hold = |raw: Connection, held: std::sync::mpsc::Sender<()>| {
+        std::thread::spawn(move || {
+            raw.execute_batch("BEGIN IMMEDIATE; INSERT INTO photos (path, imported_at, fingerprint) VALUES ('/swift', 0, 's')").unwrap();
+            held.send(()).unwrap();
+            std::thread::sleep(std::time::Duration::from_millis(300));
+            raw.execute_batch("COMMIT").unwrap();
+        })
+    };
+    let (held, taken) = std::sync::mpsc::channel();
+    let other = hold(Connection::open(&path).unwrap(), held);
+    taken.recv().unwrap();
+    index.upsert(&Entry::new("/ours", day1(), "o")).unwrap();
+    other.join().unwrap();
+    assert_eq!(index.count(), 2);
+    let check: String = Connection::open(&path).unwrap().query_row("PRAGMA integrity_check", [], |r| r.get(0)).unwrap();
+    assert_eq!(check, "ok");
+    // Twin: with no busy handler, as Swift opens it, the same write is refused at once.
+    let (held, taken) = std::sync::mpsc::channel();
+    let raw = Connection::open(&path).unwrap();
+    raw.execute_batch("DELETE FROM photos").unwrap();
+    let other = hold(raw, held);
+    taken.recv().unwrap();
+    let bare = Connection::open(&path).unwrap();
+    bare.busy_timeout(std::time::Duration::ZERO).unwrap();
+    let refused = bare.execute("INSERT INTO photos (path, imported_at, fingerprint) VALUES ('/bare', 0, 'b')", []);
+    other.join().unwrap();
+    assert!(refused.is_err());
+}

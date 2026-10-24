@@ -2726,5 +2726,47 @@
     "title": "Explorer gets backslashes, a share keeps its two slashes, and thumbnails leave the roaming profile",
     "status": "done",
     "detail": "reveal and show_folder hand explorer.exe the path with backslashes and no \\\\?\\ prefix (reveal_hands_explorer_backslashes; twin: the archive spelling holds '/'). suggested() keeps //server/share as one root (a_former_library_on_a_share_is_offered_on_that_share; twin: a one-slash path never becomes a share). On Windows the Thumbnails folder sits under LOCALAPPDATA when the support folder is the roaming default (windows_keeps_rebuildable_files_off_the_roaming_profile; twin: a check's own folder and other systems keep it)."
+  },
+  {
+    "id": 460,
+    "type": "fix",
+    "title": "Favourites are read again and merged before each save, and each favourite's volume is kept in a Rust-only file",
+    "status": "done",
+    "detail": "Favourites::save_merged lays this app's changes since the last read (stars added, stars taken off, renames followed) over favourites.json as it stands, so a favourite the Swift app added or removed meanwhile stays so; the file keeps Swift's {version, paths} shape (a_favourite_added_by_another_app_survives_our_save; twin: the whole save from memory loses it). bookmarks.json, which Swift never reads, keeps each favourite's volume (UUID and mount on macOS) and file id by path, noted off the interface thread; a disk away or another volume under the same path never erases the identity known (a_swift_launch_keeps_the_volume_identities; twin: the same identity inside favourites.json is gone after Swift's launch)."
+  },
+  {
+    "id": 461,
+    "type": "fix",
+    "title": "Projects are merged with projects.json as it stands before each save",
+    "status": "done",
+    "detail": "merge::save_projects reads projects.json again and merges by id: a project another app added survives, one this app deleted stays deleted, one the other deleted stays deleted unless edited here; name, description, order and members merge field by field, so a member added in Swift survives a rename in ONI; the member paths a save writes down are no edit (a_project_added_by_another_app_survives_our_save; twin: the plain save drops it; a_project_the_other_app_deleted_survives_an_edit_here)."
+  },
+  {
+    "id": 462,
+    "type": "fix",
+    "title": "A damaged preferences.json is set aside whole and the known keys go on, written atomically",
+    "status": "done",
+    "detail": "Preferences::set no longer rewrites an unparsable file with the one key: the file is renamed preferences.json.unreadable-<stamp> and the keys this holder knows are written with the new one; a file the disk refuses to read is never replaced; the write goes through oni_library::write_atomically (unique temporary, fsync, cleanup) instead of a fixed .part (a_damaged_preferences_file_is_kept_aside_not_lost; twins: a readable file is never set aside, a refused one is left as it was)."
+  },
+  {
+    "id": 463,
+    "type": "fix",
+    "title": "Moving a photo out across volumes syncs the copy, compares it byte for byte, then trashes the original",
+    "status": "done",
+    "detail": "flat_fields::move_out across volumes copies into a new file, syncs it and its folder, reads both back and compares them whole, and only then sends the original to the system Trash; a short or altered copy is removed and the original, its sidecar and its row stay. The sidecar goes to the Trash instead of being deleted, through the app's discard, so a check's Trash is its own. The moves are injectable (Moving). The dead library::move_out and its test are gone (a_move_across_volumes_syncs_checks_then_trashes_the_source; twin: a short copy, or one with a byte changed, keeps the original)."
+  },
+  {
+    "id": 464,
+    "type": "fix",
+    "title": "One app at a time on a support folder: a second launch says so and writes nothing",
+    "status": "done",
+    "detail": "main takes an exclusive lock on <support>/instance.lock (std File::try_lock, released by the system when the process ends, a crash included) before any write, the log included. A second launch prints why on stderr, shows the system's alert when launched by hand, and exits with code 2 (a_second_instance_does_not_write, which launches the real binary on its own folders; twin: once the lock is let go the same launch goes on and writes its log)."
+  },
+  {
+    "id": 465,
+    "type": "fix",
+    "title": "The index waits for the Swift app's writes and never drops its table on a version it cannot read",
+    "status": "done",
+    "detail": "LibraryIndex::open sets a 5 s busy timeout explicitly (the Swift app shares index.sqlite and sets none); prepare_schema treats an unreadable user_version as an error instead of -1, which dropped the table (a_write_waits_for_the_other_apps_write, with an integrity check; twin: a connection with no busy handler, as Swift opens it, is refused at once)."
   }
 ]

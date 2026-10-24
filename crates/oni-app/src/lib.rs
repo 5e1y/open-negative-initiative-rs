@@ -17,6 +17,7 @@ pub mod gallery;
 pub mod heal;
 pub mod histogram;
 pub mod hz;
+pub mod instance;
 #[cfg(test)]
 mod interface_drawing;
 pub mod language;
