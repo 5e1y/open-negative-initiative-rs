@@ -49,7 +49,7 @@ impl Favourites {
     pub fn save(&self, support: &Path) -> std::io::Result<()> {
         std::fs::create_dir_all(support)?;
         let node = json::to_node(self).map_err(std::io::Error::other)?;
-        crate::write_atomically(&Self::file_path(support), json::compact(&node).as_bytes())
+        crate::replace_readable(&Self::file_path(support), json::compact(&node).as_bytes())
     }
 
     /// Read again and merged with what this side changed since `read`, then written: a favourite

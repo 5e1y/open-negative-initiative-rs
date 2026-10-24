@@ -61,9 +61,11 @@ pub fn survey(support: &Path, roots: &[String]) -> Found {
     let path = table::folder(support).join(SEEN);
     let mut seen: HashMap<String, Seen> = std::fs::read(&path).ok().and_then(|d| serde_json::from_slice(&d).ok()).unwrap_or_default();
     let found = oni_library::roots::survey(&reachable, &|| true);
+    // A RAW the cloud keeps away is named once it is downloaded, never to name it.
     let raws: Vec<(PathBuf, (u64, f64))> = found
         .images
         .iter()
+        .filter(|p| !found.cloud.contains(*p))
         .map(PathBuf::from)
         .filter(|p| oni_decode::is_raw(p))
         .filter_map(|p| stamp(&p).map(|s| (p, s)))
@@ -75,11 +77,11 @@ pub fn survey(support: &Path, roots: &[String]) -> Found {
         .collect();
     let read_now = named(&fresh);
     // A file gone from a root the walk read whole leaves the list; one under a folder refused stays.
-    let listed: std::collections::HashSet<String> = raws.iter().map(|(p, _)| p.to_string_lossy().into_owned()).collect();
+    let listed: std::collections::HashSet<&str> = found.images.iter().map(String::as_str).collect();
     let before = seen.len();
     seen.retain(|p, _| {
         let read = reachable.iter().any(|r| holds(r, p)) && !found.unreadable.iter().any(|u| holds(u, p));
-        !read || listed.contains(p)
+        !read || listed.contains(p.as_str())
     });
     let changed = read_now.iter().any(Option::is_some) || seen.len() != before;
     for ((p, _), s) in fresh.iter().zip(read_now) {

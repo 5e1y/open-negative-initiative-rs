@@ -158,7 +158,8 @@ impl Ctl {
         let (rows, gone): (Vec<_>, Vec<_>) = s
             .rows
             .iter()
-            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING))
+            // A file the cloud keeps away is drawn once opened, never downloaded by the pass.
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path))
             .map(|e| (e.path.clone(), s.tile_key(e)))
             .partition(|(path, _)| s.presence(path).is_present());
         let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();

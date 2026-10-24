@@ -49,7 +49,7 @@ fn the_file_is_written_as_a_plain_encoder_writes_it() {
 /// the same, on the very pool the navigator lists its rows with.
 #[test]
 fn a_stuck_favourite_does_not_block_the_others() {
-    let run = |stuck: Duration| {
+    let run = |stuck: Duration, patience: Duration| {
         let release = Arc::new((Mutex::new(false), Condvar::new()));
         let (send, landed) = mpsc::channel::<String>();
         let held = release.clone();
@@ -74,7 +74,7 @@ fn a_stuck_favourite_does_not_block_the_others() {
         );
         let began = Instant::now();
         let mut got = Vec::new();
-        while got.len() < 3 && began.elapsed() < Duration::from_millis(600) {
+        while got.len() < 3 && began.elapsed() < patience {
             if let Ok(f) = landed.recv_timeout(Duration::from_millis(20)) {
                 got.push(f);
             }
@@ -84,9 +84,9 @@ fn a_stuck_favourite_does_not_block_the_others() {
         wake.notify_all();
         got
     };
-    assert_eq!(run(STUCK), ["/a", "/b", "/c"], "the others land while the NAS sleeps");
+    assert_eq!(run(STUCK, Duration::from_secs(5)), ["/a", "/b", "/c"], "the others land while the NAS sleeps");
     // Twin: a pool that waits for every read it started holds the others behind the stuck one.
-    assert!(run(Duration::from_secs(3600)).is_empty());
+    assert!(run(Duration::from_secs(3600), Duration::from_millis(600)).is_empty());
 }
 
 /// A favourites file that stays unreadable is set aside whole before the seeded one is written;

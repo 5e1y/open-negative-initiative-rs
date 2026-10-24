@@ -3027,5 +3027,12 @@
     "title": "The gallery's undo history is bounded in bytes too",
     "status": "done",
     "detail": "scale-history-unbounded-bytes. Beside its hundred steps, GalleryHistory holds at most 256 MB of settings, as their JSON weighs them; the oldest steps go first and the newest stays whatever its size (the_stack_keeps_its_steps_under_a_ceiling_of_bytes, twin: counted by steps alone every gesture is kept)."
+  },
+  {
+    "id": 509,
+    "type": "fix",
+    "title": "An unreadable favourites or projects file is never replaced",
+    "status": "done",
+    "detail": "Data loss found by lot 15. favourites.json or projects.json that the disk refuses (access denied, a disk error) read as never written, so the launch re-seeded the favourites from roots.json and the first project gesture saved an empty list over the user's file. Favourites::save and project::save now go through replace_readable: a file that exists and cannot be read is kept as it is and the save refused and said; a file that does not parse is still set aside by read_json; a missing one is made (an_unreadable_favourites_file_is_never_replaced, an_unreadable_projects_file_is_never_replaced, chmod 000 and skipped under root; twin: a missing file is created). The thumbnails pass and the camera search also leave a cloud placeholder unread."
   }
 ]

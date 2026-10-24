@@ -73,6 +73,18 @@ pub fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io::Result
     result
 }
 
+/// `write_atomically` over a small file this app can read, or over none: a file the disk refuses
+/// (access denied, a disk error) is kept as it is and the write refused, never a blank in its place.
+pub fn replace_readable(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<()> {
+    match std::fs::read(path) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+            let file = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            Err(std::io::Error::new(e.kind(), oni_i18n::tr!("{file} cannot be read, so it is kept as it is: {error}", file = file, error = e)))
+        }
+        _ => write_atomically(path, bytes),
+    }
+}
+
 /// A JSON file of the support folder, `None` when absent or unreadable; one that stays unreadable,
 /// read again after another app's write would have landed, is set aside before anything writes it.
 pub fn read_json<T: serde::de::DeserializeOwned>(path: &std::path::Path) -> Option<T> {

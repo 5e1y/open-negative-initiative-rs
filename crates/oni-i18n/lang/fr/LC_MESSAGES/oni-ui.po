@@ -4159,6 +4159,10 @@ msgstr "Windows refuse « {c} » dans un nom."
 msgid "Windows keeps “{name}” for a device."
 msgstr "Windows réserve « {name} » à un périphérique."
 
+#: crates/oni-library/src/lib.rs
+msgid "{file} cannot be read, so it is kept as it is: {error}"
+msgstr "{file} est illisible, il est donc gardé tel quel : {error}"
+
 #: crates/oni-library/src/navigator.rs
 msgid "Computer"
 msgstr "Ordinateur"
