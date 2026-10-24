@@ -121,8 +121,17 @@ export component Picture inherits Rectangle {
     }
 }
 
+// A rule across a layout, or `vertical` between two columns; `hairline` the half-point one.
+// Bounded across alone, so a layout stretches it along its length; outside one, give it a size.
 export component Divider inherits Rectangle {
-    height: Stroke.line;
+    in property <bool> vertical;
+    in property <bool> hairline;
+    property <length> thickness: root.hairline ? Stroke.hairline : Stroke.line;
+    property <length> unbounded: 100000px;
+    min-width: root.vertical ? root.thickness : 0px;
+    max-width: root.vertical ? root.thickness : root.unbounded;
+    min-height: root.vertical ? 0px : root.thickness;
+    max-height: root.vertical ? root.unbounded : root.thickness;
     background: Colour.separator;
 }
 

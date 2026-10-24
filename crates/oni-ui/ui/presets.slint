@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row } from "ds/ds.slint";
+import { Space, PresetStyle, PanelSheet, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -230,7 +230,7 @@ export component PresetEditorSheet inherits PanelSheet {
                     spacing: Space.xxs;
                     alignment: start;
                     for card[i] in Presets.rows: Row {
-                        rounded: true;
+                        form: RowForm.sidebar;
                         badge: card.abbreviation;
                         title: card.name;
                         detail: card.carries;
@@ -241,7 +241,7 @@ export component PresetEditorSheet inherits PanelSheet {
                     }
                 }
             }
-            VerticalRule { }
+            Divider { vertical: true; hairline: true; }
             // One instance per selected preset: its fields start from that preset's values.
             for instance in Presets.form-instance: Scroller {
                 horizontal-stretch: 1;

@@ -1,9 +1,10 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
-import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, RowStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips, Divider } from "base.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 import { NavigatorStyle } from "folders.slint";
+import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
 
 // A line of a context menu: a rule above it, out of reach, or opening a submenu Rust lays in its place.
@@ -11,37 +12,31 @@ export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
 
 export struct FolderChoice { title: string, current: bool }
 
-// One line of a menu: its word, its shortcut, a hover band; a folder line its glyph and its check at the end.
+// One line of a menu: its check, its word, its shortcut, the accent's band under the pointer.
 export component MenuEntry inherits Rectangle {
     in property <string> text;
     in property <string> shortcut;
     in property <bool> enabled: true;
     in property <bool> checked;
-    in property <bool> folder;
     in property <Look> look: Look.live;
     callback activated();
     property <bool> hovered: root.enabled && (area.has-hover || root.look != Look.live);
     height: MenuStyle.row;
     border-radius: ButtonStyle.small-radius;
-    background: !root.hovered ? Colour.raised.transparentize(1) : root.folder ? Colour.hover : Colour.accent;
+    background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
     opacity: root.enabled ? 1 : State.disabled;
     accessible-role: button;
     accessible-label: root.text;
     HorizontalLayout {
-        padding-left: root.folder ? Space.xs : Space.s;
-        padding-right: root.folder ? Space.xs : Space.s;
+        padding-left: Space.s;
+        padding-right: Space.s;
         spacing: Space.s;
-        if !root.folder: Rectangle {
+        Rectangle {
             width: ButtonStyle.small-icon;
             if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
         }
-        if root.folder: VerticalLayout { alignment: center; Icon { source: Icons.folder; width: RowStyle.icon; height: RowStyle.icon; } }
         Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
-        if !root.folder: Label { text: root.shortcut; tone: Tone.secondary; }
-        if root.folder && root.checked: VerticalLayout {
-            alignment: center;
-            Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
-        }
+        Label { text: root.shortcut; tone: Tone.secondary; }
     }
     area := TouchArea {
         enabled: root.enabled;
@@ -94,11 +89,12 @@ export component Menu inherits PopupWindow {
                 activated => { root.chosen(i); }
             }
         }
-        for choice[i] in root.choices: MenuEntry {
-            folder: true;
-            text: choice.title;
+        for choice[i] in root.choices: Row {
+            form: RowForm.menu;
+            kind: RowKind.folder;
+            title: choice.title;
             checked: choice.current;
-            activated => { root.chosen(i); }
+            clicked => { root.chosen(i); }
         }
     }
 }

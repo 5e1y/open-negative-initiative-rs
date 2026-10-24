@@ -2334,5 +2334,33 @@
     "title": "Sliders as Swift's DSSlider: the knob's hover, settle and the wheel everywhere",
     "status": "done",
     "detail": "Seen on the board after #320 and #321. A disabled slider never grows its knob (the board's Disabled column did). The stepped slider grows its knob and shows the grab cursor over the knob alone, as DSSlider and the continuous one; its name's double click and tooltip are off while disabled, and its ± keys dim with it. The knob follows the hand unsprung and settles on a value arriving from elsewhere (a reset, an undo, another photo) along Motion.settle (DS.Motion.settle's 0.38 s response, eased out), never while held or within Motion.settle of a scroll event; the stepped slider used to lag its slide by 0.14 s. The levels track shows the grab cursor within a handle's grab, its hover measured from the track's origin (it was a half-knob off), and its handles settle the same way while no hand is on it. Every slider takes the wheel as DSScrollAdjust does: the Brush Size (now a BrushSlider wrapper), the export's Quality and Prepare the Roll's sliders, which ignored it, move along their track and run their release's work (the brush and Picker Size kept, the export weighed) once the scroll rests, through Ctl::slider_scrolled; a scroll across a track is still left to the pane. Ink.primary has its own branch in Inks.of. Window checks: the brush, the quality and the Picker Size scroll along and refuse a scroll across (twins), the Picker Size written only once the scroll rests."
+  },
+  {
+    "id": 340,
+    "type": "refactor",
+    "title": "One RowTree lays the archive's and the projects' trees",
+    "status": "done",
+    "detail": "library_tree.slint and project_tree.slint laid two near-identical trees: the Scroller, the TouchArea under no row, each Rust-laid row as a Row, a TileView with its thumbnail's TouchArea or a renamed Row, then the pinned Row over them. Both are one app-side RowTree (ui/row_tree.slint): rows, pin, content-height, viewport-y both ways, indexed callbacks, projects (its kinds) and draggable (a press moved carries the pick); the projects' DropRing, DropLine and drag chip are its children. project_tree.slint is gone, with its broken indentation. The archive's pinned row now carries the roll's stock artwork, which it dropped (a pinned roll showed the film-roll glyph). No pixel moves otherwise."
+  },
+  {
+    "id": 341,
+    "type": "refactor",
+    "title": "Row's form: list, navigator, sidebar; the sheets' side lists rounded",
+    "status": "done",
+    "detail": "Row takes form: list | navigator | sidebar in place of the rounded, quiet, folds, open and absent props repeated by the navigator's folders and trash, the board and the catalogue; NavigatorStyle.absent (0.4) was State.disabled and is gone. The sheets' side lists take the sidebar form, rounded as the presets' already were: Settings' sections, the board's pages and the Paper Profiles makers. As PaperProfilesSheet.group, the chosen maker shows on the hover's band (picked) and each group's heading is a Row of the new heading kind: tertiary, out of reach, an xs above its first line. Visible: Settings' and the papers' rounded bands, the papers' choice on the hover band, its rows an xs lower."
+  },
+  {
+    "id": 342,
+    "type": "refactor",
+    "title": "Divider draws every rule, across or vertical, line or hairline",
+    "status": "done",
+    "detail": "Divider gets vertical and hairline and is bounded across alone, so a layout stretches it along its length. It absorbs VerticalRule (0.5 pt, Settings, the presets' editor, the board) and the rule Row drew by hand under a pinned row. No pixel moves."
+  },
+  {
+    "id": 343,
+    "type": "refactor",
+    "title": "The folder pill's choices are Rows in the menu form",
+    "status": "done",
+    "detail": "MenuEntry's folder mode drew a pill's ancestors as a second kind of line; they are Rows in a new menu form (kind folder, no chevron zone, its glyph in its own width, a check at the end, MenuStyle.row tall) and MenuEntry keeps the menus' words alone. Slight: the band's corner 6 to 8 pt (Radius.badge), the check 4 pt further in."
   }
 ]

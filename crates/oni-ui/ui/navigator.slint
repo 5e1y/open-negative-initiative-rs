@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -101,12 +101,8 @@ component Rows inherits Scroller {
         padding-right: Space.s;
         for row[i] in Navigator.rows: VerticalLayout {
             if !row.renaming: Row {
-                rounded: true;
-                quiet: true;
+                form: RowForm.navigator;
                 starrable: true;
-                folds: false;
-                open: false;
-                absent: NavigatorStyle.absent;
                 title: row.title;
                 help: row.path;
                 depth: row.depth;
@@ -132,9 +128,7 @@ component Rows inherits Scroller {
         if Navigator.at-computer: VerticalLayout {
             for line[i] in root.trash-rows: Row {
                 kind: RowKind.trash;
-                rounded: true;
-                quiet: true;
-                folds: false;
+                form: RowForm.navigator;
                 title: line.title;
                 trail: line.trail;
                 caption: line.count;

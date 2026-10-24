@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, PreviewSlot, PickerFace, Popover, BoardSheet, BoardCard, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout } from "ds/ds.slint";
+import { Icons, Space, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, PreviewSlot, PickerFace, Popover, BoardSheet, BoardCard, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -323,20 +323,23 @@ export component PaperSheet inherits BoardSheet {
             spacing: Space.m;
             alignment: start;
             VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("DOWNLOAD HERE"); } }
+                Row { kind: RowKind.heading; title: @tr("DOWNLOAD HERE"); }
+                // `PaperProfilesSheet`: the chosen maker on the hover's band.
                 for name[i] in Exporting.paper-direct: Row {
+                    form: RowForm.sidebar;
                     title: name;
-                    selected: i == Exporting.paper-source;
+                    picked: i == Exporting.paper-source;
                     clicked => { Exporting.paper-picked(i); }
                     glyph: Icons.archive;
                     has-glyph: true;
                 }
             }
             VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("ON THE MAKER’S SITE"); } }
+                Row { kind: RowKind.heading; title: @tr("ON THE MAKER’S SITE"); }
                 for name[i] in Exporting.paper-browsed: Row {
+                    form: RowForm.sidebar;
                     title: name;
-                    selected: i + Exporting.paper-direct-count == Exporting.paper-source;
+                    picked: i + Exporting.paper-direct-count == Exporting.paper-source;
                     clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
                     glyph: Icons.arrow-right;
                     has-glyph: true;

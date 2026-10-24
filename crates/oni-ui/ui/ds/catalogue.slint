@@ -7,7 +7,7 @@ import { ButtonKind, ButtonSize, Look, SliderFill, Button, ButtonGroup, Toggle, 
 import { Tabs } from "tabs.slint";
 import { HelpMark, Section, Dialog } from "containers.slint";
 import { TileView, TileHeading, Scroller } from "collections.slint";
-import { RowKind, Row } from "row.slint";
+import { RowKind, RowForm, Row } from "row.slint";
 import { MenuEntry, MenuPanel, Menu, Picker } from "menu.slint";
 import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
@@ -353,8 +353,8 @@ export component Catalogue inherits AppWindow {
                     MedalPicker { current: 2; }
                     MedalPicker { current: -1; }
                     DateFields { month: "4"; day: "15"; year: "2026"; }
-                    Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: "ONI Trash"; caption: "3"; expandable: true; expanded: true; action: "RESTORE"; action-help: "Restore every photo in the ONI Trash"; }
-                    Row { kind: RowKind.trash; rounded: true; quiet: true; folds: false; title: "Roll #8"; trail: "Negs/"; caption: "2"; depth: 1; picked: true; }
+                    Row { kind: RowKind.trash; form: RowForm.navigator; title: "ONI Trash"; caption: "3"; expandable: true; expanded: true; action: "RESTORE"; action-help: "Restore every photo in the ONI Trash"; }
+                    Row { kind: RowKind.trash; form: RowForm.navigator; title: "Roll #8"; trail: "Negs/"; caption: "2"; depth: 1; picked: true; }
                     EmptyState { title: "No Gold Photos"; detail: "Cycle the filter (⌘L) to see the others."; }
                 }
                 Group {

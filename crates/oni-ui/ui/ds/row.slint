@@ -1,15 +1,21 @@
 // Every line of a list or a tree: a title, its kind's glyph and chevron, a caption, a path before it,
 // a second line, a tint's badge, a star, a key on hover, and the title typed over while renamed.
-import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Tips } from "base.slint";
+import { Colour, Space, Radius, Stroke, State, RowStyle, FieldStyle, MenuStyle } from "theme.slint";
+import { Label, Icon, TextRole, Tone, Tips, Divider } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { Icons } from "icons.slint";
 import { Look, Button, ButtonKind, ButtonSize, RenameField } from "controls.slint";
 import { NavigatorStyle } from "folders.slint";
 import { FormStyle } from "forms.slint";
 
-// `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders.
-export enum RowKind { none, folder, opened, roll, photo, project, trash }
+// `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders;
+// `heading` names the lines under it, in the tertiary ink, out of reach.
+export enum RowKind { none, folder, opened, roll, photo, project, trash, heading }
+
+// `list` a tree's or a list's line; `navigator` a folder's or the trash's above the tree: rounded,
+// its title quiet, its chevron a click, its glyph shut; `sidebar` a sheet's side list, rounded;
+// `menu` a folder pill's choice: rounded, no chevron, a check at its end.
+export enum RowForm { list, navigator, sidebar, menu }
 
 export component Row inherits Rectangle {
     in property <string> title;
@@ -23,12 +29,9 @@ export component Row inherits Rectangle {
     in property <string> help;
     in property <int> depth;
     in property <RowKind> kind: RowKind.none;
+    in property <RowForm> form: RowForm.list;
     in property <bool> expandable;
     in property <bool> expanded;
-    // A folder's glyph drawn open, as it is while its rows show; a navigator folder opens it only when opened.
-    in property <bool> open: root.expanded;
-    // A press on the chevron folds the row instead of clicking it.
-    in property <bool> folds: root.expandable;
     // `TreeRowChrome.RowIcon.stock`: a roll's stock artwork in place of its glyph.
     in property <image> stock;
     in property <bool> has-stock;
@@ -38,13 +41,11 @@ export component Row inherits Rectangle {
     in property <bool> selected;
     // The hover band held, as a navigator folder picked or a trash line chosen.
     in property <bool> picked;
-    // The title in the secondary ink unless selected or picked.
-    in property <bool> quiet;
-    in property <bool> rounded;
+    // A menu's choice that is the current one.
+    in property <bool> checked;
     // Pinned at the top of its tree: the ground under it, a rule below.
     in property <bool> pinned;
     in property <bool> present: true;
-    in property <float> absent: State.disabled;
     // The star: lit on a favourite, shown under the pointer on any row that can be starred.
     in property <bool> starrable;
     in property <bool> favourite;
@@ -75,23 +76,32 @@ export component Row inherits Rectangle {
     // What the last left press held, ⌘ (or Ctrl) and ⇧, for `clicked` to read.
     out property <bool> command;
     out property <bool> shift;
-    property <bool> hovered: area.has-hover || root.look != Look.live;
-    property <bool> tree: root.kind != RowKind.none;
+    property <bool> hovered: !root.heading && (area.has-hover || root.look != Look.live);
+    property <bool> heading: root.kind == RowKind.heading;
+    property <bool> tree: root.kind != RowKind.none && !root.heading;
+    property <bool> navigator: root.form == RowForm.navigator;
+    property <bool> choice: root.form == RowForm.menu;
+    // A folder's glyph drawn open while its rows show; a navigator's opens only on the opened folder.
+    property <bool> open: !root.navigator && root.expanded;
+    // A press on the chevron folds the row instead of clicking it.
+    property <bool> folds: root.form == RowForm.list && root.expandable;
+    // The title in the secondary ink unless selected or picked.
+    property <bool> quiet: root.navigator;
     property <bool> badged: root.badge != "";
     property <length> indent: root.depth * RowStyle.indent;
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
-    height: root.detail != "" ? row.preferred-height : RowStyle.height;
-    border-radius: root.rounded ? Radius.badge : 0px;
+    height: root.choice ? MenuStyle.row : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
+    border-radius: root.form != RowForm.list ? Radius.badge : 0px;
     property <brush> band: root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
-    opacity: root.present ? 1 : root.absent;
+    opacity: root.present ? 1 : State.disabled;
     accessible-role: list-item;
     accessible-label: root.title;
     if root.pinned: Rectangle { background: root.band; }
     area := TouchArea {
         property <bool> folding: root.fold-zone > 0 && self.mouse-x < RowStyle.padding + root.indent + root.fold-zone;
-        enabled: !root.renaming;
+        enabled: !root.renaming && !root.heading;
         clicked => {
             if (self.folding) {
                 root.folded();
@@ -126,13 +136,14 @@ export component Row inherits Rectangle {
             : RowStyle.padding + root.indent;
         padding-right: root.badged ? Space.xs : RowStyle.padding;
         padding-top: root.badged ? Space.xs : 0px;
-        padding-bottom: root.badged ? Space.xs : 0px;
+        // `PaperProfilesSheet.group`: a heading an `xs` above its first line.
+        padding-bottom: root.badged || root.heading ? Space.xs : 0px;
         spacing: root.badged ? Space.s : RowStyle.gap;
         if root.badged: VerticalLayout {
             alignment: center;
             Badge { tone: BadgeTone.tint; text: root.badge; fill: root.badge-fill; ink: root.badge-ink; }
         }
-        if root.tree && !root.renaming: Rectangle {
+        if root.tree && !root.renaming && !root.choice: Rectangle {
             width: RowStyle.chevron-zone;
             if root.expandable: Icon {
                 source: root.expanded ? Icons.chevron-down : Icons.chevron-right;
@@ -140,8 +151,9 @@ export component Row inherits Rectangle {
                 height: RowStyle.chevron;
             }
         }
+        // A menu holds no stock, so its glyph takes only its own width.
         if root.tree && !root.renaming: Rectangle {
-            width: RowStyle.slot;
+            width: root.choice ? RowStyle.icon : RowStyle.slot;
             if root.has-stock: Image {
                 source: root.stock;
                 width: RowStyle.slot;
@@ -164,7 +176,7 @@ export component Row inherits Rectangle {
             horizontal-stretch: 1;
             Label {
                 text: root.title;
-                tone: root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
+                tone: root.heading ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
                 overflow: elide;
             }
             if root.detail != "": Label { text: root.detail; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
@@ -193,8 +205,10 @@ export component Row inherits Rectangle {
                 clicked => { root.starred(); }
             }
         }
+        // A count an `xs` further off the key, so the two never read as one.
         if root.action != "" && root.hovered: VerticalLayout {
             alignment: center;
+            padding-left: root.caption != "" ? Space.xs : 0px;
             Button {
                 text: root.action;
                 size: ButtonSize.small;
@@ -202,10 +216,14 @@ export component Row inherits Rectangle {
                 clicked => { root.acted(); }
             }
         }
+        if root.choice && root.checked: VerticalLayout {
+            alignment: center;
+            Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
+        }
     }
-    if root.pinned: Rectangle {
-        y: parent.height - Stroke.hairline;
+    if root.pinned: Divider {
+        hairline: true;
+        y: parent.height - self.height;
         height: Stroke.hairline;
-        background: Colour.separator;
     }
 }

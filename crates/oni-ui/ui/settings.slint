@@ -1,7 +1,7 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, VerticalRule, Label, Tone, TextRole, Row, Toggle } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, Tone, TextRole, Row, Toggle, Divider, RowForm } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -165,12 +165,13 @@ export component SettingsSheet inherits Sheet {
             width: SheetStyle.settings-rail;
             alignment: start;
             for name[i] in [@tr("General"), @tr("Editor"), @tr("Frontier look"), @tr("Phone"), @tr("About")]: Row {
+                form: RowForm.sidebar;
                 title: name;
                 selected: AppSettings.section == i;
                 clicked => { AppSettings.section = i; }
             }
         }
-        VerticalRule { }
+        Divider { vertical: true; hairline: true; }
         VerticalLayout {
             horizontal-stretch: 1;
             min-height: SheetStyle.settings-height;

@@ -1,0 +1,141 @@
+// `TreeEngine`'s column, the archive's or the projects': Rust lays every row, a photo as a name or a
+// thumbnail, holds the open row under the top and scrolls to the selection.
+import { Scroller, RowKind, TileView, CardStyle, Row } from "ds/ds.slint";
+import { TreeRow, TreePin } from "library.slint";
+
+export component RowTree inherits HorizontalLayout {
+    in property <[TreeRow]> rows;
+    in property <TreePin> pin;
+    in property <length> content-height;
+    // The column's scroll, both ways: Rust centres the selection, the wheel moves it.
+    in-out property <length> viewport-y;
+    // The projects' tree: a row's kind 1 a project, else a photo; the archive's 0 a folder, 1 a roll, 2 a photo.
+    in property <bool> projects;
+    // A row's left press moved carries the pick, as the projects' rows do.
+    in property <bool> draggable;
+    // The column created at its size, then each later size; a scroll, which may pin another row.
+    callback shown(length, length);
+    callback resized(length, length);
+    callback scrolled();
+    // The content under no row, its gaps included: it drops the picks and the ring.
+    callback empty-clicked();
+    callback row-clicked(int, bool, bool);
+    callback row-double-clicked(int);
+    callback row-folded(int);
+    // Whether a row's right click has a menu to show.
+    callback row-menu(int) -> bool;
+    // That menu, at the pointer in window coordinates.
+    callback open-menu(length, length);
+    // A drag from its press to the pointer, in the content's coordinates; its release or cancel.
+    callback row-dragged(int, length, length, length, length);
+    callback drag-ended(bool);
+    callback rename-committed(int, string);
+    callback rename-cancelled();
+    callback rename-edited(string);
+    callback pin-clicked(bool, bool);
+    pure function kind(k: int) -> RowKind {
+        root.projects ? (k == 1 ? RowKind.project : RowKind.photo) : k == 0 ? RowKind.folder : k == 1 ? RowKind.roll : RowKind.photo
+    }
+    padding-left: CardStyle.inset;
+    padding-right: CardStyle.inset;
+    Rectangle {
+        clip: true;
+        Scroller {
+            content-height: root.content-height;
+            content-y <=> root.viewport-y;
+            init => { root.shown(self.width, self.height); }
+            changed width => { root.resized(self.width, self.height); }
+            changed height => { root.resized(self.width, self.height); }
+            changed content-y => { root.scrolled(); }
+            TouchArea {
+                width: parent.width;
+                height: root.content-height;
+                clicked => { root.empty-clicked(); }
+            }
+            for row[i] in root.rows: Rectangle {
+                x: row.x;
+                y: row.y;
+                width: row.width;
+                height: row.height;
+                if !row.thumb && !row.renaming: Row {
+                    width: parent.width;
+                    depth: row.depth;
+                    title: row.title;
+                    caption: row.caption;
+                    kind: root.kind(row.kind);
+                    stock: row.stock;
+                    has-stock: row.has-stock;
+                    expandable: row.expandable;
+                    expanded: row.expanded;
+                    selected: row.selected;
+                    clicked => { root.row-clicked(i, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(i); }
+                    folded => { root.row-folded(i); }
+                    menu(x, y) => {
+                        if (root.row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                    }
+                    dragged(px, py, x, y) => { if (root.draggable) { root.row-dragged(i, row.x + px, row.y + py, row.x + x, row.y + y); } }
+                    released(dropped) => { if (root.draggable) { root.drag-ended(dropped); } }
+                }
+                if row.thumb: TileView {
+                    width: parent.width;
+                    picture-height: parent.width * 2 / 3;
+                    picture: row.picture;
+                    caption: row.title;
+                    selected: row.selected;
+                    medal: row.medal;
+                    missing: row.missing;
+                    rgb: row.rgb;
+                }
+                if row.thumb: TouchArea {
+                    property <bool> command;
+                    property <bool> shift;
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            self.command = event.modifiers.control || event.modifiers.meta;
+                            self.shift = event.modifiers.shift;
+                        }
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.row-menu(i)) {
+                            root.open-menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                        }
+                        if (root.draggable && ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel)) {
+                            root.drag-ended(event.kind == PointerEventKind.up);
+                        }
+                    }
+                    moved => { if (root.draggable && self.pressed) { root.row-dragged(i, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
+                    clicked => { root.row-clicked(i, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(i); }
+                }
+                // `rename`: a double click types over a folder's or a project's name.
+                if row.renaming: Row {
+                    renaming: true;
+                    width: parent.width;
+                    title: row.title;
+                    depth: row.depth;
+                    committed(t) => { root.rename-committed(i, t); }
+                    cancelled => { root.rename-cancelled(); }
+                    edited(t) => { root.rename-edited(t); }
+                }
+            }
+            // Over the rows, the marks a drag lays.
+            @children
+        }
+        if root.pin.shown: Row {
+            pinned: true;
+            expandable: true;
+            expanded: true;
+            y: root.pin.push;
+            width: parent.width;
+            depth: root.pin.row.depth;
+            title: root.pin.row.title;
+            caption: root.pin.row.caption;
+            kind: root.projects ? RowKind.project : root.pin.row.kind == 1 ? RowKind.roll : RowKind.folder;
+            stock: root.pin.row.stock;
+            has-stock: root.pin.row.has-stock;
+            selected: root.pin.row.selected;
+            clicked => { root.pin-clicked(self.command, self.shift); }
+            double-clicked => { root.row-double-clicked(root.pin.index); }
+            folded => { root.row-folded(root.pin.index); }
+        }
+    }
+}

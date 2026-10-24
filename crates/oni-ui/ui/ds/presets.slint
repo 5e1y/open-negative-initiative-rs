@@ -1,5 +1,5 @@
-// The presets' pieces: a card on its tint, the card that makes one, a swatch, the editor's row, the
-// sheet's panel and the rule that splits it.
+// The presets' pieces: a card on its tint, the card that makes one, a swatch, the editor's row and
+// the sheet's panel.
 import { Colour, Space, Radius, Stroke, State, SheetStyle } from "theme.slint";
 import { PresetStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
@@ -82,10 +82,4 @@ export component PanelSheet inherits Rectangle {
             @children
         }
     }
-}
-
-// The rule between two columns.
-export component VerticalRule inherits Rectangle {
-    width: Stroke.hairline;
-    background: Colour.separator;
 }

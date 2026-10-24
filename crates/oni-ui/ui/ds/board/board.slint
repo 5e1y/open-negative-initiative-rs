@@ -1,6 +1,6 @@
 // The design system's board: one base component a page, each variant a row, its live state and every
 // state it can be forced into a column; the list on the left or the arrow keys pick the page.
-import { Space, AppWindow, Scroller, Row, VerticalRule, TipLayer } from "../ds.slint";
+import { Space, AppWindow, Scroller, Row, TipLayer, Divider, RowForm } from "../ds.slint";
 import { BoardStyle } from "kit.slint";
 import { TextPage, BadgePage } from "text.slint";
 import { ButtonPage } from "buttons.slint";
@@ -52,7 +52,7 @@ export component Board inherits AppWindow {
                 padding: Space.s;
                 alignment: start;
                 for name[i] in root.titles: Row {
-                    rounded: true;
+                    form: RowForm.sidebar;
                     title: name;
                     selected: i == root.family;
                     clicked => {
@@ -61,7 +61,7 @@ export component Board inherits AppWindow {
                     }
                 }
             }
-            rule := VerticalRule { }
+            rule := Divider { vertical: true; hairline: true; }
             scroller := Scroller {
                 horizontal-stretch: 1;
                 content-height: page.preferred-height;

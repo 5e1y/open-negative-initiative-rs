@@ -1,26 +1,25 @@
 // The board's pickers and menus: Picker in each face and form, its menu dropping in the live column,
 // MenuEntry in each state, MenuPanel holding them, then MedalPicker.
-import { MenuStyle, Look, Divider, MenuLine, FolderChoice, MenuEntry, MenuPanel, PickerFace, Picker, MedalPicker } from "../ds.slint";
+import { MenuStyle, Look, Divider, MenuLine, FolderChoice, MenuEntry, MenuPanel, PickerFace, Picker, MedalPicker, Row, RowKind, RowForm } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // A menu line live (a click checks it), hovered, disabled, checked.
 component EntryStates inherits Line {
     in property <string> text;
     in property <string> shortcut;
-    in property <bool> folder;
     live := Fill {
         span: MenuStyle.width;
         property <bool> checked;
-        MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; checked: live.checked; activated => { live.checked = !live.checked; } }
+        MenuEntry { text: root.text; shortcut: root.shortcut; checked: live.checked; activated => { live.checked = !live.checked; } }
     }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; look: Look.hover; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; enabled: false; } }
-    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; folder: root.folder; checked: true; } }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; look: Look.hover; } }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; enabled: false; } }
+    Fill { span: MenuStyle.width; MenuEntry { text: root.text; shortcut: root.shortcut; checked: true; } }
 }
 
 export component MenuPage inherits Page {
     title: "Picker and Menu";
-    note: "Picker: face (field, pill, chip), label, prefix, value, entries + current, lines, choices, enabled, pressable, help, look; open and chosen; one hover ground for every face. MenuEntry: text, shortcut, checked, folder, enabled, look.";
+    note: "Picker: face (field, pill, chip), label, prefix, value, entries + current, lines, choices, enabled, pressable, help, look; open and chosen; one hover ground for every face. MenuEntry: text, shortcut, checked, enabled, look. A folder pill's choices are Rows in the menu form.";
     property <[MenuLine]> lines: [
         { text: "Negs", enabled: true, rule: false, opens: false },
         { text: "Pictures", enabled: true, rule: false, opens: false },
@@ -103,11 +102,10 @@ export component MenuPage inherits Page {
         EntryStates { label: "a word"; text: "Reveal in Finder"; }
         EntryStates { label: "with a shortcut"; text: "Copy Settings"; shortcut: "⌘⇧C"; }
         EntryStates { label: "opening a submenu"; text: "Move to"; shortcut: "›"; }
-        EntryStates { label: "folder"; text: "Negs"; folder: true; }
     }
     Group {
         title: "MenuPanel";
-        states: ["Live", "Each state, a rule", "Folder lines"];
+        states: ["Live", "Each state, a rule", "A pill's folders (Row, menu form)"];
         span: MenuStyle.width;
         Line {
             label: "as a Menu draws it";
@@ -132,9 +130,9 @@ export component MenuPage inherits Page {
             Cell {
                 span: MenuStyle.width;
                 MenuPanel {
-                    MenuEntry { folder: true; text: "Negs"; checked: true; }
-                    MenuEntry { folder: true; text: "Pictures"; look: Look.hover; }
-                    MenuEntry { folder: true; text: "Computer"; }
+                    Row { form: RowForm.menu; kind: RowKind.folder; title: "Negs"; checked: true; }
+                    Row { form: RowForm.menu; kind: RowKind.folder; title: "Pictures"; look: Look.hover; }
+                    Row { form: RowForm.menu; kind: RowKind.folder; title: "Computer"; }
                 }
             }
         }

@@ -1,6 +1,7 @@
-// The board's rows: Row as a list's line, a tree's every kind, the navigator's folder, the trash's
-// line, the preset's line, pinned and renamed; the live column selects, folds and stars on a click.
-import { ScannerStyle, Colour, State, Icons, Look, RowKind, Row, NavigatorStyle } from "../ds.slint";
+// The board's rows: Row in each form, a list's line, a tree's every kind, the navigator's folder, the
+// trash's line, a sheet's side list, a pill's folder, pinned and renamed; the live column selects,
+// folds and stars on a click.
+import { ScannerStyle, Colour, Icons, Look, RowKind, RowForm, Row } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Fill, Absent, Samples } from "kit.slint";
 
 // One row live, hovered, selected, picked.
@@ -20,9 +21,9 @@ component RowStates inherits Line {
     in property <bool> favourite;
     in property <string> action;
     in property <string> badge;
-    // The navigator's and the trash's form: rounded, quiet, its chevron a click, its glyph shut.
-    in property <bool> navigator;
+    in property <RowForm> form;
     in property <bool> starrable;
+    in property <bool> checked;
     for state in 4: cell := Fill {
         span: BoardStyle.library;
         property <bool> selected;
@@ -37,18 +38,15 @@ component RowStates inherits Line {
             kind: root.kind;
             expandable: root.expandable;
             expanded: cell.expanded;
-            open: root.navigator ? root.kind == RowKind.opened : cell.expanded;
-            folds: root.navigator ? false : root.expandable;
+            form: root.form;
             stock: Samples.stock;
             has-stock: root.has-stock;
             glyph: Icons.arrow-right;
             has-glyph: root.has-glyph;
             pinned: root.pinned;
             present: root.present;
-            absent: root.navigator ? NavigatorStyle.absent : State.disabled;
-            rounded: root.navigator || root.badge != "";
-            quiet: root.navigator;
             starrable: root.starrable;
+            checked: root.checked;
             favourite: cell.favourite;
             action: root.action;
             action-help: "Restore";
@@ -68,8 +66,8 @@ component RowStates inherits Line {
 
 export component RowPage inherits Page {
     title: "Row";
-    note: "Row: kind, depth, expandable, expanded, open, folds, stock, glyph, caption, trail, detail, badge, quiet, rounded, pinned, present, starrable, favourite, action, renaming.";
-    property <[string]> states: ["Live (click, chevron, star)", "Hover", "Selected", "Picked"];
+    note: "Row: form (list, navigator, sidebar, menu), kind (heading among them), depth, expandable, expanded, stock, glyph, caption, trail, detail, badge, checked, pinned, present, starrable, favourite, action, renaming.";
+    property <[string]> states: ["Live (click, chevron, star)", "Hover", "Selected", "Picked (the band held, the pointer away)"];
     Group {
         title: "List and tree lines";
         states: root.states;
@@ -85,21 +83,36 @@ export component RowPage inherits Page {
         RowStates { label: "pinned at its tree's top"; title: "Roll #8"; caption: "36"; depth: 1; kind: RowKind.roll; expandable: true; expanded: true; pinned: true; }
     }
     Group {
-        title: "Navigator folders (quiet, rounded, starrable)";
+        title: "Navigator form: rounded, quiet, its chevron a click, its glyph shut";
         states: root.states;
         span: BoardStyle.library;
-        RowStates { label: "folder (hover shows the star)"; title: "Negs"; kind: RowKind.folder; expandable: true; navigator: true; starrable: true; }
-        RowStates { label: "favourite"; title: "Roll #8"; depth: 1; kind: RowKind.roll; navigator: true; starrable: true; favourite: true; }
-        RowStates { label: "opened, unfolded"; title: "Negs"; kind: RowKind.opened; expandable: true; expanded: true; navigator: true; starrable: true; }
-        RowStates { label: "absent (volume not mounted)"; title: "Archive disk"; kind: RowKind.folder; expandable: true; navigator: true; starrable: true; present: false; }
+        RowStates { label: "folder (hover shows the star)"; title: "Negs"; kind: RowKind.folder; expandable: true; form: RowForm.navigator; starrable: true; }
+        RowStates { label: "favourite"; title: "Roll #8"; depth: 1; kind: RowKind.roll; form: RowForm.navigator; starrable: true; favourite: true; }
+        RowStates { label: "opened, unfolded"; title: "Negs"; kind: RowKind.opened; expandable: true; expanded: true; form: RowForm.navigator; starrable: true; }
+        RowStates { label: "absent (volume not mounted)"; title: "Archive disk"; kind: RowKind.folder; expandable: true; form: RowForm.navigator; starrable: true; present: false; }
     }
     Group {
-        title: "Trash and preset lines";
+        title: "Trash lines (navigator form)";
         states: root.states;
         span: BoardStyle.library;
-        RowStates { label: "the ONI Trash (hover shows RESTORE)"; title: "ONI Trash"; caption: "3"; kind: RowKind.trash; expandable: true; expanded: true; navigator: true; action: "RESTORE"; }
-        RowStates { label: "a trashed folder, its trail"; title: "Roll #8"; trail: "Negs/"; caption: "2"; depth: 1; kind: RowKind.trash; navigator: true; action: "RESTORE"; }
-        RowStates { label: "preset (badge and detail)"; title: "Portra warm"; detail: "Color, Curves"; badge: "Pt"; }
+        RowStates { label: "the ONI Trash (hover shows RESTORE)"; title: "ONI Trash"; caption: "3"; kind: RowKind.trash; expandable: true; expanded: true; form: RowForm.navigator; action: "RESTORE"; }
+        RowStates { label: "a trashed folder, its trail"; title: "Roll #8"; trail: "Negs/"; caption: "2"; depth: 1; kind: RowKind.trash; form: RowForm.navigator; action: "RESTORE"; }
+    }
+    Group {
+        title: "Sidebar form: a sheet's side list, rounded";
+        states: root.states;
+        span: BoardStyle.library;
+        RowStates { label: "a heading (out of reach)"; title: "DOWNLOAD HERE"; kind: RowKind.heading; form: RowForm.sidebar; }
+        RowStates { label: "a section"; title: "General"; form: RowForm.sidebar; }
+        RowStates { label: "a maker, its glyph"; title: "Hahnemühle"; has-glyph: true; form: RowForm.sidebar; }
+        RowStates { label: "preset (badge and detail)"; title: "Portra warm"; detail: "Color, Curves"; badge: "Pt"; form: RowForm.sidebar; }
+    }
+    Group {
+        title: "Menu form: a folder pill's choice, its check at the end";
+        states: root.states;
+        span: BoardStyle.library;
+        RowStates { label: "a folder"; title: "Pictures"; kind: RowKind.folder; form: RowForm.menu; }
+        RowStates { label: "the current one"; title: "Negs"; kind: RowKind.folder; form: RowForm.menu; checked: true; }
     }
     Group {
         title: "Renaming";
