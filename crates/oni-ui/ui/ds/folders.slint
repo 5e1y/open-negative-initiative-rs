@@ -135,36 +135,6 @@ export component RenameRow inherits FocusScope {
     }
 }
 
-// A square mini key holding one glyph, tinted when it stands for a view held on.
-export component GlyphKey inherits Rectangle {
-    in property <image> icon;
-    in property <string> help;
-    in property <bool> enabled: true;
-    in property <bool> tinted;
-    in property <Look> look: Look.live;
-    callback clicked();
-    width: NavigatorStyle.key;
-    height: NavigatorStyle.key;
-    border-radius: ButtonStyle.small-radius;
-    background: touch.pressed || root.look == Look.pressed ? Colour.raised-pressed : touch.has-hover || root.look == Look.hover ? Colour.raised-hover : Colour.raised;
-    opacity: root.enabled ? 1 : State.disabled;
-    accessible-role: button;
-    accessible-label: root.help;
-    accessible-enabled: root.enabled;
-    accessible-action-default => { root.clicked(); }
-    Icon {
-        width: ButtonStyle.small-icon;
-        height: ButtonStyle.small-icon;
-        source: root.icon;
-        ink: root.tinted ? NavigatorStyle.favourite : Colour.ink;
-    }
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.clicked(); }
-        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
-    }
-}
-
 // `ColumnPill`: the name a column's header gives what it lists, a key when it opens something.
 export component ColumnPill inherits Rectangle {
     in property <string> text;

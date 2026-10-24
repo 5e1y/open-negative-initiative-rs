@@ -4,8 +4,9 @@ import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, State, Motion, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
 
-export enum TextRole { label, value, caption, title, section, heading, button }
-export enum Tone { primary, secondary, tertiary, on-fill, on-light }
+// `note` is a block's wrapped line in the tertiary ink, the size of a value.
+export enum TextRole { label, value, caption, title, section, heading, button, note }
+export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution }
 export enum Gap { none, xxs, xs, s, m, l }
 export enum Ground { ground, canvas, canvas-cropping, well, paper, skeleton }
 export enum PlotSize { main, block }
@@ -37,6 +38,8 @@ export global Tones {
         if (tone == Tone.tertiary) { return Colour.ink-tertiary; }
         if (tone == Tone.on-fill) { return Colour.ink-on-fill; }
         if (tone == Tone.on-light) { return Colour.ink-on-light; }
+        if (tone == Tone.warning) { return Colour.warning; }
+        if (tone == Tone.caution) { return Colour.caution; }
         Colour.ink
     }
     public pure function gap(gap: Gap) -> length {
@@ -60,10 +63,10 @@ export global Tones {
 // Every word on screen: its role sets the face and size, its tone the ink.
 export component Label inherits Text {
     in property <TextRole> role: TextRole.label;
-    in property <Tone> tone: Tone.primary;
+    in property <Tone> tone: root.role == TextRole.note ? Tone.tertiary : Tone.primary;
     in property <bool> centred;
     font-family: root.role == TextRole.heading ? Type.brand-family : Type.family;
-    font-size: root.role == TextRole.value ? Type.value
+    font-size: root.role == TextRole.value || root.role == TextRole.note ? Type.value
         : root.role == TextRole.caption ? Type.chip
         : root.role == TextRole.button ? Type.chip
         : root.role == TextRole.title ? Type.title
@@ -74,6 +77,7 @@ export component Label inherits Text {
     color: Tones.ink(root.tone);
     vertical-alignment: center;
     horizontal-alignment: root.centred ? center : left;
+    wrap: root.role == TextRole.note ? word-wrap : no-wrap;
 }
 
 // `DSBadge(tone: .warning, outline: .capsule)`: a caution in a capsule, its round ends padded wider.

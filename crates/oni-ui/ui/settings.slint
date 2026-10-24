@@ -1,7 +1,7 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetKeys, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Note, Section, Tabs, ListRow, VerticalRule, Label, Tone, TextRole } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Section, Tabs, ListRow, VerticalRule, Label, Tone, TextRole } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -47,7 +47,7 @@ component GeneralPage inherits VerticalLayout {
             selected: AppSettings.language;
             picked(i) => { AppSettings.language-picked(i); }
         }
-        Note { text: @tr("Automatic follows the system's language when the app speaks it, English otherwise."); }
+        Label { role: TextRole.note; text: @tr("Automatic follows the system's language when the app speaks it, English otherwise."); }
     }
     Section {
         inset: SectionStyle.flush;
@@ -59,7 +59,7 @@ component GeneralPage inherits VerticalLayout {
             on: AppSettings.clicks;
             toggled => { AppSettings.flip(Act.toggle-sound); }
         }
-        Note { text: @tr("A click as each key is pressed and released."); }
+        Label { role: TextRole.note; text: @tr("A click as each key is pressed and released."); }
     }
 }
 
@@ -75,13 +75,13 @@ component EditorPage inherits VerticalLayout {
             on: AppSettings.keep-zoom;
             toggled => { AppSettings.flip(Act.keep-zoom); }
         }
-        Note { text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
+        Label { role: TextRole.note; text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
         ToggleRow {
             label: @tr("Show what this screen cannot show");
             on: AppSettings.screen-gamut;
             toggled => { AppSettings.flip(Act.screen-gamut); }
         }
-        Note { text: @tr("Stripes over the colours this screen cannot show."); }
+        Label { role: TextRole.note; text: @tr("Stripes over the colours this screen cannot show."); }
     }
     Section {
         inset: SectionStyle.flush;
@@ -93,7 +93,7 @@ component EditorPage inherits VerticalLayout {
             on: AppSettings.full-decode;
             toggled => { AppSettings.flip(Act.full-decode); }
         }
-        Note { text: @tr("Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."); }
+        Label { role: TextRole.note; text: @tr("Off, a RAW is read at half its size, 3 to 5 times faster, and every zoom shows it. On, it is read whole, for the finest grain past 50 %. Details, De-dust and every export always read the whole RAW. Takes effect on the next photo opened."); }
     }
 }
 
@@ -104,8 +104,8 @@ component FrontierPage inherits VerticalLayout {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("Frontier look");
-        Note { text: AppSettings.frontier-look; }
-        Note { text: @tr("A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."); }
+        Label { role: TextRole.note; text: AppSettings.frontier-look; }
+        Label { role: TextRole.note; text: @tr("A LUT on ONI's inversion, display sRGB in and out. Export it, edit it in any LUT tool, use the file: each save shows at once."); }
         ButtonGroup {
             Button { text: @tr("EXPORT…"); clicked => { AppSettings.flip(Act.frontier-export); } }
             Button { text: @tr("USE A FILE…"); clicked => { AppSettings.flip(Act.frontier-choose); } }
@@ -121,8 +121,8 @@ component PhonePage inherits VerticalLayout {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("Phone remote");
-        Note { text: @tr("The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."); }
-        if AppSettings.phones != "": Note { text: AppSettings.phones; }
+        Label { role: TextRole.note; text: @tr("The ONI app on a phone on the same network edits the photo open here, once paired by scanning a code."); }
+        if AppSettings.phones != "": Label { role: TextRole.note; text: AppSettings.phones; }
         ButtonGroup {
             SheetKey { text: @tr("PAIR PHONE…"); act: Act.pair-phone; }
             Button { text: @tr("FORGET PHONES"); fills: false; enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
@@ -183,7 +183,7 @@ export component SettingsSheet inherits Sheet {
             if AppSettings.section == 4: AboutPage { }
         }
     }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         Button {
             text: @tr("DONE");
             clicked => { AppSettings.close(); }

@@ -1,6 +1,6 @@
 // The board's tiles and pictures: the gallery's tile in each state, a picture on every ground, the
 // roll's cells, the presets' cards and rows, the swatches, the stocks and the fanned stack.
-import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, PresetNewFace, PresetRow, Swatch, StockCellView, StockIcon } from "../ds.slint";
+import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, PresetNewFace, PresetRow, StockCellView, StockIcon, Button, PresetStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Row, Cell, Fill, Samples } from "kit.slint";
 
 // A tile in its seven looks, all on one picture.
@@ -92,10 +92,10 @@ export component TilesPage inherits Page {
         states: ["Rest", "Picked", "Rest, light", "Picked, light"];
         Row {
             label: "Swatch";
-            Cell { Swatch { fill: ScannerStyle.band-red; name: "Red"; } }
-            Cell { Swatch { fill: ScannerStyle.band-red; name: "Red"; picked: true; } }
-            Cell { Swatch { fill: Colour.paper; name: "White"; ink: Colour.ink-on-light; } }
-            Cell { Swatch { fill: Colour.paper; name: "White"; ink: Colour.ink-on-light; picked: true; } }
+            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; } }
+            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: ScannerStyle.band-red; help: "Red"; on: true; } }
+            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; } }
+            Cell { Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch; fill: Colour.paper; help: "White"; glyph-ink: Colour.ink-on-light; on: true; } }
         }
         Row {
             label: "StockCellView";

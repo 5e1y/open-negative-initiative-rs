@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, KeyPlate, Label, TextRole, Tone, ScannerStyle, Note, Progress } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -52,10 +52,10 @@ export component ColorPane inherits Pane {
         if PanelState.balancing: VerticalLayout {
             spacing: Space.xs;
             Progress { fraction: PanelState.balance-fraction; }
-            Note { text: PanelState.balance-progress; }
+            Label { role: TextRole.note; text: PanelState.balance-progress; }
         }
         // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key.
-        if !PanelState.balancing: KeyPlate {
+        if !PanelState.balancing: ButtonGroup { plate: true;
             fills: true;
             VerticalLayout {
                 if PanelState.crop-first: VerticalLayout {
@@ -75,7 +75,7 @@ export component ColorPane inherits Pane {
                 }
             }
         }
-        if !PanelState.balancing && PanelState.balance-note != "": Note { text: PanelState.balance-note; }
+        if !PanelState.balancing && PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
         StoreSlider {
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;
@@ -92,7 +92,7 @@ export component ColorPane inherits Pane {
         block: 9;
         modified: Store.paper-correction-modified;
         help: @tr("Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.");
-        KeyPlate {
+        ButtonGroup { plate: true;
             fills: true;
             Button {
                 text: @tr("AUTO PAPER CORRECTION");

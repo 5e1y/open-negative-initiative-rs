@@ -1,6 +1,6 @@
 // The transition from the earlier version: a blocking sheet while each camera is matched to the
 // earlier version's colours, then what was done and CONTINUE. Rust fills every line.
-import { Sheet, SheetStyle, Space, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress, Note } from "ds/ds.slint";
+import { Sheet, SheetStyle, Space, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress } from "ds/ds.slint";
 
 export struct TransitionLine { camera: string, detail: string }
 
@@ -53,7 +53,7 @@ export component TransitionSheet inherits Sheet {
             Label { text: Transition.summary; wrap: word-wrap; }
             for line in Transition.left: Label { text: line; role: TextRole.caption; tone: Tone.tertiary; wrap: word-wrap; }
         }
-        if !Transition.done: Note { text: @tr("Quitting now is safe: the work resumes at the next launch."); }
+        if !Transition.done: Label { role: TextRole.note; text: @tr("Quitting now is safe: the work resumes at the next launch."); }
         HorizontalLayout {
             alignment: end;
             Button {

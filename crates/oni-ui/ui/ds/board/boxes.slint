@@ -1,6 +1,6 @@
 // The board's containers: the block's section in each of its forms, the help mark, the sheets, the
 // cards and the panels, and a still copy of the help card and the tooltip `TipLayer` draws.
-import { Colour, Space, Stroke, Type, TipStyle, SheetStyle, FormStyle, Look, Label, TextRole, Tone, Picture, Ground, Surface, Card, FloatingColumn, Button, ButtonKind, Tabs, HelpMark, Section, Dialog, SheetKeys, PanelSheet, BoardSheet, BoardCard, PopoverPanel, GroupHeading, TextField, Toggle, LabelledRow } from "../ds.slint";
+import { Colour, Space, Stroke, Type, TipStyle, SheetStyle, FormStyle, Look, Label, TextRole, Tone, Picture, Ground, Surface, Card, FloatingColumn, Button, ButtonKind, Tabs, HelpMark, Section, Dialog, PanelSheet, BoardSheet, BoardCard, PopoverPanel, TextField, Toggle, LabelledRow, ButtonGroup } from "../ds.slint";
 import { BoardStyle, Page, Group, Row, Cell, Fill, Stage } from "kit.slint";
 
 // A section on the panel's ground at the panel's width.
@@ -88,7 +88,7 @@ export component BoxesPage inherits Page {
                         title: "Move 3 photos to the ONI Trash?";
                         question: true;
                         Label { text: "They stay there until the trash is emptied."; tone: Tone.secondary; wrap: word-wrap; }
-                        SheetKeys { Button { text: "Cancel"; } Button { text: "Move"; kind: ButtonKind.destructive; } }
+                        ButtonGroup { plate: true; trailing: true; Button { text: "Cancel"; } Button { text: "Move"; kind: ButtonKind.destructive; } }
                     }
                 }
             }
@@ -101,7 +101,7 @@ export component BoxesPage inherits Page {
                         title: "Export";
                         Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
                         TextField { value: "Roll #8"; }
-                        SheetKeys { Button { text: "Cancel"; } Button { text: "Export"; kind: ButtonKind.accent; } }
+                        ButtonGroup { plate: true; trailing: true; Button { text: "Cancel"; } Button { text: "Export"; kind: ButtonKind.accent; } }
                     }
                 }
             }
@@ -178,7 +178,7 @@ export component BoxesPage inherits Page {
                             width: FormStyle.paper-list;
                             padding: Space.l;
                             spacing: Space.s;
-                            GroupHeading { text: "MAKERS"; }
+                            Label { tone: Tone.tertiary; text: "MAKERS"; }
                             Label { text: "Hahnemühle"; }
                             Label { text: "Canson"; tone: Tone.secondary; }
                         }

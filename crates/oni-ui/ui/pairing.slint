@@ -1,5 +1,5 @@
 // The Pair Phone sheet: the one-time QR code the phone scans, laid as every ONI sheet.
-import { Sheet, Picture, Ground, Label, Tone, Button, SheetKeys, ButtonKind, SheetStyle } from "ds/ds.slint";
+import { Sheet, Picture, Ground, Label, Tone, Button, ButtonKind, SheetStyle, ButtonGroup } from "ds/ds.slint";
 
 export global Pairing {
     in property <bool> shown;
@@ -37,7 +37,7 @@ export component PairingSheet inherits Sheet {
         text: Pairing.phones;
         wrap: word-wrap;
     }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         if Pairing.can-forget: Button {
             text: @tr("FORGET PHONES");
             kind: ButtonKind.destructive;

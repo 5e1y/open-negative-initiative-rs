@@ -2131,5 +2131,19 @@
     "title": "A design-system state board shows every component in every state, one family a page",
     "status": "done",
     "detail": "Owner's call, for the design review that brings back the raised and inset 3D effects. Board (ds/board/, exported from app.slint, `oni --board`, arrow keys walk the pages) lays thirteen families: buttons, icon buttons and plates, tabs and toggles, fields, sliders, the Scanner keypad, containers, lists and trees, tiles and pictures, menus, feedback, plots and tokens; each component a group, a row per variant, a column per state, every look forced without a pointer. Forced states added with live defaults, no look changed: `look` on Picker (MenuPicker, LinesPicker), HelpMark, ScrollKnob (widened), TrashRow, FolderRow, GlyphKey, ColumnPill, Chip, PresetRow and PinnedTreeRow; `hover-tab` on Tabs; `focused-look` on TextArea. The window check `board` shoots each family to ONI_SHOTS as board-<nn>-<name>.png at scale 2, sized to the page; twin: an unknown family lays nothing and its blank window is seen as blank. The i18n check skips ds/board/ as it skips the catalogue."
+  },
+  {
+    "id": 296,
+    "type": "refactor",
+    "title": "Design system: one component, its variants as props (text, keys, groups)",
+    "status": "done",
+    "detail": "Owner's call: the app uses instances of a few components whose props give them their look. Text: Note, Warning, CautionNote and GroupHeading are Label roles and tones (TextRole.note wraps in the tertiary ink; Tone.warning, Tone.caution). Keys: IconButton, the Scanner's Key, GlyphKey and Swatch are Button variants (ButtonSize.mini and .key, fill for a band or a tint, square, wide, glyph-ink, the keycap's hold and Shift read), Button moving to ds/button.slint. Groups: KeyPlate and SheetKeys are ButtonGroup with plate, mini, fills and trailing; KeyRow and Keypad, asked by nothing since the Scanner sliders, are gone. Every window check shot before and after: the app's screens match pixel for pixel but for run-to-run noise (temporary folder names, render dither); the catalogue and the board lose the keypad."
+  },
+  {
+    "id": 297,
+    "type": "refactor",
+    "title": "Design system consolidation: fields, rows, sheets and menus, tiles and badges, the board in the app",
+    "status": "todo",
+    "detail": "Next phases of #296: TextField takes SuffixField, NumberField and TextArea; FormRow takes LabelledRow; one Picker with its menu; one Row for ListRow, TreeItem, PinnedTreeRow, FolderRow, TrashRow, PresetRow and the headings; one Sheet for Dialog, PanelSheet, BoardSheet and Popover, with #290's one Ask dialog; one Menu for MenuPanel, MenuEntry, ContextMenu and FolderMenu; one Tile, one Badge, one Notice. Then the board rebuilt on the base components and opened from a Design System menu item shown in unstamped (dev) builds alone."
   }
 ]

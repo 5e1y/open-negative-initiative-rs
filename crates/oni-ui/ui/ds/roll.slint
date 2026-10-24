@@ -45,14 +45,6 @@ export component SealedStatusLine inherits HorizontalLayout {
     Rectangle { horizontal-stretch: 1; }
 }
 
-// A chip-sized line in the caution ink, as the scrubber's warning reads.
-export component CautionNote inherits Text {
-    font-family: Type.family;
-    font-size: Type.chip;
-    color: Colour.caution;
-    wrap: word-wrap;
-}
-
 // `RollFrameCell`: the preview, else the thumbnail; the apart dot, the passes' seal; a marked frame
 // double-ringed inside, or on the sheet ringed outside with its FLAGGED seal; dimmed once unticked.
 export component RollCellView inherits Rectangle {

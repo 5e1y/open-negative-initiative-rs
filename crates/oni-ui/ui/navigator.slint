@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, FolderRow, FolderKind, RenameRow, GlyphKey, KeyPlate, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, StepNumber } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, FolderRow, FolderKind, RenameRow, ColumnPill, FolderChoice, FolderMenu, RowsDivider, TrashRow, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, StepNumber, ButtonSize, Colour, ButtonGroup } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -180,18 +180,18 @@ export component NavigatorSection inherits Rectangle {
             padding-bottom: Space.s;
             spacing: Space.s;
             // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.
-            KeyPlate {
+            ButtonGroup { plate: true;
                 mini: true;
-                GlyphKey {
+                Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Icons.parent;
                     help: @tr("Parent folder");
                     enabled: Navigator.can-go-up;
                     clicked => { Navigator.go-up(); }
                 }
-                GlyphKey {
+                Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Icons.favourite;
                     help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
-                    tinted: Navigator.favourites-only;
+                    glyph-ink: Navigator.favourites-only ? NavigatorStyle.favourite : Colour.ink;
                     clicked => { Navigator.favourites-toggled(); }
                 }
             }

@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, IconButton, ButtonSize, KeyPlate, ToggleRow, WarningBadge, Note, WarningBand, Field, LinesPicker } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, ToggleRow, WarningBadge, WarningBand, Field, LinesPicker, Label, TextRole, Tone, ButtonGroup } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -20,13 +20,13 @@ export component RollPane inherits Pane {
                 enabled: PanelState.can-prepare;
                 clicked => { PanelState.prepare-roll(); }
             }
-            if PanelState.roll-state == 1: Note {
+            if PanelState.roll-state == 1: Label { role: TextRole.note;
                 text: PanelState.roll-measured == 1 ? @tr("Acts on this photo, the only one measured with its roll.") : @tr("Acts on the {} photos measured with this roll.", PanelState.roll-measured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: WarningBand {
                 text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this folder was not measured with the roll.") : @tr("{} photos of this folder were not measured with the roll.", PanelState.roll-unmeasured);
             }
-            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: KeyPlate {
+            if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: ButtonGroup { plate: true;
                 fills: true;
                 Button {
                     fills: true;
@@ -41,7 +41,7 @@ export component RollPane inherits Pane {
                     clicked => { PanelState.make-roll(); }
                 }
             }
-            if PanelState.roll-state == 2: Note { text: @tr("Finding the photos measured with this roll…"); }
+            if PanelState.roll-state == 2: Label { role: TextRole.note; text: @tr("Finding the photos measured with this roll…"); }
         }
     }
     Block {
@@ -67,7 +67,7 @@ export component RollPane inherits Pane {
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
-                IconButton { size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.flat-settings = !root.flat-settings; } }
+                Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.flat-settings = !root.flat-settings; } }
             }
         }
         if PanelState.flat-field-on: Field {
@@ -78,7 +78,7 @@ export component RollPane inherits Pane {
                 chosen(i) => { PanelState.mask-chosen(i); }
             }
         }
-        if PanelState.flat-field-on && PanelState.masks-empty: Note { text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
+        if PanelState.flat-field-on && PanelState.masks-empty: Label { role: TextRole.note; text: @tr("No mask yet: take a frame of the empty light panel, shot on this rig."); }
         Button {
             text: PanelState.taking-mask ? @tr("SETTING…") : @tr("USE THIS PHOTO AS FLAT-FIELD");
             enabled: PanelState.can-take-mask;
@@ -96,7 +96,7 @@ export component RollPane inherits Pane {
             field: 29; label: @tr("Tint"); fraction: Store.flat-tint-fraction; readout: Store.flat-tint-readout; value-text: Store.flat-tint-value;
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
-        if root.flat-settings: KeyPlate {
+        if root.flat-settings: ButtonGroup { plate: true;
             fills: true;
             Button { fills: true; text: PanelState.loading-mask ? @tr("LOADING…") : @tr("LOAD…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
             Button { fills: true; text: @tr("RENAME"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }

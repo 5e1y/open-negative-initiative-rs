@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, IconButton, ButtonKind, SheetKeys, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Note, Warning, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, GroupHeading, Icon, CardStyle, NewsSeal } from "ds/ds.slint";
+import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, LabelledRow, Slider, TextField, Picker, MenuPicker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, ListRow, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, FormRow, SuffixField, NumberField, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, Icon, CardStyle, NewsSeal, ButtonGroup } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -121,8 +121,8 @@ export component SpaceField inherits VerticalLayout {
             selected <=> Exporting.space-tab;
             picked(i) => { Exporting.space-picked(i); }
         }
-        if Exporting.jpeg && Exporting.space-tab == 3: Note { text: @tr("TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."); }
-        Note { text: Exporting.purpose; }
+        if Exporting.jpeg && Exporting.space-tab == 3: Label { role: TextRole.note; text: @tr("TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."); }
+        Label { role: TextRole.note; text: Exporting.purpose; }
     }
     if root.compact: Tabs {
         tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
@@ -138,7 +138,7 @@ export component SpaceField inherits VerticalLayout {
             current: Exporting.profile;
             chosen(i) => { Exporting.profile-picked(i); }
         }
-        if Exporting.profile-note != "": Note { text: Exporting.profile-note; }
+        if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
     if Exporting.on-profile && root.compact: LabelledRow {
         label: @tr("Show only color variation (not recommended)");
@@ -159,7 +159,7 @@ export component SpaceField inherits VerticalLayout {
                 Exporting.pending-picked(i);
             }
         }
-        Note { text: Exporting.pending-note; }
+        Label { role: TextRole.note; text: Exporting.pending-note; }
     }
     if !root.compact || Exporting.on-profile || Exporting.pending: HorizontalLayout {
         spacing: Space.xs;
@@ -203,7 +203,7 @@ export component ExportPanel inherits Surface {
                     }
                 }
                 SpaceField { }
-                if Exporting.edited-in != "": Note { text: Exporting.edited-in; }
+                if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
                 if Exporting.format == 0: Field {
                     label: @tr("Compression");
                     LabelledRow {
@@ -233,7 +233,7 @@ export component ExportPanel inherits Surface {
                             accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
                             left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
                         }
-                        if Exporting.resized: IconButton { icon: Icons.reset; help: @tr("Full resolution"); clicked => { Exporting.full-size(); } }
+                        if Exporting.resized: Button { has-icon: true; square: true; icon: Icons.reset; help: @tr("Full resolution"); clicked => { Exporting.full-size(); } }
                     }
                 }
                 Field {
@@ -253,8 +253,8 @@ export component ExportPanel inherits Surface {
                         Label { text: Exporting.weight-label; role: TextRole.value; horizontal-stretch: 1; }
                         Label { text: Exporting.weight; role: TextRole.value; }
                     }
-                    if Exporting.low-precision != "": Warning { text: Exporting.low-precision; }
-                    Note { text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }
+                    if Exporting.low-precision != "": Label { role: TextRole.note; tone: Tone.warning; text: Exporting.low-precision; }
+                    Label { role: TextRole.note; text: @tr("EXIF as set beside each photo; nothing of the scanner unless left there"); }
                 }
             }
         }
@@ -293,7 +293,7 @@ export component ExportConfirmSheet inherits Sheet {
     question: true;
     dismissed => { Exporting.confirmed(false); }
     if Exporting.confirm-message != "": Label { text: Exporting.confirm-message; tone: Tone.secondary; wrap: word-wrap; }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         Button { text: @tr("Cancel"); clicked => { Exporting.confirmed(false); } }
         Button { text: @tr("Replace"); kind: ButtonKind.destructive; clicked => { Exporting.confirmed(true); } }
     }
@@ -305,7 +305,7 @@ export component ExportNoticeSheet inherits Sheet {
     question: true;
     dismissed => { Exporting.notice-closed(); }
     if Exporting.notice-message != "": Label { text: Exporting.notice-message; tone: Tone.secondary; wrap: word-wrap; }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Exporting.notice-closed(); } }
     }
 }
@@ -324,7 +324,7 @@ export component PaperSheet inherits BoardSheet {
             spacing: Space.m;
             alignment: start;
             VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; GroupHeading { text: @tr("DOWNLOAD HERE"); } }
+                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("DOWNLOAD HERE"); } }
                 for name[i] in Exporting.paper-direct: ListRow {
                     title: name;
                     selected: i == Exporting.paper-source;
@@ -336,7 +336,7 @@ export component PaperSheet inherits BoardSheet {
                 }
             }
             VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; GroupHeading { text: @tr("ON THE MAKER’S SITE"); } }
+                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("ON THE MAKER’S SITE"); } }
                 for name[i] in Exporting.paper-browsed: ListRow {
                     title: name;
                     selected: i + Exporting.paper-direct-count == Exporting.paper-source;
@@ -356,16 +356,16 @@ export component PaperSheet inherits BoardSheet {
         BoardCard {
             vertical-stretch: 1;
             Label { text: Exporting.paper-name; role: TextRole.heading; }
-            Note { text: Exporting.paper-note; }
+            Label { role: TextRole.note; text: Exporting.paper-note; }
             HorizontalLayout {
                 alignment: start;
                 Button { text: @tr("Open the Maker’s Page"); clicked => { Exporting.paper-open-page(); } }
             }
-            if Exporting.paper-browser: Note {
+            if Exporting.paper-browser: Label { role: TextRole.note;
                 text: @tr("Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not.");
             }
-            if !Exporting.paper-browser && Exporting.paper-reading: Note { text: @tr("Reading the maker’s page…"); }
-            if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Note {
+            if !Exporting.paper-browser && Exporting.paper-reading: Label { role: TextRole.note; text: @tr("Reading the maker’s page…"); }
+            if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Label { role: TextRole.note;
                 text: @tr("The page lists no profile right now. Open it to look by hand.");
             }
             if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
@@ -381,7 +381,7 @@ export component PaperSheet inherits BoardSheet {
                     padding-top: Space.xs;
                     padding-bottom: Space.xs; min-height: ButtonStyle.height + 2 * Space.xs;
                     Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-                    if row.installing: Note { text: @tr("Installing…"); }
+                    if row.installing: Label { role: TextRole.note; text: @tr("Installing…"); }
                     if !row.installing && row.installed: Button {
                         text: @tr("Uninstall");
                         kind: ButtonKind.destructive;
@@ -395,7 +395,7 @@ export component PaperSheet inherits BoardSheet {
                     }
                 }
             }
-            if Exporting.paper-message != "": Note { text: Exporting.paper-message; }
+            if Exporting.paper-message != "": Label { role: TextRole.note; text: Exporting.paper-message; }
         }
     }
 }

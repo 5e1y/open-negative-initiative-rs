@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, FieldStyle, Swatch, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, SheetKeys, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, Note, HelpMark } from "ds/ds.slint";
+import { Space, PresetStyle, FieldStyle, PresetRow, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, TextArea, Toggle, LabelledRow, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, HelpMark, ButtonGroup } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -89,7 +89,7 @@ export component ChoiceSheet inherits Sheet {
     wide: true;
     dismissed => { Choice.chosen(-1); }
     if Choice.message != "": Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         Button { text: @tr("Cancel"); clicked => { Choice.chosen(-1); } }
         for key[i] in Choice.keys: Button { text: key; clicked => { Choice.chosen(i); } }
     }
@@ -100,7 +100,7 @@ export component AdviceSheet inherits Sheet {
     question: true;
     dismissed => { Advice.closed(); }
     if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; wrap: word-wrap; }
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Advice.closed(); } }
     }
 }
@@ -108,11 +108,11 @@ export component AdviceSheet inherits Sheet {
 component TintPicker inherits HorizontalLayout {
     spacing: Space.xs;
     alignment: start;
-    for tint[i] in Presets.tints: Swatch {
+    for tint[i] in Presets.tints: Button { square: true; width: PresetStyle.swatch; height: PresetStyle.swatch;
         fill: tint;
-        picked: i == Presets.form-tint;
-        name: Presets.tint-names[i];
-        ink: Presets.tint-inks[i];
+        on: i == Presets.form-tint;
+        help: Presets.tint-names[i];
+        glyph-ink: Presets.tint-inks[i];
         clicked => { Presets.form-tinted(i); }
     }
 }
@@ -160,7 +160,7 @@ component CarriesPicker inherits VerticalLayout {
             }
         }
     }
-    if Presets.form-empty: Note { text: Presets.carries-nothing; }
+    if Presets.form-empty: Label { role: TextRole.note; text: Presets.carries-nothing; }
 }
 
 // The fields of both sheets; the description is the editor's alone.
@@ -281,7 +281,7 @@ export component PresetEditorSheet inherits PanelSheet {
                 horizontal-stretch: 1;
                 alignment: center;
                 Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
-                Note { text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
+                Label { role: TextRole.note; text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
             }
         }
         Divider { }

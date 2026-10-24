@@ -1,5 +1,5 @@
 // `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
-import { Sheet, Label, Tone, Button, SheetKeys, ButtonKind } from "ds/ds.slint";
+import { Sheet, Label, Tone, Button, ButtonKind, ButtonGroup } from "ds/ds.slint";
 
 export global Confirm {
     in property <bool> shown;
@@ -19,7 +19,7 @@ export component ConfirmSheet inherits Sheet {
     dismissed => { Confirm.answered(false); }
     if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
     // Quitting's alert lays the key that goes ahead first, Cancel last as its default.
-    SheetKeys {
+    ButtonGroup { plate: true; trailing: true;
         if Confirm.cancel-default: Button { text: Confirm.key; clicked => { Confirm.answered(true); } }
         Button {
             text: @tr("CANCEL");

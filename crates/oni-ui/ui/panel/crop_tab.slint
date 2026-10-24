@@ -1,6 +1,6 @@
 // The Crop tab: the frame, its ratio, rotation, mirror and straightening.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonKind, IconButton, KeyPlate, ToggleRow, LabelledRow, LcdReadout } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonKind, ToggleRow, LabelledRow, LcdReadout, ButtonGroup } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -15,7 +15,7 @@ export component CropPane inherits Pane {
         modified: Framing.modified;
         reset(b) => { Framing.act(Act.reset-crop); }
         // `FramePane`: COPY and PASTE hug their words, PASTE TO ROLL takes the rest of the plate.
-        KeyPlate {
+        ButtonGroup { plate: true;
             fills: true;
             Button { text: @tr("COPY"); fills: false; help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
             Button { text: @tr("PASTE"); fills: false; enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
@@ -44,21 +44,21 @@ export component CropPane inherits Pane {
             alignment: start;
             VerticalLayout {
                 alignment: center;
-                IconButton { icon: Icons.rotate; help: @tr("Rotate 90° clockwise"); clicked => { Framing.act(Act.rotate); } }
+                Button { has-icon: true; square: true; icon: Icons.rotate; help: @tr("Rotate 90° clockwise"); clicked => { Framing.act(Act.rotate); } }
             }
-            KeyPlate {
-                IconButton { icon: Icons.mirror; help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
+            ButtonGroup { plate: true;
+                Button { has-icon: true; square: true; icon: Icons.mirror; help: Framing.mirrored ? @tr("Unmirror left for right") : @tr("Mirror left for right"); clicked => { Framing.act(Act.mirror); } }
                 // The same glyph turned a quarter, the icon bank holding no vertical twin.
-                IconButton { icon: Icons.mirror; turned: true; help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
+                Button { has-icon: true; square: true; icon: Icons.mirror; turned: true; help: Framing.mirrored-vertically ? @tr("Unmirror top for bottom") : @tr("Mirror top for bottom"); clicked => { Framing.act(Act.mirror-vertically); } }
             }
         }
     }
     Section {
         title: @tr("Measuring Window");
         // `MeasureWindowKeys`: the long sentence is the middle key's, armed it wears the confirm green.
-        KeyPlate {
+        ButtonGroup { plate: true;
             fills: true;
-            IconButton { icon: Icons.reset; enabled: Framing.has-window; help: @tr("Reset measure window"); clicked => { Framing.act(Act.window-reset); } }
+            Button { has-icon: true; square: true; icon: Icons.reset; enabled: Framing.has-window; help: @tr("Reset measure window"); clicked => { Framing.act(Act.window-reset); } }
             Button {
                 fills: true;
                 text: Framing.armed ? @tr("APPLY WINDOW") : @tr("MEASURING WINDOW");
@@ -66,8 +66,8 @@ export component CropPane inherits Pane {
                 help: @tr("Shows a frame on the photo; the balance keys and the histogram read only what it holds. Untouched, it follows the crop; the crop never moves it.");
                 clicked => { Framing.act(Act.window-arm); }
             }
-            IconButton { icon: Icons.copy; help: @tr("Copy measure window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
-            IconButton { icon: Icons.paste; help: @tr("Paste measure window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
+            Button { has-icon: true; square: true; icon: Icons.copy; help: @tr("Copy measure window"); enabled: Framing.has-window; clicked => { Framing.act(Act.window-copy); } }
+            Button { has-icon: true; square: true; icon: Icons.paste; help: @tr("Paste measure window"); enabled: Framing.can-paste-window; clicked => { Framing.act(Act.window-paste); } }
         }
     }
     Section {

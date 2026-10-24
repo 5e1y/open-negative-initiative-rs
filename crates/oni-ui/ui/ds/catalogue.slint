@@ -2,7 +2,7 @@
 import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
-import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, IconButton, ButtonGroup, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
+import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, LabelledRow, Slider, TextField, Picker } from "controls.slint";
 import { Tabs } from "tabs.slint";
 import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
 import { ListRow, RowKind, TileView, TileHeading, Scroller } from "collections.slint";
@@ -10,7 +10,7 @@ import { TreeItem } from "tree.slint";
 import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost, TrashRow } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { PlotInkStyle } from "theme.slint";
-import { Key, KeyRow, Keypad, LabScreen } from "keypad.slint";
+import { LabScreen } from "keypad.slint";
 
 struct Swatch { name: string, colour: color }
 
@@ -184,21 +184,21 @@ export component Catalogue inherits AppWindow {
                     title: "Icon button and group";
                     Variants {
                         caption: "rest, hover, pressed, on, disabled, destructive";
-                        IconButton { icon: Icons.undo; help: "Undo"; }
-                        IconButton { icon: Icons.redo; help: "Redo"; look: Look.hover; }
-                        IconButton { icon: Icons.copy; help: "Copy"; look: Look.pressed; }
-                        IconButton { icon: Icons.correction; help: "De-dust"; on: true; }
-                        IconButton { icon: Icons.paste; help: "Paste"; enabled: false; }
-                        IconButton { icon: Icons.remove; help: "Remove"; kind: ButtonKind.destructive; }
+                        Button { has-icon: true; square: true; icon: Icons.undo; help: "Undo"; }
+                        Button { has-icon: true; square: true; icon: Icons.redo; help: "Redo"; look: Look.hover; }
+                        Button { has-icon: true; square: true; icon: Icons.copy; help: "Copy"; look: Look.pressed; }
+                        Button { has-icon: true; square: true; icon: Icons.correction; help: "De-dust"; on: true; }
+                        Button { has-icon: true; square: true; icon: Icons.paste; help: "Paste"; enabled: false; }
+                        Button { has-icon: true; square: true; icon: Icons.remove; help: "Remove"; kind: ButtonKind.destructive; }
                     }
                     Variants {
                         caption: "a group, small keys";
                         ButtonGroup {
-                            IconButton { icon: Icons.framing; help: "Crop"; }
-                            IconButton { icon: Icons.compare; help: "Compare"; }
+                            Button { has-icon: true; square: true; icon: Icons.framing; help: "Crop"; }
+                            Button { has-icon: true; square: true; icon: Icons.compare; help: "Compare"; }
                             Button { text: "PASTE TO ROLL"; }
                         }
-                        IconButton { icon: Icons.chevron-down; help: "Fold"; size: ButtonSize.small; }
+                        Button { has-icon: true; square: true; icon: Icons.chevron-down; help: "Fold"; size: ButtonSize.small; }
                     }
                 }
                 Group {
@@ -257,16 +257,12 @@ export component Catalogue inherits AppWindow {
                         cells: [{ title: "D", value: "+3" }, { title: "C", value: "−2" }, { title: "M", value: "0" }, { title: "Y", value: "+24" }, { title: "TEMP", value: "−10" }];
                         finish: ["CT +20 %", "VIG 0 EV", "CHR 0 %"];
                     }
-                    Keypad {
-                        KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: ["", "", "", "", ""]; }
-                        KeyRow { title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: ["", "", "", "", ""]; }
-                    }
                     HorizontalLayout {
                         spacing: Space.s;
-                        rest-key := Key { legend: "REST"; }
-                        Key { legend: "HOVER"; look: Look.hover; }
-                        Key { legend: "PRESSED"; look: Look.pressed; }
-                        Key { legend: "+3"; fill: ScannerStyle.band-light; }
+                        rest-key := Button { size: ButtonSize.key; text: "REST"; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "HOVER"; look: Look.hover; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "PRESSED"; look: Look.pressed; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-light; }
                     }
                 }
                 Group {

@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, Scroller, GlyphKey, KeyPlate, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu, PinnedTreeRow } from "ds/ds.slint";
+import { ColumnPill, Scroller, Icons, TreeItem, RenameRow, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu, PinnedTreeRow, Button, ButtonSize, ButtonGroup } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { ProjectTree } from "project_tree.slint";
 
@@ -46,15 +46,15 @@ export component Tree inherits Surface {
             padding-top: Library.surface == 1 ? 0 : Space.s;
             padding-bottom: Space.s;
             spacing: Space.s;
-            KeyPlate {
+            ButtonGroup { plate: true;
                 mini: true;
-                GlyphKey { icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
-                if Library.surface == 1: GlyphKey {
+                Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
+                if Library.surface == 1: Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
                     help: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder");
                     clicked => { Library.project-fold-all(); }
                 }
-                GlyphKey {
+                Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Library.tree-layout == 0 ? Icons.list : Library.tree-layout == 1 ? Icons.gallery : Icons.single;
                     help: Library.tree-layout-help;
                     clicked => { Library.tree-layout-next(); }

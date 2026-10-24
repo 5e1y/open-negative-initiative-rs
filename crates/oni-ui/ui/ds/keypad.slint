@@ -1,117 +1,7 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
 import { Colour, Space, Stroke, State, Motion, ScannerStyle, SliderStyle } from "theme.slint";
 import { Label, Tone, Tips, Clicks, TextRole } from "base.slint";
-import { Look } from "controls.slint";
-
-export global KeyInk {
-    // `LabKeyboard.band`: the ink a fill takes, dark on a light colour, light on a dark one.
-    public pure function light(fill: color) -> bool {
-        (0.2126 * fill.red + 0.7152 * fill.green + 0.0722 * fill.blue) / 255 > ScannerStyle.light-luma
-    }
-}
-
-// One key of the keypad, coloured whole by its fill; `wide` pins it beside keys of free width.
-export component Key inherits Rectangle {
-    in property <string> legend;
-    in property <color> fill: ScannerStyle.cap-light;
-    in property <bool> wide;
-    in property <string> help;
-    in property <Look> look: Look.live;
-    callback clicked();
-    property <bool> hovered: touch.has-hover || root.look == Look.hover;
-    // `KeycapPress`: the cap drawn down from the press until `key-hold` has passed, however short the tap.
-    out property <bool> down;
-    property <duration> pressed-at;
-    property <duration> left;
-    property <bool> pressed: root.down || root.look == Look.pressed;
-    // Whether ⇧ held the last press, which a stepper reads as three steps.
-    out property <bool> shift;
-    height: ScannerStyle.key-height;
-    min-width: root.wide ? ScannerStyle.wide-key : word.preferred-width + 2 * ScannerStyle.key-padding;
-    // Narrow keys start from one width, so a longer legend does not widen its own key.
-    preferred-width: root.wide ? ScannerStyle.wide-key : ScannerStyle.key-height;
-    horizontal-stretch: root.wide ? 0 : 1;
-    border-radius: ScannerStyle.key-radius;
-    background: root.pressed ? root.fill.darker(0.2) : root.hovered ? root.fill.brighter(0.1) : root.fill;
-    accessible-role: button;
-    accessible-label: root.help != "" ? root.help : root.legend;
-    accessible-action-default => { root.clicked(); }
-    animate background { duration: Motion.quick; }
-    word := Label {
-        width: parent.width;
-        height: parent.height;
-        text: root.legend;
-        centred: true;
-        font-size: ScannerStyle.legend;
-        font-weight: ScannerStyle.label-weight;
-        tone: KeyInk.light(root.fill) ? Tone.on-light : Tone.on-fill;
-    }
-    touch := TouchArea {
-        clicked => { root.clicked(); }
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down) {
-                root.shift = event.modifiers.shift;
-            }
-        }
-        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
-        changed pressed => {
-            if (self.pressed) {
-                lift.running = false;
-                root.down = true;
-                root.pressed-at = animation-tick();
-                Clicks.press();
-            } else {
-                root.left = ScannerStyle.key-hold - (animation-tick() - root.pressed-at);
-                if (root.left <= 0ms) {
-                    root.down = false;
-                    Clicks.release();
-                } else {
-                    lift.running = true;
-                }
-            }
-        }
-    }
-    lift := Timer {
-        interval: root.left;
-        running: false;
-        triggered => {
-            self.running = false;
-            root.down = false;
-            // The rise's click follows the cap, not the finger.
-            Clicks.release();
-        }
-    }
-}
-
-// A letter's or a finish's five keys: three and one toward `minus`, the title back to rest, one and
-// three toward `plus`. `helps` holds the five tooltips in that order.
-export component KeyRow inherits HorizontalLayout {
-    in property <string> title;
-    in property <[string]> legends: ["−3", "−", "+", "+3"];
-    in property <color> minus;
-    in property <color> plus;
-    in property <[string]> helps;
-    callback stepped(int);
-    callback reset();
-    spacing: ScannerStyle.key-gap;
-    Key { legend: root.legends[0]; fill: root.minus; help: root.helps[0]; clicked => { root.stepped(-3); } }
-    Key { legend: root.legends[1]; fill: root.minus; help: root.helps[1]; clicked => { root.stepped(-1); } }
-    Key { legend: root.title; wide: true; help: root.helps[2]; clicked => { root.reset(); } }
-    Key { legend: root.legends[2]; fill: root.plus; help: root.helps[3]; clicked => { root.stepped(1); } }
-    Key { legend: root.legends[3]; fill: root.plus; help: root.helps[4]; clicked => { root.stepped(3); } }
-}
-
-// `LabStack`: the keypad's rows on one socket.
-export component Keypad inherits Rectangle {
-    border-radius: ScannerStyle.socket-radius;
-    background: ScannerStyle.socket;
-    height: rows.preferred-height;
-    rows := VerticalLayout {
-        padding: ScannerStyle.key-gap;
-        spacing: ScannerStyle.key-gap;
-        @children
-    }
-}
+import { Look, Button, ButtonSize } from "controls.slint";
 
 export struct LabCell { title: string, value: string }
 
@@ -222,9 +112,10 @@ export component StepSlider inherits VerticalLayout {
     }
     HorizontalLayout {
         spacing: Space.s;
-        Key {
+        Button {
+            size: ButtonSize.key;
             y: (SliderStyle.row - ScannerStyle.step-key) / 2;
-            legend: "−";
+            text: "−";
             fill: root.minus;
             help: root.minus-help;
             horizontal-stretch: 0;
@@ -297,9 +188,10 @@ export component StepSlider inherits VerticalLayout {
                 }
             }
         }
-        Key {
+        Button {
+            size: ButtonSize.key;
             y: (SliderStyle.row - ScannerStyle.step-key) / 2;
-            legend: "+";
+            text: "+";
             fill: root.plus;
             help: root.plus-help;
             horizontal-stretch: 0;

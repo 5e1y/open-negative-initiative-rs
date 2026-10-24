@@ -1,6 +1,6 @@
 // The top bar in three zones; every key there is a gesture a menu already reaches.
 import { Act } from "act.slint";
-import { Icons, Button, IconButton, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
+import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
 import { Preparing } from "prepare.slint";
 
 // `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
@@ -49,7 +49,7 @@ export global Bar {
 }
 
 // `AppBar.item`: a glyph key that names its gesture.
-component Item inherits IconButton {
+component Item inherits Button { has-icon: true; square: true;
     in property <Act> action;
     clicked => { Bar.act(root.action); }
 }

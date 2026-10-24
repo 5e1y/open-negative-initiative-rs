@@ -1,0 +1,186 @@
+// The key every screen presses: its kinds and sizes, a glyph, a word or both, a keycap's band or a swatch.
+import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
+import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
+import { Icons } from "icons.slint";
+
+export enum ButtonKind { plain, accent, caution, destructive, update, confirm }
+// `mini` is the column's glyph key, `key` the Scanner's keycap.
+export enum ButtonSize { regular, small, mini, key }
+// What the catalogue and the state board force a control to look like; `live` follows the pointer.
+export enum Look { live, hover, pressed }
+export enum SliderFill { level, ramp, bipolar, metal }
+export enum Knob { grey, white, black }
+
+export global KeyInk {
+    // `LabKeyboard.band`: the ink a fill takes, dark on a light colour, light on a dark one.
+    public pure function light(fill: color) -> bool {
+        (0.2126 * fill.red + 0.7152 * fill.green + 0.0722 * fill.blue) / 255 > ScannerStyle.light-luma
+    }
+}
+
+export global ButtonInk {
+    public pure function fill(kind: ButtonKind, on: bool, hover: bool, pressed: bool) -> color {
+        if (on) { return hover ? Colour.on-hover : Colour.on; }
+        if (kind == ButtonKind.accent) { return pressed ? Colour.accent-pressed : hover ? Colour.accent-hover : Colour.accent; }
+        if (kind == ButtonKind.caution) { return pressed ? Colour.caution-pressed : hover ? Colour.caution-hover : Colour.caution; }
+        if (kind == ButtonKind.confirm) { return pressed ? Colour.confirm-pressed : hover ? Colour.confirm-hover : Colour.confirm; }
+        if (kind == ButtonKind.update) { return pressed ? Colour.update-pressed : hover ? Colour.update-hover : Colour.update; }
+        if (kind == ButtonKind.destructive) {
+            return pressed ? Colour.destructive-pressed : hover ? Colour.destructive-hover : Colour.destructive;
+        }
+        pressed ? Colour.raised-pressed : hover ? Colour.raised-hover : Colour.raised
+    }
+    public pure function ink(kind: ButtonKind, on: bool) -> Tone {
+        if (on || kind == ButtonKind.caution) { return Tone.on-light; }
+        kind == ButtonKind.plain ? Tone.primary : Tone.on-fill
+    }
+}
+
+// A flat rounded key: a word, a glyph, or both; `on` lights it as a held toggle.
+export component Button inherits Rectangle {
+    in property <string> text;
+    in property <image> icon;
+    in property <bool> has-icon;
+    in property <ButtonKind> kind: ButtonKind.plain;
+    in property <ButtonSize> size: ButtonSize.regular;
+    in property <bool> on;
+    in property <bool> enabled: true;
+    in property <string> help;
+    // The widest word the key ever shows, so it keeps that width as its word changes.
+    in property <string> widest;
+    in property <length> fixed-width: 0px;
+    in property <bool> lamp-shown;
+    in property <bool> lamp-lit;
+    in property <Look> look: Look.live;
+    // `DSPanelButton.fills`: the key takes its share of the room; else it keeps its own width, though
+    // a row of keys none of which fills still shares its room out, as a filling `KeyPlate` does.
+    in property <bool> fills;
+    // `DSPanelButton.rotated`: the glyph turned a quarter for a gesture whose twin the icon bank lacks.
+    in property <bool> turned;
+    // A colour of its own instead of its kind's: a Scanner keycap's band, a tint's swatch, which `on` rings.
+    in property <color> fill: transparent;
+    // As wide as tall, a glyph alone; `wide` is a keycap's fixed width beside keys of free width.
+    in property <bool> square;
+    in property <bool> wide;
+    // The glyph's own ink in place of the kind's, as the favourite star's, and a swatch's ring.
+    in property <color> glyph-ink: transparent;
+    // Whether ⇧ held the last press, which a stepper reads as three steps.
+    out property <bool> shift;
+    callback clicked();
+    property <bool> small: root.size == ButtonSize.small || root.size == ButtonSize.mini;
+    property <bool> keycap: root.size == ButtonSize.key;
+    property <bool> filled: root.fill.alpha > 0;
+    property <bool> hovered: root.enabled && (touch.has-hover || root.look == Look.hover);
+    // `KeycapPress`: a keycap stays down from the press until `key-hold` has passed, however short the tap.
+    out property <bool> down;
+    property <duration> pressed-at;
+    property <duration> left;
+    property <bool> pressed: root.enabled && ((root.keycap ? root.down : touch.pressed) || root.look == Look.pressed);
+    property <length> pad: root.keycap ? ScannerStyle.key-padding : root.small ? ButtonStyle.small-padding : ButtonStyle.padding;
+    property <length> glyph: root.small ? ButtonStyle.small-icon : ButtonStyle.icon;
+    property <bool> worded: root.text != "";
+    property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
+    property <Tone> ink: root.filled ? (KeyInk.light(root.fill) ? Tone.on-light : Tone.on-fill) : ButtonInk.ink(root.kind, root.on);
+    height: root.keycap ? ScannerStyle.key-height : root.size == ButtonSize.mini ? ButtonStyle.mini-height : root.small ? ButtonStyle.small-height : ButtonStyle.height;
+    min-width: root.wide ? ScannerStyle.wide-key
+        : root.square ? self.height
+        : root.fixed-width > 0 ? root.fixed-width
+        : root.worded ? max(word.preferred-width, measure.preferred-width) + 2 * root.pad + (root.has-icon ? root.glyph + Space.xs : 0px) + root.lamp-room
+        : self.height;
+    preferred-width: root.keycap && !root.wide ? ScannerStyle.key-height : self.min-width;
+    horizontal-stretch: root.fills || (root.keycap && !root.wide) ? 1 : 0;
+    border-radius: root.keycap ? ScannerStyle.key-radius : root.small ? ButtonStyle.small-radius : ButtonStyle.radius;
+    background: !root.filled ? ButtonInk.fill(root.kind, root.on, root.hovered, root.pressed)
+        : root.pressed ? root.fill.darker(0.2) : root.hovered && root.keycap ? root.fill.brighter(0.1) : root.fill;
+    border-width: root.filled && root.on ? Stroke.emphasis : 0px;
+    border-color: root.glyph-ink.alpha > 0 ? root.glyph-ink : Colour.ink;
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: button;
+    accessible-label: root.worded ? root.text : root.help;
+    accessible-enabled: root.enabled;
+    accessible-checked: root.on;
+    accessible-action-default => { root.clicked(); }
+    animate background { duration: Motion.quick; }
+
+    measure := Label {
+        visible: false;
+        role: TextRole.button;
+        text: root.widest;
+        letter-spacing: ButtonStyle.tracking;
+    }
+    HorizontalLayout {
+        alignment: center;
+        padding-right: root.lamp-room;
+        // No gap beside an empty word, which would push a lone icon off the key's centre.
+        spacing: root.worded && root.has-icon ? Space.xs : 0;
+        if root.has-icon: VerticalLayout {
+            alignment: center;
+            Icon {
+                source: root.icon;
+                width: root.glyph;
+                height: root.glyph;
+                transform-rotation: root.turned ? 90deg : 0deg;
+                tone: root.ink;
+                ink: root.glyph-ink.alpha > 0 ? root.glyph-ink : Tones.ink(root.ink);
+            }
+        }
+        word := Label {
+            visible: root.worded;
+            // A fixed key elides a word longer than its room rather than spill past its edge.
+            width: !root.worded ? 0px : root.fixed-width > 0 ? min(self.preferred-width, root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px)) : self.preferred-width;
+            overflow: elide;
+            role: TextRole.button;
+            tone: root.ink;
+            text: root.text;
+            font-size: root.keycap ? ScannerStyle.legend : Type.chip;
+            font-weight: root.keycap ? ScannerStyle.label-weight : Type.strong;
+            letter-spacing: root.keycap ? 0 : ButtonStyle.tracking;
+        }
+    }
+    if root.lamp-shown: Rectangle {
+        width: ButtonStyle.lamp;
+        height: ButtonStyle.lamp;
+        border-radius: self.width / 2;
+        x: parent.width - root.pad - self.width;
+        y: (parent.height - self.height) / 2;
+        background: root.lamp-lit ? Colour.confirm : Colour.track;
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down) {
+                root.shift = event.modifiers.shift;
+            }
+        }
+        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        changed pressed => {
+            if (!root.keycap) {
+                if (self.pressed) { Clicks.press(); } else { Clicks.release(); }
+            } else if (self.pressed) {
+                lift.running = false;
+                root.down = true;
+                root.pressed-at = animation-tick();
+                Clicks.press();
+            } else {
+                root.left = ScannerStyle.key-hold - (animation-tick() - root.pressed-at);
+                if (root.left <= 0ms) {
+                    root.down = false;
+                    Clicks.release();
+                } else {
+                    lift.running = true;
+                }
+            }
+        }
+    }
+    lift := Timer {
+        interval: root.left;
+        running: false;
+        triggered => {
+            self.running = false;
+            root.down = false;
+            // The rise's click follows the cap, not the finger.
+            Clicks.release();
+        }
+    }
+}

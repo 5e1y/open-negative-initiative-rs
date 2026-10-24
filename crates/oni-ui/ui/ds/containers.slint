@@ -2,7 +2,7 @@
 import { NewsSeal } from "help.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
 import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
-import { Button, ButtonSize, Look, KeyPlate } from "controls.slint";
+import { Button, ButtonSize, Look } from "controls.slint";
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 
@@ -174,12 +174,6 @@ export component Sheet inherits Rectangle {
             @children
         }
     }
-}
-
-// `DSDialogPanel`'s key row: the keys on one plate at the card's trailing edge, the default last.
-export component SheetKeys inherits HorizontalLayout {
-    alignment: end;
-    KeyPlate { @children }
 }
 
 // One line of a menu: its word, its shortcut, a hover band.

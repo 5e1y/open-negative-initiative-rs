@@ -1,6 +1,6 @@
 // The board's feedback: warnings and notes, progress and status lines, seals, badges and chips, the
 // header's small keys, the empty state, the summary box and the notices' lines.
-import { Space, Look, Label, TextRole, Tone, WarningBadge, StatusLine, Warning, WarningBand, CautionNote, Note, Badge, Chip, Progress, LoadBar, SealedStatusLine, NewsSeal, Seal, Ring, EmptyState, SummaryBox, BulletLine, StepNumber, GlyphKey, ColumnPill, GroupHeading, PreviewSlot, Icons } from "../ds.slint";
+import { Space, Look, Label, TextRole, Tone, WarningBadge, StatusLine, WarningBand, Badge, Chip, Progress, LoadBar, SealedStatusLine, NewsSeal, Seal, Ring, EmptyState, SummaryBox, BulletLine, StepNumber, ColumnPill, PreviewSlot, Icons, Button, ButtonSize, NavigatorStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Row, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
 export component FeedbackPage inherits Page {
@@ -10,12 +10,12 @@ export component FeedbackPage inherits Page {
         title: "Warnings and notes";
         states: ["As drawn"];
         span: BoardStyle.wide;
-        Row { label: "Warning"; Fill { span: BoardStyle.wide; Warning { text: "8-bit source: 256 levels per channel."; } } }
+        Row { label: "Warning"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; tone: Tone.warning; text: "8-bit source: 256 levels per channel."; } } }
         Row { label: "WarningBadge"; Cell { span: BoardStyle.wide; WarningBadge { text: "8-bit source"; } } }
         Row { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
-        Row { label: "CautionNote"; Fill { span: BoardStyle.wide; CautionNote { text: "Clipped highlights in the blue channel."; } } }
-        Row { label: "Note"; Fill { span: BoardStyle.wide; Note { text: "A quiet line under a field, wrapping when it runs long."; } } }
-        Row { label: "GroupHeading"; Cell { span: BoardStyle.wide; GroupHeading { text: "MAKERS"; } } }
+        Row { label: "CautionNote"; Fill { span: BoardStyle.wide; Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: "Clipped highlights in the blue channel."; } } }
+        Row { label: "Note"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; text: "A quiet line under a field, wrapping when it runs long."; } } }
+        Row { label: "GroupHeading"; Cell { span: BoardStyle.wide; Label { tone: Tone.tertiary; text: "MAKERS"; } } }
     }
     Group {
         title: "Progress";
@@ -59,11 +59,11 @@ export component FeedbackPage inherits Page {
         states: ["Rest", "Hover", "Pressed", "Disabled", "Tinted / not pressable"];
         Row {
             label: "GlyphKey";
-            Cell { GlyphKey { icon: Icons.favourite; } }
-            Cell { GlyphKey { icon: Icons.favourite; look: Look.hover; } }
-            Cell { GlyphKey { icon: Icons.favourite; look: Look.pressed; } }
-            Cell { GlyphKey { icon: Icons.favourite; enabled: false; } }
-            Cell { GlyphKey { icon: Icons.favourite; tinted: true; } }
+            Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; } }
+            Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; look: Look.hover; } }
+            Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; look: Look.pressed; } }
+            Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; enabled: false; } }
+            Cell { Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: true ? NavigatorStyle.favourite : transparent; } }
         }
         Row {
             label: "ColumnPill";

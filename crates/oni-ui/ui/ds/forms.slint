@@ -43,21 +43,6 @@ export component Field inherits VerticalLayout {
     @children
 }
 
-// `dsNoteStyle`: a quiet line that wraps.
-export component Note inherits Label {
-    role: TextRole.value;
-    tone: Tone.tertiary;
-    wrap: word-wrap;
-}
-
-// A line in the warning ink, which the summary uses for an 8-bit source.
-export component Warning inherits Text {
-    font-family: Type.family;
-    font-size: Type.value;
-    color: DS.palette-warning;
-    wrap: word-wrap;
-}
-
 // `DSWarning`: a triangle, then the sentence under it, on a pale orange band.
 export component WarningBand inherits Rectangle {
     in property <string> text;
@@ -262,12 +247,6 @@ export component BoardCard inherits Rectangle {
         alignment: start;
         @children
     }
-}
-
-// A sidebar group's heading, in capitals and the tertiary ink.
-export component GroupHeading inherits Label {
-    role: TextRole.label;
-    tone: Tone.tertiary;
 }
 
 // `DSProgress`: a recessed track lit up to the fraction done; below zero, no total, a lit segment

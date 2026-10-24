@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, IconButton, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Warning, Progress } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Progress, Tone } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -300,7 +300,7 @@ export component CanvasCard inherits Card {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }
-    if Canvas.failure != "": Warning {
+    if Canvas.failure != "": Label { role: TextRole.note; tone: Tone.warning;
         text: Canvas.failure;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
@@ -326,7 +326,7 @@ export component CanvasCard inherits Card {
         width: self.preferred-width;
         height: self.preferred-height;
         alignment: center;
-        IconButton {
+        Button { has-icon: true; square: true;
             size: ButtonSize.small;
             icon: Icons.menu-left;
             help: root.library-hidden ? @tr("Show the Library (⌥⌘[)") : @tr("Hide the Library (⌥⌘[)");
@@ -352,7 +352,7 @@ export component CanvasCard inherits Card {
             Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in (⌘+)"); clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
-        IconButton {
+        Button { has-icon: true; square: true;
             size: ButtonSize.small;
             icon: Icons.menu-right;
             help: root.panel-hidden ? @tr("Show the Panel (⌥⌘])") : @tr("Hide the Panel (⌥⌘])");

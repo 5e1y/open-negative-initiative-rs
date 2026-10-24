@@ -57,27 +57,6 @@ export component PresetNewFace inherits Rectangle {
     }
 }
 
-// `PresetTintPicker`'s swatch: the picked one ringed in its own ink, which no near tint hides.
-export component Swatch inherits Rectangle {
-    in property <color> fill;
-    in property <bool> picked;
-    in property <string> name;
-    in property <color> ink: Colour.ink;
-    callback clicked();
-    width: PresetStyle.swatch;
-    height: PresetStyle.swatch;
-    border-radius: Radius.badge;
-    background: root.fill;
-    border-width: root.picked ? Stroke.emphasis : 0px;
-    border-color: root.ink;
-    accessible-role: button;
-    accessible-label: root.name;
-    TouchArea {
-        clicked => { root.clicked(); }
-        changed has-hover => { Tips.hover(self.has-hover, root.name, self.absolute-position.x, self.absolute-position.y + self.height); }
-    }
-}
-
 // The editor's list row: the monogram badge, the name, what it carries.
 export component PresetRow inherits Rectangle {
     in property <string> abbreviation;

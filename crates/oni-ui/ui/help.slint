@@ -1,5 +1,5 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
-import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, KeyPlate, Toggle, Note, Warning, Sheet, Divider, Scroller, TextArea, LogText, AppWindow, Badge, Surface, WelcomePhoto } from "ds/ds.slint";
+import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, TextArea, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup } from "ds/ds.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -88,8 +88,8 @@ export component ReportSheet inherits Sheet {
     title: Help.report-sent ? @tr("Thank You") : @tr("Report a Bug or Give Feedback");
     card-width: SheetStyle.notice-width;
     dismissed => { Help.report-closed(); }
-    if Help.report-sent: Note { text: @tr("Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."); }
-    if !Help.report-sent: Note { text: @tr("Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."); }
+    if Help.report-sent: Label { role: TextRole.note; text: @tr("Your message is on its way to the people who make ONI. It shows with the others on GitHub, where you can follow it."); }
+    if !Help.report-sent: Label { role: TextRole.note; text: @tr("Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."); }
     // Both ways: typing reaches Send's gate, and Rust's cut at the site's limit reaches the field.
     if !Help.report-sent: message := TextArea {
         text <=> Help.report-message;
@@ -111,13 +111,13 @@ export component ReportSheet inherits Sheet {
             TouchArea { clicked => { Help.report-log = !Help.report-log; } }
         }
     }
-    if !Help.report-sent && Help.report-failure != "": Warning { text: Help.report-failure; }
+    if !Help.report-sent && Help.report-failure != "": Label { role: TextRole.note; tone: Tone.warning; text: Help.report-failure; }
     HorizontalLayout {
         spacing: Space.s;
         Button { text: @tr("See Community Feedbacks"); fills: false; clicked => { Help.community(); } }
         Rectangle { horizontal-stretch: 1; }
         if Help.report-sent: Button { text: @tr("Done"); fills: false; clicked => { Help.report-closed(); } }
-        if !Help.report-sent: KeyPlate {
+        if !Help.report-sent: ButtonGroup { plate: true;
             Button { text: @tr("Cancel"); clicked => { Help.report-closed(); } }
             Button {
                 text: Help.report-sending ? @tr("Sending…") : @tr("Send");
@@ -155,7 +155,7 @@ export component ConsoleWindow inherits AppWindow {
                 content-height: view.preferred-height;
                 view := LogText { width: parent.width; text: root.log == "" ? @tr("Nothing recorded yet.") : root.log; }
             }
-            Note { text: @tr("Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."); }
+            Label { role: TextRole.note; text: @tr("Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."); }
         }
     }
 }

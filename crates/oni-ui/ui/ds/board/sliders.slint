@@ -1,6 +1,6 @@
 // The board's sliders and the Scanner face: every fill and knob, the step sliders, the keys in each
 // band's colour, the keypad and the scanner's screen.
-import { Colour, PlotStyle, ScannerStyle, Look, SliderFill, Knob, Slider, StepSlider, Key, KeyRow, Keypad, LabScreen, LcdReadout } from "../ds.slint";
+import { Colour, PlotStyle, ScannerStyle, Look, SliderFill, Knob, Slider, StepSlider, LabScreen, LcdReadout, Button, ButtonSize } from "../ds.slint";
 import { BoardStyle, Page, Group, Row, Cell, Fill } from "kit.slint";
 
 // One slider in its four states; Rust drives a live one, so this one holds its place.
@@ -65,11 +65,11 @@ export component SlidersPage inherits Page {
 component KeyFillRow inherits Row {
     in property <color> fill;
     in property <string> legend: "+3";
-    Cell { Key { legend: root.legend; fill: root.fill; } }
-    Cell { Key { legend: root.legend; fill: root.fill; look: Look.hover; } }
-    Cell { Key { legend: root.legend; fill: root.fill; look: Look.pressed; } }
-    Cell { Key { legend: "D"; fill: root.fill; wide: true; } }
-    Cell { Key { legend: "D"; fill: root.fill; wide: true; look: Look.pressed; } }
+    Cell { Button { size: ButtonSize.key; text: root.legend; fill: root.fill; } }
+    Cell { Button { size: ButtonSize.key; text: root.legend; fill: root.fill; look: Look.hover; } }
+    Cell { Button { size: ButtonSize.key; text: root.legend; fill: root.fill; look: Look.pressed; } }
+    Cell { Button { size: ButtonSize.key; text: "D"; fill: root.fill; wide: true; } }
+    Cell { Button { size: ButtonSize.key; text: "D"; fill: root.fill; wide: true; look: Look.pressed; } }
 }
 
 export component KeypadPage inherits Page {
@@ -94,22 +94,6 @@ export component KeypadPage inherits Page {
     }
     Group {
         title: "Keypad and screen";
-        Row {
-            label: "KeyRow";
-            Fill { span: BoardStyle.panel; KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: root.helps; } }
-        }
-        Row {
-            label: "Keypad socket";
-            Fill {
-                span: BoardStyle.panel;
-                Keypad {
-                    KeyRow { title: "D"; minus: ScannerStyle.band-dark; plus: ScannerStyle.band-light; helps: root.helps; }
-                    KeyRow { title: "C"; minus: ScannerStyle.band-red; plus: ScannerStyle.band-cyan; helps: root.helps; }
-                    KeyRow { title: "M"; minus: ScannerStyle.band-green; plus: ScannerStyle.band-magenta; helps: root.helps; }
-                    KeyRow { title: "Y"; minus: ScannerStyle.band-blue; plus: ScannerStyle.band-yellow; helps: root.helps; }
-                }
-            }
-        }
         Row {
             label: "LabScreen";
             Fill {
