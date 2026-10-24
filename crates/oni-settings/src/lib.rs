@@ -2,6 +2,7 @@
 //! a stored version still needs, and the roll marker, written as the Swift app writes them.
 
 pub mod collation;
+mod atomic;
 pub mod axis;
 pub mod blocks;
 pub mod cg;
@@ -14,6 +15,7 @@ pub mod frame;
 pub mod geometry;
 pub mod id;
 pub mod json;
+mod kept;
 pub mod legacy;
 pub mod levels;
 pub mod lighting_catch_up;

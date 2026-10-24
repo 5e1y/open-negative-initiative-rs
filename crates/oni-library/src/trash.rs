@@ -5,6 +5,7 @@ use crate::film_group::{self, FilmGroup, FilmKey};
 use crate::folders;
 use crate::index::Entry;
 use crate::paths::{self, holds};
+use crate::refusal;
 use oni_i18n::{tr, trn};
 use oni_settings::{Date, sidecar};
 use std::collections::{HashMap, HashSet};
@@ -15,7 +16,10 @@ pub struct Outcome {
     pub done: Vec<String>,
     /// Sidecars written by a newer version, which this one never rewrites.
     pub refused: Vec<String>,
-    pub failure: Option<String>,
+    /// Originals not on disk, their disk away or the file moved: no sidecar is written beside nothing.
+    pub unreachable: Vec<String>,
+    /// Each photo whose sidecar the disk refused, with the cause.
+    pub failed: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,26 +37,53 @@ pub fn mark(files: &[String], date: Option<Date>, mosaic: &dyn Fn(&Path) -> bool
         let original = Path::new(path);
         match sidecar::set_trashed(date, original, mosaic(original)) {
             Ok(true) => out.done.push(path.clone()),
-            Ok(false) => out.refused.push(path.clone()),
-            Err(e) => out.failure = Some(e.to_string()),
+            Ok(false) | Err(sidecar::Error::Newer) => out.refused.push(path.clone()),
+            Err(sidecar::Error::Unreachable) => out.unreachable.push(path.clone()),
+            Err(e) => out.failed.push((path.clone(), refusal::said(&e))),
         }
     }
     out
 }
 
+/// Names at most this many failed files, then counts the rest.
+const NAMED: usize = 3;
+
+/// Every cause of a mark that did not land, each with its count; `None` when every photo was marked.
 pub fn report(outcome: &Outcome, restoring: bool) -> Option<String> {
-    if !outcome.refused.is_empty() {
-        let count = outcome.refused.len() as u64;
-        let head = if restoring {
-            trn("One photo was not restored", "{n} photos were not restored", count)
+    let head = |count: usize| {
+        if restoring {
+            trn("One photo was not restored", "{n} photos were not restored", count as u64)
         } else {
-            trn("One photo was not moved to the ONI Trash", "{n} photos were not moved to the ONI Trash", count)
-        };
-        return Some(tr!("{head}: a newer version of ONI wrote their settings, and this one never rewrites them.", head = head));
+            trn("One photo was not moved to the ONI Trash", "{n} photos were not moved to the ONI Trash", count as u64)
+        }
+    };
+    let mut said = Vec::new();
+    if !outcome.refused.is_empty() {
+        let head = head(outcome.refused.len());
+        said.push(tr!("{head}: a newer version of ONI wrote their settings, and this one never rewrites them.", head = head));
     }
-    outcome.failure.as_ref().map(|f| {
-        if restoring { tr!("Some photos were not restored: {failure}", failure = f) } else { tr!("Some photos were not moved to the ONI Trash: {failure}", failure = f) }
-    })
+    if !outcome.unreachable.is_empty() {
+        let count = outcome.unreachable.len();
+        said.push(tr!("{head}: {why}", head = head(count), why = refusal::why_gone(count)));
+    }
+    if !outcome.failed.is_empty() {
+        let mut files: Vec<String> = outcome
+            .failed
+            .iter()
+            .take(NAMED)
+            .map(|(path, cause)| {
+                let name = paths::name(&sidecar::url_for(Path::new(path)).to_string_lossy());
+                tr!("{file} could not be written ({cause})", file = name, cause = cause)
+            })
+            .collect();
+        if outcome.failed.len() > NAMED {
+            let rest = (outcome.failed.len() - NAMED) as u64;
+            files.push(trn("and {n} other", "and {n} others", rest));
+        }
+        let head = head(outcome.failed.len());
+        said.push(tr!("{head}: {files}.", head = head, files = files.join(", ")));
+    }
+    (!said.is_empty()).then(|| said.join(" "))
 }
 
 /// The folders holding trashed photos, latest deletion first, each counting its own photos.

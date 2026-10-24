@@ -9,11 +9,13 @@ fn an_unreadable_sidecar_is_left_as_it_was() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let broken = dir.join("A.NEF");
+    std::fs::write(&broken, b"").unwrap();
     std::fs::write(url_for(&broken), b"{\"settings\": {\"exposure\": 1.2, trunc").unwrap();
     assert!(set_label(Medal::Gold, &broken, true).is_err(), "a broken sidecar is an error");
     assert_eq!(std::fs::read(url_for(&broken)).unwrap(), b"{\"settings\": {\"exposure\": 1.2, trunc", "left untouched");
     // Twin: a readable one takes the label, its settings kept.
     let kept = dir.join("B.NEF");
+    std::fs::write(&kept, b"").unwrap();
     let mut s = PipelineSettings::default();
     s.print.exposure = 0.7;
     sidecar::write(&s, &kept, Default::default()).unwrap();

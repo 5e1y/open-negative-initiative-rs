@@ -114,6 +114,7 @@ mod tests {
         theirs.manual_order = Some(4.0);
         theirs.face = oni_settings::Face::Scanner;
         for p in [&b, &c] {
+            std::fs::write(p, b"").unwrap();
             sidecar::write(&theirs, Path::new(p), WriteOptions::default()).unwrap();
         }
         let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone(), c.clone()], |_: &Path| false));

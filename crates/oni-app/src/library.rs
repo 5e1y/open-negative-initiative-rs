@@ -247,12 +247,18 @@ pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &
 }
 
 /// A row read again from its sidecar alone, its file's stamp kept: what a gesture on the sidecar
-/// moves, without the file read a fingerprint costs.
+/// moves, without the file read a fingerprint costs. A row whose sidecar cannot be seen stays as it was.
 pub fn refreshed(row: &Entry) -> Entry {
-    let side = oni_settings::sidecar::url_for(Path::new(&row.path));
-    let Some(envelope) = std::fs::read(&side).ok().and_then(|data| oni_settings::codec::envelope(&data)) else {
-        return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, ..row.clone() };
+    let original = Path::new(&row.path);
+    let envelope = match std::fs::read(oni_settings::sidecar::url_for(original)) {
+        Ok(data) => oni_settings::codec::envelope(&data),
+        // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
+            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, ..row.clone() };
+        }
+        Err(_) => None,
     };
+    let Some(envelope) = envelope else { return row.clone() };
     Entry {
         label: envelope.label,
         film: envelope.film,

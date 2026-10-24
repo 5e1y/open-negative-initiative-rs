@@ -16,6 +16,7 @@ pub mod navigator;
 pub mod paths;
 pub mod project;
 pub mod project_tree;
+pub mod refusal;
 pub mod relink;
 pub mod rgb_passes;
 pub mod roll_folder;

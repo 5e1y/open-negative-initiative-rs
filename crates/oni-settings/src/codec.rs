@@ -116,18 +116,22 @@ pub fn encode(
     roll_draft: Option<RollDraft>,
     trashed_at: Option<Date>,
 ) -> Result<String, json::Error> {
+    let document = document(settings, imported_at, label, exif, roll_draft, trashed_at);
+    Ok(json::pretty_sorted(&json::to_node(&document)?))
+}
+
+/// The document `encode` writes, before its text.
+pub(crate) fn document(
+    settings: &PipelineSettings,
+    imported_at: Option<Date>,
+    label: Option<Medal>,
+    exif: Option<ExifMetadata>,
+    roll_draft: Option<RollDraft>,
+    trashed_at: Option<Date>,
+) -> SettingsDocument {
     // An empty box is no EXIF at all, so an untouched frame's sidecar does not grow empty strings.
     let exif = exif.filter(|e| !e.is_empty());
-    let document = SettingsDocument {
-        version: VERSION,
-        imported_at,
-        label,
-        exif,
-        roll_draft,
-        trashed_at,
-        settings: settings.clone(),
-    };
-    Ok(json::pretty_sorted(&json::to_node(&document)?))
+    SettingsDocument { version: VERSION, imported_at, label, exif, roll_draft, trashed_at, settings: settings.clone() }
 }
 
 pub fn encode_settings(settings: &PipelineSettings) -> Result<String, json::Error> {
