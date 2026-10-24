@@ -166,6 +166,12 @@ impl Ctl {
                     *path = to;
                 }
             }
+            // `selection` and `ring` follow too, so a photo moved is never opened where it was.
+            let picks = &mut s.picks;
+            picks.selection = picks.selection.drain().map(|p| moved(&p).unwrap_or(p)).collect();
+            for kept in [&mut picks.anchor, &mut picks.cursor].into_iter().flatten() {
+                *kept = moved(kept).unwrap_or_else(|| kept.clone());
+            }
             s.open.as_deref().and_then(|p| moved(p))
         };
         self.lay_archive();

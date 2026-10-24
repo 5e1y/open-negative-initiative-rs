@@ -2530,5 +2530,12 @@
     "title": "A sidecar refused on switching photo keeps the edits and asks",
     "status": "done",
     "detail": "Leaving a frame whose write fails (disk gone, read-only share) keeps its settings in the store's unsaved list instead of dropping them; a sheet asks Retry or Discard, Escape keeps them, a volume coming back retries on its own, reopening the frame shows them, and quitting asks as a failed write does. A retry never writes beside an original out of sight."
+  },
+  {
+    "id": 382,
+    "type": "fix",
+    "title": "A move on disk takes the selection with it, as Swift's followed does",
+    "status": "done",
+    "detail": "followed() moved the index rows, the order and the open frame but left the selection, its anchor and cursor on the old paths, so a photo moved into a New Roll then opened from the gallery opened where it no longer was. EditorScene+Disk.swift:125-137 maps selection and ring too; so does the port now."
   }
 ]
