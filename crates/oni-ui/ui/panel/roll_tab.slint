@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, WarningBand, Field, Label, TextRole, Tone, ButtonGroup, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, WarningBand, Field, Label, TextRole, Tone, ButtonGroup, GroupAlign, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -27,15 +27,13 @@ export component RollPane inherits Pane {
                 text: PanelState.roll-unmeasured == 1 ? @tr("1 photo of this folder was not measured with the roll.") : @tr("{} photos of this folder were not measured with the roll.", PanelState.roll-unmeasured);
             }
             if PanelState.roll-state == 1 && PanelState.roll-unmeasured > 0: ButtonGroup { plate: true;
-                fills: true;
+                align: GroupAlign.fill;
                 Button {
-                    fills: true;
                     text: PanelState.roll-unmeasured == 1 ? @tr("JOIN THE ROLL") : @tr("JOIN THE {}", PanelState.roll-unmeasured);
                     help: @tr("Gives them this roll's measurement and settings, their own look kept.");
                     clicked => { PanelState.join-roll(); }
                 }
                 Button {
-                    fills: true;
                     text: @tr("ROLL OF THE {}", PanelState.roll-measured);
                     help: @tr("Makes the photos measured together a roll of their own.");
                     clicked => { PanelState.make-roll(); }
@@ -50,8 +48,8 @@ export component RollPane inherits Pane {
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];
-            selected <=> PanelState.film-type;
-            picked(i) => { PanelState.film-type-picked(i); }
+            selected: PanelState.film-type;
+            picked(i) => { PanelState.film-type = i; PanelState.film-type-picked(i); }
         }
     }
     Block {
@@ -63,7 +61,7 @@ export component RollPane inherits Pane {
         // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
         HorizontalLayout {
             spacing: Space.s;
-            Toggle { labelled: true; label: @tr("Flat-field"); on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
+            Toggle { label: @tr("Flat-field"); on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
@@ -97,10 +95,10 @@ export component RollPane inherits Pane {
             enabled: PanelState.masked; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta;
         }
         if root.flat-settings: ButtonGroup { plate: true;
-            fills: true;
-            Button { fills: true; text: PanelState.loading-mask ? @tr("LOADING…") : @tr("LOAD…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
-            Button { fills: true; text: @tr("RENAME"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
-            Button { fills: true; text: @tr("FOLDER"); clicked => { PanelState.mask-folder(); } }
+            align: GroupAlign.fill;
+            Button { text: PanelState.loading-mask ? @tr("LOADING…") : @tr("LOAD…"); enabled: PanelState.can-load-mask; clicked => { PanelState.load-mask(); } }
+            Button { text: @tr("RENAME"); enabled: PanelState.can-rename-mask; clicked => { PanelState.rename-mask(); } }
+            Button { text: @tr("FOLDER"); clicked => { PanelState.mask-folder(); } }
         }
         if root.flat-settings: Button {
             text: @tr("APPLY TO SELECTION");
@@ -120,8 +118,8 @@ export component RollPane inherits Pane {
             label: @tr("Read as");
             Tabs {
                 tabs: PanelState.grey-source ? [@tr("sRGB"), @tr("Linear")] : [@tr("sRGB"), @tr("Linear"), @tr("Display P3")];
-                selected <=> PanelState.encoding;
-                picked(i) => { PanelState.encoding-picked(i); }
+                selected: PanelState.encoding;
+                picked(i) => { PanelState.encoding = i; PanelState.encoding-picked(i); }
             }
         }
     }
@@ -175,8 +173,8 @@ export component RollPane inherits Pane {
             label: @tr("Dyes");
             Tabs {
                 tabs: [@tr("Kodak"), @tr("Fuji"), @tr("Generic"), @tr("ECN-2"), @tr("E-6")];
-                selected <=> PanelState.dye-family;
-                picked(i) => { PanelState.dye-family-picked(i); }
+                selected: PanelState.dye-family;
+                picked(i) => { PanelState.dye-family = i; PanelState.dye-family-picked(i); }
             }
         }
         StoreSlider { field: 13; label: @tr("Dye separation"); fraction: Store.dye-separation-fraction; readout: Store.dye-separation-readout; value-text: Store.dye-separation-value; }

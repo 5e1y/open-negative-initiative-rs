@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -347,7 +347,7 @@ export component CanvasCard inherits Card {
         if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
         Label { text: Canvas.zoom-label; role: TextRole.value; }
         ButtonGroup {
-            alignment: center;
+            align: GroupAlign.center;
             Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: @tr("Zoom out (⌘−)"); clicked => { root.menu(Act.smaller); } }
             Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in (⌘+)"); clicked => { root.menu(Act.larger); } }
         }

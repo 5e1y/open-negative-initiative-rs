@@ -81,8 +81,8 @@ export component CurvesEditor inherits VerticalLayout {
     Tabs {
         tabs: [@tr("RGB"), @tr("Luma"), @tr("R"), @tr("G"), @tr("B")];
         marked: Editors.curve-marked;
-        selected <=> Editors.curve-channel;
-        picked(i) => { Editors.pick(0, i); }
+        selected: Editors.curve-channel;
+        picked(i) => { Editors.curve-channel = i; Editors.pick(0, i); }
     }
     EditorPlot {
         plot: 0;
@@ -104,8 +104,8 @@ export component LevelsEditor inherits VerticalLayout {
     Tabs {
         tabs: [@tr("R"), @tr("G"), @tr("B")];
         marked: Editors.levels-marked;
-        selected <=> Editors.levels-channel;
-        picked(i) => { Editors.pick(1, i); }
+        selected: Editors.levels-channel;
+        picked(i) => { Editors.levels-channel = i; Editors.pick(1, i); }
     }
     VerticalLayout {
         spacing: Space.xxs;
@@ -154,8 +154,8 @@ export component SpectrogramEditor inherits VerticalLayout {
         tabs: [@tr("Red"), @tr("Orange"), @tr("Yellow"), @tr("Green"), @tr("Aqua"), @tr("Blue"), @tr("Purple"), @tr("Magenta")];
         marked: Editors.band-marked;
         swatches: PlotInkStyle.bands;
-        selected <=> Editors.band;
-        picked(i) => { Editors.pick(2, i); }
+        selected: Editors.band;
+        picked(i) => { Editors.band = i; Editors.pick(2, i); }
     }
     BandSlider {
         field: 0; label: @tr("Hue"); fraction: Editors.band-fractions[0]; readout: Editors.band-readouts[0]; value-text: Editors.band-readouts[0];

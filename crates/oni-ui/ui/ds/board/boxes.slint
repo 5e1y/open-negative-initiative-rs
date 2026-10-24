@@ -1,6 +1,6 @@
 // The board's containers: the block's Section in each form, the help mark and a still copy of the
 // card and the tooltip `TipLayer` draws, the sheets, the cards and the panels; notices.slint the rest.
-import { Colour, Space, Stroke, Type, TipStyle, SheetStyle, FormStyle, Look, Label, TextRole, Tone, Picture, Ground, Surface, Card, FloatingColumn, Button, ButtonKind, Tabs, HelpMark, Section, Dialog, PanelSheet, BoardSheet, BoardCard, PopoverPanel, TextField, Toggle, ButtonGroup, FormRow } from "../ds.slint";
+import { Colour, Space, Stroke, Type, TipStyle, SheetStyle, FormStyle, Look, Label, TextRole, Tone, Picture, Ground, Surface, Card, FloatingColumn, Button, ButtonKind, Tabs, HelpMark, Section, Dialog, PanelSheet, BoardSheet, BoardCard, PopoverPanel, TextField, Toggle, ButtonGroup, GroupAlign, Field, FieldLayout } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage } from "kit.slint";
 import { NoticeGroups } from "notices.slint";
 
@@ -85,7 +85,7 @@ export component ContainersPage inherits Page {
         }
         Line {
             label: "unfoldable (a settings page)";
-            SectionCell { Section { title: "Clicks"; foldable: false; FormRow { spread: true; label: "Keys click"; Toggle { on: true; } } } }
+            SectionCell { Section { title: "Clicks"; foldable: false; Field { layout: FieldLayout.spread; label: "Keys click"; Toggle { on: true; } } } }
             Absent { span: BoardStyle.panel; text: "— it never folds"; }
         }
         Line {
@@ -118,7 +118,7 @@ export component ContainersPage inherits Page {
                     title: "Move 3 photos to the ONI Trash?";
                     question: true;
                     Label { text: "They stay there until the trash is emptied."; tone: Tone.secondary; wrap: word-wrap; }
-                    ButtonGroup { plate: true; trailing: true; Button { text: "CANCEL"; } Button { text: "MOVE"; kind: ButtonKind.destructive; } }
+                    ButtonGroup { plate: true; align: GroupAlign.end; Button { text: "CANCEL"; } Button { text: "MOVE"; kind: ButtonKind.destructive; } }
                 }
             }
         }
@@ -132,7 +132,7 @@ export component ContainersPage inherits Page {
                     wide: true;
                     Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
                     TextField { value: "Roll #8"; }
-                    ButtonGroup { plate: true; trailing: true; Button { text: "CANCEL"; } Button { text: "EXPORT"; kind: ButtonKind.accent; } }
+                    ButtonGroup { plate: true; align: GroupAlign.end; Button { text: "CANCEL"; } Button { text: "EXPORT"; kind: ButtonKind.accent; } }
                 }
             }
         }

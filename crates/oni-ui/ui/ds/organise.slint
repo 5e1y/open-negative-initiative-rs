@@ -3,7 +3,7 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, MenuStyle, RowStyle, TileStyle, FieldStyle, ButtonStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Divider, Clicks } from "base.slint";
-import { Button, ButtonSize, Look } from "controls.slint";
+import { Button, ButtonSize, Look, TextField } from "controls.slint";
 import { Icons } from "icons.slint";
 
 // `DSMedalPicker`: bronze, silver and gold, the current one lit; `current` is -1 for none lit.
@@ -48,43 +48,20 @@ export component EmptyState inherits VerticalLayout {
     }
 }
 
-// One of the date's boxes: the digits centred, the edge lit while it holds the focus.
-component DateBox inherits Rectangle {
-    in property <string> placeholder;
-    in-out property <string> text <=> input.text;
-    out property <bool> has-focus: input.has-focus;
-    callback accepted();
-    border-radius: FieldStyle.radius;
-    background: Colour.canvas;
-    border-width: input.has-focus ? Stroke.line : Stroke.hairline;
-    border-color: input.has-focus ? Colour.focus : Colour.separator;
-    input := TextInput {
-        width: parent.width;
-        height: parent.height;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-        font-family: Type.family;
-        font-size: Type.title;
-        color: Colour.ink;
-        accepted => { root.accepted(); }
-    }
-    if input.text == "" && !input.has-focus: Label { text: root.placeholder; tone: Tone.tertiary; centred: true; }
-}
-
 // `DateFields`: month, day and year typed by hand, committed on Return or when the focus leaves.
 export component DateFields inherits HorizontalLayout {
     in-out property <string> month;
     in-out property <string> day;
     in-out property <string> year;
-    out property <bool> editing: m.has-focus || d.has-focus || y.has-focus;
+    out property <bool> editing: m.editing || d.editing || y.editing;
     callback committed(string, string, string);
     spacing: Space.xs;
     height: FieldStyle.height;
-    m := DateBox { width: DS.control-date-field-width; placeholder: @tr("MM"); text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
+    m := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("MM"); text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
     Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    d := DateBox { width: DS.control-date-field-width; placeholder: @tr("DD"); text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
+    d := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("DD"); text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
     Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    y := DateBox { width: DS.control-year-field-width; placeholder: @tr("YYYY"); text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
+    y := TextField { width: DS.control-year-field-width; centred: true; role: TextRole.title; placeholder: @tr("YYYY"); text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
     changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
 }
 

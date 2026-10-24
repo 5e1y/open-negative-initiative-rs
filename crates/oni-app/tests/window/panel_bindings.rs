@@ -147,7 +147,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     // 48 typed into W; Full resolution then writes 96, which the box shows, so Return asks nothing.
     ctl.act(oni_app::Act::Export);
     rig.settle();
-    // The field's click gives the focus with the caret first, so the digits go forward.
+    // The field's click selects its value, so the digits typed replace it.
     let width_box = || click(&rig, 935.0, 529.0);
     width_box();
     rig.key(&named(Key::Delete));
@@ -157,7 +157,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
-    click(&rig, 1085.0, 529.0);
+    click(&rig, 1117.0, 529.0);
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
     width_box();

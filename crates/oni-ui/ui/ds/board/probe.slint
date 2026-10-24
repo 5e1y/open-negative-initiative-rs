@@ -1,5 +1,5 @@
-// Three fields at fixed places for the window check that clicks, double clicks and tabs into them.
-import { Space, AppWindow, TextField } from "../ds.slint";
+// Three fields and a tab bar at fixed places, for the window checks that click into them.
+import { Space, AppWindow, TextField, Tabs } from "../ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -11,10 +11,16 @@ export component FieldProbe inherits AppWindow {
     out property <length> two-y: two.y;
     out property <length> three-y: three.y;
     out property <length> field-height: one.height;
+    // The owner's choice, bound one way as the language's; what the bar shows; the picks it asked for.
+    in-out property <int> choice;
+    out property <int> shown: bar.selected;
+    out property <int> picked: -1;
+    out property <length> bar-y: bar.y;
+    out property <length> bar-width: bar.width;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
-    preferred-height: 300px;
+    preferred-height: 360px;
     VerticalLayout {
         padding: Space.l;
         spacing: Space.l;
@@ -22,5 +28,10 @@ export component FieldProbe inherits AppWindow {
         one := TextField { }
         two := TextField { }
         three := TextField { multiline: true; }
+        bar := Tabs {
+            tabs: ["One", "Two", "Three"];
+            selected: root.choice;
+            picked(i) => { root.picked = i; }
+        }
     }
 }

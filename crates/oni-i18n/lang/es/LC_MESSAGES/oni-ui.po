@@ -342,6 +342,14 @@ msgid "YYYY"
 msgstr "AAAA"
 
 #: crates/oni-ui/ui/ds/roll.slint
+msgid "Previous"
+msgstr "Anterior"
+
+#: crates/oni-ui/ui/ds/roll.slint
+msgid "Next"
+msgstr "Siguiente"
+
+#: crates/oni-ui/ui/ds/roll.slint
 msgid "FLAGGED"
 msgstr "MARCADO"
 
@@ -776,10 +784,6 @@ msgstr "Tu mensaje va de camino a quienes hacen ONI. Aparece con los demás en G
 #: crates/oni-ui/ui/help.slint
 msgid "Your message and the app's version become a public issue on GitHub, so leave out anything personal. The log is encrypted on this Mac before it leaves."
 msgstr "Tu mensaje y la versión de la app se convierten en una incidencia pública en GitHub, así que no incluyas nada personal. El registro se cifra en este Mac antes de enviarse."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Encrypted console log"
-msgstr "Registro de consola cifrado"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Encrypted console log, readable by ONI's maintainers only"
@@ -1762,24 +1766,16 @@ msgid "Frame"
 msgstr "Fotograma"
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Previous"
-msgstr "Anterior"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Next"
-msgstr "Siguiente"
-
-#: crates/oni-ui/ui/prepare.slint
 msgid "EPILEPSY WARNING: scrubbing flashes the frames quickly."
 msgstr "AVISO DE EPILEPSIA: al desplazarse, los fotogramas parpadean rápidamente."
 
 #: crates/oni-ui/ui/prepare.slint
-msgid "Measuring…"
-msgstr "Midiendo…"
-
-#: crates/oni-ui/ui/prepare.slint
 msgid "Back"
 msgstr "Atrás"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Measuring…"
+msgstr "Midiendo…"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Reading the Scan"

@@ -1,6 +1,6 @@
-// The board's typed boxes and their forms: TextField in each variant, FormRow, Field, DateFields and
-// EditableTitle; the live column takes the focus and the keys.
-import { FormStyle, TextField, Toggle, FormRow, Field, DateFields, EditableTitle } from "../ds.slint";
+// The board's typed boxes and their forms: TextField in each variant, Field in its three layouts,
+// RenameField, DateFields and EditableTitle; the live column takes the focus and the keys.
+import { FormStyle, TextRole, TextField, RenameField, Toggle, Field, FieldLayout, DateFields, EditableTitle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent } from "kit.slint";
 
 // A field live, drawn with the focus, and disabled.
@@ -9,6 +9,8 @@ component FieldStates inherits Line {
     in property <string> placeholder;
     in property <string> suffix;
     in property <bool> multiline;
+    in property <bool> centred;
+    in property <TextRole> role: TextRole.label;
     for state in 3: Fill {
         span: BoardStyle.field;
         TextField {
@@ -16,6 +18,8 @@ component FieldStates inherits Line {
             placeholder: root.placeholder;
             suffix: root.suffix;
             multiline: root.multiline;
+            centred: root.centred;
+            role: root.role;
             lines-height: 4 * BoardStyle.gap;
             focused-look: state == 1;
             enabled: state != 2;
@@ -33,7 +37,7 @@ component NumberStates inherits Line {
 
 export component FieldPage inherits Page {
     title: "TextField and forms";
-    note: "TextField: value, placeholder, suffix, width, multiline, lines-height, focused-look, enabled. FormRow: label, spread. Field: label, help.";
+    note: "TextField: value, placeholder (multiline too), suffix, width, multiline, lines-height, centred, role, focused-look, enabled; entered, it selects its value. Field: label, help, layout (stacked, column, spread). RenameField: text, placeholder; Return or leaving commits, Escape cancels.";
     Group {
         title: "TextField";
         states: ["Live (type in it)", "Focus", "Disabled"];
@@ -43,21 +47,24 @@ export component FieldPage inherits Page {
         FieldStates { label: "suffix"; value: "DSC_6432"; suffix: ".tif"; }
         NumberStates { label: "a number (FormStyle.size-field)"; }
         FieldStates { label: "multiline"; multiline: true; value: "The scan shows banding in the sky after the Color tab's curve."; }
+        FieldStates { label: "multiline, its placeholder"; multiline: true; placeholder: "What this look is for"; }
+        FieldStates { label: "centred, a title's face (a date's box)"; centred: true; role: TextRole.title; value: "2026"; }
+        FieldStates { label: "centred, its placeholder"; centred: true; role: TextRole.title; placeholder: "YYYY"; }
     }
     Group {
-        title: "FormRow";
+        title: "Field, column and spread layouts";
         states: ["Live"];
         span: BoardStyle.wide;
         Line {
-            label: "fixed label column";
-            Fill { span: BoardStyle.wide; FormRow { label: "Camera"; TextField { value: "Nikon Z f"; horizontal-stretch: 1; } } }
+            label: "column (the label at a form's fixed width)";
+            Fill { span: BoardStyle.wide; Field { layout: FieldLayout.column; label: "Camera"; TextField { value: "Nikon Z f"; horizontal-stretch: 1; } } }
         }
         Line {
-            label: "spread (label pushes the control to the end)";
+            label: "spread (the label pushes the control to the end)";
             grain := Fill {
                 span: BoardStyle.wide;
                 property <bool> lit: true;
-                FormRow { spread: true; label: "Show the grain"; Toggle { on: grain.lit; toggled(v) => { grain.lit = v; } } }
+                Field { layout: FieldLayout.spread; label: "Show the grain"; Toggle { on: grain.lit; toggled(v) => { grain.lit = v; } } }
             }
         }
     }
@@ -74,6 +81,22 @@ export component FieldPage inherits Page {
             label: "without a note";
             Fill { span: BoardStyle.wide; Field { label: "Long edge"; TextField { value: "3000"; } } }
             Fill { span: BoardStyle.wide; Field { label: "Long edge"; TextField { value: "3000"; focused-look: true; } } }
+        }
+    }
+    Group {
+        title: "RenameField";
+        states: ["Live (click the name; Return or leaving commits, Escape cancels)"];
+        span: BoardStyle.wide;
+        Line {
+            label: "a name typed over";
+            // Opened by a click, as a row's rename is: open at once, it would take the board's keys.
+            renamed := Fill {
+                span: BoardStyle.wide;
+                property <string> name: "Roll #8";
+                property <bool> open;
+                if renamed.open: RenameField { text: renamed.name; placeholder: "Name"; committed(t) => { renamed.name = t; renamed.open = false; } cancelled => { renamed.open = false; } }
+                if !renamed.open: Absent { span: BoardStyle.wide; text: renamed.name; TouchArea { clicked => { renamed.open = true; } } }
+            }
         }
     }
     Group {

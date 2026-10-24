@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, FormRow, PreviewSlot, Chip, Popover, BoardSheet, BoardCard, Icon, CardStyle, ButtonGroup, Row, Badge, BadgeTone } from "ds/ds.slint";
+import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, PreviewSlot, PickerFace, Popover, BoardSheet, BoardCard, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -11,7 +11,7 @@ component FrameFields inherits VerticalLayout {
     in property <int> at;
     spacing: FormStyle.row-gap;
     width: FormStyle.fields-width;
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Name");
         TextField {
             value: root.line.name;
@@ -20,34 +20,34 @@ component FrameFields inherits VerticalLayout {
             edited(t) => { Exporting.edited(root.at, "name", t); }
         }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Camera");
         TextField { value: root.line.camera; placeholder: @tr("Leica M6"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "camera", t); } }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Lens");
         TextField { value: root.line.lens; placeholder: @tr("Summicron 50 mm"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "lens", t); } }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Film");
         Picker {
             value: root.line.film == "" ? @tr("Pick a film…") : root.line.film;
             open => { if (root.line.ready) { Exporting.pick-film(root.at); } }
         }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("ISO");
         TextField { value: root.line.iso; placeholder: "400"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "iso", t); } }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Date");
         TextField { value: root.line.date; placeholder: "2026:09:05 10:00:00"; enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "date", t); } }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Artist");
         TextField { value: root.line.artist; placeholder: @tr("Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "artist", t); } }
     }
-    FormRow {
+    Field { layout: FieldLayout.column;
         label: @tr("Copyright");
         TextField { value: root.line.copyright; placeholder: @tr("© 2026 Your name"); enabled: root.line.ready; edited(t) => { Exporting.edited(root.at, "copyright", t); } }
     }
@@ -118,8 +118,8 @@ export component SpaceField inherits VerticalLayout {
         Tabs {
             tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
             marked: [false, false, false, false, false];
-            selected <=> Exporting.space-tab;
-            picked(i) => { Exporting.space-picked(i); }
+            selected: Exporting.space-tab;
+            picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
         }
         if Exporting.jpeg && Exporting.space-tab == 3: Label { role: TextRole.note; text: @tr("TIFF 16-bit only: in eight bits so wide a space bands. Choosing it switches the export to TIFF."); }
         Label { role: TextRole.note; text: Exporting.purpose; }
@@ -127,8 +127,8 @@ export component SpaceField inherits VerticalLayout {
     if root.compact: Tabs {
         tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
         marked: [false, false, false, false, false];
-        selected <=> Exporting.space-tab;
-        picked(i) => { Exporting.space-picked(i); }
+        selected: Exporting.space-tab;
+        picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
     }
     if Exporting.on-profile: Field {
         label: @tr("Profile");
@@ -140,13 +140,11 @@ export component SpaceField inherits VerticalLayout {
         }
         if Exporting.profile-note != "": Label { role: TextRole.note; text: Exporting.profile-note; }
     }
-    if Exporting.on-profile && root.compact: FormRow { spread: true;
+    if Exporting.on-profile && root.compact: Toggle {
         label: @tr("Show only color variation (not recommended)");
-        Toggle {
-            label: @tr("Show only color variation (not recommended)");
-            on: Exporting.colour-only;
-            toggled(on) => { Exporting.colour-only-set(on); }
-        }
+        wrap: true;
+        on: Exporting.colour-only;
+        toggled(on) => { Exporting.colour-only-set(on); }
     }
     if Exporting.pending: Field {
         label: @tr("Profile");
@@ -161,10 +159,11 @@ export component SpaceField inherits VerticalLayout {
         }
         Label { role: TextRole.note; text: Exporting.pending-note; }
     }
-    if !root.compact || Exporting.on-profile || Exporting.pending: HorizontalLayout {
-        spacing: Space.xs;
-        Button { text: @tr("Load a Profile…"); horizontal-stretch: 1; clicked => { root.dismiss(); Exporting.load-profile(); } }
-        Button { text: @tr("Get Paper Profiles…"); horizontal-stretch: 1; clicked => { root.dismiss(); Exporting.get-papers(); } }
+    if !root.compact || Exporting.on-profile || Exporting.pending: ButtonGroup {
+        plate: true;
+        align: GroupAlign.fill;
+        Button { text: @tr("Load a Profile…"); fills: true; clicked => { root.dismiss(); Exporting.load-profile(); } }
+        Button { text: @tr("Get Paper Profiles…"); fills: true; clicked => { root.dismiss(); Exporting.get-papers(); } }
     }
 }
 
@@ -187,29 +186,27 @@ export component ExportPanel inherits Surface {
                     Label { text: Exporting.subtitle; role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
                 }
                 // Three keys, one row: a click writes every row below at once and locks none.
-                HorizontalLayout {
-                    spacing: Space.xs;
-                    Button { text: @tr("Instagram"); horizontal-stretch: 1; clicked => { Exporting.preset(0); } }
-                    Button { text: @tr("Display"); horizontal-stretch: 1; clicked => { Exporting.preset(1); } }
-                    Button { text: @tr("Print"); horizontal-stretch: 1; clicked => { Exporting.preset(2); } }
+                ButtonGroup {
+                    plate: true;
+                    align: GroupAlign.fill;
+                    Button { text: @tr("Instagram"); fills: true; clicked => { Exporting.preset(0); } }
+                    Button { text: @tr("Display"); fills: true; clicked => { Exporting.preset(1); } }
+                    Button { text: @tr("Print"); fills: true; clicked => { Exporting.preset(2); } }
                 }
                 Field {
                     label: @tr("Format");
                     Tabs {
                         tabs: [@tr("TIFF 16-bit"), @tr("JPEG")];
                         marked: [false, false];
-                        selected <=> Exporting.format;
-                        picked(i) => { Exporting.format-picked(i); }
+                        selected: Exporting.format;
+                        picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
                 }
                 SpaceField { }
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
                 if Exporting.format == 0: Field {
                     label: @tr("Compression");
-                    FormRow { spread: true;
-                        label: @tr("ZIP, lossless");
-                        Toggle { label: @tr("ZIP, lossless"); on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
-                    }
+                    Toggle { label: @tr("ZIP, lossless"); on: Exporting.compress; toggled(on) => { Exporting.compress-set(on); } }
                 }
                 if Exporting.format == 1: QualitySlider { }
                 Field {
@@ -239,10 +236,7 @@ export component ExportPanel inherits Surface {
                 Field {
                     label: @tr("HDR hack");
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
-                    FormRow { spread: true;
-                        label: @tr("Brighter on HDR screens");
-                        Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
-                    }
+                    Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
                 SummaryBox {
                     HorizontalLayout {
@@ -258,14 +252,17 @@ export component ExportPanel inherits Surface {
                 }
             }
         }
-        // Cancel and Export, the confirm at the right; mid-batch Cancel stops after the current file.
-        HorizontalLayout {
-            spacing: Space.xs;
-            Button { text: Exporting.exporting ? @tr("Stop") : @tr("Cancel"); horizontal-stretch: 1; clicked => { Exporting.cancel(); } }
+        // Cancel and Export on one plate, the confirm taking the rest; mid-batch Cancel stops after the current file.
+        ButtonGroup {
+            plate: true;
+            align: GroupAlign.fill;
+            Button { text: Exporting.exporting ? @tr("Stop") : @tr("Cancel"); clicked => { Exporting.cancel(); } }
+            // `DSActionButton`: its title as given, the busy one in its own case.
             Button {
                 text: Exporting.exporting ? @tr("Exporting…") : Exporting.key-title;
+                capitals: false;
                 kind: ButtonKind.accent;
-                horizontal-stretch: 1;
+                fills: true;
                 enabled: Exporting.can-export && !Exporting.exporting;
                 clicked => { Exporting.export(); }
             }
@@ -274,11 +271,12 @@ export component ExportPanel inherits Surface {
 }
 
 // The Working Space chip at the canvas's top edge, opening the compact space field.
-export component SpaceChip inherits Chip {
-    title: Exporting.chip-title;
-    hint: Exporting.chip-hint;
+export component SpaceChip inherits Picker {
+    face: PickerFace.chip;
+    prefix: Exporting.chip-title;
+    value: Exporting.chip-hint;
     help: @tr("The color space the picture is edited and exported in");
-    clicked => { chooser.show(); }
+    open => { chooser.show(); }
     chooser := Popover {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
@@ -293,7 +291,7 @@ export component ExportConfirmSheet inherits Sheet {
     question: true;
     dismissed => { Exporting.confirmed(false); }
     if Exporting.confirm-message != "": Label { text: Exporting.confirm-message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; trailing: true;
+    ButtonGroup { plate: true; align: GroupAlign.end;
         Button { text: @tr("Cancel"); clicked => { Exporting.confirmed(false); } }
         Button { text: @tr("Replace"); kind: ButtonKind.destructive; clicked => { Exporting.confirmed(true); } }
     }
@@ -305,7 +303,7 @@ export component ExportNoticeSheet inherits Sheet {
     question: true;
     dismissed => { Exporting.notice-closed(); }
     if Exporting.notice-message != "": Label { text: Exporting.notice-message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; trailing: true;
+    ButtonGroup { plate: true; align: GroupAlign.end;
         Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Exporting.notice-closed(); } }
     }
 }

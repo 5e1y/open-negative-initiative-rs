@@ -35,7 +35,7 @@ pub(crate) fn a_field_entered_selects_its_value_and_a_double_click_a_word() {
     let rig = common::rig(shots);
     let probe = FieldProbe::new().unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    rig.window.set_size(PhysicalSize::new(400, 300));
+    rig.window.set_size(PhysicalSize::new(400, 400));
     probe.show().unwrap();
     rig.drawn();
     // At the first word's second letter, inside the field's padding plus a few points.

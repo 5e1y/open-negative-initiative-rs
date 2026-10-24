@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, FieldStyle, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, HelpMark, ButtonGroup, FormRow, Row } from "ds/ds.slint";
+import { Space, PresetStyle, PanelSheet, VerticalRule, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -89,7 +89,7 @@ export component ChoiceSheet inherits Sheet {
     wide: true;
     dismissed => { Choice.chosen(-1); }
     if Choice.message != "": Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; trailing: true;
+    ButtonGroup { plate: true; align: GroupAlign.end;
         Button { text: @tr("Cancel"); clicked => { Choice.chosen(-1); } }
         for key[i] in Choice.keys: Button { text: key; clicked => { Choice.chosen(i); } }
     }
@@ -100,7 +100,7 @@ export component AdviceSheet inherits Sheet {
     question: true;
     dismissed => { Advice.closed(); }
     if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; trailing: true;
+    ButtonGroup { plate: true; align: GroupAlign.end;
         Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Advice.closed(); } }
     }
 }
@@ -133,19 +133,15 @@ component CarriesPicker inherits VerticalLayout {
         // The blocks stand a step further apart than their rows.
         if line.kind == 0 && i > 0: Rectangle { height: Space.m - 2 * Space.xs; }
         if line.kind == 0: Label { text: line.text; role: TextRole.section; }
-        if line.kind == 1: HorizontalLayout {
-            spacing: Space.s;
-            Label { text: @tr("White balance"); }
-            VerticalLayout { alignment: center; HelpMark { note: Presets.balance-help; } }
+        if line.kind == 1: Field {
+            label: @tr("White balance");
+            help: Presets.balance-help;
+            BalancePicker { value: line.text; }
         }
-        if line.kind == 1: BalancePicker { value: line.text; }
-        if line.kind == 2: FormRow { spread: true;
+        if line.kind == 2: Toggle {
+            on: line.on;
             label: line.text;
-            Toggle {
-                on: line.on;
-                label: line.text;
-                toggled(on) => { Presets.form-ticked(i, on); }
-            }
+            toggled(on) => { Presets.form-ticked(i, on); }
         }
     }
     if Presets.form-empty: Label { role: TextRole.note; text: Presets.carries-nothing; }
@@ -168,20 +164,12 @@ component PresetForm inherits VerticalLayout {
     // Three lines, wrapped, as `lineLimit(3, reservesSpace: true)`.
     if root.noted: Field {
         label: @tr("Description");
-        Rectangle {
-            height: PresetStyle.note-height;
-            note := TextField { multiline: true;
-                width: parent.width;
-                lines-height: parent.height;
-                text: Presets.form-note;
-                edited(t) => { Presets.form-noted(t); }
-            }
-            if note.text == "": Label {
-                x: FieldStyle.padding;
-                y: FieldStyle.padding;
-                text: @tr("What this look is for");
-                tone: Tone.tertiary;
-            }
+        TextField {
+            multiline: true;
+            lines-height: PresetStyle.note-height;
+            text: Presets.form-note;
+            placeholder: @tr("What this look is for");
+            edited(t) => { Presets.form-noted(t); }
         }
     }
     Field {
@@ -219,7 +207,7 @@ export component PresetSaveSheet inherits PanelSheet {
             alignment: end;
             spacing: Space.s;
             Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
-            Button { text: @tr("Save"); kind: ButtonKind.accent; enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
+            Button { text: @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
         }
     }
     init => { form.take-focus(); }

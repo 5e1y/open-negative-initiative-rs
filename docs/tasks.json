@@ -2173,5 +2173,68 @@
     "title": "Text fields behave as AppKit's: entered by a click, Tab or their owner they select their whole value; once in, a click places the caret, a double click selects a word, a triple click the line",
     "status": "done",
     "detail": "Owner's request. The DS TextField (every single-line, suffixed, number, multiline, rename and date field) selects its whole value when it gains the focus: a TouchArea over the unfocused field takes the press and selects all, Tab and a programmatic focus select all from the input's focus change (Slint selects on Tab only off Apple). Once the field holds the focus the TouchArea steps aside and Slint's TextInput takes the clicks: a click places the caret (it was eaten before, single-line fields never placed a caret by a click), a double click selects the word, a triple click the line. A field the window gives back after another window or a popup keeps its selection: a global serial of the last field entered tells a return from a new entry. The window check text_fields drives a probe window (ds/board/probe.slint, FieldProbe): a click then a key replaces the value, a double click replaces the word, a triple click the line, Tab into the next field replaces its value, a click into the multiline field selects all; twin: a click into the focused field types beside the value, and the old TextField fails the first assertion (\"Xalpha beta gamma\")."
+  },
+  {
+    "id": 311,
+    "type": "refactor",
+    "title": "Button: one tint path for every kind and fill, a ghost kind, DSPanelButton's capitals, no mini, 46 px or wide keycap",
+    "status": "done",
+    "detail": "Owner-approved merges K1, K2, K3, K5, K6, K7, T3. One tint: a kind (accent, caution, destructive, update, confirm) is a shortcut that sets the tint, `fill` a tint of the key's own; every tint hovers 0.1 brighter (ButtonStyle.lift), presses 0.2 darker (ButtonStyle.press) and takes its ink by its Rec. 709 lightness (KeyInk.light): UPDATE (#ff9f0a, 0.66) now reads dark ink, where Swift's DSActionButton keeps textOnFill; `on` on a tinted key keeps the tint and rings it, as Swift's tint overrides `pale`; the per-kind hover and pressed colours left the theme. ButtonSize.mini (26 px) is gone: the column headers' glyph keys are small (24 px), ButtonGroup `mini` became `small`, the column pill 26 px tall (NavigatorStyle.key = ButtonStyle.small-height). ButtonSize.key is now the step slider's 24 px square keycap (ScannerStyle.step-key), holding 140 ms in the legend's face; the 46 px height and `wide` are gone. ButtonKind.ghost: a glyph alone on no ground, tertiary then secondary under the hand, silent; HelpMark is a ghost Button (its note through the new `note`, shown as a card), and so is the row's star (`glyph-size`, `glyph-ink`). Button puts its word in capitals as DSPanelButton does (`capitals: false` for the console's AppKit keys and the DSActionButton keys whose busy title keeps its case). The Section's fold key is `square`. The button role of Label carries ButtonStyle.tracking, so a Label in that role draws as a Button's word. Not done: LoupeBand's ratio badge stays a Badge in a TouchArea (a ghost Button draws no badge face)."
+  },
+  {
+    "id": 312,
+    "type": "refactor",
+    "title": "ButtonGroup `align`, key rows on Swift's plates, one Pager",
+    "status": "done",
+    "detail": "G1: ButtonGroup's `fills` and `trailing` became `align: start | end | center | fill` (GroupAlign); the canvas's zoom keys use `align: center`, the redundant `fills: true` on keys of a filling plate and the `fills: false` defaults went. G2, each against its Swift screen: the export panel's presets (KeycapPlate(fills:)), Load a Profile / Get Paper Profiles (KeycapPlate(fills:)) and Cancel / Export (one plate, Cancel at its width, EXPORT taking the rest) and Prepare's footer (one plate, Cancel and Back at their width, the step's key taking the rest) sit on plates; the report's Send is Swift's confirm tint; the preset save sheet's Save is plain and plateless, as Swift's; the welcome, console and preset editor rows have no plate in Swift and keep none. G3: `Pager` (ds/roll.slint), Previous, a name, Next, for the frame scrubber and the base pick."
+  },
+  {
+    "id": 313,
+    "type": "refactor",
+    "title": "Picker's faces: the column pill and the Working Space chip are Picker variants",
+    "status": "done",
+    "detail": "K4: ColumnPill (folders.slint) and Chip (forms.slint) are gone; Picker gains `face: field | pill | chip`, `prefix` (the chip's secondary words), `choices` (a column's folders), `pressable`, `enabled` (dimmed) and `help`, one hover ground (Colour.hover) for every face, the field's included where it was the raised grey. The navigator's folder list drops from its pill as wide as it (the old Menu took `width:` and stayed 260 px); a pill out of reach dims."
+  },
+  {
+    "id": 314,
+    "type": "refactor",
+    "title": "Toggle's words at either side, wrapping, flipping it",
+    "status": "done",
+    "detail": "O1: Toggle's `labelled` became `label-side: none | after | before`, `after` the default as DSToggle, and `wrap`. Every FormRow-spread-around-a-Toggle (export ZIP, HDR, colour-only; the preset's carried rows), Prepare's hand-made flat-field row and the report's Label + TouchArea are a Toggle with its words after the switch, as Swift; a disabled toggle's words dim (export HDR) and a click on them flips it with its click sound."
+  },
+  {
+    "id": 315,
+    "type": "refactor",
+    "title": "Tabs only ask: a click emits picked, the owner writes the choice",
+    "status": "done",
+    "detail": "O2: Tabs' `selected` is an input; a click no longer writes it, so a one-way binding (Settings' language) keeps following its owner. The sixteen two-way sites write their global in their picked handler before Rust's, as the binding did; Settings' language is written by Rust's publish_settings. Window check tab_bar: a click asks, the bar stays on the owner's value and follows it after; twin: the owner writing the asked tab moves the bar there."
+  },
+  {
+    "id": 316,
+    "type": "refactor",
+    "title": "One RenameField for the heading, the row and the editable title",
+    "status": "done",
+    "detail": "F1: RenameField (controls.slint): text, placeholder, edited, committed, cancelled; entered at once with its value selected, Return or the focus leaving commits, Escape cancels. TileHeading (was HeadingField), the Row's renaming FocusScope and EditableTitle use it; EditableTitle gains Escape."
+  },
+  {
+    "id": 317,
+    "type": "refactor",
+    "title": "TextField: centred, a title's face, its placeholder in every form, faded whenever disabled, a number's width",
+    "status": "done",
+    "detail": "F2: TextField gains `centred` and `role` (label or title); DateFields' boxes are TextFields (DateBox gone). F3: the placeholder is drawn in multiline too, so the preset's description overlay went. Fixes: a disabled TextField fades as a suffixed one did (export Camera, Lens, ISO, Date, Artist, Copyright, W and H); FormStyle.size-field adds the hollow's padding to Swift's 64 px digits, so 3000 shows whole; `focused-look` hides the placeholder as a focus does (the board's Focus column)."
+  },
+  {
+    "id": 318,
+    "type": "refactor",
+    "title": "One Field in three layouts",
+    "status": "done",
+    "detail": "F4: Field and FormRow are one `Field { layout: stacked | column | spread; help }` (FieldLayout): stacked is DSField, column the EXIF line's fixed label width, spread the label taking the room before its control (Crop's Kept). F5: the preset's white balance is a Field with its help, as Swift's DSHelp over its DSPicker (its label now the secondary ink)."
+  },
+  {
+    "id": 319,
+    "type": "refactor",
+    "title": "The board's pages show the merged components",
+    "status": "done",
+    "detail": "Button: kinds, small glyph keys, ghost, the 24 px key, capitals on and off (no mini, 46 px or wide rows); ButtonGroup: small and each align; Toggle: label-side none, after, before and wrap, the live tab bar written by its owner; TextField and forms: multiline placeholder, centred title face, Field's column and spread layouts, RenameField; Picker and Menu: every form with a disabled column, the pill (folders, a name alone) and the chip. The catalogue's keycaps are the 24 px step keys. FieldProbe (board/probe.slint) holds the fields and the tab bar the window checks click."
   }
 ]

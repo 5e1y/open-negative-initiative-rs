@@ -6,15 +6,17 @@ import { Icons } from "icons.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, KeyInk, ButtonInk, Button } from "button.slint";
 export { ButtonKind, ButtonSize, Look, SliderFill, Knob, KeyInk, ButtonInk, Button }
 
-// `KeycapPlate`: keys side by side as one family, on a socket when `plate`, flush a hairline apart;
-// `fills` spans the row, its worded keys sharing the width; `trailing` sits it at the row's end.
+// Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
+export enum GroupAlign { start, end, center, fill }
+
+// `KeycapPlate`: keys side by side as one family, on a socket when `plate`, flush a hairline apart.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
-    in property <bool> fills;
-    // `.mini`: the radius of the small keys it holds.
-    in property <bool> mini;
-    in property <bool> trailing;
-    alignment: root.trailing ? end : root.fills ? stretch : start;
+    in property <GroupAlign> align: GroupAlign.start;
+    // The radius of the small keys it holds.
+    in property <bool> small;
+    property <bool> fills: root.align == GroupAlign.fill;
+    alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
     socket := Rectangle {
         horizontal-stretch: root.fills ? 1 : 0;
         min-width: row.min-width;
@@ -22,7 +24,7 @@ export component ButtonGroup inherits HorizontalLayout {
         min-height: row.min-height;
         max-height: row.max-height;
         background: root.plate ? ButtonStyle.socket : transparent;
-        border-radius: root.plate ? (root.mini ? ButtonStyle.small-radius : ButtonStyle.radius) + ButtonStyle.plate-inset : 0px;
+        border-radius: root.plate ? (root.small ? ButtonStyle.small-radius : ButtonStyle.radius) + ButtonStyle.plate-inset : 0px;
         row := HorizontalLayout {
             padding: root.plate ? ButtonStyle.plate-inset : 0px;
             spacing: root.plate ? ButtonStyle.plate-inset : ButtonStyle.group-gap;
@@ -32,21 +34,34 @@ export component ButtonGroup inherits HorizontalLayout {
     }
 }
 
+// Where a switch's words sit: `after` it as `DSToggle`, `before` it across the row's room, `none` the
+// switch named for accessibility alone.
+export enum LabelSide { none, after, before }
+
 // A switch: a thumb that slides to the lit side. Its owner holds the state: a click only asks,
-// so an undo or another photo moves the thumb as much as the hand does.
+// so an undo or another photo moves the thumb as much as the hand does. Its words flip it too.
 export component Toggle inherits HorizontalLayout {
     in property <bool> on;
     in property <string> label;
-    // `DSToggle`: the label shown at the switch's right, both flipping it; else it names the switch alone.
-    in property <bool> labelled;
+    in property <LabelSide> label-side: LabelSide.after;
+    // Words that wrap, the switch kept on their first line.
+    in property <bool> wrap;
     in property <bool> enabled: true;
     callback toggled(bool);
+    property <bool> worded: root.label != "" && root.label-side != LabelSide.none;
     alignment: start;
     spacing: Space.s;
     // Alone, the switch keeps its own width, so a row's label pushes it to the end.
-    horizontal-stretch: root.labelled ? 1 : 0;
+    horizontal-stretch: root.worded ? 1 : 0;
+    if root.worded && root.label-side == LabelSide.before: Label {
+        text: root.label;
+        tone: root.enabled ? Tone.primary : Tone.secondary;
+        wrap: root.wrap ? word-wrap : no-wrap;
+        horizontal-stretch: 1;
+        TouchArea { enabled: root.enabled; clicked => { Clicks.press(); root.toggled(!root.on); } }
+    }
     VerticalLayout {
-        alignment: center;
+        alignment: root.wrap ? start : center;
         Rectangle {
             height: ToggleStyle.height;
             width: ToggleStyle.width;
@@ -75,10 +90,12 @@ export component Toggle inherits HorizontalLayout {
             }
         }
     }
-    if root.labelled: Label {
+    if root.worded && root.label-side == LabelSide.after: Label {
         text: root.label;
         tone: root.enabled ? Tone.primary : Tone.secondary;
-        TouchArea { enabled: root.enabled; clicked => { root.toggled(!root.on); } }
+        wrap: root.wrap ? word-wrap : no-wrap;
+        horizontal-stretch: root.wrap ? 1 : 0;
+        TouchArea { enabled: root.enabled; clicked => { Clicks.press(); root.toggled(!root.on); } }
     }
 }
 
@@ -218,6 +235,10 @@ export component TextField inherits HorizontalLayout {
     // Lines that wrap in a box `lines-height` tall, as a report's message or a photo's note.
     in property <bool> multiline;
     in property <length> lines-height: DS.control-report-message-height;
+    // The words centred in the box, as a date's digits.
+    in property <bool> centred;
+    // The face of the words typed: a label's, or a title's as a date's digits.
+    in property <TextRole> role: TextRole.label;
     in property <bool> focused-look;
     in property <bool> enabled: true;
     out property <bool> editing: input.has-focus;
@@ -232,7 +253,7 @@ export component TextField inherits HorizontalLayout {
     init => { if (root.value != "") { input.text = root.value; } }
     changed value => { input.text = root.value; }
     spacing: Space.xxs;
-    opacity: root.suffix != "" && !root.enabled ? State.disabled : 1;
+    opacity: root.enabled ? 1 : State.disabled;
     box := Rectangle {
         horizontal-stretch: 1;
         height: root.multiline ? root.lines-height : FieldStyle.height;
@@ -241,16 +262,18 @@ export component TextField inherits HorizontalLayout {
         border-width: (input.has-focus || root.focused-look) ? Stroke.line : Stroke.hairline;
         border-color: (input.has-focus || root.focused-look) ? Colour.focus : Colour.separator;
         clip: root.multiline;
+        // A centred box spans its whole width, so a date's digits never meet its padding.
         input := TextInput {
-            x: FieldStyle.padding;
+            x: root.centred ? 0px : FieldStyle.padding;
             y: root.multiline ? FieldStyle.padding : 0px;
-            width: parent.width - 2 * FieldStyle.padding;
+            width: parent.width - 2 * self.x;
             height: root.multiline ? parent.height - 2 * FieldStyle.padding : parent.height;
             single-line: !root.multiline;
             wrap: root.multiline ? word-wrap : no-wrap;
             vertical-alignment: root.multiline ? top : center;
+            horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
             font-family: Type.family;
-            font-size: Type.label;
+            font-size: root.role == TextRole.title ? Type.title : Type.label;
             color: Colour.ink;
             enabled: root.enabled;
             edited => { root.edited(self.text); }
@@ -266,11 +289,14 @@ export component TextField inherits HorizontalLayout {
                 }
             }
         }
-        if !root.multiline && input.text == "" && !input.has-focus: Label {
-            x: FieldStyle.padding;
-            height: parent.height;
+        if input.text == "" && !input.has-focus && !root.focused-look: Label {
+            x: input.x;
+            y: input.y;
+            width: input.width;
+            height: root.multiline ? self.preferred-height : input.height;
             text: root.placeholder;
             tone: Tone.tertiary;
+            centred: root.centred;
         }
         // Over the field until it holds the focus: the press enters it, then the input takes the clicks.
         TouchArea {
@@ -285,4 +311,34 @@ export component TextField inherits HorizontalLayout {
         }
     }
     if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
+}
+
+// `RenameField`: a name typed over in place, entered at once with its value selected; Return or the
+// focus leaving commits it, Escape gives the old one back.
+export component RenameField inherits FocusScope {
+    in property <string> text;
+    in property <string> placeholder;
+    callback edited(string);
+    callback committed(string);
+    callback cancelled();
+    property <bool> done;
+    key-pressed(event) => {
+        if (event.text == Key.Escape) {
+            root.done = true;
+            root.cancelled();
+            return accept;
+        }
+        reject
+    }
+    VerticalLayout {
+        alignment: center;
+        TextField {
+            text: root.text;
+            placeholder: root.placeholder;
+            init => { self.take-focus(); }
+            edited(t) => { root.edited(t); }
+            accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+            left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+        }
+    }
 }

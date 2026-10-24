@@ -22,23 +22,13 @@ export global Colour {
     // `DSWarning`'s band, under the on-warning ink.
     out property <color> warning-soft: DS.palette-warning-soft;
     out property <color> accent: DS.palette-accent;
-    out property <color> accent-hover: DS.palette-accent.brighter(0.15);
-    out property <color> accent-pressed: DS.palette-accent.darker(0.2);
     out property <color> on: DS.system-primary;
     out property <color> on-hover: DS.system-white;
     out property <color> caution: DS.tint-undoable;
-    out property <color> caution-hover: DS.tint-undoable.brighter(0.15);
-    out property <color> caution-pressed: DS.tint-undoable.darker(0.2);
     out property <color> destructive: DS.tint-destructive;
-    out property <color> destructive-hover: DS.tint-destructive.brighter(0.15);
-    out property <color> destructive-pressed: DS.tint-destructive.darker(0.2);
     out property <color> confirm: DS.tint-confirm;
-    out property <color> confirm-hover: DS.tint-confirm.brighter(0.15);
-    out property <color> confirm-pressed: DS.tint-confirm.darker(0.2);
     // `DS.Tint.update`: the export slot's face while an update waits.
     out property <color> update: DS.tint-update;
-    out property <color> update-hover: DS.tint-update.brighter(0.15);
-    out property <color> update-pressed: DS.tint-update.darker(0.2);
     out property <color> separator: DS.palette-separator;
     out property <color> guide: DS.palette-guide;
     out property <color> guide-faint: DS.palette-guide-faint;
@@ -153,7 +143,6 @@ export global ScrollStyle {
 export global ButtonStyle {
     out property <length> height: DS.control-field-height;
     out property <length> small-height: DS.control-icon-button-size;
-    out property <length> mini-height: DS.control-keycap-mini-height;
     out property <length> radius: Radius.badge;
     out property <length> small-radius: Radius.track;
     out property <length> padding: Space.m;
@@ -168,6 +157,9 @@ export global ButtonStyle {
     out property <int> weight: Type.strong;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
+    // A tinted key's ground pressed and hovered: darker by `press`, brighter by `lift`.
+    out property <float> press: 0.2;
+    out property <float> lift: 0.1;
 }
 
 export global SliderStyle {
@@ -359,8 +351,6 @@ export global PlotInkStyle {
 // `DS.Scanner`: the Lab keypad's keys and bands, the face bar, the scanner's screen.
 export global ScannerStyle {
     out property <length> face-bar: DS.control-mode-bar-width;
-    out property <length> key-height: DS.scanner-key-height;
-    out property <length> wide-key: DS.scanner-wide-key-width;
     out property <length> legend: DS.scanner-key-legend-size;
     out property <length> key-padding: DS.scanner-key-padding-h;
     out property <length> key-radius: Radius.track;

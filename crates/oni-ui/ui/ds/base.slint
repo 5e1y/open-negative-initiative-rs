@@ -2,7 +2,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, ButtonStyle, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle } from "theme.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
@@ -74,6 +74,7 @@ export component Label inherits Text {
         : root.role == TextRole.heading ? Type.heading
         : Type.label;
     font-weight: root.role == TextRole.button ? Type.strong : Type.regular;
+    letter-spacing: root.role == TextRole.button ? ButtonStyle.tracking : 0px;
     color: Tones.ink(root.tone);
     vertical-alignment: center;
     horizontal-alignment: root.centred ? center : left;

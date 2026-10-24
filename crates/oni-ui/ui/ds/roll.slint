@@ -3,6 +3,7 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion } from "theme.slint";
 import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks, Badge, BadgeTone } from "base.slint";
+import { Button } from "controls.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -18,6 +19,23 @@ export global RollStyle {
     out property <length> hollow: DS.control-tab-bar-height;
     // The frame's name between Previous and Next, wide enough that the keys never move with it.
     out property <length> name-width: 10 * Space.m;
+}
+
+// `RollReferenceSurface`'s pager: Previous, a frame's name, Next. A `name-width` holds the keys still,
+// centred; without one the name takes the row's room between them.
+export component Pager inherits HorizontalLayout {
+    in property <string> name;
+    in property <bool> can-previous;
+    in property <bool> can-next;
+    in property <length> name-width;
+    callback previous();
+    callback next();
+    spacing: Space.s;
+    alignment: root.name-width > 0 ? LayoutAlignment.center : LayoutAlignment.stretch;
+    Button { text: @tr("Previous"); widest: @tr("Previous"); enabled: root.can-previous; clicked => { root.previous(); } }
+    if root.name-width > 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; width: root.name-width; horizontal-alignment: center; overflow: elide; }
+    if root.name-width == 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
+    Button { text: @tr("Next"); widest: @tr("Previous"); enabled: root.can-next; clicked => { root.next(); } }
 }
 
 // `DSStatusBar.idle(leading:seal:)`: the status line, the seal of a frame made of passes right after
