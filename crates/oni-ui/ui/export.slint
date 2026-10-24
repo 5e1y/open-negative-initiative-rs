@@ -286,12 +286,12 @@ export component SpaceChip inherits Picker {
     }
 }
 
-// The batch's clash: Return reaches no key, since replacing files is never a stray key's doing.
+// The clash: Replace for earlier exports alone, deaf to Return; Rename for an original.
 export component ExportConfirmSheet inherits AskSheet {
     title: Exporting.confirm-title;
     message: Exporting.confirm-message;
     cancel: @tr("Cancel");
-    keys: [{ text: @tr("Replace"), role: AskRole.destructive }];
+    keys: Exporting.confirm-replaces ? [{ text: @tr("Replace"), role: AskRole.destructive }] : [{ text: @tr("Rename"), role: AskRole.confirm }];
     answered(i) => { Exporting.confirmed(i == 0); }
 }
 

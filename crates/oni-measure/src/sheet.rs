@@ -219,9 +219,10 @@ pub fn name(film: Option<&Film>, day: &str) -> String {
     }
 }
 
-/// `ContactSheet.safe`: a name that cannot climb out of its folder nor hide an extension.
+/// `ContactSheet.safe`: a name that cannot climb out of its folder nor hide an extension, and that
+/// every system can hold.
 pub fn safe(stem: &str) -> String {
-    let cleaned = stem.replace(['/', ':', '.'], "-");
+    let cleaned = oni_library::file_names::portable(&stem.replace('.', "-"));
     let cleaned = cleaned.trim_matches(spaces);
     if cleaned.is_empty() { "contact sheet".into() } else { cleaned.into() }
 }
@@ -382,5 +383,9 @@ mod tests {
         assert_ne!(raw.components().filter(|c| matches!(c, std::path::Component::ParentDir)).count(), 0);
         assert_eq!(safe(" . "), "-");
         assert_eq!(safe("   "), "contact sheet");
+        // A roll name Windows refuses: quotes, a backslash, a device name.
+        assert_eq!(safe("Portra \"pushed\" — contact sheet"), "Portra -pushed- — contact sheet");
+        assert_eq!(safe("..\\x"), "---x");
+        assert_eq!(safe("CON"), "CON-");
     }
 }

@@ -26,8 +26,14 @@ fn files(dir: &Path, extension: &str) -> Vec<PathBuf> {
 
 fn scratch(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-export-{}-{name}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
+}
+
+/// A destination where nothing is replaced: any file found there is refused.
+fn fresh(path: &Path) -> oni_export::Landing<'_> {
+    oni_export::Landing { path, ledger: Box::leak(Box::new(oni_export::file::Ledger::none())), replacing: false }
 }
 
 /// Two decodes at once corrupt each other ("data corrupted at …"): the tests take turns.
@@ -163,7 +169,7 @@ fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
     for (name, export) in [("written.tiff", &tiff), ("written.jpg", &jpeg), ("written-hdr.jpg", &hdr)] {
         let out = dir.join(name);
         let started = Instant::now();
-        write(&source, &out, || Ok(full.clone()), &PaperCorrection::default(), export, &ExifMetadata::default(), None)
+        write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), export, &ExifMetadata::default(), None)
             .unwrap();
         let file = std::fs::read(&out).unwrap();
         println!("{name}: {} bytes in {:.2} s", file.len(), started.elapsed().as_secs_f64());
@@ -206,7 +212,7 @@ fn a_frame_exports_with_its_date_and_none_of_the_scans_fields() {
     // A typed date replaces the capture date, and the hand's fields land.
     let typed = ExifMetadata { camera: "Leica M6".into(), film: "Kodak Gold 200".into(), ..Default::default() };
     let out = dir.join("dated.jpg");
-    write(&source, &out, || Ok(full.clone()), &PaperCorrection::default(), &jpeg, &typed, Some("2001:02:03 04:05:06"))
+    write(&source, fresh(&out), || Ok(full.clone()), &PaperCorrection::default(), &jpeg, &typed, Some("2001:02:03 04:05:06"))
         .unwrap();
     let file = std::fs::read(&out).unwrap();
     let read = exif::Reader::new().read_from_container(&mut Cursor::new(&file)).unwrap();
@@ -236,7 +242,7 @@ fn the_source_is_never_overwritten() {
         let mut rendered = false;
         let result = write(
             &source,
-            &destination,
+            fresh(&destination),
             || {
                 rendered = true;
                 Err(Failure::Render)
@@ -246,14 +252,14 @@ fn the_source_is_never_overwritten() {
             &ExifMetadata::default(),
             None,
         );
-        assert_eq!(result, Err(Failure::WouldOverwriteSource), "{}", destination.display());
+        assert_eq!(result, Err(Failure::WouldOverwriteOriginal), "{}", destination.display());
         assert!(!rendered, "refused before anything renders");
     }
     // Twin: another destination goes as far as the render.
     let mut rendered = false;
     let result = write(
         &source,
-        &dir.join("DSC_6436.jpg"),
+        fresh(&dir.join("DSC_6436.jpg")),
         || {
             rendered = true;
             Err(Failure::Render)

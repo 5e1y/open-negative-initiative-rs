@@ -5,6 +5,7 @@ pub mod archive_tree;
 pub mod capture;
 pub mod exif;
 pub mod favourites;
+pub mod file_names;
 pub mod film_group;
 pub mod folders;
 pub mod gallery_history;

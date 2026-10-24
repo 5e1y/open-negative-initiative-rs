@@ -1,9 +1,11 @@
 //! Exported files of Open Negative Initiative: one writer for TIFF and JPEG, the metadata the hand
 //! stated and nothing else, resize on one edge, the size estimate, the presets and the HDR gain map.
 
+pub mod file;
 pub mod gain_map;
 pub mod ifd;
 pub mod jpeg;
+pub mod landing;
 pub mod metadata;
 pub mod presets;
 pub mod resize;
@@ -49,9 +51,10 @@ pub struct Rendered {
 pub enum Failure {
     Decode,
     Render,
-    Write,
+    /// The disk's own reason, so the notice can say full, read-only or refused.
+    Write(std::io::ErrorKind),
     Profile,
-    WouldOverwriteSource,
+    WouldOverwriteOriginal,
 }
 
 impl fmt::Display for Failure {
@@ -60,9 +63,17 @@ impl fmt::Display for Failure {
             Failure::Decode => tr("The RAW file could not be decoded."),
             Failure::Render => tr("Full-resolution rendering failed."),
             Failure::Profile => tr("The ICC profile chosen for the export can no longer be read."),
-            Failure::Write => tr("The file could not be written."),
-            Failure::WouldOverwriteSource => tr(
-                "Exporting there would overwrite the original scan. Pick another folder, or change the naming pattern so the output cannot land on its own source.",
+            Failure::Write(kind) => match kind {
+                std::io::ErrorKind::StorageFull | std::io::ErrorKind::QuotaExceeded => {
+                    tr("The disk is full: the file could not be written. A file already there is kept.")
+                }
+                std::io::ErrorKind::ReadOnlyFilesystem => tr("The disk is read-only: the file could not be written."),
+                std::io::ErrorKind::PermissionDenied => tr("ONI is not allowed to write in that folder. A file already there is kept."),
+                std::io::ErrorKind::NotFound => tr("The folder is no longer there: the file could not be written."),
+                _ => tr("The file could not be written."),
+            },
+            Failure::WouldOverwriteOriginal => tr(
+                "A file ONI did not export already has that name, an original perhaps: it is left as it was. Pick another folder or another name.",
             ),
         })
     }
@@ -70,14 +81,23 @@ impl fmt::Display for Failure {
 
 impl std::error::Error for Failure {}
 
-/// The file name a typed stem yields: sanitised so it cannot manufacture a path, the
+/// The file name a typed stem yields: one portable component that cannot manufacture a path, the
 /// original's name when empty so no hidden `.tiff` is written, the format's extension added.
 pub fn name(source: &Path, typed: &str, format: Format) -> String {
-    let mut stem = typed.replace(['/', ':'], "-").trim_matches(is_blank).to_owned();
+    let mut stem = oni_library::file_names::portable(typed.trim_matches(is_blank));
     if stem.is_empty() {
-        stem = self::stem(source);
+        stem = oni_library::file_names::portable(&self::stem(source));
+    }
+    if stem.is_empty() {
+        stem = "export".into();
     }
     format!("{stem}.{}", format.file_extension())
+}
+
+/// The file a typed stem yields in `folder`, always directly inside it.
+pub fn destination(folder: &Path, source: &Path, typed: &str, format: Format) -> PathBuf {
+    let named = name(source, typed, format);
+    oni_library::file_names::inside(folder, &named).unwrap_or_else(|| folder.join(format!("export.{}", format.file_extension())))
 }
 
 /// Foundation's `.whitespaces`: spaces and tabs, never a line break.
@@ -87,35 +107,6 @@ fn is_blank(c: char) -> bool {
 
 pub fn stem(source: &Path) -> String {
     source.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default()
-}
-
-/// The destinations a batch would overwrite: one already on disk, or one named twice.
-pub fn clashes(destinations: &[PathBuf], exists: impl Fn(&Path) -> bool) -> Vec<PathBuf> {
-    let mut seen = std::collections::HashSet::new();
-    let mut found = Vec::new();
-    for url in destinations {
-        let path = oni_colour::profile::standardized(url);
-        if !seen.insert(path) || exists(url) {
-            found.push(url.clone());
-        }
-    }
-    found
-}
-
-/// The path with symlinks resolved where it exists: a file not yet written resolves its folder.
-fn canonical(path: &Path) -> PathBuf {
-    if let Ok(found) = std::fs::canonicalize(path) {
-        return found;
-    }
-    match (path.parent(), path.file_name()) {
-        (Some(parent), Some(file)) => {
-            match std::fs::canonicalize(if parent.as_os_str().is_empty() { Path::new(".") } else { parent }) {
-                Ok(folder) => folder.join(file),
-                Err(_) => PathBuf::from(oni_colour::profile::standardized(path)),
-            }
-        }
-        _ => PathBuf::from(oni_colour::profile::standardized(path)),
-    }
 }
 
 /// The one door from the working-space frame to the file's pixels: the space's matrix and curve,
@@ -178,27 +169,46 @@ pub fn encoded(rendered: &Rendered, export: &Settings, date: Option<&str>, metad
     }
 }
 
-/// Writes one frame. Refuses a destination equal to its source before `render` runs, compared on
-/// canonical paths with symlinks resolved; `render` yields the pipeline's full-resolution output.
+/// Where one frame lands: a new file, or an earlier export the ledger vouches for when `replacing`.
+pub struct Landing<'a> {
+    pub path: &'a Path,
+    pub ledger: &'a mut file::Ledger,
+    pub replacing: bool,
+}
+
+/// Writes one frame through a temporary file and a rename. Refuses its own source and any file ONI
+/// did not export before `render` runs, and again at the rename; `render` yields the full frame.
 pub fn write(
     source: &Path,
-    destination: &Path,
+    to: Landing<'_>,
     render: impl FnOnce() -> Result<Image, Failure>,
     paper: &PaperCorrection,
     export: &Settings,
     metadata: &ExifMetadata,
     date_override: Option<&str>,
 ) -> Result<(), Failure> {
-    if canonical(destination) == canonical(source) {
-        return Err(Failure::WouldOverwriteSource);
+    let lands = match file::standing(to.path, to.ledger) {
+        file::Standing::Free => true,
+        file::Standing::Export => to.replacing,
+        file::Standing::Original => false,
+    };
+    if !lands || file::canonical(to.path) == file::canonical(source) {
+        return Err(Failure::WouldOverwriteOriginal);
     }
     let out = render()?;
     let mut out = resized(&out, export.resize.scale(out.width as f64, out.height as f64));
     oni_colour::paper::laid(paper, &mut out.pixels, export.space());
     let rendered = converted(&out, export)?;
     let date = date_override.map(str::to_owned).or_else(|| capture_date(source));
-    let data = encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write)?;
-    std::fs::write(destination, data).map_err(|_| Failure::Write)
+    let data = encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))?;
+    match file::put(to.path, &data, to.ledger, to.replacing) {
+        Ok(()) => {
+            let _ = to.ledger.note(to.path);
+            Ok(())
+        }
+        Err(file::Refused::Taken) => Err(Failure::WouldOverwriteOriginal),
+        Err(file::Refused::Io(e)) => Err(Failure::Write(e.kind())),
+    }
 }
 
 /// Estimated weight, extrapolated from the reduced preview by ratio of areas: more accurate than

@@ -98,7 +98,8 @@ pub struct Card {
     pub profiles: PathBuf,
     support: PathBuf,
     pub chooser: Option<Chooser>,
-    confirm: Option<Vec<PathBuf>>,
+    /// The clash dialog's files and whether its key replaces earlier exports.
+    confirm: Option<(Vec<PathBuf>, bool)>,
     quality: QualityHand,
     film_row: Option<usize>,
     pub notice: Option<(String, String)>,

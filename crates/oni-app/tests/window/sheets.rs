@@ -171,8 +171,12 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     let names: Vec<String> = export_card::lines(w).iter().map(|l| l.name.to_string()).collect();
     let batch = root.join("batch");
     std::fs::create_dir_all(&batch).unwrap();
+    // Earlier exports of ONI's, so the clash offers Replace.
+    let mut ledger = oni_export::file::Ledger::in_support(&root.join("Support"));
     for extension in ["tiff", "tif", "jpg", "png"] {
-        std::fs::write(batch.join(format!("{}.{extension}", names[0])), b"kept").unwrap();
+        let earlier = batch.join(format!("{}.{extension}", names[0]));
+        std::fs::write(&earlier, b"kept").unwrap();
+        ledger.note(&earlier).unwrap();
     }
     let answer = batch.clone();
     export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.clone()]));
@@ -208,5 +212,84 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
         let name = f.file_name().to_string_lossy().to_string();
         name.starts_with(n.as_str()) && std::fs::read(f.path()).unwrap() != b"kept"
     })), "each photo written over the clash");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A clash with a file ONI did not export offers Rename alone: Return renames, the original stays
+/// byte for byte, and a single photo saved over an original is asked the same.
+pub(crate) fn a_clash_with_an_original_offers_rename_and_keeps_it() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the rename prompt is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-rename-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Scans");
+    common::plain_tiff(&folder.join("A.tif"), 96, 64, 0.5);
+    common::plain_tiff(&folder.join("B.tif"), 96, 64, 0.6);
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let shell = shell(&rig, &root, &gpu, Arc::new(|_: &str, _: Option<String>| Ok(())));
+    let ctl = shell.ctl.clone();
+    let w = &shell.window;
+    let (lib, e) = (w.global::<Library>(), w.global::<Exporting>());
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_clicked(1, true, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the batch's lines", Duration::from_secs(120), || export_card::lines(w).iter().all(|l| l.ready));
+    let names: Vec<String> = export_card::lines(w).iter().map(|l| l.name.to_string()).collect();
+    let batch = root.join("batch");
+    std::fs::create_dir_all(&batch).unwrap();
+    // An original in the other case, as a camera names its JPEG.
+    let original = batch.join(format!("{}.JPG", names[0]));
+    std::fs::write(&original, b"the camera's own").unwrap();
+    let ignores_case = batch.join(format!("{}.jpg", names[0])).exists();
+    let answer = batch.clone();
+    export_card::answer_with(&ctl, Rc::new(move |_| vec![answer.clone()]));
+    e.invoke_export();
+    rig.pump();
+    if !ignores_case {
+        eprintln!("this volume tells case apart: P1.jpg lands beside P1.JPG");
+        let _ = std::fs::remove_dir_all(&root);
+        return;
+    }
+    assert!(e.get_confirm_shown(), "the clash asks");
+    assert!(!e.get_confirm_replaces(), "an original is never offered for Replace");
+    assert_eq!(e.get_confirm_title(), "1 Name Is Already Taken in That Folder");
+    let renamed = format!("{} 2.jpg", names[0]);
+    assert!(e.get_confirm_message().contains(&renamed), "{}", e.get_confirm_message());
+    rig.settle();
+    println!("shot {}", rig.shot("export-rename").display());
+    // Twin: Cancel writes nothing.
+    e.invoke_confirmed(false);
+    rig.settle();
+    assert_eq!(std::fs::read_dir(&batch).unwrap().count(), 1);
+    e.invoke_export();
+    rig.pump();
+    rig.key("\r");
+    assert!(!e.get_confirm_shown(), "Return renames, as Rename replaces nothing");
+    rig.until("the batch written", Duration::from_secs(120), || !export_card::card(&ctl).exporting && !e.get_shown());
+    assert_eq!(std::fs::read(&original).unwrap(), b"the camera's own", "the original kept byte for byte");
+    for name in [renamed.clone(), format!("{}.jpg", names[1])] {
+        let file = std::fs::read(batch.join(&name)).unwrap_or_default();
+        assert!(file.starts_with(&[0xFF, 0xD8]), "{name} written as a JPEG");
+    }
+
+    // One photo saved over the original through the save panel is asked the same.
+    lib.invoke_tile_clicked(0, false, false);
+    ctl.act(oni_app::Act::Export);
+    rig.until("the line", Duration::from_secs(120), || export_card::lines(w).iter().all(|l| l.ready));
+    let over = original.clone();
+    export_card::answer_with(&ctl, Rc::new(move |_| vec![over.clone()]));
+    e.invoke_export();
+    rig.pump();
+    assert!(e.get_confirm_shown() && !e.get_confirm_replaces());
+    assert!(e.get_confirm_message().contains(&format!("{} 3.JPG", names[0])), "{}", e.get_confirm_message());
+    e.invoke_confirmed(false);
+    rig.settle();
+    assert_eq!(std::fs::read(&original).unwrap(), b"the camera's own");
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -4255,6 +4255,7 @@ dependencies = [
  "oni-fixtures",
  "oni-hack",
  "oni-i18n",
+ "oni-library",
  "oni-render",
  "oni-settings",
  "serde",

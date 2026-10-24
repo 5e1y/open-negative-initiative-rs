@@ -5,6 +5,8 @@ use super::{Ctl, with_shell};
 use oni_measure::sheet::{self, Layout, Picture};
 use oni_settings::sidecar::{self, WriteOptions};
 use oni_settings::{Date, Film, PipelineSettings};
+use oni_export::Failure;
+use oni_export::file::{self, Refused};
 use oni_i18n::{marked, tr};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -56,11 +58,40 @@ pub fn encoded(layout: &Layout, pixels: &[[f32; 4]], icc: &[u8]) -> Option<Vec<u
     oni_export::tiff::encoded(layout.width, layout.height, &oni_colour::Quantised::Sixteen(samples), false, icc, &none, &none)
 }
 
-/// `ContactSheet.write`: a new file the app makes, or a sheet it made before; never an original.
-pub fn write(layout: &Layout, pixels: &[[f32; 4]], to: &Path) -> Result<(), String> {
-    let icc = oni_colour::working::working_profile().encode().map_err(|e| e.to_string())?;
-    let bytes = encoded(layout, pixels, &icc).ok_or("the sheet could not be encoded")?;
-    std::fs::write(to, bytes).map_err(|e| e.to_string())
+/// Where a sheet lands: beside its lead under the first free number, or over the roll's former sheet.
+#[derive(Clone, Copy, Debug)]
+pub enum To<'a> {
+    Beside { lead: &'a Path, stem: &'a str },
+    Over(&'a Path),
+}
+
+/// Names a sheet tries before giving up, each taken by a file arriving while the sheet is written.
+const TRIES: usize = 64;
+
+/// `ContactSheet.write`: a new file the app makes, or a sheet it made before swapped whole; never an
+/// original, as the free name is held at the write itself, not when the sheet was asked for.
+pub fn write(layout: &Layout, pixels: &[[f32; 4]], to: To<'_>) -> Result<PathBuf, Failure> {
+    let icc = oni_colour::working::working_profile().encode().map_err(|_| Failure::Profile)?;
+    let bytes = encoded(layout, pixels, &icc).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))?;
+    let failed = |e: std::io::Error| Failure::Write(e.kind());
+    match to {
+        To::Over(former) => match file::replace(former, &bytes) {
+            Ok(()) => Ok(former.to_path_buf()),
+            Err(Refused::Io(e)) => Err(failed(e)),
+            Err(Refused::Taken) => Err(Failure::WouldOverwriteOriginal),
+        },
+        To::Beside { lead, stem } => {
+            for _ in 0..TRIES {
+                let destination = sheet::destination(lead, stem, |p| std::fs::symlink_metadata(p).is_ok());
+                match file::create(&destination, &bytes) {
+                    Ok(()) => return Ok(destination),
+                    Err(Refused::Taken) => continue,
+                    Err(Refused::Io(e)) => return Err(failed(e)),
+                }
+            }
+            Err(Failure::WouldOverwriteOriginal)
+        }
+    }
 }
 
 /// `ContactSheet.compose`: each frame decoded to the tile side on its own settings, its head of the
@@ -132,7 +163,7 @@ impl Ctl {
         let Some(donor) = donor.filter(|d| d.roll_reference.is_some()) else {
             return self.advise(tr("Something Went Wrong"), tr("Prepare this roll first: a contact sheet carries the window its roll was measured on."));
         };
-        let destination = sheet::destination(Path::new(&lead), &named(film.as_ref(), earliest), Path::exists);
+        let stem = named(film.as_ref(), earliest);
         self.state.borrow_mut().making_sheet = Some(Making { done: 0, total: paths.len(), step: "" });
         self.publish_bar();
         let stands = stands(earliest);
@@ -140,11 +171,12 @@ impl Ctl {
             .name("contact-sheet".into())
             .spawn(move || {
                 let laid: Vec<String> = paths.iter().filter(|p| !crate::flat_fields::is_mask_source(&support, Path::new(p))).cloned().collect();
-                let made = compose(&laid, sheet::roll_tile(), |done| with_shell(move |c| c.sheet_progressed(done, ""))).and_then(|(layout, pixels)| {
+                let composed = compose(&laid, sheet::roll_tile(), |done| with_shell(move |c| c.sheet_progressed(done, "")));
+                let made = composed.ok_or(Failure::Render).and_then(|(layout, pixels)| {
                     with_shell(|c| c.sheet_progressed(0, WRITING));
-                    write(&layout, &pixels, &destination).ok()?;
+                    let path = write(&layout, &pixels, To::Beside { lead: Path::new(&lead), stem: &stem })?;
                     let mosaic = laid.iter().all(|p| oni_decode::decodes_via_mosaic(Path::new(p)));
-                    Some(Sheet { path: destination, grid: layout.grid, film, stands, mosaic })
+                    Ok(Sheet { path, grid: layout.grid, film, stands, mosaic })
                 });
                 with_shell(move |c| c.sheet_made(made, donor));
             })
@@ -164,11 +196,15 @@ impl Ctl {
         self.publish_bar();
     }
 
-    fn sheet_made(self: &Rc<Self>, made: Option<Sheet>, donor: PipelineSettings) {
-        let Some(sheet) = made else {
-            self.state.borrow_mut().making_sheet = None;
-            self.publish_bar();
-            return self.advise(tr("Something Went Wrong"), tr("The contact sheet could not be written."));
+    fn sheet_made(self: &Rc<Self>, made: Result<Sheet, Failure>, donor: PipelineSettings) {
+        let sheet = match made {
+            Ok(sheet) => sheet,
+            Err(failure) => {
+                self.state.borrow_mut().making_sheet = None;
+                self.publish_bar();
+                let cause = if failure == Failure::Render { String::new() } else { format!(" {failure}") };
+                return self.advise(tr("Something Went Wrong"), &format!("{}{cause}", tr("The contact sheet could not be written.")));
+            }
         };
         self.sheet_progressed(0, ADOPTING);
         self.adopt_sheet(&sheet, &donor, true);
@@ -224,11 +260,12 @@ mod tests {
     #[test]
     fn the_sheet_file_gives_its_pixels_back_in_working_light() {
         let dir = std::env::temp_dir().join(format!("oni-sheet-file-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let value = 0.130_204_9;
         let (layout, pixels) = laid(&[("k".into(), plate(80, 80, value))], "k", 60.0, &[]).unwrap();
-        let file = dir.join("sheet.tif");
-        write(&layout, &pixels, &file).unwrap();
+        let file = write(&layout, &pixels, To::Beside { lead: &dir.join("k"), stem: "sheet" }).unwrap();
+        assert_eq!(file, dir.join("sheet.tif"));
         let back = crate::render::decode(&file, crate::render::Reading::default()).unwrap().linear;
         assert_eq!((back.width, back.height), (layout.width, layout.height));
         let read = centre(&layout, &back);

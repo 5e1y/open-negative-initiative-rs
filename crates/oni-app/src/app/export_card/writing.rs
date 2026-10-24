@@ -4,52 +4,60 @@ use super::*;
 use oni_i18n::tr;
 
 impl Ctl {
-    /// `runExport`: one file asks for its name, a batch for a folder and then for any clash.
+    /// `runExport`: one file asks for its name, a batch for a folder; then any clash asks, Replace
+    /// offered for ONI's earlier exports alone, Rename for anything else.
     pub fn run_export(self: &Rc<Self>) {
-        let (targets, rows, format) = {
+        let (targets, rows, format, support) = {
             let c = self.export.borrow();
-            (c.targets.clone(), c.rows.clone(), c.settings.format())
+            (c.targets.clone(), c.rows.clone(), c.settings.format(), c.support.clone())
         };
         if targets.is_empty() || self.export.borrow().exporting {
             return;
         }
-        if targets.len() == 1 {
+        let single = targets.len() == 1;
+        let destinations = if single {
             let typed = rows[0].as_ref().map_or("", |r| r.name.as_str());
             let name = oni_export::name(&targets[0].path, typed, format);
             let Some(destination) = self.ask_paths(&Ask::Save { name, extension: format.file_extension().into() }).into_iter().next() else { return };
-            return self.write_export(vec![destination]);
-        }
-        let Some(folder) = self.ask_paths(&Ask::Folder { count: targets.len() }).into_iter().next() else { return };
-        let destinations = export::destinations(&folder, &targets, &rows, format);
-        // A folder picker does not ask before overwriting, so the batch checks its clashes itself.
-        let clashes = oni_export::clashes(&destinations, |p| p.exists());
-        if let Some((title, message)) = export::clash_notice(clashes.len(), destinations.len()) {
-            {
-                let mut c = self.export.borrow_mut();
-                c.confirm = Some(destinations);
-                c.notice = None;
+            vec![destination]
+        } else {
+            let Some(folder) = self.ask_paths(&Ask::Folder { count: targets.len() }).into_iter().next() else { return };
+            export::clash::destinations(&folder, &targets, &rows, format)
+        };
+        let sources: Vec<PathBuf> = targets.iter().map(|t| t.path.clone()).collect();
+        let plan = oni_export::landing::plan(&destinations, &sources, &oni_export::file::Ledger::in_support(&support));
+        match export::clash::notice(&plan) {
+            // The save panel has asked already before an earlier export is replaced.
+            Some(notice) if single && notice.replaces => self.write_export(notice.destinations, true),
+            Some(notice) => {
+                {
+                    let mut c = self.export.borrow_mut();
+                    c.confirm = Some((notice.destinations, notice.replaces));
+                    c.notice = None;
+                }
+                if let Some(w) = self.window() {
+                    let e = w.global::<Exporting>();
+                    e.set_confirm_title(notice.title.into());
+                    e.set_confirm_message(notice.message.into());
+                    e.set_confirm_replaces(notice.replaces);
+                }
+                self.publish_export()
             }
-            if let Some(w) = self.window() {
-                let e = w.global::<Exporting>();
-                e.set_confirm_title(title.into());
-                e.set_confirm_message(message.into());
-            }
-            return self.publish_export();
+            None => self.write_export(destinations, false),
         }
-        self.write_export(destinations);
     }
 
-    pub(super) fn confirmed(self: &Rc<Self>, replace: bool) {
+    pub(super) fn confirmed(self: &Rc<Self>, go: bool) {
         let chosen = self.export.borrow_mut().confirm.take();
         self.publish_export();
-        if replace && let Some(destinations) = chosen {
-            self.write_export(destinations);
+        if go && let Some((destinations, replacing)) = chosen {
+            self.write_export(destinations, replacing);
         }
     }
 
-    /// `writeExport`: in order off this thread, the stop honoured between files; the first line's
-    /// artist and copyright are remembered for the next photo's empty line.
-    pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>) {
+    /// `writeExport`: in order off this thread, the stop honoured between files, an earlier export
+    /// replaced only when `replacing`; the first line's artist and copyright are remembered.
+    pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
         let (plan, export, stop) = {
             let mut c = self.export.borrow_mut();
             c.exporting = true;
@@ -73,10 +81,12 @@ impl Ctl {
         };
         self.publish_export();
         let engine: Shared = self.engine.clone();
-        let journal = crate::app::year::journal_in(&self.export.borrow().support);
+        let support = self.export.borrow().support.clone();
+        let journal = crate::app::year::journal_in(&support);
         std::thread::Builder::new()
             .name("export".into())
             .spawn(move || {
+                let mut ledger = oni_export::file::Ledger::in_support(&support);
                 for (target, destination, metadata) in plan {
                     if stop.load(Ordering::Relaxed) {
                         return with_shell(|c| {
@@ -88,7 +98,8 @@ impl Ctl {
                             c.publish_export();
                         });
                     }
-                    match export::write_one(&engine, &target, &destination, &export, &metadata) {
+                    let to = oni_export::Landing { path: &destination, ledger: &mut ledger, replacing };
+                    match export::write_one(&engine, &target, to, &export, &metadata) {
                         Ok(()) => {
                             let subject = oni_library::paths::canonical(&target.path);
                             journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());

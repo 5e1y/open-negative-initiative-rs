@@ -2516,5 +2516,26 @@
     "title": "Tips round on the radius scale",
     "status": "done",
     "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
+  },
+  {
+    "id": 370,
+    "type": "fix",
+    "title": "An export never lands on an original",
+    "status": "done",
+    "detail": "Before anything renders and again at the rename, a destination holding any file ONI did not export (P1.JPG beside P1.NEF, found as P1.jpg where the volume ignores case), a frame's own source or a name the batch gives twice is refused. A ledger in the support folder (Exports.json) vouches for ONI's earlier exports by path, length and modification date, so only they are offered Replace; a clash with anything else offers Rename alone, the Finder's way (P1 2.jpg), and Return renames. The dialog says the originals are not touched only once that has been checked. Closes safety-export-overwrites-other-original."
+  },
+  {
+    "id": 371,
+    "type": "fix",
+    "title": "Export and contact-sheet names are portable",
+    "status": "done",
+    "detail": "One sanitiser, oni_library::file_names::portable, for every typed export name and every sheet name: separators, Windows' refused characters and control characters become '-', trailing dots and spaces go, a device name (CON, NUL, COM1, LPT1…) gains a '-'. The joined path is checked to sit directly in the chosen folder. Closes windows-export-names."
+  },
+  {
+    "id": 372,
+    "type": "fix",
+    "title": "Exports and contact sheets are written atomically and say why they failed",
+    "status": "done",
+    "detail": "Every export and sheet is written to a hidden temporary file beside it, flushed, then renamed: a new file holds its name first (create_new) so one arriving meanwhile is never replaced, an earlier export is swapped whole. A failure keeps the previous file and names its cause: disk full, read-only, not allowed, folder gone. A sheet's free name is taken at the write, not before minutes of decoding. Closes safety-export-not-atomic."
   }
 ]

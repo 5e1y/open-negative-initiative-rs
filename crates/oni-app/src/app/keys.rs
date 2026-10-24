@@ -114,12 +114,14 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `.defaultAction`: Return presses the one key a notice offers; the export's clash, whose key
-    /// replaces files, takes none.
+    /// `.defaultAction`: Return presses the one key a notice offers, and the export clash's Rename;
+    /// its Replace takes none, as it replaces files.
     fn return_sheet(self: &Rc<Self>, w: &crate::MainWindow) {
         let e = w.global::<crate::Exporting>();
         if e.get_notice_shown() {
             e.invoke_notice_closed();
+        } else if e.get_confirm_shown() && !e.get_confirm_replaces() {
+            e.invoke_confirmed(true);
         } else if w.global::<crate::Notice>().get_shown() {
             w.global::<crate::Notice>().invoke_close();
         } else if w.global::<crate::Navigator>().get_catch_up_shown() {
