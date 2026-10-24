@@ -199,12 +199,6 @@ export component FrameOverlay inherits Rectangle {
     }
 }
 
-// `CorrectionsPanel`'s list box: dark, rounded, setting per-photo detail apart from the sliders.
-export component Well inherits Rectangle {
-    background: Colour.canvas;
-    border-radius: CropStyle.well-radius;
-}
-
 // The brush's disc under the pointer, its diameter the radius at the canvas's scale.
 export component BrushDisc inherits Rectangle {
     border-radius: self.width / 2;

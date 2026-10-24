@@ -1,14 +1,15 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
 import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, SliderStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
-import { TextRole, Tone, Label, Icon, Picture, Ground, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
+import { TextRole, Tone, Label, Icon, Picture, Ground, Divider, Surface, Card, Raised, Gap, AppWindow, TipLayer } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Button, ButtonGroup, Toggle, Slider, TextField } from "controls.slint";
 import { Tabs } from "tabs.slint";
-import { HelpMark, Section, Dialog } from "containers.slint";
+import { HelpMark, Section, Sheet } from "containers.slint";
 import { TileView, TileHeading, Scroller } from "collections.slint";
+import { StatusBar } from "forms.slint";
 import { RowKind, Row } from "row.slint";
-import { MenuEntry, MenuPanel, Menu, Picker } from "menu.slint";
+import { MenuEntry, Menu, Picker } from "menu.slint";
 import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { LabScreen } from "keypad.slint";
@@ -269,7 +270,7 @@ export component Catalogue inherits AppWindow {
                 Group {
                     title: "Plot, status, divider";
                     Plot { height: PlotStyle.block; screen: false; grid: false; interactive: false; background: Colour.canvas; }
-                    StatusLine { text: "DSC_6432 · 2000 × 1332"; }
+                    StatusBar { text: "DSC_6432 · 2000 × 1332"; }
                     HorizontalLayout { alignment: start; Badge { tone: BadgeTone.warning; text: "8-bit source — 256 levels per channel"; } }
                     Divider { }
                     HorizontalLayout { spacing: Space.s; alignment: start; HelpMark { note: "The help mark's note."; } Label { text: "Help mark"; tone: Tone.secondary; } }
@@ -359,8 +360,10 @@ export component Catalogue inherits AppWindow {
                 }
                 Group {
                     title: "Menu";
-                    MenuPanel {
+                    Raised {
                         width: parent.width;
+                        menu: true;
+                        pad: Gap.xs;
                         MenuEntry { text: "Entry"; shortcut: "⌘E"; }
                         MenuEntry { text: "Hovered"; look: Look.hover; }
                         MenuEntry { text: "Checked"; checked: true; }
@@ -372,9 +375,9 @@ export component Catalogue inherits AppWindow {
                     title: "Sheet";
                     Surface {
                         ground: Ground.canvas;
-                        height: dialog.preferred-height + 2 * Space.l;
-                        dialog := Dialog {
-                            width: parent.width - 2 * Space.l;
+                        height: sheet.hung-height;
+                        sheet := Sheet {
+                            card-width: parent.width - 2 * Space.l;
                             title: "Sheet";
                             Label { text: "A sheet's content, hung from the window's top."; tone: Tone.secondary; wrap: word-wrap; }
                             HorizontalLayout { alignment: end; Button { text: "Done"; } }

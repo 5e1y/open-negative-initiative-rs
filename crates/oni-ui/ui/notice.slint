@@ -1,5 +1,5 @@
 // `neutralDecodeNotice`: shown once the library holds a RAW, its bullets what the change means for a photo.
-import { Sheet, SheetStyle, Space, Label, TextRole, Button, BulletLine } from "ds/ds.slint";
+import { Sheet, SheetStyle, Space, Gap, Label, TextRole, Button, BulletLine } from "ds/ds.slint";
 
 export global Notice {
     in property <bool> shown;
@@ -7,23 +7,21 @@ export global Notice {
 }
 
 export component NoticeSheet inherits Sheet {
+    title: @tr("RAW Color, Recalibrated");
     card-width: SheetStyle.notice-width;
-    dismissed => { Notice.close(); }
     // Its groups a wider step apart than a plain sheet's lines.
+    gap: Gap.l;
+    dismissed => { Notice.close(); }
     VerticalLayout {
-        spacing: Space.l;
-        Label { text: @tr("RAW Color, Recalibrated"); role: TextRole.title; wrap: word-wrap; }
-        VerticalLayout {
-            spacing: Space.s;
-            for line in [
-                @tr("Camera RAW files now render truer color, especially on unusual film stocks."),
-                @tr("Your existing photos have already been nudged to compensate automatically."),
-                @tr("Still looks a touch off? One press of your usual balance button settles it."),
-            ]: BulletLine { text: line; }
-        }
-        HorizontalLayout {
-            alignment: end;
-            Button { text: @tr("GOT IT"); clicked => { Notice.close(); } }
-        }
+        spacing: Space.s;
+        for line in [
+            @tr("Camera RAW files now render truer color, especially on unusual film stocks."),
+            @tr("Your existing photos have already been nudged to compensate automatically."),
+            @tr("Still looks a touch off? One press of your usual balance button settles it."),
+        ]: BulletLine { text: line; }
+    }
+    HorizontalLayout {
+        alignment: end;
+        Button { text: @tr("GOT IT"); clicked => { Notice.close(); } }
     }
 }

@@ -1,6 +1,6 @@
 // The marks drawn over the canvas: the crop's and the window's frame, dragged live as Rust drags
 // them, the compare split, the well, the brush, the corrections, the loupe, the rings and drop marks.
-import { Space, Stroke, Ground, Picture, FrameOverlay, FrameStyle, SplitGuide, Well, BrushDisc, CorrectionMark, LoupeBand, DustOriginal, LiveStroke, SourceTrace, Ring, DropRing, DropLine, Row, RowKind } from "../ds.slint";
+import { Space, Radius, Gap, Inset, Stroke, Ground, Picture, FrameOverlay, FrameStyle, SplitGuide, BrushDisc, CorrectionMark, LoupeBand, DustOriginal, LiveStroke, SourceTrace, Ring, DropRing, DropLine, Row, RowKind } from "../ds.slint";
 import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 // A photo on the canvas with something drawn over it.
@@ -68,10 +68,10 @@ export component OverlayGroups inherits VerticalLayout {
     }
     Group {
         title: "Canvas marks";
-        states: ["Well", "BrushDisc (live)", "CorrectionMark", "LiveStroke, SourceTrace", "DustOriginal", "Ring"];
+        states: ["Inset (the corrections' list)", "BrushDisc (live)", "CorrectionMark", "LiveStroke, SourceTrace", "DustOriginal", "Ring"];
         Line {
             label: "as the canvas draws them";
-            Cell { Well { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; } }
+            Cell { Inset { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; pad: Gap.s; gap: Gap.xs; radius: Radius.control; } }
             Cell {
                 brush := Stage {
                     width: BoardStyle.cell - Space.l;

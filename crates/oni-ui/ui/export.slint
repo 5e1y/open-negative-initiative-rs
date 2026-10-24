@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, SummaryBox, PreviewSlot, PickerFace, Popover, BoardSheet, BoardCard, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout } from "ds/ds.slint";
+import { Icons, Space, RowStyle, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -239,7 +239,7 @@ export component ExportPanel inherits Surface {
                     help: @tr("Writes a gain map so HDR screens show the picture up to two stops above the page's white; everyone else sees exactly this picture. Post it uncropped, from a desktop browser at original ratio. JPEG only: no TIFF reader honours a gain map.");
                     Toggle { label: @tr("Brighter on HDR screens"); on: Exporting.hdr; enabled: Exporting.format == 1; toggled(on) => { Exporting.hdr-set(on); } }
                 }
-                SummaryBox {
+                Inset {
                     HorizontalLayout {
                         Label { text: Exporting.bits; role: TextRole.value; horizontal-stretch: 1; }
                         Label { text: Exporting.dims; role: TextRole.value; }
@@ -278,7 +278,7 @@ export component SpaceChip inherits Picker {
     value: Exporting.chip-hint;
     help: @tr("The color space the picture is edited and exported in");
     open => { chooser.show(); }
-    chooser := Popover {
+    chooser := PopupPanel {
         x: (root.width - FormStyle.panel-width) / 2;
         y: root.height;
         Label { text: @tr("Working Space"); role: TextRole.section; }
@@ -287,110 +287,112 @@ export component SpaceChip inherits Picker {
 }
 
 // The batch's clash: Return reaches no key, since replacing files is never a stray key's doing.
-export component ExportConfirmSheet inherits Sheet {
+export component ExportConfirmSheet inherits AskSheet {
     title: Exporting.confirm-title;
-    question: true;
-    dismissed => { Exporting.confirmed(false); }
-    if Exporting.confirm-message != "": Label { text: Exporting.confirm-message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        Button { text: @tr("Cancel"); clicked => { Exporting.confirmed(false); } }
-        Button { text: @tr("Replace"); kind: ButtonKind.destructive; clicked => { Exporting.confirmed(true); } }
-    }
+    message: Exporting.confirm-message;
+    cancel: @tr("Cancel");
+    keys: [{ text: @tr("Replace"), role: AskRole.destructive }];
+    answered(i) => { Exporting.confirmed(i == 0); }
 }
 
 // `DSDialogRequest.notice`: its one key the default, Return included.
-export component ExportNoticeSheet inherits Sheet {
+export component ExportNoticeSheet inherits AskSheet {
     title: Exporting.notice-title;
-    question: true;
-    dismissed => { Exporting.notice-closed(); }
-    if Exporting.notice-message != "": Label { text: Exporting.notice-message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Exporting.notice-closed(); } }
-    }
+    message: Exporting.notice-message;
+    keys: [{ text: @tr("OK"), role: AskRole.confirm }];
+    answered => { Exporting.notice-closed(); }
 }
 
 // `PaperProfilesSheet`: the makers in a sidebar, what the chosen one offers in a card.
-export component PaperSheet inherits BoardSheet {
+export component PaperSheet inherits Sheet {
     title: @tr("Paper Profiles");
+    header: SheetHeader.bar;
+    card-width: FormStyle.paper-width;
+    card-height: FormStyle.paper-height;
     dismissed => { Exporting.papers-done(); }
-    Scroller {
-        width: FormStyle.paper-list;
-        content-height: makers.preferred-height;
-        makers := VerticalLayout {
-            padding-top: CardStyle.inset; padding-left: Space.s;
-            padding-right: Space.s;
-            padding-bottom: Space.m;
-            spacing: Space.m;
-            alignment: start;
-            VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("DOWNLOAD HERE"); } }
-                for name[i] in Exporting.paper-direct: Row {
-                    title: name;
-                    selected: i == Exporting.paper-source;
-                    clicked => { Exporting.paper-picked(i); }
-                    glyph: Icons.archive;
-                    has-glyph: true;
+    HorizontalLayout {
+        vertical-stretch: 1;
+        Scroller {
+            width: FormStyle.paper-list;
+            content-height: makers.preferred-height;
+            makers := VerticalLayout {
+                padding-top: CardStyle.inset; padding-left: Space.s;
+                padding-right: Space.s;
+                padding-bottom: Space.m;
+                spacing: Space.m;
+                alignment: start;
+                VerticalLayout {
+                    HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("DOWNLOAD HERE"); } }
+                    for name[i] in Exporting.paper-direct: Row {
+                        title: name;
+                        selected: i == Exporting.paper-source;
+                        clicked => { Exporting.paper-picked(i); }
+                        glyph: Icons.archive;
+                        has-glyph: true;
+                    }
                 }
-            }
-            VerticalLayout {
-                HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("ON THE MAKER’S SITE"); } }
-                for name[i] in Exporting.paper-browsed: Row {
-                    title: name;
-                    selected: i + Exporting.paper-direct-count == Exporting.paper-source;
-                    clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
-                    glyph: Icons.arrow-right;
-                    has-glyph: true;
+                VerticalLayout {
+                    HorizontalLayout { padding-left: RowStyle.padding; Label { tone: Tone.tertiary; text: @tr("ON THE MAKER’S SITE"); } }
+                    for name[i] in Exporting.paper-browsed: Row {
+                        title: name;
+                        selected: i + Exporting.paper-direct-count == Exporting.paper-source;
+                        clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
+                        glyph: Icons.arrow-right;
+                        has-glyph: true;
+                    }
                 }
             }
         }
-    }
-    VerticalLayout {
-        horizontal-stretch: 1;
-        padding-top: CardStyle.inset; padding-right: CardStyle.inset;
-        padding-bottom: CardStyle.inset;
-        BoardCard {
-            vertical-stretch: 1;
-            Label { text: Exporting.paper-name; role: TextRole.heading; }
-            Label { role: TextRole.note; text: Exporting.paper-note; }
-            HorizontalLayout {
-                alignment: start;
-                Button { text: @tr("Open the Maker’s Page"); clicked => { Exporting.paper-open-page(); } }
-            }
-            if Exporting.paper-browser: Label { role: TextRole.note;
-                text: @tr("Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not.");
-            }
-            if !Exporting.paper-browser && Exporting.paper-reading: Label { role: TextRole.note; text: @tr("Reading the maker’s page…"); }
-            if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Label { role: TextRole.note;
-                text: @tr("The page lists no profile right now. Open it to look by hand.");
-            }
-            if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
-                value: Exporting.paper-filter;
-                placeholder: @tr("Filter, e.g. P900 matte");
-                edited(t) => { Exporting.paper-filter-typed(t); }
-            }
-            if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: ListView {
+        VerticalLayout {
+            horizontal-stretch: 1;
+            padding-top: CardStyle.inset; padding-right: CardStyle.inset;
+            padding-bottom: CardStyle.inset;
+            Inset {
                 vertical-stretch: 1;
-                // As tall installing as with its key, so the list never jumps.
-                for row[i] in Exporting.paper-rows: HorizontalLayout {
-                    spacing: Space.s;
-                    padding-top: Space.xs;
-                    padding-bottom: Space.xs; min-height: ButtonStyle.height + 2 * Space.xs;
-                    Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-                    if row.installing: Label { role: TextRole.note; text: @tr("Installing…"); }
-                    if !row.installing && row.installed: Button {
-                        text: @tr("Uninstall");
-                        kind: ButtonKind.destructive;
-                        enabled: !Exporting.paper-busy;
-                        clicked => { Exporting.paper-uninstall(i); }
-                    }
-                    if !row.installing && !row.installed: Button {
-                        text: @tr("Install");
-                        enabled: !Exporting.paper-busy;
-                        clicked => { Exporting.paper-install(i); }
+                pad: Gap.l;
+                gap: Gap.m;
+                Label { text: Exporting.paper-name; role: TextRole.heading; }
+                Label { role: TextRole.note; text: Exporting.paper-note; }
+                HorizontalLayout {
+                    alignment: start;
+                    Button { text: @tr("Open the Maker’s Page"); clicked => { Exporting.paper-open-page(); } }
+                }
+                if Exporting.paper-browser: Label { role: TextRole.note;
+                    text: @tr("Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not.");
+                }
+                if !Exporting.paper-browser && Exporting.paper-reading: Label { role: TextRole.note; text: @tr("Reading the maker’s page…"); }
+                if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Label { role: TextRole.note;
+                    text: @tr("The page lists no profile right now. Open it to look by hand.");
+                }
+                if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
+                    value: Exporting.paper-filter;
+                    placeholder: @tr("Filter, e.g. P900 matte");
+                    edited(t) => { Exporting.paper-filter-typed(t); }
+                }
+                if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: ListView {
+                    vertical-stretch: 1;
+                    // As tall installing as with its key, so the list never jumps.
+                    for row[i] in Exporting.paper-rows: HorizontalLayout {
+                        spacing: Space.s;
+                        padding-top: Space.xs;
+                        padding-bottom: Space.xs; min-height: ButtonStyle.height + 2 * Space.xs;
+                        Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+                        if row.installing: Label { role: TextRole.note; text: @tr("Installing…"); }
+                        if !row.installing && row.installed: Button {
+                            text: @tr("Uninstall");
+                            kind: ButtonKind.destructive;
+                            enabled: !Exporting.paper-busy;
+                            clicked => { Exporting.paper-uninstall(i); }
+                        }
+                        if !row.installing && !row.installed: Button {
+                            text: @tr("Install");
+                            enabled: !Exporting.paper-busy;
+                            clicked => { Exporting.paper-install(i); }
+                        }
                     }
                 }
+                if Exporting.paper-message != "": Label { role: TextRole.note; text: Exporting.paper-message; }
             }
-            if Exporting.paper-message != "": Label { role: TextRole.note; text: Exporting.paper-message; }
         }
     }
 }

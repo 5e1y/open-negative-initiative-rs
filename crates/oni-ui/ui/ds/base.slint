@@ -2,7 +2,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, State, Motion, ButtonStyle, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, State, Motion, ButtonStyle, TileStyle, TipStyle, PlotStyle, CardStyle, SplitStyle, StatusStyle, ShellStyle, ScannerStyle, MenuStyle, SheetStyle } from "theme.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
 export enum TextRole { label, value, caption, title, section, heading, button, note }
@@ -204,31 +204,47 @@ export component CardCorners {
     Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
 
-// `floating(_:)`: a hidden column slid over the card, rounded and raised by its shade.
-export component FloatingColumn inherits Rectangle {
-    background: Colour.ground;
-    border-radius: CardStyle.radius;
-    clip: true;
-    drop-shadow-color: DS.scanner-raise-shade;
-    drop-shadow-blur: DS.control-hollow-blur * 1px;
-    drop-shadow-offset-y: DS.control-hollow-drop * 1px;
+// How a raised surface stands off what it sits on: a hairline alone (a popover, a menu), the
+// scanner's shade with no edge (a column slid over the card), or a hairline and a sheet's lift.
+export enum Lift { none, float, sheet }
+
+// The panel's ground rounded as a card, its content in a column; `menu` takes the raised grey and
+// the menus' round, as Swift keeps them. A press on it stays on it, but for a slid column's.
+export component Raised inherits Rectangle {
+    in property <Lift> lift: Lift.none;
+    in property <bool> menu;
+    in property <Gap> pad: Gap.none;
+    in property <Gap> gap: Gap.none;
+    height: column.preferred-height;
+    background: root.menu ? Colour.raised : Colour.ground;
+    border-radius: root.menu ? MenuStyle.radius : Radius.card;
+    border-width: root.lift == Lift.float ? 0px : Stroke.hairline;
+    border-color: Colour.separator;
+    clip: root.lift != Lift.none;
+    drop-shadow-color: root.lift == Lift.float ? DS.scanner-raise-shade : root.lift == Lift.sheet ? Colour.scrim : transparent;
+    drop-shadow-blur: root.lift == Lift.float ? DS.control-hollow-blur * 1px : root.lift == Lift.sheet ? SheetStyle.shadow : 0px;
+    drop-shadow-offset-y: root.lift == Lift.float ? DS.control-hollow-drop * 1px : 0px;
+    if root.lift != Lift.float: TouchArea { }
+    column := VerticalLayout {
+        padding: Tones.gap(root.pad);
+        spacing: Tones.gap(root.gap);
+        @children
+    }
 }
 
-// `DSStatusBar`: one line under the viewer.
-export component StatusLine inherits Rectangle {
-    in property <string> text;
-    height: StatusStyle.height;
-    // As wide as its words, eliding once the row is short of room.
-    min-width: 0;
-    preferred-width: line.preferred-width + 2 * Space.s;
-    line := Label {
-        x: Space.s;
-        width: parent.width - 2 * Space.s;
-        height: parent.height;
-        role: TextRole.value;
-        tone: Tone.secondary;
-        text: root.text;
-        overflow: elide;
+// A box sunk in the panel: the canvas's dark, rounded, its lines in a column; the export's summary,
+// the paper profiles' card and the corrections' list (`Radius.control`, as `CorrectionsPanel`).
+export component Inset inherits Rectangle {
+    in property <Gap> pad: Gap.m;
+    in property <Gap> gap: Gap.xxs;
+    in property <length> radius: Radius.card;
+    background: Colour.canvas;
+    border-radius: root.radius;
+    VerticalLayout {
+        padding: Tones.gap(root.pad);
+        spacing: Tones.gap(root.gap);
+        alignment: start;
+        @children
     }
 }
 
@@ -242,22 +258,62 @@ export component AppWindow inherits Window {
     default-font-family: Type.family;
 }
 
+// What a hovered control says: a line of text; as a help mark's note a card, its clip above, 4:3,
+// then the note. `natural-width` and `natural-height` are its size before a room holds it.
+export component TipCard inherits Rectangle {
+    in property <bool> card;
+    in property <string> text;
+    in property <image> picture;
+    out property <length> natural-width: root.card ? TipStyle.card-width : tip-text.width + 2 * TipStyle.padding-x;
+    out property <length> natural-height: root.card ? column.preferred-height : tip-text.preferred-height + 2 * TipStyle.padding-y;
+    width: root.natural-width;
+    height: root.natural-height;
+    background: Colour.tip;
+    border-radius: root.card ? TipStyle.card-radius : TipStyle.radius;
+    clip: root.card;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    tip-text := Label {
+        visible: !root.card;
+        role: TextRole.caption;
+        text: root.text;
+        wrap: word-wrap;
+        width: min(self.preferred-width, TipStyle.max-width);
+    }
+    column := VerticalLayout {
+        visible: root.card;
+        width: TipStyle.card-width;
+        padding: TipStyle.card-padding;
+        spacing: TipStyle.card-padding;
+        // The clip's place, empty until its GIF is made.
+        Picture {
+            height: (TipStyle.card-width - 2 * TipStyle.card-padding) * 3 / 4;
+            ground: Ground.skeleton;
+            rounded: true;
+            source: root.picture;
+        }
+        Label {
+            role: TextRole.caption;
+            font-weight: Type.medium;
+            tone: Tone.primary;
+            text: root.card ? root.text : "";
+            wrap: word-wrap;
+        }
+    }
+}
+
 // The tooltip, drawn above everything by the window that holds it, held inside it by `Tips.place`.
-export component TipLayer inherits Rectangle {
+export component TipLayer inherits TipCard {
     in property <length> room;
     in property <length> room-height;
-    property <TipBox> box: Tip.card
-        ? Tips.place(Tip.x, Tip.y, TipStyle.card-width, card.preferred-height, root.room, root.room-height)
-        : Tips.place(Tip.x, Tip.y, tip-text.width + 2 * TipStyle.padding-x, tip-text.preferred-height + 2 * TipStyle.padding-y, root.room, root.room-height);
+    card: Tip.card;
+    text: Tip.text;
+    picture: Tip.clip;
+    property <TipBox> box: Tips.place(Tip.x, Tip.y, root.natural-width, root.natural-height, root.room, root.room-height);
     x: root.box.x;
     y: root.box.y;
     width: root.box.width;
     height: root.box.height;
-    background: Colour.tip;
-    border-radius: Tip.card ? TipStyle.card-radius : TipStyle.radius;
-    clip: Tip.card;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
     // Shown after the delay by a timer: an animated opacity redraws the window for the whole delay.
     property <bool> shown: Tip.shown;
     property <bool> ready;
@@ -267,33 +323,6 @@ export component TipLayer inherits Rectangle {
         interval: Motion.tip-delay;
         running: Tip.shown && !Tip.at-once && !root.ready;
         triggered => { root.ready = true; }
-    }
-    tip-text := Label {
-        visible: !Tip.card;
-        role: TextRole.caption;
-        text: Tip.text;
-        wrap: word-wrap;
-        width: min(self.preferred-width, TipStyle.max-width);
-    }
-    card := VerticalLayout {
-        visible: Tip.card;
-        width: TipStyle.card-width;
-        padding: TipStyle.card-padding;
-        spacing: TipStyle.card-padding;
-        // The clip's place, empty until its GIF is made.
-        Picture {
-            height: (TipStyle.card-width - 2 * TipStyle.card-padding) * 3 / 4;
-            ground: Ground.skeleton;
-            rounded: true;
-            source: Tip.clip;
-        }
-        Label {
-            role: TextRole.caption;
-            font-weight: Type.medium;
-            tone: Tone.primary;
-            text: Tip.card ? Tip.text : "";
-            wrap: word-wrap;
-        }
     }
 }
 

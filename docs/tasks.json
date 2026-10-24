@@ -2336,10 +2336,66 @@
     "detail": "Seen on the board after #320 and #321. A disabled slider never grows its knob (the board's Disabled column did). The stepped slider grows its knob and shows the grab cursor over the knob alone, as DSSlider and the continuous one; its name's double click and tooltip are off while disabled, and its ± keys dim with it. The knob follows the hand unsprung and settles on a value arriving from elsewhere (a reset, an undo, another photo) along Motion.settle (DS.Motion.settle's 0.38 s response, eased out), never while held or within Motion.settle of a scroll event; the stepped slider used to lag its slide by 0.14 s. The levels track shows the grab cursor within a handle's grab, its hover measured from the track's origin (it was a half-knob off), and its handles settle the same way while no hand is on it. Every slider takes the wheel as DSScrollAdjust does: the Brush Size (now a BrushSlider wrapper), the export's Quality and Prepare the Roll's sliders, which ignored it, move along their track and run their release's work (the brush and Picker Size kept, the export weighed) once the scroll rests, through Ctl::slider_scrolled; a scroll across a track is still left to the pane. Ink.primary has its own branch in Inks.of. Window checks: the brush, the quality and the Picker Size scroll along and refuse a scroll across (twins), the Picker Size written only once the scroll rests."
   },
   {
+    "id": 330,
+    "type": "refactor",
+    "title": "Design system: one raised surface, Raised, and one popup, PopupPanel",
+    "status": "done",
+    "detail": "Phase of #297. The sheet's card, PopoverPanel and FloatingColumn drew the same surface: the panel's ground rounded as a card. Raised holds it once, its content in a column (pad and gap as Gap), with lift none (a hairline: a popover, a menu), float (the scanner's shade, no edge, clipped: a hidden column slid over the card) or sheet (a hairline, the scrim's lift, clipped); menu takes the raised grey and the menus' round (MenuStyle.radius), as Swift keeps a menu apart from a popover. A press on it stays on it, but on a slid column. Menu and Popover, both a PopupWindow closed by a click outside and sized on their panel, are one PopupPanel, kind menu (raised grey, radius 8, padding xs) or popover (ground, radius 12, padding and gap m, at the export panel's width); Menu is PopupPanel of kind menu with its lines. MenuPanel, PopoverPanel, Popover and FloatingColumn are gone, and MenuStyle.padding with them (the menu's pad is Gap.xs). No value changed, so no pixel."
+  },
+  {
+    "id": 331,
+    "type": "refactor",
+    "title": "Design system: one Inset for the summary box, the board's card and the corrections' well",
+    "status": "done",
+    "detail": "Phase of #297. SummaryBox (forms), BoardCard (forms) and Well (frame) were the same box sunk in the panel: the canvas's dark, rounded, a column of lines. Inset holds it, with pad and gap as Gap (m and xxs by default, the summary's) and radius (Radius.card; Radius.control 16 for the De-dust corrections' list, as CorrectionsPanel). The paper profiles' card is Inset pad l gap m. No value changed, so no pixel."
+  },
+  {
+    "id": 332,
+    "type": "refactor",
+    "title": "Design system: one TipCard for the tooltip and the help card",
+    "status": "done",
+    "detail": "Phase of #297. TipLayer drew the tooltip and the help mark's card, and the board's Containers page copied both by hand (HelpCard, TipLine). TipCard draws either, card or not, with its natural size out; TipLayer is a TipCard placed by Tips.place and shown after the delay, and the board shows TipCard itself. No pixel in the app."
+  },
+  {
+    "id": 333,
+    "type": "refactor",
+    "title": "Design system: one Sheet for the dialog's card, the presets' panel sheet and the paper board",
+    "status": "done",
+    "detail": "Phase of #297. Sheet (over Dialog), PanelSheet and BoardSheet copied one frame: the blocking TouchArea, a FocusScope for Escape, the card at SheetStyle.margin on a raised surface. Sheet now carries every variant: card-height (0 fits the content and scrolls past the window's room; else the card is that tall at most, its content laid in the height it shows), header leading (the title over the content, the section face for a question) or bar (the title beside its exit key, Done by default, above a rule, the content edge to edge), bleed, and gap (a notice's groups a step l apart). Dialog, PanelSheet and BoardSheet are gone; BoardSheet's row of sidebar and card moved into PaperSheet. One way to title a sheet: NoticeSheet, TransitionSheet and RootsCatchUpSheet wrote their own title label only to get the wider step, they now set title and gap l; PresetSaveSheet takes the leading title. StockPickerSheet redrew the bar by hand at padding m all round: it takes the bar header, whose title and Done sit at SheetStyle.padding (24) from the sides instead of 16, the only pixels moved."
+  },
+  {
+    "id": 334,
+    "type": "refactor",
+    "title": "Design system: one AskSheet for the six questions, as DSDialogRequest",
+    "status": "done",
+    "detail": "Phase of #297 and the Slint side of #290's one Ask dialog; the five globals behind it stay. ChoiceSheet, AdviceSheet, ExportConfirmSheet, ExportNoticeSheet, ConfirmSheet and MaskDialogSheet built the same panel. AskSheet copies Swift's DSDialogPanel: a question's title, the message in the secondary ink, a field when it asks for a word (focused, Return pressing default-key), then Cancel and its keys on one plate at the end; each key an AskKey { text, role } with DSDialogRequest.Role's confirm (accent, the default), destructive (red, deaf to Return) or option (neutral, deaf to Return). answered(index, text) gives -1 for Cancel and Escape. The six sheets are AskSheet instances bound to their globals; Choice.keys is now [AskKey] (every key an option). Return and Escape stay Rust's, per global, as before. No pixel."
+  },
+  {
+    "id": 335,
+    "type": "refactor",
+    "title": "Design system: one StatusBar, as Swift's DSStatusBar",
+    "status": "done",
+    "detail": "Phase of #297. StatusLine (base), SealedStatusLine (roll) and LoadBar (forms) drew the one bar under the viewer. StatusBar copies DSStatusBar's two states in one shape: idle, the line and its seal (holographic) after it; busy, what loads, its count on the glass and its progress, sweeping below zero. CardStatus switches it on loading instead of swapping two components. No pixel. Swift's idle seal stands Space.s after the text and its busy title is in the label face and primary ink; this port keeps 2 × s and the value face in the secondary ink, as before."
+  },
+  {
     "id": 336,
     "type": "fix",
     "title": "The dark badge as Swift's DSBadge: radius 8, the value face, black at 60 %, white ink",
     "status": "done",
     "detail": "Follows #305. The dark Badge had DSBadge's padding (6) but a radius of 4, the chip's face, the contrast edge's fill and the handle's ink. It now takes DSBadge's rounded outline (DS.Radius.badge, 8), DS.Typo.value (11), DS.Palette.overlay (black at 60 %, new Colour.overlay) and textOnFill; role: label gives a correction's number the label's face, as NegativeView sets it. Seen on the loupe's ratio, the crop's size, the preset deck's hint, the tree's drag counter, the correction marks and the console's count."
+  },
+  {
+    "id": 337,
+    "type": "fix",
+    "title": "The export preview slot: a state enum, its ground, and Swift's sweep while it renders",
+    "status": "done",
+    "detail": "PreviewSlot.state was an int 0/1/2: it is PreviewState { rendering, shown, failed }, which ExportLine carries. Swift's slot shows DSProgress(fraction: nil) at the inline progress's width while it renders, not a dash; the slot does so. The slot lays the canvas's dark it sits on as its ground, so its size reads on the board in every state; the export card is that dark, so no pixel moves there."
+  },
+  {
+    "id": 338,
+    "type": "docs",
+    "title": "Board: the Containers page shows Sheet's variants, AskSheet, Raised, PopupPanel, Inset, StatusBar and TipCard",
+    "status": "done",
+    "detail": "The page shows AskSheet (Cancel and a destructive key, option keys wide, a notice's one key), Sheet (leading fitted and wide, gap l, card-height, the bar header over a list and an Inset), Raised in each lift and as a menu, PopupPanel opened by its keys, Inset in its two gauges, the StatusBar idle, sealed, counted and sweeping, and TipCard in both forms; the badge page adds the dark badge in the label's face. The bar sheet's list column keeps its lines at the top (alignment start), the card-height sheet hangs whole with its bottom margin, and each Surface swatch is outlined so the ground reads on the ground. The menus page shows the menu's Raised, the overlays page the corrections' Inset."
   }
 ]

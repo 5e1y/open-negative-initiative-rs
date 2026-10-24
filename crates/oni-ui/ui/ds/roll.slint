@@ -2,7 +2,7 @@
 // scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion, StatusStyle } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks } from "base.slint";
+import { Label, Picture, Ground, TextRole, Tone, Clicks } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { Button } from "controls.slint";
 
@@ -37,22 +37,6 @@ export component Pager inherits HorizontalLayout {
     if root.name-width > 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; width: root.name-width; horizontal-alignment: center; overflow: elide; }
     if root.name-width == 0: Label { role: TextRole.value; tone: Tone.secondary; text: root.name; horizontal-stretch: 1; horizontal-alignment: center; overflow: elide; }
     Button { text: @tr("Next"); widest: @tr("Previous"); enabled: root.can-next; clicked => { root.next(); } }
-}
-
-// `DSStatusBar.idle(leading:seal:)`: the status line, the seal of a frame made of passes right after
-// it, then the room the trailing picker takes.
-export component SealedStatusLine inherits HorizontalLayout {
-    in property <string> text;
-    in property <string> seal;
-    spacing: Space.s;
-    StatusLine { horizontal-stretch: 0; text: root.text; }
-    // The seal stands out of the row by its own height, as Swift's overlay does, so the bar keeps its height.
-    if root.seal != "": Rectangle {
-        width: seal.width;
-        height: StatusStyle.height;
-        seal := Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: root.seal; }
-    }
-    Rectangle { horizontal-stretch: 1; }
 }
 
 // `RollFrameCell`: the preview, else the thumbnail; the apart dot, the passes' seal; a marked frame

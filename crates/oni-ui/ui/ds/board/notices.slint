@@ -1,6 +1,6 @@
-// The containers page's second half: the notices and blocks of text, the status lines, the progress
-// bars, and the scroller with its knob, live and forced.
-import { Space, Look, Label, TextRole, Tone, StatusLine, SealedStatusLine, WarningBand, SummaryBox, EmptyState, BulletLine, PreviewSlot, Progress, LoadBar, Scroller, ScrollKnob } from "../ds.slint";
+// The containers page's second half: the notices and blocks of text, the preview slot, the status
+// bar, the progress bar, and the scroller with its knob, live and forced.
+import { Space, Look, Label, TextRole, Tone, StatusBar, WarningBand, EmptyState, BulletLine, PreviewState, PreviewSlot, Progress, Scroller, ScrollKnob } from "../ds.slint";
 import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 // The knob over a strip of the canvas, a third of its content shown.
@@ -29,16 +29,6 @@ export component NoticeGroups inherits VerticalLayout {
         span: BoardStyle.wide;
         Line { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
         Line {
-            label: "SummaryBox";
-            Fill {
-                span: BoardStyle.wide;
-                SummaryBox {
-                    Label { text: "3 photos · TIFF 16-bit"; }
-                    Label { text: "Display P3 · 3000 px"; tone: Tone.secondary; role: TextRole.value; }
-                }
-            }
-        }
-        Line {
             label: "EmptyState, its key live";
             empty := Fill {
                 span: BoardStyle.wide;
@@ -53,23 +43,25 @@ export component NoticeGroups inherits VerticalLayout {
         states: ["Rendering", "Shown", "Failed"];
         Line {
             label: "an export preview";
-            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 0; } }
-            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 1; source: Samples.photo; } }
-            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: 2; } }
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: PreviewState.rendering; } }
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: PreviewState.shown; source: Samples.photo; } }
+            Fill { PreviewSlot { height: BoardStyle.cell * 2 / 3; state: PreviewState.failed; } }
         }
     }
     Group {
-        title: "StatusLine and SealedStatusLine";
-        states: ["Plain", "With its seal"];
+        title: "StatusBar";
+        states: ["Idle", "With its seal", "Busy, counted", "Busy, uncounted (sweeping)"];
         span: BoardStyle.wide;
         Line {
             label: "under the viewer";
-            Cell { span: BoardStyle.wide; StatusLine { text: "DSC_6432 · 6048 × 4032 · Nikon Z f"; } }
-            Fill { span: BoardStyle.wide; SealedStatusLine { text: "Frame 09 · 3 passes"; seal: "RGB"; } }
+            Fill { span: BoardStyle.wide; StatusBar { text: "DSC_6432 · 6048 × 4032 · Nikon Z f"; } }
+            Fill { span: BoardStyle.wide; StatusBar { text: "Frame 09 · 3 passes"; seal: "RGB"; } }
+            Fill { span: BoardStyle.wide; StatusBar { busy: true; text: "Loading"; count: "14 / 36"; fraction: 0.4; } }
+            Fill { span: BoardStyle.wide; StatusBar { busy: true; text: "Reading"; } }
         }
     }
     Group {
-        title: "Progress and LoadBar";
+        title: "Progress";
         states: ["Empty", "40 %", "Full", "Uncounted (sweeping)"];
         span: BoardStyle.field;
         Line {
@@ -78,13 +70,6 @@ export component NoticeGroups inherits VerticalLayout {
             Fill { span: BoardStyle.field; Progress { fraction: 0.4; } }
             Fill { span: BoardStyle.field; Progress { fraction: 1; } }
             Fill { span: BoardStyle.field; Progress { fraction: -1; } }
-        }
-        Line {
-            label: "LoadBar";
-            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "0 / 36"; fraction: 0; } }
-            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "14 / 36"; fraction: 0.4; } }
-            Fill { span: BoardStyle.field; LoadBar { title: "Loading"; count: "36 / 36"; fraction: 1; } }
-            Fill { span: BoardStyle.field; LoadBar { title: "Reading"; } }
         }
     }
     Group {

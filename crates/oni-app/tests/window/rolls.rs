@@ -138,7 +138,7 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     let choice = w.global::<Choice>();
     assert!(choice.get_shown());
     assert_eq!(choice.get_title().as_str(), "Auto White Balance on 2 photos");
-    let keys: Vec<String> = (0..choice.get_keys().row_count()).filter_map(|i| choice.get_keys().row_data(i)).map(|k| k.to_string()).collect();
+    let keys: Vec<String> = (0..choice.get_keys().row_count()).filter_map(|i| choice.get_keys().row_data(i)).map(|k| k.text.to_string()).collect();
     assert_eq!(keys, ["Balance Each of the 2", "Average the 2 Balances"]);
     rig.key("\u{1b}");
     assert!(!choice.get_shown() && !panel.get_balancing());

@@ -317,13 +317,13 @@ msgstr "Mostrar {}"
 msgid "Hide {}"
 msgstr "Ocultar {}"
 
+#: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint
+msgid "Done"
+msgstr "OK"
+
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
 msgstr "no se pudo mostrar"
-
-#: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint crates/oni-ui/ui/stocks.slint
-msgid "Done"
-msgstr "OK"
 
 #: crates/oni-ui/ui/ds/keypad.slint
 msgid "REMEASURE ROLL"
@@ -1370,16 +1370,16 @@ msgid "Kept"
 msgstr "Conservado"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
+msgid "Brush Size"
+msgstr "Tamaño del pincel"
+
+#: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Dust & Scratches"
 msgstr "Polvo y arañazos"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "Paint over a defect; the tool duplicates a matching patch of the same photo over it."
 msgstr "Pinta sobre un defecto; la herramienta coloca encima un parche similar de la misma foto."
-
-#: crates/oni-ui/ui/panel/dedust_tab.slint
-msgid "Brush Size"
-msgstr "Tamaño del pincel"
 
 #: crates/oni-ui/ui/panel/dedust_tab.slint
 msgid "No good match was found nearby — this patch is a plain shifted tile, not a real structural match."
