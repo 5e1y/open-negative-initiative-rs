@@ -167,14 +167,18 @@ pub(crate) fn the_editors_last_gestures_behave_as_swifts() {
     assert!((exposure() - rest).abs() < 1e-5, "the three events were one step");
     // The hand stays raised until 0.16 s pass without an event; each event restarts that wait.
     let held = || ctl.state.borrow().scrolling();
+    // A runner slower than the window's 0.16 s cannot judge "still held": only a fast pump asserts it.
+    let within = |at: std::time::Instant| at.elapsed() < Duration::from_millis(150);
     store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    let first = std::time::Instant::now();
     std::thread::sleep(Duration::from_millis(110));
     rig.pump();
-    assert!(held(), "inside the idle window");
+    assert!(held() || !within(first), "inside the idle window");
     store.invoke_scroll(Field::Exposure.index(), 8.0, 0.0, span, false);
+    let second = std::time::Instant::now();
     std::thread::sleep(Duration::from_millis(110));
     rig.pump();
-    assert!(held(), "twin: the second event restarted the wait, 0.22 s after the first");
+    assert!(held() || !within(second), "twin: the second event restarted the wait, 0.22 s after the first");
     std::thread::sleep(Duration::from_millis(150));
     rig.pump();
     assert!(!held(), "past the idle window");

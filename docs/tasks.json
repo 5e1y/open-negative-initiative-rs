@@ -2546,6 +2546,13 @@
     "detail": "Nearly every Windows run since 2026-10-20 lost one or two test binaries (oni-app's lib, graph, fused, stages, senses, branches, swift_checks) to STATUS_ACCESS_VIOLATION, whatever the commit. Measured on the runner (Microsoft's software adapter, WARP): the graph checks crashed in 4 runs of 15 with every backend, 2 of 15 on DX12 alone, and in none with one test thread; the stages checks 1 of 15 and none. Each check opened a device of its own beside the others. oni_graph::gpu() now opens the high-performance adapter's device once a process, at the adapter's limits with CLEAR_TEXTURE where offered; Graph::new, Graph::with_max_side and oni-app's render::Device::open take it, as do the display kernels' and the interface drawing's checks; the shared-device check now asks the graph to follow that device's limit both above and under it. The app already shared one device (render::door), so its behaviour does not move."
   },
   {
+    "id": 364,
+    "type": "fix",
+    "title": "Two window checks judge Windows as they judge macOS",
+    "status": "done",
+    "detail": "missing_original builds its roll under the temp folder's canonical spelling and compares the folder Show the Folder opens as the archive writes it ('/', long names), so Windows' RUNNER~1 and backslashes no longer fail it; editor_leftovers asserts a wheel gesture still held only when its pump came back inside the 0.16 s idle window, a slow runner otherwise failing a correct app."
+  },
+  {
     "id": 370,
     "type": "fix",
     "title": "An export never lands on an original",

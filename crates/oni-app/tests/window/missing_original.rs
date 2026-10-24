@@ -32,6 +32,9 @@ fn bench(label: &str, extra: impl Fn(&Path)) -> Option<Bench> {
     };
     let root = std::env::temp_dir().join(format!("oni-app-missing-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&root).unwrap();
+    // The spelling the app keeps: Windows' temp folder is a short `RUNNER~1` name and uses `\`.
+    let root = PathBuf::from(oni_library::paths::canonical(&root));
     let roll = root.join("Volumes/T7/Scans/Roll 12");
     for (name, tone) in [("A00.tif", 0.3), ("B00.tif", 0.5), ("C00.tif", 0.7)] {
         common::plain_tiff(&roll.join(name), 48, 32, tone);
@@ -111,7 +114,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     assert!(canvas.get_read_only() && canvas.get_failure() == "");
     assert!(store.invoke_press(Field::Exposure.index(), false), "a slider's press is refused, so no drag starts");
     store.invoke_release(Field::Exposure.index());
-    assert_eq!(w.global::<Absent>().get_folder(), b.roll.to_string_lossy().as_ref(), "Show the Folder opens its own");
+    assert_eq!(w.global::<Absent>().get_folder(), oni_library::paths::normal(&b.roll.to_string_lossy()).as_ref(), "Show the Folder opens its own");
     b.rig.shot("missing-gone");
     w.global::<Absent>().invoke_back();
     b.rig.settle();
@@ -131,7 +134,7 @@ pub(crate) fn a_photo_whose_original_is_gone_says_so_on_the_canvas() {
     let (title, detail) = b.said();
     assert_eq!(title, "“C00.tif” cannot be found");
     assert!(detail.contains("Its disk “T7” is not connected"), "{detail}");
-    assert_eq!(w.global::<Absent>().get_folder(), b.root.join("Volumes").to_string_lossy().as_ref(), "the nearest folder still there");
+    assert_eq!(w.global::<Absent>().get_folder(), oni_library::paths::normal(&b.root.join("Volumes").to_string_lossy()).as_ref(), "the nearest folder still there");
     let u = w.global::<Unsaved>();
     assert!(u.get_shown(), "the edits a disk gone refused are asked about");
     assert!(u.get_message().contains("Its disk “T7” is not connected."), "{}", u.get_message());
