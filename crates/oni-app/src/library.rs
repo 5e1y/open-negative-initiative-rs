@@ -122,6 +122,13 @@ impl Archive {
         added
     }
 
+    /// Every node a hand left folded, a folder at any depth included.
+    pub fn folded(&self) -> HashSet<NodeId> {
+        let mut folders = HashSet::new();
+        folder_ids(&self.nodes, &mut folders);
+        self.nodes.iter().map(Node::id).chain(folders).filter(|id| !self.expanded.contains(id)).collect()
+    }
+
     /// Every photo in gallery order.
     pub fn entries(&self) -> Vec<&Entry> {
         self.groups.iter().flat_map(|g| g.entries.iter()).collect()

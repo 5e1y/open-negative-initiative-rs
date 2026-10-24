@@ -2761,5 +2761,26 @@
     "title": "Explorer gets backslashes, a share keeps its two slashes, and thumbnails leave the roaming profile",
     "status": "done",
     "detail": "reveal and show_folder hand explorer.exe the path with backslashes and no \\\\?\\ prefix (reveal_hands_explorer_backslashes; twin: the archive spelling holds '/'). suggested() keeps //server/share as one root (a_former_library_on_a_share_is_offered_on_that_share; twin: a one-slash path never becomes a share). On Windows the Thumbnails folder sits under LOCALAPPDATA when the support folder is the roaming default (windows_keeps_rebuildable_files_off_the_roaming_profile; twin: a check's own folder and other systems keep it)."
+  },
+  {
+    "id": 450,
+    "type": "fix",
+    "title": "The ONI Trash is the whole library's: a photo trashed in one folder is listed and restored from any other, one on a disk away says so",
+    "status": "done",
+    "detail": "read_trashed reads every trashed row of the index (LibraryIndex::trashed_frames, Swift's trashed(index.all()) without reading the whole index: a pass whose lead the index holds is left to its lead), whichever folder is open or none; the launch counts it before any folder opens. A photo on a disk away tiles as offline in the trash; Restore and Restore All restore what they reach and the notice says how many stayed and why, nothing written where the disk was. Check a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it; twin: the same trash cut to the opened folder reads empty, and the disk back, the same key restores in silence. OniTrash twin the_trash_lists_a_triplet_once_whichever_folder_holds_it; twin: cut on the trashed rows alone, a restored triplet leaves its passes in the trash."
+  },
+  {
+    "id": 451,
+    "type": "fix",
+    "title": "A project lists its members from the whole library, whatever folder is open; a member gone shows as missing, a trashed one stays hidden",
+    "status": "done",
+    "detail": "project_standing::standing reads, per member, the index row at its recorded path or of its fingerprint beyond the opened folder's rows (Swift's checkProjectPhotos), and lays a member no row holds at its recorded path; State::reach is what every project listing and gesture resolves against (bands, tree, info, New/Add/Remove, drops, save). A trashed member is hidden and kept a member; a member whose original is gone tiles as missing. Checks a_project_from_a_still_lists_after_b_opens and a_project_resolves_beyond_the_opened_folder_and_never_shows_its_trashed_member; twin: resolved against the opened folder's rows alone, the project lists nothing."
+  },
+  {
+    "id": 452,
+    "type": "fix",
+    "title": "A rename or a move carries every recorded path: the projects' paths, the selection, the rings and the folds",
+    "status": "done",
+    "detail": "followed (now gestures/disk.rs with New Roll, gestures.rs split under its ceiling) moves the index rows, the rows held, the projects' members beyond the folder and the trash's rows, the selection, the anchor and the cursor, both trees' picks, the projects' ring and every folder a hand folded (Archive::folded, which every relay of the archive now keeps at any depth, not only the top rows), then runs project::moved and saves projects.json when a project records paths, as Swift's followed. Check a_rename_moves_the_projects_recorded_path; twin: a rename of another folder leaves the recorded path where it was, and an open folder stays open."
   }
 ]

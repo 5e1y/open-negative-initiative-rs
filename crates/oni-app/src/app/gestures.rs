@@ -1,7 +1,8 @@
-//! Gestures on several photos: targets, pastes, new rolls, the ONI Trash, the confirm sheet's answer.
+//! Gestures on several photos: targets, pastes, the ONI Trash, the confirm sheet's answer.
 
 use super::*;
 
+mod disk;
 mod told;
 
 impl Ctl {
@@ -96,97 +97,6 @@ impl Ctl {
         if let Some(walked) = walked {
             self.followed(&walked.made);
         }
-    }
-
-    /// `rollFolder(from:)`: a dated folder beside the first target, the photos, their passes and
-    /// sidecars moved in, one gallery step that ⌘Z walks back.
-    pub(super) fn new_roll(self: &Rc<Self>) {
-        let targets: HashSet<String> = self.targets().into_iter().collect();
-        self.new_roll_from(&targets);
-    }
-
-    /// `rollFolder(from:)`: the photos moved into a dated roll folder beside the first, one step.
-    pub(super) fn new_roll_from(self: &Rc<Self>, targets: &HashSet<String>) {
-        let (ordered, earliest) = {
-            let s = self.state.borrow();
-            let ordered: Vec<String> = s.order.iter().filter(|p| targets.contains(*p)).cloned().collect();
-            let dates = s.rows.iter().filter(|e| targets.contains(&e.path)).filter_map(|e| e.captured_at);
-            (ordered, dates.reduce(|a, b| if b < a { b } else { a }))
-        };
-        let Some(first) = ordered.first() else { return };
-        let parent = oni_library::paths::parent(first);
-        let name = oni_library::roll_folder::name_for(earliest.unwrap_or_else(oni_settings::Date::now), &parent);
-        let film = oni_settings::Film::new(&name);
-        let folder = match oni_library::roll_folder::make(&name, &parent, &film) {
-            Ok(folder) => folder,
-            Err(e) => return self.told(tr("New Roll"), &tr!("The roll's folder could not be made: {e}", e = oni_library::refusal::cause(&e))),
-        };
-        let files = oni_library::rgb_passes::expanded(&ordered);
-        let failure = self.state.borrow_mut().store.flush();
-        if let Some(message) = failure {
-            self.told(tr("New Roll"), &message);
-        }
-        let made = oni_library::roll_folder::move_items(&oni_library::roll_folder::moves(&files, &folder));
-        if made.len() < files.len() {
-            self.told(tr("New Roll"), &tr!("{count} of the files could not be moved into the roll.", count = files.len() - made.len()));
-        }
-        {
-            let mut s = self.state.borrow_mut();
-            if let Some(archive) = s.archive.as_mut() {
-                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(parent.clone()));
-                archive.expanded.insert(oni_library::archive_tree::NodeId::Folder(folder.clone()));
-            }
-            s.rename_request = Some(folder.clone());
-            if let Some(store) = s.store.editor() {
-                store.record_disk(oni_core::store::Disk { folder: Some(folder), film: Some(film), moves: made.clone() }, tr("New Roll"));
-            }
-        }
-        self.journal_count(oni_library::journal::Kind::Rolled, targets.len());
-
-        self.followed(&made);
-    }
-
-    /// `followed(_:)`: the index rows, the selection and the open frame go where the disk moved
-    /// them, then the folder is read again for its new tree.
-    pub(super) fn followed(self: &Rc<Self>, moves: &[Move]) {
-        let moved = |path: &str| {
-            moves.iter().find(|m| oni_library::paths::holds(&m.from, path)).map(|m| oni_library::paths::moved(path, &m.from, &m.to))
-        };
-        let reopen = {
-            let mut s = self.state.borrow_mut();
-            if let Some(index) = &s.index {
-                for row in index.all() {
-                    if let Some(to) = moved(&row.path) {
-                        let _ = index.remove(&row.path);
-                        let _ = index.upsert(&oni_library::Entry { path: to, ..row });
-                    }
-                }
-            }
-            for row in &mut s.rows {
-                if let Some(to) = moved(&row.path) {
-                    row.path = to;
-                }
-            }
-            let fingerprints = s.rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
-            s.fingerprints = fingerprints;
-            for path in &mut s.order {
-                if let Some(to) = moved(path) {
-                    *path = to;
-                }
-            }
-            // `selection` and `ring` follow too, so a photo moved is never opened where it was.
-            let picks = &mut s.picks;
-            picks.selection = picks.selection.drain().map(|p| moved(&p).unwrap_or(p)).collect();
-            for kept in [&mut picks.anchor, &mut picks.cursor].into_iter().flatten() {
-                *kept = moved(kept).unwrap_or_else(|| kept.clone());
-            }
-            s.open.as_deref().and_then(|p| moved(p))
-        };
-        self.lay_archive();
-        if let Some(to) = reopen {
-            self.open_photo(&to);
-        }
-        self.read_again();
     }
 
     /// `resetAll()`: every target back to its imported state, one gallery step.

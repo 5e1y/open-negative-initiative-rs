@@ -19,6 +19,7 @@ pub mod navigator;
 pub mod paths;
 pub mod presence;
 pub mod project;
+pub mod project_standing;
 pub mod project_tree;
 pub mod refusal;
 pub mod relink;

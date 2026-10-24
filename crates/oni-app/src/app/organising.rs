@@ -25,6 +25,7 @@ mod grid_keys;
 mod cell_menu;
 mod projects;
 mod oni_trash;
+mod members;
 mod status_bar;
 mod info_sidebar;
 mod band_rename;
@@ -112,8 +113,11 @@ pub struct Organising {
     pub trash_unfolded: bool,
     /// The ONI Trash's picked row: `""` the trash itself, else a folder's path.
     pub trash_picked: Option<String>,
+    /// Every photo in the ONI Trash, whichever folder holds it.
     pub trashed: Vec<Entry>,
     pub projects: Vec<Project>,
+    /// The projects' members the index holds beyond the opened folder's rows.
+    pub standing: Vec<Entry>,
     pub project_ring: Option<NodeId>,
     pub project_expanded: HashSet<NodeId>,
     pub project_nodes: Vec<NodeId>,
@@ -209,13 +213,13 @@ impl State {
     }
 
     fn entry(&self, path: &str) -> Option<&Entry> {
-        self.rows.iter().chain(&self.org.trashed).find(|e| e.path == path)
+        self.rows.iter().chain(&self.org.standing).chain(&self.org.trashed).find(|e| e.path == path)
     }
 
     fn bands(&self) -> Vec<Band> {
         if self.org.projects_surface {
             // On the rows, never the medal-filtered ones: a project is hand-picked.
-            return project::grouped(&self.org.projects, &self.rows)
+            return project::grouped(&self.org.projects, &self.reach())
                 .into_iter()
                 .filter(|g| !g.entries.is_empty())
                 .map(|g| Band {
@@ -286,7 +290,7 @@ impl State {
             Some(NodeId::Photo { project, .. }) => Some(*project),
             None => None,
         };
-        oni_library::info::resolved_project(&self.org.projects, &self.rows, ring, self.picks.anchor.as_deref())
+        oni_library::info::resolved_project(&self.org.projects, &self.reach(), ring, self.picks.anchor.as_deref())
     }
 }
 

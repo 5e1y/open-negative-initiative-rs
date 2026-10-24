@@ -172,7 +172,7 @@ impl Ctl {
                 ProjectNode::Project(project) => {
                     s.picks.selection.clear();
                     s.picks.cursor = None;
-                    let groups = project::grouped(&s.org.projects, &s.rows);
+                    let groups = project::grouped(&s.org.projects, &s.reach());
                     let first = groups.iter().find(|g| g.id == *project).and_then(|g| g.entries.first()).map(|e| e.path.clone());
                     // `revealInTree`: the photo opened rings under its project, which opens.
                     first.filter(|_| beside).inspect(|path| {

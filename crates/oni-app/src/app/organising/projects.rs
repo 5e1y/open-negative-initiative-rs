@@ -12,7 +12,7 @@ impl Ctl {
     pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
-            let located = project::located(&s.org.projects, &s.rows);
+            let located = project::located(&s.org.projects, &s.reach());
             s.org.projects = located.clone();
             project::save(&s.support, &ProjectsFile { version: 1, projects: located }).err()
         };
@@ -24,7 +24,7 @@ impl Ctl {
     pub(super) fn new_project(self: &Rc<Self>, paths: &HashSet<String>) {
         let made = {
             let mut s = self.state.borrow_mut();
-            let rows = s.rows.clone();
+            let rows = s.reach().into_owned();
             project::new_from(&mut s.org.projects, &rows, paths, Date::now())
         };
         if made.is_some() {
@@ -78,7 +78,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let (mut rows, paths): (Vec<TreeRow>, Vec<Option<String>>) = {
             let mut s = self.state.borrow_mut();
-            let nodes = project_tree::flatten(&project_tree::roots(&s.org.projects, &s.rows), &s.org.project_expanded, 0);
+            let nodes = project_tree::flatten(&project_tree::roots(&s.org.projects, &s.reach()), &s.org.project_expanded, 0);
             s.org.project_nodes = nodes.iter().map(|(n, _)| n.id()).collect();
             let mut paths = Vec::with_capacity(nodes.len());
             for (node, _) in &nodes {

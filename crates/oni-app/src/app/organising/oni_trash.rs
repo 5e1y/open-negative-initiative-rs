@@ -3,13 +3,12 @@
 use super::*;
 
 impl Ctl {
-    /// The ONI Trash's photos under the opened folder, latest deletion first.
+    /// The ONI Trash's photos, whichever folder or disk holds them, latest deletion first, as
+    /// Swift's `takeRows` reads the whole index; one on a disk away tiles as offline.
     pub(in crate::app) fn read_trashed(&self) {
         let mut s = self.state.borrow_mut();
-        let (Some(index), Some(folder)) = (&s.index, s.opened.clone()) else { return };
-        let trashed: Vec<Entry> =
-            oni_library::index::trashed(&index.in_trash()).into_iter().filter(|e| oni_library::paths::holds(&folder, &e.path)).collect();
-        s.org.trashed = trashed;
+        let Some(index) = &s.index else { return };
+        s.org.trashed = index.trashed_frames();
     }
 
     pub(in crate::app) fn publish_trash_rows(&self) {
