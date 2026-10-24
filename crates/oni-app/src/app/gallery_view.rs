@@ -172,14 +172,19 @@ impl Ctl {
     }
 
     pub(super) fn label_paths(self: &Rc<Self>, targets: &[String], label: Medal) {
-        self.journal_medal(targets, label);
         let mut written = Vec::new();
+        let mut gone = 0;
         for path in targets {
             match oni_settings::sidecar::set_label(label, Path::new(path), oni_decode::decodes_via_mosaic(Path::new(path))) {
                 Ok(()) => written.push(path.clone()),
-                Err(e) => self.say(&e.to_string()),
+                Err(oni_settings::sidecar::Error::Unreachable) => gone += 1,
+                Err(e) => self.say(&oni_library::refusal::said(&e)),
             }
         }
+        if gone > 0 {
+            self.say(&oni_library::refusal::left_out(gone));
+        }
+        self.journal_medal(&written, label);
         self.reread(&written);
     }
 

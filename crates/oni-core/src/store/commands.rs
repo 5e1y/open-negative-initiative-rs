@@ -249,14 +249,22 @@ impl EditorStore {
         let paths: Vec<String> = paths.iter().filter(|p| seen.insert(p.as_str())).cloned().collect();
         let paths = &paths[..];
         let mosaics: Vec<bool> = paths.iter().map(|p| self.mosaic(p)).collect();
-        let loaded = in_parallel(paths, |i, path| sidecar::read(Path::new(path), mosaics[i], true));
+        // A missing original reads as no photo, never as a fresh one its absent sidecar would suggest.
+        let loaded = in_parallel(paths, |i, path| {
+            sidecar::original_present(Path::new(path)).and_then(|()| sidecar::read(Path::new(path), mosaics[i], true))
+        });
+        let mut gone = 0;
         let mut writes = Vec::new();
         for (path, loaded) in paths.iter().zip(loaded) {
             let loaded = match loaded {
                 Ok(loaded) if loaded.writable => loaded,
                 Ok(_) => continue,
+                Err(sidecar::Error::Unreachable) => {
+                    gone += 1;
+                    continue;
+                }
                 Err(e) => {
-                    self.failure = Some(e.to_string());
+                    self.failure = Some(refusal::said(&e));
                     continue;
                 }
             };
@@ -275,8 +283,12 @@ impl EditorStore {
                     before.insert(path.clone(), was);
                     after.insert(path, next);
                 }
-                Err(e) => self.failure = Some(e.to_string()),
+                Err(sidecar::Error::Unreachable) => gone += 1,
+                Err(e) => self.failure = Some(refusal::said(&e)),
             }
+        }
+        if gone > 0 {
+            self.failure = Some(refusal::left_out(gone));
         }
         self.together.landed(&after);
         (before, after)

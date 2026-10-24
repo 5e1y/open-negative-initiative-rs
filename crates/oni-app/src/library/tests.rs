@@ -1,4 +1,5 @@
 use super::*;
+use oni_settings::Date;
 
 /// Roll #8's folder, when this machine has it.
 pub(crate) fn roll8() -> Option<std::path::PathBuf> {
@@ -111,4 +112,23 @@ fn a_rolls_row_shows_the_stock_picked_else_its_modes_generic_one() {
     group.film.as_mut().unwrap().stock = Some("nobody-film".into());
     group.entries[0].mode = Some(ConversionMode::Monochrome);
     assert_eq!(default_stock(&group), "generic-black-and-white");
+}
+
+#[test]
+fn a_row_whose_sidecar_cannot_be_seen_is_kept_as_it_was() {
+    let root = std::env::temp_dir().join(format!("oni-app-refreshed-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let mut row = Entry::new(&root.join("T7").join("P1.RW2").to_string_lossy(), Date::since_reference_date(8e8), "f");
+    row.label = Medal::Gold;
+    row.trashed_at = Some(Date::since_reference_date(9e8));
+    assert_eq!(refreshed(&row), row, "a disk away clears no mark, medal or roll");
+    let side = oni_settings::sidecar::url_for(Path::new(&row.path));
+    write(Path::new(&row.path), b"raw");
+    write(&side, b"{ trunc");
+    assert_eq!(refreshed(&row), row, "an unreadable sidecar leaves the cached row");
+    // Twin: beside its present original, an absent sidecar is a photo back at rest.
+    std::fs::remove_file(&side).unwrap();
+    let rest = refreshed(&row);
+    assert_eq!((rest.label, rest.trashed_at), (Medal::None, None));
+    let _ = std::fs::remove_dir_all(&root);
 }

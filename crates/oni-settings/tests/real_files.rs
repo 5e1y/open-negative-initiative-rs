@@ -201,10 +201,12 @@ fn scratch(name: &str) -> PathBuf {
     dir
 }
 
-/// A copy of a roll #8 sidecar beside an original that need not exist: the sidecar is the truth.
+/// A copy of a roll #8 sidecar beside an empty stand-in: the sidecar is the truth, and a write
+/// needs an original beside it.
 fn copied(roll: &Path, dir: &Path, frame: &str) -> (PathBuf, String) {
     let text = std::fs::read_to_string(roll.join(format!("{frame}.json"))).unwrap();
     let original = dir.join(frame);
+    std::fs::write(&original, b"").unwrap();
     std::fs::write(sidecar::url_for(&original), &text).unwrap();
     (original, text)
 }
@@ -284,8 +286,9 @@ fn a_newer_format_opens_read_only_and_is_never_rewritten() {
     let loaded = sidecar::read(&original, true, true).unwrap();
     assert!(!loaded.writable);
     assert!(!sidecar::update(&original, true, |s| PipelineSettings { density: 0.4, ..s.clone() }).unwrap());
-    sidecar::set_label(Medal::Gold, &original, true).unwrap();
+    assert!(matches!(sidecar::set_label(Medal::Gold, &original, true), Err(sidecar::Error::Newer)), "the refusal is said");
     assert!(!sidecar::set_trashed(Some(Date::from_unix_seconds(1.0)), &original, true).unwrap());
+    assert!(matches!(sidecar::write(&loaded.settings, &original, Default::default()), Err(sidecar::Error::Newer)));
     assert_eq!(sidecar::flush(&PipelineSettings::default(), Some(&original), Some(&loaded.settings), loaded.writable), None);
     assert_eq!(std::fs::read_to_string(&path).unwrap(), future);
     // Twin: today's version is writable.
@@ -297,6 +300,7 @@ fn a_newer_format_opens_read_only_and_is_never_rewritten() {
 fn an_absent_sidecar_is_a_new_photo_and_an_unreadable_one_an_error() {
     let dir = scratch("absent");
     let original = dir.join("DSC_9999.NEF");
+    std::fs::write(&original, b"").unwrap();
     let loaded = sidecar::read(&original, true, true).unwrap();
     assert!(loaded.is_new && loaded.writable);
     assert_eq!(loaded.settings, PipelineSettings::rest(ConversionMode::Negative, true));

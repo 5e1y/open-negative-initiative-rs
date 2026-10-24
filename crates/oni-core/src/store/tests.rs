@@ -121,6 +121,7 @@ fn a_roll_set_on_its_frames_writes_the_others_at_once_keeps_their_dates_and_undo
     let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
     std::fs::write(&a, b"").unwrap();
     for p in [&b, &c] {
+        std::fs::write(p, b"").unwrap();
         sidecar::write(&PipelineSettings::default(), Path::new(p), WriteOptions::default()).unwrap();
     }
     let stamp = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000_000);

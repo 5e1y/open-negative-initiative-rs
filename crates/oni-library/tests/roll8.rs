@@ -200,7 +200,7 @@ fn the_trash_marks_sidecars_and_never_moves_a_file() {
 
     let when = Date::since_reference_date(812_345_678.0);
     let outcome = trash::mark(&picked, Some(when), &|_| true);
-    assert_eq!((outcome.done.clone(), outcome.refused.len(), outcome.failure.clone()), (picked.clone(), 0, None));
+    assert_eq!((outcome.done.clone(), outcome.refused.len(), outcome.failed.clone()), (picked.clone(), 0, vec![]));
     assert_eq!(trash::report(&outcome, false), None);
     let after = listing(&copy.root);
     assert_eq!(

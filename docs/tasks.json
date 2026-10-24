@@ -2518,6 +2518,41 @@
     "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
   },
   {
+    "id": 390,
+    "type": "fix",
+    "title": "No sidecar is written beside a missing original",
+    "status": "done",
+    "detail": "sidecar::original_present guards write and every setter (label, EXIF, roll draft, ONI Trash), so a medal, a trash, a paste, a reset, an undo write-back or a deferred flush never leaves X.NEF.json beside nothing for a later namesake to adopt; the refusal is a typed sidecar::Error::Unreachable, not an io error string. A batch gesture checks the original before reading its sidecar, acts on the present photos and says once \"N photos were left out: their originals cannot be found\" (oni_library::refusal). A medal journals only the photos it reached."
+  },
+  {
+    "id": 391,
+    "type": "fix",
+    "title": "A restore on a disk away changes nothing and says so",
+    "status": "done",
+    "detail": "set_trashed checks the original before its absent sidecar can read as a fresh, untrashed photo: a Restore or an undone trash on an unplugged disk reports \"N photos were not restored: their originals cannot be found\", records no step, and library::refreshed keeps a row whose sidecar cannot be seen (original away, sidecar unreadable) instead of clearing its mark, medal and roll."
+  },
+  {
+    "id": 392,
+    "type": "fix",
+    "title": "A write never overwrites a newer or unreadable sidecar",
+    "status": "done",
+    "detail": "write() decodes the sidecar standing at write time: a newer format (written by another app after the photo opened) is refused with sidecar::Error::Newer, an unparseable or unreadable one with its error, and both are said, never rewritten around empty envelope fields. set_label, set_exif and set_roll_draft now return Newer instead of a silent success."
+  },
+  {
+    "id": 393,
+    "type": "fix",
+    "title": "A sidecar keeps the keys a newer app added",
+    "status": "done",
+    "detail": "The format moves its version only for a field whose meaning changes, so a newer Swift adds keys at version 19. A rewrite carries every key of a same-version document this version does not write (oni-settings kept.rs), at the top, in the settings and deeper, unless carrying them changes what this version reads (a retired key would fold twice), in which case none is. Keys inside arrays are not carried."
+  },
+  {
+    "id": 394,
+    "type": "fix",
+    "title": "The ONI Trash names every cause of a mark that did not land",
+    "status": "done",
+    "detail": "trash::Outcome counts refused (newer), unreachable (original missing) and failed sidecars, each failure with its file and cause; report says each cause with its count, names three failed sidecars and counts the rest, instead of hiding io errors behind the refusal and keeping only the last."
+  },
+  {
     "id": 400,
     "type": "fix",
     "title": "One spelling per path: composed on macOS, compared by name",

@@ -293,9 +293,13 @@ msgstr "antes"
 msgid "after"
 msgstr "después"
 
-#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/ds/roll.slint crates/oni-ui/ui/editors.slint
+#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/editors.slint
 msgid "RGB"
 msgstr "RGB"
+
+#: crates/oni-ui/ui/ds/collections.slint
+msgid "FLAGGED"
+msgstr "MARCADO"
 
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Roll name"
@@ -349,10 +353,6 @@ msgstr "Anterior"
 msgid "Next"
 msgstr "Siguiente"
 
-#: crates/oni-ui/ui/ds/roll.slint
-msgid "FLAGGED"
-msgstr "MARCADO"
-
 #: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nombre"
@@ -381,15 +381,15 @@ msgstr "EN PELÍCULA"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1693,10 +1693,6 @@ msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelv
 msgid "Details"
 msgstr "Detalles"
 
-#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare.slint
-msgid "NEXT"
-msgstr "SIGUIENTE"
-
 #: crates/oni-ui/ui/prepare.slint
 msgid "Setting…"
 msgstr "Aplicando…"
@@ -1784,6 +1780,10 @@ msgstr "Lectura del escaneo"
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
+
+#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
+msgid "NEXT"
+msgstr "SIGUIENTE"
 
 #: crates/oni-ui/ui/preset_deck.slint
 msgid "Save this photo’s settings as a preset…"
@@ -3643,17 +3643,41 @@ msgid_plural "It stops grouping its {n} photos. The photos, their settings and e
 msgstr[0] "Deja de agrupar su única foto. La foto, sus ajustes y cualquier otro proyecto o rollo al que pertenezca no se modifican."
 msgstr[1] "Deja de agrupar sus {n} fotos. Las fotos, sus ajustes y cualquier otro proyecto o rollo al que pertenezcan no se modifican."
 
+#: crates/oni-library/src/refusal.rs
+msgid "The original cannot be found, its disk disconnected or the file moved. Nothing was changed."
+msgstr "No se encuentra el original: su disco está desconectado o el archivo se movió. No se cambió nada."
+
+#: crates/oni-library/src/refusal.rs
+msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
+msgstr "Una versión más reciente de ONI escribió estos ajustes, y esta nunca los reescribe."
+
+#: crates/oni-library/src/refusal.rs crates/oni-library/src/trash.rs
+msgid "{head}: {why}"
+msgstr "{head}: {why}"
+
+#: crates/oni-library/src/refusal.rs
+msgid "its original cannot be found, its disk disconnected or the file moved. Nothing was changed."
+msgid_plural "their originals cannot be found, their disk disconnected or the files moved. Nothing was changed."
+msgstr[0] "no se encuentra su original: su disco está desconectado o el archivo se movió. No se cambió nada."
+msgstr[1] "no se encuentran sus originales: su disco está desconectado o los archivos se movieron. No se cambió nada."
+
+#: crates/oni-library/src/refusal.rs
+msgid "One photo was left out"
+msgid_plural "{n} photos were left out"
+msgstr[0] "Se dejó fuera una foto"
+msgstr[1] "Se dejaron fuera {n} fotos"
+
 #: crates/oni-library/src/trash.rs
 msgid "{head}: a newer version of ONI wrote their settings, and this one never rewrites them."
 msgstr "{head}: una versión más reciente de ONI escribió sus ajustes, y esta nunca los reescribe."
 
 #: crates/oni-library/src/trash.rs
-msgid "Some photos were not restored: {failure}"
-msgstr "Algunas fotos no se restauraron: {failure}"
+msgid "{file} could not be written ({cause})"
+msgstr "No se pudo escribir {file} ({cause})"
 
 #: crates/oni-library/src/trash.rs
-msgid "Some photos were not moved to the ONI Trash: {failure}"
-msgstr "Algunas fotos no se movieron a la Papelera de ONI: {failure}"
+msgid "{head}: {files}."
+msgstr "{head}: {files}."
 
 #: crates/oni-library/src/trash.rs
 msgid "One photo was not restored"
@@ -3666,6 +3690,12 @@ msgid "One photo was not moved to the ONI Trash"
 msgid_plural "{n} photos were not moved to the ONI Trash"
 msgstr[0] "Una foto no se movió a la Papelera de ONI"
 msgstr[1] "{n} fotos no se movieron a la Papelera de ONI"
+
+#: crates/oni-library/src/trash.rs
+msgid "and {n} other"
+msgid_plural "and {n} others"
+msgstr[0] "y {n} más"
+msgstr[1] "y {n} más"
 
 #: crates/oni-export/src/lib.rs
 msgid "The RAW file could not be decoded."

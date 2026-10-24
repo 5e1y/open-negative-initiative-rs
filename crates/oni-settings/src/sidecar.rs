@@ -2,17 +2,20 @@
 //! and edits by hand, and survives a folder move because it travels with the original.
 
 use crate::cg::Rect;
-use crate::codec::{self, Failure, Source};
+use crate::codec::{self, Decoded, Failure, Source};
 use crate::date::Date;
 use crate::frame::{FlatField, PassOrder};
 use crate::id::Id;
 use crate::modes::{ConversionMode, Medal};
 use crate::settings::PipelineSettings;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fmt;
-use std::io::{self, Write};
+use std::io;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+pub(crate) use crate::atomic::write_atomically;
+use std::time::{Duration, SystemTime};
 
 /// The EXIF a hand set for the export; every key is required, as the document writes them all.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
@@ -90,6 +93,10 @@ pub enum Error {
     Io(io::Error),
     Codec(Failure),
     Encode(crate::json::Error),
+    /// The original is not on disk, its disk away or the file moved: nothing is written beside nothing.
+    Unreachable,
+    /// The sidecar on disk is from a newer format, which this version never rewrites.
+    Newer,
 }
 
 impl fmt::Display for Error {
@@ -98,6 +105,8 @@ impl fmt::Display for Error {
             Error::Io(e) => write!(f, "{e}"),
             Error::Codec(e) => write!(f, "{e}"),
             Error::Encode(e) => write!(f, "{e}"),
+            Error::Unreachable => f.write_str("The original cannot be found; its disk may be disconnected. Nothing was saved."),
+            Error::Newer => f.write_str("A newer version of ONI wrote these settings, and this one never rewrites them."),
         }
     }
 }
@@ -119,6 +128,15 @@ impl From<Failure> for Error {
 impl From<crate::json::Error> for Error {
     fn from(e: crate::json::Error) -> Self {
         Error::Encode(e)
+    }
+}
+
+/// The guard of every write: a sidecar beside a missing original would be adopted by a later namesake.
+pub fn original_present(original: &Path) -> Result<(), Error> {
+    match original.try_exists() {
+        Ok(true) => Ok(()),
+        Ok(false) => Err(Error::Unreachable),
+        Err(e) => Err(Error::Io(e)),
     }
 }
 
@@ -161,6 +179,8 @@ pub struct WriteOptions {
     pub exif: Option<ExifMetadata>,
     /// `Some(None)` clears the draft on file.
     pub roll_draft: Option<Option<RollDraft>>,
+    /// `Some(None)` clears the ONI Trash mark.
+    pub trashed_at: Option<Option<Date>>,
     /// Keeps the modification date, so the thumbnail key holds.
     pub preserving_revision: bool,
 }
@@ -177,22 +197,39 @@ fn restore_modified(path: &Path, time: Option<SystemTime>) {
     }
 }
 
-/// Writes the sidecar atomically, reading back the metadata the caller left out.
+/// The sidecar as it stands when a write comes, `None` when absent. One from a newer format, or that
+/// this version cannot read, is refused: its fields would be lost under defaults.
+fn standing(path: &Path) -> Result<Option<(Value, Decoded)>, Error> {
+    let data = match std::fs::read(path) {
+        Ok(data) => data,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e.into()),
+    };
+    let value: Value = serde_json::from_slice(&data).map_err(|_| Failure::NotAnObject)?;
+    if crate::tolerant::ns_integer(value.get("version")).unwrap_or(0) > codec::VERSION {
+        return Err(Error::Newer);
+    }
+    let decoded = codec::decode_value(value.clone(), &Source::none(), false)?;
+    Ok(Some((value, decoded)))
+}
+
+/// Writes the sidecar atomically, reading back the metadata the caller left out and keeping the
+/// keys a newer app added; never beside a missing original, nor over a newer or unreadable sidecar.
 pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
+    original_present(original)?;
     let path = url_for(original);
     let prior = if options.preserving_revision { modified(&path) } else { None };
-    let existing = std::fs::read(&path).ok().and_then(|d| codec::envelope(&d));
-    let text = codec::encode(
+    let standing = standing(&path)?;
+    let existing = standing.as_ref().map(|(_, decoded)| decoded);
+    let document = codec::document(
         settings,
-        options.imported_at.or(existing.as_ref().and_then(|e| e.imported_at)),
-        options.label.or(existing.as_ref().map(|e| e.label)),
-        options.exif.or(existing.as_ref().and_then(|e| e.exif.clone())),
-        match options.roll_draft {
-            Some(draft) => draft,
-            None => existing.as_ref().and_then(|e| e.roll_draft.clone()),
-        },
-        existing.as_ref().and_then(|e| e.trashed_at),
-    )?;
+        options.imported_at.or(existing.and_then(|e| e.imported_at)),
+        options.label.or(existing.map(|e| e.label)),
+        options.exif.or(existing.and_then(|e| e.exif.clone())),
+        options.roll_draft.unwrap_or_else(|| existing.and_then(|e| e.roll_draft.clone())),
+        options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
+    );
+    let text = crate::kept::encoded(&document, standing.as_ref())?;
     write_atomically(&path, text.as_bytes())?;
     restore_modified(&path, prior);
     Ok(())
@@ -214,10 +251,11 @@ pub fn update(original: &Path, mosaic: bool, transform: impl FnOnce(&PipelineSet
 
 /// Sets a label without touching the settings or the revision.
 pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Error> {
+    original_present(original)?;
     // An unreadable sidecar is an error, never rewritten as defaults around the one field.
     let existing = read(original, mosaic, true)?;
     if !existing.writable {
-        return Ok(());
+        return Err(Error::Newer);
     }
     let settings = existing.settings.clone();
     write(
@@ -234,10 +272,11 @@ pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Erro
 
 /// Sets the frame's EXIF, the settings and the revision untouched.
 pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(), Error> {
+    original_present(original)?;
     // An unreadable sidecar is an error, never rewritten as defaults around the one field.
     let existing = read(original, mosaic, true)?;
     if !existing.writable {
-        return Ok(());
+        return Err(Error::Newer);
     }
     let settings = existing.settings.clone();
     write(
@@ -255,9 +294,13 @@ pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(),
 
 /// Sets or clears the roll a frame is prepared in; a frame never touched gains no sidecar for a clear.
 pub fn set_roll_draft(draft: Option<RollDraft>, original: &Path, mosaic: bool) -> Result<(), Error> {
+    original_present(original)?;
     // An unreadable sidecar is an error, never rewritten as defaults around the draft.
     let existing = read(original, mosaic, true)?;
-    if !existing.writable || existing.roll_draft.as_ref() == draft.as_ref() {
+    if !existing.writable {
+        return Err(Error::Newer);
+    }
+    if existing.roll_draft.as_ref() == draft.as_ref() {
         return Ok(());
     }
     if draft.is_none() && existing.is_new {
@@ -277,8 +320,10 @@ pub fn set_roll_draft(draft: Option<RollDraft>, original: &Path, mosaic: bool) -
     )
 }
 
-/// Marks the photo in the ONI Trash, or back on `None`; false on a newer format, an unreadable one an error.
+/// Marks the photo in the ONI Trash, or back on `None`; false on a newer format, an unreadable one an
+/// error, and a missing original `Unreachable` before its absent sidecar could read as a fresh photo.
 pub fn set_trashed(date: Option<Date>, original: &Path, mosaic: bool) -> Result<bool, Error> {
+    original_present(original)?;
     // Caught up as every rewrite is: the document is stamped with today's version.
     let existing = read(original, mosaic, true)?;
     if !existing.writable {
@@ -287,18 +332,15 @@ pub fn set_trashed(date: Option<Date>, original: &Path, mosaic: bool) -> Result<
     if existing.trashed_at == date {
         return Ok(true);
     }
-    let path = url_for(original);
-    let prior = modified(&path);
-    let text = codec::encode(
-        &existing.settings,
-        existing.imported_at,
-        Some(existing.label),
-        existing.exif,
-        existing.roll_draft,
-        date,
-    )?;
-    write_atomically(&path, text.as_bytes())?;
-    restore_modified(&path, prior);
+    let options = WriteOptions {
+        imported_at: existing.imported_at,
+        label: Some(existing.label),
+        exif: existing.exif,
+        roll_draft: Some(existing.roll_draft),
+        trashed_at: Some(date),
+        preserving_revision: true,
+    };
+    write(&existing.settings, original, options)?;
     Ok(true)
 }
 
@@ -324,39 +366,4 @@ pub fn flush(settings: &PipelineSettings, original: Option<&Path>, persisted: Op
         return None;
     }
     write(settings, original, WriteOptions::default()).err().map(|e| e.to_string())
-}
-
-/// The bytes handed to the drive before the rename. A plain `fsync`: `sync_all`'s F_FULLFSYNC on macOS
-/// costs nine times as much, 117 ms against 13 for a 38-frame roll's sidecars.
-#[cfg(unix)]
-fn flushed(file: &std::fs::File) -> io::Result<()> {
-    use std::os::fd::AsRawFd;
-    unsafe extern "C" {
-        fn fsync(fd: i32) -> i32;
-    }
-    // SAFETY: the descriptor belongs to `file`, open for the whole call.
-    if unsafe { fsync(file.as_raw_fd()) } == 0 { Ok(()) } else { Err(io::Error::last_os_error()) }
-}
-
-#[cfg(not(unix))]
-fn flushed(file: &std::fs::File) -> io::Result<()> {
-    file.sync_all()
-}
-
-/// A temporary file beside the target, then a rename: a reader never sees half a document.
-pub(crate) fn write_atomically(path: &Path, bytes: &[u8]) -> io::Result<()> {
-    let directory = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-    let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let stamp = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
-    let temporary = directory.join(format!(".{name}.{}.{stamp}.tmp", std::process::id()));
-    let result = (|| {
-        let mut file = std::fs::File::create(&temporary)?;
-        file.write_all(bytes)?;
-        flushed(&file)?;
-        std::fs::rename(&temporary, path)
-    })();
-    if result.is_err() {
-        let _ = std::fs::remove_file(&temporary);
-    }
-    result
 }

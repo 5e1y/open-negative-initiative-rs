@@ -66,7 +66,7 @@ impl EditorStore {
                     before.insert(path.clone(), was.clone());
                     after.insert(path.clone(), now.clone());
                 }
-                Err(e) => self.failure = Some(e.to_string()),
+                Err(e) => self.failure = Some(oni_library::refusal::said(&e)),
             }
         }
         // A frame of passes: its two other files name their lead, in the same step so one undo takes it back.
