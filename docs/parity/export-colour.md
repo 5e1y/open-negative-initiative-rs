@@ -42,7 +42,7 @@ Statuses are defined in [README.md](README.md). The surface is `oni-app/src/expo
 | v2 and v4 LUT tables | `Pipeline/OutputProfile.swift` | `oni-colour/src/icc_lut.rs` | done | | `oni-colour/tests/oracle_tables.rs::v4_tables_run_their_five_elements_in_the_icc_order` |
 | Colour-only toggle (screen black) | `UI/ExportSpaceField.swift:189` | `oni-colour`, `oni-app/src/export_card.rs` `set_colour_only` (`proofColourOnly`) | done | | `oni-app/tests/export_paper_window.rs::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone`; `oni-colour/tests/checks.rs::colour_only_drops_the_paper_black_to_the_screen_s` |
 | A profile picked is the profile kept and shown | `UI/ExportSpaceField.swift` | `oni-app/src/export_card.rs` `space_tab`, `choose_profile` (`exportLastProfile`) | done | | `oni-app/tests/export_paper_window.rs::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone` (Custom lands on the profile last chosen) |
-| Working Space chip | `UI/WorkingSpaceChip.swift:4` | `ui/ds/forms.slint` `Chip`, `ui/export.slint` `SpaceChip` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
+| Working Space chip | `UI/WorkingSpaceChip.swift:4` | `ui/ds/menu.slint` `Picker` (`face: chip`), `ui/export.slint` `SpaceChip` | done | | `oni-app/tests/export_window.rs::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata` |
 
 ## Proof, paper and screen
 

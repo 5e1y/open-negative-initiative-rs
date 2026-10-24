@@ -1,6 +1,6 @@
 // The board's keys: Button in every kind at every size, then its variants, each in the five states a
 // key shows, the first one live under the hand.
-import { ShellStyle, ScannerStyle, Colour, Icons, ButtonKind, ButtonSize, Button } from "../ds.slint";
+import { ShellStyle, ScannerStyle, SectionStyle, Colour, Icons, ButtonKind, ButtonSize, Button } from "../ds.slint";
 import { PresetStyle, NavigatorStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Looks } from "kit.slint";
 
@@ -18,8 +18,9 @@ component KeyStates inherits Line {
     in property <bool> lamp-lit;
     in property <length> fixed-width;
     in property <color> fill: transparent;
-    in property <bool> wide;
     in property <color> glyph-ink: transparent;
+    in property <length> glyph-size;
+    in property <bool> capitals: true;
     for state in 5: Cell {
         span: root.span;
         Button {
@@ -34,8 +35,9 @@ component KeyStates inherits Line {
             lamp-lit: root.lamp-lit;
             fixed-width: root.fixed-width;
             fill: root.fill;
-            wide: root.wide;
             glyph-ink: root.glyph-ink;
+            glyph-size: root.glyph-size;
+            capitals: root.capitals;
             help: "The key's tooltip";
             look: Looks.of(state);
             on: state == 3;
@@ -65,7 +67,7 @@ component SwatchStates inherits Line {
 
 export component ButtonPage inherits Page {
     title: "Button";
-    note: "Button: kind × size (regular, small, mini, key); text, icon, square, turned, lamp, fixed-width, fill, wide, glyph-ink; on, enabled, look.";
+    note: "Button: kind (plain, the tints, ghost) × size (regular, small, key); text in capitals unless capitals is off, icon, square, turned, lamp, fixed-width, fill (a tint of its own), glyph-ink, glyph-size, note; on, enabled, look. A tint hovers 0.1 brighter, presses 0.2 darker, takes its ink by its lightness; on rings it.";
     property <[string]> states: ["Live", "Hover", "Pressed", "On", "Disabled"];
     Group {
         title: "Regular";
@@ -88,26 +90,30 @@ export component ButtonPage inherits Page {
         KeyStates { label: "confirm"; size: ButtonSize.small; kind: ButtonKind.confirm; text: "DONE"; }
     }
     Group {
-        title: "Mini (a column header's glyph key)";
+        title: "Small glyph keys (a column header's)";
         states: root.states;
-        KeyStates { label: "glyph"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.list; }
-        KeyStates { label: "glyph in its own ink (the star)"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: NavigatorStyle.favourite; }
-        KeyStates { label: "destructive glyph"; size: ButtonSize.mini; kind: ButtonKind.destructive; text: ""; has-icon: true; square: true; icon: Icons.remove; }
-        KeyStates { label: "word"; size: ButtonSize.mini; text: "ALL"; }
+        KeyStates { label: "glyph"; size: ButtonSize.small; text: ""; has-icon: true; square: true; icon: Icons.list; }
+        KeyStates { label: "glyph in its own ink (the star)"; size: ButtonSize.small; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: NavigatorStyle.favourite; }
+        KeyStates { label: "destructive glyph"; size: ButtonSize.small; kind: ButtonKind.destructive; text: ""; has-icon: true; square: true; icon: Icons.remove; }
     }
     Group {
-        title: "Key (a Scanner keycap; live, a press holds it down a beat)";
+        title: "Ghost (a glyph alone, its tone lifting under the hand)";
         states: root.states;
-        KeyStates { label: "no fill (its kind's)"; size: ButtonSize.key; text: "+1"; }
+        KeyStates { label: "help mark (note)"; kind: ButtonKind.ghost; text: ""; has-icon: true; square: true; icon: Icons.question; glyph-size: SectionStyle.help-mark; }
+        KeyStates { label: "row star, in its ink"; kind: ButtonKind.ghost; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-size: NavigatorStyle.star; glyph-ink: NavigatorStyle.favourite; }
+    }
+    Group {
+        title: "Key (a step slider's keycap; live, a press holds it down a beat)";
+        states: root.states;
+        KeyStates { label: "no fill (its kind's)"; size: ButtonSize.key; text: "+"; }
         KeyStates { label: "fill cap-light"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
         KeyStates { label: "fill cap-dark"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-dark; }
-        KeyStates { label: "fill band-dark"; size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-dark; }
-        KeyStates { label: "fill band-light"; size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-light; }
-        KeyStates { label: "fill band-red"; size: ButtonSize.key; text: "C"; fill: ScannerStyle.band-red; }
-        KeyStates { label: "fill band-cyan"; size: ButtonSize.key; text: "C"; fill: ScannerStyle.band-cyan; }
-        KeyStates { label: "fill band-yellow"; size: ButtonSize.key; text: "Y"; fill: ScannerStyle.band-yellow; }
-        KeyStates { label: "fill band-warm"; size: ButtonSize.key; text: "T"; fill: ScannerStyle.band-warm; }
-        KeyStates { label: "wide keycap"; size: ButtonSize.key; text: "D"; fill: ScannerStyle.band-dark; wide: true; }
+        KeyStates { label: "fill band-dark"; size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-dark; }
+        KeyStates { label: "fill band-light"; size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-light; }
+        KeyStates { label: "fill band-red"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.band-red; }
+        KeyStates { label: "fill band-cyan"; size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-cyan; }
+        KeyStates { label: "fill band-yellow"; size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-yellow; }
+        KeyStates { label: "fill band-warm"; size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-warm; }
     }
     Group {
         title: "Variants";
@@ -121,6 +127,8 @@ export component ButtonPage inherits Page {
         KeyStates { label: "lamp shown, off"; text: "AUTO"; lamp-shown: true; }
         KeyStates { label: "lamp shown, lit"; text: "AUTO"; lamp-shown: true; lamp-lit: true; }
         KeyStates { label: "fixed width, eliding"; text: "ALL PHOTOS SHOWN"; fixed-width: ShellStyle.filter-width; }
+        KeyStates { label: "a word put in capitals"; text: "Cancel"; }
+        KeyStates { label: "capitals off (an AppKit key)"; text: "Reveal in Finder"; capitals: false; }
     }
     Group {
         title: "Fill: a tint's swatch (on rings it)";

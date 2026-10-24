@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, ColumnPill, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -193,27 +193,28 @@ export component NavigatorSection inherits Rectangle {
             spacing: Space.s;
             // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.
             ButtonGroup { plate: true;
-                mini: true;
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
+                small: true;
+                Button { size: ButtonSize.small; has-icon: true; square: true;
                     icon: Icons.parent;
                     help: @tr("Parent folder");
                     enabled: Navigator.can-go-up;
                     clicked => { Navigator.go-up(); }
                 }
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
+                Button { size: ButtonSize.small; has-icon: true; square: true;
                     icon: Icons.favourite;
                     help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
                     glyph-ink: Navigator.favourites-only ? NavigatorStyle.favourite : Colour.ink;
                     clicked => { Navigator.favourites-toggled(); }
                 }
             }
-            pill := ColumnPill {
+            Picker {
+                face: PickerFace.pill;
                 horizontal-stretch: 1;
-                text: Navigator.pill-title;
+                value: Navigator.pill-title;
                 help: Navigator.pill-help;
-                pressable: true;
                 enabled: !Navigator.favourites-only;
-                clicked => { choices.show(); }
+                choices: Navigator.ancestors;
+                chosen(i) => { Navigator.ancestor-chosen(i); }
             }
         }
         if !root.beside-photo: Rectangle {
@@ -259,13 +260,6 @@ export component NavigatorSection inherits Rectangle {
         root.menu-x = x - root.absolute-position.x;
         root.menu-y = y - root.absolute-position.y;
         if (Navigator.row-menu(i)) { menu.show(); }
-    }
-    choices := Menu {
-        x: pill.absolute-position.x - root.absolute-position.x;
-        y: pill.absolute-position.y - root.absolute-position.y + pill.height;
-        width: pill.width;
-        choices: Navigator.ancestors;
-        chosen(i) => { choices.close(); Navigator.ancestor-chosen(i); }
     }
     menu := Menu {
         x: root.menu-x;
@@ -316,7 +310,7 @@ export component RootsCatchUpSheet inherits Sheet {
                 spacing: Space.s;
                 Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
                 Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
-                Button { text: @tr("ADD"); fills: false; clicked => { Navigator.catch-up-added(i); } }
+                Button { text: @tr("ADD"); clicked => { Navigator.catch-up-added(i); } }
             }
             if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
         }

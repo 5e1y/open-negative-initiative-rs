@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Knob, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -18,8 +18,8 @@ export component ColorPane inherits Pane {
         Tabs {
             tabs: [@tr("ONI"), @tr("Frontier")];
             marked: [false, false];
-            selected <=> Lab.machine;
-            picked(i) => { Lab.machine-picked(i); }
+            selected: Lab.machine;
+            picked(i) => { Lab.machine = i; Lab.machine-picked(i); }
         }
     }
     if Lab.shown: LabBlock {
@@ -56,7 +56,7 @@ export component ColorPane inherits Pane {
         }
         // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key.
         if !PanelState.balancing: ButtonGroup { plate: true;
-            fills: true;
+            align: GroupAlign.fill;
             VerticalLayout {
                 if PanelState.crop-first: VerticalLayout {
                     padding: Space.s;
@@ -93,7 +93,7 @@ export component ColorPane inherits Pane {
         modified: Store.paper-correction-modified;
         help: @tr("Gains laid last, on a color or a black and white print alike, against the paper the picture is proofed on, and on that paper alone: in any other working space they do nothing. Auto Paper Correction reads the paper's own white off its profile, never the picture, and sets the gains that print a grey as grey; the strongest stays at 0 so nothing clips.");
         ButtonGroup { plate: true;
-            fills: true;
+            align: GroupAlign.fill;
             Button {
                 text: @tr("AUTO PAPER CORRECTION");
                 help: @tr("Sets the three gains from the paper profile alone");

@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, Scroller, Icons, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Row, Menu } from "ds/ds.slint";
+import { Picker, PickerFace, Scroller, Icons, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Row, Menu } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { ProjectTree } from "project_tree.slint";
 
@@ -21,8 +21,8 @@ export component Tree inherits Surface {
             padding-bottom: Space.s;
             Tabs {
                 tabs: [@tr("Archive"), @tr("Projects")];
-                selected <=> Library.surface;
-                picked(i) => { Library.surface-picked(i); }
+                selected: Library.surface;
+                picked(i) => { Library.surface = i; Library.surface-picked(i); }
             }
         }
         if Library.surface == 0: NavigatorSection {
@@ -47,22 +47,24 @@ export component Tree inherits Surface {
             padding-bottom: Space.s;
             spacing: Space.s;
             ButtonGroup { plate: true;
-                mini: true;
-                Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
-                if Library.surface == 1: Button { size: ButtonSize.mini; has-icon: true; square: true;
+                small: true;
+                Button { size: ButtonSize.small; has-icon: true; square: true; icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
+                if Library.surface == 1: Button { size: ButtonSize.small; has-icon: true; square: true;
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;
                     help: Library.projects-any-open ? @tr("Fold every folder") : @tr("Open every folder");
                     clicked => { Library.project-fold-all(); }
                 }
-                Button { size: ButtonSize.mini; has-icon: true; square: true;
+                Button { size: ButtonSize.small; has-icon: true; square: true;
                     icon: Library.tree-layout == 0 ? Icons.list : Library.tree-layout == 1 ? Icons.gallery : Icons.single;
                     help: Library.tree-layout-help;
                     clicked => { Library.tree-layout-next(); }
                 }
             }
-            ColumnPill {
+            Picker {
+                face: PickerFace.pill;
+                pressable: false;
                 horizontal-stretch: 1;
-                text: Library.surface == 1 ? @tr("ONI Projects") : Navigator.opened-title;
+                value: Library.surface == 1 ? @tr("ONI Projects") : Navigator.opened-title;
                 help: Library.surface == 1 ? "" : Navigator.opened-help;
             }
         }

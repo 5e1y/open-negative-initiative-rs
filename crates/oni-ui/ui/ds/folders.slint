@@ -1,47 +1,16 @@
-// The navigator's controls: a folder's row and its rename field, the header's keys and pill, the
-// pill's list of folders above, and the line dragged to size the rows beside a photograph.
+// The navigator's gauges and the line dragged to size the rows beside a photograph.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle, FieldStyle } from "theme.slint";
-import { Label, Icon, Tone, Tips } from "base.slint";
-import { TextField, Look } from "controls.slint";
-import { Icons } from "icons.slint";
+import { Colour, Space, Stroke, ButtonStyle } from "theme.slint";
 
 export global NavigatorStyle {
     // `DS.Control.navigatorEditorRest` and `navigatorMaxHeight`: the rows beside a photograph.
     out property <length> rest: DS.control-navigator-editor-rest;
     out property <length> max: DS.control-navigator-max-height;
     out property <length> star: DS.control-icon-size * 0.8;
-    out property <length> key: DS.control-keycap-mini-height;
+    out property <length> key: ButtonStyle.small-height;
     out property <color> favourite: DS.tint-favourite;
     // `NavigatorRow`'s 0.4 on a folder of a volume not mounted.
     out property <float> absent: 0.4;
-}
-
-// `ColumnPill`: the name a column's header gives what it lists, a key when it opens something.
-export component ColumnPill inherits Rectangle {
-    in property <string> text;
-    in property <string> help;
-    in property <bool> enabled: true;
-    in property <bool> pressable;
-    in property <Look> look: Look.live;
-    callback clicked();
-    // As tall as the key plate beside it, keys and inset alike.
-    height: NavigatorStyle.key + 2 * ButtonStyle.plate-inset;
-    border-radius: Radius.badge;
-    background: root.pressable && root.enabled && (touch.has-hover || root.look != Look.live) ? Colour.hover : Colour.canvas;
-    accessible-role: button;
-    accessible-label: root.text;
-    HorizontalLayout {
-        padding-left: Space.s;
-        padding-right: Space.s;
-        Label { text: root.text; overflow: elide; horizontal-stretch: 1; }
-    }
-    // Hovered even when it opens nothing, so the path it names still shows as its note.
-    touch := TouchArea {
-        enabled: root.enabled;
-        clicked => { if (root.pressable) { root.clicked(); } }
-        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
-    }
 }
 
 // `NavigatorDivider`: the line under the rows, dragged to size them from nothing to the ceiling;

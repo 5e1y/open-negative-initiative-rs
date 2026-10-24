@@ -1,9 +1,10 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
-import { Colour, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, RowStyle } from "theme.slint";
-import { Label, Icon, Tone, Divider } from "base.slint";
+import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, RowStyle } from "theme.slint";
+import { Label, Icon, Tone, Tips, Divider } from "base.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 import { NavigatorStyle } from "folders.slint";
+import { FormStyle } from "forms.slint";
 
 // A line of a context menu: a rule above it, out of reach, or opening a submenu Rust lays in its place.
 export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
@@ -102,54 +103,90 @@ export component Menu inherits PopupWindow {
     }
 }
 
-// A field naming the value chosen, a chevron at its end; its words or lines drop under it as a menu.
+// A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
+// canvas's dark, `chip` the Working Space's words on no ground.
+export enum PickerFace { field, pill, chip }
+
+// A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
+// menu. Every face lights the same hover ground, and dims when it is out of reach.
 export component Picker inherits HorizontalLayout {
+    in property <PickerFace> face: PickerFace.field;
     in property <string> label;
+    // Words in the secondary ink before the value, a middle dot between, as the chip's space.
+    in property <string> prefix;
     in property <string> value;
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
+    in property <[FolderChoice]> choices;
+    in property <bool> enabled: true;
+    // A pill that only names what its column lists takes no click, its note still shown.
+    in property <bool> pressable: true;
+    in property <string> help;
     in property <Look> look: Look.live;
     // Where the field starts, which a menu dropped under it aligns on.
     out property <length> field-x: field.x;
     out property <length> field-width: field.width;
     callback open();
     callback chosen(int);
+    property <bool> pill: root.face == PickerFace.pill;
+    property <bool> chip: root.face == PickerFace.chip;
+    property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
     spacing: Space.s;
-    height: FieldStyle.height;
+    // A pill as tall as the key plate beside it, keys and inset alike.
+    height: root.pill ? NavigatorStyle.key + 2 * ButtonStyle.plate-inset : root.chip ? FormStyle.chip-height : FieldStyle.height;
     if root.label != "": Label { text: root.label; }
     field := Rectangle {
         horizontal-stretch: 1;
-        border-radius: FieldStyle.radius;
-        background: area.has-hover || root.look != Look.live ? Colour.raised : Colour.canvas;
-        border-width: Stroke.hairline;
+        border-radius: root.face == PickerFace.field ? FieldStyle.radius : Radius.badge;
+        background: root.hovered ? Colour.hover : root.chip ? Colour.hover.transparentize(1) : Colour.canvas;
+        border-width: root.face == PickerFace.field ? Stroke.hairline : 0px;
         border-color: Colour.separator;
-        HorizontalLayout {
-            padding-left: FieldStyle.padding;
-            padding-right: FieldStyle.padding;
-            spacing: Space.s;
+        opacity: root.enabled ? 1 : State.disabled;
+        accessible-role: button;
+        accessible-label: root.prefix != "" ? root.prefix + " · " + root.value : root.value;
+        accessible-enabled: root.enabled;
+        // As wide as its words on a chip, eliding the value once its room is short.
+        preferred-width: row.preferred-width;
+        row := HorizontalLayout {
+            padding-left: root.face == PickerFace.field ? FieldStyle.padding : Space.s;
+            padding-right: root.face == PickerFace.field ? FieldStyle.padding : Space.s;
+            spacing: root.chip ? Space.xs : Space.s;
+            if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
+            if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
             Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
-            VerticalLayout {
+            if !root.pill: VerticalLayout {
                 alignment: center;
-                Icon { source: Icons.chevron-down; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
-            }
-        }
-        area := TouchArea {
-            clicked => {
-                root.open();
-                if (root.entries.length > 0 || root.lines.length > 0) {
-                    menu.show();
+                Icon {
+                    source: Icons.chevron-down;
+                    width: root.chip ? FormStyle.chip-icon : ButtonStyle.small-icon;
+                    height: self.width;
                 }
             }
+        }
+        // Hovered even when it opens nothing, so the path a pill names still shows as its note.
+        area := TouchArea {
+            enabled: root.enabled;
+            clicked => {
+                if (root.pressable) {
+                    root.open();
+                    if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
+                        menu.show();
+                    }
+                }
+            }
+            changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
         }
     }
     menu := Menu {
         x: root.field-x;
         y: root.height;
-        span: root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
+        // A folder's list as wide as its pill; words at least the menu's own width.
+        span: root.choices.length > 0 ? root.field-width : root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
         entries: root.entries;
         current: root.current;
         lines: root.lines;
+        choices: root.choices;
         chosen(i) => { root.chosen(i); self.close(); }
     }
 }

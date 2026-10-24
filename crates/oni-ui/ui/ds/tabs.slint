@@ -2,10 +2,11 @@
 import { Colour, Space, State, Motion, TabsStyle } from "theme.slint";
 import { Label, Tips, Clicks } from "base.slint";
 
-// `DSTabBar` as a segmented control: one raised pill under the selection.
+// `DSTabBar` as a segmented control: one raised pill under the selection. Its owner holds the choice:
+// a click only asks, so a binding on `selected` keeps following the owner's value.
 export component Tabs inherits Rectangle {
     in property <[string]> tabs;
-    in-out property <int> selected;
+    in property <int> selected;
     in property <[bool]> marked;
     // A colour per tab drawn in place of its name, which stays the tab's accessible label.
     in property <[color]> swatches;
@@ -55,7 +56,6 @@ export component Tabs inherits Rectangle {
         touch := TouchArea {
             clicked => {
                 if (i != root.selected) { Clicks.press(); }
-                root.selected = i;
                 root.picked(i);
             }
             // A swatch shows no name, so its tab gives it in the tooltip.

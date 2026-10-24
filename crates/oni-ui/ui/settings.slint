@@ -1,7 +1,7 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, Section, Tabs, VerticalRule, Label, Tone, TextRole, Row, Toggle } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, VerticalRule, Label, Tone, TextRole, Row, Toggle } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -28,7 +28,6 @@ export global AppSettings {
 // A gesture that opens a sheet of its own closes this one first, so the two never stack.
 component SheetKey inherits Button {
     in property <Act> act;
-    fills: false;
     clicked => {
         AppSettings.close();
         AppSettings.flip(root.act);
@@ -54,7 +53,7 @@ component GeneralPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.sheet-before;
         title: @tr("Sound");
-        Toggle { labelled: true;
+        Toggle {
             label: @tr("Key clicks");
             on: AppSettings.clicks;
             toggled => { AppSettings.flip(Act.toggle-sound); }
@@ -70,13 +69,13 @@ component EditorPage inherits VerticalLayout {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("Viewing");
-        Toggle { labelled: true;
+        Toggle {
             label: @tr("Keep the zoom from one photo to the next");
             on: AppSettings.keep-zoom;
             toggled => { AppSettings.flip(Act.keep-zoom); }
         }
         Label { role: TextRole.note; text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
-        Toggle { labelled: true;
+        Toggle {
             label: @tr("Show what this screen cannot show");
             on: AppSettings.screen-gamut;
             toggled => { AppSettings.flip(Act.screen-gamut); }
@@ -88,7 +87,7 @@ component EditorPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.sheet-before;
         title: @tr("RAW files");
-        Toggle { labelled: true;
+        Toggle {
             label: @tr("Decode RAW files at full resolution");
             on: AppSettings.full-decode;
             toggled => { AppSettings.flip(Act.full-decode); }
@@ -125,7 +124,7 @@ component PhonePage inherits VerticalLayout {
         if AppSettings.phones != "": Label { role: TextRole.note; text: AppSettings.phones; }
         ButtonGroup {
             SheetKey { text: @tr("PAIR PHONE…"); act: Act.pair-phone; }
-            Button { text: @tr("FORGET PHONES"); fills: false; enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
+            Button { text: @tr("FORGET PHONES"); enabled: AppSettings.can-forget; clicked => { AppSettings.flip(Act.forget-phones); } }
         }
     }
 }
@@ -183,7 +182,7 @@ export component SettingsSheet inherits Sheet {
             if AppSettings.section == 4: AboutPage { }
         }
     }
-    ButtonGroup { plate: true; trailing: true;
+    ButtonGroup { plate: true; align: GroupAlign.end;
         Button {
             text: @tr("DONE");
             clicked => { AppSettings.close(); }

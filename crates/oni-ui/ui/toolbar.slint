@@ -89,8 +89,8 @@ component EditorKeys inherits HorizontalLayout {
         width: ScannerStyle.face-bar;
         tabs: [@tr("Pro"), @tr("Scanner")];
         marked: [false, false];
-        selected <=> Bar.face;
-        picked(i) => { Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
+        selected: Bar.face;
+        picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
     ButtonGroup {
         Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings (⌘⇧C)"); enabled: Bar.has-photo; }

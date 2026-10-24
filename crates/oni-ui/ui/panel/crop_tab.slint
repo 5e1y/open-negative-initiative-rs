@@ -1,6 +1,6 @@
 // The Crop tab: the frame, its ratio, rotation, mirror and straightening.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonKind, LcdReadout, ButtonGroup, FormRow, Toggle } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonKind, LcdReadout, ButtonGroup, GroupAlign, Toggle, Field, FieldLayout } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -16,9 +16,9 @@ export component CropPane inherits Pane {
         reset(b) => { Framing.act(Act.reset-crop); }
         // `FramePane`: COPY and PASTE hug their words, PASTE TO ROLL takes the rest of the plate.
         ButtonGroup { plate: true;
-            fills: true;
-            Button { text: @tr("COPY"); fills: false; help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
-            Button { text: @tr("PASTE"); fills: false; enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
+            align: GroupAlign.fill;
+            Button { text: @tr("COPY"); help: @tr("Copies this photo's crop."); clicked => { Framing.act(Act.copy-framing); } }
+            Button { text: @tr("PASTE"); enabled: Framing.can-paste && PanelState.targets > 0; help: PanelState.targets > 1 ? @tr("Pastes the copied crop on the {} selected photos.", PanelState.targets) : @tr("Pastes the copied crop on this photo."); clicked => { Framing.act(Act.paste-framing); } }
             Button { text: @tr("PASTE TO ROLL"); fills: true; enabled: Framing.can-paste; help: @tr("Pastes the copied crop on every photo measured with this roll."); clicked => { Framing.act(Act.paste-framing-to-roll); } }
         }
     }
@@ -27,10 +27,10 @@ export component CropPane inherits Pane {
         Tabs {
             tabs: [@tr("Free"), "3:2", "4:3", "1:1", "6:7", "5:4"];
             marked: [false, false, false, false, false, false];
-            selected <=> Framing.ratio;
-            picked(i) => { Framing.ratio-picked(i); }
+            selected: Framing.ratio;
+            picked(i) => { Framing.ratio = i; Framing.ratio-picked(i); }
         }
-        Toggle { labelled: true; label: @tr("Vertical"); on: Framing.portrait; enabled: Framing.portrait-enabled; toggled(on) => { Framing.portrait-toggled(on); } }
+        Toggle { label: @tr("Vertical"); on: Framing.portrait; enabled: Framing.portrait-enabled; toggled(on) => { Framing.portrait-toggled(on); } }
     }
     Block {
         title: @tr("Straighten");
@@ -57,7 +57,7 @@ export component CropPane inherits Pane {
         title: @tr("Measuring Window");
         // `MeasureWindowKeys`: the long sentence is the middle key's, armed it wears the confirm green.
         ButtonGroup { plate: true;
-            fills: true;
+            align: GroupAlign.fill;
             Button { has-icon: true; square: true; icon: Icons.reset; enabled: Framing.has-window; help: @tr("Reset measure window"); clicked => { Framing.act(Act.window-reset); } }
             Button {
                 fills: true;
@@ -71,7 +71,7 @@ export component CropPane inherits Pane {
         }
     }
     Section {
-        FormRow { spread: true;
+        Field { layout: FieldLayout.spread;
             label: @tr("Kept");
             LcdReadout { text: Framing.kept; }
         }

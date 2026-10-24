@@ -51,8 +51,8 @@ export component Panel inherits Surface {
             Tabs {
                 tabs: [@tr("Roll"), @tr("Crop"), @tr("Color"), @tr("Details")];
                 marked: [false, false, false, false];
-                selected <=> PanelState.tab;
-                picked(i) => { PanelState.tab-picked(i); }
+                selected: PanelState.tab;
+                picked(i) => { PanelState.tab = i; PanelState.tab-picked(i); }
             }
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.

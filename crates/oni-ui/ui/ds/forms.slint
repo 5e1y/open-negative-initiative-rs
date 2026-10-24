@@ -4,7 +4,7 @@ import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, SectionStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
 import { HelpMark } from "containers.slint";
-import { TextField, Button, Look } from "controls.slint";
+import { TextField, RenameField, Button, Look } from "controls.slint";
 import { Icons } from "icons.slint";
 
 export global FormStyle {
@@ -13,7 +13,8 @@ export global FormStyle {
     out property <length> label-width: DS.control-exif-label-width;
     out property <length> caption: DS.control-export-caption-height;
     out property <length> preview-floor: DS.control-export-preview-floor;
-    out property <length> size-field: DS.control-export-size-field-width;
+    // `SizeFields`: Swift's width is the digits' own, the hollow's padding laid outside it.
+    out property <length> size-field: DS.control-export-size-field-width + 2 * FieldStyle.padding;
     out property <length> progress: DS.control-inline-progress-width;
     out property <length> chip-height: DS.control-canvas-padding;
     out property <length> chip-icon: DS.control-icon-size * 0.7;
@@ -24,13 +25,19 @@ export global FormStyle {
     out property <length> row-gap: Space.xs;
 }
 
-// `DSField`: a secondary label, its "?" when it has a note, then the control under it.
+// How a field lays its label: `stacked` over the control as `DSField`, `column` at a form's fixed
+// width before it as an EXIF line, `spread` in the primary ink taking the room before it.
+export enum FieldLayout { stacked, column, spread }
+
+// `DSField`: a label, its "?" when it has a note, then the control.
 export component Field inherits VerticalLayout {
     in property <string> label;
     in property <string> help;
+    in property <FieldLayout> layout: FieldLayout.stacked;
+    property <bool> stacked: root.layout == FieldLayout.stacked;
     spacing: FormStyle.row-gap;
     // As tall without its "?" as with it, so every field keeps one rhythm.
-    HorizontalLayout {
+    if root.stacked: HorizontalLayout {
         spacing: Space.s;
         alignment: start;
         min-height: SectionStyle.help-mark;
@@ -40,7 +47,16 @@ export component Field inherits VerticalLayout {
             HelpMark { note: root.help; }
         }
     }
-    @children
+    HorizontalLayout {
+        spacing: Space.s;
+        if root.layout == FieldLayout.column: Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }
+        if root.layout == FieldLayout.spread: Label { text: root.label; horizontal-stretch: 1; }
+        VerticalLayout {
+            horizontal-stretch: root.layout == FieldLayout.spread ? 0 : 1;
+            spacing: FormStyle.row-gap;
+            @children
+        }
+    }
 }
 
 // `DSWarning`: a triangle, then the sentence under it, on a pale orange band.
@@ -70,17 +86,6 @@ export component SummaryBox inherits Rectangle {
     }
 }
 
-// One EXIF line: the label at a fixed width, the control stretching after it.
-export component FormRow inherits HorizontalLayout {
-    in property <string> label;
-    // The label takes the room between it and the control, in the primary ink, where a form's column is fixed.
-    in property <bool> spread;
-    spacing: Space.s;
-    if root.spread: Label { text: root.label; horizontal-stretch: 1; }
-    if !root.spread: Label { text: root.label; tone: Tone.secondary; width: FormStyle.label-width; }
-    @children
-}
-
 // An export preview: the picture fitted whole, a dash while it renders, a word when it never will.
 export component PreviewSlot inherits Rectangle {
     in property <image> source;
@@ -103,39 +108,6 @@ export component PreviewSlot inherits Rectangle {
         Label { text: @tr("could not be rendered"); role: TextRole.value; tone: Tone.tertiary; centred: true; }
     }
     if root.state == 0: Label { text: "…"; role: TextRole.title; tone: Tone.tertiary; centred: true; width: parent.width; height: parent.height; }
-}
-
-// The Working Space chip: the space's name in secondary ink, its use in full, a chevron.
-export component Chip inherits Rectangle {
-    in property <string> title;
-    in property <string> hint;
-    in property <string> help;
-    in property <Look> look: Look.live;
-    callback clicked();
-    // As wide as its words, eliding the hint once the canvas's band is short of room.
-    preferred-width: row.preferred-width;
-    width: self.preferred-width;
-    height: FormStyle.chip-height;
-    border-radius: Radius.badge;
-    background: area.has-hover || root.look != Look.live ? Colour.hover : transparent;
-    accessible-role: button;
-    accessible-label: root.title + " · " + root.hint;
-    row := HorizontalLayout {
-        padding-left: Space.s;
-        padding-right: Space.s;
-        spacing: Space.xs;
-        Label { text: root.title; tone: Tone.secondary; }
-        Label { text: "·"; tone: Tone.secondary; }
-        Label { text: root.hint; overflow: elide; horizontal-stretch: 1; }
-        VerticalLayout {
-            alignment: center;
-            Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: FormStyle.chip-icon; }
-        }
-    }
-    area := TouchArea {
-        clicked => { root.clicked(); }
-        changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
-    }
 }
 
 // `dsPopover`'s body: the panel's ground at the export panel's width, its padding inside it.
@@ -285,7 +257,7 @@ export component LoadBar inherits Rectangle {
     }
 }
 
-// A title that reads as text until clicked, then commits on Return or when the focus leaves.
+// A title that reads as text until clicked, then typed over as a `RenameField`.
 export component EditableTitle inherits VerticalLayout {
     in property <string> text;
     in property <string> placeholder;
@@ -296,11 +268,10 @@ export component EditableTitle inherits VerticalLayout {
         text: root.text;
         TouchArea { clicked => { root.renaming = true; } }
     }
-    if root.renaming: TextField {
+    if root.renaming: RenameField {
         text: root.text;
         placeholder: root.placeholder;
-        init => { self.take-focus(); }
-        accepted(t) => { root.renaming = false; root.committed(t); }
-        left(t) => { if (root.renaming) { root.renaming = false; root.committed(t); } }
+        committed(t) => { root.renaming = false; root.committed(t); }
+        cancelled => { root.renaming = false; }
     }
 }

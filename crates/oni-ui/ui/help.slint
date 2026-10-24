@@ -75,10 +75,10 @@ export component WelcomeSheet inherits Sheet {
         Point { title: @tr("Smoother"); text: @tr("Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."); }
         HorizontalLayout {
             spacing: Space.s;
-            Button { text: @tr("Website"); fills: false; clicked => { Help.website(); } }
-            Button { text: @tr("Feedback"); fills: false; help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
+            Button { text: @tr("Website"); clicked => { Help.website(); } }
+            Button { text: @tr("Feedback"); help: @tr("Report a Bug / Give Feedback"); clicked => { Help.feedback(); } }
             Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("GET STARTED"); fills: false; kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
+            Button { text: @tr("GET STARTED"); kind: ButtonKind.accent; clicked => { Help.welcome-closed(); } }
         }
     }
 }
@@ -96,33 +96,23 @@ export component ReportSheet inherits Sheet {
         edited(t) => { Help.report-edited(t); }
         init => { self.take-focus(); }
     }
-    // `DSToggle`: the switch, then its words, which a click toggles as well.
-    if !Help.report-sent: HorizontalLayout {
-        spacing: Space.s;
-        // On the first line of its words, which wrap to two.
-        VerticalLayout {
-            alignment: start;
-            Toggle { label: @tr("Encrypted console log"); on: Help.report-log; toggled(on) => { Help.report-log = on; } }
-        }
-        Label {
-            text: @tr("Encrypted console log, readable by ONI's maintainers only");
-            horizontal-stretch: 1;
-            wrap: word-wrap;
-            TouchArea { clicked => { Help.report-log = !Help.report-log; } }
-        }
+    if !Help.report-sent: Toggle {
+        label: @tr("Encrypted console log, readable by ONI's maintainers only");
+        wrap: true;
+        on: Help.report-log;
+        toggled(on) => { Help.report-log = on; }
     }
     if !Help.report-sent && Help.report-failure != "": Label { role: TextRole.note; tone: Tone.warning; text: Help.report-failure; }
     HorizontalLayout {
         spacing: Space.s;
-        Button { text: @tr("See Community Feedbacks"); fills: false; clicked => { Help.community(); } }
+        Button { text: @tr("See Community Feedbacks"); clicked => { Help.community(); } }
         Rectangle { horizontal-stretch: 1; }
-        if Help.report-sent: Button { text: @tr("Done"); fills: false; clicked => { Help.report-closed(); } }
+        if Help.report-sent: Button { text: @tr("Done"); clicked => { Help.report-closed(); } }
         if !Help.report-sent: ButtonGroup { plate: true;
             Button { text: @tr("Cancel"); clicked => { Help.report-closed(); } }
             Button {
                 text: Help.report-sending ? @tr("Sending…") : @tr("Send");
-                widest: @tr("Sending…");
-                kind: ButtonKind.accent;
+                kind: ButtonKind.confirm;
                 enabled: !Help.report-sending && Help.report-message != "";
                 clicked => { Help.report-send(); }
             }
@@ -147,8 +137,9 @@ export component ConsoleWindow inherits AppWindow {
                 spacing: Space.s;
                 Badge { text: root.blocks == 0 ? @tr("No block recorded") : root.blocks == 1 ? @tr("1 block recorded") : @tr("{} blocks recorded", root.blocks); }
                 Rectangle { horizontal-stretch: 1; }
-                Button { text: @tr("Copy"); clicked => { root.copy(); } }
-                Button { text: @tr("Reveal Log in Finder"); clicked => { root.reveal(); } }
+                // AppKit's own keys in Swift's console, their words as written.
+                Button { text: @tr("Copy"); capitals: false; clicked => { root.copy(); } }
+                Button { text: @tr("Reveal Log in Finder"); capitals: false; clicked => { root.reveal(); } }
             }
             Scroller {
                 vertical-stretch: 1;

@@ -5,7 +5,6 @@ import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize,
 import { Badge, BadgeTone } from "badge.slint";
 import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, Slider, TextField } from "controls.slint";
 import { Tabs } from "tabs.slint";
-import { FormRow } from "forms.slint";
 import { HelpMark, Section, Dialog } from "containers.slint";
 import { TileView, TileHeading, Scroller } from "collections.slint";
 import { RowKind, Row } from "row.slint";
@@ -212,9 +211,9 @@ export component Catalogue inherits AppWindow {
                         swatches: PlotInkStyle.bands;
                         marked: [false, true, false, false, false, false, false, false];
                     }
-                    FormRow { spread: true; label: "Toggle off"; DemoToggle { label: "off"; } }
-                    FormRow { spread: true; label: "Toggle on"; DemoToggle { label: "on"; on: true; } }
-                    FormRow { spread: true; label: "Toggle disabled"; Toggle { label: "disabled"; enabled: false; } }
+                    DemoToggle { label: "Toggle off"; }
+                    DemoToggle { label: "Toggle on"; on: true; }
+                    Toggle { label: "Toggle disabled"; enabled: false; }
                 }
                 Group {
                     title: "Field and picker";
@@ -262,10 +261,10 @@ export component Catalogue inherits AppWindow {
                     }
                     HorizontalLayout {
                         spacing: Space.s;
-                        rest-key := Button { size: ButtonSize.key; text: "REST"; fill: ScannerStyle.cap-light; }
-                        Button { size: ButtonSize.key; text: "HOVER"; look: Look.hover; fill: ScannerStyle.cap-light; }
-                        Button { size: ButtonSize.key; text: "PRESSED"; look: Look.pressed; fill: ScannerStyle.cap-light; }
-                        Button { size: ButtonSize.key; text: "+3"; fill: ScannerStyle.band-light; }
+                        rest-key := Button { size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "−"; look: Look.hover; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "−"; look: Look.pressed; fill: ScannerStyle.cap-light; }
+                        Button { size: ButtonSize.key; text: "+"; fill: ScannerStyle.band-light; }
                     }
                 }
                 Group {

@@ -1,19 +1,23 @@
-// The board's switches: Toggle bare and labelled, then Tabs of two, four and eight swatches, each
+// The board's switches: Toggle bare and with its words at each side, then Tabs of two, four and eight swatches, each
 // live under the hand beside its forced states.
-import { PlotInkStyle, Toggle, Tabs } from "../ds.slint";
+import { PlotInkStyle, Toggle, LabelSide, Tabs } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // A switch live, off, on, and disabled off and on.
 component ToggleStates inherits Line {
-    in property <bool> labelled;
+    in property <LabelSide> side: LabelSide.after;
+    in property <string> words: "Clipping";
+    in property <bool> wrap;
+    in property <length> span: BoardStyle.cell;
     live := Cell {
+        span: root.span;
         property <bool> lit;
-        Toggle { labelled: root.labelled; label: "Clipping"; on: live.lit; toggled(v) => { live.lit = v; } }
+        Toggle { label-side: root.side; label: root.words; wrap: root.wrap; on: live.lit; toggled(v) => { live.lit = v; } }
     }
-    Cell { Toggle { labelled: root.labelled; label: "Clipping"; } }
-    Cell { Toggle { labelled: root.labelled; label: "Clipping"; on: true; } }
-    Cell { Toggle { labelled: root.labelled; label: "Clipping"; enabled: false; } }
-    Cell { Toggle { labelled: root.labelled; label: "Clipping"; on: true; enabled: false; } }
+    Cell { span: root.span; Toggle { label-side: root.side; label: root.words; wrap: root.wrap; } }
+    Cell { span: root.span; Toggle { label-side: root.side; label: root.words; wrap: root.wrap; on: true; } }
+    Cell { span: root.span; Toggle { label-side: root.side; label: root.words; wrap: root.wrap; enabled: false; } }
+    Cell { span: root.span; Toggle { label-side: root.side; label: root.words; wrap: root.wrap; on: true; enabled: false; } }
 }
 
 // A set of tabs live, another tab selected, a tab hovered, a tab marked.
@@ -24,7 +28,8 @@ component TabsStates inherits Line {
     in property <int> hovered;
     in property <[bool]> marked;
     in property <[color]> swatches;
-    Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; } }
+    // The owner writes the choice, as every screen's store does: a click only asks.
+    live := Fill { span: BoardStyle.field; property <int> at: root.selected; Tabs { tabs: root.tabs; selected: live.at; swatches: root.swatches; picked(i) => { live.at = i; } } }
     Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.other; swatches: root.swatches; } }
     Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; hover-tab: root.hovered; } }
     Fill { span: BoardStyle.field; Tabs { tabs: root.tabs; selected: root.selected; swatches: root.swatches; marked: root.marked; } }
@@ -32,12 +37,19 @@ component TabsStates inherits Line {
 
 export component TogglePage inherits Page {
     title: "Toggle and Tabs";
-    note: "Toggle: on, labelled, label, enabled. Tabs: tabs, selected, swatches, marked, hover-tab.";
+    note: "Toggle: on, label, label-side (after as DSToggle, before, none), wrap, enabled; its words flip it too. Tabs: tabs, selected (the owner's: a click only emits picked), swatches, marked, hover-tab.";
     Group {
         title: "Toggle";
         states: ["Live", "Off", "On", "Disabled, off", "Disabled, on"];
-        ToggleStates { label: "bare"; }
-        ToggleStates { label: "labelled"; labelled: true; }
+        ToggleStates { label: "label-side none"; side: LabelSide.none; }
+        ToggleStates { label: "label-side after (default)"; }
+        ToggleStates { label: "label-side before"; side: LabelSide.before; }
+    }
+    Group {
+        title: "Toggle, words that wrap";
+        states: ["Live", "Off", "On", "Disabled, off", "Disabled, on"];
+        span: BoardStyle.wide;
+        ToggleStates { label: "wrap"; words: "Encrypted console log, readable by ONI's maintainers only"; wrap: true; span: BoardStyle.wide; }
     }
     Group {
         title: "Tabs";
