@@ -49,14 +49,42 @@ impl Step {
 }
 
 pub const LIMIT: usize = 100;
+/// The settings the steps hold, at most: a gesture on thousands of photos keeps two whole settings
+/// each, and a hundred of them would hold gigabytes. The newest step stays whatever its size.
+pub const BYTES: usize = 256 * 1024 * 1024;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct GalleryHistory {
     steps: Vec<Step>,
+    /// Each step's settings in bytes, as their JSON spells them.
+    sizes: Vec<usize>,
     cursor: usize,
+    ceiling: usize,
+}
+
+impl Default for GalleryHistory {
+    fn default() -> Self {
+        GalleryHistory::bounded(BYTES)
+    }
+}
+
+/// A step's settings as their JSON spells them, near what their clones hold.
+fn weight(step: &Step) -> usize {
+    let one = |s: &PipelineSettings| serde_json::to_vec(s).map_or(0, |v| v.len());
+    step.before.values().chain(step.after.values()).map(one).sum()
 }
 
 impl GalleryHistory {
+    /// A history holding at most `ceiling` bytes of settings.
+    pub fn bounded(ceiling: usize) -> GalleryHistory {
+        GalleryHistory { steps: Vec::new(), sizes: Vec::new(), cursor: 0, ceiling }
+    }
+
+    /// The bytes of settings the steps hold now.
+    pub fn bytes(&self) -> usize {
+        self.sizes.iter().sum()
+    }
+
     pub fn can_undo(&self) -> bool {
         self.cursor > 0
     }
@@ -94,13 +122,21 @@ impl GalleryHistory {
         step.and_then(|s| s.disk.as_ref()).map(|d| d.moves.clone()).unwrap_or_default()
     }
 
-    /// A new gesture drops the branch that was undone, and the oldest step past the limit.
+    /// A new gesture drops the branch that was undone, and the oldest steps past the limit or the
+    /// ceiling.
     fn push(&mut self, step: Step) {
         self.steps.truncate(self.cursor);
+        self.sizes.truncate(self.cursor);
+        self.sizes.push(weight(&step));
         self.steps.push(step);
-        if self.steps.len() > LIMIT {
-            self.steps.drain(..self.steps.len() - LIMIT);
+        let mut over = self.steps.len().saturating_sub(LIMIT);
+        let mut held: usize = self.sizes[over..].iter().sum();
+        while held > self.ceiling && over + 1 < self.steps.len() {
+            held -= self.sizes[over];
+            over += 1;
         }
+        self.steps.drain(..over);
+        self.sizes.drain(..over);
         self.cursor = self.steps.len();
     }
 
@@ -277,5 +313,38 @@ mod tests {
         let mut idle = GalleryHistory::default();
         idle.record_disk(Disk::default(), "Move");
         assert!(!idle.can_undo());
+    }
+
+    #[test]
+    fn the_stack_keeps_its_steps_under_a_ceiling_of_bytes() {
+        let (neutral, edited) = pair();
+        let gesture = |h: &mut GalleryHistory, n: usize| {
+            let paths: Vec<String> = (0..n).map(|i| format!("/r/{i}.NEF")).collect();
+            let before: Settings = paths.iter().map(|p| (p.clone(), edited.clone())).collect();
+            let after: Settings = paths.iter().map(|p| (p.clone(), neutral.clone())).collect();
+            h.record(&before, &after, "Reset", None);
+        };
+        let mut probe = GalleryHistory::default();
+        gesture(&mut probe, 50);
+        let step = probe.bytes();
+        let mut h = GalleryHistory::bounded(step * 3);
+        for _ in 0..10 {
+            gesture(&mut h, 50);
+        }
+        let mut undone = 0;
+        while h.undo_step().is_some() {
+            undone += 1;
+        }
+        assert_eq!(undone, 3, "three steps of {step} bytes fill the ceiling");
+        // The newest step stays, even past the ceiling alone.
+        let mut tight = GalleryHistory::bounded(1);
+        gesture(&mut tight, 50);
+        assert!(tight.can_undo());
+        // Twin: counted by steps alone, the ten gestures would all be kept.
+        let mut counted = GalleryHistory::bounded(usize::MAX);
+        for _ in 0..10 {
+            gesture(&mut counted, 50);
+        }
+        assert_eq!(counted.bytes(), step * 10);
     }
 }

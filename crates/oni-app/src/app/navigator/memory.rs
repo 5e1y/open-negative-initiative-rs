@@ -75,7 +75,6 @@ impl Ctl {
         let p = me.clone();
         n.on_catch_up_done(move || p.catch_up_done());
         Ctl::watch_volumes(me);
-        me.start_pass();
         // The ONI Trash stands in every view from the launch, before any folder is laid.
         me.publish_trash_rows();
     }
@@ -176,7 +175,6 @@ impl Ctl {
             // What lies on a volume back is unknown until read or looked at again.
             s.org.presence.retain(|p, _| !on(&arrived, p));
             s.nav.presence.retain(|p, _| !on(&arrived, p));
-            s.nav.tried.retain(|f| !on(&arrived, f));
             if !answering.is_empty() {
                 s.nav.model.retry();
             }
@@ -195,7 +193,6 @@ impl Ctl {
             self.lay_grid();
         }
         if arrived {
-            self.survey_favourites();
             self.rewatch_anew();
         }
         self.publish_navigator();

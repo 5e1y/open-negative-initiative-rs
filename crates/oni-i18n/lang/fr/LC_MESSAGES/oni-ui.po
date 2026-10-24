@@ -3026,6 +3026,10 @@ msgid "Folder Not Found"
 msgstr "Dossier introuvable"
 
 #: crates/oni-app/src/app/organising/reach.rs
+msgid "In the cloud: opening it downloads it"
+msgstr "Dans le cloud : l’ouvrir le télécharge"
+
+#: crates/oni-app/src/app/organising/reach.rs
 msgid "FOLLOW"
 msgstr "SUIVRE"
 

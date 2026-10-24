@@ -2964,5 +2964,68 @@
     "title": "A disk back within the session, and a rename changing only a letter's case",
     "status": "done",
     "detail": "a_disk_back_reopens_the_opened_folder: unplugged and plugged back in one session, the opened folder lists the photo added meanwhile, read once (twin: another disk arriving reads nothing). a_rename_changing_only_case_renames_and_a_true_collision_is_refused (twin: another folder's name is refused)."
+  },
+  {
+    "id": 500,
+    "type": "fix",
+    "title": "A favourite is a bookmark: no tree read to draw its icons",
+    "status": "done",
+    "detail": "Owner's decision D3 (model-02). A star reads nothing more: the navigator no longer surveys each favourite's whole tree (Surveys, Area, favourites::read and the pass over them are gone). A row's roll icon comes from its own listing, one look at its .oni-roll.json, which covers every listed folder and not only those under a favourite; favourites.json keeps Swift's {version, paths}."
+  },
+  {
+    "id": 501,
+    "type": "fix",
+    "title": "A row stuck in its disk never holds the other rows' listings",
+    "status": "done",
+    "detail": "parity-stuck-favourite-read. favourites::read_apart reads each listed folder on a thread of its own, at most four counted at once; a read held past 250 ms stops counting, so a starred folder on a NAS asleep lets every other row land. The navigator lists its rows through it (a_stuck_favourite_does_not_block_the_others, twin: a pool that waits for every read it started holds the others)."
+  },
+  {
+    "id": 502,
+    "type": "fix",
+    "title": "The index forgets the rows of files gone, and the thumbnails no row claims are swept",
+    "status": "done",
+    "detail": "scale-index-never-forgets (pruning) and scale-thumbnail-no-sweep. Once a launch, after the first read and off the interface thread (library::tidy): a row whose file is gone from a folder the boot disk still lists, or whose folder is gone under one that lists, is taken out in one transaction, each path looked at again inside it; a row on a volume, a share or a drive other than the home's is left to its folder's own read, so a disk away, another disk under its name or a reused drive letter keeps every row; the opened folder and the favourites keep theirs for Locate and Forget. Then, on an index a day old, Thumbnails/ files no row claims are removed, none newer than 10 minutes, 5,000 at most (a_dead_row_on_a_present_disk_is_pruned_and_one_away_is_kept, twin: a volume not known as one loses its rows; a_thumbnail_no_row_claims_is_swept, twins: a fresh or claimed tile stays; a_launch_prunes_the_dead_rows_and_sweeps_only_on_a_settled_index)."
+  },
+  {
+    "id": 503,
+    "type": "fix",
+    "title": "Thumbnails are written atomically and two copies of one file keep a tile each",
+    "status": "done",
+    "detail": "safety-helpers-bypass-atomic-write (thumbnails) and names-duplicate-copies-shared (thumbnail key). persist goes through write_atomically (its own temporary name, fsync, cleanup); the sweep removes the halves a cut write left. A fingerprint two index rows hold names its tile with the path too (thumbnails::key), so an edit on one copy never shows on the other's tile; a print held once keeps Swift's name (two_copies_of_one_file_keep_a_tile_each)."
+  },
+  {
+    "id": 504,
+    "type": "fix",
+    "title": "A photo rewritten at the same size, or a sidecar edited by another app, is read again",
+    "status": "done",
+    "detail": "missing-stale-under-outside-changes and tests-12. A stamps table beside photos, which the Swift app never reads, keeps each row's size, modification date and sidecar date. A read compares them with the survey's own look: a new date on the original stamps it again and reads it whole when its print moved, a sidecar changed or gone has its envelope read again; both after the first landing. A row older than its stamp takes the disk's word once (a_photo_replaced_by_another_size_or_mtime_is_read_again, twin: a rewrite with its date put back is not seen; a_sidecar_edited_by_another_app_is_read_again, same twin)."
+  },
+  {
+    "id": 505,
+    "type": "fix",
+    "title": "An unreadable file gets no fingerprint, and a cloud placeholder is never downloaded to index it",
+    "status": "done",
+    "detail": "missing-unreadable-fingerprint-collision and windows-cloud-placeholders. relink::stamp gives None when the file or a block refuses a read, so unreadable files of one size never share a print and a tile, and when the bytes live in the cloud (SF_DATALESS on macOS, FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS, RECALL_ON_OPEN or OFFLINE on Windows): such a photo stays a waiting tile, told 'In the cloud: opening it downloads it' (an_unreadable_file_gets_no_fingerprint, twin: readable again, each gets its own)."
+  },
+  {
+    "id": 506,
+    "type": "perf",
+    "title": "The camera search no longer holds the thumbnails, and seen.json forgets files gone",
+    "status": "done",
+    "detail": "scale-transition-scan-blocks-thumbnails. The thumbnails' pass is held only while a camera is matched, not during the search; a frame drawn before its camera's match is drawn again once matched, as before. seen.json drops a file gone from a root read whole and keeps one under a folder refused or a root away (a_file_gone_leaves_the_list_and_one_on_a_disk_away_stays)."
+  },
+  {
+    "id": 507,
+    "type": "perf",
+    "title": "Re-reading rows is linear and in one transaction; the walks lose a realpath per entry",
+    "status": "done",
+    "detail": "scale-reread-quadratic and scale-walk-costs. library::refresh finds each row by its key and writes them all in one transaction (upsert_all) instead of a linear search and an fsync each. The survey resolves its root once and joins each child's name, a link never being followed; the navigator's listing leaves files out by the listing's own type and looks only at folders; the read queue is a VecDeque."
+  },
+  {
+    "id": 508,
+    "type": "fix",
+    "title": "The gallery's undo history is bounded in bytes too",
+    "status": "done",
+    "detail": "scale-history-unbounded-bytes. Beside its hundred steps, GalleryHistory holds at most 256 MB of settings, as their JSON weighs them; the oldest steps go first and the newest stays whatever its size (the_stack_keeps_its_steps_under_a_ceiling_of_bytes, twin: counted by steps alone every gesture is kept)."
   }
 ]

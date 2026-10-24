@@ -252,8 +252,9 @@ pub struct State {
     archive: Option<Archive>,
     /// Every photo's path in gallery order.
     order: Vec<String>,
-    /// Each photo's fingerprint, which names its thumbnail's file.
+    /// Each photo's tile key (`thumbnails::key`); `copies`, the prints two rows hold, keyed by path too.
     fingerprints: HashMap<String, String>,
+    copies: std::collections::HashSet<String>,
     /// `opened`: the folder the archive shows, remembered under `openedFolder`.
     opened: Option<String>,
     preferences: Preferences,

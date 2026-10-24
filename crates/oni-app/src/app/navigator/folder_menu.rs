@@ -67,21 +67,16 @@ impl Ctl {
         }
     }
 
-    /// `toggleFavourite`: kept in `favourites.json`, the read of a folder no longer wanted stopped,
-    /// a new one read in turn.
+    /// `toggleFavourite`: kept in `favourites.json`, a bookmark that reads nothing more.
     pub(in crate::app) fn toggle_favourite(&self, path: &str) {
         let failure = {
             let mut s = self.state.borrow_mut();
             s.nav.favourites.toggle(path);
-            let failure = s.save_favourites();
-            let wanted = s.wanted_folders();
-            s.nav.surveys.yield_keeping(&wanted);
-            failure
+            s.save_favourites()
         };
         if let Some(message) = failure {
             self.told(tr("Something Went Wrong"), &message);
         }
-        self.start_pass();
         self.publish_navigator();
     }
 

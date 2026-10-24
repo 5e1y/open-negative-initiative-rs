@@ -3026,6 +3026,10 @@ msgid "Folder Not Found"
 msgstr "Carpeta no encontrada"
 
 #: crates/oni-app/src/app/organising/reach.rs
+msgid "In the cloud: opening it downloads it"
+msgstr "En la nube: al abrirla se descarga"
+
+#: crates/oni-app/src/app/organising/reach.rs
 msgid "FOLLOW"
 msgstr "SEGUIR"
 

@@ -3,18 +3,16 @@
 //! groups cut from `oni-library`, never a second truth.
 
 use oni_library::archive_tree::{self, Node, NodeId};
-use oni_library::index::{self as library_index, LibraryIndex};
+use oni_library::index::LibraryIndex;
 use oni_library::roots::Survey;
 use oni_library::film_group::FilmGroup;
-use oni_library::navigator::Computer;
-use oni_library::{Entry, folders, kept, library, paths, relink, roots};
+use oni_library::{Entry, folders, paths};
 use oni_i18n::tr;
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
 use std::collections::HashSet;
 use std::path::Path;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// `absorb`'s landing pace: rows read for the folder on screen reach the gallery this often.
 pub const LANDING: Duration = Duration::from_millis(400);
@@ -206,118 +204,6 @@ fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {
     }
 }
 
-/// What a landing hands the interface: the rows to lay, with the photos still unread as waiting
-/// rows, whether the read is whole, and the survey they were cut on, shared by every landing.
-pub type Land<'a> = &'a mut dyn FnMut(Vec<Entry>, bool, &Arc<Survey>);
-
-/// What a read knows beyond its folder: the volumes that tell offline from missing, and the
-/// caches' folder where each folder's last shape is kept.
-pub struct Place<'a> {
-    pub computer: &'a Computer,
-    pub kept: Option<&'a Path>,
-}
-
-/// `rescan` then `absorb` for one folder: the survey, rows a read covering the folder missed or
-/// whose size moved dropped, then the members the index lacks read off their files. `land` gets the
-/// rows once, again every `LANDING`, then whole with `true`; `alive` going false stops the read.
-pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn Fn() -> bool, land: Land) {
-    let folder = folder.to_string();
-    let mut survey = roots::surveyed(std::slice::from_ref(&folder), alive, place.computer);
-    // A read superseded drops nothing: what its walk did not reach is unknown, never gone.
-    if survey.stopped || !alive() {
-        return;
-    }
-    if let Some(dir) = place.kept {
-        let _ = kept::keep(dir, &folder, &survey);
-        kept::worn(dir, &folder, &mut survey);
-    }
-    let survey = Arc::new(survey);
-    let _ = library::drop_invented(index);
-    let kept: HashSet<&str> = survey.images.iter().map(String::as_str).collect();
-    // A row under a folder the disk refused is kept, offline or missing alike: a disk away loses no row.
-    for row in index.all().into_iter().filter(|r| paths::holds(&folder, &r.path)) {
-        let unread = survey.unreadable.iter().any(|u| paths::holds(u, &row.path));
-        let stale = survey.sizes.get(&row.path).is_some_and(|size| relink::is_stale(&row.fingerprint, *size));
-        if (!kept.contains(row.path.as_str()) && !unread) || stale {
-            let _ = index.remove(&row.path);
-        }
-    }
-    let shown = |index: &LibraryIndex, waiting: &[String]| -> Vec<Entry> {
-        let mut entries = shown_under(index, &folder);
-        entries.extend(waiting.iter().map(|p| library::waiting(p, survey.dated.get(p).copied())));
-        entries
-    };
-    let mut waiting = library::unresolved(&survey.images, index);
-    land(shown(index, &waiting), waiting.is_empty(), &survey);
-    if waiting.is_empty() {
-        return;
-    }
-    let mut landed = Instant::now();
-    while !waiting.is_empty() && alive() {
-        let path = waiting.remove(0);
-        if let Some(entry) = library::indexed(&path) {
-            let _ = index.upsert(&entry);
-        }
-        if landed.elapsed() >= LANDING && !waiting.is_empty() {
-            land(shown(index, &waiting), false, &survey);
-            landed = Instant::now();
-        }
-    }
-    land(shown(index, &waiting), waiting.is_empty(), &survey);
-}
-
-/// `read_rows` cut into archives, for a caller with no interface between the landings.
-pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &dyn Fn() -> bool, land: &mut dyn FnMut(Archive, bool, &Survey)) {
-    let folder = paths::canonical(folder);
-    let place = Place { computer: &Computer::none(), kept: None };
-    read_rows(&folder, index, &place, alive, &mut |rows, done, survey| land(Archive::from_rows(&folder, &rows, survey, filter), done, survey));
-}
-
-/// A row read again from its sidecar alone, its file's stamp kept: what a gesture on the sidecar
-/// moves, without the file read a fingerprint costs. A row whose sidecar cannot be seen stays as it was.
-pub fn refreshed(row: &Entry) -> Entry {
-    let original = Path::new(&row.path);
-    let envelope = match std::fs::read(oni_settings::sidecar::url_for(original)) {
-        Ok(data) => oni_settings::codec::envelope(&data),
-        // No sidecar beside a present original is a photo at rest; beside a missing one, a disk away.
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound && original.exists() => {
-            return Entry { label: Medal::None, film: None, manual_order: None, pass_of: None, leads_passes: false, trashed_at: None, ..row.clone() };
-        }
-        Err(_) => None,
-    };
-    let Some(envelope) = envelope else { return row.clone() };
-    Entry {
-        label: envelope.label,
-        film: envelope.film,
-        manual_order: envelope.manual_order,
-        mode: Some(envelope.mode),
-        pass_of: envelope.pass_of,
-        leads_passes: envelope.leads_passes,
-        trashed_at: envelope.trashed_at,
-        ..row.clone()
-    }
-}
-
-/// Re-reads `paths`' rows from their sidecars into the index; a path it does not hold is read whole.
-pub fn refresh(index: &LibraryIndex, paths: &[String]) {
-    let rows = index.all();
-    for path in paths {
-        let entry = match rows.iter().find(|r| r.path == *path) {
-            Some(row) => refreshed(row),
-            None => match library::indexed(path) {
-                Some(e) => e,
-                None => continue,
-            },
-        };
-        let _ = index.upsert(&entry);
-    }
-}
-
-/// The index's rows for the gallery, the ONI Trash's and the composed passes left out.
-pub fn shown_under(index: &LibraryIndex, folder: &str) -> Vec<Entry> {
-    library_index::shown(&index.all()).into_iter().filter(|e| paths::holds(folder, &e.path)).collect()
-}
-
 /// The medal as the tree's caption writes it.
 pub fn medal(label: Medal) -> String {
     match label {
@@ -345,6 +231,10 @@ pub fn medal_of(index: i32) -> Medal {
         _ => Medal::None,
     }
 }
+
+mod reading;
+pub use reading::{Land, Place, read_rows, read, refreshed, refresh, shown_under};
+pub mod tidy;
 
 #[cfg(test)]
 mod tests;

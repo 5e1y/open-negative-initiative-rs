@@ -1,6 +1,5 @@
-//! The transition from the earlier version: when a folder opens, the library's RAWs are named off this
-//! thread; any camera the table lacks is matched to Apple's decode behind a blocking sheet. The
-//! thumbnails' pass waits meanwhile, so no frame renders without its camera's matrix.
+//! The earlier version's cameras: the library's RAWs named off this thread, a camera the table lacks
+//! matched to Apple's decode behind a sheet; only a match holds the thumbnails, which then redraw.
 
 use super::{Ctl, with_shell};
 use crate::{MainWindow, Transition as Sheet, TransitionLine};
@@ -17,8 +16,10 @@ use std::sync::atomic::Ordering;
 pub(crate) struct Transition {
     /// Apple's decode; none in the checks and wherever the earlier app never ran.
     apple: Option<Arc<dyn AppleDecode>>,
-    /// A search or a run under way, holding the thumbnails' pass.
+    /// A search or a run under way.
     busy: bool,
+    /// A match running, which holds the thumbnails' pass.
+    holding: bool,
     /// Every root was searched this session; a later folder is searched alone.
     searched: bool,
     /// Folders opened while a search or a run was under way, searched once it ends.
@@ -71,7 +72,6 @@ impl Ctl {
                 return;
             }
             s.transition.busy = true;
-            s.hands.fetch_add(1, Ordering::Relaxed);
             let mut roots = if s.transition.searched { Vec::new() } else { oni_library::roots::Roots::load(&s.support).paths };
             roots.append(&mut s.transition.waiting);
             (apple, s.support.clone(), roots)
@@ -98,7 +98,9 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.transition.busy = false;
             s.transition.searched = true;
-            let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
+            if std::mem::take(&mut s.transition.holding) {
+                let _ = s.hands.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
+            }
             s.transition.waiting.pop()
         };
         if let Some(folder) = next {
@@ -112,6 +114,10 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.transition.cameras.clear();
             s.transition.measured = (0, 0);
+            if !s.transition.holding {
+                s.transition.holding = true;
+                s.hands.fetch_add(1, Ordering::Relaxed);
+            }
         }
         if let Some(w) = self.window() {
             let t = w.global::<Sheet>();
@@ -232,8 +238,10 @@ impl Ctl {
         }
         let index = self.state.borrow().index_path.clone();
         if let Some(index) = oni_library::index::LibraryIndex::open(&index) {
+            let copies = index.copies();
             for e in index.all().into_iter().filter(|e| matched.contains(&e.path)) {
                 crate::thumbnails::forget(&support, &e.fingerprint);
+                crate::thumbnails::forget(&support, &crate::thumbnails::key(&e.fingerprint, &e.path, &copies));
             }
         }
         if let Some(open) = open {

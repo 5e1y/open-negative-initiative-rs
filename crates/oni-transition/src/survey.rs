@@ -2,6 +2,7 @@
 //! and date in `<support>/Transition/seen.json`, so a launch reads only what changed.
 
 use crate::table;
+use oni_library::paths::holds;
 use oni_decode::camera::Camera;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -59,8 +60,10 @@ pub fn survey(support: &Path, roots: &[String]) -> Found {
     let (reachable, unreachable): (Vec<String>, Vec<String>) = roots.iter().cloned().partition(|r| Path::new(r).is_dir());
     let path = table::folder(support).join(SEEN);
     let mut seen: HashMap<String, Seen> = std::fs::read(&path).ok().and_then(|d| serde_json::from_slice(&d).ok()).unwrap_or_default();
-    let raws: Vec<(PathBuf, (u64, f64))> = oni_library::roots::scan(&reachable)
-        .into_iter()
+    let found = oni_library::roots::survey(&reachable, &|| true);
+    let raws: Vec<(PathBuf, (u64, f64))> = found
+        .images
+        .iter()
         .map(PathBuf::from)
         .filter(|p| oni_decode::is_raw(p))
         .filter_map(|p| stamp(&p).map(|s| (p, s)))
@@ -71,7 +74,14 @@ pub fn survey(support: &Path, roots: &[String]) -> Found {
         .cloned()
         .collect();
     let read_now = named(&fresh);
-    let changed = read_now.iter().any(Option::is_some);
+    // A file gone from a root the walk read whole leaves the list; one under a folder refused stays.
+    let listed: std::collections::HashSet<String> = raws.iter().map(|(p, _)| p.to_string_lossy().into_owned()).collect();
+    let before = seen.len();
+    seen.retain(|p, _| {
+        let read = reachable.iter().any(|r| holds(r, p)) && !found.unreadable.iter().any(|u| holds(u, p));
+        !read || listed.contains(p)
+    });
+    let changed = read_now.iter().any(Option::is_some) || seen.len() != before;
     for ((p, _), s) in fresh.iter().zip(read_now) {
         if let Some(s) = s {
             seen.insert(p.to_string_lossy().into_owned(), s);
@@ -90,4 +100,28 @@ pub fn survey(support: &Path, roots: &[String]) -> Found {
     }
     cameras.values_mut().for_each(|v| v.sort());
     Found { cameras, unreachable }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::Scratch;
+
+    #[test]
+    fn a_file_gone_leaves_the_list_and_one_on_a_disk_away_stays() {
+        let (support, roll) = (Scratch::new("support"), Scratch::new("roll"));
+        let root = oni_library::paths::canonical(roll.path());
+        std::fs::write(roll.path().join("kept.NEF"), b"not a RAW").unwrap();
+        let entry = || Seen { size: 1, modified: 0.0, camera: Some(("Nikon".into(), "Z f".into(), false)) };
+        let at = |name: &str| oni_library::paths::join(&root, name);
+        let away = "/Volumes/oni-unplugged-disk/a.NEF".to_owned();
+        let seen: HashMap<String, Seen> = [(at("gone.NEF"), entry()), (at("kept.NEF"), entry()), (away.clone(), entry())].into();
+        std::fs::create_dir_all(table::folder(support.path())).unwrap();
+        std::fs::write(table::folder(support.path()).join(SEEN), serde_json::to_vec(&seen).unwrap()).unwrap();
+        survey(support.path(), &[root.clone(), "/Volumes/oni-unplugged-disk".into()]);
+        let left: HashMap<String, Seen> = serde_json::from_slice(&std::fs::read(table::folder(support.path()).join(SEEN)).unwrap()).unwrap();
+        assert!(!left.contains_key(&at("gone.NEF")), "a file gone from a root read whole is forgotten");
+        // Twin: the file still there and the one on the disk away keep their lines.
+        assert!(left.contains_key(&at("kept.NEF")) && left.contains_key(&away), "{:?}", left.keys());
+    }
 }

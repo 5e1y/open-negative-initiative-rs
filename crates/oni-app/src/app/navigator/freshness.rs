@@ -131,8 +131,6 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let held: HashSet<String> = s.rows.iter().map(|e| e.path.clone()).collect();
             s.nav.fresh.refreshing = s.opened.as_ref().map(|_| held);
-            s.nav.surveys.areas.clear();
-            s.nav.tried.clear();
             let listed: Vec<String> = s.nav.model.listings.keys().cloned().collect();
             for folder in listed {
                 s.nav.model.list(&folder, true);
@@ -146,7 +144,6 @@ impl Ctl {
             self.read_again();
             self.note_listing();
         } else {
-            self.survey_favourites();
             self.told(tr("Refresh"), tr("The folders were read again."));
         }
     }

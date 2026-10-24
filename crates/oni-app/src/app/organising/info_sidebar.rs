@@ -33,7 +33,7 @@ impl Ctl {
                 .entries
                 .iter()
                 .take(3)
-                .map(|e| s.thumbs.get(&e.fingerprint).unwrap_or_default())
+                .map(|e| s.thumbs.get(&s.tile_key(e)).unwrap_or_default())
                 .collect();
             lib.set_stack(ModelRc::new(VecModel::from(stack)));
             let key = format!("project {}", group.id);
