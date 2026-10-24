@@ -1,10 +1,11 @@
 // The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
 import { Colour, Space, Radius, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
-import { Label, Icon, Picture, CardCorners, Ground, Tones, TextRole, Tone } from "base.slint";
+import { Label, Icon, Picture, CardCorners, Ground, Tones, TextRole, Tone, Tips } from "base.slint";
 import { Badge, BadgeTone, Metal, BadgeStyle } from "badge.slint";
 import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Dot, Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
+import { Reach, Reaches } from "reach.slint";
 
 // AppKit's overlay scroller over a surface's edge: drawn only while the content overflows, lit while
 // it moves, `linger` after, or while the pointer is on the edge, where it widens and takes the pointer.
@@ -195,9 +196,17 @@ export component TileView inherits Rectangle {
     in property <string> caption;
     in property <bool> selected;
     in property <int> medal;
-    // A missing original, or a frame left out of the roll, shows faded with its marks.
+    // A missing original: its picture alone greyed (by the caller) and faded, its ground and
+    // marks whole, its state's disc in the corner; `note` says where it was, under the pointer.
     in property <bool> missing;
+    in property <Reach> away: Reach.missing;
+    in property <string> note;
+    in property <bool> hovered;
+    // A frame left out of the roll fades whole, its marks with it.
+    in property <bool> left-out;
     in property <bool> rgb;
+    // A triplet's pass gone: the seal says which, in the destructive foil, in place of RGB.
+    in property <string> gone-pass;
     in property <length> picture-height;
     in property <TileMarks> marks: TileMarks.medal;
     // A frame kept out of the measure, its dot in the corner.
@@ -214,6 +223,7 @@ export component TileView inherits Rectangle {
     property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;
     property <bool> outset: root.ring == RingPlacement.outset;
     height: root.caption == "" ? root.picture-height : root.picture-height + TileStyle.caption-gap + TileStyle.caption;
+    changed hovered => { Tips.hover(root.hovered, root.note, root.absolute-position.x, root.absolute-position.y + root.picture-height); }
     Picture {
         y: 0;
         height: root.picture-height;
@@ -221,7 +231,8 @@ export component TileView inherits Rectangle {
         source: root.picture;
         rounded: root.rounded;
         radius: Radius.card;
-        opacity: root.missing ? State.disabled : 1;
+        picture-opacity: root.missing ? State.disabled : 1;
+        opacity: root.left-out ? State.disabled : 1;
         // `TileLayers`: the medal's centre level with the seal's.
         if !root.frame && root.medal > 0: Medal {
             x: root.inset;
@@ -234,12 +245,26 @@ export component TileView inherits Rectangle {
             size: TileStyle.apart;
             ink: Colour.caution;
         }
-        if root.rgb: Badge {
+        if root.rgb || root.gone-pass != "": Badge {
             x: parent.width - self.width - root.inset;
             y: parent.height - self.height - root.inset;
             tone: BadgeTone.seal;
-            metal: Metal.holographic;
-            text: @tr("RGB");
+            metal: root.gone-pass != "" ? Metal.red : Metal.holographic;
+            text: root.gone-pass != "" ? root.gone-pass : @tr("RGB");
+        }
+        if root.missing: Rectangle {
+            x: parent.width - self.width - root.inset;
+            y: root.inset;
+            width: TileStyle.away;
+            height: TileStyle.away;
+            border-radius: self.width / 2;
+            background: Colour.overlay;
+            Icon {
+                width: TileStyle.away-glyph;
+                height: TileStyle.away-glyph;
+                source: Reaches.glyph(root.away);
+                tone: Tone.on-fill;
+            }
         }
         if root.outset && root.flagged: Badge {
             x: root.inset;

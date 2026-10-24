@@ -1,7 +1,7 @@
 // The library column's and the gallery grid's state, and the grid; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu } from "ds/ds.slint";
+import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu, Banner, Reach } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -14,7 +14,12 @@ export struct Tile {
     selected: bool,
     medal: int,
     missing: bool,
+    // Why its original is out of reach, and where it was, said under the pointer.
+    away: Reach,
+    note: string,
     rgb: bool,
+    // A triplet's pass gone, the seal's words.
+    gone-pass: string,
 }
 
 export struct Heading {
@@ -47,7 +52,10 @@ export struct TreeRow {
     picture: image,
     medal: int,
     missing: bool,
+    away: Reach,
+    note: string,
     rgb: bool,
+    gone-pass: string,
 }
 
 // `PinnedRow`: the open row held at a tree's top, and how far the next one pushes it up.
@@ -125,6 +133,13 @@ export global Library {
     in property <string> empty-detail;
     in property <string> empty-action;
     in property <string> projects-empty;
+    // The opened folder out of reach, said over the tiles kept of it, and its keys.
+    in property <bool> banner-shown;
+    in property <Reach> banner-reach;
+    in property <string> banner-title;
+    in property <string> banner-message;
+    in property <[string]> banner-keys;
+    callback banner-acted(int);
     // The reorder's ghost under the pointer and the line where it would land.
     in property <bool> ghost-shown;
     in property <image> ghost;
@@ -284,7 +299,12 @@ export component Grid inherits Surface {
                 selected: t.selected;
                 medal: t.medal;
                 missing: t.missing;
+                away: t.away;
+                note: t.note;
                 rgb: t.rgb;
+                gone-pass: t.gone-pass;
+                hovered: t.note != "" && pointer.has-hover && pointer.mouse-x >= t.x && pointer.mouse-x < t.x + t.width
+                    && pointer.mouse-y + Library.scroll >= t.y && pointer.mouse-y + Library.scroll < t.y + t.height;
             }
             if Library.drop-shown: DropLine {
                 x: Library.drop-x;
@@ -340,4 +360,20 @@ export component Grid inherits Surface {
         lines: Library.menu-lines;
         chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
     }
+}
+
+// The gallery: the banner of an opened folder out of reach over the grid of what is kept of it.
+export component Gallery inherits VerticalLayout {
+    if Library.banner-shown: VerticalLayout {
+        padding: Space.l;
+        padding-bottom: 0px;
+        Banner {
+            reach: Library.banner-reach;
+            title: Library.banner-title;
+            message: Library.banner-message;
+            keys: Library.banner-keys;
+            acted(i) => { Library.banner-acted(i); }
+        }
+    }
+    Grid { vertical-stretch: 1; }
 }

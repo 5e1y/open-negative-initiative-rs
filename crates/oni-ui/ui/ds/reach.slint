@@ -1,0 +1,15 @@
+// Whether a folder or a photo is there, as every view marks it: here, its disk away, the disk
+// refusing ONI, or gone from a disk that answers.
+import { Icons } from "icons.slint";
+
+export enum Reach { here, offline, denied, missing }
+
+export global Reaches {
+    // The mark of each state: a disc struck through for a disk away, a caution for a refusal, a
+    // question for a folder or a file gone.
+    public pure function glyph(reach: Reach) -> image {
+        if (reach == Reach.missing) { return Icons.question; }
+        if (reach == Reach.denied) { return Icons.warning; }
+        return Icons.offline;
+    }
+}

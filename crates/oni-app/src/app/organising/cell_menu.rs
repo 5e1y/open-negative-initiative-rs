@@ -63,11 +63,11 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             let projects: Vec<(Id, String)> = s.org.projects.iter().map(|p| (p.id, p.name.clone())).collect();
-            // The scope every verb of a cell menu shares, read off its first line, for the submenus.
+            // The menu's whole scope, read off New Project, which leaves no photo out, for the submenus.
             let scope: HashSet<String> = items
                 .iter()
                 .find_map(|i| match &i.act {
-                    Act::Cell(l) if l.action == CellAction::Paste => Some(l.scope.iter().cloned().collect()),
+                    Act::Cell(l) if l.action == CellAction::NewProject => Some(l.scope.iter().cloned().collect()),
                     _ => None,
                 })
                 .unwrap_or_default();
@@ -162,7 +162,11 @@ impl Ctl {
             CellAction::Export => self.act(crate::Act::Export),
             CellAction::Reveal => system::reveal_all(&line.scope.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             CellAction::Trash => self.move_paths_to_trash(&line.scope),
-            CellAction::AddTo | CellAction::RemoveFrom => {}
+            CellAction::AddTo | CellAction::RemoveFrom | CellAction::Missing => {}
+        }
+        // The photos left out for their originals, said once for the whole verb.
+        if line.left > 0 {
+            self.told(&line.text, &oni_library::refusal::left_out(line.left));
         }
         self.lay_grid();
         self.publish_bar();

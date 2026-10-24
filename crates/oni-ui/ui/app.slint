@@ -4,7 +4,7 @@ import { DS, SplashWindow, Clicks, Tip, Tips, TipBox, Icons, AppWindow, TipLayer
 import { Store } from "store.slint";
 import { Panel, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow } from "panel.slint";
 import { Toolbar, Bar } from "toolbar.slint";
-import { Grid, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount } from "library.slint";
+import { Gallery, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount } from "library.slint";
 import { Info } from "info_sidebar.slint";
 import { CardStatus } from "card_status.slint";
 import { Canvas, Mark, CanvasCard } from "canvas.slint";
@@ -32,7 +32,7 @@ export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWi
 export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell, Canvas, Mark, Act }
 export { Board, FieldProbe, ScrollProbe, KeyProbe } from "ds/board/board.slint";
-export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState } from "ds/ds.slint";
+export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach } from "ds/ds.slint";
 
 export global App {
     in-out property <bool> gallery;
@@ -309,7 +309,7 @@ export component MainWindow inherits AppWindow {
                         width: parent.width;
                         height: parent.height - parent.status;
                         visible: root.grid-shown;
-                        Grid { }
+                        Gallery { }
                         CardCorners { width: parent.width; height: parent.height; }
                     }
                     // On export the card floats in the ground, all four corners showing, with no status bar.

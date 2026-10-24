@@ -232,6 +232,9 @@ export global TileStyle {
     out property <length> badge-inset: Space.s;
     // `RollFrameCell`'s dot on a frame kept out of the measure.
     out property <length> apart: Space.s;
+    // A missing original's disc in the corner, its glyph inside, a seal's height across.
+    out property <length> away: DS.control-seal-height * 1px;
+    out property <length> away-glyph: DS.control-medal-size;
     // `GalleryEngine`'s tile carried by a reorder, and `InfoSidebar.cardStack`'s two cards behind.
     out property <float> ghost: 0.85;
     out property <float> stack-middle: 0.8;

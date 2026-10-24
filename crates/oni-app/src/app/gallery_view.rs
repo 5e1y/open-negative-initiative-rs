@@ -1,6 +1,7 @@
 //! The gallery: its layout, the visible tiles, opening a tile and the medals written from it.
 
 use super::*;
+use super::organising::reach;
 
 #[path = "together.rs"]
 pub(super) mod together;
@@ -45,7 +46,7 @@ impl Ctl {
             let Some(mut row) = rows.row_data(at) else { continue };
             let shows = s.order.get(row.index as usize).and_then(|p| s.fingerprints.get(p)).is_some_and(|f| f == fingerprint);
             if shows && row.width > 0.0 {
-                row.picture = picture.clone();
+                row.picture = reach::shown(&s.org.seen, fingerprint, picture.clone(), row.missing);
                 rows.set_row_data(at, row);
             }
         }
@@ -82,7 +83,10 @@ impl Ctl {
             .filter_map(|i| {
                 let frame = s.layout.frame(i)?;
                 let path = s.order.get(i)?;
-                let picture = s.fingerprints.get(path).and_then(|f| s.thumbs.get(f)).unwrap_or_default();
+                let missing = flags.get(path).is_some_and(|f| f.1);
+                let fingerprint = s.fingerprints.get(path);
+                let picture = fingerprint.and_then(|f| Some(reach::shown(&s.org.seen, f, s.thumbs.get(f)?, missing))).unwrap_or_default();
+                let (away, note, gone_pass) = s.tile_marks(path);
                 Some(Tile {
                     index: i as i32,
                     x: frame.x,
@@ -93,8 +97,11 @@ impl Ctl {
                     caption: stem(path).into(),
                     selected: s.shown_picks().selection.contains(path),
                     medal: flags.get(path).map_or(0, |f| f.0),
-                    missing: flags.get(path).is_some_and(|f| f.1),
+                    missing,
+                    away,
+                    note,
                     rgb: flags.get(path).is_some_and(|f| f.2),
+                    gone_pass,
                 })
             })
             .collect();
@@ -265,7 +272,8 @@ fn same_tile(old: &Tile, new: &Tile) -> bool {
     let held = old.picture.size().width > 0 || new.picture.size().width == 0;
     let place = (old.index, old.x, old.y, old.width, old.height) == (new.index, new.x, new.y, new.width, new.height);
     let marks = (old.selected, old.medal, old.missing, old.rgb) == (new.selected, new.medal, new.missing, new.rgb);
-    held && place && marks && old.caption == new.caption
+    let words = (old.away, &old.note, &old.gone_pass) == (new.away, &new.note, &new.gone_pass);
+    held && place && marks && words && old.caption == new.caption
 }
 
 

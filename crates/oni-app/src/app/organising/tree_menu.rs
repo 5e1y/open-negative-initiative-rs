@@ -16,10 +16,12 @@ impl Ctl {
             let mut items = Vec::new();
             if let [ArchiveNode::Folder(folder)] = targets.as_slice() {
                 let roll = s.nav.rolls().contains(folder);
-                items.push(Item { line: menu_line(tr("Rename…"), true, false, false), act: Act::RenameFolder(folder.clone()) });
+                // Out of reach, a folder takes nothing that writes in it.
+                let here = s.folder_presence(folder).is_present();
+                items.push(Item { line: menu_line(tr("Rename…"), here, false, false), act: Act::RenameFolder(folder.clone()) });
                 let text = if roll { tr("Back to a Folder") } else { tr("Make a Roll") };
-                items.push(Item { line: menu_line(text, true, false, false), act: Act::Roll(folder.clone(), !roll) });
-                items.push(Item { line: menu_line(tr("New Folder Inside"), true, false, false), act: Act::NewFolder(folder.clone()) });
+                items.push(Item { line: menu_line(text, here, false, false), act: Act::Roll(folder.clone(), !roll) });
+                items.push(Item { line: menu_line(tr("New Folder Inside"), here, false, false), act: Act::NewFolder(folder.clone()) });
             }
             let photos: Vec<String> = targets.iter().filter_map(|t| if let ArchiveNode::Photo(p) = t { Some(p.clone()) } else { None }).collect();
             if !photos.is_empty() && photos.len() == targets.len() {

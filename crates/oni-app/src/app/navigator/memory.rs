@@ -76,6 +76,8 @@ impl Ctl {
         n.on_catch_up_done(move || p.catch_up_done());
         Ctl::watch_volumes(me);
         me.start_pass();
+        // The ONI Trash stands in every view from the launch, before any folder is laid.
+        me.publish_trash_rows();
     }
 
     /// `FolderNavigation.init` and the launch's favourites: the remembered base, view, rows and

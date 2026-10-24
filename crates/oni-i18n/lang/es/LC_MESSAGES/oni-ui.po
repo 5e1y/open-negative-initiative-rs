@@ -13,11 +13,11 @@ msgstr "Galería"
 msgid "Export…"
 msgstr "Exportar…"
 
-#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
 msgid "Move to ONI Trash"
 msgstr "Mover a la Papelera de ONI"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
 msgid "Restore"
 msgstr "Restaurar"
 
@@ -157,19 +157,19 @@ msgstr "Emulador de escáner"
 msgid "Labels"
 msgstr "Etiquetas"
 
-#: crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint
 msgid "None"
 msgstr "Ninguna"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Bronze"
 msgstr "Bronce"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Silver"
 msgstr "Plata"
 
-#: crates/oni-app/src/library.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
+#: crates/oni-app/src/library.rs crates/oni-app/src/organise/cells.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/ds/organise.slint
 msgid "Gold"
 msgstr "Oro"
 
@@ -950,6 +950,14 @@ msgid "RETRY"
 msgstr "REINTENTAR"
 
 #: crates/oni-ui/ui/navigator.slint
+msgid "No Favourites"
+msgstr "Sin favoritos"
+
+#: crates/oni-ui/ui/navigator.slint
+msgid "Star a folder to keep it here; its photos stay indexed."
+msgstr "Marca una carpeta con una estrella para tenerla aquí; sus fotos siguen indexadas."
+
+#: crates/oni-ui/ui/navigator.slint
 msgid "RESTORE"
 msgstr "RESTAURAR"
 
@@ -980,14 +988,6 @@ msgstr "Mostrar todas las carpetas"
 #: crates/oni-ui/ui/navigator.slint
 msgid "Show the favourites alone"
 msgstr "Mostrar solo los favoritos"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "No Favourites"
-msgstr "Sin favoritos"
-
-#: crates/oni-ui/ui/navigator.slint
-msgid "Star a folder to keep it here; its photos stay indexed."
-msgstr "Marca una carpeta con una estrella para tenerla aquí; sus fotos siguen indexadas."
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "Your Library Now Follows Your Disk"
@@ -2301,7 +2301,7 @@ msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
 msgid "From “{file}”, read again each time it is saved."
 msgstr "De “{file}”, que se vuelve a leer cada vez que se guarda."
 
-#: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise.rs
+#: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder"
 msgstr "Mostrar en el Finder"
 
@@ -2457,11 +2457,11 @@ msgstr "Deshacer {action}"
 msgid "Redo {action}"
 msgstr "Rehacer {action}"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs
 msgid "Move {count} Photos to ONI Trash"
 msgstr "Mover {count} fotos a la Papelera de ONI"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise/cells.rs
 msgid "Restore {count} Photos"
 msgstr "Restaurar {count} fotos"
 
@@ -2504,6 +2504,10 @@ msgstr "{total} fotos de tu fototeca aún no están en ella:"
 #: crates/oni-app/src/app/navigator/catch_up.rs
 msgid "and {count} more folders"
 msgstr "y {count} carpetas más"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Show the Parent Folder"
+msgstr "Mostrar la carpeta superior"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Remove from Favourites"
@@ -2566,12 +2570,28 @@ msgid "The home folder and every volume"
 msgstr "La carpeta de inicio y todos los volúmenes"
 
 #: crates/oni-app/src/app/navigator/rows.rs
+msgid "Parent shows the folders around it."
+msgstr "Superior muestra las carpetas vecinas."
+
+#: crates/oni-app/src/app/navigator/rows.rs
 msgid "{folder} — click to jump to a folder above"
 msgstr "{folder} — haz clic para ir a una carpeta superior"
 
 #: crates/oni-app/src/app/navigator/rows.rs
+msgid "{name} — {state}"
+msgstr "{name} — {state}"
+
+#: crates/oni-app/src/app/navigator/rows.rs
 msgid "Add {name}"
 msgstr "Añadir {name}"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "“{name}” Cannot Be Reached"
+msgstr "«{name}» no está accesible"
+
+#: crates/oni-app/src/app/navigator/rows.rs
+msgid "No Folder Inside “{name}”"
+msgstr "Ninguna carpeta dentro de «{name}»"
 
 #: crates/oni-app/src/app/navigator.rs
 msgid "The favourites cannot be saved: {error}"
@@ -2625,15 +2645,15 @@ msgstr "Formato no compatible ({format})"
 msgid "ONI cannot read “{name}”. Convert it to TIFF or JPEG to edit it."
 msgstr "ONI no puede leer “{name}”. Conviértelo a TIFF o JPEG para editarlo."
 
-#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/app/organising/reach.rs crates/oni-app/src/render/decode.rs
 msgid "Its red pass “{pass}” is missing beside it."
 msgstr "Falta su pasada roja “{pass}” a su lado."
 
-#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/app/organising/reach.rs crates/oni-app/src/render/decode.rs
 msgid "Its green pass “{pass}” is missing beside it."
 msgstr "Falta su pasada verde “{pass}” a su lado."
 
-#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/app/organising/reach.rs crates/oni-app/src/render/decode.rs
 msgid "Its blue pass “{pass}” is missing beside it."
 msgstr "Falta su pasada azul “{pass}” a su lado."
 
@@ -2784,6 +2804,116 @@ msgstr[1] "¿Restaurar {n} fotos?"
 #: crates/oni-app/src/app/organising/projects.rs
 msgid "The projects could not be saved: {error}"
 msgstr "No se pudieron guardar los proyectos: {error}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Not connected"
+msgstr "No conectado"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Access denied"
+msgstr "Acceso denegado"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Not found"
+msgstr "No encontrada"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "R MISSING"
+msgstr "FALTA R"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "G MISSING"
+msgstr "FALTA G"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "B MISSING"
+msgstr "FALTA B"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "These are the last thumbnails ONI kept; nothing has been changed."
+msgstr "Son las últimas miniaturas que ONI guardó; no se ha cambiado nada."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Nothing has been changed."
+msgstr "No se ha cambiado nada."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Disk Not Connected"
+msgstr "Disco no conectado"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "No Access"
+msgstr "Sin acceso"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Folder Not Found"
+msgstr "Carpeta no encontrada"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "REMOVE FROM FAVOURITES"
+msgstr "QUITAR DE FAVORITOS"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{disk} not connected"
+msgstr "{disk} no conectado"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{path} is on “{disk}”, which is not connected."
+msgstr "{path} está en «{disk}», que no está conectado."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{path} is on a disk that is not connected."
+msgstr "{path} está en un disco que no está conectado."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "ONI is refused access to {path}."
+msgstr "ONI no tiene acceso a {path}."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{path} is no longer there: moved, renamed or deleted outside ONI."
+msgstr "{path} ya no está ahí: movida, renombrada o eliminada fuera de ONI."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Original on “{disk}”, which is not connected: {path}"
+msgstr "Original en «{disk}», que no está conectado: {path}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Original on a disk not connected: {path}"
+msgstr "Original en un disco no conectado: {path}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "ONI is refused access to the original at {path}"
+msgstr "ONI no tiene acceso al original: {path}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "Original not found at {path}"
+msgstr "Original no encontrado en {path}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{disk} Not Connected"
+msgstr "{disk} no conectado"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "“{name}” is on “{disk}”, which is not connected. {rest}"
+msgstr "«{name}» está en «{disk}», que no está conectado. {rest}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "“{name}” is on a disk that is not connected. {rest}"
+msgstr "«{name}» está en un disco que no está conectado. {rest}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "ONI is refused access to “{name}”: allow it to read the folder in the system's privacy settings. {rest}"
+msgstr "ONI no tiene acceso a «{name}»: permítale leer la carpeta en los ajustes de privacidad del sistema. {rest}"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "“{name}” is no longer in “{parent}”: moved, renamed or deleted outside ONI. Its settings travel with its files."
+msgstr "«{name}» ya no está en «{parent}»: movida, renombrada o eliminada fuera de ONI. Sus ajustes viajan con sus archivos."
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "{n} original missing"
+msgid_plural "{n} originals missing"
+msgstr[0] "{n} original no encontrado"
+msgstr[1] "{n} originales no encontrados"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -3331,7 +3461,7 @@ msgstr "Exportar {count} fotos…"
 msgid "EXPORT {count} PHOTOS"
 msgstr "EXPORTAR {count} FOTOS"
 
-#: crates/oni-app/src/export.rs crates/oni-app/src/organise.rs
+#: crates/oni-app/src/export.rs crates/oni-app/src/organise/cells.rs
 msgid "Export… ({count} photos)"
 msgstr "Exportar… ({count} fotos)"
 
@@ -3391,41 +3521,47 @@ msgstr "No se pudo guardar la máscara en la carpeta de la app."
 msgid "the copy came out short"
 msgstr "la copia quedó incompleta"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Add to Project"
 msgstr "Añadir al proyecto"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Remove from Project"
 msgstr "Quitar del proyecto"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Paste Settings ({count} photos)"
 msgstr "Pegar ajustes ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Reset Settings ({count} photos)"
 msgstr "Restablecer ajustes ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Reset to Default… ({count} photos)"
 msgstr "Restablecer valores predeterminados… ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "New Roll from ({count} photos)"
 msgstr "Nuevo rollo con ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Ungroup ({count} photos)"
 msgstr "Desagrupar ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "New Project from ({count} photos)"
 msgstr "Nuevo proyecto con ({count} fotos)"
 
-#: crates/oni-app/src/organise.rs
+#: crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder ({count} photos)"
 msgstr "Mostrar en el Finder ({count} fotos)"
+
+#: crates/oni-app/src/organise/cells.rs
+msgid "{n} photo missing"
+msgid_plural "{n} photos missing"
+msgstr[0] "{n} foto no encontrada"
+msgstr[1] "{n} fotos no encontradas"
 
 #: crates/oni-app/src/picking.rs
 msgid "{verb} ({count} photos)"
