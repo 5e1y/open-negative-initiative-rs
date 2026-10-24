@@ -1,5 +1,6 @@
-// Three fields and a tab bar at fixed places, for the window checks that click into them.
-import { Space, AppWindow, TextField, Tabs } from "../ds.slint";
+// Pieces at fixed places for the window checks that click into them: three fields and a tab bar, a
+// page that scrolls over a scroller whose content fits, a step keycap.
+import { Space, RowStyle, ShellStyle, ScannerStyle, AppWindow, TextField, Tabs, Scroller, Row, Label, TextRole, Tone, Button, ButtonSize } from "../ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -32,6 +33,61 @@ export component FieldProbe inherits AppWindow {
             tabs: ["One", "Two", "Three"];
             selected: root.choice;
             picked(i) => { root.picked = i; }
+        }
+    }
+}
+
+// A page far taller than the window, its knob on the window's edge, over a scroller whose content fits.
+export component ScrollProbe inherits AppWindow {
+    title: "ONI Scroll Probe";
+    preferred-width: ShellStyle.min-width;
+    in-out property <length> scroll <=> page.content-y;
+    out property <bool> page-overflows: page.overflows;
+    out property <bool> page-lit: page.lit;
+    out property <length> page-x: page.content-x;
+    out property <length> page-whole: page.content-height;
+    out property <length> page-shown: page.visible-height;
+    out property <bool> short-overflows: short.overflows;
+    out property <bool> short-lit: short.lit;
+    out property <length> short-x: short.absolute-position.x + short.width / 2;
+    out property <length> short-y: short.absolute-position.y + short.height / 2;
+    out property <length> short-right: short.absolute-position.x + short.width;
+    page := Scroller {
+        content-height: lines.preferred-height;
+        lines := VerticalLayout {
+            width: page.width;
+            padding: Space.l;
+            spacing: Space.s;
+            short := Scroller {
+                width: ShellStyle.library-width;
+                height: 3 * RowStyle.height;
+                content-height: fits.preferred-height;
+                fits := VerticalLayout {
+                    width: parent.width;
+                    Row { title: "Content that fits: no knob"; }
+                }
+            }
+            for i in 120: Label { text: "Line " + (i + 1); role: TextRole.value; tone: Tone.secondary; }
+        }
+    }
+}
+
+// A step slider's keycap alone, where a check presses it and reads whether its cap is down.
+export component KeyProbe inherits AppWindow {
+    title: "ONI Key Probe";
+    out property <length> key-x: key.absolute-position.x + key.width / 2;
+    out property <length> key-y: key.absolute-position.y + key.height / 2;
+    out property <bool> key-down: key.down;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 200px;
+    preferred-height: 120px;
+    VerticalLayout {
+        padding: Space.l;
+        alignment: start;
+        HorizontalLayout {
+            alignment: start;
+            key := Button { size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
         }
     }
 }

@@ -41,7 +41,7 @@ Statuses are defined in [README.md](README.md).
 
 | Feature | Swift | Rust | Status | Gap | Check |
 |---|---|---|---|---|---|
-| Tabs Roll, Crop, Color, Details | `UI/PanelTab.swift` | `oni-ui/ui/panel.slint` | done | | `oni-app/tests/catalogue.rs::the_catalogue_shows_every_component` |
+| Tabs Roll, Crop, Color, Details | `UI/PanelTab.swift` | `oni-ui/ui/panel.slint` | done | | `oni-app/tests/window/board.rs::the_board_shows_every_component_in_every_state` |
 | De-dust tab, hidden and modal | `UI/PanelTab.swift:15-17`, `Scene/EditorScene+Propagation.swift:212-215`, `OpenNegativeApp.swift:509-512` | `panel.slint` `DedustPane` (pane 4, no tab), `app/route.rs` `toggle_correcting`, `tabs.rs` `Route` | done | Entered and left by the bar's key and the menu, the Lab left first; leaving lands on the last panel the hand was in, recorded on every route, never the crop | `oni-app/tests/window/editor_routes.rs::the_panels_routes_and_the_measuring_window_behave_as_swifts`, `oni-app/src/tabs.rs::every_route_records_the_panel_left_and_never_a_modal_one`, `ONI_BENCH=dedust` |
 | Scanner face tabs (Lab keypad) | `Scene/EditorScene+Lab.swift:13-27`, `UI/ColorPane.swift:54` | `oni-ui/ui/panel.slint` `ColorPane` | done | Machine, Density, Color, Look stand where Color and Lighting stand | `oni-app/tests/scanner.rs::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back` |
 | Block help bubbles (`help:`) | every `DSSection` | `ui/ds/containers.slint` `Section`, `HelpMark`, `ui/panel.slint` | done | Every block carries Swift's note; Sharpening and Chroma Denoise say they are off on a contact sheet | `oni-app/tests/editor_leftovers.rs::every_block_says_swifts_own_help` |

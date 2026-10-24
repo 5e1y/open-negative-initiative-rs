@@ -9,7 +9,6 @@ mod auto_balance;
 mod board;
 mod canvas_layout;
 mod canvas_switch;
-mod catalogue;
 mod contact_sheet;
 mod design_system;
 mod editor_leftovers;
@@ -70,7 +69,6 @@ const CHECKS: &[(&str, fn())] = &[
     ("board::the_board_shows_every_component_in_every_state", board::the_board_shows_every_component_in_every_state),
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
-    ("catalogue::the_catalogue_shows_every_component", catalogue::the_catalogue_shows_every_component),
     ("contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips", contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),

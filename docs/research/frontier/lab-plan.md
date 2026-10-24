@@ -201,7 +201,7 @@ That is 73 values. The sector values are seeds until the step 2 refit. Left out 
   - **Readouts**: they show the value and, dimmed, the distance to each reference.
   - **Plot inks**: `Ink.reference-neutral` and `Ink.reference-frontier` for the graph's reference
     curves.
-  - **Catalogue**: every new piece appears in `ds/catalogue.slint`, and `tests/design_system.rs` stays
+  - **Board**: every new piece appears on its page of `ds/board/`, and `tests/design_system.rs` stays
     green with an empty `strict::ALLOW`.
 - **Commands**: the knobs are addressed like the Spectrogram's bands in `oni-core/src/knob.rs`, so the
   keyboard, the phone and undo reach them the same way.

@@ -55,4 +55,12 @@ pub(crate) fn the_board_shows_every_component_in_every_state() {
     rig.window.set_size(PhysicalSize::new(1600, 800));
     rig.settle();
     assert!(inks(&rig, from) <= INKS, "a blank page is seen as blank");
+
+    // A help mark's note is a card: the clip's 4:3 place above, the note under it.
+    board.global::<oni_app::Tips>().invoke_note(true, "Contrast bends the print into an S about a middle grey, its ends held.".into(), 400.0, 100.0);
+    rig.settle();
+    assert!(board.global::<oni_app::Tip>().get_card(), "the note is a card");
+    println!("shot {}", rig.shot("help-card").display());
+    board.global::<oni_app::Tips>().invoke_hover(true, "Zoom in (⌘+)".into(), 400.0, 100.0);
+    assert!(!board.global::<oni_app::Tip>().get_card(), "twin: a tooltip stays a line");
 }

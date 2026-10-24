@@ -102,7 +102,7 @@ fn sources() -> Vec<(Text, BTreeSet<String>)> {
     };
     let mut slint = Vec::new();
     files(&root.join("crates/oni-ui/ui"), "slint", &mut slint);
-    for file in slint.iter().filter(|f| !f.ends_with("ds/catalogue.slint") && !f.parent().is_some_and(|d| d.ends_with("ds/board"))) {
+    for file in slint.iter().filter(|f| !f.parent().is_some_and(|d| d.ends_with("ds/board"))) {
         let source = std::fs::read_to_string(file).unwrap();
         texts(&source, "@tr(", true).into_iter().for_each(|t| add(t, file));
     }
@@ -269,11 +269,11 @@ fn no_word_of_the_interface_is_left_outside_tr() {
     let root = root();
     let mut slint = Vec::new();
     files(&root.join("crates/oni-ui/ui"), "slint", &mut slint);
-    // The catalogue and the state board are the design system's own sample sheets; the tokens name fonts; the language names stay in their own tongue.
+    // The board is the design system's own sample sheet; the tokens name fonts; the language names stay in their own tongue.
     let own = ["English", "Français", "Español"];
     let bare: Vec<String> = slint
         .iter()
-        .filter(|f| !f.ends_with("ds/catalogue.slint") && !f.ends_with("ds/tokens.slint") && !f.parent().is_some_and(|d| d.ends_with("ds/board")))
+        .filter(|f| !f.ends_with("ds/tokens.slint") && !f.parent().is_some_and(|d| d.ends_with("ds/board")))
         .flat_map(|f| bare_words(&std::fs::read_to_string(f).unwrap()).into_iter().map(move |w| format!("{}: {w:?}", f.file_name().unwrap().to_string_lossy())))
         .filter(|w| !own.iter().any(|o| w.ends_with(&format!("{o:?}"))))
         .collect();

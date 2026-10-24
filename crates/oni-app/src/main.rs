@@ -1,9 +1,9 @@
-//! `oni [folder or file]` opens a folder of scans, else the one last opened, else roll #8; `--catalogue` or `ONI_CATALOGUE=1` shows the
-//! design system alone, `--board` its state board; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
+//! `oni [folder or file]` opens a folder of scans, else the one last opened, else roll #8; `--board` shows
+//! the design system's board; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Device, Engine};
-use oni_app::{Board, Catalogue, bench, timing};
+use oni_app::{Board, bench, timing};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use oni_app::viewport::{self, Wheel};
@@ -16,11 +16,6 @@ use std::path::PathBuf;
 static ALLOCATOR: oni_app::mapped::Mapped = oni_app::mapped::Mapped;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let catalogue = std::env::args().any(|a| a == "--catalogue") || std::env::var_os("ONI_CATALOGUE").is_some_and(|v| v == "1");
-    if catalogue {
-        Catalogue::new()?.run()?;
-        return Ok(());
-    }
     if std::env::args().any(|a| a == "--board") {
         Board::new()?.run()?;
         return Ok(());

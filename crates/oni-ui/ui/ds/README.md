@@ -11,7 +11,6 @@ and every screen picks it up.
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` |
 | `ds.slint` | The single import screens use | By hand |
-| `catalogue.slint` | Every component in each variant and state | By hand |
 | `board/` | The board: one base component a page, a row per variant, a live column then one per forced state (`Look`, `hover-tab`, `focused-look`, `on`, `enabled`) | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -23,14 +22,17 @@ Swift source, so the generator stays the only source of `DS`.
   `ButtonStyle.radius` or `SliderStyle.track`.
 - **Change a value the Swift app also uses** (a space, a colour of the palette): change it in
   `DSTokens.swift`, then run `cargo run -p oni-app --bin oni-tokens`.
+- **One name per value**: a group never renames another's value (a field's height is
+  `ButtonStyle.height`, a socket `Colour.well`); it names only a role of its own that borrows a step
+  of a scale (`SectionStyle.gap: Space.s`).
 - **A value with no Swift token** (a channel hue, a medal foil, the tooltip ground): it is written once
   in `theme.slint`, with a comment saying why.
 
-To check the result, run `cargo run --release -p oni-app --bin oni -- --catalogue` (or set
-`ONI_CATALOGUE=1`). It opens the catalogue, which shows every component in each state on one page.
-`-- --board` opens the board, as Help > Design System… does in a build without a release's stamp (the
-list on its left or the arrow keys walk its pages); the window check `board` shoots each page to
-`ONI_SHOTS` as `board-<nn>-<name>.png`.
+To check the result, run `cargo run --release -p oni-app --bin oni -- --board`. It opens the board, as
+Help > Design System… does in a build without a release's stamp (the list on its left or the arrow keys
+walk its pages); the window check `board` shoots each page to `ONI_SHOTS` as `board-<nn>-<name>.png`.
+`board/probe.slint` holds the pieces the window checks click at fixed places (fields, a scrolled page,
+a keycap).
 
 ## The rule: screens use only the design system
 

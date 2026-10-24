@@ -2488,5 +2488,12 @@
     "title": "A disabled slider keeps its rail opaque, and the levels' handles slide once",
     "status": "done",
     "detail": "As DSSlider: off limits, the readout fades and the track stays opaque. LevelsTrack no longer animates its knobs on top of Rust, which already springs every handle but the one held or scrolled with DS.Motion.settle, as DSTrackHandle; the Slint slide doubled that spring. The board's slider and plots pages say so."
+  },
+  {
+    "id": 352,
+    "type": "refactor",
+    "title": "One showcase: the catalogue gives way to the board",
+    "status": "done",
+    "detail": "ds/catalogue.slint, its window check and the --catalogue flag (ONI_CATALOGUE) are gone; the board already showed every piece it held but a scroller whose content fits, now a line of the Containers page. The checks that clicked into the catalogue read probe windows beside FieldProbe: ScrollProbe (a page taller than the window over a scroller that fits) for the scroll checks, KeyProbe (a step keycap) for the keycap's hold, and the help card's shot and its twin moved to the board's check. README, ui-spec, the parity rows and the Lab plan name the board."
   }
 ]
