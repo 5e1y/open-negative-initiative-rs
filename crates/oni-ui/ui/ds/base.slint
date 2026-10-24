@@ -207,13 +207,15 @@ export component Card inherits Rectangle {
     border-radius: CardStyle.radius;
 }
 
-// The card's four corners outside its round, in the ground it sits on, laid last over its content.
+// The four corners outside a round, in the ground beneath, laid last over a content left unclipped,
+// as a rounded clip draws it to a layer: the card's, a gallery tile's.
 export component CardCorners {
-    property <length> r: CardStyle.radius;
-    Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
-    Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
-    Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
-    Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: Colour.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
+    in property <length> r: CardStyle.radius;
+    in property <color> ground: Colour.ground;
+    Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
+    Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
+    Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
+    Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
 
 // How a raised surface stands off what it sits on: a hairline alone (a popover, a menu), the

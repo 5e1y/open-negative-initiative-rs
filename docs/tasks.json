@@ -2399,6 +2399,13 @@
     "detail": "The page shows AskSheet (Cancel and a destructive key, option keys wide, a notice's one key), Sheet (leading fitted and wide, gap l, card-height, the bar header over a list and an Inset), Raised in each lift and as a menu, PopupPanel opened by its keys, Inset in its two gauges, the StatusBar idle, sealed, counted and sweeping, and TipCard in both forms; the badge page adds the dark badge in the label's face. The bar sheet's list column keeps its lines at the top (alignment start), the card-height sheet hangs whole with its bottom margin, and each Surface swatch is outlined so the ground reads on the ground. The menus page shows the menu's Raised, the overlays page the corrections' Inset."
   },
   {
+    "id": 339,
+    "type": "refactor",
+    "title": "The gallery's tiles round their corners under the ring",
+    "status": "done",
+    "detail": "TileLayers clips a tile to Radius.card; the gallery and tree tiles stay unclipped (a rounded clip draws each tile to a layer) and paint their corners in the ground behind them (CardCorners, which takes a radius and a ground), so the photo no longer pokes past the rounded selection ring."
+  },
+  {
     "id": 340,
     "type": "refactor",
     "title": "One RowTree lays the archive's and the projects' trees",

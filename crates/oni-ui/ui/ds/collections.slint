@@ -1,6 +1,6 @@
 // The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
 import { Colour, Space, Radius, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Label, Icon, Picture, CardCorners, Ground, Tones, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal, BadgeStyle } from "badge.slint";
 import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
@@ -205,8 +205,10 @@ export component TileView inherits Rectangle {
     // A frame the measure flags: its ring destructive; ringed outside, it rings unselected under its seal.
     in property <bool> flagged;
     in property <RingPlacement> ring: RingPlacement.inset;
-    // A frame's corners round; the gallery's stay square, a rounded clip drawing each tile to a layer.
+    // A frame's corners round by a clip; the gallery's are painted in `behind`, a rounded clip drawing
+    // each tile to a layer.
     in property <bool> rounded;
+    in property <Ground> behind: Ground.canvas;
     callback clicked();
     property <bool> frame: root.marks == TileMarks.apart;
     property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;
@@ -245,6 +247,12 @@ export component TileView inherits Rectangle {
             tone: BadgeTone.seal;
             metal: Metal.red;
             text: @tr("FLAGGED");
+        }
+        if !root.rounded: CardCorners {
+            width: parent.width;
+            height: parent.height;
+            r: Radius.card;
+            ground: Tones.ground(root.behind);
         }
         if root.selected && !root.outset: SelectionRing {
             tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;

@@ -1,6 +1,6 @@
 // `TreeEngine`'s column, the archive's or the projects': Rust lays every row, a photo as a name or a
 // thumbnail, holds the open row under the top and scrolls to the selection.
-import { Scroller, RowKind, TileView, CardStyle, Row } from "ds/ds.slint";
+import { Scroller, RowKind, TileView, CardStyle, Row, Ground } from "ds/ds.slint";
 import { TreeRow, TreePin } from "library.slint";
 
 export component RowTree inherits HorizontalLayout {
@@ -80,6 +80,7 @@ export component RowTree inherits HorizontalLayout {
                 if row.thumb: TileView {
                     width: parent.width;
                     picture-height: parent.width * 2 / 3;
+                    behind: Ground.ground;
                     picture: row.picture;
                     caption: row.title;
                     selected: row.selected;
