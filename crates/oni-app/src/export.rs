@@ -14,6 +14,8 @@ use std::path::{Path, PathBuf};
 
 pub use oni_export::{PREVIEW_SIDE, SAMPLE_SIDE};
 
+pub mod clash;
+
 /// Rows the full-resolution render reads back at a time, so a frame never needs every stage at once.
 const BAND_ROWS: u32 = 1024;
 
@@ -264,40 +266,17 @@ pub fn weigh(engine: &Shared, negative: &Negative, full: (f64, f64), settings: &
 }
 
 /// One frame written: its full render, its file, then its line kept in its sidecar.
-pub fn write_one(engine: &Shared, target: &Target, destination: &Path, export: &Settings, metadata: &ExifMetadata) -> Result<(), Failure> {
+pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata) -> Result<(), Failure> {
     let render = || {
         let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
         let mut engine = engine.lock().map_err(|_| Failure::Render)?;
         render_full(&mut engine, decoded, &target.settings)
     };
     let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
-    oni_export::write(&target.path, destination, render, &target.settings.paper_correction, export, metadata, date)?;
+    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;
     let mosaic = oni_decode::decodes_via_mosaic(&target.path);
     let _ = oni_settings::sidecar::set_exif(metadata.clone(), &target.path, mosaic);
     Ok(())
-}
-
-/// The destinations of a batch in a folder: each file the name beside its preview.
-pub fn destinations(folder: &Path, targets: &[Target], rows: &[Option<Row>], format: Format) -> Vec<PathBuf> {
-    targets
-        .iter()
-        .zip(rows)
-        .map(|(t, r)| folder.join(oni_export::name(&t.path, r.as_ref().map_or("", |r| r.name.as_str()), format)))
-        .collect()
-}
-
-/// The clash dialog's title and message, `None` when nothing is overwritten.
-pub fn clash_notice(clashes: usize, of: usize) -> Option<(String, String)> {
-    if clashes == 0 {
-        return None;
-    }
-    let title = trn("{n} File Already Exists in That Folder", "{n} Files Already Exist in That Folder", clashes as u64);
-    let message = if clashes == of {
-        tr("Exporting will replace them. The originals are not touched.").to_owned()
-    } else {
-        tr!("Exporting will replace {clashes} of the {of} files. The originals are not touched.", clashes = clashes, of = of)
-    };
-    Some((title, message))
 }
 
 #[cfg(test)]
@@ -365,15 +344,6 @@ mod tests {
         // Twin: three turns is one turn's shape, never the unturned one.
         s.geometry.quarter_turns = -1;
         assert_eq!(cropped_size((6000.0, 4000.0), &s), (2000.0, 6000.0));
-    }
-
-    #[test]
-    fn a_batch_names_its_clashes_as_the_dialog_does() {
-        assert_eq!(clash_notice(0, 3), None);
-        let (title, message) = clash_notice(1, 3).unwrap();
-        assert_eq!(title, "1 File Already Exists in That Folder");
-        assert_eq!(message, "Exporting will replace 1 of the 3 files. The originals are not touched.");
-        assert_eq!(clash_notice(3, 3).unwrap().1, "Exporting will replace them. The originals are not touched.");
     }
 
     #[test]

@@ -82,11 +82,12 @@ impl SheetPlan {
         let (layout, pixels) = sheets::laid(tiles, paths.first()?, oni_measure::sheet::roll_tile(), reads)?;
         let former: HashSet<Id> = jobs.iter().filter_map(|j| j.before.roll_reference.as_ref().map(|r| r.id)).collect();
         let replaced = self.folder.iter().find(|p| !paths.contains(p) && roll_membership::sheet_reference(p).is_some_and(|id| former.contains(&id)));
-        let destination = match replaced {
-            Some(p) => std::path::PathBuf::from(p),
-            None => oni_measure::sheet::destination(Path::new(&paths[0]), &sheets::named(self.film.as_ref(), self.earliest), Path::exists),
+        let stem = sheets::named(self.film.as_ref(), self.earliest);
+        let to = match replaced {
+            Some(p) => sheets::To::Over(Path::new(p)),
+            None => sheets::To::Beside { lead: Path::new(&paths[0]), stem: &stem },
         };
-        sheets::write(&layout, &pixels, &destination).ok()?;
+        let destination = sheets::write(&layout, &pixels, to).ok()?;
         let mosaic = tiles.iter().all(|(p, _)| oni_decode::decodes_via_mosaic(Path::new(p)));
         Some(Sheet { path: destination, grid: layout.grid, film: self.film.clone(), stands: sheets::stands(self.earliest), mosaic })
     }

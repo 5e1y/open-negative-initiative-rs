@@ -1,5 +1,5 @@
 //! The export surface end to end on the headless window: roll #8 mirrored, the canvas proofed into
-//! the export space, a frame written and read back by independent readers, a batch and its clash.
+//! the export space, a frame written and read back by independent readers, a batch and its clash renamed.
 
 use oni_app::app::export_card::{self, Ask};
 use oni_app::app::{Options, Shell};
@@ -328,8 +328,10 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_export();
     assert_eq!(asked.borrow().last(), Some(&Ask::Folder { count: 2 }));
     assert!(e.get_confirm_shown());
-    assert_eq!(e.get_confirm_title(), "1 File Already Exists in That Folder");
-    assert_eq!(e.get_confirm_message(), "Exporting will replace 1 of the 2 files. The originals are not touched.");
+    // A file ONI did not export there is offered Rename alone.
+    assert_eq!(e.get_confirm_title(), "1 Name Is Already Taken in That Folder");
+    assert!(!e.get_confirm_replaces());
+    assert!(e.get_confirm_message().contains(&format!("{} 2.tiff", names[0])), "{}", e.get_confirm_message());
     // Twin: Cancel on the clash writes nothing.
     e.invoke_confirmed(false);
     assert!(!e.get_confirm_shown());
@@ -339,9 +341,10 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     e.invoke_export();
     e.invoke_confirmed(true);
     rig.until("the batch written", LONG, || !export_card::card(&ctl).exporting && !e.get_shown());
-    for name in &names {
-        let file = std::fs::read(batch.join(format!("{name}.tiff"))).unwrap();
-        assert!(file.starts_with(b"II") || file.starts_with(b"MM"), "{name} replaced by a TIFF");
+    assert_eq!(std::fs::read(batch.join(format!("{}.tiff", names[0]))).unwrap(), b"kept", "the file found there is kept");
+    for name in [format!("{} 2.tiff", names[0]), format!("{}.tiff", names[1])] {
+        let file = std::fs::read(batch.join(&name)).unwrap();
+        assert!(file.starts_with(b"II") || file.starts_with(b"MM"), "{name} written as a TIFF");
     }
     assert!(w.global::<App>().get_gallery(), "a batch opened in the gallery returns there");
     let _ = std::fs::remove_dir_all(&root);

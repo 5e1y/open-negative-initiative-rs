@@ -1,23 +1,9 @@
 //! Naming, the resize rules, the settings preference and the presets, each against its twin.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use oni_colour::Space;
-use oni_export::{Format, Preset, Resize, Settings, clashes, name, stem};
-
-#[test]
-fn a_batch_flags_what_it_would_overwrite() {
-    let there = PathBuf::from("/tmp/oni-export/a.tif");
-    let absent = PathBuf::from("/tmp/oni-export/b.tif");
-    let found = clashes(&[there.clone(), absent.clone()], |p| p == there.as_path());
-    assert_eq!(found, vec![there.clone()]);
-    // Twin: an empty folder flags nothing, so the predicate is what flagged.
-    assert!(clashes(std::slice::from_ref(&absent), |_| false).is_empty());
-    // A name produced twice within the batch clashes even in an empty folder.
-    assert_eq!(clashes(&[absent.clone(), absent.clone()], |_| false).len(), 1);
-    // Lexically the same path, spelt with a `.` segment.
-    assert_eq!(clashes(&[absent.clone(), PathBuf::from("/tmp/./oni-export/b.tif")], |_| false).len(), 1);
-}
+use oni_export::{Format, Preset, Resize, Settings, name, stem};
 
 #[test]
 fn names_cannot_fabricate_a_path() {

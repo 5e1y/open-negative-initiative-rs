@@ -653,6 +653,10 @@ msgstr "Espace de travail"
 msgid "Replace"
 msgstr "Remplacer"
 
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/export.slint
+msgid "Rename"
+msgstr "Renommer"
+
 #: crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "OK"
 msgstr "OK"
@@ -2340,10 +2344,6 @@ msgid "Rename This Flat-Field Mask"
 msgstr "Renommer ce masque flat-field"
 
 #: crates/oni-app/src/app/masks.rs
-msgid "Rename"
-msgstr "Renommer"
-
-#: crates/oni-app/src/app/masks.rs
 msgid "Choose a picture of the empty light panel, shot as the negatives are."
 msgstr "Choisissez une image de la table lumineuse vide, prise comme les négatifs."
 
@@ -3103,6 +3103,30 @@ msgstr "Moyens"
 msgid "Highs"
 msgstr "Hautes"
 
+#: crates/oni-app/src/export/clash.rs
+msgid "Exporting will replace them. The originals are not touched."
+msgstr "L’export les remplacera. Les originaux ne sont pas modifiés."
+
+#: crates/oni-app/src/export/clash.rs
+msgid "Each file whose name is taken gets a number instead, such as “{example}”. Nothing in the folder is replaced, and the originals are not touched."
+msgstr "Chaque fichier dont le nom est pris reçoit un numéro à la place, comme « {example} ». Rien n’est remplacé dans le dossier, et les originaux ne sont pas touchés."
+
+#: crates/oni-app/src/export/clash.rs
+msgid "Exporting will replace {clashes} of the {of} files. The originals are not touched."
+msgstr "L’export remplacera {clashes} des {of} fichiers. Les originaux ne sont pas modifiés."
+
+#: crates/oni-app/src/export/clash.rs
+msgid "{n} Name Is Already Taken in That Folder"
+msgid_plural "{n} Names Are Already Taken in That Folder"
+msgstr[0] "{n} nom est déjà pris dans ce dossier"
+msgstr[1] "{n} noms sont déjà pris dans ce dossier"
+
+#: crates/oni-app/src/export/clash.rs
+msgid "{n} File Already Exists in That Folder"
+msgid_plural "{n} Files Already Exist in That Folder"
+msgstr[0] "{n} fichier existe déjà dans ce dossier"
+msgstr[1] "{n} fichiers existent déjà dans ce dossier"
+
 #: crates/oni-app/src/export.rs
 msgid "16 bits per channel"
 msgstr "16 bits par canal"
@@ -3138,10 +3162,6 @@ msgstr "Aucun profil installé"
 #: crates/oni-app/src/export.rs
 msgid "No ICC profile was found in what you chose."
 msgstr "Aucun profil ICC n’a été trouvé dans votre sélection."
-
-#: crates/oni-app/src/export.rs
-msgid "Exporting will replace them. The originals are not touched."
-msgstr "L’export les remplacera. Les originaux ne sont pas modifiés."
 
 #: crates/oni-app/src/export.rs
 msgid "Export {count} Photos…"
@@ -3188,10 +3208,6 @@ msgid "This image was edited in {edited}. The previews show them in {space}."
 msgstr "Cette image a été éditée en {edited}. L’aperçu la montre en {space}."
 
 #: crates/oni-app/src/export.rs
-msgid "Exporting will replace {clashes} of the {of} files. The originals are not touched."
-msgstr "L’export remplacera {clashes} des {of} fichiers. Les originaux ne sont pas modifiés."
-
-#: crates/oni-app/src/export.rs
 msgid "Stopped after {n} file was written."
 msgid_plural "Stopped after {n} files were written."
 msgstr[0] "Arrêté après l’écriture de {n} fichier."
@@ -3202,12 +3218,6 @@ msgid "{n} Profile Installed"
 msgid_plural "{n} Profiles Installed"
 msgstr[0] "{n} profil installé"
 msgstr[1] "{n} profils installés"
-
-#: crates/oni-app/src/export.rs
-msgid "{n} File Already Exists in That Folder"
-msgid_plural "{n} Files Already Exist in That Folder"
-msgstr[0] "{n} fichier existe déjà dans ce dossier"
-msgstr[1] "{n} fichiers existent déjà dans ce dossier"
 
 #: crates/oni-app/src/flat_fields.rs
 msgid "This file could not be decoded as a picture."
@@ -3710,9 +3720,25 @@ msgid "The ICC profile chosen for the export can no longer be read."
 msgstr "Le profil ICC choisi pour l’export n’est plus lisible."
 
 #: crates/oni-export/src/lib.rs
+msgid "The disk is full: the file could not be written. A file already there is kept."
+msgstr "Le disque est plein : le fichier n’a pas pu être écrit. Un fichier déjà présent est conservé."
+
+#: crates/oni-export/src/lib.rs
+msgid "The disk is read-only: the file could not be written."
+msgstr "Le disque est en lecture seule : le fichier n’a pas pu être écrit."
+
+#: crates/oni-export/src/lib.rs
+msgid "ONI is not allowed to write in that folder. A file already there is kept."
+msgstr "ONI n’a pas le droit d’écrire dans ce dossier. Un fichier déjà présent est conservé."
+
+#: crates/oni-export/src/lib.rs
+msgid "The folder is no longer there: the file could not be written."
+msgstr "Le dossier n’est plus là : le fichier n’a pas pu être écrit."
+
+#: crates/oni-export/src/lib.rs
 msgid "The file could not be written."
 msgstr "Le fichier n’a pas pu être écrit."
 
 #: crates/oni-export/src/lib.rs
-msgid "Exporting there would overwrite the original scan. Pick another folder, or change the naming pattern so the output cannot land on its own source."
-msgstr "Exporter à cet endroit écraserait le scan d’origine. Choisissez un autre dossier, ou modifiez le modèle de nom pour que le fichier exporté ne puisse pas remplacer sa source."
+msgid "A file ONI did not export already has that name, an original perhaps: it is left as it was. Pick another folder or another name."
+msgstr "Un fichier qu’ONI n’a pas exporté porte déjà ce nom, un original peut-être : il est laissé tel quel. Choisissez un autre dossier ou un autre nom."
