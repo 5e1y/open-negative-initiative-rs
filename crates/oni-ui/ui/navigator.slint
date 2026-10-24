@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, Picker, PickerFace, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, Gap, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone, RowForm } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -265,56 +265,54 @@ export component NavigatorSection inherits Rectangle {
 
 // `RootsCatchUp`: shown once to a library made before the archive followed the disk.
 export component RootsCatchUpSheet inherits Sheet {
+    title: @tr("Your Library Now Follows Your Disk");
     card-width: SheetStyle.panel-width;
-    dismissed => { Navigator.catch-up-done(); }
     // Its groups a wider step apart than a plain sheet's lines, the steps a medium one.
+    gap: Gap.l;
+    dismissed => { Navigator.catch-up-done(); }
     VerticalLayout {
-        spacing: Space.l;
-        Label { text: @tr("Your Library Now Follows Your Disk"); role: TextRole.title; wrap: word-wrap; }
-        VerticalLayout {
-            spacing: Space.m;
-            for step[i] in [
-                { title: @tr("Pick the folder that holds all your scans"), detail: @tr("ONI reads it straight from your disk.") },
-                { title: @tr("Every folder inside it comes in"), detail: @tr("All the way down, nothing to import.") },
-                { title: @tr("Not your whole disk"), detail: @tr("Too wide and ONI reads everything; too narrow and photos stay out.") },
-            ]: HorizontalLayout {
-                spacing: Space.s;
-                VerticalLayout {
-                    alignment: start;
-                    Badge { tone: BadgeTone.step; text: i + 1; }
-                }
-                // The title's first line level with the number's disc.
-                VerticalLayout {
-                    padding-top: Space.xs;
-                    spacing: Space.xxs;
-                    horizontal-stretch: 1;
-                    Label { text: step.title; wrap: word-wrap; }
-                    Label { text: step.detail; role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; }
-                }
+        spacing: Space.m;
+        for step[i] in [
+            { title: @tr("Pick the folder that holds all your scans"), detail: @tr("ONI reads it straight from your disk.") },
+            { title: @tr("Every folder inside it comes in"), detail: @tr("All the way down, nothing to import.") },
+            { title: @tr("Not your whole disk"), detail: @tr("Too wide and ONI reads everything; too narrow and photos stay out.") },
+        ]: HorizontalLayout {
+            spacing: Space.s;
+            VerticalLayout {
+                alignment: start;
+                Badge { tone: BadgeTone.step; text: i + 1; }
+            }
+            // The title's first line level with the number's disc.
+            VerticalLayout {
+                padding-top: Space.xs;
+                spacing: Space.xxs;
+                horizontal-stretch: 1;
+                Label { text: step.title; wrap: word-wrap; }
+                Label { text: step.detail; role: TextRole.caption; tone: Tone.secondary; wrap: word-wrap; }
             }
         }
+    }
+    Button {
+        text: Navigator.catch-up-choose;
+        clicked => { Navigator.catch-up-chose(); }
+    }
+    if Navigator.catch-up-left != "": VerticalLayout {
+        spacing: Space.xs;
+        Label { text: Navigator.catch-up-left; }
+        for line[i] in Navigator.catch-up-lines: HorizontalLayout {
+            spacing: Space.s;
+            Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
+            Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
+            Button { text: @tr("ADD"); clicked => { Navigator.catch-up-added(i); } }
+        }
+        if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
+    }
+    if Navigator.catch-up-all-in != "": Label { text: Navigator.catch-up-all-in; tone: Tone.secondary; }
+    HorizontalLayout {
+        alignment: end;
         Button {
-            text: Navigator.catch-up-choose;
-            clicked => { Navigator.catch-up-chose(); }
-        }
-        if Navigator.catch-up-left != "": VerticalLayout {
-            spacing: Space.xs;
-            Label { text: Navigator.catch-up-left; }
-            for line[i] in Navigator.catch-up-lines: HorizontalLayout {
-                spacing: Space.s;
-                Label { text: line.folder; role: TextRole.caption; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-                Label { text: line.count; role: TextRole.caption; tone: Tone.secondary; }
-                Button { text: @tr("ADD"); clicked => { Navigator.catch-up-added(i); } }
-            }
-            if Navigator.catch-up-more != "": Label { text: Navigator.catch-up-more; role: TextRole.caption; tone: Tone.tertiary; }
-        }
-        if Navigator.catch-up-all-in != "": Label { text: Navigator.catch-up-all-in; tone: Tone.secondary; }
-        HorizontalLayout {
-            alignment: end;
-            Button {
-                text: @tr("DONE");
-                clicked => { Navigator.catch-up-done(); }
-            }
+            text: @tr("DONE");
+            clicked => { Navigator.catch-up-done(); }
         }
     }
 }

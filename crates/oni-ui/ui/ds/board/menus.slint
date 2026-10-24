@@ -1,6 +1,6 @@
 // The board's pickers and menus: Picker in each face and form, its menu dropping in the live column,
-// MenuEntry in each state, MenuPanel holding them, then MedalPicker.
-import { MenuStyle, Look, Divider, MenuLine, FolderChoice, MenuEntry, MenuPanel, PickerFace, Picker, MedalPicker, Row, RowKind, RowForm } from "../ds.slint";
+// MenuEntry in each state, the menu's raised panel holding them, then MedalPicker.
+import { MenuStyle, Look, Divider, MenuLine, FolderChoice, MenuEntry, Raised, Gap, PickerFace, Picker, MedalPicker, Row, RowKind, RowForm } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 // A menu line live (a click checks it), hovered, disabled, checked.
@@ -104,7 +104,7 @@ export component MenuPage inherits Page {
         EntryStates { label: "opening a submenu"; text: "Move to"; shortcut: "›"; }
     }
     Group {
-        title: "MenuPanel";
+        title: "Raised (menu), as a PopupPanel of kind menu holds its lines";
         states: ["Live", "Each state, a rule", "A pill's folders (Row, menu form)"];
         span: MenuStyle.width;
         Line {
@@ -112,13 +112,19 @@ export component MenuPage inherits Page {
             panel := Cell {
                 span: MenuStyle.width;
                 property <int> current: 1;
-                MenuPanel {
+                Raised {
+                    width: MenuStyle.width;
+                    menu: true;
+                    pad: Gap.xs;
                     for word[i] in ["sRGB", "Display P3", "Rec. 2020"]: MenuEntry { text: word; checked: i == panel.current; activated => { panel.current = i; } }
                 }
             }
             Cell {
                 span: MenuStyle.width;
-                MenuPanel {
+                Raised {
+                    width: MenuStyle.width;
+                    menu: true;
+                    pad: Gap.xs;
                     MenuEntry { text: "Open"; }
                     MenuEntry { text: "Reveal in Finder"; look: Look.hover; }
                     Divider { }
@@ -129,7 +135,10 @@ export component MenuPage inherits Page {
             }
             Cell {
                 span: MenuStyle.width;
-                MenuPanel {
+                Raised {
+                    width: MenuStyle.width;
+                    menu: true;
+                    pad: Gap.xs;
                     Row { form: RowForm.menu; kind: RowKind.folder; title: "Negs"; checked: true; }
                     Row { form: RowForm.menu; kind: RowKind.folder; title: "Pictures"; look: Look.hover; }
                     Row { form: RowForm.menu; kind: RowKind.folder; title: "Computer"; }

@@ -35,6 +35,8 @@ export global Colour {
     out property <color> marker: DS.palette-marker;
     out property <color> handle-idle: DS.palette-handle-idle;
     out property <color> scrim: DS.palette-scrim;
+    // `DS.Palette.overlay`: a dark badge's fill over the photo, black at 60 %.
+    out property <color> overlay: DS.palette-overlay;
     out property <color> canvas-cropping: DS.palette-canvas-cropping;
     out property <color> unaligned-balance: DS.tint-unaligned-balance;
     out property <color> contrast-edge-idle: DS.palette-contrast-edge-idle;
@@ -272,7 +274,6 @@ export global MenuStyle {
     out property <length> width: DS.control-export-fields-width;
     out property <length> row: ButtonStyle.height;
     out property <length> radius: Radius.badge;
-    out property <length> padding: Space.xs;
 }
 
 export global TipStyle {

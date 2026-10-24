@@ -195,7 +195,8 @@ impl Ctl {
         let c = w.global::<Choice>();
         c.set_title(wording.title.into());
         c.set_message(wording.detail.into());
-        c.set_keys(ModelRc::new(VecModel::from(wording.options.iter().map(|(_, t)| SharedString::from(t.as_str())).collect::<Vec<_>>())));
+        let keys = wording.options.iter().map(|(_, t)| crate::AskKey { text: t.as_str().into(), role: crate::AskRole::Option });
+        c.set_keys(ModelRc::new(VecModel::from(keys.collect::<Vec<_>>())));
         c.set_shown(true);
         w.invoke_refocus();
         self.publish_bar();

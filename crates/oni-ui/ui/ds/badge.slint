@@ -1,12 +1,11 @@
 // The badges: a short word on a capsule, a tag, a disc, a tint or a foil seal.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Type } from "theme.slint";
-import { Label, Tips } from "base.slint";
+import { Label, Tips, TextRole } from "base.slint";
 
 // `DSBadge`'s and `DSGoldSealView`'s gauges, and each seal's foil as one flat colour.
 export global BadgeStyle {
     out property <length> padding: DS.control-badge-padding;
-    out property <length> radius: Radius.badge / 2;
     out property <length> seal-height: DS.control-seal-height * 1px;
     out property <length> seal-padding: DS.control-seal-padding * 1px;
     out property <length> seal-size: DS.typo-seal-size;
@@ -33,6 +32,8 @@ export component Badge inherits Rectangle {
     in property <string> note;
     // A click that swaps what it says, as the loupe's ratio.
     in property <bool> pressable;
+    // A dark badge's face: the value's, or the label's for a correction's number.
+    in property <TextRole> role: TextRole.value;
     callback read();
     callback clicked();
     property <bool> fixed: root.tone == BadgeTone.step || root.tone == BadgeTone.tint;
@@ -48,12 +49,12 @@ export component Badge inherits Rectangle {
         : root.tone == BadgeTone.warning ? label.preferred-height + 2 * Space.xs
         : root.seal ? BadgeStyle.seal-height
         : label.preferred-height + 2 * BadgeStyle.padding;
-    border-radius: root.tone == BadgeTone.tint ? Radius.badge : root.tone == BadgeTone.dark ? BadgeStyle.radius : self.height / 2;
+    border-radius: root.tone == BadgeTone.tint || root.tone == BadgeTone.dark ? Radius.badge : self.height / 2;
     background: root.tone == BadgeTone.warning ? Colour.warning-surface
         : root.seal ? BadgeStyle.foil[root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0]
         : root.tone == BadgeTone.step ? Colour.raised
         : root.tone == BadgeTone.tint ? root.fill
-        : Colour.contrast-edge;
+        : Colour.overlay;
     label := Label {
         x: root.seal ? BadgeStyle.seal-padding : (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
@@ -61,12 +62,12 @@ export component Badge inherits Rectangle {
         height: root.fixed || root.seal ? parent.height : self.preferred-height;
         text: root.text;
         font-size: root.tone == BadgeTone.warning ? Type.value : root.seal ? BadgeStyle.seal-size
-            : root.tone == BadgeTone.step ? Type.label : Type.chip;
+            : root.tone == BadgeTone.step || root.role == TextRole.label ? Type.label : Type.value;
         font-weight: root.seal ? Type.strong : Type.regular;
         spaced: root.seal;
         // `DSFoil` prints every seal in one dark ink.
         ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? Colour.ink-on-light
-            : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.handle-active;
+            : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.ink-on-fill;
         centred: root.fixed;
         vertical-alignment: root.fixed || root.seal ? TextVerticalAlignment.center : TextVerticalAlignment.top;
     }

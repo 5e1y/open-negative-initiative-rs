@@ -2,6 +2,7 @@
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
 import { DS, Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "badge.slint";
+import { TextRole } from "base.slint";
 import { RingTone, Ring } from "marks.slint";
 
 export enum FrameStyle { crop, window }
@@ -202,12 +203,6 @@ export component FrameOverlay inherits Rectangle {
     }
 }
 
-// `CorrectionsPanel`'s list box: dark, rounded, setting per-photo detail apart from the sliders.
-export component Well inherits Rectangle {
-    background: Colour.canvas;
-    border-radius: CropStyle.well-radius;
-}
-
 // A De-dust reminder: the dust a patch covers, as the frame shows it unpatched.
 export component DustOriginal inherits Rectangle {
     in property <image> source;
@@ -239,6 +234,7 @@ export component CorrectionMark inherits Rectangle {
         x: parent.width + Space.xxs / 2;
         y: -self.height - Space.xxs / 2;
         text: root.number;
+        role: TextRole.label;
     }
 }
 

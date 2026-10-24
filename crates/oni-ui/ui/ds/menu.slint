@@ -1,6 +1,6 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
 import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle } from "theme.slint";
-import { Label, Icon, Tone, Tips, Divider } from "base.slint";
+import { Label, Icon, Tone, Tips, Divider, Raised, Gap } from "base.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 import { NavigatorStyle } from "folders.slint";
@@ -44,58 +44,57 @@ export component MenuEntry inherits Rectangle {
     }
 }
 
-export component MenuPanel inherits Rectangle {
-    in property <length> span: MenuStyle.width;
-    width: root.span;
-    height: column.preferred-height;
-    background: Colour.raised;
-    border-radius: MenuStyle.radius;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
-    column := VerticalLayout {
-        padding: MenuStyle.padding;
-        spacing: 0;
+// What a popup holds: a menu's lines on the raised grey, or a popover's form on the panel's ground at
+// the export panel's width, as Swift keeps them apart.
+export enum PopupKind { menu, popover }
+
+// A popup anchored where it opened, closed by a click outside. Sized as its panel: unsized, its
+// content is hit at another width than drawn, and a window's edge pushes it past its own width.
+export component PopupPanel inherits PopupWindow {
+    in property <PopupKind> kind: PopupKind.popover;
+    // A menu dropped under a field is as wide as it.
+    in property <length> span: root.kind == PopupKind.menu ? MenuStyle.width : FormStyle.panel-width;
+    close-policy: close-on-click-outside;
+    width: panel.width;
+    height: panel.height;
+    panel := Raised {
+        width: root.span;
+        menu: root.kind == PopupKind.menu;
+        pad: root.kind == PopupKind.menu ? Gap.xs : Gap.m;
+        gap: root.kind == PopupKind.menu ? Gap.none : Gap.m;
         @children
     }
 }
 
 // Words with the current one checked; or a context menu's lines; or the folder pill's choices.
 // A choice closes it, as a click outside does.
-export component Menu inherits PopupWindow {
+export component Menu inherits PopupPanel {
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
     in property <[FolderChoice]> choices;
-    // A menu dropped under a field is as wide as it.
-    in property <length> span: MenuStyle.width;
     callback chosen(int);
-    close-policy: close-on-click-outside;
-    // Sized as its panel, so a window's edge pushes it no further than its own width.
-    width: panel.width;
-    height: panel.height;
-    panel := MenuPanel {
-        span: root.span;
-        for word[i] in root.entries: MenuEntry {
-            text: word;
-            checked: i == root.current;
-            activated => { root.chosen(i); root.close(); }
+    kind: PopupKind.menu;
+    for word[i] in root.entries: MenuEntry {
+        text: word;
+        checked: i == root.current;
+        activated => { root.chosen(i); root.close(); }
+    }
+    for line[i] in root.lines: VerticalLayout {
+        if line.rule: Divider { }
+        MenuEntry {
+            text: line.text;
+            shortcut: line.opens ? "›" : "";
+            enabled: line.enabled;
+            activated => { root.chosen(i); }
         }
-        for line[i] in root.lines: VerticalLayout {
-            if line.rule: Divider { }
-            MenuEntry {
-                text: line.text;
-                shortcut: line.opens ? "›" : "";
-                enabled: line.enabled;
-                activated => { root.chosen(i); }
-            }
-        }
-        for choice[i] in root.choices: Row {
-            form: RowForm.menu;
-            kind: RowKind.folder;
-            title: choice.title;
-            checked: choice.current;
-            clicked => { root.chosen(i); }
-        }
+    }
+    for choice[i] in root.choices: Row {
+        form: RowForm.menu;
+        kind: RowKind.folder;
+        title: choice.title;
+        checked: choice.current;
+        clicked => { root.chosen(i); }
     }
 }
 

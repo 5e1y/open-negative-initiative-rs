@@ -1,5 +1,5 @@
 // `StockPickerSheet`: Select Roll Type, the stocks grouped by brand, one click picking and closing.
-import { Space, StockStyle, Label, TextRole, Tone, Button, Divider, Scroller, PanelSheet, StockCellView } from "ds/ds.slint";
+import { Space, StockStyle, Label, TextRole, Tone, Button, Divider, Scroller, Sheet, SheetHeader, StockCellView } from "ds/ds.slint";
 
 export struct StockCell { index: int, name: string, artwork: image, has-artwork: bool, picked: bool }
 export struct StockRow { cells: [StockCell] }
@@ -14,38 +14,32 @@ export global Stocks {
     callback chosen(int);
 }
 
-export component StockPickerSheet inherits PanelSheet {
-    panel-width: StockStyle.width;
-    panel-height: StockStyle.height;
+export component StockPickerSheet inherits Sheet {
+    title: @tr("Select Roll Type");
+    header: SheetHeader.bar;
+    card-width: StockStyle.width;
+    card-height: StockStyle.height;
     dismissed => { Stocks.chosen(-1); }
-    VerticalLayout {
-        HorizontalLayout {
+    Scroller {
+        vertical-stretch: 1;
+        content-height: list.preferred-height;
+        list := VerticalLayout {
             padding: Space.m;
-            Label { text: @tr("Select Roll Type"); role: TextRole.title; horizontal-stretch: 1; }
-            Button { text: @tr("Done"); clicked => { Stocks.chosen(-1); } }
-        }
-        Divider { }
-        Scroller {
-            vertical-stretch: 1;
-            content-height: list.preferred-height;
-            list := VerticalLayout {
-                padding: Space.m;
-                spacing: Space.l;
-                alignment: start;
-                for brand in Stocks.brands: VerticalLayout {
+            spacing: Space.l;
+            alignment: start;
+            for brand in Stocks.brands: VerticalLayout {
+                spacing: Space.s;
+                Label { text: brand.brand; tone: Tone.secondary; }
+                for row in brand.rows: HorizontalLayout {
                     spacing: Space.s;
-                    Label { text: brand.brand; tone: Tone.secondary; }
-                    for row in brand.rows: HorizontalLayout {
-                        spacing: Space.s;
-                        alignment: start;
-                        for cell in row.cells: StockCellView {
-                            width: (StockStyle.width - 2 * Space.m - (Stocks.columns - 1) * Space.s) / Stocks.columns;
-                            artwork: cell.artwork;
-                            has-artwork: cell.has-artwork;
-                            name: cell.name;
-                            picked: cell.picked;
-                            clicked => { Stocks.chosen(cell.index); }
-                        }
+                    alignment: start;
+                    for cell in row.cells: StockCellView {
+                        width: (StockStyle.width - 2 * Space.m - (Stocks.columns - 1) * Space.s) / Stocks.columns;
+                        artwork: cell.artwork;
+                        has-artwork: cell.has-artwork;
+                        name: cell.name;
+                        picked: cell.picked;
+                        clicked => { Stocks.chosen(cell.index); }
                     }
                 }
             }

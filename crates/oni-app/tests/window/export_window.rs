@@ -221,7 +221,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(e.get_edited_in(), "", "edited and previewed in one space, the note says nothing");
     rig.until("the preview and the estimate", LONG, || {
         let l = export_card::lines(w);
-        l.len() == 1 && l[0].state == 1 && l[0].ready && e.get_weight() != "estimating…"
+        l.len() == 1 && l[0].state == oni_app::PreviewState::Shown && l[0].ready && e.get_weight() != "estimating…"
     });
     let line = &export_card::lines(w)[0];
     let line_camera = line.camera.to_string();
@@ -233,7 +233,7 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     assert_eq!(e.get_edited_in(), "This image was edited in Display P3. The previews show them in sRGB.");
     e.invoke_space_picked(1);
     assert_eq!(e.get_edited_in(), "");
-    rig.until("the preview again", LONG, || export_card::lines(w)[0].state == 1);
+    rig.until("the preview again", LONG, || export_card::lines(w)[0].state == oni_app::PreviewState::Shown);
     rig.settle();
     println!("shot {}", rig.shot("export-surface").display());
 

@@ -1,6 +1,6 @@
 // The transition from the earlier version: a blocking sheet while each camera is matched to the
 // earlier version's colours, then what was done and CONTINUE. Rust fills every line.
-import { Sheet, SheetStyle, Space, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress } from "ds/ds.slint";
+import { Sheet, SheetStyle, Space, Gap, Label, TextRole, Tone, Button, ButtonKind, BulletLine, Progress } from "ds/ds.slint";
 
 export struct TransitionLine { camera: string, detail: string }
 
@@ -17,7 +17,10 @@ export global Transition {
 }
 
 export component TransitionSheet inherits Sheet {
+    title: @tr("Matching Your Cameras");
     card-width: SheetStyle.notice-width;
+    // Its groups a wider step apart than a plain sheet's lines.
+    gap: Gap.l;
     // Escape closes it only once the work is done: until then it holds the window.
     dismissed => {
         if Transition.done {
@@ -25,43 +28,39 @@ export component TransitionSheet inherits Sheet {
         }
     }
     VerticalLayout {
-        spacing: Space.l;
-        Label { text: @tr("Matching Your Cameras"); role: TextRole.title; wrap: word-wrap; }
-        VerticalLayout {
+        spacing: Space.s;
+        for line in [
+            @tr("ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version."),
+            @tr("Each camera is matched once to the earlier version's colours, on a few of your photos."),
+            @tr("Nothing in your photos' settings is changed."),
+        ]: BulletLine { text: line; }
+    }
+    VerticalLayout {
+        spacing: Space.s;
+        Progress { fraction: Transition.done ? 1 : Transition.progress; }
+        Label { text: Transition.stage; tone: Tone.secondary; wrap: word-wrap; }
+    }
+    if Transition.cameras.length > 0: VerticalLayout {
+        spacing: Space.xs;
+        for line in Transition.cameras: HorizontalLayout {
             spacing: Space.s;
-            for line in [
-                @tr("ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version."),
-                @tr("Each camera is matched once to the earlier version's colours, on a few of your photos."),
-                @tr("Nothing in your photos' settings is changed."),
-            ]: BulletLine { text: line; }
+            Label { text: line.camera; overflow: elide; horizontal-stretch: 1; }
+            Label { text: line.detail; tone: Tone.secondary; }
         }
-        VerticalLayout {
-            spacing: Space.s;
-            Progress { fraction: Transition.done ? 1 : Transition.progress; }
-            Label { text: Transition.stage; tone: Tone.secondary; wrap: word-wrap; }
-        }
-        if Transition.cameras.length > 0: VerticalLayout {
-            spacing: Space.xs;
-            for line in Transition.cameras: HorizontalLayout {
-                spacing: Space.s;
-                Label { text: line.camera; overflow: elide; horizontal-stretch: 1; }
-                Label { text: line.detail; tone: Tone.secondary; }
-            }
-        }
-        if Transition.done: VerticalLayout {
-            spacing: Space.xs;
-            Label { text: Transition.summary; wrap: word-wrap; }
-            for line in Transition.left: Label { text: line; role: TextRole.caption; tone: Tone.tertiary; wrap: word-wrap; }
-        }
-        if !Transition.done: Label { role: TextRole.note; text: @tr("Quitting now is safe: the work resumes at the next launch."); }
-        HorizontalLayout {
-            alignment: end;
-            Button {
-                text: @tr("CONTINUE");
-                kind: ButtonKind.accent;
-                enabled: Transition.done;
-                clicked => { Transition.continue-pressed(); }
-            }
+    }
+    if Transition.done: VerticalLayout {
+        spacing: Space.xs;
+        Label { text: Transition.summary; wrap: word-wrap; }
+        for line in Transition.left: Label { text: line; role: TextRole.caption; tone: Tone.tertiary; wrap: word-wrap; }
+    }
+    if !Transition.done: Label { role: TextRole.note; text: @tr("Quitting now is safe: the work resumes at the next launch."); }
+    HorizontalLayout {
+        alignment: end;
+        Button {
+            text: @tr("CONTINUE");
+            kind: ButtonKind.accent;
+            enabled: Transition.done;
+            clicked => { Transition.continue-pressed(); }
         }
     }
 }

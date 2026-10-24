@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, PanelSheet, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
+import { Space, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -77,32 +77,27 @@ export global Choice {
     in property <bool> shown;
     in property <string> title;
     in property <string> message;
-    in property <[string]> keys;
+    // Every key an option.
+    in property <[AskKey]> keys;
     // The key's index, -1 for Cancel.
     callback chosen(int);
 }
 
 // Option keys stay neutral and deaf to Return, so no choice is made by reflex.
-export component ChoiceSheet inherits Sheet {
+export component ChoiceSheet inherits AskSheet {
     title: Choice.title;
-    question: true;
+    message: Choice.message;
     wide: true;
-    dismissed => { Choice.chosen(-1); }
-    if Choice.message != "": Label { text: Choice.message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        Button { text: @tr("Cancel"); clicked => { Choice.chosen(-1); } }
-        for key[i] in Choice.keys: Button { text: key; clicked => { Choice.chosen(i); } }
-    }
+    cancel: @tr("Cancel");
+    keys: Choice.keys;
+    answered(i) => { Choice.chosen(i); }
 }
 
-export component AdviceSheet inherits Sheet {
+export component AdviceSheet inherits AskSheet {
     title: Advice.title;
-    question: true;
-    dismissed => { Advice.closed(); }
-    if Advice.message != "": Label { text: Advice.message; tone: Tone.secondary; wrap: word-wrap; }
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Advice.closed(); } }
-    }
+    message: Advice.message;
+    keys: [{ text: @tr("OK"), role: AskRole.confirm }];
+    answered => { Advice.closed(); }
 }
 
 component TintPicker inherits HorizontalLayout {
@@ -186,91 +181,86 @@ component PresetForm inherits VerticalLayout {
 }
 
 // `PresetSaveSheet`: a name, a colour, the rows it carries; Save stays dark on a blank name.
-export component PresetSaveSheet inherits PanelSheet {
-    panel-width: PresetStyle.save-width;
-    panel-height: PresetStyle.save-height;
+export component PresetSaveSheet inherits Sheet {
+    title: @tr("Save a Preset");
+    card-width: PresetStyle.save-width;
+    card-height: PresetStyle.save-height;
     dismissed => { Presets.save-cancelled(); }
-    VerticalLayout {
-        padding: Space.l;
-        spacing: Space.m;
-        Label { text: @tr("Save a Preset"); role: TextRole.title; }
-        Scroller {
-            vertical-stretch: 1;
-            content-height: form.preferred-height;
-            form := PresetForm {
-                width: parent.width;
-                named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
-            }
+    Scroller {
+        vertical-stretch: 1;
+        content-height: form.preferred-height;
+        form := PresetForm {
+            width: parent.width;
+            named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
         }
-        Divider { }
-        HorizontalLayout {
-            alignment: end;
-            spacing: Space.s;
-            Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
-            Button { text: @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
-        }
+    }
+    Divider { }
+    HorizontalLayout {
+        alignment: end;
+        spacing: Space.s;
+        Button { text: @tr("Cancel"); clicked => { Presets.save-cancelled(); } }
+        Button { text: @tr("Save"); enabled: Presets.form-valid; clicked => { Presets.save-confirmed(); } }
     }
     init => { form.take-focus(); }
 }
 
 // `PresetEditor`: the presets in a list, the selected one's form, and the footer's keys; an edit
 // is written once the hand rests, and at once when another row or Done takes over.
-export component PresetEditorSheet inherits PanelSheet {
-    panel-width: PresetStyle.editor-width;
-    panel-height: PresetStyle.editor-height;
+export component PresetEditorSheet inherits Sheet {
+    card-width: PresetStyle.editor-width;
+    card-height: PresetStyle.editor-height;
+    bleed: true;
     dismissed => { Presets.done(); }
-    VerticalLayout {
-        HorizontalLayout {
-            vertical-stretch: 1;
-            Scroller {
-                width: PresetStyle.editor-list;
-                content-height: list.preferred-height;
-                list := VerticalLayout {
-                    padding: Space.s;
-                    spacing: Space.xxs;
-                    alignment: start;
-                    for card[i] in Presets.rows: Row {
-                        form: RowForm.sidebar;
-                        badge: card.abbreviation;
-                        title: card.name;
-                        detail: card.carries;
-                        badge-fill: card.fill;
-                        badge-ink: card.ink;
-                        selected: i == Presets.selected;
-                        clicked => { Presets.picked(i); }
-                    }
+    HorizontalLayout {
+        vertical-stretch: 1;
+        Scroller {
+            width: PresetStyle.editor-list;
+            content-height: list.preferred-height;
+            list := VerticalLayout {
+                padding: Space.s;
+                spacing: Space.xxs;
+                alignment: start;
+                for card[i] in Presets.rows: Row {
+                    form: RowForm.sidebar;
+                    badge: card.abbreviation;
+                    title: card.name;
+                    detail: card.carries;
+                    badge-fill: card.fill;
+                    badge-ink: card.ink;
+                    selected: i == Presets.selected;
+                    clicked => { Presets.picked(i); }
                 }
             }
-            Divider { vertical: true; hairline: true; }
-            // One instance per selected preset: its fields start from that preset's values.
-            for instance in Presets.form-instance: Scroller {
-                horizontal-stretch: 1;
-                content-height: form.preferred-height + 2 * Space.l;
-                form := PresetForm {
-                    x: Space.l;
-                    y: Space.l;
-                    width: parent.width - 2 * Space.l;
-                    noted: true;
-                    named => { Presets.done(); }
-                }
-            }
-            if !Presets.form-shown: VerticalLayout {
-                horizontal-stretch: 1;
-                alignment: center;
-                Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
-                Label { role: TextRole.note; text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
+        }
+        Divider { vertical: true; hairline: true; }
+        // One instance per selected preset: its fields start from that preset's values.
+        for instance in Presets.form-instance: Scroller {
+            horizontal-stretch: 1;
+            content-height: form.preferred-height + 2 * Space.l;
+            form := PresetForm {
+                x: Space.l;
+                y: Space.l;
+                width: parent.width - 2 * Space.l;
+                noted: true;
+                named => { Presets.done(); }
             }
         }
-        Divider { }
-        HorizontalLayout {
-            padding: Space.m;
-            spacing: Space.s;
-            Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
-            Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
-            Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
-            Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
-            Rectangle { horizontal-stretch: 1; }
-            Button { text: @tr("Done"); clicked => { Presets.done(); } }
+        if !Presets.form-shown: VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            Label { text: @tr("No preset selected"); role: TextRole.section; centred: true; }
+            Label { role: TextRole.note; text: @tr("Save a photo's settings to create your first preset."); horizontal-alignment: center; }
         }
+    }
+    Divider { }
+    HorizontalLayout {
+        padding: Space.m;
+        spacing: Space.s;
+        Button { text: @tr("Duplicate"); enabled: Presets.form-shown; clicked => { Presets.duplicate(); } }
+        Button { text: @tr("Share…"); enabled: Presets.form-shown; clicked => { Presets.share(); } }
+        Button { text: @tr("Copy Preset Code"); enabled: Presets.form-shown; help: @tr("Copies the preset as one line of text, to paste in a message."); clicked => { Presets.copy-code(); } }
+        Button { text: @tr("Delete"); kind: ButtonKind.destructive; enabled: Presets.form-shown; clicked => { Presets.delete(); } }
+        Rectangle { horizontal-stretch: 1; }
+        Button { text: @tr("Done"); clicked => { Presets.done(); } }
     }
 }

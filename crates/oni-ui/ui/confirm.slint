@@ -1,5 +1,5 @@
 // `DSDialogRequest.confirm`: a title, a message, Cancel and the key that goes ahead.
-import { Sheet, Label, Tone, Button, ButtonKind, ButtonGroup, GroupAlign } from "ds/ds.slint";
+import { AskSheet, AskRole } from "ds/ds.slint";
 
 export global Confirm {
     in property <bool> shown;
@@ -13,23 +13,13 @@ export global Confirm {
     callback answered(bool);
 }
 
-export component ConfirmSheet inherits Sheet {
+// Quitting's alert lays the key that goes ahead first, Cancel last as its default.
+export component ConfirmSheet inherits AskSheet {
     title: Confirm.title;
-    question: true;
-    dismissed => { Confirm.answered(false); }
-    if Confirm.message != "": Label { text: Confirm.message; tone: Tone.secondary; wrap: word-wrap; }
-    // Quitting's alert lays the key that goes ahead first, Cancel last as its default.
-    ButtonGroup { plate: true; align: GroupAlign.end;
-        if Confirm.cancel-default: Button { text: Confirm.key; clicked => { Confirm.answered(true); } }
-        Button {
-            text: @tr("CANCEL");
-            kind: Confirm.cancel-default ? ButtonKind.accent : ButtonKind.plain;
-            clicked => { Confirm.answered(false); }
-        }
-        if !Confirm.cancel-default: Button {
-            text: Confirm.key;
-            kind: Confirm.destructive ? ButtonKind.destructive : ButtonKind.accent;
-            clicked => { Confirm.answered(true); }
-        }
-    }
+    message: Confirm.message;
+    cancel: Confirm.cancel-default ? "" : @tr("CANCEL");
+    keys: Confirm.cancel-default
+        ? [{ text: Confirm.key, role: AskRole.option }, { text: @tr("CANCEL"), role: AskRole.confirm }]
+        : [{ text: Confirm.key, role: Confirm.destructive ? AskRole.destructive : AskRole.confirm }];
+    answered(i) => { Confirm.answered(i == 0); }
 }

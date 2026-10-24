@@ -1,8 +1,9 @@
-// The forms of export and colour management: a labelled field, a note, a summary box, a preview slot,
-// a chip that opens a popover, and the panel a popover or a sheet draws on.
+// The forms of export and colour management: a labelled field, a note, a preview slot, progress, the
+// status bar and a title typed over.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, State, Motion, FieldStyle, ButtonStyle, SectionStyle, MenuStyle, CardStyle, StatusStyle, ScannerStyle, SheetStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "base.slint";
+import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
 import { TextField, RenameField, Button, Look } from "controls.slint";
 import { Icons } from "icons.slint";
@@ -76,130 +77,6 @@ export component WarningBand inherits Rectangle {
     }
 }
 
-// The summary box: the canvas's dark under value lines.
-export component SummaryBox inherits Rectangle {
-    background: Colour.canvas;
-    border-radius: Radius.card;
-    VerticalLayout {
-        padding: Space.m;
-        spacing: Space.xxs;
-        @children
-    }
-}
-
-// An export preview: the picture fitted whole, a dash while it renders, a word when it never will.
-export component PreviewSlot inherits Rectangle {
-    in property <image> source;
-    // 0 waits, 1 shows the picture, 2 failed.
-    in property <int> state;
-    if root.state == 1: Picture {
-        width: parent.width;
-        height: parent.height;
-        source: root.source;
-        ground: Ground.canvas;
-        rounded: true;
-    }
-    if root.state == 2: VerticalLayout {
-        alignment: center;
-        spacing: Space.xs;
-        HorizontalLayout {
-            alignment: center;
-            Icon { source: Icons.warning; tone: Tone.tertiary; width: ButtonStyle.icon; height: ButtonStyle.icon; }
-        }
-        Label { text: @tr("could not be rendered"); role: TextRole.value; tone: Tone.tertiary; centred: true; }
-    }
-    if root.state == 0: Label { text: "…"; role: TextRole.title; tone: Tone.tertiary; centred: true; width: parent.width; height: parent.height; }
-}
-
-// `dsPopover`'s body: the panel's ground at the export panel's width, its padding inside it.
-export component PopoverPanel inherits Rectangle {
-    width: FormStyle.panel-width;
-    height: column.preferred-height;
-    background: Colour.ground;
-    border-radius: Radius.card;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
-    // A click inside stays inside, so only a click outside closes the popover.
-    TouchArea { }
-    column := VerticalLayout {
-        padding: Space.m;
-        spacing: Space.m;
-        @children
-    }
-}
-
-// A popover anchored under the control that opened it, closed by a click outside. Sized as its
-// panel: unsized, its content is hit at another width than drawn and a tab picks its neighbour.
-export component Popover inherits PopupWindow {
-    close-policy: close-on-click-outside;
-    width: panel.width;
-    height: panel.height;
-    panel := PopoverPanel {
-        @children
-    }
-}
-
-// A board laid out as the app is: a title bar with its exit, then a sidebar and a card; modal as
-// `Sheet`, hung from the window's top at most the window's height, Escape its exit.
-export component BoardSheet inherits Rectangle {
-    in property <string> title;
-    in property <string> exit: @tr("Done");
-    callback dismissed();
-    TouchArea { }
-    FocusScope {
-        width: 100%;
-        height: 100%;
-        focus-on-click: false;
-        key-pressed(event) => {
-            if (event.text == Key.Escape) {
-                root.dismissed();
-                return accept;
-            }
-            reject
-        }
-        Rectangle {
-            y: SheetStyle.margin;
-            width: FormStyle.paper-width;
-            height: min(FormStyle.paper-height, root.height - 2 * SheetStyle.margin);
-            background: Colour.ground;
-            border-radius: Radius.card;
-            border-width: Stroke.hairline;
-            border-color: Colour.separator;
-            drop-shadow-blur: SheetStyle.shadow;
-            drop-shadow-color: Colour.scrim;
-            clip: true;
-            TouchArea { }
-            VerticalLayout {
-                HorizontalLayout {
-                    padding: Space.m;
-                    padding-left: SheetStyle.padding;
-                    padding-right: SheetStyle.padding;
-                    Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
-                    Button { text: root.exit; clicked => { root.dismissed(); } }
-                }
-                Divider { }
-                HorizontalLayout {
-                    vertical-stretch: 1;
-                    @children
-                }
-            }
-        }
-    }
-}
-
-// The board's card: the canvas's dark, inset from the sheet's right and bottom edges.
-export component BoardCard inherits Rectangle {
-    horizontal-stretch: 1;
-    background: Colour.canvas;
-    border-radius: Radius.card;
-    VerticalLayout {
-        padding: Space.l;
-        spacing: Space.m;
-        alignment: start;
-        @children
-    }
-}
-
 // `DSProgress`: a recessed track lit up to the fraction done; below zero, no total, a lit segment
 // sweeps it, so a wait that cannot be counted still reads as moving.
 export component Progress inherits Rail {
@@ -213,6 +90,40 @@ export component Progress inherits Rail {
     glow: DS.scanner-phosphor-glow;
     from: root.counted ? 0 : (1 - DS.control-progress-segment) * root.eased;
     at: root.counted ? clamp(root.fraction, 0, 1) : root.from + DS.control-progress-segment;
+}
+
+// What an export preview shows: a sweep while it renders, the picture, or the word it never will.
+export enum PreviewState { rendering, shown, failed }
+
+// An export preview on the canvas's dark: the picture fitted whole, a sweep while it renders (the
+// inline progress's width), a word when it never will.
+export component PreviewSlot inherits Rectangle {
+    in property <image> source;
+    in property <PreviewState> state;
+    background: Colour.canvas;
+    if root.state == PreviewState.shown: Picture {
+        width: parent.width;
+        height: parent.height;
+        source: root.source;
+        ground: Ground.canvas;
+        rounded: true;
+    }
+    if root.state == PreviewState.failed: VerticalLayout {
+        alignment: center;
+        spacing: Space.xs;
+        HorizontalLayout {
+            alignment: center;
+            Icon { source: Icons.warning; tone: Tone.tertiary; width: ButtonStyle.icon; height: ButtonStyle.icon; }
+        }
+        Label { text: @tr("could not be rendered"); role: TextRole.value; tone: Tone.tertiary; centred: true; }
+    }
+    if root.state == PreviewState.rendering: VerticalLayout {
+        alignment: center;
+        HorizontalLayout {
+            alignment: center;
+            Progress { width: FormStyle.progress; fraction: -1; }
+        }
+    }
 }
 
 // `DSLCD`: a count on the scanner's glass.
@@ -229,26 +140,51 @@ export component LcdReadout inherits Rectangle {
     }
 }
 
-// `DSStatusBar`'s busy row: what loads, its count on the glass, its progress across the rest.
-export component LoadBar inherits Rectangle {
-    in property <string> title;
+// `DSStatusBar`: the one bar under the viewer. Idle, its line and the seal a frame of passes wears
+// right after it; busy, what loads, its count on the glass and its progress across the rest.
+export component StatusBar inherits Rectangle {
+    in property <string> text;
+    in property <string> seal;
+    in property <bool> busy;
     in property <string> count;
+    // Below zero the work cannot be counted: the progress sweeps.
     in property <float> fraction: -1;
     height: StatusStyle.height;
     HorizontalLayout {
-        padding-left: Space.s;
-        padding-right: Space.s;
+        padding-left: root.busy ? Space.s : 0px;
+        padding-right: root.busy ? Space.s : 0px;
         spacing: Space.s;
-        Label { text: root.title; role: TextRole.value; tone: Tone.secondary; vertical-alignment: center; overflow: elide; }
-        if root.count != "": VerticalLayout {
+        if root.busy: Label { text: root.text; role: TextRole.value; tone: Tone.secondary; vertical-alignment: center; overflow: elide; }
+        if root.busy && root.count != "": VerticalLayout {
             alignment: center;
             LcdReadout { text: root.count; }
         }
-        VerticalLayout {
+        if root.busy: VerticalLayout {
             alignment: center;
             horizontal-stretch: 1;
             Progress { fraction: root.fraction; }
         }
+        // As wide as its words, eliding once the row is short of room.
+        if !root.busy: Rectangle {
+            horizontal-stretch: 0;
+            min-width: 0;
+            preferred-width: line.preferred-width + 2 * Space.s;
+            line := Label {
+                x: Space.s;
+                width: parent.width - 2 * Space.s;
+                height: parent.height;
+                role: TextRole.value;
+                tone: Tone.secondary;
+                text: root.text;
+                overflow: elide;
+            }
+        }
+        // The seal stands out of the row by its own height, as Swift's overlay does, so the bar keeps its height.
+        if !root.busy && root.seal != "": Rectangle {
+            width: seal.width;
+            seal := Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: root.seal; }
+        }
+        if !root.busy: Rectangle { horizontal-stretch: 1; }
     }
 }
 

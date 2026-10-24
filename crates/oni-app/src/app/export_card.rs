@@ -180,9 +180,9 @@ impl Card {
         let m = row.as_ref().map(|r| r.metadata.clone()).unwrap_or_default();
         let target = &self.targets[i];
         let (preview, state) = match self.previews.get(i) {
-            Some(Preview::Ready(img)) => (img.clone(), 1),
-            Some(Preview::Failed) => (Image::default(), 2),
-            _ => (Image::default(), 0),
+            Some(Preview::Ready(img)) => (img.clone(), crate::PreviewState::Shown),
+            Some(Preview::Failed) => (Image::default(), crate::PreviewState::Failed),
+            _ => (Image::default(), crate::PreviewState::Rendering),
         };
         let size = self.sizes.get(i).copied().flatten();
         let caption = size.map(|(w, h)| {

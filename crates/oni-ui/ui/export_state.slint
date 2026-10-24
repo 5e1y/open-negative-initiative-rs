@@ -1,5 +1,7 @@
 // The export surface's state: its lines, its settings and the paper profiles sheet, which Rust sets.
 
+import { PreviewState } from "ds/ds.slint";
+
 // One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
 export struct ExportLine {
     name: string,
@@ -13,8 +15,7 @@ export struct ExportLine {
     // The line is read off the main thread; until it lands the fields wait, disabled.
     ready: bool,
     preview: image,
-    // 0 waits, 1 shows the picture, 2 failed.
-    state: int,
+    state: PreviewState,
     caption: string,
     // Width over height, 0 before it is measured.
     aspect: float,

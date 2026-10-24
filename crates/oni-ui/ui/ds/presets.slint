@@ -48,38 +48,3 @@ export component PresetFace inherits Rectangle {
         }
     }
 }
-
-// A sheet at its own gauge hung from the window's top, modal as `Sheet`: no scrim, a click beside
-// it reaches nothing; Escape dismisses it.
-export component PanelSheet inherits Rectangle {
-    in property <length> panel-width;
-    in property <length> panel-height;
-    callback dismissed();
-    TouchArea { }
-    FocusScope {
-        width: 100%;
-        height: 100%;
-        focus-on-click: false;
-        key-pressed(event) => {
-            if (event.text == Key.Escape) {
-                root.dismissed();
-                return accept;
-            }
-            reject
-        }
-        Rectangle {
-            y: SheetStyle.margin;
-            width: root.panel-width;
-            height: min(root.panel-height, root.height - 2 * SheetStyle.margin);
-            background: Colour.ground;
-            border-radius: SheetStyle.radius;
-            border-width: Stroke.hairline;
-            border-color: Colour.separator;
-            drop-shadow-blur: SheetStyle.shadow;
-            drop-shadow-color: Colour.scrim;
-            clip: true;
-            TouchArea { }
-            @children
-        }
-    }
-}

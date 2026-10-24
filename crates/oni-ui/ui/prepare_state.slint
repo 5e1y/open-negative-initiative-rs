@@ -1,0 +1,131 @@
+// Prepare the Roll's state: every value Rust sets and every callback the panel, the card and the bar raise.
+import { MenuLine } from "ds/ds.slint";
+
+// One frame of the roll as a cell shows it.
+export struct RollCell { picture: image, marked: bool, flagged: bool, apart: bool, ticked: bool, rgb: bool }
+
+export global Preparing {
+    in property <bool> shown;
+    in property <bool> measuring;
+    in property <int> step;
+    // The step's tutorial, a texture rewritten in place at each frame (`Picture.revision`); none is empty.
+    in property <image> tutorial;
+    in property <int> tutorial-revision;
+    in property <[bool]> skipped: [false, false, false, false, false];
+    in property <string> heading;
+    in property <string> detail;
+    in property <string> status;
+    in property <string> differ;
+    in property <string> left-out;
+    in-out property <int> film;
+    in-out property <int> capture: 1;
+    in property <string> passes-note;
+    // RGB Passes grouped: the first frame's files under their bands, the count, and what to check.
+    in property <bool> grouped;
+    in property <[string]> pass-letters: [@tr("B"), @tr("G"), @tr("R")];
+    in property <[int]> pass-bands: [2, 1, 0];
+    in property <[image]> pass-pictures: [];
+    in property <[string]> pass-names: ["", "", ""];
+    in property <string> grouping-note;
+    in property <string> grouping-remark;
+    in property <bool> flat-on;
+    in property <bool> flat-masked;
+    in property <bool> monochrome;
+    in property <bool> masks-empty;
+    in property <string> mask-title;
+    in property <[MenuLine]> mask-lines;
+    // A frame picked to be taken as the mask, and the decodes under way.
+    in property <bool> can-take-flat; in property <bool> taking-flat; in property <bool> loading-flat;
+    // The sliders' tracks and readouts: Amount, Temperature, Tint, Picker Size, Frame.
+    in property <[float]> fractions: [0, 0, 0, 0, 0];
+    in property <[string]> readouts: ["", "", "", "", ""];
+    in property <string> base-note;
+    in property <bool> has-base;
+    in property <string> flags-note;
+    in property <bool> can-clear-flags;
+    in property <string> frame-name;
+    in property <bool> can-previous;
+    in property <bool> can-next;
+    in property <[RollCell]> cells;
+    in property <bool> back-shown;
+    in property <string> action-title: @tr("NEXT");
+    in property <bool> action-enabled: true;
+    // The card: where the picture and the window stand in it.
+    in-out property <length> card-width;
+    in-out property <length> card-height;
+    in property <image> card-picture;
+    in property <length> picture-x;
+    in property <length> picture-y;
+    in property <length> picture-width;
+    in property <length> picture-height;
+    in property <bool> window-shown;
+    in property <length> window-x;
+    in property <length> window-y;
+    in property <length> window-width;
+    in property <length> window-height;
+    // The base's scan, fitted in the area Rust is told of, its ring and the loupe under the pointer.
+    in property <string> base-name;
+    in property <bool> base-can-previous;
+    in property <bool> base-can-next;
+    in-out property <length> base-width;
+    in-out property <length> base-height;
+    // Where the base's area, the card, the sheet and the panel's footer stand in the window, for a hand that aims.
+    in-out property <length> base-origin-x;
+    in-out property <length> base-origin-y;
+    in-out property <length> card-origin-x;
+    in-out property <length> card-origin-y;
+    in-out property <length> sheet-origin-x;
+    in-out property <length> sheet-origin-y;
+    in-out property <length> sheet-width;
+    in-out property <length> footer-x;
+    in-out property <length> footer-y;
+    in-out property <length> footer-width;
+    in-out property <length> footer-height;
+    in property <bool> scan-ready;
+    in property <image> scan;
+    in property <length> scan-x;
+    in property <length> scan-y;
+    in property <length> scan-width;
+    in property <length> scan-height;
+    in property <bool> ring-shown;
+    in property <length> ring-x;
+    in property <length> ring-y;
+    in property <length> ring-diameter;
+    in property <bool> loupe-shown;
+    in property <length> loupe-x;
+    in property <length> loupe-y;
+    in property <image> loupe-source;
+    in property <[int]> loupe-cut: [0, 0, 0, 0];
+    in property <[length]> loupe-shown-at: [0px, 0px, 0px, 0px];
+    in property <[length]> loupe-rings: [0px, 0px, 0px, 0px, 0px, 0px];
+    in property <bool> loupe-picked;
+    callback step-picked(int);
+    callback film-picked(int);
+    callback capture-picked(int);
+    callback pass-moved(int, int);
+    callback shift-grouping();
+    callback flat-toggled(bool);
+    callback mask-chosen(int);
+    callback take-flat(); callback load-flat();
+    callback press(int, bool) -> bool;
+    callback drag(int, length, length, bool);
+    callback release(int); callback scroll(int, length, length, length, bool) -> bool;
+    callback clear-base();
+    callback clear-flags();
+    callback previous();
+    callback next();
+    callback cell-clicked(int);
+    callback sheet-clicked(int);
+    callback cancel();
+    callback back();
+    callback advance();
+    callback card-resized();
+    callback window-grabbed(int);
+    callback window-dragged(int, length, length);
+    callback window-released();
+    callback base-previous();
+    callback base-next();
+    callback base-resized();
+    callback base-hover(length, length, bool);
+    callback base-clicked(length, length);
+}

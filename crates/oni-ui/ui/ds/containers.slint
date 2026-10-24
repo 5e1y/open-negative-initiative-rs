@@ -1,8 +1,8 @@
-// The containers: a block's section, the help mark, the sheet and the menu.
+// The containers: a block's section, the help mark, the sheet and the question a sheet asks.
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
-import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
+import { Label, Icon, Divider, TextRole, Tone, Tips, Raised, Lift, Gap, Tones } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
-import { Button, ButtonKind, ButtonSize, Look } from "controls.slint";
+import { Button, ButtonKind, ButtonSize, Look, ButtonGroup, GroupAlign, TextField } from "controls.slint";
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
 
@@ -94,54 +94,34 @@ export component Section inherits VerticalLayout {
     }
 }
 
-// The sheet's card: a leading title, the content, a rounded panel; `Sheet` hangs it in the window.
-// `WelcomeSheet`'s fit: as tall as its content, never past `room`, the content scrolling beyond.
-export component Dialog inherits Rectangle {
-    in property <string> title;
-    // `DSDialogPanel`'s question: its title in the section face, a full sheet's in the title face.
-    in property <bool> question;
-    in property <bool> wide;
-    // A gauge of its own, as the notices' and the catch-up's; zero takes the plain or wide one.
-    in property <length> card-width;
-    in property <length> room: 1000000px;
-    // Edge to edge: the content carries its own padding, as the welcome's photo touches the card.
-    in property <bool> bleed;
-    width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
-    height: min(column.preferred-height, root.room);
-    background: Colour.ground;
-    border-radius: SheetStyle.radius;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
-    drop-shadow-blur: SheetStyle.shadow;
-    drop-shadow-color: Colour.scrim;
-    clip: true;
-    // A click on the card stays on it.
-    TouchArea { }
-    Scroller {
-        content-height: column.preferred-height;
-        column := VerticalLayout {
-            width: root.width;
-            padding: root.bleed ? 0px : SheetStyle.padding;
-            spacing: root.bleed ? 0px : SheetStyle.gap;
-            if root.title != "": Label {
-                role: root.question ? TextRole.section : TextRole.title;
-                text: root.title;
-                wrap: word-wrap;
-            }
-            @children
-        }
-    }
-}
+// How a sheet titles itself: `leading`, its title over the content in the section face for a
+// question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
+export enum SheetHeader { leading, bar }
 
 // A window-modal sheet hung from the window's top; no scrim is drawn, yet a click beside the card
 // reaches nothing, as Swift's sheet ignores it. Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
+    in property <SheetHeader> header: SheetHeader.leading;
+    // `DSDialogPanel`'s question: its title in the section face, a full sheet's in the title face.
     in property <bool> question;
+    // The bar's key, which dismisses the sheet.
+    in property <string> exit: @tr("Done");
     in property <bool> wide;
+    // A gauge of its own, as the notices' and the catch-up's; zero takes the plain or wide one.
     in property <length> card-width;
+    // Zero fits the card to its content, which scrolls past the window's room (`WelcomeSheet`'s
+    // fit); else the card is that tall at most, its content laid in the height it shows.
+    in property <length> card-height;
+    // Edge to edge: the content carries its own padding, as the welcome's photo touches the card.
     in property <bool> bleed;
+    // The step between the content's groups; a notice's are a wider step apart.
+    in property <Gap> gap: Gap.m;
     callback dismissed();
+    // The height the sheet takes hung in a room that holds it whole.
+    out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
+    property <bool> fixed: root.card-height > 0;
+    property <bool> edge: root.bleed || root.header == SheetHeader.bar;
     TouchArea { }
     // A field's Escape bubbles here: the window's key monitor is the sheet's sibling, never its parent.
     FocusScope {
@@ -155,16 +135,72 @@ export component Sheet inherits Rectangle {
             }
             reject
         }
-        Dialog {
+        card := Raised {
+            lift: Lift.sheet;
             y: SheetStyle.margin;
-            title: root.title;
-            question: root.question;
-            wide: root.wide;
-            card-width: root.card-width;
-            bleed: root.bleed;
-            room: root.height - 2 * SheetStyle.margin;
-            @children
+            width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
+            height: min(root.fixed ? root.card-height : column.preferred-height, root.height - 2 * SheetStyle.margin);
+            Scroller {
+                content-height: root.fixed ? self.visible-height : column.preferred-height;
+                column := VerticalLayout {
+                    width: card.width;
+                    height: root.fixed ? card.height : self.preferred-height;
+                    padding: root.edge ? 0px : SheetStyle.padding;
+                    spacing: root.edge ? 0px : Tones.gap(root.gap);
+                    if root.header == SheetHeader.leading && root.title != "": Label {
+                        role: root.question ? TextRole.section : TextRole.title;
+                        text: root.title;
+                        wrap: word-wrap;
+                    }
+                    if root.header == SheetHeader.bar: HorizontalLayout {
+                        padding: Space.m;
+                        padding-left: SheetStyle.padding;
+                        padding-right: SheetStyle.padding;
+                        Label { text: root.title; role: TextRole.title; horizontal-stretch: 1; }
+                        Button { text: root.exit; clicked => { root.dismissed(); } }
+                    }
+                    if root.header == SheetHeader.bar: Divider { }
+                    @children
+                }
+            }
         }
     }
 }
 
+// What a key of a question does, as `DSDialogRequest.Role`: `confirm` is the default and tinted,
+// `destructive` red and deaf to Return, `option` neutral and deaf to Return, so no choice is a reflex.
+export enum AskRole { confirm, destructive, option }
+
+export struct AskKey { text: string, role: AskRole }
+
+// `DSDialogPanel`: a question as a sheet, its message, a field when it asks for a word, then Cancel
+// and its keys on one plate at the end. `answered` gives the key's place, -1 for Cancel and Escape,
+// with the field's text; Return in the field presses `default-key`.
+export component AskSheet inherits Sheet {
+    in property <string> message;
+    in property <bool> field;
+    in property <string> placeholder;
+    in-out property <string> text;
+    // Drawn first; empty when a key of `keys` stands in for it.
+    in property <string> cancel;
+    in property <[AskKey]> keys;
+    in property <int> default-key: -1;
+    callback answered(int, string);
+    question: true;
+    dismissed => { root.answered(-1, ""); }
+    if root.message != "": Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
+    if root.field: TextField {
+        text <=> root.text;
+        placeholder: root.placeholder;
+        accepted(typed) => { root.answered(root.default-key, typed); }
+        init => { self.take-focus(); }
+    }
+    ButtonGroup { plate: true; align: GroupAlign.end;
+        if root.cancel != "": Button { text: root.cancel; clicked => { root.answered(-1, ""); } }
+        for key[i] in root.keys: Button {
+            text: key.text;
+            kind: key.role == AskRole.confirm ? ButtonKind.accent : key.role == AskRole.destructive ? ButtonKind.destructive : ButtonKind.plain;
+            clicked => { root.answered(i, root.text); }
+        }
+    }
+}
