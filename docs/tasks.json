@@ -2207,7 +2207,7 @@
     "type": "fix",
     "title": "The preset editor's tint badge is a Badge tint, its monogram centred as Swift's frame centres it",
     "status": "done",
-    "detail": "Row's badge was a 30×22 rectangle with its Text at the top left; Badge tone `tint` takes the preset's fill and ink, at DS.Control.presetBadgeWidth × presetBadgeHeight on Radius.badge, the monogram centred. Visible: \"Pt\" recentred."
+    "detail": "Row's badge was a 30×22 rectangle around a raw Text; Badge tone `tint` takes the preset's fill and ink, at DS.Control.presetBadgeWidth × presetBadgeHeight on Radius.badge, the monogram centred by the badge itself. Slint already placed the Text at the middle, so no pixel moves."
   },
   {
     "id": 307,
