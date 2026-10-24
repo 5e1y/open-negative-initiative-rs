@@ -3139,5 +3139,12 @@
     "title": "The file system's parity rows say what the code does",
     "status": "done",
     "detail": "archive.md: Favourites partial (the empty view promises indexing; a refused favourites.json is reseeded and replaced); rows added for a disk leaving or coming back (done), an unreadable member waiting for Refresh (partial), and port-only rows for Locate…, Remove from Library…, other apps' changes, the instance lock and the files merged with Swift's; the checks of the rename, trash, project and missing-tile rows point at today's tests; window checks cited at their tests/window path. checks.md: #20 and #61 partial with their gaps named, #60, #84 and #120 cite their new twins. README counts recounted: editor 147 of 153 with a check, archive 98 / 7 / 0 and 104 of 105, all 441 / 26 / 7 and 450 of 474; checks 104 twin, 36 partial, 9 none, 12 blocked. Closes parity-doc-archive-wrong-done."
+  },
+  {
+    "id": 529,
+    "type": "chore",
+    "title": "app.rs back under its ceiling after the explorer and index merges",
+    "status": "done",
+    "detail": "Lots 13 and 14 each added a line to crates/oni-app/src/app.rs, taking it to 520 against its 519 ceiling; two oni_settings imports share one line, so the file is back at 519 without raising the ceiling."
   }
 ]
