@@ -67,6 +67,8 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (lib, c, d) = (w.global::<Library>(), w.global::<Canvas>(), w.global::<Dedust>());
+    // B's file taken away below stays its frame's: no watch reads the folder again behind the check.
+    ctl.set_watching(false);
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     lib.invoke_tile_clicked(0, false, false);
