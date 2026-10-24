@@ -124,10 +124,12 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     assert_eq!(menu(w, "Roll 12"), [
         ("Open".to_string(), true),
         ("Remove from Favourites".to_string(), true),
+        ("Locate…".to_string(), true),
         ("Rename…".to_string(), false),
         ("Make a Roll".to_string(), false),
         ("New Folder Inside".to_string(), false),
         ("Show the Parent Folder".to_string(), true),
+        ("Remove from Library…".to_string(), true),
     ]);
     // Twin: the favourite there stays whole, its menu whole.
     rig.until("Keep listed", Duration::from_secs(10), || row(w, "Keep").is_some_and(|r| r.present));
@@ -148,15 +150,18 @@ pub(crate) fn a_favourite_moved_away_on_the_home_fades_and_its_menu_greys() {
     assert_eq!(title, "Folder Not Found");
     assert!(message.contains("“Roll 12” is no longer in “Scans”"), "{message}");
     assert_eq!(empty_title(&shell), "", "a folder gone is not an empty folder");
-    let keys = w.global::<Library>().get_banner_keys();
-    assert_eq!(keys.row_data(0).as_deref(), Some("REMOVE FROM FAVOURITES"));
+    let keys = || {
+        let k = w.global::<Library>().get_banner_keys();
+        (0..k.row_count()).filter_map(|i| k.row_data(i)).map(|k| k.to_string()).collect::<Vec<_>>()
+    };
+    assert_eq!(keys(), ["LOCATE…", "REMOVE FROM FAVOURITES"], "never read, it holds nothing to forget");
     rig.settle();
     rig.shot("visible-favourite-gone-gallery");
-    // Its key takes the favourite away and leaves the banner without one.
-    w.global::<Library>().invoke_banner_acted(0);
+    // Its key takes the favourite away and leaves the banner with Locate alone.
+    w.global::<Library>().invoke_banner_acted(1);
     rig.pump();
     assert!(!Favourites::load(&d.support).unwrap().paths.contains(&gone));
-    assert_eq!(w.global::<Library>().get_banner_keys().row_count(), 0);
+    assert_eq!(keys(), ["LOCATE…"]);
     drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
 }

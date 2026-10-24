@@ -105,6 +105,8 @@ impl Ctl {
         n.set_opened_title(opened_pill.0.into());
         n.set_opened_help(opened_pill.1.into());
         self.publish_catch_up();
+        // A volume mounted under another name moves no tile, so the banner's lead is looked for here too.
+        self.look_for_lead();
     }
 
     /// The listings asked and not under way, read on a few threads; each thread lands its share at once.

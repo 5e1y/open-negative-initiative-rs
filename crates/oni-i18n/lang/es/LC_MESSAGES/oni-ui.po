@@ -2181,11 +2181,11 @@ msgstr "No encontrado: {path}"
 msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it."
 msgstr "No se abrió: {folder} es un disco entero o la carpeta de inicio. Abre la carpeta de escaneos que contiene."
 
-#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
 msgid "Something Went Wrong"
 msgstr "Algo ha fallado"
 
-#: crates/oni-app/src/app/archive_view.rs
+#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/navigator/locate.rs
 msgid "The library index cannot be opened"
 msgstr "No se puede abrir el índice de la fototeca"
 
@@ -2301,6 +2301,18 @@ msgstr "No se puede leer el último guardado del aspecto Frontier: {e}"
 msgid "From “{file}”, read again each time it is saved."
 msgstr "De “{file}”, que se vuelve a leer cada vez que se guarda."
 
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "New Roll"
+msgstr "Nuevo rollo"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "The roll's folder could not be made: {e}"
+msgstr "No se pudo crear la carpeta del rollo: {e}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "{count} of the files could not be moved into the roll."
+msgstr "{count} de los archivos no se pudieron mover al rollo."
+
 #: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
 msgid "Show in Finder"
 msgstr "Mostrar en el Finder"
@@ -2320,18 +2332,6 @@ msgstr "No se puede mostrar «{name}»: ONI no tiene acceso."
 #: crates/oni-app/src/app/gestures/told.rs
 msgid "“{name}” cannot be shown: {cause}."
 msgstr "No se puede mostrar «{name}»: {cause}."
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "New Roll"
-msgstr "Nuevo rollo"
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "The roll's folder could not be made: {e}"
-msgstr "No se pudo crear la carpeta del rollo: {e}"
-
-#: crates/oni-app/src/app/gestures.rs
-msgid "{count} of the files could not be moved into the roll."
-msgstr "{count} de los archivos no se pudieron mover al rollo."
 
 #: crates/oni-app/src/app/help.rs
 msgid "The console cannot open."
@@ -2517,6 +2517,10 @@ msgstr "Quitar de favoritos"
 msgid "Add to Favourites"
 msgstr "Añadir a favoritos"
 
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Locate…"
+msgstr "Localizar…"
+
 #: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
 msgid "Rename…"
 msgstr "Renombrar…"
@@ -2532,6 +2536,10 @@ msgstr "Convertir en rollo"
 #: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
 msgid "New Folder Inside"
 msgstr "Nueva carpeta dentro"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Remove from Library…"
+msgstr "Quitar de la biblioteca…"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "New Folder"
@@ -2560,6 +2568,92 @@ msgstr "La carpeta no se pudo convertir en rollo: {cause}."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The roll could not be made a folder again: {cause}."
 msgstr "El rollo no se pudo volver a convertir en carpeta: {cause}."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "Locate"
+msgstr "Localizar"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "This system has no folder picker."
+msgstr "Este sistema no tiene selector de carpetas."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "No Photo Recognised"
+msgstr "Ninguna foto reconocida"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "Follow Anyway"
+msgstr "Seguir de todos modos"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "Located"
+msgstr "Localizada"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "Remove from Library"
+msgstr "Quitar de la biblioteca"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "“{from}” seems to have become “{to}”."
+msgstr "«{from}» parece haberse convertido en «{to}»."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "It seems to have become “{place}”."
+msgstr "Parece haberse convertido en «{place}»."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "It seems to be in “{place}” now."
+msgstr "Parece estar ahora en «{place}»."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "“{name}” cannot stand in for itself."
+msgstr "«{name}» no puede sustituirse a sí misma."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "“{name}” is there again: it stays where it is."
+msgstr "«{name}» vuelve a estar ahí: se queda donde está."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "ONI holds no photo of “{gone}” to look for in “{place}”. Follow it there all the same? No file is touched."
+msgstr "ONI no conoce ninguna foto de «{gone}» que buscar en «{place}». ¿Seguirla allí de todos modos? No se toca ningún archivo."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "ONI holds no photo under “{folder}”: only the folder is forgotten. No file is touched."
+msgstr "ONI no conoce ninguna foto en «{folder}»: solo se olvida la carpeta. No se toca ningún archivo."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "Remove “{name}” from the Library?"
+msgstr "¿Quitar «{name}» de la biblioteca?"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "“{name}” is there again: nothing was forgotten."
+msgstr "«{name}» vuelve a estar ahí: no se ha olvidado nada."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "“{name}” is out of reach, not gone: ONI keeps it until its disk is back."
+msgstr "«{name}» está fuera de alcance, no ha desaparecido: ONI la conserva hasta que vuelva su disco."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "The library index could not be changed: {error}"
+msgstr "No se ha podido modificar el índice de la biblioteca: {error}"
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "The photo ONI knew in “{gone}” is not in “{place}”. Follow it there all the same? No file is touched."
+msgid_plural "None of the {n} photos ONI knew in “{gone}” is in “{place}”. Follow it there all the same? No file is touched."
+msgstr[0] "La foto que ONI conocía en «{gone}» no está en «{place}». ¿Seguirla allí de todos modos? No se toca ningún archivo."
+msgstr[1] "Ninguna de las {n} fotos que ONI conocía en «{gone}» está en «{place}». ¿Seguirla allí de todos modos? No se toca ningún archivo."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "{n} photo of {total} recognised in “{place}”: “{gone}” follows it."
+msgid_plural "{n} photos of {total} recognised in “{place}”: “{gone}” follows it."
+msgstr[0] "{n} foto de {total} reconocida en «{place}»: «{gone}» la sigue."
+msgstr[1] "{n} fotos de {total} reconocidas en «{place}»: «{gone}» la sigue."
+
+#: crates/oni-app/src/app/navigator/locate.rs
+msgid "ONI forgets the photo indexed under “{folder}”. No file is touched: if the folder comes back, its photo returns with its settings."
+msgid_plural "ONI forgets the {n} photos indexed under “{folder}”. No file is touched: if the folder comes back, its photos return with their settings."
+msgstr[0] "ONI olvida la foto indexada en «{folder}». No se toca ningún archivo: si la carpeta vuelve, su foto vuelve con sus ajustes."
+msgstr[1] "ONI olvida las {n} fotos indexadas en «{folder}». No se toca ningún archivo: si la carpeta vuelve, sus fotos vuelven con sus ajustes."
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "Favourites"
@@ -2850,8 +2944,20 @@ msgid "Folder Not Found"
 msgstr "Carpeta no encontrada"
 
 #: crates/oni-app/src/app/organising/reach.rs
+msgid "FOLLOW"
+msgstr "SEGUIR"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "LOCATE…"
+msgstr "LOCALIZAR…"
+
+#: crates/oni-app/src/app/organising/reach.rs
 msgid "REMOVE FROM FAVOURITES"
 msgstr "QUITAR DE FAVORITOS"
+
+#: crates/oni-app/src/app/organising/reach.rs
+msgid "REMOVE FROM LIBRARY…"
+msgstr "QUITAR DE LA BIBLIOTECA…"
 
 #: crates/oni-app/src/app/organising/reach.rs
 msgid "{disk} not connected"

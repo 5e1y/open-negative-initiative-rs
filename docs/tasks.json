@@ -2873,5 +2873,26 @@
     "title": "The index waits for the Swift app's writes and never drops its table on a version it cannot read",
     "status": "done",
     "detail": "LibraryIndex::open sets a 5 s busy timeout explicitly (the Swift app shares index.sqlite and sets none); prepare_schema treats an unreadable user_version as an error instead of -1, which dropped the table (a_write_waits_for_the_other_apps_write, with an integrity check; twin: a connection with no busy handler, as Swift opens it, is refused at once)."
+  },
+  {
+    "id": 480,
+    "type": "feature",
+    "title": "Locate… follows a folder gone to the folder picked, once its photos are recognised there",
+    "status": "done",
+    "detail": "A Missing favourite or folder carries Locate… in its menu and on the banner. The folder picker (Options.picker) chooses; each indexed row is stamped at its place under the new folder off the interface thread (relink::recognised). With one recognised the folder follows at once and a notice says \"N photos of M recognised\"; with none a sheet asks first. Following runs one path for a rename in ONI and a Locate (follow_folder): Navigation::follow, Favourites::follow (now kept once when it lands on a favourite already there), the opened folder and its preference, then followed() for the index rows, picks, folds and projects' recorded paths. A row whose new place holds another file is dropped so that file is stamped afresh; a folder back meanwhile is never followed away. Writes only the app's own files (locate_follows_favourite_rows_and_projects; twin: a folder sharing no photo asks and Cancel changes nothing)."
+  },
+  {
+    "id": 481,
+    "type": "feature",
+    "title": "A disk remounted under another name, or a favourite renamed in the Finder, is offered on the banner and never followed by itself",
+    "status": "done",
+    "detail": "bookmarks::Identify names a path's volume (statfs and getattrlist in the app, a check's own through Options.identify) and records places with it. Bookmarks::lead finds, off the interface thread, the volume known by its UUID mounted under another name (\"T7\" as \"T7 1\") or the favourite's file id on the same volume (beside it, else /.vol by id on macOS), never in a Trash. The banner says \"“T7” seems to have become “T7 1”.\" or \"It seems to have become “…”.\" with FOLLOW, which runs Locate's fingerprint check on the whole volume or the favourite; only the favourites still held lead (a_t7_remounted_as_t7_1_is_offered_to_follow; twin: another disk under the new name is offered nothing; bookmarks unit checks with a twin each)."
+  },
+  {
+    "id": 482,
+    "type": "feature",
+    "title": "Remove from Library… forgets a folder gone, never one offline, and touches no file",
+    "status": "done",
+    "detail": "Only a Missing folder carries it, in its menu and on the banner when rows remain. A sheet says \"ONI forgets the N photos indexed under …. No file is touched\"; the folder is looked at again off the interface thread and only one still gone is forgotten. LibraryIndex::forget takes its rows in one transaction; thumbnails go only when no other row claims their fingerprint; the favourites and folds under it and its kept shape go; sidecars, originals and projects stay. Nothing is forgotten on its own and a disk away keeps its rows forever (forget_touches_no_file: listing byte for byte identical; twins: a touched sidecar is seen, a folder offline is offered no Remove from Library)."
   }
 ]

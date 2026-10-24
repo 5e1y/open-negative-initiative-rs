@@ -10,9 +10,7 @@ use crate::thumbnails::{self, Memory};
 use crate::render::{self, Delivery, InputHistograms, Job, Negative, Placed, Previews, Shared, View, Worker};
 use crate::viewport::{self, Viewport};
 use crate::framing::{self as frames, Handle};
-use oni_settings::cg::Rect as Fraction;
-use oni_settings::frame::Geometry;
-use oni_settings::geometry::{self as geom, Framing as Remembered};
+use oni_settings::{cg::Rect as Fraction, frame::Geometry, geometry::{self as geom, Framing as Remembered}};
 use crate::phone::{self, Phone};
 use crate::store::{self, Store as Settings};
 use crate::timing::{self, Kind, Notches};
@@ -27,9 +25,7 @@ use oni_i18n::{tr, trn};
 use crate::track::{self, Hand, Offer};
 use slint::{ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, Timer, TimerMode, VecModel};
 use std::cell::RefCell;
-use oni_library::gallery_history::Move;
-use oni_library::index::LibraryIndex;
-use oni_library::roots::Survey;
+use oni_library::{gallery_history::Move, index::LibraryIndex, roots::Survey};
 use oni_settings::Medal;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
@@ -138,6 +134,8 @@ pub struct Options {
     pub pasteboard: Box<dyn crate::pasteboard::Board>,
     /// Apple's decode, which turns the transition from the earlier version on; none in the checks.
     pub transition: Option<Arc<dyn oni_transition::AppleDecode>>,
+    /// Names the volume a path lies on: the system's in the app, a check's own for its folders.
+    pub identify: oni_library::bookmarks::Identify,
 }
 
 /// `EditorScene.open`'s panel message.
@@ -169,6 +167,7 @@ impl Default for Options {
             updates: None,
             pasteboard: Box::new(crate::pasteboard::Memory::default()),
             transition: None,
+            identify: oni_library::bookmarks::system(),
         }
     }
 }
@@ -198,6 +197,7 @@ enum Pending {
     ResetToDefault(oni_library::roll_membership::ResetReach),
     QuitAnyway,
     DownloadUpdate,
+    Locate(navigator::Asked),
 }
 
 /// A render on its way to the screen, timed from its ask.

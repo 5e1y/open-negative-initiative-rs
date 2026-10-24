@@ -1,10 +1,20 @@
 //! What this app alone keeps of each favourite beyond its path, by path: the volume it lives on and
 //! its file id. A file of its own, as the Swift app rewrites `favourites.json` with its two fields.
 
+use crate::navigator::Computer;
+use crate::paths::{self, holds};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+
+/// Names the volume a path lies on: the system's answer in the app, a check's own disk otherwise.
+pub type Identify = Arc<dyn Fn(&str) -> Option<Volume> + Send + Sync>;
+
+/// The system's `statfs` and `getattrlist`; nothing off macOS.
+pub fn system() -> Identify {
+    Arc::new(volume)
+}
 
 /// The volume a favourite was last seen on: its UUID where the system gives one, and where it mounted.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,21 +85,123 @@ impl Bookmarks {
 static RECORDING: Mutex<()> = Mutex::new(());
 
 /// Notes each favourite's place off the interface thread, as a volume asleep can hold a `statfs`.
-pub fn record(support: PathBuf, favourites: Vec<String>) {
+pub fn record(support: PathBuf, favourites: Vec<String>, identify: Identify) {
     std::thread::spawn(move || {
         let _turn = RECORDING.lock();
         // A support folder removed meanwhile, a check's own, is not made again.
         if !support.is_dir() {
             return;
         }
-        let _ = Bookmarks::load(&support).noted(&favourites, place).save(&support);
+        let _ = Bookmarks::load(&support).noted(&favourites, |p| place(p, &identify)).save(&support);
     });
 }
 
 /// The volume and file id of `path` as the system reports them now, `None` when it does not answer.
-pub fn place(path: &str) -> Option<Place> {
+pub fn place(path: &str, identify: &Identify) -> Option<Place> {
     let metadata = std::fs::metadata(path).ok()?;
-    Some(Place { volume: volume(path), file_id: file_id(&metadata) })
+    Some(Place { volume: identify(path), file_id: file_id(&metadata) })
+}
+
+/// Where a folder out of reach seems to be now, by an identity kept here: offered, never followed
+/// by itself. `from` moved to `to`, a whole volume's root or the favourite holding the folder.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Lead {
+    pub from: String,
+    pub to: String,
+    pub volume: bool,
+}
+
+impl Bookmarks {
+    /// Its volume's UUID mounted under another name, else a favourite above it found by its file id
+    /// on the same volume. Reads the disk: each mounted volume's identity, then a folder's.
+    pub fn lead(&self, path: &str, computer: &Computer, mounted: &[String], identify: &Identify) -> Option<Lead> {
+        self.by_volume(path, computer, mounted, identify).or_else(|| self.by_file_id(path, identify))
+    }
+
+    fn by_volume(&self, path: &str, computer: &Computer, mounted: &[String], identify: &Identify) -> Option<Lead> {
+        let root = crate::absence::volume_root(computer, path)?;
+        let uuid = self.places.iter().filter(|(p, _)| holds(&root, p)).find_map(|(_, place)| place.volume.as_ref()?.uuid.clone())?;
+        let known = |v: &str| identify(v).and_then(|v| v.uuid).is_some_and(|u| u == uuid);
+        // Its own disk under its own name: whatever is gone moved on it, not with it.
+        if Path::new(&root).is_dir() && known(&root) {
+            return None;
+        }
+        let to = mounted.iter().find(|v| {
+            !paths::same(v, &root) && computer.is_on_volume(v) && known(v) && Path::new(&paths::moved(path, &root, v)).is_dir()
+        })?;
+        Some(Lead { from: root, to: to.clone(), volume: true })
+    }
+
+    fn by_file_id(&self, path: &str, identify: &Identify) -> Option<Lead> {
+        let (favourite, place) = self
+            .places
+            .iter()
+            .filter(|(p, place)| holds(p, path) && place.file_id.is_some())
+            .max_by_key(|(p, _)| p.len())?;
+        let uuid = place.volume.as_ref()?.uuid.as_deref()?;
+        if Path::new(favourite).exists() {
+            return None;
+        }
+        // An id names a folder on one volume only: the nearest folder still there must be on it.
+        let near = crate::absence::nearest_folder(favourite);
+        if identify(&near).and_then(|v| v.uuid).as_deref() != Some(uuid) {
+            return None;
+        }
+        let found = found_by_id(&near, place.file_id?)?;
+        let fits = !in_a_trash(&found) && !paths::same(&found, favourite) && Path::new(&paths::moved(path, favourite, &found)).is_dir();
+        fits.then(|| Lead { from: favourite.clone(), to: found, volume: false })
+    }
+}
+
+/// A folder in the system's Trash was thrown away, not moved: never offered as its new place.
+fn in_a_trash(path: &str) -> bool {
+    path.split(['/', '\\']).any(|part| matches!(part, ".Trash" | ".Trashes" | "$RECYCLE.BIN"))
+}
+
+/// The folder holding the id `id` on the volume of `near`: among `near`'s folders, as a rename in
+/// the Finder leaves it, else wherever the volume says it moved. Reads the disk.
+#[cfg(unix)]
+fn found_by_id(near: &str, id: u64) -> Option<String> {
+    use std::os::unix::fs::MetadataExt;
+    let device = std::fs::metadata(near).ok()?.dev();
+    let beside = std::fs::read_dir(near).ok()?.flatten().find_map(|entry| {
+        let m = std::fs::symlink_metadata(entry.path()).ok()?;
+        (m.is_dir() && m.ino() == id && m.dev() == device).then(|| paths::canonical(&entry.path()))
+    });
+    beside.or_else(|| by_volume_id(device, id))
+}
+
+#[cfg(not(unix))]
+fn found_by_id(_: &str, _: u64) -> Option<String> {
+    None
+}
+
+/// `/.vol/<device>/<id>` opened and asked its path, as the Mac keeps every object reachable by id.
+#[cfg(target_os = "macos")]
+fn by_volume_id(device: u64, id: u64) -> Option<String> {
+    use std::ffi::{CStr, CString};
+    let at = CString::new(format!("/.vol/{device}/{id}")).ok()?;
+    // SAFETY: a NUL-terminated path; the descriptor is closed below on every path out.
+    let fd = unsafe { libc::open(at.as_ptr(), libc::O_RDONLY) };
+    if fd < 0 {
+        return None;
+    }
+    let mut buffer = [0 as libc::c_char; libc::PATH_MAX as usize];
+    // SAFETY: `F_GETPATH` writes at most `PATH_MAX` bytes, NUL-terminated, into the buffer.
+    let got = unsafe { libc::fcntl(fd, libc::F_GETPATH, buffer.as_mut_ptr()) };
+    // SAFETY: `fd` was opened above and is closed once.
+    unsafe { libc::close(fd) };
+    if got < 0 {
+        return None;
+    }
+    // SAFETY: on success the buffer holds a NUL-terminated path.
+    let path = unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_string_lossy().into_owned();
+    Path::new(&path).is_dir().then(|| paths::canonical(Path::new(&path)))
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn by_volume_id(_: u64, _: u64) -> Option<String> {
+    None
 }
 
 #[cfg(unix)]

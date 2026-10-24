@@ -24,7 +24,7 @@ fn a_swift_launch_keeps_the_volume_identities() {
     let path = crate::paths::canonical(&scans);
     let mut favourites = Favourites { version: 1, paths: vec![path.clone()] };
     favourites.save_merged(&mut Favourites::default(), &support).unwrap();
-    Bookmarks::default().noted(&favourites.paths, place).save(&support).unwrap();
+    Bookmarks::default().noted(&favourites.paths, |p| place(p, &system())).save(&support).unwrap();
     let noted = Bookmarks::load(&support).places[&path].clone();
     assert!(noted.file_id.is_some());
     if cfg!(target_os = "macos") {
@@ -51,4 +51,62 @@ fn a_disk_away_or_another_volume_keeps_the_identity_known() {
     assert_eq!(known.noted(&paths, |_| Some(refreshed.clone())).places["/Volumes/T7/Scans"], refreshed);
     // Twin: a path no longer a favourite leaves the file.
     assert!(known.noted(&[], |_| Some(volume("A"))).places.is_empty());
+}
+
+/// Each volume of `computer` named by the UUID `uuids` gives its folder's name.
+fn fake(computer: &Computer, uuids: &[(&str, &str)]) -> Identify {
+    let (computer, uuids): (Computer, Vec<(String, String)>) = (computer.clone(), uuids.iter().map(|(n, u)| (n.to_string(), u.to_string())).collect());
+    Arc::new(move |path: &str| {
+        let root = crate::absence::volume_root(&computer, path)?;
+        let uuid = uuids.iter().find(|(n, _)| *n == paths::name(&root)).map(|(_, u)| u.clone());
+        Some(Volume { uuid, mount: root })
+    })
+}
+
+#[test]
+fn a_volume_known_by_its_uuid_under_another_name_is_a_lead() {
+    let scratch = Scratch::new("bookmarks-volume");
+    let volumes = scratch.path().join("Volumes");
+    std::fs::create_dir_all(volumes.join("T7 1/Scans")).unwrap();
+    let computer = Computer { home: paths::canonical(scratch.path()), volumes: paths::canonical(&volumes) };
+    let (t7, t7_1) = (paths::join(&computer.volumes, "T7"), paths::join(&computer.volumes, "T7 1"));
+    let scans = paths::join(&t7, "Scans");
+    let known = Bookmarks { version: 1, places: [(scans.clone(), Place { volume: Some(Volume { uuid: Some("A".into()), mount: t7.clone() }), file_id: None })].into() };
+    let mounted = vec![computer.home.clone(), t7_1.clone()];
+    let lead = known.lead(&paths::join(&scans, "Roll 12"), &computer, &mounted, &fake(&computer, &[("T7 1", "A")]));
+    assert_eq!(lead, None, "the folder itself is not on the disk now under that name");
+    std::fs::create_dir_all(volumes.join("T7 1/Scans/Roll 12")).unwrap();
+    let lead = known.lead(&paths::join(&scans, "Roll 12"), &computer, &mounted, &fake(&computer, &[("T7 1", "A")]));
+    assert_eq!(lead, Some(Lead { from: t7.clone(), to: t7_1.clone(), volume: true }));
+    // Twins: another disk under the new name, or the disk back under its own name, leads nowhere.
+    assert_eq!(known.lead(&scans, &computer, &mounted, &fake(&computer, &[("T7 1", "B")])), None);
+    std::fs::create_dir_all(volumes.join("T7/Scans")).unwrap();
+    let both = vec![t7.clone(), t7_1.clone()];
+    assert_eq!(known.lead(&scans, &computer, &both, &fake(&computer, &[("T7", "A"), ("T7 1", "A")])), None);
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn a_favourite_renamed_in_the_finder_is_found_by_its_file_id_and_one_thrown_away_is_not() {
+    let scratch = Scratch::new("bookmarks-id");
+    let scans = scratch.path().join("Scans");
+    std::fs::create_dir_all(scans.join("Roll 12/Day 2")).unwrap();
+    std::fs::create_dir_all(scratch.path().join("Archive")).unwrap();
+    let computer = Computer { home: paths::canonical(scratch.path()), volumes: "/Volumes".into() };
+    let old = paths::canonical(&scans.join("Roll 12"));
+    let known = Bookmarks::default().noted(std::slice::from_ref(&old), |p| place(p, &system()));
+    let inside = paths::join(&old, "Day 2");
+    std::fs::rename(scans.join("Roll 12"), scans.join("2026-03 Lisbon")).unwrap();
+    let renamed = paths::canonical(&scans.join("2026-03 Lisbon"));
+    assert_eq!(known.lead(&inside, &computer, &[], &system()), Some(Lead { from: old.clone(), to: renamed, volume: false }));
+    // Moved elsewhere on the volume, the volume says where.
+    std::fs::rename(scans.join("2026-03 Lisbon"), scratch.path().join("Archive/Lisbon")).unwrap();
+    let archived = paths::canonical(&scratch.path().join("Archive/Lisbon"));
+    assert_eq!(known.lead(&old, &computer, &[], &system()).map(|l| l.to), Some(archived));
+    // Twins: thrown into a Trash, or deleted, it leads nowhere.
+    std::fs::create_dir_all(scratch.path().join(".Trash")).unwrap();
+    std::fs::rename(scratch.path().join("Archive/Lisbon"), scratch.path().join(".Trash/Lisbon")).unwrap();
+    assert_eq!(known.lead(&old, &computer, &[], &system()), None);
+    std::fs::remove_dir_all(scratch.path().join(".Trash/Lisbon")).unwrap();
+    assert_eq!(known.lead(&old, &computer, &[], &system()), None);
 }

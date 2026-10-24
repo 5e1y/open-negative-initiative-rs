@@ -23,6 +23,20 @@ fn favourites_star_beside_each_other_and_follow_a_rename() {
     let mut moved = Favourites { version: 1, paths: strings(&["/r/trip", "/r/trip/day2", "/r/tripod"]) };
     moved.follow("/r/trip", "/s/trip");
     assert_eq!(moved.paths, ["/s/trip", "/s/trip/day2", "/r/tripod"]);
+    // Followed onto a favourite already there: kept once, where the earlier one stood.
+    let mut both = Favourites { version: 1, paths: strings(&["/x/new", "/r/old", "/r/old/in"]) };
+    both.follow("/r/old", "/x/new");
+    assert_eq!(both.paths, ["/x/new", "/x/new/in"]);
+}
+
+#[test]
+fn forgetting_a_folder_takes_its_favourites_and_those_inside_alone() {
+    let mut favourites = Favourites { version: 1, paths: strings(&["/r/trip", "/r/trip/day2", "/r/tripod", "/s"]) };
+    assert_eq!(favourites.forget("/r/trip"), 2);
+    assert_eq!(favourites.paths, ["/r/tripod", "/s"]);
+    // Twin: a folder holding no favourite takes none, a sibling named alike neither.
+    assert_eq!(favourites.forget("/r/tri"), 0);
+    assert_eq!(favourites.paths, ["/r/tripod", "/s"]);
 }
 
 #[test]

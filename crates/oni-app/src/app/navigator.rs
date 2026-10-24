@@ -25,6 +25,8 @@ mod rows;
 mod folder_menu;
 mod reading;
 mod catch_up;
+mod locate;
+pub(in crate::app) use locate::{Asked, lead_words};
 
 /// `FolderNavigation`'s preference keys, as Swift's `UserDefaults` holds them.
 pub const BASE: &str = "navigatorBase";
@@ -51,6 +53,8 @@ enum Act {
     NewFolder,
     Reveal,
     RevealParent,
+    Locate,
+    Forget,
 }
 
 pub(super) struct Nav {
@@ -89,10 +93,13 @@ pub(super) struct Nav {
     refused: Arc<std::sync::Mutex<Vec<String>>>,
     /// The rows' folders a listing or a favourite's read found offline or missing, looked at off this thread.
     presence: HashMap<String, Presence>,
+    /// Names the volumes a favourite lives on, which `bookmarks.json` keeps beside its path.
+    identify: oni_library::bookmarks::Identify,
+    leads: locate::Leads,
 }
 
 impl Nav {
-    pub fn new(computer: Computer) -> Nav {
+    pub fn new(computer: Computer, identify: oni_library::bookmarks::Identify) -> Nav {
         Nav {
             computer,
             model: Navigation::default(),
@@ -118,6 +125,8 @@ impl Nav {
             watcher: Arc::new(()),
             refused: Arc::default(),
             presence: HashMap::new(),
+            identify,
+            leads: locate::Leads::default(),
         }
     }
 
@@ -216,7 +225,7 @@ impl State {
         let nav = &mut self.nav;
         let saved = nav.favourites.save_merged(&mut nav.favourites_read, &self.support);
         if saved.is_ok() {
-            oni_library::bookmarks::record(self.support.clone(), self.nav.favourites.paths.clone());
+            oni_library::bookmarks::record(self.support.clone(), self.nav.favourites.paths.clone(), self.nav.identify.clone());
         }
         saved.err().map(|e| tr!("The favourites cannot be saved: {error}", error = e))
     }

@@ -140,7 +140,7 @@ impl Shell {
             report_round: 0,
             console: None,
             board: None,
-            nav: navigator::Nav::new(options.computer),
+            nav: navigator::Nav::new(options.computer, options.identify),
             prepare: prepare::Roll::new(options.require_roll),
             making_sheet: None,
             updates: updates::Updates::new(options.updates),

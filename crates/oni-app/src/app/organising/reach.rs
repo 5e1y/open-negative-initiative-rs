@@ -135,7 +135,10 @@ pub(in crate::app) fn banner_words(presence: Presence, folder: &str, computer: &
 /// The keys of the banner, in order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::app) enum BannerKey {
+    Follow,
+    Locate,
     Unfavourite,
+    Forget,
 }
 
 impl State {
@@ -163,9 +166,22 @@ impl State {
         }
     }
 
+    /// The lead an identity suggests first; on a folder gone, Locate, then what forgets it.
     fn banner_keys(&self) -> Vec<BannerKey> {
-        let favourite = self.opened.as_deref().is_some_and(|o| self.nav.favourites.contains(o));
-        if favourite && self.opened_presence() == Presence::Missing { vec![BannerKey::Unfavourite] } else { Vec::new() }
+        let mut keys = Vec::new();
+        if self.lead().is_some() {
+            keys.push(BannerKey::Follow);
+        }
+        if self.opened_presence() == Presence::Missing {
+            keys.push(BannerKey::Locate);
+            if self.opened.as_deref().is_some_and(|o| self.nav.favourites.contains(o)) {
+                keys.push(BannerKey::Unfavourite);
+            }
+            if !self.rows.is_empty() {
+                keys.push(BannerKey::Forget);
+            }
+        }
+        keys
     }
 
     /// The status bar's word on the originals out of reach among those shown, empty for none.
@@ -179,11 +195,15 @@ impl Ctl {
     /// The banner of the opened folder out of reach, or none.
     pub(in crate::app) fn publish_banner(&self) {
         let Some(w) = self.window() else { return };
+        self.look_for_lead();
         let (shown, keys) = {
             let s = self.state.borrow();
             let folder = s.opened.clone().filter(|_| !s.trash_shown() && !s.org.projects_surface);
             let presence = s.opened_presence();
-            let words = folder.as_deref().and_then(|f| banner_words(presence, f, &s.nav.computer, !s.order.is_empty()));
+            let mut words = folder.as_deref().and_then(|f| banner_words(presence, f, &s.nav.computer, !s.order.is_empty()));
+            if let (Some((_, message)), Some(lead)) = (words.as_mut(), s.lead()) {
+                *message = format!("{message} {}", super::super::navigator::lead_words(lead));
+            }
             (words.map(|w| (w, reach(presence))), s.banner_keys())
         };
         let lib = w.global::<Library>();
@@ -194,7 +214,10 @@ impl Ctl {
             lib.set_banner_reach(reach);
         }
         let words: Vec<SharedString> = keys.iter().map(|k| match k {
+            BannerKey::Follow => tr("FOLLOW").into(),
+            BannerKey::Locate => tr("LOCATE…").into(),
             BannerKey::Unfavourite => tr("REMOVE FROM FAVOURITES").into(),
+            BannerKey::Forget => tr("REMOVE FROM LIBRARY…").into(),
         }).collect();
         lib.set_banner_keys(ModelRc::new(VecModel::from(words)));
     }
@@ -204,9 +227,16 @@ impl Ctl {
             let s = self.state.borrow();
             (s.banner_keys().get(i).copied(), s.opened.clone())
         };
-        if let (Some(BannerKey::Unfavourite), Some(folder)) = (key, opened) {
-            self.toggle_favourite(&folder);
-            self.publish_banner();
+        let Some(folder) = opened else { return };
+        match key {
+            Some(BannerKey::Follow) => self.follow_lead(),
+            Some(BannerKey::Locate) => self.locate(&folder),
+            Some(BannerKey::Unfavourite) => {
+                self.toggle_favourite(&folder);
+                self.publish_banner();
+            }
+            Some(BannerKey::Forget) => self.ask_forget(&folder),
+            None => {}
         }
     }
 }

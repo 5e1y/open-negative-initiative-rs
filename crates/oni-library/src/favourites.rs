@@ -84,11 +84,24 @@ impl Favourites {
         }
     }
 
-    /// A favourite renamed or moved on the disk follows it, a folder carrying those inside it.
+    /// A favourite renamed or moved on the disk follows it, a folder carrying those inside it; one
+    /// landing on a favourite already there is kept once, in the earlier place.
     pub fn follow(&mut self, old: &str, new: &str) {
-        for path in &mut self.paths {
-            *path = paths::moved(path, old, new);
+        let mut followed: Vec<String> = Vec::with_capacity(self.paths.len());
+        for path in &self.paths {
+            let moved = paths::moved(path, old, new);
+            if !followed.iter().any(|p| same(p, &moved)) {
+                followed.push(moved);
+            }
         }
+        self.paths = followed;
+    }
+
+    /// The favourites at `folder` or under it taken away, as forgetting a folder gone asks; how many.
+    pub fn forget(&mut self, folder: &str) -> usize {
+        let before = self.paths.len();
+        self.paths.retain(|p| !holds(folder, p));
+        before - self.paths.len()
     }
 }
 

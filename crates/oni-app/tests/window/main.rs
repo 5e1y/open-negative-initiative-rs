@@ -27,6 +27,7 @@ mod keycap;
 mod launch;
 mod library_column;
 mod library_wide;
+mod locate;
 mod masks;
 mod missing_original;
 mod navigator;
@@ -156,6 +157,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
     ("tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift", tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift),
     ("updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded", updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded),
+    ("locate::locate_follows_favourite_rows_and_projects", locate::locate_follows_favourite_rows_and_projects),
+    ("locate::forget_touches_no_file", locate::forget_touches_no_file),
+    ("locate::a_t7_remounted_as_t7_1_is_offered_to_follow", locate::a_t7_remounted_as_t7_1_is_offered_to_follow),
     ("visible::a_favourite_moved_away_on_the_home_fades_and_its_menu_greys", visible::a_favourite_moved_away_on_the_home_fades_and_its_menu_greys),
     ("visible::an_opened_folder_gone_is_not_an_empty_folder", visible::an_opened_folder_gone_is_not_an_empty_folder),
     ("visible::a_missing_tile_is_grey_on_its_own_layer", visible::a_missing_tile_is_grey_on_its_own_layer),

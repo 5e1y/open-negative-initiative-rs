@@ -38,6 +38,31 @@ pub fn is_stale(fingerprint: &str, size: i64) -> bool {
     head.parse::<i64>().is_ok_and(|stamped| stamped != size)
 }
 
+/// What a folder chosen for one gone shares with it, each row looked for at its own place below.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Recognised {
+    /// The rows whose file stands at its place under the new folder with the same fingerprint.
+    pub found: usize,
+    pub total: usize,
+    /// The rows whose place under the new folder holds another file: their fingerprint is not its.
+    pub other: Vec<String>,
+}
+
+/// Each row under `old`, by path and fingerprint, looked for at its place under `new` and stamped
+/// there. Reads the disk: one stamp per row.
+pub fn recognised(rows: &[(String, String)], old: &str, new: &str) -> Recognised {
+    let mut out = Recognised { total: rows.len(), ..Recognised::default() };
+    for (path, print) in rows {
+        let there = crate::paths::moved(path, old, new);
+        match fingerprint(Path::new(&there)) {
+            Some(found) if found == *print => out.found += 1,
+            Some(_) => out.other.push(path.clone()),
+            None => {}
+        }
+    }
+    out
+}
+
 const BLOCK: usize = 16 * 1024;
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
 
@@ -101,6 +126,29 @@ mod tests {
         assert!(fa.contains("-no-date-"));
         // Twin: a sample taken elsewhere in the same file is another digest.
         assert_ne!(digest_at(&pa, count as i64, &[0.1, 0.5, 0.75]), sample_digest(&pa, count as i64));
+    }
+
+    #[test]
+    fn a_folder_moved_whole_is_recognised_by_its_prints_and_another_file_is_told() {
+        let scratch = Scratch::new("relink-recognised");
+        let (old, new) = (scratch.path().join("Roll 12"), scratch.path().join("Lisbon"));
+        std::fs::create_dir_all(new.join("Sub")).unwrap();
+        let a: Vec<u8> = (0..40_000).map(|i| (i % 251) as u8).collect();
+        let b: Vec<u8> = (0..40_000).map(|i| (i % 13) as u8).collect();
+        std::fs::write(new.join("A.tif"), &a).unwrap();
+        std::fs::write(new.join("Sub/B.tif"), &b).unwrap();
+        let (old, new) = (old.to_string_lossy().into_owned(), new.to_string_lossy().into_owned());
+        let print = |data: &[u8]| {
+            let at = scratch.path().join("print.tif");
+            std::fs::write(&at, data).unwrap();
+            fingerprint(&at).unwrap()
+        };
+        let row = |rel: &str, data: &[u8]| (crate::paths::join(&old, rel), print(data));
+        let rows = vec![row("A.tif", &a), row("Sub/B.tif", &b), row("Gone.tif", &a)];
+        assert_eq!(recognised(&rows, &old, &new), Recognised { found: 2, total: 3, other: Vec::new() });
+        // Twin: the same name over another file is no match, and is told so its print is not lent.
+        let swapped = vec![row("A.tif", &b)];
+        assert_eq!(recognised(&swapped, &old, &new), Recognised { found: 0, total: 1, other: vec![swapped[0].0.clone()] });
     }
 
     #[test]

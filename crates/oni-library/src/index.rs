@@ -368,6 +368,7 @@ fn frames(picked: &[&Entry], rows: &[Entry]) -> Vec<Entry> {
         .collect()
 }
 
+mod forget;
 mod spelling;
 
 #[cfg(test)]

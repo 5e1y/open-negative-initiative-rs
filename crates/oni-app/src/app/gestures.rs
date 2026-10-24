@@ -301,6 +301,7 @@ impl Ctl {
                 let _ = slint::quit_event_loop();
             }
             Some(Pending::DownloadUpdate) => self.download_update(),
+            Some(Pending::Locate(asked)) => self.locate_answered(asked),
             None => {}
         }
         self.publish_bar();

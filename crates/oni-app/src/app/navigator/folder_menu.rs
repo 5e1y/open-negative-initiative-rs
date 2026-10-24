@@ -1,5 +1,5 @@
-//! The folder menu: open, favourite, rename, new folder, make a roll or back to a folder, show in
-//! Finder; on a folder out of reach, only what touches no disk under it.
+//! The folder menu: open, favourite, rename, new folder, roll, show in Finder; out of reach, only what
+//! touches no disk under it, and on a folder gone Locate and Remove from Library.
 
 use super::*;
 
@@ -10,19 +10,30 @@ impl Ctl {
         let lines = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.nav.rows.get(i).cloned() else { return false };
-            let present = s.row_presence(&path).is_present();
+            let presence = s.row_presence(&path);
+            let present = presence.is_present();
+            let gone = presence == Presence::Missing;
             let favourite = s.nav.favourites.contains(&path);
             let roll = s.nav.rolls().contains(&path);
             // Out of reach, Open shows its state, and the folder above it stands in for it in the Finder.
             let shown = if present { (tr("Show in Finder"), Act::Reveal) } else { (tr("Show the Parent Folder"), Act::RevealParent) };
-            let items = [
+            let mut items = vec![
                 (line(tr("Open"), true, false), Act::Open),
                 (line(if favourite { tr("Remove from Favourites") } else { tr("Add to Favourites") }, true, false), Act::Favourite),
+            ];
+            if gone {
+                items.push((line(tr("Locate…"), true, false), Act::Locate));
+            }
+            items.extend([
                 (line(tr("Rename…"), present, true), Act::Rename),
                 (line(if roll { tr("Back to a Folder") } else { tr("Make a Roll") }, present, false), Act::Roll(!roll)),
                 (line(tr("New Folder Inside"), present, false), Act::NewFolder),
                 (line(shown.0, true, true), shown.1),
-            ];
+            ]);
+            // A disk away keeps its folders whatever: only a folder gone from a disk that answers is forgotten.
+            if gone {
+                items.push((line(tr("Remove from Library…"), true, true), Act::Forget));
+            }
             s.nav.menu = items.iter().map(|(_, a)| *a).collect();
             s.nav.menu_path = Some(path);
             items.into_iter().map(|(l, _)| l).collect::<Vec<_>>()
@@ -51,6 +62,8 @@ impl Ctl {
             Act::NewFolder => self.new_folder(&path, true),
             Act::Reveal => self.reveal_folder(&path),
             Act::RevealParent => self.reveal_folder(&paths::parent(&path)),
+            Act::Locate => self.locate(&path),
+            Act::Forget => self.ask_forget(&path),
         }
     }
 
@@ -119,30 +132,11 @@ impl Ctl {
             self.told(tr("Rename"), &tr!("The folder could not be renamed: {error}", error = oni_library::refusal::cause(&e)));
             return self.publish_navigator();
         }
-        let failure = {
-            let mut s = self.state.borrow_mut();
-            s.nav.model.follow(path, &target);
-            s.nav.favourites.follow(path, &target);
-            let failure = s.save_favourites();
-            if let Some(opened) = s.opened.clone().filter(|o| holds(path, o)) {
-                let moved = paths::moved(&opened, path, &target);
-                let _ = s.preferences.set(crate::preferences::OPENED_FOLDER, Value::String(moved.clone()));
-                s.opened = Some(moved);
-            }
-            failure
-        };
-        if let Some(message) = failure {
-            self.told(tr("Something Went Wrong"), &message);
-        }
         if let Some(mut film) = folders::roll(&target) {
             film.name = trimmed.to_owned();
             let _ = folders::set_roll(Some(&film), &target);
         }
-        // A read in flight under the old names is superseded, never laid over the moved rows.
-        self.state.borrow().generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        self.followed(&[Move { from: path.to_owned(), to: target }]);
-        self.start_pass();
-        self.publish_navigator();
+        self.follow_folder(path, &target);
     }
 
     /// `newFolder(in:)`: "New Folder", numbered as the Finder numbers one taken; from the navigator
