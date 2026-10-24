@@ -42,7 +42,7 @@ pub(super) fn prepared_keeping(engine: &Shared, path: &str, reading: render::Rea
 pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previews>>, hands: Arc<AtomicUsize>, generation: Arc<AtomicU64>, support: PathBuf, screen: Screen) {
     enum Next {
         Redraw(String, Option<String>),
-        Pass(u64, Vec<(String, String)>),
+        Pass(u64, Vec<(String, String)>, Vec<String>),
         Fill(u64, String, String),
     }
     std::thread::Builder::new()
@@ -59,8 +59,8 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                         if let Some((path, known)) = paint.redraws.pop_front() {
                             break Next::Redraw(path, known);
                         }
-                        if let Some((g, rows)) = paint.pass.take() {
-                            break Next::Pass(g, rows);
+                        if let Some((g, rows, gone)) = paint.pass.take() {
+                            break Next::Pass(g, rows, gone);
                         }
                         if let Some((g, queue)) = current.as_mut()
                             && let Some((path, fingerprint)) = queue.pop_front()
@@ -71,11 +71,12 @@ pub(super) fn paint(painter: Painter, engine: Shared, previews: Arc<Mutex<Previe
                     }
                 };
                 let (pass, path, fingerprint) = match next {
-                    Next::Pass(g, rows) => {
+                    Next::Pass(g, rows, gone) => {
                         let (held, absent): (Vec<_>, Vec<_>) = rows.into_iter().partition(|(_, f)| thumbnails::is_held(&support, f));
+                        let unreachable = gone.iter().filter(|f| !thumbnails::is_held(&support, f)).count();
                         let counts = (held.len(), absent.len());
                         current = Some((g, absent.into()));
-                        with_shell(move |c| c.pass_counted(g, counts.0, counts.1));
+                        with_shell(move |c| c.pass_counted(g, counts.0, counts.1, unreachable));
                         continue;
                     }
                     Next::Fill(g, path, fingerprint) => {

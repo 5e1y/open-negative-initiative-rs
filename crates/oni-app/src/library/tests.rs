@@ -132,3 +132,77 @@ fn a_row_whose_sidecar_cannot_be_seen_is_kept_as_it_was() {
     assert_eq!((rest.label, rest.trashed_at), (Medal::None, None));
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// Reads `folder` whole through `place`: the survey it landed with and the rows of its last landing.
+fn read_whole(folder: &str, index: &LibraryIndex, place: &Place) -> (Arc<Survey>, Vec<String>) {
+    let mut last = None;
+    read_rows(folder, index, place, &|| true, &mut |rows, _, survey| last = Some((survey.clone(), rows.into_iter().map(|e| e.path).collect())));
+    last.expect("a whole read lands")
+}
+
+#[cfg(unix)]
+#[test]
+fn read_rows_tells_gone_away_and_denied_apart() {
+    use oni_library::presence::{Away, Presence};
+    use std::os::unix::fs::PermissionsExt;
+    let root = std::env::temp_dir().join(format!("oni-app-presence-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    for (name, bytes) in [("Volumes/T7/Scans/A.NEF", &b"a"[..]), ("Volumes/T7/Scans/Locked/B.NEF", b"b"), ("Home/Roll/C.NEF", b"c")] {
+        write(&root.join(name), bytes);
+    }
+    let p = |rel: &str| paths::canonical(&root.join(rel));
+    let (scans, a, b, roll) = (p("Volumes/T7/Scans"), p("Volumes/T7/Scans/A.NEF"), p("Volumes/T7/Scans/Locked/B.NEF"), p("Home/Roll"));
+    let computer = Computer { home: p("Home"), volumes: p("Volumes") };
+    let place = Place { computer: &computer, kept: None };
+    let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+    assert_eq!(read_whole(&scans, &index, &place).1.len(), 2);
+
+    // A folder the disk refuses keeps its rows, told denied.
+    let locked = root.join("Volumes/T7/Scans/Locked");
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o000)).unwrap();
+    let (survey, rows) = read_whole(&scans, &index, &place);
+    std::fs::set_permissions(&locked, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(rows.len(), 2, "a folder denied loses no row: {rows:?}");
+    assert_eq!((survey.presence(&b), survey.presence(&a)), (Presence::Offline(Away::Denied), Presence::Present));
+
+    // Its volume away: every row kept, told offline, never missing.
+    std::fs::rename(root.join("Volumes/T7"), root.join("T7 away")).unwrap();
+    let (survey, rows) = read_whole(&scans, &index, &place);
+    std::fs::rename(root.join("T7 away"), root.join("Volumes/T7")).unwrap();
+    assert_eq!(rows.len(), 2, "a disk away loses no row");
+    assert_eq!((survey.presence(&scans), survey.presence(&a)), (Presence::Offline(Away::Disconnected), Presence::Offline(Away::Disconnected)));
+
+    // Moved off a disk that answers: kept, told missing, for the hand to locate or forget.
+    assert_eq!(read_whole(&roll, &index, &place).1.len(), 1);
+    std::fs::rename(root.join("Home/Roll"), root.join("Home/Roll moved")).unwrap();
+    let (survey, rows) = read_whole(&roll, &index, &place);
+    assert_eq!((rows.len(), survey.presence(&roll)), (1, Presence::Missing));
+
+    // Twin: in a folder that reads, a file removed loses its row.
+    std::fs::remove_file(root.join("Volumes/T7/Scans/A.NEF")).unwrap();
+    let (_, rows) = read_whole(&scans, &index, &place);
+    assert_eq!(rows, [b.clone()]);
+    assert!(index.all().iter().all(|e| e.path != a), "the removed file's row leaves the index");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_read_stopped_part_way_drops_no_row() {
+    let root = std::env::temp_dir().join(format!("oni-app-stopped-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    for name in ["Scans/A.NEF", "Scans/Sub/B.NEF"] {
+        write(&root.join(name), name.as_bytes());
+    }
+    let scans = paths::canonical(&root.join("Scans"));
+    let computer = Computer::none();
+    let place = Place { computer: &computer, kept: None };
+    let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+    read_whole(&scans, &index, &place);
+    std::fs::remove_file(root.join("Scans/Sub/B.NEF")).unwrap();
+    read_rows(&scans, &index, &place, &|| false, &mut |_, _, _| {});
+    assert_eq!(index.all().len(), 2, "a read stopped knows nothing of what it did not reach");
+    // Twin: let run, the same read drops the row of the file removed.
+    read_whole(&scans, &index, &place);
+    assert_eq!(index.all().len(), 1);
+    let _ = std::fs::remove_dir_all(&root);
+}

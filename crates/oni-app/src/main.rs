@@ -1,4 +1,4 @@
-//! `oni [folder or file]` opens a folder of scans, else the one last opened, else roll #8; `--board` shows
+//! `oni [folder or file]` opens a folder of scans, else the one last opened, else nothing; `--board` shows
 //! the design system's board; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
 
 use oni_app::app::{Options, Shell};
@@ -140,10 +140,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         EventResult::Propagate
     });
+    // A path named opens it or nothing; the reference roll opens only where a check or a bench names it.
     match std::env::args_os().nth(1).map(PathBuf::from) {
         Some(path) => shell.add(&path),
         None if shell.open_remembered() => {}
-        None => shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR)),
+        None if std::env::var_os(oni_fixtures::RAW_DIR.0).is_some() || bench::requested().is_some() => {
+            shell.open_folder(&oni_fixtures::folder(oni_fixtures::RAW_DIR))
+        }
+        None => {}
     }
     if let Some(mode) = bench::requested() {
         shell.open_first_when_read();

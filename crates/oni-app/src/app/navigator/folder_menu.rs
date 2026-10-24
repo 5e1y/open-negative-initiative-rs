@@ -156,7 +156,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let inside = s.opened.as_deref().is_some_and(|o| holds(o, &made));
             if inside {
-                s.survey.folders.push(made.clone());
+                std::sync::Arc::make_mut(&mut s.survey).folders.push(made.clone());
                 if let Some(archive) = s.archive.as_mut() {
                     archive.expanded.insert(NodeId::Folder(folder.to_owned()));
                 }
@@ -179,8 +179,11 @@ impl Ctl {
             if folders::set_roll(Some(&film), folder).is_err() {
                 return self.went_wrong(tr("The folder could not be made a roll: it cannot be written to."));
             }
+            self.roll_written(folder, Some(film));
         } else if folders::set_roll(None, folder).is_err() {
             return;
+        } else {
+            self.roll_written(folder, None);
         }
         self.state.borrow_mut().nav.roll_edits.insert(folder.to_owned(), make);
         self.lay_archive();

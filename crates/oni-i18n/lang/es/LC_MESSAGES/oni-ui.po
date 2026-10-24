@@ -2161,9 +2161,21 @@ msgstr "No se puede conservar la preferencia: {e}"
 msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
 msgstr "{message}\n\nSi sales ahora, se descartan los cambios hechos desde el último guardado correcto. Cancela para mantener la app abierta y resolver el problema; por ejemplo, liberando espacio o volviendo a conectar el volumen donde están los originales."
 
-#: crates/oni-app/src/app/archive_view.rs
+#: crates/oni-app/src/app/archive_view/adding.rs
 msgid "This system has no folder picker: pass the folder on the command line"
 msgstr "Este sistema no tiene selector de carpetas: indica la carpeta en la línea de comandos"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: ONI has no access to {path}"
+msgstr "No se abrió: ONI no tiene acceso a {path}"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not found: {path}"
+msgstr "No encontrado: {path}"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it."
+msgstr "No se abrió: {folder} es un disco entero o la carpeta de inicio. Abre la carpeta de escaneos que contiene."
 
 #: crates/oni-app/src/app/archive_view.rs
 msgid "The library index cannot be opened"
@@ -2172,6 +2184,12 @@ msgstr "No se puede abrir el índice de la fototeca"
 #: crates/oni-app/src/app/archive_view.rs
 msgid "The notice cannot be marked seen: {error}"
 msgstr "No se puede marcar el aviso como visto: {error}"
+
+#: crates/oni-app/src/app/archive_view.rs
+msgid "One photo has no thumbnail: its original cannot be reached."
+msgid_plural "{n} photos have no thumbnail: their originals cannot be reached."
+msgstr[0] "Una foto no tiene miniatura: no se puede acceder a su original."
+msgstr[1] "{n} fotos no tienen miniatura: no se puede acceder a sus originales."
 
 #: crates/oni-app/src/app/dedusting.rs
 msgid "Correction"

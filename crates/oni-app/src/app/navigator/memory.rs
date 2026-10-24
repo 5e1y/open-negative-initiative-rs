@@ -94,7 +94,8 @@ impl Ctl {
             let height = prefs.value(EDITOR_HEIGHT).and_then(Value::as_f64).unwrap_or(EDITOR_REST);
             let remembered_opened = prefs.string(crate::preferences::OPENED_FOLDER).map(str::to_owned);
             let caught_up = prefs.bool(ROOTS_CATCH_UP_SHOWN).unwrap_or(false);
-            let volumes = s.nav.computer.computer();
+            // The home alone until the volumes' thread lists the rest: a sleeping mount never holds the launch.
+            let volumes: Vec<String> = Some(s.nav.computer.home.clone()).filter(|h| !h.is_empty()).into_iter().collect();
             s.nav.model = Navigation::new(base, favourites_only, unfolded, volumes);
             s.nav.remembered = Some(s.nav.model.remembered());
             s.org.trash_unfolded = s.nav.model.unfolded.contains(TRASH_ROW);
@@ -122,37 +123,79 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// Reads the mounted volumes again whenever Computer's rows change, and the
-    /// folders the disk refused once it answers: a drive waking or access granted lists them.
+    /// Reads the mounted volumes off this thread, first at once, then whenever Computer's rows
+    /// change, and the folders the disk refused once they answer: a drive waking or access granted.
     pub(super) fn watch_volumes(me: &Rc<Ctl>) {
         let (token, computer, refused) = {
             let s = me.state.borrow();
             (s.nav.watcher.clone(), s.nav.computer.clone(), s.nav.refused.clone())
         };
         let _ = std::thread::Builder::new().name("volumes".into()).spawn(move || {
-            let mut seen = computer.computer();
+            let mut seen: Option<Vec<String>> = None;
             loop {
-                std::thread::sleep(MOUNTS);
                 if Arc::strong_count(&token) <= 1 {
                     return;
                 }
                 let answering: Vec<String> = refused.lock().expect("refused").iter().filter(|f| std::fs::read_dir(f).is_ok()).cloned().collect();
                 if !answering.is_empty() {
                     refused.lock().expect("refused").retain(|f| !answering.contains(f));
-                    with_shell(move |c| c.answering(&answering));
                 }
                 let now = computer.computer();
-                if now != seen {
-                    seen = now;
-                    let volumes = seen.clone();
-                    with_shell(move |c| {
-                        c.state.borrow_mut().nav.model.volumes = volumes;
-                        c.publish_navigator();
-                        // Edits a disk gone refused are written as it comes back.
-                        c.retry_unsaved(false);
-                    });
+                let first = seen.is_none();
+                if first || seen.as_ref() != Some(&now) || !answering.is_empty() {
+                    let volumes = now.clone();
+                    with_shell(move |c| c.volumes_moved(volumes, answering, first));
                 }
+                seen = Some(now);
+                std::thread::sleep(MOUNTS);
             }
         });
+    }
+
+    /// The one answer to the disks moving: what left turns offline from its paths alone; on a volume
+    /// back, the opened folder is read again once, its favourites too, and the kept edits written.
+    pub(super) fn volumes_moved(self: &Rc<Self>, now: Vec<String>, answering: Vec<String>, first: bool) {
+        let (moved, left, reread, arrived) = {
+            let mut s = self.state.borrow_mut();
+            let before = std::mem::replace(&mut s.nav.model.volumes, now.clone());
+            let moved = before != now;
+            let (left, arrived): (Vec<String>, Vec<String>) = if first {
+                (Vec::new(), Vec::new())
+            } else {
+                (before.iter().filter(|v| !now.contains(v)).cloned().collect(), now.iter().filter(|v| !before.contains(v)).cloned().collect())
+            };
+            let on = |vs: &[String], p: &str| vs.iter().any(|v| holds(v, p));
+            s.org.left.retain(|v| !arrived.contains(v));
+            s.org.left.extend(left.iter().cloned());
+            presence::left(s.org.presence.iter_mut(), &left);
+            presence::left(s.nav.presence.iter_mut(), &left);
+            // What lies on a volume back is unknown until read or looked at again.
+            s.org.presence.retain(|p, _| !on(&arrived, p));
+            s.nav.presence.retain(|p, _| !on(&arrived, p));
+            s.nav.tried.retain(|f| !on(&arrived, f));
+            if !answering.is_empty() {
+                s.nav.model.retry();
+            }
+            let opened = s.opened.clone();
+            let refused = opened.as_ref().is_some_and(|o| answering.contains(o) && s.survey.unreadable.contains(o));
+            let reread = refused || opened.as_ref().is_some_and(|o| on(&arrived, o));
+            (moved, left, reread, !arrived.is_empty())
+        };
+        self.list_wanted();
+        if reread {
+            self.read_again();
+        } else if arrived {
+            self.probe_presence();
+        }
+        if !left.is_empty() {
+            self.lay_grid();
+        }
+        if arrived {
+            self.survey_favourites();
+        }
+        self.publish_navigator();
+        if moved {
+            self.retry_unsaved(false);
+        }
     }
 }

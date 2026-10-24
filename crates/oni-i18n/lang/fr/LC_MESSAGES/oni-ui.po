@@ -2161,9 +2161,21 @@ msgstr "La préférence ne peut pas être conservée : {e}"
 msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
 msgstr "{message}\n\nQuitter maintenant abandonne les modifications faites depuis le dernier enregistrement réussi. Annulez pour garder l’app ouverte et régler le problème, par exemple en libérant de l’espace ou en reconnectant le volume qui contient les originaux."
 
-#: crates/oni-app/src/app/archive_view.rs
+#: crates/oni-app/src/app/archive_view/adding.rs
 msgid "This system has no folder picker: pass the folder on the command line"
 msgstr "Ce système n’a pas de sélecteur de dossier : indiquez le dossier en ligne de commande"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: ONI has no access to {path}"
+msgstr "Pas ouvert : ONI n’a pas accès à {path}"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not found: {path}"
+msgstr "Introuvable : {path}"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it."
+msgstr "Pas ouvert : {folder} est un disque entier ou le dossier de départ. Ouvrez le dossier des scans qu’il contient."
 
 #: crates/oni-app/src/app/archive_view.rs
 msgid "The library index cannot be opened"
@@ -2172,6 +2184,12 @@ msgstr "L’index de la photothèque ne peut pas être ouvert"
 #: crates/oni-app/src/app/archive_view.rs
 msgid "The notice cannot be marked seen: {error}"
 msgstr "L’avis ne peut pas être marqué comme vu : {error}"
+
+#: crates/oni-app/src/app/archive_view.rs
+msgid "One photo has no thumbnail: its original cannot be reached."
+msgid_plural "{n} photos have no thumbnail: their originals cannot be reached."
+msgstr[0] "Une photo n’a pas de vignette : son original est injoignable."
+msgstr[1] "{n} photos n’ont pas de vignette : leurs originaux sont injoignables."
 
 #: crates/oni-app/src/app/dedusting.rs
 msgid "Correction"

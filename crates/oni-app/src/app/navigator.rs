@@ -8,6 +8,7 @@ use oni_library::favourites::{self, Area, Favourites, Surveys};
 use oni_library::gallery_history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
 use oni_library::paths::{self, holds};
+use oni_library::presence::{self, Away, Presence};
 use oni_library::roots::{self, Roots};
 use oni_library::{archive_tree::NodeId, folders};
 use serde_json::Value;
@@ -82,6 +83,8 @@ pub(super) struct Nav {
     watcher: Arc<()>,
     /// The folders the disk refused, the opened one among them, which the mounts' reader tries.
     refused: Arc<std::sync::Mutex<Vec<String>>>,
+    /// The rows' folders a listing or a favourite's read found offline or missing, looked at off this thread.
+    presence: HashMap<String, Presence>,
 }
 
 impl Nav {
@@ -109,6 +112,7 @@ impl Nav {
             roll_edits: HashMap::new(),
             watcher: Arc::new(()),
             refused: Arc::default(),
+            presence: HashMap::new(),
         }
     }
 
@@ -154,9 +158,33 @@ fn same_item(a: &str, b: &str) -> bool {
 }
 
 impl State {
-    fn present(&self, path: &str) -> bool {
+    /// Off its volumes or on one mounted, from the path alone.
+    pub(in crate::app) fn present(&self, path: &str) -> bool {
         let c = &self.nav.computer;
         !c.is_on_volume(path) || self.nav.model.volumes.iter().any(|v| holds(v, path))
+    }
+
+    /// A navigator row's state: its volume away from the path alone, else the opened folder's or
+    /// what its last listing or read found; never a look at the disk.
+    pub fn row_presence(&self, path: &str) -> Presence {
+        if !self.present(path) || self.org.left.iter().any(|v| holds(v, path)) {
+            return Presence::Offline(Away::Disconnected);
+        }
+        if self.opened.as_deref().is_some_and(|o| paths::same(o, path)) {
+            return self.opened_presence();
+        }
+        self.nav.presence.get(path).copied().unwrap_or_default()
+    }
+
+    /// States looked at off this thread, a present one forgotten.
+    fn noted(&mut self, found: Vec<(String, Presence)>) {
+        for (path, state) in found {
+            if state.is_present() {
+                self.nav.presence.remove(&path);
+            } else {
+                self.nav.presence.insert(path, state);
+            }
+        }
     }
 
     fn wanted_folders(&self) -> Vec<String> {

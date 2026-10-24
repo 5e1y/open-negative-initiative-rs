@@ -178,8 +178,8 @@ impl Default for Options {
 struct Paint {
     /// An edit's redraws by path, with the fingerprint the index knows.
     redraws: VecDeque<(String, Option<String>)>,
-    /// The pass a folder asked last, by generation; it replaces the one running.
-    pass: Option<(u64, Vec<(String, String)>)>,
+    /// The pass a folder asked last, by generation, and the thumbnails its unreachable photos need.
+    pass: Option<(u64, Vec<(String, String)>, Vec<String>)>,
 }
 
 type Painter = Arc<(Mutex<Paint>, Condvar)>;
@@ -259,7 +259,7 @@ pub struct State {
     /// The interface thread's own connection to the index; a read opens its own.
     index: Option<LibraryIndex>,
     index_path: PathBuf,
-    survey: Survey,
+    survey: Arc<Survey>,
     /// Bumped by every folder opened, which stops the previous folder's read and pass.
     generation: Arc<AtomicU64>,
     read_done: bool,

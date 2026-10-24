@@ -251,6 +251,14 @@ impl LibraryIndex {
         rows.filter_map(Result::ok).collect()
     }
 
+    /// The ONI Trash's rows alone, in `all`'s order, so the trash is read without the whole index.
+    pub fn in_trash(&self) -> Vec<Entry> {
+        let sql = format!("SELECT {COLUMNS} FROM photos WHERE trashed_at IS NOT NULL ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
+        let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };
+        let Ok(rows) = statement.query_map([], entry) else { return Vec::new() };
+        rows.filter_map(Result::ok).collect()
+    }
+
     /// What the gallery draws: every member but the ONI Trash's and the passes a lead composes.
     pub fn shown(&self) -> Vec<Entry> {
         shown(&self.all())

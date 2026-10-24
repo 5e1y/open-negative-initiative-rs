@@ -1,8 +1,10 @@
 //! The folders the archive shows. Every image under a root is a member, found on the disk and
 //! never imported; the active root is the one the tree and the gallery lay out.
 
+use crate::navigator::Computer;
 use crate::paths::{self, canonical, holds};
-use oni_settings::Date;
+use crate::presence::{self, Away, Presence};
+use oni_settings::{Date, Film};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
@@ -70,6 +72,22 @@ pub struct Survey {
     pub dated: HashMap<String, Date>,
     pub unreadable: Vec<String>,
     pub sizes: HashMap<String, i64>,
+    /// Each unreadable root or folder's state, offline or missing, told when the disk refused it.
+    pub away: HashMap<String, Presence>,
+    /// The roll marker of each folder holding an image, read on the survey's own thread.
+    pub rolls: HashMap<String, Film>,
+    /// The walk stopped part way: what it did not reach is unknown, never gone.
+    pub stopped: bool,
+}
+
+impl Survey {
+    /// The state of a path the survey covers: its unreadable folder's, else present.
+    pub fn presence(&self, path: &str) -> Presence {
+        self.unreadable
+            .iter()
+            .find(|u| holds(u, path))
+            .map_or(Presence::Present, |u| self.away.get(u).copied().unwrap_or(Presence::Offline(Away::Disconnected)))
+    }
 }
 
 /// Directories the Finder shows as one file: their contents belong to their app, not the archive.
@@ -137,25 +155,50 @@ fn date(time: std::io::Result<SystemTime>) -> Option<Date> {
     Some(Date::from_unix_seconds(seconds))
 }
 
+/// `surveyed` with no volume known, so a path not found on a folder that answers is missing.
 pub fn survey(roots: &[String], alive: &dyn Fn() -> bool) -> Survey {
+    surveyed(roots, alive, &Computer::none())
+}
+
+/// Every root walked, each refusal told offline or missing against `computer`'s volumes, and the
+/// rolls of the folders holding images read. Reads the disk.
+pub fn surveyed(roots: &[String], alive: &dyn Fn() -> bool, computer: &Computer) -> Survey {
     let mut out = Survey::default();
     for root in roots {
+        presence::looked(root);
         // A root the disk refuses, gone, unmounted or denied, lists nothing, which is not empty.
-        if std::fs::read_dir(root).is_err() {
-            out.unreadable.push(root.clone());
+        if let Err(e) = std::fs::read_dir(root) {
+            refuse(&mut out, root.clone(), &e, computer);
             continue;
         }
         // A survey stopped part way still lists every later root the disk refuses.
-        walk(Path::new(root), alive, &mut out);
+        out.stopped |= !walk(Path::new(root), alive, computer, &mut out);
+        // A disk that left during the walk refused what it had not listed: none of it is gone.
+        if let Err(e) = std::fs::read_dir(root) {
+            refuse(&mut out, root.clone(), &e, computer);
+        }
     }
+    out.rolls = crate::folders::rolls(&out.images);
     out
 }
 
+fn refuse(out: &mut Survey, folder: String, error: &std::io::Error, computer: &Computer) {
+    if out.away.contains_key(&folder) {
+        return;
+    }
+    out.away.insert(folder.clone(), presence::refused(&folder, error, computer));
+    out.unreadable.push(folder);
+}
+
 /// Depth first, a folder before its contents, names in Finder order; false once `alive` turns false.
-fn walk(folder: &Path, alive: &dyn Fn() -> bool, out: &mut Survey) -> bool {
-    let Ok(listing) = std::fs::read_dir(folder) else {
-        out.unreadable.push(canonical(folder));
-        return true;
+fn walk(folder: &Path, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut Survey) -> bool {
+    presence::looked(&folder.to_string_lossy());
+    let listing = match std::fs::read_dir(folder) {
+        Ok(listing) => listing,
+        Err(e) => {
+            refuse(out, canonical(folder), &e, computer);
+            return true;
+        }
     };
     let mut children: Vec<PathBuf> = listing.filter_map(|e| e.ok().map(|e| e.path())).collect();
     children.sort_by(|a, b| paths::standard_order(&a.to_string_lossy(), &b.to_string_lossy()).then_with(|| a.cmp(b)));
@@ -163,7 +206,15 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, out: &mut Survey) -> bool {
         if !alive() {
             return false;
         }
-        let Ok(metadata) = std::fs::symlink_metadata(&child) else { continue };
+        let metadata = match std::fs::symlink_metadata(&child) {
+            Ok(metadata) => metadata,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            // An entry listed and then refused leaves its folder unread, so no row in it is dropped.
+            Err(e) => {
+                refuse(out, canonical(folder), &e, computer);
+                continue;
+            }
+        };
         if is_hidden(&child, &metadata) {
             continue;
         }
@@ -176,7 +227,7 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, out: &mut Survey) -> bool {
             if let Some(made) = date(metadata.created()) {
                 out.made.insert(folder, made);
             }
-            if !walk(&child, alive, out) {
+            if !walk(&child, alive, computer, out) {
                 return false;
             }
         } else if metadata.is_file() && crate::library::is_importable(&child) {
@@ -244,117 +295,4 @@ pub fn suggested(members: &[String], home: &str) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::scratch::Scratch;
-
-    #[test]
-    fn a_scan_keeps_images_and_leaves_sidecars_hidden_folders_and_packages_out() {
-        let scratch = Scratch::new("roots");
-        for relative in [
-            "a.RW2",
-            "a.RW2.json",
-            "Roll 1/b.tif",
-            "Roll 1/Deep/c.jpg",
-            ".hidden/d.RW2",
-            "e.txt",
-            "Album.photoslibrary/f.jpg",
-            ".oni-roll.json",
-        ] {
-            let path = scratch.path().join(relative);
-            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-            std::fs::write(&path, [0u8]).unwrap();
-        }
-        let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let scanned: BTreeSet<String> =
-            scan(std::slice::from_ref(&root)).into_iter().map(|p| p[root.len() + 1..].to_owned()).collect();
-        assert_eq!(scanned, BTreeSet::from(["a.RW2", "Roll 1/b.tif", "Roll 1/Deep/c.jpg"].map(String::from)));
-        // Twin: a root one folder down finds its two images alone.
-        assert_eq!(scan(&[paths::join(&root, "Roll 1")]).len(), 2);
-        let surveyed = survey(std::slice::from_ref(&root), &|| true);
-        assert_eq!(surveyed.folders.len(), 2);
-        assert_eq!(surveyed.sizes.values().copied().collect::<Vec<_>>(), [1, 1, 1]);
-        // Twin: a root that is not there is unreadable, never an empty folder.
-        let gone = paths::join(&root, "gone");
-        assert_eq!(survey(std::slice::from_ref(&gone), &|| true).unreadable, [gone]);
-    }
-
-    #[cfg(target_os = "macos")]
-    #[test]
-    fn a_folder_the_finder_hides_by_its_flag_is_left_out() {
-        let scratch = Scratch::new("roots-flagged");
-        for relative in ["Recovery/a.RW2", "Film/b.RW2"] {
-            let path = scratch.path().join(relative);
-            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-            std::fs::write(&path, [0u8]).unwrap();
-        }
-        let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        assert_eq!(scan(std::slice::from_ref(&root)).len(), 2, "twin: unflagged, both folders count");
-        let flagged = std::process::Command::new("/usr/bin/chflags").arg("hidden").arg(scratch.path().join("Recovery")).status();
-        assert!(flagged.is_ok_and(|s| s.success()));
-        assert_eq!(scan(std::slice::from_ref(&root)), [paths::join(&root, "Film/b.RW2")]);
-        assert_eq!(crate::navigator::children(&root), Some(vec![paths::join(&root, "Film")]));
-    }
-
-    #[test]
-    fn a_stopped_survey_still_names_every_root_the_disk_refuses() {
-        let scratch = Scratch::new("roots-stopped");
-        std::fs::write(scratch.path().join("a.RW2"), [0u8]).unwrap();
-        let here = paths::normal(&scratch.path().to_string_lossy()).into_owned();
-        let gone = paths::join(&here, "gone");
-        let both = [here.clone(), gone.clone()];
-        let stopped = survey(&both, &|| false);
-        assert_eq!((stopped.images.len(), stopped.unreadable), (0, vec![gone.clone()]));
-        // Twin: left running, the same survey also lists the photo.
-        let running = survey(&both, &|| true);
-        assert_eq!((running.images.len(), running.unreadable), (1, vec![gone]));
-    }
-
-    #[test]
-    fn roots_never_hold_a_photo_twice() {
-        let mut roots = Roots::default();
-        roots.add("/r/Roll 1");
-        roots.add("/r");
-        assert_eq!((roots.paths.clone(), roots.current()), (vec!["/r".to_owned()], Some("/r")));
-        roots.add("/r/Roll 1/Deep");
-        assert_eq!(roots.paths, ["/r"]);
-        // Twin: a sibling sharing a prefix is a root of its own.
-        roots.add("/ro");
-        assert_eq!(roots.paths, ["/r", "/ro"]);
-        assert_eq!(roots.current(), Some("/ro"));
-    }
-
-    #[test]
-    fn a_former_library_is_offered_per_volume_never_the_home_itself() {
-        let home = "/Users/a";
-        let proposed = suggested(
-            &[
-                "/Users/a/Pictures/Scans/2025/a.RW2",
-                "/Users/a/Pictures/Scans/2026/Roll/b.RW2",
-                "/Volumes/NAS/Film/c.tif",
-                "/Users/a/Downloads/d.jpg",
-            ]
-            .map(String::from),
-            home,
-        );
-        assert_eq!(proposed, ["/Users/a/Downloads", "/Users/a/Pictures", "/Volumes/NAS/Film"]);
-        // Twin: photos under one folder of the home offer that folder.
-        assert_eq!(
-            suggested(
-                &["/Users/a/Pictures/Scans/2025/a.RW2", "/Users/a/Pictures/Scans/2026/b.RW2"].map(String::from),
-                home
-            ),
-            ["/Users/a/Pictures/Scans"]
-        );
-    }
-
-    /// On Windows a drive roots the folders offered: the home's children, another drive's deepest
-    /// common folder; the twin, a path rooted at `/`, never gains a drive.
-    #[test]
-    fn a_former_library_on_windows_drives_is_offered_per_drive() {
-        let members = ["C:/Users/a/Old/1.RW2", "C:/Users/a/Scans/Roll 1/2.RW2", "D:/Scans/A/3.NEF", "D:/Scans/B/4.NEF"].map(String::from);
-        assert_eq!(suggested(&members, "C:/Users/a"), ["C:/Users/a/Old", "C:/Users/a/Scans", "D:/Scans"]);
-        assert_eq!(suggested(&["/Volumes/T7/Scans/A/1.NEF".to_string()], "/Users/a"), ["/Volumes/T7/Scans/A"]);
-    }
-}
-
+mod tests;
