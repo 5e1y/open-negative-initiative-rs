@@ -14,7 +14,7 @@ const MAGIC: &[u8; 8] = b"ONIDEC1\0";
 /// The decoder's own code, so a change to how a file is read never serves an older decode.
 static CODE: LazyLock<u64> = LazyLock::new(|| {
     let mut h = std::collections::hash_map::DefaultHasher::new();
-    for part in [include_str!("../csrc/pinned.c"), include_str!("lib.rs"), include_str!("camera.rs"), include_str!("rendition.rs")] {
+    for part in [include_str!("../csrc/pinned.c"), include_str!("../csrc/stream.cpp"), include_str!("lib.rs"), include_str!("source.rs"), include_str!("camera.rs"), include_str!("rendition.rs")] {
         part.hash(&mut h);
     }
     h.finish()

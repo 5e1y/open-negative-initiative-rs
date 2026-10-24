@@ -2,6 +2,16 @@
 #include "libraw/libraw.h"
 #include <string.h>
 
+// From stream.cpp: a file reached through a handle the caller opened.
+int oni_stream_attach(libraw_data_t *lr, void *stream);
+void oni_stream_free(void *stream);
+
+// A file by its name, or through `stream` when there is one; `stream` stays the caller's to free.
+static int oni_attach(libraw_data_t *lr, const char *path, void *stream)
+{
+    return stream ? oni_stream_attach(lr, stream) : libraw_open_file(lr, path);
+}
+
 typedef struct {
     int width, height, colors, dng;
     float cam_xyz[4][3];
@@ -18,22 +28,27 @@ typedef struct {
     int flip;
     // The camera as `oni_identify` names it, which keys its rendition matrix.
     char make[64], model[64];
+    // The handle's stream, freed once LibRaw lets the file go; NULL for a file opened by name.
+    void *stream;
 } oni_decoded;
 
 void oni_release(oni_decoded *d)
 {
     if (d->image) libraw_dcraw_clear_mem(d->image);
     if (d->raw) libraw_close(d->raw);
+    if (d->stream) oni_stream_free(d->stream);
     memset(d, 0, sizeof *d);
 }
 
 // Opens and identifies: the colour metadata is read before any multiplier is chosen. A copy no
 // longer than `min_side` (0: the whole frame) is read at half size when the sensor allows it.
-int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *out)
+// `stream`, when given, is the file's and freed by `oni_release`.
+int oni_open(const char *path, void *stream, float exposure_gain, int min_side, oni_decoded *out)
 {
     memset(out, 0, sizeof *out);
+    out->stream = stream;
     libraw_data_t *lr = libraw_init(0);
-    if (!lr) return -1;
+    if (!lr) { oni_release(out); return -1; }
     libraw_output_params_t *p = &lr->params;
     p->use_camera_wb = 0;
     p->use_auto_wb = 0;
@@ -58,7 +73,7 @@ int oni_open(const char *path, float exposure_gain, int min_side, oni_decoded *o
         p->exp_preser = 0.0f;
     }
     out->raw = lr;
-    int rc = libraw_open_file(lr, path);
+    int rc = oni_attach(lr, path, stream);
     if (rc != LIBRAW_SUCCESS) { oni_release(out); return rc; }
     int longest = lr->sizes.width > lr->sizes.height ? lr->sizes.width : lr->sizes.height;
     if (min_side > 0 && longest >= 2 * min_side) {
@@ -99,6 +114,7 @@ int oni_process(oni_decoded *d, const float mul[3])
     d->inset[3] = c->cheight;
     // The raw and working buffers, 245 MB at 24 MP, go before the caller's float copy is made.
     libraw_recycle(lr);
+    if (d->stream) { oni_stream_free(d->stream); d->stream = NULL; }
     return 0;
 }
 
@@ -123,18 +139,20 @@ void oni_thumb_release(oni_thumb *t)
     memset(t, 0, sizeof *t);
 }
 
-int oni_thumbnail(const char *path, oni_thumb *out)
+// `stream`, when given, is freed before the call returns.
+int oni_thumbnail(const char *path, void *stream, oni_thumb *out)
 {
     memset(out, 0, sizeof *out);
     libraw_data_t *lr = libraw_init(0);
-    if (!lr) return -1;
-    int rc = libraw_open_file(lr, path);
+    if (!lr) { if (stream) oni_stream_free(stream); return -1; }
+    int rc = oni_attach(lr, path, stream);
     if (rc == LIBRAW_SUCCESS) rc = libraw_unpack_thumb(lr);
-    if (rc != LIBRAW_SUCCESS) { libraw_close(lr); return rc; }
+    if (rc != LIBRAW_SUCCESS) { libraw_close(lr); if (stream) oni_stream_free(stream); return rc; }
     int err = 0;
     libraw_processed_image_t *img = libraw_dcraw_make_mem_thumb(lr, &err);
     out->flip = lr->sizes.flip;
     libraw_close(lr);
+    if (stream) oni_stream_free(stream);
     if (!img) return err ? err : -2;
     out->image = img;
     out->format = img->type;
@@ -148,11 +166,12 @@ int oni_thumbnail(const char *path, oni_thumb *out)
 }
 
 // The maker and model LibRaw names from the file's metadata, and whether it is a DNG; nothing decoded.
-int oni_identify(const char *path, char make[64], char model[64], int *dng)
+// `stream`, when given, is freed before the call returns.
+int oni_identify(const char *path, void *stream, char make[64], char model[64], int *dng)
 {
     libraw_data_t *lr = libraw_init(0);
-    if (!lr) return -1;
-    int rc = libraw_open_file(lr, path);
+    if (!lr) { if (stream) oni_stream_free(stream); return -1; }
+    int rc = oni_attach(lr, path, stream);
     if (rc == LIBRAW_SUCCESS) {
         strncpy(make, lr->idata.make, 63);
         make[63] = 0;
@@ -161,5 +180,6 @@ int oni_identify(const char *path, char make[64], char model[64], int *dng)
         *dng = lr->idata.dng_version != 0;
     }
     libraw_close(lr);
+    if (stream) oni_stream_free(stream);
     return rc;
 }

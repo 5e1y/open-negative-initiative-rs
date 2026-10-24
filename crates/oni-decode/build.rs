@@ -91,8 +91,10 @@ fn main() {
     for s in SOURCES {
         lib.file(root.join(s));
     }
+    lib.file("csrc/stream.cpp");
     lib.compile("raw");
     cc::Build::new().file("csrc/pinned.c").include(root).define("LIBRAW_NODLL", None).compile("oni_pinned");
     println!("cargo:rerun-if-changed=csrc/pinned.c");
+    println!("cargo:rerun-if-changed=csrc/stream.cpp");
     println!("cargo:rerun-if-changed=LIBRAW_VERSION");
 }

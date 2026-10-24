@@ -47,7 +47,22 @@ pub fn reveal_all(paths: &[PathBuf]) {
 
 /// Opens a folder in the Finder or the Explorer, as `NSWorkspace.open` does.
 pub fn show_folder(path: &Path) {
-    platform::open_url(&path.to_string_lossy());
+    platform::show_folder(path);
+}
+
+/// Explorer's spelling of a path: backslashes, which its command line needs to find a file, and no
+/// `\\?\` prefix, which it does not read.
+pub fn explorer_path(path: &Path) -> String {
+    let text = path.to_string_lossy().replace('/', "\\");
+    match text.strip_prefix(r"\\?\UNC\") {
+        Some(share) => format!(r"\\{share}"),
+        None => text.strip_prefix(r"\\?\").map_or(text.clone(), str::to_owned),
+    }
+}
+
+/// The argument that has Explorer open `path`'s folder with `path` selected.
+pub fn explorer_select(path: &Path) -> String {
+    format!("/select,\"{}\"", explorer_path(path))
 }
 
 /// Opens a web page in the person's browser, as `NSWorkspace.open` does.
@@ -96,6 +111,20 @@ pub fn caches() -> PathBuf {
     base.join(crate::timing::FOLDER)
 }
 
+/// Where the support folder's durable but rebuildable files go: on Windows the local application
+/// data, as the roaming one syncs at every sign-in; elsewhere, and for a check's folder, `support`.
+pub fn local_support(support: &Path) -> PathBuf {
+    local_of(support, cfg!(windows), std::env::var_os("APPDATA"), std::env::var_os("LOCALAPPDATA"))
+}
+
+fn local_of(support: &Path, windows: bool, roaming: Option<std::ffi::OsString>, local: Option<std::ffi::OsString>) -> PathBuf {
+    let folder = |base: std::ffi::OsString| PathBuf::from(base).join(crate::timing::FOLDER);
+    match (roaming.map(folder), local) {
+        (Some(roamed), Some(local)) if windows && roamed == support => folder(local),
+        _ => support.to_path_buf(),
+    }
+}
+
 #[cfg(target_os = "macos")]
 mod platform {
     use std::io;
@@ -140,6 +169,10 @@ mod platform {
 
     pub fn open_url(url: &str) {
         let _ = std::process::Command::new("/usr/bin/open").arg(url).spawn();
+    }
+
+    pub fn show_folder(path: &Path) {
+        let _ = std::process::Command::new("/usr/bin/open").arg(path).spawn();
     }
 
     pub fn trash(path: &Path) -> io::Result<()> {
@@ -193,12 +226,15 @@ mod platform {
 
     pub fn reveal(path: &Path) {
         use std::os::windows::process::CommandExt;
-        let line = format!("/select,\"{}\"", path.display());
-        let _ = std::process::Command::new("explorer").raw_arg(line).spawn();
+        let _ = std::process::Command::new("explorer").raw_arg(super::explorer_select(path)).spawn();
     }
 
     pub fn open_url(url: &str) {
         let _ = std::process::Command::new("explorer").arg(url).spawn();
+    }
+
+    pub fn show_folder(path: &Path) {
+        let _ = std::process::Command::new("explorer").arg(super::explorer_path(path)).spawn();
     }
 
     pub fn trash(path: &Path) -> io::Result<()> {
@@ -255,6 +291,8 @@ mod platform {
 
     pub fn open_url(_url: &str) {}
 
+    pub fn show_folder(_path: &Path) {}
+
     pub fn trash(_path: &Path) -> io::Result<()> {
         Err(io::Error::new(io::ErrorKind::Unsupported, "no system Trash on this system"))
     }
@@ -283,6 +321,29 @@ mod tests {
             assert_ne!(trash(&here).unwrap_err().kind(), io::ErrorKind::NotFound);
         }
         let _ = std::fs::remove_file(&here);
+    }
+
+    #[test]
+    fn reveal_hands_explorer_backslashes() {
+        let photo = Path::new("D:/Scans/Roll 8/DSC_0001.NEF");
+        assert_eq!(explorer_select(photo), r#"/select,"D:\Scans\Roll 8\DSC_0001.NEF""#);
+        assert_eq!(explorer_path(Path::new("//nas/film/Roll 8")), r"\\nas\film\Roll 8");
+        assert_eq!(explorer_path(Path::new(r"\\?\C:\Scans")), r"C:\Scans");
+        assert_eq!(explorer_path(Path::new(r"\\?\UNC\nas\film")), r"\\nas\film");
+        // Twin: the path as the archive spells it, which Explorer answered with Documents.
+        assert!(format!("/select,\"{}\"", photo.display()).contains('/'));
+    }
+
+    #[test]
+    fn windows_keeps_rebuildable_files_off_the_roaming_profile() {
+        let (roaming, local) = (Some("C:/Users/a/AppData/Roaming".into()), Some("C:/Users/a/AppData/Local".into()));
+        let support = Path::new("C:/Users/a/AppData/Roaming").join(crate::timing::FOLDER);
+        let chosen = local_of(&support, true, roaming.clone(), local.clone());
+        assert_eq!(chosen, Path::new("C:/Users/a/AppData/Local").join(crate::timing::FOLDER));
+        // Twin: a check's own support folder, and every other system, keep the support folder.
+        let own = Path::new("C:/Temp/oni-check/Support");
+        assert_eq!(local_of(own, true, roaming.clone(), local.clone()), own);
+        assert_eq!(local_of(&support, false, roaming, local), support);
     }
 
     /// `AppFolders.selfCheck`: a check's folders are stand-ins named after its run, and the
