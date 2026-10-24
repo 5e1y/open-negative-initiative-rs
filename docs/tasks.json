@@ -2656,5 +2656,54 @@
     "title": "The index respells its keys at open and never loses a row",
     "status": "done",
     "detail": "LibraryIndex keys every write in the archive's spelling and names both spellings in each update and delete. At open, one transaction respells rows an earlier build keyed decomposed (or with `\\` on Windows); where both spellings hold a row, the respelt one keeps its values and takes what it lacks from its twin. A busy database is respelt at the next open. index.rs's tests moved to index/tests.rs, its ceiling back to 400."
+  },
+  {
+    "id": 410,
+    "type": "fix",
+    "title": "One presence model, computed off the interface thread",
+    "status": "done",
+    "detail": "oni-library presence.rs: Present, Offline (Disconnected, Denied) or Missing, told by absence.rs's reasons (absence::refusal shared, so the canvas and the gallery say the same). roots::surveyed records each refusal's state in Survey.away and reads the roll markers on the survey's thread (Survey.rolls). The interface keeps each photo's state (organising/presence.rs) from the read's survey and from looks on a thread of their own (probe_presence after every read, and for paths a lay meets unknown); lay_grid, lay_archive, navigator_read and the ONI Trash rows read no file any more. presence::on_look lets a check refuse any look on the interface thread. Closes missing-main-thread-stat and its duplicates (model-10, scale-ui-stat-every-photo, parity-disk-stats-on-ui-thread, tests-11, bench-exists-on-ui-thread)."
+  },
+  {
+    "id": 411,
+    "type": "fix",
+    "title": "A read stopped or a disk leaving mid-read drops no row",
+    "status": "done",
+    "detail": "read_rows returned the rows of a survey cut short by a newer folder opened as gone: every row not yet walked left the index. A stopped survey now returns before pruning; a root that no longer reads after its walk is counted unreadable; an entry listed then refused leaves its folder unread. Rows under any refused folder, offline or missing, are always kept."
+  },
+  {
+    "id": 412,
+    "type": "fix",
+    "title": "The launch keeps the remembered folder whatever its state",
+    "status": "done",
+    "detail": "open_remembered opens openedFolder as Swift does (EditorScene+Stages.swift:71), never filtered by is_dir nor replaced by roots.json, and reads no disk on the interface thread; the reference roll opens only under ONI_RAW_DIR or a bench. The first volumes listing runs on the volumes thread, the home alone shown until it lands. Closes model-07 and its duplicates, windows-first-launch-fixture."
+  },
+  {
+    "id": 413,
+    "type": "fix",
+    "title": "A disk leaving or coming back, answered in one place",
+    "status": "done",
+    "detail": "volumes_moved (navigator/memory.rs) takes the volumes' thread's listing and the refused folders that answer: a volume gone turns every path under it offline from the paths alone; a volume back clears what was known under it, reads the opened folder again once when it lies there (or was refused and answers), clears tried for its favourites, and writes the kept edits (lot 2's retry). Closes the marking part of scale-unplug-no-refresh."
+  },
+  {
+    "id": 414,
+    "type": "fix",
+    "title": "A path named on the command line, dropped or picked is looked at first",
+    "status": "done",
+    "detail": "add looks at the item on a thread of its own: not there or on a disk away, nothing opens and the status says Not found: …; denied says so; a file at the top of the home or of a volume never opens the whole of it. OPENED_FOLDER is written only by a folder that opens."
+  },
+  {
+    "id": 415,
+    "type": "fix",
+    "title": "The thumbnails pass leaves unreachable originals out",
+    "status": "done",
+    "detail": "fill and redraw skip photos whose original is not present; the pass counts those with no thumbnail kept and says it once. Closes missing-thumbnail-pass-spam."
+  },
+  {
+    "id": 416,
+    "type": "fix",
+    "title": "A folder away is laid as it was last seen",
+    "status": "done",
+    "detail": "kept.rs keeps each opened folder's last whole shape (subfolders, creation dates, roll markers) under the caches' Surveys folder; a survey whose folder the disk refuses wears it, so roll headings and empty folders stay. The ONI Trash reads only its rows (index.in_trash), a roll marker written by the app is laid without being read back, the Survey is shared by Arc across landings. Closes missing-unreadable-roll-loses-rolls and the disk part of scale-ui-lay-archive-disk."
   }
 ]

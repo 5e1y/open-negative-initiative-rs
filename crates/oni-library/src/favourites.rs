@@ -272,7 +272,7 @@ pub fn read(root: &str, stop: &Stop) -> Option<Area> {
         return None;
     }
     Some(Area {
-        rolls: crate::folders::rolls(&found.images),
+        rolls: found.rolls,
         images: found.images,
         folders: found.folders,
         made: found.made,

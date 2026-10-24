@@ -146,8 +146,10 @@ fn every_column_reads_back_into_its_own_field() {
     // Twin: the same instant in seconds since 1970 is not what the column holds.
     assert_ne!(imported, row.imported_at.unix_seconds());
 
+    assert_eq!(index.in_trash().len(), 1, "a trashed row is the ONI Trash's");
     index.set_passes(None, false, &row.path).unwrap();
     index.set_trashed(None, &row.path).unwrap();
+    assert!(index.in_trash().is_empty(), "twin: restored, it leaves the ONI Trash's rows");
     index.set_manual_order(None, &row.path).unwrap();
     let cleared = index.all().remove(0);
     assert_eq!(

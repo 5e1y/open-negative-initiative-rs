@@ -211,7 +211,7 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rig.pump();
     assert_eq!((n.get_pill_title().as_str(), n.get_can_go_up()), ("Computer", false), "the home climbs to Computer, never `/`");
     shell.add(&home.join("Scans/Roll 2"));
-    rig.pump();
+    rig.until("Roll 2 revealed", Duration::from_secs(10), || n.get_pill_title().as_str() == "Scans");
     n.invoke_ancestor_chosen(1);
     rig.pump();
     assert_eq!(n.get_pill_title().as_str(), "Home");

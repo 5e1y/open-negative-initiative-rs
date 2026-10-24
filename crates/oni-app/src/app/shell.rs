@@ -33,7 +33,7 @@ impl Shell {
             preferences: Preferences::load(&options.support),
             index: LibraryIndex::open(&index_path),
             index_path,
-            survey: Survey::default(),
+            survey: Arc::default(),
             generation,
             read_done: false,
             opening: None,

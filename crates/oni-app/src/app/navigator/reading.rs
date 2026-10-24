@@ -17,7 +17,7 @@ impl Ctl {
     pub(in crate::app) fn navigator_read(&self) {
         {
             let mut s = self.state.borrow_mut();
-            let rolls: HashSet<String> = folders::rolls(&s.survey.images).into_keys().collect();
+            let rolls: HashSet<String> = s.survey.rolls.keys().cloned().collect();
             if let Some(opened) = s.opened.clone() {
                 s.nav.roll_edits.retain(|k, _| !holds(&opened, k));
             }
@@ -28,19 +28,6 @@ impl Ctl {
         self.publish_navigator();
     }
 
-    /// Folders the disk refused now answer: listed again, and the opened one read again.
-    pub(super) fn answering(self: &Rc<Self>, folders: &[String]) {
-        let reopen = {
-            let mut s = self.state.borrow_mut();
-            s.nav.model.retry();
-            s.opened.clone().filter(|o| folders.contains(o) && s.survey.unreadable.contains(o))
-        };
-        self.list_wanted();
-        if let Some(folder) = reopen {
-            self.open_folder(Path::new(&folder));
-        }
-    }
-
     pub(super) fn start_pass(&self) {
         self.state.borrow_mut().nav.tried.clear();
         self.survey_favourites();
@@ -49,7 +36,7 @@ impl Ctl {
     /// `surveyFolders` for the favourites: each one no read area covers, read alone off this
     /// thread, the folders holding the opened one first.
     pub(super) fn survey_favourites(&self) {
-        let (root, stop) = {
+        let (root, stop, computer) = {
             let mut s = self.state.borrow_mut();
             let wanted = s.wanted_folders();
             s.nav.surveys.keep(&wanted);
@@ -66,17 +53,20 @@ impl Ctl {
             s.nav.tried.insert(root.clone());
             s.nav.reading = true;
             let stop = s.nav.surveys.begin(&root);
-            (root, stop)
+            (root, stop, s.nav.computer.clone())
         };
         let _ = std::thread::Builder::new().name("favourites".into()).spawn(move || {
             let area = favourites::read(&root, &stop);
-            with_shell(move |c| c.favourite_read(root, area));
+            // A favourite unread for its disk is told offline or missing; one stopped is not told.
+            let state = if area.is_none() && !stop.raised() { presence::of(&root, &computer) } else { Presence::Present };
+            with_shell(move |c| c.favourite_read(root, area, state));
         });
     }
 
-    pub(super) fn favourite_read(&self, root: String, area: Option<Area>) {
+    pub(super) fn favourite_read(&self, root: String, area: Option<Area>, state: Presence) {
         {
             let mut s = self.state.borrow_mut();
+            s.noted(vec![(root.clone(), state)]);
             s.nav.surveys.end();
             s.nav.reading = false;
             let wanted = s.wanted_folders();

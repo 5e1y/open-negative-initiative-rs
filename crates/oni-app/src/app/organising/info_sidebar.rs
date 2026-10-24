@@ -89,8 +89,9 @@ impl Ctl {
         if film != roll.film {
             match &roll.marker {
                 Some(folder) => {
-                    if let Err(e) = oni_library::folders::set_roll(Some(&film), folder) {
-                        self.say(&tr!("The roll could not be written in its folder: {error}", error = e));
+                    match oni_library::folders::set_roll(Some(&film), folder) {
+                        Ok(()) => self.roll_written(folder, Some(film.clone())),
+                        Err(e) => self.say(&tr!("The roll could not be written in its folder: {error}", error = e)),
                     }
                     self.lay_archive();
                 }

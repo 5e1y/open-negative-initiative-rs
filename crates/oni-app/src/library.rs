@@ -6,12 +6,14 @@ use oni_library::archive_tree::{self, Node, NodeId};
 use oni_library::index::{self as library_index, LibraryIndex};
 use oni_library::roots::Survey;
 use oni_library::film_group::FilmGroup;
-use oni_library::{Entry, folders, library, paths, relink, roots};
+use oni_library::navigator::Computer;
+use oni_library::{Entry, folders, kept, library, paths, relink, roots};
 use oni_i18n::tr;
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// `absorb`'s landing pace: rows read for the folder on screen reach the gallery this often.
@@ -76,10 +78,10 @@ impl Archive {
     /// `filter` keeps exactly one medal in the gallery, never a tier above, and leaves the tree whole.
     pub fn from_rows(folder: &str, entries: &[Entry], survey: &Survey, filter: Option<Medal>) -> Archive {
         let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
-        let rolls = folders::rolls(&survey.images);
-        let nodes = folders::tree(&root, entries, &rolls, &survey.folders, &survey.made);
+        let rolls = &survey.rolls;
+        let nodes = folders::tree(&root, entries, rolls, &survey.folders, &survey.made);
         let filtered: Vec<Entry> = entries.iter().filter(|e| filter.is_none_or(|m| e.label == m)).cloned().collect();
-        let groups = folders::groups(&root, &filtered, &rolls, &survey.made)
+        let groups = folders::groups(&root, &filtered, rolls, &survey.made)
             .into_iter()
             .map(|g| {
                 let title = g.film.as_ref().map(|f| f.name.clone()).or(g.heading.clone()).unwrap_or_default();
@@ -198,17 +200,34 @@ fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {
 }
 
 /// What a landing hands the interface: the rows to lay, with the photos still unread as waiting
-/// rows, whether the read is whole, and the survey they were cut on.
-pub type Land<'a> = &'a mut dyn FnMut(Vec<Entry>, bool, &Survey);
+/// rows, whether the read is whole, and the survey they were cut on, shared by every landing.
+pub type Land<'a> = &'a mut dyn FnMut(Vec<Entry>, bool, &Arc<Survey>);
+
+/// What a read knows beyond its folder: the volumes that tell offline from missing, and the
+/// caches' folder where each folder's last shape is kept.
+pub struct Place<'a> {
+    pub computer: &'a Computer,
+    pub kept: Option<&'a Path>,
+}
 
 /// `rescan` then `absorb` for one folder: the survey, rows a read covering the folder missed or
 /// whose size moved dropped, then the members the index lacks read off their files. `land` gets the
 /// rows once, again every `LANDING`, then whole with `true`; `alive` going false stops the read.
-pub fn read_rows(folder: &str, index: &LibraryIndex, alive: &dyn Fn() -> bool, land: Land) {
+pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn Fn() -> bool, land: Land) {
     let folder = folder.to_string();
-    let survey = roots::survey(std::slice::from_ref(&folder), alive);
+    let mut survey = roots::surveyed(std::slice::from_ref(&folder), alive, place.computer);
+    // A read superseded drops nothing: what its walk did not reach is unknown, never gone.
+    if survey.stopped || !alive() {
+        return;
+    }
+    if let Some(dir) = place.kept {
+        let _ = kept::keep(dir, &folder, &survey);
+        kept::worn(dir, &folder, &mut survey);
+    }
+    let survey = Arc::new(survey);
     let _ = library::drop_invented(index);
     let kept: HashSet<&str> = survey.images.iter().map(String::as_str).collect();
+    // A row under a folder the disk refused is kept, offline or missing alike: a disk away loses no row.
     for row in index.all().into_iter().filter(|r| paths::holds(&folder, &r.path)) {
         let unread = survey.unreadable.iter().any(|u| paths::holds(u, &row.path));
         let stale = survey.sizes.get(&row.path).is_some_and(|size| relink::is_stale(&row.fingerprint, *size));
@@ -243,7 +262,8 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, alive: &dyn Fn() -> bool, l
 /// `read_rows` cut into archives, for a caller with no interface between the landings.
 pub fn read(folder: &Path, index: &LibraryIndex, filter: Option<Medal>, alive: &dyn Fn() -> bool, land: &mut dyn FnMut(Archive, bool, &Survey)) {
     let folder = paths::canonical(folder);
-    read_rows(&folder, index, alive, &mut |rows, done, survey| land(Archive::from_rows(&folder, &rows, survey, filter), done, survey));
+    let place = Place { computer: &Computer::none(), kept: None };
+    read_rows(&folder, index, &place, alive, &mut |rows, done, survey| land(Archive::from_rows(&folder, &rows, survey, filter), done, survey));
 }
 
 /// A row read again from its sidecar alone, its file's stamp kept: what a gesture on the sidecar

@@ -93,14 +93,21 @@ impl Ctl {
             return;
         }
         let share = wanted.len().div_ceil(LISTERS);
+        let computer = self.state.borrow().nav.computer.clone();
         for chunk in wanted.chunks(share) {
-            let chunk = chunk.to_vec();
+            let (chunk, computer) = (chunk.to_vec(), computer.clone());
             let _ = std::thread::Builder::new().name("navigator".into()).spawn(move || {
                 let listed: Vec<(String, Option<Vec<String>>)> = chunk.into_iter().map(|f| {
                     let children = walk::children(&f);
                     (f, children)
                 }).collect();
-                with_shell(move |c| c.listed(listed));
+                // A folder refused is told offline or missing here, off the interface thread.
+                let found: Vec<(String, Presence)> =
+                    listed.iter().map(|(f, c)| (f.clone(), if c.is_some() { Presence::Present } else { presence::of(f, &computer) })).collect();
+                with_shell(move |c| {
+                    c.state.borrow_mut().noted(found);
+                    c.listed(listed);
+                });
             });
         }
     }

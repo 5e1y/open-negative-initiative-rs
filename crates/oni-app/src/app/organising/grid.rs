@@ -6,22 +6,28 @@ impl Ctl {
     /// The bands the surface shows, the selection kept to them, then the tiles, the tree's other
     /// rows, the status bar, the sidebar and the empty state.
     pub(in crate::app) fn lay_grid(self: &Rc<Self>) {
-        let remounted = {
+        let (remounted, unknown) = {
             let mut s = self.state.borrow_mut();
             let bands = s.bands();
             let order: Vec<String> = bands.iter().flat_map(|b| b.entries.iter().map(|e| e.path.clone())).collect();
             for e in bands.iter().flat_map(|b| &b.entries) {
                 s.fingerprints.entry(e.path.clone()).or_insert_with(|| e.fingerprint.clone());
             }
-            s.org.missing = order.iter().filter(|p| !Path::new(p).exists()).cloned().collect();
+            // The states last published, never the disk: a photo not looked at yet is looked at behind.
+            s.org.missing = order.iter().filter(|p| !s.presence(p).is_present()).cloned().collect();
+            let unknown: Vec<String> = order.iter().filter(|p| !s.org.presence.contains_key(*p)).cloned().collect();
+            for path in &unknown {
+                s.org.presence.insert(path.clone(), Default::default());
+            }
             let shown: HashSet<String> = order.iter().cloned().collect();
             s.shown_picks_mut().selection.retain(|p| shown.contains(p));
             s.order = order;
             s.org.bands = bands;
             // Each surface is its own `GalleryEngine`, which lands afresh when switched to.
             let surface = if s.org.projects_surface { 1 } else { u8::from(s.trash_shown()) * 2 };
-            s.org.laid_surface.replace(surface) != Some(surface)
+            (s.org.laid_surface.replace(surface) != Some(surface), unknown)
         };
+        self.probe(unknown);
         self.relayout();
         if remounted {
             self.land_gallery();

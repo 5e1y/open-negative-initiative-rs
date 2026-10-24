@@ -2,70 +2,25 @@
 
 use super::*;
 
+mod adding;
+
 impl Ctl {
     // MARK: - The archive
-
-    /// `add(_:)`: the first item's folder opens, the item itself when a folder; the first photo
-    /// among them then opens in the editor once found. Nothing is copied or moved.
-    pub(super) fn add(self: &Rc<Self>, paths: &[PathBuf]) {
-        let Some(first) = paths.first() else { return };
-        let folder = if first.is_dir() { first.as_path() } else { first.parent().unwrap_or(first) };
-        let opening = paths.iter().find(|p| !p.is_dir() && oni_library::library::is_importable(p)).map(|p| oni_library::paths::canonical(p));
-        self.navigator_reveal(folder);
-        self.open_folder(folder);
-        self.state.borrow_mut().opening = opening;
-    }
-
-    /// `dropDestination`: files from the Finder are taken in the gallery alone, as ⌘O takes them;
-    /// whether they were.
-    pub fn dropped(self: &Rc<Self>, paths: &[PathBuf]) -> bool {
-        // Under a sheet the drop would change the folder the sheet was asked about.
-        let shown = self.window().is_some_and(|w| w.get_grid_shown() && !w.get_sheet_shown());
-        if !shown || paths.is_empty() {
-            return false;
-        }
-        self.add(paths);
-        true
-    }
-
-    /// The launch's folder: `openedFolder` if it still exists, else the first root of `roots.json`.
-    pub(super) fn open_remembered(self: &Rc<Self>) -> bool {
-        let (remembered, support) = {
-            let s = self.state.borrow();
-            (s.preferences.string(preferences::OPENED_FOLDER).map(PathBuf::from), s.support.clone())
-        };
-        let roots = || oni_library::roots::Roots::load(&support).current().map(PathBuf::from);
-        let folder = remembered.filter(|p| p.is_dir()).or_else(roots);
-        match folder {
-            Some(folder) => {
-                self.open_folder(&folder);
-                true
-            }
-            None => false,
-        }
-    }
-
-    /// `open()`: the system's folder picker, then `add`; a cancel leaves everything as it was.
-    pub(super) fn pick(self: &Rc<Self>) {
-        // Taken out first: a modal panel runs a nested event loop, which may reach the state.
-        let picker = std::mem::replace(&mut self.state.borrow_mut().picker, Box::new(|| None));
-        let chosen = picker();
-        self.state.borrow_mut().picker = picker;
-        if let Some(folder) = chosen {
-            self.add(&[folder]);
-        } else if !system::HAS_PICKER {
-            self.say(tr("This system has no folder picker: pass the folder on the command line"));
-        }
-    }
 
     /// `openFolder`: the gallery on the folder, read through the index behind, its thumbnails
     /// drawn once the read is whole; the editor keeps what it holds.
     pub(super) fn open_folder(self: &Rc<Self>, folder: &Path) {
-        let folder = oni_library::paths::canonical(folder);
+        self.open_spelt(oni_library::paths::canonical(folder));
+    }
+
+    /// `open_folder` on a path already in the archive's spelling, which reads no disk here.
+    pub(super) fn open_spelt(self: &Rc<Self>, folder: String) {
         let (generation, index_path) = {
             let mut s = self.state.borrow_mut();
             s.org.trash_open = false;
             s.org.renaming = None;
+            s.org.presence.clear();
+            s.org.opened_presence = oni_library::presence::Presence::Present;
             s.trash_picks = Default::default();
             s.opened = Some(folder.clone());
             s.reveal.fresh = true;
@@ -95,7 +50,11 @@ impl Ctl {
 
     /// The read on its own thread and its own connection; each landing comes back to this thread.
     pub(super) fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
-        let current = self.state.borrow().generation.clone();
+        let (current, computer) = {
+            let mut s = self.state.borrow_mut();
+            s.org.reads += 1;
+            (s.generation.clone(), s.nav.computer.clone())
+        };
         std::thread::Builder::new()
             .name("library".into())
             .spawn(move || {
@@ -103,7 +62,9 @@ impl Ctl {
                     return with_shell(|c| c.say(tr("The library index cannot be opened")));
                 };
                 let alive = || current.load(Ordering::Relaxed) == generation;
-                library::read_rows(&folder, &index, &alive, &mut |rows, done, survey| {
+                let kept = index_path.parent().map(|caches| caches.join("Surveys"));
+                let place = library::Place { computer: &computer, kept: kept.as_deref() };
+                library::read_rows(&folder, &index, &place, &alive, &mut |rows, done, survey| {
                     let survey = survey.clone();
                     with_shell(move |c| c.take_rows(generation, rows, done, survey));
                 });
@@ -112,7 +73,7 @@ impl Ctl {
     }
 
     /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.
-    pub(super) fn take_rows(self: &Rc<Self>, generation: u64, rows: Vec<oni_library::Entry>, done: bool, survey: Survey) {
+    pub(super) fn take_rows(self: &Rc<Self>, generation: u64, rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>) {
         {
             let mut s = self.state.borrow_mut();
             if s.generation.load(Ordering::Relaxed) != generation {
@@ -122,9 +83,11 @@ impl Ctl {
             s.rows = rows;
             s.survey = survey;
             s.read_done = done;
+            s.landed_presence();
         }
         self.lay_archive();
         if done {
+            self.probe_presence();
             self.navigator_read();
             let order = self.state.borrow().order.clone();
             self.offer_neutral_decode_notice(&order);
@@ -139,6 +102,17 @@ impl Ctl {
             }
             self.wrapped_after_read();
         }
+    }
+
+    /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
+    pub(super) fn roll_written(&self, folder: &str, film: Option<oni_settings::Film>) {
+        let mut s = self.state.borrow_mut();
+        let holding = s.survey.images.iter().any(|i| oni_library::paths::same(&oni_library::paths::parent(i), folder));
+        let rolls = &mut Arc::make_mut(&mut s.survey).rolls;
+        match film.filter(|_| holding) {
+            Some(film) => rolls.insert(folder.to_owned(), film),
+            None => rolls.remove(folder),
+        };
     }
 
     /// The archive cut again from the rows held, under the filter; what the hand folded stays so,
@@ -170,24 +144,29 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `fillOpened`: the pass over the opened folder's rows, which draws those with no file.
+    /// `fillOpened`: the pass over the opened folder's rows, which draws those with no file; a
+    /// photo whose original cannot be reached is never decoded, only counted once if it lacks one.
     pub(super) fn fill(&self) {
         let s = self.state.borrow();
         let generation = s.generation.load(Ordering::Relaxed);
-        let rows: Vec<(String, String)> = s
+        let (rows, gone): (Vec<_>, Vec<_>) = s
             .rows
             .iter()
             .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING))
             .map(|e| (e.path.clone(), e.fingerprint.clone()))
-            .collect();
+            .partition(|(path, _)| s.presence(path).is_present());
+        let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();
         let (lock, wake) = &*s.painter;
-        lock.lock().expect("painter").pass = Some((generation, rows));
+        lock.lock().expect("painter").pass = Some((generation, rows, gone));
         wake.notify_one();
     }
 
     /// `invalidate`: the photo's redraw, queued once and drawn before the pass's next photo.
     pub(super) fn redraw(&self, path: &str) {
         let mut s = self.state.borrow_mut();
+        if !s.presence(path).is_present() {
+            return;
+        }
         let fingerprint = s.fingerprints.get(path).filter(|f| !f.starts_with(thumbnails::PENDING)).cloned();
         let painter = s.painter.clone();
         let (lock, wake) = &*painter;
@@ -215,12 +194,19 @@ impl Ctl {
         });
     }
 
-    /// The pass's count once it knows which photos lack a file.
-    pub(super) fn pass_counted(&self, generation: u64, held: usize, absent: usize) {
-        let mut s = self.state.borrow_mut();
-        if s.generation.load(Ordering::Relaxed) == generation {
+    /// The pass's count once it knows which photos lack a file, and one line for those whose
+    /// original cannot be reached, never one per photo.
+    pub(super) fn pass_counted(&self, generation: u64, held: usize, absent: usize, unreachable: usize) {
+        {
+            let mut s = self.state.borrow_mut();
+            if s.generation.load(Ordering::Relaxed) != generation {
+                return;
+            }
             s.painted = (held, held + absent);
             s.creating = (0, absent);
+        }
+        if unreachable > 0 {
+            self.say(&trn("One photo has no thumbnail: its original cannot be reached.", "{n} photos have no thumbnail: their originals cannot be reached.", unreachable as u64));
         }
     }
 

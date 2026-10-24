@@ -39,6 +39,7 @@ mod prepare_leftovers;
 mod prepare_masks;
 mod preset_deck;
 mod presets;
+mod presence;
 mod quit;
 mod rgb_passes;
 mod roll_tab;
@@ -102,6 +103,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
     ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
+    ("presence::lay_grid_touches_no_disk", presence::lay_grid_touches_no_disk),
+    ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
+    ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
     ("navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left", navigator::the_navigator_walks_its_disk_from_computer_and_the_next_launch_finds_it_where_it_was_left),
     ("panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset", panel_bindings::the_panels_switches_follow_their_owner_and_its_blocks_reset),
     ("panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window", panel_bindings::the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window),

@@ -14,12 +14,12 @@ use oni_settings::{Date, Film, Id, Medal};
 use oni_i18n::{tr, trn};
 use slint::{ComponentHandle, Image, ModelRc, SharedString, VecModel};
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
 use std::rc::Rc;
 use std::sync::OnceLock;
 use std::time::Instant;
 
 mod grid;
+mod presence;
 mod pointer;
 mod grid_keys;
 mod cell_menu;
@@ -118,7 +118,15 @@ pub struct Organising {
     pub project_expanded: HashSet<NodeId>,
     pub project_nodes: Vec<NodeId>,
     pub bands: Vec<Band>,
+    /// The photos shown whose original is not there, from `presence` alone.
     pub missing: HashSet<String>,
+    /// Each photo's state as the reads and the looks off this thread last published it.
+    pub presence: HashMap<String, oni_library::presence::Presence>,
+    pub opened_presence: oni_library::presence::Presence,
+    /// The volumes gone since the last listing, whose paths stay offline whatever lands later.
+    pub left: Vec<String>,
+    /// The opened folder's reads started, which the checks count.
+    pub reads: usize,
     menu: Vec<Item>,
     menu_path: Option<String>,
     menu_lists: (Vec<(Id, String)>, Vec<(Id, String)>),

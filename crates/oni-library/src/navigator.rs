@@ -100,6 +100,7 @@ impl Computer {
 /// A folder's subfolders in the Finder's order, hidden ones and packages left out; `None` while the
 /// disk refuses it (asleep, unmounted, access not granted yet), which is not empty. Reads the disk.
 pub fn children(folder: &str) -> Option<Vec<String>> {
+    crate::presence::looked(folder);
     let listing = std::fs::read_dir(folder).ok()?;
     let mut out: Vec<String> = listing
         .filter_map(|e| e.ok())

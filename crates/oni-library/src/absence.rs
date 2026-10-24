@@ -23,22 +23,31 @@ pub enum Absence {
 /// What keeps `path` from being read, `None` for a file ONI can open. Reads the disk: a stat, then
 /// an open, since macOS's privacy rules let a stat through and refuse the read.
 pub fn absence(computer: &Computer, path: &Path) -> Option<Absence> {
+    crate::presence::looked(&path.to_string_lossy());
     let refused = match std::fs::metadata(path) {
         Ok(m) if m.is_file() && m.len() == 0 => return Some(Absence::Empty),
         Ok(m) if m.is_file() => std::fs::File::open(path).err()?,
         Ok(_) => std::io::Error::from(ErrorKind::NotFound),
         Err(e) => e,
     };
-    let text = path.to_string_lossy();
-    if let Some(root) = volume_root(computer, &text).filter(|r| !Path::new(r).is_dir()) {
-        let volume = paths::name(&root).trim_end_matches('/').to_string();
-        return Some(Absence::Unplugged { volume: if volume.is_empty() { root } else { volume } });
+    Some(refusal(computer, &path.to_string_lossy(), &refused))
+}
+
+/// What a refusal of `path` by the disk means: its volume away, gone from a disk that answers,
+/// denied, or another failure. Reads the disk: the volume's root.
+pub fn refusal(computer: &Computer, path: &str, refused: &std::io::Error) -> Absence {
+    if let Some(root) = volume_root(computer, path) {
+        crate::presence::looked(&root);
+        if !Path::new(&root).is_dir() {
+            let volume = paths::name(&root).trim_end_matches('/').to_string();
+            return Absence::Unplugged { volume: if volume.is_empty() { root } else { volume } };
+        }
     }
-    Some(match refused.kind() {
+    match refused.kind() {
         ErrorKind::PermissionDenied => Absence::Denied,
         ErrorKind::NotFound | ErrorKind::NotADirectory => Absence::Gone,
         _ => Absence::Unreadable(refused.to_string()),
-    })
+    }
 }
 
 /// The root of the volume `path` lies on when that volume may come and go: `/Volumes/T7`, or a

@@ -7,9 +7,8 @@ impl Ctl {
     pub(in crate::app) fn read_trashed(&self) {
         let mut s = self.state.borrow_mut();
         let (Some(index), Some(folder)) = (&s.index, s.opened.clone()) else { return };
-        let all = index.all();
         let trashed: Vec<Entry> =
-            oni_library::index::trashed(&all).into_iter().filter(|e| oni_library::paths::holds(&folder, &e.path)).collect();
+            oni_library::index::trashed(&index.in_trash()).into_iter().filter(|e| oni_library::paths::holds(&folder, &e.path)).collect();
         s.org.trashed = trashed;
     }
 
@@ -48,7 +47,7 @@ impl Ctl {
                         unfolded: false,
                         picked: s.org.trash_picked.as_deref() == Some(folder.path.as_str()),
                         opened: false,
-                        present: Path::new(&folder.path).exists(),
+                        present: s.present(&folder.path),
                         restore_help: trn("Restore this photo", "Restore these {n} photos", folder.count as u64).into(),
                     });
                 }
@@ -119,7 +118,8 @@ impl Ctl {
             };
             let word = trn("Restore Photo", "Restore {n} Photos", n as u64);
             items.push(Item { line: menu_line(&word, true, false, false), act: Act::Restore(frames) });
-            let present = Path::new(&folder).exists();
+            // Its volume mounted, from the path alone, as Swift tells a trash folder's row.
+            let present = self.state.borrow().present(&folder);
             items.push(Item { line: menu_line(tr("Show in Finder"), present, true, false), act: Act::Reveal(vec![folder]) });
         }
         self.open_menu(items, None)
