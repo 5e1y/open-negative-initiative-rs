@@ -2334,5 +2334,12 @@
     "title": "Sliders as Swift's DSSlider: the knob's hover, settle and the wheel everywhere",
     "status": "done",
     "detail": "Seen on the board after #320 and #321. A disabled slider never grows its knob (the board's Disabled column did). The stepped slider grows its knob and shows the grab cursor over the knob alone, as DSSlider and the continuous one; its name's double click and tooltip are off while disabled, and its ± keys dim with it. The knob follows the hand unsprung and settles on a value arriving from elsewhere (a reset, an undo, another photo) along Motion.settle (DS.Motion.settle's 0.38 s response, eased out), never while held or within Motion.settle of a scroll event; the stepped slider used to lag its slide by 0.14 s. The levels track shows the grab cursor within a handle's grab, its hover measured from the track's origin (it was a half-knob off), and its handles settle the same way while no hand is on it. Every slider takes the wheel as DSScrollAdjust does: the Brush Size (now a BrushSlider wrapper), the export's Quality and Prepare the Roll's sliders, which ignored it, move along their track and run their release's work (the brush and Picker Size kept, the export weighed) once the scroll rests, through Ctl::slider_scrolled; a scroll across a track is still left to the pane. Ink.primary has its own branch in Inks.of. Window checks: the brush, the quality and the Picker Size scroll along and refuse a scroll across (twins), the Picker Size written only once the scroll rests."
+  },
+  {
+    "id": 336,
+    "type": "fix",
+    "title": "The dark badge as Swift's DSBadge: radius 8, the value face, black at 60 %, white ink",
+    "status": "done",
+    "detail": "Follows #305. The dark Badge had DSBadge's padding (6) but a radius of 4, the chip's face, the contrast edge's fill and the handle's ink. It now takes DSBadge's rounded outline (DS.Radius.badge, 8), DS.Typo.value (11), DS.Palette.overlay (black at 60 %, new Colour.overlay) and textOnFill; role: label gives a correction's number the label's face, as NegativeView sets it. Seen on the loupe's ratio, the crop's size, the preset deck's hint, the tree's drag counter, the correction marks and the console's count."
   }
 ]

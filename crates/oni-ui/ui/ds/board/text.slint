@@ -117,26 +117,28 @@ component BadgeRow inherits Line {
     in property <string> text;
     in property <string> long;
     in property <string> note;
-    Cell { Badge { tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; note: root.note; } }
-    Cell { Badge { tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.long; } }
+    in property <TextRole> role: TextRole.value;
+    Cell { Badge { role: root.role; tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; note: root.note; } }
+    Cell { Badge { role: root.role; tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.long; } }
     Cell {
         Stage {
             width: BoardStyle.cell;
             height: 3 * BoardStyle.gap;
             border-radius: Radius.badge;
-            Badge { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; }
+            Badge { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; role: root.role; tone: root.tone; metal: root.metal; fill: root.fill; ink: root.ink; text: root.text; }
         }
     }
 }
 
 export component BadgePage inherits Page {
     title: "Badge";
-    note: "Badge: tone (warning, dark, seal, step, tint), metal (a seal's gold, holographic, red), fill and ink (a tint's), text, note (shown on hover, then read).";
+    note: "Badge: tone (warning, dark, seal, step, tint), metal (a seal's gold, holographic, red), fill and ink (a tint's), role (a dark one's face: value, label), text, note (shown on hover, then read).";
     Group {
         title: "Badge";
         states: ["Live", "A longer word", "On the canvas"];
         BadgeRow { label: "warning"; tone: BadgeTone.warning; text: "8-bit"; long: "8-bit source"; }
         BadgeRow { label: "dark (over the photo)"; tone: BadgeTone.dark; text: "1:1"; long: "200 %"; }
+        BadgeRow { label: "dark, the label's face (a correction's number)"; tone: BadgeTone.dark; role: TextRole.label; text: "3"; long: "12"; }
         BadgeRow { label: "seal, gold, its note on hover"; tone: BadgeTone.seal; text: "NEW"; long: "2026"; note: "Grain now follows the film's own size."; }
         BadgeRow { label: "seal, holographic"; tone: BadgeTone.seal; metal: Metal.holographic; text: "RGB"; long: "3 PASSES"; }
         BadgeRow { label: "seal, red"; tone: BadgeTone.seal; metal: Metal.red; text: "FLAGGED"; long: "FLAGGED FRAME"; }

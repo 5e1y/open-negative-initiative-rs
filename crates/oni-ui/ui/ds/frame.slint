@@ -2,6 +2,7 @@
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
 import { DS, Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "badge.slint";
+import { TextRole } from "base.slint";
 
 export enum FrameStyle { crop, window }
 
@@ -255,6 +256,7 @@ export component CorrectionMark inherits Rectangle {
         x: parent.width + Space.xxs / 2;
         y: -self.height - Space.xxs / 2;
         text: root.number;
+        role: TextRole.label;
     }
 }
 
