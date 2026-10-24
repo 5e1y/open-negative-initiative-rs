@@ -13,7 +13,7 @@ export component Panel inherits Surface {
     width: ShellStyle.panel-width;
     VerticalLayout {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
-        // `DSHistogram` on the panel's ground, its size the trace's; Lighting's curves over it on the Color tab.
+        // `DSHistogram` on the panel's ground; Lighting's curves over it on the Color tab.
         if !Lab.shown && PanelState.tab != 3: Plot {
             plot: 5;
             height: PlotStyle.main;
@@ -23,7 +23,8 @@ export component Panel inherits Surface {
             histogram: Plots.output;
             histogram-revision: Plots.output-revision;
             lines: PanelState.tab == 2 ? Editors.print-lines : [];
-            resized(p, w, h) => { Editors.resized(p, w, h); }
+            // The trace's size, set by the plot itself so it is known before any histogram lands.
+            resized(p, w, h) => { Plots.output-width = w; Plots.output-height = h; Editors.resized(p, w, h); }
             property <int> epoch: Editors.epoch;
             changed epoch => { Editors.resized(self.plot, self.width, self.height); }
         }

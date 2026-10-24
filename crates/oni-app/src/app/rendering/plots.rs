@@ -187,7 +187,7 @@ impl Ctl {
                 self.state.borrow_mut().requests.inputs_drawn = None;
                 self.publish_inputs();
             }
-            Plot::Saturation | Plot::Print => self.state.borrow_mut().histogram_dirty = true,
+            Plot::Saturation => self.state.borrow_mut().histogram_dirty = true,
             _ => {}
         }
     }
