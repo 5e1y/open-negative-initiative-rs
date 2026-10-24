@@ -34,7 +34,7 @@ impl Ctl {
                     },
                     picked: model.selected.as_deref() == Some(path.as_str()),
                     opened: opened.as_deref() == Some(path.as_str()),
-                    favourite: favourites.contains(path),
+                    favourite: s.nav.favourites.contains(path),
                     present: s.present(path),
                     renaming: model.renaming.as_deref() == Some(path.as_str()),
                 })

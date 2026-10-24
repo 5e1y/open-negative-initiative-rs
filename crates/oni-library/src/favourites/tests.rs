@@ -137,3 +137,32 @@ fn an_unreadable_favourites_file_is_set_aside_never_written_over() {
     assert_eq!(Favourites::load(scratch.path()).map(|f| f.paths), Some(vec!["/Volumes/T7/Scans".to_string()]));
     assert!(file.exists(), "twin: a file that reads stays");
 }
+
+/// The Finder renames `roll 8` to `Roll 8`: the star stays on its row and its photos stay inside it.
+#[cfg(any(target_os = "macos", windows))]
+#[test]
+fn a_case_only_rename_outside_oni_keeps_the_favourite() {
+    let scratch = Scratch::new("case");
+    let root = crate::paths::normal(&scratch.path().to_string_lossy()).into_owned();
+    assert!(crate::paths::ignores_case(&root), "the check runs on a volume blind to case");
+    std::fs::create_dir_all(scratch.path().join("roll 8")).unwrap();
+    std::fs::write(scratch.path().join("roll 8").join("a.NEF"), [0u8]).unwrap();
+    let starred = crate::navigator::children(&root).unwrap().remove(0);
+    let mut stars = Favourites::default();
+    stars.toggle(&starred);
+    stars.save(scratch.path()).unwrap();
+    std::fs::rename(scratch.path().join("roll 8"), scratch.path().join("Roll 8")).unwrap();
+    let row = crate::navigator::children(&root).unwrap().remove(0);
+    assert!(row.ends_with("/Roll 8"), "the disk lists the new case");
+    let mut surveys = Surveys::default();
+    surveys.store(read(&stars.paths[0], &Stop::new()).unwrap(), &stars.paths[0]);
+    let image = crate::paths::canonical(&scratch.path().join("Roll 8").join("a.NEF"));
+    for loaded in [stars.clone(), Favourites::load(scratch.path()).unwrap()] {
+        assert!(loaded.contains(&row), "the star stays on the renamed row");
+        assert_eq!(surveys.union(None, &loaded.paths).images, [image.clone()]);
+    }
+    stars.toggle(&row);
+    assert!(stars.paths.is_empty(), "unstarring the row takes the old spelling with it");
+    // Twin: compared byte for byte, the favourite names neither the row nor the photo.
+    assert!(starred != row && !image.starts_with(&format!("{starred}/")));
+}

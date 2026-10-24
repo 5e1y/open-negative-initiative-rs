@@ -1,6 +1,7 @@
 //! A cache, disposable without loss: rebuildable from the sidecars, which stay the only truth.
 //! Bumping the schema version throws the table away and rebuilds it, never a migration.
 
+use crate::paths::normal;
 use oni_settings::{ConversionMode, Date, Film, Id, Medal};
 use rusqlite::{Connection, OptionalExtension, Row, params};
 use std::collections::HashSet;
@@ -89,6 +90,8 @@ impl LibraryIndex {
         let _ = connection.execute_batch("PRAGMA synchronous = NORMAL");
         let index = LibraryIndex { connection };
         index.prepare_schema().ok()?;
+        // A busy database is respelt at the next open; meanwhile each write names both spellings.
+        let _ = spelling::respell(&index.connection);
         Some(index)
     }
 
@@ -150,7 +153,7 @@ impl LibraryIndex {
                     trashed_at = excluded.trashed_at"
             ))?
             .execute(params![
-                entry.path,
+                normal(&entry.path),
                 reference(entry.imported_at),
                 entry.captured_at.map(reference),
                 entry.fingerprint,
@@ -172,14 +175,14 @@ impl LibraryIndex {
 
     pub fn set_trashed(&self, date: Option<Date>, path: &str) -> rusqlite::Result<()> {
         self.connection
-            .execute("UPDATE photos SET trashed_at = ? WHERE path = ?", params![date.map(reference), path])?;
+            .execute("UPDATE photos SET trashed_at = ? WHERE path IN (?, ?)", params![date.map(reference), path, normal(path)])?;
         Ok(())
     }
 
     pub fn set_passes(&self, pass_of: Option<&str>, leads: bool, path: &str) -> rusqlite::Result<()> {
         self.connection.execute(
-            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path = ?",
-            params![pass_of, i64::from(leads), path],
+            "UPDATE photos SET pass_of = ?, leads_passes = ? WHERE path IN (?, ?)",
+            params![pass_of, i64::from(leads), path, normal(path)],
         )?;
         Ok(())
     }
@@ -188,7 +191,7 @@ impl LibraryIndex {
     pub fn set_film(&self, film: Option<&Film>, path: &str) -> rusqlite::Result<()> {
         self.connection.execute(
             "UPDATE photos SET film_id = ?, film_name = ?, film_order = ?, film_stock = ?, \
-             film_shot_date = ?, film_camera_body = ? WHERE path = ?",
+             film_shot_date = ?, film_camera_body = ? WHERE path IN (?, ?)",
             params![
                 film.map(|f| f.id.to_string()),
                 film.map(|f| f.name.clone()),
@@ -196,24 +199,25 @@ impl LibraryIndex {
                 film.and_then(|f| f.stock.clone()),
                 film.and_then(|f| f.shot_date).map(reference),
                 film.and_then(|f| f.camera_body.clone()),
-                path
+                path,
+                normal(path)
             ],
         )?;
         Ok(())
     }
 
     pub fn set_label(&self, label: Medal, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET label = ? WHERE path = ?", params![medal_raw(label), path])?;
+        self.connection.execute("UPDATE photos SET label = ? WHERE path IN (?, ?)", params![medal_raw(label), path, normal(path)])?;
         Ok(())
     }
 
     pub fn set_manual_order(&self, order: Option<f64>, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("UPDATE photos SET manual_order = ? WHERE path = ?", params![order, path])?;
+        self.connection.execute("UPDATE photos SET manual_order = ? WHERE path IN (?, ?)", params![order, path, normal(path)])?;
         Ok(())
     }
 
     pub fn remove(&self, path: &str) -> rusqlite::Result<()> {
-        self.connection.execute("DELETE FROM photos WHERE path = ?", params![path])?;
+        self.connection.execute("DELETE FROM photos WHERE path IN (?, ?)", params![path, normal(path)])?;
         Ok(())
     }
 
@@ -321,178 +325,7 @@ fn frames(picked: &[&Entry], rows: &[Entry]) -> Vec<Entry> {
         .collect()
 }
 
+mod spelling;
+
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::scratch::Scratch;
-
-    fn day1() -> Date {
-        Date::since_reference_date(800_000_000.0)
-    }
-
-    fn at(base: Date, seconds: f64) -> Date {
-        crate::later(base, seconds)
-    }
-
-    fn roll_entries() -> Vec<Entry> {
-        let day1 = day1();
-        let batch = at(day1, 10_800.0);
-        let day2 = at(day1, 86_400.0);
-        let mut b = Entry::new("/negs/b.RW2", batch, "b-100-x");
-        b.captured_at = Some(at(day1, 7200.0));
-        let mut a = Entry::new("/negs/a.RW2", batch, "a-100-x");
-        a.captured_at = Some(at(day1, 3600.0));
-        let undated = Entry::new("/negs/sansdate.RW2", batch, "s-100-x");
-        let mut c = Entry::new("/negs/c.RW2", day2, "c-100-x");
-        c.captured_at = Some(at(day2, 60.0));
-        let mut relinked = Entry::new("/negs/relinked.RW2", at(day2, 3600.0), "r-100-x");
-        relinked.captured_at = Some(at(day1, 1800.0));
-        vec![b, a, undated, c, relinked]
-    }
-
-    fn names(index: &LibraryIndex) -> Vec<String> {
-        index.all().iter().map(|e| crate::paths::name(&e.path)).collect()
-    }
-
-    #[test]
-    fn the_index_orders_on_capture_and_rebuilds_whole() {
-        let scratch = Scratch::new("index");
-        let index = LibraryIndex::open(&scratch.path().join("index.sqlite")).unwrap();
-        assert_eq!(index.count(), 0);
-        let entries = roll_entries();
-        for e in &entries {
-            index.upsert(e).unwrap();
-        }
-        for e in &entries {
-            index.upsert(e).unwrap();
-        }
-        assert_eq!(index.count(), 5, "a second import duplicates nothing");
-        assert_eq!(names(&index), ["relinked.RW2", "a.RW2", "b.RW2", "sansdate.RW2", "c.RW2"]);
-        index.remove("/negs/b.RW2").unwrap();
-        assert_eq!(index.count(), 4);
-        index.rebuild(&entries).unwrap();
-        assert_eq!(index.all(), {
-            let mut sorted = entries.clone();
-            let key = |e: &Entry| crate::seconds(e.captured_at.unwrap_or(e.imported_at));
-            sorted.sort_by(|a, b| key(a).total_cmp(&key(b)).then_with(|| a.path.cmp(&b.path)));
-            sorted
-        });
-
-        index.set_label(Medal::Gold, "/negs/a.RW2").unwrap();
-        let all = index.all();
-        assert!(all.iter().all(|e| (e.label == Medal::Gold) == (e.path == "/negs/a.RW2")));
-
-        let mut roll = Film::new("Portra 400");
-        roll.stock = Some("kodak-portra".into());
-        roll.shot_date = Some(Date::since_reference_date(700_000_000.0));
-        index.set_film(Some(&roll), "/negs/a.RW2").unwrap();
-        let joined = index.all().into_iter().find(|e| e.path == "/negs/a.RW2").unwrap();
-        assert_eq!(joined.film.as_ref(), Some(&roll));
-        // Twin: a namesake is another roll, so the id is what came back.
-        assert_ne!(Some(&Film::new("Portra 400")), joined.film.as_ref());
-        index.set_film(None, "/negs/a.RW2").unwrap();
-        assert!(index.all().iter().all(|e| e.film.is_none()));
-
-        let mut moded = entries.clone();
-        moded[0].mode = Some(ConversionMode::Positive);
-        moded[1].mode = Some(ConversionMode::Monochrome);
-        index.rebuild(&moded).unwrap();
-        let mode = |p: &str| index.all().into_iter().find(|e| e.path == p).unwrap().mode;
-        assert_eq!(mode("/negs/b.RW2"), Some(ConversionMode::Positive));
-        assert_eq!(mode("/negs/a.RW2"), Some(ConversionMode::Monochrome));
-        assert_eq!(mode("/negs/c.RW2"), None);
-    }
-
-    #[test]
-    fn a_triplet_draws_as_its_lead_and_its_passes_show_once_it_is_gone() {
-        let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
-        let mut lead = Entry::new("/rgb/0821.ARW", day1(), "a");
-        lead.leads_passes = true;
-        let pass = |p: &str, f: &str| {
-            let mut e = Entry::new(p, day1(), f);
-            e.pass_of = Some("0821.ARW".into());
-            e
-        };
-        for e in [lead, pass("/rgb/0822.ARW", "b"), pass("/rgb/0823.ARW", "c"), pass("/other/0821-like.ARW", "d")] {
-            index.upsert(&e).unwrap();
-        }
-        let drawn: HashSet<String> = index.shown().into_iter().map(|e| e.path).collect();
-        assert_eq!(drawn, HashSet::from(["/other/0821-like.ARW".to_owned(), "/rgb/0821.ARW".to_owned()]));
-        index.remove("/rgb/0821.ARW").unwrap();
-        // Twin: with the lead gone, the passes show again.
-        let drawn: HashSet<String> = index.shown().into_iter().map(|e| e.path).collect();
-        assert_eq!(drawn.len(), 3);
-    }
-
-    /// A row with every column set to a value no other column holds.
-    fn full_row() -> Entry {
-        let mut film = Film::new("Roll #8");
-        film.manual_order = Some(-4.5);
-        film.stock = Some("fujifilm-fujicolor".into());
-        film.shot_date = Some(Date::since_reference_date(700_000_001.0));
-        film.camera_body = Some("Nikon F3".into());
-        Entry {
-            path: "/negs/DSC_6432.NEF".into(),
-            imported_at: Date::since_reference_date(812_000_002.0),
-            captured_at: Some(Date::since_reference_date(811_000_003.0)),
-            fingerprint: "30005388-2026:09:14 16:46:19-58c5f1206c22f7cb".into(),
-            label: Medal::Silver,
-            film: Some(film),
-            manual_order: Some(7.25),
-            mode: Some(ConversionMode::Monochrome),
-            pass_of: Some("DSC_6431.NEF".into()),
-            leads_passes: true,
-            trashed_at: Some(Date::since_reference_date(813_000_004.0)),
-        }
-    }
-
-    #[test]
-    fn every_column_reads_back_into_its_own_field() {
-        let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
-        let row = full_row();
-        index.upsert(&row).unwrap();
-        assert_eq!(index.all(), std::slice::from_ref(&row));
-        // Twin: the same row with two same-typed columns crossed is another row, so a crossed read fails above.
-        let mut crossed = row.clone();
-        crossed.manual_order = row.film.as_ref().and_then(|f| f.manual_order);
-        crossed.film.as_mut().unwrap().manual_order = row.manual_order;
-        assert_ne!(crossed, row);
-        let mut swapped = row.clone();
-        swapped.film.as_mut().unwrap().stock = row.film.as_ref().unwrap().camera_body.clone();
-        swapped.film.as_mut().unwrap().camera_body = row.film.as_ref().unwrap().stock.clone();
-        assert_ne!(swapped, row);
-
-        // Dates are stored as seconds since 2001, as the Swift index stores them.
-        let (imported, trashed): (f64, f64) = index
-            .connection
-            .query_row("SELECT imported_at, trashed_at FROM photos", [], |r| Ok((r.get(0)?, r.get(1)?)))
-            .unwrap();
-        assert_eq!((imported, trashed), (812_000_002.0, 813_000_004.0));
-        // Twin: the same instant in seconds since 1970 is not what the column holds.
-        assert_ne!(imported, row.imported_at.unix_seconds());
-
-        index.set_passes(None, false, &row.path).unwrap();
-        index.set_trashed(None, &row.path).unwrap();
-        index.set_manual_order(None, &row.path).unwrap();
-        let cleared = index.all().remove(0);
-        assert_eq!(
-            (cleared.pass_of, cleared.leads_passes, cleared.trashed_at, cleared.manual_order),
-            (None, false, None, None)
-        );
-        assert_eq!(cleared.film, row.film, "a write to one column leaves the roll alone");
-    }
-
-    #[test]
-    fn a_schema_of_another_version_is_thrown_away() {
-        let scratch = Scratch::new("index-version");
-        let path = scratch.path().join("index.sqlite");
-        {
-            let index = LibraryIndex::open(&path).unwrap();
-            index.upsert(&Entry::new("/a", day1(), "a")).unwrap();
-        }
-        // Twin: reopened at the same version, the row is still there.
-        assert_eq!(LibraryIndex::open(&path).unwrap().count(), 1);
-        Connection::open(&path).unwrap().execute_batch("PRAGMA user_version = 99").unwrap();
-        assert_eq!(LibraryIndex::open(&path).unwrap().count(), 0);
-    }
-}
+mod tests;

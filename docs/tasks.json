@@ -2516,5 +2516,40 @@
     "title": "Tips round on the radius scale",
     "status": "done",
     "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
+  },
+  {
+    "id": 400,
+    "type": "fix",
+    "title": "One spelling per path: composed on macOS, compared by name",
+    "status": "done",
+    "detail": "exFAT lists `Été` decomposed while its real path is composed, so the navigator's row, the opened folder, the survey's rolls and the favourite star named one folder two ways. paths::normal and canonical compose (NFC) on macOS, where every volume resolves either form to the same file; Windows and Linux keep the disk's bytes, as their disks tell the forms apart. holds, same, below and moved compare and cut by names, never by bytes, so a rename's follow (navigator, favourites, projects, gestures, the opened folder) never slices mid-letter. Favourites and the navigator's remembered rows are respelt on read. Closes names-exfat-nfd-nfc-split and tests-08."
+  },
+  {
+    "id": 401,
+    "type": "fix",
+    "title": "A case-only rename outside ONI keeps the favourite",
+    "status": "done",
+    "detail": "On a volume blind to case (APFS and exFAT by default, NTFS), `roll 8` holds and names what the disk now spells `Roll 8`: holds and same fold case there, each Mac volume asked once through pathconf(_PC_CASE_SENSITIVE), and only when two paths differ by case alone. A star off takes its own spelling first, so two favourites differing by case on a case-sensitive disk never merge. Closes windows-case-only-rename."
+  },
+  {
+    "id": 402,
+    "type": "fix",
+    "title": "A Windows share or mapped drive has one spelling",
+    "status": "done",
+    "detail": "canonical reads `\\\\?\\UNC\\nas\\film` as `//nas/film`, and keeps a mapped or subst drive's letter rather than the share or folder behind it, so a favourite starred as `Z:/Film/Roll 12` holds the photos the survey canonicalises. Presence of a share off the volume list stays with the presence work. Partly closes windows-unc-mapped-canonical."
+  },
+  {
+    "id": 403,
+    "type": "fix",
+    "title": "The Finder's order puts Été among the E's",
+    "status": "done",
+    "detail": "paths::standard_order (paths/order.rs) reads names decomposed: base letters first (æ, œ, ß expanded), then accents, then case, a small letter before its capital, digit runs as numbers, the composed and decomposed spellings of one name equal; ASCII names take an allocation-free pass that orders alike. Closes names-finder-order-accents."
+  },
+  {
+    "id": 404,
+    "type": "fix",
+    "title": "The index respells its keys at open and never loses a row",
+    "status": "done",
+    "detail": "LibraryIndex keys every write in the archive's spelling and names both spellings in each update and delete. At open, one transaction respells rows an earlier build keyed decomposed (or with `\\` on Windows); where both spellings hold a row, the respelt one keeps its values and takes what it lacks from its twin. A busy database is respelt at the next open. index.rs's tests moved to index/tests.rs, its ceiling back to 400."
   }
 ]

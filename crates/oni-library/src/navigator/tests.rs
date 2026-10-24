@@ -202,3 +202,83 @@ fn on_windows_each_drive_is_a_volume() {
     assert!(!mac().is_volume_root(r"D:\"));
 }
 
+
+/// A disk image formatted exFAT like the T7, attached inside the scratch folder, detached on drop.
+#[cfg(target_os = "macos")]
+struct Exfat(std::path::PathBuf);
+
+#[cfg(target_os = "macos")]
+impl Exfat {
+    fn attach(scratch: &Scratch) -> Option<Exfat> {
+        use std::process::Command;
+        let (image, mount) = (scratch.path().join("t7.dmg"), scratch.path().join("T7"));
+        let run = |c: &mut Command| c.status().is_ok_and(|s| s.success());
+        let made = run(Command::new("hdiutil").args(["create", "-quiet", "-size", "8m", "-fs", "ExFAT", "-volname", "T7", "-layout", "NONE"]).arg(&image));
+        std::fs::create_dir_all(&mount).ok()?;
+        let attached = made && run(Command::new("hdiutil").args(["attach", "-quiet", "-nobrowse", "-noverify", "-mountpoint"]).arg(&mount).arg(&image));
+        attached.then_some(Exfat(mount))
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl Drop for Exfat {
+    fn drop(&mut self) {
+        let _ = std::process::Command::new("hdiutil").args(["detach", "-quiet", "-force"]).arg(&self.0).status();
+    }
+}
+
+/// exFAT lists `Été` decomposed while its real path is composed: the row, the opened folder, the
+/// survey's roll and photos and the star all name it one way. Without `hdiutil`, APFS stands in.
+#[cfg(target_os = "macos")]
+#[test]
+fn an_accented_folder_on_exfat_opens_marks_and_stars() {
+    use crate::favourites::{Favourites, Stop, Surveys, read};
+    let scratch = Scratch::new("exfat");
+    let (nfc, nfd) = ("\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025");
+    let exfat = Exfat::attach(&scratch);
+    let disk = match &exfat {
+        Some(Exfat(mount)) => mount.clone(),
+        None => {
+            eprintln!("hdiutil refused an exFAT image: decomposed names made on APFS stand in");
+            scratch.path().join("apfs")
+        }
+    };
+    std::fs::create_dir_all(disk.join(if exfat.is_some() { nfc } else { nfd }).join("Roll 3")).unwrap();
+    let root = paths::canonical(&disk);
+    let roll = paths::join(&root, &format!("{nfc}/Roll 3"));
+    std::fs::write(paths::join(&roll, "a.NEF"), [0u8]).unwrap();
+    crate::folders::set_roll(Some(&oni_settings::Film::new("Portra 400")), &roll).unwrap();
+    let raw: Vec<String> = std::fs::read_dir(&disk)
+        .unwrap()
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !n.starts_with('.'))
+        .collect();
+    assert_eq!(raw, [nfd], "the disk lists the name decomposed");
+    let ete = children(&root).unwrap().remove(0);
+    let row = children(&ete).unwrap().remove(0);
+    assert_eq!((ete.as_str(), row.as_str()), (paths::join(&root, nfc).as_str(), roll.as_str()));
+    assert_eq!(paths::canonical(Path::new(&row)), row, "the opened folder is its row");
+    let area = read(&root, &Stop::new()).unwrap();
+    assert!(area.rolls.contains_key(&row) && area.folders.contains(&ete), "the roll's icon falls on its row");
+    assert!(!area.images.is_empty() && area.images.iter().all(|i| holds(&row, i)));
+    let mut nav = Navigation::new(Some(root.clone()), false, BTreeSet::new(), Vec::new());
+    nav.show(&row, &[], &Computer::none());
+    let mut wanted = nav.take_wanted();
+    while !wanted.is_empty() {
+        for folder in wanted {
+            nav.listed(&folder, children(&folder).unwrap());
+        }
+        nav.rows(&[]);
+        wanted = nav.take_wanted();
+    }
+    assert!(nav.unfolded.contains(&ete) && nav.rows(&[]).iter().any(|(p, _)| *p == row), "the photo's folder unfolds to its row");
+    let mut stars = Favourites::default();
+    stars.toggle(&row);
+    let mut surveys = Surveys::default();
+    surveys.store(area.clone(), &root);
+    assert!(stars.contains(&row) && surveys.union(None, &stars.paths).images == area.images, "the star holds its photos");
+    // Twin: the row the disk's listing spells, joined byte for byte, is no folder the survey knows.
+    let listed = format!("{root}/{}", raw[0]);
+    assert!(listed != ete && !area.folders.contains(&listed));
+}

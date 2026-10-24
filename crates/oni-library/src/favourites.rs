@@ -1,7 +1,7 @@
 //! The folders the navigator keeps at hand and the index keeps read, in a file of their own so a
 //! build that rewrites `roots.json` never drops them; and the surveys that read them off the disk.
 
-use crate::paths::holds;
+use crate::paths::{self, holds, same};
 use crate::roots::{self, Roots};
 use oni_settings::{Date, Film, json};
 use serde::{Deserialize, Serialize};
@@ -26,9 +26,23 @@ impl Favourites {
         support.join("favourites.json")
     }
 
-    /// `None` while the file was never written, which is what seeds it from the roots once.
+    /// `None` while the file was never written, which is what seeds it from the roots once. Read in
+    /// the archive's spelling, as the Swift app or an earlier build may have kept another.
     pub fn load(support: &Path) -> Option<Favourites> {
-        crate::read_json(&Self::file_path(support))
+        crate::read_json::<Favourites>(&Self::file_path(support)).map(Favourites::respelt)
+    }
+
+    /// Each path in the archive's spelling, one spelt twice kept once, in their order. Case never
+    /// merges two here, as a volume away cannot say whether it tells `Roll` from `roll`.
+    pub fn respelt(self) -> Favourites {
+        let mut paths: Vec<String> = Vec::with_capacity(self.paths.len());
+        for path in self.paths {
+            let path = paths::normal(&path).into_owned();
+            if !paths.contains(&path) {
+                paths.push(path);
+            }
+        }
+        Favourites { paths, ..self }
     }
 
     /// A plain `JSONEncoder`'s text: compact, keys in declaration order.
@@ -40,29 +54,29 @@ impl Favourites {
 
     /// The roots of `roots.json` seed the first favourites; that file is only read.
     pub fn seeded(roots: &Roots) -> Favourites {
-        Favourites { version: 1, paths: roots.paths.clone() }
+        Favourites { version: 1, paths: roots.paths.clone() }.respelt()
     }
 
     pub fn contains(&self, path: &str) -> bool {
-        self.paths.iter().any(|p| p == path)
+        self.paths.iter().any(|p| same(p, path))
     }
 
+    /// A star off takes its own spelling, else the one a case-only rename outside ONI left behind.
     pub fn toggle(&mut self, path: &str) {
-        if self.contains(path) {
-            self.paths.retain(|p| p != path);
+        let spelt = paths::normal(path).into_owned();
+        if self.paths.contains(&spelt) {
+            self.paths.retain(|p| *p != spelt);
+        } else if self.contains(path) {
+            self.paths.retain(|p| !same(p, path));
         } else {
-            self.paths.push(path.to_owned());
+            self.paths.push(spelt);
         }
     }
 
     /// A favourite renamed or moved on the disk follows it, a folder carrying those inside it.
     pub fn follow(&mut self, old: &str, new: &str) {
         for path in &mut self.paths {
-            if path == old {
-                *path = new.to_owned();
-            } else if holds(old, path) {
-                *path = format!("{new}{}", &path[old.len()..]);
-            }
+            *path = paths::moved(path, old, new);
         }
     }
 }
@@ -140,11 +154,11 @@ impl Surveys {
 
     pub fn store(&mut self, area: Area, root: &str) {
         // A folder read again inside an area held is laid into it, so one area answers for each photo.
-        let outer = self.areas.keys().find(|k| k.as_str() != root && holds(k, root)).cloned();
+        let outer = self.areas.keys().find(|k| !same(k, root) && holds(k, root)).cloned();
         if let Some(outer) = outer
             && let Some(whole) = self.areas.get_mut(&outer)
         {
-            let inside = |p: &str| p != root && holds(root, p);
+            let inside = |p: &str| !same(p, root) && holds(root, p);
             whole.images.retain(|p| !holds(root, p));
             whole.images.extend(area.images);
             whole.folders.retain(|p| !inside(p));
@@ -162,7 +176,7 @@ impl Surveys {
             return;
         }
         // An area inside the one stored would be read twice; the outer one answers for it.
-        self.areas.retain(|inner, _| inner == root || !holds(root, inner));
+        self.areas.retain(|inner, _| !holds(root, inner));
         self.areas.insert(root.to_owned(), area);
     }
 
@@ -211,7 +225,7 @@ impl Surveys {
     /// even when it holds the new one, whose own read is far shorter.
     pub fn yield_keeping(&self, wanted: &[String]) {
         if let Some((root, stop)) = &self.running
-            && !wanted.contains(root)
+            && !wanted.iter().any(|w| same(w, root))
         {
             stop.raise();
         }
@@ -220,7 +234,7 @@ impl Surveys {
 
 /// The areas to read for `wanted`: each wanted folder no stored area covers, outermost first.
 pub fn missing(wanted: &[String], stored: &[String]) -> Vec<String> {
-    let outermost = wanted.iter().filter(|p| !wanted.iter().any(|w| w != *p && holds(w, p)));
+    let outermost = wanted.iter().filter(|p| !wanted.iter().any(|w| !same(w, p) && holds(w, p)));
     let set: std::collections::BTreeSet<String> =
         outermost.filter(|p| !stored.iter().any(|s| holds(s, p))).cloned().collect();
     set.into_iter().collect()
@@ -231,7 +245,7 @@ pub fn missing(wanted: &[String], stored: &[String]) -> Vec<String> {
 pub fn ordered(reading: &[String], opened: Option<&str>) -> Vec<String> {
     let mut out = reading.to_vec();
     if let Some(opened) = opened
-        && !out.iter().any(|r| r == opened)
+        && !out.iter().any(|r| same(r, opened))
         && out.iter().any(|r| holds(r, opened))
     {
         out.push(opened.to_owned());

@@ -1,7 +1,7 @@
 //! The navigator's walk of the disk, folders only and one level at a time, and where it stands:
 //! the base (`None` is Computer), the unfolded rows, the favourites view and the picked row.
 
-use crate::paths::{self, holds};
+use crate::paths::{self, holds, same};
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 
@@ -79,7 +79,7 @@ impl Computer {
     /// One level up; `None` is Computer.
     pub fn parent(&self, base: &str) -> Option<String> {
         let up = paths::parent(base);
-        if base == self.home || self.is_volume_root(base) || up == "/" || up == self.volumes || up.is_empty() || up == base {
+        if same(base, &self.home) || self.is_volume_root(base) || up == "/" || up == self.volumes || up.is_empty() || up == base {
             return None;
         }
         Some(up)
@@ -174,7 +174,10 @@ pub enum Landed {
 }
 
 impl Navigation {
+    /// The remembered base and rows in the archive's spelling, which an earlier build kept as the disk listed them.
     pub fn new(base: Option<String>, favourites_only: bool, unfolded: BTreeSet<String>, volumes: Vec<String>) -> Navigation {
+        let base = base.map(|b| paths::normal(&b).into_owned());
+        let unfolded = unfolded.iter().map(|p| paths::normal(p).into_owned()).collect();
         Navigation { base, favourites_only, unfolded, volumes, ..Navigation::default() }
     }
 
@@ -321,15 +324,7 @@ impl Navigation {
 
     /// A folder renamed or moved: the base, the pick and the unfolded rows follow it.
     pub fn follow(&mut self, old: &str, new: &str) {
-        let moved = |path: &str| -> String {
-            if path == old {
-                new.to_owned()
-            } else if holds(old, path) {
-                format!("{new}{}", &path[old.len()..])
-            } else {
-                path.to_owned()
-            }
-        };
+        let moved = |path: &str| paths::moved(path, old, new);
         self.base = self.base.as_deref().map(moved);
         self.selected = self.selected.as_deref().map(moved);
         self.unfolded = self.unfolded.iter().map(|p| moved(p)).collect();
@@ -357,7 +352,7 @@ impl Navigation {
         };
         if let Some(top) = tops.iter().find(|t| holds(t, folder)).cloned() {
             self.unfold(&top, folder, true);
-        } else if let Some(base) = self.base.clone().filter(|b| b != folder && holds(b, folder)) {
+        } else if let Some(base) = self.base.clone().filter(|b| !same(b, folder) && holds(b, folder)) {
             self.unfold(&base, folder, false);
         } else {
             self.go(computer.parent(folder));
@@ -367,7 +362,7 @@ impl Navigation {
 
     fn unfold(&mut self, top: &str, folder: &str, including: bool) {
         let mut at = paths::parent(folder);
-        while at != top && holds(top, &at) {
+        while !same(&at, top) && holds(top, &at) {
             self.unfolded.insert(at.clone());
             self.list(&at, false);
             let up = paths::parent(&at);
@@ -376,7 +371,7 @@ impl Navigation {
             }
             at = up;
         }
-        if including && top != folder {
+        if including && !same(top, folder) {
             self.unfolded.insert(top.to_owned());
             self.list(top, false);
         }
@@ -384,8 +379,10 @@ impl Navigation {
 
     /// A folder opened from elsewhere: picked where it shows, else the base moved to its parent.
     pub fn reveal(&mut self, folder: &str, computer: &Computer) {
-        if !self.favourites_only && self.rows(&[]).iter().any(|(p, _)| p == folder) {
-            self.selected = Some(folder.to_owned());
+        if !self.favourites_only
+            && let Some((row, _)) = self.rows(&[]).into_iter().find(|(p, _)| same(p, folder))
+        {
+            self.selected = Some(row);
             return;
         }
         self.go(computer.parent(folder));

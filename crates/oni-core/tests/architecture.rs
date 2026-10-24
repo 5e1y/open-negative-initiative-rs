@@ -19,7 +19,6 @@ const GRANDFATHERED: &[(&str, usize)] = &[
     ("crates/oni-decode/tests/swift_checks.rs", 466),
     ("crates/oni-export/tests/files.rs", 470),
     ("crates/oni-graph/tests/graph.rs", 407),
-    ("crates/oni-library/src/index.rs", 498),
     ("crates/oni-library/src/project.rs", 551),
     ("crates/oni-localsend/src/receiver.rs", 582),
     ("crates/oni-measure/src/registration.rs", 432),

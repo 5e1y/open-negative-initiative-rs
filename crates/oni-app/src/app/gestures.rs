@@ -136,13 +136,7 @@ impl Ctl {
     /// them, then the folder is read again for its new tree.
     pub(super) fn followed(self: &Rc<Self>, moves: &[Move]) {
         let moved = |path: &str| {
-            moves.iter().find_map(|m| {
-                if path == m.from {
-                    Some(m.to.clone())
-                } else {
-                    oni_library::paths::holds(&m.from, path).then(|| format!("{}{}", m.to, &path[m.from.len()..]))
-                }
-            })
+            moves.iter().find(|m| oni_library::paths::holds(&m.from, path)).map(|m| oni_library::paths::moved(path, &m.from, &m.to))
         };
         let reopen = {
             let mut s = self.state.borrow_mut();

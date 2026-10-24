@@ -118,7 +118,7 @@ impl Ctl {
             s.nav.favourites.follow(path, &target);
             let failure = s.save_favourites();
             if let Some(opened) = s.opened.clone().filter(|o| holds(path, o)) {
-                let moved = format!("{target}{}", &opened[path.len()..]);
+                let moved = paths::moved(&opened, path, &target);
                 let _ = s.preferences.set(crate::preferences::OPENED_FOLDER, Value::String(moved.clone()));
                 s.opened = Some(moved);
             }

@@ -167,15 +167,8 @@ pub fn moved(projects: &[Project], moves: &[(String, String)]) -> Vec<Project> {
             let mut kept = project.clone();
             if let Some(paths) = kept.paths.as_mut() {
                 for path in paths.values_mut() {
-                    for (from, to) in moves {
-                        if path == from {
-                            *path = to.clone();
-                            break;
-                        }
-                        if holds(from, path) {
-                            *path = format!("{to}{}", &path[from.len()..]);
-                            break;
-                        }
+                    if let Some((from, to)) = moves.iter().find(|(from, _)| holds(from, path)) {
+                        *path = crate::paths::moved(path, from, to);
                     }
                 }
             }
