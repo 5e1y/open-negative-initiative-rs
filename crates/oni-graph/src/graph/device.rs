@@ -1,6 +1,35 @@
 //! The graph on its GPU: opening, limits, statistics and purging.
 
 use super::*;
+use std::sync::OnceLock;
+
+/// The process's GPU: the high-performance adapter, and one device on it at the adapter's own limits.
+#[derive(Clone)]
+pub struct Gpu {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+}
+
+/// The one device every graph and window of a process records on, opened at the first call: devices
+/// opened side by side crashed Windows' software adapter (WARP) in 5 checks' runs of 30, one at a time in none.
+pub fn gpu() -> Result<Gpu, Error> {
+    static GPU: OnceLock<Result<Gpu, Error>> = OnceLock::new();
+    GPU.get_or_init(|| pollster::block_on(open_gpu())).clone()
+}
+
+async fn open_gpu() -> Result<Gpu, Error> {
+    let instance = wgpu::Instance::default();
+    let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
+    let adapter = instance.request_adapter(&options).await.map_err(|e| Error::NoAdapter(e.to_string()))?;
+    // The adapter's own limits, as the defaults stop textures at 8 192 px; clearing a texture in place
+    // lets a sheet laid every notch reuse the last one's.
+    let required_features = adapter.features() & wgpu::Features::CLEAR_TEXTURE;
+    let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), required_features, ..Default::default() };
+    let (device, queue) = adapter.request_device(&descriptor).await.map_err(|e| Error::NoDevice(e.to_string()))?;
+    Ok(Gpu { instance, adapter, device, queue })
+}
 
 impl Graph {
     /// The default adapter, tiles at `TEXTURE_SIDE` or the device's own limit if lower.
@@ -10,23 +39,9 @@ impl Graph {
 
     /// Tiles and render pieces at most `max_side` pixels a side.
     pub fn with_max_side(max_side: u32) -> Result<Self, Error> {
-        pollster::block_on(Self::open(max_side))
-    }
-
-    pub(super) async fn open(max_side: u32) -> Result<Self, Error> {
-        let instance = wgpu::Instance::default();
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                ..Default::default()
-            })
-            .await
-            .map_err(|e| Error::NoAdapter(e.to_string()))?;
-        let info = adapter.get_info();
-        // The adapter's own limits: the defaults stop textures at 8 192 px, half a pixel-shift frame.
-        let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), ..Default::default() };
-        let (device, queue) = adapter.request_device(&descriptor).await.map_err(|e| Error::NoDevice(e.to_string()))?;
-        Ok(Self::from_device(device, queue, format!("{} ({:?})", info.name, info.backend), max_side))
+        let gpu = gpu()?;
+        let info = gpu.adapter.get_info();
+        Ok(Self::from_device(gpu.device, gpu.queue, format!("{} ({:?})", info.name, info.backend), max_side))
     }
 
     /// A graph on a device another crate already opened, so one GPU serves the whole app. Tiles

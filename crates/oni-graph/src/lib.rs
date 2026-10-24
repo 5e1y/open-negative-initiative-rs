@@ -9,6 +9,6 @@ pub mod stages;
 mod texture;
 pub use texture::{IDLE_RENDERS, Precision, STEP};
 
-pub use graph::{Cache, Door, Error, Graph, Image, Source, Stats, TEXTURE_SIDE, Uploader};
+pub use graph::{Cache, Door, Error, Gpu, Graph, Image, Source, Stats, TEXTURE_SIDE, Uploader, gpu};
 pub use rect::Rect;
 pub use stage::{MAX_AUX, Stage};

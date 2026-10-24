@@ -75,15 +75,9 @@ pub struct Device {
 }
 
 impl Device {
-    /// The high-performance adapter at its own limits: the defaults stop textures at 8 192 px.
+    /// The process's one GPU (`oni_graph::gpu`): the high-performance adapter at its own limits.
     pub fn open() -> Result<Device, String> {
-        let instance = wgpu::Instance::default();
-        let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
-        let adapter = pollster::block_on(instance.request_adapter(&options)).map_err(|e| format!("no GPU adapter: {e}"))?;
-        // Clearing a texture in place lets a sheet laid every notch reuse the last one's.
-        let required_features = adapter.features() & wgpu::Features::CLEAR_TEXTURE;
-        let descriptor = wgpu::DeviceDescriptor { required_limits: adapter.limits(), required_features, ..Default::default() };
-        let (device, queue) = pollster::block_on(adapter.request_device(&descriptor)).map_err(|e| format!("no GPU device: {e}"))?;
+        let oni_graph::Gpu { instance, adapter, device, queue } = oni_graph::gpu().map_err(|e| e.to_string())?;
         // Logged, not raised: a surface reconfigure that loses a race keeps its old size until the next frame.
         device.on_uncaptured_error(Arc::new(|e: wgpu::Error| crate::timing::line(&format!("wgpu error: {e}"))));
         Ok(Device { instance, adapter, device, queue })

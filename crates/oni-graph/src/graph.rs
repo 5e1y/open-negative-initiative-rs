@@ -17,6 +17,7 @@ mod chain;
 mod plan;
 mod cache;
 mod device;
+pub use device::{Gpu, gpu};
 mod rendering;
 mod dispatch;
 mod half;
@@ -27,7 +28,7 @@ pub const TEXTURE_SIDE: u32 = 16_384;
 /// Largest upload written at once; a whole 16 384 px tile is 4 GiB, past what one staging buffer may hold.
 const UPLOAD_BAND_BYTES: u64 = 64 << 20;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
     NoAdapter(String),
     NoDevice(String),

@@ -315,18 +315,15 @@ fn an_enlargement_keeps_regions_and_reference() {
 #[test]
 fn graphs_on_a_shared_device_render_as_their_own() {
     let Some(mut own) = graph("graphs_on_a_shared_device_render_as_their_own") else { return };
-    let opened = pollster::block_on(async {
-        let adapter = wgpu::Instance::default().request_adapter(&Default::default()).await.ok()?;
-        adapter.request_device(&wgpu::DeviceDescriptor::default()).await.ok()
-    });
-    let Some((device, queue)) = opened else {
-        println!("SKIPPED graphs_on_a_shared_device_render_as_their_own: no device at the default limits");
+    let Ok(oni_graph::Gpu { device, queue, .. }) = oni_graph::gpu() else {
+        println!("SKIPPED graphs_on_a_shared_device_render_as_their_own: no device");
         return;
     };
-    let mut a = Graph::from_device(device.clone(), queue.clone(), "shared".into(), oni_graph::TEXTURE_SIDE);
-    let mut b = Graph::from_device(device.clone(), queue, "shared".into(), oni_graph::TEXTURE_SIDE);
-    // The default limits stop textures at 8 192 px: the graph follows the device it was handed.
-    assert_eq!(a.max_side(), device.limits().max_texture_dimension_2d.min(oni_graph::TEXTURE_SIDE));
+    let limit = device.limits().max_texture_dimension_2d;
+    let mut a = Graph::from_device(device.clone(), queue.clone(), "shared".into(), u32::MAX);
+    let mut b = Graph::from_device(device.clone(), queue, "shared".into(), 1024);
+    // The graph follows the device it was handed, under the side its caller asked for.
+    assert_eq!((a.max_side(), b.max_side()), (limit, limit.min(1024)));
     let pixels = noise(W, H, 9);
     let reference = {
         let s = own.upload(W, H, &pixels).expect("upload");
