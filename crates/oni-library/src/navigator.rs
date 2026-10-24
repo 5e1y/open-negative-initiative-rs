@@ -64,11 +64,11 @@ impl Computer {
         if self.volumes == DRIVES {
             return is_drive_root(path);
         }
-        paths::parent(path) == self.volumes
+        same(&paths::parent(path), &self.volumes)
     }
 
-    /// On a disk that may come and go: under `/Volumes`, or on Windows a drive other than the home's;
-    /// never with no volumes' folder known, which would hold every path.
+    /// On a disk that may come and go: under `/Volumes` in any spelling of it, or on Windows a drive
+    /// other than the home's; never with no volumes' folder known, which would hold every path.
     pub fn is_on_volume(&self, path: &str) -> bool {
         if self.volumes.is_empty() {
             return false;
@@ -77,13 +77,13 @@ impl Computer {
             let drive = |p: &str| p.get(..2).map(str::to_ascii_uppercase);
             return path.as_bytes().get(1) == Some(&b':') && drive(path) != drive(&self.home);
         }
-        path.strip_prefix(self.volumes.as_str()).is_some_and(|rest| rest.starts_with('/'))
+        holds(&self.volumes, path) && !same(&self.volumes, path)
     }
 
     /// One level up; `None` is Computer.
     pub fn parent(&self, base: &str) -> Option<String> {
         let up = paths::parent(base);
-        if same(base, &self.home) || self.is_volume_root(base) || up == "/" || up == self.volumes || up.is_empty() || up == base {
+        if same(base, &self.home) || self.is_volume_root(base) || up == "/" || same(&up, &self.volumes) || up.is_empty() || up == base {
             return None;
         }
         Some(up)

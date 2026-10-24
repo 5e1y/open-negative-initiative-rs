@@ -204,6 +204,17 @@ fn on_windows_each_drive_is_a_volume() {
     assert!(!mac().is_volume_root(r"D:\"));
 }
 
+/// A volumes' folder handed in Windows' own spelling, `\` and another case, holds the archive's `/` paths.
+#[cfg(windows)]
+#[test]
+fn an_injected_volumes_folder_is_read_in_any_spelling_on_windows() {
+    let c = Computer { home: r"C:\x\home".into(), volumes: r"C:\x\Volumes".into() };
+    assert!(c.is_on_volume("C:/x/Volumes/T7/Roll") && c.is_on_volume("c:/X/volumes/T7"));
+    assert!(c.is_volume_root("C:/x/Volumes/T7") && c.parent("C:/x/Volumes/T7").is_none());
+    // Twin: a sibling named like it, and the folder itself, lie on no volume.
+    assert!(!c.is_on_volume("C:/x/Volumesque/T7") && !c.is_on_volume("C:/x/Volumes"));
+    assert_eq!(crate::absence::volume_root(&c, "C:/x/Volumes/T7/Roll/A.NEF").as_deref(), Some("C:/x/Volumes/T7"));
+}
 
 /// A disk image formatted exFAT like the T7, attached inside the scratch folder, detached on drop.
 #[cfg(target_os = "macos")]

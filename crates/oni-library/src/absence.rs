@@ -59,7 +59,7 @@ pub fn volume_root(computer: &Computer, path: &str) -> Option<String> {
     if computer.volumes == DRIVES {
         return path.get(..2).map(|d| format!("{d}/"));
     }
-    let rest = path.strip_prefix(computer.volumes.as_str())?.trim_start_matches('/');
+    let rest = paths::below(&computer.volumes, path)?;
     let name = rest.split('/').next().filter(|n| !n.is_empty())?;
     Some(paths::join(&computer.volumes, name))
 }
