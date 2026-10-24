@@ -1,5 +1,5 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
-import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, SliderStyle, PlotStyle, RowStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, SliderStyle, PlotStyle, RowStyle, TileStyle } from "theme.slint";
 import { Icons } from "icons.slint";
 import { TextRole, Tone, Label, Icon, Picture, Ground, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
@@ -9,7 +9,7 @@ import { HelpMark, Section, Dialog } from "containers.slint";
 import { TileView, TileHeading, Scroller } from "collections.slint";
 import { RowKind, RowForm, Row } from "row.slint";
 import { MenuEntry, MenuPanel, Menu, Picker } from "menu.slint";
-import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
+import { MedalPicker, EmptyState, DateFields, DropLine } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { LabScreen } from "keypad.slint";
 
@@ -344,7 +344,7 @@ export component Catalogue inherits AppWindow {
                         spacing: Space.s;
                         TileView { picture-height: Space.l * 2; width: Space.l * 3; missing: true; }
                         TileView { picture-height: Space.l * 2; width: Space.l * 3; rgb: true; medal: 2; }
-                        TileGhost { height: Space.l * 2; width: Space.l * 3; }
+                        Picture { height: Space.l * 2; width: Space.l * 3; ground: Ground.well; opacity: TileStyle.ghost; }
                         DropLine { width: Stroke.emphasis; height: Space.l * 2; }
                     }
                 }

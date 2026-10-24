@@ -31,7 +31,10 @@ export component Badge inherits Rectangle {
     in property <color> fill;
     in property <color> ink;
     in property <string> note;
+    // A click that swaps what it says, as the loupe's ratio.
+    in property <bool> pressable;
     callback read();
+    callback clicked();
     property <bool> fixed: root.tone == BadgeTone.step || root.tone == BadgeTone.tint;
     property <bool> seal: root.tone == BadgeTone.seal;
     width: root.tone == BadgeTone.step ? DS.control-keycap-mini-height
@@ -67,10 +70,13 @@ export component Badge inherits Rectangle {
         centred: root.fixed;
         vertical-alignment: root.fixed || root.seal ? TextVerticalAlignment.center : TextVerticalAlignment.top;
     }
-    if root.note != "": TouchArea {
+    if root.note != "" || root.pressable: TouchArea {
+        clicked => { root.clicked(); }
         changed has-hover => {
-            Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
-            if (self.has-hover) { root.read(); }
+            if (root.note != "") {
+                Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
+                if (self.has-hover) { root.read(); }
+            }
         }
     }
 }

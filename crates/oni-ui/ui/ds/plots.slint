@@ -1,7 +1,7 @@
 // The editors' plots: a recessed screen holding a histogram, lines and dots Rust lays out, and the
 // track whose handles a press catches; every gesture is handed to Rust with its place in points.
 import { Colour, Space, Stroke, State, Motion, SliderStyle, PlotStyle } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Label, Picture, Ground, Fit, TextRole, Tone } from "base.slint";
 import { Knob, Rail } from "slider.slint";
 
 export enum Ink {
@@ -96,7 +96,7 @@ export component Plot inherits Rectangle {
         source: root.histogram;
         revision: root.histogram-revision;
         ground: Ground.ground;
-        stretched: true;
+        fit: Fit.fill;
         background: transparent;
     }
     for line in root.lines: Path {

@@ -7,6 +7,7 @@ import { Icons } from "icons.slint";
 import { Look, Button, ButtonKind, ButtonSize, RenameField } from "controls.slint";
 import { NavigatorStyle } from "folders.slint";
 import { FormStyle } from "forms.slint";
+import { StockIcon } from "stocks.slint";
 
 // `none` is a list's line, with no chevron or glyph; `trash` is the ONI Trash and its folders;
 // `heading` names the lines under it, in the tertiary ink, out of reach.
@@ -154,10 +155,10 @@ export component Row inherits Rectangle {
         // A menu holds no stock, so its glyph takes only its own width.
         if root.tree && !root.renaming: Rectangle {
             width: root.choice ? RowStyle.icon : RowStyle.slot;
-            if root.has-stock: Image {
-                source: root.stock;
-                width: RowStyle.slot;
-                height: RowStyle.slot;
+            if root.has-stock: StockIcon {
+                artwork: root.stock;
+                has-artwork: true;
+                side: RowStyle.slot;
             }
             if !root.has-stock: Icon {
                 source: root.kind == RowKind.photo ? Icons.film : root.kind == RowKind.project ? Icons.sticky-note

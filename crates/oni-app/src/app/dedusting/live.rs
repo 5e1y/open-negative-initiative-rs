@@ -8,6 +8,9 @@ const MIN_STEP: f64 = 1.0;
 /// A lone point's segment, in canvas points: long enough for the renderer to keep and cap it round.
 const DOT: f64 = 0.1;
 
+/// `NegativeView`'s `dash: [4, 4]` on the line to a patch's source, in canvas points.
+const DASH: f64 = 4.0;
+
 /// The stroke's points in fractions of the rendered frame, y down, and its path in canvas points;
 /// a move appends one segment, so it costs the same at the stroke's thousandth point as at its first.
 #[derive(Default)]
@@ -91,6 +94,27 @@ pub fn traced(points: &[(f64, f64)], f: (f64, f64, f64, f64)) -> String {
     out
 }
 
+/// The line from `a` to `b`, fractions of the frame `f`, cut into dashes `DASH` on and `DASH` off
+/// from `a`: a Slint path strokes no dash of its own.
+pub fn dashed(a: (f64, f64), b: (f64, f64), f: (f64, f64, f64, f64)) -> String {
+    let (x0, y0) = (f.0 + a.0 * f.2, f.1 + a.1 * f.3);
+    let (x1, y1) = (f.0 + b.0 * f.2, f.1 + b.1 * f.3);
+    let length = (x1 - x0).hypot(y1 - y0);
+    let mut out = String::new();
+    if length <= 0.0 {
+        return out;
+    }
+    let (ux, uy) = ((x1 - x0) / length, (y1 - y0) / length);
+    let mut at = 0.0;
+    while at < length {
+        let end = (at + DASH).min(length);
+        let gap = if out.is_empty() { "" } else { " " };
+        let _ = write!(out, "{gap}M {:.2} {:.2} L {:.2} {:.2}", x0 + ux * at, y0 + uy * at, x0 + ux * end, y0 + uy * end);
+        at += 2.0 * DASH;
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,6 +159,17 @@ mod tests {
         assert_eq!(dot, "M 210.00 120.00 L 210.10 120.00");
         assert_ne!(dot, "M 210.00 120.00 L 210.00 120.00", "twin: a segment onto itself the renderer drops");
         assert_eq!(traced(&[], FRAME), "");
+    }
+
+    #[test]
+    fn a_sources_line_is_dashed_four_on_four_off_from_the_stroke() {
+        // 20 points across from (210, 120): dashes at 0-4, 8-12, 16-20.
+        let line = dashed((0.5, 0.5), (0.55, 0.5), FRAME);
+        assert_eq!(line, "M 210.00 120.00 L 214.00 120.00 M 218.00 120.00 L 222.00 120.00 M 226.00 120.00 L 230.00 120.00");
+        assert_ne!(line, traced(&[(0.5, 0.5), (0.55, 0.5)], FRAME), "twin: the line drawn whole is another path");
+        // A line ending inside a dash is cut there, never past `b`.
+        assert!(dashed((0.5, 0.5), (0.525, 0.5), FRAME).ends_with("M 218.00 120.00 L 220.00 120.00"));
+        assert_eq!(dashed((0.5, 0.5), (0.5, 0.5), FRAME), "");
     }
 
     #[test]

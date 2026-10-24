@@ -3,6 +3,7 @@ import { DS } from "tokens.slint";
 import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
 import { Icons } from "icons.slint";
+import { Dot } from "marks.slint";
 import { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button } from "button.slint";
 import { SliderFill, Knob, Slider } from "slider.slint";
 export { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button, SliderFill, Knob, Slider }
@@ -73,13 +74,11 @@ export component Toggle inherits HorizontalLayout {
             accessible-checked: root.on;
             accessible-label: root.label;
             animate background { duration: Motion.quick; }
-            Rectangle {
+            Dot {
                 y: ToggleStyle.inset;
-                height: parent.height - 2 * ToggleStyle.inset;
-                width: self.height;
+                size: parent.height - 2 * ToggleStyle.inset;
                 x: root.on ? parent.width - self.width - ToggleStyle.inset : ToggleStyle.inset;
-                border-radius: self.height / 2;
-                background: Colour.white;
+                ink: Colour.white;
                 animate x { duration: Motion.quick; }
             }
             TouchArea {

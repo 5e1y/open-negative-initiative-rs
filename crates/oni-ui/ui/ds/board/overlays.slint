@@ -1,7 +1,14 @@
 // The marks drawn over the canvas: the crop's and the window's frame, dragged live as Rust drags
-// them, the compare split, the well, the brush, the corrections, the loupe, the rings and drop marks.
-import { Space, Stroke, Ground, Picture, FrameOverlay, FrameStyle, SplitGuide, Well, BrushDisc, CorrectionMark, LoupeBand, DustOriginal, LiveStroke, SourceTrace, Ring, DropRing, DropLine, Row, RowKind } from "../ds.slint";
+// them, the compare split, the well, the rings, the traces, the loupe and the drop marks.
+import { Space, Stroke, Radius, Ground, Fit, Picture, Label, TextRole, Tone, FrameOverlay, FrameStyle, SplitGuide, Well, CorrectionMark, LoupeBand, DustOriginal, Ring, Trace, TraceTone, SelectionRing, DropLine, Row, RowKind } from "../ds.slint";
 import { BoardStyle, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
+
+// A canvas mark's cell: a photo under it, every cell the same size.
+component Scene inherits Stage {
+    width: BoardStyle.cell - Space.l;
+    height: self.width * 2 / 3;
+    Picture { source: Samples.photo; ground: Ground.canvas; fit: Fit.cover; }
+}
 
 // A photo on the canvas with something drawn over it.
 component OverPhoto inherits Stage {
@@ -68,46 +75,57 @@ export component OverlayGroups inherits VerticalLayout {
     }
     Group {
         title: "Canvas marks";
-        states: ["Well", "BrushDisc (live)", "CorrectionMark", "LiveStroke, SourceTrace", "DustOriginal", "Ring"];
+        states: ["Well, its rows", "Ring guide: the brush (live)", "Ring sharpen: CorrectionMark", "Trace live", "Trace source, its line dashed", "DustOriginal", "Ring guide: the base pick"];
+        span: BoardStyle.cell - Space.l;
         Line {
             label: "as the canvas draws them";
-            Cell { Well { width: BoardStyle.cell - Space.l; height: BoardStyle.cell / 2; } }
             Cell {
-                brush := Stage {
+                span: BoardStyle.cell - Space.l;
+                Well {
                     width: BoardStyle.cell - Space.l;
-                    height: BoardStyle.cell / 2;
-                    property <length> side: self.height * 2 / 3;
-                    BrushDisc {
-                        x: (hand.has-hover ? hand.mouse-x : parent.width / 2) - self.width / 2;
-                        y: (hand.has-hover ? hand.mouse-y : parent.height / 2) - self.height / 2;
-                        width: brush.side;
-                        height: self.width;
+                    height: self.width * 2 / 3;
+                    VerticalLayout {
+                        padding: Space.s;
+                        spacing: Space.xs;
+                        alignment: start;
+                        Label { text: "1  Dust"; role: TextRole.value; }
+                        Label { text: "2  Hair"; role: TextRole.value; tone: Tone.secondary; }
+                    }
+                }
+            }
+            Cell {
+                span: BoardStyle.cell - Space.l;
+                Scene {
+                    Ring {
+                        centre-x: hand.has-hover ? hand.mouse-x : parent.width / 2;
+                        centre-y: hand.has-hover ? hand.mouse-y : parent.height / 2;
+                        diameter: parent.height / 2;
                     }
                     hand := TouchArea { mouse-cursor: none; }
                 }
             }
             Cell {
-                Stage {
-                    width: BoardStyle.cell / 2 + Space.l;
-                    height: BoardStyle.cell / 2;
-                    CorrectionMark { x: Space.s; y: Space.l; width: BoardStyle.cell / 4; height: self.width; number: 3; }
+                span: BoardStyle.cell - Space.l;
+                Scene { CorrectionMark { x: Space.l; y: Space.l; width: parent.width / 3; height: parent.height / 2; number: 3; } }
+            }
+            Cell {
+                span: BoardStyle.cell - Space.l;
+                Scene { Trace { width: parent.width; height: parent.height; thickness: Space.s; commands: "M 12 50 L 40 20 L 70 45 L 110 15"; } }
+            }
+            Cell {
+                span: BoardStyle.cell - Space.l;
+                Scene {
+                    Trace { tone: TraceTone.source; width: parent.width; height: parent.height; thickness: Space.xs; commands: "M 80 20 L 96 32 L 108 24"; }
+                    Trace { tone: TraceTone.source; dashed: true; width: parent.width; height: parent.height; thickness: Stroke.line; commands: "M 16 64 L 20 61 M 23.2 58.6 L 26.4 56.2 M 29.6 53.8 L 32.8 51.4 M 36 49 L 39.2 46.6 M 42.4 44.2 L 45.6 41.8 M 48.8 39.4 L 52 37 M 55.2 34.6 L 58.4 32.2 M 61.6 29.8 L 64.8 27.4 M 68 25 L 71.2 22.6"; }
                 }
             }
             Cell {
-                Stage {
-                    width: BoardStyle.cell - Space.l;
-                    height: BoardStyle.cell / 2;
-                    LiveStroke { width: parent.width; height: parent.height; thickness: Space.s; commands: "M 12 50 L 40 20 L 70 45 L 110 15"; }
-                    SourceTrace { width: parent.width; height: parent.height; thickness: Stroke.line; commands: "M 12 64 L 110 64"; }
-                }
+                span: BoardStyle.cell - Space.l;
+                Scene { DustOriginal { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; source: Samples.other; } }
             }
-            Cell { DustOriginal { source: Samples.photo; } }
             Cell {
-                Stage {
-                    width: BoardStyle.cell / 2;
-                    height: BoardStyle.cell / 2;
-                    Ring { centre-x: parent.width / 2; centre-y: parent.height / 2; diameter: parent.width / 2; }
-                }
+                span: BoardStyle.cell - Space.l;
+                Scene { Ring { centre-x: parent.width / 2; centre-y: parent.height / 2; diameter: parent.height / 3; } }
             }
         }
     }
@@ -134,7 +152,7 @@ export component OverlayGroups inherits VerticalLayout {
         }
     }
     Group {
-        title: "DropRing and DropLine";
+        title: "A drop's SelectionRing and DropLine";
         states: ["Over a row", "Between rows"];
         span: BoardStyle.library;
         Line {
@@ -144,7 +162,7 @@ export component OverlayGroups inherits VerticalLayout {
                 Rectangle {
                     height: ring.height;
                     ring := Row { title: "Negs"; caption: "4"; kind: RowKind.folder; expandable: true; }
-                    DropRing { width: parent.width; height: parent.height; }
+                    SelectionRing { width: parent.width; height: parent.height; radius: Radius.badge; }
                 }
             }
             Fill {

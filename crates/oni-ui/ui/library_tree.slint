@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { Picker, PickerFace, Icons, Surface, Space, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Menu, DropRing, DropLine, Badge } from "ds/ds.slint";
+import { Picker, PickerFace, Icons, Surface, Space, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Menu, SelectionRing, Radius, DropLine, Badge } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { RowTree } from "row_tree.slint";
 
@@ -112,8 +112,9 @@ export component Tree inherits Surface {
             rename-cancelled => { Library.project-row-rename-cancelled(); }
             rename-edited(t) => { Library.row-rename-edited(t); }
             pin-clicked(command, shift) => { Library.project-pin-clicked(command, shift); }
-            // The ring round the row joined, or the line before the row landed before.
-            if Library.project-drag.ring: DropRing {
+            // `TreeRowChrome.dropRing` round the row joined, or the line before the row landed before.
+            if Library.project-drag.ring: SelectionRing {
+                radius: Radius.badge;
                 x: Library.project-drag.mark-x;
                 y: Library.project-drag.mark-y;
                 width: Library.project-drag.mark-width;

@@ -2,6 +2,7 @@
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
 import { DS, Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "badge.slint";
+import { RingTone, Ring } from "marks.slint";
 
 export enum FrameStyle { crop, window }
 
@@ -36,6 +37,8 @@ component Bracket inherits Rectangle {
     in property <bool> right;
     in property <bool> bottom;
     in property <bool> active;
+    // Its line at rest: the guide's on a crop, `unalignedBalance` on the measuring window.
+    in property <color> rest: Colour.guide;
     property <length> line: root.active ? CropStyle.stroke + 1px : CropStyle.stroke;
     Rectangle {
         x: root.right ? parent.width - root.line - CropStyle.halo : 0;
@@ -56,14 +59,14 @@ component Bracket inherits Rectangle {
         y: 0;
         width: root.line;
         height: parent.height;
-        background: root.active ? Colour.handle-active : Colour.guide;
+        background: root.active ? Colour.handle-active : root.rest;
     }
     Rectangle {
         x: 0;
         y: root.bottom ? parent.height - root.line : 0;
         width: parent.width;
         height: root.line;
-        background: root.active ? Colour.handle-active : Colour.guide;
+        background: root.active ? Colour.handle-active : root.rest;
     }
 }
 
@@ -187,6 +190,7 @@ export component FrameOverlay inherits Rectangle {
         height: root.corner;
         right: c.right;
         bottom: c.bottom;
+        rest: root.rest;
         active: corner-grab.has-hover || root.held == c.handle;
         corner-grab := Grab {
             handle: c.handle;
@@ -202,16 +206,6 @@ export component FrameOverlay inherits Rectangle {
 export component Well inherits Rectangle {
     background: Colour.canvas;
     border-radius: CropStyle.well-radius;
-}
-
-// The brush's disc under the pointer, its diameter the radius at the canvas's scale.
-export component BrushDisc inherits Rectangle {
-    border-radius: self.width / 2;
-    // `DSGuide.width(true)` and its shadow, `DS.Stroke.emphasis`.
-    border-width: Stroke.line + DS.control-guide-grow;
-    border-color: Colour.handle-active;
-    drop-shadow-color: Colour.contrast-edge;
-    drop-shadow-blur: Stroke.emphasis;
 }
 
 // A De-dust reminder: the dust a patch covers, as the frame shows it unpatched.
@@ -230,25 +224,15 @@ export component DustOriginal inherits Rectangle {
     }
 }
 
-// The stroke being painted, as a polyline in the canvas's points.
-export component LiveStroke inherits Path {
-    in property <length> thickness;
-    stroke: Colour.stroke-live;
-    stroke-width: root.thickness;
-    stroke-line-cap: round;
-    stroke-line-join: round;
-    fill: transparent;
-    // One unit of the commands a point of the canvas: a fitted path shrinks by its stroke's width.
-    fit: preserve;
-}
-
-// A correction on the canvas: its ring and, off the ring's top-right corner, its number.
+// A correction on the canvas, over the box its stroke spans: `Circle()`'s ring at the box's shorter
+// side and, off the box's top-right corner, its number.
 export component CorrectionMark inherits Rectangle {
     in property <int> number;
-    Rectangle {
-        border-radius: self.width / 2;
-        border-width: CropStyle.hairline;
-        border-color: Colour.sharpen;
+    Ring {
+        tone: RingTone.sharpen;
+        centre-x: parent.width / 2;
+        centre-y: parent.height / 2;
+        diameter: min(parent.width, parent.height);
     }
     // Half an `xxs` clear of the ring, as Swift's alignment guides set it.
     if root.number > 0: Badge {
@@ -280,23 +264,11 @@ export component LoupeBand inherits Rectangle {
         // Read so a rewrite in place, which changes no other property, redraws the band.
         image-fit: root.revision < 0 ? ImageFit.contain : ImageFit.fill;
     }
-    if root.ratio-shown: TouchArea {
+    if root.ratio-shown: Badge {
         x: parent.width - self.width - Space.s;
         y: Space.s;
-        width: badge.width;
-        height: badge.height;
-        badge := Badge { text: root.ratio; }
+        text: root.ratio;
+        pressable: true;
         clicked => { root.toggled(); }
     }
-}
-
-// A patch's source: the line from the stroke to where it was copied, and the copied stroke's shape.
-export component SourceTrace inherits Path {
-    in property <length> thickness;
-    stroke: Colour.sharpen;
-    stroke-width: root.thickness;
-    stroke-line-cap: round;
-    stroke-line-join: round;
-    fill: transparent;
-    fit: preserve;
 }

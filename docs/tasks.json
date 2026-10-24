@@ -2362,5 +2362,47 @@
     "title": "The folder pill's choices are Rows in the menu form",
     "status": "done",
     "detail": "MenuEntry's folder mode drew a pill's ancestors as a second kind of line; they are Rows in a new menu form (kind folder, no chevron zone, its glyph in its own width, a check at the end, MenuStyle.row tall) and MenuEntry keeps the menus' words alone. Slight: the band's corner 6 to 8 pt (Radius.badge), the check 4 pt further in."
+  },
+  {
+    "id": 344,
+    "type": "refactor",
+    "title": "One SelectionRing, and TileView draws Prepare the Roll's frames",
+    "status": "done",
+    "detail": "TileView's square ring, RollCellView's double and outset rings and DropRing were three rings; Swift builds all three alike (TileLayers, RollFrameCell, TreeRowChrome.dropRing): a contrastEdgeIdle stroke inset by Stroke.line, the 2 pt selected ring over it. One SelectionRing { placement: inset | outset; tone: selected | destructive; radius } in ds/marks.slint draws them, copied from Swift: the gallery's ring gains the inner edge and Radius.card corners, the roll cell's rings go Radius.badge to Radius.card with the inner edge under the ring (Stroke.line in, not Stroke.emphasis). RollFrameCell is built on GalleryView.tile, so TileView absorbs RollCellView: marks medal | apart (the apart dot top-right, every seal an xs in), flagged, ring inset | outset, rounded (Radius.card), clicked; an unticked frame fades with its marks, as Swift's .opacity on the whole cell. tree.slint and RollCellView are gone. The gallery's pictures stay square: Swift rounds them at Radius.card, which a rounded clip would draw tile by tile into a layer of its own. Visible: the gallery's and the roll's rings."
+  },
+  {
+    "id": 345,
+    "type": "refactor",
+    "title": "Picture's fit; the Wrapped cells, the welcome photo and the splash are Pictures",
+    "status": "done",
+    "detail": "Picture takes fit: contain | cover | fill in place of stretched, and a radius (Radius.badge by default). The Wrapped deck's photo cells, WelcomePhoto and SplashWindow (which now holds a WelcomePhoto at its own radius and a caption at scale 1) draw through it. TileGhost is a Picture at TileStyle.ghost (0.85, GalleryEngine's dragged tile); the card stack's 0.8 and 0.55 are TileStyle.stack-middle and stack-back. Row draws a roll's stock through StockIcon. No pixel moves."
+  },
+  {
+    "id": 346,
+    "type": "refactor",
+    "title": "One Ring with guide and sharpen tones, one Trace with live and source tones, the source's line dashed",
+    "status": "done",
+    "detail": "Ring (the base pick's), BrushDisc and CorrectionMark's ring were three circles; Swift strokes all three with Circle().stroke, centred on the edge: DSGuide.width(true) over its shadow for the base ring and the brush, the sharpen tint at DSGuide.width(false) with no shadow for a correction. One Ring { tone: guide | sharpen } in ds/marks.slint draws them: the brush's ring is centred (a point further out), a correction's ring is 1 pt, not 0.5, and a circle at the box's shorter side as Circle() in a frame, not a stadium. LiveStroke and SourceTrace, the same Path but for the ink, are one Trace { tone: live | source; dashed }; the line from a patch to its source is dashed four on four as NegativeView's StrokeStyle(dash: [4, 4]), its ends flat: Slint strokes no dash, so live::dashed lays the dashes in Rust (unit test with its twin). Visible: the brush ring, the correction rings, the dashed source lines."
+  },
+  {
+    "id": 347,
+    "type": "refactor",
+    "title": "One Dot for every disc, one Medal for the tile and the picker",
+    "status": "done",
+    "detail": "The hand-made discs (the tile's medal, MedalPicker's three, the roll cell's apart dot, Tabs' swatch and mark, Button's lamp, Toggle's thumb, BulletLine's bullet) are one Dot { size; ink } in ds/marks.slint; the tile and MedalPicker share Medal { rank }. No pixel moves."
+  },
+  {
+    "id": 348,
+    "type": "fix",
+    "title": "The measuring window's corners in unalignedBalance; the loupe's ratio a pressable Badge; Row's RESTORE clear of its count",
+    "status": "done",
+    "detail": "The measuring window drew its corners white at rest: Bracket now takes the frame's rest ink, unalignedBalance on the window as CropOverlay's cornerHandle strokes DSGuide.stroke(rest: style.rest). LoupeBand's ratio is a Badge with pressable and clicked, no TouchArea of its own (no pixel). A hovered trash line's RESTORE stands an xs further from its count. The board's Picked column says the band is held with the pointer away, which is why it shows no star or RESTORE: Swift's rows show them under the pointer alone. ListView stays: Slint virtualises a for only under an element whose type is named ListView with the content and visible lengths, which the export's lines use."
+  },
+  {
+    "id": 349,
+    "type": "feature",
+    "title": "The board shows the merged components",
+    "status": "done",
+    "detail": "Row page: the four forms, the heading kind, the menu form's check, the Picked column's meaning. Tiles page: TileView as the gallery's tile and as Prepare the Roll's frame (marks apart, rounded, every state of the old RollCellView), SelectionRing in each placement, tone and radius, Picture's fit, Dot and Medal, the ghost as a Picture. Scanner page: the canvas marks in cells of one size over a photo (the Well with rows, Ring in both tones, Trace live and source with its dashed line, DustOriginal on a scene), and the measuring window's teal corners. Picker page: the pill's folders as menu-form Rows."
   }
 ]

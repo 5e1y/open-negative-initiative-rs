@@ -2,6 +2,7 @@
 import { Colour, Space, Stroke, Type, State, Motion, ButtonStyle, SliderStyle, TabsStyle, ToggleStyle, FieldStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
 import { Icons } from "icons.slint";
+import { Dot } from "marks.slint";
 
 // `ghost` is a glyph alone on no ground, its tone lifting under the hand, as a help mark or a star.
 export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost }
@@ -144,13 +145,11 @@ export component Button inherits Rectangle {
             font-weight: root.keycap ? ScannerStyle.label-weight : Type.strong;
         }
     }
-    if root.lamp-shown: Rectangle {
-        width: ButtonStyle.lamp;
-        height: ButtonStyle.lamp;
-        border-radius: self.width / 2;
+    if root.lamp-shown: Dot {
+        size: ButtonStyle.lamp;
         x: parent.width - root.pad - self.width;
         y: (parent.height - self.height) / 2;
-        background: root.lamp-lit ? Colour.confirm : Colour.track;
+        ink: root.lamp-lit ? Colour.confirm : Colour.track;
     }
     touch := TouchArea {
         enabled: root.enabled;

@@ -1,9 +1,10 @@
 // The collections' cells and their scrolled surfaces: a list row, a tree row, a gallery tile, a heading.
-import { Colour, Space, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
+import { Colour, Space, Radius, State, RowStyle, TileStyle, ScrollStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal, BadgeStyle } from "badge.slint";
 import { Look, RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
+import { Dot, Medal, RingPlacement, SelectionTone, SelectionRing } from "marks.slint";
 
 // AppKit's overlay scroller over a surface's edge: drawn only while the content overflows, lit while
 // it moves, `linger` after, or while the pointer is on the edge, where it widens and takes the pointer.
@@ -183,44 +184,78 @@ export component Scroller {
 // directly in an element named `ListView` that carries the content and visible lengths.
 export component ListView inherits Scroller { }
 
-// A gallery cell: the picture in its well, the medal, the RGB seal, the selection ring, and a
-// caption under it only when one is given. A missing original shows faded.
+// `medal` lays the gallery's marks, its medal bottom-left and its seal a `Space.s` in; `apart` Prepare
+// the Roll's, the apart dot top-right and every seal an `xs` in.
+export enum TileMarks { medal, apart }
+
+// A gallery cell, or a frame of Prepare the Roll (`RollFrameCell` is built on `GalleryView.tile`):
+// the picture in its well, its marks, the RGB seal, the selection's ring, a caption when given.
 export component TileView inherits Rectangle {
     in property <image> picture;
     in property <string> caption;
     in property <bool> selected;
     in property <int> medal;
+    // A missing original, or a frame left out of the roll, shows faded with its marks.
     in property <bool> missing;
     in property <bool> rgb;
     in property <length> picture-height;
+    in property <TileMarks> marks: TileMarks.medal;
+    // A frame kept out of the measure, its dot in the corner.
+    in property <bool> apart;
+    // A frame the measure flags: its ring destructive; ringed outside, it rings unselected under its seal.
+    in property <bool> flagged;
+    in property <RingPlacement> ring: RingPlacement.inset;
+    // A frame's corners round; the gallery's stay square, a rounded clip drawing each tile to a layer.
+    in property <bool> rounded;
+    callback clicked();
+    property <bool> frame: root.marks == TileMarks.apart;
+    property <length> inset: root.frame ? Space.xs : TileStyle.badge-inset;
+    property <bool> outset: root.ring == RingPlacement.outset;
     height: root.caption == "" ? root.picture-height : root.picture-height + TileStyle.caption-gap + TileStyle.caption;
     Picture {
         y: 0;
         height: root.picture-height;
         ground: Ground.well;
         source: root.picture;
+        rounded: root.rounded;
+        radius: Radius.card;
         opacity: root.missing ? State.disabled : 1;
-        // `TileLayers`: the medal at the bottom-left corner, the RGB seal at the bottom-right.
-        // The medal's centre level with the seal's.
-        if root.medal > 0: Rectangle {
-            x: TileStyle.badge-inset;
-            y: parent.height - TileStyle.badge-inset - (BadgeStyle.seal-height + self.height) / 2;
-            width: TileStyle.medal;
-            height: TileStyle.medal;
-            border-radius: self.width / 2;
-            background: Colour.medal[root.medal];
+        // `TileLayers`: the medal's centre level with the seal's.
+        if !root.frame && root.medal > 0: Medal {
+            x: root.inset;
+            y: parent.height - root.inset - (BadgeStyle.seal-height + self.height) / 2;
+            rank: root.medal;
+        }
+        if root.frame && root.apart: Dot {
+            x: parent.width - root.inset - self.width;
+            y: root.inset;
+            size: TileStyle.apart;
+            ink: Colour.caution;
         }
         if root.rgb: Badge {
-            x: parent.width - self.width - TileStyle.badge-inset;
-            y: parent.height - self.height - TileStyle.badge-inset;
+            x: parent.width - self.width - root.inset;
+            y: parent.height - self.height - root.inset;
             tone: BadgeTone.seal;
             metal: Metal.holographic;
             text: @tr("RGB");
         }
-        Rectangle {
-            border-width: root.selected ? TileStyle.selection : 0px;
-            border-color: Colour.selected;
+        if root.outset && root.flagged: Badge {
+            x: root.inset;
+            y: root.inset;
+            tone: BadgeTone.seal;
+            metal: Metal.red;
+            text: @tr("FLAGGED");
         }
+        if root.selected && !root.outset: SelectionRing {
+            tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;
+        }
+    }
+    // Outside the picture's clip.
+    if root.outset && (root.selected || root.flagged): SelectionRing {
+        y: 0;
+        height: root.picture-height;
+        placement: RingPlacement.outset;
+        tone: root.flagged ? SelectionTone.destructive : SelectionTone.selected;
     }
     if root.caption != "": Label {
         y: root.picture-height + TileStyle.caption-gap;
@@ -232,6 +267,7 @@ export component TileView inherits Rectangle {
         centred: true;
         overflow: elide;
     }
+    if root.frame: TouchArea { clicked => { root.clicked(); } }
 }
 
 // A group's heading over its tiles, its roll's folder before its name, typed over while renamed;

@@ -1,0 +1,92 @@
+// The marks laid over a picture, a control or the canvas: a disc, a medal, a selection's ring, a
+// guide's ring and a stroke's trace.
+import { DS } from "tokens.slint";
+import { Colour, Space, Radius, Stroke, TileStyle } from "theme.slint";
+
+// A disc of one ink: a medal, a lamp, a switch's thumb, a tab's swatch or mark, a bullet.
+export component Dot inherits Rectangle {
+    in property <length> size;
+    in property <color> ink;
+    width: root.size;
+    height: root.size;
+    border-radius: root.size / 2;
+    background: root.ink;
+}
+
+// `DSMedal`: bronze, silver or gold as a flat disc, 0 being none.
+export component Medal inherits Dot {
+    in property <int> rank;
+    size: TileStyle.medal;
+    ink: Colour.medal[root.rank];
+}
+
+export enum RingPlacement { inset, outset }
+export enum SelectionTone { selected, destructive }
+
+// `TileLayers`, `RollFrameCell` and `TreeRowChrome.dropRing` alike: a fine edge inset by a line,
+// the selection's ring over it; `outset` rings the bounds an `xs` outside, with no edge.
+export component SelectionRing inherits Rectangle {
+    in property <RingPlacement> placement: RingPlacement.inset;
+    in property <SelectionTone> tone: SelectionTone.selected;
+    in property <length> radius: Radius.card;
+    property <length> out: root.placement == RingPlacement.outset ? Space.xs : 0px;
+    if root.placement == RingPlacement.inset: Rectangle {
+        x: Stroke.line;
+        y: Stroke.line;
+        width: parent.width - 2 * Stroke.line;
+        height: parent.height - 2 * Stroke.line;
+        border-radius: root.radius;
+        border-width: Stroke.line;
+        border-color: Colour.contrast-edge-idle;
+    }
+    Rectangle {
+        x: -root.out;
+        y: -root.out;
+        width: parent.width + 2 * root.out;
+        height: parent.height + 2 * root.out;
+        border-radius: root.radius + root.out;
+        border-width: Stroke.emphasis;
+        border-color: root.tone == SelectionTone.destructive ? Colour.destructive : Colour.selected;
+    }
+}
+
+// `guide` the base pick's and the brush's ring, `DSGuide.width(true)` over its shadow; `sharpen` a
+// correction's, `DSGuide.width(false)` in the sharpen tint with none.
+export enum RingTone { guide, sharpen }
+
+// A circle's `stroke`, never `strokeBorder`: centred on the disc's edge, so the rim never eats the
+// pixels it bounds.
+export component Ring inherits Rectangle {
+    in property <length> centre-x;
+    in property <length> centre-y;
+    in property <length> diameter;
+    in property <RingTone> tone: RingTone.guide;
+    property <bool> guide: root.tone == RingTone.guide;
+    property <length> line: root.guide ? Stroke.line + DS.control-guide-grow : Stroke.line;
+    x: root.centre-x - (root.diameter + root.line) / 2;
+    y: root.centre-y - (root.diameter + root.line) / 2;
+    width: root.diameter + root.line;
+    height: self.width;
+    border-radius: self.width / 2;
+    border-width: root.line;
+    border-color: root.guide ? Colour.handle-active : Colour.sharpen;
+    drop-shadow-color: root.guide ? Colour.contrast-edge : Colour.contrast-edge.transparentize(1);
+    drop-shadow-blur: root.guide ? Stroke.emphasis : 0px;
+}
+
+// `live` the stroke being painted, `source` a patch's: its copied stroke, and the line to it `dashed`.
+export enum TraceTone { live, source }
+
+// A stroke as a polyline in the canvas's points; a dashed one ends flat, its dashes laid by Rust.
+export component Trace inherits Path {
+    in property <length> thickness;
+    in property <TraceTone> tone: TraceTone.live;
+    in property <bool> dashed;
+    stroke: root.tone == TraceTone.live ? Colour.stroke-live : Colour.sharpen;
+    stroke-width: root.thickness;
+    stroke-line-cap: root.dashed ? LineCap.butt : LineCap.round;
+    stroke-line-join: round;
+    fill: transparent;
+    // One unit of the commands a point of the canvas: a fitted path shrinks by its stroke's width.
+    fit: preserve;
+}

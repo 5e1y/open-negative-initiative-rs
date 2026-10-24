@@ -5,6 +5,7 @@ import { Colour, Space, Radius, Stroke, State, Type, MenuStyle, RowStyle, TileSt
 import { Label, Icon, Picture, Ground, TextRole, Tone, Divider, Clicks } from "base.slint";
 import { Button, ButtonSize, Look, TextField } from "controls.slint";
 import { Icons } from "icons.slint";
+import { Medal } from "marks.slint";
 
 // `DSMedalPicker`: bronze, silver and gold, the current one lit; `current` is -1 for none lit.
 export component MedalPicker inherits HorizontalLayout {
@@ -17,11 +18,9 @@ export component MedalPicker inherits HorizontalLayout {
         height: self.width;
         accessible-role: button;
         accessible-label: medal == 1 ? @tr("Bronze") : medal == 2 ? @tr("Silver") : @tr("Gold");
-        Rectangle {
-            width: TileStyle.medal * (touch.pressed ? DS.control-medal-press : 1);
-            height: self.width;
-            border-radius: self.width / 2;
-            background: Colour.medal[medal];
+        Medal {
+            rank: medal;
+            size: TileStyle.medal * (touch.pressed ? DS.control-medal-press : 1);
             opacity: root.current == medal ? 1 : State.idle;
         }
         touch := TouchArea {
@@ -70,12 +69,6 @@ export component DropLine inherits Rectangle {
     background: Colour.selected;
 }
 
-// The tile a reorder carries under the pointer.
-export component TileGhost inherits Picture {
-    ground: Ground.well;
-    opacity: 0.85;
-}
-
 // `InfoSidebar.cardStack`: a project's first three photos fanned behind one another, the first in front.
 export component CardStack inherits Rectangle {
     in property <[image]> pictures;
@@ -87,7 +80,7 @@ export component CardStack inherits Rectangle {
         height: self.width * 2 / 3;
         rounded: true;
         source: root.pictures[2];
-        opacity: 0.55;
+        opacity: TileStyle.stack-back;
     }
     if root.pictures.length > 1: Picture {
         x: Space.l + Space.xs;
@@ -96,7 +89,7 @@ export component CardStack inherits Rectangle {
         height: self.width * 2 / 3;
         rounded: true;
         source: root.pictures[1];
-        opacity: 0.8;
+        opacity: TileStyle.stack-middle;
     }
     Picture {
         x: Space.l;

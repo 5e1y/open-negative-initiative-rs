@@ -1,6 +1,7 @@
-// The board's tiles: the gallery's heading and tile, a picture on every ground, the presets' cards,
-// the roll's cells, the stocks' cells, a reorder's ghost and a project's stack.
-import { Colour, Space, ScannerStyle, TileStyle, Picture, Ground, TileView, TileHeading, TileGhost, CardStack, RollCellView, PresetFace, StockCellView, StockIcon } from "../ds.slint";
+// The board's tiles: the gallery's heading and tile, the roll's frame on the same tile, a picture on
+// every ground and fit, the selection's rings, the discs and medals, the presets' cards, the stocks'
+// cells, a reorder's ghost and a project's stack.
+import { Colour, Space, Radius, ScannerStyle, TileStyle, TabsStyle, ButtonStyle, Picture, Ground, Fit, TileView, TileMarks, TileHeading, CardStack, PresetFace, StockCellView, StockIcon, RingPlacement, SelectionTone, SelectionRing, Dot, Medal } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
 // A tile in its looks, all on one picture; it draws no hover of its own.
@@ -16,6 +17,14 @@ component TileStates inherits Line {
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; medal: 3; selected: true; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; missing: true; } }
     Fill { TileView { picture: root.picture; picture-height: root.high; caption: root.caption; rgb: true; medal: 2; } }
+}
+
+// A frame of Prepare the Roll on the tile: its marks apart, its picture rounded.
+component Frame inherits TileView {
+    marks: TileMarks.apart;
+    rounded: true;
+    picture: Samples.photo;
+    picture-height: self.width * 2 / 3;
 }
 
 // A picture on each of the six grounds.
@@ -42,7 +51,7 @@ component FaceStates inherits Line {
 
 export component TilesPage inherits Page {
     title: "Tiles";
-    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing, rgb. PresetFace: new, lit, enabled. RollCellView, StockCellView, TileGhost, CardStack.";
+    note: "TileHeading: caption, pinned, renaming. TileView: selected, medal, missing, rgb, marks (medal, apart), apart, flagged, ring (inset, outset), rounded, clicked. Picture: ground, rounded, radius, fit. SelectionRing: placement, tone, radius. Dot: size, ink; Medal: rank. PresetFace: new, lit, enabled. StockCellView, StockIcon, CardStack.";
     Group {
         title: "TileHeading (on the canvas)";
         states: ["Live"];
@@ -69,11 +78,76 @@ export component TilesPage inherits Page {
         TileStates { label: "empty well"; captioned: true; }
     }
     Group {
+        title: "TileView as Prepare the Roll's frame (marks apart, rounded)";
+        states: ["Live (click marks)", "Marked", "Marked, flagged", "Apart (dot)", "RGB seal", "Sheet: marked", "Sheet: flagged", "Unticked"];
+        span: BoardStyle.cell - Space.l;
+        Line {
+            label: "a frame of the roll";
+            frame := Fill {
+                span: BoardStyle.cell - Space.l;
+                property <bool> marked;
+                Frame { selected: frame.marked; clicked => { frame.marked = !frame.marked; } }
+            }
+            Fill { span: BoardStyle.cell - Space.l; Frame { selected: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { selected: true; flagged: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { apart: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { rgb: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; selected: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; flagged: true; } }
+            Fill { span: BoardStyle.cell - Space.l; Frame { ring: RingPlacement.outset; missing: true; apart: true; rgb: true; } }
+        }
+    }
+    Group {
+        title: "SelectionRing";
+        states: ["Inset, selected", "Inset, destructive", "Outset", "Outset, destructive", "A row's (Radius.badge)"];
+        span: BoardStyle.cell - Space.l;
+        Line {
+            label: "over a picture";
+            for ring in [
+                { placement: RingPlacement.inset, tone: SelectionTone.selected, radius: Radius.card },
+                { placement: RingPlacement.inset, tone: SelectionTone.destructive, radius: Radius.card },
+                { placement: RingPlacement.outset, tone: SelectionTone.selected, radius: Radius.card },
+                { placement: RingPlacement.outset, tone: SelectionTone.destructive, radius: Radius.card },
+                { placement: RingPlacement.inset, tone: SelectionTone.selected, radius: Radius.badge },
+            ]: Fill {
+                span: BoardStyle.cell - Space.l;
+                Rectangle {
+                    height: self.width * 2 / 3;
+                    Picture { source: Samples.photo; rounded: true; radius: ring.radius; }
+                    SelectionRing { placement: ring.placement; tone: ring.tone; radius: ring.radius; }
+                }
+            }
+        }
+    }
+    Group {
         title: "Picture";
         states: ["ground", "canvas", "canvas-cropping", "well", "paper", "skeleton"];
         GroundStates { label: "empty"; }
         GroundStates { label: "empty, rounded"; rounded: true; }
         GroundStates { label: "photo, rounded"; source: Samples.photo; rounded: true; }
+    }
+    Group {
+        title: "Picture's fit";
+        states: ["contain", "cover", "fill"];
+        Line {
+            label: "a 3:2 photo in a square";
+            for fit in [Fit.contain, Fit.cover, Fit.fill]: Cell {
+                Picture { width: BoardStyle.cell * 2 / 3; height: self.width; source: Samples.photo; fit: fit; }
+            }
+        }
+    }
+    Group {
+        title: "Dot and Medal";
+        states: ["Medal: bronze", "silver", "gold", "Dot: a lamp", "a tab's mark", "a bullet"];
+        Line {
+            label: "as the tiles, keys and notes draw them";
+            Cell { Medal { rank: 1; } }
+            Cell { Medal { rank: 2; } }
+            Cell { Medal { rank: 3; } }
+            Cell { Dot { size: ButtonStyle.lamp; ink: Colour.confirm; } }
+            Cell { Dot { size: TabsStyle.mark; ink: Colour.accent; } }
+            Cell { Dot { size: Space.xs; ink: Colour.ink; } }
+        }
     }
     Group {
         title: "PresetFace";
@@ -82,26 +156,6 @@ export component TilesPage inherits Page {
         FaceStates { label: "a light tint"; abbreviation: "Hp"; name: "HP5 crisp"; fill: Colour.paper; ink: Colour.ink-on-light; }
         FaceStates { label: "a warm tint"; abbreviation: "Fr"; name: "Frontier"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; }
         FaceStates { label: "new (the deck's last card)"; new: true; }
-    }
-    Group {
-        title: "RollCellView";
-        states: ["Live (click marks)", "Marked", "Marked, flagged", "Apart (dot)", "RGB seal", "Sheet: marked", "Sheet: flagged", "Unticked"];
-        span: BoardStyle.cell - Space.l;
-        Line {
-            label: "a frame of the roll";
-            frame := Fill {
-                span: BoardStyle.cell - Space.l;
-                property <bool> marked;
-                RollCellView { picture: Samples.photo; marked: frame.marked; clicked => { frame.marked = !frame.marked; } }
-            }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; marked: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; marked: true; flagged: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; apart: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; rgb: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; outset: true; marked: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; outset: true; flagged: true; } }
-            Fill { span: BoardStyle.cell - Space.l; RollCellView { picture: Samples.photo; dimmed: true; } }
-        }
     }
     Group {
         title: "StockCellView and StockIcon";
@@ -123,12 +177,12 @@ export component TilesPage inherits Page {
         }
     }
     Group {
-        title: "TileGhost and CardStack";
-        states: ["TileGhost (a reorder's tile)", "CardStack (a project's three)"];
+        title: "A reorder's ghost and CardStack";
+        states: ["Picture at TileStyle.ghost (a reorder's tile)", "CardStack (a project's three)"];
         span: BoardStyle.wide;
         Line {
             label: "as drawn";
-            Cell { span: BoardStyle.wide; TileGhost { width: BoardStyle.cell; height: BoardStyle.cell * 2 / 3; source: Samples.photo; } }
+            Cell { span: BoardStyle.wide; Picture { width: BoardStyle.cell; height: BoardStyle.cell * 2 / 3; source: Samples.photo; opacity: TileStyle.ghost; } }
             Fill { span: BoardStyle.wide; CardStack { pictures: [Samples.photo, Samples.other, Samples.photo]; } }
         }
     }

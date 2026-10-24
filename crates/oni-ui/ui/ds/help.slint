@@ -3,6 +3,7 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, FieldStyle } from "theme.slint";
 import { Tips, Tones, Tone, Label } from "base.slint";
+import { Dot } from "marks.slint";
 
 // The console's log: monospaced so aligned figures stay in column, selectable, on the panel's ground.
 export component LogText inherits Rectangle {
@@ -29,12 +30,10 @@ export component BulletLine inherits HorizontalLayout {
     spacing: Space.s;
     Rectangle {
         width: Space.xs;
-        Rectangle {
+        Dot {
             y: Space.xs + Space.xxs;
-            width: Space.xs;
-            height: Space.xs;
-            border-radius: self.width / 2;
-            background: Tones.ink(Tone.primary);
+            size: Space.xs;
+            ink: Tones.ink(Tone.primary);
         }
     }
     Label { text: root.text; wrap: word-wrap; horizontal-stretch: 1; }

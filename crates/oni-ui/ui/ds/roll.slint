@@ -1,10 +1,11 @@
-// Prepare the Roll's pieces: a frame's cell with its marks, the base pick's ring, the loupe on the
-// scan's own pixels, the seal a flagged frame wears and the passes' order.
+// Prepare the Roll's pieces: the pager, the sealed status line, the loupe on the scan's own pixels
+// and the passes' order; a frame's cell is a `TileView`.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion, StatusStyle } from "theme.slint";
 import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { Button } from "controls.slint";
+import { Ring } from "marks.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -13,8 +14,6 @@ export global RollStyle {
     out property <length> panel-width: DS.control-panel-width;
     out property <length> plate: DS.control-keycap-plate-height;
     out property <length> canvas-padding: DS.control-canvas-padding;
-    out property <length> dot: Space.s;
-    out property <length> ring: Stroke.line + DS.control-guide-grow;
     // `GalleryView.tile`'s well: a 3:2 frame on its side.
     out property <float> well-ratio: 2 / 3;
     out property <length> hollow: DS.control-tab-bar-height;
@@ -53,85 +52,6 @@ export component SealedStatusLine inherits HorizontalLayout {
         seal := Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: root.seal; }
     }
     Rectangle { horizontal-stretch: 1; }
-}
-
-// `RollFrameCell`: the preview, else the thumbnail; the apart dot, the passes' seal; a marked frame
-// double-ringed inside, or on the sheet ringed outside with its FLAGGED seal; dimmed once unticked.
-export component RollCellView inherits Rectangle {
-    in property <image> picture;
-    in property <bool> marked;
-    in property <bool> flagged;
-    in property <bool> apart;
-    in property <bool> rgb;
-    in property <bool> outset;
-    in property <bool> dimmed;
-    callback clicked();
-    height: self.width * RollStyle.well-ratio;
-    Picture {
-        source: root.picture;
-        ground: Ground.well;
-        rounded: true;
-        opacity: root.dimmed ? State.disabled : 1;
-    }
-    if root.apart: Rectangle {
-        x: parent.width - Space.xs - RollStyle.dot;
-        y: Space.xs;
-        width: RollStyle.dot;
-        height: RollStyle.dot;
-        border-radius: self.width / 2;
-        background: Colour.caution;
-    }
-    if root.rgb: Badge { tone: BadgeTone.seal; metal: Metal.holographic;
-        x: parent.width - Space.xs - self.width;
-        y: parent.height - Space.xs - self.height;
-        text: @tr("RGB");
-    }
-    // The rings follow the picture's corners: the inner one just inside the outer.
-    if root.marked && !root.outset: Rectangle {
-        border-radius: Radius.badge;
-        border-width: Stroke.emphasis;
-        border-color: root.flagged ? Colour.destructive : Colour.selected;
-        Rectangle {
-            x: Stroke.emphasis;
-            y: Stroke.emphasis;
-            width: parent.width - 2 * Stroke.emphasis;
-            height: parent.height - 2 * Stroke.emphasis;
-            border-radius: Radius.badge - Stroke.emphasis;
-            border-width: Stroke.line;
-            border-color: Colour.contrast-edge-idle;
-        }
-    }
-    if root.outset && (root.marked || root.flagged): Rectangle {
-        x: -Space.xs;
-        y: -Space.xs;
-        width: parent.width + 2 * Space.xs;
-        height: parent.height + 2 * Space.xs;
-        border-radius: Radius.badge + Space.xs;
-        border-width: Stroke.emphasis;
-        border-color: root.flagged ? Colour.destructive : Colour.selected;
-    }
-    if root.outset && root.flagged: Badge { tone: BadgeTone.seal; metal: Metal.red;
-        x: Space.xs;
-        y: Space.xs;
-        text: @tr("FLAGGED");
-    }
-    TouchArea { clicked => { root.clicked(); } }
-}
-
-// `RollBaseSurface.ring`: a stroke centred on the disc's edge, never inside it, over a dark shadow.
-export component Ring inherits Rectangle {
-    in property <length> centre-x;
-    in property <length> centre-y;
-    in property <length> diameter;
-    x: root.centre-x - (root.diameter + RollStyle.ring) / 2;
-    y: root.centre-y - (root.diameter + RollStyle.ring) / 2;
-    width: root.diameter + RollStyle.ring;
-    height: self.width;
-    border-radius: self.width / 2;
-    border-width: RollStyle.ring;
-    border-color: Colour.handle-active;
-    drop-shadow-color: Colour.contrast-edge;
-    drop-shadow-blur: Stroke.emphasis;
 }
 
 // The base's loupe: the scan's pixels under the pointer, nearest neighbour, the canvas past its

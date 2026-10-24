@@ -1,6 +1,7 @@
 // `DSTabBar`, the segmented tabs.
 import { Colour, Space, State, Motion, TabsStyle } from "theme.slint";
 import { Label, Tips, Clicks } from "base.slint";
+import { Dot } from "marks.slint";
 
 // `DSTabBar` as a segmented control: one raised pill under the selection. Its owner holds the choice:
 // a click only asks, so a binding on `selected` keeps following the owner's value.
@@ -39,19 +40,15 @@ export component Tabs inherits Rectangle {
             centred: true;
             opacity: (i == root.selected || touch.has-hover || i == root.hover-tab) ? 1 : State.idle;
         }
-        if root.swatches.length > 0: Rectangle {
-            width: TabsStyle.swatch;
-            height: TabsStyle.swatch;
-            border-radius: self.width / 2;
-            background: root.swatches[i];
+        if root.swatches.length > 0: Dot {
+            size: TabsStyle.swatch;
+            ink: root.swatches[i];
         }
-        if root.marked[i]: Rectangle {
+        if root.marked[i]: Dot {
             x: parent.width - self.width - Space.xs;
             y: Space.xs;
-            width: TabsStyle.mark;
-            height: TabsStyle.mark;
-            border-radius: self.width / 2;
-            background: Colour.accent;
+            size: TabsStyle.mark;
+            ink: Colour.accent;
         }
         touch := TouchArea {
             clicked => {

@@ -238,7 +238,12 @@ export global TileStyle {
     out property <length> medal: DS.control-medal-size;
     // `Space.sm` in from the corners, as `TileLayers` sets the medal and the seal.
     out property <length> badge-inset: Space.s;
-    out property <length> selection: Stroke.emphasis;
+    // `RollFrameCell`'s dot on a frame kept out of the measure.
+    out property <length> apart: Space.s;
+    // `GalleryEngine`'s tile carried by a reorder, and `InfoSidebar.cardStack`'s two cards behind.
+    out property <float> ghost: 0.85;
+    out property <float> stack-middle: 0.8;
+    out property <float> stack-back: 0.55;
     out property <length> heading: DS.control-roll-header-height;
 }
 

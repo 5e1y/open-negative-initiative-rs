@@ -1,7 +1,7 @@
 // The library column's and the gallery grid's state, and the grid; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, TileGhost, TileHeading, Menu } from "ds/ds.slint";
+import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, Picture, TileStyle, TileHeading, Menu } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -292,7 +292,10 @@ export component Grid inherits Surface {
                 width: Library.drop-width;
                 height: Library.drop-height;
             }
-            if Library.ghost-shown: TileGhost {
+            // The tile a reorder carries under the pointer.
+            if Library.ghost-shown: Picture {
+                ground: Ground.well;
+                opacity: TileStyle.ghost;
                 x: Library.ghost-x - self.width / 2;
                 y: Library.ghost-y - self.height / 2;
                 width: Library.ghost-width;

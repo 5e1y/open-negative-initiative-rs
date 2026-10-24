@@ -2,6 +2,7 @@
 // photo's credit along its foot, held while the gallery loads underneath.
 import { DS } from "tokens.slint";
 import { Colour } from "theme.slint";
+import { Picture, Ground, Fit } from "base.slint";
 
 export global SplashStyle {
     out property <length> width: DS.control-splash-width;
@@ -63,27 +64,25 @@ export component SplashCaption inherits Rectangle {
     }
 }
 
-// The welcome sheet's photo: edge to edge at 3:2 on the wide sheet, cropped to fill, the splash's
-// caption over its foot at the welcome's scale.
-export component WelcomePhoto inherits Rectangle {
+// A version's photo cropped to fill, the splash's caption over its foot; on the welcome sheet edge
+// to edge at 3:2 on the wide sheet, its caption at the welcome's scale.
+export component WelcomePhoto inherits Picture {
+    // 0 the first version's picture, 1 the next.
     in property <int> picture;
     in property <string> line;
     in property <string> credit;
+    in property <float> scale: SplashStyle.welcome-scale;
     height: DS.control-dialog-wide-width / SplashStyle.welcome-aspect;
     clip: true;
-    background: Colour.canvas;
-    Image {
-        width: parent.width;
-        height: parent.height;
-        image-fit: cover;
-        source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
-    }
+    ground: Ground.canvas;
+    fit: Fit.cover;
+    source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
     SplashCaption {
         width: parent.width;
         height: parent.height;
         line: root.line;
         credit: root.credit;
-        scale: SplashStyle.welcome-scale;
+        scale: root.scale;
     }
 }
 
@@ -98,21 +97,13 @@ export component SplashWindow inherits Window {
     width: SplashStyle.width;
     height: SplashStyle.height;
     default-font-family: DS.typo-splash-line-family;
-    Rectangle {
-        border-radius: SplashStyle.radius;
-        clip: true;
-        background: Colour.canvas;
-        Image {
-            width: parent.width;
-            height: parent.height;
-            image-fit: cover;
-            source: root.picture == 0 ? @image-url("../splash/1.0.0.jpg") : @image-url("../splash/1.3.0.jpg");
-        }
-        SplashCaption {
-            width: parent.width;
-            height: parent.height;
-            line: root.line;
-            credit: root.credit;
-        }
+    WelcomePhoto {
+        height: parent.height;
+        rounded: true;
+        radius: SplashStyle.radius;
+        picture: root.picture;
+        line: root.line;
+        credit: root.credit;
+        scale: 1;
     }
 }

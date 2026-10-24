@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, MenuLine, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, StatusLine, StatusStyle, CardStyle, RollStyle, RollCellView, Ring, Loupe, PassReorder, Picker } from "ds/ds.slint";
+import { Colour, Space, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, MenuLine, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, StatusLine, StatusStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit } from "ds/ds.slint";
 
 // One frame of the roll as a cell shows it.
 export struct RollCell { picture: image, marked: bool, flagged: bool, apart: bool, ticked: bool, rgb: bool }
@@ -151,10 +151,13 @@ component FrameGrid inherits VerticalLayout {
             property <int> at: row * RollStyle.columns + column;
             width: (root.width - (RollStyle.columns - 1) * Space.s) / RollStyle.columns;
             height: self.width * RollStyle.well-ratio;
-            if self.at < Preparing.cells.length: RollCellView {
+            if self.at < Preparing.cells.length: TileView {
                 width: parent.width;
+                picture-height: parent.height;
+                marks: TileMarks.apart;
+                rounded: true;
                 picture: Preparing.cells[parent.at].picture;
-                marked: Preparing.cells[parent.at].marked;
+                selected: Preparing.cells[parent.at].marked;
                 flagged: Preparing.cells[parent.at].flagged;
                 apart: Preparing.cells[parent.at].apart;
                 rgb: Preparing.cells[parent.at].rgb;
@@ -343,14 +346,17 @@ component FlagSheet inherits Scroller {
                 property <int> at: row * RollStyle.sheet-columns + column;
                 width: (grid.width - 2 * Space.l - (RollStyle.sheet-columns - 1) * Space.m) / RollStyle.sheet-columns;
                 height: self.width * RollStyle.well-ratio;
-                if self.at < Preparing.cells.length: RollCellView {
+                if self.at < Preparing.cells.length: TileView {
                     width: parent.width;
+                    picture-height: parent.height;
+                    marks: TileMarks.apart;
+                    rounded: true;
+                    ring: RingPlacement.outset;
                     picture: Preparing.cells[parent.at].picture;
                     flagged: Preparing.cells[parent.at].flagged;
                     apart: Preparing.cells[parent.at].apart;
                     rgb: Preparing.cells[parent.at].rgb;
-                    dimmed: !Preparing.cells[parent.at].ticked;
-                    outset: true;
+                    missing: !Preparing.cells[parent.at].ticked;
                     clicked => { Preparing.sheet-clicked(parent.at); }
                 }
             }
@@ -390,7 +396,7 @@ component BaseSurface inherits VerticalLayout {
             width: Preparing.scan-width;
             height: Preparing.scan-height;
             ground: Ground.canvas;
-            stretched: true;
+            fit: Fit.fill;
             source: Preparing.scan;
         }
         if Preparing.scan-ready && Preparing.ring-shown: Ring { centre-x: Preparing.ring-x; centre-y: Preparing.ring-y; diameter: Preparing.ring-diameter; }
@@ -449,7 +455,7 @@ component FrameCard inherits Rectangle {
             width: Preparing.picture-width;
             height: Preparing.picture-height;
             ground: Ground.canvas;
-            stretched: true;
+            fit: Fit.fill;
             source: Preparing.card-picture;
         }
         if Preparing.window-shown: FrameOverlay {

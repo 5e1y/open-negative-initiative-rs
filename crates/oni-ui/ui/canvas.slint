@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -124,7 +124,7 @@ export component CanvasCard inherits Card {
             width: Canvas.frame-width;
             height: Canvas.frame-height;
             ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
-            stretched: true;
+            fit: Fit.fill;
             source: Canvas.frame;
             revision: Canvas.frame-revision;
             clip-width: Canvas.frame-clip-width;
@@ -143,7 +143,7 @@ export component CanvasCard inherits Card {
                 width: Canvas.before-width;
                 height: Canvas.before-height;
                 ground: Ground.canvas;
-                stretched: true;
+                fit: Fit.fill;
                 source: Canvas.before;
                 revision: Canvas.before-revision;
             }
@@ -204,13 +204,17 @@ export component CanvasCard inherits Card {
         if Canvas.painting: Rectangle {
             width: parent.width;
             height: parent.height;
-            for t in Canvas.source-shapes: SourceTrace {
+            for t in Canvas.source-shapes: Trace {
+                tone: TraceTone.source;
                 width: parent.width;
                 height: parent.height;
                 commands: t.commands;
                 thickness: t.width;
             }
-            if Canvas.source-lines != "": SourceTrace {
+            // `DSGuide.width(false)` dashed four on four, the dashes laid by Rust.
+            if Canvas.source-lines != "": Trace {
+                tone: TraceTone.source;
+                dashed: true;
                 width: parent.width;
                 height: parent.height;
                 commands: Canvas.source-lines;
@@ -223,24 +227,23 @@ export component CanvasCard inherits Card {
                 height: m.height;
                 number: m.number;
             }
-            for t in Canvas.pending-strokes: LiveStroke {
+            for t in Canvas.pending-strokes: Trace {
                 width: parent.width;
                 height: parent.height;
                 commands: t.commands;
                 thickness: t.width;
             }
-            if Canvas.stroke != "": LiveStroke {
+            if Canvas.stroke != "": Trace {
                 width: parent.width;
                 height: parent.height;
                 commands: Canvas.stroke;
                 thickness: Canvas.stroke-width;
             }
             // The disc follows the pointer here, with no trip through Rust, over the picture only.
-            if paint.shows-brush: BrushDisc {
-                x: paint.mouse-x - Canvas.brush-diameter / 2;
-                y: paint.mouse-y - Canvas.brush-diameter / 2;
-                width: Canvas.brush-diameter;
-                height: Canvas.brush-diameter;
+            if paint.shows-brush: Ring {
+                centre-x: paint.mouse-x;
+                centre-y: paint.mouse-y;
+                diameter: Canvas.brush-diameter;
             }
             paint := TouchArea {
                 // `wantsHiddenCursor`: the disc stands for the pointer while it shows, Space aside.

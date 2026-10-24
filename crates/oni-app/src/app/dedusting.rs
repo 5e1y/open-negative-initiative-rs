@@ -133,7 +133,7 @@ impl Ctl {
         if let Some(waiting) = renewed(&c.get_pending_strokes(), shapes(&waiting)) {
             c.set_pending_strokes(waiting);
         }
-        let line_commands = frame.map(|f| lines.iter().map(|(a, b)| path(&[*a, *b], f)).collect::<Vec<_>>().join(" ")).unwrap_or_default();
+        let line_commands = frame.map(|f| lines.iter().map(|(a, b)| live::dashed(*a, *b, f)).filter(|l| !l.is_empty()).collect::<Vec<_>>().join(" ")).unwrap_or_default();
         c.set_source_lines(line_commands.into());
     }
 

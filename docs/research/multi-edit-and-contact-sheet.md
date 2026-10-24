@@ -15,7 +15,7 @@ mark, circle and export. They can coexist; §4 compares them and recommends an o
   - Prepare the Roll already decodes reduced tiles of a whole roll and redraws them as a look changes
     (`roll_previews.rs`, `TILE_SIDE`, the `retile` queue).
   - The store already writes a gesture to several frames as one undo step (roll settings, paste to roll).
-  - The canvas already draws vector strokes over the picture (De-dust's `SourceTrace`, `LiveStroke`,
+  - The canvas already draws vector strokes over the picture (De-dust's `Trace`,
     `CorrectionMark`).
   - The gallery already labels frames (`Medal`) in their sidecars.
 
@@ -81,7 +81,7 @@ whose decodes crowd the slots (task #211).
 ### 3.2 Storage and rendering
 - Marks live in the sheet's sidecar as vector paths in the sheet's own unit square (`marks: [{tool, points,
   colour, width}]`), a field the Swift app ignores (it reads the sheet, without marks).
-- On the canvas: the De-dust overlay's path drawing (`SourceTrace`); at export: rasterised by a small CPU
+- On the canvas: the De-dust overlay's path drawing (`Trace`); at export: rasterised by a small CPU
   stroker (anti-aliased, round caps) over the rendered sheet, before the output profile.
 - Labels set by circling go through the gallery's own label command (one undo step for the circle and the
   label together).

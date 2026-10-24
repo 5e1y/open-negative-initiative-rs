@@ -2,7 +2,7 @@
 // its photos, and the line saying how to turn the cards.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
-import { Label, Tone, TextRole } from "base.slint";
+import { Label, Tone, TextRole, Picture, Ground, Fit } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
 
 export global WrappedStyle {
@@ -98,17 +98,17 @@ export component WrappedCard inherits Rectangle {
         Label { text: root.caption; tone: Tone.secondary; centred: true; wrap: word-wrap; }
         if root.photos.length > 0: Rectangle {
             height: ceil(root.photos.length / 3) * (root.side + Space.s) - Space.s;
-            for photo[i] in root.photos: Rectangle {
+            for photo[i] in root.photos: Picture {
                 width: root.side;
                 height: root.side;
                 x: (parent.width - root.columns * (root.side + Space.s) + Space.s) / 2 + mod(i, 3) * (root.side + Space.s);
                 y: floor(i / 3) * (root.side + Space.s);
-                border-radius: Radius.badge;
-                clip: true;
-                background: Colour.canvas;
+                rounded: true;
+                ground: Ground.canvas;
+                fit: Fit.cover;
+                source: photo;
                 opacity: root.top ? 1 : 0;
                 animate opacity { duration: WrappedStyle.settle; delay: i * WrappedStyle.stagger; }
-                Image { width: parent.width; height: parent.height; source: photo; image-fit: cover; }
             }
         }
     }
