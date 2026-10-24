@@ -10,7 +10,6 @@ export enum TextRole { label, value, caption, title, section, heading, button, n
 export enum Tone { primary, secondary, tertiary, on-fill, on-light, warning, caution, on-warning, lcd }
 export enum Gap { none, xxs, xs, s, m, l }
 export enum Ground { ground, canvas, canvas-cropping, well, paper, skeleton }
-export enum PlotSize { main, block }
 
 // Where a note lands: its corner and its size, in the window's points.
 export struct TipBox {
@@ -120,14 +119,6 @@ export component Picture inherits Rectangle {
         image-fit: root.revision < 0 || root.stretched ? ImageFit.fill : ImageFit.contain;
         image-rendering: root.pixelated ? ImageRendering.pixelated : ImageRendering.smooth;
     }
-}
-
-// `DSHistogram`'s frame: the plot Rust rasterises, edge to edge at one of two heights.
-export component HistogramFrame inherits Picture {
-    in property <PlotSize> size: PlotSize.main;
-    ground: Ground.ground;
-    stretched: true;
-    height: root.size == PlotSize.main ? PlotStyle.main : PlotStyle.block;
 }
 
 export component Divider inherits Rectangle {

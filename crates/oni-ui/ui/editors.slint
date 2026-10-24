@@ -1,6 +1,6 @@
 // The panel's editors: the manual curves, the per-channel levels, the spectrogram, the saturation
 // curve and the print curve over the main histogram. Rust lays out every line, dot and handle.
-import { Plot, LevelsTrack, PlotReadouts, AxisCaptions, PlotLine, PlotDot, PlotKnob, PlotReadout, Tabs, Slider, SliderFill, Label, Tone, TextRole, PlotInkStyle, Colour, Space } from "ds/ds.slint";
+import { Plot, LevelsTrack, PlotReadouts, AxisCaptions, PlotLine, PlotDot, PlotKnob, PlotReadout, Tabs, Slider, SliderFill, Label, Tone, TextRole, PlotStyle, SliderStyle, Colour, Space } from "ds/ds.slint";
 
 // The plots' numbers, as `plot` names them in every callback.
 export global Editors {
@@ -99,8 +99,8 @@ export component LevelsEditor inherits VerticalLayout {
     in property <image> histogram;
     in property <int> revision;
     spacing: Space.s;
-    padding-left: PlotInkStyle.knob-width / 2;
-    padding-right: PlotInkStyle.knob-width / 2;
+    padding-left: SliderStyle.knob-width / 2;
+    padding-right: SliderStyle.knob-width / 2;
     Tabs {
         tabs: [@tr("R"), @tr("G"), @tr("B")];
         marked: Editors.levels-marked;
@@ -111,7 +111,7 @@ export component LevelsEditor inherits VerticalLayout {
         spacing: Space.xxs;
         EditorPlot {
             plot: 4;
-            height: PlotInkStyle.histogram;
+            height: PlotStyle.block;
             interactive: false;
             histogram: root.histogram;
             histogram-revision: root.revision;
@@ -153,7 +153,7 @@ export component SpectrogramEditor inherits VerticalLayout {
     Tabs {
         tabs: [@tr("Red"), @tr("Orange"), @tr("Yellow"), @tr("Green"), @tr("Aqua"), @tr("Blue"), @tr("Purple"), @tr("Magenta")];
         marked: Editors.band-marked;
-        swatches: PlotInkStyle.bands;
+        swatches: PlotStyle.bands;
         selected: Editors.band;
         picked(i) => { Editors.band = i; Editors.pick(2, i); }
     }
@@ -163,7 +163,7 @@ export component SpectrogramEditor inherits VerticalLayout {
     }
     BandSlider {
         field: 1; label: @tr("Saturation"); fraction: Editors.band-fractions[1]; readout: Editors.band-readouts[1]; value-text: Editors.band-readouts[1];
-        fill: SliderFill.bipolar; low: PlotInkStyle.grey-half; high: PlotInkStyle.bands[Editors.band];
+        fill: SliderFill.bipolar; low: PlotStyle.grey-half; high: PlotStyle.bands[Editors.band];
     }
     BandSlider {
         field: 2; label: @tr("Luminance"); fraction: Editors.band-fractions[2]; readout: Editors.band-readouts[2]; value-text: Editors.band-readouts[2];
@@ -179,28 +179,11 @@ export component SaturationEditor inherits VerticalLayout {
     AxisCaptions { start: @tr("Black point"); end: @tr("White point"); }
     EditorPlot {
         plot: 3;
-        height: PlotInkStyle.histogram;
+        height: PlotStyle.block;
         histogram: root.histogram;
         histogram-revision: root.revision;
         lines: Editors.saturation-lines;
         dots: Editors.saturation-dots;
-        VerticalLayout {
-            padding: Space.s;
-            Label { text: @tr("Saturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
-            Rectangle { vertical-stretch: 1; }
-            Label { text: @tr("Desaturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
-        }
+        AxisCaptions { axis: Orientation.vertical; start: @tr("Saturated"); end: @tr("Desaturated"); tone: Tone.tertiary; }
     }
-}
-
-// `PrintCurve`: Lighting's curves over the main histogram, out of the hit test.
-export component PrintOverlay inherits Plot {
-    plot: 5;
-    screen: false;
-    grid: false;
-    interactive: false;
-    lines: Editors.print-lines;
-    resized(p, w, h) => { Editors.resized(p, w, h); }
-    property <int> epoch: Editors.epoch;
-    changed epoch => { Editors.resized(self.plot, self.width, self.height); }
 }

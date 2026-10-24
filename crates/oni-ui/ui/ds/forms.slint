@@ -6,6 +6,7 @@ import { Label, Icon, Picture, Ground, TextRole, Tone, Tips, Divider } from "bas
 import { HelpMark } from "containers.slint";
 import { TextField, RenameField, Button, Look } from "controls.slint";
 import { Icons } from "icons.slint";
+import { SliderFill, Rail } from "slider.slint";
 
 export global FormStyle {
     out property <length> panel-width: DS.control-export-panel-width;
@@ -201,23 +202,17 @@ export component BoardCard inherits Rectangle {
 
 // `DSProgress`: a recessed track lit up to the fraction done; below zero, no total, a lit segment
 // sweeps it, so a wait that cannot be counted still reads as moving.
-export component Progress inherits Rectangle {
+export component Progress inherits Rail {
     in property <float> fraction;
     property <bool> counted: root.fraction >= 0;
     // Read only while sweeping, so a counted bar asks no frame of its own.
     property <float> swing: root.counted ? 0 : Math.mod(animation-tick() / DS.motion-sweep-duration, 2);
     property <float> eased: (1 - cos((root.swing < 1 ? root.swing : 2 - root.swing) * 180deg)) / 2;
-    height: DS.control-track-height;
-    border-radius: Radius.track;
-    background: Colour.track;
-    Rectangle {
-        x: root.counted ? 0 : (parent.width - self.width) * root.eased;
-        width: root.counted ? parent.width * clamp(root.fraction, 0, 1) : parent.width * DS.control-progress-segment;
-        border-radius: Radius.track;
-        background: Colour.selected;
-        drop-shadow-color: Colour.selected;
-        drop-shadow-blur: DS.scanner-phosphor-glow;
-    }
+    fill: SliderFill.level;
+    tint: Colour.selected;
+    glow: DS.scanner-phosphor-glow;
+    from: root.counted ? 0 : (1 - DS.control-progress-segment) * root.eased;
+    at: root.counted ? clamp(root.fraction, 0, 1) : root.from + DS.control-progress-segment;
 }
 
 // `DSLCD`: a count on the scanner's glass.

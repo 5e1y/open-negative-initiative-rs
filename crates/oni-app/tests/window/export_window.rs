@@ -163,6 +163,13 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
     // The four labels on one photo: the menu, the bar's key, the card's key, the context menu.
     assert_eq!(e.get_menu_title(), "Export…");
     assert!(e.get_menu_live());
+    // The wheel along the quality slider moves it, as every slider; a scroll across it is the card's.
+    let quality = e.get_quality_fraction();
+    assert!(!e.invoke_quality_scroll(0.0, -40.0, 200.0, false), "a scroll across the track is the card's");
+    assert!(e.invoke_quality_scroll(-40.0, 0.0, 200.0, false));
+    assert!(e.get_quality_fraction() < quality, "{} from {quality}", e.get_quality_fraction());
+    assert!(e.invoke_quality_scroll(40.0, 0.0, 200.0, false));
+    assert!((e.get_quality_fraction() - quality).abs() < 1e-5, "twin: the way back lands where it began");
     assert_eq!(w.global::<Bar>().get_export_title(), "EXPORT");
     assert_eq!(label::context(1), "Export…");
     assert_eq!(e.get_chip_title(), "Display P3", "the export space is the canvas's, Display P3 at rest");

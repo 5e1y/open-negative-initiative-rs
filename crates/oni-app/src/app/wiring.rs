@@ -252,6 +252,8 @@ impl Ctl {
         let p = me.clone();
         d.on_drag(move |t, span, fine| p.brush_drag(t, span, fine));
         let p = me.clone();
+        d.on_scroll(move |dx, dy, span, fine| p.brush_scroll(dx, dy, span, fine));
+        let p = me.clone();
         d.on_release(move || {
             let dragged = p.state.borrow_mut().brush_start.take().is_some();
             if dragged {

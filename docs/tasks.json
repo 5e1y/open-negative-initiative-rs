@@ -2299,5 +2299,40 @@
     "title": "The board's pages show the merged components",
     "status": "done",
     "detail": "Button: kinds, small glyph keys, ghost, the 24 px key, capitals on and off (no mini, 46 px or wide rows); ButtonGroup: small and each align; Toggle: label-side none, after, before and wrap, the live tab bar written by its owner; TextField and forms: multiline placeholder, centred title face, Field's column and spread layouts, RenameField; Picker and Menu: every form with a disabled column, the pill (folders, a name alone) and the chip. The catalogue's keycaps are the 24 px step keys. FieldProbe (board/probe.slint) holds the fields and the tab bar the window checks click."
+  },
+  {
+    "id": 320,
+    "type": "refactor",
+    "title": "Design system: one Knob, one Rail, one value header for every slider",
+    "status": "done",
+    "detail": "Phase of #297. ds/slider.slint holds the slider's parts: Knob (DSBarHandle: centre, fill, grip, grip-ink, grown, slide) draws Slider's, StepSlider's and the levels track's handles (TrackKnob is gone); Rail (DSRail: fill level, ramp, bipolar, metal or none, at, from, tint, low, high, overhang, rest, glow) draws Slider's, StepSlider's (bipolar plus its rest tick) and LevelsTrack's tracks, and Progress is a Rail lit in Colour.selected with its glow, LoadBar following; ValueHeader (DSReadout) is the name and value above Slider and StepSlider, the latter's double click and tooltip on the name included. Slider moved from controls.slint to slider.slint, SliderFill with it (new: none); the Knob enum is gone, Slider.knob is a colour as Swift's DSSlider.knob. One look changed, copied from Swift: DSBarHandle's grip lines are DS.Palette.textOnFill on every cap, so SliderStyle.grip-ink is white instead of the secondary ink (a flat white cap keeps the dark ink, its lines otherwise vanishing); every other pixel is unchanged."
+  },
+  {
+    "id": 321,
+    "type": "refactor",
+    "title": "Design system: Slider absorbs StepSlider as its stepped mode",
+    "status": "done",
+    "detail": "Phase of #297, after #320. Slider gains stepped: whole steps from lowest to highest (value), the rail a bipolar gradient from low to high with its rest ticked, a key either side in those colours (one step, three with Shift, the StepKey Button in one place), the name's double click and the rail's resetting (reset), the name's tooltip (help, minus-help, plus-help), held(bool) around a slide, every move through step(field, by); no Option fine mode and no wheel in that mode. LabSlider (panel/parts.slint) is a stepped Slider; the Scanner Color tab's calls into Lab (press, step-effect, clear, clear-effect, hold) are unchanged. StepSlider is gone from keypad.slint. The board's Slider page shows Knob, Rail, Slider and the stepped Slider, its columns Live, Hover, Pressed, Disabled; the Scanner page's letters are stepped Sliders. No pixel changed."
+  },
+  {
+    "id": 322,
+    "type": "refactor",
+    "title": "Design system: one Plot for the main histogram, AxisCaptions down a plot's side",
+    "status": "done",
+    "detail": "Phase of #297. The panel's HistogramFrame (a stretched Picture on the panel's ground) and PrintOverlay nested in it are one Plot (plot 5: screen, grid and hit test off, PlotStyle.main tall, Plots.output as its histogram, Lighting's curves on the Color tab alone), square-cornered on the panel's ground as Swift's DSHistogram; HistogramFrame, PlotSize and PrintOverlay are gone. The plot's own resized sets Plots.output-width/height, the size Rust traces the output histogram at, and reports plot 5 to the editors: read from the editors' sizes instead, the trace missed the histogram in the navigator's and the trees' shots, plot 5's size not yet known when the first count landed. AxisCaptions takes axis: Orientation.vertical, its captions down the plot's side inset by Space.s, which the saturation editor's Saturated and Desaturated now use. The board's Plots page shows the main histogram's Plot, an editor's screen and the vertical captions, the levels track live; the knobs moved to the Slider page. No pixel changed."
+  },
+  {
+    "id": 323,
+    "type": "refactor",
+    "title": "Design system: PlotInkStyle folded into PlotStyle, Colour and SliderStyle",
+    "status": "done",
+    "detail": "Phase of #297. PlotInkStyle repeated other groups: its track, knob-width and knob-height are SliderStyle's, its grab is SliderStyle.grab (DS.Control.grabSize, which SplitStyle.grab now reads), its histogram is PlotStyle.block, its guide, guide-faint, handle-active, handle-idle and channel-red are Colour's, and its marker is the new Colour.marker. PlotStyle now holds the plots' own: main, block, radius, and the inks Swift's views write as literals (the levels greys and the spectrogram's bands). No value changed, so no pixel."
+  },
+  {
+    "id": 324,
+    "type": "fix",
+    "title": "Sliders as Swift's DSSlider: the knob's hover, settle and the wheel everywhere",
+    "status": "done",
+    "detail": "Seen on the board after #320 and #321. A disabled slider never grows its knob (the board's Disabled column did). The stepped slider grows its knob and shows the grab cursor over the knob alone, as DSSlider and the continuous one; its name's double click and tooltip are off while disabled, and its ± keys dim with it. The knob follows the hand unsprung and settles on a value arriving from elsewhere (a reset, an undo, another photo) along Motion.settle (DS.Motion.settle's 0.38 s response, eased out), never while held or within Motion.settle of a scroll event; the stepped slider used to lag its slide by 0.14 s. The levels track shows the grab cursor within a handle's grab, its hover measured from the track's origin (it was a half-knob off), and its handles settle the same way while no hand is on it. Every slider takes the wheel as DSScrollAdjust does: the Brush Size (now a BrushSlider wrapper), the export's Quality and Prepare the Roll's sliders, which ignored it, move along their track and run their release's work (the brush and Picker Size kept, the export weighed) once the scroll rests, through Ctl::slider_scrolled; a scroll across a track is still left to the pane. Ink.primary has its own branch in Inks.of. Window checks: the brush, the quality and the Picker Size scroll along and refuse a scroll across (twins), the Picker Size written only once the scroll rests."
   }
 ]

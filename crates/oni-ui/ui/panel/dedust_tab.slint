@@ -3,21 +3,25 @@ import { Icons, Space, Slider, Section, Label, Tone, Well, HelpMark, DustOrigina
 import { Dedust } from "state.slint";
 import { Pane } from "parts.slint";
 
+// The brush's size, its hand held by Rust as every slider's.
+component BrushSlider inherits Slider {
+    field: -1;
+    label: @tr("Brush Size");
+    fraction: Dedust.fraction;
+    readout: Dedust.readout;
+    value-text: Dedust.value-text;
+    press(f, fine) => { return Dedust.press(fine); }
+    drag(f, t, s, fine) => { Dedust.drag(t, s, fine); }
+    release(f) => { Dedust.release(); }
+    scroll(f, dx, dy, s, fine) => { return Dedust.scroll(dx, dy, s, fine); }
+}
+
 export component DedustPane inherits Pane {
     Section {
         title: @tr("Dust & Scratches");
         help: @tr("Paint over a defect; the tool duplicates a matching patch of the same photo over it.");
         separated: false;
-        Slider {
-            field: -1;
-            label: @tr("Brush Size");
-            fraction: Dedust.fraction;
-            readout: Dedust.readout;
-            value-text: Dedust.value-text;
-            press(f, fine) => { return Dedust.press(fine); }
-            drag(f, t, s, fine) => { Dedust.drag(t, s, fine); }
-            release(f) => { Dedust.release(); }
-        }
+        BrushSlider { }
         if Dedust.rows.length > 0: Well {
             VerticalLayout {
                 padding: Space.s;

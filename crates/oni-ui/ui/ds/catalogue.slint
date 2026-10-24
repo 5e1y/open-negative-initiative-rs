@@ -1,9 +1,9 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
-import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle, RowStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, SliderStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
-import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
+import { TextRole, Tone, Label, Icon, Picture, Ground, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
-import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, Slider, TextField } from "controls.slint";
+import { ButtonKind, ButtonSize, Look, SliderFill, Button, ButtonGroup, Toggle, Slider, TextField } from "controls.slint";
 import { Tabs } from "tabs.slint";
 import { HelpMark, Section, Dialog } from "containers.slint";
 import { TileView, TileHeading, Scroller } from "collections.slint";
@@ -11,7 +11,6 @@ import { RowKind, Row } from "row.slint";
 import { MenuEntry, MenuPanel, Menu, Picker } from "menu.slint";
 import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
-import { PlotInkStyle } from "theme.slint";
 import { LabScreen } from "keypad.slint";
 
 struct Swatch { name: string, colour: color }
@@ -208,7 +207,7 @@ export component Catalogue inherits AppWindow {
                     Tabs { tabs: ["Roll", "Crop", "Color", "Details"]; selected: 2; marked: [true, false, false, false]; }
                     Tabs {
                         tabs: ["Red", "Orange", "Yellow", "Green", "Aqua", "Blue", "Purple", "Magenta"];
-                        swatches: PlotInkStyle.bands;
+                        swatches: PlotStyle.bands;
                         marked: [false, true, false, false, false, false, false, false];
                     }
                     DemoToggle { label: "Toggle off"; }
@@ -231,8 +230,8 @@ export component Catalogue inherits AppWindow {
                 Group {
                     title: "Slider";
                     Demo { label: "Level"; at: 0.62; }
-                    Demo { label: "Ramp, white knob"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Knob.white; }
-                    Demo { label: "Ramp, black knob"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Knob.black; }
+                    Demo { label: "Ramp, white knob"; at: 0.8; fill: SliderFill.ramp; tint: Colour.white; knob: Colour.white; }
+                    Demo { label: "Ramp, black knob"; at: 0.2; fill: SliderFill.ramp; tint: Colour.black; knob: Colour.black; }
                     Demo { label: "Bipolar"; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
                     Demo { label: "Metal"; at: 0.4; fill: SliderFill.metal; }
                     Demo { label: "Hovered knob"; at: 0.3; look: Look.hover; }
@@ -269,7 +268,7 @@ export component Catalogue inherits AppWindow {
                 }
                 Group {
                     title: "Plot, status, divider";
-                    HistogramFrame { size: PlotSize.block; ground: Ground.canvas; }
+                    Plot { height: PlotStyle.block; screen: false; grid: false; interactive: false; background: Colour.canvas; }
                     StatusLine { text: "DSC_6432 · 2000 × 1332"; }
                     HorizontalLayout { alignment: start; Badge { tone: BadgeTone.warning; text: "8-bit source — 256 levels per channel"; } }
                     Divider { }
@@ -279,7 +278,7 @@ export component Catalogue inherits AppWindow {
                     title: "Editor plot and track";
                     AxisCaptions { start: "Black point"; end: "White point"; }
                     Plot {
-                        height: PlotInkStyle.histogram;
+                        height: PlotStyle.block;
                         lines: [
                             { commands: "M 0 120 L 320 0", ink: Ink.separator, width: Stroke.hairline, opacity: 1 },
                             { commands: "M 0 110 L 80 90 L 160 50 L 240 30 L 320 10", ink: Ink.active, width: Stroke.trace, opacity: 1 },
@@ -290,8 +289,8 @@ export component Catalogue inherits AppWindow {
                         ];
                     }
                     VerticalLayout {
-                        padding-left: PlotInkStyle.knob-width / 2;
-                        padding-right: PlotInkStyle.knob-width / 2;
+                        padding-left: SliderStyle.knob-width / 2;
+                        padding-right: SliderStyle.knob-width / 2;
                         LevelsTrack {
                             knobs: [
                                 { x: 70px, ink: Ink.grey-quarter, held: false, label: "Shadows" },

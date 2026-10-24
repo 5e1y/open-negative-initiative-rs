@@ -1,0 +1,281 @@
+// The sliders: one knob, one rail, the readout above them, and `Slider`, continuous or in whole steps.
+import { Colour, Space, Stroke, State, Motion, SliderStyle, ScannerStyle } from "theme.slint";
+import { Label, TextRole, Tone, Tips } from "base.slint";
+import { Look, Button, ButtonSize } from "button.slint";
+
+// `level` and `ramp` light the rail up to the value and `metal` in brushed silver; `bipolar` is a
+// gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
+export enum SliderFill { level, ramp, bipolar, metal, none }
+
+// `DSBarHandle`: a cap set across the track, edged in black, two grip lines on its face; it grows
+// under the hand and, with `slide`, settles on a value arriving from elsewhere, never under the hand.
+export component Knob inherits Rectangle {
+    // Its centre along the travel, and the height of the row whose middle it sits on.
+    in property <length> centre;
+    in property <length> across: SliderStyle.row;
+    in property <color> fill: SliderStyle.knob;
+    in property <bool> grip: true;
+    // A flat white cap takes the dark ink, or its lines would vanish into it.
+    in property <color> grip-ink: root.fill == Colour.white ? Colour.ink-on-light : SliderStyle.grip-ink;
+    in property <bool> grown;
+    in property <bool> slide;
+    property <float> grow: root.grown ? SliderStyle.knob-grow : 1;
+    x: root.centre - self.width / 2;
+    y: (root.across - self.height) / 2;
+    width: SliderStyle.knob-width * self.grow;
+    height: SliderStyle.knob-height * self.grow;
+    border-radius: SliderStyle.knob-radius;
+    background: root.fill;
+    border-width: Stroke.line;
+    border-color: SliderStyle.knob-edge;
+    animate grow { duration: Motion.quick; easing: ease-out-back; }
+    animate x { duration: root.slide ? Motion.settle : 0ms; easing: ease-out; }
+    HorizontalLayout {
+        alignment: center;
+        spacing: SliderStyle.grip-gap - Stroke.line;
+        padding-top: (parent.height - SliderStyle.grip) / 2;
+        padding-bottom: (parent.height - SliderStyle.grip) / 2;
+        for _ in root.grip ? 2 : 0: Rectangle {
+            width: Stroke.line;
+            background: root.grip-ink;
+        }
+    }
+}
+
+// `DSRail`: the track, run past the travel by `overhang` at both ends; the lit stretch spans `from`
+// to `at`, fractions of the travel, and `rest` ticks the value a reset brings back (none below 0).
+export component Rail inherits Rectangle {
+    in property <SliderFill> fill: SliderFill.none;
+    in property <float> at;
+    in property <float> from;
+    in property <color> tint: Colour.track-fill;
+    in property <color> low;
+    in property <color> high;
+    in property <length> overhang;
+    in property <float> rest: -1;
+    // The lit stretch's glow, a progress bar's phosphor.
+    in property <length> glow;
+    property <length> travel: self.width - 2 * root.overhang;
+    height: SliderStyle.track;
+    border-radius: SliderStyle.track-radius;
+    background: root.fill == SliderFill.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : Colour.track;
+    if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {
+        x: root.from > 0 ? root.overhang + root.from * root.travel : 0;
+        width: root.overhang + root.at * root.travel - self.x;
+        border-radius: SliderStyle.track-radius; // its own round: a rail clipping it renders each slider apart
+        background: root.fill == SliderFill.metal
+            ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 35%, Colour.metal-light 65%, Colour.metal-dark 100%)
+            : root.fill == SliderFill.ramp
+            ? @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
+            : root.tint;
+        drop-shadow-color: root.glow > 0 ? root.tint : transparent;
+        drop-shadow-blur: root.glow;
+    }
+    if root.rest >= 0: Rectangle {
+        x: root.overhang + root.rest * root.travel - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: Stroke.line;
+        height: SliderStyle.knob-height / 2;
+        background: SliderStyle.rest-ink;
+    }
+}
+
+// `DSReadout`: a slider's name, its value at the right in the secondary ink, both faded when off;
+// with `resets`, a double click on the name brings the value back to rest and `help` is its tooltip.
+export component ValueHeader inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <bool> enabled: true;
+    in property <bool> resets;
+    in property <string> help;
+    callback reset();
+    spacing: Space.s;
+    opacity: root.enabled ? 1 : State.disabled;
+    Label {
+        text: root.label;
+        overflow: elide;
+        horizontal-stretch: 1;
+        if root.resets: TouchArea {
+            enabled: root.enabled;
+            double-clicked => { root.reset(); }
+            changed has-hover => { Tips.hover(self.has-hover, root.help, self.absolute-position.x, self.absolute-position.y + self.height); }
+        }
+    }
+    Label { text: root.value; role: TextRole.value; tone: Tone.secondary; horizontal-alignment: right; }
+}
+
+// A stepped slider's key beside its rail, in its end's colour: one step a click, three with ⇧.
+component StepKey inherits Button {
+    size: ButtonSize.key;
+    y: (SliderStyle.row - ScannerStyle.step-key) / 2;
+    horizontal-stretch: 0;
+}
+
+// `DSSlider`: the readout, then a track whose whole row grabs; Rust holds the value and its timing.
+// `stepped`: whole steps from `lowest` to `highest`, a key either side, the name's double click resting it.
+export component Slider inherits VerticalLayout {
+    in property <int> field;
+    in property <string> label;
+    in property <string> readout;
+    // The settings' value, which accessibility reads where the readout shows the hand's.
+    in property <string> value-text;
+    in property <float> fraction;
+    in property <SliderFill> fill: SliderFill.level;
+    in property <color> tint: Colour.track-fill;
+    in property <color> low;
+    in property <color> high;
+    // `DSSlider.knob`: a cap in the colour the value carries, the chrome's grey otherwise.
+    in property <color> knob: SliderStyle.knob;
+    in property <bool> enabled: true;
+    in property <Look> look: Look.live;
+    in property <bool> stepped;
+    in property <int> value;
+    in property <int> lowest;
+    in property <int> highest;
+    // The tooltips of the minus key, the name and the plus key.
+    in property <string> minus-help;
+    in property <string> help;
+    in property <string> plus-help;
+    // Rust answers whether this press is the second of a double click.
+    callback press(int, bool) -> bool;
+    callback drag(int, length, length, bool);
+    callback release(int);
+    // Rust answers whether the scroll runs along the track; one across it is left to the panel.
+    callback scroll(int, length, length, length, bool) -> bool;
+    // Accessibility's increments; a stepped slider's every move, by whole steps.
+    callback step(int, int);
+    callback reset();
+    // A press on a stepped rail holds the edit, so a whole slide is one step to undo.
+    callback held(bool);
+    // The step under the hand while it slides, ahead of the value the store answers.
+    property <int> hand;
+    property <int> span: max(1, root.highest - root.lowest);
+    spacing: SliderStyle.label-gap;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.value-text;
+    accessible-enabled: root.enabled;
+    accessible-action-increment => { root.step(root.field, 1); }
+    accessible-action-decrement => { root.step(root.field, -1); }
+    property <float> at: root.stepped ? ((area.held ? root.hand : root.value) - root.lowest) / root.span : clamp(root.fraction, 0, 1);
+    pure function step-at(x: length) -> int {
+        root.lowest + round(clamp(x / max(1px, track.width), 0, 1) * (root.highest - root.lowest))
+    }
+    ValueHeader {
+        label: root.label;
+        value: root.readout;
+        enabled: root.enabled;
+        resets: root.stepped;
+        help: root.help;
+        reset => { root.reset(); }
+    }
+    HorizontalLayout {
+        spacing: Space.s;
+        if root.stepped: StepKey {
+            text: "−";
+            fill: root.low;
+            help: root.minus-help;
+            enabled: root.enabled;
+            clicked => { root.step(root.field, self.shift ? -3 : -1); }
+        }
+        HorizontalLayout {
+            padding-left: SliderStyle.knob-width / 2;
+            padding-right: SliderStyle.knob-width / 2;
+            horizontal-stretch: 1;
+            track := Rectangle {
+                height: SliderStyle.row;
+                opacity: root.enabled ? 1 : State.disabled;
+                Rail {
+                    x: -SliderStyle.knob-width / 2;
+                    width: parent.width + SliderStyle.knob-width;
+                    y: (parent.height - self.height) / 2;
+                    overhang: SliderStyle.knob-width / 2;
+                    fill: root.fill;
+                    at: root.at;
+                    tint: root.tint;
+                    low: root.low;
+                    high: root.high;
+                    // Rest, where the name's double click brings it back.
+                    rest: root.stepped ? (0 - root.lowest) / root.span : -1;
+                }
+                Knob {
+                    centre: parent.width * root.at;
+                    fill: root.knob;
+                    grip: !root.stepped;
+                    grown: root.enabled && (area.over-knob || area.held || root.look != Look.live);
+                    slide: !area.held && !area.scrolling;
+                }
+                area := TouchArea {
+                    enabled: root.enabled;
+                    in-out property <bool> held;
+                    property <bool> fine;
+                    // A scroll's events, and `settle` after the last, which the knob follows unsprung.
+                    in-out property <bool> scrolling;
+                    out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.at) <= SliderStyle.knob-width / 2;
+                    mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
+                    double-clicked => {
+                        if (root.stepped) { root.reset(); }
+                    }
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
+                            if (root.stepped) {
+                                root.hand = root.step-at(self.mouse-x);
+                                self.held = true;
+                                root.held(true);
+                                if (root.hand != root.value) {
+                                    root.step(root.field, root.hand - root.value);
+                                }
+                            } else {
+                                self.fine = event.modifiers.alt;
+                                self.held = !root.press(root.field, self.fine);
+                            }
+                        } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                            if (root.stepped) {
+                                if (self.held) {
+                                    self.held = false;
+                                    root.held(false);
+                                }
+                            } else if (event.button == PointerEventButton.left || event.kind == PointerEventKind.cancel) {
+                                self.held = false;
+                                root.release(root.field);
+                            }
+                        } else if (event.kind == PointerEventKind.move) {
+                            self.fine = event.modifiers.alt;
+                        }
+                    }
+                    moved => {
+                        if (self.held && root.stepped) {
+                            let next = root.step-at(self.mouse-x);
+                            if (next != root.hand) {
+                                root.step(root.field, next - root.hand);
+                                root.hand = next;
+                            }
+                        } else if (self.held) {
+                            root.drag(root.field, self.mouse-x - self.pressed-x, track.width, self.fine);
+                        }
+                    }
+                    scroll-event(event) => {
+                        if (!root.stepped && root.scroll(root.field, event.delta-x, event.delta-y, track.width, event.modifiers.alt)) {
+                            self.scrolling = true;
+                            still.restart();
+                            return EventResult.accept;
+                        }
+                        EventResult.reject
+                    }
+                }
+                still := Timer {
+                    interval: Motion.settle;
+                    running: area.scrolling;
+                    triggered => { area.scrolling = false; }
+                }
+            }
+        }
+        if root.stepped: StepKey {
+            text: "+";
+            fill: root.high;
+            help: root.plus-help;
+            enabled: root.enabled;
+            clicked => { root.step(root.field, self.shift ? 3 : 1); }
+        }
+    }
+}

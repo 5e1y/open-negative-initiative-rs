@@ -112,6 +112,11 @@ pub(crate) fn a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corr
     assert!(d.invoke_press(false), "the second press is a double press");
     assert_eq!(d.get_readout().as_str(), rested, "the reset shows while the press is held");
     d.invoke_release();
+    // The wheel along the brush resizes it, as every slider; a scroll across it is the pane's.
+    assert!(!d.invoke_scroll(0.0, 40.0, 200.0, false), "a scroll across the track is the pane's");
+    assert_eq!(d.get_readout().as_str(), rested, "twin: the scroll across left the size");
+    assert!(d.invoke_scroll(40.0, 0.0, 200.0, false));
+    assert_ne!(d.get_readout().as_str(), rested, "the scroll along resized the brush");
 
     // A notch leaves the corrections' list as it was; a correction painted renews it.
     let list = d.get_rows();
