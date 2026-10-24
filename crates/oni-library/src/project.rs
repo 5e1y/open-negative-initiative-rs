@@ -354,7 +354,7 @@ pub fn encode(file: &ProjectsFile) -> Result<String, json::Error> {
 pub fn save(support: &Path, file: &ProjectsFile) -> std::io::Result<()> {
     std::fs::create_dir_all(support)?;
     let text = encode(file).map_err(std::io::Error::other)?;
-    crate::write_atomically(&file_path(support), text.as_bytes())
+    crate::replace_readable(&file_path(support), text.as_bytes())
 }
 
 #[cfg(test)]

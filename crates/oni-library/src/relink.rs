@@ -20,10 +20,16 @@ pub fn fingerprint(path: &Path) -> Option<String> {
     stamp(path).map(|s| s.fingerprint)
 }
 
+/// `None` for a file that cannot be read whole or that the cloud keeps away: a print made of what
+/// was not read would be shared by every such file of one size.
 pub fn stamp(path: &Path) -> Option<Stamp> {
-    let size = std::fs::metadata(path).ok()?.len() as i64;
+    let metadata = std::fs::metadata(path).ok()?;
+    if in_cloud(&metadata) {
+        return None;
+    }
+    let size = metadata.len() as i64;
+    let digest = sample_digest(path, size)?;
     let text = exif::capture_date(path);
-    let digest = sample_digest(path, size);
     // A literal marker fills the date slot when there is no EXIF date, so it cannot collide with one.
     Some(Stamp {
         fingerprint: format!("{size}-{}-{digest}", text.as_deref().unwrap_or("no-date")),
@@ -63,36 +69,60 @@ pub fn recognised(rows: &[(String, String)], old: &str, new: &str) -> Recognised
     out
 }
 
+/// `SF_DATALESS`: iCloud keeps the file's bytes away until it is read.
+#[cfg(target_os = "macos")]
+const DATALESS: u32 = 0x4000_0000;
+/// `FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS`, `RECALL_ON_OPEN` and `OFFLINE`: OneDrive's placeholders.
+#[cfg(windows)]
+const PLACEHOLDER: u32 = 0x0040_0000 | 0x0004_0000 | 0x0000_1000;
+
+/// A file whose bytes live in the cloud: reading a block of it downloads it whole, so it is not
+/// stamped until it is opened.
+pub fn in_cloud(metadata: &std::fs::Metadata) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        use std::os::macos::fs::MetadataExt;
+        if metadata.st_flags() & DATALESS != 0 {
+            return true;
+        }
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if metadata.file_attributes() & PLACEHOLDER != 0 {
+            return true;
+        }
+    }
+    let _ = metadata;
+    false
+}
+
 const BLOCK: usize = 16 * 1024;
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
 
-/// FNV-1a over three blocks from the middle of the file; `"0"` when nothing can be read, which
-/// keeps the fingerprint well-formed rather than absent.
-fn sample_digest(path: &Path, size: i64) -> String {
+/// FNV-1a over three blocks from the middle of the file, `"0"` for an empty one; `None` when the
+/// file or a block refuses to be read.
+fn sample_digest(path: &Path, size: i64) -> Option<String> {
     digest_at(path, size, &FRACTIONS)
 }
 
-fn digest_at(path: &Path, size: i64, fractions: &[f64]) -> String {
-    let Ok(mut file) = File::open(path) else { return "0".into() };
+fn digest_at(path: &Path, size: i64, fractions: &[f64]) -> Option<String> {
+    let mut file = File::open(path).ok()?;
     if size <= 0 {
-        return "0".into();
+        return Some("0".into());
     }
     let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
     for fraction in fractions {
         let offset = (size as f64 - BLOCK as f64).min(size as f64 * fraction).max(0.0) as u64;
-        if file.seek(SeekFrom::Start(offset)).is_err() {
-            continue;
-        }
+        file.seek(SeekFrom::Start(offset)).ok()?;
         let mut data = Vec::with_capacity(BLOCK);
-        if (&mut file).take(BLOCK as u64).read_to_end(&mut data).is_err() {
-            continue;
-        }
+        (&mut file).take(BLOCK as u64).read_to_end(&mut data).ok()?;
         for byte in data {
             hash ^= u64::from(byte);
             hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
         }
     }
-    format!("{hash:x}")
+    Some(format!("{hash:x}"))
 }
 
 /// EXIF's `2026:06:18 14:32:10`, colons in the date too, read in the local time zone.
@@ -126,6 +156,29 @@ mod tests {
         assert!(fa.contains("-no-date-"));
         // Twin: a sample taken elsewhere in the same file is another digest.
         assert_ne!(digest_at(&pa, count as i64, &[0.1, 0.5, 0.75]), sample_digest(&pa, count as i64));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn an_unreadable_file_gets_no_fingerprint() {
+        use std::os::unix::fs::PermissionsExt;
+        let scratch = Scratch::new("relink-unreadable");
+        let (a, b) = (scratch.path().join("scan_01.tif"), scratch.path().join("scan_02.tif"));
+        std::fs::write(&a, vec![1u8; 40_000]).unwrap();
+        std::fs::write(&b, vec![2u8; 40_000]).unwrap();
+        for p in [&a, &b] {
+            std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o000)).unwrap();
+        }
+        let closed = (stamp(&a), stamp(&b));
+        for p in [&a, &b] {
+            std::fs::set_permissions(p, std::fs::Permissions::from_mode(0o644)).unwrap();
+        }
+        // Two scans of one size, neither readable: no print each, so neither lends the other its tile.
+        assert_eq!(closed, (None, None));
+        assert!(!in_cloud(&std::fs::metadata(&a).unwrap()), "a file on the disk is not in the cloud");
+        // Twin: readable again, each gets a print of its own.
+        let (fa, fb) = (fingerprint(&a).unwrap(), fingerprint(&b).unwrap());
+        assert_ne!(fa, fb);
     }
 
     #[test]

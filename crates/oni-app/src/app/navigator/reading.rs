@@ -1,19 +1,19 @@
-//! Reading the folders off this thread, the favourites after the opened one, and following the open photo.
+//! Reading the folders off this thread: each listed row on a pool where one stuck in its disk never
+//! holds the others, its roll mark one look at its marker; and following the open photo.
 
 use super::*;
 
+/// One folder's listing: its subfolders (`None` while the disk refuses it), its state, and whether
+/// its roll marker is there.
+type Listing = (Option<Vec<String>>, Presence, bool);
+
 impl Ctl {
-    /// `openFolder`'s `surveys.yield`: a favourite's read gives way to the folder opened.
-    pub(in crate::app) fn navigator_opened(&self, folder: &str) {
-        {
-            let mut s = self.state.borrow_mut();
-            s.nav.surveys.yield_keeping(&[folder.to_owned()]);
-            s.nav.waiting = true;
-        }
+    /// The navigator waits for the folder opened, whose read marks its rolls.
+    pub(in crate::app) fn navigator_opened(&self, _folder: &str) {
         self.publish_navigator();
     }
 
-    /// The opened folder read whole: its rolls known, then the favourites read in turn.
+    /// The opened folder read whole: its rolls known, the hand's marks inside it dropped.
     pub(in crate::app) fn navigator_read(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
@@ -22,66 +22,52 @@ impl Ctl {
                 s.nav.roll_edits.retain(|k, _| !holds(&opened, k));
             }
             s.nav.opened_rolls = rolls;
-            s.nav.waiting = false;
         }
-        self.start_pass();
         self.publish_navigator();
         self.fresh_read();
     }
 
-    pub(super) fn start_pass(&self) {
-        self.state.borrow_mut().nav.tried.clear();
-        self.survey_favourites();
-    }
-
-    /// `surveyFolders` for the favourites: each one no read area covers, read alone off this
-    /// thread, the folders holding the opened one first.
-    pub(super) fn survey_favourites(&self) {
-        let (root, stop, computer) = {
-            let mut s = self.state.borrow_mut();
-            let wanted = s.wanted_folders();
-            s.nav.surveys.keep(&wanted);
-            if s.nav.reading || s.nav.waiting {
-                return;
-            }
-            let opened = s.opened.clone();
-            let mut stored: Vec<String> = s.nav.surveys.areas.keys().cloned().collect();
-            stored.extend(opened.iter().cloned());
-            stored.extend(s.nav.tried.iter().cloned());
-            let missing = favourites::missing(&s.nav.favourites.paths, &stored);
-            let next = favourites::ordered(&missing, opened.as_deref()).into_iter().find(|r| Some(r) != opened.as_ref());
-            let Some(root) = next else { return };
-            s.nav.tried.insert(root.clone());
-            s.nav.reading = true;
-            let stop = s.nav.surveys.begin(&root);
-            (root, stop, s.nav.computer.clone())
+    /// The folders asked, listed apart: a favourite is a bookmark, so a row reads its own folder
+    /// and its marker, never a tree.
+    pub(super) fn list_apart(&self, wanted: Vec<String>) {
+        let computer = self.state.borrow().nav.computer.clone();
+        let read = move |folder: &str| -> Listing {
+            let children = walk::children(folder);
+            // A folder refused is told offline or missing here, off the interface thread.
+            let state = if children.is_some() { Presence::Present } else { presence::of(folder, &computer) };
+            let roll = children.is_some() && {
+                presence::looked(folder);
+                folders::marker(folder).is_file()
+            };
+            (children, state, roll)
         };
-        let _ = std::thread::Builder::new().name("favourites".into()).spawn(move || {
-            let area = favourites::read(&root, &stop);
-            // A favourite unread for its disk is told offline or missing; one stopped is not told.
-            let state = if area.is_none() && !stop.raised() { presence::of(&root, &computer) } else { Presence::Present };
-            with_shell(move |c| c.favourite_read(root, area, state));
-        });
+        favourites::read_apart(wanted, LISTERS, favourites::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
     }
 
-    pub(super) fn favourite_read(&self, root: String, area: Option<Area>, state: Presence) {
-        {
+    fn listed_apart(self: &Rc<Self>, landed: Vec<(String, Listing)>) {
+        let listed = {
             let mut s = self.state.borrow_mut();
-            s.noted(vec![(root.clone(), state)]);
-            s.nav.surveys.end();
-            s.nav.reading = false;
-            let wanted = s.wanted_folders();
-            if let Some(area) = area.filter(|_| wanted.iter().any(|w| holds(&root, w) || holds(w, &root))) {
-                s.nav.roll_edits.retain(|k, _| !holds(&root, k));
-                s.nav.surveys.store(area, &root);
+            let mut found = Vec::with_capacity(landed.len());
+            let mut listed = Vec::with_capacity(landed.len());
+            for (folder, (children, state, roll)) in landed {
+                if children.is_some() {
+                    // A mark of the hand's that the disk now shows is no longer needed.
+                    if s.nav.roll_edits.get(&folder) == Some(&roll) {
+                        s.nav.roll_edits.remove(&folder);
+                    }
+                    if roll {
+                        s.nav.listed_rolls.insert(folder.clone());
+                    } else {
+                        s.nav.listed_rolls.remove(&folder);
+                    }
+                }
+                found.push((folder.clone(), state));
+                listed.push((folder, children));
             }
-            let inside = |p: &str| wanted.iter().any(|w| holds(w, p));
-            let rolls: HashSet<String> =
-                s.nav.surveys.areas.values().flat_map(|a| a.rolls.keys()).filter(|k| inside(k)).cloned().collect();
-            s.nav.area_rolls = rolls;
-        }
-        self.publish_navigator();
-        self.survey_favourites();
+            s.noted(found);
+            listed
+        };
+        self.listed(listed);
     }
 
     /// `reveal(current)`: beside a photo, the navigator unfolds down to the photo's folder and

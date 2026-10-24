@@ -238,7 +238,7 @@ impl Drop for Exfat {
 #[cfg(target_os = "macos")]
 #[test]
 fn an_accented_folder_on_exfat_opens_marks_and_stars() {
-    use crate::favourites::{Favourites, Stop, Surveys, read};
+    use crate::favourites::Favourites;
     let scratch = Scratch::new("exfat");
     let (nfc, nfd) = ("\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025");
     let exfat = Exfat::attach(&scratch);
@@ -265,7 +265,7 @@ fn an_accented_folder_on_exfat_opens_marks_and_stars() {
     let row = children(&ete).unwrap().remove(0);
     assert_eq!((ete.as_str(), row.as_str()), (paths::join(&root, nfc).as_str(), roll.as_str()));
     assert_eq!(paths::canonical(Path::new(&row)), row, "the opened folder is its row");
-    let area = read(&root, &Stop::new()).unwrap();
+    let area = crate::roots::survey(std::slice::from_ref(&root), &|| true);
     assert!(area.rolls.contains_key(&row) && area.folders.contains(&ete), "the roll's icon falls on its row");
     assert!(!area.images.is_empty() && area.images.iter().all(|i| holds(&row, i)));
     let mut nav = Navigation::new(Some(root.clone()), false, BTreeSet::new(), Vec::new());
@@ -281,9 +281,7 @@ fn an_accented_folder_on_exfat_opens_marks_and_stars() {
     assert!(nav.unfolded.contains(&ete) && nav.rows(&[]).iter().any(|(p, _)| *p == row), "the photo's folder unfolds to its row");
     let mut stars = Favourites::default();
     stars.toggle(&row);
-    let mut surveys = Surveys::default();
-    surveys.store(area.clone(), &root);
-    assert!(stars.contains(&row) && surveys.union(None, &stars.paths).images == area.images, "the star holds its photos");
+    assert!(stars.contains(&row) && area.images.iter().all(|i| stars.paths.iter().any(|p| holds(p, i))), "the star holds its photos");
     // Twin: the row the disk's listing spells, joined byte for byte, is no folder the survey knows.
     let listed = format!("{root}/{}", raw[0]);
     assert!(listed != ete && !area.folders.contains(&listed));

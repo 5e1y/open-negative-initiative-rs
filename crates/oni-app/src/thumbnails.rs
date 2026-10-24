@@ -1,10 +1,9 @@
-//! `Thumbnails`: one JPEG per photo in a durable folder of the support folder, named by the photo's
-//! fingerprint alone, and the memory cache over it. Showing a tile reads that folder; a render runs
-//! only in the thumbnails pass, for a photo with no file, or after an edit.
+//! `Thumbnails`: one JPEG per photo in a durable support folder, named by its fingerprint (`key`), and
+//! the memory over it. A tile reads that folder; a render runs only in the pass or after an edit.
 
 use crate::display::Screen;
 use std::cell::Cell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -46,6 +45,21 @@ pub fn file_name(fingerprint: &str) -> String {
 /// the system allows it.
 fn swift_name(fingerprint: &str) -> String {
     format!("{}.jpg", fingerprint.replace('/', "_"))
+}
+
+/// The name a tile is kept and shown under: the fingerprint, or for a print two rows hold (a copy,
+/// a backup) the print and the path, so an edit on one copy never shows on the other's tile.
+pub fn key(fingerprint: &str, path: &str, copies: &HashSet<String>) -> String {
+    if !copies.contains(fingerprint) {
+        return fingerprint.to_owned();
+    }
+    let hash = oni_library::paths::normal(path).bytes().fold(0xcbf2_9ce4_8422_2325_u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3));
+    format!("{fingerprint}~{hash:016x}")
+}
+
+/// The files a row keeps from the sweep: its print's, Swift's name for it, and its own key's.
+pub fn claims(fingerprint: &str, key: &str) -> [String; 3] {
+    [file_name(fingerprint), swift_name(fingerprint), file_name(key)]
 }
 
 /// Where a thumbnail is written.
@@ -90,14 +104,12 @@ pub fn jpeg(rgba: &[u8], width: usize, height: usize) -> Option<Vec<u8>> {
     Some(out)
 }
 
-/// Written whole through a sibling, so a tile never reads half a file.
+/// Written whole through a sibling of its own (`write_atomically`), so a tile never reads half a
+/// file and a full disk leaves nothing behind.
 pub fn persist(support: &Path, fingerprint: &str, data: &[u8]) -> std::io::Result<()> {
     let folder = directory(support);
     std::fs::create_dir_all(&folder)?;
-    let target = folder.join(file_name(fingerprint));
-    let staged = target.with_extension("jpg.part");
-    std::fs::write(&staged, data)?;
-    std::fs::rename(&staged, &target)?;
+    oni_library::write_atomically(&folder.join(file_name(fingerprint)), data)?;
     // Swift's copy is older than this one now: gone, so Swift draws the photo afresh.
     if !cfg!(windows) && swift_name(fingerprint) != file_name(fingerprint) {
         let _ = std::fs::remove_file(folder.join(swift_name(fingerprint)));
@@ -213,6 +225,9 @@ impl<T: Clone> Memory<T> {
     }
 }
 
+mod sweep;
+pub use sweep::{FRESH, SWEPT, sweep};
+
 #[cfg(test)]
 mod criterion;
 
@@ -231,6 +246,16 @@ mod tests {
         assert!(!file_name("a/b").trim_end_matches(".jpg").contains('/'));
         // Two fingerprints never share a name: the escape's own `_` is escaped.
         assert_ne!(file_name("a:b"), file_name("a_3ab"));
+    }
+
+    #[test]
+    fn two_copies_of_one_file_keep_a_tile_each() {
+        let copies = HashSet::from(["4096-no-date-9f".to_owned()]);
+        let (mac, backup) = (key("4096-no-date-9f", "/Users/a/Roll 8/A.tif", &copies), key("4096-no-date-9f", "/Volumes/T7/Roll 8/A.tif", &copies));
+        assert!(mac != backup && mac.starts_with("4096-no-date-9f~"), "{mac} {backup}");
+        assert_eq!(key("4096-no-date-9f", "/Users/a/Roll 8/A.tif", &copies), mac, "a copy keeps its name");
+        // Twin: a print no other row holds keeps Swift's name, the print alone.
+        assert_eq!(key("2048-no-date-1a", "/Users/a/Roll 8/B.tif", &copies), "2048-no-date-1a");
     }
 
     /// Windows refuses `:` in a name (NTFS reads a stream after it), so a dated photo had no tile there.

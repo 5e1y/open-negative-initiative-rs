@@ -145,7 +145,6 @@ impl Ctl {
             }
             // What was known of the old places says nothing of the new ones.
             s.nav.presence.retain(|p, _| !holds(old, p));
-            s.nav.tried.retain(|p| !holds(old, p));
             s.nav.leads.looked = None;
             s.nav.leads.lead = None;
             failure
@@ -156,7 +155,6 @@ impl Ctl {
         // A read in flight under the old names is superseded, never laid over the moved rows.
         self.state.borrow().generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         self.followed(&[Move { from: old.to_owned(), to: new.to_owned() }]);
-        self.start_pass();
         self.publish_navigator();
     }
 
@@ -227,7 +225,6 @@ impl Ctl {
                     s.nav.model.unfolded.retain(|p| !holds(folder, p));
                     s.remember();
                     s.nav.presence.retain(|p, _| !holds(folder, p));
-                    s.nav.tried.retain(|p| !holds(folder, p));
                     s.nav.leads.looked = None;
                     s.nav.leads.lead = None;
                     let kept = s.index_path.parent().map(|caches| oni_library::kept::file(&caches.join("Surveys"), folder));
@@ -258,7 +255,6 @@ impl Ctl {
         } else {
             self.lay_grid();
         }
-        self.start_pass();
         self.publish_navigator();
     }
 

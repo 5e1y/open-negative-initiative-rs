@@ -1,11 +1,11 @@
 //! The navigator in the window (`FolderNavigator`, `RootWelcome`, `RootsCatchUp`): folders listed off
-//! this thread, the favourites read behind the opened folder, the folder menu, what a launch finds.
+//! this thread, the favourites kept as bookmarks, the folder menu, what a launch finds.
 
 use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
 use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
 use oni_i18n::tr;
-use oni_library::favourites::{self, Area, Favourites, Surveys};
+use oni_library::favourites::{self, Favourites};
 use oni_library::gallery_history::Move;
 use oni_library::navigator::{self as walk, Computer, Landed, Navigation, TRASH_ROW};
 use oni_library::paths::{self, holds};
@@ -81,21 +81,16 @@ pub(super) struct Nav {
     former: Vec<String>,
     pub catching_up: bool,
     catch_up_folders: Vec<String>,
-    surveys: Surveys,
-    /// The favourites this pass has read or tried, so one the disk refuses is not read again in it.
-    tried: HashSet<String>,
-    reading: bool,
-    /// Held off while the opened folder's own read runs, which goes first.
-    waiting: bool,
     opened_rolls: HashSet<String>,
-    area_rolls: HashSet<String>,
+    /// The listed rows whose roll marker their listing found.
+    listed_rolls: HashSet<String>,
     /// Make a Roll and Back to a Folder until the folder is read again.
     roll_edits: HashMap<String, bool>,
     /// Held by the mounts' reader, which ends once the window's state is gone.
     watcher: Arc<()>,
     /// The folders the disk refused, the opened one among them, which the mounts' reader tries.
     refused: Arc<std::sync::Mutex<Vec<String>>>,
-    /// The rows' folders a listing or a favourite's read found offline or missing, looked at off this thread.
+    /// The rows' folders a listing found offline or missing, looked at off this thread.
     presence: HashMap<String, Presence>,
     /// Names the volumes a favourite lives on, which `bookmarks.json` keeps beside its path.
     identify: oni_library::bookmarks::Identify,
@@ -124,12 +119,8 @@ impl Nav {
             former: Vec::new(),
             catching_up: false,
             catch_up_folders: Vec::new(),
-            surveys: Surveys::default(),
-            tried: HashSet::new(),
-            reading: false,
-            waiting: false,
             opened_rolls: HashSet::new(),
-            area_rolls: HashSet::new(),
+            listed_rolls: HashSet::new(),
             roll_edits: HashMap::new(),
             watcher: Arc::new(()),
             refused: Arc::default(),
@@ -142,9 +133,9 @@ impl Nav {
         }
     }
 
-    /// `rollFolders`: the opened folder's rolls and the favourites', with the hand's edits on top.
+    /// `rollFolders`: the opened folder's rolls and the listed rows', with the hand's edits on top.
     pub(super) fn rolls(&self) -> HashSet<String> {
-        let mut out: HashSet<String> = self.opened_rolls.union(&self.area_rolls).cloned().collect();
+        let mut out: HashSet<String> = self.opened_rolls.union(&self.listed_rolls).cloned().collect();
         for (folder, roll) in &self.roll_edits {
             if *roll {
                 out.insert(folder.clone());
@@ -211,12 +202,6 @@ impl State {
                 self.nav.presence.insert(path, state);
             }
         }
-    }
-
-    fn wanted_folders(&self) -> Vec<String> {
-        let mut wanted: Vec<String> = self.opened.iter().cloned().collect();
-        wanted.extend(self.nav.favourites.paths.iter().cloned());
-        wanted
     }
 
     /// Writes what `remember()` writes, when it moved.

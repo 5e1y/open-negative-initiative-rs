@@ -11,7 +11,8 @@ impl Ctl {
             let bands = s.bands();
             let order: Vec<String> = bands.iter().flat_map(|b| b.entries.iter().map(|e| e.path.clone())).collect();
             for e in bands.iter().flat_map(|b| &b.entries) {
-                s.fingerprints.entry(e.path.clone()).or_insert_with(|| e.fingerprint.clone());
+                let key = s.tile_key(e);
+                s.fingerprints.entry(e.path.clone()).or_insert(key);
             }
             // The states last published, never the disk: a photo not looked at yet is looked at behind.
             s.org.missing = order.iter().filter(|p| !s.presence(p).is_present()).cloned().collect();

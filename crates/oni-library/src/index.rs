@@ -103,7 +103,7 @@ impl LibraryIndex {
         // A version that does not read is no reason to drop the table another app may be filling.
         let version: i32 = self.connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version != SCHEMA_VERSION {
-            self.connection.execute_batch("DROP TABLE IF EXISTS photos")?;
+            self.connection.execute_batch("DROP TABLE IF EXISTS photos; DROP TABLE IF EXISTS stamps")?;
             self.connection.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION}"))?;
         }
         self.connection.execute_batch(
@@ -129,7 +129,20 @@ impl LibraryIndex {
             CREATE INDEX IF NOT EXISTS photos_captured_at ON photos(captured_at);
             CREATE INDEX IF NOT EXISTS photos_fingerprint ON photos(fingerprint);
             CREATE INDEX IF NOT EXISTS photos_label ON photos(label);",
-        )
+        )?;
+        stamps::prepare(&self.connection)
+    }
+
+    /// `body` inside one transaction, committed whole or rolled back.
+    fn in_one(&self, body: impl FnOnce() -> rusqlite::Result<()>) -> rusqlite::Result<()> {
+        self.connection.execute_batch("BEGIN IMMEDIATE")?;
+        match body() {
+            Ok(()) => self.connection.execute_batch("COMMIT"),
+            Err(e) => {
+                let _ = self.connection.execute_batch("ROLLBACK");
+                Err(e)
+            }
+        }
     }
 
     // MARK: - Writing
@@ -223,27 +236,27 @@ impl LibraryIndex {
 
     pub fn remove(&self, path: &str) -> rusqlite::Result<()> {
         self.connection.execute("DELETE FROM photos WHERE path IN (?, ?)", params![path, normal(path)])?;
-        Ok(())
+        self.forget_stamp(path)
     }
 
     /// One transaction: without it each insert pays its own `fsync`, and a rebuild of ten
     /// thousand frames takes minutes instead of under a second.
     pub fn rebuild(&self, entries: &[Entry]) -> rusqlite::Result<()> {
-        self.connection.execute_batch("BEGIN IMMEDIATE")?;
-        let written = (|| {
+        self.in_one(|| {
             self.connection.execute_batch("DELETE FROM photos")?;
             for entry in entries {
                 self.upsert(entry)?;
             }
             Ok(())
-        })();
-        match written {
-            Ok(()) => self.connection.execute_batch("COMMIT"),
-            Err(e) => {
-                let _ = self.connection.execute_batch("ROLLBACK");
-                Err(e)
-            }
+        })
+    }
+
+    /// Each row written, in one transaction rather than one `fsync` each.
+    pub fn upsert_all(&self, entries: &[Entry]) -> rusqlite::Result<()> {
+        if entries.is_empty() {
+            return Ok(());
         }
+        self.in_one(|| entries.iter().try_for_each(|e| self.upsert(e)))
     }
 
     // MARK: - Reading
@@ -369,7 +382,10 @@ fn frames(picked: &[&Entry], rows: &[Entry]) -> Vec<Entry> {
 }
 
 mod forget;
+pub mod prune;
 mod spelling;
+mod stamps;
+pub use stamps::Stamped;
 
 #[cfg(test)]
 mod tests;

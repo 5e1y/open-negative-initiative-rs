@@ -223,11 +223,48 @@ impl Ctl {
                 let waiting: Vec<oni_library::Entry> =
                     s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
                 rows.extend(waiting);
-                s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+                s.copies = index.copies();
+                s.fingerprints = rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
                 s.rows = rows;
             }
         }
         self.lay_archive();
+    }
+}
+
+/// The first read of a launch landed whole: the tidy runs once, whichever folder it was.
+static TIDIED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+impl Ctl {
+    /// Once a launch, off this thread: the index's dead rows pruned and the thumbnails no row claims
+    /// swept (`library::tidy`); the opened folder and the favourites keep their rows for Locate and Forget.
+    pub(super) fn tidy_once(&self) {
+        if TIDIED.swap(true, Ordering::Relaxed) {
+            return;
+        }
+        let (index_path, support, computer, kept) = {
+            let s = self.state.borrow();
+            let mut kept: Vec<String> = s.opened.iter().cloned().collect();
+            kept.extend(s.nav.favourites.paths.iter().cloned());
+            (s.index_path.clone(), s.support.clone(), s.nav.computer.clone(), kept)
+        };
+        let _ = std::thread::Builder::new().name("tidying".into()).spawn(move || {
+            crate::decode_gate::in_background();
+            let Some(index) = LibraryIndex::open(&index_path) else { return };
+            let sweeping = library::tidy::settled(&index_path);
+            let done = library::tidy::tidy(&index, &support, &computer, &kept, sweeping);
+            crate::timing::line(&format!("tidy: {} rows pruned, {} thumbnails swept", done.pruned, done.swept));
+            if done.pruned > 0 {
+                with_shell(|c| c.read_library());
+            }
+        });
+    }
+}
+
+impl State {
+    /// The name a row's tile goes by (`thumbnails::key`): a copy's is told from the other's.
+    pub(super) fn tile_key(&self, e: &oni_library::Entry) -> String {
+        thumbnails::key(&e.fingerprint, &e.path, &self.copies)
     }
 }
 

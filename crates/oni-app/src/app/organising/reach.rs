@@ -157,6 +157,9 @@ impl State {
         if !presence.is_present() {
             return (reach(presence), tile_note(presence, path, &self.nav.computer).into(), SharedString::new());
         }
+        if self.survey.cloud.contains(path) {
+            return (crate::Reach::Here, tr("In the cloud: opening it downloads it").into(), SharedString::new());
+        }
         match self.org.seen.gone_passes.get(path) {
             Some((channel, name)) => {
                 let (seal, note) = pass_words(*channel, name);

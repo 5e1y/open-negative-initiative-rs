@@ -95,13 +95,15 @@ impl Computer {
 pub fn children(folder: &str) -> Option<Vec<String>> {
     crate::presence::looked(folder);
     let listing = std::fs::read_dir(folder).ok()?;
+    // The listing's own type (`d_type`) leaves files out with no look each; folders alone are looked at.
     let mut out: Vec<String> = listing
         .filter_map(|e| e.ok())
         .filter(|e| {
             let path = e.path();
             let dotted = e.file_name().to_string_lossy().starts_with('.');
-            let directory = std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir() && !crate::roots::is_hidden(&path, &m));
-            !dotted && directory && !crate::roots::is_package(&path)
+            let maybe = e.file_type().is_ok_and(|t| t.is_dir());
+            let directory = || std::fs::symlink_metadata(&path).is_ok_and(|m| m.is_dir() && !crate::roots::is_hidden(&path, &m));
+            !dotted && maybe && !crate::roots::is_package(&path) && directory()
         })
         .map(|e| paths::join(folder, &e.file_name().to_string_lossy()))
         .collect();

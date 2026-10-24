@@ -118,30 +118,10 @@ impl Ctl {
         self.rewatch();
     }
 
-    /// The listings asked and not under way, read on a few threads; each thread lands its share at once.
+    /// The listings asked and not under way, each read apart (`list_apart`).
     pub(super) fn list_wanted(&self) {
         let wanted = self.state.borrow_mut().nav.model.take_wanted();
-        if wanted.is_empty() {
-            return;
-        }
-        let share = wanted.len().div_ceil(LISTERS);
-        let computer = self.state.borrow().nav.computer.clone();
-        for chunk in wanted.chunks(share) {
-            let (chunk, computer) = (chunk.to_vec(), computer.clone());
-            let _ = std::thread::Builder::new().name("navigator".into()).spawn(move || {
-                let listed: Vec<(String, Option<Vec<String>>)> = chunk.into_iter().map(|f| {
-                    let children = walk::children(&f);
-                    (f, children)
-                }).collect();
-                // A folder refused is told offline or missing here, off the interface thread.
-                let found: Vec<(String, Presence)> =
-                    listed.iter().map(|(f, c)| (f.clone(), if c.is_some() { Presence::Present } else { presence::of(f, &computer) })).collect();
-                with_shell(move |c| {
-                    c.state.borrow_mut().noted(found);
-                    c.listed(listed);
-                });
-            });
-        }
+        self.list_apart(wanted);
     }
 
     /// The listings landed lay their rows and open nothing: the folder opened last stays opened.

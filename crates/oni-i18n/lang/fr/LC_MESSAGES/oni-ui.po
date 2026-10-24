@@ -3086,6 +3086,10 @@ msgid "Folder Not Found"
 msgstr "Dossier introuvable"
 
 #: crates/oni-app/src/app/organising/reach.rs
+msgid "In the cloud: opening it downloads it"
+msgstr "Dans le cloud : l’ouvrir le télécharge"
+
+#: crates/oni-app/src/app/organising/reach.rs
 msgid "FOLLOW"
 msgstr "SUIVRE"
 
@@ -4214,6 +4218,10 @@ msgstr "Windows refuse « {c} » dans un nom."
 #: crates/oni-library/src/file_names.rs
 msgid "Windows keeps “{name}” for a device."
 msgstr "Windows réserve « {name} » à un périphérique."
+
+#: crates/oni-library/src/lib.rs
+msgid "{file} cannot be read, so it is kept as it is: {error}"
+msgstr "{file} est illisible, il est donc gardé tel quel : {error}"
 
 #: crates/oni-library/src/navigator/names.rs
 msgid "Desktop"

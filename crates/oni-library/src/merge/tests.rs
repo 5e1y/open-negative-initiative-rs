@@ -109,3 +109,68 @@ fn a_project_the_other_app_deleted_survives_an_edit_here() {
     located[0].paths = Some([("f1".to_string(), "/r/a.NEF".to_string())].into());
     assert!(projects(&base, &located, &[]).is_empty());
 }
+
+/// Closes `at` to every reader; `false` when the check runs as root, which reads it all the same.
+#[cfg(unix)]
+fn closed(at: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(at, std::fs::Permissions::from_mode(0o000)).unwrap();
+    std::fs::read(at).is_err()
+}
+
+#[cfg(unix)]
+fn opened(at: &Path) {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(at, std::fs::Permissions::from_mode(0o644)).unwrap();
+}
+
+/// A favourites file the disk refuses reads as none, as a launch meets it; the launch's seeded save
+/// is refused, and the user's file comes back whole once it reads again.
+#[cfg(unix)]
+#[test]
+fn an_unreadable_favourites_file_is_never_replaced() {
+    let scratch = Scratch::new("favourites-closed");
+    let support = scratch.path();
+    swift_writes_favourites(support, &["/Volumes/T7/Scans", "/Users/a/Roll 8"]);
+    let stars = Favourites::file_path(support);
+    let kept = std::fs::read(&stars).unwrap();
+    if !closed(&stars) {
+        opened(&stars);
+        return eprintln!("SKIPPED: root reads a closed file");
+    }
+    assert_eq!(Favourites::load(support), None);
+    let mut seeded = Favourites::seeded(&crate::roots::Roots { version: 1, paths: strings(&["/Users/a/Old"]), active: None });
+    let mut read = Favourites::default();
+    let refused = seeded.save_merged(&mut read, support);
+    opened(&stars);
+    assert!(refused.is_err(), "the seeded list is not written over the user's");
+    assert_eq!(std::fs::read(&stars).unwrap(), kept);
+    // Twin: a file never written is made at the first save.
+    std::fs::remove_file(&stars).unwrap();
+    seeded.save_merged(&mut read, support).unwrap();
+    assert_eq!(Favourites::load(support).unwrap().paths, ["/Users/a/Old"]);
+}
+
+#[cfg(unix)]
+#[test]
+fn an_unreadable_projects_file_is_never_replaced() {
+    let scratch = Scratch::new("projects-closed");
+    let support = scratch.path();
+    other_app_writes(support, &[project("Iceland", &["/r/a.NEF"])]);
+    let book = project::file_path(support);
+    let kept = std::fs::read(&book).unwrap();
+    if !closed(&book) {
+        opened(&book);
+        return eprintln!("SKIPPED: root reads a closed file");
+    }
+    assert!(project::load(support).projects.is_empty(), "a refused file reads as no project");
+    let refused = save_projects(support, &[], &[project("Portraits", &["/r/b.NEF"])]);
+    opened(&book);
+    assert!(refused.is_err(), "the first gesture's save does not write over every project");
+    assert_eq!(std::fs::read(&book).unwrap(), kept);
+    assert_eq!(names(&project::load(support).projects), ["Iceland"]);
+    // Twin: with no file yet, the same save makes it.
+    std::fs::remove_file(&book).unwrap();
+    save_projects(support, &[], &[project("Portraits", &["/r/b.NEF"])]).unwrap();
+    assert_eq!(names(&project::load(support).projects), ["Portraits"]);
+}

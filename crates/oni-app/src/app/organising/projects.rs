@@ -96,7 +96,8 @@ impl Ctl {
                     continue;
                 };
                 // A thumbnail is asked by fingerprint, which the archive's grid may never have read.
-                s.fingerprints.entry(entry.path.clone()).or_insert_with(|| entry.fingerprint.clone());
+                let key = s.tile_key(entry);
+                s.fingerprints.entry(entry.path.clone()).or_insert(key);
                 paths.push(Some(entry.path.clone()));
             }
             let rows = nodes

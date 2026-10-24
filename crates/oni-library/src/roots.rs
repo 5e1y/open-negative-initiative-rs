@@ -6,7 +6,7 @@ use crate::paths::{self, canonical, holds};
 use crate::presence::{self, Away, Presence};
 use oni_settings::{Date, Film};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -78,6 +78,10 @@ pub struct Survey {
     pub rolls: HashMap<String, Film>,
     /// The walk stopped part way: what it did not reach is unknown, never gone.
     pub stopped: bool,
+    /// Each image's sidecar's modification date, read off the walk's own look at it.
+    pub sidecars: HashMap<String, Date>,
+    /// The images whose bytes the cloud keeps away (`relink::in_cloud`), never read to be indexed.
+    pub cloud: HashSet<String>,
 }
 
 impl Survey {
@@ -172,7 +176,7 @@ pub fn surveyed(roots: &[String], alive: &dyn Fn() -> bool, computer: &Computer)
             continue;
         }
         // A survey stopped part way still lists every later root the disk refuses.
-        out.stopped |= !walk(Path::new(root), alive, computer, &mut out);
+        out.stopped |= !walk(Path::new(root), &canonical(Path::new(root)), alive, computer, &mut out);
         // A disk that left during the walk refused what it had not listed: none of it is gone.
         if let Err(e) = std::fs::read_dir(root) {
             refuse(&mut out, root.clone(), &e, computer);
@@ -190,19 +194,21 @@ fn refuse(out: &mut Survey, folder: String, error: &std::io::Error, computer: &C
     out.unreadable.push(folder);
 }
 
-/// Depth first, a folder before its contents, names in Finder order; false once `alive` turns false.
-fn walk(folder: &Path, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut Survey) -> bool {
-    presence::looked(&folder.to_string_lossy());
+/// Depth first, names in Finder order, false once `alive` turns false. No link is followed, so each
+/// child is its name joined to `spelt`, and no entry pays a `realpath` (six times a look, on an SSD).
+fn walk(folder: &Path, spelt: &str, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut Survey) -> bool {
+    presence::looked(spelt);
     let listing = match std::fs::read_dir(folder) {
         Ok(listing) => listing,
         Err(e) => {
-            refuse(out, canonical(folder), &e, computer);
+            refuse(out, spelt.to_owned(), &e, computer);
             return true;
         }
     };
     let mut children: Vec<PathBuf> = listing.filter_map(|e| e.ok().map(|e| e.path())).collect();
     children.sort_by(|a, b| paths::standard_order(&a.to_string_lossy(), &b.to_string_lossy()).then_with(|| a.cmp(b)));
     for child in children {
+        let name = child.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         if !alive() {
             return false;
         }
@@ -211,7 +217,7 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut 
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
             // An entry listed and then refused leaves its folder unread, so no row in it is dropped.
             Err(e) => {
-                refuse(out, canonical(folder), &e, computer);
+                refuse(out, spelt.to_owned(), &e, computer);
                 continue;
             }
         };
@@ -222,21 +228,29 @@ fn walk(folder: &Path, alive: &dyn Fn() -> bool, computer: &Computer, out: &mut 
             if is_package(&child) {
                 continue;
             }
-            let folder = canonical(&child);
+            let folder = paths::join(spelt, &name);
             out.folders.push(folder.clone());
             if let Some(made) = date(metadata.created()) {
-                out.made.insert(folder, made);
+                out.made.insert(folder.clone(), made);
             }
-            if !walk(&child, alive, computer, out) {
+            if !walk(&child, &folder, alive, computer, out) {
                 return false;
             }
         } else if metadata.is_file() && crate::library::is_importable(&child) {
-            let image = canonical(&child);
+            let image = paths::join(spelt, &name);
+            if crate::relink::in_cloud(&metadata) {
+                out.cloud.insert(image.clone());
+            }
             out.images.push(image.clone());
             if let Some(dated) = date(metadata.modified()) {
                 out.dated.insert(image.clone(), dated);
             }
             out.sizes.insert(image, metadata.len() as i64);
+        } else if metadata.is_file()
+            && let Some(original) = name.strip_suffix(".json").filter(|o| crate::library::is_importable(Path::new(o)))
+            && let Some(dated) = date(metadata.modified())
+        {
+            out.sidecars.insert(paths::join(spelt, original), dated);
         }
     }
     true

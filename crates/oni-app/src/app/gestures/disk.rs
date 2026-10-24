@@ -130,7 +130,7 @@ impl Ctl {
             for row in s.rows.iter_mut().chain(s.org.standing.iter_mut()).chain(s.org.trashed.iter_mut()) {
                 carry(&mut row.path);
             }
-            let fingerprints = s.rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            let fingerprints = s.rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
             s.fingerprints = fingerprints;
             s.order.iter_mut().for_each(carry);
             // `selection` and `ring` follow too, so a photo moved is never opened where it was.

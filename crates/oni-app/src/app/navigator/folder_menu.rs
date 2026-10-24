@@ -87,16 +87,14 @@ impl Ctl {
         }
     }
 
-    /// `toggleFavourite`: kept in `favourites.json`, the read of a folder no longer wanted stopped,
-    /// a new one read in turn. A favourite taken away says so, with Undo, as its row may vanish.
+    /// `toggleFavourite`: kept in `favourites.json`, a bookmark that reads nothing more; one taken
+    /// away says so, with Undo, as its row may vanish.
     pub(in crate::app) fn toggle_favourite(&self, path: &str) {
         let (failure, removed) = {
             let mut s = self.state.borrow_mut();
             let removed = s.nav.favourites.contains(path);
             s.nav.favourites.toggle(path);
             let failure = s.save_favourites();
-            let wanted = s.wanted_folders();
-            s.nav.surveys.yield_keeping(&wanted);
             (failure, removed)
         };
         if let Some(message) = failure {
@@ -105,7 +103,6 @@ impl Ctl {
             let name = self.state.borrow().nav.computer.name(path);
             self.told_undo(tr("Removed from Favourites"), &tr!("“{name}” is no longer a favourite.", name = name), path);
         }
-        self.start_pass();
         self.publish_navigator();
     }
 

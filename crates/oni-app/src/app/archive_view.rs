@@ -79,7 +79,8 @@ impl Ctl {
             if s.generation.load(Ordering::Relaxed) != generation {
                 return;
             }
-            s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+            s.copies = s.index.as_ref().map(LibraryIndex::copies).unwrap_or_default();
+            s.fingerprints = rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
             s.rows = rows;
             s.survey = survey;
             s.read_done = done;
@@ -87,6 +88,7 @@ impl Ctl {
         }
         self.lay_archive();
         if done {
+            self.tidy_once();
             self.probe_presence();
             self.navigator_read();
             let order = self.state.borrow().order.clone();
@@ -156,8 +158,9 @@ impl Ctl {
         let (rows, gone): (Vec<_>, Vec<_>) = s
             .rows
             .iter()
-            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING))
-            .map(|e| (e.path.clone(), e.fingerprint.clone()))
+            // A file the cloud keeps away is drawn once opened, never downloaded by the pass.
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path))
+            .map(|e| (e.path.clone(), s.tile_key(e)))
             .partition(|(path, _)| s.presence(path).is_present());
         let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();
         let (lock, wake) = &*s.painter;

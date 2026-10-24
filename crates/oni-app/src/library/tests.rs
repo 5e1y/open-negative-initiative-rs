@@ -1,5 +1,8 @@
 use super::*;
+use oni_library::navigator::Computer;
+use oni_library::{library, roots};
 use oni_settings::Date;
+use std::sync::Arc;
 
 /// Roll #8's folder, when this machine has it.
 pub(crate) fn roll8() -> Option<std::path::PathBuf> {
@@ -204,5 +207,77 @@ fn a_read_stopped_part_way_drops_no_row() {
     // Twin: let run, the same read drops the row of the file removed.
     read_whole(&scans, &index, &place);
     assert_eq!(index.all().len(), 1);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Sets a file's modification date, as a scanner rewriting a frame or a copy keeping its date does.
+fn dated(path: &Path, at: std::time::SystemTime) {
+    std::fs::File::options().write(true).open(path).unwrap().set_modified(at).unwrap();
+}
+
+#[test]
+fn a_photo_replaced_by_another_size_or_mtime_is_read_again() {
+    let root = std::env::temp_dir().join(format!("oni-app-replaced-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let scan = root.join("Scans/scan_01.tif");
+    let (day, later) = (std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000), std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_600));
+    write(&scan, &[1u8; 5]);
+    dated(&scan, day);
+    let folder = paths::canonical(&root.join("Scans"));
+    let path = paths::canonical(&scan);
+    let (computer, index) = (Computer::none(), LibraryIndex::open(Path::new(":memory:")).unwrap());
+    let place = Place { computer: &computer, kept: None };
+    let print = |index: &LibraryIndex| index.row(&path).unwrap().fingerprint;
+    read_whole(&folder, &index, &place);
+    let first = print(&index);
+    // Rescanned at another size: the row is read again.
+    write(&scan, &[2u8; 9]);
+    dated(&scan, day);
+    read_whole(&folder, &index, &place);
+    let second = print(&index);
+    assert!(second != first && second.starts_with("9-"), "{second}");
+    // Rewritten at the same size, its date moved: stamped again, a new print.
+    write(&scan, &[3u8; 9]);
+    dated(&scan, later);
+    read_whole(&folder, &index, &place);
+    let third = print(&index);
+    assert_ne!(third, second, "a file of the same size with a new date is read again");
+    // Touched with the same bytes: the cheap look again keeps the print.
+    dated(&scan, day);
+    read_whole(&folder, &index, &place);
+    assert_eq!(print(&index), third);
+    // Twin: rewritten with its date put back as it was, nothing tells the read, and the print stays stale.
+    write(&scan, &[4u8; 9]);
+    dated(&scan, day);
+    read_whole(&folder, &index, &place);
+    assert_eq!(print(&index), third, "the date and the size are all a read looks at");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_sidecar_edited_by_another_app_is_read_again() {
+    let root = std::env::temp_dir().join(format!("oni-app-sidecar-moved-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let scan = root.join("Scans/scan_01.tif");
+    write(&scan, b"pixels");
+    let (folder, path) = (paths::canonical(&root.join("Scans")), paths::canonical(&scan));
+    let (computer, index) = (Computer::none(), LibraryIndex::open(Path::new(":memory:")).unwrap());
+    let place = Place { computer: &computer, kept: None };
+    read_whole(&folder, &index, &place);
+    let side = oni_settings::sidecar::url_for(&scan);
+    oni_settings::sidecar::set_label(Medal::Gold, &scan, false).unwrap();
+    read_whole(&folder, &index, &place);
+    assert_eq!(index.row(&path).unwrap().label, Medal::Gold, "the medal the other app gave shows");
+    std::fs::remove_file(&side).unwrap();
+    read_whole(&folder, &index, &place);
+    assert_eq!(index.row(&path).unwrap().label, Medal::None, "a sidecar deleted by hand puts the photo back at rest");
+    // Twin: a sidecar rewritten with its date put back is not read again.
+    oni_settings::sidecar::set_label(Medal::Silver, &scan, false).unwrap();
+    read_whole(&folder, &index, &place);
+    let silver = std::fs::metadata(&side).unwrap().modified().unwrap();
+    oni_settings::sidecar::set_label(Medal::Bronze, &scan, false).unwrap();
+    dated(&side, silver);
+    read_whole(&folder, &index, &place);
+    assert_eq!(index.row(&path).unwrap().label, Medal::Silver);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -29,6 +29,7 @@ impl Shell {
             archive: None,
             order: Vec::new(),
             fingerprints: HashMap::new(),
+            copies: Default::default(),
             opened: None,
             preferences: Preferences::load(&options.support),
             index: LibraryIndex::open(&index_path),
