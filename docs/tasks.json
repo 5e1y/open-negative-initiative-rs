@@ -2553,6 +2553,27 @@
     "detail": "missing_original builds its roll under the temp folder's canonical spelling and compares the folder Show the Folder opens as the archive writes it ('/', long names), so Windows' RUNNER~1 and backslashes no longer fail it; editor_leftovers asserts a wheel gesture still held only when its pump came back inside the 0.16 s idle window, a slow runner otherwise failing a correct app."
   },
   {
+    "id": 365,
+    "type": "fix",
+    "title": "An injected volumes' folder holds its paths in any spelling the system takes",
+    "status": "done",
+    "detail": "Computer::is_on_volume, is_volume_root and parent, and absence::volume_root, compared the volumes' folder byte for byte, so on Windows a folder handed with '\\' (missing_original's) or a path under a short RUNNER~1 temp folder (adding's) lay on no volume and a disk unplugged read as a file deleted. They now go through paths::holds, same and below ('/' or '\\', case on a case-blind volume); the drives of a real Windows machine stay drives. The adding check builds its folders under the temp folder's canonical spelling, as missing_original does (an_injected_volumes_folder_is_read_in_any_spelling_on_windows; twin: a sibling named like it and the folder itself lie on no volume)."
+  },
+  {
+    "id": 366,
+    "type": "fix",
+    "title": "The single-instance check never reads the lock file it holds",
+    "status": "done",
+    "detail": "a_second_instance_does_not_write snapshotted every support file's bytes, instance.lock included, while its own handle held the lock: Windows refuses a read of a locked range (os error 33). The snapshot keeps the lock file's length and modification date instead of its bytes, so a write to it still fails the check; the app's lock is unchanged and never reads the file."
+  },
+  {
+    "id": 367,
+    "type": "feature",
+    "title": "Windows notes a favourite's file index and volume serial number in bookmarks.json",
+    "status": "done",
+    "detail": "bookmarks::place gave Windows no identity (file_id and volume None), so a_swift_launch_keeps_the_volume_identities failed there. GetFileInformationByHandle on a handle opened with backup semantics (folders included) now gives the 64-bit file index and the volume serial number (kept as uuid, XXXX-XXXX, which a new drive letter keeps), GetVolumePathNameW the mount; the check asserts the volume's identity on Windows as on macOS (windows-sys 0.61, already in the tree)."
+  },
+  {
     "id": 370,
     "type": "fix",
     "title": "An export never lands on an original",

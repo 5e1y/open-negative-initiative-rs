@@ -28,7 +28,8 @@ fn launch(root: &Path) -> Child {
         .unwrap()
 }
 
-/// Every file under `dir` with its bytes and its modification date.
+/// Every file under `dir` with its bytes and its modification date; the lock by its length alone, as
+/// Windows refuses any read of a file another handle locks.
 fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>, SystemTime)> {
     let mut out = Vec::new();
     let mut stack = vec![dir.to_path_buf()];
@@ -39,8 +40,13 @@ fn snapshot(dir: &Path) -> Vec<(PathBuf, Vec<u8>, SystemTime)> {
                 stack.push(path.clone());
                 out.push((path, Vec::new(), SystemTime::UNIX_EPOCH));
             } else {
-                let modified = entry.metadata().unwrap().modified().unwrap();
-                out.push((path.clone(), std::fs::read(&path).unwrap(), modified));
+                let metadata = entry.metadata().unwrap();
+                let bytes = if path.file_name() == Some(std::ffi::OsStr::new(oni_app::instance::FILE)) {
+                    metadata.len().to_le_bytes().to_vec()
+                } else {
+                    std::fs::read(&path).unwrap()
+                };
+                out.push((path.clone(), bytes, metadata.modified().unwrap()));
             }
         }
     }

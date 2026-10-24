@@ -158,6 +158,9 @@ mod tests {
     fn a_path_handed_over_opens_its_folder_or_nothing() {
         let root = std::env::temp_dir().join(format!("oni-app-adding-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(&root).unwrap();
+        // The spelling the archive keeps, as Windows' temp folder is a short `RUNNER~1` name.
+        let root = PathBuf::from(paths::canonical(&root));
         for file in ["Home/Scans/A.tif", "Home/loose.tif", "Volumes/T7/top.tif"] {
             std::fs::create_dir_all(root.join(file).parent().unwrap()).unwrap();
             std::fs::write(root.join(file), b"a").unwrap();
