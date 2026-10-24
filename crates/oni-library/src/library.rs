@@ -2,7 +2,7 @@
 //! read once, to tell a library made before the roots which photos no folder holds yet.
 
 use crate::index::{Entry, LibraryIndex};
-use crate::{paths, relink};
+use crate::relink;
 use oni_settings::codec::{self, Envelope};
 use oni_settings::{ConversionMode, Date, Medal, sidecar};
 use serde::{Deserialize, Serialize};
@@ -116,29 +116,9 @@ pub fn drop_invented(index: &LibraryIndex) -> rusqlite::Result<usize> {
     Ok(invented.len())
 }
 
-/// Moves a photograph's original out of the library into `folder`, its sidecar and row cleared:
-/// the one case where the app moves an original, and only once a hand has confirmed it.
-pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>) -> Option<PathBuf> {
-    std::fs::create_dir_all(folder).ok()?;
-    let name = paths::name(path);
-    let mut target = folder.join(&name);
-    let mut rank = 2;
-    while target.exists() {
-        target = folder.join(format!("{} {rank}.{}", paths::stem(path), paths::extension(path)));
-        rank += 1;
-    }
-    std::fs::rename(path, &target).ok()?;
-    let _ = sidecar::remove(Path::new(path));
-    if let Some(index) = index {
-        let _ = index.remove(path);
-    }
-    Some(target)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scratch::Scratch;
 
     #[test]
     fn an_invented_row_is_dropped_and_a_waiting_one_kept() {
@@ -153,27 +133,5 @@ mod tests {
         // Twin: a second pass over a healed index finds nothing to drop.
         assert_eq!(drop_invented(&index).unwrap(), 0);
         assert_eq!(waiting("/negs/b.RW2", None).imported_at, crate::distant_past());
-    }
-
-    #[test]
-    fn moving_out_numbers_a_taken_name_and_clears_the_sidecar_and_the_row() {
-        let scratch = Scratch::new("move-out");
-        let original = scratch.path().join("x.RW2");
-        std::fs::write(&original, b"frame").unwrap();
-        std::fs::write(sidecar::url_for(&original), b"{}").unwrap();
-        let away = scratch.path().join("Away");
-        std::fs::create_dir(&away).unwrap();
-        std::fs::write(away.join("x.RW2"), b"other").unwrap();
-        let path = crate::paths::normal(&original.to_string_lossy()).into_owned();
-        let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
-        index.upsert(&Entry::new(&path, Date::since_reference_date(8e8), "5-no-date-1")).unwrap();
-
-        let target = move_out(&path, &away, Some(&index)).unwrap();
-        assert_eq!(target, away.join("x 2.RW2"));
-        assert_eq!(std::fs::read(&target).unwrap(), b"frame");
-        assert_eq!(std::fs::read(away.join("x.RW2")).unwrap(), b"other", "the taken name keeps its file");
-        assert!(!original.exists() && !sidecar::url_for(&original).exists() && index.count() == 0);
-        // Twin: a file that is not there moves nothing.
-        assert_eq!(move_out(&path, &away, None), None);
     }
 }

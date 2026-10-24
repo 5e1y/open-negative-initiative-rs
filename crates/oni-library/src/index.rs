@@ -8,6 +8,8 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 pub const SCHEMA_VERSION: i32 = 9;
+/// How long a write waits for the other app's to end; theirs last milliseconds.
+pub const BUSY: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// One member of the library as the gallery cuts it, cached from its file and its sidecar.
 #[derive(Debug, Clone, PartialEq)]
@@ -85,6 +87,8 @@ impl LibraryIndex {
             let _ = std::fs::create_dir_all(folder);
         }
         let connection = if memory { Connection::open_in_memory() } else { Connection::open(path) }.ok()?;
+        // The Swift app writes the same file: a write meeting its lock waits for it, never fails at once.
+        connection.busy_timeout(BUSY).ok()?;
         // WAL lets background thumbnail writes proceed without blocking gallery reads.
         let _ = connection.query_row("PRAGMA journal_mode = WAL", [], |_| Ok(()));
         let _ = connection.execute_batch("PRAGMA synchronous = NORMAL");
@@ -96,7 +100,8 @@ impl LibraryIndex {
     }
 
     fn prepare_schema(&self) -> rusqlite::Result<()> {
-        let version: i32 = self.connection.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap_or(-1);
+        // A version that does not read is no reason to drop the table another app may be filling.
+        let version: i32 = self.connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version != SCHEMA_VERSION {
             self.connection.execute_batch("DROP TABLE IF EXISTS photos")?;
             self.connection.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION}"))?;

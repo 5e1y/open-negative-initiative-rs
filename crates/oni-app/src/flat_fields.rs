@@ -151,9 +151,23 @@ pub fn forget(support: &Path, ids: &HashSet<String>) {
     write_entries(support, &list);
 }
 
-/// `Library.moveOut`: the original moved into `folder` under a free name, its sidecar and index row
-/// cleared; the one case where the app moves an original, and only once a hand has confirmed it.
-pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>) -> Option<PathBuf> {
+/// How a move reaches the disk; a check swaps them to force a move across volumes.
+pub struct Moving<'a> {
+    pub rename: fn(&Path, &Path) -> std::io::Result<()>,
+    pub copy: fn(&Path, &Path) -> std::io::Result<()>,
+    pub trash: &'a dyn Fn(&Path) -> std::io::Result<()>,
+}
+
+impl<'a> Moving<'a> {
+    /// The system's rename and a copy handed to the drive, then `trash`, the app's discard.
+    pub fn through(trash: &'a dyn Fn(&Path) -> std::io::Result<()>) -> Moving<'a> {
+        Moving { rename: |from, to| std::fs::rename(from, to), copy: synced_copy, trash }
+    }
+}
+
+/// `Library.moveOut`: the original moved into `folder` under a free name, its sidecar sent to the
+/// system Trash and its index row cleared; the one case where the app moves an original, once confirmed.
+pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>, how: &Moving) -> Option<PathBuf> {
     let url = Path::new(path);
     std::fs::create_dir_all(folder).ok()?;
     let mut target = folder.join(url.file_name()?);
@@ -163,27 +177,67 @@ pub fn move_out(path: &str, folder: &Path, index: Option<&LibraryIndex>) -> Opti
         target = folder.join(format!("{} {rank}.{extension}", stem(url)));
         rank += 1;
     }
-    moved(url, &target).ok()?;
-    let _ = sidecar::remove(url);
+    moved(url, &target, how).ok()?;
+    let settings = sidecar::url_for(url);
+    if settings.exists() {
+        let _ = (how.trash)(&settings);
+    }
     if let Some(index) = index {
         let _ = index.remove(path);
     }
     Some(target)
 }
 
-/// `FileManager.moveItem`: a rename, else across volumes a copy whose length is checked before
-/// the original goes.
-fn moved(from: &Path, to: &Path) -> std::io::Result<()> {
-    match std::fs::rename(from, to) {
+/// `FileManager.moveItem`, safer across volumes: a copy handed to the drive, read back equal to
+/// the original byte for byte, and only then the original sent to the system Trash.
+fn moved(from: &Path, to: &Path, how: &Moving) -> std::io::Result<()> {
+    match (how.rename)(from, to) {
         Err(e) if e.kind() == std::io::ErrorKind::CrossesDevices => {
-            let copied = std::fs::copy(from, to);
-            if copied.as_ref().ok() != Some(&std::fs::metadata(from)?.len()) {
+            let checked = (how.copy)(from, to).and_then(|()| {
+                if same_content(from, to)? { Ok(()) } else { Err(std::io::Error::other(tr("the copy does not match the original"))) }
+            });
+            let gone = checked.and_then(|()| (how.trash)(from));
+            if gone.is_err() {
                 let _ = std::fs::remove_file(to);
-                return Err(copied.err().unwrap_or_else(|| std::io::Error::other(tr("the copy came out short"))));
             }
-            std::fs::remove_file(from)
+            gone
         }
         other => other,
+    }
+}
+
+/// A copy into a new file, handed to the drive with its folder before it counts.
+fn synced_copy(from: &Path, to: &Path) -> std::io::Result<()> {
+    let mut source = std::fs::File::open(from)?;
+    let mut copy = std::fs::OpenOptions::new().write(true).create_new(true).open(to)?;
+    std::io::copy(&mut source, &mut copy)?;
+    copy.sync_all()?;
+    // The new name reaches the disk with the folder; a system that cannot sync a folder skips it.
+    if let Some(folder) = to.parent()
+        && let Ok(folder) = std::fs::File::open(folder)
+    {
+        let _ = folder.sync_all();
+    }
+    Ok(())
+}
+
+/// Both files read again, chunk by chunk, and compared whole.
+fn same_content(a: &Path, b: &Path) -> std::io::Result<bool> {
+    use std::io::Read;
+    let (mut a, mut b) = (std::io::BufReader::new(std::fs::File::open(a)?), std::io::BufReader::new(std::fs::File::open(b)?));
+    let (mut x, mut y) = (vec![0u8; 1 << 16], vec![0u8; 1 << 16]);
+    loop {
+        let n = a.read(&mut x)?;
+        if n == 0 {
+            return Ok(b.read(&mut y[..1])? == 0);
+        }
+        match b.read_exact(&mut y[..n]) {
+            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => return Ok(false),
+            other => other?,
+        }
+        if x[..n] != y[..n] {
+            return Ok(false);
+        }
     }
 }
 

@@ -79,6 +79,19 @@ pub fn trash(path: &Path) -> io::Result<()> {
     platform::trash(path)
 }
 
+/// A word in a window of the system's, said before the app's own window exists.
+pub fn alert(title: &str, message: &str) {
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    let _ = rfd::MessageDialog::new()
+        .set_level(rfd::MessageLevel::Warning)
+        .set_title(title)
+        .set_description(message)
+        .set_buttons(rfd::MessageButtons::Ok)
+        .show();
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let _ = (title, message);
+}
+
 /// Writes `text` to the general clipboard; a system without one ignores it.
 pub fn set_text(text: &str) {
     if let Ok(mut board) = arboard::Clipboard::new() {

@@ -6,15 +6,24 @@ impl Ctl {
     pub(in crate::app) fn load_projects(&self) {
         let mut s = self.state.borrow_mut();
         s.org.projects = project::load(&s.support).projects;
+        s.org.projects_read = s.org.projects.clone();
     }
 
-    /// `saveProjects`: every member's path written down, then the one file.
+    /// `saveProjects`: every member's path written down, then the one file, merged with what
+    /// another app wrote since it was read.
     pub(in crate::app) fn save_projects(&self) {
         let failure = {
             let mut s = self.state.borrow_mut();
             let located = project::located(&s.org.projects, &s.rows);
             s.org.projects = located.clone();
-            project::save(&s.support, &ProjectsFile { version: 1, projects: located }).err()
+            match oni_library::merge::save_projects(&s.support, &s.org.projects_read, &located) {
+                Ok(written) => {
+                    s.org.projects_read = written.clone();
+                    s.org.projects = written;
+                    None
+                }
+                Err(e) => Some(e),
+            }
         };
         if let Some(e) = failure {
             self.told(tr("Something Went Wrong"), &tr!("The projects could not be saved: {error}", error = e));

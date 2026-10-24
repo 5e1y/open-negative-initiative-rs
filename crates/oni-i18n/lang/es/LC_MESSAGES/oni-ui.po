@@ -3388,8 +3388,16 @@ msgid "The mask could not be saved in the app's folder."
 msgstr "No se pudo guardar la máscara en la carpeta de la app."
 
 #: crates/oni-app/src/flat_fields.rs
-msgid "the copy came out short"
-msgstr "la copia quedó incompleta"
+msgid "the copy does not match the original"
+msgstr "la copia no coincide con el original"
+
+#: crates/oni-app/src/instance.rs
+msgid "Open Negative Initiative is already open"
+msgstr "Open Negative Initiative ya está abierto"
+
+#: crates/oni-app/src/instance.rs
+msgid "Switch to its window: two copies at once would write over each other's work."
+msgstr "Cambia a su ventana: dos copias abiertas a la vez sobrescribirían el trabajo de la otra."
 
 #: crates/oni-app/src/organise.rs
 msgid "Add to Project"

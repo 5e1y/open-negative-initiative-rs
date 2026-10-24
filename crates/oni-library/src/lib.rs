@@ -3,6 +3,7 @@
 
 pub mod absence;
 pub mod archive_tree;
+pub mod bookmarks;
 pub mod capture;
 pub mod exif;
 pub mod favourites;
@@ -15,6 +16,7 @@ pub mod index;
 pub mod journal;
 pub mod kept;
 pub mod library;
+pub mod merge;
 pub mod navigator;
 pub mod paths;
 pub mod presence;

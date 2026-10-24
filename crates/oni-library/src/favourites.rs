@@ -52,6 +52,17 @@ impl Favourites {
         crate::write_atomically(&Self::file_path(support), json::compact(&node).as_bytes())
     }
 
+    /// Read again and merged with what this side changed since `read`, then written: a favourite
+    /// another app added or removed meanwhile stays so. `read` becomes what was written.
+    pub fn save_merged(&mut self, read: &mut Favourites, support: &Path) -> std::io::Result<()> {
+        if let Some(theirs) = Favourites::load(support) {
+            self.paths = crate::merge::list(&read.paths, &self.paths, &theirs.paths);
+        }
+        self.save(support)?;
+        *read = self.clone();
+        Ok(())
+    }
+
     /// The roots of `roots.json` seed the first favourites; that file is only read.
     pub fn seeded(roots: &Roots) -> Favourites {
         Favourites { version: 1, paths: roots.paths.clone() }.respelt()

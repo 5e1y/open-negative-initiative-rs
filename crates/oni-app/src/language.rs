@@ -12,9 +12,14 @@ pub fn chosen(preferences: &Preferences) -> Option<Language> {
 /// Speaks `language`, or the system's for none, from the next text drawn; after the window exists,
 /// as Slint selects its catalogue on a live component.
 pub fn speak(language: Option<Language>) {
-    // `ONI_LANGUAGE` stands in for the system's, so the checks read English on any machine.
-    let fallback = || std::env::var("ONI_LANGUAGE").ok().and_then(|k| Language::from_key(&k)).unwrap_or_else(Language::system);
-    let language = language.unwrap_or_else(fallback);
+    let language = resolved(language);
     oni_i18n::set(language);
     let _ = slint::select_bundled_translation(language.code());
+}
+
+/// `language`, else the system's; `ONI_LANGUAGE` stands in for the system's, so the checks read
+/// English on any machine.
+pub fn resolved(language: Option<Language>) -> Language {
+    let fallback = || std::env::var("ONI_LANGUAGE").ok().and_then(|k| Language::from_key(&k)).unwrap_or_else(Language::system);
+    language.unwrap_or_else(fallback)
 }

@@ -55,6 +55,8 @@ pub(super) struct Nav {
     pub computer: Computer,
     pub model: Navigation,
     pub favourites: Favourites,
+    /// `favourites.json` as last read or written, which tells this app's changes from another's.
+    pub favourites_read: Favourites,
     remembered: Option<(Option<String>, bool, Vec<String>)>,
     /// The last click: its row, when, and the count it reached, as AppKit's `clickCount` keeps it.
     clicks: Option<(String, Instant, usize)>,
@@ -93,6 +95,7 @@ impl Nav {
             computer,
             model: Navigation::default(),
             favourites: Favourites::default(),
+            favourites_read: Favourites::default(),
             remembered: None,
             clicks: None,
             rows: Vec::new(),
@@ -206,8 +209,14 @@ impl State {
         self.nav.remembered = Some(now);
     }
 
+    /// Merged with what another app wrote since, then each favourite's volume noted beside it.
     fn save_favourites(&mut self) -> Option<String> {
-        self.nav.favourites.save(&self.support).err().map(|e| tr!("The favourites cannot be saved: {error}", error = e))
+        let nav = &mut self.nav;
+        let saved = nav.favourites.save_merged(&mut nav.favourites_read, &self.support);
+        if saved.is_ok() {
+            oni_library::bookmarks::record(self.support.clone(), self.nav.favourites.paths.clone());
+        }
+        saved.err().map(|e| tr!("The favourites cannot be saved: {error}", error = e))
     }
 }
 
