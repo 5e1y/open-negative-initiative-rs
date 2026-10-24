@@ -226,7 +226,7 @@ fn rename(rig: &common::Rig, shell: &Shell, folder: &str, to: &str) {
     let w = &shell.window;
     for up in ["Home", "Scans"] {
         if !w.global::<Navigator>().get_rows().iter().any(|l| l.title == up && l.unfolded) {
-            w.global::<Navigator>().invoke_row_clicked(at(w, up) as i32);
+            w.global::<Navigator>().invoke_row_folded(at(w, up) as i32);
         }
         rig.pump();
     }

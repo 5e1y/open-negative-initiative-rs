@@ -23,11 +23,12 @@ impl Ctl {
         self.publish_export();
     }
 
-    /// `exportNow`: the selection in gallery order, else the open photo.
+    /// `exportNow`: the selection in gallery order, else beside it the open photo.
     pub fn export_now(self: &Rc<Self>) {
+        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
         let targets = {
             let s = self.state.borrow();
-            let paths = export::targets(&s.order, &s.selection(), s.open.as_deref());
+            let paths = export::targets(&s.order, &s.selection(), s.open.as_deref().filter(|_| !gallery));
             let open = s.open_path().map(str::to_string);
             let current = s.store.settings().clone();
             paths

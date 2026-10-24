@@ -14,6 +14,7 @@ mod design_system;
 mod editor_leftovers;
 mod editor_routes;
 mod editors;
+mod explorer;
 mod export_paper_window;
 mod export_window;
 mod extended;
@@ -90,6 +91,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("editors::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo", editors::panel::a_handle_dragged_on_the_levels_is_one_step_and_springs_back_on_undo),
     ("editors::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands", editors::panel::the_wheel_takes_the_arrows_once_pressed_and_its_swatches_name_their_bands),
     ("editors::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have", editors::panel::the_panel_lays_out_only_the_blocks_a_photo_and_a_face_have),
+    ("explorer::the_gallery_bar_acts_on_the_selection_only", explorer::the_gallery_bar_acts_on_the_selection_only),
+    ("explorer::a_drop_from_two_folders_says_what_it_left", explorer::a_drop_from_two_folders_says_what_it_left),
+    ("explorer::return_renames_and_double_click_does_not", explorer::return_renames_and_double_click_does_not),
     ("export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone", export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone),
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),

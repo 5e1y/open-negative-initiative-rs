@@ -9,14 +9,32 @@ mod told;
 pub(in crate::app) use busy::wait_for_disk;
 
 impl Ctl {
-    /// `propagationTargets`: the selection, else the open photo; the ONI Trash's never are.
+    /// `propagationTargets`: the selection, else beside it the open photo; in the gallery the
+    /// selection alone, as the photo opened last may not even be on screen. The ONI Trash's never are.
     pub(super) fn targets(&self) -> Vec<String> {
-        let s = self.state.borrow();
-        if s.picks.selection.is_empty() {
-            return s.open.clone().into_iter().collect();
-        }
-        s.selected()
+        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
+        self.state.borrow().targets_in(gallery)
     }
+}
+
+impl State {
+    pub(in crate::app) fn targets_in(&self, gallery: bool) -> Vec<String> {
+        if self.picks.selection.is_empty() {
+            return self.open.clone().filter(|_| !gallery).into_iter().collect();
+        }
+        self.selected()
+    }
+
+    /// How many photos a gesture reaches now, the bar's and the menus' count alike.
+    pub(in crate::app) fn target_count(&self, gallery: bool) -> usize {
+        match self.picks.selection.len() {
+            0 => usize::from(self.open.is_some() && !gallery),
+            n => n,
+        }
+    }
+}
+
+impl Ctl {
 
     /// A gesture on several photos through the core, then what it wrote read back: the rows, the
     /// open frame's sliders, the others' thumbnails.
@@ -309,6 +327,7 @@ impl Ctl {
             }
             Some(Pending::DownloadUpdate) => self.download_update(),
             Some(Pending::Locate(asked)) => self.locate_answered(asked),
+            Some(Pending::Run(then)) => then(self),
             None => {}
         }
         self.publish_bar();

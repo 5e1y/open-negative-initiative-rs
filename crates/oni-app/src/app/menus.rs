@@ -18,7 +18,7 @@ impl Ctl {
             let selected = s.picks.selection.len();
             let trash = s.trash_shown() && gallery;
             let restoring = s.trash_picks.selection.len();
-            let count = if selected > 0 { selected } else { usize::from(open) };
+            let count = s.target_count(gallery);
             let anchor = s.picks.anchor.is_some();
             // `modalOpen`: the export surface or any sheet, Report a Bug and the year's deck included.
             let sheet = w.get_sheet_shown() || s.shelf_form_open();
@@ -89,7 +89,7 @@ impl Ctl {
                 open: true,
                 toggle_mode: !gallery || anchor,
                 // On the surface ⌘E confirms; elsewhere it opens on the selection, else the open photo.
-                export: exporting.map_or(open || selected > 0, |n| n > 0 && !writing),
+                export: exporting.map_or(count > 0, |n| n > 0 && !writing),
                 // A read under way is the refresh already.
                 refresh: read_done || !opened,
                 show_selected: gallery && (open || selected > 0),

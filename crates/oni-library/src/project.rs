@@ -208,17 +208,27 @@ pub fn delete(projects: &mut Vec<Project>, id: Id) {
     projects.retain(|p| p.id != id);
 }
 
-/// A photo sits in one project, so joining `kept` leaves every other; any other project left
-/// empty goes, as an empty project groups nothing.
-pub fn leave(projects: &mut Vec<Project>, fingerprints: &HashSet<String>, kept: Id) {
+/// A photo sits in one project, so joining `kept` leaves every other. A project left empty stays,
+/// its name and description kept: only Delete Project, which asks, takes one away.
+pub fn leave(projects: &mut [Project], fingerprints: &HashSet<String>, kept: Id) {
     for project in projects.iter_mut().filter(|p| p.id != kept) {
         project.members.retain(|m| !fingerprints.contains(m));
     }
-    projects.retain(|p| p.id == kept || !p.members.is_empty());
+}
+
+/// The projects `add_to` would take photos from, each with how many: what the ask names first.
+pub fn leaving<'a>(projects: &'a [Project], entries: &[Entry], paths: &HashSet<String>, id: Id) -> Vec<(&'a Project, usize)> {
+    let fingerprints: HashSet<&str> = entries.iter().filter(|e| paths.contains(&e.path)).map(|e| e.fingerprint.as_str()).collect();
+    projects
+        .iter()
+        .filter(|p| p.id != id)
+        .map(|p| (p, p.members.iter().filter(|m| fingerprints.contains(m.as_str())).count()))
+        .filter(|(_, n)| *n > 0)
+        .collect()
 }
 
 /// `addToProject`: by fingerprint, the photos not already members appended; false when none joins.
-pub fn add_to(projects: &mut Vec<Project>, entries: &[Entry], paths: &HashSet<String>, id: Id) -> bool {
+pub fn add_to(projects: &mut [Project], entries: &[Entry], paths: &HashSet<String>, id: Id) -> bool {
     let Some(at) = projects.iter().position(|p| p.id == id) else { return false };
     let mut joining: Vec<String> = Vec::new();
     for e in entries.iter().filter(|e| paths.contains(&e.path)) {
@@ -235,14 +245,11 @@ pub fn add_to(projects: &mut Vec<Project>, entries: &[Entry], paths: &HashSet<St
     true
 }
 
-/// `removeFromProject`: the photos leave it, and a project left empty is deleted.
-pub fn remove_from(projects: &mut Vec<Project>, entries: &[Entry], paths: &HashSet<String>, id: Id) {
+/// `removeFromProject`: the photos leave it; a project left empty stays, named, until deleted.
+pub fn remove_from(projects: &mut [Project], entries: &[Entry], paths: &HashSet<String>, id: Id) {
     let Some(at) = projects.iter().position(|p| p.id == id) else { return };
     let fingerprints: HashSet<&str> = entries.iter().filter(|e| paths.contains(&e.path)).map(|e| e.fingerprint.as_str()).collect();
     projects[at].members.retain(|m| !fingerprints.contains(m.as_str()));
-    if projects[at].members.is_empty() {
-        delete(projects, id);
-    }
 }
 
 /// The projects holding any of `paths`, keyed on fingerprints, in the file's order.
@@ -253,7 +260,7 @@ pub fn member_projects<'a>(projects: &'a [Project], entries: &[Entry], paths: &H
 
 /// `reorderProjectDrop`: the dragged photos land before `target` in the target's project, those
 /// already members first in their own order, the rest joining from other projects.
-pub fn reorder_drop(projects: &mut Vec<Project>, entries: &[Entry], dragged: &HashSet<String>, target: &Entry) -> bool {
+pub fn reorder_drop(projects: &mut [Project], entries: &[Entry], dragged: &HashSet<String>, target: &Entry) -> bool {
     let Some(at) = projects.iter().position(|p| p.members.contains(&target.fingerprint)) else { return false };
     let mut moving: HashSet<String> =
         entries.iter().filter(|e| dragged.contains(&e.path)).map(|e| e.fingerprint.clone()).collect();
@@ -463,44 +470,32 @@ mod tests {
         assert_ne!(made.members, members(&["fc", "fa"]));
     }
 
+    /// "Add to Project" takes a photo out of the project it sat in, as a photo sits in one: the ask
+    /// names that project first, and an emptied project stays, never dropped without a word.
     #[test]
-    fn joining_a_project_leaves_every_other_and_an_emptied_one_goes() {
+    fn adding_to_a_project_never_drops_another_silently() {
         let library = [row("/r/a", "fa"), row("/r/b", "fb"), row("/r/c", "fc")];
         let first = Project::new("First", stamp(), members(&["fa"]));
         let second = Project::new("Second", stamp(), members(&["fb", "fc"]));
         let target = Project::new("Target", stamp(), members(&["fz"]));
         let (first_id, second_id, target_id) = (first.id, second.id, target.id);
         let mut projects = vec![first, second, target];
+        let asked: Vec<(&str, usize)> = leaving(&projects, &library, &picked(&["/r/a", "/r/b"]), target_id).into_iter().map(|(p, n)| (p.name.as_str(), n)).collect();
+        assert_eq!(asked, [("First", 1), ("Second", 1)], "the ask names each project a photo leaves");
+        assert!(leaving(&projects, &library, &picked(&["/r/c"]), second_id).is_empty(), "twin: photos already there leave nothing");
         assert!(add_to(&mut projects, &library, &picked(&["/r/a", "/r/b"]), target_id));
-        let names: Vec<&str> = projects.iter().map(|p| p.name.as_str()).collect();
-        assert_eq!(names, ["Second", "Target"], "First held only a and is gone");
+        let first = projects.iter().find(|p| p.id == first_id).expect("First stays, empty, with its name");
+        assert!(first.members.is_empty() && first.name == "First");
         assert_eq!(projects.iter().find(|p| p.id == second_id).unwrap().members, members(&["fc"]));
         assert_eq!(projects.iter().find(|p| p.id == target_id).unwrap().members, members(&["fz", "fa", "fb"]));
-        assert!(!projects.iter().any(|p| p.id == first_id));
-        // Twin: adding members already there changes nothing and says so.
+        // Twin: the rule it replaces, emptied projects dropped, loses First and its name.
+        let mut dropped = projects.clone();
+        dropped.retain(|p| !p.members.is_empty());
+        assert!(!dropped.iter().any(|p| p.id == first_id));
+        // Adding members already there changes nothing and says so.
         let before = projects.clone();
         assert!(!add_to(&mut projects, &library, &picked(&["/r/a"]), target_id));
         assert_eq!(projects, before);
-        // The emptied project sat before the target: the target is found by id, never by a stale place.
-        assert_eq!(projects[1].id, target_id);
-    }
-
-    #[test]
-    fn removing_a_projects_last_photo_deletes_it_and_members_are_read_by_fingerprint() {
-        let library = [row("/r/a", "fa"), row("/r/b", "fb")];
-        let one = Project::new("One", stamp(), members(&["fa", "fb"]));
-        let id = one.id;
-        let mut projects = vec![one];
-        assert_eq!(member_projects(&projects, &library, &picked(&["/r/b"])).len(), 1);
-        assert!(member_projects(&projects, &library, &picked(&["/elsewhere"])).is_empty());
-        remove_from(&mut projects, &library, &picked(&["/r/a"]), id);
-        assert_eq!(projects[0].members, members(&["fb"]));
-        remove_from(&mut projects, &library, &picked(&["/r/b"]), id);
-        assert!(projects.is_empty(), "a project left empty is deleted");
-        let (title, message, key) = delete_prompt(&Project::new("Iceland", stamp(), members(&["fa"])));
-        assert_eq!(title, "Delete \u{201c}Iceland\u{201d}?");
-        assert!(message.starts_with("It stops grouping its 1 photo. ") && key == "Delete Project");
-        assert_eq!(delete_prompt(&Project::new("Empty", stamp(), vec![])).1, "It holds no photos. Nothing else is affected.");
     }
 
     #[test]
@@ -512,9 +507,9 @@ mod tests {
         let mut projects = vec![other, trip];
         // d and x dragged before b: d already a member moves first, x joins after it and leaves Other.
         assert!(reorder_drop(&mut projects, &library, &picked(&["/r/x", "/r/d"]), &library[1]));
-        assert_eq!(projects.len(), 1, "Other held only x and is gone");
-        assert_eq!(projects[0].id, trip_id);
-        assert_eq!(projects[0].members, members(&["fa", "fd", "fx", "fb", "fc"]));
+        assert!(projects[0].name == "Other" && projects[0].members.is_empty(), "Other held only x and stays, empty");
+        assert_eq!(projects[1].id, trip_id);
+        assert_eq!(projects[1].members, members(&["fa", "fd", "fx", "fb", "fc"]));
         // Twin: the target dragged onto itself moves nothing.
         assert!(!reorder_drop(&mut projects, &library, &picked(&["/r/b"]), &library[1]));
         // A drop on a photo in no project lands nowhere.

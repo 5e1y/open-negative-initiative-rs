@@ -58,7 +58,7 @@ impl Ctl {
         } else if s.opened.is_none() {
             (
                 tr("No Folder Open").into(),
-                tr("Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.").into(),
+                tr("Click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved.").into(),
                 tr("Open Folder…").into(),
             )
         } else if !s.opened_presence().is_present() {

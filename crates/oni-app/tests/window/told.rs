@@ -193,7 +193,7 @@ fn navigator(rig: &common::Rig, shell: &Shell, d: &Disk) {
     let w = &shell.window;
     for folder in ["Home", "Scans"] {
         if !w.global::<Navigator>().get_rows().iter().any(|l| l.title == folder && l.unfolded) {
-            w.global::<Navigator>().invoke_row_clicked(at(w, folder) as i32);
+            w.global::<Navigator>().invoke_row_folded(at(w, folder) as i32);
         }
         rig.pump();
     }

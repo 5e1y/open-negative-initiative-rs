@@ -155,13 +155,14 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     rig.pump();
     assert_eq!(marked(&lib), ["A02.tif", "B00.tif", "B01.tif", "B02.tif", "B03.tif", "B04.tif", "Roll B"]);
 
-    // A pick holding a folder and a photo shows in the Finder only; a folder alone takes its own lines.
+    // A pick holding a folder and a photo shows in the Finder only; a folder alone takes the
+    // navigator's folder menu, one menu for a folder wherever it is right-clicked.
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll B")));
     assert_eq!(lines(&lib), ["Show in Finder"]);
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
-    assert_eq!(lines(&lib), ["Rename…", "Make a Roll", "New Folder Inside", "Show in Finder"], "twin: a folder outside the pick");
+    assert_eq!(lines(&lib), ["Open", "Add to Favourites", "Rename…", "Make a Roll", "New Folder Inside", "Show in Finder"], "twin: a folder outside the pick");
     let ruled: Vec<bool> = lib.get_menu_lines().iter().map(|l| l.rule).collect();
-    assert_eq!(ruled, [false, false, false, true], "a divider before Show in Finder");
+    assert_eq!(ruled, [false, false, true, false, false, true], "dividers before Rename… and Show in Finder, as the navigator's");
 
     // Make a Roll writes the folder's marker, Back to a Folder takes it away.
     let roll_a = oni_library::paths::canonical(&scans.join("Roll A"));
@@ -169,19 +170,21 @@ pub(crate) fn the_trees_pick_open_their_menus_and_rename_as_swift() {
     rig.pump();
     assert!(oni_library::folders::roll(&roll_a).is_some(), "the folder is a roll");
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
-    assert_eq!(lines(&lib)[1], "Back to a Folder");
+    assert_eq!(lines(&lib)[3], "Back to a Folder");
     choose(&lib, "Back to a Folder");
     rig.pump();
     assert!(oni_library::folders::roll(&roll_a).is_none(), "twin: the marker is gone");
 
-    // New Folder Inside makes "New Folder", then "New Folder 2"; the navigator names neither.
-    for _ in 0..2 {
+    // New Folder Inside makes "New Folder", then "New Folder 2", each named in the tree it was asked from.
+    for name in ["New Folder", "New Folder 2"] {
         assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));
         choose(&lib, "New Folder Inside");
+        rig.until("the new folder named in the tree", Duration::from_secs(30), || rows(&lib).iter().any(|r| r.renaming && r.title == name));
+        lib.invoke_row_rename_cancelled();
         rig.pump();
     }
     assert!(scans.join("Roll A/New Folder").is_dir() && scans.join("Roll A/New Folder 2").is_dir());
-    assert!(w.global::<Navigator>().get_rows().iter().all(|r| !r.renaming), "the tree's new folder is not named in the navigator");
+    assert!(w.global::<Navigator>().get_rows().iter().all(|r| !r.renaming), "twin: the tree's new folder is not named in the navigator");
 
     // Rename… types over the row; a click elsewhere commits what the field holds.
     assert!(lib.invoke_row_menu(row(&lib, false, "Roll A")));

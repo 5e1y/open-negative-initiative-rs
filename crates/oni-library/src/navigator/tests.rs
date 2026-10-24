@@ -55,38 +55,42 @@ fn a_folder_lists_its_subfolders_alone_in_the_finders_order() {
     assert_eq!(children(&paths::join(&root, "Roll 1")), Some(Vec::new()));
     // Twin: a folder the disk refuses is not an empty one.
     assert_eq!(children(&paths::join(&root, "gone")), None);
-    assert_eq!((title(None), title(Some("/Volumes/T7"))), ("Computer".to_string(), "T7".to_string()));
+    assert_eq!((title(None, &mac()), title(Some("/Volumes/T7"), &mac())), ("Computer".to_string(), "T7".to_string()));
 }
 
+/// The Finder sidebar's rule: one click opens any folder, whatever it holds; the chevron alone
+/// folds, and opens nothing.
 #[test]
-fn a_row_opens_or_unfolds_as_it_holds() {
-    let some = strings(&["/a/b"]);
-    let none: Vec<String> = Vec::new();
-    assert_eq!(clicked(1, true, Some(&some)), Clicked::Open);
-    assert_eq!(clicked(2, true, None), Clicked::Nothing);
-    assert_eq!(clicked(1, false, Some(&none)), Clicked::Open);
-    assert_eq!((clicked(1, false, Some(&some)), clicked(2, false, Some(&some))), (Clicked::Toggle, Clicked::Open));
-    assert_eq!(clicked(1, false, None), Clicked::Read);
-    // Twin: one first click, two answers by what the row holds.
-    assert_ne!(clicked(1, false, Some(&none)), clicked(1, false, Some(&some)));
-}
-
-#[test]
-fn an_unlisted_folder_is_read_then_opened_when_bare_and_unfolded_when_not() {
+fn a_click_opens_and_the_chevron_folds() {
     let mut nav = Navigation::new(Some("/r".into()), false, BTreeSet::new(), vec![]);
-    assert_eq!(nav.click("/r/a", 1, false), None);
-    assert_eq!(nav.take_wanted(), ["/r/a"]);
-    assert_eq!(nav.listed("/r/a", strings(&["/r/a/x"])), Landed::Toggled);
-    assert!(nav.unfolded.contains("/r/a"));
-    assert_eq!(nav.click("/r/b", 1, false), None);
-    nav.take_wanted();
-    assert_eq!(nav.listed("/r/b", Vec::new()), Landed::Open("/r/b".into()));
-    // Twin: a listing nobody clicked for decides nothing.
-    assert_eq!(nav.listed("/r/c", Vec::new()), Landed::Nothing);
-    assert!(!nav.unfolded.contains("/r/b") && !nav.unfolded.contains("/r/c"));
-    // A second click on an unfolded parent opens it and leaves it unfolded.
-    assert_eq!(nav.click("/r/a", 2, false).as_deref(), Some("/r/a"));
-    assert!(nav.unfolded.contains("/r/a"));
+    nav.listings.insert("/r/2024".into(), strings(&["/r/2024/Roll 12"]));
+    assert_eq!(nav.click("/r/2024", 1).as_deref(), Some("/r/2024"), "a folder holding others opens on the first click");
+    assert!(!nav.unfolded.contains("/r/2024"), "the click folds nothing");
+    assert_eq!(nav.click("/r/2024/Roll 12", 1).as_deref(), Some("/r/2024/Roll 12"), "a leaf opens alike");
+    assert_eq!(nav.click("/r/unlisted", 1).as_deref(), Some("/r/unlisted"), "an unlisted folder opens without waiting on its listing");
+    // A double click's second opens nothing more.
+    assert_eq!(nav.click("/r/unlisted", 2), None);
+    nav.toggle("/r/2024");
+    assert!(nav.unfolded.contains("/r/2024") && nav.selected.as_deref() == Some("/r/2024"));
+    nav.toggle("/r/2024");
+    assert!(!nav.unfolded.contains("/r/2024"), "twin: the chevron folds what it unfolded");
+}
+
+/// A listing read slowly, a T7 spinning up, lands after the person opened another folder: it lays
+/// its rows and opens nothing, as no click waits on it.
+#[test]
+fn a_late_listing_never_opens_over_a_newer_open() {
+    let mut nav = Navigation::new(Some("/Volumes/T7".into()), false, BTreeSet::new(), vec![]);
+    assert_eq!(nav.click("/Volumes/T7/Roll 3", 1).as_deref(), Some("/Volumes/T7/Roll 3"));
+    assert_eq!(nav.click("/Volumes/T7/Roll 4", 1).as_deref(), Some("/Volumes/T7/Roll 4"));
+    nav.list("/Volumes/T7/Roll 3", false);
+    assert_eq!(nav.take_wanted(), ["/Volumes/T7/Roll 3"]);
+    let landed = nav.listed("/Volumes/T7/Roll 3", Vec::new());
+    assert_eq!(landed, Landed::Nothing, "the empty listing landing late opens nothing");
+    assert_eq!(nav.selected.as_deref(), Some("/Volumes/T7/Roll 4"), "the pick stays on the folder opened last");
+    // Twin: the listing does land, its row now known to hold no folder.
+    assert_eq!(nav.listings.get("/Volumes/T7/Roll 3"), Some(&Vec::new()));
+    assert!(!nav.unfolded.contains("/Volumes/T7/Roll 3"));
 }
 
 #[test]
@@ -100,9 +104,9 @@ fn a_refused_folder_stays_unlisted_until_read_again() {
     assert!(nav.take_wanted().is_empty(), "a refused folder is not asked on every publish");
     assert_eq!(nav.refused("/Volumes/T7"), Landed::Same);
     // A click on it reads it again, as does a retry.
-    assert_eq!(nav.click("/Volumes/T7", 1, false), None);
+    assert_eq!(nav.click("/Volumes/T7", 1).as_deref(), Some("/Volumes/T7"));
     assert_eq!(nav.take_wanted(), ["/Volumes/T7"]);
-    assert_eq!(nav.listed("/Volumes/T7", strings(&["/Volumes/T7/Scans"])), Landed::Toggled);
+    assert_eq!(nav.listed("/Volumes/T7", strings(&["/Volumes/T7/Scans"])), Landed::Nothing);
     assert!(nav.refused.is_empty());
     nav.refused("/Volumes/T7/Scans");
     nav.retry();

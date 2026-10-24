@@ -105,7 +105,9 @@ impl Ctl {
 
     pub(in crate::app) fn trash_row_menu(self: &Rc<Self>, i: usize) -> bool {
         let count = self.state.borrow().org.trashed.len();
-        let mut items = vec![Item { line: menu_line(tr("Open"), true, false, false), act: Act::OpenTrash }];
+        // A folder's line opens the whole ONI Trash, and says so.
+        let open = if i == 0 { tr("Open") } else { tr("Open the ONI Trash") };
+        let mut items = vec![Item { line: menu_line(open, true, false, false), act: Act::OpenTrash }];
         if i == 0 {
             if count > 0 {
                 items.push(Item { line: menu_line(tr("Restore All…"), true, false, false), act: Act::RestoreAll });
@@ -119,7 +121,7 @@ impl Ctl {
             items.push(Item { line: menu_line(&word, true, false, false), act: Act::Restore(frames) });
             // Its volume mounted, from the path alone, as Swift tells a trash folder's row.
             let present = self.state.borrow().present(&folder);
-            items.push(Item { line: menu_line(tr("Show in Finder"), present, true, false), act: Act::Reveal(vec![folder]) });
+            items.push(Item { line: menu_line(crate::app::navigator::reveal_word(), present, true, false), act: Act::Reveal(vec![folder]) });
         }
         self.open_menu(items, None)
     }

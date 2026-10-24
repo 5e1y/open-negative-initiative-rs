@@ -199,6 +199,7 @@ enum Pending {
     QuitAnyway,
     DownloadUpdate,
     Locate(navigator::Asked),
+    Run(Box<dyn FnOnce(&Rc<Ctl>)>),
 }
 
 /// A render on its way to the screen, timed from its ask.

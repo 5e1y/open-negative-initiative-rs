@@ -1,7 +1,7 @@
 //! The navigator in the window (`FolderNavigator`, `RootWelcome`, `RootsCatchUp`): folders listed off
 //! this thread, the favourites read behind the opened folder, the folder menu, what a launch finds.
 
-use super::{Ctl, State, with_shell};
+use super::{Ctl, Pending, State, with_shell};
 use super::organising::reach;
 use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
 use oni_i18n::tr;
@@ -23,11 +23,13 @@ use std::time::{Duration, Instant};
 mod memory;
 mod rows;
 mod folder_menu;
+pub(in crate::app) use folder_menu::reveal_word;
 mod reading;
 mod catch_up;
 mod locate;
 pub(in crate::app) use locate::{Asked, lead_words};
 mod freshness;
+mod keys;
 
 /// `FolderNavigation`'s preference keys, as Swift's `UserDefaults` holds them.
 pub const BASE: &str = "navigatorBase";
@@ -45,8 +47,9 @@ const MOUNTS: Duration = Duration::from_secs(1);
 /// `RootsCatchUp`'s folders shown before "and N more folders".
 const CATCH_UP_SHOWN: usize = 6;
 
-#[derive(Clone, Copy)]
-enum Act {
+/// The folder menu's lines, one set wherever a folder is right-clicked.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(in crate::app) enum FolderAct {
     Open,
     Favourite,
     Rename,
@@ -69,7 +72,7 @@ pub(super) struct Nav {
     clicks: Option<(String, Instant, usize)>,
     /// The rows as published, each one's path.
     rows: Vec<String>,
-    menu: Vec<Act>,
+    menu: Vec<FolderAct>,
     menu_path: Option<String>,
     /// The open photo's folder last revealed beside it.
     current: Option<String>,
@@ -98,6 +101,10 @@ pub(super) struct Nav {
     identify: oni_library::bookmarks::Identify,
     leads: locate::Leads,
     fresh: freshness::Fresh,
+    /// The arrows walk the rows, from a click on one until a click on the grid.
+    pub keys: bool,
+    /// A favourite just taken away, which the notice's Undo stars again.
+    pub unstarred: Option<String>,
 }
 
 impl Nav {
@@ -130,6 +137,8 @@ impl Nav {
             identify,
             leads: locate::Leads::default(),
             fresh: Default::default(),
+            keys: false,
+            unstarred: None,
         }
     }
 

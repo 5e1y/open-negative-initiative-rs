@@ -22,6 +22,10 @@ export enum RowForm { list, navigator, sidebar, menu }
 
 export component Row inherits Rectangle {
     in property <string> title;
+    // `truncationMode(.middle)`: the title cut in two, its head eliding while its tail stays whole,
+    // so names alike up to their end stay apart; no tail, the title elides at its end.
+    in property <string> head;
+    in property <string> tail;
     // At the end in the tertiary ink, a count or a size.
     in property <string> caption;
     // Before the title, the folder a trashed photo came from.
@@ -89,8 +93,8 @@ export component Row inherits Rectangle {
     property <bool> choice: root.form == RowForm.menu;
     // A folder's glyph drawn open while its rows show; a navigator's opens only on the opened folder.
     property <bool> open: !root.navigator && root.expanded;
-    // A press on the chevron folds the row instead of clicking it.
-    property <bool> folds: root.form == RowForm.list && root.expandable;
+    // A press on the chevron folds the row instead of clicking it; a navigator's folder alike.
+    property <bool> folds: (root.form == RowForm.list || (root.navigator && root.kind != RowKind.trash)) && root.expandable;
     // The title in the secondary ink unless selected or picked.
     property <bool> quiet: root.navigator;
     property <bool> badged: root.badge != "";
@@ -102,6 +106,7 @@ export component Row inherits Rectangle {
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     property <bool> away: root.reach != Reach.here;
+    property <Tone> ink: root.heading ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
     opacity: root.present || root.away ? 1 : State.disabled;
     accessible-role: list-item;
     accessible-label: root.title;
@@ -182,11 +187,18 @@ export component Row inherits Rectangle {
         if root.trail != "" && !root.renaming: Label { text: root.trail; tone: Tone.tertiary; overflow: elide; }
         if !root.renaming: VerticalLayout {
             horizontal-stretch: 1;
-            Label {
+            if root.tail == "": Label {
                 opacity: root.away ? State.disabled : 1;
                 text: root.title;
-                tone: root.heading ? Tone.tertiary : root.quiet && !root.selected && !root.picked ? Tone.secondary : Tone.primary;
+                tone: root.ink;
                 overflow: elide;
+            }
+            // The head shrinks first, so the ellipsis falls before the tail.
+            if root.tail != "": HorizontalLayout {
+                opacity: root.away ? State.disabled : 1;
+                alignment: start;
+                Label { text: root.head; tone: root.ink; overflow: elide; }
+                Label { text: root.tail; tone: root.ink; horizontal-stretch: 0; }
             }
             if root.detail != "": Label { text: root.detail; role: TextRole.value; tone: Tone.tertiary; overflow: elide; }
         }

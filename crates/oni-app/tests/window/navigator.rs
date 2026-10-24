@@ -3,7 +3,7 @@
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::Preferences;
-use oni_app::{App, FolderLine, Navigator, Told};
+use oni_app::{App, Confirm, FolderLine, Navigator, Told};
 use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use oni_library::paths::{self, canonical};
@@ -129,17 +129,33 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(!n.get_catch_up_shown());
     assert_eq!(Preferences::load(&support).bool("rootsCatchUpShown"), Some(true));
 
+    // Added, Old is revealed among its siblings; Parent climbs to Computer.
+    assert_eq!(n.get_pill_title().as_str(), "Home");
+    assert!(row(w, "Old").picked && row(w, "Old").favourite, "Add stars the folder it opens");
+    n.invoke_go_up();
+    rig.pump();
     // Computer: the home folder, then every volume; nothing to climb to, the ONI Trash under them.
     assert_eq!(titles(w), ["Home", "T7"]);
     assert!(n.get_at_computer() && !n.get_can_go_up());
     assert_eq!((n.get_pill_title().as_str(), n.get_pill_help().as_str()), ("Computer", "The home folder and every volume"));
-    // A folder holding others unfolds on the first click and opens nothing.
+    // A click on the home asks before reading a whole disk, and unfolds it to pick a folder in.
+    let confirm = w.global::<Confirm>();
     click(&rig, w, "Home");
+    assert!(confirm.get_shown(), "the home is asked about before it is read whole");
+    assert_eq!(confirm.get_title().as_str(), "Show Every Photo on “Home”?");
+    confirm.invoke_answered(false);
+    rig.pump();
     rig.until("the home listed", Duration::from_secs(10), || titles(w).contains(&"Scans".to_string()));
     assert_eq!(titles(w), ["Home", "Old", "Other", "Scans", "T7"]);
     assert!(row(w, "Home").unfolded && row(w, "Old").opened && row(w, "Old").kind == 2);
-    assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()), "a first click on a parent opens nothing");
+    assert_eq!(opened().as_deref(), Some(p(&home.join("Old")).as_str()), "twin: the ask cancelled, nothing opens");
+    // A folder holding others opens on the first click, and folds nothing.
+    rest(&rig);
     click(&rig, w, "Scans");
+    rig.until("Scans opened", Duration::from_secs(30), || opened().as_deref() == Some(p(&home.join("Scans")).as_str()));
+    assert!(!row(w, "Scans").unfolded && row(w, "Scans").opened, "a click opens and leaves the fold as it was");
+    // The chevron alone unfolds it, and opens nothing.
+    n.invoke_row_folded(at(w, "Scans") as i32);
     rig.until("Scans listed", Duration::from_secs(10), || titles(w).contains(&"Roll 1".to_string()));
     assert_eq!(lines(w).iter().map(|l| (l.title.to_string(), l.depth)).collect::<Vec<_>>()[3..7], [
         ("Scans".to_string(), 1),
@@ -147,17 +163,22 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
         ("Roll 1".to_string(), 2),
         ("Roll 2".to_string(), 2)
     ]);
-    // A folder holding none opens on the first click.
+    assert_eq!(opened().as_deref(), Some(p(&home.join("Scans")).as_str()), "twin: the chevron opens nothing");
+    // A folder holding none opens on the first click too.
     rig.until("Empty listed bare", Duration::from_secs(10), || !row(w, "Empty").chevron && !row(w, "Roll 1").chevron);
+    rest(&rig);
     click(&rig, w, "Empty");
     rig.until("Empty opened", Duration::from_secs(30), || opened().as_deref() == Some(p(&home.join("Scans/Empty")).as_str()));
     assert!(row(w, "Empty").picked && !row(w, "Scans").picked);
-    // A double click on a parent opens it: the first click folds it, the second opens.
+    // A double click opens it as its first click does, and folds nothing.
     rest(&rig);
     click(&rig, w, "Scans");
     click(&rig, w, "Scans");
-    rig.until("Scans opened", Duration::from_secs(30), || opened().as_deref() == Some(p(&home.join("Scans")).as_str()));
-    assert!(!titles(w).contains(&"Roll 1".to_string()) && row(w, "Scans").opened);
+    rig.until("Scans opened again", Duration::from_secs(30), || opened().as_deref() == Some(p(&home.join("Scans")).as_str()));
+    assert!(titles(w).contains(&"Roll 1".to_string()) && row(w, "Scans").opened);
+    n.invoke_row_folded(at(w, "Scans") as i32);
+    rig.pump();
+    assert!(!titles(w).contains(&"Roll 1".to_string()), "the chevron folds it again");
 
     // A volume mounted while the app runs joins Computer's rows.
     std::fs::create_dir_all(volumes.join("T8")).unwrap();
@@ -167,7 +188,11 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     rest(&rig);
     n.invoke_star_clicked(at(w, "Scans") as i32);
     rig.pump();
+    // A whole disk asks first too; its chevron alone lists it.
     click(&rig, w, "T7");
+    assert!(confirm.get_shown() && confirm.get_title().as_str() == "Show Every Photo on “T7”?");
+    confirm.invoke_answered(false);
+    rig.pump();
     rig.until("T7 listed", Duration::from_secs(10), || titles(w).contains(&"Film".to_string()));
     n.invoke_star_clicked(at(w, "Film") as i32);
     rig.pump();
@@ -185,10 +210,20 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(row(w, "Scans").present, "twin: a favourite on the home stays");
     std::fs::rename(root.join("T7 away"), volumes.join("T7")).unwrap();
     rig.until("T7 back", Duration::from_secs(10), || row(w, "Film").present);
-    // Unstarred in the view, a favourite leaves it.
+    // Unstarred in the view, a favourite leaves it, and the notice's Undo brings it back.
     n.invoke_star_clicked(at(w, "Old") as i32);
     rig.pump();
     assert_eq!(titles(w), ["Scans", "Film"]);
+    let told = w.global::<Told>();
+    assert!(told.get_shown() && told.get_title() == "Removed from Favourites" && told.get_action() == "UNDO");
+    assert_eq!(told.get_message().as_str(), "“Old” is no longer a favourite.");
+    told.invoke_acted();
+    rig.pump();
+    assert_eq!(titles(w), ["Scans", "Film", "Old"], "Undo stars it again");
+    n.invoke_star_clicked(at(w, "Old") as i32);
+    rig.pump();
+    told.invoke_closed();
+    assert_eq!(titles(w), ["Scans", "Film"], "twin: closed without Undo, it stays out");
     n.invoke_favourites_toggled();
     rig.pump();
 
@@ -237,6 +272,21 @@ pub(crate) fn the_navigator_walks_its_disk_from_computer_and_the_next_launch_fin
     assert!(home.join("Scans/New Folder 2").is_dir(), "twin: a taken name is numbered");
     n.invoke_rename_cancelled();
     rig.pump();
+    // A double click renames nothing; the arrows walk the rows and Return renames the picked one,
+    // as in the Finder's sidebar.
+    rest(&rig);
+    click(&rig, w, "Roll 2");
+    click(&rig, w, "Roll 2");
+    assert!(lines(w).iter().all(|l| !l.renaming), "a double click renames nothing");
+    let up: slint::SharedString = slint::platform::Key::UpArrow.into();
+    rig.key(&up);
+    rig.key(&up);
+    assert!(row(w, "New Folder 2").picked && !row(w, "Roll 2").picked, "↑ walks the pick up the rows");
+    rig.key(&slint::SharedString::from(slint::platform::Key::Return));
+    assert!(row(w, "New Folder 2").renaming, "Return types over the picked row");
+    n.invoke_rename_cancelled();
+    rig.pump();
+    assert_eq!(opened().as_deref(), Some(p(&home.join("Scans/Roll 2")).as_str()), "twin: walking the rows opens nothing");
     // Rename… trims the name typed and renames the folder on the disk.
     choose(&rig, w, "New Folder", "Rename…");
     assert!(row(w, "New Folder").renaming);

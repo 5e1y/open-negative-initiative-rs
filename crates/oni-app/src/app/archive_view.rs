@@ -309,11 +309,15 @@ impl Ctl {
                     oni_library::archive_tree::NodeId::Folder(p) if s.tree_renaming.as_deref() == Some(p.as_str()) => Some(oni_library::paths::name(p)),
                     _ => None,
                 };
+                let title = renamed.clone().unwrap_or(r.title);
+                let (head, tail) = oni_library::navigator::split_end(&title);
                 TreeRow {
                     depth: r.depth as i32,
                     // `explicitName`: a name typed over is the folder's own, never its roll's.
                     renaming: renamed.is_some(),
-                    title: renamed.unwrap_or(r.title).into(),
+                    title: title.into(),
+                    head: head.into(),
+                    tail: tail.into(),
                     caption: r.caption.into(),
                     kind: r.kind,
                     stock: r.stock.and_then(crate::stocks::icon).unwrap_or_default(),

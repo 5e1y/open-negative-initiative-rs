@@ -110,14 +110,44 @@ impl Ctl {
             Act::Reveal(paths) => system::reveal_all(&paths.iter().map(std::path::PathBuf::from).collect::<Vec<_>>()),
             Act::OpenTrash => self.open_trash(),
             Act::RestoreAll => self.ask_restore_all(),
-            Act::RenameFolder(path) => self.rename_in_tree(path),
-            Act::Roll(path, make) => self.make_roll(&path, make),
-            Act::NewFolder(path) => {
-                self.new_folder(&path, false);
-            }
+            Act::Folder(act, path) => self.folder_acted(act, &path, true),
         }
         self.publish_bar();
         false
+    }
+
+    /// Add to Project, asked first when it takes photos from another project, as a photo sits in one.
+    fn ask_add_to_project(self: &Rc<Self>, scope: HashSet<String>, id: Id) {
+        let asked = {
+            let s = self.state.borrow();
+            let rows = s.reach();
+            let target = s.org.projects.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default();
+            let leaving = project::leaving(&s.org.projects, &rows, &scope, id);
+            let lines: Vec<String> = leaving
+                .iter()
+                .map(|(p, n)| trn("One photo leaves “{project}”.", "{n} photos leave “{project}”.", *n as u64).replace("{project}", &p.name))
+                .collect();
+            (!lines.is_empty()).then(|| (target, lines.join(" ")))
+        };
+        let add = move |c: &Rc<Ctl>| {
+            let added = {
+                let mut s = c.state.borrow_mut();
+                let rows = s.reach().into_owned();
+                project::add_to(&mut s.org.projects, &rows, &scope, id)
+            };
+            if added {
+                c.save_projects();
+            }
+            c.lay_grid();
+            c.publish_bar();
+        };
+        match asked {
+            None => add(self),
+            Some((target, lines)) => {
+                let message = tr!("{lines} A photo sits in one project at a time; a project left empty stays.", lines = lines);
+                self.ask(&tr!("Move to “{project}”?", project = target), &message, tr("Move"), false, Pending::Run(Box::new(add)));
+            }
+        }
     }
 
     /// `CellMenu`: each verb selects its scope first, anchored on the cell, then acts on it.
@@ -141,16 +171,7 @@ impl Ctl {
                 self.gesture(&paths, |store| store.set_film(&paths, None, tr("Ungroup")));
             }
             CellAction::NewProject => self.new_project(&scope),
-            CellAction::AddToProject(id) => {
-                let added = {
-                    let mut s = self.state.borrow_mut();
-                    let rows = s.reach().into_owned();
-                    project::add_to(&mut s.org.projects, &rows, &scope, id)
-                };
-                if added {
-                    self.save_projects();
-                }
-            }
+            CellAction::AddToProject(id) => self.ask_add_to_project(scope, id),
             CellAction::RemoveFromProject(id) => {
                 {
                     let mut s = self.state.borrow_mut();

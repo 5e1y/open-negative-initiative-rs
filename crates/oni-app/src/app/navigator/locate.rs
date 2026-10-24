@@ -175,8 +175,8 @@ impl Ctl {
             tr!("ONI holds no photo under “{folder}”: only the folder is forgotten. No file is touched.", folder = folder)
         } else {
             trn(
-                "ONI forgets the photo indexed under “{folder}”. No file is touched: if the folder comes back, its photo returns with its settings.",
-                "ONI forgets the {n} photos indexed under “{folder}”. No file is touched: if the folder comes back, its photos return with their settings.",
+                "ONI forgets the photo it knows in “{folder}”. No file is touched: if the folder comes back, its photo returns with its settings.",
+                "ONI forgets the {n} photos it knows in “{folder}”. No file is touched: if the folder comes back, its photos return with their settings.",
                 count as u64,
             )
             .replace("{folder}", folder)

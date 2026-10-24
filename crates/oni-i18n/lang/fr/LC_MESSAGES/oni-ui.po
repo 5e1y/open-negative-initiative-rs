@@ -950,8 +950,8 @@ msgid "No Favourites"
 msgstr "Aucun favori"
 
 #: crates/oni-ui/ui/navigator.slint
-msgid "Star a folder to keep it here; its photos stay indexed."
-msgstr "Ajoutez une étoile à un dossier pour le garder ici ; ses photos restent indexées."
+msgid "Star a folder to keep it here, ready to open."
+msgstr "Ajoutez une étoile à un dossier pour le garder ici, prêt à ouvrir."
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "RESTORE"
@@ -965,11 +965,7 @@ msgstr "Les archives montrent un dossier de votre disque et tout ce qu’il cont
 msgid "Your photos were in:"
 msgstr "Vos photos se trouvaient dans :"
 
-#: crates/oni-ui/ui/navigator.slint
-msgid "ADD {}"
-msgstr "AJOUTER {}"
-
-#: crates/oni-ui/ui/navigator.slint
+#: crates/oni-ui/ui/navigator.slint crates/oni-ui/ui/toolbar.slint
 msgid "ADD FOLDER…"
 msgstr "AJOUTER UN DOSSIER…"
 
@@ -2030,8 +2026,8 @@ msgid "RESET SCAN"
 msgstr "RÉINITIALISER LE SCAN"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Crop and Straighten (⌘K)"
-msgstr "Recadrer et redresser (⌘K)"
+msgid "Crop and Straighten ({})"
+msgstr "Recadrer et redresser ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Compare"
@@ -2042,16 +2038,16 @@ msgid "Pro"
 msgstr "Pro"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Copy settings (⌘⇧C)"
-msgstr "Copier les réglages (⌘⇧C)"
+msgid "Copy settings ({})"
+msgstr "Copier les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Paste settings to {} photos (⌘⇧V)"
-msgstr "Coller les réglages sur {} photos (⌘⇧V)"
+msgid "Paste settings to {} photos ({})"
+msgstr "Coller les réglages sur {} photos ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Paste settings (⌘⇧V)"
-msgstr "Coller les réglages (⌘⇧V)"
+msgid "Paste settings ({})"
+msgstr "Coller les réglages ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Paste to the Roll"
@@ -2078,6 +2074,10 @@ msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Move {} Photos to ONI Trash"
+msgstr "Placer {} photos dans la Corbeille ONI"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "GALLERY"
 msgstr "GALERIE"
 
@@ -2086,12 +2086,12 @@ msgid "EDITOR"
 msgstr "ÉDITEUR"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Gallery (⌘G)"
-msgstr "Galerie (⌘G)"
+msgid "Gallery ({})"
+msgstr "Galerie ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Editor (⌘G)"
-msgstr "Éditeur (⌘G)"
+msgid "Editor ({})"
+msgstr "Éditeur ({})"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "FEEDBACKS"
@@ -2102,12 +2102,8 @@ msgid "Phone Remote"
 msgstr "Télécommande sur téléphone"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "ADD FOLDER (⌘+O)"
-msgstr "AJOUTER UN DOSSIER (⌘+O)"
-
-#: crates/oni-ui/ui/toolbar.slint
-msgid "Add a folder of scans (⌘O) · export stays on ⌘E"
-msgstr "Ajouter un dossier de scans (⌘O) · l’export reste sur ⌘E"
+msgid "Star a folder of scans and open it · export stays on {}"
+msgstr "Mettre un dossier de scans en favori et l’ouvrir · l’export reste sur {}"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "UPDATING"
@@ -2157,13 +2153,33 @@ msgstr "La préférence ne peut pas être conservée : {e}"
 msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
 msgstr "{message}\n\nQuitter maintenant abandonne les modifications faites depuis le dernier enregistrement réussi. Annulez pour garder l’app ouverte et régler le problème, par exemple en libérant de l’espace ou en reconnectant le volume qui contient les originaux."
 
+#: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/rows.rs
+msgid "ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."
+msgstr "ONI lit chacun de ses dossiers, ce qui est long sur un disque plein. Un dossier de scans à l’intérieur s’ouvre aussitôt : choisissez-en un dessous."
+
+#: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/rows.rs
+msgid "Show Every Photo"
+msgstr "Afficher toutes les photos"
+
 #: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs
 msgid "Open"
 msgstr "Ouvrir"
 
 #: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Not Opened"
+msgstr "Rien n’a été ouvert"
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "Go back to the gallery to open these files."
+msgstr "Revenez à la galerie pour ouvrir ces fichiers."
+
+#: crates/oni-app/src/app/archive_view/adding.rs
 msgid "This system has no folder picker: pass the folder on the command line"
 msgstr "Ce système n’a pas de sélecteur de dossier : indiquez le dossier en ligne de commande"
+
+#: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/rows.rs
+msgid "Show Every Photo on “{name}”?"
+msgstr "Afficher toutes les photos de « {name} » ?"
 
 #: crates/oni-app/src/app/archive_view/adding.rs
 msgid "Not opened: ONI has no access to {path}"
@@ -2176,6 +2192,12 @@ msgstr "Introuvable : {path}"
 #: crates/oni-app/src/app/archive_view/adding.rs
 msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it."
 msgstr "Pas ouvert : {folder} est un disque entier ou le dossier de départ. Ouvrez le dossier des scans qu’il contient."
+
+#: crates/oni-app/src/app/archive_view/adding.rs
+msgid "One item from another folder was left out: ONI opens one folder at a time."
+msgid_plural "{n} items from other folders were left out: ONI opens one folder at a time."
+msgstr[0] "Un élément d’un autre dossier laissé de côté : ONI ouvre un dossier à la fois."
+msgstr[1] "{n} éléments d’autres dossiers laissés de côté : ONI ouvre un dossier à la fois."
 
 #: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
 msgid "Something Went Wrong"
@@ -2369,9 +2391,9 @@ msgid_plural "Move {n} Photos"
 msgstr[0] "Déplacer la photo"
 msgstr[1] "Déplacer {n} photos"
 
-#: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise/cells.rs
-msgid "Show in Finder"
-msgstr "Afficher dans le Finder"
+#: crates/oni-app/src/app/gestures/told.rs
+msgid "UNDO"
+msgstr "ANNULER"
 
 #: crates/oni-app/src/app/gestures/told.rs
 msgid "“{name}” is no longer here: the nearest folder still there is shown."
@@ -2562,6 +2584,14 @@ msgid "and {count} more folders"
 msgstr "et {count} autres dossiers"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Show in Explorer"
+msgstr "Afficher dans l’Explorateur"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/organise/cells.rs
+msgid "Show in Finder"
+msgstr "Afficher dans le Finder"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Show the Parent Folder"
 msgstr "Afficher le dossier parent"
 
@@ -2577,19 +2607,19 @@ msgstr "Ajouter aux favoris"
 msgid "Locate…"
 msgstr "Le retrouver…"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Rename…"
 msgstr "Renommer…"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Back to a Folder"
 msgstr "Reconvertir en dossier"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Make a Roll"
 msgstr "Convertir en pellicule"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/tree_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "New Folder Inside"
 msgstr "Nouveau dossier à l’intérieur"
 
@@ -2598,8 +2628,16 @@ msgid "Remove from Library…"
 msgstr "Retirer de la bibliothèque…"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "Removed from Favourites"
+msgstr "Retiré des favoris"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "New Folder"
 msgstr "Nouveau dossier"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "“{name}” is no longer a favourite."
+msgstr "« {name} » n’est plus un favori."
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder was not renamed, as the open photo's settings could not be saved: {error}"
@@ -2732,10 +2770,10 @@ msgstr[0] "{n} photo sur {total} reconnue dans « {place} » : « {gone} » le s
 msgstr[1] "{n} photos sur {total} reconnues dans « {place} » : « {gone} » le suit."
 
 #: crates/oni-app/src/app/navigator/locate.rs
-msgid "ONI forgets the photo indexed under “{folder}”. No file is touched: if the folder comes back, its photo returns with its settings."
-msgid_plural "ONI forgets the {n} photos indexed under “{folder}”. No file is touched: if the folder comes back, its photos return with their settings."
-msgstr[0] "ONI oublie la photo indexée sous « {folder} ». Aucun fichier n'est touché : si le dossier revient, sa photo revient avec ses réglages."
-msgstr[1] "ONI oublie les {n} photos indexées sous « {folder} ». Aucun fichier n'est touché : si le dossier revient, ses photos reviennent avec leurs réglages."
+msgid "ONI forgets the photo it knows in “{folder}”. No file is touched: if the folder comes back, its photo returns with its settings."
+msgid_plural "ONI forgets the {n} photos it knows in “{folder}”. No file is touched: if the folder comes back, its photos return with their settings."
+msgstr[0] "ONI oublie la photo qu’il connaît dans « {folder} ». Aucun fichier n'est touché : si le dossier revient, sa photo revient avec ses réglages."
+msgstr[1] "ONI oublie les {n} photos qu’il connaît dans « {folder} ». Aucun fichier n'est touché : si le dossier revient, ses photos reviennent avec leurs réglages."
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "Favourites"
@@ -2871,6 +2909,24 @@ msgstr[1] "Les modifications de {n} photos n’ont pas pu être enregistrées"
 msgid "{name} · decoding"
 msgstr "{name} · décodage"
 
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "Move"
+msgstr "Déplacer"
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "{lines} A photo sits in one project at a time; a project left empty stays."
+msgstr "{lines} Une photo n’est que dans un projet à la fois ; un projet vidé reste là."
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "Move to “{project}”?"
+msgstr "Déplacer vers « {project} » ?"
+
+#: crates/oni-app/src/app/organising/cell_menu.rs
+msgid "One photo leaves “{project}”."
+msgid_plural "{n} photos leave “{project}”."
+msgstr[0] "Une photo quitte « {project} »."
+msgstr[1] "{n} photos quittent « {project} »."
+
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Photos in a Project"
 msgstr "Aucune photo dans un projet"
@@ -2892,8 +2948,8 @@ msgid "No Folder Open"
 msgstr "Aucun dossier ouvert"
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "Double-click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved."
-msgstr "Double-cliquez sur un dossier dans la colonne pour l’ouvrir : toutes les photos qu’il contient s’affichent ici. Rien n’est copié ni déplacé."
+msgid "Click a folder in the column to open it: every photo under it shows here. Nothing is copied or moved."
+msgstr "Cliquez sur un dossier dans la colonne pour l’ouvrir : toutes les photos qu’il contient s’affichent ici. Rien n’est copié ni déplacé."
 
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No Photos"
@@ -2950,6 +3006,10 @@ msgstr "Corbeille ONI"
 #: crates/oni-app/src/app/organising/oni_trash.rs
 msgid "Restore every photo in the ONI Trash"
 msgstr "Restaurer toutes les photos de la Corbeille ONI"
+
+#: crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Open the ONI Trash"
+msgstr "Ouvrir la Corbeille ONI"
 
 #: crates/oni-app/src/app/organising/oni_trash.rs
 msgid "Restore All…"
@@ -4154,6 +4214,34 @@ msgstr "Windows refuse « {c} » dans un nom."
 #: crates/oni-library/src/file_names.rs
 msgid "Windows keeps “{name}” for a device."
 msgstr "Windows réserve « {name} » à un périphérique."
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Desktop"
+msgstr "Bureau"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Documents"
+msgstr "Documents"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Downloads"
+msgstr "Téléchargements"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Movies"
+msgstr "Films"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Music"
+msgstr "Musique"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Pictures"
+msgstr "Images"
+
+#: crates/oni-library/src/navigator/names.rs
+msgid "Videos"
+msgstr "Vidéos"
 
 #: crates/oni-library/src/navigator.rs
 msgid "Computer"
