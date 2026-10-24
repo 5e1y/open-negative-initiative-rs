@@ -172,7 +172,7 @@ impl Ctl {
 
     pub(super) fn reset_to_default(self: &Rc<Self>, reach: ResetReach) {
         let touched: Vec<String> = reach.frames.iter().chain(reach.sheets.iter()).cloned().collect();
-        self.gesture(&touched, |store| store.reset_to_default(&reach));
+        self.gesture_as(tr("Reset to Default"), &touched, |store| store.reset_to_default(&reach));
     }
 
     // MARK: - Auto White Balance over several frames

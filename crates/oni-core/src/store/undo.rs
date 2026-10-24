@@ -1,6 +1,15 @@
 //! Undo and redo, on the editor's history or the gallery's.
 
 use super::*;
+use oni_library::gallery_history::Move;
+
+/// An undo or a redo of a roll on the disk: the moves made, and the folder holding what could not
+/// move when some could not.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Walked {
+    pub made: Vec<Move>,
+    pub left_in: Option<String>,
+}
 
 impl EditorStore {
     pub fn undo(&mut self, surface: Surface) -> FieldSet {
@@ -43,11 +52,13 @@ impl EditorStore {
 
     pub(super) fn take_back(&mut self, step: Step, undoing: bool) -> FieldSet {
         if let Some(disk) = &step.disk {
-            if undoing {
-                roll_folder::take_back(disk);
-            } else {
-                roll_folder::lay(disk);
+            let made = if undoing { roll_folder::take_back(disk).0 } else { roll_folder::lay(disk) };
+            let missed = disk.moves.len().saturating_sub(made.len());
+            if missed > 0 {
+                self.failure = Some(roll_folder::shortfall(missed, undoing));
             }
+            let left_in = disk.folder.clone().filter(|_| missed > 0);
+            self.walked = Some(Walked { made, left_in });
             return FieldSet::EMPTY;
         }
         if let Some(marks) = &step.trash {

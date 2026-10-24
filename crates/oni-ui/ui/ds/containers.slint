@@ -204,3 +204,43 @@ export component AskSheet inherits Sheet {
         }
     }
 }
+
+// A transient notice: what a gesture could not do, laid low over every view without stopping the
+// hand; it leaves by its key or after `SheetStyle.linger`, held while the pointer rests on it.
+export component Toast inherits Rectangle {
+    in property <string> title;
+    in property <string> message;
+    // A key acting on what the notice names, as Show in Finder; empty for none.
+    in property <string> action;
+    // Bumped by each notice, so one replacing another stays its whole time.
+    in property <int> serial;
+    // The window's room, the notice centred low in it.
+    in property <length> room;
+    in property <length> room-height;
+    callback acted();
+    callback closed();
+    width: min(SheetStyle.notice-width, root.room - 2 * SheetStyle.margin);
+    height: card.height;
+    x: (root.room - self.width) / 2;
+    y: root.room-height - self.height - SheetStyle.margin;
+    changed serial => { linger.restart(); }
+    linger := Timer {
+        interval: SheetStyle.linger;
+        running: !hover.has-hover;
+        triggered => { root.closed(); }
+    }
+    hover := TouchArea {
+        card := Raised {
+            lift: Lift.sheet;
+            pad: Gap.m;
+            gap: Gap.s;
+            width: root.width;
+            if root.title != "": Label { role: TextRole.section; text: root.title; wrap: word-wrap; }
+            Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
+            ButtonGroup { plate: true; align: GroupAlign.end;
+                if root.action != "": Button { text: root.action; clicked => { root.acted(); } }
+                Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }
+            }
+        }
+    }
+}

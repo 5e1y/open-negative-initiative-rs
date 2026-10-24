@@ -74,6 +74,12 @@ fn missing(shell: &Shell, caption: &str) -> bool {
     app::tiles(&shell.window).into_iter().find(|t| t.caption == caption).unwrap_or_else(|| panic!("{caption} is shown")).missing
 }
 
+/// What the notice over the window says, empty when none shows.
+fn told(shell: &Shell) -> String {
+    let t = shell.window.global::<oni_app::Told>();
+    if t.get_shown() { t.get_message().to_string() } else { String::new() }
+}
+
 fn status(shell: &Shell) -> String {
     shell.window.global::<Canvas>().get_status().to_string()
 }
@@ -180,16 +186,16 @@ pub(crate) fn a_missing_path_on_the_command_line_opens_nothing_and_says_so() {
 
     // Mistyped: nothing opens, the home it lies in least of all, and nothing is remembered.
     shell.add(&d.root.join("Home/Scnas"));
-    rig.until("the refusal said", Duration::from_secs(10), || status(&shell).starts_with("Not found:"));
-    assert_eq!(status(&shell), format!("Not found: {}", d.path("Home/Scnas")));
+    rig.until("the refusal said", Duration::from_secs(10), || told(&shell).starts_with("Not found:"));
+    assert_eq!(told(&shell), format!("Not found: {}", d.path("Home/Scnas")));
     assert_eq!((ctl.state.borrow().opened(), remembered()), (None, Some(before.clone())));
     // On a disk away: the same, never the volumes' folder.
     shell.add(&d.root.join("Volumes/T7/Roll"));
-    rig.until("the second refusal", Duration::from_secs(10), || status(&shell).contains("Volumes/T7/Roll"));
-    assert!(status(&shell).starts_with("Not found:"));
+    rig.until("the second refusal", Duration::from_secs(10), || told(&shell).contains("Volumes/T7/Roll"));
+    assert!(told(&shell).starts_with("Not found:"));
     // A file at the top of the home never opens the whole home.
     shell.add(&d.root.join("Home/loose.tif"));
-    rig.until("the wide refusal", Duration::from_secs(10), || status(&shell).contains("whole disk or the home folder"));
+    rig.until("the wide refusal", Duration::from_secs(10), || told(&shell).contains("whole disk or the home folder"));
     assert_eq!((ctl.state.borrow().opened(), remembered()), (None, Some(before)));
 
     // Twin: a folder there opens and is remembered.

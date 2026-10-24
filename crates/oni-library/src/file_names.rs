@@ -1,5 +1,7 @@
 //! One file name every system ONI runs on can hold in one folder, whatever was typed.
 
+use oni_i18n::tr;
+
 /// The characters Windows refuses in a name, the separators of both systems among them.
 const REFUSED: &[char] = &['/', '\\', ':', '*', '?', '"', '<', '>', '|'];
 
@@ -23,6 +25,29 @@ pub fn portable(name: &str) -> String {
         return format!("{head}-{}", &cleaned[head.len()..]);
     }
     cleaned.to_owned()
+}
+
+/// Why a typed folder name cannot be used, `None` when it can: a separator would move the folder, a
+/// leading dot hides it, and Windows (`windows`) refuses its own characters, devices and endings.
+pub fn refused(name: &str, windows: bool) -> Option<String> {
+    let separator = name.chars().find(|&c| c == '/' || (windows && c == '\\'));
+    if let Some(c) = separator {
+        return Some(tr!("A folder's name cannot hold “{c}”, which separates folders.", c = c));
+    }
+    if name.starts_with('.') {
+        return Some(tr("A name starting with a dot would hide the folder.").into());
+    }
+    if !windows {
+        return None;
+    }
+    if let Some(c) = name.chars().find(|&c| REFUSED.contains(&c) || c.is_control()) {
+        return Some(tr!("Windows refuses “{c}” in a name.", c = c.escape_default()));
+    }
+    if name.ends_with(['.', ' ']) {
+        return Some(tr("Windows drops a dot or a space at the end of a name.").into());
+    }
+    let head = name.split('.').next().unwrap_or_default().trim_end_matches(' ');
+    DEVICES.contains(&head.to_uppercase().as_str()).then(|| tr!("Windows keeps “{name}” for a device.", name = head))
 }
 
 /// `folder` joined with `name` only when the result is one file directly inside `folder`.
@@ -53,6 +78,22 @@ mod tests {
         // Twin: a name that only starts like a device, and a plain name, are kept as typed.
         assert_eq!(portable("CONTACT"), "CONTACT");
         assert_eq!(portable("Portra 400 — 03"), "Portra 400 — 03");
+    }
+
+    #[test]
+    fn a_rename_with_a_slash_says_why() {
+        let slash = refused("12/06/2026", false).unwrap_or_default();
+        assert!(slash.contains("“/”") && slash.contains("separates folders"), "{slash}");
+        assert!(refused(".old", false).is_some_and(|s| s.contains("dot would hide")));
+        assert!(refused("a\\b", true).is_some_and(|s| s.contains("“\\”")));
+        assert!(refused("a?b", true).is_some_and(|s| s.contains("“?”")));
+        assert!(refused("Roll 3.", true).is_some_and(|s| s.contains("end of a name")));
+        assert!(refused("con.d", true).is_some_and(|s| s.contains("“con”")));
+        // Twin: a plain name, a dot inside it, and Windows' rules on a Mac pass untouched.
+        for kept in ["Portra 400 — +1", "Roll 3.5", "a?b", "CON", "a\\b"] {
+            assert_eq!(refused(kept, false), None, "{kept}");
+        }
+        assert_eq!(refused("CONTACT", true), None);
     }
 
     #[test]

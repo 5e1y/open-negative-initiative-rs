@@ -17,7 +17,7 @@ impl Ctl {
             project::save(&s.support, &ProjectsFile { version: 1, projects: located }).err()
         };
         if let Some(e) = failure {
-            self.say(&tr!("The projects could not be saved: {error}", error = e));
+            self.told(tr("Something Went Wrong"), &tr!("The projects could not be saved: {error}", error = e));
         }
     }
 

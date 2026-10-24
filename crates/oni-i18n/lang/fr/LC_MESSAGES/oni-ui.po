@@ -13,11 +13,11 @@ msgstr "Galerie"
 msgid "Export…"
 msgstr "Exporter…"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-core/src/store/oni_trash.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
 msgid "Move to ONI Trash"
 msgstr "Placer dans la Corbeille ONI"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/organise.rs crates/oni-ui/ui/app.slint
 msgid "Restore"
 msgstr "Restaurer"
 
@@ -29,11 +29,11 @@ msgstr "Coller les réglages"
 msgid "Paste to Roll"
 msgstr "Coller sur la pellicule"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
 msgid "Undo"
 msgstr "Annuler"
 
-#: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
 msgid "Redo"
 msgstr "Rétablir"
 
@@ -324,6 +324,10 @@ msgstr "Masquer {}"
 #: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint
 msgid "Done"
 msgstr "Terminé"
+
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "OK"
+msgstr "OK"
 
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
@@ -653,13 +657,9 @@ msgstr "Espace de travail"
 msgid "Replace"
 msgstr "Remplacer"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/export.slint
+#: crates/oni-app/src/app/masks.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-ui/ui/export.slint
 msgid "Rename"
 msgstr "Renommer"
-
-#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
-msgid "OK"
-msgstr "OK"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Paper Profiles"
@@ -2161,6 +2161,10 @@ msgstr "La préférence ne peut pas être conservée : {e}"
 msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
 msgstr "{message}\n\nQuitter maintenant abandonne les modifications faites depuis le dernier enregistrement réussi. Annulez pour garder l’app ouverte et régler le problème, par exemple en libérant de l’espace ou en reconnectant le volume qui contient les originaux."
 
+#: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs
+msgid "Open"
+msgstr "Ouvrir"
+
 #: crates/oni-app/src/app/archive_view/adding.rs
 msgid "This system has no folder picker: pass the folder on the command line"
 msgstr "Ce système n’a pas de sélecteur de dossier : indiquez le dossier en ligne de commande"
@@ -2176,6 +2180,10 @@ msgstr "Introuvable : {path}"
 #: crates/oni-app/src/app/archive_view/adding.rs
 msgid "Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it."
 msgstr "Pas ouvert : {folder} est un disque entier ou le dossier de départ. Ouvrez le dossier des scans qu’il contient."
+
+#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+msgid "Something Went Wrong"
+msgstr "Un problème est survenu"
 
 #: crates/oni-app/src/app/archive_view.rs
 msgid "The library index cannot be opened"
@@ -2292,6 +2300,26 @@ msgstr "Le dernier enregistrement du look Frontier est illisible : {e}"
 #: crates/oni-app/src/app/frontier_look.rs
 msgid "From “{file}”, read again each time it is saved."
 msgstr "Depuis « {file} », relu à chaque enregistrement."
+
+#: crates/oni-app/src/app/gestures/told.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise.rs
+msgid "Show in Finder"
+msgstr "Afficher dans le Finder"
+
+#: crates/oni-app/src/app/gestures/told.rs
+msgid "“{name}” is no longer here: the nearest folder still there is shown."
+msgstr "« {name} » n’est plus là : le dossier le plus proche encore présent est affiché."
+
+#: crates/oni-app/src/app/gestures/told.rs
+msgid "“{name}” cannot be shown: its disk “{volume}” is not connected."
+msgstr "Impossible d’afficher « {name} » : son disque « {volume} » n’est pas branché."
+
+#: crates/oni-app/src/app/gestures/told.rs
+msgid "“{name}” cannot be shown: ONI has no access to it."
+msgstr "Impossible d’afficher « {name} » : ONI n’y a pas accès."
+
+#: crates/oni-app/src/app/gestures/told.rs
+msgid "“{name}” cannot be shown: {cause}."
+msgstr "Impossible d’afficher « {name} » : {cause}."
 
 #: crates/oni-app/src/app/gestures.rs
 msgid "New Roll"
@@ -2477,10 +2505,6 @@ msgstr "{total} photos de votre photothèque n’y figurent pas encore :"
 msgid "and {count} more folders"
 msgstr "et {count} autres dossiers"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs
-msgid "Open"
-msgstr "Ouvrir"
-
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Remove from Favourites"
 msgstr "Retirer des favoris"
@@ -2505,17 +2529,9 @@ msgstr "Convertir en pellicule"
 msgid "New Folder Inside"
 msgstr "Nouveau dossier à l’intérieur"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/oni_trash.rs crates/oni-app/src/app/organising/tree_menu.rs crates/oni-app/src/organise.rs
-msgid "Show in Finder"
-msgstr "Afficher dans le Finder"
-
 #: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "The folder could not be made a roll: it cannot be written to."
-msgstr "Le dossier n’a pas pu devenir une pellicule : il n’est pas accessible en écriture."
-
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
-msgid "Something Went Wrong"
-msgstr "Un problème est survenu"
+msgid "New Folder"
+msgstr "Nouveau dossier"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder was not renamed, as the open photo's settings could not be saved: {error}"
@@ -2528,6 +2544,18 @@ msgstr "un élément nommé « {name} » existe déjà"
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be renamed: {error}"
 msgstr "Le dossier n’a pas pu être renommé : {error}"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be made inside “{folder}”: {cause}."
+msgstr "Le dossier n’a pas pu être créé dans « {folder} » : {cause}."
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be made a roll: {cause}."
+msgstr "Le dossier n’a pas pu devenir une pellicule : {cause}."
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The roll could not be made a folder again: {cause}."
+msgstr "La pellicule n’a pas pu redevenir un dossier : {cause}."
 
 #: crates/oni-app/src/app/navigator/rows.rs
 msgid "Favourites"
@@ -3038,6 +3066,10 @@ msgstr "La mesure de leur pellicule et tous les réglages de leur look disparais
 #: crates/oni-app/src/app/rolls.rs
 msgid "Their roll's measurement and every setting of their look go, a frame shot in RGB passes splits back into its three shots. Crops, dust corrections, flat-fields, medals and EXIF stay. Undo brings the settings back."
 msgstr "La mesure de leur pellicule et tous les réglages de leur look disparaissent, une vue prise en passes RGB se sépare de nouveau en ses trois prises. Recadrages, corrections de poussières, flat-fields, médailles et EXIF sont conservés. Annuler rétablit les réglages."
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Reset to Default"
+msgstr "Rétablir les réglages par défaut"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -3771,6 +3803,26 @@ msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Rejoindre la pellicule"
 msgstr[1] "Rejoindre la pellicule avec {n} photos"
 
+#: crates/oni-library/src/file_names.rs
+msgid "A name starting with a dot would hide the folder."
+msgstr "Un nom commençant par un point masquerait le dossier."
+
+#: crates/oni-library/src/file_names.rs
+msgid "Windows drops a dot or a space at the end of a name."
+msgstr "Windows supprime un point ou une espace en fin de nom."
+
+#: crates/oni-library/src/file_names.rs
+msgid "A folder's name cannot hold “{c}”, which separates folders."
+msgstr "Le nom d’un dossier ne peut pas contenir « {c} », qui sépare les dossiers."
+
+#: crates/oni-library/src/file_names.rs
+msgid "Windows refuses “{c}” in a name."
+msgstr "Windows refuse « {c} » dans un nom."
+
+#: crates/oni-library/src/file_names.rs
+msgid "Windows keeps “{name}” for a device."
+msgstr "Windows réserve « {name} » à un périphérique."
+
 #: crates/oni-library/src/navigator.rs
 msgid "Computer"
 msgstr "Ordinateur"
@@ -3797,6 +3849,30 @@ msgstr "L’original est introuvable : son disque est débranché ou le fichier 
 msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
 msgstr "Une version plus récente d’ONI a écrit ces réglages, et celle-ci ne les réécrit jamais."
 
+#: crates/oni-library/src/refusal.rs
+msgid "it is no longer there"
+msgstr "il n’est plus là"
+
+#: crates/oni-library/src/refusal.rs
+msgid "it cannot be written to"
+msgstr "on ne peut pas y écrire"
+
+#: crates/oni-library/src/refusal.rs
+msgid "an item of that name is already there"
+msgstr "un élément de ce nom s’y trouve déjà"
+
+#: crates/oni-library/src/refusal.rs
+msgid "its disk is read-only"
+msgstr "son disque est en lecture seule"
+
+#: crates/oni-library/src/refusal.rs
+msgid "the disk is full"
+msgstr "le disque est plein"
+
+#: crates/oni-library/src/refusal.rs
+msgid "the disk refuses that name"
+msgstr "le disque refuse ce nom"
+
 #: crates/oni-library/src/refusal.rs crates/oni-library/src/trash.rs
 msgid "{head}: {why}"
 msgstr "{head} : {why}"
@@ -3812,6 +3888,18 @@ msgid "One photo was left out"
 msgid_plural "{n} photos were left out"
 msgstr[0] "Une photo a été laissée de côté"
 msgstr[1] "{n} photos ont été laissées de côté"
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "One item could not be put back: its folder moved or a file took its name."
+msgid_plural "{n} of the items could not be put back: their folder moved or a file took their name."
+msgstr[0] "Un élément n’a pas pu être remis en place : son dossier a été déplacé ou un fichier a pris son nom."
+msgstr[1] "{n} éléments n’ont pas pu être remis en place : leur dossier a été déplacé ou un fichier a pris leur nom."
+
+#: crates/oni-library/src/roll_folder.rs
+msgid "One item could not be moved into the roll again: its folder moved or a file took its name."
+msgid_plural "{n} of the items could not be moved into the roll again: their folder moved or a file took their name."
+msgstr[0] "Un élément n’a pas pu être remis dans la pellicule : son dossier a été déplacé ou un fichier a pris son nom."
+msgstr[1] "{n} éléments n’ont pas pu être remis dans la pellicule : leur dossier a été déplacé ou un fichier a pris leur nom."
 
 #: crates/oni-library/src/trash.rs
 msgid "{head}: a newer version of ONI wrote their settings, and this one never rewrites them."

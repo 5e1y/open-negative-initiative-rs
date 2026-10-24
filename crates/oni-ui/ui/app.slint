@@ -24,12 +24,12 @@ import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 import { Confirm, ConfirmSheet } from "confirm.slint";
 import { Transition, TransitionLine, TransitionSheet } from "transition.slint";
 import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
+import { Told, ToldNotice } from "told.slint";
 
 export { DS, Clicks, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
-export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved }
-export { Stocks, StockBrand, StockRow, StockCell }
+export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell, Canvas, Mark, Act }
 export { Board, FieldProbe, ScrollProbe, KeyProbe } from "ds/board/board.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState } from "ds/ds.slint";
@@ -416,6 +416,7 @@ export component MainWindow inherits AppWindow {
     // Last, so a question asked over another sheet, as quitting's, is drawn over it.
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
+    if Told.shown: ToldNotice { room: root.width; room-height: root.height; }
     TipLayer { room: root.width; room-height: root.height; }
 
     init => { keys.focus(); }

@@ -2707,6 +2707,41 @@
     "detail": "kept.rs keeps each opened folder's last whole shape (subfolders, creation dates, roll markers) under the caches' Surveys folder; a survey whose folder the disk refuses wears it, so roll headings and empty folders stay. The ONI Trash reads only its rows (index.in_trash), a roll marker written by the app is laid without being read back, the Survey is shared by Arc across landings. Closes missing-unreadable-roll-loses-rolls and the disk part of scale-ui-lay-archive-disk."
   },
   {
+    "id": 420,
+    "type": "fix",
+    "title": "A gesture's failure is told wherever the hand is",
+    "status": "done",
+    "detail": "One notice for every gesture that fails or lands in part, over the gallery, the organiser and the editor alike: the design system's Toast (containers.slint), laid low over the window, gone after SheetStyle.linger (held while hovered), by its OK key or by Escape, an optional action key beside it; told.slint's Told global, app/gestures/told.rs. gesture_as titles it with the gesture as Swift's reportFailure (Move to ONI Trash, Restore, Undo, Redo, Reset to Default, New Roll); the medal's refusals, the projects', favourites' and roll marker's saves, the index that cannot open and a folder handed over that cannot open use it too, never the editor's status line the gallery hides. A success says nothing. Closes ux-gallery-errors-invisible and parity-gallery-failures-invisible."
+  },
+  {
+    "id": 421,
+    "type": "fix",
+    "title": "An undo or redo of a roll that cannot move every item says how many",
+    "status": "done",
+    "detail": "The store's take_back keeps roll_folder's moves (Walked: the moves made, the folder holding what stayed) and says Swift's sentence, plural-aware: \"2 of the items could not be put back: their folder moved or a file took their name.\"; a redo says its own. The notice carries Show in Finder on the roll folder left behind, and the gallery follows the moves the disk made rather than guessing them from what exists. Closes missing-undo-partial-silent, safety-undo-partial-silent, parity-undo-disk-shortfall-unreported and tests-04."
+  },
+  {
+    "id": 422,
+    "type": "fix",
+    "title": "New Folder, Back to a Folder, Make a Roll, Rename and Show in Finder say why they failed",
+    "status": "done",
+    "detail": "refusal::cause words the disk's common refusals (not there, cannot be written to, name taken, read-only, full, name refused). New Folder Inside and Back to a Folder, silent before, tell their refusal; Make a Roll and Rename name the cause, never a raw os error. Show in Finder looks off the interface thread: a folder gone shows the nearest folder still there and says so, a disk away or a refused folder says why. Closes ux-silent-folder-ops, missing-small-silent-failures (its messages), safety-silent-folder-failures and bench-reveal-missing-silent."
+  },
+  {
+    "id": 423,
+    "type": "fix",
+    "title": "A folder name holding a separator or starting with a dot is refused with its reason",
+    "status": "done",
+    "detail": "file_names::refused, read by every folder rename (navigator, archive tree, band heading): \"/\" (and \"\\\\\" on Windows) would move the folder, a leading dot would hide it; on Windows its refused characters, a trailing dot or space and the device names too. The reason is told instead of the old name coming back without a word. Closes names-slash-in-rename-silent."
+  },
+  {
+    "id": 424,
+    "type": "fix",
+    "title": "The navigator's reveal reads no disk on the interface thread",
+    "status": "done",
+    "detail": "navigator_reveal takes the folder as adding.rs's looked already made it canonical off the interface thread, instead of resolving it again on it. Lot 4's leftover."
+  },
+  {
     "id": 430,
     "type": "fix",
     "title": "Windows reads a RAW by a handle Rust opened: any folder name, any path length, the file left free to rename",

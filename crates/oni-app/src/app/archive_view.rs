@@ -59,7 +59,7 @@ impl Ctl {
             .name("library".into())
             .spawn(move || {
                 let Some(index) = LibraryIndex::open(&index_path) else {
-                    return with_shell(|c| c.say(tr("The library index cannot be opened")));
+                    return with_shell(|c| c.told(tr("Something Went Wrong"), tr("The library index cannot be opened")));
                 };
                 let alive = || current.load(Ordering::Relaxed) == generation;
                 let kept = index_path.parent().map(|caches| caches.join("Surveys"));

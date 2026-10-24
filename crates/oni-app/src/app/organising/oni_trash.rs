@@ -158,7 +158,7 @@ impl Ctl {
         if targets.is_empty() {
             return;
         }
-        self.gesture(&targets, |store| store.restore_from_trash(&targets));
+        self.gesture_as(tr("Restore"), &targets, |store| store.restore_from_trash(&targets));
         let gone: HashSet<String> = targets.into_iter().collect();
         self.state.borrow_mut().trash_picks.forget(&gone);
         self.lay_grid();

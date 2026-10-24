@@ -54,14 +54,14 @@ impl Ctl {
     fn added(self: &Rc<Self>, added: Option<Added>) {
         match added {
             Some(Added::Open { folder, opening }) => {
-                self.navigator_reveal(Path::new(&folder));
+                self.navigator_reveal(&folder);
                 self.open_spelt(folder);
                 self.state.borrow_mut().opening = opening;
             }
-            Some(Added::Refused { path, state: Presence::Offline(Away::Denied) }) => self.say(&tr!("Not opened: ONI has no access to {path}", path = path)),
-            Some(Added::Refused { path, .. }) => self.say(&tr!("Not found: {path}", path = path)),
+            Some(Added::Refused { path, state: Presence::Offline(Away::Denied) }) => self.told(tr("Open"), &tr!("Not opened: ONI has no access to {path}", path = path)),
+            Some(Added::Refused { path, .. }) => self.told(tr("Open"), &tr!("Not found: {path}", path = path)),
             Some(Added::Wide { folder }) => {
-                self.say(&tr!("Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it.", folder = folder))
+                self.told(tr("Open"), &tr!("Not opened: {folder} is a whole disk or the home folder. Open the folder of scans inside it.", folder = folder))
             }
             None => {}
         }

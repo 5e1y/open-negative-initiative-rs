@@ -1,0 +1,23 @@
+// What a gesture could not do or did only in part, said wherever the hand is: over the gallery,
+// the organiser and the editor alike, never in a status line one of them hides.
+import { Toast } from "ds/ds.slint";
+
+export global Told {
+    in property <bool> shown;
+    in property <string> title;
+    in property <string> message;
+    // Its one action's key, as Show in Finder; empty for none.
+    in property <string> action;
+    in property <int> serial;
+    callback acted();
+    callback closed();
+}
+
+export component ToldNotice inherits Toast {
+    title: Told.title;
+    message: Told.message;
+    action: Told.action;
+    serial: Told.serial;
+    acted => { Told.acted(); }
+    closed => { Told.closed(); }
+}

@@ -152,6 +152,8 @@ pub struct Organising {
     pub(in crate::app) project_renaming: Option<Id>,
     /// A drag in the projects' tree under way.
     pub(in crate::app) project_drag: Option<super::project_drop::Drag>,
+    /// The folder the notice's Show in Finder key reveals.
+    pub(in crate::app) told_folder: Option<String>,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.

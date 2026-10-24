@@ -2,7 +2,7 @@
 //! this thread, the favourites read behind the opened folder, the folder menu, what a launch finds.
 
 use super::{Ctl, State, with_shell};
-use crate::{Advice, App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
+use crate::{App, CatchUpLine, FolderChoice, FolderLine, MenuLine, WelcomeLine};
 use oni_i18n::tr;
 use oni_library::favourites::{self, Area, Favourites, Surveys};
 use oni_library::gallery_history::Move;
