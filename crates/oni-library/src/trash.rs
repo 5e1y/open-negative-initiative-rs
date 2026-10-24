@@ -64,7 +64,9 @@ pub fn report(outcome: &Outcome, restoring: bool) -> Option<String> {
     }
     if !outcome.unreachable.is_empty() {
         let count = outcome.unreachable.len();
-        said.push(tr!("{head}: {why}", head = head(count), why = refusal::why_gone(count)));
+        // "Nothing was changed" holds only when nothing else was.
+        let why = if outcome.done.is_empty() { refusal::why_gone(count) } else { refusal::why_unreachable(count) };
+        said.push(tr!("{head}: {why}", head = head(count), why = why));
     }
     if !outcome.failed.is_empty() {
         let mut files: Vec<String> = outcome
@@ -82,6 +84,14 @@ pub fn report(outcome: &Outcome, restoring: bool) -> Option<String> {
         }
         let head = head(outcome.failed.len());
         said.push(tr!("{head}: {files}.", head = head, files = files.join(", ")));
+    }
+    if !said.is_empty() && !outcome.done.is_empty() {
+        let done = outcome.done.len() as u64;
+        said.push(if restoring {
+            trn("The other photo is back in its folder.", "The other {n} photos are back in their folders.", done)
+        } else {
+            trn("The other photo went to the ONI Trash.", "The other {n} photos went to the ONI Trash.", done)
+        });
     }
     (!said.is_empty()).then(|| said.join(" "))
 }
@@ -145,7 +155,7 @@ pub fn groups(trashed: &[Entry], home: &str) -> Vec<FilmGroup> {
         .collect()
 }
 
-/// A folder by its path from the home or its volume.
+/// A folder by its path from the home or its volume; a Windows drive by its letter, `D: › Scans/One`.
 pub fn heading(folder: &str, home: &str) -> String {
     if holds(home, folder) {
         let tail = if folder == home { String::new() } else { format!("/{}", paths::relative(folder, home)) };
@@ -153,6 +163,10 @@ pub fn heading(folder: &str, home: &str) -> String {
     }
     if let Some(on_volume) = folder.strip_prefix("/Volumes/") {
         return on_volume.to_owned();
+    }
+    if folder.get(..3).is_some_and(crate::navigator::is_drive_root) {
+        let rest = folder[3..].trim_matches('/');
+        return if rest.is_empty() { folder[..2].to_owned() } else { format!("{} › {rest}", &folder[..2]) };
     }
     folder.trim_start_matches('/').to_owned()
 }
@@ -195,6 +209,21 @@ mod tests {
         assert_eq!(headings, ["T7/Two", "a/Scans/One"]);
         // Twin: read from another home, the same folder heads from the root.
         assert_eq!(heading("/Users/a/Scans/One", "/Users/b"), "Users/a/Scans/One");
+        assert_eq!(heading("D:/Scans/One", "C:/Users/a"), "D: › Scans/One");
+        assert_eq!(heading("D:/", "C:/Users/a"), "D:");
+        // Twin: a folder whose name only starts like a drive keeps its path.
+        assert_eq!(heading("/D:x/One", "/Users/a"), "D:x/One");
+    }
+
+    #[test]
+    fn a_partial_restore_says_what_came_back() {
+        let unreachable = vec!["/gone/a".to_owned()];
+        let partial = Outcome { done: vec!["/r/b".into(), "/r/c".into()], unreachable: unreachable.clone(), ..Outcome::default() };
+        let said = report(&partial, true).unwrap_or_default();
+        assert_eq!(said, "One photo was not restored: its original cannot be found, its disk disconnected or the file moved. The other 2 photos are back in their folders.");
+        // Twin: when nothing was restored, "Nothing was changed" is true and stays.
+        let none = report(&Outcome { unreachable, ..Outcome::default() }, true).unwrap_or_default();
+        assert!(none.ends_with("Nothing was changed.") && !none.contains("The other"), "{none}");
     }
 
     #[test]

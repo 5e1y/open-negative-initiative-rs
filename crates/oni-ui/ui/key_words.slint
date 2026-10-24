@@ -1,0 +1,8 @@
+// The keys a label writes beside a gesture, as each system writes them: ⌘ and ⌥ on macOS, Ctrl+
+// and Alt+ on Windows; Rust sets them once, from the one place the two systems' words differ.
+export global KeyWords {
+    in property <string> command;
+    in property <string> command-shift;
+    in property <string> option-command;
+    in property <string> shift;
+}

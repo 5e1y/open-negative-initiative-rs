@@ -160,6 +160,10 @@ pub struct Organising {
     pub(in crate::app) project_drag: Option<super::project_drop::Drag>,
     /// The folder the notice's Show in Finder key reveals.
     pub(in crate::app) told_folder: Option<String>,
+    /// The gallery step the notice's Undo key walks back, by its label and photos, while it is the last.
+    pub(in crate::app) told_step: Option<(String, std::collections::BTreeSet<String>)>,
+    /// The ONI Trash folder whose Restore, once landed, says what came back, with Undo; with its photos.
+    pub(in crate::app) restore_told: Option<(String, Vec<String>)>,
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
     pub(in crate::app) disk_busy: Option<String>,
 }

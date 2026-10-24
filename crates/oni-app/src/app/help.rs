@@ -246,6 +246,7 @@ impl Ctl {
                 console.on_copy(move || system::set_text(&std::fs::read_to_string(&copied).unwrap_or_default()));
                 let revealed = log.clone();
                 console.on_reveal(move || system::reveal(&revealed));
+                console.set_reveal_word(crate::platform::reveal_log(crate::platform::Platform::THIS).into());
                 let timer = Timer::default();
                 let weak = console.as_weak();
                 // Read only while the window is up: closed, it costs nothing.

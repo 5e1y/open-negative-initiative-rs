@@ -2,10 +2,19 @@
 //! show in Finder; out of reach, only what touches no disk under it; on a folder gone Locate and Forget.
 
 use super::*;
+use oni_library::names::Platform;
 
 /// Show in Finder, as the Explorer is named on Windows.
 pub(in crate::app) fn reveal_word() -> &'static str {
-    if cfg!(windows) { tr("Show in Explorer") } else { tr("Show in Finder") }
+    crate::platform::reveal(Platform::THIS)
+}
+
+/// Why a folder kept its name; Windows denies a folder holding a file another app has open.
+fn renamed_refused(e: &std::io::Error, platform: Platform) -> String {
+    if oni_library::refusal::held(e, platform) || oni_library::refusal::denied_on_windows(e, platform) {
+        return tr("The folder could not be renamed: a file in it is open in another app. Close that app, then try again.").into();
+    }
+    tr!("The folder could not be renamed: {error}", error = oni_library::refusal::cause(e))
 }
 
 impl State {
@@ -139,11 +148,13 @@ impl Ctl {
             return self.publish_navigator();
         }
         // A separator would move the folder rather than name it, a leading dot would hide it.
-        if let Some(why) = oni_library::file_names::refused(trimmed, cfg!(windows)) {
+        if let Some(why) = oni_library::names::refused(trimmed, Platform::THIS) {
             self.told(tr("Rename"), &why);
             return self.publish_navigator();
         }
-        // The open frame's settings reach its sidecar before the folder holding it moves.
+        // The open frame's settings and the drafts queued for its frames reach their sidecars
+        // before the folder holding them moves.
+        self.drain_drafts();
         let unsaved = self.state.borrow_mut().store.flush();
         if let Some(e) = unsaved {
             self.told(tr("Rename"), &tr!("The folder was not renamed, as the open photo's settings could not be saved: {error}", error = e));
@@ -154,10 +165,11 @@ impl Ctl {
         let moved = if Path::new(&target).exists() && !same_item(path, &target) {
             Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, tr!("an item named “{name}” already exists", name = trimmed)))
         } else {
-            std::fs::rename(path, &target)
+            let rename = |from: &Path, to: &Path| std::fs::rename(from, to);
+            oni_library::roll_folder::retried(Path::new(path), Path::new(&target), &rename, &std::thread::sleep, Platform::THIS)
         };
         if let Err(e) = moved {
-            self.told(tr("Rename"), &tr!("The folder could not be renamed: {error}", error = oni_library::refusal::cause(&e)));
+            self.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
             return self.publish_navigator();
         }
         if let Some(mut film) = folders::roll(&target) {

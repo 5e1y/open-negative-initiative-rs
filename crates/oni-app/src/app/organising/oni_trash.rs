@@ -100,6 +100,7 @@ impl Ctl {
             f.sort();
             f
         };
+        self.state.borrow_mut().org.restore_told = Some((folder, frames.clone()));
         self.restore(&frames);
     }
 

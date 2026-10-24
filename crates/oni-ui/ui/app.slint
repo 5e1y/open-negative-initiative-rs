@@ -25,12 +25,13 @@ import { Confirm, ConfirmSheet } from "confirm.slint";
 import { Transition, TransitionLine, TransitionSheet } from "transition.slint";
 import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
 import { Told, ToldNotice } from "told.slint";
+import { KeyWords } from "key_words.slint";
 
 export { DS, Clicks, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, SplashWindow, Exporting, ExportLine, PaperRow }
 export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
-export { Preparing, RollCell, Canvas, Mark, Act }
+export { Preparing, RollCell, Canvas, Mark, Act, KeyWords }
 export { Board, FieldProbe, ScrollProbe, KeyProbe } from "ds/board/board.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach } from "ds/ds.slint";
 
@@ -121,7 +122,7 @@ export global Menus {
         paste: @tr("Paste Settings"), paste-to-roll: @tr("Paste to Roll"), undo: @tr("Undo"), redo: @tr("Redo"),
         smaller: @tr("Zoom Out"), larger: @tr("Zoom In"), sound: @tr("Mute Key Clicks"), compare: @tr("Compare Before/After"),
         library: @tr("Hide the Library"), panel: @tr("Hide the Panel"), correcting: @tr("Remove Dust & Scratches"),
-        mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("New Roll from Selection"),
+        mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("Move into a New Roll…"),
         ungroup: @tr("Ungroup"), sheet: @tr("New Contact Sheet"), screen-gamut: @tr("Show What This Screen Cannot Show"),
     };
     in property <MenuLive> live: { open: true, cycle-filter: true };

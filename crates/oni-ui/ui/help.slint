@@ -125,6 +125,8 @@ export component ConsoleWindow inherits AppWindow {
     title: @tr("Console");
     in property <string> log;
     in property <int> blocks;
+    // Reveal Log in Finder, or in Explorer on Windows, as Rust words it.
+    in property <string> reveal-word;
     callback copy();
     callback reveal();
     preferred-width: HelpStyle.console-width;
@@ -139,7 +141,7 @@ export component ConsoleWindow inherits AppWindow {
                 Rectangle { horizontal-stretch: 1; }
                 // AppKit's own keys in Swift's console, their words as written.
                 Button { text: @tr("Copy"); capitals: false; clicked => { root.copy(); } }
-                Button { text: @tr("Reveal Log in Finder"); capitals: false; clicked => { root.reveal(); } }
+                Button { text: root.reveal-word; capitals: false; clicked => { root.reveal(); } }
             }
             Scroller {
                 vertical-stretch: 1;

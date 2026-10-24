@@ -55,7 +55,7 @@ impl Ctl {
         } else if s.org.trash_open {
             (tr("ONI Trash Is Empty").into(), tr("A photo deleted in ONI waits here, its file untouched, until it is restored.").into(), String::new())
         } else if let Some(m) = s.filter {
-            (tr!("No {medal} Photos", medal = library::medal(m)), tr("Cycle the filter (⌘L) to see the others.").into(), String::new())
+            (tr!("No {medal} Photos", medal = library::medal(m)), tr!("Cycle the filter ({key}) to see the others.", key = format!("{}L", crate::platform::keys(crate::platform::Platform::THIS).command)), String::new())
         } else if s.opened.is_none() {
             (
                 tr("No Folder Open").into(),

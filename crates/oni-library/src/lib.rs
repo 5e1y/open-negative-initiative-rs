@@ -17,6 +17,7 @@ pub mod journal;
 pub mod kept;
 pub mod library;
 pub mod merge;
+pub mod names;
 pub mod navigator;
 pub mod paths;
 pub mod presence;

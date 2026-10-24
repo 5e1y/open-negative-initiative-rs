@@ -99,9 +99,6 @@ impl Ctl {
         bar.set_targets(targets as i32);
         bar.set_export_title(crate::export::label::key(targets).into());
         bar.set_editing(!gallery);
-        let (command, shift) = if cfg!(windows) { ("Ctrl+", "Ctrl+Shift+") } else { ("⌘", "⌘⇧") };
-        bar.set_command(command.into());
-        bar.set_command_shift(shift.into());
         self.publish_lab();
         self.publish_export_menu(selected, has_photo && !gallery);
     }

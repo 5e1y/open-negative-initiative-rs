@@ -202,6 +202,7 @@ impl Ctl {
         Ctl::wire_help(me, window);
         Ctl::wire_transition(me, window);
         Ctl::wire_told(me, window);
+        crate::platform::publish_keys(window);
         Ctl::wire_stock_picker(me, window);
         Ctl::wire_wrapped(me, window);
         Ctl::wire_loupe(me, window);

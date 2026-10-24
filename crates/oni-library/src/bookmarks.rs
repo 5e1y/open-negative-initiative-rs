@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 /// Names the volume a path lies on: the system's answer in the app, a check's own disk otherwise.
 pub type Identify = Arc<dyn Fn(&str) -> Option<Volume> + Send + Sync>;
 
-/// The system's `statfs` and `getattrlist`; nothing off macOS.
+/// The system's `statfs` and `getattrlist` on macOS, the volume's serial number on Windows.
 pub fn system() -> Identify {
     Arc::new(volume)
 }
@@ -257,9 +257,42 @@ fn volume(path: &str) -> Option<Volume> {
     Some(Volume { uuid, mount })
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(windows)]
+use win32::volume;
+
+#[cfg(not(any(target_os = "macos", windows)))]
 fn volume(_: &str) -> Option<Volume> {
     None
+}
+
+#[cfg(windows)]
+mod win32 {
+    use super::Volume;
+    use std::os::windows::fs::OpenOptionsExt;
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::Storage::FileSystem::{BY_HANDLE_FILE_INFORMATION, FILE_FLAG_BACKUP_SEMANTICS, GetFileInformationByHandle, GetVolumePathNameW};
+
+    /// The file's index and its volume's serial number; a folder opens only with backup semantics.
+    pub(super) fn by_handle(path: &str) -> Option<BY_HANDLE_FILE_INFORMATION> {
+        let file = std::fs::OpenOptions::new().access_mode(0).custom_flags(FILE_FLAG_BACKUP_SEMANTICS).open(path).ok()?;
+        let mut info = BY_HANDLE_FILE_INFORMATION::default();
+        // SAFETY: the handle lives as long as `file`; the struct is written only on success.
+        (unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) } != 0).then_some(info)
+    }
+
+    /// The mount `GetVolumePathNameW` names, and the serial number, which a new drive letter keeps.
+    pub(super) fn volume(path: &str) -> Option<Volume> {
+        let wide: Vec<u16> = path.encode_utf16().chain(std::iter::once(0)).collect();
+        let mut mount = vec![0u16; 1024];
+        // SAFETY: `wide` is NUL-terminated; the answer fits the buffer's length, handed with it.
+        if unsafe { GetVolumePathNameW(wide.as_ptr(), mount.as_mut_ptr(), mount.len() as u32) } == 0 {
+            return None;
+        }
+        let end = mount.iter().position(|&c| c == 0).unwrap_or(mount.len());
+        let mount = crate::paths::normal(&String::from_utf16_lossy(&mount[..end])).into_owned();
+        let serial = by_handle(path).map(|info| info.dwVolumeSerialNumber);
+        Some(Volume { uuid: serial.map(|s| format!("{:04X}-{:04X}", s >> 16, s & 0xFFFF)), mount })
+    }
 }
 
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]

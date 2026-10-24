@@ -4,10 +4,12 @@
 use super::units::{Unit, steps};
 use super::there;
 use crate::gallery_history::Move;
+use crate::names::Platform;
 use crate::{paths, refusal};
 use oni_i18n::tr;
 use std::io;
 use std::path::Path;
+use std::time::Duration;
 
 /// How a file moves, injectable so a check can refuse one halfway.
 pub type Rename = dyn Fn(&Path, &Path) -> io::Result<()> + Sync;
@@ -33,8 +35,12 @@ impl Carried {
 }
 
 /// `from` to `to` unless something lies there already: never a replace, which `rename` does
-/// silently on macOS and Windows alike.
+/// silently on macOS and Windows alike. A file another app holds is tried again for a moment.
 pub fn rename_new(from: &Path, to: &Path) -> io::Result<()> {
+    retried(from, to, &rename_once, &std::thread::sleep, Platform::THIS)
+}
+
+fn rename_once(from: &Path, to: &Path) -> io::Result<()> {
     #[cfg(target_os = "macos")]
     {
         use std::os::unix::ffi::OsStrExt;
@@ -54,6 +60,25 @@ pub fn rename_new(from: &Path, to: &Path) -> io::Result<()> {
         return Err(io::Error::from(io::ErrorKind::AlreadyExists));
     }
     std::fs::rename(from, to)
+}
+
+/// The pauses between tries, about half a second in all: an indexer, a cloud client or an
+/// antivirus lets a file go within that, and a hold any longer is said instead.
+pub const PAUSES: [Duration; 4] = [Duration::from_millis(30), Duration::from_millis(60), Duration::from_millis(120), Duration::from_millis(240)];
+
+/// `rename` tried again after each pause while another app holds the file, or on Windows while a
+/// file open inside a folder denies it; any other refusal, or the last one, is returned at once.
+pub fn retried(from: &Path, to: &Path, rename: &dyn Fn(&Path, &Path) -> io::Result<()>, pause: &dyn Fn(Duration), platform: Platform) -> io::Result<()> {
+    let mut pauses = PAUSES.iter();
+    loop {
+        match rename(from, to) {
+            Err(e) if refusal::held(&e, platform) || refusal::denied_on_windows(&e, platform) => match pauses.next() {
+                Some(wait) => pause(*wait),
+                None => return Err(e),
+            },
+            done => return done,
+        }
+    }
 }
 
 /// Each unit moved whole: its photos still there, every place free, then file by file; a refusal
@@ -99,7 +124,7 @@ pub fn carry(units: &[Unit], rename: &Rename) -> Carried {
 fn cause(e: &io::Error) -> String {
     match e.kind() {
         io::ErrorKind::CrossesDevices => tr("it lies on another disk").into(),
-        io::ErrorKind::ResourceBusy => tr("another app is using it").into(),
+        _ if refusal::denied_on_windows(e, Platform::THIS) => tr("another app is using it").into(),
         _ => refusal::cause(e),
     }
 }

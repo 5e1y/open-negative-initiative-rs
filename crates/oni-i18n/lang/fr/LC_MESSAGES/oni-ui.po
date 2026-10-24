@@ -74,8 +74,8 @@ msgid "Filter: All"
 msgstr "Filtre : Toutes"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint
-msgid "New Roll from Selection"
-msgstr "Nouvelle pellicule à partir de la sélection"
+msgid "Move into a New Roll…"
+msgstr "Déplacer dans une nouvelle pellicule…"
 
 #: crates/oni-app/src/app/menus.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-app/src/app/rolls.rs crates/oni-ui/ui/app.slint
 msgid "Ungroup"
@@ -254,28 +254,28 @@ msgid "Read-only: settings will not be saved"
 msgstr "Lecture seule : les réglages ne seront pas enregistrés"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Show the Library (⌥⌘[)"
-msgstr "Afficher la photothèque (⌥⌘[)"
+msgid "Show the Library ({})"
+msgstr "Afficher la photothèque ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Hide the Library (⌥⌘[)"
-msgstr "Masquer la photothèque (⌥⌘[)"
+msgid "Hide the Library ({})"
+msgstr "Masquer la photothèque ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Zoom out (⌘−)"
-msgstr "Zoom arrière (⌘−)"
+msgid "Zoom out ({})"
+msgstr "Zoom arrière ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Zoom in (⌘+)"
-msgstr "Zoom avant (⌘+)"
+msgid "Zoom in ({})"
+msgstr "Zoom avant ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Show the Panel (⌥⌘])"
-msgstr "Afficher le panneau (⌥⌘])"
+msgid "Show the Panel ({})"
+msgstr "Afficher le panneau ({})"
 
 #: crates/oni-ui/ui/canvas.slint
-msgid "Hide the Panel (⌥⌘])"
-msgstr "Masquer le panneau (⌥⌘])"
+msgid "Hide the Panel ({})"
+msgstr "Masquer le panneau ({})"
 
 #: crates/oni-ui/ui/confirm.slint
 msgid "CANCEL"
@@ -822,10 +822,6 @@ msgid "Copy"
 msgstr "Copier"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Reveal Log in Finder"
-msgstr "Afficher le journal dans le Finder"
-
-#: crates/oni-ui/ui/help.slint
 msgid "Nothing recorded yet."
 msgstr "Rien n’est encore enregistré."
 
@@ -1074,8 +1070,8 @@ msgid "D −: toward dark"
 msgstr "D − : plus sombre"
 
 #: crates/oni-ui/ui/panel/color_tab.slint
-msgid "Double-click to bring it back to rest; ⇧ with − or + moves three steps."
-msgstr "Double-cliquez pour revenir au repos ; ⇧ avec − ou + avance de trois crans."
+msgid "Double-click to bring it back to rest; {} with − or + moves three steps."
+msgstr "Double-cliquez pour revenir au repos ; {} avec − ou + avance de trois crans."
 
 #: crates/oni-ui/ui/panel/color_tab.slint
 msgid "D +: toward light"
@@ -2069,7 +2065,7 @@ msgstr "Filtre : {}"
 msgid "PREPARE ROLL"
 msgstr "PRÉPARER LA PELLICULE"
 
-#: crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/measure.rs crates/oni-ui/ui/toolbar.slint
 msgid "Prepare the Roll"
 msgstr "Préparer la pellicule"
 
@@ -2347,6 +2343,12 @@ msgstr "Remise des photos dans la pellicule"
 msgid "“{gesture}” is still under way: try again once it is done."
 msgstr "« {gesture} » est encore en cours : réessayez une fois terminé."
 
+#: crates/oni-app/src/app/gestures/busy.rs
+msgid "One photo of “{folder}” is back in its folder."
+msgid_plural "{n} photos of “{folder}” are back in their folder."
+msgstr[0] "Une photo de « {folder} » est revenue dans son dossier."
+msgstr[1] "{n} photos de « {folder} » sont revenues dans leur dossier."
+
 #: crates/oni-app/src/app/gestures/disk.rs
 msgid "New Roll"
 msgstr "Nouvelle pellicule"
@@ -2556,8 +2558,8 @@ msgid "Filter: {medal}"
 msgstr "Filtre : {medal}"
 
 #: crates/oni-app/src/app/menus.rs
-msgid "New Roll from {count} Photos"
-msgstr "Nouvelle pellicule à partir de {count} photos"
+msgid "Move {count} Photos into a New Roll…"
+msgstr "Déplacer {count} photos dans une nouvelle pellicule…"
 
 #: crates/oni-app/src/app/menus.rs
 msgid "Ungroup {count} Photos"
@@ -2572,24 +2574,22 @@ msgid "Add Another Folder…"
 msgstr "Ajouter un autre dossier…"
 
 #: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "Every photo of your library is in."
-msgstr "Toutes les photos de votre photothèque y sont."
-
-#: crates/oni-app/src/app/navigator/catch_up.rs
-msgid "{total} photos of your library are not in it yet:"
-msgstr "{total} photos de votre photothèque n’y figurent pas encore :"
+msgid "Every photo of your former library lies in a favourite."
+msgstr "Toutes les photos de votre ancienne photothèque sont dans un favori."
 
 #: crates/oni-app/src/app/navigator/catch_up.rs
 msgid "and {count} more folders"
 msgstr "et {count} autres dossiers"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "Show in Explorer"
-msgstr "Afficher dans l’Explorateur"
+#: crates/oni-app/src/app/navigator/catch_up.rs
+msgid "One photo of your former library lies outside your favourites:"
+msgid_plural "{n} photos of your former library lie outside your favourites:"
+msgstr[0] "Une photo de votre ancienne photothèque est hors de vos favoris :"
+msgstr[1] "{n} photos de votre ancienne photothèque sont hors de vos favoris :"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/organise/cells.rs
-msgid "Show in Finder"
-msgstr "Afficher dans le Finder"
+#: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be renamed: a file in it is open in another app. Close that app, then try again."
+msgstr "Le dossier n’a pas pu être renommé : un fichier qu’il contient est ouvert dans une autre app. Fermez cette app, puis réessayez."
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "Show the Parent Folder"
@@ -2636,6 +2636,10 @@ msgid "New Folder"
 msgstr "Nouveau dossier"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
+msgid "The folder could not be renamed: {error}"
+msgstr "Le dossier n’a pas pu être renommé : {error}"
+
+#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "“{name}” is no longer a favourite."
 msgstr "« {name} » n’est plus un favori."
 
@@ -2646,10 +2650,6 @@ msgstr "Le dossier n’a pas été renommé, car les réglages de la photo ouver
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "an item named “{name}” already exists"
 msgstr "un élément nommé « {name} » existe déjà"
-
-#: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "The folder could not be renamed: {error}"
-msgstr "Le dossier n’a pas pu être renommé : {error}"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be made inside “{folder}”: {cause}."
@@ -2940,10 +2940,6 @@ msgid "A photo deleted in ONI waits here, its file untouched, until it is restor
 msgstr "Une photo supprimée dans ONI attend ici, son fichier intact, jusqu’à ce qu’elle soit restaurée."
 
 #: crates/oni-app/src/app/organising/grid.rs
-msgid "Cycle the filter (⌘L) to see the others."
-msgstr "Changez de filtre (⌘L) pour voir les autres."
-
-#: crates/oni-app/src/app/organising/grid.rs
 msgid "No Folder Open"
 msgstr "Aucun dossier ouvert"
 
@@ -2966,6 +2962,10 @@ msgstr "Aucun projet"
 #: crates/oni-app/src/app/organising/grid.rs
 msgid "No {medal} Photos"
 msgstr "Aucune photo {medal}"
+
+#: crates/oni-app/src/app/organising/grid.rs
+msgid "Cycle the filter ({key}) to see the others."
+msgstr "Changez de filtre ({key}) pour voir les autres."
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Select a project"
@@ -3232,6 +3232,12 @@ msgstr "Aucune vue de cette pellicule n’a pu être mesurée : les fichiers n�
 #: crates/oni-app/src/app/prepare/measure.rs
 msgid "{missed} of {asked} frames could not be measured and were left as they were."
 msgstr "Vues non mesurées, laissées telles quelles : {missed} sur {asked}."
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "One frame's preparation could not be saved: {cause}"
+msgid_plural "{n} frames' preparation could not be saved: {cause}"
+msgstr[0] "La préparation d’une vue n’a pas pu être enregistrée : {cause}"
+msgstr[1] "La préparation de {n} vues n’a pas pu être enregistrée : {cause}"
 
 #: crates/oni-app/src/app/prepare/model.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
@@ -3802,8 +3808,8 @@ msgid "Reset to Default… ({count} photos)"
 msgstr "Rétablir les valeurs par défaut… ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
-msgid "New Roll from ({count} photos)"
-msgstr "Nouvelle pellicule à partir de ({count} photos)"
+msgid "Move into a New Roll… ({count} photos)"
+msgstr "Déplacer dans une nouvelle pellicule… ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "Ungroup ({count} photos)"
@@ -3812,10 +3818,6 @@ msgstr "Dissocier ({count} photos)"
 #: crates/oni-app/src/organise/cells.rs
 msgid "New Project from ({count} photos)"
 msgstr "Nouveau projet à partir de ({count} photos)"
-
-#: crates/oni-app/src/organise/cells.rs
-msgid "Show in Finder ({count} photos)"
-msgstr "Afficher dans le Finder ({count} photos)"
 
 #: crates/oni-app/src/organise/cells.rs
 msgid "{n} photo missing"
@@ -3836,6 +3838,30 @@ msgid "{n} selected"
 msgid_plural "{n} selected"
 msgstr[0] "{n} sélectionnée"
 msgstr[1] "{n} sélectionnées"
+
+#: crates/oni-app/src/platform.rs
+msgid "Show in Finder"
+msgstr "Afficher dans le Finder"
+
+#: crates/oni-app/src/platform.rs
+msgid "Show in Explorer"
+msgstr "Afficher dans l’Explorateur"
+
+#: crates/oni-app/src/platform.rs
+msgid "Reveal Log in Finder"
+msgstr "Afficher le journal dans le Finder"
+
+#: crates/oni-app/src/platform.rs
+msgid "Reveal Log in Explorer"
+msgstr "Afficher le journal dans l’Explorateur"
+
+#: crates/oni-app/src/platform.rs
+msgid "Show in Finder ({count} photos)"
+msgstr "Afficher dans le Finder ({count} photos)"
+
+#: crates/oni-app/src/platform.rs
+msgid "Show in Explorer ({count} photos)"
+msgstr "Afficher dans l’Explorateur ({count} photos)"
 
 #: crates/oni-app/src/render/decode.rs
 msgid "its container is unreadable"
@@ -3910,8 +3936,8 @@ msgid "UPDATE TO {version}"
 msgstr "PASSER À LA {version}"
 
 #: crates/oni-app/src/updates.rs
-msgid "Download version {version} · export stays on ⌘E"
-msgstr "Télécharger la version {version} · l’export reste sur ⌘E"
+msgid "Download version {version} · export stays on {key}"
+msgstr "Télécharger la version {version} · l’export reste sur {key}"
 
 #: crates/oni-app/src/updates.rs
 msgid "A new version of {app} is available!"
@@ -4199,29 +4225,29 @@ msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Rejoindre la pellicule"
 msgstr[1] "Rejoindre la pellicule avec {n} photos"
 
-#: crates/oni-library/src/file_names.rs
-msgid "A name starting with a dot would hide the folder."
-msgstr "Un nom commençant par un point masquerait le dossier."
-
-#: crates/oni-library/src/file_names.rs
-msgid "Windows drops a dot or a space at the end of a name."
-msgstr "Windows supprime un point ou une espace en fin de nom."
-
-#: crates/oni-library/src/file_names.rs
-msgid "A folder's name cannot hold “{c}”, which separates folders."
-msgstr "Le nom d’un dossier ne peut pas contenir « {c} », qui sépare les dossiers."
-
-#: crates/oni-library/src/file_names.rs
-msgid "Windows refuses “{c}” in a name."
-msgstr "Windows refuse « {c} » dans un nom."
-
-#: crates/oni-library/src/file_names.rs
-msgid "Windows keeps “{name}” for a device."
-msgstr "Windows réserve « {name} » à un périphérique."
-
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"
 msgstr "{file} est illisible, il est donc gardé tel quel : {error}"
+
+#: crates/oni-library/src/names.rs
+msgid "A name starting with a dot would hide the folder."
+msgstr "Un nom commençant par un point masquerait le dossier."
+
+#: crates/oni-library/src/names.rs
+msgid "Windows drops a dot or a space at the end of a name."
+msgstr "Windows supprime un point ou une espace en fin de nom."
+
+#: crates/oni-library/src/names.rs
+msgid "A folder's name cannot hold “{c}”, which separates folders."
+msgstr "Le nom d’un dossier ne peut pas contenir « {c} », qui sépare les dossiers."
+
+#: crates/oni-library/src/names.rs
+msgid "Windows refuses “{c}” in a name."
+msgstr "Windows refuse « {c} » dans un nom."
+
+#: crates/oni-library/src/names.rs
+msgid "Windows keeps “{name}” for a device."
+msgstr "Windows réserve « {name} » à un périphérique."
 
 #: crates/oni-library/src/navigator/names.rs
 msgid "Desktop"
@@ -4277,6 +4303,10 @@ msgstr "L’original est introuvable : son disque est débranché ou le fichier 
 msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
 msgstr "Une version plus récente d’ONI a écrit ces réglages, et celle-ci ne les réécrit jamais."
 
+#: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
+msgid "another app is using it"
+msgstr "une autre app l’utilise"
+
 #: crates/oni-library/src/refusal.rs
 msgid "it is no longer there"
 msgstr "il n’est plus là"
@@ -4312,6 +4342,12 @@ msgstr[0] "son original est introuvable : son disque est débranché ou le fichi
 msgstr[1] "leurs originaux sont introuvables : leur disque est débranché ou les fichiers ont été déplacés. Rien n’a été modifié."
 
 #: crates/oni-library/src/refusal.rs
+msgid "its original cannot be found, its disk disconnected or the file moved."
+msgid_plural "their originals cannot be found, their disk disconnected or the files moved."
+msgstr[0] "son original est introuvable : son disque est débranché ou le fichier a été déplacé."
+msgstr[1] "leurs originaux sont introuvables : leur disque est débranché ou les fichiers ont été déplacés."
+
+#: crates/oni-library/src/refusal.rs
 msgid "One photo was left out"
 msgid_plural "{n} photos were left out"
 msgstr[0] "Une photo a été laissée de côté"
@@ -4320,10 +4356,6 @@ msgstr[1] "{n} photos ont été laissées de côté"
 #: crates/oni-library/src/roll_folder/carry.rs
 msgid "it lies on another disk"
 msgstr "il se trouve sur un autre disque"
-
-#: crates/oni-library/src/roll_folder/carry.rs
-msgid "another app is using it"
-msgstr "une autre app l’utilise"
 
 #: crates/oni-library/src/roll_folder/carry.rs
 msgid "“{name}” is already there"
@@ -4396,6 +4428,18 @@ msgid "and {n} other"
 msgid_plural "and {n} others"
 msgstr[0] "et {n} autre"
 msgstr[1] "et {n} autres"
+
+#: crates/oni-library/src/trash.rs
+msgid "The other photo is back in its folder."
+msgid_plural "The other {n} photos are back in their folders."
+msgstr[0] "L’autre photo est revenue dans son dossier."
+msgstr[1] "Les {n} autres photos sont revenues dans leurs dossiers."
+
+#: crates/oni-library/src/trash.rs
+msgid "The other photo went to the ONI Trash."
+msgid_plural "The other {n} photos went to the ONI Trash."
+msgstr[0] "L’autre photo est partie dans la Corbeille ONI."
+msgstr[1] "Les {n} autres photos sont parties dans la Corbeille ONI."
 
 #: crates/oni-export/src/lib.rs
 msgid "The RAW file could not be decoded."

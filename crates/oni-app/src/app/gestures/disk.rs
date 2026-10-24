@@ -66,6 +66,7 @@ impl Ctl {
         if self.busy_said(tr("New Roll")) {
             return;
         }
+        self.drain_drafts();
         let failure = self.state.borrow_mut().store.flush();
         if let Some(message) = failure {
             self.told(tr("New Roll"), &message);
@@ -175,7 +176,6 @@ fn tree_moved(id: TreeId, moved: &impl Fn(&str) -> Option<String>) -> TreeId {
     match id {
         TreeId::Folder(p) => TreeId::Folder(moved(&p).unwrap_or(p)),
         TreeId::Photo(p) => TreeId::Photo(moved(&p).unwrap_or(p)),
-        other => other,
     }
 }
 

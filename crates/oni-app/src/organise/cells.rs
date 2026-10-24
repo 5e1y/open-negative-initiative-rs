@@ -1,6 +1,7 @@
 //! The cell menu's lines, `CellMenu`: each verb with its scope; a photo whose original is out of
 //! reach is counted first, and every verb that writes beside an original or moves it leaves it out.
 
+use crate::platform::{self, Platform};
 use oni_i18n::{tr, trn};
 use std::collections::HashSet;
 
@@ -96,7 +97,7 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
     for (i, medal) in [Medal::None, Medal::Bronze, Medal::Silver, Medal::Gold].into_iter().enumerate() {
         lines.push(line(medal_name(medal).into(), any, i == 0, CellAction::Medal(medal), &here, gone));
     }
-    lines.push(line(counted(n, "New Roll from", tr!("New Roll from ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
+    lines.push(line(counted(n, "Move into a New Roll…", tr!("Move into a New Roll… ({count} photos)", count = n)), any, true, CellAction::NewRoll, &here, gone));
     let j = joined.len();
     lines.push(line(counted(j, "Ungroup", tr!("Ungroup ({count} photos)", count = j)), !joined.is_empty(), false, CellAction::Ungroup, &joined, gone));
     let all = scope.len();
@@ -108,7 +109,8 @@ pub fn cell_menu(scope: &HashSet<String>, order: &[String], facts: &CellFacts) -
         lines.push(line(tr("Remove from Project").into(), true, false, CellAction::RemoveFrom, scope, 0));
     }
     lines.push(line(counted(n, "Export…", tr!("Export… ({count} photos)", count = n)), any, true, CellAction::Export, &here, 0));
-    lines.push(line(counted(n, "Show in Finder", tr!("Show in Finder ({count} photos)", count = n)), any, false, CellAction::Reveal, &here, 0));
+    let reveal = if n > 1 { platform::reveal_photos(Platform::THIS, n) } else { platform::reveal(Platform::THIS).to_owned() };
+    lines.push(line(reveal, any, false, CellAction::Reveal, &here, 0));
     let trash = if n > 1 { tr!("Move {count} Photos to ONI Trash", count = n) } else { tr("Move to ONI Trash").into() };
     lines.push(line(trash, any, true, CellAction::Trash, &here, gone));
     lines
@@ -124,11 +126,11 @@ pub fn submenu(opener: &CellLine, facts: &CellFacts) -> Vec<CellLine> {
     list.iter().map(|(id, name)| CellLine { text: name.clone(), enabled: true, rule: false, action: make(*id), scope: opener.scope.clone(), left: 0 }).collect()
 }
 
-/// The ONI Trash's cell menu: Restore, then Show in Finder.
+/// The ONI Trash's cell menu: Restore, then Show in Finder or Explorer.
 pub fn trash_menu(scope: &HashSet<String>, order: &[String]) -> Vec<(String, bool, Vec<String>)> {
     let n = scope.len();
     let on = sorted(scope, order);
-    vec![(if n > 1 { tr!("Restore {count} Photos", count = n) } else { tr("Restore").into() }, false, on.clone()), (tr("Show in Finder").into(), true, on)]
+    vec![(if n > 1 { tr!("Restore {count} Photos", count = n) } else { tr("Restore").into() }, false, on.clone()), (platform::reveal(Platform::THIS).into(), true, on)]
 }
 
 #[cfg(test)]
@@ -159,8 +161,8 @@ mod tests {
             [
                 "1 photo missing", "Paste Settings", "Reset Settings", "Reset to Default\u{2026}",
                 "None", "Bronze", "Silver", "Gold",
-                "New Roll from", "Ungroup", "New Project from (2 photos)", "Add to Project",
-                "Export\u{2026}", "Show in Finder", "Move to ONI Trash"
+                "Move into a New Roll\u{2026}", "Ungroup", "New Project from (2 photos)", "Add to Project",
+                "Export\u{2026}", platform::reveal(Platform::THIS), "Move to ONI Trash"
             ]
         );
         assert!(!lines[0].enabled && lines[0].action == CellAction::Missing, "the count first, greyed");

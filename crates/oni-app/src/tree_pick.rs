@@ -84,7 +84,6 @@ pub fn picked_photos(picked: &HashSet<NodeId>, members: &[String]) -> HashSet<St
                 out.insert(path.clone());
             }
             NodeId::Folder(folder) => out.extend(members.iter().filter(|m| paths::holds(folder, m)).cloned()),
-            NodeId::Roll(_) | NodeId::Day(_) => {}
         }
     }
     out

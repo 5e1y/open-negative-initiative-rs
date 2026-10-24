@@ -21,13 +21,9 @@ impl Ctl {
                 let scope: HashSet<String> = photos.iter().cloned().collect();
                 (self.cell_items(&s, &photos[0], &scope, true, can_paste), Some(photos[0].clone()))
             } else {
-                let paths: Vec<String> = targets
-                    .iter()
-                    .filter_map(|t| match t {
-                        ArchiveNode::Photo(p) | ArchiveNode::Folder(p) => Some(p.clone()),
-                        ArchiveNode::Roll(_) | ArchiveNode::Day(_) => None,
-                    })
-                    .collect();
+                let paths: Vec<String> = targets.iter().map(|t| match t {
+                    ArchiveNode::Photo(p) | ArchiveNode::Folder(p) => p.clone(),
+                }).collect();
                 (vec![Item { line: menu_line(crate::app::navigator::reveal_word(), true, false, false), act: Act::Reveal(paths) }], None)
             }
         };

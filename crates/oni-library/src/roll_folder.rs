@@ -13,7 +13,7 @@ use std::path::Path;
 mod carry;
 mod units;
 
-pub use carry::{Carried, Rename, carry, rename_new, said};
+pub use carry::{Carried, PAUSES, Rename, carry, rename_new, retried, said};
 pub use units::{Unit, files, plan_units};
 
 /// The earliest capture as year, month, day in local time, numbered past the names taken beside it.
@@ -39,6 +39,9 @@ pub fn dated(date: Date) -> String {
 /// The folder made and marked a roll; a name already there is refused, never reused, and a marker
 /// the disk refuses leaves no folder behind.
 pub fn make(name: &str, parent: &str, film: &Film) -> io::Result<String> {
+    if let Some(why) = crate::names::refused(name, crate::names::Platform::THIS) {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, why));
+    }
     let folder = paths::join(parent, name);
     std::fs::create_dir(&folder)?;
     if let Err(e) = folders::set_roll(Some(film), &folder) {

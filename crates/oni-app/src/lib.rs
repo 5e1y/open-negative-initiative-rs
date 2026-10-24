@@ -35,6 +35,7 @@ pub mod pasteboard;
 pub mod patches;
 pub mod phone;
 pub mod picking;
+pub mod platform;
 pub mod preferences;
 pub mod splash;
 pub mod proof;
