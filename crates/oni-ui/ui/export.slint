@@ -323,7 +323,6 @@ export component PaperSheet inherits Sheet {
                 alignment: start;
                 VerticalLayout {
                     Row { kind: RowKind.heading; title: @tr("DOWNLOAD HERE"); }
-                    // `PaperProfilesSheet`: the chosen maker on the hover's band.
                     for name[i] in Exporting.paper-direct: Row {
                         form: RowForm.sidebar;
                         title: name;

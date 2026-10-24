@@ -93,7 +93,7 @@ export component Row inherits Rectangle {
     property <length> fold-zone: root.folds ? RowStyle.chevron-zone : 0px;
     height: root.choice ? MenuStyle.row : root.detail != "" || root.heading ? row.preferred-height : RowStyle.height;
     border-radius: root.form != RowForm.list ? Radius.badge : 0px;
-    property <brush> band: root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
+    property <brush> band: root.heading ? Colour.ground.transparentize(1) : root.selected ? Colour.row-selected : (root.picked || root.hovered) ? Colour.hover : Colour.ground.transparentize(1);
     // A pinned row covers the rows scrolled under it, its band laid over the ground.
     background: root.pinned ? Colour.ground : root.band;
     opacity: root.present ? 1 : State.disabled;
