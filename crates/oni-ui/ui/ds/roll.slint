@@ -2,7 +2,7 @@
 // scan's own pixels, the seal a flagged frame wears and the passes' order.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, Type, TileStyle, Motion } from "theme.slint";
-import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks } from "base.slint";
+import { Label, Picture, Ground, TextRole, Tone, StatusLine, Clicks, Badge, BadgeTone } from "base.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -20,17 +20,6 @@ export global RollStyle {
     out property <length> name-width: 10 * Space.m;
 }
 
-// `DSGoldSealView` flattened: a word on its metal, the red one for a flagged frame.
-export component Seal inherits Rectangle {
-    in property <string> word;
-    in property <bool> red;
-    width: word.preferred-width + 2 * Space.xs;
-    height: TileStyle.caption;
-    border-radius: Space.xxs;
-    background: root.red ? Colour.destructive : Colour.raised;
-    word := Label { role: TextRole.caption; tone: root.red ? Tone.on-fill : Tone.primary; text: root.word; centred: true; }
-}
-
 // `DSStatusBar.idle(leading:seal:)`: the status line, the seal of a frame made of passes right after
 // it, then the room the trailing picker takes.
 export component SealedStatusLine inherits HorizontalLayout {
@@ -40,7 +29,7 @@ export component SealedStatusLine inherits HorizontalLayout {
     StatusLine { horizontal-stretch: 0; text: root.text; }
     if root.seal != "": VerticalLayout {
         alignment: center;
-        Seal { word: root.seal; }
+        Badge { tone: BadgeTone.seal; text: root.seal; }
     }
     Rectangle { horizontal-stretch: 1; }
 }
@@ -71,10 +60,10 @@ export component RollCellView inherits Rectangle {
         border-radius: self.width / 2;
         background: Colour.caution;
     }
-    if root.rgb: Seal {
+    if root.rgb: Badge { tone: BadgeTone.seal;
         x: parent.width - Space.xs - self.width;
         y: parent.height - Space.xs - self.height;
-        word: @tr("RGB");
+        text: @tr("RGB");
     }
     // The rings follow the picture's corners: the inner one just inside the outer.
     if root.marked && !root.outset: Rectangle {
@@ -100,11 +89,10 @@ export component RollCellView inherits Rectangle {
         border-width: Stroke.emphasis;
         border-color: root.flagged ? Colour.destructive : Colour.selected;
     }
-    if root.outset && root.flagged: Seal {
+    if root.outset && root.flagged: Badge { tone: true ? BadgeTone.alert : BadgeTone.seal;
         x: Space.xs;
         y: Space.xs;
-        word: @tr("FLAGGED");
-        red: true;
+        text: @tr("FLAGGED");
     }
     TouchArea { clicked => { root.clicked(); } }
 }

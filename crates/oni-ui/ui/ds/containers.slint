@@ -1,7 +1,6 @@
 // The containers: a block's section, the help mark, the sheet and the menu.
-import { NewsSeal } from "help.slint";
 import { Colour, Space, Stroke, State, Motion, ButtonStyle, SectionStyle, SheetStyle, MenuStyle } from "theme.slint";
-import { Label, Icon, Divider, TextRole, Tone, Tips } from "base.slint";
+import { Label, Icon, Divider, TextRole, Tone, Tips, Badge, BadgeTone } from "base.slint";
 import { Button, ButtonSize, Look } from "controls.slint";
 import { Scroller } from "collections.slint";
 import { Icons } from "icons.slint";
@@ -66,7 +65,7 @@ export component Section inherits VerticalLayout {
             }
             if root.news != "": VerticalLayout {
                 alignment: center;
-                NewsSeal { word: root.news; note: root.news-note; read => { root.news-read(); } }
+                Badge { tone: BadgeTone.news; text: root.news; note: root.news-note; read => { root.news-read(); } }
             }
             Rectangle { horizontal-stretch: 1; }
             // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
@@ -176,69 +175,3 @@ export component Sheet inherits Rectangle {
     }
 }
 
-// One line of a menu: its word, its shortcut, a hover band.
-export component MenuEntry inherits Rectangle {
-    in property <string> text;
-    in property <string> shortcut;
-    in property <bool> enabled: true;
-    in property <bool> checked;
-    in property <Look> look: Look.live;
-    callback activated();
-    height: MenuStyle.row;
-    border-radius: ButtonStyle.small-radius;
-    background: root.enabled && (area.has-hover || root.look != Look.live) ? Colour.accent : transparent;
-    opacity: root.enabled ? 1 : State.disabled;
-    accessible-role: button;
-    accessible-label: root.text;
-    HorizontalLayout {
-        padding-left: Space.s;
-        padding-right: Space.s;
-        spacing: Space.s;
-        Rectangle {
-            width: ButtonStyle.small-icon;
-            if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
-        }
-        Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
-        Label { text: root.shortcut; tone: Tone.secondary; }
-    }
-    area := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.activated(); }
-    }
-}
-
-// A menu's body: the entries on a raised panel, a rule between groups as a `Divider`.
-export component MenuPanel inherits Rectangle {
-    in property <length> span: MenuStyle.width;
-    width: root.span;
-    height: column.preferred-height;
-    background: Colour.raised;
-    border-radius: MenuStyle.radius;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
-    column := VerticalLayout {
-        padding: MenuStyle.padding;
-        spacing: 0;
-        @children
-    }
-}
-
-// A popup menu of words; the chosen index comes back through `chosen`.
-export component Menu inherits PopupWindow {
-    in property <[string]> entries;
-    in property <int> current: -1;
-    // A menu dropped under a field is as wide as it.
-    in property <length> span: MenuStyle.width;
-    callback chosen(int);
-    // Sized as its panel, so a window's edge pushes it no further than its own width.
-    width: panel.width;
-    height: panel.height;
-    panel := MenuPanel {
-        span: root.span;
-        for word[i] in root.entries: MenuEntry {
-            text: word;
-            checked: i == root.current;
-            activated => { root.chosen(i); }
-        }
-    }
-}

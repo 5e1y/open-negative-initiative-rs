@@ -4,7 +4,6 @@ import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, State, ButtonStyle, RowStyle, MenuStyle, FieldStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips } from "base.slint";
 import { TextField, Look } from "controls.slint";
-import { MenuPanel } from "containers.slint";
 import { Icons } from "icons.slint";
 
 export global NavigatorStyle {
@@ -42,37 +41,6 @@ export component ColumnPill inherits Rectangle {
         enabled: root.enabled;
         clicked => { if (root.pressable) { root.clicked(); } }
         changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
-    }
-}
-
-// One folder of the pill's list: its glyph, its name, a check on the folder the column stands on.
-export struct FolderChoice { title: string, current: bool }
-
-// The pill's popover: the base and each folder above it, Computer last.
-export component FolderMenu inherits PopupWindow {
-    in property <[FolderChoice]> choices;
-    callback chosen(int);
-    close-policy: close-on-click-outside;
-    MenuPanel {
-        for choice[i] in root.choices: Rectangle {
-            height: MenuStyle.row;
-            border-radius: ButtonStyle.small-radius;
-            background: area.has-hover ? Colour.hover : transparent;
-            accessible-role: button;
-            accessible-label: choice.title;
-            HorizontalLayout {
-                padding-left: Space.xs;
-                padding-right: Space.xs;
-                spacing: Space.s;
-                VerticalLayout { alignment: center; Icon { source: Icons.folder; width: RowStyle.icon; height: RowStyle.icon; } }
-                Label { text: choice.title; overflow: elide; horizontal-stretch: 1; }
-                if choice.current: VerticalLayout {
-                    alignment: center;
-                    Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
-                }
-            }
-            area := TouchArea { clicked => { root.chosen(i); } }
-        }
     }
 }
 

@@ -1,6 +1,6 @@
 // The board's tiles and pictures: the gallery's tile in each state, a picture on every ground, the
 // roll's cells, the presets' cards and rows, the swatches, the stocks and the fanned stack.
-import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, PresetNewFace, StockCellView, StockIcon, Button, PresetStyle, Row } from "../ds.slint";
+import { Colour, Space, ScannerStyle, Look, Picture, Ground, TileView, TileGhost, CardStack, RollCellView, PresetFace, StockCellView, StockIcon, Button, PresetStyle, Row } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Samples } from "kit.slint";
 
 // A tile in its seven looks, all on one picture.
@@ -71,9 +71,9 @@ export component TilesPage inherits Page {
             Cell { PresetFace { abbreviation: "Pt"; name: "Portra warm"; fill: ScannerStyle.band-dark; ink: Colour.ink; } }
             Cell { PresetFace { abbreviation: "Hp"; name: "HP5 crisp"; fill: Colour.paper; ink: Colour.ink-on-light; } }
             Cell { PresetFace { abbreviation: "Fr"; name: "Frontier"; fill: ScannerStyle.band-warm; ink: Colour.ink-on-light; } }
-            Cell { PresetNewFace { } }
-            Cell { PresetNewFace { lit: true; } }
-            Cell { PresetNewFace { enabled: false; } }
+            Cell { PresetFace { new: true; } }
+            Cell { PresetFace { new: true; lit: true; } }
+            Cell { PresetFace { new: true; enabled: false; } }
         }
     }
     Group {

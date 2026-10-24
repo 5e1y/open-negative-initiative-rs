@@ -1,5 +1,5 @@
 // The board's inputs: the tabs and the switches, then every field, picker and typed box.
-import { Colour, PlotInkStyle, Look, Tabs, Toggle, ToggleRow, TextField, Picker, MenuPicker, LinesPicker, DateFields, EditableTitle, Field, FormRow, FormStyle } from "../ds.slint";
+import { Colour, PlotInkStyle, Look, Tabs, Toggle, TextField, Picker, DateFields, EditableTitle, Field, FormRow, FormStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent } from "kit.slint";
 
 // One set of tabs at rest, with another tab hovered, and with a tab marked.
@@ -46,10 +46,10 @@ export component TabsPage inherits Page {
         }
         Line {
             label: "ToggleRow";
-            Cell { ToggleRow { label: "Clipping"; } }
-            Cell { ToggleRow { label: "Clipping"; on: true; } }
-            Cell { ToggleRow { label: "Clipping"; enabled: false; } }
-            Cell { ToggleRow { label: "Clipping"; on: true; enabled: false; } }
+            Cell { Toggle { labelled: true; label: "Clipping"; } }
+            Cell { Toggle { labelled: true; label: "Clipping"; on: true; } }
+            Cell { Toggle { labelled: true; label: "Clipping"; enabled: false; } }
+            Cell { Toggle { labelled: true; label: "Clipping"; on: true; enabled: false; } }
             Absent { }
         }
         Line {
@@ -113,17 +113,17 @@ export component FieldsPage inherits Page {
         }
         Line {
             label: "MenuPicker, closed";
-            Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
-            Fill { span: BoardStyle.field; MenuPicker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
-            Fill { span: BoardStyle.field; MenuPicker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
-            Fill { span: BoardStyle.field; MenuPicker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
+            Fill { span: BoardStyle.field; Picker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
+            Fill { span: BoardStyle.field; Picker { value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
+            Fill { span: BoardStyle.field; Picker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; } }
+            Fill { span: BoardStyle.field; Picker { label: "Space"; value: "Display P3"; entries: ["sRGB", "Display P3"]; current: 1; look: Look.hover; } }
         }
         Line {
             label: "LinesPicker, closed";
-            Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; } }
-            Fill { span: BoardStyle.field; LinesPicker { value: "Negs / Roll #8"; look: Look.hover; } }
-            Fill { span: BoardStyle.field; LinesPicker { label: "Into"; value: "Negs / Roll #8"; } }
-            Fill { span: BoardStyle.field; LinesPicker { label: "Into"; value: "Negs / Roll #8"; look: Look.hover; } }
+            Fill { span: BoardStyle.field; Picker { value: "Negs / Roll #8"; } }
+            Fill { span: BoardStyle.field; Picker { value: "Negs / Roll #8"; look: Look.hover; } }
+            Fill { span: BoardStyle.field; Picker { label: "Into"; value: "Negs / Roll #8"; } }
+            Fill { span: BoardStyle.field; Picker { label: "Into"; value: "Negs / Roll #8"; look: Look.hover; } }
         }
     }
     Group {

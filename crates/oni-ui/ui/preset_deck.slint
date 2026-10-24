@@ -1,5 +1,5 @@
 // The presets' deck on the canvas's bottom edge.
-import { Space, State, PresetStyle, PresetFace, PresetNewFace, Badge, ContextMenu, Scroller, Tips } from "ds/ds.slint";
+import { Space, State, PresetStyle, PresetFace, Badge, Scroller, Tips, Menu } from "ds/ds.slint";
 import { Presets } from "presets.slint";
 
 // `PresetCarousel`: down to a strip at rest, up while the pointer is on it; a card previews under
@@ -41,7 +41,7 @@ export component PresetDeck inherits Rectangle {
                 Rectangle {
                     width: PresetStyle.card-width;
                     height: root.full;
-                    PresetNewFace {
+                    PresetFace { new: true;
                         y: PresetStyle.lift - (plus.has-hover && Presets.can-update ? PresetStyle.lift : 0px);
                         lit: plus.has-hover && Presets.can-update;
                         enabled: Presets.can-update;
@@ -119,7 +119,7 @@ export component PresetDeck inherits Rectangle {
     function roll-by(by: length) {
         roll-view.content-x = max(min(roll-view.content-x + by, 0px), min(0px, roll-view.width - roll-view.content-width));
     }
-    menu := ContextMenu {
+    menu := Menu {
         x: root.menu-x;
         y: root.menu-y;
         lines: Presets.menu-lines;

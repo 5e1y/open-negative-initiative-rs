@@ -4,31 +4,6 @@ import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type, FieldStyle } from "theme.slint";
 import { Tips, Tones, Tone, Label } from "base.slint";
 
-// `DSGoldSealView`: the word in capitals on the medal's gold; hovered, the note shows and is read.
-export component NewsSeal inherits Rectangle {
-    in property <string> word;
-    in property <string> note;
-    callback read();
-    height: DS.control-seal-height * 1px;
-    width: label.preferred-width + 2 * DS.control-seal-padding * 1px;
-    border-radius: self.height / 2;
-    background: Colour.medal[3];
-    label := Text {
-        text: root.word;
-        font-family: Type.family;
-        font-size: DS.typo-seal-size;
-        font-weight: Type.strong;
-        letter-spacing: DS.control-seal-tracking * 1px;
-        color: Colour.ink-on-light;
-    }
-    TouchArea {
-        changed has-hover => {
-            Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
-            if (self.has-hover) { root.read(); }
-        }
-    }
-}
-
 // The console's log: monospaced so aligned figures stay in column, selectable, on the panel's ground.
 export component LogText inherits Rectangle {
     in property <string> text;
@@ -65,12 +40,3 @@ export component BulletLine inherits HorizontalLayout {
     Label { text: root.text; wrap: word-wrap; horizontal-stretch: 1; }
 }
 
-// `RootsCatchUp`'s step number: the digit on a keycap-grey disc.
-export component StepNumber inherits Rectangle {
-    in property <int> number;
-    width: DS.control-keycap-mini-height;
-    height: self.width;
-    border-radius: self.width / 2;
-    background: Colour.raised;
-    Label { text: root.number; centred: true; }
-}

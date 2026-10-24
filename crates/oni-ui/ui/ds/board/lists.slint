@@ -1,6 +1,6 @@
 // The board's lists and trees: the archive's rows of every kind, the navigator's and the trash's,
 // the headings, the rename field, the drop marks and the scroll knob.
-import { Colour, Space, Stroke, Look, RowKind, DropRing, DropLine, ScrollKnob, Row, Heading, NavigatorStyle } from "../ds.slint";
+import { Colour, Space, Stroke, Look, RowKind, DropRing, DropLine, ScrollKnob, Row, TileHeading, NavigatorStyle } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Stage, Samples } from "kit.slint";
 
 // A tree row of one kind at rest, hovered and selected.
@@ -104,8 +104,8 @@ export component ListsPage inherits Page {
         title: "Headings, renaming and drops";
         states: ["As drawn"];
         span: BoardStyle.wide;
-        Line { label: "TileHeading"; Fill { span: BoardStyle.wide; Heading { title: "Roll #8"; caption: "Negs"; } } }
-        Line { label: "PinnedHeading"; Fill { span: BoardStyle.wide; Heading { pinned: true; title: "Roll #8"; caption: "Negs"; } } }
+        Line { label: "TileHeading"; Fill { span: BoardStyle.wide; TileHeading { title: "Roll #8"; caption: "Negs"; } } }
+        Line { label: "PinnedHeading"; Fill { span: BoardStyle.wide; TileHeading { pinned: true; title: "Roll #8"; caption: "Negs"; } } }
         Line { label: "RenameRow (focused)"; Fill { span: BoardStyle.wide; Row { renaming: true; title: "Roll #8"; depth: 1; } } }
         Line {
             label: "DropRing over a row";

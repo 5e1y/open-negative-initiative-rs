@@ -1,7 +1,7 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
-import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, ToggleRow, Section, Tabs, VerticalRule, Label, Tone, TextRole, Row } from "ds/ds.slint";
+import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, Section, Tabs, VerticalRule, Label, Tone, TextRole, Row, Toggle } from "ds/ds.slint";
 
 export global AppSettings {
     in property <bool> shown;
@@ -54,7 +54,7 @@ component GeneralPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.sheet-before;
         title: @tr("Sound");
-        ToggleRow {
+        Toggle { labelled: true;
             label: @tr("Key clicks");
             on: AppSettings.clicks;
             toggled => { AppSettings.flip(Act.toggle-sound); }
@@ -70,13 +70,13 @@ component EditorPage inherits VerticalLayout {
         before: SectionStyle.flush;
         separated: false;
         title: @tr("Viewing");
-        ToggleRow {
+        Toggle { labelled: true;
             label: @tr("Keep the zoom from one photo to the next");
             on: AppSettings.keep-zoom;
             toggled => { AppSettings.flip(Act.keep-zoom); }
         }
         Label { role: TextRole.note; text: @tr("Off, each photo opens fitted to the canvas. On, it opens at the zoom of the last one, centred, to compare grain across a roll."); }
-        ToggleRow {
+        Toggle { labelled: true;
             label: @tr("Show what this screen cannot show");
             on: AppSettings.screen-gamut;
             toggled => { AppSettings.flip(Act.screen-gamut); }
@@ -88,7 +88,7 @@ component EditorPage inherits VerticalLayout {
         foldable: false;
         before: SectionStyle.sheet-before;
         title: @tr("RAW files");
-        ToggleRow {
+        Toggle { labelled: true;
             label: @tr("Decode RAW files at full resolution");
             on: AppSettings.full-decode;
             toggled => { AppSettings.flip(Act.full-decode); }

@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, WarningBadge, Progress, Tone } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, FrameOverlay, FrameStyle, BrushDisc, LiveStroke, CorrectionMark, Badge, SourceTrace, Button, ButtonGroup, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -287,7 +287,7 @@ export component CanvasCard inherits Card {
             dragged(at) => { Canvas.split-dragged(self.x + at); }
         }
         // `readOnlyBanner`: the frame's settings will not be kept, at the top centre, below Compare's labels.
-        if Canvas.read-only: WarningBadge {
+        if Canvas.read-only: Badge { tone: BadgeTone.warning;
             x: (parent.width - self.width) / 2;
             y: Canvas.split >= 0 ? Space.l + Space.xs : Space.s;
             text: @tr("Read-only: settings will not be saved");

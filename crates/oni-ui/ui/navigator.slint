@@ -1,6 +1,6 @@
 // The navigator above the archive tree (`FolderNavigator`), with `RootWelcome` and `RootsCatchUp`:
 // Parent, the favourites key and the base's pill over the folders and the ONI Trash.
-import { Space, RowStyle, NavigatorStyle, Scroller, ColumnPill, FolderChoice, FolderMenu, RowsDivider, EmptyState, ContextMenu, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, StepNumber, ButtonSize, Colour, ButtonGroup, Row, RowKind } from "ds/ds.slint";
+import { Space, RowStyle, NavigatorStyle, Scroller, ColumnPill, FolderChoice, RowsDivider, EmptyState, MenuLine, Label, TextRole, Tone, Button, Icons, Sheet, SheetStyle, ButtonSize, Colour, ButtonGroup, Row, RowKind, Menu, Badge, BadgeTone } from "ds/ds.slint";
 
 // A line of the ONI Trash's rows: the trash itself at depth 0, its folders under it.
 export struct TrashLine {
@@ -260,14 +260,14 @@ export component NavigatorSection inherits Rectangle {
         root.menu-y = y - root.absolute-position.y;
         if (Navigator.row-menu(i)) { menu.show(); }
     }
-    choices := FolderMenu {
+    choices := Menu {
         x: pill.absolute-position.x - root.absolute-position.x;
         y: pill.absolute-position.y - root.absolute-position.y + pill.height;
         width: pill.width;
         choices: Navigator.ancestors;
         chosen(i) => { choices.close(); Navigator.ancestor-chosen(i); }
     }
-    menu := ContextMenu {
+    menu := Menu {
         x: root.menu-x;
         y: root.menu-y;
         lines: Navigator.menu-lines;
@@ -293,7 +293,7 @@ export component RootsCatchUpSheet inherits Sheet {
                 spacing: Space.s;
                 VerticalLayout {
                     alignment: start;
-                    StepNumber { number: i + 1; }
+                    Badge { tone: BadgeTone.step; text: i + 1; }
                 }
                 // The title's first line level with the number's disc.
                 VerticalLayout {

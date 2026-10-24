@@ -2147,6 +2147,13 @@
     "detail": "Part of #296. TextField takes a suffix (SuffixField), a width for numbers (NumberField) and multiline with its own height (TextArea); FormRow takes spread for LabelledRow. ds/row.slint's Row is every line of a list or a tree: ListRow, TreeItem, PinnedTreeRow, FolderRow, TrashRow, PresetRow and RenameRow become instances (kind, depth, expandable, folds, open, stock or glyph, trail, caption, detail, badge, selected, picked, quiet, rounded, pinned, present, star, a hovered action, renaming); RowKind gains none, opened and trash, FolderKind goes. TileHeading and PinnedHeading are one Heading. Every window check's shot matches the one before but for a board line."
   },
   {
+    "id": 299,
+    "type": "refactor",
+    "title": "Design system: one Menu, one Picker, one Badge, one Toggle, one PresetFace",
+    "status": "done",
+    "detail": "Part of #296. ds/menu.slint holds MenuEntry, MenuPanel, Menu and Picker: Menu takes words (entries, current), a context menu's lines, or the folder pill's choices, and closes on a choice or a click outside; ContextMenu and FolderMenu are gone. Picker takes entries or lines and drops its own menu under its field, MenuPicker and LinesPicker gone, the preset form's BalancePicker an instance. Badge (base.slint) with BadgeTone warning, dark, seal, alert, news and step replaces WarningBadge, the frame's Badge, Seal, NewsSeal and StepNumber. Toggle takes labelled for ToggleRow, keeping its own width alone so a row's label pushes it to the end. PresetFace takes new and lit for PresetNewFace. Sheet, PanelSheet and BoardSheet stay three: Slint lays a component's children in one place and their layouts differ. Every window check's shot matches the one before."
+  },
+  {
     "id": 297,
     "type": "refactor",
     "title": "Design system consolidation: fields, rows, sheets and menus, tiles and badges, the board in the app",

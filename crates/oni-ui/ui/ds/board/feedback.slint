@@ -1,6 +1,6 @@
 // The board's feedback: warnings and notes, progress and status lines, seals, badges and chips, the
 // header's small keys, the empty state, the summary box and the notices' lines.
-import { Space, Look, Label, TextRole, Tone, WarningBadge, StatusLine, WarningBand, Badge, Chip, Progress, LoadBar, SealedStatusLine, NewsSeal, Seal, Ring, EmptyState, SummaryBox, BulletLine, StepNumber, ColumnPill, PreviewSlot, Icons, Button, ButtonSize, NavigatorStyle } from "../ds.slint";
+import { Space, Look, Label, TextRole, Tone, StatusLine, WarningBand, Badge, Chip, Progress, LoadBar, SealedStatusLine, Ring, EmptyState, SummaryBox, BulletLine, ColumnPill, PreviewSlot, Icons, Button, ButtonSize, NavigatorStyle, BadgeTone } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill, Absent, Stage, Samples } from "kit.slint";
 
 export component FeedbackPage inherits Page {
@@ -11,7 +11,7 @@ export component FeedbackPage inherits Page {
         states: ["As drawn"];
         span: BoardStyle.wide;
         Line { label: "Warning"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; tone: Tone.warning; text: "8-bit source: 256 levels per channel."; } } }
-        Line { label: "WarningBadge"; Cell { span: BoardStyle.wide; WarningBadge { text: "8-bit source"; } } }
+        Line { label: "WarningBadge"; Cell { span: BoardStyle.wide; Badge { tone: BadgeTone.warning; text: "8-bit source"; } } }
         Line { label: "WarningBand"; Fill { span: BoardStyle.wide; WarningBand { text: "The original of this photo cannot be found."; } } }
         Line { label: "CautionNote"; Fill { span: BoardStyle.wide; Label { role: TextRole.caption; tone: Tone.caution; wrap: word-wrap; text: "Clipped highlights in the blue channel."; } } }
         Line { label: "Note"; Fill { span: BoardStyle.wide; Label { role: TextRole.note; text: "A quiet line under a field, wrapping when it runs long."; } } }
@@ -49,10 +49,10 @@ export component FeedbackPage inherits Page {
     Group {
         title: "Seals and badges";
         states: ["Plain", "Variant"];
-        Line { label: "NewsSeal"; Cell { NewsSeal { word: "NEW"; } } Cell { NewsSeal { word: "UPDATED"; } } }
-        Line { label: "Seal"; Cell { Seal { word: "RGB"; } } Cell { Seal { word: "FLAGGED"; red: true; } } }
+        Line { label: "NewsSeal"; Cell { Badge { tone: BadgeTone.news; text: "NEW"; } } Cell { Badge { tone: BadgeTone.news; text: "UPDATED"; } } }
+        Line { label: "Seal"; Cell { Badge { tone: BadgeTone.seal; text: "RGB"; } } Cell { Badge { tone: true ? BadgeTone.alert : BadgeTone.seal; text: "FLAGGED"; } } }
         Line { label: "Badge (canvas)"; Cell { Badge { text: "1:1"; } } Cell { Badge { text: "200 %"; } } }
-        Line { label: "StepNumber"; Cell { StepNumber { number: 1; } } Cell { StepNumber { number: 3; } } }
+        Line { label: "StepNumber"; Cell { Badge { tone: BadgeTone.step; text: 1; } } Cell { Badge { tone: BadgeTone.step; text: 3; } } }
     }
     Group {
         title: "Small keys and chips";

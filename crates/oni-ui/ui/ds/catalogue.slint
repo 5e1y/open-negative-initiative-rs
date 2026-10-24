@@ -1,13 +1,14 @@
 // The design system's playground: every component in each variant and state, on one scrolling page.
 import { Colour, Space, Radius, Stroke, ShellStyle, SheetStyle, ScannerStyle, PlotStyle, RowStyle } from "theme.slint";
 import { Icons } from "icons.slint";
-import { TextRole, Tone, Label, WarningBadge, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer } from "base.slint";
-import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, Slider, TextField, Picker } from "controls.slint";
+import { TextRole, Tone, Label, Icon, Picture, Ground, HistogramFrame, PlotSize, Divider, Surface, Card, StatusLine, AppWindow, TipLayer, Badge, BadgeTone } from "base.slint";
+import { ButtonKind, ButtonSize, Look, SliderFill, Knob, Button, ButtonGroup, Toggle, Slider, TextField } from "controls.slint";
 import { Tabs } from "tabs.slint";
 import { FormRow } from "forms.slint";
-import { HelpMark, Section, Dialog, MenuEntry, MenuPanel, Menu } from "containers.slint";
-import { TileView, Heading, Scroller } from "collections.slint";
+import { HelpMark, Section, Dialog } from "containers.slint";
+import { TileView, TileHeading, Scroller } from "collections.slint";
 import { RowKind, Row } from "row.slint";
+import { MenuEntry, MenuPanel, Menu, Picker } from "menu.slint";
 import { MedalPicker, EmptyState, DateFields, DropLine, TileGhost } from "organise.slint";
 import { Ink, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "plots.slint";
 import { PlotInkStyle } from "theme.slint";
@@ -270,7 +271,7 @@ export component Catalogue inherits AppWindow {
                     title: "Plot, status, divider";
                     HistogramFrame { size: PlotSize.block; ground: Ground.canvas; }
                     StatusLine { text: "DSC_6432 · 2000 × 1332"; }
-                    HorizontalLayout { alignment: start; WarningBadge { text: "8-bit source — 256 levels per channel"; } }
+                    HorizontalLayout { alignment: start; Badge { tone: BadgeTone.warning; text: "8-bit source — 256 levels per channel"; } }
                     Divider { }
                     HorizontalLayout { spacing: Space.s; alignment: start; HelpMark { note: "The help mark's note."; } Label { text: "Help mark"; tone: Tone.secondary; } }
                 }
@@ -330,7 +331,7 @@ export component Catalogue inherits AppWindow {
                 }
                 Group {
                     title: "Tiles";
-                    Heading { title: "Roll #8"; caption: "10 photos"; }
+                    TileHeading { title: "Roll #8"; caption: "10 photos"; }
                     HorizontalLayout {
                         spacing: Space.s;
                         for m in [0, 1, 2, 3]: TileView {

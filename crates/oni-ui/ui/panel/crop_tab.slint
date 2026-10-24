@@ -1,6 +1,6 @@
 // The Crop tab: the frame, its ratio, rotation, mirror and straightening.
 import { Act } from "../act.slint";
-import { Icons, Space, Section, Tabs, Button, ButtonKind, ToggleRow, LcdReadout, ButtonGroup, FormRow } from "../ds/ds.slint";
+import { Icons, Space, Section, Tabs, Button, ButtonKind, LcdReadout, ButtonGroup, FormRow, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { PanelState, Framing } from "state.slint";
 import { StoreSlider, Block, Pane } from "parts.slint";
@@ -30,7 +30,7 @@ export component CropPane inherits Pane {
             selected <=> Framing.ratio;
             picked(i) => { Framing.ratio-picked(i); }
         }
-        ToggleRow { label: @tr("Vertical"); on: Framing.portrait; enabled: Framing.portrait-enabled; toggled(on) => { Framing.portrait-toggled(on); } }
+        Toggle { labelled: true; label: @tr("Vertical"); on: Framing.portrait; enabled: Framing.portrait-enabled; toggled(on) => { Framing.portrait-toggled(on); } }
     }
     Block {
         title: @tr("Straighten");

@@ -1,6 +1,7 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
 import { DS, Colour, CropStyle, Space, Radius, Stroke, Type } from "theme.slint";
+import { Badge } from "base.slint";
 
 export enum FrameStyle { crop, window }
 
@@ -262,20 +263,6 @@ export component CorrectionMark inherits Rectangle {
             color: Colour.handle-active;
             font-size: Type.chip;
         }
-    }
-}
-
-// `DSBadge`: a short readout on the canvas, dark under light text.
-export component Badge inherits Rectangle {
-    in property <string> text;
-    width: label.preferred-width + 10px;
-    height: label.preferred-height + 4px;
-    background: Colour.contrast-edge;
-    border-radius: 4px;
-    label := Text {
-        text: root.text;
-        color: Colour.handle-active;
-        font-size: 11px;
     }
 }
 

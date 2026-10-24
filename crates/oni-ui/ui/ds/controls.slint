@@ -34,51 +34,48 @@ export component ButtonGroup inherits HorizontalLayout {
 
 // A switch: a thumb that slides to the lit side. Its owner holds the state: a click only asks,
 // so an undo or another photo moves the thumb as much as the hand does.
-export component Toggle inherits Rectangle {
+export component Toggle inherits HorizontalLayout {
     in property <bool> on;
     in property <string> label;
-    in property <bool> enabled: true;
-    callback toggled(bool);
-    height: ToggleStyle.height;
-    width: ToggleStyle.width;
-    border-radius: self.height / 2;
-    background: root.on ? Colour.confirm : Colour.track;
-    opacity: root.enabled ? 1 : State.disabled;
-    accessible-role: checkbox;
-    accessible-checked: root.on;
-    accessible-label: root.label;
-    animate background { duration: Motion.quick; }
-    Rectangle {
-        y: ToggleStyle.inset;
-        height: parent.height - 2 * ToggleStyle.inset;
-        width: self.height;
-        x: root.on ? parent.width - self.width - ToggleStyle.inset : ToggleStyle.inset;
-        border-radius: self.height / 2;
-        background: Colour.white;
-        animate x { duration: Motion.quick; }
-    }
-    TouchArea {
-        enabled: root.enabled;
-        clicked => {
-            Clicks.press();
-            root.toggled(!root.on);
-        }
-    }
-}
-
-// `DSToggle`: the switch, then its label at its right, both flipping it; nothing stretches between.
-export component ToggleRow inherits HorizontalLayout {
-    in property <bool> on;
-    in property <string> label;
+    // `DSToggle`: the label shown at the switch's right, both flipping it; else it names the switch alone.
+    in property <bool> labelled;
     in property <bool> enabled: true;
     callback toggled(bool);
     alignment: start;
     spacing: Space.s;
+    // Alone, the switch keeps its own width, so a row's label pushes it to the end.
+    horizontal-stretch: root.labelled ? 1 : 0;
     VerticalLayout {
         alignment: center;
-        Toggle { label: root.label; on: root.on; enabled: root.enabled; toggled(v) => { root.toggled(v); } }
+        Rectangle {
+            height: ToggleStyle.height;
+            width: ToggleStyle.width;
+            border-radius: self.height / 2;
+            background: root.on ? Colour.confirm : Colour.track;
+            opacity: root.enabled ? 1 : State.disabled;
+            accessible-role: checkbox;
+            accessible-checked: root.on;
+            accessible-label: root.label;
+            animate background { duration: Motion.quick; }
+            Rectangle {
+                y: ToggleStyle.inset;
+                height: parent.height - 2 * ToggleStyle.inset;
+                width: self.height;
+                x: root.on ? parent.width - self.width - ToggleStyle.inset : ToggleStyle.inset;
+                border-radius: self.height / 2;
+                background: Colour.white;
+                animate x { duration: Motion.quick; }
+            }
+            TouchArea {
+                enabled: root.enabled;
+                clicked => {
+                    Clicks.press();
+                    root.toggled(!root.on);
+                }
+            }
+        }
     }
-    Label {
+    if root.labelled: Label {
         text: root.label;
         tone: root.enabled ? Tone.primary : Tone.secondary;
         TouchArea { enabled: root.enabled; clicked => { root.toggled(!root.on); } }
@@ -265,34 +262,3 @@ export component TextField inherits HorizontalLayout {
     if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
 }
 
-// `DSPicker`: the value in a field with a chevron; the menu it drops is Rust's or a `Menu`.
-export component Picker inherits HorizontalLayout {
-    in property <string> label;
-    in property <string> value;
-    in property <Look> look: Look.live;
-    // Where the field starts, which a menu dropped under it aligns on.
-    out property <length> field-x: field.x;
-    out property <length> field-width: field.width;
-    callback open();
-    spacing: Space.s;
-    height: FieldStyle.height;
-    if root.label != "": Label { text: root.label; }
-    field := Rectangle {
-        horizontal-stretch: 1;
-        border-radius: FieldStyle.radius;
-        background: area.has-hover || root.look != Look.live ? Colour.raised : Colour.canvas;
-        border-width: Stroke.hairline;
-        border-color: Colour.separator;
-        HorizontalLayout {
-            padding-left: FieldStyle.padding;
-            padding-right: FieldStyle.padding;
-            spacing: Space.s;
-            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
-            VerticalLayout {
-                alignment: center;
-                Icon { source: Icons.chevron-down; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
-            }
-        }
-        area := TouchArea { clicked => { root.open(); } }
-    }
-}

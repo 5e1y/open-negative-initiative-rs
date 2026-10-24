@@ -1,6 +1,6 @@
 // The library column: the navigator over the opened folder's tree, or the projects' tree.
 import { NavigatorSection, Navigator } from "navigator.slint";
-import { ColumnPill, Scroller, Icons, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, ContextMenu, Button, ButtonSize, ButtonGroup, Row } from "ds/ds.slint";
+import { ColumnPill, Scroller, Icons, RowKind, TileView, Surface, Space, CardStyle, Tabs, EmptyState, Button, ButtonSize, ButtonGroup, Row, Menu } from "ds/ds.slint";
 import { Library } from "library.slint";
 import { ProjectTree } from "project_tree.slint";
 
@@ -177,7 +177,7 @@ export component Tree inherits Surface {
         root.menu-y = y - root.absolute-position.y;
         menu.show();
     }
-    menu := ContextMenu {
+    menu := Menu {
         x: root.menu-x;
         y: root.menu-y;
         lines: Library.menu-lines;

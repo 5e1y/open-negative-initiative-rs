@@ -11,11 +11,26 @@ export component PresetFace inherits Rectangle {
     in property <string> name;
     in property <color> fill;
     in property <color> ink;
+    // The deck's last card, a "+" in an outline, lit under the pointer, that saves a new preset.
+    in property <bool> new;
+    in property <bool> lit;
+    in property <bool> enabled: true;
     width: PresetStyle.card-width;
     height: PresetStyle.card-height;
     border-radius: Radius.card;
-    background: root.fill;
-    VerticalLayout {
+    background: root.new ? Colour.ground.transparentize(1) : root.fill;
+    border-width: !root.new ? 0px : root.lit ? Stroke.line : Stroke.hairline;
+    border-color: root.lit ? Colour.ink : Colour.handle-idle;
+    opacity: root.enabled ? 1 : State.disabled;
+    if root.new: Text {
+        text: "+";
+        font-family: Type.family;
+        font-size: PresetStyle.mark;
+        color: root.lit ? Colour.ink : Colour.handle-idle;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    if !root.new: VerticalLayout {
         padding: Space.s;
         spacing: Space.xxs;
         Text {
@@ -34,26 +49,6 @@ export component PresetFace inherits Rectangle {
             wrap: word-wrap;
             overflow: elide;
         }
-    }
-}
-
-// `PresetCarousel.newCard`: a card's gauge in outline, lit under the pointer, dark with no photo.
-export component PresetNewFace inherits Rectangle {
-    in property <bool> lit;
-    in property <bool> enabled: true;
-    width: PresetStyle.card-width;
-    height: PresetStyle.card-height;
-    border-radius: Radius.card;
-    border-width: root.lit ? Stroke.line : Stroke.hairline;
-    border-color: root.lit ? Colour.ink : Colour.handle-idle;
-    opacity: root.enabled ? 1 : State.disabled;
-    Text {
-        text: "+";
-        font-family: Type.family;
-        font-size: PresetStyle.mark;
-        color: root.lit ? Colour.ink : Colour.handle-idle;
-        horizontal-alignment: center;
-        vertical-alignment: center;
     }
 }
 

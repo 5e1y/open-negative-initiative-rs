@@ -1,0 +1,155 @@
+// The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
+import { Colour, Space, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, RowStyle } from "theme.slint";
+import { Label, Icon, Tone, Divider } from "base.slint";
+import { Look } from "button.slint";
+import { Icons } from "icons.slint";
+import { NavigatorStyle } from "folders.slint";
+
+// A line of a context menu: a rule above it, out of reach, or opening a submenu Rust lays in its place.
+export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
+
+export struct FolderChoice { title: string, current: bool }
+
+// One line of a menu: its word, its shortcut, a hover band; a folder line its glyph and its check at the end.
+export component MenuEntry inherits Rectangle {
+    in property <string> text;
+    in property <string> shortcut;
+    in property <bool> enabled: true;
+    in property <bool> checked;
+    in property <bool> folder;
+    in property <Look> look: Look.live;
+    callback activated();
+    property <bool> hovered: root.enabled && (area.has-hover || root.look != Look.live);
+    height: MenuStyle.row;
+    border-radius: ButtonStyle.small-radius;
+    background: !root.hovered ? Colour.raised.transparentize(1) : root.folder ? Colour.hover : Colour.accent;
+    opacity: root.enabled ? 1 : State.disabled;
+    accessible-role: button;
+    accessible-label: root.text;
+    HorizontalLayout {
+        padding-left: root.folder ? Space.xs : Space.s;
+        padding-right: root.folder ? Space.xs : Space.s;
+        spacing: Space.s;
+        if !root.folder: Rectangle {
+            width: ButtonStyle.small-icon;
+            if root.checked: Icon { source: Icons.done; tone: Tone.primary; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
+        }
+        if root.folder: VerticalLayout { alignment: center; Icon { source: Icons.folder; width: RowStyle.icon; height: RowStyle.icon; } }
+        Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
+        if !root.folder: Label { text: root.shortcut; tone: Tone.secondary; }
+        if root.folder && root.checked: VerticalLayout {
+            alignment: center;
+            Icon { source: Icons.done; width: NavigatorStyle.star; height: NavigatorStyle.star; tone: Tone.primary; }
+        }
+    }
+    area := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.activated(); }
+    }
+}
+
+export component MenuPanel inherits Rectangle {
+    in property <length> span: MenuStyle.width;
+    width: root.span;
+    height: column.preferred-height;
+    background: Colour.raised;
+    border-radius: MenuStyle.radius;
+    border-width: Stroke.hairline;
+    border-color: Colour.separator;
+    column := VerticalLayout {
+        padding: MenuStyle.padding;
+        spacing: 0;
+        @children
+    }
+}
+
+// Words with the current one checked; or a context menu's lines; or the folder pill's choices.
+// A choice closes it, as a click outside does.
+export component Menu inherits PopupWindow {
+    in property <[string]> entries;
+    in property <int> current: -1;
+    in property <[MenuLine]> lines;
+    in property <[FolderChoice]> choices;
+    // A menu dropped under a field is as wide as it.
+    in property <length> span: MenuStyle.width;
+    callback chosen(int);
+    close-policy: close-on-click-outside;
+    // Sized as its panel, so a window's edge pushes it no further than its own width.
+    width: panel.width;
+    height: panel.height;
+    panel := MenuPanel {
+        span: root.span;
+        for word[i] in root.entries: MenuEntry {
+            text: word;
+            checked: i == root.current;
+            activated => { root.chosen(i); root.close(); }
+        }
+        for line[i] in root.lines: VerticalLayout {
+            if line.rule: Divider { }
+            MenuEntry {
+                text: line.text;
+                shortcut: line.opens ? "›" : "";
+                enabled: line.enabled;
+                activated => { root.chosen(i); }
+            }
+        }
+        for choice[i] in root.choices: MenuEntry {
+            folder: true;
+            text: choice.title;
+            checked: choice.current;
+            activated => { root.chosen(i); }
+        }
+    }
+}
+
+// A field naming the value chosen, a chevron at its end; its words or lines drop under it as a menu.
+export component Picker inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <[string]> entries;
+    in property <int> current: -1;
+    in property <[MenuLine]> lines;
+    in property <Look> look: Look.live;
+    // Where the field starts, which a menu dropped under it aligns on.
+    out property <length> field-x: field.x;
+    out property <length> field-width: field.width;
+    callback open();
+    callback chosen(int);
+    spacing: Space.s;
+    height: FieldStyle.height;
+    if root.label != "": Label { text: root.label; }
+    field := Rectangle {
+        horizontal-stretch: 1;
+        border-radius: FieldStyle.radius;
+        background: area.has-hover || root.look != Look.live ? Colour.raised : Colour.canvas;
+        border-width: Stroke.hairline;
+        border-color: Colour.separator;
+        HorizontalLayout {
+            padding-left: FieldStyle.padding;
+            padding-right: FieldStyle.padding;
+            spacing: Space.s;
+            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
+            VerticalLayout {
+                alignment: center;
+                Icon { source: Icons.chevron-down; width: ButtonStyle.small-icon; height: ButtonStyle.small-icon; }
+            }
+        }
+        area := TouchArea {
+            clicked => {
+                root.open();
+                if (root.entries.length > 0 || root.lines.length > 0) {
+                    menu.show();
+                }
+            }
+        }
+    }
+    menu := Menu {
+        x: root.field-x;
+        y: root.height;
+        span: root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
+        entries: root.entries;
+        current: root.current;
+        lines: root.lines;
+        chosen(i) => { root.chosen(i); self.close(); }
+    }
+}

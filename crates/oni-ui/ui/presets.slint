@@ -120,22 +120,10 @@ component TintPicker inherits HorizontalLayout {
 // `PresetCarriesPicker`: the blocks' boxes, the white balance a choice of three, and the note
 // when nothing is ticked.
 // `DSPicker` for the white balance: its menu drops under the field, the current choice ticked.
-component BalancePicker inherits Rectangle {
-    in property <string> value;
-    height: FieldStyle.height;
-    Picker {
-        width: parent.width;
-        height: parent.height;
-        value: root.value;
-        open => { menu.show(); }
-    }
-    menu := Menu {
-        x: 0;
-        y: root.height;
-        entries: Presets.balance-names;
-        current: Presets.form-balance;
-        chosen(i) => { Presets.form-balanced(i); }
-    }
+component BalancePicker inherits Picker {
+    entries: Presets.balance-names;
+    current: Presets.form-balance;
+    chosen(i) => { Presets.form-balanced(i); }
 }
 
 component CarriesPicker inherits VerticalLayout {

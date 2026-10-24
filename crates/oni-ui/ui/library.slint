@@ -1,7 +1,7 @@
 // The library column's and the gallery grid's state, and the grid; the lists draw only what is on screen.
 import { TrashLine, NavigatorSection, Navigator } from "navigator.slint";
 export { TrashLine } from "navigator.slint";
-import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, ContextMenu, MenuLine, DropLine, TileGhost, Heading } from "ds/ds.slint";
+import { ScrollKnob, TileView, Surface, Ground, Space, EmptyState, MenuLine, DropLine, TileGhost, TileHeading, Menu } from "ds/ds.slint";
 
 export struct Tile {
     index: int,
@@ -263,7 +263,7 @@ export component Grid inherits Surface {
             y: -Library.scroll;
             width: parent.width;
             height: Library.content-height;
-            for h in Library.headings: Heading {
+            for h in Library.headings: TileHeading {
                 x: Space.l;
                 y: h.y;
                 width: root.width - 2 * Space.l;
@@ -300,7 +300,7 @@ export component Grid inherits Surface {
                 source: Library.ghost;
             }
         }
-        if Library.pinned-shown: Heading { pinned: true;
+        if Library.pinned-shown: TileHeading { pinned: true;
             y: Library.pinned-y - Library.scroll;
             width: parent.width;
             title: Library.pinned-title;
@@ -331,7 +331,7 @@ export component Grid inherits Surface {
         action: Library.empty-action;
         acted => { Library.empty-acted(); }
     }
-    menu := ContextMenu {
+    menu := Menu {
         x: root.menu-x;
         y: root.menu-y;
         lines: Library.menu-lines;

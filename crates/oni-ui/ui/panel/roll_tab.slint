@@ -1,5 +1,5 @@
 // The Roll tab: the measured roll, the film type and the settings the roll shares.
-import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, ToggleRow, WarningBadge, WarningBand, Field, LinesPicker, Label, TextRole, Tone, ButtonGroup } from "../ds/ds.slint";
+import { Icons, Colour, Space, SliderFill, Tabs, Button, ButtonSize, WarningBand, Field, Label, TextRole, Tone, ButtonGroup, Picker, Badge, BadgeTone, Toggle } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { Editors, LevelsEditor } from "../editors.slint";
 import { Plots, PanelState } from "state.slint";
@@ -63,7 +63,7 @@ export component RollPane inherits Pane {
         // `FlatFieldControls`: the switch and its word at the left, the settings key at the far right.
         HorizontalLayout {
             spacing: Space.s;
-            ToggleRow { label: @tr("Flat-field"); on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
+            Toggle { labelled: true; label: @tr("Flat-field"); on: PanelState.flat-field-on; toggled(on) => { PanelState.flat-field-toggled(on); } }
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
@@ -72,7 +72,7 @@ export component RollPane inherits Pane {
         }
         if PanelState.flat-field-on: Field {
             label: @tr("Mask");
-            LinesPicker {
+            Picker {
                 value: PanelState.mask-title;
                 lines: PanelState.mask-lines;
                 chosen(i) => { PanelState.mask-chosen(i); }
@@ -160,7 +160,7 @@ export component RollPane inherits Pane {
         LevelsEditor { histogram: Plots.levels; revision: Plots.levels-revision; }
         if Editors.low-precision: HorizontalLayout {
             alignment: start;
-            WarningBadge { text: @tr("8-bit source — 256 levels per channel"); }
+            Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }
         }
     }
     // After the per-channel windows: a balanced grey is its fixed point. Monochrome, RGB passes and
