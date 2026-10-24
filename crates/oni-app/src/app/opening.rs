@@ -2,21 +2,26 @@
 
 use super::*;
 
+mod missing;
+
 impl Ctl {
     /// Opens a photo in the store; the canvas renders once its negative is decoded.
     pub(super) fn open_photo(self: &Rc<Self>, path: &str) {
         self.leave_together();
-        let kept = self.remembered_flat_field();
-        let failure = {
+        let remembered = self.remembered_flat_field();
+        let (failure, stranded) = {
             let mut s = self.state.borrow_mut();
-            let flush = s.store.flush();
+            // The frame left is stranded when its edits join the unsaved ones with this opening.
+            let leaving = s.store.editor_ref().and_then(|e| e.path()).map(str::to_string);
+            let kept = |s: &State| leaving.as_ref().is_some_and(|l| s.store.editor_ref().is_some_and(|e| e.unsaved().iter().any(|u| &u.path == l)));
+            let was_kept = kept(&s);
             // The flat-field sliders last dialled reach a frame that never had its own; a frame never
             // balanced opens with its measuring window proposed and armed.
             let armed = std::cell::Cell::new(false);
             let opened = s
                 .store
                 .open_adjusted(path, &|o| {
-                    o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, kept);
+                    o.flat_field = crate::flat_fields::with_remembered(&o.flat_field, remembered);
                     armed.set(oni_core::balance::opening_window(o));
                 })
                 .err();
@@ -37,24 +42,38 @@ impl Ctl {
             for slide in &mut s.slides {
                 slide.published = None;
             }
-            flush.or(opened)
+            (opened, kept(&s) && !was_kept)
         };
-        if let Some(message) = failure {
-            self.say(&message);
-        }
         let read_only = self.state.borrow_mut().store.editor().is_some_and(|e| !e.writable());
+        // Checked before any decode, and said last, so no status of the opening covers it.
+        let absent = self.say_absent(path);
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_read_only(read_only);
             w.global::<Canvas>().set_failure("".into());
-            w.global::<Canvas>().set_busy(true);
-            w.global::<Canvas>().set_status(tr!("{name} · decoding", name = stem(path)).into());
+            w.global::<Canvas>().set_busy(!absent);
+            if !absent {
+                w.global::<Canvas>().set_status(tr!("{name} · decoding", name = stem(path)).into());
+            }
+        }
+        match failure {
+            Some(message) if !absent => self.say(&message),
+            _ => {}
         }
         self.show_thumbnail(path);
         self.publish_status();
         self.publish(true);
         self.publish_tree();
         self.schedule_redraw();
-        self.decode_open(path);
+        if absent {
+            let mut s = self.state.borrow_mut();
+            s.negative = None;
+            s.full = None;
+        } else {
+            self.decode_open(path);
+        }
+        if stranded {
+            self.ask_unsaved();
+        }
         self.prefetch_neighbours(path);
         self.require_roll(path);
         self.journal_opened(path);

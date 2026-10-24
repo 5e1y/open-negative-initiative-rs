@@ -2516,5 +2516,19 @@
     "title": "Tips round on the radius scale",
     "status": "done",
     "detail": "A help mark's card rounds at Radius.control, as DSHelpBubble; a control's tooltip, the system's in Swift, takes the scale's smallest round (Radius.track, 6) instead of half a badge's 4."
+  },
+  {
+    "id": 380,
+    "type": "fix",
+    "title": "A photo whose original cannot be read says why on the canvas, before any decode",
+    "status": "done",
+    "detail": "Opening a photo checks its original first (oni-library absence: its volume not mounted, moved or deleted with the disk there, EACCES/EPERM, 0 bytes, any other refusal; oni-decode unsupported_format: HEIC, PSD, AVIF; a lead's pass missing beside it). The canvas keeps the cached thumbnail and lays a note in the hand's words with Show the Folder (the nearest folder still there) and Back to the Gallery; no decode is asked, nothing writes '· decoding' over it, the store refuses every hand on a frame out of sight and its sliders take no press. 'could not be decoded' stays for a real decode failure. A lead's missing pass is named by the decode too."
+  },
+  {
+    "id": 381,
+    "type": "fix",
+    "title": "A sidecar refused on switching photo keeps the edits and asks",
+    "status": "done",
+    "detail": "Leaving a frame whose write fails (disk gone, read-only share) keeps its settings in the store's unsaved list instead of dropping them; a sheet asks Retry or Discard, Escape keeps them, a volume coming back retries on its own, reopening the frame shows them, and quitting asks as a failed write does. A retry never writes beside an original out of sight."
   }
 ]

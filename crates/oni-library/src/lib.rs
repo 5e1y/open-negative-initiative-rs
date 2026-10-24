@@ -1,6 +1,7 @@
 //! The archive read off the disk: roots, folders and their rolls, projects, the ONI Trash, favourites,
 //! and the SQLite index, a disposable cache rebuilt from the sidecars, which stay the only truth.
 
+pub mod absence;
 pub mod archive_tree;
 pub mod capture;
 pub mod exif;

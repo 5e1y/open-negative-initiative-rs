@@ -7,12 +7,14 @@ impl Ctl {
         Ctl::wire_canvas(me, window);
         Ctl::wire_framing(me, window);
         Ctl::wire_dedust(me, window);
+        Ctl::wire_missing(me, window);
         crate::editors::wire(me, window);
         let g = window.global::<StoreGlobal>();
 
         let p = me.clone();
         g.on_press(move |field, _fine| {
-            let Some(f) = Field::from_index(field) else { return false };
+            // A frame out of sight takes no hand: the press is answered as handled, so no drag starts.
+            let Some(f) = Field::from_index(field).filter(|_| !p.inert()) else { return true };
             let i = f.index() as usize;
             let now = Instant::now();
             let double = {
@@ -119,7 +121,7 @@ impl Ctl {
         // A scroll along the track writes the store at each event; one across it scrolls the panel.
         let p = me.clone();
         g.on_scroll(move |field, dx, dy, span, fine| {
-            let Some(f) = Field::from_index(field) else { return false };
+            let Some(f) = Field::from_index(field).filter(|_| !p.inert()) else { return false };
             if dx == 0.0 || dx.abs() <= dy.abs() {
                 return false;
             }

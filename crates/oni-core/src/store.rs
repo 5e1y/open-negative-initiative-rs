@@ -29,6 +29,7 @@ mod oni_trash;
 mod scanner;
 mod together;
 
+pub use opening::Unsaved;
 pub use scanner::{channel, machine_for, machine_of};
 
 pub mod roll;
@@ -87,6 +88,10 @@ struct Open {
     writable: bool,
     /// What the disk holds, so a write of the same settings is skipped.
     persisted: Option<PipelineSettings>,
+    /// Its original cannot be seen: every hand on it is refused, nothing is written.
+    absent: bool,
+    /// The original's size and date as it opened, so edits kept for it never land on another file.
+    stamp: Option<opening::Stamp>,
 }
 
 pub struct EditorStore {
@@ -115,6 +120,8 @@ pub struct EditorStore {
     epoch: Instant,
     /// The last failure a gesture met, for the host to show.
     pub failure: Option<String>,
+    /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
+    unsaved: Vec<opening::Unsaved>,
 }
 
 impl EditorStore {
@@ -138,6 +145,7 @@ impl EditorStore {
             last_change: None,
             epoch: Instant::now(),
             failure: None,
+            unsaved: Vec::new(),
         }
     }
 
@@ -155,6 +163,11 @@ impl EditorStore {
 
     pub fn writable(&self) -> bool {
         self.open.as_ref().is_some_and(|o| o.writable)
+    }
+
+    /// The open frame's original cannot be seen, so no hand moves its settings.
+    pub fn inert(&self) -> bool {
+        self.open.as_ref().is_some_and(|o| o.absent)
     }
 
     /// Bumped by every change, from whatever hand.

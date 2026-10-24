@@ -293,9 +293,13 @@ msgstr "antes"
 msgid "after"
 msgstr "después"
 
-#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/ds/roll.slint crates/oni-ui/ui/editors.slint
+#: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/editors.slint
 msgid "RGB"
 msgstr "RGB"
+
+#: crates/oni-ui/ui/ds/collections.slint
+msgid "FLAGGED"
+msgstr "MARCADO"
 
 #: crates/oni-ui/ui/ds/collections.slint crates/oni-ui/ui/info_sidebar.slint
 msgid "Roll name"
@@ -349,10 +353,6 @@ msgstr "Anterior"
 msgid "Next"
 msgstr "Siguiente"
 
-#: crates/oni-ui/ui/ds/roll.slint
-msgid "FLAGGED"
-msgstr "MARCADO"
-
 #: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nombre"
@@ -381,15 +381,15 @@ msgstr "EN PELÍCULA"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -928,6 +928,22 @@ msgstr "Proyectos de ONI"
 #: crates/oni-app/src/app/organising/grid.rs crates/oni-ui/ui/library_tree.slint
 msgid "Right-click photos in the library and choose New Project from them."
 msgstr "Haz clic derecho en fotos de la fototeca y elige Nuevo proyecto para crear uno con ellas."
+
+#: crates/oni-ui/ui/missing.slint
+msgid "SHOW THE FOLDER"
+msgstr "MOSTRAR LA CARPETA"
+
+#: crates/oni-ui/ui/missing.slint
+msgid "BACK TO THE GALLERY"
+msgstr "VOLVER A LA GALERÍA"
+
+#: crates/oni-ui/ui/missing.slint
+msgid "DISCARD"
+msgstr "DESCARTAR"
+
+#: crates/oni-ui/ui/missing.slint
+msgid "RETRY"
+msgstr "REINTENTAR"
 
 #: crates/oni-ui/ui/navigator.slint
 msgid "RESTORE"
@@ -1693,10 +1709,6 @@ msgstr "Este rollo se midió antes de que el escáner guardara su mediana: vuelv
 msgid "Details"
 msgstr "Detalles"
 
-#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare.slint
-msgid "NEXT"
-msgstr "SIGUIENTE"
-
 #: crates/oni-ui/ui/prepare.slint
 msgid "Setting…"
 msgstr "Aplicando…"
@@ -1784,6 +1796,10 @@ msgstr "Lectura del escaneo"
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
+
+#: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
+msgid "NEXT"
+msgstr "SIGUIENTE"
 
 #: crates/oni-ui/ui/preset_deck.slint
 msgid "Save this photo’s settings as a preset…"
@@ -2514,6 +2530,100 @@ msgstr "Añadir {name}"
 #: crates/oni-app/src/app/navigator.rs
 msgid "The favourites cannot be saved: {error}"
 msgstr "No se pueden guardar los favoritos: {error}"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "It was moved or deleted: its disk is here, the file is not."
+msgstr "Se ha movido o eliminado: su disco está, el archivo no."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Allow ONI to read its folder in the system's privacy settings, then open it again."
+msgstr "Permite que ONI lea su carpeta en los ajustes de privacidad del sistema y vuelve a abrirla."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "An interrupted copy? Copy it again from its source."
+msgstr "¿Una copia interrumpida? Cópialo de nuevo desde su origen."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its file was moved or deleted."
+msgstr "Su archivo se ha movido o eliminado."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "The kept edits are saved."
+msgstr "Los cambios conservados se han guardado."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "“{name}” cannot be found"
+msgstr "No se encuentra “{name}”"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its disk “{volume}” is not connected. Connect it to edit this photo; nothing was changed."
+msgstr "Su disco “{volume}” no está conectado. Conéctalo para editar esta foto; no se ha cambiado nada."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "ONI has no access to “{name}”"
+msgstr "ONI no tiene acceso a “{name}”"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "“{name}” is empty (0 bytes)"
+msgstr "“{name}” está vacío (0 bytes)"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "“{name}” cannot be read"
+msgstr "No se puede leer “{name}”"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Format not supported ({format})"
+msgstr "Formato no compatible ({format})"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "ONI cannot read “{name}”. Convert it to TIFF or JPEG to edit it."
+msgstr "ONI no puede leer “{name}”. Conviértelo a TIFF o JPEG para editarlo."
+
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+msgid "Its red pass “{pass}” is missing beside it."
+msgstr "Falta su pasada roja “{pass}” a su lado."
+
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+msgid "Its green pass “{pass}” is missing beside it."
+msgstr "Falta su pasada verde “{pass}” a su lado."
+
+#: crates/oni-app/src/app/opening/missing.rs crates/oni-app/src/render/decode.rs
+msgid "Its blue pass “{pass}” is missing beside it."
+msgstr "Falta su pasada azul “{pass}” a su lado."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its red pass “{pass}” is empty (0 bytes)."
+msgstr "Su pasada roja “{pass}” está vacía (0 bytes)."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its green pass “{pass}” is empty (0 bytes)."
+msgstr "Su pasada verde “{pass}” está vacía (0 bytes)."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its blue pass “{pass}” is empty (0 bytes)."
+msgstr "Su pasada azul “{pass}” está vacía (0 bytes)."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "“{name}” cannot be shown"
+msgstr "No se puede mostrar “{name}”"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "Its disk “{volume}” is not connected."
+msgstr "Su disco “{volume}” no está conectado."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "The edits of “{name}” could not be saved"
+msgstr "No se han podido guardar los cambios de “{name}”"
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "{reason}\n\nONI keeps them while it runs and writes them as soon as the disk is back. Retry once the problem is fixed, or discard them."
+msgstr "{reason}\n\nONI los conserva mientras está abierto y los escribe en cuanto vuelve el disco. Reintenta cuando el problema esté resuelto, o descártalos."
+
+#: crates/oni-app/src/app/opening/missing.rs
+msgid "The edits of {n} photo could not be saved"
+msgid_plural "The edits of {n} photos could not be saved"
+msgstr[0] "No se han podido guardar los cambios de {n} foto"
+msgstr[1] "No se han podido guardar los cambios de {n} fotos"
 
 #: crates/oni-app/src/app/opening.rs
 msgid "{name} · decoding"
@@ -3564,6 +3674,14 @@ msgstr[1] "Restaurar {n} fotos"
 #: crates/oni-core/src/store/opening.rs
 msgid "The original cannot be found; its disk may be disconnected. The photo opens read-only, and nothing is saved."
 msgstr "No se encuentra el original; puede que su disco esté desconectado. La foto se abre en solo lectura y no se guarda nada."
+
+#: crates/oni-core/src/store/opening.rs
+msgid "The original cannot be found; its disk may be disconnected."
+msgstr "No se encuentra el original; puede que su disco esté desconectado."
+
+#: crates/oni-core/src/store/opening.rs
+msgid "Another file now stands where the original was; the edits are kept for it."
+msgstr "Ahora hay otro archivo en el lugar del original; los cambios se conservan para él."
 
 #: crates/oni-core/src/store/paste.rs
 msgid "Paste settings"

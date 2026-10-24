@@ -50,6 +50,17 @@ pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
     Some(Encoded { width, height, full, pixels, icc, grey })
 }
 
+/// A file no reader of ONI takes, named by its extension in capitals (`HEIC`); `None` when one takes
+/// it, or when the file cannot be opened, which its absence tells instead.
+pub fn unsupported(path: &Path) -> Option<String> {
+    let reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
+    if reader.format().is_some_and(|f| f.reading_enabled()) {
+        return None;
+    }
+    let named = path.extension().map(|e| e.to_string_lossy().to_uppercase()).filter(|e| !e.is_empty());
+    Some(named.or_else(|| reader.format().map(|f| format!("{f:?}").to_uppercase())).unwrap_or_default())
+}
+
 /// The reader's limits cap a TIFF tag at the pixels' own byte count, so a profile larger than a small
 /// image's pixels (598 bytes over a 4 × 1 frame) is dropped; a decoder with the default limits reads it.
 fn tiff_profile(path: &Path) -> Option<Vec<u8>> {
@@ -76,6 +87,21 @@ mod tests {
         assert_eq!((small.width, small.height, small.full), (10, 5, (40, 20)));
         // Twin: a side past the file's own size leaves it whole, never enlarged.
         assert_eq!(read(&path, Some(400.0)).unwrap().width, 40);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_heic_is_named_unsupported_and_a_broken_tiff_is_left_to_its_decode() {
+        let dir = std::env::temp_dir().join(format!("oni-plain-formats-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let heic = dir.join("IMG_0001.HEIC");
+        std::fs::write(&heic, b"\0\0\0\x18ftypheic\0\0\0\0mif1heic").unwrap();
+        assert_eq!(unsupported(&heic).as_deref(), Some("HEIC"));
+        // Twin: a TIFF whose bytes are broken is a format ONI reads, so its failure is the decode's.
+        let bad = dir.join("Bad.tif");
+        std::fs::write(&bad, b"II*\0not a picture").unwrap();
+        assert_eq!(unsupported(&bad), None);
+        assert!(read(&bad, None).is_none(), "and it does fail to decode");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
