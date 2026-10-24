@@ -184,23 +184,6 @@ export component SaturationEditor inherits VerticalLayout {
         histogram-revision: root.revision;
         lines: Editors.saturation-lines;
         dots: Editors.saturation-dots;
-        VerticalLayout {
-            padding: Space.s;
-            Label { text: @tr("Saturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
-            Rectangle { vertical-stretch: 1; }
-            Label { text: @tr("Desaturated"); role: TextRole.caption; tone: Tone.tertiary; vertical-stretch: 0; }
-        }
+        AxisCaptions { axis: Orientation.vertical; start: @tr("Saturated"); end: @tr("Desaturated"); tone: Tone.tertiary; }
     }
-}
-
-// `PrintCurve`: Lighting's curves over the main histogram, out of the hit test.
-export component PrintOverlay inherits Plot {
-    plot: 5;
-    screen: false;
-    grid: false;
-    interactive: false;
-    lines: Editors.print-lines;
-    resized(p, w, h) => { Editors.resized(p, w, h); }
-    property <int> epoch: Editors.epoch;
-    changed epoch => { Editors.resized(self.plot, self.width, self.height); }
 }

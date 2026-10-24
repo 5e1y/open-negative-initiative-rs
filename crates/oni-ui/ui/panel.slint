@@ -1,6 +1,6 @@
 // The editor's panel: the tab bar and its five tabs, each in its own file under `panel/`.
-import { Space, Tabs, Divider, HistogramFrame, PlotSize, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
-import { PrintOverlay } from "editors.slint";
+import { Space, Tabs, Divider, Plot, PlotStyle, Surface, ShellStyle, LabScreen, LoupeBand } from "ds/ds.slint";
+import { Editors } from "editors.slint";
 import { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow } from "panel/state.slint";
 import { RollPane } from "panel/roll_tab.slint";
 import { CropPane } from "panel/crop_tab.slint";
@@ -13,15 +13,19 @@ export component Panel inherits Surface {
     width: ShellStyle.panel-width;
     VerticalLayout {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
-        if !Lab.shown && PanelState.tab != 3: HistogramFrame {
-            source: Plots.output;
-            revision: Plots.output-revision;
-            size: PlotSize.main;
-            init => { Plots.output-width = self.width; Plots.output-height = self.height; }
-            changed width => { Plots.output-width = self.width; }
-            changed height => { Plots.output-height = self.height; }
-            // Lighting's curves over the plot, on the Color tab alone.
-            if PanelState.tab == 2: PrintOverlay { }
+        // `DSHistogram` on the panel's ground, its size the trace's; Lighting's curves over it on the Color tab.
+        if !Lab.shown && PanelState.tab != 3: Plot {
+            plot: 5;
+            height: PlotStyle.main;
+            screen: false;
+            grid: false;
+            interactive: false;
+            histogram: Plots.output;
+            histogram-revision: Plots.output-revision;
+            lines: PanelState.tab == 2 ? Editors.print-lines : [];
+            resized(p, w, h) => { Editors.resized(p, w, h); }
+            property <int> epoch: Editors.epoch;
+            changed epoch => { Editors.resized(self.plot, self.width, self.height); }
         }
         // Under Details the output histogram cannot move, so the band holds the loupe.
         if PanelState.tab == 3: LoupeBand {

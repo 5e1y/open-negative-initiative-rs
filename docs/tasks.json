@@ -2180,5 +2180,12 @@
     "title": "Design system: Slider absorbs StepSlider as its stepped mode",
     "status": "done",
     "detail": "Phase of #297, after #320. Slider gains stepped: whole steps from lowest to highest (value), the rail a bipolar gradient from low to high with its rest ticked, a key either side in those colours (one step, three with Shift, the StepKey Button in one place), the name's double click and the rail's resetting (reset), the name's tooltip (help, minus-help, plus-help), held(bool) around a slide, every move through step(field, by); no Option fine mode and no wheel in that mode. LabSlider (panel/parts.slint) is a stepped Slider; the Scanner Color tab's calls into Lab (press, step-effect, clear, clear-effect, hold) are unchanged. StepSlider is gone from keypad.slint. The board's Slider page shows Knob, Rail, Slider and the stepped Slider, its columns Live, Hover, Pressed, Disabled; the Scanner page's letters are stepped Sliders. No pixel changed."
+  },
+  {
+    "id": 322,
+    "type": "refactor",
+    "title": "Design system: one Plot for the main histogram, AxisCaptions down a plot's side",
+    "status": "done",
+    "detail": "Phase of #297. The panel's HistogramFrame (a stretched Picture on the panel's ground) and PrintOverlay nested in it are one Plot (plot 5: screen, grid and hit test off, PlotStyle.main tall, Plots.output as its histogram, Lighting's curves on the Color tab alone), square-cornered on the panel's ground as Swift's DSHistogram; HistogramFrame, PlotSize and PrintOverlay are gone. Rust traces the output histogram at plot 5's size (editors::size(Plot::Print)), which a resize now marks for a new trace, and Plots.output-width/height are gone. AxisCaptions takes axis: Orientation.vertical, its captions down the plot's side inset by Space.s, which the saturation editor's Saturated and Desaturated now use. The board's Plots page shows the main histogram's Plot, an editor's screen and the vertical captions, the levels track live; the knobs moved to the Slider page. No pixel changed."
   }
 ]

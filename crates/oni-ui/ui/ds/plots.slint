@@ -234,12 +234,20 @@ export component PlotReadouts inherits HorizontalLayout {
     }
 }
 
-// Two captions at the ends of a plot's axis.
-export component AxisCaptions inherits HorizontalLayout {
+// Two captions at the ends of a plot's axis: above it, or down its side, inside the plot and inset.
+export component AxisCaptions inherits VerticalLayout {
     in property <string> start;
     in property <string> end;
     in property <Tone> tone: Tone.secondary;
-    Label { text: root.start; role: TextRole.caption; tone: root.tone; }
-    Rectangle { horizontal-stretch: 1; }
-    Label { text: root.end; role: TextRole.caption; tone: root.tone; }
+    in property <Orientation> axis: Orientation.horizontal;
+    property <bool> down: root.axis == Orientation.vertical;
+    padding: root.down ? Space.s : 0;
+    HorizontalLayout {
+        vertical-stretch: root.down ? 0 : 1;
+        Label { text: root.start; role: TextRole.caption; tone: root.tone; }
+        Rectangle { horizontal-stretch: 1; }
+        if !root.down: Label { text: root.end; role: TextRole.caption; tone: root.tone; }
+    }
+    if root.down: Rectangle { vertical-stretch: 1; }
+    if root.down: Label { text: root.end; role: TextRole.caption; tone: root.tone; vertical-stretch: 0; }
 }

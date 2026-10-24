@@ -1,30 +1,13 @@
-// The board's plots: the histogram's frame, the plot screen with its captions and readouts, the
-// track's knobs in each ink and state, the levels track and every ink.
-import { Colour, Space, Stroke, PlotInkStyle, PlotSize, Ground, Label, Tone, TextRole, HistogramFrame, Ink, Inks, PlotKnob, Plot, Knob, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
+// The board's plots: the main histogram's plot and the editors' screen with their captions and
+// readouts, the levels track live and every ink; the knob and the rail are on the Slider page.
+import { Colour, Space, Stroke, PlotStyle, PlotInkStyle, Label, Tone, TextRole, Ink, Inks, PlotKnob, Plot, LevelsTrack, PlotReadouts, AxisCaptions } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Cell, Fill } from "kit.slint";
 
 struct Named { name: string, ink: Ink }
 
-// A track knob in one ink: at rest, under the pointer, held.
-component KnobRow inherits Line {
-    in property <Ink> ink;
-    for state in 3: Cell {
-        Rectangle {
-            width: BoardStyle.cell / 2;
-            height: PlotInkStyle.knob-height * 1.5;
-            Knob {
-                centre: BoardStyle.cell / 4;
-                across: parent.height;
-                fill: Inks.of(root.ink);
-                grown: state != 0;
-            }
-        }
-    }
-}
-
 export component PlotsPage inherits Page {
     title: "Plots";
-    note: "HistogramFrame: size, ground. Plot: lines, dots, grid, screen. Knob: centre, fill, grip, grown, slide. LevelsTrack, AxisCaptions, PlotReadouts, every Ink.";
+    note: "Plot: histogram, lines, dots, grid, screen, interactive. AxisCaptions: start, end, tone, axis. LevelsTrack: knobs. PlotReadouts, every Ink.";
     property <[Named]> inks: [
         { name: "guide", ink: Ink.guide }, { name: "guide-faint", ink: Ink.guide-faint }, { name: "marker", ink: Ink.marker },
         { name: "separator", ink: Ink.separator }, { name: "active", ink: Ink.active }, { name: "idle", ink: Ink.idle },
@@ -38,12 +21,20 @@ export component PlotsPage inherits Page {
     ];
     Group {
         title: "Plot screens";
-        states: ["HistogramFrame, main", "HistogramFrame, block", "Plot: grid, curve, dots"];
+        states: ["The main histogram (screen: false)", "An editor's screen", "Vertical captions"];
         span: BoardStyle.panel;
         Line {
-            label: "frames (Rust paints the histogram)";
-            Fill { span: BoardStyle.panel; HistogramFrame { size: PlotSize.main; ground: Ground.canvas; } }
-            Fill { span: BoardStyle.panel; HistogramFrame { size: PlotSize.block; ground: Ground.canvas; } }
+            label: "Rust paints the histogram";
+            Fill {
+                span: BoardStyle.panel;
+                Plot {
+                    height: PlotStyle.main;
+                    screen: false;
+                    grid: false;
+                    interactive: false;
+                    lines: [{ commands: "M 0 110 C 100 110 120 20 340 10", ink: Ink.guide, width: Stroke.trace, opacity: 1 }];
+                }
+            }
             Fill {
                 span: BoardStyle.panel;
                 VerticalLayout {
@@ -63,22 +54,19 @@ export component PlotsPage inherits Page {
                     PlotReadouts { readouts: [{ name: "Black", value: "0.000" }, { name: "Mid", value: "0.500" }, { name: "White", value: "2.700" }]; }
                 }
             }
+            Fill {
+                span: BoardStyle.panel;
+                Plot {
+                    height: PlotInkStyle.histogram;
+                    AxisCaptions { axis: Orientation.vertical; start: "Saturated"; end: "Desaturated"; tone: Tone.tertiary; }
+                }
+            }
         }
     }
     Group {
-        title: "Knob";
-        states: ["Rest", "Under the pointer", "Held"];
-        KnobRow { label: "grey-quarter"; ink: Ink.grey-quarter; }
-        KnobRow { label: "grey-half"; ink: Ink.grey-half; }
-        KnobRow { label: "grey-three-quarters"; ink: Ink.grey-three-quarters; }
-        KnobRow { label: "black"; ink: Ink.black; }
-        KnobRow { label: "white"; ink: Ink.white; }
-        KnobRow { label: "red"; ink: Ink.red; }
-        KnobRow { label: "green"; ink: Ink.green; }
-        KnobRow { label: "blue"; ink: Ink.blue; }
-    }
-    Group {
         title: "LevelsTrack";
+        states: ["Live (hover a handle)"];
+        span: BoardStyle.panel;
         Line {
             label: "five handles, the middle held";
             Fill {

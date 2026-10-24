@@ -58,10 +58,9 @@ impl Ctl {
             (s.histogram.clone(), counted)
         };
         if let Some(h) = histogram {
-            let plots = w.global::<Plots>();
             let scale = w.window().scale_factor();
-            let under = crate::editors::size(self, crate::editors::Plot::Saturation);
-            let sizes = [(f64::from(plots.get_output_width()), f64::from(plots.get_output_height())), (under.w, under.h)];
+            let (output, under) = (crate::editors::size(self, crate::editors::Plot::Print), crate::editors::size(self, crate::editors::Plot::Saturation));
+            let sizes = [(output.w, output.h), (under.w, under.h)];
             // Traced off this thread, 1.5 ms a plot; a trace overtaken by a later one is dropped.
             let (ticket, writer) = (TRACES.fetch_add(1, Ordering::SeqCst) + 1, self.plot_writer());
             super::plots::plot(move |p| {
