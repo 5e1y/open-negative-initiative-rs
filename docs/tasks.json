@@ -3152,7 +3152,7 @@
     "type": "fix",
     "title": "A format no reader of ONI takes is listed with its seal",
     "status": "done",
-    "detail": "Decision: listed as the Finder lists it rather than hidden, so a folder of iPhone HEICs never reads as empty and moves keep it with its roll. oni-decode PLAIN_EXTENSIONS and named_decodable are the one table of what the image reader takes; the presence probe looks at the files their name leaves in doubt (unsupported_format) off the interface thread; tile_marks seals the tile with its format (HEIC) in the destructive foil and says \"Format not supported (HEIC)\" under the pointer; the thumbnail pass never tries it and says nothing. Lot 2 already says it on the canvas. Check: oni-decode tests.rs every_plain_extension_has_its_reader_compiled_in (twin: avif, HEIC and psd are not). Closes the listing part of names-unsupported-formats-listed."
+    "detail": "Decision: listed as the Finder lists it rather than hidden, so a folder of iPhone HEICs never reads as empty and moves keep it with its roll. oni-decode PLAIN_EXTENSIONS and named_decodable are the one table of what the image reader takes; the presence probe looks at the files their name leaves in doubt (unsupported_format) off the interface thread; tile_marks seals the tile with its format (HEIC) in the destructive foil and says \"Format not supported (HEIC)\" under the pointer; the thumbnail pass never tries it and says nothing. Lot 2 already says it on the canvas. Checks: oni-decode tests.rs every_plain_extension_has_its_reader_compiled_in (twin: avif, HEIC and psd are not), window gallery_cell a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed. Closes the listing part of names-unsupported-formats-listed."
   },
   {
     "id": 532,
@@ -3180,14 +3180,14 @@
     "type": "feature",
     "title": "A RAW+JPEG pair is one tile, the RAW leading",
     "status": "done",
-    "detail": "folders::paired: a JPEG beside a RAW of its stem (case and composition aside) with no ONI sidecar of its own stands behind the RAW, in the tree and the gallery; the RAW is read off the survey's files, so one in the ONI Trash still keeps its JPEG hidden. The RAW's tile carries a +JPG badge (TileView companion, Tile.companion). Lot 10 moves both. Swift shows two tiles. Check: folders.rs a_raw_jpeg_pair_is_one_tile (twins: a JPEG with settings of its own stays, unpaired every file is a tile). Closes names-raw-jpeg-pairs."
+    "detail": "folders::paired: a JPEG beside a RAW of its stem (case and composition aside) with no ONI sidecar of its own stands behind the RAW, in the tree and the gallery; the RAW is read off the survey's files, so one in the ONI Trash still keeps its JPEG hidden. The RAW's tile carries a +JPG badge (TileView companion, Tile.companion). Lot 10 moves both. Swift shows two tiles. Its JPEG is never drawn by the thumbnails' pass. Checks: folders.rs a_raw_jpeg_pair_is_one_tile (twins: a JPEG with settings of its own stays, unpaired every file is a tile), library/tests.rs a_raw_jpeg_pair_is_one_tile_in_the_archive (twin: a JPEG with its sidecar is a third tile), window gallery_cell a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed (twin: a TIFF beside them has no mark). Closes names-raw-jpeg-pairs."
   },
   {
     "id": 536,
     "type": "feature",
     "title": "Links, junctions and Finder aliases to folders are shown and followed",
     "status": "done",
-    "detail": "navigator::children lists a symbolic link, a Windows junction (std reads it as a link) or a Finder alias (its kIsAlias flag, then CFURLCreateByResolvingBookmarkData with no UI and no mount) by the folder it leads to, never one holding the listed folder; Navigation::walk never unfolds a row already above it. The survey walks a link under its own name, once, never one holding the root, inside it or inside a folder a link reached already. Checks: roots/tests.rs a_symlinked_folder_is_listed_and_a_loop_is_not_followed (twins: the loop rows, a dangling link), a_finder_alias_to_a_folder_is_listed_by_its_folder. Closes names-symlinks-aliases-invisible and windows-junctions-hidden."
+    "detail": "navigator::children lists a symbolic link, a Windows junction (std reads it as a link) or a Finder alias (its kIsAlias flag, then CFURLCreateByResolvingBookmarkData with no UI and no mount) by the folder it leads to, never one holding the listed folder (a sidecar, an XMP or a document is never looked at for an alias); Navigation::walk never unfolds a row already above it. The survey walks a link under its own name, once, never one holding the root, inside it or inside a folder a link reached already. Checks: roots/tests.rs a_symlinked_folder_is_listed_and_a_loop_is_not_followed (twins: the loop rows, a dangling link), a_finder_alias_to_a_folder_is_listed_by_its_folder. Closes names-symlinks-aliases-invisible and windows-junctions-hidden."
   },
   {
     "id": 537,

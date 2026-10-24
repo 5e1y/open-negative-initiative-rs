@@ -125,12 +125,15 @@ pub fn children(folder: &str) -> Option<Vec<String>> {
     Some(out)
 }
 
+/// Files beside photos that are never an alias, so a folder of sidecars on a share pays no look each.
+const SIDE_FILES: &[&str] = &[".json", ".xmp", ".pp3", ".dop", ".on1", ".txt", ".pdf", ".mov", ".mp4"];
+
 /// The folder a symbolic link, a Windows junction or a Finder alias leads to, by its real path;
 /// never one holding `folder`, which would list itself inside itself.
 fn linked(folder: &str, path: &Path, kind: &std::fs::FileType, name: &str) -> Option<String> {
     let target = if kind.is_symlink() {
         path.to_path_buf()
-    } else if kind.is_file() && !crate::library::is_importable(path) && !name.ends_with(".json") {
+    } else if kind.is_file() && !crate::library::is_importable(path) && !SIDE_FILES.iter().any(|e| name.to_ascii_lowercase().ends_with(e)) {
         crate::roots::alias_target(path)?
     } else {
         return None;

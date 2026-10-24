@@ -176,11 +176,13 @@ impl Ctl {
     pub(super) fn fill(&self) {
         let s = self.state.borrow();
         let generation = s.generation.load(Ordering::Relaxed);
+        // A pair's JPEG stands behind its RAW: no tile shows it, so none is drawn.
+        let behind: HashSet<&String> = s.archive.as_ref().map(|a| a.companions.values().collect()).unwrap_or_default();
         let (rows, gone): (Vec<_>, Vec<_>) = s
             .rows
             .iter()
             // A file the cloud keeps away is drawn once opened, never downloaded by the pass.
-            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path))
+            .filter(|e| !e.fingerprint.starts_with(thumbnails::PENDING) && !s.survey.cloud.contains(&e.path) && !behind.contains(&e.path))
             .map(|e| (e.path.clone(), s.tile_key(e)))
             .partition(|(path, _)| s.presence(path).is_present());
         let gone = gone.into_iter().map(|(_, fingerprint)| fingerprint).collect();

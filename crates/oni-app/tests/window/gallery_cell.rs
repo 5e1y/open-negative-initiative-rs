@@ -106,3 +106,35 @@ pub(crate) fn a_tile_shows_its_own_pick_medal_and_picture_and_keeps_nothing_of_a
     assert!((back - bright).abs() < (back - dark).abs(), "One's A shows its own picture, never Two's: {back} ({bright} against {dark})");
     rig.shot("gallery-cell");
 }
+
+/// A RAW+JPEG pair lays one tile, the RAW's, marked `+JPG`; a HEIC is listed with its format's seal.
+pub(crate) fn a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return println!("SKIPPED pair tile: {e}"),
+    };
+    let d = disk();
+    let folder = d.root.join("Home/Pair");
+    common::pixels_tiff(&folder.join("R.tif"), 48, 32, |_, _| [0.5, 0.5, 0.5]);
+    for (name, bytes) in [("P.NEF", &b"a raw"[..]), ("P.JPG", b"its jpeg"), ("Q.HEIC", b"\0\0\0\x18ftypheic")] {
+        std::fs::write(folder.join(name), bytes).unwrap();
+    }
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    let shell = launch(&d, &gpu);
+    let ctl = shell.ctl.clone();
+    shell.open_folder(&folder);
+    let sealed = |s: &Shell| app::tiles(&s.window).iter().any(|t| t.caption == "Q" && t.gone_pass == "HEIC");
+    rig.until("the folder read and its HEIC looked at", Duration::from_secs(60), || ctl.state.borrow().read_done() && sealed(&shell));
+    let captions: Vec<String> = app::tiles(&shell.window).iter().filter(|t| t.width > 0.0).map(|t| t.caption.to_string()).collect();
+    assert_eq!(captions.iter().filter(|c| *c == "P").count(), 1, "one tile for the pair: {captions:?}");
+    assert_eq!(tile(&shell, "P").companion, "+JPG");
+    assert_eq!(tile(&shell, "Q").note, "Format not supported (HEIC)");
+    // Twin: a plain TIFF beside them has neither mark.
+    let plain = tile(&shell, "R");
+    assert!(plain.companion.is_empty() && plain.gone_pass.is_empty(), "{plain:?}");
+    // The recalibration notice a RAW raises is closed, so the shot shows the tiles.
+    shell.window.global::<oni_app::Notice>().invoke_close();
+    rig.settle();
+    rig.shot("pair-tile");
+}
