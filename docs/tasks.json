@@ -2529,7 +2529,7 @@
     "type": "fix",
     "title": "A case-only rename outside ONI keeps the favourite",
     "status": "done",
-    "detail": "On a volume blind to case (APFS and exFAT by default, NTFS), `roll 8` holds and names what the disk now spells `Roll 8`: holds and same fold case there, each Mac volume asked once through pathconf(_PC_CASE_SENSITIVE), and only when two paths differ by case alone. A star off takes its own spelling first, so two favourites differing by case on a case-sensitive disk never merge. Closes windows-case-only-rename."
+    "detail": "On a volume blind to case (APFS and exFAT by default, NTFS), `roll 8` holds and names what the disk now spells `Roll 8`: holds and same fold case there, each Mac volume asked once through pathconf(_PC_CASE_SENSITIVE), and only when two paths differ by case alone. A star off takes its own spelling first, so two favourites differing by case on a case-sensitive disk never merge. Closes windows-case-only-rename. ASCII paths fold without allocating, as a survey compares thousands."
   },
   {
     "id": 402,

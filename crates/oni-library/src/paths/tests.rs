@@ -108,3 +108,13 @@ fn a_path_spelt_nfc_holds_its_nfd_listing() {
     let listed = format!("{root}/{nfd}/Roll 3/a.NEF");
     assert!(!listed.starts_with(&format!("{typed}/")) && format!("{root}/{nfd}") != typed);
 }
+
+#[test]
+fn case_folds_only_where_the_volume_ignores_it() {
+    let blind = ignores_case("/");
+    assert_eq!(holds("/Scans/roll 8", "/Scans/Roll 8/a.NEF"), blind);
+    assert_eq!(same("/Scans/roll 8", "/Scans/ROLL 8"), blind);
+    assert_eq!(holds("/Scans/\u{e9}t\u{e9}", "/Scans/\u{c9}T\u{c9}/a.NEF"), blind);
+    // Twin: folded or not, a sibling sharing the prefix stays outside.
+    assert!(!holds("/Scans/roll 8", "/Scans/Roll 80/a.NEF") && !holds("/Scans/roll", "/Scans/Roll 8"));
+}

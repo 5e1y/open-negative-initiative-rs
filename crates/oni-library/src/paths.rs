@@ -69,13 +69,13 @@ pub fn join(folder: &str, name: &str) -> String {
 /// On a volume that ignores case, `roll 8` holds what the disk now spells `Roll 8`.
 pub fn holds(root: &str, path: &str) -> bool {
     let (root, path) = (normal(root), normal(path));
-    under(&root, &path) || (under(&folded(&root), &folded(&path)) && ignores_case(&root))
+    under(&root, &path) || (under_folded(&root, &path) && ignores_case(&root))
 }
 
 /// Whether two paths name one folder or file: one spelling, or two a case-blind volume takes as one.
 pub fn same(a: &str, b: &str) -> bool {
     let (a, b) = (normal(a), normal(b));
-    a == b || (folded(&a) == folded(&b) && ignores_case(&a))
+    a == b || (folded_eq(&a, &b) && ignores_case(&a))
 }
 
 fn under(root: &str, path: &str) -> bool {
@@ -88,8 +88,17 @@ fn under(root: &str, path: &str) -> bool {
     path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
 }
 
-fn folded(text: &str) -> Cow<'_, str> {
-    if text.chars().any(char::is_uppercase) { Cow::Owned(text.to_lowercase()) } else { Cow::Borrowed(text) }
+/// `under` with case folded, without allocating for ASCII paths, as a survey compares thousands.
+fn under_folded(root: &str, path: &str) -> bool {
+    if !(root.is_ascii() && path.is_ascii()) {
+        return under(&root.to_lowercase(), &path.to_lowercase());
+    }
+    let Some(head) = path.get(..root.len()) else { return false };
+    head.eq_ignore_ascii_case(root) && (path.len() == root.len() || root.ends_with('/') || path.as_bytes()[root.len()] == b'/')
+}
+
+fn folded_eq(a: &str, b: &str) -> bool {
+    if a.is_ascii() && b.is_ascii() { a.eq_ignore_ascii_case(b) } else { a.to_lowercase() == b.to_lowercase() }
 }
 
 /// What lies below `root` in `path`, as `path` spells it; `None` outside it. Cut by names, never
