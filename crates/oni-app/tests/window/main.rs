@@ -26,6 +26,7 @@ mod help;
 mod keycap;
 mod launch;
 mod library_column;
+mod library_wide;
 mod masks;
 mod missing_original;
 mod navigator;
@@ -102,6 +103,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
+    ("library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it", library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it),
+    ("library_wide::a_project_from_a_still_lists_after_b_opens", library_wide::a_project_from_a_still_lists_after_b_opens),
+    ("library_wide::a_rename_moves_the_projects_recorded_path", library_wide::a_rename_moves_the_projects_recorded_path),
     ("missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas", missing_original::a_photo_whose_original_is_gone_says_so_on_the_canvas),
     ("missing_original::a_heic_says_format_not_supported", missing_original::a_heic_says_format_not_supported),
     ("presence::lay_grid_touches_no_disk", presence::lay_grid_touches_no_disk),

@@ -104,7 +104,7 @@ impl Ctl {
             }
             let at = boundary.min(s.order.len() - 1);
             let Some(target) = s.entry(&s.order[at].clone()).cloned() else { return };
-            let rows = s.rows.clone();
+            let rows = s.reach().into_owned();
             project::reorder_drop(&mut s.org.projects, &rows, &r.sources, &target)
         };
         if moved {

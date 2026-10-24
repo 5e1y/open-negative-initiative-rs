@@ -200,16 +200,18 @@ impl Ctl {
         }
         {
             let mut s = self.state.borrow_mut();
-            let Some(folder) = s.opened.clone() else { return };
             let Some(index) = &s.index else { return };
             library::refresh(index, paths);
-            let mut rows = library::shown_under(index, &folder);
-            let held: HashSet<String> = rows.iter().map(|e| e.path.clone()).collect();
-            let waiting: Vec<oni_library::Entry> =
-                s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
-            rows.extend(waiting);
-            s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
-            s.rows = rows;
+            // With no folder open, a photo restored from the ONI Trash leaves it all the same.
+            if let Some(folder) = s.opened.clone() {
+                let mut rows = library::shown_under(index, &folder);
+                let held: HashSet<String> = rows.iter().map(|e| e.path.clone()).collect();
+                let waiting: Vec<oni_library::Entry> =
+                    s.rows.iter().filter(|r| r.fingerprint.starts_with(thumbnails::PENDING) && !held.contains(&r.path)).cloned().collect();
+                rows.extend(waiting);
+                s.fingerprints = rows.iter().map(|e| (e.path.clone(), e.fingerprint.clone())).collect();
+                s.rows = rows;
+            }
         }
         self.lay_archive();
     }

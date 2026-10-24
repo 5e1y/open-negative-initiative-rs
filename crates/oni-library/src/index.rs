@@ -264,6 +264,33 @@ impl LibraryIndex {
         rows.filter_map(Result::ok).collect()
     }
 
+    /// The ONI Trash as `trashed(&all())` lists it, whichever folder holds each photo, read
+    /// without the whole index: a pass whose lead the index holds is left to its lead.
+    pub fn trashed_frames(&self) -> Vec<Entry> {
+        let rows = self.in_trash();
+        let held = |lead: &str| rows.iter().any(|r| r.path == lead) || self.row(lead).is_some();
+        let picked: Vec<&Entry> = rows
+            .iter()
+            .filter(|e| e.pass_of.as_ref().is_none_or(|lead| !held(&crate::paths::join(&crate::paths::parent(&e.path), lead))))
+            .collect();
+        latest_first(picked.into_iter().cloned().collect())
+    }
+
+    /// The row at `path`, in either spelling the index may hold it under.
+    pub fn row(&self, path: &str) -> Option<Entry> {
+        let sql = format!("SELECT {COLUMNS} FROM photos WHERE path IN (?, ?) LIMIT 1");
+        let mut statement = self.connection.prepare_cached(&sql).ok()?;
+        statement.query_row(params![path, normal(path)], entry).optional().ok().flatten()
+    }
+
+    /// Every row of one fingerprint, in `all`'s order: the copies of one file.
+    pub fn with_fingerprint(&self, fingerprint: &str) -> Vec<Entry> {
+        let sql = format!("SELECT {COLUMNS} FROM photos WHERE fingerprint = ? ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
+        let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };
+        let Ok(rows) = statement.query_map([fingerprint], entry) else { return Vec::new() };
+        rows.filter_map(Result::ok).collect()
+    }
+
     /// What the gallery draws: every member but the ONI Trash's and the passes a lead composes.
     pub fn shown(&self) -> Vec<Entry> {
         shown(&self.all())
@@ -320,7 +347,10 @@ pub fn shown(rows: &[Entry]) -> Vec<Entry> {
 /// The ONI Trash's rows, a triplet as its lead, latest deletion first.
 pub fn trashed(rows: &[Entry]) -> Vec<Entry> {
     let picked: Vec<&Entry> = rows.iter().filter(|e| e.trashed_at.is_some()).collect();
-    let mut out = frames(&picked, rows);
+    latest_first(frames(&picked, rows))
+}
+
+fn latest_first(mut out: Vec<Entry>) -> Vec<Entry> {
     let at = |e: &Entry| e.trashed_at.map(crate::seconds).unwrap_or(crate::DISTANT_PAST_SECONDS);
     out.sort_by(|a, b| at(b).total_cmp(&at(a)));
     out

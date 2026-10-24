@@ -239,3 +239,31 @@ fn a_write_waits_for_the_other_apps_write() {
     other.join().unwrap();
     assert!(refused.is_err());
 }
+
+#[test]
+fn the_trash_lists_a_triplet_once_whichever_folder_holds_it() {
+    let index = LibraryIndex::open(Path::new(":memory:")).unwrap();
+    let when = at(day1(), 1e7);
+    let mut lead = Entry::new("/A/t-r.ARW", day1(), "r");
+    lead.leads_passes = true;
+    index.upsert(&lead).unwrap();
+    for (path, print) in [("/A/t-g.ARW", "g"), ("/A/t-b.ARW", "b")] {
+        let mut pass = Entry::new(path, day1(), print);
+        pass.pass_of = Some("t-r.ARW".into());
+        index.upsert(&pass).unwrap();
+    }
+    index.upsert(&Entry::new("/B/kept.RW2", day1(), "k")).unwrap();
+    for path in ["/A/t-r.ARW", "/A/t-g.ARW", "/A/t-b.ARW"] {
+        index.set_trashed(Some(when), path).unwrap();
+    }
+    let listed: Vec<String> = index.trashed_frames().into_iter().map(|e| e.path).collect();
+    assert_eq!(listed, ["/A/t-r.ARW"], "a triplet as its lead");
+    assert_eq!(listed, trashed(&index.all()).into_iter().map(|e| e.path).collect::<Vec<_>>());
+
+    // The lead restored while its passes' rows still carry the mark: no pass is listed alone.
+    index.set_trashed(None, "/A/t-r.ARW").unwrap();
+    assert!(index.trashed_frames().is_empty());
+    // Twin: cut on the trashed rows alone, the passes would stand in the trash without their lead.
+    let alone: Vec<String> = trashed(&index.in_trash()).into_iter().map(|e| e.path).collect();
+    assert_eq!(alone.len(), 2, "{alone:?}");
+}

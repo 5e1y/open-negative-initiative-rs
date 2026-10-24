@@ -118,13 +118,17 @@ impl Ctl {
     /// The archive cut again from the rows held, under the filter; what the hand folded stays so,
     /// except in a folder just opened.
     pub(super) fn lay_archive(self: &Rc<Self>) {
+        let Some(folder) = self.state.borrow().opened.clone() else {
+            // The ONI Trash and the projects are the library's, laid with no folder open too.
+            self.read_library();
+            return self.lay_grid();
+        };
         let (title, stock) = {
             let mut s = self.state.borrow_mut();
-            let Some(folder) = s.opened.clone() else { return };
             let mut archive = Archive::from_rows(&folder, &s.rows, &s.survey, s.filter);
             let fresh = std::mem::take(&mut s.reveal.fresh);
             if let Some(old) = s.archive.as_ref().filter(|_| !fresh) {
-                let folded: HashSet<_> = old.nodes.iter().map(oni_library::archive_tree::Node::id).filter(|id| !old.expanded.contains(id)).collect();
+                let folded = old.folded();
                 archive.expanded.retain(|id| !folded.contains(id));
             }
             let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
@@ -138,7 +142,7 @@ impl Ctl {
             lib.set_roll_title(title.into());
             lib.set_stock(stock.into());
         }
-        self.read_trashed();
+        self.read_library();
         self.lay_grid();
         self.publish_tree();
         self.publish_bar();

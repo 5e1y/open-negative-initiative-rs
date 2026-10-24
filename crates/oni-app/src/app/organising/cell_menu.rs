@@ -40,7 +40,7 @@ impl Ctl {
         let rolled: HashSet<String> = s.rows.iter().filter(|e| e.film.is_some()).map(|e| e.path.clone()).collect();
         let projects: Vec<(Id, String)> = s.org.projects.iter().map(|p| (p.id, p.name.clone())).collect();
         let member_of: Vec<(Id, String)> =
-            project::member_projects(&s.org.projects, &s.rows, scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+            project::member_projects(&s.org.projects, &s.reach(), scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
         let facts = CellFacts { missing: &s.org.missing, rolled: &rolled, can_paste, projects, member_of };
         let mut items = Vec::new();
         if edit && scope.len() == 1 {
@@ -72,7 +72,7 @@ impl Ctl {
                 })
                 .unwrap_or_default();
             let member: Vec<(Id, String)> =
-                project::member_projects(&s.org.projects, &s.rows, &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
+                project::member_projects(&s.org.projects, &s.reach(), &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
             s.org.menu_lists = (projects, member);
             s.org.menu = items;
             s.org.menu_path = path;
@@ -144,7 +144,7 @@ impl Ctl {
             CellAction::AddToProject(id) => {
                 let added = {
                     let mut s = self.state.borrow_mut();
-                    let rows = s.rows.clone();
+                    let rows = s.reach().into_owned();
                     project::add_to(&mut s.org.projects, &rows, &scope, id)
                 };
                 if added {
@@ -154,7 +154,7 @@ impl Ctl {
             CellAction::RemoveFromProject(id) => {
                 {
                     let mut s = self.state.borrow_mut();
-                    let rows = s.rows.clone();
+                    let rows = s.reach().into_owned();
                     project::remove_from(&mut s.org.projects, &rows, &scope, id);
                 }
                 self.save_projects();

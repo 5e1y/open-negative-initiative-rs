@@ -174,6 +174,9 @@ impl Shell {
         window.global::<App>().set_dev(!crate::updates::stamped());
         ctl.publish(true);
         ctl.publish_bar();
+        // The ONI Trash counts the whole library before any folder opens.
+        ctl.read_library();
+        ctl.publish_trash_rows();
         ctl.start_updates();
         // A phone paired before finds the desktop listening again; nothing pairs until asked.
         if phone::has_trusted(&options.support) {

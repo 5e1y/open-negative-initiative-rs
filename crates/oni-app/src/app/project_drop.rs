@@ -74,7 +74,7 @@ impl Ctl {
         let moved = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
-            let rows = &s.rows;
+            let rows = &s.reach().into_owned();
             let node = |i: usize| s.org.project_nodes.get(i).cloned();
             match drag.target.filter(|_| dropped) {
                 Some(DropTarget::Join(i)) => node(i).is_some_and(|id| !drag.items.contains(&id) && join(&mut s.org.projects, rows, &drag.items, &id)),
