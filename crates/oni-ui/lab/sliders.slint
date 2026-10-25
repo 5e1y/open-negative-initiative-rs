@@ -18,6 +18,9 @@ export global SliderLook {
     in-out property <float> knob-grow: 1.07;
     in-out property <float> grip-line: 12;
     in-out property <float> grip-gap: 4;
+    // The stepped slider's − and + keys: a standard key's height, its legend set larger than a word's.
+    in-out property <float> step-key: 40;
+    in-out property <float> step-legend: 18;
     // The 1 pt `trackLine` edge (black) round the rail and the knob, as an opacity.
     in-out property <float> edge: 1;
     // `dsRecessed`'s lit lower rim outside the hollow: `rim` white 0.4, blur 0.7, drop 1.
@@ -132,13 +135,16 @@ component BarHandle inherits Rectangle {
         albedo: root.tint;
         level: true;
         edged: true;
-        // `HStack(spacing: knobLineGap) { line; line }`, turned 90° on a vertical track.
-        for i in root.grip ? 2 : 0: Rectangle {
-            x: root.vertical ? (parent.width - root.line) / 2 : parent.width / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2);
-            y: root.vertical ? parent.height / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2) : (parent.height - root.line) / 2;
-            width: root.vertical ? root.line : 1px;
-            height: root.vertical ? 1px : root.line;
-            background: DS.palette-text-on-fill;
+        // `HStack(spacing: knobLineGap) { line; line }`, turned 90° on a vertical track; the wrapper takes
+        // the face's own size, as a child's `parent` names the cap, not the face it lies on.
+        Rectangle {
+            for i in root.grip ? 2 : 0: Rectangle {
+                x: root.vertical ? (parent.width - root.line) / 2 : parent.width / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2);
+                y: root.vertical ? parent.height / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2) : (parent.height - root.line) / 2;
+                width: root.vertical ? root.line : 1px;
+                height: root.vertical ? 1px : root.line;
+                background: DS.palette-text-on-fill;
+            }
         }
     }
 }
@@ -463,9 +469,10 @@ component SteppedSlider inherits VerticalLayout {
     HorizontalLayout {
         spacing: 8px;
         StepKey {
-            width: 24px;
-            height: 24px;
+            width: SliderLook.step-key * 1px;
+            height: SliderLook.step-key * 1px;
             y: (SliderLook.knob-length * 1px - self.height) / 2;
+            legend-size: SliderLook.step-legend * 1px;
             legend: "−";
             fill: root.low;
             clicked(shift) => { root.step-by(shift ? -3 : -1); }
@@ -489,7 +496,6 @@ component SteppedSlider inherits VerticalLayout {
                 BarHandle {
                     cx: root.shown * travel.width;
                     cy: travel.height / 2;
-                    grip: false;
                     grown: area.over-knob || area.pressed || root.force-hover;
                 }
                 area := TouchArea {
@@ -507,9 +513,10 @@ component SteppedSlider inherits VerticalLayout {
             }
         }
         StepKey {
-            width: 24px;
-            height: 24px;
+            width: SliderLook.step-key * 1px;
+            height: SliderLook.step-key * 1px;
             y: (SliderLook.knob-length * 1px - self.height) / 2;
+            legend-size: SliderLook.step-legend * 1px;
             legend: "+";
             fill: root.high;
             clicked(shift) => { root.step-by(shift ? 3 : 1); }
@@ -826,6 +833,8 @@ export component SlidersPage inherits Rectangle {
                     Tune { label: "grow"; minimum: 1; maximum: 1.4; value <=> SliderLook.knob-grow; }
                     Tune { label: "grip line"; maximum: 24; value <=> SliderLook.grip-line; }
                     Tune { label: "grip gap"; maximum: 12; value <=> SliderLook.grip-gap; }
+                    Tune { label: "step key"; minimum: 20; maximum: 56; value <=> SliderLook.step-key; }
+                    Tune { label: "step legend"; minimum: 9; maximum: 28; value <=> SliderLook.step-legend; }
                 }
                 VerticalLayout {
                     width: 300px;
