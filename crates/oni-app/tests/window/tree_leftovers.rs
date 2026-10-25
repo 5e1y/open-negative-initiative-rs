@@ -15,7 +15,7 @@ use std::time::{Duration, Instant};
 use crate::common;
 
 /// Where the window lays the projects' list at 1280 × 800 beside a photo.
-const LIST_TOP: f32 = 171.0;
+const LIST_TOP: f32 = 180.0;
 
 fn project_rows(lib: &Library) -> Vec<TreeRow> {
     lib.get_project_rows().iter().collect()

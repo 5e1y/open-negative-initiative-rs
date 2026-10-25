@@ -65,9 +65,29 @@ component SwatchStates inherits Line {
     }
 }
 
+// A stepped slider's key: a standard key's height, its sign larger, in the five states.
+component StepStates inherits Line {
+    in property <color> fill;
+    in property <string> text;
+    for state in 5: Cell {
+        Button {
+            size: ButtonSize.key;
+            width: ScannerStyle.step-key;
+            height: ScannerStyle.step-key;
+            legend-size: ScannerStyle.step-legend;
+            text: root.text;
+            fill: root.fill;
+            help: "One step";
+            look: Looks.of(state);
+            on: state == 3;
+            enabled: state != 4;
+        }
+    }
+}
+
 export component ButtonPage inherits Page {
     title: "Button";
-    note: "Button: kind (plain, the tints, ghost) × size (regular, small, key); text in capitals unless capitals is off, icon, square, turned, lamp, fixed-width, fill (a tint of its own), glyph-ink, glyph-size, note; on, enabled, look. No face changes colour: hovered the cap sinks a quarter, pressed it shrinks to 0.95 over its black socket, its word a step lower; a tint takes its ink by its lightness; on rings it.";
+    note: "Button, a keycap (Depth, Raster): kind (plain, the tints, ghost) × size (regular 40, small 24, mini 26, key 46); text in capitals unless capitals is off, icon, square, turned, lamp, fixed-width, fill (a cap of its own colour), glyph-ink, glyph-size, legend-size, note; on, enabled, look. Hovered the cap sinks a quarter, pressed it sinks whole and shrinks to 0.95 over its socket, held down 0.14 s however short the tap; the legend inks dark on a light cap; on makes a plain key pale and rings a tinted one; disabled fades the legend alone; a ghost has no cap.";
     property <[string]> states: ["Live", "Hover", "Pressed", "On", "Disabled"];
     Group {
         title: "Regular";
@@ -90,7 +110,15 @@ export component ButtonPage inherits Page {
         KeyStates { label: "confirm"; size: ButtonSize.small; kind: ButtonKind.confirm; text: "DONE"; }
     }
     Group {
-        title: "Small glyph keys (a column header's)";
+        title: "Mini (a section's, a header's plate)";
+        states: root.states;
+        KeyStates { label: "plain"; size: ButtonSize.mini; text: "RESET"; }
+        KeyStates { label: "accent"; size: ButtonSize.mini; kind: ButtonKind.accent; text: "NEXT"; }
+        KeyStates { label: "glyph"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.chevron-down; }
+        KeyStates { label: "glyph in its own ink (the star)"; size: ButtonSize.mini; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: NavigatorStyle.favourite; }
+    }
+    Group {
+        title: "Small glyph keys";
         states: root.states;
         KeyStates { label: "glyph"; size: ButtonSize.small; text: ""; has-icon: true; square: true; icon: Icons.list; }
         KeyStates { label: "glyph in its own ink (the star)"; size: ButtonSize.small; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-ink: NavigatorStyle.favourite; }
@@ -103,8 +131,10 @@ export component ButtonPage inherits Page {
         KeyStates { label: "row star, in its ink"; kind: ButtonKind.ghost; text: ""; has-icon: true; square: true; icon: Icons.favourite; glyph-size: NavigatorStyle.star; glyph-ink: NavigatorStyle.favourite; }
     }
     Group {
-        title: "Key (a step slider's keycap; live, a press holds it down a beat)";
+        title: "Key (the scanner's 46 pt key, and a stepped slider's; live, a press holds it down a beat)";
         states: root.states;
+        StepStates { label: "step key, band-red"; text: "−"; fill: ScannerStyle.band-red; }
+        StepStates { label: "step key, band-light"; text: "+"; fill: ScannerStyle.band-light; }
         KeyStates { label: "no fill (its kind's)"; size: ButtonSize.key; text: "+"; }
         KeyStates { label: "fill cap-light"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
         KeyStates { label: "fill cap-dark"; size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-dark; }

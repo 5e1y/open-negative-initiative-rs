@@ -338,7 +338,7 @@ export component CanvasCard inherits Card {
         height: self.preferred-height;
         alignment: center;
         Button { has-icon: true; square: true;
-            size: ButtonSize.small;
+            size: ButtonSize.mini;
             icon: Icons.menu-left;
             help: root.library-hidden ? @tr("Show the Library ({})", KeyWords.option-command + "[") : @tr("Hide the Library ({})", KeyWords.option-command + "[");
             clicked => {
@@ -357,14 +357,17 @@ export component CanvasCard inherits Card {
         alignment: center;
         if Canvas.hz != "": Label { text: Canvas.hz; role: TextRole.value; }
         Label { text: Canvas.zoom-label; role: TextRole.value; }
+        // `KeycapPlate(.mini)`: the two zoom keys flush on one plate.
         ButtonGroup {
+            plate: true;
+            small: true;
             align: GroupAlign.center;
-            Button { text: "−"; size: ButtonSize.small; enabled: Canvas.can-zoom-out; help: @tr("Zoom out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
-            Button { text: "+"; size: ButtonSize.small; enabled: Canvas.can-zoom-in; help: @tr("Zoom in ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
+            Button { text: "−"; size: ButtonSize.mini; enabled: Canvas.can-zoom-out; help: @tr("Zoom out ({})", KeyWords.command + "−"); clicked => { root.menu(Act.smaller); } }
+            Button { text: "+"; size: ButtonSize.mini; enabled: Canvas.can-zoom-in; help: @tr("Zoom in ({})", KeyWords.command + "+"); clicked => { root.menu(Act.larger); } }
         }
         // `columnKey(.trailing)`: the Panel's key, last in the zoom bubble.
         Button { has-icon: true; square: true;
-            size: ButtonSize.small;
+            size: ButtonSize.mini;
             icon: Icons.menu-right;
             help: root.panel-hidden ? @tr("Show the Panel ({})", KeyWords.option-command + "]") : @tr("Hide the Panel ({})", KeyWords.option-command + "]");
             clicked => {

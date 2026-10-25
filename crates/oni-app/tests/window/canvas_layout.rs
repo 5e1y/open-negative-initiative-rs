@@ -13,9 +13,9 @@ use crate::common;
 
 const WIDTH: f32 = 1280.0;
 const HEIGHT: f32 = 800.0;
-/// The headless window draws the menu bar in its first points, then the 48-point bar.
+/// The headless window draws the menu bar in its first points, then the 56-point bar (40 pt keys).
 const MENU: f32 = 40.0;
-const CARD_TOP: f32 = MENU + 48.0;
+const CARD_TOP: f32 = MENU + 56.0;
 
 fn click(rig: &common::Rig, x: f32, y: f32) {
     let position = LogicalPosition::new(x, y);

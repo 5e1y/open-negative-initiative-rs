@@ -79,7 +79,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     // `DSToggle`: the switch at the block's left, before its word.
-    let vertical = || click(&rig, 975.0, 505.0);
+    let vertical = || click(&rig, 975.0, 526.0);
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -96,24 +96,26 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
-    click(&rig, 1204.0, 322.0);
+    click(&rig, 1201.0, 331.0);
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
     assert!(!framing.get_modified());
 
-    // Source Encoding's RESET writes no encoding, the file read as sRGB again.
+    // Source Encoding's RESET writes no encoding, the file read as sRGB again; the window taller, so
+    // the 40 pt keys above leave the block in sight.
+    rig.window.set_size(slint::PhysicalSize::new(1280, 900));
     tab(0);
     panel.invoke_encoding_picked(1);
-    click(&rig, 1252.0, 625.0);
+    click(&rig, 1251.0, 646.0);
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    click(&rig, 1205.0, 772.0);
+    click(&rig, 1201.0, 803.0);
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || click(&rig, 976.0, 657.0);
+    let flat = || click(&rig, 976.0, 680.0);
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -123,10 +125,10 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
-    click(&rig, 1100.0, 715.0);
+    click(&rig, 1100.0, 738.0);
     rig.settle();
     rig.shot("bindings-mask-menu");
-    click(&rig, 1040.0, 780.0);
+    click(&rig, 1040.0, 803.0);
     rig.settle();
     assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's second line, under the picker");
     let _ = std::fs::remove_dir_all(&root);

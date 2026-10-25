@@ -1,4 +1,4 @@
-// The board's key groups: ButtonGroup bare, on its plate, of small keys, at each place in its row,
+// The board's key groups: ButtonGroup bare, on its plate, of mini keys, at each place in its row,
 // its first key in each state.
 import { Icons, ButtonKind, ButtonSize, Button, ButtonGroup, GroupAlign } from "../ds.slint";
 import { BoardStyle, Page, Group, Line, Fill, Looks } from "kit.slint";
@@ -8,7 +8,7 @@ component GroupStates inherits Line {
     in property <bool> plate;
     in property <bool> small;
     in property <GroupAlign> align;
-    property <ButtonSize> size: root.small ? ButtonSize.small : ButtonSize.regular;
+    property <ButtonSize> size: root.small ? ButtonSize.mini : ButtonSize.regular;
     property <bool> fills: root.align == GroupAlign.fill;
     for state in 4: Fill {
         span: BoardStyle.wide;
@@ -38,14 +38,14 @@ component SheetKeysStates inherits Line {
 
 export component ButtonGroupPage inherits Page {
     title: "ButtonGroup";
-    note: "ButtonGroup: plate, small, align (start, end, center, fill); holding Buttons (a key's fills shares the row).";
+    note: "ButtonGroup: plate (the keys flush on their black socket, KeycapPlate), small (a mini plate's radius, for mini keys), align (start, end, center, fill); holding Buttons (a key's fills shares the row).";
     Group {
         title: "ButtonGroup";
         states: ["Live", "First key hovered", "First key pressed", "First key on"];
         span: BoardStyle.wide;
-        GroupStates { label: "bare (keys a hairline apart)"; }
+        GroupStates { label: "bare (keys a gap apart)"; }
         GroupStates { label: "plate"; plate: true; }
-        GroupStates { label: "plate, small keys"; plate: true; small: true; }
+        GroupStates { label: "plate, mini keys (small)"; plate: true; small: true; }
         GroupStates { label: "plate, align fill"; plate: true; align: GroupAlign.fill; }
         GroupStates { label: "bare, align fill"; align: GroupAlign.fill; }
         GroupStates { label: "plate, align end"; plate: true; align: GroupAlign.end; }

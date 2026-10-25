@@ -11,11 +11,11 @@ export { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button, SliderFill, Kn
 // Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
 export enum GroupAlign { start, end, center, fill }
 
-// `KeycapPlate`: keys side by side as one family, on a socket when `plate`, flush a hairline apart.
+// Keys side by side as one family; `plate` sets them flush on their socket, as `KeycapPlate`.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
     in property <GroupAlign> align: GroupAlign.start;
-    // The radius of the small keys it holds.
+    // The radius of the mini keys it holds (`KeycapPlate(variant: .mini)`).
     in property <bool> small;
     property <bool> fills: root.align == GroupAlign.fill;
     alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
@@ -25,11 +25,10 @@ export component ButtonGroup inherits HorizontalLayout {
         preferred-width: row.preferred-width;
         min-height: row.min-height;
         max-height: row.max-height;
-        background: root.plate ? Colour.well : transparent;
-        border-radius: root.plate ? (root.small ? ButtonStyle.small-radius : ButtonStyle.radius) + ButtonStyle.plate-inset : 0px;
+        background: root.plate ? ButtonStyle.bezel : transparent;
+        border-radius: root.plate ? (root.small ? ButtonStyle.mini-plate-radius : ButtonStyle.plate-radius) : 0px;
         row := HorizontalLayout {
-            padding: root.plate ? ButtonStyle.plate-inset : 0px;
-            spacing: root.plate ? ButtonStyle.plate-inset : ButtonStyle.group-gap;
+            spacing: root.plate ? 0px : ButtonStyle.group-gap;
             alignment: root.fills ? stretch : start;
             @children
         }

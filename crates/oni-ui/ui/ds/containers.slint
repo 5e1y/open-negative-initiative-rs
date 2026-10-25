@@ -65,7 +65,7 @@ export component Section inherits VerticalLayout {
             Rectangle { horizontal-stretch: 1; }
             // Always laid out, only invisible, so the row keeps its height on a slider's first touch.
             if root.block >= 0: Button {
-                size: ButtonSize.small;
+                size: ButtonSize.mini;
                 horizontal-stretch: 0;
                 text: @tr("RESET");
                 visible: root.modified;
@@ -73,7 +73,7 @@ export component Section inherits VerticalLayout {
                 clicked => { root.reset(root.block); }
             }
             if root.foldable: Button {
-                size: ButtonSize.small;
+                size: ButtonSize.mini;
                 has-icon: true;
                 square: true;
                 horizontal-stretch: 0;

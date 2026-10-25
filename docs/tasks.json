@@ -3391,5 +3391,12 @@
     "title": "The three depths and the keycap raster move into the design system, one mapping for the lab and the app",
     "status": "done",
     "detail": "ui/ds/depth.slint now holds Depth, KeycapLook (with the window's scale, so a change of screen draws the keys again), Raster, KeycapVariant, Keycap, Outward and Inward; lab/depth.slint re-exports them, so the lab tunes the app's own Depth (every lab page shot identical to the pixel). oni-keycap's look module maps a look's numbers to KeycapStyle and Frame and keeps the renders in a Cache keyed by those numbers, the depth on a 1/256 grid, bounded in bytes; oni-lab and oni-app (keycaps.rs, served by the Shell on the main window, the board and the console) both use it. Depth.look() builds the look in one call per key and a cap without cast shadow draws no margin (a test shows nothing lies past the key)."
+  },
+  {
+    "id": 561,
+    "type": "design",
+    "title": "Every key of the app is a keycap: Button, ButtonGroup's plate, the step keys",
+    "status": "done",
+    "detail": "Button draws the lab's keycap: regular the 40 pt small key (DSPanelButton standard), small the same at 24, a new mini size at 26 (sections, header plates, the card's keys, the zoom plate, as Swift's .mini), key the scanner's 46 pt key, a stepped slider's keys at 40 with an 18 pt sign. A kind or fill is the albedo, on a pale cap (a ring on a tinted one), the legend bold capitals inked by the cap's luminance, disabled fading the legend alone, the ghost bare. KeycapPress for every key: hover sinks it Depth.hover-press, a press whole in 0.1 s, held 0.14 s at least, risen in 0.02 s, the release click with the cap. ButtonGroup's plate sets its keys flush on the black socket at the cap's outer radius. The bar grows to the 40 pt keys (56). Board pages, ds/README and ui-spec updated."
   }
 ]

@@ -9,7 +9,8 @@ and every screen picks it up.
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
-| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` |
+| `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
+| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 | `board/` | The board: one base component a page, a row per variant, a live column then one per forced state (`Look`, `hover-tab`, `focused-look`, `on`, `enabled`) | By hand |
 
@@ -32,7 +33,26 @@ To check the result, run `cargo run --release -p oni-app --bin oni -- --board`. 
 Help > Design System… does in a build without a release's stamp (the list on its left or the arrow keys
 walk its pages); the window check `board` shoots each page to `ONI_SHOTS` as `board-<nn>-<name>.png`.
 `board/probe.slint` holds the pieces the window checks click at fixed places (fields, a scrolled page,
-a keycap).
+a keycap). The board's windows answer `Raster.keycap` too, so its shots show the real keycaps.
+
+## Keycaps
+
+Every `Button` but the ghost is a `Keycap`: a raster of Swift's `KeycapStyle` that Rust draws when the
+window asks `Raster.keycap(KeycapLook)`. `oni_app::keycaps::serve` answers it on a window (the `Shell`
+does it for the main window, the board and the console; a check building a window alone calls it);
+an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
+(oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
+
+- **Sizes** (`ButtonSize`): `regular` is `DSPanelButton`'s standard 40 pt key, `small` the same small
+  variant at 24, `mini` the 26 pt mini key of the sections and the header plates, `key` the scanner's
+  46 pt key; a stepped slider's keys are `key`s at `ScannerStyle.step-key` with a larger `legend-size`.
+- **Colour**: a kind's tint or `fill` is the cap's albedo, else the keycap grey; `on` makes a plain key
+  pale (`DSPanelButton(pale:)`) and rings a tinted one. The legend inks dark on a light cap, light on a
+  dark one (`KeyInk.light`); a disabled key fades its legend alone.
+- **Press** (`KeycapPress`): the hand sinks the cap `Depth.hover-press`, a press sinks it whole in
+  `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
+- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`),
+  `small` for a plate of mini keys.
 
 ## The rule: screens use only the design system
 

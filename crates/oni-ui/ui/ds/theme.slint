@@ -152,12 +152,30 @@ export global ButtonStyle {
     out property <length> small-icon: DS.control-toggle-glyph;
     out property <length> tracking: Stroke.hairline;
     out property <length> lamp: DS.control-lamp-size;
-    // `KeycapStyle` at the small variant: a press shrinks the cap to `pressed-scale` over its black
-    // socket and sinks its word by `travel`; the hand over it presses it `hover-depth` of the way.
-    out property <float> pressed-scale: 0.95;
-    out property <float> hover-depth: 0.25;
-    out property <length> travel: 0.525px;
+    // `KeycapPlate`'s socket under keys set flush, `KeycapStyle.socketColor`.
     out property <color> bezel: DS.system-black;
+    // The keycaps (`DSPanelButton`): the standard 40 pt key and the mini 26, a plain grey cap, a toggled
+    // one pale (`pale: true`), each length at `Keycap.Variant`'s factor of the large key's.
+    out property <length> cap-height: DS.control-keycap-height;
+    out property <length> mini-height: DS.control-keycap-mini-height;
+    out property <float> small-factor: 0.525;
+    out property <float> mini-factor: 0.38;
+    out property <color> cap: DS.palette-keycap;
+    out property <color> pale: DS.palette-text-on-fill;
+    // `KeycapStyle.paddingH` 32 and `iconSize` 28 at each variant: a word's room either side, a glyph's size.
+    out property <length> cap-padding: 32px * ButtonStyle.small-factor;
+    out property <length> mini-padding: 32px * ButtonStyle.mini-factor;
+    out property <length> cap-glyph: 28px * ButtonStyle.small-factor;
+    out property <length> mini-glyph: 28px * ButtonStyle.mini-factor;
+    // The legend: `Keycap.Variant.fontSize`, bold, 0.5 pt apart; a disabled key fades it alone.
+    out property <length> legend: 10.5px;
+    out property <length> mini-legend: 9px;
+    out property <int> legend-weight: 700;
+    out property <length> legend-tracking: 0.5px;
+    out property <float> legend-disabled: 0.3;
+    // `KeycapPlate`'s radius: the cap's outer one at each variant, so the socket follows the contour.
+    out property <length> plate-radius: 16px * ButtonStyle.small-factor;
+    out property <length> mini-plate-radius: 16px * ButtonStyle.mini-factor;
 }
 
 export global SliderStyle {
@@ -329,7 +347,7 @@ export global ShellStyle {
     out property <length> bar-padding: Space.s;
     out property <length> bar-gap: Space.m;
     out property <length> compact-gap: Space.s;
-    out property <length> bar-height: ButtonStyle.height + 2 * Space.s;
+    out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
     out property <length> export-width: DS.control-app-bar-export-width;
     out property <length> filter-width: DS.control-app-bar-filter-width;
     out property <length> library-width: DS.control-film-sidebar-width;
@@ -343,9 +361,10 @@ export global ScannerStyle {
     out property <length> face-bar: DS.control-mode-bar-width;
     out property <length> legend: DS.scanner-key-legend-size;
     out property <length> key-padding: DS.scanner-key-padding-h;
-    out property <length> key-radius: Radius.track;
-    // `KeycapStyle.minHold`: the shortest time a cap stays down, or a tap plays a tenth of the press.
-    out property <duration> key-hold: 140ms;
+    // `LabKeyboard`'s 46 pt key; a stepped slider's − and + keys at a standard key's height, their sign larger.
+    out property <length> key-height: DS.scanner-key-height;
+    out property <length> step-key: DS.control-keycap-height;
+    out property <length> step-legend: 18px;
     // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.
     out property <color> cap-light: DS.palette-keycap;
     out property <color> cap-dark: DS.palette-canvas;

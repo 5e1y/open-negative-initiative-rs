@@ -1,5 +1,5 @@
 // The sliders: one knob, one rail, the readout above them, and `Slider`, continuous or in whole steps.
-import { Colour, Space, Stroke, State, Motion, SliderStyle, ButtonStyle } from "theme.slint";
+import { Colour, Space, Stroke, State, Motion, SliderStyle, ButtonStyle, ScannerStyle } from "theme.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look, Button, ButtonSize } from "button.slint";
 
@@ -107,7 +107,9 @@ export component ValueHeader inherits HorizontalLayout {
 // A stepped slider's key beside its rail, in its end's colour: one step a click, three with ⇧.
 component StepKey inherits Button {
     size: ButtonSize.key;
-    y: (SliderStyle.row - ButtonStyle.small-height) / 2;
+    height: ScannerStyle.step-key;
+    width: self.height;
+    legend-size: ScannerStyle.step-legend;
     horizontal-stretch: 0;
 }
 

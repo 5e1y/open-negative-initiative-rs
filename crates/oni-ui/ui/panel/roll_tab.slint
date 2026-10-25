@@ -65,7 +65,7 @@ export component RollPane inherits Pane {
             Rectangle { horizontal-stretch: 1; }
             VerticalLayout {
                 alignment: center;
-                Button { has-icon: true; square: true; size: ButtonSize.small; icon: Icons.settings; help: root.flat-settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.flat-settings = !root.flat-settings; } }
+                Button { has-icon: true; square: true; size: ButtonSize.mini; icon: Icons.settings; help: root.flat-settings ? @tr("Hide Amount and Color") : @tr("Show Amount and Color"); clicked => { root.flat-settings = !root.flat-settings; } }
             }
         }
         if PanelState.flat-field-on: Field {

@@ -218,13 +218,13 @@ export component NavigatorSection inherits Rectangle {
             // `KeycapPlate(.mini)`: parent and favourites flush on one plate, then the pill.
             ButtonGroup { plate: true;
                 small: true;
-                Button { size: ButtonSize.small; has-icon: true; square: true;
+                Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Icons.parent;
                     help: @tr("Parent folder");
                     enabled: Navigator.can-go-up;
                     clicked => { Navigator.go-up(); }
                 }
-                Button { size: ButtonSize.small; has-icon: true; square: true;
+                Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Icons.favourite;
                     help: Navigator.favourites-only ? @tr("Show every folder") : @tr("Show the favourites alone");
                     glyph-ink: Navigator.favourites-only ? NavigatorStyle.favourite : Colour.ink;

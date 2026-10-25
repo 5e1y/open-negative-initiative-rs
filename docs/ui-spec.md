@@ -255,7 +255,7 @@ reaches.
 | Zone | Keys | Slint | Risk |
 |---|---|---|---|
 | Leading (`.navigation`) | EDITOR / GALLERY word key (⌘G), holding the width of the wider face | `Keycap` component with `faces` measured: width = max of both labels' `Text.preferred-width` | `[text]` |
-| Principal, editor | Plate: framing (⌘K), compare; contact sheet; plate: undo (⌘Z), redo (⌘⇧Z); plate: copy (⌘⇧C), paste, PASTE TO ROLL; PREPARE ROLL; de-dust; plate: RESET SCAN, trash | `KeycapPlate` = `HorizontalLayout` in a recessed `Rectangle`; icon keys from the Trinil SVGs | `[draw]` Keycap chrome (section 5). A hidden copy of the editor keys holds the zone's width so keys move inside it: Slint's layouts re-measure, so this becomes a fixed `min-width` computed from the editing set. |
+| Principal, editor | Plate: framing (⌘K), compare; contact sheet; plate: undo (⌘Z), redo (⌘⇧Z); plate: copy (⌘⇧C), paste, PASTE TO ROLL; PREPARE ROLL; de-dust; plate: RESET SCAN, trash | `ButtonGroup { plate: true }`: keys flush on the black socket; icon keys from the Trinil SVGs | `[draw]` Keycap chrome (section 5). A hidden copy of the editor keys holds the zone's width so keys move inside it: Slint's layouts re-measure, so this becomes a fixed `min-width` computed from the editing set. |
 | Principal, roll mode | One word key per `RollStep`, the current one inverted, a lamp on done steps | `for step in steps: Keycap { tint, ink, lamp }` | `[draw]` `DSLamp` glow. |
 | Trailing (`.primaryAction`) | FEEDBACKS; the export/import/update key (EXPORT, EXPORT n PHOTOS, IMPORT, UPDATE, busy titles ADDING / EXPORTING / UPDATING) | `Keycap` with label from Rust | Low. |
 | Help tooltips (`help:`) | System tooltips on every key | Slint has no tooltip element: a hover-delayed overlay `Text` | `[native]` The system tooltip delay (~1 s) and look must be imitated. |
@@ -474,14 +474,14 @@ hand. The website does the same with `sync-app-tokens.mjs`, which refuses name c
 
 | Swift | What it is | Slint | Risk |
 |---|---|---|---|
-| `Keycap`, `KeycapStyle`, `KeycapSurface`, `KeycapButtonStyle`, `KeycapTokens`, `Frustum` | The key: a frustum lit by one light (azimuth 100°, elevation 33°, ambient .25, normaliser .7946), four walls, a dished face, ornaments, press depth, socket shadow, hover lift | **A Rust raster per (size, albedo, style)** as `Image` (PoC `keycap.rs`), cached; depth changes only translate/scale and the socket shadow | `[draw]` Slint cannot shade per pixel; the raster is the only way to keep the Frustum maths exact. Press depth uses `scale(0.95)`/`translate`: drawn by GPU renderers, not the software one. A GPU-rendered variant (a wgpu pass via the rendering notifier) is possible but needs femtovg-wgpu. |
-| `KeycapPlate` | The recessed plate grouping keys | `Rectangle` with the inner shadow drawn as gradient strips | `[draw]` Inset shadows do not exist in Slint: build them from gradients (as the PoC's rail does). |
+| `Keycap`, `KeycapStyle`, `KeycapSurface`, `KeycapButtonStyle`, `KeycapTokens`, `Frustum` | The key: a frustum lit by one light (azimuth 100°, elevation 33°, ambient .25, normaliser .7946), four walls, a dished face, ornaments, press depth, socket shadow, hover lift | `ds/depth.slint`'s `Keycap`: the `Raster.keycap(KeycapLook)` global callback answered by oni-keycap (`oni_app::keycaps::serve`, oni-lab the same `look::Cache`), one raster per (size, albedo, depth step, scale), kept; the legend lies on the face, sunk and scaled with it | Done. A press re-rasters one key per frame of its 0.1 s curve (depth quantised to 1/256); a still key is drawn once. |
+| `KeycapPlate` | Keys flush on the socket, the plate at the cap's outer radius | `ButtonGroup { plate: true }` (`small` for mini keys): black, radius 16 × the variant's factor, no gap | Done. |
 | `KeycapIcon`, `DSIcon`, `Glyph+Trinil` | Trinil SVG icons | `Image { source: @image-url("icons/x.svg"); colorize: … }` | Slint renders SVG through resvg: the strokes should match; verify at 1x. |
 | `KeycapSound` | Key down/up sound with varispeed | `rodio`/`cpal` | `[native]` |
 | `DSSlider`, `DSHandle` (bar handle) | 4.4.1 | PoC | |
 | `DSHandle` (curve point disc) | Disc without hit testing; the container grabs wider | `Rectangle` circle + parent `TouchArea` | |
 | `DSPanel` (`DSSection`, pager, `DSSeparator`, `DSColumnResizer`) | Block frame, pane pager | Components (PoC has `Section`, `Separator`) | |
-| `DSPanelButton` | The big button of a block | Keycap raster | |
+| `DSPanelButton`, `DSActionButton`, `AppBar.item` / `word` | The keys of the panel, the sheets and the bar | `Button`: `regular` 40 pt (small variant), `mini` 26 pt, a kind or `fill` as the albedo, `on` as `pale`, capitals bold 10.5 pt (9 mini) 0.5 apart, inked by the cap's luminance; disabled fades the legend alone | Done. |
 | `DSPanelSkeleton` | Each control's outline remembered per build | Rust geometry cache | |
 | `DSTabBar` | Condensed tabs, marks for settings in hidden tabs, hover shows the label | `HorizontalLayout` of tabs, `accessible-role: tab` | `[a11y]` |
 | `DSToggle` | A switch: cross and check in a hollow, the held state lit | Component, `accessible-role: checkbox` | `[a11y]` |
