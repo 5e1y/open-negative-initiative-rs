@@ -152,8 +152,6 @@ impl Ctl {
         if let Some(message) = failure {
             self.told(tr("Something Went Wrong"), &message);
         }
-        // A read in flight under the old names is superseded, never laid over the moved rows.
-        self.state.borrow().generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         self.followed(&[Move { from: old.to_owned(), to: new.to_owned() }]);
         self.publish_navigator();
     }

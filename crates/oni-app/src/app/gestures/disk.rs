@@ -120,6 +120,8 @@ impl Ctl {
         let (reopen, folded, recorded) = {
             let mut guard = self.state.borrow_mut();
             let s = &mut *guard;
+            // A read in flight surveyed the old names: superseded, its rows would drop the moved picks.
+            s.generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             if let Some(index) = &s.index {
                 for row in index.all() {
                     if let Some(to) = moved(&row.path) {
