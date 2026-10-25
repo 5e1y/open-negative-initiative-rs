@@ -1,6 +1,313 @@
-// The lab's Keys page: Slint copies of the Swift app's 2.5D keys, built on depth.slint.
-import { Keycap, Outward, Inward, Depth } from "depth.slint";
+// The lab's Keys page: the Swift app's keycap keys on `Keycap`, each live beside its forced states.
+// A live key presses as `KeycapPress`: the reference's curves, held down 0.14 s however short the tap.
+import { ScrollView } from "std-widgets.slint";
+import { DS } from "../ui/ds/tokens.slint";
+import { Icons } from "../ui/ds/icons.slint";
+import { Keycap, KeycapVariant, Depth } from "depth.slint";
+
+// `KeycapPress`: down on the press, up once `min-hold` has passed; a hover sinks it `hover-press`.
+// `force` at 0 or above pins the depth, for a still state; `enabled` false fades the legend alone.
+export component LiveKey inherits Rectangle {
+    in property <color> albedo: DS.palette-keycap;
+    in property <KeycapVariant> variant: small;
+    in property <float> force: -1;
+    in property <bool> enabled: true;
+    callback clicked();
+    property <bool> held;
+    // Lifted before the hold was over: the timer lifts it.
+    property <bool> waiting;
+    // Lifted while still hovered: going back up to the hover depth is a release, not a press.
+    property <bool> lifted;
+    property <float> target: root.held ? 1 : touch.has-hover && root.enabled ? Depth.hover-press : 0;
+    property <bool> sinking: root.held || (touch.has-hover && !root.lifted);
+    property <float> depth: root.target;
+    animate depth {
+        duration: root.sinking ? Depth.press-time : Depth.release-time;
+        easing: root.sinking ? cubic-bezier(0, 0, 0, 1) : cubic-bezier(0.79, 0.03, 0.43, 1);
+    }
+    function lift() {
+        root.held = false;
+        root.lifted = true;
+    }
+    hold := Timer {
+        interval: Depth.min-hold;
+        running: false;
+        triggered => {
+            self.running = false;
+            if (root.waiting) {
+                root.waiting = false;
+                root.lift();
+            }
+        }
+    }
+    Keycap {
+        albedo: root.albedo;
+        variant: root.variant;
+        depth: root.force >= 0 ? root.force : root.depth;
+        Rectangle {
+            opacity: root.enabled ? 1 : 0.3;
+            @children
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled && root.force < 0;
+        changed has-hover => {
+            if (!self.has-hover) { root.lifted = false; }
+        }
+        pointer-event(event) => {
+            if (event.button != PointerEventButton.left) { return; }
+            if (event.kind == PointerEventKind.down) {
+                root.held = true;
+                root.waiting = false;
+                root.lifted = false;
+                hold.running = false;
+                hold.running = true;
+            } else if (event.kind == PointerEventKind.up) {
+                if (hold.running) { root.waiting = true; } else { root.lift(); }
+            }
+        }
+        clicked => { root.clicked(); }
+    }
+}
+
+// The legend: capitals in the variant's size, bold, 0.5 pt tracking.
+component Legend inherits Text {
+    in property <KeycapVariant> variant: small;
+    color: DS.palette-text-on-fill;
+    font-size: root.variant == KeycapVariant.mini ? 9px : root.variant == KeycapVariant.small ? 10.5px : 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    horizontal-alignment: center;
+    vertical-alignment: center;
+}
+
+// A glyph at `iconSize` scaled by the variant (28 pt large), centred on the face.
+component Glyph inherits Image {
+    in property <float> factor: 0.525;
+    width: 28px * root.factor;
+    height: self.width;
+    colorize: DS.palette-text-on-fill;
+}
+
+component Heading inherits Text {
+    color: #ffffff59;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+component Caption inherits Text {
+    color: #ffffff73;
+    font-size: 10px;
+    horizontal-alignment: center;
+}
+
+// `KeycapPlate`, `LabStack`: keys flush on the socket's own material, at the small cap's outer radius.
+component Plate inherits Rectangle {
+    background: #000000;
+    border-radius: 16px * 0.525;
+}
+
+// The five states a key is shown in: live, then pinned at rest, hovered, pressed, and disabled.
+struct State { name: string, force: float, enabled: bool }
+
+global States {
+    out property <[State]> all: [
+        { name: "live", force: -1, enabled: true },
+        { name: "rest", force: 0, enabled: true },
+        { name: "hover", force: 0.25, enabled: true },
+        { name: "pressed", force: 1, enabled: true },
+        { name: "disabled", force: 0, enabled: false },
+    ];
+}
+
+// `DSPanelButton`'s word: small variant, capitals, white on the keycap grey, dark on a pale or tinted cap.
+component PanelWord inherits LiveKey {
+    in property <string> text: "AUTO";
+    in property <bool> dark;
+    width: 97px;
+    height: DS.control-keycap-height;
+    Legend { text: root.text; color: root.dark ? DS.palette-canvas : DS.palette-text-on-fill; variant: root.variant; }
+}
+
+// `DSPanelButton(icon:)` and `AppBar.item`: a square key, the glyph alone.
+component IconKey inherits LiveKey {
+    in property <image> glyph: Icons.rotate;
+    width: self.height;
+    height: DS.control-keycap-height;
+    Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525; }
+}
+
+// A scanner key (`LabKeyboard.styled`): 46 pt, a 13 pt legend inked by the albedo's luminance.
+component BandKey inherits LiveKey {
+    in property <string> text;
+    property <bool> light: (0.2126 * root.albedo.red + 0.7152 * root.albedo.green + 0.0722 * root.albedo.blue) / 255 > 0.55;
+    height: DS.scanner-key-height;
+    Legend { text: root.text; font-size: DS.scanner-key-legend-size; color: root.light ? DS.palette-text-on-light : DS.palette-text-on-fill; }
+}
+
+// One letter of the keypad: −3, −1, the letter on a light key 96 wide, +1, +3.
+component KeypadRow inherits HorizontalLayout {
+    in property <string> letter;
+    in property <color> minus;
+    in property <color> plus;
+    in property <string> word;
+    BandKey { text: "−3"; albedo: root.minus; }
+    BandKey { text: "−"; albedo: root.minus; }
+    BandKey { text: root.word != "" ? root.word : root.letter; width: DS.scanner-wide-key-width; }
+    BandKey { text: "+"; albedo: root.plus; }
+    BandKey { text: "+3"; albedo: root.plus; }
+}
+
+component Section inherits VerticalLayout {
+    in property <string> title;
+    in property <string> source;
+    spacing: 10px;
+    alignment: start;
+    HorizontalLayout {
+        spacing: 12px;
+        alignment: start;
+        Heading { text: root.title; }
+        Caption { text: root.source; horizontal-alignment: left; }
+    }
+    @children
+}
+
+// A row of one key in the five states, each with its caption.
+component StateRow inherits HorizontalLayout {
+    in property <string> label;
+    spacing: 28px;
+    alignment: start;
+    Text { text: root.label; width: 120px; color: #ffffffa6; font-size: 11px; vertical-alignment: center; }
+    @children
+}
 
 export component KeysPage inherits Rectangle {
-    Text { text: "Keys: to come"; color: #ffffff8c; }
+    ScrollView {
+        VerticalLayout {
+            padding: 40px;
+            spacing: 36px;
+            alignment: start;
+            Section {
+                title: "DSPANELBUTTON";
+                source: "DSPanelButton.swift · .small, 40 pt; pale and tinted ink the legend dark";
+                StateRow {
+                    label: "word";
+                    for s in States.all: VerticalLayout { spacing: 8px; PanelWord { force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "word, pale";
+                    for s in States.all: VerticalLayout { spacing: 8px; PanelWord { albedo: DS.palette-text-on-fill; dark: true; force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "word, on (tint)";
+                    for s in States.all: VerticalLayout { spacing: 8px; PanelWord { text: "SCAN"; albedo: DS.palette-accent; dark: true; force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "icon";
+                    for s in States.all: VerticalLayout { spacing: 8px; IconKey { force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "heights 40 · 52 · 60 · 26";
+                    PanelWord { }
+                    PanelWord { height: DS.control-keycap-plate-height; }
+                    PanelWord { height: DS.control-keycap-wide-height; }
+                    PanelWord { variant: mini; height: DS.control-keycap-mini-height; }
+                    IconKey { }
+                    IconKey { height: DS.control-keycap-plate-height; }
+                    IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.chevron-down; }
+                }
+            }
+            Section {
+                title: "DSACTIONBUTTON";
+                source: "DSField.swift:35 · accent, .small, the bar's 40 pt, filling; busy disables it";
+                StateRow {
+                    label: "EXPORT";
+                    for s in States.all: VerticalLayout { spacing: 8px; PanelWord { text: "EXPORT"; width: DS.control-app-bar-export-width; albedo: DS.palette-accent; force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "plate, busy";
+                    PanelWord { text: "EXPORT 12 PHOTOS"; width: 200px; height: DS.control-keycap-plate-height; albedo: DS.palette-accent; }
+                    PanelWord { text: "WORKING…"; width: 200px; height: DS.control-keycap-plate-height; albedo: DS.palette-accent; enabled: false; }
+                }
+            }
+            Section {
+                title: "APP BAR";
+                source: "AppBar.swift · 40 × 40 icon keys, a word key in its state's tint";
+                StateRow {
+                    label: "icon";
+                    for s in States.all: VerticalLayout { spacing: 8px; IconKey { glyph: Icons.framing; height: DS.control-app-bar-keycap-height; force: s.force; enabled: s.enabled; } Caption { text: s.name; } }
+                }
+                StateRow {
+                    label: "framing, on";
+                    IconKey { glyph: Icons.framing; height: DS.control-app-bar-keycap-height; albedo: DS.tint-geometry; }
+                    PanelWord { text: "UNDO"; width: 80px; height: DS.control-app-bar-keycap-height; }
+                    PanelWord { text: "UPDATE"; width: 92px; height: DS.control-app-bar-keycap-height; albedo: DS.tint-update; dark: true; }
+                }
+            }
+            Section {
+                title: "SCANNER KEYPAD";
+                source: "LabKeyboard.swift · 46 pt keys on one plate, bands inked by luminance";
+                HorizontalLayout {
+                    alignment: start;
+                    Plate {
+                        width: DS.scanner-keyboard-width;
+                        height: 5 * DS.scanner-key-height;
+                        VerticalLayout {
+                            KeypadRow { letter: "D"; minus: DS.scanner-band-dark; plus: DS.scanner-band-light; }
+                            KeypadRow { letter: "C"; minus: DS.scanner-band-red; plus: DS.scanner-band-cyan; }
+                            KeypadRow { letter: "M"; minus: DS.scanner-band-green; plus: DS.scanner-band-magenta; }
+                            KeypadRow { letter: "Y"; minus: DS.scanner-band-blue; plus: DS.scanner-band-yellow; }
+                            KeypadRow { letter: "W"; minus: DS.scanner-band-cool; plus: DS.scanner-band-warm; }
+                        }
+                    }
+                }
+            }
+            Section {
+                title: "STEP KEYS";
+                source: "LabStepKeys · a finishing slider as keys, the middle one back to rest";
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 28px;
+                    Plate {
+                        width: DS.scanner-keyboard-width;
+                        height: DS.scanner-key-height;
+                        KeypadRow { word: "CONTRAST"; minus: DS.scanner-band-dark; plus: DS.scanner-band-light; }
+                    }
+                    Plate {
+                        width: DS.scanner-keyboard-width;
+                        height: DS.scanner-key-height;
+                        KeypadRow { word: "WARMTH"; minus: DS.scanner-band-cool; plus: DS.scanner-band-warm; }
+                    }
+                }
+            }
+            Section {
+                title: "KEYCAPPLATE";
+                source: "KeycapPlate.swift · flush, gap zero, the socket at the cap's outer radius";
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 28px;
+                    Plate {
+                        width: 3 * 97px;
+                        height: DS.control-keycap-height;
+                        HorizontalLayout {
+                            PanelWord { text: "AUTO"; }
+                            PanelWord { text: "WHITE"; }
+                            PanelWord { text: "BLACK"; }
+                        }
+                    }
+                    Plate {
+                        border-radius: 16px * 0.38;
+                        width: 3 * DS.control-keycap-mini-height;
+                        height: DS.control-keycap-mini-height;
+                        HorizontalLayout {
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.rotate; }
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.mirror; }
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.reset; }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

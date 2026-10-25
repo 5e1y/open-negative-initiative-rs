@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
-# The 2.5D lab in slint-viewer: no build, the window redraws on each save of crates/oni-ui/lab/*.slint.
-# `--check` compiles it without a window; `--shot FILE [COMPONENT] [WxH]` renders it to a PNG and exits.
+# The 2.5D lab in oni-lab: built once, it reloads crates/oni-ui/lab/*.slint into its window on each save,
+# its keycaps drawn by oni-keycap. `--check` compiles the lab; `--shot FILE [COMPONENT] [WxH]` renders the
+# lab or one page (KeysPage, SlidersPage…) to a PNG at 2× (`ONI_LAB_SCALE`). `cargo build -p oni-lab` refreshes it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-bin="$HOME/.oni-toolchain/slint/bin"
-if [ ! -x "$bin/slint-viewer" ]; then
-    cargo install slint-viewer --version 1.18.1 --locked --root "$HOME/.oni-toolchain/slint"
+bin="${CARGO_TARGET_DIR:-target}/debug/oni-lab"
+if [ ! -x "$bin" ]; then
+    cargo build -p oni-lab
 fi
 case "${1:-}" in
-    --check) exec "$bin/slint-viewer" --check crates/oni-ui/lab/lab.slint ;;
-    --shot)
-        args=(--screenshot "$2")
-        [ -n "${3:-}" ] && args+=(--component "$3")
-        [ -n "${4:-}" ] && args+=(--size "$4")
-        exec "$bin/slint-viewer" "${args[@]}" crates/oni-ui/lab/lab.slint ;;
+    --check) exec "$bin" --check ;;
+    --shot) shift; exec "$bin" --shot "$@" ;;
 esac
-exec "$bin/slint-viewer" --auto-reload crates/oni-ui/lab/lab.slint
+exec "$bin"

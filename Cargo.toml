@@ -42,6 +42,10 @@ split-debuginfo = "off"
 opt-level = 3
 debug = false
 
+# The keycap's rasteriser runs per frame of a press: fully optimised, as a dependency would be.
+[profile.dev.package.oni-keycap]
+opt-level = 3
+
 # The generated interface: 44 MB of Rust; optimised, as the window checks run it 72 times, and edited
 # through `scripts/live`, which needs no build.
 [profile.dev.package.oni-ui]

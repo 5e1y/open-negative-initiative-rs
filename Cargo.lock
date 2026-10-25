@@ -2542,6 +2542,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "i-slint-backend-qt"
+version = "1.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a32cd6edc5422d1525fbe4ed29635b642fdbb26ae7036abc20eee063faa45d4a"
+dependencies = [
+ "const-field-offset",
+ "i-slint-common",
+ "i-slint-core",
+ "i-slint-core-macros",
+ "vtable",
+]
+
+[[package]]
 name = "i-slint-backend-selector"
 version = "1.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2550,6 +2563,7 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "i-slint-backend-linuxkms",
+ "i-slint-backend-qt",
  "i-slint-backend-testing",
  "i-slint-backend-winit",
  "i-slint-common",
@@ -4379,7 +4393,10 @@ dependencies = [
  "getrandom 0.4.3",
  "half",
  "hashbrown 0.17.1",
+ "i-slint-backend-selector",
  "i-slint-common",
+ "i-slint-compiler",
+ "i-slint-core",
  "icu_locale_core",
  "icu_properties",
  "icu_provider",
@@ -4399,10 +4416,10 @@ dependencies = [
  "objc2-core-foundation",
  "objc2-core-graphics",
  "objc2-foundation 0.3.2",
- "objc2-metal 0.3.2",
  "objc2-quartz-core 0.3.2",
  "once_cell",
  "percent-encoding",
+ "pin-weak",
  "portable-atomic",
  "potential_utf",
  "proc-macro2",
@@ -4412,10 +4429,10 @@ dependencies = [
  "serde_core",
  "serde_json",
  "simd-adler32",
- "skrifa",
  "slotmap",
  "smallvec",
  "stable_deref_trait",
+ "strict-num",
  "swash",
  "syn 2.0.119",
  "syn 3.0.9",
@@ -4423,6 +4440,7 @@ dependencies = [
  "thiserror 2.0.21",
  "tinystr",
  "tokio",
+ "toml_edit",
  "tracing",
  "tracing-core",
  "url",
@@ -4448,10 +4466,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-keycap"
+version = "0.1.0"
+dependencies = [
+ "oni-hack",
+ "png",
+ "tiny-skia 0.11.4",
+]
+
+[[package]]
 name = "oni-keys"
 version = "0.1.0"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "oni-lab"
+version = "0.1.0"
+dependencies = [
+ "oni-hack",
+ "oni-keycap",
+ "png",
+ "slint",
+ "slint-interpreter",
 ]
 
 [[package]]
@@ -5904,6 +5942,29 @@ dependencies = [
  "i-slint-compiler",
  "spin_on",
  "toml_edit",
+]
+
+[[package]]
+name = "slint-interpreter"
+version = "1.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "645cf39fcf871b5b49f7319973e8dee7af03ee51c5a2c8e1e7466d72acc8b217"
+dependencies = [
+ "derive_more",
+ "i-slint-backend-linuxkms",
+ "i-slint-backend-selector",
+ "i-slint-backend-winit",
+ "i-slint-common",
+ "i-slint-compiler",
+ "i-slint-core",
+ "i-slint-core-macros",
+ "itertools 0.15.0",
+ "lyon_path",
+ "smol_str 0.3.6",
+ "typed-index-collections",
+ "unicode-segmentation",
+ "vtable",
+ "web-sys",
 ]
 
 [[package]]

@@ -27,7 +27,10 @@ derive_more = { version = "2", default-features = false, features = ["add", "add
 either = { version = "1", default-features = false, features = ["use_std"] }
 flate2 = { version = "1" }
 hashbrown = { version = "0.17", default-features = false, features = ["default-hasher", "inline-more", "raw-entry"] }
+i-slint-backend-selector = { version = "1", default-features = false, features = ["accessibility", "backend-winit", "renderer-femtovg-wgpu", "renderer-software", "rtti", "unstable-wgpu-30", "unstable-winit-030"] }
 i-slint-common = { version = "1", features = ["locale-decimal-separator", "markdown", "shared-fontique", "svg-text"] }
+i-slint-compiler = { version = "1", features = ["bundle-translations", "display-diagnostics", "proc_macro_span", "renderer-software", "rust"] }
+i-slint-core = { version = "1", features = ["rtti", "shared-swash", "unstable-wgpu-30"] }
 icu_locale_core = { version = "2", default-features = false, features = ["alloc", "zerovec"] }
 icu_properties = { version = "2" }
 icu_provider = { version = "2", default-features = false, features = ["alloc", "baked"] }
@@ -43,8 +46,11 @@ naga-types = { version = "30", default-features = false, features = ["std"] }
 num-traits = { version = "0.2", features = ["libm"] }
 once_cell = { version = "1", default-features = false, features = ["critical-section", "std"] }
 percent-encoding = { version = "2" }
+pin-weak = { version = "1" }
 portable-atomic = { version = "1", features = ["critical-section"] }
 potential_utf = { version = "0.1", default-features = false, features = ["alloc", "zerovec"] }
+proc-macro2 = { version = "1" }
+quote = { version = "1" }
 read-fonts = { version = "0.41", default-features = false, features = ["experimental_font_api", "std"] }
 rustc-hash = { version = "1" }
 serde_core = { version = "1", default-features = false, features = ["result", "std"] }
@@ -53,6 +59,7 @@ simd-adler32 = { version = "0.3" }
 slotmap = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
 stable_deref_trait = { version = "1", default-features = false, features = ["alloc"] }
+strict-num = { version = "0.1" }
 swash = { version = "0.2" }
 sys-locale = { version = "0.3", default-features = false, features = ["js"] }
 thiserror = { version = "2" }
@@ -77,6 +84,7 @@ either = { version = "1", default-features = false, features = ["use_std"] }
 flate2 = { version = "1" }
 hashbrown = { version = "0.17", default-features = false, features = ["default-hasher", "inline-more", "raw-entry"] }
 i-slint-common = { version = "1", features = ["locale-decimal-separator", "markdown", "shared-fontique", "svg-text"] }
+i-slint-compiler = { version = "1", features = ["bundle-translations", "display-diagnostics", "proc_macro_span", "renderer-software", "rust"] }
 icu_locale_core = { version = "2", default-features = false, features = ["alloc", "zerovec"] }
 icu_properties = { version = "2" }
 icu_provider = { version = "2", default-features = false, features = ["alloc", "baked"] }
@@ -103,11 +111,13 @@ simd-adler32 = { version = "0.3" }
 slotmap = { version = "1" }
 smallvec = { version = "1", default-features = false, features = ["const_new"] }
 stable_deref_trait = { version = "1", default-features = false, features = ["alloc"] }
+strict-num = { version = "0.1" }
 swash = { version = "0.2" }
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2", features = ["extra-traits", "full", "visit", "visit-mut"] }
 thiserror = { version = "2" }
 tinystr = { version = "0.8", default-features = false, features = ["alloc", "zerovec"] }
+toml_edit = { version = "0.25" }
 url = { version = "2" }
 writeable = { version = "0.6", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8", default-features = false, features = ["alloc", "derive"] }
@@ -120,16 +130,15 @@ bitflags = { version = "2", default-features = false, features = ["serde", "std"
 block2 = { version = "0.6" }
 crossbeam-utils = { version = "0.8" }
 half = { version = "2", features = ["num-traits"] }
+i-slint-core = { version = "1", default-features = false, features = ["accessibility-text", "box-shadow-cache", "image-decoders", "svg"] }
 libc = { version = "0.2" }
 objc2 = { version = "0.6", features = ["relax-sign-encoding"] }
 objc2-app-kit = { version = "0.3", default-features = false, features = ["NSAlert", "NSAppearance", "NSApplication", "NSButton", "NSCell", "NSColor", "NSControl", "NSEvent", "NSImage", "NSMenu", "NSMenuItem", "NSOpenPanel", "NSPanel", "NSPasteboard", "NSPasteboardItem", "NSResponder", "NSRunningApplication", "NSSavePanel", "NSSound", "NSStatusBar", "NSStatusBarButton", "NSStatusItem", "NSView", "NSWindow", "NSWorkspace", "block2", "objc2-core-foundation", "objc2-core-graphics", "objc2-quartz-core", "std"] }
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["CFArray", "CFAttributedString", "CFBase", "CFCGTypes", "CFCalendar", "CFCharacterSet", "CFData", "CFDate", "CFDictionary", "CFError", "CFFileSecurity", "CFLocale", "CFMachPort", "CFMessagePort", "CFNumber", "CFRunLoop", "CFSet", "CFStream", "CFString", "CFURL", "CFUserNotification", "objc2", "std"] }
 objc2-core-graphics = { version = "0.3", default-features = false, features = ["CGColor", "CGColorSpace", "CGContext", "CGDataProvider", "CGDirectDisplay", "CGEventTypes", "CGFont", "CGImage", "CGLayer", "CGPath", "objc2", "std"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["NSAppleEventDescriptor", "NSArray", "NSAttributedString", "NSBundle", "NSCoder", "NSData", "NSDate", "NSDictionary", "NSEnumerator", "NSError", "NSException", "NSFileManager", "NSFileWrapper", "NSFormatter", "NSGeometry", "NSItemProvider", "NSKeyValueObserving", "NSLocale", "NSNotification", "NSNull", "NSObjCRuntime", "NSObject", "NSOperation", "NSPathUtilities", "NSProcessInfo", "NSRange", "NSRunLoop", "NSSet", "NSString", "NSThread", "NSURL", "NSUndoManager", "NSUserActivity", "NSUserDefaults", "NSValue", "NSZone", "block2", "objc2-core-foundation", "std"] }
-objc2-metal = { version = "0.3", default-features = false, features = ["MTLAccelerationStructureCommandEncoder", "MTLAccelerationStructureTypes", "MTLBlitCommandEncoder", "MTLBlitPass", "MTLBuffer", "MTLCaptureManager", "MTLCaptureScope", "MTLCommandBuffer", "MTLCommandEncoder", "MTLCommandQueue", "MTLComputeCommandEncoder", "MTLComputePass", "MTLComputePipeline", "MTLCounters", "MTLDepthStencil", "MTLDevice", "MTLDrawable", "MTLEvent", "MTLPipeline", "MTLPixelFormat", "MTLRenderCommandEncoder", "MTLRenderPass", "MTLRenderPipeline", "MTLResidencySet", "MTLSampler", "MTLStageInputOutputDescriptor", "MTLTexture", "MTLTypes", "MTLVertexDescriptor", "block2", "std"] }
 objc2-quartz-core = { version = "0.3", default-features = false, features = ["CADisplayLink", "CALayer", "CAMediaTiming", "CAMediaTimingFunction", "CAMetalLayer", "CAOpenGLLayer", "CATransaction", "objc2-core-foundation", "objc2-core-graphics", "objc2-metal", "std"] }
 once_cell = { version = "1" }
-skrifa = { version = "0.44" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 tokio = { version = "1", default-features = false, features = ["io-util"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
@@ -146,7 +155,6 @@ objc2 = { version = "0.6", features = ["relax-sign-encoding"] }
 objc2-core-foundation = { version = "0.3", default-features = false, features = ["CFArray", "CFAttributedString", "CFBase", "CFCGTypes", "CFCalendar", "CFCharacterSet", "CFData", "CFDate", "CFDictionary", "CFError", "CFFileSecurity", "CFLocale", "CFMachPort", "CFMessagePort", "CFNumber", "CFRunLoop", "CFSet", "CFStream", "CFString", "CFURL", "CFUserNotification", "objc2", "std"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["NSAppleEventDescriptor", "NSArray", "NSAttributedString", "NSBundle", "NSCoder", "NSData", "NSDate", "NSDictionary", "NSEnumerator", "NSError", "NSException", "NSFileManager", "NSFileWrapper", "NSFormatter", "NSGeometry", "NSItemProvider", "NSKeyValueObserving", "NSLocale", "NSNotification", "NSNull", "NSObjCRuntime", "NSObject", "NSOperation", "NSPathUtilities", "NSProcessInfo", "NSRange", "NSRunLoop", "NSSet", "NSString", "NSThread", "NSURL", "NSUndoManager", "NSUserActivity", "NSUserDefaults", "NSValue", "NSZone", "block2", "objc2-core-foundation", "std"] }
 once_cell = { version = "1" }
-skrifa = { version = "0.44" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 
 [target.x86_64-pc-windows-msvc.dependencies]
@@ -154,8 +162,8 @@ bitflags = { version = "2", default-features = false, features = ["serde"] }
 crossbeam-utils = { version = "0.8" }
 getrandom = { version = "0.4", default-features = false, features = ["std"] }
 half = { version = "2", features = ["num-traits"] }
+i-slint-core = { version = "1", default-features = false, features = ["accessibility-text", "box-shadow-cache", "image-decoders", "svg"] }
 once_cell = { version = "1" }
-skrifa = { version = "0.44" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 tokio = { version = "1", default-features = false, features = ["io-util"] }
 tracing = { version = "0.1", default-features = false, features = ["std"] }
@@ -171,7 +179,6 @@ crossbeam-utils = { version = "0.8" }
 getrandom = { version = "0.4", default-features = false, features = ["std"] }
 half = { version = "2", features = ["num-traits"] }
 once_cell = { version = "1" }
-skrifa = { version = "0.44" }
 smallvec = { version = "1", default-features = false, features = ["union"] }
 windows = { version = "0.62", features = ["Win32_Devices_DeviceAndDriverInstallation", "Win32_Devices_Display", "Win32_Globalization", "Win32_Graphics_Direct3D12", "Win32_Graphics_Direct3D_Dxc", "Win32_Graphics_Direct3D_Fxc", "Win32_Graphics_DirectComposition", "Win32_Graphics_DirectWrite", "Win32_Graphics_Dwm", "Win32_Graphics_Dxgi_Common", "Win32_Graphics_Gdi", "Win32_Graphics_OpenGL", "Win32_Security", "Win32_System_Com", "Win32_System_Diagnostics_Debug", "Win32_System_Kernel", "Win32_System_LibraryLoader", "Win32_System_Ole", "Win32_System_Performance", "Win32_System_Threading", "Win32_System_Variant", "Win32_UI_Accessibility", "Win32_UI_HiDpi", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 windows-core = { version = "0.62" }

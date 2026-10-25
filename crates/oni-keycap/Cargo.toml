@@ -1,0 +1,17 @@
+[package]
+name = "oni-keycap"
+description = "The Swift app's keycap rasterised on the CPU: lit frustum walls, dished face, socket and cast shadows, blurs as SwiftUI draws them"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+tiny-skia = { version = "0.11", default-features = false, features = ["std"] }
+oni-hack = { version = "0.1", path = "../oni-hack" }
+
+[dev-dependencies]
+png = "0.18"
+
+[lib]
+doctest = false

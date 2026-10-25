@@ -3328,5 +3328,47 @@
     "title": "A 2.5D lab shown live by slint-viewer, no build",
     "status": "in progress",
     "detail": "crates/oni-ui/lab/ holds Slint copies of the Swift app's raised and sunken elements on three shared effects (depth.slint: Keycap, Swift's lit frustum for keys; Outward, a plain raised surface; Inward, a sunken well), every look a live tunable; scripts/ds-lab opens it in slint-viewer 1.18.1 (installed once in ~/.oni-toolchain/slint) and redraws on each save, --check compiles it and --shot renders a component to a PNG. The final styles then move into ui/ds/."
+  },
+  {
+    "id": 551,
+    "type": "feature",
+    "title": "oni-keycap: the Swift keycap rasterised on the CPU, matched against the Swift bench's own render",
+    "status": "done",
+    "detail": "crates/oni-keycap ports KeycapStyle (fields, defaults, depth interpolation, Variant large/small/mini, the app's instances), Frustum and KeycapSurface/KeycapChrome/SocketShadow: walls grown by the bleed and blurred at seamBlur, the 7-stop dish, the socket's centred blurred stroke, travel and scale, the continuous corner as UIKit's three cubics, everything clipped to the silhouette. SwiftUI's `.shadow` after a clip shadows each layer, so the face darkens the wall below it: ported as such. Blur and shadow radii are Gaussians of 0.9 radius, fitted by reference::sweep. Against keycap-lab/exports/variantes.png rebuilt at its own style (2 pt contour, white backing, ambient loss): mean 0.91 levels, 99th percentile 6; twins: azimuth +30° 2.23, blurs ×2.5 14.49. About 4 ms for a 120 × 40 key at 2×."
+  },
+  {
+    "id": 552,
+    "type": "tooling",
+    "title": "oni-lab: the 2.5D lab in Slint's interpreter, reloaded into the same window, its keycaps drawn by oni-keycap",
+    "status": "done",
+    "detail": "crates/oni-lab (bin oni-lab) loads crates/oni-ui/lab/lab.slint with slint-interpreter 1.18.1, polls the lab's and ui/ds's .slint files every 250 ms and rebuilds into the same window, carrying every global value the hand moved unless the file changed that default. It answers the `Raster.keycap` pure callback at the window's scale, cached by its numbers with the depth in 1/256 steps. `--check` compiles; `--shot FILE [COMPONENT] [WxH]` renders the lab or one page headless at 2× (ONI_LAB_SCALE). ONI_BACKGROUND=1 opens it behind."
+  },
+  {
+    "id": 553,
+    "type": "design",
+    "title": "The lab's Keycap draws Raster's image: Swift's look, children on the face",
+    "status": "done",
+    "detail": "depth.slint: KeycapLook, the Raster global and KeycapVariant; Keycap keeps albedo, radius, face-radius, depth and @children, gains variant/factor, level, shadow, rim and an edge (DSBarHandle's strokeBorder), lays its children on the face rect moved by the travel and scaled by scale(at:) about the key's centre, and stands a flat cap in for slint-viewer. Depth gains seam blur, rim rest/pressed/softness, scale pressed, the 0.1 s / 0.02 s curves and the 0.14 s hold; the left panel tunes them."
+  },
+  {
+    "id": 554,
+    "type": "tooling",
+    "title": "scripts/ds-lab runs oni-lab",
+    "status": "done",
+    "detail": "Builds oni-lab once when missing, then runs it; --check and --shot FILE [COMPONENT] [WxH] go through it, so a shot shows the real keycap. slint-viewer --check still compiles the lab: the pure callback answers an empty image there."
+  },
+  {
+    "id": 555,
+    "type": "design",
+    "title": "The lab's Keys page: the app's keycap keys, live beside their forced states",
+    "status": "done",
+    "detail": "keys.slint: LiveKey presses as KeycapPress (reference curves, 0.14 s minimum hold, hover at 0.25, a release while hovered rises on the release curve). Rows: DSPanelButton word plain, pale, tinted, icon, the four heights; DSActionButton and its busy plate; the app bar's 40 pt icon and word keys; the scanner keypad's five letters on one plate; step keys; KeycapPlate small and mini. The Depths page's key is a LiveKey."
+  },
+  {
+    "id": 556,
+    "type": "design",
+    "title": "The slider knob and step keys draw through Keycap",
+    "status": "done",
+    "detail": "sliders.slint's ScaledCap is now Keycap at a free factor (0.525 by default), no cast shadow unless asked, no rim when level, the 1 px edge when edged: DSBarHandle's knobStyle."
   }
 ]

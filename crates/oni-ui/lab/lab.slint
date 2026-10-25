@@ -4,7 +4,9 @@ import { Slider, ScrollView, TabWidget } from "std-widgets.slint";
 import "../fonts/Inter.ttf";
 import { DS } from "../ui/ds/tokens.slint";
 import { Keycap, Outward, Inward, Depth } from "depth.slint";
-import { KeysPage } from "keys.slint";
+import { KeysPage, LiveKey } from "keys.slint";
+// Exported for oni-lab, which answers `Raster` and carries `Depth` across a reload.
+export { Depth, Raster } from "depth.slint";
 import { TabsPage } from "tabs.slint";
 import { FieldsPage } from "fields.slint";
 import { SlidersPage } from "sliders.slint";
@@ -42,13 +44,12 @@ component DepthsPage inherits Rectangle {
             spacing: 12px;
             alignment: start;
             Heading { text: "KEYCAP"; }
-            cap := Keycap {
+            // The large cap, pressed as `KeycapPress` presses it.
+            LiveKey {
                 width: 140px;
                 height: 64px;
-                depth: touch.pressed ? 1 : touch.has-hover ? Depth.hover-press : 0;
-                animate depth { duration: Depth.press-time; easing: ease-out; }
-                Text { text: "EXPORT"; color: DS.palette-text-on-fill; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; horizontal-alignment: center; vertical-alignment: center; width: parent.width; height: parent.height; }
-                touch := TouchArea { }
+                variant: large;
+                Text { text: "EXPORT"; color: DS.palette-text-on-fill; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; horizontal-alignment: center; vertical-alignment: center; width: parent.width; height: parent.height; }
             }
         }
         VerticalLayout {
@@ -93,6 +94,11 @@ export component Lab inherits Window {
                     Tune { label: "wall side"; maximum: 24; value <=> Depth.wall-side; }
                     Tune { label: "rise"; maximum: 24; value <=> Depth.rise; }
                     Tune { label: "dish"; maximum: 12; value <=> Depth.dish; }
+                    Tune { label: "seam blur"; maximum: 8; value <=> Depth.seam-blur; }
+                    Tune { label: "rim at rest"; maximum: 8; value <=> Depth.socket-rest; }
+                    Tune { label: "rim pressed"; maximum: 12; value <=> Depth.socket-pressed; }
+                    Tune { label: "rim softness"; value <=> Depth.socket-softness; }
+                    Tune { label: "scale pressed"; minimum: 0.8; value <=> Depth.scale-pressed; }
                     Tune { label: "shadow opacity"; value <=> Depth.shadow-opacity; }
                     Tune { label: "hover press"; value <=> Depth.hover-press; }
                     Heading { text: "OUTWARD"; }

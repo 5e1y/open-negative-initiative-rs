@@ -2,6 +2,25 @@
 // `Outward`, a plain raised surface; `Inward`, a well sunk into the ground. Tuned live, then copied into ds/.
 import { DS } from "../ui/ds/tokens.slint";
 
+// What `Raster.keycap` draws: a key's size, depth and look, every length in points at the large size.
+export struct KeycapLook {
+    width: float, height: float, depth: float, albedo: color, radius: float, face-radius: float,
+    factor: float, margin: float, level: bool, shadow: bool, rim: bool,
+    azimuth: float, elevation: float, ambient: float, diffuse: float, midtone: float,
+    wall-top: float, wall-bottom: float, wall-side: float, rise: float, dish: float, seam-blur: float,
+    socket-rest: float, socket-pressed: float, socket-softness: float, scale-pressed: float, travel: float,
+    shadow-opacity: float, shadow-blur: float, shadow-y: float,
+}
+
+// The keycap rasterised by oni-keycap, Swift's algorithm to the pixel; `oni-lab` answers it, and
+// slint-viewer, which cannot, gets an empty image and `Keycap` its flat stand-in.
+export global Raster {
+    pure callback keycap(look: KeycapLook) -> image;
+}
+
+// `Keycap.Variant`: every length at 1, 0.525 or 0.38, as `KeycapStyle.scaled(by:)`.
+export enum KeycapVariant { large, small, mini }
+
 // Swift's `KeycapStyle`, the physical subset: a lit frustum (four flat walls, a dished face) over a socket.
 export global Depth {
     // The light: azimuth from +x counter-clockwise, elevation above the plane, in degrees.
@@ -23,10 +42,19 @@ export global Depth {
     in-out property <float> shadow-opacity: 0.2;
     in-out property <length> shadow-blur: 8px;
     in-out property <length> shadow-y: 10px;
-    // How far a press sinks the cap, and how much of a press a hover shows.
+    // How far a press sinks the cap, how much of a press a hover shows; the reference's two curves,
+    // 0.1 s down and 0.02 s up, and the 0.14 s a tap is held down for.
     in-out property <length> travel: 1px;
     in-out property <float> hover-press: 0.25;
-    in-out property <duration> press-time: 90ms;
+    in-out property <duration> press-time: 100ms;
+    in-out property <duration> release-time: 20ms;
+    in-out property <duration> min-hold: 140ms;
+    in-out property <float> scale-pressed: 0.95;
+    // The walls' seam blur, and the socket's rim at rest and pressed with its softness.
+    in-out property <float> seam-blur: 3;
+    in-out property <float> socket-rest: 2;
+    in-out property <float> socket-pressed: 6;
+    in-out property <float> socket-softness: 0.5;
     // The plain raised surface: a lit top edge, a shade towards its foot, a short cast shadow.
     in-out property <float> raise-light: 0.10;
     in-out property <float> raise-shade: 0.18;
@@ -72,68 +100,70 @@ export global Depth {
     public pure function face(albedo: color, t: float, h: float) -> color { lit(albedo, dish-shade(t, h)) }
 }
 
-// A keycap standing out: its cast shadow, four flat-shaded walls clipped to the silhouette, the dished
-// face on them; children lie on the face and sink with it. `depth` 0 rests, 1 is fully pressed.
+// Swift's `KeycapChrome`, drawn by `Raster`: children lie on the face, sink and shrink with it. `depth`
+// 0 rests, 1 is fully pressed; the variant or a free `factor` sizes every length.
 export component Keycap inherits Rectangle {
     in property <color> albedo: DS.palette-keycap;
-    in property <length> radius: Depth.corner;
-    in property <length> face-radius: Depth.face-corner;
+    in property <KeycapVariant> variant: large;
+    in property <float> factor: root.variant == KeycapVariant.small ? 0.525 : root.variant == KeycapVariant.mini ? 0.38 : 1;
+    in property <length> radius: Depth.corner * root.factor;
+    in property <length> face-radius: Depth.face-corner * root.factor;
     in property <float> depth;
-    property <float> top: Depth.wall-top * Depth.relief;
-    property <float> bottom: Depth.wall-bottom * Depth.relief;
-    property <float> side: Depth.wall-side * Depth.relief;
+    // `DSBarHandle`: equal walls, no cast shadow, no rim; and its edge stroked over the chrome.
+    in property <bool> level;
+    in property <bool> shadow: true;
+    in property <bool> rim: true;
+    in property <length> edge-width: 0;
+    in property <color> edge-color: #000000;
     property <float> w: self.width / 1px;
     property <float> h: self.height / 1px;
-    property <length> sink: Depth.travel * root.depth;
-    border-radius: root.radius;
-    background: root.albedo;
-    drop-shadow-color: rgba(0, 0, 0, Depth.shadow-opacity * (1 - root.depth));
-    drop-shadow-blur: Depth.shadow-blur;
-    drop-shadow-offset-y: Depth.shadow-y * (1 - root.depth);
-
-    Rectangle {
+    property <float> top: Depth.wall-top * Depth.relief * root.factor;
+    property <float> bottom: (root.level ? Depth.wall-top : Depth.wall-bottom) * Depth.relief * root.factor;
+    property <float> side: Depth.wall-side * Depth.relief * root.factor;
+    // `faceRect`: the walls squeezed alike where they would leave the face under 40 % of the cap.
+    property <float> squeeze: min(root.top + root.bottom > root.h * 0.6 ? root.h * 0.6 / (root.top + root.bottom) : 1,
+        2 * root.side > root.w * 0.6 ? root.w * 0.6 / (2 * root.side) : 1);
+    // The cast shadow's reach at 0.9 σ per radius, so the image holds it whole.
+    property <float> margin: ceil((2.7 * Depth.shadow-blur / 1px + Depth.shadow-y / 1px) * root.factor) + 2;
+    image := Image {
+        x: -root.margin * 1px;
+        y: -root.margin * 1px;
+        width: root.width + 2 * root.margin * 1px;
+        height: root.height + 2 * root.margin * 1px;
+        image-fit: fill;
+        source: Raster.keycap({
+            width: root.w, height: root.h, depth: root.depth, albedo: root.albedo,
+            radius: root.radius / 1px, face-radius: root.face-radius / 1px, factor: root.factor,
+            margin: root.margin, level: root.level, shadow: root.shadow, rim: root.rim,
+            azimuth: Depth.azimuth, elevation: Depth.elevation, ambient: Depth.ambient,
+            diffuse: Depth.diffuse, midtone: Depth.midtone,
+            wall-top: Depth.wall-top * Depth.relief, wall-bottom: Depth.wall-bottom * Depth.relief,
+            wall-side: Depth.wall-side * Depth.relief, rise: Depth.rise * Depth.relief, dish: Depth.dish,
+            seam-blur: Depth.seam-blur, socket-rest: Depth.socket-rest, socket-pressed: Depth.socket-pressed,
+            socket-softness: Depth.socket-softness, scale-pressed: Depth.scale-pressed, travel: Depth.travel / 1px,
+            shadow-opacity: Depth.shadow-opacity, shadow-blur: Depth.shadow-blur / 1px, shadow-y: Depth.shadow-y / 1px,
+        });
+    }
+    // slint-viewer has no `Raster`: a flat cap in its place keeps the layout readable.
+    if image.source.width == 0: Rectangle {
         border-radius: root.radius;
-        clip: true;
-        Path {
-            x: 0; y: root.sink; width: parent.width; height: parent.height;
-            viewbox-width: root.w; viewbox-height: root.h;
-            fill: Depth.wall(root.albedo, 0, Depth.wall-top);
-            commands: "M 0 0 L \{root.w} 0 L \{root.w - root.side} \{root.top} L \{root.side} \{root.top} Z";
-        }
-        Path {
-            x: 0; y: root.sink; width: parent.width; height: parent.height;
-            viewbox-width: root.w; viewbox-height: root.h;
-            fill: Depth.wall(root.albedo, 1, Depth.wall-bottom);
-            commands: "M 0 \{root.h} L \{root.w} \{root.h} L \{root.w - root.side} \{root.h - root.bottom} L \{root.side} \{root.h - root.bottom} Z";
-        }
-        Path {
-            x: 0; y: root.sink; width: parent.width; height: parent.height;
-            viewbox-width: root.w; viewbox-height: root.h;
-            fill: Depth.wall(root.albedo, 2, Depth.wall-side);
-            commands: "M 0 0 L \{root.side} \{root.top} L \{root.side} \{root.h - root.bottom} L 0 \{root.h} Z";
-        }
-        Path {
-            x: 0; y: root.sink; width: parent.width; height: parent.height;
-            viewbox-width: root.w; viewbox-height: root.h;
-            fill: Depth.wall(root.albedo, 3, Depth.wall-side);
-            commands: "M \{root.w} 0 L \{root.w - root.side} \{root.top} L \{root.w - root.side} \{root.h - root.bottom} L \{root.w} \{root.h} Z";
-        }
-        face := Rectangle {
-            x: root.side * 1px;
-            y: root.top * 1px + root.sink;
-            width: parent.width - 2 * root.side * 1px;
-            height: parent.height - (root.top + root.bottom) * 1px;
-            border-radius: root.face-radius;
-            background: @linear-gradient(180deg,
-                Depth.face(root.albedo, 0, self.height / 1px) 0%,
-                Depth.face(root.albedo, 1 / 6, self.height / 1px) 16.67%,
-                Depth.face(root.albedo, 2 / 6, self.height / 1px) 33.33%,
-                Depth.face(root.albedo, 3 / 6, self.height / 1px) 50%,
-                Depth.face(root.albedo, 4 / 6, self.height / 1px) 66.67%,
-                Depth.face(root.albedo, 5 / 6, self.height / 1px) 83.33%,
-                Depth.face(root.albedo, 1, self.height / 1px) 100%);
-            @children
-        }
+        background: root.albedo;
+    }
+    if root.edge-width > 0: Rectangle {
+        border-radius: root.radius;
+        border-width: root.edge-width;
+        border-color: root.edge-color;
+    }
+    // The label's place: on the face, moved by the travel, scaled about the key's centre as the cap.
+    Rectangle {
+        x: root.side * root.squeeze * 1px;
+        y: (root.top * root.squeeze + Depth.travel / 1px * root.factor * root.depth) * 1px;
+        width: root.width - 2 * root.side * root.squeeze * 1px;
+        height: root.height - (root.top + root.bottom) * root.squeeze * 1px;
+        transform-scale-x: 1 + (Depth.scale-pressed - 1) * root.depth;
+        transform-scale-y: self.transform-scale-x;
+        transform-origin: { x: root.width / 2 - self.x, y: root.height / 2 - self.y };
+        @children
     }
 }
 
