@@ -3587,5 +3587,40 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 655,
+    "type": "feature",
+    "title": "The roll's histogram summed as the roll combines its frames",
+    "status": "done",
+    "detail": "Each measured frame keeps the levels histogram its tails and median were read off (Measured.counts), and roll::summed lays every frame's counts at the roll's gains, moved as the tails are, into the bins of 0…1, so the measure can show the roll so far with the black and white combined reads. Test the_roll_s_histogram_sums_every_frame_moved_to_the_roll_s_gains, its twin the last frame alone."
+  },
+  {
+    "id": 656,
+    "type": "feature",
+    "title": "One CRT glass for the Scanner face's screen and the measure: ds crt.slint",
+    "status": "done",
+    "detail": "CrtScreen (LabScreen's glass, its scanlines in one cached layer), CrtLine (the phosphor ink with LabScreen's glow, a near and a far halo on the glyphs' outer stroke, since Slint has no text shadow), CrtTrace (a phosphor histogram, its echoes, the roll's ends and what lies past them dimmed) and CrtPicture (a cross-fading picture); CrtStyle holds their values. LabScreen now draws on it and gains the glow Swift's has."
+  },
+  {
+    "id": 657,
+    "type": "feature",
+    "title": "The measure step as a bank of CRT screens: the place, the negative, three channels",
+    "status": "done",
+    "detail": "The 2.5D plot well in its card (TraceWell, TraceStyle) is gone. The measure shows FRAME 03/08 and the frame's name on a screen line, the frame's negative reduced on the measure's thread with its lights blooming and cross-fading as the next lands, and red, green and blue each on its own screen, morphing into the next frame's with the frames before as fading echoes. Curves are published as whole models: a screen reading its curve by index is not woken by a row written in place. Nothing ticks once the morph rests."
+  },
+  {
+    "id": 658,
+    "type": "feature",
+    "title": "The roll's screen: its histogram building up frame by frame, its black and white placed",
+    "status": "done",
+    "detail": "After each frame that votes, the worker combines the roll so far and sends its summed histogram and each channel's black and white once per frame; the roll's screen draws them as three bands with their ends as phosphor lines that move as the estimate settles. The base is read before the frames, so the black shown is the one the roll takes; the reading itself is unchanged."
+  },
+  {
+    "id": 659,
+    "type": "test",
+    "title": "The measure's window check follows the CRT bank and the roll",
+    "status": "done",
+    "detail": "prepare_measure: every screen dark at the start, after a stop and after landing (no channel, echo, negative or roll); three channels per landing, the place on two digits, the negative shown; the roll's count never shrinks and reaches several frames, its histogram moves, each black left of its white. Twins: the histogram moved between landings, and a roll showing the last frame alone would stay at one."
   }
 ]
