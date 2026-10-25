@@ -121,6 +121,7 @@ impl Ctl {
         if ask_scan {
             s.prepare.asked_scan = base_path;
         }
+        Self::ask_full(&mut s.prepare);
         drop(s);
         p.set_measuring(measuring.is_some());
         p.set_step(step.index() as i32);
@@ -184,6 +185,21 @@ impl Ctl {
         p.set_window_height(wh as f32);
     }
 
+    /// The first full resolution the loupe wants and lacks, one at a time; those no longer wanted are let go.
+    fn ask_full(r: &mut Roll) {
+        let wanted = r.fulls_wanted();
+        r.fulls.retain(|(p, _, _)| wanted.contains(p));
+        let Some(missing) = wanted.iter().position(|p| !r.fulls.iter().any(|(f, _, _)| f == p)) else { return };
+        let path = &wanted[missing];
+        if r.asked_full.as_ref().is_some_and(|(p, _)| p == path) {
+            return;
+        }
+        if let Some(previews) = &r.previews {
+            previews.full(path, missing > 0);
+            r.asked_full = Some((path.clone(), Instant::now()));
+        }
+    }
+
     /// The base step's scan, its picked ring, and the loupe under the pointer.
     pub(in crate::app) fn publish_base(&self) {
         let Some(w) = self.window() else { return };
@@ -203,7 +219,7 @@ impl Ctl {
         let mut s = self.state.borrow_mut();
         let radius = base_radius(&s);
         let r = &mut s.prepare;
-        let Some((path, scan, scan_size)) = r.scan.clone() else { return };
+        let Some((path, scan, scan_size, whole_size)) = r.scan.clone() else { return };
         p.set_scan_ready(true);
         if r.laid_scan.as_ref() != Some(&(path.clone(), scan_size)) {
             p.set_scan(scan.clone());
@@ -224,17 +240,19 @@ impl Ctl {
             p.set_loupe_shown(false);
             return;
         };
-        let whole = r.full.as_ref().filter(|(f, _, _)| *f == path);
-        let (source, (width, height)) = whole.map_or((scan, size), |(_, i, s)| (i.clone(), *s));
-        let l = loupe(pointer, rect, size.0, (width, height), whole.is_some(), radius, picked.map(|b| (b.unit, b.radius)));
+        // Never the scan: a well at the full resolution's scale until it lands, so nothing sharpens under the eye.
+        let laid = r.fulls.iter().find(|(f, _, _)| *f == path).map(|(_, image, s)| if s.0 > 0 { (image.clone(), *s, true) } else { (scan, size, false) });
+        let l = loupe(pointer, rect, size.0, laid.as_ref().map_or(whole_size, |l| l.1), laid.as_ref().is_none_or(|l| l.2), radius, picked.map(|b| (b.unit, b.radius)));
         p.set_loupe_shown(true);
         p.set_loupe_x(pointer.0 as f32);
         p.set_loupe_y(pointer.1 as f32);
-        if r.laid_loupe.as_ref() != Some(&(path.clone(), (width, height))) {
-            p.set_loupe_source(source);
-            r.laid_loupe = Some((path.clone(), (width, height)));
+        if let Some((source, s, _)) = &laid
+            && r.laid_loupe.as_ref() != Some(&(path.clone(), *s))
+        {
+            p.set_loupe_source(source.clone());
+            r.laid_loupe = Some((path.clone(), *s));
         }
-        p.set_loupe_cut(ModelRc::new(VecModel::from(l.cut.to_vec())));
+        p.set_loupe_cut(ModelRc::new(VecModel::from(if laid.is_some() { l.cut.to_vec() } else { vec![0; 4] })));
         p.set_loupe_shown_at(ModelRc::new(VecModel::from(l.at.iter().map(|v| *v as f32).collect::<Vec<_>>())));
         p.set_loupe_rings(ModelRc::new(VecModel::from(l.rings.iter().map(|v| *v as f32).collect::<Vec<_>>())));
         p.set_loupe_picked(l.picked);

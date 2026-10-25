@@ -93,6 +93,11 @@ impl State {
         self.prepare.previewed()
     }
 
+    /// The frames whose full resolution the base step's loupe holds ready.
+    pub fn roll_fulls(&self) -> Vec<String> {
+        self.prepare.fulls.iter().map(|(p, _, _)| p.clone()).collect()
+    }
+
     pub fn opened(&self) -> Option<&str> {
         self.opened.as_deref()
     }

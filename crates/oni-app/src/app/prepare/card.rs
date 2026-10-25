@@ -35,7 +35,7 @@ impl Ctl {
         let p = w.global::<Preparing>();
         let r = &self.state.borrow().prepare;
         let path = r.base_shown()?.path.clone();
-        let (_, _, size) = r.scan.as_ref().filter(|(p, _, _)| *p == path)?;
+        let (_, _, size, _) = r.scan.as_ref().filter(|(p, _, _, _)| *p == path)?;
         let rect = fitted_image((size.0 as f64, size.1 as f64), (f64::from(p.get_base_width()), f64::from(p.get_base_height())));
         Some((rect, *size))
     }
