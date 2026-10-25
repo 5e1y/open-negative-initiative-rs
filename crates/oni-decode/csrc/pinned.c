@@ -111,6 +111,12 @@ int oni_unpack(oni_decoded *d)
 int oni_process(oni_decoded *d, const float mul[3])
 {
     libraw_data_t *lr = d->raw;
+    // LibRaw halves a mosaic alone (raw2image_start): a LinearRaw DNG or an sRAW comes back whole.
+    const libraw_rawdata_t *rd = &lr->rawdata;
+    if (!rd->iparams.filters || rd->color3_image || rd->color4_image || rd->float3_image || rd->float4_image) {
+        lr->params.half_size = 0;
+        d->half = 0;
+    }
     for (int c = 0; c < 3; c++) lr->params.user_mul[c] = mul[c];
     lr->params.user_mul[3] = mul[1];
     int rc = libraw_dcraw_process(lr);
@@ -122,18 +128,22 @@ int oni_process(oni_decoded *d, const float mul[3])
     d->height = img->height;
     d->pixels = (unsigned short *)img->data;
     d->image = img;
+    // LibRaw keeps the crop in the raw's coordinates; the image handed out starts at the margins.
     const libraw_raw_inset_crop_t *c = &lr->sizes.raw_inset_crops[0];
-    d->inset[0] = c->cleft;
-    d->inset[1] = c->ctop;
-    d->inset[2] = c->cwidth;
-    d->inset[3] = c->cheight;
+    int left = rd->sizes.left_margin, top = rd->sizes.top_margin;
+    if (c->cleft < 0xffff && c->ctop < 0xffff && c->cleft >= left && c->ctop >= top) {
+        d->inset[0] = c->cleft - left;
+        d->inset[1] = c->ctop - top;
+        d->inset[2] = c->cwidth;
+        d->inset[3] = c->cheight;
+    }
     // The raw and working buffers, 245 MB at 24 MP, go before the caller's float copy is made.
     libraw_recycle(lr);
     if (d->stream) { oni_stream_free(d->stream); d->stream = NULL; }
     return 0;
 }
 
-// The maker's default crop inside the visible area, as LibRaw reads it; zero sizes when none.
+// The maker's default crop in the image handed out, before any halving; zero sizes when none.
 void oni_inset(const oni_decoded *d, int out[4])
 {
     memcpy(out, d->inset, sizeof d->inset);

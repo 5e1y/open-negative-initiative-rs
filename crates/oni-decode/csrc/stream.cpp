@@ -20,10 +20,16 @@ public:
     explicit handle_stream(FILE *file) : LibRaw_bigfile_datastream("")
     {
         f = file;
+        // Huffman decoders read a byte a call, 25 million for a 24 MP NEF: a wide buffer serves them.
+        setvbuf(f, NULL, _IOFBF, 1 << 20);
         _fsize = 0;
         if (seek(0, SEEK_END) == 0) _fsize = tell();
         seek(0, SEEK_SET);
     }
+#ifdef _WIN32
+    // The CRT's fgetc locks the stream on every byte; a stream is never shared between threads.
+    int get_char() override { return _fgetc_nolock(f); }
+#endif
 };
 
 } // namespace

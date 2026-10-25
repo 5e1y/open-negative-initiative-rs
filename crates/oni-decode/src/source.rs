@@ -36,7 +36,7 @@ impl Source {
     pub(crate) fn open(path: &Path, route: Route) -> Result<Source, DecodeError> {
         match route {
             Route::Name => {
-                let name = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| DecodeError(-3))?;
+                let name = CString::new(name_bytes(path)).map_err(|_| DecodeError(-3))?;
                 Ok(Source { name, stream: std::ptr::null_mut() })
             }
             Route::Handle => {
@@ -69,6 +69,18 @@ impl Drop for Source {
     }
 }
 
+/// The name's own bytes, so a name that is not UTF-8 still names its file.
+#[cfg(unix)]
+fn name_bytes(path: &Path) -> Vec<u8> {
+    use std::os::unix::ffi::OsStrExt;
+    path.as_os_str().as_bytes().to_vec()
+}
+
+#[cfg(not(unix))]
+fn name_bytes(path: &Path) -> Vec<u8> {
+    path.to_string_lossy().as_bytes().to_vec()
+}
+
 #[cfg(windows)]
 fn raw(file: std::fs::File) -> isize {
     use std::os::windows::io::IntoRawHandle;
@@ -82,4 +94,4 @@ fn raw(file: std::fs::File) -> isize {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

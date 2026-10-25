@@ -3587,5 +3587,68 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 680,
+    "type": "fix",
+    "title": "A LinearRaw DNG or an sRAW is read whole at factor 1 when a small copy is asked",
+    "status": "done",
+    "detail": "oni_open asked LibRaw for half size from the frame's size alone, but LibRaw halves only a mosaic (raw2image_start: filters set, no colour3/4 or float image), so a compressed linear DNG or a Canon sRAW came back whole while ONI counted a factor of 2: the maker's crop halved into a top-left window, full_width doubled, the wrong window kept under the HALF key. oni_process now clears half_size and the half flag on the same condition LibRaw shrinks on, and a decode is kept under its key whatever its factor. Mosaics take the same path as before. Check a_linear_dng_is_read_whole_at_factor_one (a LinearRaw DNG at HALF reads factor 1 and bit for bit the whole decode; twin: a mosaic of the same size reads factor 2 at half the crop)."
+  },
+  {
+    "id": 681,
+    "type": "fix",
+    "title": "The maker's crop is placed from the margins LibRaw cuts, as an ActiveArea DNG, a CR2 or a RAF holds it",
+    "status": "done",
+    "detail": "LibRaw keeps raw_inset_crops in the raw's coordinates (a DNG's DefaultCropOrigin plus its ActiveArea margins), while the image it hands out starts at left_margin and top_margin: the window was shifted by the margins or, past the image, dropped. oni_process subtracts the margins and writes zero sizes for an unknown crop or one inside the margins. NEF and RW2 (margins 0) decode bit for bit as before at sides 0, HALF and 2000 in every colour mode; the Fujifilm RAF now takes its 6240 x 4155 crop instead of the uncropped 6246 x 4170. Check a_default_crop_lands_inside_the_active_area (a DNG with ActiveArea decodes bit for bit as the same frame without margins; twin: a window shifted by the margins differs)."
+  },
+  {
+    "id": 682,
+    "type": "fix",
+    "title": "An embedded RGB preview shorter than its sides is no preview, never a panic of the thumbnail thread",
+    "status": "done",
+    "detail": "LibRaw can hand out a bitmap preview whose data_size is the strip's declared length, shorter than width x height x 3, and turned() indexed past it, ending the only thumbnail thread. embedded_by takes a bitmap only when both sides are positive and the bytes cover them, cut to that length. Check a_bitmap_shorter_than_its_sides_is_no_preview (one byte short and a zero or negative side read None; twin: the whole rows read and a longer buffer is cut to the sides)."
+  },
+  {
+    "id": 683,
+    "type": "fix",
+    "title": "The TIFF probe reads its file a 64 KB window at a time, not a seek and a read a field",
+    "status": "done",
+    "detail": "Reader on a file did a seek and a read_exact per u8, u16 or u32, so a directory's arrays (strip offsets, a 4096-entry linearization table) cost thousands of syscalls per probe, on the UI thread for a selection. A Window keeps 64 KB around the last field (a quarter of it behind) and refills only when a field falls outside. Check a_probe_reads_a_window_not_a_field_at_a_time (a 256 x 256 LinearRaw TIFF with a 4096-entry table probes as its bytes in 3 reads at most; twin: a window as small as a field takes more than 4096)."
+  },
+  {
+    "id": 684,
+    "type": "fix",
+    "title": "LibRaw's name route keeps a path's own bytes, so a name that is not UTF-8 still opens",
+    "status": "done",
+    "detail": "Source::open built the C string from to_string_lossy, which replaces invalid bytes with U+FFFD and names another file on a volume from another system. On Unix the CString is the OsStr's bytes. Check a_name_that_is_not_utf8_keeps_its_bytes (the name reaches the shim byte for byte; twin: the lossy text differs)."
+  },
+  {
+    "id": 685,
+    "type": "fix",
+    "title": "Two writers of one decode never share a part file, and a stopped writer's part is trimmed",
+    "status": "done",
+    "detail": "store wrote every writer of a key into one '<key>.part', and File::create truncated the file another writer was still filling, which could leave a zero band in a kept decode; a part left by a kill was never counted nor removed. Each writer now has its own part (pid and a counter), and trim removes parts older than ten minutes. Check two_writers_of_one_frame_never_share_a_part_and_a_stale_part_goes (two parts differ, a stale one goes; twin: a fresh one stays)."
+  },
+  {
+    "id": 686,
+    "type": "fix",
+    "title": "A decode read back is dated as used on Windows too",
+    "status": "done",
+    "detail": "read_in noted the use with set_modified on a read-only handle, which Windows refuses (FILE_WRITE_ATTRIBUTES), so its cache let go the first written, not the least used. The date is now set through a handle opened for writing. Check a_decode_read_back_is_dated_as_used (twin: a decode not read keeps its date)."
+  },
+  {
+    "id": 687,
+    "type": "fix",
+    "title": "A tiled LinearRaw TIFF reads each tile's rows at the tile's width",
+    "status": "done",
+    "detail": "In one column of tiles wider than the image, a row's offset inside a tile was counted at the image's width, so every row after the first started early and the picture came out sheared with padding mixed in. The stride inside a tile is now the tile's width. Check a_tile_wider_than_the_image_reads_its_rows_at_its_own_width (5-wide image in 16-wide tiles decodes as the same strips; twin: the padding reads 1.0, which the picture never does; the image-width stride fails it)."
+  },
+  {
+    "id": 688,
+    "type": "fix",
+    "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
+    "status": "done",
+    "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
   }
 ]
