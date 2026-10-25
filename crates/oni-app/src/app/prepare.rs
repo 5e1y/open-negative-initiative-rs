@@ -130,8 +130,11 @@ pub(crate) struct Roll {
     serial: Option<mpsc::Sender<Job>>,
     tiles: HashMap<String, Image>,
     card: Option<(String, Image)>,
-    scan: Option<(String, Image, (usize, usize))>,
-    full: Option<(String, Image, (usize, usize))>,
+    /// The base's scan, its size, and its size at full resolution.
+    scan: Option<(String, Image, (usize, usize), (usize, usize))>,
+    /// The loupe's full resolutions, of the base frame and its neighbours, and the one asked since when.
+    pub(in crate::app) fulls: Vec<(String, Image, (usize, usize))>,
+    asked_full: Option<(String, Instant)>,
     pointer: Option<(f64, f64)>,
     asked_scan: Option<String>,
     shown_path: Option<String>,
@@ -190,7 +193,8 @@ impl Default for Roll {
             tiles: HashMap::new(),
             card: None,
             scan: None,
-            full: None,
+            fulls: Vec::new(),
+            asked_full: None,
             pointer: None,
             asked_scan: None,
             shown_path: None,
@@ -264,6 +268,19 @@ impl Roll {
 
     fn base_shown(&self) -> Option<&Frame> {
         if self.frames.is_empty() { None } else { self.frames.get(self.base_frame.min(self.frames.len() - 1)) }
+    }
+
+    /// The frames whose full resolution the loupe holds ready: the base frame from the roll's entry, its
+    /// neighbours on the base step, none past it, so the loupe's first picture is already the sensor's.
+    fn fulls_wanted(&self) -> Vec<String> {
+        let Some(at) = self.base_shown().map(|_| self.base_frame.min(self.frames.len() - 1)) else { return Vec::new() };
+        let mut wanted = match self.step.index().cmp(&Step::Base.index()) {
+            std::cmp::Ordering::Greater => return Vec::new(),
+            std::cmp::Ordering::Less => vec![at],
+            std::cmp::Ordering::Equal => vec![at, at + 1, at.wrapping_sub(1)],
+        };
+        wanted.retain(|i| *i < self.frames.len());
+        wanted.into_iter().map(|i| self.frames[i].path.clone()).collect()
     }
 
     fn ticked(&self) -> usize {

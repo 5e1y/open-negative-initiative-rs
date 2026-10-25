@@ -17,8 +17,6 @@ use std::time::{Duration, Instant};
 pub const TILE_SIDE: f64 = 360.0;
 /// `RollPreviews.gridPause`: the rest before the tiles follow a new look, or the card a new frame.
 pub const GRID_PAUSE: Duration = Duration::from_millis(250);
-/// `RollBaseSurface`: the rest on one scan before its full resolution is decoded for the loupe.
-pub const FULL_PAUSE: Duration = Duration::from_millis(300);
 
 /// What the frames are shown on: the roll's film and its flat-field, none while neutral.
 #[derive(Clone, Debug, PartialEq)]
@@ -40,8 +38,10 @@ pub struct Bitmap {
 pub enum Out {
     Tile(String, Bitmap),
     Card(String, Bitmap),
-    Scan(String, Bitmap),
-    Full(String, Bitmap),
+    /// The base's scan and the size of its full resolution, which the loupe is laid at before it lands.
+    Scan(String, Bitmap, (usize, usize)),
+    /// The loupe's full resolution, none when it cannot be decoded.
+    Full(String, Option<Bitmap>),
 }
 
 /// `RollPreviews.rendered`: the frame carried onto the roll's film at rest, its flat-field the roll's
@@ -92,7 +92,8 @@ struct Queue {
     large: Option<(String, Arc<Source>)>,
     large_at: Option<(String, Instant)>,
     scan: Option<String>,
-    full_at: Option<(String, Instant)>,
+    /// The full resolution asked, and whether it is a neighbour's, decoded as background work.
+    full: Option<(String, bool)>,
 }
 
 enum Work {
@@ -101,7 +102,7 @@ enum Work {
     Large(String),
     Decode(String),
     Tile(String, Arc<Source>, PipelineSettings, Look),
-    Full(String),
+    Full(String, bool),
 }
 
 impl Queue {
@@ -124,12 +125,9 @@ impl Queue {
         if let Some(path) = self.scan.take() {
             return Ok(Work::Scan(path));
         }
-        // The loupe's full scan, once the hand rests, ahead of the roll's tiles: it decodes on its own thread.
-        if let Some((path, at)) = self.full_at.clone()
-            && at <= now
-        {
-            self.full_at = None;
-            return Ok(Work::Full(path));
+        // The loupe's full scan ahead of the roll's tiles: it decodes on its own thread.
+        if let Some((path, neighbour)) = self.full.take() {
+            return Ok(Work::Full(path, neighbour));
         }
         if let Some((path, at)) = self.large_at.clone()
             && at <= now
@@ -149,7 +147,7 @@ impl Queue {
                 return Ok(Work::Tile(path, source, base, look));
             }
         }
-        let waits = [self.large_at.as_ref().map(|l| l.1), self.retile_at, self.full_at.as_ref().map(|f| f.1)];
+        let waits = [self.large_at.as_ref().map(|l| l.1), self.retile_at];
         Err(waits.into_iter().flatten().min().map(|at| at.saturating_duration_since(now)))
     }
 }
@@ -214,12 +212,14 @@ impl Previews {
         });
     }
 
-    /// The base step's scan of `path`, the last asked winning, then its full size once it rests.
+    /// The base step's scan of `path`, the last asked winning.
     pub fn scan(&self, path: Option<&str>) {
-        self.with(|q| {
-            q.scan = path.map(str::to_string);
-            q.full_at = None;
-        });
+        self.with(|q| q.scan = path.map(str::to_string));
+    }
+
+    /// The loupe's full resolution of `path`, the last asked winning; a neighbour's yields to the hand's decodes.
+    pub fn full(&self, path: &str, neighbour: bool) {
+        self.with(|q| q.full = Some((path.to_string(), neighbour)));
     }
 }
 
@@ -253,27 +253,25 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 }
             }
             Work::Scan(path) => {
-                let scan = reduced(graph, &path, oni_measure::reader::MEASURE_SIDE).map(|s| encoded(&s.linear, seed));
+                let scan = reduced(graph, &path, oni_measure::reader::MEASURE_SIDE).map(|s| (encoded(&s.linear, seed), whole(&s)));
                 let (lock, _) = &*queue;
-                let mut q = lock.lock().expect("roll previews");
-                if current(&q) && q.scan.is_none() {
-                    q.full_at = Some((path.clone(), Instant::now() + FULL_PAUSE));
-                    drop(q);
-                    if let Some(b) = scan {
-                        post(session, Out::Scan(path, b));
-                    }
+                let fresh = { let q = lock.lock().expect("roll previews"); current(&q) && q.scan.is_none() };
+                if fresh && let Some((b, size)) = scan {
+                    post(session, Out::Scan(path, b, size));
                 }
             }
-            Work::Full(path) => {
+            // Posted whatever was asked since: the window keeps the base frame's and its neighbours'.
+            Work::Full(path, neighbour) => {
                 let (queue, post) = (queue.clone(), post.clone());
                 let ticket = crate::decode_gate::ROLL_FULL.ask();
                 std::thread::spawn(move || {
+                    if neighbour {
+                        crate::decode_gate::in_background();
+                    }
                     let decode = || render::decode_full(Path::new(&path), reading(&path)).ok().map(|d| encoded(&d.linear, seed));
                     let Some(full) = crate::decode_gate::ROLL_FULL.run(ticket, decode) else { return };
-                    let (lock, _) = &*queue;
-                    let still = { let q = lock.lock().expect("roll previews"); q.session == session && q.scan.is_none() && q.full_at.is_none() };
-                    if still && let Some(b) = full {
-                        post(session, Out::Full(path, b));
+                    if queue.0.lock().expect("roll previews").session == session {
+                        post(session, Out::Full(path, full));
                     }
                 });
             }
@@ -357,6 +355,13 @@ fn picture(graph: &mut Graph, pipeline: &mut Pipeline, resident: &mut Resident, 
         inverted(&mut b.rgba, settings.mode.is_monochrome());
     }
     Some(b)
+}
+
+/// The frame's size at full resolution, its height on the reduced copy's aspect.
+fn whole(s: &Source) -> (usize, usize) {
+    let l = &s.linear;
+    let width = if s.full_width > 0.0 { s.full_width } else { l.width as f64 };
+    (width.round() as usize, (width * l.height as f64 / l.width.max(1) as f64).round() as usize)
 }
 
 fn encoded(linear: &Linear, seed: u32) -> Bitmap {

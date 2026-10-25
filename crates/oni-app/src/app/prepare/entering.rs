@@ -68,7 +68,7 @@ impl Ctl {
             r.tiles.clear();
             r.card = None;
             r.scan = None;
-            r.full = None;
+            (r.fulls, r.asked_full) = (Vec::new(), None);
             r.asked_scan = None;
             r.shown_path = None;
             r.stop.store(false, Ordering::Relaxed);
@@ -183,7 +183,7 @@ impl Ctl {
             r.tiles.clear();
             r.card = None;
             r.scan = None;
-            r.full = None;
+            (r.fulls, r.asked_full) = (Vec::new(), None);
             if let Some(p) = &r.previews {
                 p.reset(r.session);
             }

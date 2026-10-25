@@ -18,15 +18,22 @@ impl Ctl {
                 }
                 Out::Card(path, b) => r.card = Some((path, picture(&b))),
                 // A picture drawn again for the same photo is laid again, whatever its size.
-                Out::Scan(path, b) => {
+                Out::Scan(path, b, whole) => {
                     let size = (b.width, b.height);
-                    r.scan = Some((path, picture(&b), size));
+                    r.scan = Some((path, picture(&b), size, whole));
                     (r.laid_scan, r.laid_loupe) = (None, None);
                 }
+                // Kept while the base frame or a neighbour; the next one missing is asked as it publishes.
                 Out::Full(path, b) => {
-                    let size = (b.width, b.height);
-                    r.full = Some((path, picture(&b), size));
-                    r.laid_loupe = None;
+                    if let Some((_, at)) = r.asked_full.take_if(|(p, _)| *p == path) {
+                        crate::timing::line(&format!("the base loupe's full resolution ready {:.0} ms after it was asked", at.elapsed().as_secs_f64() * 1000.0));
+                    }
+                    // One that cannot be decoded is held at no size, which leaves the scan in the loupe.
+                    if r.fulls_wanted().contains(&path) && !r.fulls.iter().any(|(p, _, _)| *p == path) {
+                        let (image, size) = b.map_or((Image::default(), (0, 0)), |b| (picture(&b), (b.width, b.height)));
+                        r.fulls.push((path, image, size));
+                        r.laid_loupe = None;
+                    }
                 }
             }
         }

@@ -3482,5 +3482,12 @@
     "title": "The lab's Misc page shows the design system's own surfaces",
     "status": "done",
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
+  },
+  {
+    "id": 635,
+    "type": "feature",
+    "title": "Prepare the Roll's base loupe shows the full resolution first, decoded ahead",
+    "status": "done",
+    "detail": "The loupe showed the 1400-pixel scan, then switched to the sensor's pixels 300 ms after the scan landed plus a full decode, its span going from 32 to 64 pixels: the owner read the sharpening as a bug. Measured on roll #8 (DSC_6433.NEF, 6048x4032, app profile, a loaded machine): scan 2.2 s, full decode 2.5 s, 8-bit encode 0.23 s, so the full landed about 5.3 s after the step opened, the scan shown blurred from 2.2 s. The base frame's full resolution is now decoded from the roll's entry, its two neighbours on the base step (as background decodes), one at a time, let go past the base step; the loupe never shows the scan: a well at the full resolution's scale with its rings until it lands, the scan only when the full cannot be decoded. Window check prepare_loupe: the first picture on the scan is the full one, the surface stays on the reduced scan (twin), a frame two away is never decoded ahead (twin), a cold walk shows a well, never the scan."
   }
 ]
