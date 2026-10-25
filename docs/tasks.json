@@ -3482,5 +3482,12 @@
     "title": "The lab's Misc page shows the design system's own surfaces",
     "status": "done",
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
+  },
+  {
+    "id": 640,
+    "type": "feature",
+    "title": "A help mark's card in the editor panel opens left of the panel, under its tab bar",
+    "status": "done",
+    "detail": "TipLayer takes the panel's anchor from app.slint (its left edge, root.width less the panel's width, and the tab bar's foot, the bar's height plus PanelState.header the panel lays from its rule) and opens every card from a mark inside the panel with its right edge TipStyle.card-gap left of the panel and its top at the foot, held in the window by Tips.place so a short window lifts it. Marks off the panel (gallery Info, export and prepare columns, sheets) and every tooltip keep their place under the mark; a sheet over the window drops the anchor. Window check help_card with its twins (a card beside its mark, a note over the canvas, the gallery's column)."
   }
 ]

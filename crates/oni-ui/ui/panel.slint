@@ -11,6 +11,10 @@ export { Plots, PanelState, Lab, Framing, Dedust, DetailLoupe, CorrectionRow }
 
 export component Panel inherits Surface {
     width: ShellStyle.panel-width;
+    // Every help mark in the panel opens its card under the tab bar's rule.
+    property <length> header: rule.y + rule.height;
+    changed header => { PanelState.header = self.header; }
+    init => { PanelState.header = self.header; }
     VerticalLayout {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
         // `DSHistogram` on the panel's ground; Lighting's curves over it on the Color tab.
@@ -61,7 +65,7 @@ export component Panel inherits Surface {
             }
         }
         // `DSPanel`'s pinned header ends on its rule; every pane's first block draws none.
-        Divider { }
+        rule := Divider { }
         Rectangle {
             vertical-stretch: 1;
             RollPane { shown: PanelState.tab == 0; }

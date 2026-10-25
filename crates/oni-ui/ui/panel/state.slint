@@ -22,6 +22,8 @@ export global Plots {
 
 export global PanelState {
     in-out property <int> tab: 2;
+    // The header's height, plot band and tab bar down to its rule, laid by the panel.
+    in-out property <length> header;
     // `DSSection`'s fold under `sectionFold.<title>`: the stored one, else the block's default.
     pure callback fold-of(string, bool) -> bool;
     // Set once Rust answers `fold-of`, so a block laid before reads its fold again.

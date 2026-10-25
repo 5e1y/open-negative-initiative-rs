@@ -139,6 +139,10 @@ export component MainWindow inherits AppWindow {
     title: @tr("Open Negative Initiative");
     icon: @image-url("icons/app-icon.png");
     out property <bool> keys-focused: keys.has-focus;
+    // Where the shown note lands; a help mark in the editor panel opens left of it, under its tab bar.
+    out property <TipBox> tip-box: tips.box;
+    out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
+    out property <length> tabs-foot: ShellStyle.bar-height + PanelState.header + (App.panel-hidden ? Space.s : 0px);
     // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
     property <bool> revealed-library;
     property <bool> revealed-panel;
@@ -416,7 +420,10 @@ export component MainWindow inherits AppWindow {
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     if Told.shown: ToldNotice { room: root.width; room-height: root.height; }
-    TipLayer { room: root.width; room-height: root.height; }
+    tips := TipLayer {
+        room: root.width; room-height: root.height; anchored: root.beside-photo && !root.sheet-shown;
+        anchor-x: root.panel-x; anchor-y: root.tabs-foot; anchor-width: ShellStyle.panel-width;
+    }
 
     init => { keys.focus(); }
 }
