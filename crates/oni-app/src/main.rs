@@ -1,5 +1,7 @@
 //! `oni [folder or file]` opens a folder of scans, else the one last opened, else nothing;
 //! `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
+// A Windows release opens its window alone, with no console beside it.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Device, Engine};

@@ -3428,6 +3428,13 @@
     "detail": "The splash's timer held it weakly; with Slint's live preview a shown window's handle goes with the function's own, so the timer found nothing to hide and the app stayed on its splash. The timer holds the splash strongly, in both modes."
   },
   {
+    "id": 566,
+    "type": "tooling",
+    "title": "A Windows tester's build: ONI.exe in a zip, by hand",
+    "status": "done",
+    "detail": "The owner wants a tester on Windows. .github/workflows/windows-package.yml (workflow_dispatch only, never a release) builds the release on windows-latest and keeps ONI-windows-<sha>.zip (ONI.exe and a README in English and French: unzip, double-click, SmartScreen's Run anyway, where settings live) as the run's artifact for 14 days. The Windows release links the C runtime in (+crt-static) so a bare PC runs it, and opens no console (windows_subsystem)."
+  },
+  {
     "id": 570,
     "type": "design",
     "title": "The selection controls stand on the depths: Tabs, Toggle, Picker's field, the medals",
