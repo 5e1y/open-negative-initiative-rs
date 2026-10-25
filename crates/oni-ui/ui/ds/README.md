@@ -8,9 +8,10 @@ and every screen picks it up.
 | File | What it holds | Who writes it |
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
 | `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
+| `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `PickerStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
@@ -79,6 +80,18 @@ holds the focus (`focused-look` forces it). Disabled, the words fade and the chr
   the hand; the stepped slider's knob carries its grip too.
 - **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
   `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
+
+## Selection controls
+
+The tabs, the switch, the picker and the medals stand on the depths as the lab's Tabs page shows them.
+
+- **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a field's, and one
+  `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
+  adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
+- **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds.
+- **`Picker`**, field face (`DSPicker`): the value in a hollow, the chevron on a mini `Keycap` that sinks
+  `Depth.hover-press` under the hand and whole on a press; the pill and chip faces keep the hover ground.
+- **`Medal`** (`DSFoil.medal`): spun metal drawn by gradients; `MedalPicker` shrinks a pressed medal on the spring.
 
 ## The rule: screens use only the design system
 

@@ -3,6 +3,7 @@
 import { DS } from "tokens.slint";
 export { DS }
 export { SliderStyle, PlotStyle } from "theme_sliders.slint";
+export { TabsStyle, ToggleStyle, PickerStyle, MedalStyle } from "theme_tabs.slint";
 
 // Surfaces from back to front, then inks, then the meaning colours.
 export global Colour {
@@ -188,19 +189,6 @@ export global SectionStyle {
     out property <length> after: Space.l;
     out property <length> gap: Space.s;
     out property <length> help-mark: DS.control-help-mark-size;
-}
-
-export global TabsStyle {
-    out property <length> inset: Space.xxs;
-    out property <length> pill-radius: Radius.track;
-    out property <length> mark: Space.xs;
-    out property <length> swatch: DS.control-handle-size;
-}
-
-export global ToggleStyle {
-    out property <length> height: DS.control-toggle-height;
-    out property <length> width: 2 * DS.control-toggle-cell-width - Space.s;
-    out property <length> inset: Space.xxs;
 }
 
 export { FieldStyle } from "theme_fields.slint";

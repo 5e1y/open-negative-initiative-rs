@@ -41,6 +41,24 @@ export component ButtonGroup inherits HorizontalLayout {
 // switch named for accessibility alone.
 export enum LabelSide { none, after, before }
 
+import { TabsStyle } from "theme.slint";
+import { Inward, Outward } from "depth.slint";
+
+// `DSToggle.Glyph`: a cross for off, a check for on, stroked with round ends, dark on the lit pill.
+component ToggleGlyph inherits Path {
+    in property <bool> checked;
+    in property <bool> lit;
+    width: ToggleStyle.glyph;
+    height: ToggleStyle.glyph;
+    viewbox-width: 10;
+    viewbox-height: 10;
+    commands: root.checked ? "M 0 5.5 L 3.8 9 L 10 1.2" : "M 1 1 L 9 9 M 9 1 L 1 9";
+    stroke: root.lit ? ToggleStyle.glyph-lit : ToggleStyle.glyph-idle;
+    stroke-width: ToggleStyle.glyph-stroke;
+    stroke-line-cap: round;
+    animate stroke { duration: TabsStyle.slide; easing: spring(0.38); }
+}
+
 // A switch: a thumb that slides to the lit side. Its owner holds the state: a click only asks,
 // so an undo or another photo moves the thumb as much as the hand does. Its words flip it too.
 export component Toggle inherits HorizontalLayout {
@@ -68,19 +86,26 @@ export component Toggle inherits HorizontalLayout {
         Rectangle {
             height: ToggleStyle.height;
             width: ToggleStyle.width;
-            border-radius: self.height / 2;
-            background: root.on ? Colour.confirm : Colour.track;
             opacity: root.enabled ? 1 : State.disabled;
             accessible-role: checkbox;
             accessible-checked: root.on;
             accessible-label: root.label;
-            animate background { duration: Motion.quick; }
-            Dot {
-                y: ToggleStyle.inset;
-                size: parent.height - 2 * ToggleStyle.inset;
-                x: root.on ? parent.width - self.width - ToggleStyle.inset : ToggleStyle.inset;
-                ink: Colour.white;
-                animate x { duration: Motion.quick; }
+            // `DSToggle`'s hollow, its pill sliding on the grab spring as a tab's.
+            Inward {
+                hollow: true;
+                ground: Colour.canvas;
+                radius: parent.height / 2;
+                Outward {
+                    x: ToggleStyle.inset + (root.on ? ToggleStyle.cell : 0px);
+                    y: ToggleStyle.inset;
+                    width: ToggleStyle.cell;
+                    height: parent.height - 2 * ToggleStyle.inset;
+                    radius: self.height / 2;
+                    fill: ToggleStyle.thumb;
+                    animate x { duration: TabsStyle.slide; easing: spring(0.38); }
+                }
+                ToggleGlyph { x: ToggleStyle.inset + (ToggleStyle.cell - self.width) / 2; lit: !root.on; }
+                ToggleGlyph { x: ToggleStyle.inset + ToggleStyle.cell + (ToggleStyle.cell - self.width) / 2; checked: true; lit: root.on; }
             }
             TouchArea {
                 enabled: root.enabled;

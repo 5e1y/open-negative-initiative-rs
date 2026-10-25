@@ -118,7 +118,7 @@ export component SpaceField inherits VerticalLayout {
         help: @tr("The picture is edited in this space and exported in it. Each keeps the name a lab or a printer will ask for. Custom converts into an installed ICC profile, relative colorimetric with black point compensation.");
         Tabs {
             tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-            marked: [false, false, false, false, false];
+            dimmed: [false, false, false, Exporting.jpeg, false];
             selected: Exporting.space-tab;
             picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
         }
@@ -127,7 +127,7 @@ export component SpaceField inherits VerticalLayout {
     }
     if root.compact: Tabs {
         tabs: [@tr("sRGB"), @tr("DP3"), @tr("Adobe RGB"), @tr("ProPhoto"), @tr("Custom")];
-        marked: [false, false, false, false, false];
+        dimmed: [false, false, false, Exporting.jpeg, false];
         selected: Exporting.space-tab;
         picked(i) => { Exporting.space-tab = i; Exporting.space-picked(i); }
     }

@@ -7,22 +7,28 @@ import { Button } from "controls.slint";
 export { DateFields } from "fields.slint";
 import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
+import { MedalStyle, TabsStyle } from "theme.slint";
 
 // `DSMedalPicker`: bronze, silver and gold, the current one lit; `current` is -1 for none lit.
+// A press shrinks a medal on the grab spring.
 export component MedalPicker inherits HorizontalLayout {
     in property <int> current: -1;
+    // The medal the lab shows pressed; -1 follows the hand alone.
+    in property <int> pressed-rank: -1;
     callback picked(int);
     spacing: Space.xs;
     alignment: center;
     for medal[i] in [1, 2, 3]: Rectangle {
-        width: TileStyle.medal + 2 * Space.xxs;
+        width: MedalStyle.size;
         height: self.width;
         accessible-role: button;
         accessible-label: medal == 1 ? @tr("Bronze") : medal == 2 ? @tr("Silver") : @tr("Gold");
+        property <float> scale: touch.pressed || medal == root.pressed-rank ? MedalStyle.press : 1;
+        animate scale { duration: TabsStyle.slide; easing: spring(0.38); }
         Medal {
             rank: medal;
-            size: TileStyle.medal * (touch.pressed ? DS.control-medal-press : 1);
-            opacity: root.current == medal ? 1 : State.idle;
+            size: MedalStyle.size * parent.scale;
+            opacity: root.current == medal ? 1 : TabsStyle.idle;
         }
         touch := TouchArea {
             clicked => { root.picked(medal); }
