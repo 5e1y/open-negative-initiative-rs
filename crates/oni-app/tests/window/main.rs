@@ -27,6 +27,7 @@ mod gestures;
 mod headless;
 mod help;
 mod keycap;
+mod keycap_cost;
 mod launch;
 mod library_column;
 mod library_wide;
@@ -109,6 +110,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas", headless::the_window_opens_roll_8_and_a_slider_drives_the_canvas),
     ("help::the_help_menus_surfaces_behave_as_swifts", help::the_help_menus_surfaces_behave_as_swifts),
     ("keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once", keycap::a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once),
+    ("keycap_cost::a_screen_s_keys_are_drawn_once_and_never_again_while_still", keycap_cost::a_screen_s_keys_are_drawn_once_and_never_again_while_still),
+    ("keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests", keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests),
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),

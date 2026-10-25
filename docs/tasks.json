@@ -3398,5 +3398,12 @@
     "title": "Every key of the app is a keycap: Button, ButtonGroup's plate, the step keys",
     "status": "done",
     "detail": "Button draws the lab's keycap: regular the 40 pt small key (DSPanelButton standard), small the same at 24, a new mini size at 26 (sections, header plates, the card's keys, the zoom plate, as Swift's .mini), key the scanner's 46 pt key, a stepped slider's keys at 40 with an 18 pt sign. A kind or fill is the albedo, on a pale cap (a ring on a tinted one), the legend bold capitals inked by the cap's luminance, disabled fading the legend alone, the ghost bare. KeycapPress for every key: hover sinks it Depth.hover-press, a press whole in 0.1 s, held 0.14 s at least, risen in 0.02 s, the release click with the cap. ButtonGroup's plate sets its keys flush on the black socket at the cap's outer radius. The bar grows to the 40 pt keys (56). Board pages, ds/README and ui-spec updated."
+  },
+  {
+    "id": 562,
+    "type": "test",
+    "title": "The keycaps' cost, measured by a window check",
+    "status": "done",
+    "detail": "keycap_cost: the editor's first frame at 2x (1440 x 900) asks its keys and renders each distinct look once, a hundred still frames render none; a press renders at most one key a frame and nothing once risen, a new scale draws it again, its twin that the press and the hover do render. Measured on the test profile: the editor's 29 distinct keys (187 asks) in 47 ms, 1.6 ms each, 2.5 MB kept; a press 9 to 10 renders over its curve, 0.7 ms each, one a frame at most; still keys 0."
   }
 ]
