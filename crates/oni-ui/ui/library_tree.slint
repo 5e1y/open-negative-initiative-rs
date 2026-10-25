@@ -47,7 +47,7 @@ export component Tree inherits Surface {
             padding-bottom: Space.s;
             spacing: Space.s;
             ButtonGroup { plate: true;
-                small: true;
+                mini: true;
                 Button { size: ButtonSize.mini; has-icon: true; square: true; icon: Icons.target; help: @tr("Show the selected photo"); clicked => { if (Library.surface == 0) { Library.tree-centre(); } else { Library.project-centre(); } } }
                 if Library.surface == 1: Button { size: ButtonSize.mini; has-icon: true; square: true;
                     icon: Library.projects-any-open ? Icons.collapse-all : Icons.expand-all;

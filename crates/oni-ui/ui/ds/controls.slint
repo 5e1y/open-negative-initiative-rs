@@ -13,12 +13,16 @@ export { TextField, RenameField }
 // Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
 export enum GroupAlign { start, end, center, fill }
 
-// Keys side by side as one family; `plate` sets them flush on their socket, as `KeycapPlate`.
+// Keys side by side as one family: `plate` sets them flush on their socket, as `KeycapPlate`, else a
+// spaced row `Space.s` apart, as Swift's `HStack(spacing: DS.Space.sm)` of keys.
 export component ButtonGroup inherits HorizontalLayout {
     in property <bool> plate;
     in property <GroupAlign> align: GroupAlign.start;
-    // The radius of the mini keys it holds (`KeycapPlate(variant: .mini)`).
-    in property <bool> small;
+    // A plate of mini keys (`KeycapPlate(variant: .mini)`): its radius is the mini cap's.
+    in property <bool> mini;
+    // The socket's corner, the cap's outer one at the plate's variant (`contourWidth` 0).
+    out property <length> radius: root.plate ? Depth.corner * (root.mini ? ButtonStyle.mini-factor : ButtonStyle.small-factor) : 0px;
+    out property <length> gap: root.plate ? 0px : ButtonStyle.group-gap;
     property <bool> fills: root.align == GroupAlign.fill;
     alignment: root.align == GroupAlign.end ? end : root.align == GroupAlign.center ? center : root.fills ? stretch : start;
     socket := Rectangle {
@@ -28,9 +32,9 @@ export component ButtonGroup inherits HorizontalLayout {
         min-height: row.min-height;
         max-height: row.max-height;
         background: root.plate ? ButtonStyle.bezel : transparent;
-        border-radius: root.plate ? (root.small ? ButtonStyle.mini-plate-radius : ButtonStyle.plate-radius) : 0px;
+        border-radius: root.radius;
         row := HorizontalLayout {
-            spacing: root.plate ? 0px : ButtonStyle.group-gap;
+            spacing: root.gap;
             alignment: root.fills ? stretch : start;
             @children
         }
@@ -42,7 +46,7 @@ export component ButtonGroup inherits HorizontalLayout {
 export enum LabelSide { none, after, before }
 
 import { TabsStyle } from "theme.slint";
-import { Inward, Outward } from "depth.slint";
+import { Inward, Outward, Depth } from "depth.slint";
 
 // `DSToggle.Glyph`: a cross for off, a check for on, stroked with round ends, dark on the lit pill.
 component ToggleGlyph inherits Path {

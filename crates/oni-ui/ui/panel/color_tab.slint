@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, Tabs, Button, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup, GroupAlign } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, Tabs, Button, ButtonSize, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -70,6 +70,7 @@ export component ColorPane inherits Pane {
                     }
                 }
                 Button {
+                    size: ButtonSize.plate;
                     text: @tr("AUTO WHITE BALANCE");
                     help: @tr("The frame's light toward grey with Temperature and Tint, scaled by Balance strength");
                     clicked => { PanelState.auto-balance(); }
@@ -96,6 +97,7 @@ export component ColorPane inherits Pane {
         ButtonGroup { plate: true;
             align: GroupAlign.fill;
             Button {
+                size: ButtonSize.plate;
                 text: @tr("AUTO PAPER CORRECTION");
                 help: @tr("Sets the three gains from the paper profile alone");
                 clicked => { Exporting.auto-paper(); }

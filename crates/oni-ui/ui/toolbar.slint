@@ -4,8 +4,9 @@ import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerSty
 import { Preparing } from "prepare.slint";
 import { KeyWords } from "key_words.slint";
 
-// `rollStepKeys`: one key per step, the current one lit, a lamp on each step behind it.
+// `rollStepKeys`: one key per step on one plate, the current one lit, a lamp on each step behind it.
 export component RollStepKeys inherits ButtonGroup {
+    plate: true;
     for name[i] in [@tr("FILM"), @tr("FLAT-FIELD"), @tr("BASE"), @tr("FLAGS"), @tr("WINDOW")]: Button {
         text: name;
         help: [@tr("Select the Film Type"), @tr("Set Up the Flat-Field"), @tr("Pick the Film Base"), @tr("Flag the Frames Left Out"), @tr("Place the Measuring Frame")][i];
@@ -76,12 +77,13 @@ component ResetScan inherits Word {
 component EditorKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
-    ButtonGroup {
+    // `centreKeys`: each family on its own plate, De-dust alone and never plated.
+    ButtonGroup { plate: true;
         Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo; }
         Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
         Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
     }
-    ButtonGroup {
+    ButtonGroup { plate: true;
         Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
         Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
@@ -93,7 +95,7 @@ component EditorKeys inherits HorizontalLayout {
         selected: Bar.face;
         picked(i) => { Bar.face = i; Bar.act(i == 1 ? Act.face-scanner : Act.face-pro); }
     }
-    ButtonGroup {
+    ButtonGroup { plate: true;
         Item { action: Act.copy; icon: Icons.copy; help: @tr("Copy settings ({})", KeyWords.command-shift + "C"); enabled: Bar.has-photo; }
         Item {
             action: Act.paste;
@@ -117,14 +119,19 @@ component EditorKeys inherits HorizontalLayout {
         on: Bar.dedust;
         enabled: Bar.has-photo;
     }
-    ResetScan { compact: root.compact; }
+    ButtonGroup { plate: true;
+        ResetScan { compact: root.compact; }
+    }
 }
 
 component GalleryKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
-    Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
-    ButtonGroup {
+    // The editor's first plate holds the contact sheet alone here, as in Swift's `centreKeys`.
+    ButtonGroup { plate: true;
+        Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
+    }
+    ButtonGroup { plate: true;
         Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
         Item { action: Act.redo; icon: Icons.redo; help: Bar.redo-title + " (" + KeyWords.command-shift + "Z)"; enabled: Bar.can-redo; }
     }
@@ -135,7 +142,7 @@ component GalleryKeys inherits HorizontalLayout {
         help: Bar.filter == @tr("ALL") ? @tr("Filter: All") : @tr("Filter: {}", Bar.filter);
     }
     Word { action: Act.prepare-roll; text: @tr("PREPARE ROLL"); help: @tr("Prepare the Roll"); enabled: Bar.can-prepare; }
-    ButtonGroup {
+    ButtonGroup { plate: true;
         ResetScan { compact: root.compact; }
         Item { action: Act.remove; icon: Icons.remove; help: Bar.targets > 1 ? @tr("Move {} Photos to ONI Trash", Bar.targets) : @tr("Move to ONI Trash"); kind: ButtonKind.destructive; enabled: Bar.targets > 0; }
     }

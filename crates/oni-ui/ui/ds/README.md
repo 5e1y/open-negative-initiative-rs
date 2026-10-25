@@ -45,7 +45,8 @@ does it for the main window and the console; a check building a window alone cal
 an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
 (oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
 
-- **Sizes** (`ButtonSize`): `regular` is `DSPanelButton`'s standard 40 pt key, `small` the same small
+- **Sizes** (`ButtonSize`): `regular` is `DSPanelButton`'s standard 40 pt key, `plate` its 52 pt `.plate`
+  key (the panels' and footers' plates), `small` the same small
   variant at 24, `mini` the 26 pt mini key of the sections and the header plates, `key` the scanner's
   46 pt key; a stepped slider's keys are `key`s at `SliderStyle.step-key` with a larger `legend-size`.
 - **Colour**: a kind's tint or `fill` is the cap's albedo, else the keycap grey; `on` makes a plain key
@@ -53,8 +54,9 @@ an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache
   dark one (`KeyInk.light`); a disabled key fades its legend alone.
 - **Press** (`KeycapPress`): the hand sinks the cap `Depth.hover-press`, a press sinks it whole in
   `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
-- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`),
-  `small` for a plate of mini keys.
+- **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`), as
+  tall as they are, its corner the cap's outer one (`Depth.corner` × the variant's factor), `mini` for a
+  plate of mini keys; without `plate` it is a spaced row, `Space.s` apart as Swift's `HStack` of keys.
 
 ## Fields
 

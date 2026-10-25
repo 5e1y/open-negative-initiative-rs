@@ -149,7 +149,8 @@ export global ButtonStyle {
     out property <length> small-radius: Radius.track;
     out property <length> padding: Space.m;
     out property <length> small-padding: Space.s;
-    out property <length> group-gap: Space.xxs;
+    // A spaced row's keys apart, Swift's `DS.Space.sm` between keys off a plate.
+    out property <length> group-gap: Space.s;
     out property <length> plate-inset: Stroke.hairline;
     out property <length> icon: DS.control-icon-size;
     out property <length> small-icon: DS.control-toggle-glyph;
@@ -161,6 +162,8 @@ export global ButtonStyle {
     // one pale (`pale: true`), each length at `Keycap.Variant`'s factor of the large key's.
     out property <length> cap-height: DS.control-keycap-height;
     out property <length> mini-height: DS.control-keycap-mini-height;
+    // `DSPanelButton(height: .plate)`: a panel's or a footer's key on its plate.
+    out property <length> plate-height: DS.control-keycap-plate-height;
     out property <float> small-factor: 0.525;
     out property <float> mini-factor: 0.38;
     out property <color> cap: DS.palette-keycap;
@@ -176,9 +179,6 @@ export global ButtonStyle {
     out property <int> legend-weight: 700;
     out property <length> legend-tracking: 0.5px;
     out property <float> legend-disabled: 0.3;
-    // `KeycapPlate`'s radius: the cap's outer one at each variant, so the socket follows the contour.
-    out property <length> plate-radius: 16px * ButtonStyle.small-factor;
-    out property <length> mini-plate-radius: 16px * ButtonStyle.mini-factor;
 }
 
 export global SectionStyle {

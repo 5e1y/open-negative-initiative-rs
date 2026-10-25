@@ -3503,5 +3503,40 @@
     "title": "The Scanner keypad steps by half a unit: 0.5 a key, 1.5 with ⇧",
     "status": "done",
     "detail": "The owner's call, apart from Swift: ScannerClicks counts steps of half the unit the screen reads (density ±48 steps for ±24 units, TEMP ±20 for ±10). A density step is a quarter of the measured click, read on the line between its neighbours, so a whole unit renders as before; TEMP's share is per unit. The Frontier's rest D+0.5 M+2 Y-2 is now one plain count (FRONTIER_REST_D gone). The sidecar keeps Swift's whole counts under d, c, m, y, w (toward zero) and the half step left over under `halves`, which Swift ignores and which is absent on whole units, so an old sidecar reads unchanged. The screen, the slider readouts and the link demo spell steps as units with halves (oni_keys::spelled); the rails have 97 and 41 places. The phone link's Clicks are in steps: a phone app must read them halved. The effects (Contrast, Vignette, Chrome) keep their 5 %, 0.1 EV and 5 % steps."
+  },
+  {
+    "id": 625,
+    "type": "design",
+    "title": "ButtonGroup is Swift's KeycapPlate: the socket at the cap's corner, keys wall to wall, a spaced row Space.s apart",
+    "status": "done",
+    "detail": "Owner: \"il faut réimplémenter les buttongroups, base toi sur swift\". KeycapPlate draws HStack(spacing: 0) on a RoundedRectangle of the socket colour (black) at cornerRadius + contourWidth, 16 × the variant's factor with contour 0. ButtonGroup's socket now reads Depth.corner × the variant's factor, so a corner tuned in the lab moves the cap and its plate together; `small` became `mini` (KeycapPlate(variant: .mini)); `radius` and `gap` are out properties. Without `plate` a group is a spaced row at Space.s, Swift's DS.Space.sm between keys off a plate (PresetEditor, WelcomeSheet, PaperProfilesSheet, GeometryPanel, FolderNavigator, the zoom bubble), in place of 2 px."
+  },
+  {
+    "id": 626,
+    "type": "design",
+    "title": "The 52 pt plate key: ButtonSize.plate on every key Swift sizes .plate",
+    "status": "done",
+    "detail": "DSPanelButton(height: .plate) is DS.Control.keycapPlateHeight, 52 pt, against the standard 40: ButtonSize.plate (ButtonStyle.plate-height). On it: Measured Roll's PREPARE THE ROLL… and JOIN / ROLL OF, the flat-field's USE THIS PHOTO, LOAD / RENAME / FOLDER and APPLY TO SELECTION, Crop's COPY / PASTE / PASTE TO ROLL, the Measuring Window's four keys, AUTO WHITE BALANCE and AUTO PAPER CORRECTION, the export panel's presets, Load a Profile / Get Paper Profiles and Cancel / EXPORT, Prepare the Roll's Cancel / Back / step key. The report sheet, the dialogs and the bar keep Swift's 40."
+  },
+  {
+    "id": 627,
+    "type": "fix",
+    "title": "The app bar's keys on Swift's plates",
+    "status": "done",
+    "detail": "EditorScene+Bar's centreKeys plates every family: editing, framing / compare / contact sheet, undo / redo, copy / paste / PASTE TO ROLL, De-dust alone and never plated, RESET SCAN on its own plate; in the gallery the contact sheet alone on its plate, undo / redo, the filter and PREPARE ROLL loose, RESET SCAN / trash on one plate. rollStepKeys is one plate of the five steps. The bar's groups were spaced rows without a socket."
+  },
+  {
+    "id": 628,
+    "type": "fix",
+    "title": "The canvas's column keys each on a mini plate",
+    "status": "done",
+    "detail": "columnKey(_:) is KeycapPlate(variant: .mini) around the one key: the Library's at the canvas's top left and the Panel's last in the zoom bubble now stand on their socket as the zoom pair does."
+  },
+  {
+    "id": 629,
+    "type": "test",
+    "title": "Window check: a plate's keys touch, a spaced row keeps Swift's gap",
+    "status": "done",
+    "detail": "button_group: GroupProbe lays two .plate keys on a plate, two mini keys on a mini plate and two keys on a spaced row. The plates' keys share their walls (gap 0), the row's stand 8 apart, the socket is as tall as its 52 pt keys, rounded 16 × 0.525 and 16 × 0.38, the row draws none. Twins: the gap measure reads the row's room and a plate is no row, each variant's radius tells the other's apart; a plate spaced 1 px fails it."
   }
 ]

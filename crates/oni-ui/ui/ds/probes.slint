@@ -1,6 +1,6 @@
 // Pieces at fixed places for the window checks that click or read them: three fields and a tab bar, a
-// page that scrolls over a scroller whose content fits, a step keycap, a field's lip three ways.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize } from "ds.slint";
+// page that scrolls over a scroller whose content fits, a step keycap, a field's lip three ways, a plate.
+import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -123,6 +123,40 @@ export component KeyProbe inherits AppWindow {
         HorizontalLayout {
             alignment: start;
             key := Button { size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
+        }
+    }
+}
+
+// Two keys on a plate, two on a mini plate and two on a spaced row, where a check reads their walls.
+export component GroupProbe inherits AppWindow {
+    title: "ONI Group Probe";
+    out property <length> plate-gap: plate-b.absolute-position.x - plate-a.absolute-position.x - plate-a.width;
+    out property <length> plate-height: plate.height;
+    out property <length> plate-key-height: plate-a.height;
+    out property <length> plate-radius: plate.radius;
+    out property <length> mini-gap: mini-b.absolute-position.x - mini-a.absolute-position.x - mini-a.width;
+    out property <length> mini-radius: mini.radius;
+    out property <length> row-gap: row-b.absolute-position.x - row-a.absolute-position.x - row-a.width;
+    out property <length> row-radius: row.radius;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    preferred-height: 260px;
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.l;
+        alignment: start;
+        plate := ButtonGroup { plate: true;
+            plate-a := Button { size: ButtonSize.plate; text: "Copy"; }
+            plate-b := Button { size: ButtonSize.plate; text: "Paste"; }
+        }
+        mini := ButtonGroup { plate: true; mini: true;
+            mini-a := Button { size: ButtonSize.mini; text: "−"; }
+            mini-b := Button { size: ButtonSize.mini; text: "+"; }
+        }
+        row := ButtonGroup {
+            row-a := Button { text: "Website"; }
+            row-b := Button { text: "Feedback"; }
         }
     }
 }

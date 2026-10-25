@@ -8,9 +8,9 @@ import { Lamp } from "surfaces.slint";
 
 // `ghost` is a glyph alone on no cap, its tone lifting under the hand, as a help mark or a star.
 export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost }
-// `regular` is `DSPanelButton`'s standard 40 pt key, `small` the same variant at 24, `mini` the 26 pt
-// mini key of the headers and plates, `key` the scanner's 46 pt key (`LabKeyboard`).
-export enum ButtonSize { regular, small, mini, key }
+// `regular` is `DSPanelButton`'s standard 40 pt key, `plate` its 52 pt `.plate` key, `small` the same
+// variant at 24, `mini` the 26 pt mini key of the headers, `key` the scanner's 46 pt key (`LabKeyboard`).
+export enum ButtonSize { regular, plate, small, mini, key }
 // What a check forces a control to look like; `live` follows the pointer.
 export enum Look { live, hover, pressed }
 
@@ -157,6 +157,7 @@ export component Button inherits Rectangle {
     height: root.keycap ? ScannerStyle.key-height
         : root.mini ? ButtonStyle.mini-height
         : root.size == ButtonSize.small ? ButtonStyle.small-height
+        : root.size == ButtonSize.plate ? ButtonStyle.plate-height
         : root.ghost ? ButtonStyle.height : ButtonStyle.cap-height;
     min-width: root.square || root.keycap ? self.height
         : root.fixed-width > 0 ? root.fixed-width
