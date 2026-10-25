@@ -38,10 +38,10 @@ export global Depth {
     in-out property <float> dish: 4;
     in-out property <length> corner: 16px;
     in-out property <length> face-corner: 14px;
-    // The cap's cast shadow at rest; a press flattens it.
-    in-out property <float> shadow-opacity: 0.2;
+    // The cap's cast shadow at rest, set lighter than Swift's 0.2 at 10 pt; a press flattens it.
+    in-out property <float> shadow-opacity: 0.14;
     in-out property <length> shadow-blur: 8px;
-    in-out property <length> shadow-y: 10px;
+    in-out property <length> shadow-y: 7px;
     // How far a press sinks the cap, how much of a press a hover shows; the reference's two curves,
     // 0.1 s down and 0.02 s up, and the 0.14 s a tap is held down for.
     in-out property <length> travel: 1px;
