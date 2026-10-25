@@ -135,7 +135,7 @@ component IconKey inherits LiveKey {
     in property <image> glyph: Icons.rotate;
     width: self.height;
     height: DS.control-keycap-height;
-    Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525; }
+    Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : root.variant == KeycapVariant.small ? 0.525 : 1; }
 }
 
 // A scanner key (`LabKeyboard.styled`): 46 pt, a 13 pt legend inked by the albedo's luminance.
@@ -188,6 +188,57 @@ export component KeysPage inherits Rectangle {
             padding: 40px;
             spacing: 36px;
             alignment: start;
+            // Every size the Swift app gives a keycap: its variant (factor, legend), its height, and where.
+            Section {
+                title: "SIZES";
+                source: "Keycap.Variant · large 1 (legend 14, glyph 28), small 0.525 (10.5), mini 0.38 (9); DS.Control heights";
+                StateRow {
+                    label: "large · bench 70";
+                    PanelWord { variant: large; text: "ADD"; width: 104px; height: 70px; }
+                    IconKey { variant: large; height: 70px; }
+                    Caption { text: "keycap-lab's own size"; vertical-alignment: center; }
+                }
+                StateRow {
+                    label: "small · wide 60";
+                    PanelWord { height: DS.control-keycap-wide-height; text: "AUTO"; }
+                    IconKey { height: DS.control-keycap-wide-height; }
+                    Caption { text: "DSPanelButton .wide"; vertical-alignment: center; }
+                }
+                StateRow {
+                    label: "small · plate 52";
+                    PanelWord { height: DS.control-keycap-plate-height; text: "CANCEL"; width: 104px; }
+                    LiveKey { albedo: DS.palette-accent; width: 200px; height: DS.control-keycap-plate-height; Legend { text: "EXPORT 12 PHOTOS"; } }
+                    IconKey { height: DS.control-keycap-plate-height; }
+                    Caption { text: "DSPanelButton .plate, DSActionButton on a footer"; vertical-alignment: center; }
+                }
+                StateRow {
+                    label: "small · scanner 46";
+                    BandKey { text: "D"; width: 96px; albedo: DS.palette-keycap; }
+                    BandKey { text: "+3"; width: DS.scanner-key-height; albedo: #e6e6e6; }
+                    Caption { text: "LabKeyboard keys"; vertical-alignment: center; }
+                }
+                StateRow {
+                    label: "small · standard 40";
+                    PanelWord { text: "DONE"; }
+                    IconKey { glyph: Icons.framing; }
+                    LiveKey { albedo: DS.palette-accent; width: DS.control-app-bar-export-width; height: DS.control-app-bar-keycap-height; Legend { text: "EXPORT"; } }
+                    Caption { text: "DSPanelButton .standard, the app bar's 40 × 40 and its word keys"; vertical-alignment: center; }
+                }
+                StateRow {
+                    label: "mini · 26";
+                    PanelWord { variant: mini; text: "NEXT"; width: 64px; height: DS.control-keycap-mini-height; }
+                    IconKey { variant: mini; height: DS.control-keycap-mini-height; }
+                    Plate {
+                        width: 2 * DS.control-keycap-mini-height;
+                        height: DS.control-keycap-mini-height;
+                        HorizontalLayout {
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.favourite; }
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.parent; }
+                        }
+                    }
+                    Caption { text: "DSPanelButton .mini, KeycapPlate(.mini) of the navigator, DSPicker's key"; vertical-alignment: center; }
+                }
+            }
             Section {
                 title: "DSPANELBUTTON";
                 source: "DSPanelButton.swift · .small, 40 pt; pale and tinted ink the legend dark";
@@ -301,7 +352,7 @@ export component KeysPage inherits Rectangle {
                         width: 3 * DS.control-keycap-mini-height;
                         height: DS.control-keycap-mini-height;
                         HorizontalLayout {
-                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.rotate; }
+                            IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.favourite; }
                             IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.mirror; }
                             IconKey { variant: mini; height: DS.control-keycap-mini-height; glyph: Icons.reset; }
                         }
