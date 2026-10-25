@@ -343,7 +343,7 @@ fn every_scanner_key_moves_its_own_count_and_nothing_of_pro() {
         press(&mut store, Key::Step { letter: Letter::Y, by: 3 });
         press(&mut store, Key::Step { letter: Letter::W, by: -3 });
     }
-    assert_eq!((store.settings().scanner.y, store.settings().scanner.w), (24, -10), "a key held past its stop stays on it");
+    assert_eq!((store.settings().scanner.y, store.settings().scanner.w), (48, -20), "a key held past its stop stays on its ±24 and ±10 units");
 
     // A Contrast key lands on its 5 % grid and stops at the track's end; a Vignette key on tenths of a stop.
     let on = |name: &str, mode: ConversionMode, effect: Effect, from: f32, by: i8| {

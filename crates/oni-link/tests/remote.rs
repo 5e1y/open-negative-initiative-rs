@@ -86,9 +86,11 @@ async fn a_press_shows_before_the_desktop_answers() {
 #[tokio::test]
 async fn counts_stop_at_the_keypad_ends() {
     let state = (0..20).fold(State::default(), |s, _| s.predicted(Command::Step { letter: Letter::D, by: 3 }));
-    assert_eq!(state.clicks.d, 24);
+    assert_eq!(state.clicks.d, 48, "24 units of the desktop's screen, in steps");
     let state = (0..20).fold(State::default(), |s, _| s.predicted(Command::Step { letter: Letter::W, by: -3 }));
-    assert_eq!(state.clicks.w, -10);
+    assert_eq!(state.clicks.w, -20);
+    // Twin: inside the ends a press of three is three steps, held by nothing.
+    assert_eq!(State::default().predicted(Command::Step { letter: Letter::D, by: 3 }).clicks.d, 3);
     let mono = State { channel: oni_link::Channel::Monochrome, chrome: None, ..State::default() };
     let state = mono.predicted(Command::StepEffect { effect: Effect::Chrome, by: 1 });
     assert_eq!(state.chrome, None, "black and white has no Chrome to move");

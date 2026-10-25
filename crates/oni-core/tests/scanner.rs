@@ -53,7 +53,7 @@ fn the_keypad_writes_the_scanner_s_clicks_and_nothing_of_pro() {
         store.apply(step(Letter::Y, 3));
         store.apply(step(Letter::W, -3));
     }
-    assert_eq!((store.settings().scanner.y, store.settings().scanner.w), (24, -10), "a key held past its stop stays on it");
+    assert_eq!((store.settings().scanner.y, store.settings().scanner.w), (48, -20), "a key held past its stop stays on its ±24 and ±10 units");
 
     // `LabStepKeys.moved`: a click rounds to the grid, then moves by its steps, held by the track.
     let finish = |store: &mut EditorStore, contrast: f32, vignette: f32| {
@@ -176,5 +176,25 @@ fn the_bar_s_reset_clears_the_edit_of_the_face_it_is_pressed_on() {
     store.apply(Command::Face(Face::Pro));
     store.apply(Command::Reset);
     assert_eq!((store.settings().scanner.d, store.settings().secret_sauce), (3, 0.0));
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// The phone's keys and the settings count the same steps: half a unit each, the stops on ±24 and ±10
+/// units, so a key saved to a sidecar reads back in Swift's unit, its half under `halves`.
+#[test]
+fn a_key_moves_half_a_unit_and_a_shift_press_one_and_a_half() {
+    let (mut store, _, dir) = fresh("halves", 1);
+    store.apply(Command::Face(Face::Scanner));
+    store.apply(step(Letter::D, 1));
+    store.apply(step(Letter::Y, 3));
+    let stored = serde_json::to_value(store.settings().scanner).unwrap();
+    assert_eq!((&stored["d"], &stored["y"], &stored["halves"]), (&0.into(), &1.into(), &serde_json::json!({"d": 1, "y": 1})));
+    // Twin: a whole step would have stored a unit with no half.
+    assert_ne!(stored["d"], 1);
+    for (letter, (lo, hi)) in [(Letter::D, ScannerClicks::DENSITY_RANGE), (Letter::W, ScannerClicks::WARMTH_RANGE)] {
+        let (a, b) = letter.range();
+        assert_eq!((i64::from(a), i64::from(b)), (lo, hi));
+        assert_eq!(hi, oni_keys::STEPS_PER_UNIT * if letter == Letter::W { 10 } else { 24 });
+    }
     let _ = std::fs::remove_dir_all(&dir);
 }

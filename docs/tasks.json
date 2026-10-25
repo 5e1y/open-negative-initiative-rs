@@ -3482,5 +3482,12 @@
     "title": "The lab's Misc page shows the design system's own surfaces",
     "status": "done",
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
+  },
+  {
+    "id": 620,
+    "type": "feature",
+    "title": "The Scanner keypad steps by half a unit: 0.5 a key, 1.5 with ⇧",
+    "status": "done",
+    "detail": "The owner's call, apart from Swift: ScannerClicks counts steps of half the unit the screen reads (density ±48 steps for ±24 units, TEMP ±20 for ±10). A density step is a quarter of the measured click, read on the line between its neighbours, so a whole unit renders as before; TEMP's share is per unit. The Frontier's rest D+0.5 M+2 Y-2 is now one plain count (FRONTIER_REST_D gone). The sidecar keeps Swift's whole counts under d, c, m, y, w (toward zero) and the half step left over under `halves`, which Swift ignores and which is absent on whole units, so an old sidecar reads unchanged. The screen, the slider readouts and the link demo spell steps as units with halves (oni_keys::spelled); the rails have 97 and 41 places. The phone link's Clicks are in steps: a phone app must read them halved. The effects (Contrast, Vignette, Chrome) keep their 5 %, 0.1 EV and 5 % steps."
   }
 ]

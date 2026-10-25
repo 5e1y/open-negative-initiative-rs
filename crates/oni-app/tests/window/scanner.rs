@@ -8,7 +8,7 @@ use oni_core::{Archive, EditorStore};
 use oni_link::scanner::Letter;
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::{Face, ScannerMachine};
-use slint::platform::WindowEvent;
+use slint::platform::{PointerEventButton, WindowEvent};
 use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -102,7 +102,19 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
         phone.apply(oni_app::link::command_of(oni_link::Command::Step { letter: Letter::ALL[letter as usize], by: by as i8 }).unwrap());
     }
     assert_eq!(phone.settings().scanner, settings().scanner, "the phone's presses and the desktop's keys are one command");
-    assert_eq!(cells(w), ["+3", "+3", "−2", "0", "+4"], "the Lab screen reads every letter back");
+    assert_eq!(cells(w), ["+1.5", "+1.5", "−1", "0", "+2"], "the Lab screen reads every letter back, a step half a unit");
+    let readout = |i: usize| lab.get_readouts().row_data(i).unwrap().to_string();
+    assert_eq!((readout(0), lab.get_lows().row_data(0), lab.get_highs().row_data(4)), ("+1.5".into(), Some(-48), Some(20)));
+    // A key moves half a unit, ⇧ one and a half; twin: whole steps would read +1 and +3.
+    lab.invoke_press(3, 1);
+    rig.pump();
+    assert_eq!((cells(w)[3].as_str(), readout(3).as_str()), ("+0.5", "+0.5"));
+    lab.invoke_press(3, 3);
+    rig.pump();
+    assert_eq!(cells(w)[3], "+2");
+    assert_ne!(cells(w)[3], "+4");
+    lab.invoke_clear(3);
+    rig.pump();
     assert_eq!(modified(w), [true, true, true, false]);
 
     // A letter's own key clears it alone; the Color block's reset clears its three as one step.
@@ -141,6 +153,28 @@ pub(crate) fn the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_t
 
     // The RAW notice is modal: closed first, so the keys reach the Lab.
     w.global::<oni_app::Notice>().invoke_close();
+    rig.pump();
+    // D's rail slid by the hand, a pixel a move: it lands on every step, half a unit apart, and never
+    // jumps a whole unit; the readout follows on halves.
+    let (y, pressed) = (525.0, slint::LogicalPosition::new(1110.0, 525.0));
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: pressed });
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position: pressed, button: PointerEventButton::Left });
+    let mut landed = Vec::new();
+    for x in 990..=1222 {
+        rig.window.dispatch_event(WindowEvent::PointerMoved { position: slint::LogicalPosition::new(x as f32, y) });
+        rig.pump();
+        landed.push((settings().scanner.d, readout(0)));
+    }
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position: pressed, button: PointerEventButton::Left });
+    rig.pump();
+    let steps: Vec<i64> = landed.iter().map(|l| l.0).collect();
+    assert_eq!((steps[0], *steps.last().unwrap()), (-48, 48), "the rail's ends are ±24 units");
+    assert!(steps.windows(2).all(|p| p[1] - p[0] == 0 || p[1] - p[0] == 1), "every move lands on the next step at most");
+    assert_eq!(steps.iter().collect::<std::collections::BTreeSet<_>>().len(), 97, "97 places, half a unit apart");
+    assert!(landed.iter().any(|(d, r)| *d == 1 && r == "+0.5") && landed.iter().any(|(d, r)| *d == -3 && r == "−1.5"));
+    // Twin: a rail on whole units would skip the odd steps.
+    assert!(steps.iter().any(|d| d % 2 != 0));
+    lab.invoke_clear(0);
     rig.pump();
     // A bare arrow walks the group on the Scanner face, which the next frame opens on.
     rig.key("\u{F703}");

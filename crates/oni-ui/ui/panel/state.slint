@@ -103,13 +103,13 @@ export global Lab {
     in property <[string]> legends: ["−3", "−", "+", "+3"];
     // The groups' reset keys, in `LabGroup`'s order: Density, Color, Look, Effects.
     in property <[bool]> modified: [false, false, false, false];
-    // A letter by its index in `Letter::ALL` (D, C, M, Y, TEMP), an effect in `Effect`'s order.
-    // The sliders, letters then effects (D, C, M, Y, TEMP, Contrast, Vignette, Chrome): each one's
-    // value and range in steps, and its readout.
+    // The sliders, letters (D, C, M, Y, TEMP) then effects (Contrast, Vignette, Chrome): each one's
+    // value and range in steps, a letter's half the unit its readout shows, and its readout.
     in property <[int]> steps: [0, 0, 0, 0, 0, 0, 0, 0];
-    in property <[int]> lows: [-24, -24, -24, -24, -10, -10, -20, 0];
-    in property <[int]> highs: [24, 24, 24, 24, 10, 10, 20, 30];
+    in property <[int]> lows: [-48, -48, -48, -48, -20, -10, -20, 0];
+    in property <[int]> highs: [48, 48, 48, 48, 20, 10, 20, 30];
     in property <[string]> readouts;
+    // A letter by its index in `Letter::ALL`, an effect in `Effect`'s order.
     callback press(int, int);
     callback hold(bool);
     callback clear(int);
