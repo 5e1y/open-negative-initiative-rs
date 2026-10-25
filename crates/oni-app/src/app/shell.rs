@@ -6,6 +6,7 @@ impl Shell {
     /// The window over `engine`, whose device the canvas's texture must share when Slint draws on wgpu.
     pub fn new(store: Box<dyn Settings>, engine: Shared, options: Options) -> Result<Shell, slint::PlatformError> {
         let window = MainWindow::new()?;
+        crate::keycaps::serve(&window);
         let caches = engine.lock().ok().and_then(|e| e.caches.clone());
         crate::measuring::set_folders(&options.support, caches);
         let worker = Worker::new(Box::new(engine.clone()), |done| with_shell(move |c| c.deliver(done)));

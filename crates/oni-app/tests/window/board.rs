@@ -25,6 +25,7 @@ pub(crate) fn the_board_shows_every_component_in_every_state() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let board = Board::new().unwrap();
+    oni_app::keycaps::serve(&board);
     // The board reads English whatever the machine speaks, as the checks do.
     oni_app::language::speak(None);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: SCALE });

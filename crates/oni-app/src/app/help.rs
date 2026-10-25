@@ -230,6 +230,7 @@ impl Ctl {
             Ok(board) => board,
             Err(e) => return crate::timing::line(&format!("the board cannot open: {e}")),
         };
+        crate::keycaps::serve(&board);
         let _ = board.show();
         self.state.borrow_mut().board = Some(board);
     }
@@ -241,6 +242,7 @@ impl Ctl {
             Some(c) => c,
             None => {
                 let Ok(console) = ConsoleWindow::new() else { return self.say(tr("The console cannot open.")) };
+                crate::keycaps::serve(&console);
                 let log = crate::timing::log_path(&self.state.borrow().support);
                 let copied = log.clone();
                 console.on_copy(move || system::set_text(&std::fs::read_to_string(&copied).unwrap_or_default()));

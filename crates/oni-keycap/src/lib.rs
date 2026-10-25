@@ -4,6 +4,7 @@
 pub mod blur;
 pub mod instances;
 pub mod light;
+pub mod look;
 pub mod shape;
 pub mod style;
 pub mod surface;
@@ -15,6 +16,7 @@ mod tests;
 
 pub use style::{KeycapStyle, Motion, Rgba, Timing, Variant};
 pub use surface::Frame;
+pub use look::{Cache, Look, Stats};
 
 /// A rendered key: premultiplied RGBA8, the key's top-left `margin` points in from the image's.
 #[derive(Clone, Debug, PartialEq)]

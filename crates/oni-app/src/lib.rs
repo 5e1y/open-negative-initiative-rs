@@ -18,6 +18,7 @@ pub mod heal;
 pub mod histogram;
 pub mod hz;
 pub mod instance;
+pub mod keycaps;
 #[cfg(test)]
 mod interface_drawing;
 pub mod language;

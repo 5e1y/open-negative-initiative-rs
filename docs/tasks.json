@@ -3384,5 +3384,12 @@
     "title": "The lab's keycaps cast no shadow, their bottom wall lifted toward the face",
     "status": "done",
     "detail": "Owner's call: no cast shadow under a keycap (Depth.shadow-opacity 0, Swift's 0.2 kept as the tunable's history in the comment), and a softer foot: oni-keycap's bottom_lift (0 = Swift) moves the bottom wall's Lambert shade toward the flat face's, 0.4 in the lab, a tunable of the left panel; a test with its twin checks the bottom wall lightens and the top wall keeps its shade."
+  },
+  {
+    "id": 560,
+    "type": "design",
+    "title": "The three depths and the keycap raster move into the design system, one mapping for the lab and the app",
+    "status": "done",
+    "detail": "ui/ds/depth.slint now holds Depth, KeycapLook (with the window's scale, so a change of screen draws the keys again), Raster, KeycapVariant, Keycap, Outward and Inward; lab/depth.slint re-exports them, so the lab tunes the app's own Depth (every lab page shot identical to the pixel). oni-keycap's look module maps a look's numbers to KeycapStyle and Frame and keeps the renders in a Cache keyed by those numbers, the depth on a 1/256 grid, bounded in bytes; oni-lab and oni-app (keycaps.rs, served by the Shell on the main window, the board and the console) both use it. Depth.look() builds the look in one call per key and a cap without cast shadow draws no margin (a test shows nothing lies past the key)."
   }
 ]

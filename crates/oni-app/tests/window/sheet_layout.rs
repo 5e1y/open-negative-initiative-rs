@@ -50,6 +50,7 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     let rig = common::rig(shots);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     let window = MainWindow::new().unwrap();
+    oni_app::keycaps::serve(&window);
     let help = window.global::<Help>();
     help.set_release("1.2".into());
     help.set_welcome_line("V1.2.1".into());

@@ -24,6 +24,7 @@ pub(crate) fn the_splash_names_the_version_and_the_notice_covers_the_window() {
     println!("shot {}", rig.shot("splash").display());
     splash.hide().unwrap();
     let window = MainWindow::new().unwrap();
+    oni_app::keycaps::serve(&window);
     rig.window.set_size(PhysicalSize::new(2 * 1440, 2 * 900));
     window.global::<Notice>().set_shown(true);
     window.show().unwrap();

@@ -12,6 +12,7 @@ pub(crate) fn a_surface_scrolls_by_the_wheel_and_never_by_a_drag() {
     use slint::LogicalPosition;
     let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
     let probe = ScrollProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
     rig.window.set_size(PhysicalSize::new(1440, 900));
     probe.show().unwrap();
     rig.settle();
@@ -50,6 +51,7 @@ pub(crate) fn the_knob_shows_only_where_the_content_overflows_and_only_while_it_
     use std::time::Duration;
     let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
     let probe = ScrollProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(1440, 900));
     probe.show().unwrap();
@@ -135,6 +137,7 @@ pub(crate) fn the_knob_drags_the_content_and_its_track_pages_as_appkit_s() {
     use std::time::Duration;
     let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
     let probe = ScrollProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     // Short, so a page is a fraction of the content and two of them stop short of its end.
     rig.window.set_size(PhysicalSize::new(1440, 450));

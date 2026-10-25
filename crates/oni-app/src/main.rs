@@ -17,7 +17,9 @@ static ALLOCATOR: oni_app::mapped::Mapped = oni_app::mapped::Mapped;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::args().any(|a| a == "--board") {
-        Board::new()?.run()?;
+        let board = Board::new()?;
+        oni_app::keycaps::serve(&board);
+        board.run()?;
         return Ok(());
     }
     let support = timing::support();

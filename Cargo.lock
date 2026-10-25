@@ -4256,6 +4256,7 @@ dependencies = [
  "oni-graph",
  "oni-hack",
  "oni-i18n",
+ "oni-keycap",
  "oni-library",
  "oni-link",
  "oni-link-ffi",

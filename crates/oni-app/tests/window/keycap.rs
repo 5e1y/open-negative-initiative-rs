@@ -14,6 +14,7 @@ pub(crate) fn a_tap_holds_the_cap_down_its_floor_and_a_long_press_lifts_at_once(
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = KeyProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(200, 120));
     probe.show().unwrap();

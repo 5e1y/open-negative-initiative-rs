@@ -1,0 +1,289 @@
+// The three depths every 2.5D element is built from: `Keycap`, Swift's lit frustum for the keys;
+// `Outward`, a plain raised surface; `Inward`, a well sunk into the ground. The lab tunes `Depth` live.
+import { DS } from "tokens.slint";
+
+// What `Raster.keycap` draws: a key's size, depth and look, every length in points at the large size;
+// `scale` is the window's pixels per point, so a change of screen draws the keys again.
+export struct KeycapLook {
+    width: float, height: float, depth: float, albedo: color, radius: float, face-radius: float,
+    factor: float, margin: float, scale: float, level: bool, shadow: bool, rim: bool,
+    azimuth: float, elevation: float, ambient: float, diffuse: float, midtone: float,
+    wall-top: float, wall-bottom: float, wall-side: float, rise: float, dish: float, seam-blur: float,
+    socket-rest: float, socket-pressed: float, socket-softness: float, scale-pressed: float, travel: float,
+    shadow-opacity: float, shadow-blur: float, shadow-y: float, bottom-lift: float,
+}
+
+// The keycap rasterised by oni-keycap, Swift's algorithm to the pixel; oni-app and oni-lab answer it,
+// and slint-viewer, which cannot, gets an empty image and `Keycap` its flat stand-in.
+export global Raster {
+    pure callback keycap(look: KeycapLook) -> image;
+}
+
+// `Keycap.Variant`: every length at 1, 0.525 or 0.38, as `KeycapStyle.scaled(by:)`.
+export enum KeycapVariant { small, mini }
+
+// Swift's `KeycapStyle`, the physical subset: a lit frustum (four flat walls, a dished face) over a socket.
+export global Depth {
+    // The light: azimuth from +x counter-clockwise, elevation above the plane, in degrees.
+    in-out property <float> azimuth: 100;
+    in-out property <float> elevation: 33;
+    in-out property <float> ambient: 0.25;
+    in-out property <float> diffuse: 1;
+    // 1 divides every shade by the flat face's, so the face keeps the albedo and the walls move around it.
+    in-out property <float> midtone: 1;
+    // The walls' horizontal runs and their common rise: a taller rise, steeper walls.
+    in-out property <float> wall-top: 8;
+    in-out property <float> wall-bottom: 12;
+    in-out property <float> wall-side: 8;
+    in-out property <float> rise: 6;
+    in-out property <float> dish: 4;
+    in-out property <length> corner: 16px;
+    in-out property <length> face-corner: 14px;
+    // The cap's cast shadow at rest, none where Swift's is 0.2 at 10 pt; a press flattens it.
+    in-out property <float> shadow-opacity: 0;
+    in-out property <length> shadow-blur: 8px;
+    in-out property <length> shadow-y: 10px;
+    // The bottom wall's shade moved toward the face's: 0 is Swift's darker foot.
+    in-out property <float> bottom-lift: 0.4;
+    // How far a press sinks the cap, how much of a press a hover shows; the reference's two curves,
+    // 0.1 s down and 0.02 s up, and the 0.14 s a tap is held down for.
+    in-out property <length> travel: 1px;
+    in-out property <float> hover-press: 0.25;
+    in-out property <duration> press-time: 100ms;
+    in-out property <duration> release-time: 20ms;
+    in-out property <duration> min-hold: 140ms;
+    in-out property <float> scale-pressed: 0.95;
+    // The walls' seam blur, and the socket's rim at rest and pressed with its softness.
+    in-out property <float> seam-blur: 3;
+    in-out property <float> socket-rest: 2;
+    in-out property <float> socket-pressed: 6;
+    in-out property <float> socket-softness: 0.5;
+    // `Outward`, Swift's `dsFloating` (DSPopover.swift:89): a lit rim along the top, a face a shade lighter
+    // at the top than at the foot, a hairline edge inside (`separator`), a cast shadow (`raiseShade`, 4, 3).
+    in-out property <float> raise-light: 0.08;
+    in-out property <float> raise-sheen: 0.04;
+    in-out property <float> raise-shade: 0.10;
+    in-out property <float> raise-edge: 0.10;
+    // CSS blur is twice SwiftUI's shadow radius: radius 4 is 8px here.
+    in-out property <length> raise-shadow-y: 3px;
+    in-out property <length> raise-shadow-blur: 8px;
+    in-out property <float> raise-shadow-opacity: 0.45;
+    // `Inward`, Swift's `dsRecessed` (DSSlider.swift:276): `recess` folded inside, reaching `reach` on
+    // the sides and `reach + drop` at the top; a hollow (field, toggle, plot) reaches further (4, 3).
+    in-out property <float> well-shade: 0.65;
+    in-out property <length> well-reach: 3px;
+    in-out property <length> well-drop: 1.5px;
+    in-out property <length> well-hollow-reach: 8px;
+    in-out property <length> well-hollow-drop: 3px;
+    // The edge one line inside (`trackLine`), and the lit lower rim outside (`rim`, radius 0.7, y 1).
+    in-out property <float> well-edge: 1;
+    in-out property <float> well-lip: 0.3;
+    in-out property <length> well-lip-y: 1px;
+    in-out property <float> well-lip-soft: 0.4;
+    // A scale on every wall run and on the rise, so the whole lab's relief turns up or down at once.
+    in-out property <float> relief: 1;
+
+    // The light's direction, a unit vector; y grows downwards as the screen does.
+    public pure function lx() -> float { cos(elevation * 1deg) * cos(azimuth * 1deg) }
+    public pure function ly() -> float { -cos(elevation * 1deg) * sin(azimuth * 1deg) }
+    public pure function lz() -> float { sin(elevation * 1deg) }
+
+    // `Frustum.Light.shade`: Lambert over the ambient, divided by the flat face's shade as `midtone` asks.
+    public pure function shade(nx: float, ny: float, nz: float) -> float {
+        (ambient + diffuse * max(0, nx * lx() + ny * ly() + nz * lz())) / max(0.000001, 1 + (ambient + diffuse * max(0, lz()) - 1) * clamp(midtone, 0, 1))
+    }
+
+    public pure function lit(albedo: color, s: float) -> color {
+        rgba(min(255, albedo.red * s), min(255, albedo.green * s), min(255, albedo.blue * s), albedo.alpha / 255)
+    }
+
+    // A wall's colour from its run: the four walls lean out by `run` over `rise`.
+    public pure function wall(albedo: color, side: int, run: float) -> color {
+        lit(albedo, shade(
+            side == 2 ? -rise * relief / hyp(run, rise) : side == 3 ? rise * relief / hyp(run, rise) : 0,
+            side == 0 ? -rise * relief / hyp(run, rise) : side == 1 ? rise * relief / hyp(run, rise) : 0,
+            run / hyp(run, rise)))
+    }
+
+    pure function hyp(run: float, r: float) -> float { max(0.000000001, sqrt(run * run + r * relief * r * relief)) }
+
+    // `Frustum.dishNormal` at `t`, 0 at the face's top to 1 at its bottom, as a shade.
+    public pure function dish-shade(t: float, h: float) -> float {
+        h <= 0 ? shade(0, 0, 1) : shade(0, -(4 * dish * (2 * t - 1) / h) / sqrt(1 + pow(4 * dish * (2 * t - 1) / h, 2)), 1 / sqrt(1 + pow(4 * dish * (2 * t - 1) / h, 2)))
+    }
+
+    public pure function face(albedo: color, t: float, h: float) -> color { lit(albedo, dish-shade(t, h)) }
+
+    // The cast shadow's reach at 0.9 σ per radius, so the image holds it whole; without one, nothing
+    // lies past the key, and the image is the key's size.
+    public pure function margin(factor: float, shadow: bool) -> float {
+        shadow && shadow-opacity > 0 ? ceil((2.7 * shadow-blur / 1px + shadow-y / 1px) * factor) + 2 : 0
+    }
+
+    // One key's `KeycapLook` with every tunable; a function, so each key's code stays a call.
+    public pure function look(width: length, height: length, depth: float, albedo: color, radius: length,
+        face-radius: length, factor: float, margin: float, scale: float, level: bool, shadow: bool, rim: bool) -> KeycapLook {
+        {
+            width: width / 1px, height: height / 1px, depth: depth, albedo: albedo,
+            radius: radius / 1px, face-radius: face-radius / 1px, factor: factor,
+            margin: margin, scale: scale, level: level, shadow: shadow, rim: rim,
+            azimuth: azimuth, elevation: elevation, ambient: ambient, diffuse: diffuse, midtone: midtone,
+            wall-top: wall-top * relief, wall-bottom: wall-bottom * relief, wall-side: wall-side * relief,
+            rise: rise * relief, dish: dish, seam-blur: seam-blur, socket-rest: socket-rest,
+            socket-pressed: socket-pressed, socket-softness: socket-softness, scale-pressed: scale-pressed,
+            travel: travel / 1px, shadow-opacity: shadow-opacity, shadow-blur: shadow-blur / 1px,
+            shadow-y: shadow-y / 1px, bottom-lift: bottom-lift,
+        }
+    }
+}
+
+// Swift's `KeycapChrome`, drawn by `Raster`: children lie on the face, sink and shrink with it. `depth`
+// 0 rests, 1 is fully pressed; the variant or a free `factor` sizes every length.
+export component Keycap inherits Rectangle {
+    in property <color> albedo: DS.palette-keycap;
+    in property <KeycapVariant> variant: small;
+    in property <float> factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525;
+    in property <length> radius: Depth.corner * root.factor;
+    in property <length> face-radius: Depth.face-corner * root.factor;
+    in property <float> depth;
+    // `DSBarHandle`: equal walls, no cast shadow, no rim; and its edge stroked over the chrome.
+    in property <bool> level;
+    in property <bool> shadow: true;
+    in property <bool> rim: true;
+    in property <length> edge-width: 0;
+    in property <color> edge-color: #000000;
+    // No cap at all: the children on the whole key, unmoved, as a ghost key's glyph.
+    in property <bool> bare;
+    property <float> w: self.width / 1px;
+    property <float> h: self.height / 1px;
+    property <float> top: Depth.wall-top * Depth.relief * root.factor;
+    property <float> bottom: (root.level ? Depth.wall-top : Depth.wall-bottom) * Depth.relief * root.factor;
+    property <float> side: Depth.wall-side * Depth.relief * root.factor;
+    // `faceRect`: the walls squeezed alike where they would leave the face under 40 % of the cap.
+    property <float> squeeze: root.bare ? 0 : min(root.top + root.bottom > root.h * 0.6 ? root.h * 0.6 / (root.top + root.bottom) : 1,
+        2 * root.side > root.w * 0.6 ? root.w * 0.6 / (2 * root.side) : 1);
+    property <float> margin: Depth.margin(root.factor, root.shadow);
+    property <image> none;
+    image := Image {
+        x: -root.margin * 1px;
+        y: -root.margin * 1px;
+        width: root.width + 2 * root.margin * 1px;
+        height: root.height + 2 * root.margin * 1px;
+        image-fit: fill;
+        source: root.bare ? root.none : Raster.keycap(Depth.look(root.width, root.height, root.depth, root.albedo,
+            root.radius, root.face-radius, root.factor, root.margin, 1px / 1phx, root.level, root.shadow, root.rim));
+    }
+    // slint-viewer has no `Raster`: a flat cap in its place keeps the layout readable.
+    if !root.bare && image.source.width == 0: Rectangle {
+        border-radius: root.radius;
+        background: root.albedo;
+    }
+    if root.edge-width > 0: Rectangle {
+        border-radius: root.radius;
+        border-width: root.edge-width;
+        border-color: root.edge-color;
+    }
+    // The label's place: on the face, moved by the travel, scaled about the key's centre as the cap.
+    Rectangle {
+        x: root.side * root.squeeze * 1px;
+        y: (root.top * root.squeeze + (root.bare ? 0 : Depth.travel / 1px * root.factor * root.depth)) * 1px;
+        width: root.width - 2 * root.side * root.squeeze * 1px;
+        height: root.height - (root.top + root.bottom) * root.squeeze * 1px;
+        transform-scale-x: root.bare ? 1 : 1 + (Depth.scale-pressed - 1) * root.depth;
+        transform-scale-y: self.transform-scale-x;
+        transform-origin: { x: root.width / 2 - self.x, y: root.height / 2 - self.y };
+        @children
+    }
+}
+
+// A plain surface standing out (`dsFloating`): children lie on the face, under the edge and the rim.
+// `lift` 0 to 1 lengthens the shadow, as a preset card rises under the pointer.
+export component Outward inherits Rectangle {
+    in property <color> fill: DS.palette-keycap;
+    in property <length> radius: 8px;
+    in property <float> lift;
+    border-radius: root.radius;
+    background: @linear-gradient(180deg, root.fill.mix(#ffffff, 1 - Depth.raise-sheen) 0%, root.fill 35%, root.fill.mix(#000000, 1 - Depth.raise-shade) 100%);
+    drop-shadow-color: rgba(0, 0, 0, Depth.raise-shadow-opacity);
+    drop-shadow-blur: Depth.raise-shadow-blur * (1 + root.lift);
+    drop-shadow-offset-y: Depth.raise-shadow-y * (1 + root.lift);
+    @children
+    Rectangle {
+        border-radius: root.radius;
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, Depth.raise-edge);
+    }
+    Rectangle {
+        x: root.radius * 0.6;
+        y: 1px;
+        width: parent.width - root.radius * 1.2;
+        height: 1px;
+        background: @linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, Depth.raise-light) 15%, rgba(255, 255, 255, Depth.raise-light) 85%, rgba(255, 255, 255, 0) 100%);
+    }
+}
+
+// A well sunk into the ground (`dsRecessed`): strokes offset down by the drop stand for the blurred
+// shadow, so it follows the corners; the edge, then the lit lip below. Children lie under the shade.
+export component Inward inherits Rectangle {
+    in property <color> ground: DS.palette-tile;
+    in property <length> radius: 8px;
+    // A field's, a toggle's or a plot's deeper hollow (`hollowBlur`, `hollowDrop`).
+    in property <bool> hollow;
+    // The rim lit round the edge, as a field holding the keyboard (DSTextField.swift:28).
+    in property <bool> lit;
+    // The shade at the rim, all strokes overlapping; one well may ask less than the shared tunable.
+    in property <float> shade: Depth.well-shade;
+    property <length> reach: root.hollow ? Depth.well-hollow-reach : Depth.well-reach;
+    property <length> drop: root.hollow ? Depth.well-hollow-drop : Depth.well-drop;
+    property <length> pad: root.drop + 2px;
+    // Twelve strokes, each that opacity which, stacked twelve deep at the rim, reaches `well-shade`.
+    property <int> steps: 12;
+    property <float> step: 1 - pow(1 - clamp(root.shade, 0, 0.999), 1 / root.steps);
+    // Only the lower half, so the lip never shows through a translucent ground at the top.
+    Rectangle {
+        y: parent.height / 2;
+        height: parent.height / 2 + 4px;
+        clip: true;
+        Rectangle {
+            y: -parent.y + Depth.well-lip-y + 1px;
+            width: parent.width;
+            height: root.height;
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(255, 255, 255, Depth.well-lip * Depth.well-lip-soft);
+        }
+        Rectangle {
+            y: -parent.y + Depth.well-lip-y;
+            width: parent.width;
+            height: root.height;
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(255, 255, 255, Depth.well-lip);
+        }
+    }
+    Rectangle {
+        border-radius: root.radius;
+        background: root.ground;
+        clip: true;
+        @children
+        for i in root.steps: Rectangle {
+            x: -root.pad;
+            y: -root.pad + root.drop;
+            width: parent.width + 2 * root.pad;
+            height: parent.height + 2 * root.pad;
+            border-radius: root.radius + root.pad;
+            border-width: root.pad + root.reach * (i + 1) / root.steps;
+            border-color: rgba(0, 0, 0, root.step);
+        }
+        Rectangle {
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(0, 0, 0, Depth.well-edge);
+        }
+        if root.lit: Rectangle {
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: DS.palette-rim;
+        }
+    }
+}

@@ -13,6 +13,7 @@ pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     std::fs::create_dir_all(&shots).unwrap();
     let rig = common::rig(shots);
     let probe = FieldProbe::new().unwrap();
+    oni_app::keycaps::serve(&probe);
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
     rig.window.set_size(PhysicalSize::new(400, 400));
     probe.show().unwrap();
