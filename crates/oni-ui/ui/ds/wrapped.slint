@@ -4,6 +4,7 @@ import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, Type } from "theme.slint";
 import { Label, Tone, TextRole, Picture, Ground, Fit } from "base.slint";
 import { Badge, BadgeTone } from "badge.slint";
+import { Outward } from "depth.slint";
 
 export global WrappedStyle {
     // `Color.black`, the ground the year is told on, whatever the theme.
@@ -50,13 +51,14 @@ export component WrappedTitle inherits Rectangle {
         }
         HorizontalLayout {
             alignment: center;
-            Badge { tone: BadgeTone.seal; text: root.year; }
+            Badge { tone: BadgeTone.seal; text: root.year; glinting: root.shown; }
         }
     }
 }
 
-// One card: the eyebrow in capitals, the figure in Enriqueta, the caption, and its photos.
-export component WrappedCard inherits Rectangle {
+// One card standing out of the black (`dsFloating`): the eyebrow in capitals, the figure in Enriqueta,
+// the caption, and its photos.
+export component WrappedCard inherits Outward {
     in property <string> eyebrow;
     in property <string> figure;
     in property <string> caption;
@@ -65,12 +67,8 @@ export component WrappedCard inherits Rectangle {
     in property <bool> top;
     width: WrappedStyle.card-width;
     height: WrappedStyle.card-height;
-    background: Colour.ground;
-    border-radius: Radius.card;
-    border-width: Stroke.hairline;
-    border-color: Colour.separator;
-    drop-shadow-blur: Space.l;
-    drop-shadow-color: Colour.scrim;
+    fill: Colour.ground;
+    radius: Radius.card;
     property <length> side: root.photos.length == 1 ? WrappedStyle.photo-side * 3 : WrappedStyle.photo-side;
     property <int> columns: min(root.photos.length, 3);
     VerticalLayout {

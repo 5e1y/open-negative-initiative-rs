@@ -1,0 +1,53 @@
+// The small raised and lit pieces: `DSLamp` on a key, and the popover's panel with its tail.
+import { DS } from "tokens.slint";
+import { Colour, Radius, Stroke, ButtonStyle, ScannerStyle, SurfaceStyle } from "theme.slint";
+import { Raised, Gap } from "base.slint";
+import { Depth } from "depth.slint";
+
+// `DSLamp` (DSLamp.swift:5): dark glass at rest, its colour glowing when lit, in a groove ring.
+export component Lamp inherits Rectangle {
+    in property <bool> lit;
+    in property <color> colour: Colour.confirm;
+    width: ButtonStyle.lamp;
+    height: ButtonStyle.lamp;
+    border-radius: self.width / 2;
+    background: root.lit ? root.colour : ScannerStyle.glass;
+    border-width: Stroke.line;
+    border-color: DS.palette-groove;
+    drop-shadow-color: root.lit ? root.colour : transparent;
+    drop-shadow-blur: root.lit ? SurfaceStyle.lamp-glow : 0px;
+}
+
+// `DSPopoverShape` under `dsFloating` (DSPopover.swift:68): the panel hung under its anchor, its tail
+// welded into the outline, the tip at the top; `tail-x` below zero centres the tail.
+export component Popover inherits Rectangle {
+    in property <bool> menu;
+    in property <bool> tail: true;
+    in property <length> tail-x: -1px;
+    in property <Gap> pad;
+    in property <Gap> gap;
+    property <length> drop: root.tail ? DS.control-popover-tail : 0px;
+    height: panel.height + root.drop;
+    panel := Raised {
+        y: root.drop;
+        width: parent.width;
+        menu: root.menu;
+        radius: root.menu ? Radius.badge : Radius.control;
+        pad: root.pad;
+        gap: root.gap;
+        @children
+    }
+    // Filled as the face's lit top and stroked open, so the edge runs round the tail, not across its base.
+    if root.tail: Path {
+        x: (root.tail-x < 0 ? root.width / 2 : root.tail-x) - root.drop;
+        y: 0;
+        width: 2 * root.drop;
+        height: root.drop + Stroke.line;
+        viewbox-width: 14;
+        viewbox-height: 8;
+        fill: (root.menu ? Colour.raised : Colour.ground).mix(#ffffff, 1 - Depth.raise-sheen);
+        stroke: rgba(255, 255, 255, Depth.raise-edge);
+        stroke-width: Stroke.line;
+        commands: "M 0 8 L 7 0 L 14 8";
+    }
+}

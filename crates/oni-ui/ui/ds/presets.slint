@@ -4,8 +4,10 @@ import { Colour, Space, Radius, Stroke, State, SheetStyle } from "theme.slint";
 import { PresetStyle } from "theme_views.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look } from "controls.slint";
+import { Outward } from "depth.slint";
 
-// `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink.
+// `PresetCarousel.card`: the monogram on the tint, the name under it, both in the tint's own ink, the
+// card standing out of the deck (`dsFloating`), its shadow lengthened while it is `lifted`.
 export component PresetFace inherits Rectangle {
     in property <string> abbreviation;
     in property <string> name;
@@ -15,36 +17,43 @@ export component PresetFace inherits Rectangle {
     in property <bool> new;
     in property <bool> lit;
     in property <bool> enabled: true;
+    in property <bool> lifted;
     width: PresetStyle.card-width;
     height: PresetStyle.card-height;
-    border-radius: Radius.card;
-    background: root.new ? Colour.ground.transparentize(1) : root.fill;
-    border-width: !root.new ? 0px : root.lit ? Stroke.line : Stroke.hairline;
-    border-color: root.lit ? Colour.ink : Colour.handle-idle;
     opacity: root.enabled ? 1 : State.disabled;
-    if root.new: Label {
-        text: "+";
-        font-size: PresetStyle.mark;
-        ink: root.lit ? Colour.ink : Colour.handle-idle;
-        centred: true;
-    }
-    if !root.new: VerticalLayout {
-        padding: Space.s;
-        spacing: Space.xxs;
+    if root.new: Rectangle {
+        border-radius: Radius.card;
+        border-width: root.lit ? Stroke.line : Stroke.hairline;
+        border-color: root.lit ? Colour.ink : Colour.handle-idle;
         Label {
-            text: root.abbreviation;
+            text: "+";
             font-size: PresetStyle.mark;
-            ink: root.ink;
-            overflow: elide;
-            vertical-alignment: top;
+            ink: root.lit ? Colour.ink : Colour.handle-idle;
+            centred: true;
         }
-        Rectangle { vertical-stretch: 1; }
-        Label {
-            text: root.name;
-            ink: root.ink;
-            wrap: word-wrap;
-            overflow: elide;
-            vertical-alignment: top;
+    }
+    if !root.new: Outward {
+        fill: root.fill;
+        radius: Radius.card;
+        lift: root.lifted ? 1 : 0;
+        VerticalLayout {
+            padding: Space.s;
+            spacing: Space.xxs;
+            Label {
+                text: root.abbreviation;
+                font-size: PresetStyle.mark;
+                ink: root.ink;
+                overflow: elide;
+                vertical-alignment: top;
+            }
+            Rectangle { vertical-stretch: 1; }
+            Label {
+                text: root.name;
+                ink: root.ink;
+                wrap: word-wrap;
+                overflow: elide;
+                vertical-alignment: top;
+            }
         }
     }
 }

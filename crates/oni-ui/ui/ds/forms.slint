@@ -1,13 +1,13 @@
 // The forms of export and colour management: a labelled field, a note, a preview slot, progress, the
 // status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, FieldStyle, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Motion, FieldStyle, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle, SurfaceStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
 import { RenameField } from "controls.slint";
 import { Icons } from "icons.slint";
-import { SliderFill, Rail } from "slider.slint";
+import { Inward } from "depth.slint";
 
 export global FormStyle {
     out property <length> panel-width: DS.control-export-panel-width;
@@ -76,19 +76,26 @@ export component WarningBand inherits Rectangle {
     }
 }
 
-// `DSProgress`: a recessed track lit up to the fraction done; below zero, no total, a lit segment
-// sweeps it, so a wait that cannot be counted still reads as moving.
-export component Progress inherits Rail {
+// `DSProgress`: a track's recess lit up to the fraction done, glowing; below zero, no total, a lit
+// segment sweeps it, so a wait that cannot be counted still reads as moving.
+export component Progress inherits Inward {
     in property <float> fraction;
     property <bool> counted: root.fraction >= 0;
     // Read only while sweeping, so a counted bar asks no frame of its own.
     property <float> swing: root.counted ? 0 : Math.mod(animation-tick() / DS.motion-sweep-duration, 2);
     property <float> eased: (1 - cos((root.swing < 1 ? root.swing : 2 - root.swing) * 180deg)) / 2;
-    fill: SliderFill.level;
-    tint: Colour.selected;
-    glow: DS.scanner-phosphor-glow;
-    from: root.counted ? 0 : (1 - DS.control-progress-segment) * root.eased;
-    at: root.counted ? clamp(root.fraction, 0, 1) : root.from + DS.control-progress-segment;
+    ground: Colour.track;
+    radius: Radius.track;
+    height: DS.control-track-height;
+    Rectangle {
+        x: root.counted ? 0 : (root.width - self.width) * root.eased;
+        width: root.counted ? root.width * clamp(root.fraction, 0, 1) : root.width * DS.control-progress-segment;
+        // `Motion.settle`, a spring of 0.38 s damped 0.72: a slight overshoot.
+        animate width { duration: Motion.settle; easing: ease-out-back; }
+        background: Colour.selected;
+        drop-shadow-color: Colour.selected;
+        drop-shadow-blur: SurfaceStyle.progress-glow;
+    }
 }
 
 // What an export preview shows: a sweep while it renders, the picture, or the word it never will.
@@ -125,14 +132,26 @@ export component PreviewSlot inherits Rectangle {
     }
 }
 
-// `DSLCD`: a count on the scanner's glass.
-export component LcdReadout inherits Rectangle {
+// `DSLCD`: a count on the scanner's glass, in a track's recess, its ink glowing.
+export component LcdReadout inherits Inward {
     in property <string> text;
-    background: ScannerStyle.glass;
-    border-radius: Radius.track;
+    ground: ScannerStyle.glass;
+    radius: Radius.track;
     width: readout.preferred-width + 2 * Space.s;
     height: readout.preferred-height + 2 * Space.xxs;
+    Label {
+        x: readout.x;
+        y: readout.y;
+        text: root.text;
+        role: TextRole.value;
+        ink: ScannerStyle.lcd-ink.with-alpha(SurfaceStyle.lcd-glow);
+        stroke: ScannerStyle.lcd-ink.with-alpha(SurfaceStyle.lcd-glow * 0.5);
+        stroke-width: SurfaceStyle.lcd-glow-width;
+        stroke-style: outside;
+    }
     readout := Label {
+        x: Space.s;
+        y: Space.xxs;
         text: root.text;
         role: TextRole.value;
         tone: Tone.lcd;

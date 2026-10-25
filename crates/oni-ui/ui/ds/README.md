@@ -10,7 +10,8 @@ and every screen picks it up.
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
 | `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
-| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
+| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -51,6 +52,25 @@ an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache
   `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`),
   `small` for a plate of mini keys.
+
+## Surfaces
+
+What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (`dsRecessed`):
+
+- **Raised**: every lift on `Outward`, its lit rim, its face lighter at the top, its inner hairline and its
+  cast shade; `sheet` lengthens the shadow (`Outward.lift` 1). The sheets, the notices, the banners, the
+  slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
+  `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
+- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (its ink glowing) and the passes'
+  reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
+  gallery's many tiles keep their flat well.
+- **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
+  `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
+- **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
+  (a menu's rule) keeps a flat line.
+- **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
+  clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
+  only while it crosses; `glint-at` holds it still. **Lamp** is `DSLamp`, at a key's legend's top right.
 
 ## The rule: screens use only the design system
 

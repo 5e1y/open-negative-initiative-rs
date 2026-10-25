@@ -3419,5 +3419,19 @@
     "title": "Dev and test builds read the interface at run time",
     "status": "done",
     "detail": "oni-ui/build.rs sets SLINT_LIVE_PREVIEW for the debug profile, slint gains live-preview: the generated layer falls from 103 MB to 1.1 MB, oni-ui compiles in 12 s, a .slint edit reaches a window check in 15 s, the full check in 128 s instead of about 650. The app profile and release keep the compiled interface. Slint's @tr texts stay English in this mode (no bundled translations in the interpreter), so the French look is judged on the app profile."
+  },
+  {
+    "id": 600,
+    "type": "feature",
+    "title": "The surfaces take the lab's relief: Raised, Inset, the cards, the popover, the glass, the lamps and the seals",
+    "status": "done",
+    "detail": "The 2.5D lab's misc family moves into the design system, its values as approved. Raised stands on Outward (dsFloating: the lit rim, the gradient, the inner hairline, the cast shade, lengthened for a sheet), so every sheet, notice, banner, slid column and popup takes it; Popover (surfaces.slint) hangs it under DSPopoverShape's tail, which PopupPanel draws for a popover (tail-x, centred by default). Inset, Progress (its glow) and LcdReadout (its glowing ink) sink as Inward, as does the passes' reorder hollow (DSReorder). PresetFace (lifted), WrappedCard and TipCard (DSHelpBubble on the canvas) are Outwards. Divider is DSSeparator's engraved groove, two lines; hairline or engraved: false stays flat (a menu's rule). Badge seals print DSGoldSealView's foil (gold, holographic, red), the glint swept on glinting or a hovered note; Lamp is DSLamp, laid on a key at its legend's top right. SurfaceStyle, SealStyle and Foil live in theme_surfaces.slint."
+  },
+  {
+    "id": 601,
+    "type": "tooling",
+    "title": "The lab's Misc page shows the design system's own surfaces",
+    "status": "done",
+    "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
   }
 ]

@@ -6,6 +6,7 @@ import { Label, Picture, Ground, TextRole, Tone, Clicks } from "base.slint";
 
 import { Button } from "controls.slint";
 import { Ring } from "marks.slint";
+import { Inward } from "depth.slint";
 
 export global RollStyle {
     out property <int> columns: DS.control-roll-columns;
@@ -112,10 +113,12 @@ export component PassReorder inherits VerticalLayout {
             Label { role: TextRole.caption; tone: Tone.tertiary; text: name; overflow: elide; centred: true; }
         }
     }
-    Rectangle {
+    // `DSReorder`'s hollow (`dsRecessed`, the hollow's blur and drop).
+    Inward {
         height: RollStyle.hollow;
-        border-radius: self.height / 2;
-        background: Colour.canvas;
+        radius: self.height / 2;
+        ground: Colour.canvas;
+        hollow: true;
         for letter[i] in root.letters: Rectangle {
             x: Space.xs + (i == root.held ? i * root.pitch + root.travel : root.slot(i) * root.pitch);
             y: Space.xs;

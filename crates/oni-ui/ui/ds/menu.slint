@@ -1,6 +1,7 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
 import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, CardStyle } from "theme.slint";
-import { Label, Icon, Tone, Tips, Divider, Raised, Gap } from "base.slint";
+import { Label, Icon, Tone, Tips, Divider, Gap } from "base.slint";
+import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
 
@@ -48,18 +49,22 @@ export component MenuEntry inherits Rectangle {
 // the export panel's width, as Swift keeps them apart.
 export enum PopupKind { menu, popover }
 
-// A popup anchored where it opened, closed by a click outside. Sized as its panel: unsized, its
-// content is hit at another width than drawn, and a window's edge pushes it past its own width.
+// A popup anchored where it opened, closed by a click outside; a popover hangs from its tail's tip. Sized
+// as its panel: unsized, its content is hit at another width than drawn, and an edge pushes it wider.
 export component PopupPanel inherits PopupWindow {
     in property <PopupKind> kind: PopupKind.popover;
     // A menu dropped under a field is as wide as it.
     in property <length> span: root.kind == PopupKind.menu ? MenuStyle.width : FormStyle.panel-width;
+    // Where a popover's tail meets its anchor, from the panel's left; below zero, its middle.
+    in property <length> tail-x: -1px;
     close-policy: close-on-click-outside;
     width: panel.width;
     height: panel.height;
-    panel := Raised {
+    panel := Popover {
         width: root.span;
         menu: root.kind == PopupKind.menu;
+        tail: root.kind == PopupKind.popover;
+        tail-x: root.tail-x;
         pad: root.kind == PopupKind.menu ? Gap.xs : Gap.m;
         gap: root.kind == PopupKind.menu ? Gap.none : Gap.m;
         @children
@@ -81,7 +86,7 @@ export component Menu inherits PopupPanel {
         activated => { root.chosen(i); root.close(); }
     }
     for line[i] in root.lines: VerticalLayout {
-        if line.rule: Divider { }
+        if line.rule: Divider { engraved: false; }
         MenuEntry {
             text: line.text;
             shortcut: line.opens ? "›" : "";

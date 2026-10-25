@@ -1,50 +1,12 @@
-// The lab's Misc page: Slint copies of the Swift app's other raised and sunken surfaces, built on
-// depth.slint's `Outward` and `Inward`, each live beside its forced states.
+// The lab's Misc page: the design system's other raised and sunken surfaces (`Raised`, `Inset`, the glass,
+// the lamps, the seals, the cards, the popover, the sheet, the status bar), live beside their forced states.
 import { Slider, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
+import { SurfaceStyle } from "../ui/ds/theme_surfaces.slint";
+import { Label, TextRole, Tone, Gap, Raised, Lift, Inset, Divider, TipCard, Badge, BadgeTone, Metal, LcdReadout,
+    Progress, StatusBar, Lamp, Popover, PopupPanel, PresetFace, PresetStyle, WrappedCard, Section, AskSheet, AskRole,
+    SheetStyle, Button } from "../ui/ds/ds.slint";
 import { Keycap, Outward, Inward, Depth } from "depth.slint";
-
-// This page's own tunables; lengths are in px, as floats, so one slider kind moves them all.
-export global MiscLook {
-    // `DSLCD`'s ink glow (`lcdInk`, radius `rimBlur` 0.7), drawn as an outer stroke.
-    in-out property <float> lcd-glow: 0.35;
-    in-out property <float> lcd-glow-width: 1.2;
-    // `DSLamp`'s glow, its colour at radius `Space.xxs` 2 (CSS blur 4).
-    in-out property <float> lamp-glow: 4;
-    // The foil's light: 1 is the ramp read off `DSFoil.render`, 0 a flat body.
-    in-out property <float> seal-contrast: 1;
-    in-out property <float> seal-sheen: 0.35;
-    in-out property <float> seal-rule: 0.6;
-    in-out property <float> seal-emboss: 0.35;
-    in-out property <float> seal-shadow: 1;
-    // `DSProgress`'s lit fill glow, `phosphorGlow` 5 (CSS blur 10).
-    in-out property <float> progress-glow: 10;
-    // A preset card's rise under the pointer, `cardLift` 6.
-    in-out property <float> card-lift: 6;
-}
-
-// `DSFoil.Metal`'s ramps (DSFoil.swift:13): 0 gold, 1 holographic, 2 red, 3 silver, 4 bronze, 5 rose.
-export global Foil {
-    public pure function deep(m: int) -> color {
-        [rgb(92, 56, 13), rgb(51, 51, 61), rgb(77, 8, 10), rgb(61, 64, 69), rgb(69, 31, 10), rgb(92, 18, 43)][m]
-    }
-    public pure function body(m: int) -> color {
-        [rgb(219, 166, 64), rgb(199, 204, 219), rgb(212, 43, 48), rgb(179, 184, 191), rgb(179, 102, 48), rgb(237, 112, 158)][m]
-    }
-    public pure function bright(m: int) -> color {
-        [rgb(255, 230, 153), rgb(255, 255, 255), rgb(255, 179, 173), rgb(247, 250, 255), rgb(255, 194, 133), rgb(255, 212, 232)][m]
-    }
-    // The light `t` scaled about the body by `seal-contrast`.
-    public pure function lit(t: float) -> float { 0.7 + (t - 0.7) * MiscLook.seal-contrast }
-    // `DSFoil`'s ramp: deep to body below 1, body to bright up to 1.6.
-    public pure function at(m: int, t: float) -> color {
-        lit(t) < 1 ? deep(m).mix(body(m), 1 - max(lit(t), 0)) : body(m).mix(bright(m), 1 - min((lit(t) - 1) / 0.6, 1))
-    }
-    // The holographic foil's light laid over its spectrum: darker below 1, whiter above.
-    public pure function over(t: float) -> color {
-        lit(t) < 1 ? rgba(0, 0, 0, (1 - max(lit(t), 0)) * 0.76) : rgba(255, 255, 255, min((lit(t) - 1) / 0.6, 1))
-    }
-}
 
 // One tunable, as lab.slint's `Tune`.
 component Tune inherits Rectangle {
@@ -119,285 +81,6 @@ component Legend inherits Text {
     vertical-alignment: center;
 }
 
-// `DSLCD` (DSLCD.swift:3): the value on the scanner's glass, its ink glowing, in a track's recess.
-export component Lcd inherits Inward {
-    in property <string> text;
-    ground: DS.palette-lcd-glass;
-    radius: DS.radius-track;
-    width: ink.preferred-width + 2 * DS.space-sm;
-    height: ink.preferred-height + 2 * DS.space-xxs;
-    Text {
-        x: DS.space-sm;
-        y: DS.space-xxs;
-        text: root.text;
-        font-size: DS.typo-value-size;
-        color: DS.palette-lcd-ink.with-alpha(MiscLook.lcd-glow);
-        stroke: DS.palette-lcd-ink.with-alpha(MiscLook.lcd-glow * 0.5);
-        stroke-width: MiscLook.lcd-glow-width * 1px;
-        stroke-style: outside;
-    }
-    ink := Text {
-        x: DS.space-sm;
-        y: DS.space-xxs;
-        text: root.text;
-        font-size: DS.typo-value-size;
-        color: DS.palette-lcd-ink;
-    }
-}
-
-// `DSLamp` (DSLamp.swift:5): dark glass at rest, its colour glowing when lit, in a groove ring.
-export component Lamp inherits Rectangle {
-    in property <bool> lit;
-    in property <color> colour: DS.tint-confirm;
-    width: DS.control-lamp-size;
-    height: DS.control-lamp-size;
-    border-radius: self.width / 2;
-    background: root.lit ? root.colour : DS.palette-lcd-glass;
-    border-width: DS.stroke-line;
-    border-color: DS.palette-groove;
-    drop-shadow-color: root.lit ? root.colour : transparent;
-    drop-shadow-blur: MiscLook.lamp-glow * 1px;
-}
-
-// `DSGoldSealView` (DSNews.swift:78) over `DSFoil.seal`: a capsule of brushed foil lit from above, a rule
-// printed inside its edge, the word in dark ink; a hover sweeps a glint across it once.
-export component Seal inherits Rectangle {
-    in property <string> word;
-    in property <int> metal;
-    in property <bool> glinting;
-    // A sweep held still, -1 to 1, for a forced specimen; below -2 the hover drives it.
-    in property <float> frozen: -9;
-    property <float> sweep: -1;
-    property <length> pad: DS.control-seal-padding * 1px;
-    height: DS.control-seal-height * 1px;
-    width: ceil((label.preferred-width - DS.control-seal-tracking * 1px + 2 * root.pad) / 1px) * 1px;
-    border-radius: self.height / 2;
-    background: Foil.deep(root.metal);
-    drop-shadow-color: rgba(0, 0, 0, 0.2 * MiscLook.seal-shadow);
-    drop-shadow-blur: 4px;
-    drop-shadow-offset-y: 1.5px;
-    // `sealSweep` 0.7 s ease-in-out on the way in; back to the start at once, as Swift resets it.
-    states [
-        glint when root.glinting: {
-            sweep: 1;
-            in { animate sweep { duration: DS.control-seal-sweep * 1s; easing: ease-in-out; } }
-            out { animate sweep { duration: 0ms; } }
-        }
-    ]
-    Rectangle {
-        border-radius: root.height / 2;
-        clip: true;
-        // The light down a brushed dome: the lit top bevel, the softbox streak above the middle, the dark foot.
-        background: root.metal == 1
-            ? @linear-gradient(100deg, #dada6b 0%, #90ff90 18%, #6bdada 37%, #9090ff 55%, #da6bda 74%, #ff9090 92%, #f0aa78 100%)
-            : @linear-gradient(180deg, Foil.at(root.metal, 1.25) 0%, Foil.at(root.metal, 1.0) 10%, Foil.at(root.metal, 0.85) 22%,
-                Foil.at(root.metal, 1.2) 38%, Foil.at(root.metal, 0.9) 52%, Foil.at(root.metal, 0.4) 70%,
-                Foil.at(root.metal, 0.25) 88%, Foil.at(root.metal, 0.1) 100%);
-        drop-shadow-color: rgba(0, 0, 0, 0.45 * MiscLook.seal-shadow);
-        drop-shadow-blur: 1px;
-        drop-shadow-offset-y: 0.5px;
-        if root.metal == 1: Rectangle {
-            background: @linear-gradient(180deg, Foil.over(1.25) 0%, Foil.over(1.0) 10%, Foil.over(0.85) 22%, Foil.over(1.2) 38%,
-                Foil.over(0.9) 52%, Foil.over(0.4) 70%, Foil.over(0.25) 88%, Foil.over(0.1) 100%);
-        }
-        // The diagonal highlight `across` lays from the lower left to the upper right.
-        Rectangle {
-            background: @linear-gradient(120deg, rgba(255, 255, 255, 0) 18%, rgba(255, 255, 255, MiscLook.seal-sheen) 32%, rgba(255, 255, 255, 0) 46%);
-        }
-        // The rule printed 2 pt inside the edge, 0.4 pt wide.
-        Rectangle {
-            x: 2px;
-            y: 2px;
-            width: parent.width - 4px;
-            height: parent.height - 4px;
-            border-radius: self.height / 2;
-            border-width: 0.5px;
-            border-color: rgba(19, 13, 3, MiscLook.seal-rule);
-        }
-        // The ink stands proud of the foil: its top edge catches the light.
-        Text {
-            x: root.pad;
-            y: -0.5px;
-            height: parent.height;
-            text: label.text;
-            font-size: label.font-size;
-            font-weight: label.font-weight;
-            letter-spacing: label.letter-spacing;
-            vertical-alignment: center;
-            color: Foil.bright(root.metal).with-alpha(MiscLook.seal-emboss);
-        }
-        label := Text {
-            x: root.pad;
-            height: parent.height;
-            text: root.word;
-            font-size: DS.typo-seal-size;
-            font-weight: 800;
-            letter-spacing: DS.control-seal-tracking * 1px;
-            vertical-alignment: center;
-            color: rgb(19, 13, 3);
-        }
-        Rectangle {
-            width: root.height * 2.4;
-            x: -self.width + ((root.frozen > -2 ? root.frozen : root.sweep) + 1) / 2 * (root.width + self.width);
-            background: @linear-gradient(70deg, rgba(255, 255, 255, 0) 25%, rgba(255, 255, 255, DS.control-seal-glint) 50%, rgba(255, 255, 255, 0) 75%);
-        }
-    }
-}
-
-// `DSProgress` (DSProgress.swift:5): a track's recess lit up to the fraction done; below zero a lit
-// quarter sweeps it, `sweepDuration` 1.2 s each way, ease-in-out.
-export component Progress inherits Inward {
-    in-out property <float> fraction: -1;
-    property <bool> counted: root.fraction >= 0;
-    property <float> swing: root.counted ? 0 : Math.mod(animation-tick() / DS.motion-sweep-duration, 2);
-    property <float> eased: (1 - cos((root.swing < 1 ? root.swing : 2 - root.swing) * 180deg)) / 2;
-    ground: DS.palette-track;
-    radius: DS.radius-track;
-    height: DS.control-track-height;
-    Rectangle {
-        x: root.counted ? 0 : (root.width - self.width) * root.eased;
-        width: root.counted ? root.width * clamp(root.fraction, 0, 1) : root.width * DS.control-progress-segment;
-        // `Motion.settle`, a spring of 0.38 s damped 0.72: a slight overshoot.
-        animate width { duration: 380ms; easing: ease-out-back; }
-        background: DS.palette-selected;
-        drop-shadow-color: DS.palette-selected;
-        drop-shadow-blur: MiscLook.progress-glow * 1px;
-    }
-}
-
-// `DSStatusBar` (DSStatusBar.swift:5): idle, a line of facts and its seal; busy, the title, the count
-// on the glass and the progress across the rest. `mode` 0 idle, 1 counted, 2 no total.
-export component StatusBar inherits Rectangle {
-    in property <int> mode;
-    in property <int> done: 12;
-    in property <int> total: 40;
-    in property <string> title: "Importing";
-    in property <string> leading: "Roll #8 · 36 frames · Nikon Z f";
-    in property <string> seal: "RGB";
-    height: DS.control-status-row-height + 2 * DS.space-sm;
-    background: DS.palette-panel;
-    HorizontalLayout {
-        padding: DS.space-sm;
-        spacing: DS.space-sm;
-        if root.mode != 0: Text { text: root.title; font-size: DS.typo-label-size; color: DS.palette-text-on-fill; vertical-alignment: center; }
-        if root.mode == 1: VerticalLayout {
-            alignment: center;
-            Lcd { text: root.done + "/" + root.total; }
-        }
-        if root.mode != 0: VerticalLayout {
-            alignment: center;
-            horizontal-stretch: 1;
-            Progress { fraction: root.mode == 1 ? root.done / max(root.total, 1) : -1; }
-        }
-        if root.mode == 0: Text { text: root.leading; font-size: DS.typo-label-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-        // The seal stands out of the row by its own height, so the bar keeps its own.
-        if root.mode == 0 && root.seal != "": Rectangle {
-            width: s.width;
-            height: DS.control-status-row-height;
-            s := Seal { y: (parent.height - self.height) / 2; word: root.seal; metal: 1; }
-        }
-        if root.mode == 0: Rectangle { horizontal-stretch: 1; }
-        if root.mode == 0: Text { text: "100 %"; font-size: DS.typo-value-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-    }
-}
-
-// `DSSeparator` (DSPanel.swift:5): an engraved line, `groove` then `grooveLight`.
-export component Groove inherits Rectangle {
-    in property <bool> vertical;
-    width: root.vertical ? 2 * DS.stroke-line : 200px;
-    height: root.vertical ? 24px : 2 * DS.stroke-line;
-    Rectangle {
-        x: 0;
-        y: 0;
-        width: root.vertical ? DS.stroke-line : parent.width;
-        height: root.vertical ? parent.height : DS.stroke-line;
-        background: DS.palette-groove;
-    }
-    Rectangle {
-        x: root.vertical ? DS.stroke-line : 0;
-        y: root.vertical ? 0 : DS.stroke-line;
-        width: root.vertical ? DS.stroke-line : parent.width;
-        height: root.vertical ? parent.height : DS.stroke-line;
-        background: DS.palette-groove-light;
-    }
-}
-
-// The editor's floating card (EditorScene+Card.swift:323): the panel's ground on a card's corner, lifted
-// by `raiseShade` over the canvas; a section under its engraved separator.
-export component PanelCard inherits Outward {
-    in property <string> heading: "Balance";
-    fill: DS.palette-panel;
-    radius: DS.radius-card;
-    width: 220px;
-    height: 120px;
-    VerticalLayout {
-        Rectangle { height: 1px; }
-        VerticalLayout {
-            padding: DS.space-md;
-            spacing: DS.space-sm;
-            Text { text: root.heading; font-size: DS.typo-section-size; color: DS.palette-text-on-fill; }
-            Text { text: "Temperature   5000 K"; font-size: DS.typo-value-size; color: DS.palette-text-secondary; }
-        }
-        Groove { width: parent.width; }
-        VerticalLayout {
-            padding: DS.space-md;
-            Text { text: "Tone"; font-size: DS.typo-section-size; color: DS.palette-text-on-fill; }
-        }
-    }
-}
-
-// A preset card (PresetCarousel.swift:153): a flat tint on a card's corner that rises `cardLift` under
-// the pointer, `Motion.lift` (0.16 s, damped 0.55).
-export component PresetCard inherits Rectangle {
-    in property <color> tint: DS.tint-correction;
-    in property <bool> lifted;
-    in property <string> monogram: "P4";
-    width: 72px;
-    height: 104px + MiscLook.card-lift * 1px;
-    card := Outward {
-        y: root.lifted ? 0 : MiscLook.card-lift * 1px;
-        animate y { duration: 160ms; easing: ease-out-back; }
-        width: parent.width;
-        height: 104px;
-        fill: root.tint;
-        radius: DS.radius-card;
-        lift: root.lifted ? 1 : 0;
-        Text { x: DS.space-sm; y: DS.space-sm; text: root.monogram; font-size: DS.typo-mark-size; color: DS.palette-text-on-fill; }
-    }
-}
-
-// `DSPopoverShape` under `dsFloating` (DSPopover.swift:68): the panel hung under its anchor, its tail
-// welded into the outline; `tail-x` below zero centres the tail.
-export component Popover inherits Rectangle {
-    in property <length> tail-x: -1px;
-    property <length> tail: DS.control-popover-tail;
-    Outward {
-        y: root.tail;
-        width: parent.width;
-        height: parent.height - root.tail;
-        fill: DS.palette-panel;
-        radius: DS.radius-control;
-        VerticalLayout {
-            padding: DS.space-md;
-            spacing: DS.space-sm;
-            @children
-        }
-    }
-    // Filled and stroked open, so the stroke runs round the tail and not across its base.
-    Path {
-        x: (root.tail-x < 0 ? root.width / 2 : root.tail-x) - root.tail;
-        y: 0;
-        width: 2 * root.tail;
-        height: root.tail + 1px;
-        viewbox-width: 14;
-        viewbox-height: 8;
-        fill: DS.palette-panel.mix(#ffffff, 1 - Depth.raise-sheen);
-        stroke: rgba(255, 255, 255, Depth.raise-edge);
-        stroke-width: 1px;
-        commands: "M 0 8 L 7 0 L 14 8";
-    }
-}
-
 // A key of a dialog's plate: the keycap in its role's tint, the legend light.
 component DialogKey inherits Keycap {
     in property <string> text;
@@ -408,44 +91,6 @@ component DialogKey inherits Keycap {
     animate depth { duration: 90ms; easing: ease-out; }
     legend := Legend { width: parent.width; height: parent.height; text: root.text; }
     touch := TouchArea { clicked => { root.clicked(); } }
-}
-
-// `DSDialogPanel` (DSDialog.swift:48): a sheet on the panel's ground, its title, its message, a field
-// when asked, and the keys on a plate at the right. `role` 0 confirm, 1 destructive, 2 notice.
-export component Dialog inherits Outward {
-    in property <string> title;
-    in property <string> message;
-    in property <string> field;
-    in property <int> role;
-    in property <bool> wide;
-    callback answered(string);
-    fill: DS.palette-panel;
-    radius: DS.radius-card;
-    width: root.wide ? DS.control-dialog-wide-width : DS.control-dialog-width;
-    VerticalLayout {
-        padding: DS.space-lg;
-        spacing: DS.space-md;
-        Text { text: root.title; font-size: DS.typo-section-size; font-weight: 600; color: DS.palette-text-on-fill; }
-        if root.message != "": Text { text: root.message; font-size: DS.typo-label-size; color: DS.palette-text-secondary; wrap: word-wrap; }
-        if root.field != "": Inward {
-            height: 32px;
-            ground: DS.palette-canvas;
-            radius: DS.radius-card;
-            hollow: true;
-            lit: true;
-            Text { x: DS.space-md; height: parent.height; vertical-alignment: center; text: root.field; font-size: DS.typo-label-size; color: DS.palette-text-on-fill; }
-        }
-        HorizontalLayout {
-            alignment: end;
-            spacing: 0;
-            if root.role != 2: DialogKey { text: "Cancel"; clicked => { root.answered("Cancel"); } }
-            DialogKey {
-                text: root.role == 2 ? "OK" : root.role == 1 ? "Move to Trash" : "Apply";
-                albedo: root.role == 1 ? DS.tint-destructive : root.role == 0 ? DS.tint-confirm : DS.palette-keycap;
-                clicked => { root.answered(self.text); }
-            }
-        }
-    }
 }
 
 // `DSWarning` (DSWarning.swift:5): a triangle and a sentence on a pale orange band; flat in Swift.
@@ -470,23 +115,6 @@ export component Warning inherits Rectangle {
             alignment: end;
             DialogKey { text: "Dismiss"; }
         }
-    }
-}
-
-// `DSBadge` (DSBadge.swift:4): a value laid on the photo, flat in Swift; rounded pins a corner,
-// a capsule floats; `warning` on the orange surface.
-export component Badge inherits Rectangle {
-    in property <string> text;
-    in property <bool> capsule;
-    in property <bool> warning;
-    width: t.preferred-width + 2 * (root.capsule ? DS.space-sm : DS.control-badge-padding);
-    height: t.preferred-height + 2 * (root.capsule ? DS.space-xs : DS.control-badge-padding);
-    border-radius: root.capsule ? self.height / 2 : DS.radius-badge;
-    background: root.warning ? DS.palette-warning-surface : DS.palette-overlay;
-    t := Text {
-        text: root.text;
-        font-size: DS.typo-value-size;
-        color: root.warning ? DS.palette-text-on-warning : DS.palette-text-on-fill;
     }
 }
 
@@ -523,18 +151,6 @@ export component PlotScreen inherits Inward {
     }
 }
 
-// `DSHelpBubble` (DSHelp.swift:20): a note floating on the canvas's ground, a control's corner.
-export component HelpBubble inherits Outward {
-    in property <string> text;
-    fill: DS.palette-canvas;
-    radius: DS.radius-control;
-    width: 200px;
-    VerticalLayout {
-        padding: DS.space-sm;
-        Text { text: root.text; font-size: DS.typo-label-size; color: DS.palette-text-secondary; wrap: word-wrap; }
-    }
-}
-
 // A ground to lay a specimen on: the canvas's dark, or the photo's black-to-white for what floats on it.
 component Ground inherits Rectangle {
     in property <bool> photo;
@@ -557,6 +173,7 @@ export component MiscPage inherits Rectangle {
     property <bool> popover-open;
     property <string> answer: "nothing asked yet";
     property <bool> field-lit;
+    property <float> live-fraction: 0.4;
     Timer {
         interval: 80ms;
         running: root.status-mode == 1;
@@ -568,7 +185,7 @@ export component MiscPage inherits Rectangle {
             spacing: 36px;
             alignment: start;
 
-            // The tuning strip: the two depths' own tunables, then this page's.
+            // The tuning strip: the two depths' own tunables, then the surfaces' (`SurfaceStyle`).
             HorizontalLayout {
                 spacing: 24px;
                 alignment: start;
@@ -601,30 +218,29 @@ export component MiscPage inherits Rectangle {
                 VerticalLayout {
                     width: 290px;
                     alignment: start;
-                    Heading { text: "MISC"; }
-                    Tune { label: "lcd glow"; value <=> MiscLook.lcd-glow; }
-                    Tune { label: "lcd glow width"; maximum: 4; value <=> MiscLook.lcd-glow-width; }
-                    Tune { label: "lamp glow"; maximum: 12; value <=> MiscLook.lamp-glow; }
-                    Tune { label: "foil contrast"; maximum: 2; value <=> MiscLook.seal-contrast; }
-                    Tune { label: "foil sheen"; value <=> MiscLook.seal-sheen; }
-                    Tune { label: "foil rule"; value <=> MiscLook.seal-rule; }
-                    Tune { label: "ink emboss"; value <=> MiscLook.seal-emboss; }
-                    Tune { label: "foil shadow"; maximum: 2; value <=> MiscLook.seal-shadow; }
-                    Tune { label: "progress glow"; maximum: 24; value <=> MiscLook.progress-glow; }
-                    Tune { label: "card lift"; maximum: 16; value <=> MiscLook.card-lift; }
+                    Heading { text: "SURFACES"; }
+                    Tune { label: "lcd glow"; value <=> SurfaceStyle.lcd-glow; }
+                    TuneLength { label: "lcd glow width"; maximum: 4; value <=> SurfaceStyle.lcd-glow-width; }
+                    TuneLength { label: "lamp glow"; maximum: 12; value <=> SurfaceStyle.lamp-glow; }
+                    Tune { label: "foil contrast"; maximum: 2; value <=> SurfaceStyle.seal-contrast; }
+                    Tune { label: "foil sheen"; value <=> SurfaceStyle.seal-sheen; }
+                    Tune { label: "foil rule"; value <=> SurfaceStyle.seal-rule; }
+                    Tune { label: "ink emboss"; value <=> SurfaceStyle.seal-emboss; }
+                    Tune { label: "foil shadow"; maximum: 2; value <=> SurfaceStyle.seal-shadow; }
+                    TuneLength { label: "progress glow"; maximum: 24; value <=> SurfaceStyle.progress-glow; }
                 }
             }
 
             Row {
-                title: "OUTWARD";
-                source: "depth.slint · Swift dsFloating, DSPopover.swift:89";
+                title: "OUTWARD · RAISED";
+                source: "depth.slint, base.slint · Swift dsFloating, DSPopover.swift:89";
                 Cell {
                     caption: "live: hover lifts";
                     Rectangle {
                         width: 160px;
                         height: 90px;
-                        live-out := Outward {
-                            y: hover-out.has-hover ? -MiscLook.card-lift * 1px : 0;
+                        Outward {
+                            y: hover-out.has-hover ? -PresetStyle.lift : 0;
                             animate y { duration: 160ms; easing: ease-out-back; }
                             width: parent.width;
                             height: parent.height;
@@ -635,15 +251,16 @@ export component MiscPage inherits Rectangle {
                         }
                     }
                 }
-                Cell { caption: "rest, panel"; Outward { width: 120px; height: 90px; fill: DS.palette-panel; radius: DS.radius-card; } }
-                Cell { caption: "lifted"; Outward { width: 120px; height: 90px; fill: DS.palette-panel; radius: DS.radius-card; lift: 1; } }
-                Cell { caption: "keycap grey"; Outward { width: 120px; height: 90px; } }
-                Cell { caption: "on the canvas"; Ground { Outward { width: 100px; height: 60px; fill: DS.palette-panel; radius: DS.radius-card; } } }
+                Cell { caption: "Raised, none (popover)"; Raised { width: 120px; pad: Gap.m; Label { text: "none"; } } }
+                Cell { caption: "Raised, float (slid column)"; Raised { width: 120px; lift: Lift.float; pad: Gap.m; Label { text: "float"; } } }
+                Cell { caption: "Raised, sheet"; Raised { width: 120px; lift: Lift.sheet; pad: Gap.m; Label { text: "sheet"; } } }
+                Cell { caption: "Raised, menu"; Raised { width: 120px; menu: true; pad: Gap.m; Label { text: "menu"; } } }
+                Cell { caption: "on the canvas"; Ground { Raised { width: 100px; lift: Lift.float; pad: Gap.m; Label { text: "float"; } } } }
             }
 
             Row {
-                title: "INWARD";
-                source: "depth.slint · Swift dsRecessed, DSSlider.swift:276";
+                title: "INWARD · INSET";
+                source: "depth.slint, base.slint · Swift dsRecessed, DSSlider.swift:276";
                 Cell {
                     caption: "live: click lights the rim";
                     Inward {
@@ -658,45 +275,41 @@ export component MiscPage inherits Rectangle {
                 }
                 Cell { caption: "track recess"; Inward { width: 120px; height: DS.control-track-height; ground: DS.palette-track; radius: DS.radius-track; } }
                 Cell { caption: "hollow"; Inward { width: 120px; height: 32px; ground: DS.palette-canvas; radius: DS.radius-card; hollow: true; } }
-                Cell { caption: "hollow, lit (focused)"; Inward { width: 120px; height: 32px; ground: DS.palette-canvas; radius: DS.radius-card; hollow: true; lit: true; } }
                 Cell { caption: "pill hollow (toggle)"; Inward { width: 80px; height: 20px; ground: DS.palette-canvas; radius: 10px; hollow: true; } }
-                Cell { caption: "disabled (0.4)"; Inward { width: 120px; height: DS.control-track-height; ground: DS.palette-track; radius: DS.radius-track; opacity: DS.state-missing; } }
+                Cell {
+                    caption: "Inset (the export's summary)";
+                    Inset {
+                        width: 200px;
+                        Label { text: "16-bit TIFF · Display P3"; role: TextRole.value; }
+                        Label { text: "6048 × 4032 · 139 MB"; role: TextRole.value; tone: Tone.secondary; }
+                    }
+                }
+                Cell { caption: "photo well (tile)"; Inward { width: 120px; height: 80px; ground: DS.palette-tile; radius: DS.radius-card; hollow: true; } }
             }
 
             Row {
-                title: "DSLCD";
-                source: "DSLCD.swift:3";
+                title: "DSLCD · LcdReadout";
+                source: "forms.slint · DSLCD.swift:3";
                 Cell {
                     caption: "live: click counts";
-                    Lcd {
+                    LcdReadout {
                         text: root.lcd-count + "/40";
                         TouchArea { clicked => { root.lcd-count = Math.mod(root.lcd-count + 1, 41); } }
                     }
                 }
-                Cell { caption: "kept"; Lcd { text: "KEPT 87 %"; } }
-                Cell { caption: "angle"; Lcd { text: "ANGLE +1.25°"; } }
-                Cell { caption: "count"; Lcd { text: "12/40"; } }
+                Cell { caption: "kept"; LcdReadout { text: "KEPT 87 %"; } }
+                Cell { caption: "angle"; LcdReadout { text: "ANGLE +1.25°"; } }
+                Cell { caption: "count"; LcdReadout { text: "12/40"; } }
             }
 
             Row {
-                title: "DSLAMP";
-                source: "DSLamp.swift:5 · on a key, AppBar.swift:25";
+                title: "DSLAMP · Lamp, Button's lamp";
+                source: "surfaces.slint, button.slint · DSLamp.swift:5 · on a key, AppBar.swift:25";
                 Cell {
                     caption: "live: click the key";
-                    Keycap {
-                        width: 120px;
-                        height: 40px;
-                        depth: lamp-touch.pressed ? 1 : lamp-touch.has-hover ? 0.25 : 0;
-                        animate depth { duration: 90ms; easing: ease-out; }
-                        lamp-legend := Legend { width: parent.width; height: parent.height; text: "SCAN"; }
-                        Lamp {
-                            x: lamp-legend.x + (lamp-legend.width + lamp-legend.preferred-width) / 2 + DS.space-sm - self.width;
-                            y: lamp-legend.y + (lamp-legend.height - DS.typo-label-size) / 2;
-                            lit: root.lamp-on;
-                        }
-                        lamp-touch := TouchArea { clicked => { root.lamp-on = !root.lamp-on; } }
-                    }
+                    Button { text: "Scan"; lamp-shown: true; lamp-lit: root.lamp-on; clicked => { root.lamp-on = !root.lamp-on; } }
                 }
+                Cell { caption: "key, dark"; Button { text: "Base"; lamp-shown: true; } }
                 Cell { caption: "dark"; Ground { Lamp { lit: false; } } }
                 Cell { caption: "lit, confirm"; Ground { Lamp { lit: true; } } }
                 Cell { caption: "lit, destructive"; Ground { Lamp { lit: true; colour: DS.tint-destructive; } } }
@@ -704,96 +317,119 @@ export component MiscPage inherits Rectangle {
             }
 
             Row {
-                title: "DSFOIL · SEALS";
-                source: "DSFoil.swift:35 · DSNews.swift:78";
+                title: "DSFOIL · Badge seals";
+                source: "badge.slint · DSFoil.swift:35 · DSNews.swift:78";
                 Cell {
                     caption: "live: hover glints";
-                    s-live := Seal { word: "NEW"; glinting: s-touch.has-hover; s-touch := TouchArea { } }
+                    Rectangle {
+                        width: s-live.width;
+                        height: s-live.height;
+                        s-live := Badge { tone: BadgeTone.seal; text: "NEW"; glinting: s-touch.has-hover; }
+                        s-touch := TouchArea { }
+                    }
                 }
-                Cell { caption: "gold"; Seal { word: "NEW"; metal: 0; } }
-                Cell { caption: "holographic"; Seal { word: "RGB"; metal: 1; } }
-                Cell { caption: "red"; Seal { word: "FLAGGED"; metal: 2; } }
-                Cell { caption: "gold, mid-glint"; Seal { word: "2026"; metal: 0; frozen: 0; } }
-                Cell { caption: "holo, mid-glint"; Seal { word: "RGB"; metal: 1; frozen: -0.1; } }
-                Cell { caption: "on the canvas"; Ground { Seal { word: "FLAGGED"; metal: 2; } } }
+                Cell { caption: "gold"; Badge { tone: BadgeTone.seal; text: "NEW"; } }
+                Cell { caption: "holographic"; Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: "RGB"; } }
+                Cell { caption: "red"; Badge { tone: BadgeTone.seal; metal: Metal.red; text: "FLAGGED"; } }
+                Cell { caption: "gold, mid-glint"; Badge { tone: BadgeTone.seal; text: "2026"; glint-at: 0; } }
+                Cell { caption: "holo, mid-glint"; Badge { tone: BadgeTone.seal; metal: Metal.holographic; text: "RGB"; glint-at: -0.1; } }
+                Cell { caption: "on the canvas"; Ground { Badge { tone: BadgeTone.seal; metal: Metal.red; text: "FLAGGED"; } } }
             }
 
             Row {
                 title: "PANEL AND CARDS";
                 source: "EditorScene+Card.swift:323 · PresetCarousel.swift:153 · WrappedView.swift:115 · DSPanel.swift:5";
-                Cell { caption: "editor card on the canvas"; Ground { PanelCard { } } }
                 Cell {
-                    caption: "preset card, live: hover";
-                    pc := PresetCard { lifted: pc-touch.has-hover; pc-touch := TouchArea { } }
-                }
-                Cell { caption: "rest"; PresetCard { tint: DS.tint-unaligned-balance; monogram: "B2"; } }
-                Cell { caption: "lifted"; PresetCard { tint: DS.tint-unaligned-balance; monogram: "B2"; lifted: true; } }
-                Cell {
-                    caption: "wrapped card (scaled)";
-                    Outward {
-                        width: 132px;
-                        height: 162px;
-                        fill: DS.palette-panel;
-                        radius: DS.radius-card;
-                        VerticalLayout {
-                            padding: DS.space-md;
-                            spacing: DS.space-sm;
-                            alignment: center;
-                            Text { text: "FRAMES"; font-size: DS.typo-chip-size; letter-spacing: 1.2px; color: DS.palette-text-secondary; horizontal-alignment: center; }
-                            Text { text: "1 284"; font-size: 30px; font-family: "Enriqueta"; color: DS.palette-text-on-fill; horizontal-alignment: center; }
+                    caption: "editor card (Raised float) on the canvas";
+                    Ground {
+                        Raised {
+                            width: 220px;
+                            lift: Lift.float;
+                            Section { title: "Balance"; separated: false; foldable: false; Label { text: "Temperature   5000 K"; role: TextRole.value; tone: Tone.secondary; } }
+                            Section { title: "Tone"; foldable: false; }
                         }
                     }
                 }
                 Cell {
-                    caption: "separator, both ways";
+                    caption: "preset card, live: hover";
+                    Rectangle {
+                        width: PresetStyle.card-width;
+                        height: PresetStyle.card-height + PresetStyle.lift;
+                        PresetFace {
+                            y: pc-touch.has-hover ? 0 : PresetStyle.lift;
+                            animate y { duration: 160ms; easing: ease-out-back; }
+                            lifted: pc-touch.has-hover;
+                            abbreviation: "P4";
+                            name: "Portra 400";
+                            fill: DS.tint-correction;
+                            ink: DS.palette-text-on-fill;
+                        }
+                        pc-touch := TouchArea { }
+                    }
+                }
+                Cell { caption: "rest"; PresetFace { abbreviation: "B2"; name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; } }
+                Cell { caption: "lifted"; PresetFace { abbreviation: "B2"; name: "Balance"; fill: DS.tint-unaligned-balance; ink: DS.palette-text-on-fill; lifted: true; } }
+                Cell { caption: "the new card"; PresetFace { new: true; } }
+                Cell {
+                    caption: "separator (Divider), both ways";
                     VerticalLayout {
                         spacing: 16px;
-                        Groove { }
+                        Divider { width: 200px; }
                         HorizontalLayout {
                             spacing: DS.space-sm;
                             alignment: start;
-                            Text { text: "group"; font-size: DS.typo-value-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-                            Groove { vertical: true; }
-                            Text { text: "group"; font-size: DS.typo-value-size; color: DS.palette-text-secondary; vertical-alignment: center; }
+                            height: 24px;
+                            Label { text: "group"; role: TextRole.value; tone: Tone.secondary; }
+                            Divider { vertical: true; }
+                            Label { text: "group"; role: TextRole.value; tone: Tone.secondary; }
                         }
+                        Divider { width: 200px; engraved: false; }
                     }
                 }
             }
 
             Row {
-                title: "WELLS AND INSETS";
-                source: "DSPlotScreen.swift:11 · DSTextField.swift:26 · DSToggle.swift:60";
-                Cell { caption: "plot screen"; PlotScreen { } }
-                Cell { caption: "plot screen, no grid"; PlotScreen { grid: false; } }
-                Cell { caption: "photo well (tile)"; Inward { width: 120px; height: 80px; ground: DS.palette-tile; radius: DS.radius-card; hollow: true; } }
+                title: "WRAPPED CARD";
+                source: "wrapped.slint · WrappedView.swift:115";
+                Cell {
+                    caption: "on the year's black";
+                    Rectangle {
+                        background: #000000;
+                        width: card.width + 48px;
+                        height: card.height + 48px;
+                        card := WrappedCard { eyebrow: "FRAMES"; figure: "1 284"; caption: "developed this year"; }
+                    }
+                }
             }
 
             Row {
-                title: "DSPOPOVER";
-                source: "DSPopover.swift:68 · dsFloating :89";
+                title: "WELLS";
+                source: "DSPlotScreen.swift:11 · DSTextField.swift:26 · DSToggle.swift:60";
+                Cell { caption: "plot screen"; PlotScreen { } }
+                Cell { caption: "plot screen, no grid"; PlotScreen { grid: false; } }
+            }
+
+            Row {
+                title: "DSPOPOVER · PopupPanel, Popover";
+                source: "menu.slint, surfaces.slint · DSPopover.swift:68 · dsFloating :89";
                 Cell {
                     caption: "live: click the key";
                     Rectangle {
                         width: 240px;
                         height: 200px;
-                        Keycap {
+                        key := Button {
                             x: (parent.width - self.width) / 2;
                             y: 0;
-                            width: 100px;
-                            height: 40px;
-                            depth: pop-touch.pressed || root.popover-open ? 1 : pop-touch.has-hover ? 0.25 : 0;
-                            animate depth { duration: 90ms; easing: ease-out; }
-                            Legend { width: parent.width; height: parent.height; text: "Display P3"; font-size: 11px; }
-                            pop-touch := TouchArea { clicked => { root.popover-open = !root.popover-open; } }
+                            text: "Display P3";
+                            clicked => { pop.show(); }
                         }
-                        if root.popover-open: Popover {
-                            y: 40px;
-                            width: 240px;
-                            height: 150px;
-                            Text { text: "Display P3"; font-size: DS.typo-label-size; color: DS.palette-text-on-fill; }
-                            Text { text: "sRGB"; font-size: DS.typo-label-size; color: DS.palette-text-secondary; }
-                            Text { text: "Adobe RGB (1998)"; font-size: DS.typo-label-size; color: DS.palette-text-secondary; }
-                            Text { text: "P900 · Premium Luster"; font-size: DS.typo-label-size; color: DS.palette-text-secondary; }
+                        pop := PopupPanel {
+                            x: (parent.width - 240px) / 2;
+                            y: key.height;
+                            span: 240px;
+                            Label { text: "Display P3"; }
+                            Label { text: "sRGB"; tone: Tone.secondary; }
+                            Label { text: "Adobe RGB (1998)"; tone: Tone.secondary; }
                         }
                     }
                 }
@@ -801,59 +437,71 @@ export component MiscPage inherits Rectangle {
                     caption: "tail centred";
                     Popover {
                         width: 200px;
-                        height: 90px;
-                        Text { text: "A panel hung under its key."; font-size: DS.typo-label-size; color: DS.palette-text-secondary; wrap: word-wrap; }
+                        pad: Gap.m;
+                        Label { text: "A panel hung under its key."; tone: Tone.secondary; wrap: word-wrap; }
                     }
                 }
                 Cell {
                     caption: "tail leading (wider panel)";
                     Popover {
                         width: 260px;
-                        height: 90px;
                         tail-x: 30px;
-                        Text { text: "Laid from the anchor's left edge."; font-size: DS.typo-label-size; color: DS.palette-text-secondary; wrap: word-wrap; }
+                        pad: Gap.m;
+                        Label { text: "Laid from the anchor's left edge."; tone: Tone.secondary; wrap: word-wrap; }
                     }
                 }
-                Cell { caption: "help bubble (canvas ground)"; HelpBubble { text: "A block's own note, shown only on hover instead of printed underneath."; } }
+                Cell { caption: "menu (no tail)"; Popover { width: 180px; menu: true; tail: false; pad: Gap.xs; Label { text: "Reveal in Finder"; } } }
+                Cell { caption: "TipCard, help bubble"; TipCard { card: true; text: "A block's own note, shown only on hover instead of printed underneath."; } }
+                Cell { caption: "TipCard, tooltip"; TipCard { text: "Reset the balance"; } }
             }
 
             Row {
-                title: "DSDIALOG";
-                source: "DSDialog.swift:48";
+                title: "DSDIALOG · AskSheet";
+                source: "containers.slint · DSDialog.swift:48";
                 Cell {
                     caption: "live: answered " + root.answer;
-                    Dialog {
-                        title: "Apply the Balance to 12 Photos?";
-                        message: "Each photo keeps its own crop. The balance can be undone.";
-                        answered(a) => { root.answer = a; }
+                    Rectangle {
+                        width: SheetStyle.width;
+                        height: ask.hung-height;
+                        ask := AskSheet {
+                            title: "Apply the Balance to 12 Photos?";
+                            message: "Each photo keeps its own crop. The balance can be undone.";
+                            cancel: "Cancel";
+                            keys: [{ text: "Apply", role: AskRole.confirm }];
+                            answered(i) => { root.answer = i < 0 ? "Cancel" : "Apply"; }
+                        }
                     }
                 }
                 Cell {
                     caption: "destructive";
-                    Dialog {
-                        title: "Move 3 Photos to the Trash?";
-                        message: "Their settings are lost. The originals go to the Trash, where they can be put back.";
-                        role: 1;
+                    Rectangle {
+                        width: SheetStyle.width;
+                        height: trash.hung-height;
+                        trash := AskSheet {
+                            title: "Move 3 Photos to the Trash?";
+                            message: "Their settings are lost. The originals go to the Trash, where they can be put back.";
+                            cancel: "Cancel";
+                            keys: [{ text: "Move to Trash", role: AskRole.destructive }];
+                        }
                     }
                 }
             }
 
             Row {
-                title: "DSDIALOG";
-                source: "DSDialog.swift:48 · DSPlayground.swift:398";
-                Cell { caption: "with a field"; Dialog { title: "Rename This Mask"; field: "Lumix panel"; } }
-                Cell { caption: "notice"; Dialog { title: "The roll is ready."; role: 2; } }
-            }
-
-            Row {
-                title: "DSSTATUSBAR";
-                source: "DSStatusBar.swift:5";
+                title: "DSSTATUSBAR · StatusBar";
+                source: "forms.slint · DSStatusBar.swift:5";
                 Cell {
                     caption: "live: click cycles idle, counted, no total";
-                    StatusBar {
+                    Rectangle {
                         width: 520px;
-                        mode: root.status-mode;
-                        done: root.status-done;
+                        height: live-bar.height;
+                        live-bar := StatusBar {
+                            busy: root.status-mode != 0;
+                            text: root.status-mode == 0 ? "Roll #8 · 36 frames · Nikon Z f" : "Importing";
+                            seal: "RGB";
+                            count: root.status-mode == 1 ? root.status-done + "/40" : "";
+                            fraction: root.status-mode == 1 ? root.status-done / 40 : -1;
+                        }
                         TouchArea { clicked => { root.status-mode = Math.mod(root.status-mode + 1, 3); } }
                     }
                 }
@@ -861,28 +509,29 @@ export component MiscPage inherits Rectangle {
                     caption: "idle with seal; loading 12/40; loading, no total";
                     VerticalLayout {
                         spacing: 8px;
-                        StatusBar { width: 420px; }
-                        StatusBar { width: 420px; mode: 1; }
-                        StatusBar { width: 420px; mode: 2; title: "Reading the roll"; }
+                        width: 420px;
+                        StatusBar { text: "Roll #8 · 36 frames · Nikon Z f"; seal: "RGB"; }
+                        StatusBar { busy: true; text: "Importing"; count: "12/40"; fraction: 0.3; }
+                        StatusBar { busy: true; text: "Reading the roll"; }
                     }
                 }
             }
 
             Row {
-                title: "DSPROGRESS";
-                source: "DSProgress.swift:5";
+                title: "DSPROGRESS · Progress";
+                source: "forms.slint · DSProgress.swift:5";
                 Cell {
                     caption: "live: click to set";
                     live-progress := Progress {
                         width: 220px;
-                        fraction: 0.4;
-                        TouchArea { clicked => { live-progress.fraction = clamp(self.mouse-x / self.width, 0, 1); } }
+                        fraction: root.live-fraction;
+                        TouchArea { clicked => { root.live-fraction = clamp(self.mouse-x / self.width, 0, 1); } }
                     }
                 }
                 Cell { caption: "0 %"; Progress { width: 160px; fraction: 0; } }
                 Cell { caption: "40 %"; Progress { width: 160px; fraction: 0.4; } }
                 Cell { caption: "100 %"; Progress { width: 160px; fraction: 1; } }
-                Cell { caption: "no total (sweeps)"; Progress { width: 160px; } }
+                Cell { caption: "no total (sweeps)"; Progress { width: 160px; fraction: -1; } }
             }
 
             Row {
@@ -895,14 +544,15 @@ export component MiscPage inherits Rectangle {
 
             Row {
                 title: "DSBADGE";
-                source: "DSBadge.swift:4 · flat in Swift, no relief";
+                source: "badge.slint · DSBadge.swift:4 · flat in Swift, no relief";
                 Cell {
-                    caption: "rounded, capsule, warning on the photo";
+                    caption: "dark, warning, step and tint on the photo";
                     Ground {
                         photo: true;
                         Badge { text: "R 0.2133   G 0.1782   B 0.1394"; }
-                        Badge { text: "frame"; capsule: true; }
-                        Badge { text: "Read-only: settings will not be saved"; capsule: true; warning: true; }
+                        Badge { tone: BadgeTone.warning; text: "Read-only: settings will not be saved"; }
+                        Badge { tone: BadgeTone.step; text: "3"; }
+                        Badge { tone: BadgeTone.tint; text: "P4"; fill: DS.tint-correction; ink: DS.palette-text-on-fill; }
                     }
                 }
             }
