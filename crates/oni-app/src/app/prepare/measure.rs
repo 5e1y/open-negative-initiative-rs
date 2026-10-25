@@ -39,6 +39,16 @@ impl Ctl {
                 let side = oni_measure::sheet::roll_tile();
                 let mut tiles: Vec<(String, oni_measure::sheet::Picture)> = Vec::new();
                 let mut reads = Vec::new();
+                // The base read first, so the roll's screen places the black the roll will take.
+                let base = pick.and_then(|p| {
+                    let bare = if Some(&p.path) == open.as_ref() {
+                        live.clone()
+                    } else {
+                        sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
+                    };
+                    let unit = Point::new(p.unit.0, p.unit.1);
+                    m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
+                });
                 for f in &picked {
                     if stop.load(Ordering::Relaxed) {
                         break;
@@ -61,9 +71,10 @@ impl Ctl {
                     // Every frame of the measure lays its tile, a flagged one too, on the measuring copy.
                     let start = job.start.clone();
                     let mut drawn = None;
+                    let voted = frames.len();
                     if f.flagged {
                         if let Some(tile) = m.and_then(|m| m.with(&f.path, &start, |r, copy| oni_measure::sheet::tile(r, copy, &start, side))) {
-                            drawn = trace::Drawn::of(&tile, screen);
+                            drawn = trace::Drawn::of(&tile, screen).zip(negative::of(&tile));
                             tiles.push((f.path.clone(), tile));
                             reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
@@ -77,24 +88,18 @@ impl Ctl {
                         frames.push(frame);
                         jobs.push(job);
                         if let Some(tile) = tile {
-                            drawn = trace::Drawn::of(&tile, screen);
+                            drawn = trace::Drawn::of(&tile, screen).zip(negative::of(&tile));
                             tiles.push((f.path.clone(), tile));
                             reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
                     }
-                    let landed = drawn.map(|d| (oni_library::paths::name(&f.path), d));
+                    // The roll as it would combine now, sent once per frame that voted.
+                    let roll = (frames.len() > voted).then(|| roll::combined(&frames, film, base)).flatten().map(|r| (trace::Drawn::roll(&frames, &r, film), frames.len()));
+                    let landed = trace::Landed { name: oni_library::paths::name(&f.path), frame: drawn, roll };
                     with_shell(move |c| c.measure_progressed(session, landed));
                 }
                 let stopped = stop.load(Ordering::Relaxed);
-                let base = pick.filter(|_| !stopped).and_then(|p| {
-                    let bare = if Some(&p.path) == open.as_ref() {
-                        live.clone()
-                    } else {
-                        sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
-                    };
-                    let unit = Point::new(p.unit.0, p.unit.1);
-                    m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
-                });
+                let base = base.filter(|_| !stopped);
                 let reference = if stopped { None } else { roll::combined(&frames, film, base) };
                 let written: Option<Written> =
                     reference.map(|reference| jobs.iter().map(|j| (j.path.clone(), j.before.clone(), oni_core::balance::written(&reference, &j.start))).collect());
@@ -110,8 +115,8 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// A frame read: the count moves on, and its histogram, when its tile was drawn, is morphed into.
-    pub(in crate::app) fn measure_progressed(self: &Rc<Self>, session: u64, landed: Option<(String, trace::Drawn)>) {
+    /// A frame read: the count moves on, and what it drew is morphed into.
+    pub(in crate::app) fn measure_progressed(self: &Rc<Self>, session: u64, landed: trace::Landed) {
         {
             let r = &mut self.state.borrow_mut().prepare;
             if r.session != session {
@@ -121,10 +126,7 @@ impl Ctl {
                 p.0 += 1;
             }
         }
-        match landed {
-            Some((name, drawn)) => self.trace_landed(name, drawn),
-            None => self.publish_trace(),
-        }
+        self.trace_landed(landed);
         self.publish_prepare();
     }
 

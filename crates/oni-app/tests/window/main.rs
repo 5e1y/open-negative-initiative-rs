@@ -150,7 +150,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face", phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
     ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
-    ("prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well", prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well),
+    ("prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark", prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark),
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),

@@ -385,15 +385,15 @@ msgstr "EN ARGENTIQUE"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1685,7 +1685,7 @@ msgstr "Intensité"
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
 msgstr "Désactivé sur une planche contact : ses vues sont des copies réduites. Les réglages sont conservés pour le jour où une photo les reprendra."
 
-#: crates/oni-ui/ui/panel/state.slint
+#: crates/oni-app/src/app/prepare/trace.rs crates/oni-ui/ui/panel/state.slint
 msgid "FRAME --/--"
 msgstr "VUE --/--"
 
@@ -1784,10 +1784,6 @@ msgstr "Lecture du scan"
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Le scan entier, bord du film compris, s’affiche ici."
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Reading the first frame…"
-msgstr "Lecture de la première vue…"
 
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
@@ -3334,6 +3330,24 @@ msgstr "{count} vues, regroupées lors de la dernière mesure de la pellicule."
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} mesurées, {flagged} marquées"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "Reading the first frame…"
+msgstr "Lecture de la première vue…"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL"
+msgstr "PELLICULE"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME {at}/{count}"
+msgstr "VUE {at}/{count}"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL · {n} FRAME"
+msgid_plural "ROLL · {n} FRAMES"
+msgstr[0] "PELLICULE · {n} VUE"
+msgstr[1] "PELLICULE · {n} VUES"
 
 #: crates/oni-app/src/app/presets/deck.rs
 msgid "Delete “{name}”"
