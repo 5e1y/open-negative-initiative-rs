@@ -3435,6 +3435,13 @@
     "detail": "The owner wants a tester on Windows. .github/workflows/windows-package.yml (workflow_dispatch only, never a release) builds the release on windows-latest and keeps ONI-windows-<sha>.zip (ONI.exe and a README in English and French: unzip, double-click, SmartScreen's Run anyway, where settings live) as the run's artifact for 14 days. The Windows release links the C runtime in (+crt-static) so a bare PC runs it, and opens no console (windows_subsystem)."
   },
   {
+    "id": 567,
+    "type": "fix",
+    "title": "Too many open files: the folder watch uses FSEvents again, and the app raises its descriptor limit",
+    "status": "done",
+    "detail": "Owner's report: 'Too many open files (os error 24)' after an Edit Together of 36 frames. Slint's live preview (#564) enables notify's macos_kqueue for the whole workspace, which made RecommendedWatcher kqueue: one descriptor per file under every watched tree (245 806 held, ~/Documents and its node_modules), past the Mac's 256. notify 8.2.0 is vendored (vendor/notify, CC0) with FSEvents kept on the Mac whatever the features, oni-library's watch names FsEventWatcher, and main raises RLIMIT_NOFILE toward 10 240. A check with its twin: a deep watch of 400 files holds under 50 descriptors with FSEvents, kqueue over 400."
+  },
+  {
     "id": 570,
     "type": "design",
     "title": "The selection controls stand on the depths: Tabs, Toggle, Picker's field, the medals",

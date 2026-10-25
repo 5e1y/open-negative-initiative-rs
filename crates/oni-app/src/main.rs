@@ -17,7 +17,23 @@ use std::path::PathBuf;
 #[global_allocator]
 static ALLOCATOR: oni_app::mapped::Mapped = oni_app::mapped::Mapped;
 
+/// A Mac app starts with 256 descriptors: a roll of RAWs decoded together, its sidecars and the index
+/// pass that, so the soft limit is raised toward the hard one.
+#[cfg(target_os = "macos")]
+fn more_descriptors() {
+    // SAFETY: plain getrlimit/setrlimit on this process's own limit.
+    unsafe {
+        let mut limit = libc::rlimit { rlim_cur: 0, rlim_max: 0 };
+        if libc::getrlimit(libc::RLIMIT_NOFILE, &mut limit) == 0 && limit.rlim_cur < 10_240 {
+            limit.rlim_cur = limit.rlim_max.min(10_240);
+            libc::setrlimit(libc::RLIMIT_NOFILE, &limit);
+        }
+    }
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_os = "macos")]
+    more_descriptors();
     let support = timing::support();
     // Before any write, the log included: a second launch on the same folder leaves it as it is.
     let _instance = match oni_app::instance::hold(&support) {

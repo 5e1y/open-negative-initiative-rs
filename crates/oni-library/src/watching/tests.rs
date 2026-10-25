@@ -128,3 +128,27 @@ fn neither_a_disk_nor_the_home_is_ever_watched() {
     assert!(may_watch(&computer, &paths::join(&root, "Home/Scans/Roll 8")));
     assert!(may_watch(&computer, &paths::join(&root, "Volumes/T7/Film")));
 }
+
+/// The descriptors this process holds, as /dev/fd lists them.
+#[cfg(target_os = "macos")]
+fn descriptors() -> usize {
+    std::fs::read_dir("/dev/fd").map_or(0, |d| d.count())
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn a_deep_watch_holds_no_descriptor_per_file() {
+    let (_scratch, computer, root) = rig("watching-descriptors");
+    let deep = paths::join(&root, "Home/Scans");
+    for i in 0..400 {
+        std::fs::write(Path::new(&deep).join(format!("Roll 8/f{i}.NEF")), [0u8]).unwrap();
+    }
+    let before = descriptors();
+    let (watch, _calls) = live(&computer, &deep, &paths::join(&root, "Home/Scans/Other"));
+    assert!(descriptors() < before + 50, "FSEvents: {} descriptors more", descriptors() - before);
+    drop(watch);
+    // Twin: kqueue, which Slint's live preview adds to notify, holds one per file of the same tree.
+    let mut kqueue = notify::KqueueWatcher::new(|_| {}, notify::Config::default()).unwrap();
+    notify::Watcher::watch(&mut kqueue, Path::new(&deep), notify::RecursiveMode::Recursive).unwrap();
+    assert!(descriptors() >= before + 400, "kqueue: {} descriptors more", descriptors().saturating_sub(before));
+}

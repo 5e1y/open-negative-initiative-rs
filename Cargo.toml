@@ -71,4 +71,7 @@ debug = false
 # (vendor/femtovg, MIT OR Apache-2.0).
 [patch.crates-io]
 femtovg = { path = "vendor/femtovg" }
+# notify 8.2.0 (CC0-1.0) with FSEvents kept on the Mac when Slint's live preview adds kqueue, which holds a
+# descriptor per watched file and runs out at 256 (`ONI:` comment in src/lib.rs).
+notify = { path = "vendor/notify" }
 i-slint-renderer-femtovg = { path = "vendor/i-slint-renderer-femtovg" }

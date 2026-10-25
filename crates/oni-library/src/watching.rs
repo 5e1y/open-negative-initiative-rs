@@ -37,6 +37,13 @@ enum Order {
     Stop,
 }
 
+/// FSEvents on the Mac, whichever backend another crate's features unify into notify: kqueue holds one
+/// descriptor per file under a watched tree and runs out at the process's 256.
+#[cfg(target_os = "macos")]
+type Backend = notify::FsEventWatcher;
+#[cfg(not(target_os = "macos"))]
+type Backend = notify::RecommendedWatcher;
+
 /// The watching thread's handle; dropping it ends the thread and every watch.
 pub struct Watch {
     orders: Sender<Order>,
@@ -48,9 +55,12 @@ impl Watch {
         let (orders, inbox) = mpsc::channel::<Order>();
         let events = orders.clone();
         let _ = std::thread::Builder::new().name("watching".into()).spawn(move || {
-            let mut watcher = notify::recommended_watcher(move |e| {
-                let _ = events.send(Order::Event(e));
-            })
+            let mut watcher = Backend::new(
+                move |e| {
+                    let _ = events.send(Order::Event(e));
+                },
+                notify::Config::default(),
+            )
             .ok();
             let mut held = Held::default();
             let mut burst = Burst::new(pace);
@@ -136,7 +146,7 @@ struct Held {
 }
 
 impl Held {
-    fn set(&mut self, watcher: &mut notify::RecommendedWatcher, computer: &Computer, deep: Vec<String>, flat: Vec<String>) {
+    fn set(&mut self, watcher: &mut Backend, computer: &Computer, deep: Vec<String>, flat: Vec<String>) {
         let mut changes = watcher.paths_mut();
         for (_, real) in self.deep.iter().chain(&self.flat) {
             let _ = changes.remove(Path::new(real));
