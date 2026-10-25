@@ -79,6 +79,24 @@ pub(crate) fn a_screen_s_keys_are_drawn_once_and_never_again_while_still() {
     // Still, a hundred frames redraw the screen and render no key.
     let still: u64 = frames(&rig, 100).iter().sum();
     assert_eq!(still, 0, "a still key is never drawn again");
+    // A slider's knob is a keycap that slides: dragged, then sprung home by an undo, it is drawn no more.
+    let g = shell.window.global::<oni_app::Store>();
+    let field = oni_app::fields::Field::Exposure;
+    let (before, start) = (app::fraction(&g, field), renders());
+    assert!(!g.invoke_press(field.index(), false), "the press starts a drag");
+    let dragged: u64 = (1..=20)
+        .map(|i| {
+            g.invoke_drag(field.index(), i as f32 * 4.0, 300.0, false);
+            frames(&rig, 1)[0]
+        })
+        .sum();
+    g.invoke_release(field.index());
+    // Twin: the knob did move, so a raster tied to its place would have shown here.
+    assert!((app::fraction(&g, field) - before).abs() > 0.05, "the drag moves the knob");
+    rig.chord(slint::platform::Key::Control, "z");
+    let sprung: u64 = frames(&rig, 60).iter().sum();
+    println!("a slider dragged 20 frames and sprung home over 60: {} knob renders", renders() - start);
+    assert_eq!(dragged + sprung, 0, "a knob is drawn once, wherever it slides");
 }
 
 pub(crate) fn a_press_draws_one_key_a_frame_and_nothing_once_it_rests() {

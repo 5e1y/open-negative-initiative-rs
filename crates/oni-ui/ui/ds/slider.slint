@@ -1,5 +1,6 @@
 // The sliders: one knob, one rail, the readout above them, and `Slider`, continuous or in whole steps.
-import { Colour, Space, Stroke, State, Motion, SliderStyle, ButtonStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Stroke, State, Motion, SliderStyle } from "theme.slint";
+import { Keycap, Inward } from "depth.slint";
 import { Label, TextRole, Tone, Tips } from "base.slint";
 import { Look, Button, ButtonSize } from "button.slint";
 
@@ -7,43 +8,53 @@ import { Look, Button, ButtonSize } from "button.slint";
 // gradient from `low` to `high`; `none` leaves it bare, as under the levels' handles.
 export enum SliderFill { level, ramp, bipolar, metal, none }
 
-// `DSBarHandle`: a cap set across the track, edged in black, two grip lines on its face; it grows
-// under the hand and, with `slide`, settles on a value arriving from elsewhere, never under the hand.
+// `DSBarHandle`: a small keycap set across the track, level walls, no shadow, edged in black, two grip
+// lines on its face; it grows under the hand on the rise spring, a scale so its raster is drawn once.
 export component Knob inherits Rectangle {
-    // Its centre along the travel, and the height of the row whose middle it sits on.
+    // Its centre along the travel, and the breadth of the row whose middle it sits on.
     in property <length> centre;
     in property <length> across: SliderStyle.row;
     in property <color> fill: SliderStyle.knob;
     in property <bool> grip: true;
-    // A flat white cap takes the dark ink, or its lines would vanish into it.
-    in property <color> grip-ink: root.fill == Colour.white ? Colour.ink-on-light : SliderStyle.grip-ink;
+    in property <color> grip-ink: SliderStyle.grip-ink;
     in property <bool> grown;
+    // With `slide`, it settles on a value arriving from elsewhere, never under the hand.
     in property <bool> slide;
+    // On a vertical track `centre` runs down and the grip lines turn a quarter.
+    in property <bool> vertical;
     property <float> grow: root.grown ? SliderStyle.knob-grow : 1;
-    x: root.centre - self.width / 2;
-    y: (root.across - self.height) / 2;
-    width: SliderStyle.knob-width * self.grow;
-    height: SliderStyle.knob-height * self.grow;
-    border-radius: SliderStyle.knob-radius;
-    background: root.fill;
-    border-width: Stroke.line;
-    border-color: SliderStyle.knob-edge;
-    animate grow { duration: Motion.quick; easing: ease-out-back; }
-    animate x { duration: root.slide ? Motion.settle : 0ms; easing: ease-out; }
-    HorizontalLayout {
-        alignment: center;
-        spacing: SliderStyle.grip-gap - Stroke.line;
-        padding-top: (parent.height - SliderStyle.grip) / 2;
-        padding-bottom: (parent.height - SliderStyle.grip) / 2;
-        for _ in root.grip ? 2 : 0: Rectangle {
-            width: Stroke.line;
-            background: root.grip-ink;
+    animate grow { duration: SliderStyle.rise; easing: ease-out-back; }
+    width: root.vertical ? SliderStyle.knob-height : SliderStyle.knob-width;
+    height: root.vertical ? SliderStyle.knob-width : SliderStyle.knob-height;
+    x: root.vertical ? (root.across - self.width) / 2 : root.centre - self.width / 2;
+    y: root.vertical ? root.centre - self.height / 2 : (root.across - self.height) / 2;
+    animate x, y { duration: root.slide ? SliderStyle.settle : 0ms; easing: ease-out; }
+    Keycap {
+        albedo: root.fill;
+        factor: SliderStyle.knob-factor;
+        level: true;
+        shadow: false;
+        rim: false;
+        edge-width: Stroke.line;
+        edge-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+        transform-scale-x: root.grow;
+        transform-scale-y: root.grow;
+        transform-origin: { x: self.width / 2, y: self.height / 2 };
+        // The face's own size: a child's `parent` names the cap, not the face it lies on.
+        Rectangle {
+            for i in root.grip ? 2 : 0: Rectangle {
+                x: root.vertical ? (parent.width - SliderStyle.grip) / 2 : parent.width / 2 + (i == 0 ? -SliderStyle.grip-gap / 2 - Stroke.line : SliderStyle.grip-gap / 2);
+                y: root.vertical ? parent.height / 2 + (i == 0 ? -SliderStyle.grip-gap / 2 - Stroke.line : SliderStyle.grip-gap / 2) : (parent.height - SliderStyle.grip) / 2;
+                width: root.vertical ? SliderStyle.grip : Stroke.line;
+                height: root.vertical ? Stroke.line : SliderStyle.grip;
+                background: root.grip-ink;
+            }
         }
     }
 }
 
-// `DSRail`: the track, run past the travel by `overhang` at both ends; the lit stretch spans `from`
-// to `at`, fractions of the travel, and `rest` ticks the value a reset brings back (none below 0).
+// `DSRail` in `dsRecessed`: the ground, the lit stretch from `from` to `at` (fractions of the travel),
+// the hollow's shade, the edge, the lit rim below; run past the travel by `overhang` at both ends.
 export component Rail inherits Rectangle {
     in property <SliderFill> fill: SliderFill.none;
     in property <float> at;
@@ -52,30 +63,62 @@ export component Rail inherits Rectangle {
     in property <color> low;
     in property <color> high;
     in property <length> overhang;
+    // The value a reset brings back, ticked across the rail; none below 0.
     in property <float> rest: -1;
     // The lit stretch's glow, a progress bar's phosphor.
     in property <length> glow;
-    property <length> travel: self.width - 2 * root.overhang;
+    // Low at the bottom; a vertical rail sets its own width and height.
+    in property <bool> vertical;
+    // The surface the rail is milled into: the rim's light needs an opaque body under a translucent ground.
+    in property <color> under: Colour.ground;
+    property <length> along: root.vertical ? self.height : self.width;
+    property <length> travel: root.along - 2 * root.overhang;
+    property <length> lit: root.overhang + root.at * root.travel;
+    property <length> start: root.from > 0 ? root.overhang + root.from * root.travel : 0;
     height: SliderStyle.track;
-    border-radius: SliderStyle.track-radius;
-    background: root.fill == SliderFill.bipolar ? @linear-gradient(90deg, root.low 0%, root.high 100%) : Colour.track;
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        background: root.under;
+        drop-shadow-color: Colour.white.with-alpha(SliderStyle.rim);
+        drop-shadow-blur: SliderStyle.rim-blur;
+        drop-shadow-offset-y: SliderStyle.rim-drop;
+    }
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        background: root.fill != SliderFill.bipolar ? Colour.track
+            : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
+            : @linear-gradient(90deg, root.low 0%, root.high 100%);
+    }
+    // Its own round, no clip: a clipping rail renders each slider apart.
     if root.fill != SliderFill.bipolar && root.fill != SliderFill.none: Rectangle {
-        x: root.from > 0 ? root.overhang + root.from * root.travel : 0;
-        width: root.overhang + root.at * root.travel - self.x;
-        border-radius: SliderStyle.track-radius; // its own round: a rail clipping it renders each slider apart
+        x: root.vertical ? 0 : root.start;
+        y: root.vertical ? parent.height - root.lit : 0;
+        width: root.vertical ? parent.width : root.lit - root.start;
+        height: root.vertical ? root.lit : parent.height;
+        border-radius: SliderStyle.track-radius;
         background: root.fill == SliderFill.metal
-            ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 35%, Colour.metal-light 65%, Colour.metal-dark 100%)
+            ? @linear-gradient(180deg, Colour.metal-dark 0%, Colour.metal-light 33.33%, Colour.metal-light 66.67%, Colour.metal-dark 100%)
             : root.fill == SliderFill.ramp
-            ? @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
+            ? (root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%)
+                : @linear-gradient(90deg, root.tint.with-alpha(SliderStyle.ramp-start) 0%, root.tint.with-alpha(SliderStyle.ramp-end) 100%))
             : root.tint;
         drop-shadow-color: root.glow > 0 ? root.tint : transparent;
         drop-shadow-blur: root.glow;
     }
+    Inward {
+        ground: transparent;
+        radius: SliderStyle.track-radius;
+    }
+    Rectangle {
+        border-radius: SliderStyle.track-radius;
+        border-width: Stroke.line;
+        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+    }
     if root.rest >= 0: Rectangle {
-        x: root.overhang + root.rest * root.travel - self.width / 2;
-        y: (parent.height - self.height) / 2;
-        width: Stroke.line;
-        height: SliderStyle.knob-height / 2;
+        x: root.vertical ? (parent.width - self.width) / 2 : root.overhang + root.rest * root.travel - self.width / 2;
+        y: root.vertical ? parent.height - root.overhang - root.rest * root.travel - self.height / 2 : (parent.height - self.height) / 2;
+        width: root.vertical ? SliderStyle.knob-height / 2 : Stroke.line;
+        height: root.vertical ? Stroke.line : SliderStyle.knob-height / 2;
         background: SliderStyle.rest-ink;
     }
 }
@@ -107,9 +150,9 @@ export component ValueHeader inherits HorizontalLayout {
 // A stepped slider's key beside its rail, in its end's colour: one step a click, three with ⇧.
 component StepKey inherits Button {
     size: ButtonSize.key;
-    height: ScannerStyle.step-key;
+    height: SliderStyle.step-key;
     width: self.height;
-    legend-size: ScannerStyle.step-legend;
+    legend-size: SliderStyle.step-legend;
     horizontal-stretch: 0;
 }
 
@@ -160,6 +203,9 @@ export component Slider inherits VerticalLayout {
     accessible-action-increment => { root.step(root.field, 1); }
     accessible-action-decrement => { root.step(root.field, -1); }
     property <float> at: root.stepped ? ((area.held ? root.hand : root.value) - root.lowest) / root.span : clamp(root.fraction, 0, 1);
+    // What the rail and the knob show: sprung on `settle` for a value from elsewhere, never under the hand.
+    property <float> shown: root.at;
+    animate shown { duration: area.held || area.scrolling ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
     pure function step-at(x: length) -> int {
         root.lowest + round(clamp(x / max(1px, track.width), 0, 1) * (root.highest - root.lowest))
     }
@@ -193,7 +239,7 @@ export component Slider inherits VerticalLayout {
                     y: (parent.height - self.height) / 2;
                     overhang: SliderStyle.knob-width / 2;
                     fill: root.fill;
-                    at: root.at;
+                    at: root.shown;
                     tint: root.tint;
                     low: root.low;
                     high: root.high;
@@ -201,11 +247,9 @@ export component Slider inherits VerticalLayout {
                     rest: root.stepped ? (0 - root.lowest) / root.span : -1;
                 }
                 Knob {
-                    centre: parent.width * root.at;
+                    centre: parent.width * root.shown;
                     fill: root.knob;
-                    grip: !root.stepped;
                     grown: root.enabled && (area.over-knob || area.held || root.look != Look.live);
-                    slide: !area.held && !area.scrolling;
                 }
                 area := TouchArea {
                     enabled: root.enabled;
@@ -213,7 +257,7 @@ export component Slider inherits VerticalLayout {
                     property <bool> fine;
                     // A scroll's events, and `settle` after the last, which the knob follows unsprung.
                     in-out property <bool> scrolling;
-                    out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.at) <= SliderStyle.knob-width / 2;
+                    out property <bool> over-knob: self.has-hover && abs(self.mouse-x - parent.width * root.shown) <= SliderStyle.knob-width / 2;
                     mouse-cursor: self.held ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
                     double-clicked => {
                         if (root.stepped) { root.reset(); }

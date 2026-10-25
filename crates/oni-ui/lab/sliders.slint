@@ -1,39 +1,12 @@
-// The lab's Sliders page: Slint copies of the Swift app's 2.5D sliders, built on depth.slint.
-// The rail and the plot screen sink with `Inward`; the knob and the step keys are `Keycap`'s frustum, scaled small.
-import { Slider, ScrollView } from "std-widgets.slint";
+// The lab's Sliders page: the design system's sliders and plots (ui/ds/slider.slint, ui/ds/plots.slint)
+// in their states, driven here as Rust drives them in the app; the tunables move the DS's own styles live.
+import { Slider as Tuner, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
-import { Keycap, Outward, Inward, Depth } from "depth.slint";
-
-// This page's own tunables, the Swift numbers as defaults.
-export global SliderLook {
-    // `DS.Control.trackHeight` 14, `DS.Radius.track` 6.
-    in-out property <float> track: 14;
-    in-out property <float> track-radius: 6;
-    // `DS.Control.handleThickness` 24 along the travel, `handleLength` 34 across it.
-    in-out property <float> knob-thickness: 24;
-    in-out property <float> knob-length: 34;
-    // `Keycap.Variant.small.factor` 0.525: the knob is a small key.
-    in-out property <float> knob-scale: 0.525;
-    // `DS.Control.knobGrow` 1.07 under the hand; `knobLine` 12, `knobLineGap` 4.
-    in-out property <float> knob-grow: 1.07;
-    in-out property <float> grip-line: 12;
-    in-out property <float> grip-gap: 4;
-    // The stepped slider's − and + keys: a standard key's height, its legend set larger than a word's.
-    in-out property <float> step-key: 40;
-    in-out property <float> step-legend: 18;
-    // The 1 pt `trackLine` edge (black) round the rail and the knob, as an opacity.
-    in-out property <float> edge: 1;
-    // `dsRecessed`'s lit lower rim outside the hollow: `rim` white 0.4, blur 0.7, drop 1.
-    in-out property <float> rim: 0.4;
-    in-out property <float> rim-blur: 0.7;
-    in-out property <float> rim-drop: 1;
-    // `DS.Motion.rise` (response 0.11, damping 0.62) and `settle` (0.38, 0.72), as durations in ms.
-    in-out property <float> rise-ms: 120;
-    in-out property <float> settle-ms: 380;
-    // `DS.Radius.card` 12 for a plot screen; its quarter lines' opacity (`separator`, primary 0.12).
-    in-out property <float> plot-radius: 12;
-    in-out property <float> grid: 0.12;
-}
+import { SliderStyle, PlotStyle } from "../ui/ds/theme.slint";
+import { Look } from "../ui/ds/button.slint";
+import { Slider, SliderFill, Knob, Rail } from "../ui/ds/slider.slint";
+import { Plot, LevelsTrack, CurvePoint, Ink } from "../ui/ds/plots.slint";
+import { Keycap, Depth } from "depth.slint";
 
 // The synthetic `Histogram.baseline` (lobes at 0.35, 0.45, 0.58), scaled by `HistogramScale` (^0.42), in a 480×96 box.
 global Plots {
@@ -44,7 +17,7 @@ global Plots {
     out property <string> curve: "M 0.0 48.0 L 7.5 44.7 L 15.0 41.4 L 22.5 38.2 L 30.0 35.1 L 37.5 32.2 L 45.0 29.3 L 52.5 26.7 L 60.0 24.2 L 67.5 22.0 L 75.0 20.1 L 82.5 18.4 L 90.0 17.0 L 97.5 15.8 L 105.0 15.0 L 112.5 14.6 L 120.0 14.4 L 127.5 14.6 L 135.0 15.0 L 142.5 15.8 L 150.0 17.0 L 157.5 18.4 L 165.0 20.1 L 172.5 22.0 L 180.0 24.2 L 187.5 26.7 L 195.0 29.3 L 202.5 32.2 L 210.0 35.1 L 217.5 38.2 L 225.0 41.4 L 232.5 44.7 L 240.0 48.0 L 247.5 51.3 L 255.0 54.6 L 262.5 57.8 L 270.0 60.9 L 277.5 63.8 L 285.0 66.7 L 292.5 69.3 L 300.0 71.8 L 307.5 74.0 L 315.0 75.9 L 322.5 77.6 L 330.0 79.0 L 337.5 80.2 L 345.0 81.0 L 352.5 81.4 L 360.0 81.6 L 367.5 81.4 L 375.0 81.0 L 382.5 80.2 L 390.0 79.0 L 397.5 77.6 L 405.0 75.9 L 412.5 74.0 L 420.0 71.8 L 427.5 69.3 L 435.0 66.7 L 442.5 63.8 L 450.0 60.9 L 457.5 57.8 L 465.0 54.6 L 472.5 51.3 L 480.0 48.0";
 }
 
-// One tunable, as lab.slint's `Tune`.
+// One tunable, as lab.slint's `Tune`; a length or a duration in points or milliseconds.
 component Tune inherits Rectangle {
     in property <string> label;
     in property <float> minimum: 0;
@@ -54,8 +27,36 @@ component Tune inherits Rectangle {
     HorizontalLayout {
         spacing: 8px;
         Text { text: root.label; width: 96px; color: #ffffffcc; font-size: 11px; vertical-alignment: center; overflow: elide; }
-        Slider { minimum: root.minimum; maximum: root.maximum; value <=> root.value; }
+        Tuner { minimum: root.minimum; maximum: root.maximum; value <=> root.value; }
         Text { text: round(root.value * 100) / 100; width: 36px; color: #ffffff8c; font-size: 11px; horizontal-alignment: right; vertical-alignment: center; }
+    }
+}
+
+component LengthTune inherits Rectangle {
+    in property <string> label;
+    in property <float> minimum: 0;
+    in property <float> maximum: 1;
+    in-out property <length> value;
+    height: 30px;
+    Tune {
+        label: root.label;
+        minimum: root.minimum;
+        maximum: root.maximum;
+        value: root.value / 1px;
+        changed value => { root.value = self.value * 1px; }
+    }
+}
+
+component TimeTune inherits Rectangle {
+    in property <string> label;
+    in property <float> maximum: 1;
+    in-out property <duration> value;
+    height: 30px;
+    Tune {
+        label: root.label;
+        maximum: root.maximum;
+        value: root.value / 1ms;
+        changed value => { root.value = self.value * 1ms; }
     }
 }
 
@@ -100,225 +101,59 @@ component Row inherits VerticalLayout {
     }
 }
 
-// `KeycapChrome` at `Keycap.Variant.small`, drawn by `Keycap` at a free `scale`; `level` gives equal
-// walls, `shadow` the cast shadow, `edged` the knob's `strokeBorder(trackLine, 1)`.
-component ScaledCap inherits Keycap {
-    in property <float> scale: SliderLook.knob-scale;
-    in property <bool> edged;
-    factor: root.scale;
-    shadow: false;
-    rim: !root.level;
-    edge-width: root.edged ? 1px : 0;
-    edge-color: rgba(0, 0, 0, SliderLook.edge);
-}
-
-// `DSBarHandle`: a small key set across the track, equal walls, no shadow, a black edge and two white
-// grip lines; it grows by `knobGrow` on the `rise` spring when hovered or grabbed. Centred on `cx`, `cy`.
-component BarHandle inherits Rectangle {
-    in property <bool> vertical;
-    in property <color> tint: DS.palette-keycap;
-    in property <bool> grown;
-    in property <bool> grip: true;
-    in property <length> cx;
-    in property <length> cy;
-    property <float> grow: root.grown ? SliderLook.knob-grow : 1;
-    animate grow { duration: SliderLook.rise-ms * 1ms; easing: ease-out-back; }
-    property <length> along: SliderLook.knob-thickness * 1px * root.grow;
-    property <length> across: SliderLook.knob-length * 1px * root.grow;
-    property <length> line: SliderLook.grip-line * 1px * root.grow;
-    property <length> gap: SliderLook.grip-gap * 1px * root.grow;
-    width: root.vertical ? root.across : root.along;
-    height: root.vertical ? root.along : root.across;
-    x: root.cx - self.width / 2;
-    y: root.cy - self.height / 2;
-    ScaledCap {
-        albedo: root.tint;
-        level: true;
-        edged: true;
-        // `HStack(spacing: knobLineGap) { line; line }`, turned 90° on a vertical track; the wrapper takes
-        // the face's own size, as a child's `parent` names the cap, not the face it lies on.
-        Rectangle {
-            for i in root.grip ? 2 : 0: Rectangle {
-                x: root.vertical ? (parent.width - root.line) / 2 : parent.width / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2);
-                y: root.vertical ? parent.height / 2 + (i == 0 ? -root.gap / 2 - 1px : root.gap / 2) : (parent.height - root.line) / 2;
-                width: root.vertical ? root.line : 1px;
-                height: root.vertical ? 1px : root.line;
-                background: DS.palette-text-on-fill;
-            }
-        }
-    }
-}
-
-// `DSRail` in `dsRecessed`: the ground (the track grey, or a bipolar gradient), the fill up to `at`, the
-// hollow's shade (`Inward`), the black edge, the lit rim below. Runs past the travel by `overhang` at both ends.
-component Rail inherits Rectangle {
-    in property <bool> vertical;
-    in property <float> at;
-    in property <length> overhang: SliderLook.knob-thickness * 1px / 2;
-    in property <bool> spectrum;
-    in property <color> low;
-    in property <color> high;
-    in property <color> tint: DS.palette-track-fill;
-    in property <bool> metal;
-    // No fill, as under the levels' handles.
-    in property <bool> bare;
-    // A stepped slider's rest, ticked across the rail (the Rust app's `Rail.rest`); none below 0.
-    in property <float> rest: -1;
-    // The surface the rail is milled into: the rim's shadow needs an opaque body under a translucent ground.
-    in property <color> under: DS.palette-panel;
-    property <length> radius: SliderLook.track-radius * 1px;
-    property <length> along: root.vertical ? root.height : root.width;
-    property <length> reached: root.overhang + clamp(root.at, 0, 1) * (root.along - 2 * root.overhang);
-    Rectangle {
-        border-radius: root.radius;
-        background: root.under;
-        drop-shadow-color: rgba(255, 255, 255, SliderLook.rim);
-        drop-shadow-blur: SliderLook.rim-blur * 1px;
-        drop-shadow-offset-y: SliderLook.rim-drop * 1px;
-    }
-    Rectangle {
-        border-radius: root.radius;
-        clip: true;
-        background: !root.spectrum ? DS.palette-track
-            : root.vertical ? @linear-gradient(0deg, root.low 0%, root.high 100%)
-            : @linear-gradient(90deg, root.low 0%, root.high 100%);
-        // A neutral fill is flat; a tinted one ramps 0.45 → 0.9; `metal` is brushed silver top to bottom.
-        if !root.spectrum && !root.bare: Rectangle {
-            x: 0;
-            y: root.vertical ? parent.height - root.reached : 0;
-            width: root.vertical ? parent.width : root.reached;
-            height: root.vertical ? root.reached : parent.height;
-            background: root.metal
-                ? @linear-gradient(180deg, DS.scanner-metal-dark 0%, DS.scanner-metal-light 33.33%, DS.scanner-metal-light 66.67%, DS.scanner-metal-dark 100%)
-                : root.tint == DS.palette-track-fill ? root.tint
-                : root.vertical ? @linear-gradient(0deg, root.tint.with-alpha(0.45) 0%, root.tint.with-alpha(0.9) 100%)
-                : @linear-gradient(90deg, root.tint.with-alpha(0.45) 0%, root.tint.with-alpha(0.9) 100%);
-        }
-    }
-    Inward {
-        ground: transparent;
-        radius: root.radius;
-    }
-    Rectangle {
-        border-radius: root.radius;
-        border-width: 1px;
-        border-color: rgba(0, 0, 0, SliderLook.edge);
-    }
-    if root.rest >= 0: Rectangle {
-        x: root.overhang + root.rest * (root.along - 2 * root.overhang) - self.width / 2;
-        y: (parent.height - self.height) / 2;
-        width: 1px;
-        height: SliderLook.knob-length * 1px / 2;
-        background: DS.system-secondary;
-    }
-}
-
-// `DSReadout`: the name at the left, the value at the right in the secondary ink.
-component Readout inherits HorizontalLayout {
-    in property <string> label;
-    in property <string> value;
-    spacing: 8px;
-    Text { text: root.label; color: DS.system-primary; font-size: 13px; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
-    Text { text: root.value; color: DS.system-secondary; font-size: 11px; horizontal-alignment: right; vertical-alignment: center; }
-}
-
-// `DSSlider`, horizontal: the readout, then a row as tall as the knob whose whole travel grabs. A drag moves
-// by the hand's travel (⌥ a fifth), a double click springs back to `base`, a horizontal swipe nudges.
-component TrackSlider inherits VerticalLayout {
-    in property <string> label;
-    in-out property <float> value;
+// The DS `Slider` driven as Rust drives it in the app: a drag by the hand's travel (⌥ a fifth), the
+// second press of a double click back to `base`, a sideways swipe a quarter point a point.
+component LiveSlider inherits Slider {
+    in-out property <float> amount;
     in property <float> minimum: 0;
     in property <float> maximum: 1;
     in property <float> base;
-    in property <bool> enabled: true;
-    in property <bool> spectrum;
-    in property <color> low: #40c8e0;
-    in property <color> high: #ff453a;
-    in property <color> tint: DS.palette-track-fill;
-    in property <bool> metal;
-    in property <color> knob: DS.palette-keycap;
     in property <bool> percent;
     in property <string> unit;
-    // Forced states for the specimens: the knob as under the pointer, or as held.
-    in property <bool> force-hover;
-    in property <bool> force-grab;
-    property <float> fraction: (root.value - root.minimum) / max(0.000001, root.maximum - root.minimum);
-    // The value drawn: sprung on `settle` when it arrives from elsewhere, never under the hand.
-    property <float> shown: root.fraction;
-    animate shown { duration: area.pressed || area.scrolling ? 0ms : SliderLook.settle-ms * 1ms; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
-    pure function readout(v: float) -> string {
-        root.percent ? round(v * 100) + "%" : (v >= 0 ? "+" : "") + v.to-fixed(2) + root.unit
-    }
+    property <float> start;
+    property <duration> last: -1s;
     function move-to(f: float) {
-        root.value = root.minimum + clamp(f, 0, 1) * (root.maximum - root.minimum);
+        root.amount = root.minimum + clamp(f, 0, 1) * (root.maximum - root.minimum);
     }
-    spacing: 4px;
-    // Off limits, the words fade to `State.missing` and the rail stays opaque, as a key keeps its chrome.
-    Readout { label: root.label; value: root.readout(root.value); opacity: root.enabled ? 1 : 0.4; }
-    Rectangle {
-        height: SliderLook.knob-length * 1px;
-        travel := Rectangle {
-            x: SliderLook.knob-thickness * 1px / 2;
-            width: parent.width - SliderLook.knob-thickness * 1px;
-            Rail {
-                x: -self.overhang;
-                y: (parent.height - self.height) / 2;
-                width: parent.width + 2 * self.overhang;
-                height: SliderLook.track * 1px;
-                at: root.shown;
-                spectrum: root.spectrum;
-                low: root.low;
-                high: root.high;
-                tint: root.tint;
-                metal: root.metal;
-            }
-            BarHandle {
-                cx: root.shown * travel.width;
-                cy: travel.height / 2;
-                tint: root.knob;
-                grown: root.enabled && (area.over-knob || area.pressed || root.force-hover || root.force-grab);
-            }
-            area := TouchArea {
-                enabled: root.enabled;
-                property <float> start;
-                property <bool> fine;
-                in-out property <bool> scrolling;
-                out property <bool> over-knob: self.has-hover && abs(self.mouse-x - root.shown * self.width) <= SliderLook.knob-thickness * 1px / 2;
-                mouse-cursor: self.pressed ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                pointer-event(event) => {
-                    if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                        self.start = root.fraction;
-                    }
-                    self.fine = event.modifiers.alt;
-                }
-                moved => {
-                    if (self.pressed) {
-                        root.move-to(self.start + (self.mouse-x - self.pressed-x) / max(1px, self.width) * (self.fine ? 0.2 : 1));
-                    }
-                }
-                double-clicked => { root.value = root.base; }
-                // `DSScrollAdjust`: travel along the track only, 0.25 pt a trackpad point; across it is left to the panel.
-                scroll-event(event) => {
-                    if (event.delta-x != 0 && abs(event.delta-x) > abs(event.delta-y)) {
-                        self.scrolling = true;
-                        idle.restart();
-                        root.move-to(root.fraction + event.delta-x * 0.25 / max(1px, self.width) * (event.modifiers.alt ? 0.2 : 1));
-                        return EventResult.accept;
-                    }
-                    EventResult.reject
-                }
-            }
-            // `DSScroll.idleWindow`: a scroll ends 0.16 s after its last event.
-            idle := Timer {
-                interval: 160ms;
-                running: area.scrolling;
-                triggered => { area.scrolling = false; }
-            }
+    fraction: (root.amount - root.minimum) / max(0.000001, root.maximum - root.minimum);
+    readout: root.percent ? round(root.amount * 100) + "%" : (root.amount >= 0 ? "+" : "") + root.amount.to-fixed(2) + root.unit;
+    value-text: self.readout;
+    press(f, fine) => {
+        if (animation-tick() - root.last < 400ms) {
+            root.amount = root.base;
+            root.last = -1s;
+            return true;
         }
+        root.last = animation-tick();
+        root.start = root.fraction;
+        return false;
     }
+    drag(f, travel, span, fine) => { root.move-to(root.start + travel / max(1px, span) * (fine ? 0.2 : 1)); }
+    scroll(f, dx, dy, span, fine) => {
+        if (dx != 0 && abs(dx) > abs(dy)) {
+            root.move-to(root.fraction + dx * 0.25 / max(1px, span) * (fine ? 0.2 : 1));
+            return true;
+        }
+        return false;
+    }
+    step(f, by) => { root.move-to(root.fraction + by / 100); }
 }
 
-// `DSSlider(axis: .vertical)`: the same control turned, low at the bottom; the grip lines turn with it.
+// The DS stepped `Slider` (the Scanner face's letters): whole steps, a key either side, ⇧ for three.
+component LiveStepped inherits Slider {
+    in-out property <int> amount;
+    stepped: true;
+    lowest: -10;
+    highest: 10;
+    value: root.amount;
+    readout: (root.amount > 0 ? "+" : "") + root.amount;
+    value-text: self.readout;
+    step(f, by) => { root.amount = clamp(root.amount + by, root.lowest, root.highest); }
+    reset => { root.amount = 0; }
+}
+
+// `DSSlider(axis: .vertical)`: the DS rail and knob turned, low at the bottom; no screen of the app
+// holds one, so it is driven here alone.
 component UprightSlider inherits VerticalLayout {
     in property <string> label;
     in-out property <float> value;
@@ -332,42 +167,47 @@ component UprightSlider inherits VerticalLayout {
     in property <string> unit;
     property <float> fraction: (root.value - root.minimum) / max(0.000001, root.maximum - root.minimum);
     property <float> shown: root.fraction;
-    animate shown { duration: area.pressed || area.scrolling ? 0ms : SliderLook.settle-ms * 1ms; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
+    animate shown { duration: area.pressed || area.scrolling ? 0ms : SliderStyle.settle; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
     function move-to(f: float) {
         root.value = root.minimum + clamp(f, 0, 1) * (root.maximum - root.minimum);
     }
     spacing: 4px;
-    Readout { label: root.label; value: root.percent ? round(root.value * 100) + "%" : (root.value >= 0 ? "+" : "") + root.value.to-fixed(2) + root.unit; }
+    HorizontalLayout {
+        spacing: 8px;
+        Text { text: root.label; color: DS.system-primary; font-size: 13px; overflow: elide; horizontal-stretch: 1; }
+        Text { text: root.percent ? round(root.value * 100) + "%" : (root.value >= 0 ? "+" : "") + root.value.to-fixed(2) + root.unit; color: DS.system-secondary; font-size: 11px; }
+    }
     HorizontalLayout {
         alignment: start;
         vertical-stretch: 1;
         Rectangle {
-            width: SliderLook.knob-length * 1px;
+            width: SliderStyle.knob-height;
             travel := Rectangle {
-                y: SliderLook.knob-thickness * 1px / 2;
-                height: parent.height - SliderLook.knob-thickness * 1px;
+                y: SliderStyle.knob-width / 2;
+                height: parent.height - SliderStyle.knob-width;
                 Rail {
                     vertical: true;
                     x: (parent.width - self.width) / 2;
                     y: -self.overhang;
-                    width: SliderLook.track * 1px;
+                    width: SliderStyle.track;
                     height: parent.height + 2 * self.overhang;
+                    overhang: SliderStyle.knob-width / 2;
+                    fill: root.spectrum ? SliderFill.bipolar : SliderFill.level;
                     at: root.shown;
-                    spectrum: root.spectrum;
                     low: root.low;
                     high: root.high;
                 }
-                BarHandle {
+                Knob {
                     vertical: true;
-                    cx: travel.width / 2;
-                    cy: travel.height - root.shown * travel.height;
+                    across: travel.width;
+                    centre: travel.height - root.shown * travel.height;
                     grown: area.over-knob || area.pressed;
                 }
                 area := TouchArea {
                     property <float> start;
                     property <bool> fine;
                     in-out property <bool> scrolling;
-                    out property <bool> over-knob: self.has-hover && abs(self.mouse-y - (1 - root.shown) * self.height) <= SliderLook.knob-thickness * 1px / 2;
+                    out property <bool> over-knob: self.has-hover && abs(self.mouse-y - (1 - root.shown) * self.height) <= SliderStyle.knob-width / 2;
                     mouse-cursor: self.pressed ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
                     pointer-event(event) => {
                         if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
@@ -412,9 +252,9 @@ component StepKey inherits Rectangle {
     in property <bool> force-press;
     callback clicked(bool);
     property <bool> light: (0.2126 * root.fill.red + 0.7152 * root.fill.green + 0.0722 * root.fill.blue) / 255 > 0.55;
-    ScaledCap {
+    Keycap {
         albedo: root.fill;
-        shadow: true;
+        factor: SliderStyle.knob-factor;
         depth: root.force-press || touch.pressed ? 1 : touch.has-hover ? Depth.hover-press : 0;
         animate depth { duration: Depth.press-time; easing: ease-out; }
         Text {
@@ -437,93 +277,6 @@ component StepKey inherits Rectangle {
     }
 }
 
-// The Rust app's stepped `Slider` (the Scanner face's letters): whole steps on a bipolar rail ticked at
-// rest, a key either side in its end's colour, one step a click and three with ⇧; the name's double click rests it.
-component SteppedSlider inherits VerticalLayout {
-    in property <string> label;
-    in-out property <int> value;
-    in property <int> lowest: -10;
-    in property <int> highest: 10;
-    in property <color> low: #d6403a;
-    in property <color> high: #1fa8c7;
-    in property <bool> force-hover;
-    property <int> span: max(1, root.highest - root.lowest);
-    property <float> shown: (root.value - root.lowest) / root.span;
-    animate shown { duration: area.pressed ? 0ms : SliderLook.settle-ms * 1ms; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
-    function step-by(by: int) { root.value = clamp(root.value + by, root.lowest, root.highest); }
-    pure function step-at(x: length) -> int {
-        root.lowest + round(clamp(x / max(1px, travel.width), 0, 1) * root.span)
-    }
-    spacing: 4px;
-    HorizontalLayout {
-        spacing: 8px;
-        Text {
-            text: root.label;
-            color: DS.system-primary;
-            font-size: 13px;
-            horizontal-stretch: 1;
-            TouchArea { double-clicked => { root.value = 0; } }
-        }
-        Text { text: (root.value > 0 ? "+" : "") + root.value; color: DS.system-secondary; font-size: 11px; vertical-alignment: center; }
-    }
-    HorizontalLayout {
-        spacing: 8px;
-        StepKey {
-            width: SliderLook.step-key * 1px;
-            height: SliderLook.step-key * 1px;
-            y: (SliderLook.knob-length * 1px - self.height) / 2;
-            legend-size: SliderLook.step-legend * 1px;
-            legend: "−";
-            fill: root.low;
-            clicked(shift) => { root.step-by(shift ? -3 : -1); }
-        }
-        Rectangle {
-            height: SliderLook.knob-length * 1px;
-            horizontal-stretch: 1;
-            travel := Rectangle {
-                x: SliderLook.knob-thickness * 1px / 2;
-                width: parent.width - SliderLook.knob-thickness * 1px;
-                Rail {
-                    x: -self.overhang;
-                    y: (parent.height - self.height) / 2;
-                    width: parent.width + 2 * self.overhang;
-                    height: SliderLook.track * 1px;
-                    spectrum: true;
-                    low: root.low;
-                    high: root.high;
-                    rest: (0 - root.lowest) / root.span;
-                }
-                BarHandle {
-                    cx: root.shown * travel.width;
-                    cy: travel.height / 2;
-                    grown: area.over-knob || area.pressed || root.force-hover;
-                }
-                area := TouchArea {
-                    out property <bool> over-knob: self.has-hover && abs(self.mouse-x - root.shown * self.width) <= SliderLook.knob-thickness * 1px / 2;
-                    mouse-cursor: self.pressed ? MouseCursor.grabbing : self.over-knob ? MouseCursor.grab : MouseCursor.default;
-                    pointer-event(event) => {
-                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                            root.value = root.step-at(self.mouse-x);
-                        }
-                    }
-                    moved => {
-                        if (self.pressed) { root.value = root.step-at(self.mouse-x); }
-                    }
-                }
-            }
-        }
-        StepKey {
-            width: SliderLook.step-key * 1px;
-            height: SliderLook.step-key * 1px;
-            y: (SliderLook.knob-length * 1px - self.height) / 2;
-            legend-size: SliderLook.step-legend * 1px;
-            legend: "+";
-            fill: root.high;
-            clicked(shift) => { root.step-by(shift ? 3 : 1); }
-        }
-    }
-}
-
 // `LabStepKeys`: a finishing slider as the scanner's keys on their socket (`LabStack`): −3 −1 TITLE +1 +3,
 // the side keys in their end's band colour, the middle key back to rest. 46 pt tall, the title key 96 wide.
 component StepKeyRow inherits Rectangle {
@@ -540,7 +293,7 @@ component StepKeyRow inherits Rectangle {
     }
     height: 46px;
     // The socket: `socketColor` black at the small cap's corner.
-    border-radius: Depth.corner * SliderLook.knob-scale;
+    border-radius: Depth.corner * SliderStyle.knob-factor;
     background: #000000;
     HorizontalLayout {
         StepKey { legend: "−3"; fill: root.minus-fill; clicked => { root.moved(-3); } }
@@ -548,46 +301,6 @@ component StepKeyRow inherits Rectangle {
         StepKey { width: 96px; legend: root.title; fill: DS.palette-keycap; force-press: root.force-press; clicked => { root.value = 0; } }
         StepKey { legend: "+"; fill: root.plus-fill; clicked => { root.moved(1); } }
         StepKey { legend: "+3"; fill: root.plus-fill; clicked => { root.moved(3); } }
-    }
-}
-
-// `dsPlotScreen`: a plot behind glass, the canvas floor sunk at the card's corner (`hollowBlur` 4, `hollowDrop` 3),
-// quarter lines engraved in `separator` hairlines; the content lies under the hollow's shade.
-component PlotScreen inherits Rectangle {
-    in property <bool> grid: true;
-    in property <color> under: DS.palette-panel;
-    property <length> radius: SliderLook.plot-radius * 1px;
-    Rectangle {
-        border-radius: root.radius;
-        background: root.under;
-        drop-shadow-color: rgba(255, 255, 255, SliderLook.rim);
-        drop-shadow-blur: SliderLook.rim-blur * 1px;
-        drop-shadow-offset-y: SliderLook.rim-drop * 1px;
-    }
-    Rectangle {
-        border-radius: root.radius;
-        background: DS.palette-canvas;
-        clip: true;
-        for i in root.grid ? 3 : 0: Rectangle {
-            x: parent.width * (i + 1) / 4;
-            width: 0.5px;
-            background: rgba(255, 255, 255, SliderLook.grid);
-        }
-        for i in root.grid ? 3 : 0: Rectangle {
-            y: parent.height * (i + 1) / 4;
-            height: 0.5px;
-            background: rgba(255, 255, 255, SliderLook.grid);
-        }
-        @children
-    }
-    Inward {
-        ground: transparent;
-        radius: root.radius;
-    }
-    Rectangle {
-        border-radius: root.radius;
-        border-width: 1px;
-        border-color: rgba(0, 0, 0, SliderLook.edge);
     }
 }
 
@@ -631,51 +344,9 @@ component Histogram inherits Rectangle {
     Path { viewbox-width: 480; viewbox-height: 96; commands: Plots.blue; fill: rgba(10, 132, 255, 0.28 * root.b); stroke: rgba(10, 132, 255, 0.85 * root.b); stroke-width: 1px; }
 }
 
-// `DSTrackHandle`: a knob on a track several share, caught in a 24 pt box centred on it (`grabSize`), never the
-// track; dragged from where it was caught, sprung on `settle` for a value from elsewhere, double click to rest.
-component TrackHandle inherits Rectangle {
-    in-out property <float> value;
-    in property <float> rest;
-    in property <float> lowest: 0;
-    in property <float> highest: 1;
-    in property <color> tint;
-    in property <length> span;
-    in property <bool> force-grown;
-    // The pointer's own place: the box moves under the hand, so its local coordinates cannot measure the drag.
-    property <length> pointer: self.absolute-position.x + area.mouse-x;
-    property <length> caught;
-    property <float> start;
-    property <float> shown: root.value;
-    animate shown { duration: area.pressed ? 0ms : SliderLook.settle-ms * 1ms; easing: cubic-bezier(0.3, 1.25, 0.5, 1); }
-    x: clamp(root.shown, 0, 1) * root.span - self.width / 2;
-    width: 24px;
-    height: SliderLook.knob-length * 1px;
-    BarHandle {
-        cx: parent.width / 2;
-        cy: parent.height / 2;
-        tint: root.tint;
-        grown: area.has-hover || area.pressed || root.force-grown;
-    }
-    area := TouchArea {
-        mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                root.start = root.value;
-                root.caught = root.pointer;
-            }
-        }
-        moved => {
-            if (self.pressed) {
-                root.value = clamp(root.start + (root.pointer - root.caught) / max(1px, root.span), root.lowest, root.highest);
-            }
-        }
-        double-clicked => { root.value = root.rest; }
-    }
-}
-
-// `LevelsView`: the histogram behind its plot screen over a bare rail and five handles, both inset half a knob
-// a side so a handle's centre lines up with the plot; the markers follow the handles. Ends drawn last, on top.
-component LevelsTrack inherits VerticalLayout {
+// `LevelsView` on the DS `Plot` and `LevelsTrack`, its grips held here as Rust holds them in the app: a
+// press within a grab catches a handle, dragged from where it was caught; a second press rests it.
+component LiveLevels inherits VerticalLayout {
     in-out property <float> black: 0;
     in-out property <float> shadows: 0.25;
     in-out property <float> mid: 0.5;
@@ -684,31 +355,43 @@ component LevelsTrack inherits VerticalLayout {
     in property <bool> suggest;
     in property <int> lit: -1;
     property <length> span: 480px;
-    // `LevelsView.grip(at:)`: the handle under the pointer, else the nearest, read front to back.
+    property <int> held: -1;
+    property <length> caught;
+    property <float> start;
+    property <int> last-grip: -1;
+    property <duration> last: -1s;
+    pure function at(i: int) -> float {
+        i == 0 ? root.black : i == 1 ? root.shadows : i == 2 ? root.mid : i == 3 ? root.highlights : root.white
+    }
+    // `LevelsView.grip(at:)`: the handle under the pointer, read front to back; -1 for none.
+    pure function grip(x: length) -> int {
+        abs(root.white * root.span - x) <= SliderStyle.grab / 2 ? 4
+            : abs(root.black * root.span - x) <= SliderStyle.grab / 2 ? 0
+            : abs(root.highlights * root.span - x) <= SliderStyle.grab / 2 ? 3
+            : abs(root.mid * root.span - x) <= SliderStyle.grab / 2 ? 2
+            : abs(root.shadows * root.span - x) <= SliderStyle.grab / 2 ? 1 : -1
+    }
     pure function nearest(x: length) -> int {
-        abs(root.white * root.span - x) <= 12px ? 4
-            : abs(root.black * root.span - x) <= 12px ? 0
-            : abs(root.highlights * root.span - x) <= 12px ? 3
-            : abs(root.mid * root.span - x) <= 12px ? 2
-            : abs(root.shadows * root.span - x) <= 12px ? 1
+        root.grip(x) >= 0 ? root.grip(x)
             : x < (root.black + root.shadows) * root.span / 2 ? 0
             : x < (root.shadows + root.mid) * root.span / 2 ? 1
             : x < (root.mid + root.highlights) * root.span / 2 ? 2
             : x < (root.highlights + root.white) * root.span / 2 ? 3 : 4
     }
-    function nudge(x: length, by: float) {
-        if (root.nearest(x) == 0) { root.black = clamp(root.black + by, 0, root.shadows); }
-        else if (root.nearest(x) == 1) { root.shadows = clamp(root.shadows + by, root.black, root.mid); }
-        else if (root.nearest(x) == 2) { root.mid = clamp(root.mid + by, root.shadows, root.highlights); }
-        else if (root.nearest(x) == 3) { root.highlights = clamp(root.highlights + by, root.mid, root.white); }
-        else { root.white = clamp(root.white + by, root.highlights, 1); }
+    function set(i: int, v: float) {
+        if (i == 0) { root.black = clamp(v, 0, root.shadows); }
+        else if (i == 1) { root.shadows = clamp(v, root.black, root.mid); }
+        else if (i == 2) { root.mid = clamp(v, root.shadows, root.highlights); }
+        else if (i == 3) { root.highlights = clamp(v, root.mid, root.white); }
+        else { root.white = clamp(v, root.highlights, 1); }
     }
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: SliderStyle.knob-width / 2;
+    padding-right: SliderStyle.knob-width / 2;
     spacing: 2px;
-    PlotScreen {
+    Plot {
         width: root.span;
         height: 96px;
+        interactive: false;
         Histogram { lit: root.lit; }
         for m in [root.black, root.shadows, root.mid, root.highlights, root.white]: Marker {
             x: m * root.span - 0.5px;
@@ -717,30 +400,43 @@ component LevelsTrack inherits VerticalLayout {
             x: m * root.span - 5px;
         }
     }
-    Rectangle {
+    LevelsTrack {
         width: root.span;
-        height: SliderLook.knob-length * 1px;
-        Rail {
-            x: -self.overhang;
-            y: (parent.height - self.height) / 2;
-            width: parent.width + 2 * self.overhang;
-            height: SliderLook.track * 1px;
-            bare: true;
+        // Drawn in `LevelsView`'s order, the ends last, on top.
+        knobs: [
+            { x: root.shadows * root.span, ink: Ink.grey-quarter, held: root.held == 1, label: "Shadows" },
+            { x: root.mid * root.span, ink: Ink.grey-half, held: root.held == 2, label: "Mid" },
+            { x: root.highlights * root.span, ink: Ink.grey-three-quarters, held: root.held == 3, label: "Highs" },
+            { x: root.black * root.span, ink: Ink.black, held: root.held == 0, label: "Black" },
+            { x: root.white * root.span, ink: Ink.white, held: root.held == 4, label: "White" },
+        ];
+        pointer(p, kind, x, y, alt) => {
+            if (kind == 0) {
+                let g = root.grip(x);
+                if (g >= 0 && g == root.last-grip && animation-tick() - root.last < 400ms) {
+                    root.set(g, [0, 0.25, 0.5, 0.75, 1][g]);
+                    root.last = -1s;
+                } else if (g >= 0) {
+                    root.held = g;
+                    root.caught = x;
+                    root.start = root.at(g);
+                    root.last = animation-tick();
+                    root.last-grip = g;
+                }
+            } else if (kind == 1 && root.held >= 0) {
+                root.set(root.held, root.start + (x - root.caught) / root.span);
+            } else if (kind == 2 || kind == 3) {
+                root.held = -1;
+            }
         }
         // `DSScrollAdjust` over the track: a swipe moves the handle under the pointer, else the nearest.
-        TouchArea {
-            scroll-event(event) => {
-                if (event.delta-x != 0 && abs(event.delta-x) > abs(event.delta-y)) {
-                    root.nudge(self.mouse-x, event.delta-x * 0.25 / root.span);
-                    return EventResult.accept;
-                }
-                EventResult.reject
+        scrolled(p, x, dx, dy, alt) => {
+            if (dx != 0 && abs(dx) > abs(dy)) {
+                let g = root.nearest(x);
+                root.set(g, root.at(g) + dx * 0.25 / root.span);
+                return true;
             }
-            TrackHandle { span: root.span; value <=> root.shadows; rest: 0.25; lowest: root.black; highest: root.mid; tint: #404040; }
-            TrackHandle { span: root.span; value <=> root.mid; rest: 0.5; lowest: root.shadows; highest: root.highlights; tint: #808080; }
-            TrackHandle { span: root.span; value <=> root.highlights; rest: 0.75; lowest: root.mid; highest: root.white; tint: #bfbfbf; }
-            TrackHandle { span: root.span; value <=> root.black; rest: 0; lowest: 0; highest: root.shadows; tint: #000000; }
-            TrackHandle { span: root.span; value <=> root.white; rest: 1; lowest: root.highlights; highest: 1; tint: #ffffff; }
+            return false;
         }
     }
     HorizontalLayout {
@@ -753,51 +449,28 @@ component LevelsTrack inherits VerticalLayout {
     }
 }
 
-// `DSHandle`: a curve point's disc, 9 pt, `handleIdle` hairline at rest, grown ×1.45 with a white line when active.
-component CurvePoint inherits Rectangle {
-    in property <color> tint: DS.system-primary;
-    in property <bool> active;
-    property <length> size: 9px * (root.active ? 1.45 : 1);
-    width: 24px;
-    height: 24px;
-    Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        width: root.size;
-        height: root.size;
-        border-radius: self.width / 2;
-        background: root.tint;
-        border-width: root.active ? 1px : 0.5px;
-        border-color: root.active ? DS.palette-handle-active : DS.palette-handle-idle;
-        drop-shadow-color: rgba(0, 0, 0, 0.3);
-        drop-shadow-blur: root.active ? 2px : 1px;
-        drop-shadow-offset-y: 0.5px;
-    }
-}
-
-// The playground's knob specimen: a 52 pt cyan → red rail with a handle on it.
+// The playground's knob specimen: the DS knob on a 52 pt cyan → red rail.
 component KnobSpecimen inherits Rectangle {
     in property <color> tint: DS.palette-keycap;
     in property <bool> grown;
     in property <bool> vertical;
     width: 64px;
-    height: SliderLook.knob-length * 1px + 6px;
+    height: SliderStyle.knob-height + 6px;
     Rail {
         vertical: root.vertical;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        width: root.vertical ? SliderLook.track * 1px : 52px;
-        height: root.vertical ? parent.height : SliderLook.track * 1px;
-        overhang: 0;
-        spectrum: true;
+        width: root.vertical ? SliderStyle.track : 52px;
+        height: root.vertical ? parent.height : SliderStyle.track;
+        fill: SliderFill.bipolar;
         low: #40c8e0;
         high: #ff453a;
     }
-    BarHandle {
+    Knob {
         vertical: root.vertical;
-        cx: parent.width / 2;
-        cy: parent.height / 2;
-        tint: root.tint;
+        centre: root.vertical ? parent.height / 2 : parent.width / 2;
+        across: root.vertical ? parent.width : parent.height;
+        fill: root.tint;
         grown: root.grown;
     }
 }
@@ -817,32 +490,32 @@ export component SlidersPage inherits Rectangle {
                 VerticalLayout {
                     width: 300px;
                     Heading { text: "TRACK"; }
-                    Tune { label: "track height"; minimum: 4; maximum: 24; value <=> SliderLook.track; }
-                    Tune { label: "track radius"; maximum: 12; value <=> SliderLook.track-radius; }
-                    Tune { label: "edge"; value <=> SliderLook.edge; }
-                    Tune { label: "rim"; value <=> SliderLook.rim; }
-                    Tune { label: "rim blur"; maximum: 4; value <=> SliderLook.rim-blur; }
-                    Tune { label: "rim drop"; maximum: 4; value <=> SliderLook.rim-drop; }
+                    LengthTune { label: "track height"; minimum: 4; maximum: 24; value <=> SliderStyle.track; }
+                    LengthTune { label: "track radius"; maximum: 12; value <=> SliderStyle.track-radius; }
+                    Tune { label: "edge"; value <=> SliderStyle.edge; }
+                    Tune { label: "rim"; value <=> SliderStyle.rim; }
+                    LengthTune { label: "rim blur"; maximum: 4; value <=> SliderStyle.rim-blur; }
+                    LengthTune { label: "rim drop"; maximum: 4; value <=> SliderStyle.rim-drop; }
                 }
                 VerticalLayout {
                     width: 300px;
                     Heading { text: "KNOB"; }
-                    Tune { label: "thickness"; minimum: 8; maximum: 48; value <=> SliderLook.knob-thickness; }
-                    Tune { label: "length"; minimum: 14; maximum: 60; value <=> SliderLook.knob-length; }
-                    Tune { label: "key scale"; minimum: 0.2; maximum: 1; value <=> SliderLook.knob-scale; }
-                    Tune { label: "grow"; minimum: 1; maximum: 1.4; value <=> SliderLook.knob-grow; }
-                    Tune { label: "grip line"; maximum: 24; value <=> SliderLook.grip-line; }
-                    Tune { label: "grip gap"; maximum: 12; value <=> SliderLook.grip-gap; }
-                    Tune { label: "step key"; minimum: 20; maximum: 56; value <=> SliderLook.step-key; }
-                    Tune { label: "step legend"; minimum: 9; maximum: 28; value <=> SliderLook.step-legend; }
+                    LengthTune { label: "thickness"; minimum: 8; maximum: 48; value <=> SliderStyle.knob-width; }
+                    LengthTune { label: "length"; minimum: 14; maximum: 60; value <=> SliderStyle.knob-height; }
+                    Tune { label: "key scale"; minimum: 0.2; maximum: 1; value <=> SliderStyle.knob-factor; }
+                    Tune { label: "grow"; minimum: 1; maximum: 1.4; value <=> SliderStyle.knob-grow; }
+                    LengthTune { label: "grip line"; maximum: 24; value <=> SliderStyle.grip; }
+                    LengthTune { label: "grip gap"; maximum: 12; value <=> SliderStyle.grip-gap; }
+                    LengthTune { label: "step key"; minimum: 20; maximum: 56; value <=> SliderStyle.step-key; }
+                    LengthTune { label: "step legend"; minimum: 9; maximum: 28; value <=> SliderStyle.step-legend; }
                 }
                 VerticalLayout {
                     width: 300px;
                     Heading { text: "MOTION, PLOT"; }
-                    Tune { label: "rise ms"; maximum: 400; value <=> SliderLook.rise-ms; }
-                    Tune { label: "settle ms"; maximum: 1000; value <=> SliderLook.settle-ms; }
-                    Tune { label: "plot radius"; maximum: 24; value <=> SliderLook.plot-radius; }
-                    Tune { label: "grid"; maximum: 0.5; value <=> SliderLook.grid; }
+                    TimeTune { label: "rise ms"; maximum: 400; value <=> SliderStyle.rise; }
+                    TimeTune { label: "settle ms"; maximum: 1000; value <=> SliderStyle.settle; }
+                    LengthTune { label: "plot radius"; maximum: 24; value <=> PlotStyle.radius; }
+                    Tune { label: "grid"; maximum: 0.5; value <=> PlotStyle.grid; }
                 }
             }
 
@@ -853,37 +526,37 @@ export component SlidersPage inherits Rectangle {
                     width: 308px;
                     spacing: 16px;
                     alignment: start;
-                    TrackSlider { label: "Amount"; value: 0.4; base: 0.4; percent: true; }
-                    TrackSlider { label: "Cyan ↔ Red"; value: 0; minimum: -1; maximum: 1; spectrum: true; unit: " st"; }
-                    TrackSlider { label: "Denoise"; value: 0.25; tint: DS.tint-chroma; percent: true; }
-                    TrackSlider { label: "Chrome"; value: 0.6; metal: true; percent: true; }
+                    LiveSlider { label: "Amount"; amount: 0.4; base: 0.4; percent: true; }
+                    LiveSlider { label: "Cyan ↔ Red"; amount: 0; minimum: -1; maximum: 1; fill: SliderFill.bipolar; low: #40c8e0; high: #ff453a; unit: " st"; }
+                    LiveSlider { label: "Denoise"; amount: 0.25; fill: SliderFill.ramp; tint: DS.tint-chroma; percent: true; }
+                    LiveSlider { label: "Chrome"; amount: 0.6; fill: SliderFill.metal; percent: true; }
                     Caption { text: "live: drag, ⌥ for a fifth, double-click to reset, swipe sideways"; horizontal-alignment: left; }
                 }
                 VerticalLayout {
                     spacing: 18px;
                     HorizontalLayout {
                         spacing: 20px;
-                        Specimen { name: "rest"; TrackSlider { width: 200px; label: "Amount"; value: 0.4; percent: true; } }
-                        Specimen { name: "hover (knob ×1.07)"; TrackSlider { width: 200px; label: "Amount"; value: 0.4; percent: true; force-hover: true; } }
-                        Specimen { name: "dragging"; TrackSlider { width: 200px; label: "Amount"; value: 0.62; percent: true; force-grab: true; } }
+                        Specimen { name: "rest"; LiveSlider { width: 200px; label: "Amount"; amount: 0.4; percent: true; } }
+                        Specimen { name: "hover (knob ×1.07)"; LiveSlider { width: 200px; label: "Amount"; amount: 0.4; percent: true; look: Look.hover; } }
+                        Specimen { name: "dragging"; LiveSlider { width: 200px; label: "Amount"; amount: 0.62; percent: true; look: Look.pressed; } }
                     }
                     HorizontalLayout {
                         spacing: 20px;
-                        Specimen { name: "disabled (words at 0.4)"; TrackSlider { width: 200px; label: "Amount"; value: 0.4; percent: true; enabled: false; } }
-                        Specimen { name: "fill at 0"; TrackSlider { width: 200px; label: "Amount"; value: 0; percent: true; } }
-                        Specimen { name: "fill at 1"; TrackSlider { width: 200px; label: "Amount"; value: 1; percent: true; } }
+                        Specimen { name: "disabled (words at 0.4)"; LiveSlider { width: 200px; label: "Amount"; amount: 0.4; percent: true; enabled: false; } }
+                        Specimen { name: "fill at 0"; LiveSlider { width: 200px; label: "Amount"; amount: 0; percent: true; } }
+                        Specimen { name: "fill at 1"; LiveSlider { width: 200px; label: "Amount"; amount: 1; percent: true; } }
                     }
                     HorizontalLayout {
                         spacing: 20px;
-                        Specimen { name: "bipolar at zero"; TrackSlider { width: 200px; label: "Cyan ↔ Red"; value: 0; minimum: -1; maximum: 1; spectrum: true; unit: " st"; } }
-                        Specimen { name: "bipolar, low side"; TrackSlider { width: 200px; label: "Cyan ↔ Red"; value: -0.6; minimum: -1; maximum: 1; spectrum: true; unit: " st"; } }
-                        Specimen { name: "bipolar, high side"; TrackSlider { width: 200px; label: "Cyan ↔ Red"; value: 0.6; minimum: -1; maximum: 1; spectrum: true; unit: " st"; } }
+                        Specimen { name: "bipolar at zero"; LiveSlider { width: 200px; label: "Cyan ↔ Red"; amount: 0; minimum: -1; maximum: 1; fill: SliderFill.bipolar; low: #40c8e0; high: #ff453a; unit: " st"; } }
+                        Specimen { name: "bipolar, low side"; LiveSlider { width: 200px; label: "Cyan ↔ Red"; amount: -0.6; minimum: -1; maximum: 1; fill: SliderFill.bipolar; low: #40c8e0; high: #ff453a; unit: " st"; } }
+                        Specimen { name: "bipolar, high side"; LiveSlider { width: 200px; label: "Cyan ↔ Red"; amount: 0.6; minimum: -1; maximum: 1; fill: SliderFill.bipolar; low: #40c8e0; high: #ff453a; unit: " st"; } }
                     }
                     HorizontalLayout {
                         spacing: 20px;
-                        Specimen { name: "tinted ramp 0.45 → 0.9"; TrackSlider { width: 200px; label: "Denoise"; value: 0.7; tint: DS.tint-chroma; percent: true; } }
-                        Specimen { name: "metal"; TrackSlider { width: 200px; label: "Chrome"; value: 0.7; metal: true; percent: true; } }
-                        Specimen { name: "knob carrying its value"; TrackSlider { width: 200px; label: "Tint"; value: 0.3; spectrum: true; low: #32d74b; high: #d63380; knob: #d63380; percent: true; } }
+                        Specimen { name: "tinted ramp 0.45 → 0.9"; LiveSlider { width: 200px; label: "Denoise"; amount: 0.7; fill: SliderFill.ramp; tint: DS.tint-chroma; percent: true; } }
+                        Specimen { name: "metal"; LiveSlider { width: 200px; label: "Chrome"; amount: 0.7; fill: SliderFill.metal; percent: true; } }
+                        Specimen { name: "knob carrying its value"; LiveSlider { width: 200px; label: "Tint"; amount: 0.3; fill: SliderFill.bipolar; low: #32d74b; high: #d63380; knob: #d63380; percent: true; } }
                     }
                     Caption { text: "Swift's bipolar rail has no progressive fill: the gradient is the whole bar and the knob reads the balance."; horizontal-alignment: left; }
                 }
@@ -914,13 +587,16 @@ export component SlidersPage inherits Rectangle {
                     Rectangle {
                         width: 120px;
                         height: 150px;
-                        ScaledCap {
+                        Keycap {
                             x: (parent.width - self.width) / 2;
                             width: 96px;
                             height: 136px;
-                            scale: SliderLook.knob-scale * 4;
+                            factor: SliderStyle.knob-factor * 4;
                             level: true;
-                            edged: true;
+                            shadow: false;
+                            rim: false;
+                            edge-width: 1px;
+                            edge-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
                         }
                     }
                 }
@@ -941,12 +617,12 @@ export component SlidersPage inherits Rectangle {
                     width: 308px;
                     spacing: 16px;
                     alignment: start;
-                    SteppedSlider { label: "C"; value: 0; }
-                    SteppedSlider { label: "D"; value: 3; low: rgb(71, 71, 77); high: rgb(219, 219, 214); }
+                    LiveStepped { label: "C"; low: #d6403a; high: #1fa8c7; amount: 0; }
+                    LiveStepped { label: "D"; amount: 3; low: rgb(71, 71, 77); high: rgb(219, 219, 214); }
                     Caption { text: "live: press or drag the rail, click a key (⇧ for three), double-click the name"; horizontal-alignment: left; }
                 }
-                Specimen { name: "at rest (ticked)"; SteppedSlider { width: 220px; label: "M"; value: 0; low: rgb(46, 163, 122); high: rgb(214, 51, 128); } }
-                Specimen { name: "hover, low side"; SteppedSlider { width: 220px; label: "Y"; value: -4; low: rgb(56, 92, 214); high: rgb(237, 199, 46); force-hover: true; } }
+                Specimen { name: "at rest (ticked)"; LiveStepped { width: 220px; label: "M"; amount: 0; low: rgb(46, 163, 122); high: rgb(214, 51, 128); } }
+                Specimen { name: "hover, low side"; LiveStepped { width: 220px; label: "Y"; amount: -4; low: rgb(56, 92, 214); high: rgb(237, 199, 46); look: Look.hover; } }
             }
 
             Row {
@@ -965,10 +641,10 @@ export component SlidersPage inherits Rectangle {
                 source: "LevelsView.swift:96 (DSTrackHandle, DSHandle.swift:114) · grips :124";
                 VerticalLayout {
                     spacing: 6px;
-                    LevelsTrack { }
+                    LiveLevels { }
                     Caption { text: "live: drag a handle, double-click to rest, swipe sideways over the track"; horizontal-alignment: left; }
                 }
-                Specimen { name: "suggestions shown, green focused"; LevelsTrack { black: 0.08; shadows: 0.3; mid: 0.47; highlights: 0.72; white: 0.9; suggest: true; lit: 1; } }
+                Specimen { name: "suggestions shown, green focused"; LiveLevels { black: 0.08; shadows: 0.3; mid: 0.47; highlights: 0.72; white: 0.9; suggest: true; lit: 1; } }
             }
 
             Row {
@@ -976,15 +652,16 @@ export component SlidersPage inherits Rectangle {
                 source: "DSPlotScreen.swift:13 (dsRecessed at the card radius) · DSPlayground.swift:386";
                 Specimen {
                     name: "plot screen, quarters engraved";
-                    PlotScreen {
+                    Plot {
                         width: 480px;
                         height: 96px;
+                        interactive: false;
                         Path { viewbox-width: 480; viewbox-height: 96; commands: Plots.curve; stroke: DS.palette-selected; stroke-width: 1.5px; }
                     }
                 }
                 Specimen {
                     name: "no grid (Spectrogram)";
-                    PlotScreen { width: 160px; height: 96px; grid: false; }
+                    Plot { width: 160px; height: 96px; grid: false; interactive: false; }
                 }
             }
 
@@ -993,10 +670,12 @@ export component SlidersPage inherits Rectangle {
                 source: "DSHistogram.swift:207 (on the panel, no screen) · DSPlayground.swift:468";
                 Specimen {
                     name: "DSHistogram alone, markers 0.15 · 0.5 · 0.9";
-                    Rectangle {
+                    Plot {
                         width: 480px;
                         height: 96px;
-                        background: DS.palette-panel;
+                        screen: false;
+                        grid: false;
+                        interactive: false;
                         Histogram { }
                         Marker { x: 0.15 * 480px; }
                         Marker { x: 0.5 * 480px; }

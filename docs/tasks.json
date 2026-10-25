@@ -3419,5 +3419,19 @@
     "title": "Dev and test builds read the interface at run time",
     "status": "done",
     "detail": "oni-ui/build.rs sets SLINT_LIVE_PREVIEW for the debug profile, slint gains live-preview: the generated layer falls from 103 MB to 1.1 MB, oni-ui compiles in 12 s, a .slint edit reaches a window check in 15 s, the full check in 128 s instead of about 650. The app profile and release keep the compiled interface. Slint's @tr texts stay English in this mode (no bundled translations in the interpreter), so the French look is judged on the app profile."
+  },
+  {
+    "id": 590,
+    "type": "interface",
+    "title": "The lab's sliders and plots move into the design system",
+    "status": "done",
+    "detail": "ds/theme_sliders.slint holds SliderStyle and PlotStyle (out of theme.slint, re-exported by it), the lab's values in-out so the lab tunes them live. Rail is DSRail in dsRecessed: the ground or the bipolar gradient, the fill on its own round, Inward's shade, the black edge, the lit rim over an opaque `under`, the rest tick; `vertical` added. Knob is DSBarHandle: a Keycap at the small factor, level walls, no shadow or rim, a 1 pt black edge, two white grip lines centred on the face; it grows on the rise spring (120 ms) by a scale, so its raster is drawn once, and its cap is the keycap grey. Slider moves rail and knob together on the settle spring (380 ms, cubic-bezier(0.3, 1.25, 0.5, 1)) for a value from elsewhere, never under the hand; the stepped knob gains its grip; the step keys read SliderStyle.step-key and step-legend. Plot's screen sinks with Inward { hollow } over the canvas, quarters engraved at white 0.12, its rim lit; CurvePoint is DSHandle."
+  },
+  {
+    "id": 591,
+    "type": "tooling",
+    "title": "The lab's Sliders page shows the design system's own sliders and plots",
+    "status": "done",
+    "detail": "crates/oni-ui/lab/sliders.slint drops its copies: DS Slider (live and stepped, driven in Slint as Rust drives them: drag, ⌥ a fifth, a second press resting it, the sideways swipe), Rail and Knob (the vertical slider and the specimens), Keycap at ×4, Plot, LevelsTrack with its five grips held in Slint, CurvePoint; the tunables bind SliderStyle and PlotStyle. keycap_cost's window check drags a slider and springs it home: no knob is drawn again (twin: the knob moved)."
   }
 ]
