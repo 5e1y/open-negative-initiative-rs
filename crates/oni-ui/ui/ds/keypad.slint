@@ -1,19 +1,12 @@
 // The Scanner face's keypad and screen: `LabKeyboard`, `LabStepKeys`, `LabStack` and `LabScreen`.
-import { Space, Stroke, ScannerStyle, Type } from "theme.slint";
-import { Label, Tone, Tips } from "base.slint";
+import { Space } from "theme.slint";
+import { Tips } from "base.slint";
+import { CrtScreen, CrtLine as Lcd } from "crt.slint";
 
 export struct LabCell { title: string, value: string }
 
-component Lcd inherits Label {
-    in property <bool> large;
-    font-family: ScannerStyle.mono;
-    font-size: root.large ? ScannerStyle.screen-value : ScannerStyle.screen-label;
-    font-weight: root.large ? ScannerStyle.value-weight : Type.medium;
-    tone: Tone.lcd;
-}
-
 // `LabScreen`: the scanner's screen in the plot band, its frame, its machine, every letter's count
-// and the finishing's values, behind scanlines.
+// and the finishing's values, glowing behind scanlines.
 export component LabScreen inherits Rectangle {
     in property <string> frame;
     in property <string> machine;
@@ -21,42 +14,37 @@ export component LabScreen inherits Rectangle {
     in property <string> remeasure-help;
     in property <[LabCell]> cells;
     in property <[string]> finish;
-    background: ScannerStyle.glass;
-    clip: true;
-    VerticalLayout {
-        padding: Space.m;
-        HorizontalLayout {
-            Lcd { text: root.frame; }
-            Rectangle { horizontal-stretch: 1; }
-            if root.remeasure: Lcd {
-                text: @tr("REMEASURE ROLL");
-                TouchArea {
-                    changed has-hover => { Tips.hover(self.has-hover, root.remeasure-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+    CrtScreen {
+        VerticalLayout {
+            padding: Space.m;
+            HorizontalLayout {
+                Lcd { text: root.frame; }
+                Rectangle { horizontal-stretch: 1; }
+                if root.remeasure: Lcd {
+                    text: @tr("REMEASURE ROLL");
+                    TouchArea {
+                        changed has-hover => { Tips.hover(self.has-hover, root.remeasure-help, self.absolute-position.x, self.absolute-position.y + self.height); }
+                    }
+                }
+                if root.remeasure: Rectangle { horizontal-stretch: 1; }
+                Lcd { text: root.machine; }
+            }
+            Rectangle { min-height: Space.xs; vertical-stretch: 1; }
+            HorizontalLayout {
+                spacing: Space.s;
+                // Equal columns, so a value growing a digit never moves the others.
+                for cell in root.cells: VerticalLayout {
+                    width: (parent.width - (root.cells.length - 1) * Space.s) / max(1, root.cells.length);
+                    spacing: Space.xxs;
+                    Lcd { text: cell.title; horizontal-alignment: center; }
+                    Lcd { text: cell.value; large: true; horizontal-alignment: center; }
                 }
             }
-            if root.remeasure: Rectangle { horizontal-stretch: 1; }
-            Lcd { text: root.machine; }
-        }
-        Rectangle { min-height: Space.xs; vertical-stretch: 1; }
-        HorizontalLayout {
-            spacing: Space.s;
-            // Equal columns, so a value growing a digit never moves the others.
-            for cell in root.cells: VerticalLayout {
-                width: (parent.width - (root.cells.length - 1) * Space.s) / max(1, root.cells.length);
-                spacing: Space.xxs;
-                Lcd { text: cell.title; horizontal-alignment: center; }
-                Lcd { text: cell.value; large: true; horizontal-alignment: center; }
+            Rectangle { min-height: Space.xs; vertical-stretch: 1; }
+            HorizontalLayout {
+                alignment: space-between;
+                for line in root.finish: Lcd { text: line; }
             }
         }
-        Rectangle { min-height: Space.xs; vertical-stretch: 1; }
-        HorizontalLayout {
-            alignment: space-between;
-            for line in root.finish: Lcd { text: line; }
-        }
-    }
-    for i in floor(root.height / ScannerStyle.scanline-pitch): Rectangle {
-        y: i * ScannerStyle.scanline-pitch;
-        height: Stroke.line;
-        background: ScannerStyle.scanline;
     }
 }
