@@ -3482,5 +3482,12 @@
     "title": "The lab's Misc page shows the design system's own surfaces",
     "status": "done",
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
+  },
+  {
+    "id": 615,
+    "type": "fix",
+    "title": "A section ending on a well or a raised face draws its lip and shadow whole",
+    "status": "done",
+    "detail": "Section clipped its content at its bounds even unfolded, so a tab bar, a text field or a plot screen ending a block (Film Type, Machine, Source Encoding, Camera Body, Description, a curves plot) lost Inward's lit lip, the two lines under the well, and an Outward lost its shadow. The content clips only while folded, the one state that needs it; Depth.lip-reach names how far the lip reaches (2 px), and the scrolled columns that can end on a well (the export panel's summary, the preset save sheet's form, Prepare the Roll's step) leave it under their content. The wells keep Swift's sizes: reserving the lip inside each component would have shrunk every well by 2 px (a 14 px rail to 12). Checked by window check depth_lip on DepthProbe: a field ending a section draws the same lip rows as a field alone; its twin, a box clipped at the field's bounds, reads the ground there (and the old clip fails the check); folded, the section still shows nothing of its field."
   }
 ]

@@ -1,5 +1,5 @@
 // The presets: the deck on the canvas's bottom edge, the save sheet, the editor, and their notices.
-import { Space, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
+import { Space, Depth, PresetStyle, AskSheet, AskRole, AskKey, Label, TextRole, Tone, Button, ButtonKind, TextField, Toggle, Picker, Menu, Divider, Scroller, Sheet, MenuLine, Field, ButtonGroup, GroupAlign, Row, RowForm } from "ds/ds.slint";
 
 // A card as the deck and the editor's list draw it: the monogram on the tint, in its own ink.
 export struct PresetCard { abbreviation: string, name: string, help: string, carries: string, fill: color, ink: color }
@@ -191,6 +191,8 @@ export component PresetSaveSheet inherits Sheet {
         content-height: form.preferred-height;
         form := PresetForm {
             width: parent.width;
+            // A toggle's or a picker's lip ends the form, kept at the scroll's end.
+            padding-bottom: Depth.lip-reach;
             named => { if (Presets.form-valid) { Presets.save-confirmed(); } }
         }
     }

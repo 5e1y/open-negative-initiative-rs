@@ -82,10 +82,11 @@ export component Section inherits VerticalLayout {
                 clicked => { root.folded = !root.folded; root.fold-toggled(root.folded); }
             }
         }
-        // Folded, the content keeps its place in the tree at zero height, so its state survives.
+        // Folded, the content keeps its place in the tree at zero height, so its state survives. Clipped
+        // only then: a well's lit lip and a raised face's shadow lie past the last child's bounds.
         Rectangle {
             height: root.folded && root.title != "" ? 0px : content.preferred-height;
-            clip: true;
+            clip: root.folded && root.title != "";
             content := VerticalLayout {
                 width: parent.width;
                 spacing: SectionStyle.gap;

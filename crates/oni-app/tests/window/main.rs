@@ -9,6 +9,7 @@ mod auto_balance;
 mod canvas_layout;
 mod canvas_switch;
 mod contact_sheet;
+mod depth_lip;
 mod design_system;
 mod editor_leftovers;
 mod editor_routes;
@@ -79,6 +80,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("canvas_layout::the_shell_lays_its_pieces_where_swift_does", canvas_layout::the_shell_lays_its_pieces_where_swift_does),
     ("canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one", canvas_switch::a_photo_switched_to_shows_nothing_of_the_last_and_numbers_its_corrections_from_one),
     ("contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips", contact_sheet::a_roll_lays_its_sheet_and_a_selection_composes_one_that_opens_dimming_what_a_sheet_skips),
+    ("depth_lip::a_section_ending_on_a_field_draws_its_lip_whole", depth_lip::a_section_ending_on_a_field_draws_its_lip_whole),
     ("design_system::screens_use_only_the_design_system", design_system::screens_use_only_the_design_system),
     ("design_system::a_planted_value_is_refused_outside_the_design_system_only", design_system::a_planted_value_is_refused_outside_the_design_system_only),
     ("editor_leftovers::the_editors_last_gestures_behave_as_swifts", editor_leftovers::the_editors_last_gestures_behave_as_swifts),

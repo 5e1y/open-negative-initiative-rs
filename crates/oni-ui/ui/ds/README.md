@@ -105,6 +105,9 @@ What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (
 - **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (its ink glowing) and the passes'
   reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
   gallery's many tiles keep their flat well.
+- **Past the bounds**: an `Inward`'s lit lip reaches `Depth.lip-reach` under it and an `Outward`'s shadow
+  falls around it, as Swift's. A `Section` clips only while folded; a scrolled column ending on a well
+  leaves `Depth.lip-reach` under it.
 - **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
   `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
 - **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`

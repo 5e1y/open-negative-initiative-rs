@@ -1,6 +1,6 @@
-// Pieces at fixed places for the window checks that click into them: three fields and a tab bar, a
-// page that scrolls over a scroller whose content fits, a step keycap.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, AppWindow, TextField, Tabs, Scroller, Row, Label, TextRole, Tone, Button, ButtonSize } from "ds.slint";
+// Pieces at fixed places for the window checks that click or read them: three fields and a tab bar, a
+// page that scrolls over a scroller whose content fits, a step keycap, a field's lip three ways.
+import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -35,6 +35,39 @@ export component FieldProbe inherits AppWindow {
             tabs: ["One", "Two", "Three"];
             selected: root.choice;
             picked(i) => { root.picked = i; }
+        }
+    }
+}
+
+// The same field three times, where a check reads the lit lip under each: alone on the ground, in a
+// box clipped at its bounds, and ending a section that folds.
+export component DepthProbe inherits AppWindow {
+    in-out property <bool> folded <=> section.folded;
+    out property <length> left: Space.l;
+    out property <length> field-width: free.width;
+    out property <length> field-height: free.height;
+    out property <length> free-y: free.absolute-position.y;
+    out property <length> cut-y: cut.absolute-position.y;
+    out property <length> ending-y: ending.absolute-position.y;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    preferred-height: 400px;
+    VerticalLayout {
+        padding: Space.l;
+        spacing: Space.l;
+        alignment: start;
+        free := TextField { }
+        Rectangle {
+            height: FieldStyle.height;
+            clip: true;
+            cut := TextField { }
+        }
+        section := Section {
+            title: "Section";
+            separated: false;
+            inset: SectionStyle.flush;
+            ending := TextField { }
         }
     }
 }

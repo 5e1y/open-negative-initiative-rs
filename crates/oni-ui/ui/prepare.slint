@@ -1,6 +1,6 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 
@@ -88,6 +88,8 @@ export component RollPanel inherits Surface {
                 width: body.width;
                 alignment: start;
                 spacing: Space.m;
+                // A tab bar may end the step: its well's lip keeps its room at the scroll's end.
+                padding-bottom: Depth.lip-reach;
                 if Preparing.tutorial.width > 0: Picture { height: self.width; source: Preparing.tutorial; revision: Preparing.tutorial-revision; rounded: true; }
                 if Preparing.differ != "": VerticalLayout {
                     spacing: Space.xs;

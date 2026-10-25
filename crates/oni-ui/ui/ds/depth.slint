@@ -80,6 +80,8 @@ export global Depth {
     in-out property <float> well-lip: 0.3;
     in-out property <length> well-lip-y: 1px;
     in-out property <float> well-lip-soft: 0.4;
+    // How far the lip reaches under a well's bounds: what a clipping container leaves below its last child.
+    out property <length> lip-reach: well-lip-y + 1px;
     // A scale on every wall run and on the rise, so the whole lab's relief turns up or down at once.
     in-out property <float> relief: 1;
 
@@ -245,7 +247,7 @@ export component Inward inherits Rectangle {
         height: parent.height / 2 + 4px;
         clip: true;
         Rectangle {
-            y: -parent.y + Depth.well-lip-y + 1px;
+            y: -parent.y + Depth.lip-reach;
             width: parent.width;
             height: root.height;
             border-radius: root.radius;

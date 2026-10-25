@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields } from "ds/ds.slint";
+import { Icons, Space, Depth, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -181,6 +181,8 @@ export component ExportPanel inherits Surface {
                 width: parent.width;
                 alignment: start;
                 spacing: Space.m;
+                // The summary's well ends the column: its lip keeps its room at the scroll's end.
+                padding-bottom: Depth.lip-reach;
                 VerticalLayout {
                     spacing: Space.xs;
                     Label { text: @tr("Export"); role: TextRole.heading; }
