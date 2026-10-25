@@ -83,7 +83,8 @@ mod tests {
                 }
                 let Some(end) = end else { break };
                 let literal = &after[..end];
-                if MAC_WORDS.iter().any(|w| literal.contains(w)) {
+                // A system identifier (`com.apple.FinderInfo`) is read from the disk, never shown.
+                if !literal.starts_with("com.apple.") && MAC_WORDS.iter().any(|w| literal.contains(w)) {
                     found.push(literal.to_owned());
                 }
                 rest = &after[end + 1..];
@@ -137,6 +138,7 @@ mod tests {
         // Twin: a Mac word planted in a label is caught, in Rust and in Slint; a comment is not.
         let planted = "    tr(\"Show in Finder\");\n    help: @tr(\"Zoom in (⌘+)\");\n    // ⌘ opens\n";
         assert_eq!(mac_words(planted), ["Show in Finder", "Zoom in (⌘+)"]);
+        assert!(mac_words("    xattr(\"com.apple.FinderInfo\");\n").is_empty(), "a system identifier is not a label");
         assert!(mac_words("fn a() {}\n#[cfg(test)]\nmod tests {\n    \"⌘\"\n}\n").is_empty(), "a check's own literals are not labels");
     }
 }

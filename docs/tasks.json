@@ -2574,6 +2574,13 @@
     "detail": "bookmarks::place gave Windows no identity (file_id and volume None), so a_swift_launch_keeps_the_volume_identities failed there. GetFileInformationByHandle on a handle opened with backup semantics (folders included) now gives the 64-bit file index and the volume serial number (kept as uuid, XXXX-XXXX, which a new drive letter keeps), GetVolumePathNameW the mount; the check asserts the volume's identity on Windows as on macOS (windows-sys 0.61, already in the tree)."
   },
   {
+    "id": 368,
+    "type": "fix",
+    "title": "The Windows label scan passes a system identifier",
+    "status": "done",
+    "detail": "windows_labels_say_explorer_and_ctrl flagged the xattr name com.apple.FinderInfo (oni-library roots/finder.rs) as a Mac word shown to the user; literals starting with com.apple. are identifiers read from the disk, never labels, and a twin keeps one passing while a planted label is still caught."
+  },
+  {
     "id": 370,
     "type": "fix",
     "title": "An export never lands on an original",
