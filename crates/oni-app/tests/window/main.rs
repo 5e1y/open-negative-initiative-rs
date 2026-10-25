@@ -45,6 +45,7 @@ mod phone_tabs;
 mod prepare;
 mod prepare_leftovers;
 mod prepare_masks;
+mod prepare_measure;
 mod preset_deck;
 mod presets;
 mod presence;
@@ -144,6 +145,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face", phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
     ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
+    ("prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well", prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well),
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),

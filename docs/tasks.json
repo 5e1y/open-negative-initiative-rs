@@ -3538,5 +3538,12 @@
     "title": "Window check: a plate's keys touch, a spaced row keeps Swift's gap",
     "status": "done",
     "detail": "button_group: GroupProbe lays two .plate keys on a plate, two mini keys on a mini plate and two keys on a spaced row. The plates' keys share their walls (gap 0), the row's stand 8 apart, the socket is as tall as its 52 pt keys, rounded 16 × 0.525 and 16 × 0.38, the row draws none. Twins: the gap measure reads the row's room and a plate is no row, each variant's radius tells the other's apart; a plate spaced 1 px fails it."
+  },
+  {
+    "id": 630,
+    "type": "feature",
+    "title": "The measure's screen draws each frame's histogram and morphs it into the next one's",
+    "status": "done",
+    "detail": "While Prepare the Roll measures, the card shows the frame just read, the count, and its histogram in the plot well (ds TraceWell, TraceStyle): luminance under red, green and blue, each area tinted under its line, the line glowing in two widths, the three frames before as fading luminances, a hairline at the luminance's median. The measure's thread counts each frame's tile as the editor counts its picture (128 bins) and sends it once per frame; this thread eases the curves from one histogram to the next over 320 ms at the frame tick, then stops ticking. A measure starting or landing clears it, so the well is empty until its first frame lands. Window check prepare_measure, with the stale-well twin."
   }
 ]

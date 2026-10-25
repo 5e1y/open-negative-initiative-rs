@@ -37,6 +37,7 @@ mod publishing;
 mod flat_masks;
 mod tutorial;
 mod draft_base;
+mod trace;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
@@ -145,6 +146,7 @@ pub(crate) struct Roll {
     pub opened_among: HashSet<String>,
     pub require: bool,
     tutorial: Option<tutorial::Playing>,
+    trace: trace::Trace,
     /// What the scan and the loupe were last given, by path and size: a 24 MP picture set again
     /// would be compared pixel by pixel at every move of the pointer.
     laid_scan: Option<(String, (usize, usize))>,
@@ -202,6 +204,7 @@ impl Default for Roll {
             opened_among: HashSet::new(),
             require: false,
             tutorial: None,
+            trace: trace::Trace::default(),
             laid_scan: None,
             laid_loupe: None,
             laid_cells: Vec::new(),
