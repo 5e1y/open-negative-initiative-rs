@@ -1,17 +1,15 @@
 // The badges: a short word on a capsule, a tag, a disc, a tint or a foil seal.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Type } from "theme.slint";
+import { Colour, Space, Radius, Type, SurfaceStyle, SealStyle, Foil } from "theme.slint";
 import { Label, Tips, TextRole } from "base.slint";
 
-// `DSBadge`'s and `DSGoldSealView`'s gauges, and each seal's foil as one flat colour.
+// `DSBadge`'s and `DSGoldSealView`'s gauges.
 export global BadgeStyle {
     out property <length> padding: DS.control-badge-padding;
     out property <length> seal-height: DS.control-seal-height * 1px;
     out property <length> seal-padding: DS.control-seal-padding * 1px;
     out property <length> seal-size: DS.typo-seal-size;
     out property <length> tracking: DS.control-seal-tracking * 1px;
-    // `DSFoil.Metal`'s gold as the medal's, the holographic foil's body, the red foil's as the destructive tint.
-    out property <[color]> foil: [Colour.medal[3], #c7ccdb, Colour.destructive];
 }
 
 // What a badge says by its colour: a caution on the canvas, a value over the photo, a foil seal, a
@@ -21,7 +19,8 @@ export enum BadgeTone { warning, dark, seal, step, tint }
 // `DSFoil.Metal`: the foil a seal is struck in.
 export enum Metal { gold, holographic, red }
 
-// A short word on a capsule, a tag, a disc or a tint; a note shows on hover and marks it read.
+// A short word on a capsule, a tag, a disc or a tint; a note shows on hover and marks it read. A seal
+// is `DSGoldSealView`: brushed foil lit from above, a rule inside its edge, a glint swept once on hover.
 export component Badge inherits Rectangle {
     in property <string> text;
     in property <BadgeTone> tone: BadgeTone.dark;
@@ -34,8 +33,23 @@ export component Badge inherits Rectangle {
     in property <bool> pressable;
     // A dark badge's face: the value's, or the label's for a correction's number.
     in property <TextRole> role: TextRole.value;
+    // A seal's glint swept across it, as the Wrapped title's while it shows; a hovered note sweeps it too.
+    in property <bool> glinting;
+    // The glint held still, -1 to 1 across the seal, for a forced look; below -2 the sweep drives it.
+    in property <float> glint-at: -9;
     callback read();
     callback clicked();
+    property <bool> hovered;
+    property <float> sweep: -1;
+    property <int> foil: root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0;
+    // `sealSweep` ease-in-out on the way in; back to the start at once, as Swift resets it.
+    states [
+        glint when root.seal && (root.glinting || root.hovered): {
+            sweep: 1;
+            in { animate sweep { duration: DS.control-seal-sweep * 1s; easing: ease-in-out; } }
+            out { animate sweep { duration: 0ms; } }
+        }
+    ]
     property <bool> fixed: root.tone == BadgeTone.step || root.tone == BadgeTone.tint;
     property <bool> seal: root.tone == BadgeTone.seal;
     width: root.tone == BadgeTone.step ? DS.control-keycap-mini-height
@@ -51,10 +65,58 @@ export component Badge inherits Rectangle {
         : label.preferred-height + 2 * BadgeStyle.padding;
     border-radius: root.tone == BadgeTone.tint || root.tone == BadgeTone.dark ? Radius.badge : self.height / 2;
     background: root.tone == BadgeTone.warning ? Colour.warning-surface
-        : root.seal ? BadgeStyle.foil[root.metal == Metal.holographic ? 1 : root.metal == Metal.red ? 2 : 0]
+        : root.seal ? Foil.deep(root.foil)
         : root.tone == BadgeTone.step ? Colour.raised
         : root.tone == BadgeTone.tint ? root.fill
         : Colour.overlay;
+    drop-shadow-color: root.seal ? rgba(0, 0, 0, SealStyle.shadow * SurfaceStyle.seal-shadow) : transparent;
+    drop-shadow-blur: root.seal ? SealStyle.shadow-blur : 0px;
+    drop-shadow-offset-y: root.seal ? SealStyle.shadow-y : 0px;
+    // The light down a brushed dome: the lit top bevel, the softbox streak above the middle, the dark foot;
+    // each layer rounded as the capsule, so no clip draws the seal to a layer of its own.
+    if root.seal: Rectangle {
+        border-radius: root.height / 2;
+        background: root.foil == 1
+            ? @linear-gradient(100deg, #dada6b 0%, #90ff90 18%, #6bdada 37%, #9090ff 55%, #da6bda 74%, #ff9090 92%, #f0aa78 100%)
+            : @linear-gradient(180deg, Foil.at(root.foil, 1.25) 0%, Foil.at(root.foil, 1.0) 10%, Foil.at(root.foil, 0.85) 22%,
+                Foil.at(root.foil, 1.2) 38%, Foil.at(root.foil, 0.9) 52%, Foil.at(root.foil, 0.4) 70%,
+                Foil.at(root.foil, 0.25) 88%, Foil.at(root.foil, 0.1) 100%);
+        drop-shadow-color: rgba(0, 0, 0, SealStyle.edge * SurfaceStyle.seal-shadow);
+        drop-shadow-blur: SealStyle.edge-blur;
+        drop-shadow-offset-y: SealStyle.edge-y;
+        if root.foil == 1: Rectangle {
+            border-radius: root.height / 2;
+            background: @linear-gradient(180deg, Foil.over(1.25) 0%, Foil.over(1.0) 10%, Foil.over(0.85) 22%, Foil.over(1.2) 38%,
+                Foil.over(0.9) 52%, Foil.over(0.4) 70%, Foil.over(0.25) 88%, Foil.over(0.1) 100%);
+        }
+        // The diagonal highlight `across` lays from the lower left to the upper right.
+        Rectangle {
+            border-radius: root.height / 2;
+            background: @linear-gradient(120deg, rgba(255, 255, 255, 0) 18%, rgba(255, 255, 255, SurfaceStyle.seal-sheen) 32%, rgba(255, 255, 255, 0) 46%);
+        }
+        Rectangle {
+            x: SealStyle.rule-inset;
+            y: SealStyle.rule-inset;
+            width: parent.width - 2 * SealStyle.rule-inset;
+            height: parent.height - 2 * SealStyle.rule-inset;
+            border-radius: self.height / 2;
+            border-width: SealStyle.rule;
+            border-color: SealStyle.ink.with-alpha(SurfaceStyle.seal-rule);
+        }
+        // The ink stands proud of the foil: its top edge catches the light.
+        Label {
+            x: label.x;
+            y: label.y + SealStyle.emboss-y;
+            width: label.width;
+            height: label.height;
+            text: label.text;
+            font-size: label.font-size;
+            font-weight: label.font-weight;
+            spaced: true;
+            vertical-alignment: center;
+            ink: Foil.bright(root.foil).with-alpha(SurfaceStyle.seal-emboss);
+        }
+    }
     label := Label {
         x: root.seal ? BadgeStyle.seal-padding : (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
@@ -63,17 +125,28 @@ export component Badge inherits Rectangle {
         text: root.text;
         font-size: root.tone == BadgeTone.warning ? Type.value : root.seal ? BadgeStyle.seal-size
             : root.tone == BadgeTone.step || root.role == TextRole.label ? Type.label : Type.value;
-        font-weight: root.seal ? Type.strong : Type.regular;
+        font-weight: root.seal ? SealStyle.weight : Type.regular;
         spaced: root.seal;
         // `DSFoil` prints every seal in one dark ink.
-        ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? Colour.ink-on-light
+        ink: root.tone == BadgeTone.warning ? Colour.ink-on-warning : root.seal ? SealStyle.ink
             : root.tone == BadgeTone.step ? Colour.ink : root.tone == BadgeTone.tint ? root.ink : Colour.ink-on-fill;
         centred: root.fixed;
         vertical-alignment: root.fixed || root.seal ? TextVerticalAlignment.center : TextVerticalAlignment.top;
     }
+    // Drawn only while it crosses, clipped to the capsule.
+    if root.seal && (root.glint-at > -2 || (root.sweep > -1 && root.sweep < 1)): Rectangle {
+        border-radius: root.height / 2;
+        clip: true;
+        Rectangle {
+            width: root.height * SealStyle.glint-width;
+            x: -self.width + ((root.glint-at > -2 ? root.glint-at : root.sweep) + 1) / 2 * (root.width + self.width);
+            background: @linear-gradient(70deg, rgba(255, 255, 255, 0) 25%, rgba(255, 255, 255, DS.control-seal-glint) 50%, rgba(255, 255, 255, 0) 75%);
+        }
+    }
     if root.note != "" || root.pressable: TouchArea {
         clicked => { root.clicked(); }
         changed has-hover => {
+            root.hovered = self.has-hover;
             if (root.note != "") {
                 Tips.hover(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
                 if (self.has-hover) { root.read(); }

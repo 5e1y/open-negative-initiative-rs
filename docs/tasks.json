@@ -3454,5 +3454,19 @@
     "title": "The lab's Sliders page shows the design system's own sliders and plots",
     "status": "done",
     "detail": "crates/oni-ui/lab/sliders.slint drops its copies: DS Slider (live and stepped, driven in Slint as Rust drives them: drag, ⌥ a fifth, a second press resting it, the sideways swipe), Rail and Knob (the vertical slider and the specimens), Keycap at ×4, Plot, LevelsTrack with its five grips held in Slint, CurvePoint; the tunables bind SliderStyle and PlotStyle. keycap_cost's window check drags a slider and springs it home: no knob is drawn again (twin: the knob moved)."
+  },
+  {
+    "id": 600,
+    "type": "feature",
+    "title": "The surfaces take the lab's relief: Raised, Inset, the cards, the popover, the glass, the lamps and the seals",
+    "status": "done",
+    "detail": "The 2.5D lab's misc family moves into the design system, its values as approved. Raised stands on Outward (dsFloating: the lit rim, the gradient, the inner hairline, the cast shade, lengthened for a sheet), so every sheet, notice, banner, slid column and popup takes it; Popover (surfaces.slint) hangs it under DSPopoverShape's tail, which PopupPanel draws for a popover (tail-x, centred by default). Inset, Progress (its glow) and LcdReadout (its glowing ink) sink as Inward, as does the passes' reorder hollow (DSReorder). PresetFace (lifted), WrappedCard and TipCard (DSHelpBubble on the canvas) are Outwards. Divider is DSSeparator's engraved groove, two lines; hairline or engraved: false stays flat (a menu's rule). Badge seals print DSGoldSealView's foil (gold, holographic, red), the glint swept on glinting or a hovered note; Lamp is DSLamp, laid on a key at its legend's top right. SurfaceStyle, SealStyle and Foil live in theme_surfaces.slint."
+  },
+  {
+    "id": 601,
+    "type": "tooling",
+    "title": "The lab's Misc page shows the design system's own surfaces",
+    "status": "done",
+    "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
   }
 ]

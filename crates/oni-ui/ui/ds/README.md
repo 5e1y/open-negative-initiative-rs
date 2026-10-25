@@ -13,7 +13,8 @@ and every screen picks it up.
 | `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `PickerStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
-| `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `theme_surfaces.slint` | `SurfaceStyle` (the glass's and the lamp's glow, the foil's light, the progress's phosphor: in-out, so the lab tunes them live), `SealStyle` and `Foil`, `DSFoil`'s ramps; re-exported by `theme.slint` | By hand, the lab's approved values |
+| `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces), `surfaces.slint` (the lamp, the popover) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -92,6 +93,25 @@ The tabs, the switch, the picker and the medals stand on the depths as the lab's
 - **`Picker`**, field face (`DSPicker`): the value in a hollow, the chevron on a mini `Keycap` that sinks
   `Depth.hover-press` under the hand and whole on a press; the pill and chip faces keep the hover ground.
 - **`Medal`** (`DSFoil.medal`): spun metal drawn by gradients; `MedalPicker` shrinks a pressed medal on the spring.
+
+## Surfaces
+
+What stands out is an `Outward` (Swift's `dsFloating`), what sinks an `Inward` (`dsRecessed`):
+
+- **Raised**: every lift on `Outward`, its lit rim, its face lighter at the top, its inner hairline and its
+  cast shade; `sheet` lengthens the shadow (`Outward.lift` 1). The sheets, the notices, the banners, the
+  slid columns and the popups stand on it. **Popover** hangs a `Raised` under its tail (`DSPopoverShape`),
+  `tail-x` below zero centring it; `PopupPanel` draws one, a menu without a tail.
+- **Inward**: `Inset`, `Progress` (its fill glowing), `LcdReadout` (its ink glowing) and the passes'
+  reorder hollow. Its children lie under the shade, as Swift's overlay; it clips to its round, so a
+  gallery's many tiles keep their flat well.
+- **Cards**: `PresetFace` (`lifted` lengthens its shadow while the deck raises it), `WrappedCard` and
+  `TipCard` (`DSHelpBubble`, on the canvas's ground) are `Outward`s; the canvas card stays flat, as Swift's.
+- **Divider** is `DSSeparator`'s engraved groove and lit edge, two lines; `hairline` or `engraved: false`
+  (a menu's rule) keeps a flat line.
+- **Seals** (`Badge { tone: seal }`) print `DSGoldSealView`: brushed foil in layers rounded as the capsule (no
+  clip, no layer), the rule, the embossed ink; the glint sweeps once on `glinting` or a hovered note, clipped
+  only while it crosses; `glint-at` holds it still. **Lamp** is `DSLamp`, at a key's legend's top right.
 
 ## The rule: screens use only the design system
 

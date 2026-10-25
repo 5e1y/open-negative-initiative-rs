@@ -3,8 +3,8 @@
 import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
 
-import { Dot } from "marks.slint";
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
+import { Lamp } from "surfaces.slint";
 
 // `ghost` is a glyph alone on no cap, its tone lifting under the hand, as a help mark or a star.
 export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost }
@@ -46,7 +46,6 @@ component Face inherits Rectangle {
     in property <length> legend;
     in property <bool> ghost;
     in property <length> word-room;
-    in property <length> inset;
     in property <bool> lamp-shown;
     in property <bool> lamp-lit;
     property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
@@ -66,7 +65,7 @@ component Face inherits Rectangle {
                 ink: root.glyph-ink.alpha > 0 ? root.glyph-ink : Tones.ink(root.ink);
             }
         }
-        Label {
+        legend := Label {
             visible: root.worded;
             // A fixed key elides a word longer than its room rather than spill past its edge.
             width: !root.worded ? 0px : root.word-room > 0 ? min(self.preferred-width, root.word-room) : self.preferred-width;
@@ -78,11 +77,11 @@ component Face inherits Rectangle {
             letter-spacing: ButtonStyle.legend-tracking;
         }
     }
-    if root.lamp-shown: Dot {
-        size: ButtonStyle.lamp;
-        x: parent.width - root.inset - self.width;
-        y: (parent.height - self.height) / 2;
-        ink: root.lamp-lit ? Colour.confirm : Colour.track;
+    // `keycapOrnament`: the lamp at the legend's top right, a step past its last letter, on the face.
+    if root.lamp-shown: Lamp {
+        x: legend.x + legend.width + Space.s - self.width;
+        y: (parent.height - root.legend) / 2;
+        lit: root.lamp-lit;
     }
 }
 
@@ -152,8 +151,6 @@ export component Button inherits Rectangle {
     property <bool> worded: root.text != "";
     property <string> word: root.capitals && !root.keycap ? root.text.to-uppercase() : root.text;
     property <length> lamp-room: root.lamp-shown ? ButtonStyle.lamp + Space.xs : 0px;
-    // The face's room either side of its word: the key's padding less the side wall it covers.
-    property <length> inset: max(0px, root.pad - Depth.wall-side * Depth.relief * root.factor * 1px);
     // A glyph's ink when its key's colour gives none: dark on a light cap, light on a dark one.
     property <Tone> ink: root.ghost ? (root.hovered || touch.pressed ? Tone.secondary : Tone.tertiary)
         : KeyInk.light(root.albedo) ? Tone.on-light : Tone.on-fill;
@@ -208,7 +205,6 @@ export component Button inherits Rectangle {
             glyph-ink: root.glyph-ink;
             legend: root.legend;
             word-room: root.fixed-width > 0 ? root.fixed-width - 2 * root.pad - root.lamp-room - (root.has-icon ? root.glyph + Space.xs : 0px) : 0px;
-            inset: root.inset;
             lamp-shown: root.lamp-shown;
             lamp-lit: root.lamp-lit;
         }

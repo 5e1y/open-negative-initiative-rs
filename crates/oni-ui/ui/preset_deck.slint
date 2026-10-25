@@ -74,6 +74,7 @@ export component PresetDeck inherits Rectangle {
                             }
                             PresetFace {
                                 y: PresetStyle.lift - (Presets.hovered == i ? PresetStyle.lift : 0px);
+                                lifted: Presets.hovered == i;
                                 abbreviation: card.abbreviation;
                                 name: card.name;
                                 fill: card.fill;

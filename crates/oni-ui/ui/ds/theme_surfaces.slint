@@ -1,0 +1,59 @@
+// The raised and sunken surfaces' own gauges: the glass's glow, the lamp's, the foil seals' light and
+// the progress's phosphor. In-out, so the 2.5D lab tunes the app's own values live.
+import { DS } from "tokens.slint";
+
+export global SurfaceStyle {
+    // `DSLCD`'s ink glow (`lcdInk`, radius `rimBlur` 0.7), drawn as an outer stroke.
+    in-out property <float> lcd-glow: 0.35;
+    in-out property <length> lcd-glow-width: 1.2px;
+    // `DSLamp`'s glow, its colour at radius `Space.xxs` (CSS blur is twice SwiftUI's radius).
+    in-out property <length> lamp-glow: 2 * DS.space-xxs;
+    // The foil's light: 1 is the ramp read off `DSFoil.render`, 0 a flat body.
+    in-out property <float> seal-contrast: 1;
+    in-out property <float> seal-sheen: 0.35;
+    in-out property <float> seal-rule: 0.6;
+    in-out property <float> seal-emboss: 0.35;
+    in-out property <float> seal-shadow: 1;
+    // `DSProgress`'s lit fill glow, `phosphorGlow` (CSS blur twice the radius).
+    in-out property <length> progress-glow: 2 * DS.scanner-phosphor-glow;
+}
+
+// `DSGoldSealView`'s print: the dark ink, its weight, the rule inside the edge, the two shadows under it.
+export global SealStyle {
+    out property <color> ink: rgb(19, 13, 3);
+    out property <int> weight: 800;
+    out property <length> rule-inset: 2px;
+    out property <length> rule: 0.5px;
+    out property <length> emboss-y: -0.5px;
+    out property <length> shadow-blur: 4px;
+    out property <length> shadow-y: 1.5px;
+    out property <float> shadow: 0.2;
+    out property <length> edge-blur: 1px;
+    out property <length> edge-y: 0.5px;
+    out property <float> edge: 0.45;
+    // The glint's band, as wide as 2.4 seal heights.
+    out property <float> glint-width: 2.4;
+}
+
+// `DSFoil.Metal`'s ramps (DSFoil.swift:13), by `Metal`: 0 gold, 1 holographic, 2 red.
+export global Foil {
+    public pure function deep(m: int) -> color {
+        [rgb(92, 56, 13), rgb(51, 51, 61), rgb(77, 8, 10)][m]
+    }
+    public pure function body(m: int) -> color {
+        [rgb(219, 166, 64), rgb(199, 204, 219), rgb(212, 43, 48)][m]
+    }
+    public pure function bright(m: int) -> color {
+        [rgb(255, 230, 153), rgb(255, 255, 255), rgb(255, 179, 173)][m]
+    }
+    // The light `t` scaled about the body by `seal-contrast`.
+    public pure function lit(t: float) -> float { 0.7 + (t - 0.7) * SurfaceStyle.seal-contrast }
+    // `DSFoil`'s ramp: deep to body below 1, body to bright up to 1.6.
+    public pure function at(m: int, t: float) -> color {
+        lit(t) < 1 ? deep(m).mix(body(m), 1 - max(lit(t), 0)) : body(m).mix(bright(m), 1 - min((lit(t) - 1) / 0.6, 1))
+    }
+    // The holographic foil's light laid over its spectrum: darker below 1, whiter above.
+    public pure function over(t: float) -> color {
+        lit(t) < 1 ? rgba(0, 0, 0, (1 - max(lit(t), 0)) * 0.76) : rgba(255, 255, 255, min((lit(t) - 1) / 0.6, 1))
+    }
+}
