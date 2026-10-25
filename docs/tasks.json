@@ -3482,5 +3482,12 @@
     "title": "The lab's Misc page shows the design system's own surfaces",
     "status": "done",
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
+  },
+  {
+    "id": 630,
+    "type": "feature",
+    "title": "The measure's screen draws each frame's histogram and morphs it into the next one's",
+    "status": "done",
+    "detail": "While Prepare the Roll measures, the card shows the frame just read, the count, and its histogram in the plot well (ds TraceWell, TraceStyle): luminance under red, green and blue, each area tinted under its line, the line glowing in two widths, the three frames before as fading luminances, a hairline at the luminance's median. The measure's thread counts each frame's tile as the editor counts its picture (128 bins) and sends it once per frame; this thread eases the curves from one histogram to the next over 320 ms at the frame tick, then stops ticking. A measure starting or landing clears it, so the well is empty until its first frame lands. Window check prepare_measure, with the stale-well twin."
   }
 ]

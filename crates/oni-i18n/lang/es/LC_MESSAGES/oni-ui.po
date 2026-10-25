@@ -1785,6 +1785,10 @@ msgstr "Lectura del escaneo"
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
 
+#: crates/oni-ui/ui/prepare.slint
+msgid "Reading the first frame…"
+msgstr "Leyendo el primer fotograma…"
+
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
 msgstr "SIGUIENTE"

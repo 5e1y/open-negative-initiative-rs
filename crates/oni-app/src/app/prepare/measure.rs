@@ -21,6 +21,7 @@ impl Ctl {
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.film, r.stop.clone(), r.session);
             let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked);
+            let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
                 let asked = paths.len();
@@ -59,8 +60,10 @@ impl Ctl {
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
                     // Every frame of the measure lays its tile, a flagged one too, on the measuring copy.
                     let start = job.start.clone();
+                    let mut drawn = None;
                     if f.flagged {
                         if let Some(tile) = m.and_then(|m| m.with(&f.path, &start, |r, copy| oni_measure::sheet::tile(r, copy, &start, side))) {
+                            drawn = trace::Drawn::of(&tile, screen);
                             tiles.push((f.path.clone(), tile));
                             reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
@@ -74,11 +77,13 @@ impl Ctl {
                         frames.push(frame);
                         jobs.push(job);
                         if let Some(tile) = tile {
+                            drawn = trace::Drawn::of(&tile, screen);
                             tiles.push((f.path.clone(), tile));
                             reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
                     }
-                    with_shell(move |c| c.measure_progressed(session));
+                    let landed = drawn.map(|d| (oni_library::paths::name(&f.path), d));
+                    with_shell(move |c| c.measure_progressed(session, landed));
                 }
                 let stopped = stop.load(Ordering::Relaxed);
                 let base = pick.filter(|_| !stopped).and_then(|p| {
@@ -100,11 +105,13 @@ impl Ctl {
         };
         let _ = session;
         self.state.borrow().prepare.post(job);
+        self.trace_cleared();
         self.publish_prepare();
         self.publish_bar();
     }
 
-    pub(in crate::app) fn measure_progressed(self: &Rc<Self>, session: u64) {
+    /// A frame read: the count moves on, and its histogram, when its tile was drawn, is morphed into.
+    pub(in crate::app) fn measure_progressed(self: &Rc<Self>, session: u64, landed: Option<(String, trace::Drawn)>) {
         {
             let r = &mut self.state.borrow_mut().prepare;
             if r.session != session {
@@ -113,6 +120,10 @@ impl Ctl {
             if let Some(p) = r.progress.as_mut() {
                 p.0 += 1;
             }
+        }
+        match landed {
+            Some((name, drawn)) => self.trace_landed(name, drawn),
+            None => self.publish_trace(),
         }
         self.publish_prepare();
     }
@@ -135,6 +146,7 @@ impl Ctl {
             }
             r.frames.iter().map(|f| f.path.clone()).collect()
         };
+        self.trace_cleared();
         let Some(written) = written.filter(|w| !w.is_empty()) else {
             if let Some(store) = self.state.borrow_mut().store.editor() {
                 store.forget_measured();

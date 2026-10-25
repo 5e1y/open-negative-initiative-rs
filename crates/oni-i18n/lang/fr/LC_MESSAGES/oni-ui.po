@@ -1785,6 +1785,10 @@ msgstr "Lecture du scan"
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Le scan entier, bord du film compris, s’affiche ici."
 
+#: crates/oni-ui/ui/prepare.slint
+msgid "Reading the first frame…"
+msgstr "Lecture de la première vue…"
+
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
 msgstr "SUIVANT"

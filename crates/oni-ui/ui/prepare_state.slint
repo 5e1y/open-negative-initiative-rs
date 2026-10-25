@@ -1,5 +1,5 @@
 // Prepare the Roll's state: every value Rust sets and every callback the panel, the card and the bar raise.
-import { MenuLine } from "ds/ds.slint";
+import { MenuLine, TraceCurve } from "ds/ds.slint";
 
 // One frame of the roll as a cell shows it.
 export struct RollCell { picture: image, marked: bool, flagged: bool, apart: bool, ticked: bool, rgb: bool }
@@ -99,6 +99,14 @@ export global Preparing {
     in property <[length]> loupe-shown-at: [0px, 0px, 0px, 0px];
     in property <[length]> loupe-rings: [0px, 0px, 0px, 0px, 0px, 0px];
     in property <bool> loupe-picked;
+    // The measure's histogram, morphed by Rust from one frame's to the next's; none before the first lands.
+    in property <bool> traced;
+    in property <string> trace-name;
+    in property <string> trace-count;
+    in property <[TraceCurve]> trace-curves;
+    in property <[string]> trace-trail;
+    in property <length> trace-marker;
+    callback trace-resized(length, length);
     callback step-picked(int);
     callback film-picked(int);
     callback capture-picked(int);
