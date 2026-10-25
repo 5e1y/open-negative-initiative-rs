@@ -38,7 +38,8 @@ fn breaches(root: &Path) -> Vec<(String, usize)> {
             let path = entry.path();
             let name = path.file_name().unwrap().to_string_lossy().to_string();
             if path.is_dir() {
-                if name != "target" && name != "libraw" {
+                // The 2.5D lab is a sandbox of specimen sheets, never built into the app.
+                if name != "target" && name != "libraw" && !path.ends_with("oni-ui/lab") {
                     stack.push(path);
                 }
                 continue;

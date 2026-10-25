@@ -55,16 +55,28 @@ export global Depth {
     in-out property <float> socket-rest: 2;
     in-out property <float> socket-pressed: 6;
     in-out property <float> socket-softness: 0.5;
-    // The plain raised surface: a lit top edge, a shade towards its foot, a short cast shadow.
-    in-out property <float> raise-light: 0.10;
-    in-out property <float> raise-shade: 0.18;
-    in-out property <length> raise-shadow-y: 2px;
-    in-out property <length> raise-shadow-blur: 4px;
-    in-out property <float> raise-shadow-opacity: 0.35;
-    // The well: its darkening at the top edge, how far down it reaches, and the lit lip at the bottom.
-    in-out property <float> well-shade: 0.55;
-    in-out property <length> well-reach: 6px;
-    in-out property <float> well-lip: 0.08;
+    // `Outward`, Swift's `dsFloating` (DSPopover.swift:89): a lit rim along the top, a face a shade lighter
+    // at the top than at the foot, a hairline edge inside (`separator`), a cast shadow (`raiseShade`, 4, 3).
+    in-out property <float> raise-light: 0.08;
+    in-out property <float> raise-sheen: 0.04;
+    in-out property <float> raise-shade: 0.10;
+    in-out property <float> raise-edge: 0.10;
+    // CSS blur is twice SwiftUI's shadow radius: radius 4 is 8px here.
+    in-out property <length> raise-shadow-y: 3px;
+    in-out property <length> raise-shadow-blur: 8px;
+    in-out property <float> raise-shadow-opacity: 0.45;
+    // `Inward`, Swift's `dsRecessed` (DSSlider.swift:276): `recess` folded inside, reaching `reach` on
+    // the sides and `reach + drop` at the top; a hollow (field, toggle, plot) reaches further (4, 3).
+    in-out property <float> well-shade: 0.65;
+    in-out property <length> well-reach: 3px;
+    in-out property <length> well-drop: 1.5px;
+    in-out property <length> well-hollow-reach: 8px;
+    in-out property <length> well-hollow-drop: 3px;
+    // The edge one line inside (`trackLine`), and the lit lower rim outside (`rim`, radius 0.7, y 1).
+    in-out property <float> well-edge: 1;
+    in-out property <float> well-lip: 0.3;
+    in-out property <length> well-lip-y: 1px;
+    in-out property <float> well-lip-soft: 0.4;
     // A scale on every wall run and on the rise, so the whole lab's relief turns up or down at once.
     in-out property <float> relief: 1;
 
@@ -167,42 +179,92 @@ export component Keycap inherits Rectangle {
     }
 }
 
-// A plain surface standing out: a light rim along its top, a shade towards its foot, a short shadow.
+// A plain surface standing out (`dsFloating`): children lie on the face, under the edge and the rim.
+// `lift` 0 to 1 lengthens the shadow, as a preset card rises under the pointer.
 export component Outward inherits Rectangle {
     in property <color> fill: DS.palette-keycap;
     in property <length> radius: 8px;
+    in property <float> lift;
     border-radius: root.radius;
-    background: @linear-gradient(180deg, Depth.lit(root.fill, 1 + Depth.raise-light) 0%, root.fill 40%, Depth.lit(root.fill, 1 - Depth.raise-shade) 100%);
+    background: @linear-gradient(180deg, root.fill.mix(#ffffff, 1 - Depth.raise-sheen) 0%, root.fill 35%, root.fill.mix(#000000, 1 - Depth.raise-shade) 100%);
     drop-shadow-color: rgba(0, 0, 0, Depth.raise-shadow-opacity);
-    drop-shadow-blur: Depth.raise-shadow-blur;
-    drop-shadow-offset-y: Depth.raise-shadow-y;
-    Rectangle {
-        height: 1px;
-        y: 0;
-        x: root.radius / 2;
-        width: parent.width - root.radius;
-        background: rgba(255, 255, 255, Depth.raise-light);
-    }
+    drop-shadow-blur: Depth.raise-shadow-blur * (1 + root.lift);
+    drop-shadow-offset-y: Depth.raise-shadow-y * (1 + root.lift);
     @children
+    Rectangle {
+        border-radius: root.radius;
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, Depth.raise-edge);
+    }
+    Rectangle {
+        x: root.radius * 0.6;
+        y: 1px;
+        width: parent.width - root.radius * 1.2;
+        height: 1px;
+        background: @linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, Depth.raise-light) 15%, rgba(255, 255, 255, Depth.raise-light) 85%, rgba(255, 255, 255, 0) 100%);
+    }
 }
 
-// A well sunk into the ground: darker at its top edge where the rim shades it, a faint lit lip at its
-// bottom edge; children lie inside.
+// A well sunk into the ground (`dsRecessed`): strokes offset down by the drop stand for the blurred
+// shadow, so it follows the corners; the edge, then the lit lip below. Children lie under the shade.
 export component Inward inherits Rectangle {
     in property <color> ground: DS.palette-tile;
     in property <length> radius: 8px;
-    border-radius: root.radius;
-    background: root.ground;
-    clip: true;
+    // A field's, a toggle's or a plot's deeper hollow (`hollowBlur`, `hollowDrop`).
+    in property <bool> hollow;
+    // The rim lit round the edge, as a field holding the keyboard (DSTextField.swift:28).
+    in property <bool> lit;
+    property <length> reach: root.hollow ? Depth.well-hollow-reach : Depth.well-reach;
+    property <length> drop: root.hollow ? Depth.well-hollow-drop : Depth.well-drop;
+    property <length> pad: root.drop + 2px;
+    // Twelve strokes, each that opacity which, stacked twelve deep at the rim, reaches `well-shade`.
+    property <int> steps: 12;
+    property <float> step: 1 - pow(1 - clamp(Depth.well-shade, 0, 0.999), 1 / root.steps);
+    // Only the lower half, so the lip never shows through a translucent ground at the top.
     Rectangle {
-        height: Depth.well-reach;
-        y: 0;
-        background: @linear-gradient(180deg, rgba(0, 0, 0, Depth.well-shade) 0%, rgba(0, 0, 0, 0) 100%);
+        y: parent.height / 2;
+        height: parent.height / 2 + 4px;
+        clip: true;
+        Rectangle {
+            y: -parent.y + Depth.well-lip-y + 1px;
+            width: parent.width;
+            height: root.height;
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(255, 255, 255, Depth.well-lip * Depth.well-lip-soft);
+        }
+        Rectangle {
+            y: -parent.y + Depth.well-lip-y;
+            width: parent.width;
+            height: root.height;
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(255, 255, 255, Depth.well-lip);
+        }
     }
     Rectangle {
-        height: 1px;
-        y: parent.height - self.height;
-        background: rgba(255, 255, 255, Depth.well-lip);
+        border-radius: root.radius;
+        background: root.ground;
+        clip: true;
+        @children
+        for i in root.steps: Rectangle {
+            x: -root.pad;
+            y: -root.pad + root.drop;
+            width: parent.width + 2 * root.pad;
+            height: parent.height + 2 * root.pad;
+            border-radius: root.radius + root.pad;
+            border-width: root.pad + root.reach * (i + 1) / root.steps;
+            border-color: rgba(0, 0, 0, root.step);
+        }
+        Rectangle {
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: rgba(0, 0, 0, Depth.well-edge);
+        }
+        if root.lit: Rectangle {
+            border-radius: root.radius;
+            border-width: 1px;
+            border-color: DS.palette-rim;
+        }
     }
-    @children
 }

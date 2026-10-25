@@ -3370,5 +3370,12 @@
     "title": "The slider knob and step keys draw through Keycap",
     "status": "done",
     "detail": "sliders.slint's ScaledCap is now Keycap at a free factor (0.525 by default), no cast shadow unless asked, no rim when level, the 1 px edge when edged: DSBarHandle's knobStyle."
+  },
+  {
+    "id": 557,
+    "type": "tooling",
+    "title": "The 2.5D lab's pages: tabs, fields, sliders and the rest, on a full Outward and Inward",
+    "status": "done",
+    "detail": "tabs.slint (DSTabBar, DSToggle, DSPicker with a mini keycap, DSMedalPicker), fields.slint (DSTextField variants, DSField layouts), sliders.slint (DSSlider rail, BarHandle on the raster keycap, stepped slider, step keys, Levels, plot screen, histogram) and misc.slint (DSLCD, DSLamp, DSFoil seals, cards, wells, popover, dialog, status bar, progress) copy the Swift elements with live instances, forced states and per-page tunables; depth.slint's Outward copies dsFloating and Inward the whole dsRecessed (12 nested strokes for the folded blur, the trackLine edge, the rim lip, hollow and lit). The lab is a sandbox outside the file ceilings."
   }
 ]
