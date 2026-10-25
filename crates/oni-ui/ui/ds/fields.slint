@@ -2,6 +2,7 @@
 // place, and the size and date boxes that share one hollow and one focus.
 import { Colour, Space, Type, FieldStyle } from "theme.slint";
 import { Label, TextRole, Tone } from "base.slint";
+import { Outside } from "outside.slint";
 import { Inward } from "depth.slint";
 
 // The serial of the last entry focused, so a window's return to its field keeps its selection.
@@ -18,6 +19,8 @@ component Entry inherits Rectangle {
     in property <bool> centred;
     in property <TextRole> role: TextRole.label;
     in property <bool> enabled: true;
+    // The pointer on the hollow's padding around the words, which keeps the editing as they do.
+    in property <bool> rim;
     out property <bool> editing: input.has-focus;
     callback edited(string);
     callback accepted(string);
@@ -26,6 +29,11 @@ component Entry inherits Rectangle {
     public function enter() { input.focus(); input.select-all(); }
     // The `FieldFocus` serial this entry took when last entered; -1 before it ever was.
     property <int> held: -1;
+    // A press beside the field while it holds the keyboard ends the editing, as a click elsewhere in AppKit.
+    property <int> presses: Outside.presses;
+    changed presses => {
+        if (input.has-focus && !hover.has-hover && !root.rim) { Outside.released += 1; }
+    }
     horizontal-stretch: 1;
     if input.text == "": Label {
         width: parent.width;
@@ -37,28 +45,35 @@ component Entry inherits Rectangle {
         vertical-alignment: root.multiline ? top : center;
         overflow: elide;
     }
-    input := TextInput {
+    // Wraps the words only to know the pointer is on them; the input takes every press.
+    hover := TouchArea {
         width: parent.width;
         height: parent.height;
-        single-line: !root.multiline;
-        wrap: root.multiline ? word-wrap : no-wrap;
-        vertical-alignment: root.multiline ? top : center;
-        horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
-        font-family: Type.family;
-        font-size: root.role == TextRole.title ? Type.title : Type.label;
-        color: root.enabled ? FieldStyle.ink : FieldStyle.faded;
-        selection-background-color: FieldStyle.selection;
         enabled: root.enabled;
-        edited => { root.edited(self.text); }
-        accepted => { root.accepted(self.text); }
-        changed has-focus => {
-            if (self.has-focus) {
-                // A return with no other entry focused meanwhile is the window's coming back.
-                if (root.held != FieldFocus.serial) { self.select-all(); }
-                FieldFocus.serial += 1;
-                root.held = FieldFocus.serial;
-            } else {
-                root.left(self.text);
+        mouse-cursor: MouseCursor.text;
+        input := TextInput {
+            width: parent.width;
+            height: parent.height;
+            single-line: !root.multiline;
+            wrap: root.multiline ? word-wrap : no-wrap;
+            vertical-alignment: root.multiline ? top : center;
+            horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
+            font-family: Type.family;
+            font-size: root.role == TextRole.title ? Type.title : Type.label;
+            color: root.enabled ? FieldStyle.ink : FieldStyle.faded;
+            selection-background-color: FieldStyle.selection;
+            enabled: root.enabled;
+            edited => { root.edited(self.text); }
+            accepted => { root.accepted(self.text); }
+            changed has-focus => {
+                if (self.has-focus) {
+                    // A return with no other entry focused meanwhile is the window's coming back.
+                    if (root.held != FieldFocus.serial) { self.select-all(); }
+                    FieldFocus.serial += 1;
+                    root.held = FieldFocus.serial;
+                } else {
+                    root.left(self.text);
+                }
             }
         }
     }
@@ -107,12 +122,12 @@ export component TextField inherits HorizontalLayout {
         radius: FieldStyle.radius;
         hollow: true;
         lit: entry.editing || root.focused-look;
-        // The hollow's padding enters the field as its words do.
-        TouchArea {
-            enabled: root.enabled && !entry.editing;
+        // The hollow's padding enters the field as its words do, and keeps it while it is edited.
+        rim := TouchArea {
+            enabled: root.enabled;
             mouse-cursor: MouseCursor.text;
             pointer-event(event) => {
-                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { entry.enter(); }
+                if (!entry.editing && event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { entry.enter(); }
             }
         }
         row := HorizontalLayout {
@@ -126,6 +141,7 @@ export component TextField inherits HorizontalLayout {
                 centred: root.centred;
                 role: root.role;
                 enabled: root.enabled;
+                rim: rim.has-hover;
                 edited(t) => { root.edited(t); }
                 accepted(t) => { root.accepted(t); }
                 left(t) => { root.left(t); }

@@ -1,6 +1,7 @@
 // The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
 import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, CardStyle } from "theme.slint";
 import { Label, Icon, Tone, Tips, Divider, Gap } from "base.slint";
+import { Outside } from "outside.slint";
 import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
@@ -130,6 +131,9 @@ export component Picker inherits HorizontalLayout {
     // Where the field starts, which a menu dropped under it aligns on.
     out property <length> field-x: field.x;
     out property <length> field-width: field.width;
+    // A popup the owner drops itself on `open`, as the Working Space chip's, held as its menu.
+    in property <bool> own-popup;
+    out property <bool> dropped: menu.is-open || root.own-popup;
     callback open();
     callback chosen(int);
     property <bool> pill: root.face == PickerFace.pill;
@@ -139,6 +143,19 @@ export component Picker inherits HorizontalLayout {
     // The key's press on the grab spring: a hover sinks it as a keycap's, a press whole.
     property <float> depth: !root.hovered ? 0 : area.pressed || root.look == Look.pressed ? 1 : Depth.hover-press;
     animate depth { duration: TabsStyle.slide; easing: spring(0.38); }
+    // The press its field last took, and the one that closed its menu: a release whose press never
+    // came is a click a menu swallowed, which opens this picker, as AppKit's does, unless it closed its own.
+    property <int> down-at: -1;
+    property <int> closed-at: -1;
+    changed dropped => { if (!self.dropped) { root.closed-at = Outside.presses; } }
+    function drop() {
+        if (root.pressable) {
+            root.open();
+            if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
+                menu.show();
+            }
+        }
+    }
     spacing: Space.s;
     // A pill as tall as the key plate beside it, keys and inset alike.
     height: root.pill ? ButtonStyle.small-height + 2 * ButtonStyle.plate-inset : root.chip ? CardStyle.padding : ButtonStyle.height;
@@ -179,13 +196,11 @@ export component Picker inherits HorizontalLayout {
         // Hovered even when it opens nothing, so the path a pill names still shows as its note.
         area := TouchArea {
             enabled: root.enabled;
-            clicked => {
-                if (root.pressable) {
-                    root.open();
-                    if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
-                        menu.show();
-                    }
-                }
+            clicked => { root.drop(); }
+            pointer-event(event) => {
+                if (event.button != PointerEventButton.left) { return; }
+                if (event.kind == PointerEventKind.down) { root.down-at = Outside.presses; }
+                if (event.kind == PointerEventKind.up && root.down-at != Outside.presses && root.closed-at != Outside.presses) { root.drop(); }
             }
             changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
         }

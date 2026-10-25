@@ -1,6 +1,6 @@
 // Pieces at fixed places for the window checks that click into them: three fields and a tab bar, a
-// page that scrolls over a scroller whose content fits, a step keycap.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, AppWindow, TextField, Tabs, Scroller, Row, Label, TextRole, Tone, Button, ButtonSize } from "ds.slint";
+// page that scrolls over a scroller whose content fits, a step keycap, fields and pickers to press beside.
+import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, ButtonStyle, AppWindow, TextField, RenameField, KeyMonitor, Picker, Tabs, Scroller, Row, Label, TextRole, Tone, Button, ButtonSize } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -92,4 +92,70 @@ export component KeyProbe inherits AppWindow {
             key := Button { size: ButtonSize.key; text: "−"; fill: ScannerStyle.cap-light; }
         }
     }
+}
+
+// A key monitor around a field, a name typed over, a key and two pickers side by side, where the
+// checks press beside a field or a menu.
+export component OutsideProbe inherits AppWindow {
+    title: "ONI Outside Probe";
+    in-out property <string> text <=> field.text;
+    in-out property <bool> renaming;
+    in property <string> name;
+    out property <string> committed;
+    out property <bool> cancelled;
+    out property <bool> editing: field.editing;
+    out property <bool> monitor-focused: keys.has-focus;
+    // The last key the monitor heard, and the key's clicks.
+    out property <string> heard;
+    out property <int> clicks;
+    out property <int> first-chosen: -1;
+    out property <bool> first-open: first.dropped;
+    out property <bool> second-open: second.dropped;
+    out property <length> text-x: field.absolute-position.x + FieldStyle.across;
+    out property <length> field-y: field.absolute-position.y + field.height / 2;
+    out property <length> rename-y: slot.absolute-position.y + slot.height / 2;
+    out property <length> key-x: key.absolute-position.x + key.width / 2;
+    out property <length> key-y: key.absolute-position.y + key.height / 2;
+    out property <length> first-x: first.absolute-position.x + first.width / 2;
+    out property <length> second-x: second.absolute-position.x + second.width / 2;
+    out property <length> pickers-y: first.absolute-position.y + first.height / 2;
+    // The second line of the first picker's menu, dropped under its field.
+    out property <length> line-x: first.absolute-position.x + Space.l;
+    out property <length> line-y: first.absolute-position.y + first.height + Space.xs + 1.5 * ButtonStyle.height;
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 400px;
+    preferred-height: 400px;
+    keys := KeyMonitor {
+        key-pressed(event) => {
+            root.heard = event.text;
+            accept
+        }
+        VerticalLayout {
+            padding: Space.l;
+            spacing: Space.l;
+            alignment: start;
+            field := TextField { }
+            slot := Rectangle {
+                height: FieldStyle.height;
+                if root.renaming: RenameField {
+                    width: parent.width;
+                    height: parent.height;
+                    text: root.name;
+                    committed(t) => { root.committed = t; root.renaming = false; }
+                    cancelled => { root.cancelled = true; root.renaming = false; }
+                }
+            }
+            HorizontalLayout {
+                alignment: start;
+                key := Button { text: "Key"; clicked => { root.clicks += 1; } }
+            }
+            HorizontalLayout {
+                spacing: Space.l;
+                first := Picker { value: "One"; entries: ["One", "Two", "Three"]; chosen(i) => { root.first-chosen = i; } }
+                second := Picker { value: "Red"; entries: ["Red", "Green"]; }
+            }
+        }
+    }
+    init => { keys.focus(); }
 }

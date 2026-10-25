@@ -31,6 +31,7 @@ pub mod mapped;
 pub mod measuring;
 pub mod motion;
 pub mod organise;
+pub mod outside;
 pub mod passes;
 pub mod pasteboard;
 pub mod patches;
