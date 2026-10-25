@@ -1,0 +1,178 @@
+// The three depths every 2.5D element is built from: `Keycap`, Swift's lit frustum for the keys;
+// `Outward`, a plain raised surface; `Inward`, a well sunk into the ground. Tuned live, then copied into ds/.
+import { DS } from "../ui/ds/tokens.slint";
+
+// Swift's `KeycapStyle`, the physical subset: a lit frustum (four flat walls, a dished face) over a socket.
+export global Depth {
+    // The light: azimuth from +x counter-clockwise, elevation above the plane, in degrees.
+    in-out property <float> azimuth: 100;
+    in-out property <float> elevation: 33;
+    in-out property <float> ambient: 0.25;
+    in-out property <float> diffuse: 1;
+    // 1 divides every shade by the flat face's, so the face keeps the albedo and the walls move around it.
+    in-out property <float> midtone: 1;
+    // The walls' horizontal runs and their common rise: a taller rise, steeper walls.
+    in-out property <float> wall-top: 8;
+    in-out property <float> wall-bottom: 12;
+    in-out property <float> wall-side: 8;
+    in-out property <float> rise: 6;
+    in-out property <float> dish: 4;
+    in-out property <length> corner: 16px;
+    in-out property <length> face-corner: 14px;
+    // The cap's cast shadow at rest; a press flattens it.
+    in-out property <float> shadow-opacity: 0.2;
+    in-out property <length> shadow-blur: 8px;
+    in-out property <length> shadow-y: 10px;
+    // How far a press sinks the cap, and how much of a press a hover shows.
+    in-out property <length> travel: 1px;
+    in-out property <float> hover-press: 0.25;
+    in-out property <duration> press-time: 90ms;
+    // The plain raised surface: a lit top edge, a shade towards its foot, a short cast shadow.
+    in-out property <float> raise-light: 0.10;
+    in-out property <float> raise-shade: 0.18;
+    in-out property <length> raise-shadow-y: 2px;
+    in-out property <length> raise-shadow-blur: 4px;
+    in-out property <float> raise-shadow-opacity: 0.35;
+    // The well: its darkening at the top edge, how far down it reaches, and the lit lip at the bottom.
+    in-out property <float> well-shade: 0.55;
+    in-out property <length> well-reach: 6px;
+    in-out property <float> well-lip: 0.08;
+    // A scale on every wall run and on the rise, so the whole lab's relief turns up or down at once.
+    in-out property <float> relief: 1;
+
+    // The light's direction, a unit vector; y grows downwards as the screen does.
+    public pure function lx() -> float { cos(elevation * 1deg) * cos(azimuth * 1deg) }
+    public pure function ly() -> float { -cos(elevation * 1deg) * sin(azimuth * 1deg) }
+    public pure function lz() -> float { sin(elevation * 1deg) }
+
+    // `Frustum.Light.shade`: Lambert over the ambient, divided by the flat face's shade as `midtone` asks.
+    public pure function shade(nx: float, ny: float, nz: float) -> float {
+        (ambient + diffuse * max(0, nx * lx() + ny * ly() + nz * lz())) / max(0.000001, 1 + (ambient + diffuse * max(0, lz()) - 1) * clamp(midtone, 0, 1))
+    }
+
+    public pure function lit(albedo: color, s: float) -> color {
+        rgba(min(255, albedo.red * s), min(255, albedo.green * s), min(255, albedo.blue * s), albedo.alpha / 255)
+    }
+
+    // A wall's colour from its run: the four walls lean out by `run` over `rise`.
+    public pure function wall(albedo: color, side: int, run: float) -> color {
+        lit(albedo, shade(
+            side == 2 ? -rise * relief / hyp(run, rise) : side == 3 ? rise * relief / hyp(run, rise) : 0,
+            side == 0 ? -rise * relief / hyp(run, rise) : side == 1 ? rise * relief / hyp(run, rise) : 0,
+            run / hyp(run, rise)))
+    }
+
+    pure function hyp(run: float, r: float) -> float { max(0.000000001, sqrt(run * run + r * relief * r * relief)) }
+
+    // `Frustum.dishNormal` at `t`, 0 at the face's top to 1 at its bottom, as a shade.
+    public pure function dish-shade(t: float, h: float) -> float {
+        h <= 0 ? shade(0, 0, 1) : shade(0, -(4 * dish * (2 * t - 1) / h) / sqrt(1 + pow(4 * dish * (2 * t - 1) / h, 2)), 1 / sqrt(1 + pow(4 * dish * (2 * t - 1) / h, 2)))
+    }
+
+    public pure function face(albedo: color, t: float, h: float) -> color { lit(albedo, dish-shade(t, h)) }
+}
+
+// A keycap standing out: its cast shadow, four flat-shaded walls clipped to the silhouette, the dished
+// face on them; children lie on the face and sink with it. `depth` 0 rests, 1 is fully pressed.
+export component Keycap inherits Rectangle {
+    in property <color> albedo: DS.palette-keycap;
+    in property <length> radius: Depth.corner;
+    in property <length> face-radius: Depth.face-corner;
+    in property <float> depth;
+    property <float> top: Depth.wall-top * Depth.relief;
+    property <float> bottom: Depth.wall-bottom * Depth.relief;
+    property <float> side: Depth.wall-side * Depth.relief;
+    property <float> w: self.width / 1px;
+    property <float> h: self.height / 1px;
+    property <length> sink: Depth.travel * root.depth;
+    border-radius: root.radius;
+    background: root.albedo;
+    drop-shadow-color: rgba(0, 0, 0, Depth.shadow-opacity * (1 - root.depth));
+    drop-shadow-blur: Depth.shadow-blur;
+    drop-shadow-offset-y: Depth.shadow-y * (1 - root.depth);
+
+    Rectangle {
+        border-radius: root.radius;
+        clip: true;
+        Path {
+            x: 0; y: root.sink; width: parent.width; height: parent.height;
+            viewbox-width: root.w; viewbox-height: root.h;
+            fill: Depth.wall(root.albedo, 0, Depth.wall-top);
+            commands: "M 0 0 L \{root.w} 0 L \{root.w - root.side} \{root.top} L \{root.side} \{root.top} Z";
+        }
+        Path {
+            x: 0; y: root.sink; width: parent.width; height: parent.height;
+            viewbox-width: root.w; viewbox-height: root.h;
+            fill: Depth.wall(root.albedo, 1, Depth.wall-bottom);
+            commands: "M 0 \{root.h} L \{root.w} \{root.h} L \{root.w - root.side} \{root.h - root.bottom} L \{root.side} \{root.h - root.bottom} Z";
+        }
+        Path {
+            x: 0; y: root.sink; width: parent.width; height: parent.height;
+            viewbox-width: root.w; viewbox-height: root.h;
+            fill: Depth.wall(root.albedo, 2, Depth.wall-side);
+            commands: "M 0 0 L \{root.side} \{root.top} L \{root.side} \{root.h - root.bottom} L 0 \{root.h} Z";
+        }
+        Path {
+            x: 0; y: root.sink; width: parent.width; height: parent.height;
+            viewbox-width: root.w; viewbox-height: root.h;
+            fill: Depth.wall(root.albedo, 3, Depth.wall-side);
+            commands: "M \{root.w} 0 L \{root.w - root.side} \{root.top} L \{root.w - root.side} \{root.h - root.bottom} L \{root.w} \{root.h} Z";
+        }
+        face := Rectangle {
+            x: root.side * 1px;
+            y: root.top * 1px + root.sink;
+            width: parent.width - 2 * root.side * 1px;
+            height: parent.height - (root.top + root.bottom) * 1px;
+            border-radius: root.face-radius;
+            background: @linear-gradient(180deg,
+                Depth.face(root.albedo, 0, self.height / 1px) 0%,
+                Depth.face(root.albedo, 1 / 6, self.height / 1px) 16.67%,
+                Depth.face(root.albedo, 2 / 6, self.height / 1px) 33.33%,
+                Depth.face(root.albedo, 3 / 6, self.height / 1px) 50%,
+                Depth.face(root.albedo, 4 / 6, self.height / 1px) 66.67%,
+                Depth.face(root.albedo, 5 / 6, self.height / 1px) 83.33%,
+                Depth.face(root.albedo, 1, self.height / 1px) 100%);
+            @children
+        }
+    }
+}
+
+// A plain surface standing out: a light rim along its top, a shade towards its foot, a short shadow.
+export component Outward inherits Rectangle {
+    in property <color> fill: DS.palette-keycap;
+    in property <length> radius: 8px;
+    border-radius: root.radius;
+    background: @linear-gradient(180deg, Depth.lit(root.fill, 1 + Depth.raise-light) 0%, root.fill 40%, Depth.lit(root.fill, 1 - Depth.raise-shade) 100%);
+    drop-shadow-color: rgba(0, 0, 0, Depth.raise-shadow-opacity);
+    drop-shadow-blur: Depth.raise-shadow-blur;
+    drop-shadow-offset-y: Depth.raise-shadow-y;
+    Rectangle {
+        height: 1px;
+        y: 0;
+        x: root.radius / 2;
+        width: parent.width - root.radius;
+        background: rgba(255, 255, 255, Depth.raise-light);
+    }
+    @children
+}
+
+// A well sunk into the ground: darker at its top edge where the rim shades it, a faint lit lip at its
+// bottom edge; children lie inside.
+export component Inward inherits Rectangle {
+    in property <color> ground: DS.palette-tile;
+    in property <length> radius: 8px;
+    border-radius: root.radius;
+    background: root.ground;
+    clip: true;
+    Rectangle {
+        height: Depth.well-reach;
+        y: 0;
+        background: @linear-gradient(180deg, rgba(0, 0, 0, Depth.well-shade) 0%, rgba(0, 0, 0, 0) 100%);
+    }
+    Rectangle {
+        height: 1px;
+        y: parent.height - self.height;
+        background: rgba(255, 255, 255, Depth.well-lip);
+    }
+    @children
+}

@@ -3314,5 +3314,12 @@
     "title": "The French refusal after a partial restore reads in one sentence",
     "status": "done",
     "detail": "'{head} : {why}' joined two colons ('… n’a pas été restaurée : son original est introuvable : son disque …'); the why now reads 'son original est introuvable (disque débranché ou fichier déplacé)'."
+  },
+  {
+    "id": 550,
+    "type": "tooling",
+    "title": "A 2.5D lab shown live by slint-viewer, no build",
+    "status": "in progress",
+    "detail": "crates/oni-ui/lab/ holds Slint copies of the Swift app's raised and sunken elements on three shared effects (depth.slint: Keycap, Swift's lit frustum for keys; Outward, a plain raised surface; Inward, a sunken well), every look a live tunable; scripts/ds-lab opens it in slint-viewer 1.18.1 (installed once in ~/.oni-toolchain/slint) and redraws on each save, --check compiles it and --shot renders a component to a PNG. The final styles then move into ui/ds/."
   }
 ]

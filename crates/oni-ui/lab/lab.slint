@@ -1,0 +1,117 @@
+// The 2.5D lab: Slint copies of the Swift app's raised and sunken elements, shown by slint-viewer and
+// redrawn on each save, so a look is tuned in seconds before it goes into ds/.
+import { Slider, ScrollView, TabWidget } from "std-widgets.slint";
+import "../fonts/Inter.ttf";
+import { DS } from "../ui/ds/tokens.slint";
+import { Keycap, Outward, Inward, Depth } from "depth.slint";
+import { KeysPage } from "keys.slint";
+import { TabsPage } from "tabs.slint";
+import { FieldsPage } from "fields.slint";
+import { SlidersPage } from "sliders.slint";
+import { MiscPage } from "misc.slint";
+
+// One tunable: its name, its value and the slider moving it, bound both ways to a `Depth` property.
+component Tune inherits Rectangle {
+    in property <string> label;
+    in property <float> minimum: 0;
+    in property <float> maximum: 1;
+    in-out property <float> value;
+    height: 34px;
+    HorizontalLayout {
+        spacing: 8px;
+        Text { text: root.label; width: 110px; color: #ffffffcc; font-size: 11px; vertical-alignment: center; overflow: elide; }
+        Slider { minimum: root.minimum; maximum: root.maximum; value <=> root.value; }
+        Text { text: round(root.value * 100) / 100; width: 40px; color: #ffffff8c; font-size: 11px; horizontal-alignment: right; vertical-alignment: center; }
+    }
+}
+
+component Heading inherits Text {
+    color: #ffffff59;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+// The three depths side by side, a keycap pressed by the hand.
+component DepthsPage inherits Rectangle {
+    HorizontalLayout {
+        padding: 40px;
+        spacing: 40px;
+        alignment: start;
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Heading { text: "KEYCAP"; }
+            cap := Keycap {
+                width: 140px;
+                height: 64px;
+                depth: touch.pressed ? 1 : touch.has-hover ? Depth.hover-press : 0;
+                animate depth { duration: Depth.press-time; easing: ease-out; }
+                Text { text: "EXPORT"; color: DS.palette-text-on-fill; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; horizontal-alignment: center; vertical-alignment: center; width: parent.width; height: parent.height; }
+                touch := TouchArea { }
+            }
+        }
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Heading { text: "OUTWARD"; }
+            Outward { width: 140px; height: 40px; }
+        }
+        VerticalLayout {
+            spacing: 12px;
+            alignment: start;
+            Heading { text: "INWARD"; }
+            Inward { width: 140px; height: 40px; }
+        }
+    }
+}
+
+export component Lab inherits Window {
+    title: "ONI 2.5D Lab";
+    preferred-width: 1400px;
+    preferred-height: 900px;
+    background: DS.palette-panel;
+    default-font-family: "Inter";
+    HorizontalLayout {
+        Rectangle {
+            width: 340px;
+            background: DS.palette-canvas;
+            ScrollView {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 2px;
+                    Heading { text: "LIGHT"; }
+                    Tune { label: "azimuth"; maximum: 360; value <=> Depth.azimuth; }
+                    Tune { label: "elevation"; maximum: 90; value <=> Depth.elevation; }
+                    Tune { label: "ambient"; value <=> Depth.ambient; }
+                    Tune { label: "diffuse"; maximum: 2; value <=> Depth.diffuse; }
+                    Tune { label: "midtone match"; value <=> Depth.midtone; }
+                    Heading { text: "KEYCAP"; }
+                    Tune { label: "relief"; maximum: 3; value <=> Depth.relief; }
+                    Tune { label: "wall top"; maximum: 24; value <=> Depth.wall-top; }
+                    Tune { label: "wall bottom"; maximum: 24; value <=> Depth.wall-bottom; }
+                    Tune { label: "wall side"; maximum: 24; value <=> Depth.wall-side; }
+                    Tune { label: "rise"; maximum: 24; value <=> Depth.rise; }
+                    Tune { label: "dish"; maximum: 12; value <=> Depth.dish; }
+                    Tune { label: "shadow opacity"; value <=> Depth.shadow-opacity; }
+                    Tune { label: "hover press"; value <=> Depth.hover-press; }
+                    Heading { text: "OUTWARD"; }
+                    Tune { label: "light"; maximum: 0.5; value <=> Depth.raise-light; }
+                    Tune { label: "shade"; maximum: 0.5; value <=> Depth.raise-shade; }
+                    Tune { label: "shadow opacity"; value <=> Depth.raise-shadow-opacity; }
+                    Heading { text: "INWARD"; }
+                    Tune { label: "shade"; value <=> Depth.well-shade; }
+                    Tune { label: "lip"; maximum: 0.3; value <=> Depth.well-lip; }
+                }
+            }
+        }
+        TabWidget {
+            Tab { title: "Depths"; DepthsPage { } }
+            Tab { title: "Keys"; KeysPage { } }
+            Tab { title: "Tabs"; TabsPage { } }
+            Tab { title: "Fields"; FieldsPage { } }
+            Tab { title: "Sliders"; SlidersPage { } }
+            Tab { title: "Misc"; MiscPage { } }
+        }
+    }
+}
