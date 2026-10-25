@@ -256,7 +256,7 @@ reaches.
 |---|---|---|---|
 | Leading (`.navigation`) | EDITOR / GALLERY word key (⌘G), holding the width of the wider face | `Keycap` component with `faces` measured: width = max of both labels' `Text.preferred-width` | `[text]` |
 | Principal, editor | Plate: framing (⌘K), compare; contact sheet; plate: undo (⌘Z), redo (⌘⇧Z); plate: copy (⌘⇧C), paste, PASTE TO ROLL; PREPARE ROLL; de-dust; plate: RESET SCAN, trash | `ButtonGroup { plate: true }`: keys flush on the black socket; icon keys from the Trinil SVGs | `[draw]` Keycap chrome (section 5). A hidden copy of the editor keys holds the zone's width so keys move inside it: Slint's layouts re-measure, so this becomes a fixed `min-width` computed from the editing set. |
-| Principal, roll mode | One word key per `RollStep`, the current one inverted, a lamp on done steps | `for step in steps: Keycap { tint, ink, lamp }` | `[draw]` `DSLamp` glow. |
+| Principal, roll mode | One word key per `RollStep` on one plate, the current one inverted, a lamp on done steps | `RollStepKeys`, a `ButtonGroup { plate: true }` of `Button { on, lamp-shown, lamp-lit }` | `[draw]` `DSLamp` glow. |
 | Trailing (`.primaryAction`) | FEEDBACKS; the export/import/update key (EXPORT, EXPORT n PHOTOS, IMPORT, UPDATE, busy titles ADDING / EXPORTING / UPDATING) | `Keycap` with label from Rust | Low. |
 | Help tooltips (`help:`) | System tooltips on every key | Slint has no tooltip element: a hover-delayed overlay `Text` | `[native]` The system tooltip delay (~1 s) and look must be imitated. |
 
@@ -475,7 +475,7 @@ hand. The website does the same with `sync-app-tokens.mjs`, which refuses name c
 | Swift | What it is | Slint | Risk |
 |---|---|---|---|
 | `Keycap`, `KeycapStyle`, `KeycapSurface`, `KeycapButtonStyle`, `KeycapTokens`, `Frustum` | The key: a frustum lit by one light (azimuth 100°, elevation 33°, ambient .25, normaliser .7946), four walls, a dished face, ornaments, press depth, socket shadow, hover lift | `ds/depth.slint`'s `Keycap`: the `Raster.keycap(KeycapLook)` global callback answered by oni-keycap (`oni_app::keycaps::serve`, oni-lab the same `look::Cache`), one raster per (size, albedo, depth step, scale), kept; the legend lies on the face, sunk and scaled with it | Done. A press re-rasters one key per frame of its 0.1 s curve (depth quantised to 1/256); a still key is drawn once. |
-| `KeycapPlate` | Keys flush on the socket, the plate at the cap's outer radius | `ButtonGroup { plate: true }` (`small` for mini keys): black, radius 16 × the variant's factor, no gap | Done. |
+| `KeycapPlate` | Keys flush on the socket, the plate at the cap's outer radius | `ButtonGroup { plate: true }` (`mini` for mini keys): black, radius `Depth.corner` × the variant's factor, no gap; without `plate` a row `Space.s` apart | Done (`button_group` window check). |
 | `KeycapIcon`, `DSIcon`, `Glyph+Trinil` | Trinil SVG icons | `Image { source: @image-url("icons/x.svg"); colorize: … }` | Slint renders SVG through resvg: the strokes should match; verify at 1x. |
 | `KeycapSound` | Key down/up sound with varispeed | `rodio`/`cpal` | `[native]` |
 | `DSSlider`, `DSHandle` (bar handle) | 4.4.1 | PoC | |
