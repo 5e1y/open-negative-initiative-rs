@@ -3580,5 +3580,12 @@
     "title": "A help mark's card in the editor panel opens left of the panel, under its tab bar",
     "status": "done",
     "detail": "TipLayer takes the panel's anchor from app.slint (its left edge, root.width less the panel's width, and the tab bar's foot, the bar's height plus PanelState.header the panel lays from its rule) and opens every card from a mark inside the panel with its right edge TipStyle.card-gap left of the panel and its top at the foot, held in the window by Tips.place so a short window lifts it. Marks off the panel (gallery Info, export and prepare columns, sheets) and every tooltip keep their place under the mark; a sheet over the window drops the anchor. Window check help_card with its twins (a card beside its mark, a note over the canvas, the gallery's column)."
+  },
+  {
+    "id": 613,
+    "type": "test",
+    "title": "The panel's binding checks aimed again after the taller keys and tab bars",
+    "status": "done",
+    "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
   }
 ]

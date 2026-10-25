@@ -66,6 +66,8 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     let ctl = shell.ctl.clone();
     let w = &shell.window;
     let (panel, framing) = (w.global::<PanelState>(), w.global::<Framing>());
+    // Each press measured from the panel's left edge and its tab bar's foot, which the window publishes.
+    let at = |x: f32, y: f32| click(&rig, w.get_panel_x() + x, w.get_tabs_foot() + y);
     let settings = || ctl.state.borrow().store().settings().clone();
     let tab = |i: i32| {
         panel.set_tab(i);
@@ -79,7 +81,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     // `DSToggle`: the switch at the block's left, before its word.
-    let vertical = || click(&rig, 975.0, 542.0);
+    let vertical = || at(30.0, 292.0);
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -96,26 +98,28 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
-    click(&rig, 1201.0, 339.0);
+    at(261.0, 77.0);
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
     assert!(!framing.get_modified());
 
     // Source Encoding's RESET writes no encoding, the file read as sRGB again; the window taller, so
-    // the 40 pt keys above leave the block in sight.
+    // the keys above leave the block in sight.
     rig.window.set_size(slint::PhysicalSize::new(1280, 900));
     tab(0);
     panel.invoke_encoding_picked(1);
-    click(&rig, 1251.0, 662.0);
+    rig.settle();
+    // Flat-Field's chevron: the block unfolds above Source Encoding, its switch then in reach.
+    at(311.0, 413.0);
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    click(&rig, 1201.0, 819.0);
+    at(261.0, 583.0);
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || click(&rig, 976.0, 696.0);
+    let flat = || at(30.0, 447.0);
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -125,10 +129,10 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
-    click(&rig, 1100.0, 754.0);
+    at(160.0, 504.0);
     rig.settle();
     rig.shot("bindings-mask-menu");
-    click(&rig, 1040.0, 819.0);
+    at(100.0, 572.0);
     rig.settle();
     assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's second line, under the picker");
     let _ = std::fs::remove_dir_all(&root);
@@ -150,7 +154,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click selects its value, so the digits typed replace it.
-    let width_box = || click(&rig, 935.0, 545.0);
+    let width_box = || click(&rig, 952.0, 584.0);
     width_box();
     rig.key(&named(Key::Delete));
     rig.key(&named(Key::Delete));
@@ -159,7 +163,8 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
-    click(&rig, 1117.0, 545.0);
+    // Full resolution, the key beside the box once it is resized.
+    click(&rig, 1112.0, 584.0);
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
     width_box();
@@ -168,9 +173,10 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     assert!(!e.get_resized(), "the box shows 96, not the 48 typed before Full resolution");
 
     // Load a Profile… in the chip's popover closes it before the file window opens.
-    click(&rig, 989.0, 760.0);
+    // CANCEL, then the space chip over the canvas, then its popover's Custom tab.
+    click(&rig, 943.0, 749.0);
     rig.settle();
-    click(&rig, 600.0, 108.0);
+    click(&rig, 600.0, 116.0);
     rig.settle();
     click(&rig, 739.0, 200.0);
     rig.settle();
