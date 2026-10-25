@@ -57,12 +57,20 @@ pub(crate) fn embedded_by(path: &Path, route: Route) -> Option<Embedded> {
     let bytes = if t.data.is_null() { &[][..] } else { unsafe { std::slice::from_raw_parts(t.data, t.size as usize) } };
     let preview = match (t.format, t.colors, t.bits) {
         (JPEG, _, _) => Some(Preview::Jpeg(bytes.to_vec())),
-        (BITMAP, 3, 8) => Some(Preview::Rgb { width: t.width as usize, height: t.height as usize, pixels: bytes.to_vec() }),
+        (BITMAP, 3, 8) => bitmap(t.width, t.height, bytes),
         _ => None,
     };
     let flip = t.flip;
     unsafe { oni_thumb_release(&mut t) };
     preview.map(|preview| Embedded { preview, flip })
+}
+
+/// 8-bit RGB rows, `None` when the bytes fall short of the sides: LibRaw keeps a strip's declared
+/// length, which a cut or malformed file makes shorter than width x height x 3.
+fn bitmap(width: c_int, height: c_int, bytes: &[u8]) -> Option<Preview> {
+    let (w, h) = (usize::try_from(width).ok().filter(|&w| w > 0)?, usize::try_from(height).ok().filter(|&h| h > 0)?);
+    let pixels = bytes.get(..w.checked_mul(h)?.checked_mul(3)?)?;
+    Some(Preview::Rgb { width: w, height: h, pixels: pixels.to_vec() })
 }
 
 /// RGB rows `w` by `h` turned by LibRaw's `flip`, as a decode is: bit 4 swaps rows and columns,
@@ -91,6 +99,17 @@ mod tests {
     use super::*;
 
     /// A 3 by 2 image whose red names each pixel by its place, turned by each flip LibRaw writes.
+    #[test]
+    fn a_bitmap_shorter_than_its_sides_is_no_preview() {
+        let whole = vec![7u8; 4 * 2 * 3];
+        assert!(bitmap(4, 2, &whole[..whole.len() - 1]).is_none(), "one byte short");
+        assert!(bitmap(0, 2, &whole).is_none() && bitmap(4, -2, &whole).is_none());
+        // Twin: the whole rows read, and a longer buffer is cut to the sides, which `turned` reads in full.
+        let Some(Preview::Rgb { width, height, pixels }) = bitmap(4, 2, &[whole.clone(), vec![9; 5]].concat()) else { panic!("a preview") };
+        assert_eq!((width, height, pixels), (4, 2, whole.clone()));
+        assert_eq!(turned(&whole, (4, 2), 6).0.len(), whole.len());
+    }
+
     #[test]
     fn each_flip_turns_the_preview_as_a_decode_is_turned() {
         let pixels: Vec<u8> = (0..6u8).flat_map(|i| [i, 0, 0]).collect();

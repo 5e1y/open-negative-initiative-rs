@@ -307,8 +307,8 @@ pub fn decode(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
 /// The `side` that reads any sensor at LibRaw's half size, kept on disk as a whole decode is.
 pub const HALF: usize = 1;
 
-/// `decode` for a copy no longer than `side`: read at half size, a sensor pixel per 2x2 block with
-/// no demosaic, when the sensor is twice as long; the factor back to the full frame beside it.
+/// `decode` for a copy no longer than `side`: a mosaic twice as long is read at half size, a sensor
+/// pixel per 2x2 block with no demosaic; the factor back to the full frame beside it.
 pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linear, usize), DecodeError> {
     decode_in(path, exposure_gain, side, Colours::Matrix)
 }
@@ -372,7 +372,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, ma
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
     let matrix = if matched && colours == Colours::Matrix { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
-    if let Some(key) = key.filter(|_| (side == 0) == (d.half == 0)) {
+    if let Some(key) = key {
         let head = cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: Vec::new() };
         cache::write(&key, &head, (y0..y0 + h_out).map(|row| &raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3]));
     }

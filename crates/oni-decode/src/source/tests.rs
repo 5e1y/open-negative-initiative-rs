@@ -9,18 +9,18 @@ const W: usize = 96;
 const H: usize = 64;
 
 /// A scratch folder of this run's own, under `name`.
-fn scratch(name: &str) -> PathBuf {
+pub(crate) fn scratch(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-source-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }
 
-type Tag = (u16, u16, u32, Vec<u8>);
+pub(crate) type Tag = (u16, u16, u32, Vec<u8>);
 
 /// Appends one directory, its long values and its strip, `273` pointing at the strip; the next
 /// directory follows when `more`.
-fn directory(out: &mut Vec<u8>, tags: &[Tag], strip: &[u8], more: bool) {
+pub(crate) fn directory(out: &mut Vec<u8>, tags: &[Tag], strip: &[u8], more: bool) {
     let long = |v: usize| (v as u32).to_le_bytes();
     let start = out.len();
     let overflow_at = start + 2 + tags.len() * 12 + 4;
@@ -220,4 +220,17 @@ fn a_truncated_raw_says_so() {
     std::fs::write(&garbled, vec![7u8; bytes.len()]).unwrap();
     assert!(decode_by(&garbled, Route::Name, 0, 1.0).is_err_and(|e| !e.is_cut_short()));
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A name that is not UTF-8 reaches LibRaw byte for byte, as a volume from another system may hold one.
+#[cfg(unix)]
+#[test]
+fn a_name_that_is_not_utf8_keeps_its_bytes() {
+    use std::os::unix::ffi::OsStrExt;
+    let raw = b"/Volumes/Share/Roll \xe9t\xe9/Frame.NEF";
+    let path = Path::new(std::ffi::OsStr::from_bytes(raw));
+    let source = Source::open(path, Route::Name).unwrap();
+    assert_eq!(source.name.as_bytes(), raw);
+    // Twin: the lossy text of the same name is another file's.
+    assert_ne!(path.to_string_lossy().as_bytes(), raw);
 }

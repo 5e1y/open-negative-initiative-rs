@@ -4,7 +4,9 @@
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{LazyLock, RwLock};
+use std::time::{Duration, SystemTime};
 
 /// Where decodes are kept and the bytes they may take; none keeps nothing.
 static PLACE: RwLock<Option<(PathBuf, u64)>> = RwLock::new(None);
@@ -84,7 +86,10 @@ fn read_in(dir: &Path, key: &str) -> Option<Kept> {
         f.read_exact(&mut row).ok()?;
         raw.extend(row.chunks_exact(2).map(|b| u16::from_le_bytes([b[0], b[1]])));
     }
-    let _ = f.set_modified(std::time::SystemTime::now());
+    // Windows dates a file only through a handle opened for writing.
+    if let Ok(w) = std::fs::File::options().write(true).open(&at) {
+        let _ = w.set_modified(SystemTime::now());
+    }
     Some(Kept { width, height, flip, factor, matrix, raw })
 }
 
@@ -101,7 +106,7 @@ pub(crate) fn write<'a>(key: &str, head: &Kept, rows: impl Iterator<Item = &'a [
 fn store<'a>(dir: &Path, key: &str, kept: &Kept, rows: impl Iterator<Item = &'a [u16]>) {
     let _ = std::fs::create_dir_all(dir);
     let at = file(dir, key);
-    let part = at.with_extension("part");
+    let part = part_of(&at);
     let written = (|| -> std::io::Result<()> {
         let mut out = std::io::BufWriter::new(std::fs::File::create(&part)?);
         out.write_all(MAGIC)?;
@@ -127,12 +132,32 @@ fn store<'a>(dir: &Path, key: &str, kept: &Kept, rows: impl Iterator<Item = &'a 
     }
 }
 
-/// The oldest decodes let go until the folder holds `cap` bytes at most.
+/// A name of this writer's own: two decodes of one frame at once never write into one file.
+fn part_of(at: &Path) -> PathBuf {
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    at.with_extension(format!("{}-{}.part", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)))
+}
+
+/// A part older than this is a writer's that stopped: a whole decode is written in seconds.
+const STALE_PART: Duration = Duration::from_secs(600);
+
+/// The oldest decodes let go until the folder holds `cap` bytes at most, and stale parts with them.
 fn trim(dir: &Path, cap: u64) {
     let Ok(entries) = std::fs::read_dir(dir) else { return };
-    let mut kept: Vec<(std::time::SystemTime, u64, PathBuf)> = entries
+    let now = SystemTime::now();
+    let mut kept: Vec<(SystemTime, u64, PathBuf)> = entries
         .flatten()
-        .filter(|e| e.path().extension().is_some_and(|x| x == "decode"))
+        .filter(|e| {
+            let kept = e.path();
+            if kept.extension().is_some_and(|x| x == "part") {
+                let at = e.metadata().and_then(|m| m.modified());
+                if at.is_ok_and(|at| now.duration_since(at).is_ok_and(|age| age > STALE_PART)) {
+                    let _ = std::fs::remove_file(&kept);
+                }
+                return false;
+            }
+            kept.extension().is_some_and(|x| x == "decode")
+        })
         .filter_map(|e| {
             let m = e.metadata().ok()?;
             Some((m.modified().ok()?, m.len(), e.path()))
@@ -176,6 +201,42 @@ mod tests {
         bytes[last] ^= 0x40;
         std::fs::write(&at, bytes).unwrap();
         assert_ne!(read_in(&dir, "frame|a").expect("kept").raw, raw);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn two_writers_of_one_frame_never_share_a_part_and_a_stale_part_goes() {
+        let dir = temporary("parts");
+        std::fs::create_dir_all(&dir).unwrap();
+        let at = file(&dir, "frame");
+        assert_ne!(part_of(&at), part_of(&at), "each writer its own part");
+        let (stale, fresh) = (part_of(&at), part_of(&at));
+        for p in [&stale, &fresh] {
+            std::fs::write(p, b"half a decode").unwrap();
+        }
+        let old = SystemTime::now() - STALE_PART - Duration::from_secs(60);
+        std::fs::File::options().write(true).open(&stale).unwrap().set_modified(old).unwrap();
+        trim(&dir, u64::MAX);
+        assert!(!stale.exists(), "a writer stopped long ago leaves nothing");
+        // Twin: a part still being written stays.
+        assert!(fresh.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_decode_read_back_is_dated_as_used() {
+        let dir = temporary("used");
+        let kept = Kept { width: 1, height: 1, flip: 0, factor: 1, matrix: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], raw: Vec::new() };
+        let old = SystemTime::now() - Duration::from_secs(3600);
+        for key in ["read", "left"] {
+            store(&dir, key, &kept, [[1u16, 2, 3]].iter().map(|r| &r[..]));
+            std::fs::File::options().write(true).open(file(&dir, key)).unwrap().set_modified(old).unwrap();
+        }
+        assert!(read_in(&dir, "read").is_some());
+        let dated = |key| std::fs::metadata(file(&dir, key)).unwrap().modified().unwrap();
+        assert!(dated("read") > old + Duration::from_secs(1800), "the use is noted");
+        // Twin: a decode not read keeps its date.
+        assert_eq!(dated("left"), old);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

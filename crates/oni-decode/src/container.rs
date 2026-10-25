@@ -4,8 +4,10 @@
 use crate::Linear;
 use std::cell::RefCell;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+use window::{WINDOW, Window};
+
+mod window;
 
 /// What the bytes say the file is, read from the header, never from the extension.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -45,7 +47,7 @@ struct Directory {
 /// The file's bytes, in memory for a decode, or read where asked for a header.
 enum Bytes<'a> {
     Slice(&'a [u8]),
-    File(RefCell<File>, u64),
+    File(RefCell<Window>),
 }
 
 struct Reader<'a> {
@@ -57,16 +59,7 @@ impl Reader<'_> {
     fn take<const N: usize>(&self, i: usize) -> Option<[u8; N]> {
         match &self.bytes {
             Bytes::Slice(b) => b.get(i..i.checked_add(N)?)?.try_into().ok(),
-            Bytes::File(f, len) => {
-                if i as u64 + N as u64 > *len {
-                    return None;
-                }
-                let mut f = f.borrow_mut();
-                let mut out = [0u8; N];
-                f.seek(SeekFrom::Start(i as u64)).ok()?;
-                f.read_exact(&mut out).ok()?;
-                Some(out)
-            }
+            Bytes::File(w) => w.borrow_mut().take(i as u64),
         }
     }
 
@@ -215,7 +208,7 @@ fn reader(bytes: Bytes<'_>) -> Option<Reader<'_>> {
 fn of_file(path: &Path) -> Option<Reader<'static>> {
     let file = File::open(path).ok()?;
     let len = file.metadata().ok()?.len();
-    reader(Bytes::File(RefCell::new(file), len))
+    reader(Bytes::File(RefCell::new(Window::new(file, len, WINDOW))))
 }
 
 fn classify(r: &Reader) -> Option<Kind> {
@@ -301,6 +294,7 @@ pub fn decode(bytes: &[u8], longest_side: Option<f64>) -> Option<Linear> {
     let spp = d.samples_per_pixel;
     let bps = d.bits_per_sample / 8;
     let row_bytes = d.width.checked_mul(spp)?.checked_mul(bps)?;
+    let tile_bytes = d.tile_width.checked_mul(spp)?.checked_mul(bps)?;
     out_w.checked_mul(out_h)?.checked_mul(16)?;
     let full = ((1u64 << d.bits_per_sample) - 1) as f64;
     let white: [f64; 3] = std::array::from_fn(|c| {
@@ -316,12 +310,13 @@ pub fn decode(bytes: &[u8], longest_side: Option<f64>) -> Option<Linear> {
             let strip = y / rps;
             return Some(*d.strip_offsets.get(strip)? as usize + (y - strip * rps) * row_bytes);
         }
-        // One row of tiles spanning the width only; a real tile grid would need reassembly.
+        // One column of tiles spanning the width only; a real tile grid would need reassembly. A
+        // tile's rows run its own width, padding past the image's included.
         if d.tile_width < d.width || d.tile_length == 0 {
             return None;
         }
         let tile = y / d.tile_length;
-        Some(*d.tile_offsets.get(tile)? as usize + (y - tile * d.tile_length) * row_bytes)
+        Some(*d.tile_offsets.get(tile)? as usize + (y - tile * d.tile_length) * tile_bytes)
     };
     let value = |i: usize, c: usize| -> Option<f64> {
         let mut raw = match d.bits_per_sample {
@@ -369,97 +364,4 @@ pub fn decode(bytes: &[u8], longest_side: Option<f64>) -> Option<Linear> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// A little-endian LinearRaw TIFF of `w` by `h`, 16-bit RGB in one strip, with an optional table.
-    fn tiff(w: usize, h: usize, samples: &[u16], table: Option<&[u16]>, cfa: bool, photometric: u16) -> Vec<u8> {
-        let data_at = 8usize;
-        let data: Vec<u8> = samples.iter().flat_map(|v| v.to_le_bytes()).collect();
-        let table_at = data_at + data.len();
-        let table_bytes: Vec<u8> = table.unwrap_or(&[]).iter().flat_map(|v| v.to_le_bytes()).collect();
-        let ifd_at = table_at + table_bytes.len();
-        let mut entries: Vec<(u16, u16, u32, u32)> = vec![
-            (256, 4, 1, w as u32),
-            (257, 4, 1, h as u32),
-            (258, 3, 1, 16),
-            (259, 3, 1, 1),
-            (262, 3, 1, u32::from(photometric)),
-            (273, 4, 1, data_at as u32),
-            (277, 3, 1, 3),
-            (278, 4, 1, h as u32),
-            (279, 4, 1, data.len() as u32),
-            (50717, 4, 1, 1000),
-            (50714, 4, 1, 100),
-        ];
-        if let Some(t) = table {
-            entries.push((50712, 3, t.len() as u32, table_at as u32));
-        }
-        if cfa {
-            entries.push((33422, 1, 4, 0x0201_0100));
-        }
-        entries.sort();
-        let mut out = b"II".to_vec();
-        out.extend(42u16.to_le_bytes());
-        out.extend((ifd_at as u32).to_le_bytes());
-        out.extend(data);
-        out.extend(table_bytes);
-        out.extend((entries.len() as u16).to_le_bytes());
-        for (tag, t, n, v) in entries {
-            out.extend(tag.to_le_bytes());
-            out.extend(t.to_le_bytes());
-            out.extend(n.to_le_bytes());
-            if t == 3 && n == 1 {
-                out.extend((v as u16).to_le_bytes());
-                out.extend([0, 0]);
-            } else {
-                out.extend(v.to_le_bytes());
-            }
-        }
-        out.extend(0u32.to_le_bytes());
-        out
-    }
-
-    #[test]
-    fn a_linear_scan_reads_through_its_table_black_and_white() {
-        let samples: Vec<u16> = (0..4 * 2 * 3).map(|i| (i % 4) as u16).collect();
-        let table = [100u16, 325, 550, 1000];
-        let bytes = tiff(4, 2, &samples, Some(&table), false, 34892);
-        assert_eq!(kind(&bytes), Some(Kind::LinearRgb));
-        let l = decode(&bytes, None).unwrap();
-        assert_eq!((l.width, l.height), (4, 2));
-        // Index 1 reads 325 on the table: (325 - 100) / (1000 - 100).
-        assert!((l.pixels[0][1] - 0.25).abs() < 1e-6, "{:?}", l.pixels[0]);
-        assert!(l.pixels[0][0].abs() < 1e-6 && (l.pixels[1][0] - 1.0).abs() < 1e-6, "{:?}", l.pixels[1]);
-        // Twin: without the table the index itself is taken, under the black level.
-        let bare = decode(&tiff(4, 2, &samples, None, false, 34892), None).unwrap();
-        assert!(bare.pixels[0][1] < 0.0);
-    }
-
-    #[test]
-    fn the_bytes_decide_the_branch() {
-        let samples = vec![0u16; 2 * 2 * 3];
-        assert_eq!(kind(&tiff(2, 2, &samples, None, true, 34892)), Some(Kind::Mosaic));
-        assert_eq!(kind(&tiff(2, 2, &samples, None, false, 2)), Some(Kind::Unsupported("PhotometricInterpretation 2".into())));
-        assert_eq!(kind(b"\xff\xd8\xff\xe0 a JPEG header"), None);
-        // Twin: the same LinearRaw bytes are claimed.
-        assert_eq!(kind(&tiff(2, 2, &samples, None, false, 34892)), Some(Kind::LinearRgb));
-    }
-
-    #[test]
-    fn a_reduced_read_takes_the_comb_mean_of_each_step() {
-        assert_eq!(comb_offsets(1), vec![0]);
-        assert_eq!(comb_offsets(2), vec![0, 1]);
-        assert_eq!(comb_offsets(8), vec![1, 3, 5, 7]);
-        // A column ramp: each step's mean is its centre, not its first sample.
-        let (w, h) = (8usize, 2usize);
-        let samples: Vec<u16> = (0..w * h).flat_map(|i| [(100 + 100 * (i % w)) as u16; 3]).collect();
-        let l = decode(&tiff(w, h, &samples, None, false, 34892), Some(2.0)).unwrap();
-        assert_eq!((l.width, l.height), (2, 1));
-        let centre = |x0: usize| ((100 + 100 * (x0 + 1)) as f32 + (100 + 100 * (x0 + 2)) as f32) / 2.0;
-        let want = (centre(0) - 100.0) / 900.0;
-        assert!((l.pixels[0][0] - want).abs() < 1e-6, "{} against {want}", l.pixels[0][0]);
-        // Twin: point decimation would read the step's first column.
-        assert!((l.pixels[0][0] - 0.0).abs() > 0.1);
-    }
-}
+mod tests;
