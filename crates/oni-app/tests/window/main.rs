@@ -37,6 +37,7 @@ mod masks;
 mod missing_original;
 mod navigator;
 mod new_roll;
+mod outside;
 mod panel_bindings;
 mod paper_sheet_window;
 mod phone;
@@ -129,6 +130,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::a_new_folder_refused_by_the_disk_is_said", told::a_new_folder_refused_by_the_disk_is_said),
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
     ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
+    ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
+    ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),

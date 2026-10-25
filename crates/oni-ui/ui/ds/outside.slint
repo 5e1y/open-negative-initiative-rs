@@ -1,0 +1,15 @@
+// What a press beside a field or a menu does: the window's count of each press, and its key monitor.
+
+// Each press in the window, counted by the window's pointer hook before any item reads it: a field it
+// misses ends its editing, a picker whose release comes without it opens.
+export global Outside {
+    in-out property <int> presses;
+    // Bumped by a field a press missed, so the window's key monitor takes the keyboard back.
+    in-out property <int> released;
+}
+
+// The window's key monitor: it takes the keyboard back from a field a press beside it ended.
+export component KeyMonitor inherits FocusScope {
+    property <int> released: Outside.released;
+    changed released => { self.focus(); }
+}

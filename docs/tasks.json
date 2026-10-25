@@ -3491,6 +3491,27 @@
     "detail": "crates/oni-ui/lab/misc.slint lays the real Raised (each lift, menu), Inset, LcdReadout, Lamp and Button's lamp, Badge seals (glint-at for a still glint), PresetFace, WrappedCard, Divider, Popover and a live PopupPanel, TipCard, AskSheet, StatusBar and Progress; its tuning strip moves SurfaceStyle live. The flat DSWarning, the plot screen and the depths' own specimens keep their lab copies."
   },
   {
+    "id": 610,
+    "type": "fix",
+    "title": "A click beside a focused field ends its editing and gives the keys back to the window",
+    "status": "done",
+    "detail": "The key monitor (a FocusScope) took the keyboard only from a press no item accepted, so a click on a key, a row or the canvas left the field focused and the shortcuts dead. The window's pointer hook (oni_app::outside::pressed, from the winit filter) now counts each press in the Outside global before Slint reads it; an Entry holding the keyboard whose words and hollow padding are not under that press bumps Outside.released, and KeyMonitor (the window's monitor) takes the focus back. The field's focus-out commits as before: a RenameField commits, as the Finder does on a click elsewhere, Escape still cancels; size, date and text fields hand their value over. The click itself still reaches what it lands on."
+  },
+  {
+    "id": 611,
+    "type": "fix",
+    "title": "A click on another picker while a menu is down opens that picker's menu",
+    "status": "done",
+    "detail": "Every menu, picker list, popover and context menu is a PopupPanel (close-on-click-outside): Slint closes it on a press beside it and dispatches that press to nothing, so no hand-made overlay was left open. The one gap was the opener: the swallowed press never reached another picker. Its release still arrives with no press before it, so a Picker whose field takes a release without its press opens, unless that press closed its own menu (the Working Space chip counts its chooser as its menu, own-popup)."
+  },
+  {
+    "id": 612,
+    "type": "test",
+    "title": "Window checks: a press beside a menu or a field",
+    "status": "done",
+    "detail": "OutsideProbe (ds/probes.slint) lays a key monitor round a field, a rename, a key and two pickers. outside::a_menu_closes… : a click beside a menu closes it and the key under it counts nothing (twins: the key counts a click with no menu down, a click inside picks its line); a click on the other picker opens it (twin: a click on the open picker closes it and opens none). outside::a_field_ends… : a click beside the field ends its editing and the next key reaches the monitor, a rename commits (twins: a click inside keeps the focus and the key goes in at the caret; a click inside the rename keeps it, Escape cancels). Each mutation of the rule makes its check fail."
+  },
+  {
     "id": 615,
     "type": "fix",
     "title": "A section ending on a well or a raised face draws its lip and shadow whole",
