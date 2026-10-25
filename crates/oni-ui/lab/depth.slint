@@ -214,12 +214,14 @@ export component Inward inherits Rectangle {
     in property <bool> hollow;
     // The rim lit round the edge, as a field holding the keyboard (DSTextField.swift:28).
     in property <bool> lit;
+    // The shade at the rim, all strokes overlapping; one well may ask less than the shared tunable.
+    in property <float> shade: Depth.well-shade;
     property <length> reach: root.hollow ? Depth.well-hollow-reach : Depth.well-reach;
     property <length> drop: root.hollow ? Depth.well-hollow-drop : Depth.well-drop;
     property <length> pad: root.drop + 2px;
     // Twelve strokes, each that opacity which, stacked twelve deep at the rim, reaches `well-shade`.
     property <int> steps: 12;
-    property <float> step: 1 - pow(1 - clamp(Depth.well-shade, 0, 0.999), 1 / root.steps);
+    property <float> step: 1 - pow(1 - clamp(root.shade, 0, 0.999), 1 / root.steps);
     // Only the lower half, so the lip never shows through a translucent ground at the top.
     Rectangle {
         y: parent.height / 2;

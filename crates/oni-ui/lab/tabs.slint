@@ -14,6 +14,8 @@ export global TabsLook {
     // DS.Control.medalPress, and DSFoil's spun-metal lobes (0.7) lighting a medal along the lamp's radius.
     in-out property <float> medal-press: 0.86;
     in-out property <float> foil-spin: 0.7;
+    // The tab bar's hollow, lighter than a field's: the shade at its rim.
+    in-out property <float> track-shade: 0.4;
     out property <duration> slide: slide-ms * 1ms;
     out property <color> pill: rgb(
         DS.palette-canvas.red + (255 - DS.palette-canvas.red) * pill-tone,
@@ -55,6 +57,7 @@ export component TabBar inherits Rectangle {
     height: DS.control-tab-bar-height;
     Hollow {
         radius: root.height / 2;
+        shade: TabsLook.track-shade;
         Outward {
             x: DS.space-xs + root.selected * root.pitch;
             y: DS.space-xs;
@@ -435,6 +438,7 @@ export component TabsPage inherits Rectangle {
                     spacing: 2px;
                     Heading { text: "PILL & LABELS"; }
                     Tune { label: "pill tone"; maximum: 0.5; value <=> TabsLook.pill-tone; }
+                    Tune { label: "track shade"; value <=> TabsLook.track-shade; }
                     Tune { label: "idle label"; value <=> TabsLook.idle; }
                 }
                 VerticalLayout {
