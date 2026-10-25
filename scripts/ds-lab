@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # The 2.5D lab in oni-lab: built once, it reloads crates/oni-ui/lab/*.slint into its window on each save,
 # its keycaps drawn by oni-keycap. `--check` compiles the lab; `--shot FILE [COMPONENT] [WxH]` renders the
-# lab or one page (KeysPage, SlidersPage…) to a PNG at 2× (`ONI_LAB_SCALE`). `cargo build -p oni-lab` refreshes it.
+# lab or one page (KeysPage, SlidersPage…) to a PNG at 2× (`ONI_LAB_SCALE`). `cargo build --profile app -p oni-lab` refreshes it, release-fast as the app.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-bin="${CARGO_TARGET_DIR:-target}/debug/oni-lab"
+bin="${CARGO_TARGET_DIR:-target}/app/oni-lab"
 if [ ! -x "$bin" ]; then
-    cargo build -p oni-lab
+    cargo build --profile app -p oni-lab
 fi
 case "${1:-}" in
     --check) exec "$bin" --check ;;
