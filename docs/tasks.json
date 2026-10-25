@@ -3421,6 +3421,13 @@
     "detail": "oni-ui/build.rs sets SLINT_LIVE_PREVIEW for the debug profile, slint gains live-preview: the generated layer falls from 103 MB to 1.1 MB, oni-ui compiles in 12 s, a .slint edit reaches a window check in 15 s, the full check in 128 s instead of about 650. The app profile and release keep the compiled interface. Slint's @tr texts stay English in this mode (no bundled translations in the interpreter), so the French look is judged on the app profile."
   },
   {
+    "id": 565,
+    "type": "fix",
+    "title": "The splash closes when the interface is interpreted",
+    "status": "done",
+    "detail": "The splash's timer held it weakly; with Slint's live preview a shown window's handle goes with the function's own, so the timer found nothing to hide and the app stayed on its splash. The timer holds the splash strongly, in both modes."
+  },
+  {
     "id": 570,
     "type": "design",
     "title": "The selection controls stand on the depths: Tabs, Toggle, Picker's field, the medals",

@@ -38,16 +38,15 @@ pub fn show(reveal: impl FnOnce() + 'static) -> Result<(), slint::PlatformError>
             w.set_outer_position(slint::winit_030::winit::dpi::PhysicalPosition::new(x, y));
         }
     });
-    let held = window.as_weak();
+    // Held strongly by the timer: an interpreted interface lets a shown window's handle go with `window`.
+    let held = window.clone_strong();
     let mut reveal = Some(reveal);
     Timer::single_shot(MINIMUM, move || {
         // The main window first, so the event loop never finds itself without one.
         if let Some(r) = reveal.take() {
             r();
         }
-        if let Some(w) = held.upgrade() {
-            let _ = w.hide();
-        }
+        let _ = held.hide();
     });
     Ok(())
 }
