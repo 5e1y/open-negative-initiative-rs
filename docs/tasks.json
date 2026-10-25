@@ -3377,5 +3377,12 @@
     "title": "The 2.5D lab's pages: tabs, fields, sliders and the rest, on a full Outward and Inward",
     "status": "done",
     "detail": "tabs.slint (DSTabBar, DSToggle, DSPicker with a mini keycap, DSMedalPicker), fields.slint (DSTextField variants, DSField layouts), sliders.slint (DSSlider rail, BarHandle on the raster keycap, stepped slider, step keys, Levels, plot screen, histogram) and misc.slint (DSLCD, DSLamp, DSFoil seals, cards, wells, popover, dialog, status bar, progress) copy the Swift elements with live instances, forced states and per-page tunables; depth.slint's Outward copies dsFloating and Inward the whole dsRecessed (12 nested strokes for the folded blur, the trackLine edge, the rim lip, hollow and lit). The lab is a sandbox outside the file ceilings."
+  },
+  {
+    "id": 558,
+    "type": "design",
+    "title": "The lab's keycaps cast no shadow, their bottom wall lifted toward the face",
+    "status": "done",
+    "detail": "Owner's call: no cast shadow under a keycap (Depth.shadow-opacity 0, Swift's 0.2 kept as the tunable's history in the comment), and a softer foot: oni-keycap's bottom_lift (0 = Swift) moves the bottom wall's Lambert shade toward the flat face's, 0.4 in the lab, a tunable of the left panel; a test with its twin checks the bottom wall lightens and the top wall keeps its shade."
   }
 ]

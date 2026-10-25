@@ -97,6 +97,8 @@ pub struct KeycapStyle {
     pub shadow_blur: f64,
     pub shadow_y: f64,
     pub shadow_opacity: f64,
+    /// How far the bottom wall's shade moves toward the flat face's: 0 is Swift's, 1 a bottom as lit as the top.
+    pub bottom_lift: f64,
     pub press_shadow_y: f64,
     pub press_shadow_opacity: f64,
     pub scale_pressed: f64,
@@ -150,6 +152,7 @@ impl Default for KeycapStyle {
             shadow_blur: 8.0,
             shadow_y: 10.0,
             shadow_opacity: 0.2,
+            bottom_lift: 0.0,
             press_shadow_y: 0.0,
             press_shadow_opacity: 0.0,
             scale_pressed: 0.95,

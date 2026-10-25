@@ -9,7 +9,7 @@ export struct KeycapLook {
     azimuth: float, elevation: float, ambient: float, diffuse: float, midtone: float,
     wall-top: float, wall-bottom: float, wall-side: float, rise: float, dish: float, seam-blur: float,
     socket-rest: float, socket-pressed: float, socket-softness: float, scale-pressed: float, travel: float,
-    shadow-opacity: float, shadow-blur: float, shadow-y: float,
+    shadow-opacity: float, shadow-blur: float, shadow-y: float, bottom-lift: float,
 }
 
 // The keycap rasterised by oni-keycap, Swift's algorithm to the pixel; `oni-lab` answers it, and
@@ -38,10 +38,12 @@ export global Depth {
     in-out property <float> dish: 4;
     in-out property <length> corner: 16px;
     in-out property <length> face-corner: 14px;
-    // The cap's cast shadow at rest, set lighter than Swift's 0.2 at 10 pt; a press flattens it.
-    in-out property <float> shadow-opacity: 0.14;
+    // The cap's cast shadow at rest, none where Swift's is 0.2 at 10 pt; a press flattens it.
+    in-out property <float> shadow-opacity: 0;
     in-out property <length> shadow-blur: 8px;
-    in-out property <length> shadow-y: 7px;
+    in-out property <length> shadow-y: 10px;
+    // The bottom wall's shade moved toward the face's: 0 is Swift's darker foot.
+    in-out property <float> bottom-lift: 0.4;
     // How far a press sinks the cap, how much of a press a hover shows; the reference's two curves,
     // 0.1 s down and 0.02 s up, and the 0.14 s a tap is held down for.
     in-out property <length> travel: 1px;
@@ -154,6 +156,7 @@ export component Keycap inherits Rectangle {
             seam-blur: Depth.seam-blur, socket-rest: Depth.socket-rest, socket-pressed: Depth.socket-pressed,
             socket-softness: Depth.socket-softness, scale-pressed: Depth.scale-pressed, travel: Depth.travel / 1px,
             shadow-opacity: Depth.shadow-opacity, shadow-blur: Depth.shadow-blur / 1px, shadow-y: Depth.shadow-y / 1px,
+            bottom-lift: Depth.bottom-lift,
         });
     }
     // slint-viewer has no `Raster`: a flat cap in its place keeps the layout readable.

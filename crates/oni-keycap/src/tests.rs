@@ -144,3 +144,21 @@ fn cost() {
     }
 }
 
+
+/// The red at (`x`, `y`) points from the key's top-left, on a 100 × 70 key at 2×, no margin.
+fn red(style: &KeycapStyle, x: f64, y: f64) -> u8 {
+    let image = render_in(style, Frame { width: 100.0, height: 70.0, scale: 2.0, margin: 0.0 }, 0.0);
+    let (px, py) = ((x * 2.0) as u32, (y * 2.0) as u32);
+    image.pixels[((py * image.width + px) * 4) as usize]
+}
+
+#[test]
+fn a_lifted_bottom_wall_is_lighter_and_the_top_wall_keeps_its_shade() {
+    let swift = KeycapStyle { shadow_opacity: 0.0, ..KeycapStyle::default() };
+    let lifted = KeycapStyle { bottom_lift: 0.6, ..swift.clone() };
+    // The bottom wall's middle, a few points above the foot; the top wall's, a few below the head.
+    let (bottom, top) = ((50.0, 64.0), (50.0, 4.0));
+    assert!(red(&lifted, bottom.0, bottom.1) > red(&swift, bottom.0, bottom.1) + 8);
+    // Twin: the top wall does not move, so the lift is the bottom's alone.
+    assert_eq!(red(&lifted, top.0, top.1), red(&swift, top.0, top.1));
+}

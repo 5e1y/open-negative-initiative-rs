@@ -79,8 +79,13 @@ pub fn compose_with(style: &KeycapStyle, frame: Frame, depth: f64, backing: Opti
     let (fx, fy, fw, fh) = (face.x as f32, face.y as f32, face.w as f32, face.h as f32);
     let inner = [fx + b, fy + b, fx + fw - b, fy + fh - b];
     let mut walls = Plane::new(pw, ph, 4);
+    let flat = light.shade((0.0, 0.0, 1.0));
     for wall in Wall::ALL {
-        let colour = light.colour(wall.normal(wall.run(style), style.rise));
+        let mut shade = light.shade(wall.normal(wall.run(style), style.rise));
+        if wall == Wall::Bottom {
+            shade += (flat - shade) * style.bottom_lift.clamp(0.0, 1.0);
+        }
+        let colour = style.albedo.shaded(shade);
         let quad = polygon(&wall.corners(outer.map(f64::from), inner.map(f64::from)));
         over(&mut walls, &mask(pw, ph, quad, moved), colour);
     }

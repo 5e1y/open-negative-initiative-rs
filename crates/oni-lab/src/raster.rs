@@ -14,7 +14,7 @@ const NUMBERS: [&str; 23] = [
     "ambient", "diffuse", "midtone", "wall-top", "wall-bottom", "wall-side", "rise", "dish", "seam-blur",
     "socket-rest", "socket-pressed", "socket-softness", "scale-pressed", "travel",
 ];
-const SHADOW: [&str; 3] = ["shadow-opacity", "shadow-blur", "shadow-y"];
+const SHADOW: [&str; 4] = ["shadow-opacity", "shadow-blur", "shadow-y", "bottom-lift"];
 const FLAGS: [&str; 3] = ["level", "shadow", "rim"];
 
 /// A press sweeps the depth continuously; 1/256 steps cannot be told apart and bound the cache.
@@ -67,6 +67,7 @@ pub fn style(look: &Struct) -> KeycapStyle {
         shadow_opacity: n("shadow-opacity"),
         shadow_blur: n("shadow-blur"),
         shadow_y: n("shadow-y"),
+        bottom_lift: n("bottom-lift"),
         scale_pressed: n("scale-pressed"),
         travel: n("travel"),
         ..KeycapStyle::hardened()
