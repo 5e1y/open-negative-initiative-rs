@@ -3622,5 +3622,19 @@
     "title": "The measure's window check follows the CRT bank and the roll",
     "status": "done",
     "detail": "prepare_measure: every screen dark at the start, after a stop and after landing (no channel, echo, negative or roll); three channels per landing, the place on two digits, the negative shown; the roll's count never shrinks and reaches several frames, its histogram moves, each black left of its white. Twins: the histogram moved between landings, and a roll showing the last frame alone would stay at one."
+  },
+  {
+    "id": 700,
+    "type": "feature",
+    "title": "A Windows installer dressed as the splash",
+    "status": "done",
+    "detail": "packaging/windows/oni.iss (Inno Setup 6.7, dark wizard): the version's splash photograph with the logo, the version and the credit behind the welcome and finish pages, dimmed behind the others (art.py draws them from the splash folder, Inter and the logo at every DPI size). Per-user install without an administrator, all users on offer; Start menu entry, optional desktop icon, launch at the end, uninstaller; English, French, Spanish. The manual Windows package workflow builds it beside the zip, as artifacts only, and with `shots` walks its pages into pictures."
+  },
+  {
+    "id": 701,
+    "type": "feature",
+    "title": "ONI.exe carries the app icon",
+    "status": "done",
+    "detail": "crates/oni-app/build.rs compiles packaging/windows/oni.ico (app-icon.png at 16 to 256 px) into the Windows executable's resources through winresource, a Windows-only build dependency; the Explorer, the taskbar and the installer show it."
   }
 ]

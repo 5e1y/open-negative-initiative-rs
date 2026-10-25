@@ -1,7 +1,13 @@
 name: Windows package
-# By hand only: a tester's build, ONI.exe in a zip kept as this run's artifact for 14 days; never a release.
+# By hand only: a tester's build, the installer and ONI.exe in a zip kept as this run's artifacts for 14 days;
+# never a release. `shots` walks the installer and keeps a picture of each page.
 on:
   workflow_dispatch:
+    inputs:
+      shots:
+        description: Walk the installer and keep a picture of each page
+        type: boolean
+        default: false
 jobs:
   package:
     runs-on: windows-latest
@@ -32,8 +38,54 @@ jobs:
           « Exécuter quand même ».
           "@ | Set-Content -Encoding utf8 ONI/README.txt
           Compress-Archive -Path ONI -DestinationPath "ONI-windows-$sha.zip"
+      - name: Installer
+        shell: pwsh
+        run: |
+          $sha = "${{ github.sha }}".Substring(0, 7)
+          $version = (Select-String -Path crates/oni-app/Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          python -m pip install --quiet pillow
+          python packaging/windows/art.py $version "$pwd/art"
+          if ($LASTEXITCODE) { exit 1 }
+          choco install innosetup -y --no-progress | Out-Null
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc /Qp "/DAppVersion=$version" "/DTag=$version-$sha" "/DArt=$pwd\art" "/DExe=$pwd\target\release\oni.exe" "/DOutput=$pwd" packaging/windows/oni.iss
+          if ($LASTEXITCODE) { exit 1 }
+      - name: Shots
+        if: ${{ inputs.shots }}
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          New-Item -ItemType Directory -Force shots | Out-Null
+          function Shot($name) {
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bitmap = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($bitmap).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bitmap.Save("shots/$name.png")
+          }
+          $setup = (Get-ChildItem ONI-setup-*.exe)[0].FullName
+          $shell = New-Object -ComObject WScript.Shell
+          foreach ($lang in "fr", "en") {
+            $p = Start-Process $setup -ArgumentList "/LANG=$lang" -PassThru
+            Start-Sleep 8
+            for ($i = 1; $i -le 7; $i++) {
+              $shell.AppActivate($p.Id) | Out-Null
+              Start-Sleep 1
+              Shot "$lang-$i"
+              $shell.SendKeys("{ENTER}")
+              Start-Sleep 6
+            }
+            Get-Process ONI, ONI-setup* -ErrorAction SilentlyContinue | Stop-Process -Force
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: ONI-windows
-          path: ONI-windows-*.zip
+          path: |
+            ONI-windows-*.zip
+            ONI-setup-*.exe
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.shots }}
+        with:
+          name: ONI-setup-shots
+          path: shots
           retention-days: 14
