@@ -1,64 +1,74 @@
 // `DSTabBar`, the segmented tabs.
-import { Colour, Space, State, Motion, TabsStyle, ButtonStyle } from "theme.slint";
+import { Colour, TabsStyle } from "theme.slint";
 import { Label, Tips, Clicks } from "base.slint";
 import { Dot } from "marks.slint";
+import { Inward, Outward } from "depth.slint";
 
-// `DSTabBar` as a segmented control: one raised pill under the selection. Its owner holds the choice:
-// a click only asks, so a binding on `selected` keeps following the owner's value.
+// `DSTabBar`: a hollow cut down to the canvas, one raised pill sliding under the selection on the grab
+// spring; a tab answers hover with its label alone. Its owner holds the choice: a click only asks, so a
+// binding on `selected` keeps following the owner's value.
 export component Tabs inherits Rectangle {
     in property <[string]> tabs;
     in property <int> selected;
     in property <[bool]> marked;
     // A colour per tab drawn in place of its name, which stays the tab's accessible label.
     in property <[color]> swatches;
-    // The tab the state board shows hovered; -1 follows the pointer alone.
+    // Tabs drawn fainter, still pressable: choosing one changes something else.
+    in property <[bool]> dimmed;
+    // The tab a check or the lab shows hovered; -1 follows the pointer alone.
     in property <int> hover-tab: -1;
     callback picked(int);
-    height: ButtonStyle.height;
-    clip: true;
-    border-radius: ButtonStyle.radius;
-    background: Colour.canvas;
-    property <length> pitch: (self.width - 2 * TabsStyle.inset) / max(1, root.tabs.length);
-    Rectangle {
-        x: TabsStyle.inset + root.selected * root.pitch;
-        y: TabsStyle.inset;
-        width: root.pitch;
-        height: parent.height - 2 * TabsStyle.inset;
-        border-radius: TabsStyle.pill-radius;
-        background: Colour.raised;
-        animate x { duration: Motion.slide; easing: ease-out; }
-    }
-    for name[i] in root.tabs: Rectangle {
-        x: TabsStyle.inset + i * root.pitch;
-        y: TabsStyle.inset;
-        width: root.pitch;
-        height: parent.height - 2 * TabsStyle.inset;
-        accessible-role: tab;
-        accessible-label: name;
-        if root.swatches.length == 0: Label {
-            text: name;
-            centred: true;
-            opacity: (i == root.selected || touch.has-hover || i == root.hover-tab) ? 1 : State.idle;
+    height: TabsStyle.height;
+    property <length> pitch: (self.width - 2 * TabsStyle.inset + TabsStyle.gap) / max(1, root.tabs.length);
+    Inward {
+        hollow: true;
+        ground: Colour.canvas;
+        radius: root.height / 2;
+        shade: TabsStyle.track-shade;
+        Outward {
+            x: TabsStyle.inset + root.selected * root.pitch;
+            y: TabsStyle.inset;
+            width: root.pitch - TabsStyle.gap;
+            height: root.height - 2 * TabsStyle.inset;
+            radius: self.height / 2;
+            fill: TabsStyle.pill;
+            animate x { duration: TabsStyle.slide; easing: spring(0.38); }
         }
-        if root.swatches.length > 0: Dot {
-            size: TabsStyle.swatch;
-            ink: root.swatches[i];
-        }
-        if root.marked[i]: Dot {
-            x: parent.width - self.width - Space.xs;
-            y: Space.xs;
-            size: TabsStyle.mark;
-            ink: Colour.accent;
-        }
-        touch := TouchArea {
-            clicked => {
-                if (i != root.selected) { Clicks.press(); }
-                root.picked(i);
+        for name[i] in root.tabs: Rectangle {
+            x: TabsStyle.inset + i * root.pitch;
+            y: TabsStyle.inset;
+            width: root.pitch - TabsStyle.gap;
+            height: root.height - 2 * TabsStyle.inset;
+            accessible-role: tab;
+            accessible-label: name;
+            opacity: (i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle)
+                * (root.dimmed[i] && i != root.selected ? TabsStyle.idle : 1);
+            if root.swatches.length == 0: Label {
+                text: name;
+                centred: true;
             }
-            // A swatch shows no name, so its tab gives it in the tooltip.
-            changed has-hover => {
-                if root.swatches.length > 0 {
-                    Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+            if root.swatches.length > 0: Dot {
+                x: (parent.width - self.width) / 2;
+                y: (parent.height - self.height) / 2;
+                size: TabsStyle.swatch;
+                ink: root.swatches[i];
+            }
+            if root.marked[i]: Dot {
+                x: parent.width - self.width - TabsStyle.mark-inset;
+                y: TabsStyle.mark-inset;
+                size: TabsStyle.mark;
+                ink: Colour.accent;
+            }
+            touch := TouchArea {
+                clicked => {
+                    if (i != root.selected) { Clicks.press(); }
+                    root.picked(i);
+                }
+                // A swatch shows no name, so its tab gives it in the tooltip.
+                changed has-hover => {
+                    if root.swatches.length > 0 {
+                        Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                    }
                 }
             }
         }

@@ -1,0 +1,67 @@
+// The selection controls' gauges: the tab bar, the switch, the picker's field and the medals. The
+// 2.5D lab tunes the `in-out` ones live, as it tunes `Depth`.
+import { DS } from "tokens.slint";
+
+// `DSTabBar`: a 40 pt hollow, tabs a line apart, one raised pill sliding under the selection.
+export global TabsStyle {
+    // `DS.Motion.grab`: SwiftUI's spring, response 0.22 s, damping 0.62, as Slint's spring(0.38) over 220 ms.
+    in-out property <float> slide-ms: 220;
+    out property <duration> slide: TabsStyle.slide-ms * 1ms;
+    out property <length> height: DS.control-tab-bar-height;
+    out property <length> inset: DS.space-xs;
+    out property <length> gap: DS.stroke-line;
+    out property <length> mark: DS.space-xs;
+    out property <length> mark-inset: DS.space-xxs;
+    out property <length> swatch: DS.control-handle-size;
+    // The pill: `DS.Palette.track` (white 15 %) laid on the canvas, opaque so its shadow stays under it.
+    in-out property <float> pill-tone: 0.153;
+    out property <color> pill: DS.palette-canvas.mix(#ffffff, 1 - TabsStyle.pill-tone);
+    // The bar's hollow, lighter at its rim than a field's.
+    in-out property <float> track-shade: 0.4;
+    // `DS.State.idleLabel`: an unselected tab's label, a dimmed tab, a medal not chosen.
+    in-out property <float> idle: DS.state-idle-label;
+}
+
+// `DSToggle`: a 20 pt hollow holding a cross and a check, a white pill on the state that holds.
+export global ToggleStyle {
+    out property <length> height: DS.control-toggle-height;
+    out property <length> cell: DS.control-toggle-cell-width;
+    out property <length> inset: DS.space-xxs;
+    out property <length> width: 2 * ToggleStyle.cell + 2 * ToggleStyle.inset;
+    out property <length> glyph: DS.control-toggle-glyph;
+    out property <length> glyph-stroke: DS.stroke-emphasis;
+    out property <color> thumb: DS.palette-selected;
+    out property <color> glyph-lit: DS.palette-canvas;
+    out property <color> glyph-idle: DS.palette-text-secondary;
+}
+
+// `DSPicker`'s field face: the value in a hollow, a mini keycap holding the chevron at its end.
+export global PickerStyle {
+    out property <length> radius: DS.radius-card;
+    out property <length> padding: DS.space-md;
+    out property <length> key: DS.control-keycap-mini-height;
+    out property <length> chevron: DS.control-icon-size;
+    // `Keycap.Variant.mini`: `KeycapStyle` scaled by 0.38; the chevron shrinks to 0.95 when pressed.
+    out property <float> mini: 0.38;
+    out property <float> chevron-pressed: 0.95;
+    out property <color> chevron-ink: DS.palette-text-on-fill;
+}
+
+// `DSMedal` on `DSFoil.medal`: a spun metal disc; index 0 is no medal, then bronze, silver and gold.
+export global MedalStyle {
+    out property <length> size: DS.control-medal-size;
+    in-out property <float> press: DS.control-medal-press;
+    // DSFoil's spun lobes lighting the grain along the lamp's radius, over the flat face's 0.70.
+    in-out property <float> foil-spin: 0.7;
+    // `DSFoil.Metal.ramp`: deep, body and bright.
+    out property <[color]> deeps: [#000000, rgb(69, 31, 10), rgb(61, 64, 69), rgb(92, 56, 13)];
+    out property <[color]> bodies: [#000000, rgb(179, 102, 48), rgb(179, 184, 191), rgb(219, 166, 64)];
+    out property <[color]> brights: [#000000, rgb(255, 194, 133), rgb(247, 250, 255), rgb(255, 230, 153)];
+    // The ruled ring in DSFoil's ink, and `DSMedal`'s two shadows (0.5 at 0.5 pt, 0.25 at 1.5 pt).
+    out property <color> rule-ink: #1a1206cc;
+    out property <color> near-shadow: #00000080;
+    out property <color> far-shadow: #00000040;
+    out property <length> near-blur: 0.5px;
+    out property <length> far-blur: 1.5px;
+    out property <length> far-y: 1px;
+}

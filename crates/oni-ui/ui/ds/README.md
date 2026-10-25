@@ -8,7 +8,8 @@ and every screen picks it up.
 | File | What it holds | Who writes it |
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme_tabs.slint` | The selection controls' gauges (`TabsStyle`, `ToggleStyle`, `PickerStyle`, `MedalStyle`), re-exported by `theme.slint`; their `in-out` values are the lab's tunables | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
@@ -51,6 +52,18 @@ an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache
   `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`),
   `small` for a plate of mini keys.
+
+## Selection controls
+
+The tabs, the switch, the picker and the medals stand on the depths as the lab's Tabs page shows them.
+
+- **`Tabs`** (`DSTabBar`): an `Inward` hollow at `TabsStyle.track-shade`, lighter than a field's, and one
+  `Outward` pill sliding on the grab spring (`TabsStyle.slide`); hover lights a label alone. `marked`
+  adds the accent dot, `swatches` draws colours for words, `dimmed` fades a tab that changes something else.
+- **`Toggle`** (`DSToggle`): a hollow holding a cross and a check, the white `Outward` thumb on the state that holds.
+- **`Picker`**, field face (`DSPicker`): the value in a hollow, the chevron on a mini `Keycap` that sinks
+  `Depth.hover-press` under the hand and whole on a press; the pill and chip faces keep the hover ground.
+- **`Medal`** (`DSFoil.medal`): spun metal drawn by gradients; `MedalPicker` shrinks a pressed medal on the spring.
 
 ## The rule: screens use only the design system
 

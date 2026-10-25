@@ -79,7 +79,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     framing.invoke_ratio_picked(1);
     rig.settle();
     // `DSToggle`: the switch at the block's left, before its word.
-    let vertical = || click(&rig, 975.0, 526.0);
+    let vertical = || click(&rig, 975.0, 542.0);
     vertical();
     rig.settle();
     assert!(settings().geometry.portrait && framing.get_portrait());
@@ -96,7 +96,7 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.settle();
     let window = settings().geometry.measure_window;
     assert!(window.is_some() && framing.get_modified());
-    click(&rig, 1201.0, 331.0);
+    click(&rig, 1201.0, 339.0);
     rig.settle();
     let g = settings().geometry;
     assert_eq!((g.ratio, g.portrait, g.measure_window), (None, false, window), "the window outlives the reset");
@@ -107,15 +107,15 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     rig.window.set_size(slint::PhysicalSize::new(1280, 900));
     tab(0);
     panel.invoke_encoding_picked(1);
-    click(&rig, 1251.0, 646.0);
+    click(&rig, 1251.0, 662.0);
     rig.settle();
     assert_eq!(settings().source_encoding, Some(SourceEncoding::Linear));
-    click(&rig, 1201.0, 803.0);
+    click(&rig, 1201.0, 819.0);
     rig.settle();
     assert_eq!((settings().source_encoding, panel.get_encoding_modified()), (None, false));
 
     // The flat-field's switch follows an undo too; its mask menu drops under the picker.
-    let flat = || click(&rig, 976.0, 680.0);
+    let flat = || click(&rig, 976.0, 696.0);
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom);
@@ -125,10 +125,10 @@ pub(crate) fn the_panels_switches_follow_their_owner_and_its_blocks_reset() {
     flat();
     rig.settle();
     assert_eq!(settings().flat_field.mask, FlatFieldMask::Custom, "the switch followed the undo");
-    click(&rig, 1100.0, 738.0);
+    click(&rig, 1100.0, 754.0);
     rig.settle();
     rig.shot("bindings-mask-menu");
-    click(&rig, 1040.0, 803.0);
+    click(&rig, 1040.0, 819.0);
     rig.settle();
     assert_eq!(settings().flat_field.custom.as_deref(), Some("a1"), "Rig, the menu's second line, under the picker");
     let _ = std::fs::remove_dir_all(&root);
@@ -150,7 +150,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     ctl.act(oni_app::Act::Export);
     rig.settle();
     // The field's click selects its value, so the digits typed replace it.
-    let width_box = || click(&rig, 935.0, 529.0);
+    let width_box = || click(&rig, 935.0, 545.0);
     width_box();
     rig.key(&named(Key::Delete));
     rig.key(&named(Key::Delete));
@@ -159,7 +159,7 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("48", true));
     rig.shot("bindings-export-typed");
-    click(&rig, 1117.0, 529.0);
+    click(&rig, 1117.0, 545.0);
     rig.settle();
     assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false));
     width_box();

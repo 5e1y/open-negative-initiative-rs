@@ -2,6 +2,7 @@
 // guide's ring and a stroke's trace.
 import { DS } from "tokens.slint";
 import { Colour, Space, Radius, Stroke, TileStyle } from "theme.slint";
+import { MedalStyle } from "theme.slint";
 
 // A disc of one ink: a medal, a lamp, a switch's thumb, a tab's swatch or mark, a bullet.
 export component Dot inherits Rectangle {
@@ -13,11 +14,67 @@ export component Dot inherits Rectangle {
     background: root.ink;
 }
 
-// `DSMedal`: bronze, silver or gold as a flat disc, 0 being none.
-export component Medal inherits Dot {
+// `DSMedal`: bronze, silver or gold spun in foil, 0 being none; its grain lit along the lamp's radius
+// (DSFoil's softbox, upper left) and its opposite, a ruled ring inside the edge, two cast shadows.
+export component Medal inherits Rectangle {
     in property <int> rank;
-    size: TileStyle.medal;
-    ink: Colour.medal[root.rank];
+    in property <length> size: MedalStyle.size;
+    property <color> deep: MedalStyle.deeps[root.rank];
+    property <color> body: MedalStyle.bodies[root.rank];
+    property <color> bright: MedalStyle.brights[root.rank];
+    // The ramp at `t` (deep to body over 0..1, body to bright over 1..1.6), then DSFoil's 1/1.15 gamma.
+    pure function ch(d: float, b: float, l: float, t: float) -> float {
+        255 * pow(clamp((t < 1 ? d + (b - d) * t : b + (l - b) * (t - 1) / 0.6) / 255, 0, 1), 1 / 1.15)
+    }
+    pure function tone(t: float) -> color {
+        rgb(root.ch(root.deep.red, root.body.red, root.bright.red, t),
+            root.ch(root.deep.green, root.body.green, root.bright.green, t),
+            root.ch(root.deep.blue, root.body.blue, root.bright.blue, t))
+    }
+    // The flat face's light (0.70) plus the spun lobes, |cos(bearing)|^4, brightest at 328.5° and 148.5°.
+    pure function at(a: float) -> color {
+        root.tone(0.70 + MedalStyle.foil-spin * pow(abs(cos((a - 328.5) * 1deg)), 4))
+    }
+    width: root.size;
+    height: root.size;
+    visible: root.rank > 0;
+    border-radius: self.width / 2;
+    drop-shadow-color: MedalStyle.far-shadow;
+    drop-shadow-blur: MedalStyle.far-blur;
+    drop-shadow-offset-y: MedalStyle.far-y;
+    Rectangle {
+        border-radius: self.width / 2;
+        drop-shadow-color: MedalStyle.near-shadow;
+        drop-shadow-blur: MedalStyle.near-blur;
+        drop-shadow-offset-y: MedalStyle.near-blur;
+        background: @conic-gradient(
+            root.at(0) 0deg, root.at(22.5) 22.5deg, root.at(45) 45deg, root.at(67.5) 67.5deg,
+            root.at(90) 90deg, root.at(112.5) 112.5deg, root.at(135) 135deg, root.at(157.5) 157.5deg,
+            root.at(180) 180deg, root.at(202.5) 202.5deg, root.at(225) 225deg, root.at(247.5) 247.5deg,
+            root.at(270) 270deg, root.at(292.5) 292.5deg, root.at(315) 315deg, root.at(337.5) 337.5deg,
+            root.at(360) 360deg);
+        // The lobes fade into the centre (`min(ring / radius * 2, 1)`).
+        Rectangle {
+            border-radius: self.width / 2;
+            background: @radial-gradient(circle, root.tone(0.70) 0%, root.tone(0.70).transparentize(1) 35%);
+        }
+        // The rolled bevel: lit on top, shaded at the foot.
+        Rectangle {
+            border-radius: self.width / 2;
+            border-width: parent.width * 0.6 / 12;
+            border-color: @linear-gradient(180deg, root.tone(1.5) 0%, root.tone(0.35) 100%);
+        }
+        // The ruled ring, 1.5 pt inside the edge at the 12 pt size.
+        Rectangle {
+            x: parent.width * 1.5 / 12;
+            y: self.x;
+            width: parent.width - 2 * self.x;
+            height: self.width;
+            border-radius: self.width / 2;
+            border-width: parent.width * 0.4 / 12;
+            border-color: MedalStyle.rule-ink;
+        }
+    }
 }
 
 export enum RingPlacement { inset, outset }

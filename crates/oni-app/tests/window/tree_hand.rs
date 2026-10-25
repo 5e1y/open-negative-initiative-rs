@@ -47,7 +47,7 @@ fn project_row(lib: &Library, title: &str) -> i32 {
 }
 
 /// Where the window lays the projects' list at 1280 × 800, and a row's middle across it.
-const LIST_TOP: f32 = 180.0;
+const LIST_TOP: f32 = 188.0;
 const ACROSS: f32 = 120.0;
 
 /// A press and release through the window, as a hand gives it, with a modifier held or none.

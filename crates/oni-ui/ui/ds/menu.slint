@@ -6,6 +6,8 @@ import { Icons } from "icons.slint";
 
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
+import { PickerStyle, TabsStyle } from "theme.slint";
+import { Inward, Keycap, KeycapVariant, Depth } from "depth.slint";
 
 // A line of a context menu: a rule above it, out of reach, or opening a submenu Rust lays in its place.
 export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
@@ -103,7 +105,8 @@ export component Menu inherits PopupPanel {
 export enum PickerFace { field, pill, chip }
 
 // A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
-// menu. Every face lights the same hover ground, and dims when it is out of reach.
+// menu. The field is `DSPicker`'s hollow, its chevron on a mini key that sinks under the hand; a pill
+// or a chip lights the hover ground. Every face dims when it is out of reach.
 export component Picker inherits HorizontalLayout {
     in property <PickerFace> face: PickerFace.field;
     in property <string> label;
@@ -127,35 +130,44 @@ export component Picker inherits HorizontalLayout {
     property <bool> pill: root.face == PickerFace.pill;
     property <bool> chip: root.face == PickerFace.chip;
     property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
+    property <bool> well: root.face == PickerFace.field;
+    // The key's press on the grab spring: a hover sinks it as a keycap's, a press whole.
+    property <float> depth: !root.hovered ? 0 : area.pressed || root.look == Look.pressed ? 1 : Depth.hover-press;
+    animate depth { duration: TabsStyle.slide; easing: spring(0.38); }
     spacing: Space.s;
     // A pill as tall as the key plate beside it, keys and inset alike.
     height: root.pill ? ButtonStyle.small-height + 2 * ButtonStyle.plate-inset : root.chip ? CardStyle.padding : ButtonStyle.height;
     if root.label != "": Label { text: root.label; }
     field := Rectangle {
         horizontal-stretch: 1;
-        border-radius: root.face == PickerFace.field ? ButtonStyle.radius : Radius.badge;
-        background: root.hovered ? Colour.hover : root.chip ? Colour.hover.transparentize(1) : Colour.canvas;
-        border-width: root.face == PickerFace.field ? Stroke.hairline : 0px;
-        border-color: Colour.separator;
+        border-radius: Radius.badge;
+        background: root.well || (root.chip && !root.hovered) ? Colour.hover.transparentize(1) : root.hovered ? Colour.hover : Colour.canvas;
         opacity: root.enabled ? 1 : State.disabled;
         accessible-role: button;
         accessible-label: root.prefix != "" ? root.prefix + " · " + root.value : root.value;
         accessible-enabled: root.enabled;
         // As wide as its words on a chip, eliding the value once its room is short.
         preferred-width: row.preferred-width;
+        if root.well: Inward { hollow: true; ground: Colour.canvas; radius: PickerStyle.radius; }
         row := HorizontalLayout {
-            padding-left: root.face == PickerFace.field ? FieldStyle.padding : Space.s;
-            padding-right: root.face == PickerFace.field ? FieldStyle.padding : Space.s;
+            padding-left: root.well ? PickerStyle.padding : Space.s;
+            padding-right: root.well ? (root.height - PickerStyle.key) / 2 : Space.s;
             spacing: root.chip ? Space.xs : Space.s;
             if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
             if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
             Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
-            if !root.pill: VerticalLayout {
+            if root.chip: VerticalLayout {
                 alignment: center;
-                Icon {
-                    source: Icons.chevron-down;
-                    width: root.chip ? FormStyle.chip-icon : ButtonStyle.small-icon;
-                    height: self.width;
+                Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: self.width; }
+            }
+            if root.well: VerticalLayout {
+                alignment: center;
+                Keycap {
+                    width: PickerStyle.key;
+                    height: PickerStyle.key;
+                    variant: KeycapVariant.mini;
+                    depth: root.depth;
+                    Icon { source: Icons.chevron-down; ink: PickerStyle.chevron-ink; width: PickerStyle.chevron; height: self.width; }
                 }
             }
         }

@@ -1,27 +1,9 @@
-// The lab's Tabs page: Slint copies of the Swift app's 2.5D selection controls, built on depth.slint.
-// Tab bar, toggle, picker and medal picker: each live, beside its forced states.
+// The lab's Tabs page: the design system's selection controls, live beside their forced states.
+// Tab bar, toggle, picker and medal picker are the app's own (ui/ds); the tunables move the DS live.
 import { Slider, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
-import { Keycap, KeycapVariant, Outward, Inward, Depth } from "depth.slint";
-
-export global TabsLook {
-    // DS.Motion.grab: SwiftUI spring, response 0.22 s, damping 0.62 = Slint spring(0.38) over 220 ms.
-    in-out property <float> slide-ms: 220;
-    // The pill: DS.Palette.track (white 15 %) laid on the canvas, made opaque so Outward's shadow stays under it.
-    in-out property <float> pill-tone: 0.153;
-    // DS.State.idleLabel: an unselected tab's label, a dimmed tab, a medal not chosen.
-    in-out property <float> idle: 0.55;
-    // DS.Control.medalPress, and DSFoil's spun-metal lobes (0.7) lighting a medal along the lamp's radius.
-    in-out property <float> medal-press: 0.86;
-    in-out property <float> foil-spin: 0.7;
-    // The tab bar's hollow, lighter than a field's: the shade at its rim.
-    in-out property <float> track-shade: 0.4;
-    out property <duration> slide: slide-ms * 1ms;
-    out property <color> pill: rgb(
-        DS.palette-canvas.red + (255 - DS.palette-canvas.red) * pill-tone,
-        DS.palette-canvas.green + (255 - DS.palette-canvas.green) * pill-tone,
-        DS.palette-canvas.blue + (255 - DS.palette-canvas.blue) * pill-tone);
-}
+import { Tabs, Toggle, Picker, Look, MedalPicker, Medal } from "../ui/ds/ds.slint";
+import { TabsStyle, MedalStyle } from "../ui/ds/theme_tabs.slint";
 
 // One tunable, as lab.slint's `Tune`.
 component Tune inherits Rectangle {
@@ -38,327 +20,54 @@ component Tune inherits Rectangle {
     }
 }
 
-// `dsRecessed` at `hollowBlur`/`hollowDrop` over the canvas: the tab bar's, the toggle's, the field's hollow.
-component Hollow inherits Inward {
-    hollow: true;
-    ground: DS.palette-canvas;
-}
-
-// `DSTabBar`: a 40 pt hollow, tabs 1 pt apart, one raised pill sliding under the selection.
-// A tab answers hover with its label only; a mark is an accent dot, a swatch replaces the word.
-export component TabBar inherits Rectangle {
+// A tab bar that writes its own choice, as its owner would.
+component TabBar inherits Rectangle {
     in property <[string]> tabs;
     in-out property <int> selected;
     in property <[bool]> marked;
     in property <[bool]> dimmed;
     in property <[color]> swatches;
     in property <int> force-hover: -1;
-    property <length> pitch: (self.width - 2 * DS.space-xs + DS.stroke-line) / max(1, root.tabs.length);
-    height: DS.control-tab-bar-height;
-    Hollow {
-        radius: root.height / 2;
-        shade: TabsLook.track-shade;
-        Outward {
-            x: DS.space-xs + root.selected * root.pitch;
-            y: DS.space-xs;
-            width: root.pitch - DS.stroke-line;
-            height: root.height - 2 * DS.space-xs;
-            radius: self.height / 2;
-            fill: TabsLook.pill;
-            animate x { duration: TabsLook.slide; easing: spring(0.38); }
-        }
-        for name[i] in root.tabs: Rectangle {
-            x: DS.space-xs + i * root.pitch;
-            y: DS.space-xs;
-            width: root.pitch - DS.stroke-line;
-            height: root.height - 2 * DS.space-xs;
-            opacity: (i == root.selected || i == root.force-hover || touch.has-hover ? 1 : TabsLook.idle)
-                * (i < root.dimmed.length && root.dimmed[i] && i != root.selected ? TabsLook.idle : 1);
-            if root.swatches.length == 0: Text {
-                text: name;
-                color: #ffffff;
-                font-size: DS.typo-label-size;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-                width: parent.width;
-                height: parent.height;
-            }
-            if root.swatches.length > 0: Rectangle {
-                width: DS.control-handle-size;
-                height: self.width;
-                border-radius: self.width / 2;
-                background: root.swatches[i];
-            }
-            if i < root.marked.length && root.marked[i]: Rectangle {
-                x: parent.width - self.width - DS.space-xxs;
-                y: DS.space-xxs;
-                width: DS.space-xs;
-                height: DS.space-xs;
-                border-radius: self.width / 2;
-                background: DS.palette-accent;
-            }
-            touch := TouchArea {
-                clicked => { root.selected = i; }
-            }
-        }
+    height: TabsStyle.height;
+    Tabs {
+        tabs: root.tabs;
+        selected: root.selected;
+        marked: root.marked;
+        dimmed: root.dimmed;
+        swatches: root.swatches;
+        hover-tab: root.force-hover;
+        picked(i) => { root.selected = i; }
     }
 }
 
-// `DSToggle.Glyph`: a cross for off, a check for on, stroked 2 pt with round ends.
-component Glyph inherits Path {
-    in property <bool> checked;
-    in property <bool> lit;
-    width: DS.control-toggle-glyph;
-    height: DS.control-toggle-glyph;
-    viewbox-width: 10;
-    viewbox-height: 10;
-    commands: root.checked ? "M 0 5.5 L 3.8 9 L 10 1.2" : "M 1 1 L 9 9 M 9 1 L 1 9";
-    stroke: root.lit ? DS.palette-canvas : DS.palette-text-secondary;
-    stroke-width: DS.stroke-emphasis;
-    stroke-line-cap: round;
-    animate stroke { duration: TabsLook.slide; easing: spring(0.38); }
-}
-
-// `DSToggle`: a 20 pt hollow holding a cross and a check, a raised white pill on the state that
-// holds, sliding across as a tab's does; the switch and its label both flip it.
-export component Toggle inherits HorizontalLayout {
+component LiveToggle inherits HorizontalLayout {
     in property <string> label;
     in-out property <bool> on;
     in property <bool> enabled: true;
-    spacing: DS.space-sm;
-    alignment: start;
-    Rectangle {
-        width: 2 * DS.control-toggle-cell-width + 2 * DS.space-xxs;
-        height: DS.control-toggle-height;
-        opacity: root.enabled ? 1 : DS.state-missing;
-        Hollow {
-            radius: parent.height / 2;
-            Outward {
-                x: DS.space-xxs + (root.on ? DS.control-toggle-cell-width : 0);
-                y: DS.space-xxs;
-                width: DS.control-toggle-cell-width;
-                height: parent.height - 2 * DS.space-xxs;
-                radius: self.height / 2;
-                fill: DS.palette-selected;
-                animate x { duration: TabsLook.slide; easing: spring(0.38); }
-            }
-            Glyph {
-                x: DS.space-xxs + (DS.control-toggle-cell-width - self.width) / 2;
-                checked: false;
-                lit: !root.on;
-            }
-            Glyph {
-                x: DS.space-xxs + DS.control-toggle-cell-width + (DS.control-toggle-cell-width - self.width) / 2;
-                checked: true;
-                lit: root.on;
-            }
-        }
-        TouchArea {
-            enabled: root.enabled;
-            clicked => { root.on = !root.on; }
-        }
-    }
-    if root.label != "": Text {
-        text: root.label;
-        color: root.enabled ? #ffffff : DS.palette-text-secondary;
-        font-size: DS.typo-label-size;
-        vertical-alignment: center;
-        TouchArea {
-            enabled: root.enabled;
-            clicked => { root.on = !root.on; }
-        }
-    }
+    Toggle { label: root.label; on: root.on; enabled: root.enabled; toggled(v) => { root.on = v; } }
 }
 
-// The system menu `DSPicker` drops (NSMenu, dark): rows of 22 pt, a check on the chosen one.
-component MenuSheet inherits Rectangle {
-    in property <[string]> options;
-    in property <int> selected;
-    in property <int> force-hover: -1;
-    callback pick(int);
-    height: root.options.length * 22px + 10px;
-    background: #2b2b2bf5;
-    border-radius: 8px;
-    border-width: 0.5px;
-    border-color: #ffffff26;
-    drop-shadow-color: #00000080;
-    drop-shadow-blur: 16px;
-    drop-shadow-offset-y: 6px;
-    for title[i] in root.options: Rectangle {
-        x: 5px;
-        y: 5px + i * 22px;
-        width: parent.width - 10px;
-        height: 22px;
-        border-radius: 4px;
-        background: row.has-hover || i == root.force-hover ? DS.palette-accent : transparent;
-        if i == root.selected: Image {
-            x: 5px;
-            width: 12px;
-            height: 12px;
-            source: @image-url("../ui/icons/check.svg");
-            colorize: #ffffff;
-        }
-        Text {
-            x: 22px;
-            width: parent.width - 30px;
-            height: parent.height;
-            text: title;
-            color: #ffffff;
-            font-size: DS.typo-label-size;
-            vertical-alignment: center;
-            overflow: elide;
-        }
-        row := TouchArea {
-            clicked => { root.pick(i); }
-        }
-    }
-}
-
-// `DSPicker`: the value in a field's hollow, a mini keycap with a chevron at its end; a click drops
-// the menu with the chosen item laid on the field. The key sinks on the press with the grab spring.
-export component Picker inherits Rectangle {
+component LivePicker inherits HorizontalLayout {
     in property <[string]> options;
     in-out property <int> selected;
-    in property <bool> force-pressed;
-    property <float> depth: touch.pressed || root.force-pressed ? 1 : 0;
-    // `Keycap.Variant.mini`: KeycapStyle scaled by 0.38.
-    property <float> mini: 0.38;
-    animate depth { duration: TabsLook.slide; easing: spring(0.38); }
-    height: DS.control-field-height;
-    Hollow { radius: DS.radius-card; }
-    Text {
-        x: DS.space-md;
-        width: parent.width - DS.space-md - DS.space-sm - key.width - (parent.height - key.height) / 2;
-        height: parent.height;
-        text: root.selected >= 0 && root.selected < root.options.length ? root.options[root.selected] : "";
-        color: #ffffff;
-        font-size: DS.typo-label-size;
-        vertical-alignment: center;
-        overflow: elide;
-    }
-    key := Keycap {
-        x: parent.width - self.width - (parent.height - self.height) / 2;
-        y: (parent.height - self.height) / 2;
-        width: DS.control-keycap-mini-height;
-        height: DS.control-keycap-mini-height;
-        variant: KeycapVariant.mini;
-        depth: root.depth;
-    }
-    // `labelCentring + travel(at:)` and `scale(at:)`: the chevron rides the face, 0.95 when pressed.
-    Image {
-        x: key.x + (key.width - self.width) / 2;
-        y: key.y + (key.height - self.height) / 2
-            + ((Depth.wall-top - Depth.wall-bottom) / 2 * Depth.relief * root.mini) * 1px + Depth.travel * root.mini * root.depth;
-        width: DS.control-icon-size * (1 - 0.05 * root.depth);
-        height: self.width;
-        source: @image-url("../ui/icons/chevron-down.svg");
-        colorize: DS.palette-text-on-fill;
-    }
-    touch := TouchArea {
-        clicked => { menu.show(); }
-    }
-    // Laid so the chosen row's text sits on the field's: 5 pt inset + 22 pt check column.
-    menu := PopupWindow {
-        x: DS.space-md - 27px;
-        y: (root.height - 22px) / 2 - 5px - max(0, root.selected) * 22px;
-        width: root.width + 27px - DS.space-md;
-        MenuSheet {
-            width: parent.width;
-            options: root.options;
-            selected: root.selected;
-            pick(i) => { root.selected = i; }
-        }
+    in property <Look> look: Look.live;
+    Picker {
+        value: root.options[root.selected];
+        entries: root.options;
+        current: root.selected;
+        look: root.look;
+        chosen(i) => { root.selected = i; }
     }
 }
 
-// `DSMedal`: a spun foil disc, 12 pt, its grain lit along the lamp's radius (DSFoil's softbox, upper
-// left) and its opposite, a ruled ring 1.5 pt inside the edge, two cast shadows.
-component Medal inherits Rectangle {
-    // 0 bronze, 1 silver, 2 gold: `DSFoil.Metal.ramp`, deep, body and bright.
-    in property <int> metal;
-    property <[color]> deeps: [rgb(69, 31, 10), rgb(61, 64, 69), rgb(92, 56, 13)];
-    property <[color]> bodies: [rgb(179, 102, 48), rgb(179, 184, 191), rgb(219, 166, 64)];
-    property <[color]> brights: [rgb(255, 194, 133), rgb(247, 250, 255), rgb(255, 230, 153)];
-    property <color> deep: root.deeps[root.metal];
-    property <color> body: root.bodies[root.metal];
-    property <color> bright: root.brights[root.metal];
-    // The ramp at `t` (deep to body over 0..1, body to bright over 1..1.6), then DSFoil's 1/1.15 gamma.
-    pure function ch(d: float, b: float, l: float, t: float) -> float {
-        255 * pow(clamp((t < 1 ? d + (b - d) * t : b + (l - b) * (t - 1) / 0.6) / 255, 0, 1), 1 / 1.15)
-    }
-    pure function tone(t: float) -> color {
-        rgb(root.ch(root.deep.red, root.body.red, root.bright.red, t),
-            root.ch(root.deep.green, root.body.green, root.bright.green, t),
-            root.ch(root.deep.blue, root.body.blue, root.bright.blue, t))
-    }
-    // The flat face's light (0.70) plus the spun lobes, |cos(bearing)|^4, brightest at 328.5° and 148.5°.
-    pure function at(a: float) -> color {
-        root.tone(0.70 + TabsLook.foil-spin * pow(abs(cos((a - 328.5) * 1deg)), 4))
-    }
-    width: DS.control-medal-size;
-    height: DS.control-medal-size;
-    border-radius: self.width / 2;
-    drop-shadow-color: #00000040;
-    drop-shadow-blur: 1.5px;
-    drop-shadow-offset-y: 1px;
-    Rectangle {
-        border-radius: self.width / 2;
-        drop-shadow-color: #00000080;
-        drop-shadow-blur: 0.5px;
-        drop-shadow-offset-y: 0.5px;
-        background: @conic-gradient(
-            root.at(0) 0deg, root.at(22.5) 22.5deg, root.at(45) 45deg, root.at(67.5) 67.5deg,
-            root.at(90) 90deg, root.at(112.5) 112.5deg, root.at(135) 135deg, root.at(157.5) 157.5deg,
-            root.at(180) 180deg, root.at(202.5) 202.5deg, root.at(225) 225deg, root.at(247.5) 247.5deg,
-            root.at(270) 270deg, root.at(292.5) 292.5deg, root.at(315) 315deg, root.at(337.5) 337.5deg,
-            root.at(360) 360deg);
-        // The lobes fade into the centre (`min(ring / radius * 2, 1)`).
-        Rectangle {
-            border-radius: self.width / 2;
-            background: @radial-gradient(circle, root.tone(0.70) 0%, root.tone(0.70).transparentize(1) 35%);
-        }
-        // The rolled bevel: lit on top, shaded at the foot.
-        Rectangle {
-            border-radius: self.width / 2;
-            border-width: parent.width * 0.6 / 12;
-            border-color: @linear-gradient(180deg, root.tone(1.5) 0%, root.tone(0.35) 100%);
-        }
-        // The ruled ring, printed in DSFoil's ink.
-        Rectangle {
-            x: parent.width * 1.5 / 12;
-            y: self.x;
-            width: parent.width - 2 * self.x;
-            height: self.width;
-            border-radius: self.width / 2;
-            border-width: parent.width * 0.4 / 12;
-            border-color: #1a1206cc;
-        }
-    }
-}
-
-// `DSMedalPicker`: bronze, silver, gold 4 pt apart; the chosen one at full strength, the others idle.
-// A press shrinks a medal to 0.86 on the grab spring; tapping the chosen one clears it.
-export component MedalPicker inherits HorizontalLayout {
+component LiveMedals inherits HorizontalLayout {
     in-out property <int> current: -1;
     in property <int> force-pressed: -1;
-    spacing: DS.space-xs;
     alignment: start;
-    for metal[i] in [0, 1, 2]: Rectangle {
-        width: DS.control-medal-size;
-        height: DS.control-medal-size;
-        property <float> scale: touch.pressed || i == root.force-pressed ? TabsLook.medal-press : 1;
-        animate scale { duration: TabsLook.slide; easing: spring(0.38); }
-        Medal {
-            metal: metal;
-            x: (parent.width - self.width) / 2;
-            y: (parent.height - self.height) / 2;
-            width: DS.control-medal-size * parent.scale;
-            height: self.width;
-            opacity: root.current == i ? 1 : TabsLook.idle;
-        }
-        touch := TouchArea {
-            clicked => { root.current = root.current == i ? -1 : i; }
-        }
+    MedalPicker {
+        current: root.current;
+        pressed-rank: root.force-pressed;
+        picked(m) => { root.current = root.current == m ? -1 : m; }
     }
 }
 
@@ -430,22 +139,22 @@ export component TabsPage inherits Rectangle {
                     width: 300px;
                     spacing: 2px;
                     Heading { text: "MOTION"; }
-                    Tune { label: "slide ms (grab)"; minimum: 60; maximum: 600; value <=> TabsLook.slide-ms; }
-                    Tune { label: "medal press"; minimum: 0.6; value <=> TabsLook.medal-press; }
+                    Tune { label: "slide ms (grab)"; minimum: 60; maximum: 600; value <=> TabsStyle.slide-ms; }
+                    Tune { label: "medal press"; minimum: 0.6; value <=> MedalStyle.press; }
                 }
                 VerticalLayout {
                     width: 300px;
                     spacing: 2px;
                     Heading { text: "PILL & LABELS"; }
-                    Tune { label: "pill tone"; maximum: 0.5; value <=> TabsLook.pill-tone; }
-                    Tune { label: "track shade"; value <=> TabsLook.track-shade; }
-                    Tune { label: "idle label"; value <=> TabsLook.idle; }
+                    Tune { label: "pill tone"; maximum: 0.5; value <=> TabsStyle.pill-tone; }
+                    Tune { label: "track shade"; value <=> TabsStyle.track-shade; }
+                    Tune { label: "idle label"; value <=> TabsStyle.idle; }
                 }
                 VerticalLayout {
                     width: 300px;
                     spacing: 2px;
                     Heading { text: "FOIL"; }
-                    Tune { label: "foil spin"; maximum: 1.5; value <=> TabsLook.foil-spin; }
+                    Tune { label: "foil spin"; maximum: 1.5; value <=> MedalStyle.foil-spin; }
                 }
             }
 
@@ -523,53 +232,46 @@ export component TabsPage inherits Rectangle {
                 VerticalLayout {
                     spacing: DS.space-sm;
                     alignment: start;
-                    Toggle { label: "ZIP, lossless"; on: false; }
-                    Toggle { label: "Brighter on HDR screens"; on: true; }
-                    Toggle { label: "Unavailable for TIFF"; enabled: false; }
+                    LiveToggle { label: "ZIP, lossless"; on: false; }
+                    LiveToggle { label: "Brighter on HDR screens"; on: true; }
+                    LiveToggle { label: "Unavailable for TIFF"; enabled: false; }
                 }
                 States {
-                    Specimen { caption: "off"; Toggle { on: false; } }
-                    Specimen { caption: "on"; Toggle { on: true; } }
-                    Specimen { caption: "disabled, off"; Toggle { on: false; enabled: false; } }
-                    Specimen { caption: "disabled, on"; Toggle { on: true; enabled: false; } }
+                    Specimen { caption: "off"; LiveToggle { on: false; } }
+                    Specimen { caption: "on"; LiveToggle { on: true; } }
+                    Specimen { caption: "disabled, off"; LiveToggle { on: false; enabled: false; } }
+                    Specimen { caption: "disabled, on"; LiveToggle { on: true; enabled: false; } }
                 }
             }
 
             Row {
                 name: "DSPicker · the menu face";
                 source: "DSPicker.swift:6, 36 (DSPickerStyle) · ExportSpaceField.swift:179, FlatFieldControls.swift:36";
-                Picker { width: DS.control-panel-width - 2 * DS.space-md; options: root.profiles; selected: 0; }
+                LivePicker { width: DS.control-panel-width - 2 * DS.space-md; options: root.profiles; selected: 0; }
                 States {
-                    Specimen { caption: "rest"; Picker { width: 200px; options: root.profiles; selected: 1; } }
-                    Specimen { caption: "pressed"; Picker { width: 200px; options: root.profiles; selected: 1; force-pressed: true; } }
-                    Specimen {
-                        caption: "menu open, hover Adobe RGB";
-                        Rectangle {
-                            width: 230px;
-                            height: 110px;
-                            MenuSheet { x: 0; y: 0; width: 230px; options: root.profiles; selected: 1; force-hover: 2; }
-                        }
-                    }
+                    Specimen { caption: "rest"; LivePicker { width: 200px; options: root.profiles; selected: 1; } }
+                    Specimen { caption: "hover"; LivePicker { width: 200px; options: root.profiles; selected: 1; look: Look.hover; } }
+                    Specimen { caption: "pressed"; LivePicker { width: 200px; options: root.profiles; selected: 1; look: Look.pressed; } }
                 }
             }
 
             Row {
                 name: "DSMedalPicker";
                 source: "DSMedalPicker.swift:31 · DSMedal :3, DSFoil.medal · EditorScene+Card.swift:210";
-                MedalPicker { current: 2; }
+                LiveMedals { current: 3; }
                 States {
-                    Specimen { caption: "none (mixed)"; MedalPicker { current: -1; } }
-                    Specimen { caption: "bronze"; MedalPicker { current: 0; } }
-                    Specimen { caption: "silver"; MedalPicker { current: 1; } }
-                    Specimen { caption: "gold"; MedalPicker { current: 2; } }
-                    Specimen { caption: "pressed silver"; MedalPicker { current: 2; force-pressed: 1; } }
+                    Specimen { caption: "none (mixed)"; LiveMedals { current: -1; } }
+                    Specimen { caption: "bronze"; LiveMedals { current: 1; } }
+                    Specimen { caption: "silver"; LiveMedals { current: 2; } }
+                    Specimen { caption: "gold"; LiveMedals { current: 3; } }
+                    Specimen { caption: "pressed silver"; LiveMedals { current: 3; force-pressed: 2; } }
                     Specimen {
                         caption: "×8, to judge the foil";
                         HorizontalLayout {
                             spacing: 32px;
-                            Medal { metal: 0; width: 96px; height: 96px; }
-                            Medal { metal: 1; width: 96px; height: 96px; }
-                            Medal { metal: 2; width: 96px; height: 96px; }
+                            Medal { rank: 1; size: 96px; }
+                            Medal { rank: 2; size: 96px; }
+                            Medal { rank: 3; size: 96px; }
                         }
                     }
                 }
