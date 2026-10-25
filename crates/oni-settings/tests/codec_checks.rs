@@ -558,14 +558,14 @@ fn a_scan_from_before_keeps_its_converted_primaries() {
 #[test]
 fn a_scanner_edit_from_before_reads_its_counts_doubled() {
     let stamped = |version: i64| {
-        let settings = PipelineSettings { scanner: ScannerClicks::new(3, -5, 7, -12, 4), ..PipelineSettings::default() };
+        let settings = PipelineSettings { scanner: ScannerClicks::new(6, -10, 14, -24, 8), ..PipelineSettings::default() };
         aged(&settings, version, |_| {})
     };
     let before = decode_from(&stamped(codec::SCANNER_HALF_STEP_VERSION - 1), false, false).scanner;
-    assert_eq!(before, ScannerClicks::new(6, -10, 14, -24, 4));
+    assert_eq!(before, ScannerClicks::new(12, -20, 28, -48, 8));
     // Twin: written since, the counts read as stored.
     let since = decode_from(&stamped(codec::SCANNER_HALF_STEP_VERSION), false, false).scanner;
-    assert_eq!(since, ScannerClicks::new(3, -5, 7, -12, 4));
+    assert_eq!(since, ScannerClicks::new(6, -10, 14, -24, 8));
     let older = decode_from(&stamped(codec::ONI_MACHINE_VERSION - 1), false, false).scanner_machine;
     let newer = decode_from(&stamped(codec::ONI_MACHINE_VERSION), false, false).scanner_machine;
     assert_eq!((older, newer), (ScannerMachine::Frontier, ScannerMachine::Oni));

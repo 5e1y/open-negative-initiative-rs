@@ -254,7 +254,7 @@ fn parse_key(text: &str) -> Option<Command> {
 
 /// The scanner's screen as the app's `LabScreen` prints it.
 fn screen(state: &State) -> String {
-    let spelled = |n: i8| if n == 0 { "0".into() } else { format!("{}{}", if n < 0 { "−" } else { "+" }, n.abs()) };
+    let spelled = |n: i8| oni_link::scanner::spelled(n.into());
     let percent = |v: f32| {
         let shown = (v * 100.0).round() as i32;
         if shown == 0 { "0 %".into() } else { format!("{}{} %", if shown < 0 { "−" } else { "+" }, shown.abs()) }

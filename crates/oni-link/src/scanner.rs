@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::panel::{Face, Panel, Param};
 
-pub use oni_keys::{Channel, Effect, Letter, Machine};
+pub use oni_keys::{Channel, Effect, Letter, Machine, spelled};
 
 /// What a key asks for. A step is relative, so two hands on two devices add up.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -30,6 +30,7 @@ pub enum Command {
     ReleaseParam { param: Param },
 }
 
+/// Each letter in steps, half the unit the desktop's screen reads: 3 is shown +1.5.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Clicks {
     pub d: i8,

@@ -43,6 +43,36 @@ fn the_table_reads_and_an_odd_count_sits_between_its_neighbours() {
     assert!(m.warmth_plus.cube_data.iter().all(|n| n[0] > -LIFT));
 }
 
+/// A whole unit of the screen moves the render as one count did before the half step: the mean of
+/// the measured clicks around half of it, so a frame edited on whole units renders unchanged.
+#[test]
+fn a_whole_unit_renders_as_a_count_did_and_a_half_step_lies_between() {
+    let m = &*MACHINE;
+    let table = |n: i64| -> [f32; 3] {
+        let v = &m.table.clicks["Y"][&n.to_string()];
+        [v[0], v[1], v[2]]
+    };
+    let former = |count: i64| -> [f32; 3] {
+        let (a, b) = (table(count.div_euclid(2)), table(count.div_euclid(2) + count.rem_euclid(2)));
+        std::array::from_fn(|c| (a[c] + b[c]) / 2.0)
+    };
+    let at = |steps: i64| m.offset(&ScannerClicks::new(0, 0, 0, steps, 0));
+    for count in -24..=24 {
+        let (got, want) = (at(count * ScannerClicks::PER_UNIT), former(count));
+        assert!((0..3).all(|c| (got[c] - want[c]).abs() < 1e-6), "{count}: {got:?} against {want:?}");
+    }
+    for steps in [-47, -3, 1, 5, 47] {
+        let (got, low, high) = (at(steps), at(steps - 1), at(steps + 1));
+        assert!((0..3).all(|c| (got[c] - (low[c] + high[c]) / 2.0).abs() < 1e-6), "{steps}");
+        // Twin: a half step is a move of its own, on neither neighbour.
+        assert!(got != low && got != high, "{steps}");
+    }
+    // And the warmth's share is per unit: two steps weigh what one count weighed.
+    let share = |steps: i64| m.warmth(steps).unwrap().1;
+    assert!((share(2) - 1.0 / m.table.looks["warmthPlus"].per_count).abs() < 1e-6);
+    assert!((share(1) - share(2) / 2.0).abs() < 1e-6 && share(-3) > share(-2));
+}
+
 #[test]
 fn the_oni_machine_rests_lighting_and_moves_the_gains_by_the_clicks() {
     let mut s = PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);

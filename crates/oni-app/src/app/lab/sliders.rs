@@ -1,5 +1,5 @@
 //! The Scanner face's sliders, letters then effects: each one's value and range in steps, and its
-//! readout, the letter's count as the screen spells it, an effect in its own unit.
+//! readout, a letter's steps in the screen's unit, an effect in its own.
 
 use super::{EFFECTS, same, spelled};
 use slint::{ModelRc, SharedString, VecModel};
@@ -69,8 +69,10 @@ mod tests {
         settings.scanner_finish.vignette.stops = -0.3;
         let all = sliders(&settings);
         assert_eq!(all.len(), 8);
-        assert_eq!((all[1].steps, all[1].low, all[1].high, all[1].readout.as_str()), (4, -24, 24, "+4"));
-        assert_eq!((all[4].low, all[4].high), (-10, 10), "TEMP has its own range");
+        assert_eq!((all[1].steps, all[1].low, all[1].high, all[1].readout.as_str()), (4, -48, 48, "+2"));
+        assert_eq!((all[4].low, all[4].high), (-20, 20), "TEMP has its own range, ±10 units in half steps");
+        // A notch of the rail is one step, half a unit: 97 places on density, 41 on TEMP.
+        assert_eq!((all[0].high - all[0].low + 1, all[4].high - all[4].low + 1), (97, 41));
         assert_eq!((all[5].steps, all[5].low, all[5].high, all[5].readout.as_str()), (3, -10, 10, "+15 %"));
         assert_eq!((all[6].steps, all[6].readout.as_str()), (-3, "−0.3 EV"));
         assert_eq!((all[7].low, all[7].high), (0, 30));

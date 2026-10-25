@@ -3,7 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
-/// The keypad's letters: half-steps of density on D, C, M and Y, then warmth on TEMP.
+/// The keypad's letters: density on D, C, M and Y, then warmth on TEMP, each counted in steps of half
+/// the unit the desktop's screen reads.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Letter {
     D,
@@ -26,12 +27,27 @@ impl Letter {
         }
     }
 
+    /// In steps: ±24 units on density, ±10 on TEMP.
     pub fn range(self) -> (i8, i8) {
         match self {
-            Letter::W => (-10, 10),
-            _ => (-24, 24),
+            Letter::W => (-20, 20),
+            _ => (-48, 48),
         }
     }
+}
+
+/// Steps in one unit of the desktop's screen.
+pub const STEPS_PER_UNIT: i64 = 2;
+
+/// `LabScreen.spelled`: a letter's steps in the screen's unit, signed, a half step as ".5", zero bare.
+pub fn spelled(steps: i64) -> String {
+    let sign = match steps.signum() {
+        0 => return "0".to_string(),
+        -1 => "−",
+        _ => "+",
+    };
+    let (whole, part) = (steps.unsigned_abs() / STEPS_PER_UNIT as u64, steps % STEPS_PER_UNIT != 0);
+    format!("{sign}{whole}{}", if part { ".5" } else { "" })
 }
 
 /// The finishing keys that stand beside the letters.
@@ -74,4 +90,16 @@ pub enum Channel {
     Negative,
     Positive,
     Monochrome,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_step_reads_half_a_unit_and_three_read_one_and_a_half() {
+        assert_eq!([0, 1, -1, 3, -3, 2, 48, -20].map(spelled), ["0", "+0.5", "−0.5", "+1.5", "−1.5", "+1", "+24", "−10"]);
+        // Twin: the steps read bare would show a whole unit for one press.
+        assert_ne!(spelled(2), "+2");
+    }
 }

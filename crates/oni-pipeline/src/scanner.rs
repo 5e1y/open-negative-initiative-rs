@@ -101,25 +101,27 @@ impl Machine {
         self.table.render.reached.map_or(([self.low(); 3], [self.low() + self.span(); 3]), |r| (r[0], r[1]))
     }
 
-    /// A count is half the machine's measured click: an odd one reads halfway between its neighbours.
+    /// A step is a quarter of the machine's measured click, read on the line between its neighbours.
     pub fn offset(&self, clicks: &ScannerClicks) -> [f32; 3] {
+        const PER_CLICK: i64 = 2 * ScannerClicks::PER_UNIT;
         let mut sum = [0.0f32; 3];
-        for (key, count) in [("D", clicks.d), ("C", clicks.c), ("M", clicks.m), ("Y", clicks.y)] {
+        for (key, steps) in [("D", clicks.d), ("C", clicks.c), ("M", clicks.m), ("Y", clicks.y)] {
             let measured = |n: i64| -> Option<[f32; 3]> {
                 let v = self.table.clicks.get(key)?.get(&n.to_string())?;
                 (v.len() == 3).then(|| [v[0], v[1], v[2]])
             };
-            let (low, high) = (count.div_euclid(2), count.div_euclid(2) + count.rem_euclid(2));
-            if let (Some(a), Some(b)) = (measured(low), measured(high)) {
+            let (low, part) = (steps.div_euclid(PER_CLICK), steps.rem_euclid(PER_CLICK));
+            let share = part as f32 / PER_CLICK as f32;
+            if let (Some(a), Some(b)) = (measured(low), measured(low + i64::from(part > 0))) {
                 for c in 0..3 {
-                    sum[c] += (a[c] + b[c]) / 2.0;
+                    sum[c] += a[c] + share * (b[c] - a[c]);
                 }
             }
         }
         sum
     }
 
-    /// The warmth look for a count of TEMP and its share, `None` at zero.
+    /// The warmth look for TEMP's steps and its share, `None` at zero.
     pub fn warmth(&self, count: i64) -> Option<(&ColorCube, f32)> {
         if count == 0 {
             return None;
@@ -129,7 +131,7 @@ impl Machine {
         } else {
             (&self.warmth_minus, &self.table.looks["warmthMinus"])
         };
-        Some((cube, count.unsigned_abs() as f32 / look.per_count))
+        Some((cube, count.unsigned_abs() as f32 / (look.per_count * ScannerClicks::PER_UNIT as f32)))
     }
 }
 
@@ -201,15 +203,12 @@ pub fn stops_of(offset: [f32; 3], s: &PipelineSettings) -> [f32; 3] {
 }
 
 /// Where the Frontier's look rests, the owner's own neutral for it, in the gains before the conversion:
-/// half a D lighter, two M, two Y toward blue; the screen still reads zero.
-pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 0, c: 0, m: 2, y: -2, w: 0 };
-/// The rest's D, half a click, which no keypad count holds.
-pub const FRONTIER_REST_D: f32 = 0.5;
+/// D+0.5 M+2 Y-2 in the screen's units, in steps here; the screen still reads zero.
+pub const FRONTIER_REST: ScannerClicks = ScannerClicks { d: 1, c: 0, m: 4, y: -4, w: 0 };
 
-/// The rest as a density offset, the half D included.
+/// The rest as a density offset.
 pub fn frontier_rest() -> [f32; 3] {
-    let (clicks, one_d) = (MACHINE.offset(&FRONTIER_REST), MACHINE.offset(&ScannerClicks::new(1, 0, 0, 0, 0)));
-    std::array::from_fn(|c| clicks[c] + FRONTIER_REST_D * one_d[c])
+    MACHINE.offset(&FRONTIER_REST)
 }
 
 /// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's

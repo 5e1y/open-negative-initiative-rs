@@ -3489,5 +3489,12 @@
     "title": "A section ending on a well or a raised face draws its lip and shadow whole",
     "status": "done",
     "detail": "Section clipped its content at its bounds even unfolded, so a tab bar, a text field or a plot screen ending a block (Film Type, Machine, Source Encoding, Camera Body, Description, a curves plot) lost Inward's lit lip, the two lines under the well, and an Outward lost its shadow. The content clips only while folded, the one state that needs it; Depth.lip-reach names how far the lip reaches (2 px), and the scrolled columns that can end on a well (the export panel's summary, the preset save sheet's form, Prepare the Roll's step) leave it under their content. The wells keep Swift's sizes: reserving the lip inside each component would have shrunk every well by 2 px (a 14 px rail to 12). Checked by window check depth_lip on DepthProbe: a field ending a section draws the same lip rows as a field alone; its twin, a box clipped at the field's bounds, reads the ground there (and the old clip fails the check); folded, the section still shows nothing of its field."
+  },
+  {
+    "id": 620,
+    "type": "feature",
+    "title": "The Scanner keypad steps by half a unit: 0.5 a key, 1.5 with ⇧",
+    "status": "done",
+    "detail": "The owner's call, apart from Swift: ScannerClicks counts steps of half the unit the screen reads (density ±48 steps for ±24 units, TEMP ±20 for ±10). A density step is a quarter of the measured click, read on the line between its neighbours, so a whole unit renders as before; TEMP's share is per unit. The Frontier's rest D+0.5 M+2 Y-2 is now one plain count (FRONTIER_REST_D gone). The sidecar keeps Swift's whole counts under d, c, m, y, w (toward zero) and the half step left over under `halves`, which Swift ignores and which is absent on whole units, so an old sidecar reads unchanged. The screen, the slider readouts and the link demo spell steps as units with halves (oni_keys::spelled); the rails have 97 and 41 places. The phone link's Clicks are in steps: a phone app must read them halved. The effects (Contrast, Vignette, Chrome) keep their 5 %, 0.1 EV and 5 % steps."
   }
 ]

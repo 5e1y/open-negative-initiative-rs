@@ -50,6 +50,7 @@ pub enum Command {
     ResetParam { param: Param },
 }
 
+/// Each letter in steps, half the unit the desktop's screen reads: 3 is shown +1.5.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, uniffi::Record)]
 pub struct Clicks {
     pub d: i8,

@@ -57,6 +57,9 @@ None of the values listed against Swift remains apart: the sidecar delay, the th
 cache, the block reset's rest, the Dye Separation reset, the slider's double-click interval, the Roll
 tab's block order and the menu titles now read as Swift's.
 
+One departs on purpose, the owner's call: the Scanner keypad's step is half Swift's count, 0.5 on
+the screen and 1.5 with ⇧, its stops and every whole count unchanged (`hidden.md`, `editor.md`, #620).
+
 ## The eight largest gaps, in port order
 
 1. **Windows' own surfaces.** A signed build and its feed; ⌥⌘ shortcuts read as Ctrl+Alt, which

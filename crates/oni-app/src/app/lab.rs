@@ -50,14 +50,7 @@ pub fn legend(step: i32) -> String {
     if step.abs() == 1 { sign.to_string() } else { format!("{sign}{}", step.abs()) }
 }
 
-/// `LabScreen.spelled`: a letter's count with its sign, zero bare.
-pub fn spelled(steps: i64) -> String {
-    match steps {
-        0 => "0".to_string(),
-        s if s < 0 => format!("−{}", s.abs()),
-        s => format!("+{s}"),
-    }
-}
+pub use oni_link::scanner::spelled;
 
 /// `LabStepKeys.percent`: whole percent, signed, zero bare.
 pub fn percent(value: f32) -> String {
