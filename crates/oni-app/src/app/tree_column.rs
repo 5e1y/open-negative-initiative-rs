@@ -108,6 +108,8 @@ impl Ctl {
         let depths: Vec<usize> = rows.iter().map(|r| r.depth.max(0) as usize).collect();
         let (frames, total) = sidebar::frames(&photos, &depths, s.laid(which).size.0, columns, metrics);
         let flags = Ctl::tile_flags(s);
+        // A column with no view yet asks nothing; its first size lays it again.
+        let viewed = s.laid(which).size.1 > 0.0;
         let mut asking = Vec::new();
         for (i, (row, frame)) in rows.iter_mut().zip(&frames).enumerate() {
             (row.x, row.y, row.width, row.height) = (frame.x, frame.y, frame.width, frame.height);
@@ -122,14 +124,12 @@ impl Ctl {
             (row.away, row.note, row.gone_pass) = s.tile_marks(&path);
             let missing = row.missing;
             row.picture = fingerprint.as_ref().filter(|_| near(frame)).and_then(|f| Some(reach::shown(&s.org.seen, f, s.thumbs.get(f)?, missing))).unwrap_or_default();
-            if let Some(f) = fingerprint.filter(|f| !f.starts_with(thumbnails::PENDING) && !s.thumbs.contains(f) && !s.asked.contains(f)) {
+            // Only the rows near the view ask: a tree past the memory's limit would drop what it shows.
+            if let Some(f) = fingerprint.filter(|f| viewed && near(frame) && Self::askable(s, f)) {
                 asking.push(f);
             }
         }
-        for fingerprint in asking {
-            s.asked.insert(fingerprint.clone());
-            let _ = s.disk.send(fingerprint);
-        }
+        Self::ask_rows(s, asking);
         let laid = s.laid_mut(which);
         laid.pictures = rows.iter().map(|r| r.thumb.then(|| r.picture.size().width > 0)).collect();
         laid.open = rows.iter().map(|r| r.expandable && r.expanded).collect();
@@ -170,12 +170,45 @@ impl Ctl {
         }
     }
 
+    /// The column asked to stand at `top`; its scroller says so back, which fills the rows come near.
     fn scroll_column(&self, which: Which, top: f32) {
         let Some(w) = self.window() else { return };
         let lib = w.global::<Library>();
         match which {
-            Which::Archive => lib.set_tree_viewport_y(-top),
-            Which::Projects => lib.set_project_viewport_y(-top),
+            Which::Archive => {
+                lib.set_tree_viewport_y(-top);
+                lib.set_tree_scroll_asks(lib.get_tree_scroll_asks().wrapping_add(1));
+            }
+            Which::Projects => {
+                lib.set_project_viewport_y(-top);
+                lib.set_project_scroll_asks(lib.get_project_scroll_asks().wrapping_add(1));
+            }
+        }
+    }
+
+    /// The column's scroll moved, by the wheel, the knob or an ask: the row pinned and the pictures
+    /// near the view follow. Slint runs the change handler once a frame, however many events moved it.
+    fn column_scrolled(&self, which: Which, y: f32) {
+        let Some(w) = self.window() else { return };
+        let lib = w.global::<Library>();
+        match which {
+            Which::Archive => lib.set_tree_viewport_y(y),
+            Which::Projects => lib.set_project_viewport_y(y),
+        }
+        self.pin_column(which);
+        self.fill_tree_thumbnails(None);
+    }
+
+    /// Whether a photo's thumbnail file may be read: one is known, not in memory, not asked yet.
+    fn askable(s: &State, fingerprint: &str) -> bool {
+        !fingerprint.starts_with(thumbnails::PENDING) && !s.thumbs.contains(fingerprint) && !s.asked.contains(fingerprint)
+    }
+
+    fn ask_rows(s: &mut State, asking: Vec<String>) {
+        for fingerprint in asking {
+            if s.asked.insert(fingerprint.clone()) {
+                let _ = s.disk.send(fingerprint);
+            }
         }
     }
 
@@ -193,7 +226,7 @@ impl Ctl {
                     Which::Archive => &mut s.tree,
                     Which::Projects => &mut s.project_tree,
                 };
-                let mut changed = Vec::new();
+                let (mut changed, mut asking) = (Vec::new(), Vec::new());
                 for (i, (path, held)) in laid.paths.iter().zip(laid.pictures.iter_mut()).enumerate() {
                     let Some(held) = held else { continue };
                     // A row scrolled far away lets its picture go, and with it the texture Slint kept.
@@ -208,10 +241,16 @@ impl Ctl {
                     if *held && redrawn != Some(fingerprint.as_str()) {
                         continue;
                     }
-                    let Some(picture) = thumbs.get(fingerprint) else { continue };
+                    let Some(picture) = thumbs.get(fingerprint) else {
+                        asking.push(fingerprint.clone());
+                        continue;
+                    };
                     *held = true;
                     changed.push((i, picture, fingerprint.clone()));
                 }
+                // A row come near whose picture memory let go reads it again, off this thread.
+                asking.retain(|f| Self::askable(s, f));
+                Self::ask_rows(s, asking);
                 changed
             };
             for (i, picture, fingerprint) in changed {
@@ -335,6 +374,7 @@ impl Ctl {
             Some(i) => self.centre_row(Which::Projects, i),
             None => self.pin_column(Which::Projects),
         }
+        self.fill_tree_thumbnails(None);
     }
 
     fn project_resized(&self, width: f32, height: f32) {
@@ -344,21 +384,20 @@ impl Ctl {
         }
         self.clamp_column(Which::Projects);
         self.pin_column(Which::Projects);
+        self.fill_tree_thumbnails(None);
     }
 
     pub(super) fn wire_tree_column(self: &Rc<Self>, lib: &Library) {
         let me = Rc::downgrade(self);
-        lib.on_tree_scrolled(move || {
+        lib.on_tree_scrolled(move |y| {
             if let Some(c) = me.upgrade() {
-                c.pin_column(Which::Archive);
-                c.fill_tree_thumbnails(None);
+                c.column_scrolled(Which::Archive, y);
             }
         });
         let me = Rc::downgrade(self);
-        lib.on_project_scrolled(move || {
+        lib.on_project_scrolled(move |y| {
             if let Some(c) = me.upgrade() {
-                c.pin_column(Which::Projects);
-                c.fill_tree_thumbnails(None);
+                c.column_scrolled(Which::Projects, y);
             }
         });
         let me = Rc::downgrade(self);

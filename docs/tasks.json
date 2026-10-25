@@ -3587,5 +3587,19 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 650,
+    "type": "fix",
+    "title": "The sidebar trees follow every scroll, so the rows it reaches get their pictures",
+    "status": "done",
+    "detail": "The trees' scroll was bound both ways to Library.tree-viewport-y and project-viewport-y, but a wheel or trackpad scroll removes the Flickable's bindings (Slint's remove_binding before its smooth-scroll animation): from the first wheel on, Rust read a frozen scroll, the near-view rule gave pictures to the rows around the old place only, and the rows scrolled into view stayed empty until another event laid the column. The scroll now goes one way each: Rust asks a place (viewport-y plus a count of asks the RowTree applies), and the scroller reports every move, wheel, knob, key or reveal, with its value (tree-scrolled(y), project-scrolled(y)); Slint runs that change handler once a frame. A size change fills the rows a taller column brings near. Window check library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches: in a 1,100-photo column scrolled by the wheel without a resize, the scroll reaches Rust and the rows in view get their pictures, the top row left far away lets its picture go; after an ask far down, no row three screens away holds one (twin). The tree checks that scrolled by writing the property now ask as Rust does (common::scroll_tree, scroll_projects)."
+  },
+  {
+    "id": 651,
+    "type": "fix",
+    "title": "A tree asks only the thumbnails of the rows near its view, and asks again those memory let go",
+    "status": "done",
+    "detail": "Laying a tree asked every photo row's thumbnail file: past MEMORY_LIMIT (1,000) memory dropped its least recent half, often the rows on screen, and a scroll never asked them again (fill_tree_thumbnails only read memory). Laying now asks the rows near the view only, nothing while the column has no size, and a fill asks the near rows whose picture is not in memory, read off the interface thread as before. Same window check: with memory emptied (forget_tiles) and the column laid again, fewer than a quarter of the 1,100 thumbnails are asked (599 when every row asks, the twin), and the rows an ask brings into view read theirs back (a timeout when a fill asks nothing, the twin)."
   }
 ]

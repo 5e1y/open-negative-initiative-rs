@@ -97,8 +97,10 @@ export global Library {
     in property <int> tree-layout;
     in property <string> tree-layout-help;
     in property <length> tree-content-height;
-    // The column's scroll, both ways: Rust centres the selection, the wheel moves it.
+    // The column's scroll as it last stood, which Rust alone writes: a wheel unlinks a two-way binding.
+    // Each ask counted in `tree-scroll-asks` moves the column there.
     in-out property <length> tree-viewport-y;
+    in-out property <int> tree-scroll-asks;
     // The column created at its size, then each later size; only its creation re-centres it.
     callback tree-shown(length, length);
     callback tree-resized(length, length);
@@ -106,8 +108,8 @@ export global Library {
     callback tree-centre();
     callback tree-reload();
     // A tree's scroll moved, which may pin another row; the pinned row's click; the column changing mode.
-    callback tree-scrolled();
-    callback project-scrolled();
+    callback tree-scrolled(length);
+    callback project-scrolled(length);
     in property <TreePin> tree-pin;
     in property <TreePin> project-pin;
     callback tree-pin-clicked(bool, bool);
@@ -212,9 +214,10 @@ export global Library {
     in property <bool> projects-any-open;
     callback project-fold-all();
     callback project-centre();
-    // The projects' tree laid as the archive's, its scroll both ways, a click under its rows.
+    // The projects' tree laid as the archive's, its scroll as the archive's, a click under its rows.
     in property <length> project-content-height;
     in-out property <length> project-viewport-y;
+    in-out property <int> project-scroll-asks;
     callback project-shown(length, length);
     callback project-resized(length, length);
     callback project-empty-clicked();

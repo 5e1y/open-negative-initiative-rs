@@ -73,10 +73,11 @@ export component Tree inherits Surface {
             rows: Library.rows;
             pin: Library.tree-pin;
             content-height: Library.tree-content-height;
-            viewport-y <=> Library.tree-viewport-y;
+            viewport-y: Library.tree-viewport-y;
+            asks: Library.tree-scroll-asks;
             shown(w, h) => { Library.tree-shown(w, h); }
             resized(w, h) => { Library.tree-resized(w, h); }
-            scrolled => { Library.tree-scrolled(); }
+            scrolled(y) => { Library.tree-scrolled(y); }
             empty-clicked => { Library.tree-empty-clicked(); }
             row-clicked(i, command, shift) => { Library.row-clicked(i, command, shift); }
             row-double-clicked(i) => { Library.row-double-clicked(i); }
@@ -96,10 +97,11 @@ export component Tree inherits Surface {
             rows: Library.project-rows;
             pin: Library.project-pin;
             content-height: Library.project-content-height;
-            viewport-y <=> Library.project-viewport-y;
+            viewport-y: Library.project-viewport-y;
+            asks: Library.project-scroll-asks;
             shown(w, h) => { Library.project-shown(w, h); }
             resized(w, h) => { Library.project-resized(w, h); }
-            scrolled => { Library.project-scrolled(); }
+            scrolled(y) => { Library.project-scrolled(y); }
             empty-clicked => { Library.project-empty-clicked(); }
             row-clicked(i, command, shift) => { Library.project-row-clicked(i, command, shift); }
             row-double-clicked(i) => { Library.project-row-double-clicked(i); }
