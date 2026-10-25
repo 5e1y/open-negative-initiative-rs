@@ -3419,5 +3419,19 @@
     "title": "Dev and test builds read the interface at run time",
     "status": "done",
     "detail": "oni-ui/build.rs sets SLINT_LIVE_PREVIEW for the debug profile, slint gains live-preview: the generated layer falls from 103 MB to 1.1 MB, oni-ui compiles in 12 s, a .slint edit reaches a window check in 15 s, the full check in 128 s instead of about 650. The app profile and release keep the compiled interface. Slint's @tr texts stay English in this mode (no bundled translations in the interpreter), so the French look is judged on the app profile."
+  },
+  {
+    "id": 580,
+    "type": "design",
+    "title": "The text fields stand in the lab's hollow",
+    "status": "done",
+    "detail": "ds/fields.slint holds TextField, RenameField, SizeFields and DateFields on depth.slint's Inward { hollow: true }: a card's corner floored in the canvas, DS.Space.md across, DS.Space.sm down a multiline one, the rim lit while focused (focused-look forces it), the placeholder shown while empty as SwiftUI does, a disabled field fading its words alone. FieldStyle moves to theme_fields.slint. The export's W x H and the shot date share one hollow a keycap tall; a multiline field's lines-height is the text's, inside its padding (Swift's frame before dsTextField); a title typed over takes DS.Typo.title, led out by the hollow's padding; a renamed row's text stays where its title stood. Behaviour unchanged: select-all on entry, double and triple click (text_fields reads the new inset). Cost: no raster, the hollow is twelve strokes as every Inward."
+  },
+  {
+    "id": 581,
+    "type": "design",
+    "title": "The lab's Fields page shows the design system's fields",
+    "status": "done",
+    "detail": "crates/oni-ui/lab/fields.slint lays the real TextField, Field, SizeFields and DateFields, their states forced through focused-look and enabled; the chrome's tunables leave the page for FieldStyle, the hollow's Depth tunables stay."
   }
 ]

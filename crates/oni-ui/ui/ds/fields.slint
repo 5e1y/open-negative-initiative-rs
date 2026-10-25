@@ -1,0 +1,260 @@
+// The text fields (`dsTextField`): one entry in a hollow floored in the canvas, a name typed over in
+// place, and the size and date boxes that share one hollow and one focus.
+import { Colour, Space, Type, FieldStyle } from "theme.slint";
+import { Label, TextRole, Tone } from "base.slint";
+import { Inward } from "depth.slint";
+
+// The serial of the last entry focused, so a window's return to its field keeps its selection.
+global FieldFocus {
+    in-out property <int> serial;
+}
+
+// The words typed and, while there are none, the placeholder under them, focused or not as SwiftUI
+// shows it. Entered by a click, Tab or its owner, it selects its whole value, as AppKit's field does.
+component Entry inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    in property <bool> multiline;
+    in property <bool> centred;
+    in property <TextRole> role: TextRole.label;
+    in property <bool> enabled: true;
+    out property <bool> editing: input.has-focus;
+    callback edited(string);
+    callback accepted(string);
+    callback left(string);
+    public function take-focus() { input.focus(); }
+    public function enter() { input.focus(); input.select-all(); }
+    // The `FieldFocus` serial this entry took when last entered; -1 before it ever was.
+    property <int> held: -1;
+    horizontal-stretch: 1;
+    if input.text == "": Label {
+        width: parent.width;
+        height: parent.height;
+        text: root.placeholder;
+        role: root.role;
+        ink: FieldStyle.placeholder;
+        centred: root.centred;
+        vertical-alignment: root.multiline ? top : center;
+        overflow: elide;
+    }
+    input := TextInput {
+        width: parent.width;
+        height: parent.height;
+        single-line: !root.multiline;
+        wrap: root.multiline ? word-wrap : no-wrap;
+        vertical-alignment: root.multiline ? top : center;
+        horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
+        font-family: Type.family;
+        font-size: root.role == TextRole.title ? Type.title : Type.label;
+        color: root.enabled ? FieldStyle.ink : FieldStyle.faded;
+        selection-background-color: FieldStyle.selection;
+        enabled: root.enabled;
+        edited => { root.edited(self.text); }
+        accepted => { root.accepted(self.text); }
+        changed has-focus => {
+            if (self.has-focus) {
+                // A return with no other entry focused meanwhile is the window's coming back.
+                if (root.held != FieldFocus.serial) { self.select-all(); }
+                FieldFocus.serial += 1;
+                root.held = FieldFocus.serial;
+            } else {
+                root.left(self.text);
+            }
+        }
+    }
+    // Over the entry until it holds the focus: the press enters it, then the input takes the clicks.
+    TouchArea {
+        enabled: root.enabled && !input.has-focus;
+        mouse-cursor: MouseCursor.text;
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { root.enter(); }
+        }
+    }
+}
+
+// `DSTextField`: an entry in its hollow, the rim lit while it holds the focus; once in, a click places
+// the caret, a double click selects a word and a triple click the line. Disabled, only the words fade.
+export component TextField inherits HorizontalLayout {
+    in-out property <string> text <=> entry.text;
+    // The owner's text, pushed in at each change: a binding on `text` dies at the first key typed.
+    in property <string> value;
+    in property <string> placeholder;
+    // A unit at the hollow's end, as the extension after a file name.
+    in property <string> suffix;
+    // Lines that wrap, `lines-height` of them inside the hollow's padding, as a report's message.
+    in property <bool> multiline;
+    in property <length> lines-height: FieldStyle.lines;
+    in property <bool> centred;
+    // The face of the words typed: a label's, or a title's as a roll's name typed over.
+    in property <TextRole> role: TextRole.label;
+    // The rim lit as if focused, a state shown without the keyboard.
+    in property <bool> focused-look;
+    in property <bool> enabled: true;
+    out property <bool> editing: entry.editing;
+    callback edited(string);
+    // Return; and the focus leaving the field, which a typed value also commits on.
+    callback accepted(string);
+    callback left(string);
+    public function take-focus() { entry.take-focus(); }
+    public function take-focus-selecting() { entry.enter(); }
+    init => { if (root.value != "") { entry.text = root.value; } }
+    changed value => { entry.text = root.value; }
+    Inward {
+        horizontal-stretch: 1;
+        min-width: row.min-width;
+        height: root.multiline ? root.lines-height + 2 * FieldStyle.down : FieldStyle.height;
+        ground: FieldStyle.ground;
+        radius: FieldStyle.radius;
+        hollow: true;
+        lit: entry.editing || root.focused-look;
+        // The hollow's padding enters the field as its words do.
+        TouchArea {
+            enabled: root.enabled && !entry.editing;
+            mouse-cursor: MouseCursor.text;
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) { entry.enter(); }
+            }
+        }
+        row := HorizontalLayout {
+            padding-left: FieldStyle.across;
+            padding-right: FieldStyle.across;
+            padding-top: root.multiline ? FieldStyle.down : 0px;
+            padding-bottom: root.multiline ? FieldStyle.down : 0px;
+            entry := Entry {
+                placeholder: root.placeholder;
+                multiline: root.multiline;
+                centred: root.centred;
+                role: root.role;
+                enabled: root.enabled;
+                edited(t) => { root.edited(t); }
+                accepted(t) => { root.accepted(t); }
+                left(t) => { root.left(t); }
+            }
+            if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
+        }
+    }
+}
+
+// `RenameField`: a name typed over in place, entered at once with its value selected; Return or the
+// focus leaving commits it, Escape gives the old one back.
+export component RenameField inherits FocusScope {
+    in property <string> text;
+    in property <string> placeholder;
+    in property <TextRole> role: TextRole.label;
+    // The hollow led out by its padding, so the typed name starts where the title stood.
+    in property <bool> outdent;
+    callback edited(string);
+    callback committed(string);
+    callback cancelled();
+    property <bool> done;
+    min-height: FieldStyle.height;
+    key-pressed(event) => {
+        if (event.text == Key.Escape) {
+            root.done = true;
+            root.cancelled();
+            return accept;
+        }
+        reject
+    }
+    TextField {
+        x: root.outdent ? -FieldStyle.across : 0px;
+        y: (root.height - self.height) / 2;
+        width: root.width - self.x;
+        height: FieldStyle.height;
+        text: root.text;
+        placeholder: root.placeholder;
+        role: root.role;
+        init => { self.take-focus(); }
+        edited(t) => { root.edited(t); }
+        accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+        left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
+    }
+}
+
+// `SizeFields`: W × H, centred title digits in one hollow a keycap tall, lit while either holds the
+// focus. Return in a box, or the focus leaving it, hands both to `typed`.
+export component SizeFields inherits HorizontalLayout {
+    // The owner's numbers, pushed in at each change, and what the boxes hold.
+    in property <string> width-value;
+    in property <string> height-value;
+    out property <string> width-text: wide.text;
+    out property <string> height-text: high.text;
+    in property <bool> focused-look;
+    in property <bool> enabled: true;
+    out property <bool> editing: wide.editing || high.editing;
+    callback typed(string, string);
+    init => { wide.text = root.width-value; high.text = root.height-value; }
+    changed width-value => { wide.text = root.width-value; }
+    changed height-value => { high.text = root.height-value; }
+    Inward {
+        horizontal-stretch: 1;
+        min-width: row.min-width;
+        height: FieldStyle.boxes-height;
+        ground: FieldStyle.ground;
+        radius: FieldStyle.radius;
+        hollow: true;
+        lit: root.editing || root.focused-look;
+        row := HorizontalLayout {
+            padding-left: FieldStyle.across;
+            padding-right: FieldStyle.across;
+            alignment: center;
+            spacing: Space.xs;
+            wide := Entry {
+                width: FieldStyle.size-box; horizontal-stretch: 0;
+                placeholder: @tr("W"); role: TextRole.title; centred: true; enabled: root.enabled;
+                accepted => { root.typed(wide.text, high.text); }
+                left => { root.typed(wide.text, high.text); }
+            }
+            Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
+            high := Entry {
+                width: FieldStyle.size-box; horizontal-stretch: 0;
+                placeholder: @tr("H"); role: TextRole.title; centred: true; enabled: root.enabled;
+                accepted => { root.typed(wide.text, high.text); }
+                left => { root.typed(wide.text, high.text); }
+            }
+        }
+    }
+}
+
+// `DateFields`: MM / DD / YYYY in one hollow hugging its boxes, committed on Return or when the focus
+// leaves the three.
+export component DateFields inherits HorizontalLayout {
+    in-out property <string> month <=> m.text;
+    in-out property <string> day <=> d.text;
+    in-out property <string> year <=> y.text;
+    in property <bool> focused-look;
+    out property <bool> editing: m.editing || d.editing || y.editing;
+    callback committed(string, string, string);
+    changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
+    alignment: start;
+    Inward {
+        width: row.preferred-width;
+        height: FieldStyle.boxes-height;
+        ground: FieldStyle.ground;
+        radius: FieldStyle.radius;
+        hollow: true;
+        lit: root.editing || root.focused-look;
+        row := HorizontalLayout {
+            padding-left: FieldStyle.across;
+            padding-right: FieldStyle.across;
+            spacing: Space.xs;
+            m := Entry {
+                width: FieldStyle.date-box; horizontal-stretch: 0;
+                placeholder: @tr("MM"); role: TextRole.title; centred: true;
+                accepted => { root.committed(root.month, root.day, root.year); }
+            }
+            Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+            d := Entry {
+                width: FieldStyle.date-box; horizontal-stretch: 0;
+                placeholder: @tr("DD"); role: TextRole.title; centred: true;
+                accepted => { root.committed(root.month, root.day, root.year); }
+            }
+            Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
+            y := Entry {
+                width: FieldStyle.year-box; horizontal-stretch: 0;
+                placeholder: @tr("YYYY"); role: TextRole.title; centred: true;
+                accepted => { root.committed(root.month, root.day, root.year); }
+            }
+        }
+    }
+}

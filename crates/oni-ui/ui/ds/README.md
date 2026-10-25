@@ -8,9 +8,9 @@ and every screen picks it up.
 | File | What it holds | Who writes it |
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle` (in `theme_fields.slint`), `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
-| `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
+| `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
@@ -51,6 +51,21 @@ an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache
   `Depth.press-time`, held down `Depth.min-hold` however short the tap, risen in `Depth.release-time`.
 - **Plates**: `ButtonGroup { plate: true }` sets its keys flush on the black socket (`KeycapPlate`),
   `small` for a plate of mini keys.
+
+## Fields
+
+Every text field is Swift's `dsTextField`: an `Inward { hollow: true }` floored in the canvas, a card's
+corner, `FieldStyle.across` either side and `down` above and below a multiline one, its rim lit while it
+holds the focus (`focused-look` forces it). Disabled, the words fade and the chrome stays.
+
+- **`TextField`**: one entry; `suffix` sits at the hollow's end, `lines-height` is the text's height inside
+  the padding. Entered by a click, Tab or its owner, it selects its value; then a click places the caret,
+  a double click selects a word, a triple click the line (the `text_fields` window check).
+- **`RenameField`**: a `TextField` that takes the focus at once; `role: title` and `outdent` for a title,
+  the hollow led out by its padding so the name typed stays where the title stood.
+- **`SizeFields`, `DateFields`**: two or three centred entries in one hollow a keycap tall, lit while any
+  of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
+- **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it.
 
 ## The rule: screens use only the design system
 

@@ -39,8 +39,8 @@ pub(crate) fn a_field_entered_selects_its_value_and_a_double_click_a_word() {
     rig.window.set_size(PhysicalSize::new(400, 400));
     probe.show().unwrap();
     rig.drawn();
-    // At the first word's second letter, inside the field's padding plus a few points.
-    let x = probe.get_left() + 14.0;
+    // At the first word's second letter, a few points past the hollow's padding.
+    let x = probe.get_text_left() + 6.0;
     let one = probe.get_one_y() + probe.get_field_height() / 2.0;
     probe.set_first(VALUE.into());
 

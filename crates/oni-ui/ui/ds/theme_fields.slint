@@ -1,0 +1,26 @@
+// The text fields' gauges, Swift's `dsTextField` (DSTextField.swift): a card-cornered hollow floored in
+// the canvas, `DS.Space.md` across, `DS.Space.sm` down a multiline one, its rim lit while focused.
+import { DS } from "tokens.slint";
+
+export global FieldStyle {
+    // A picker's field face, inset as a field's words once were.
+    out property <length> padding: DS.space-sm;
+    out property <length> radius: DS.radius-card;
+    out property <length> height: DS.control-field-height;
+    out property <length> across: DS.space-md;
+    out property <length> down: DS.space-sm;
+    out property <color> ground: DS.palette-canvas;
+    // A multiline field's lines unless told, a report's message.
+    out property <length> lines: DS.control-report-message-height;
+    // AppKit's dark label, placeholder and disabled-control text alphas: 0.85, then 0.25 for both.
+    out property <color> ink: DS.system-primary;
+    out property <color> placeholder: DS.system-tertiary;
+    out property <color> faded: DS.system-tertiary;
+    // AppKit's selected-text background in the dark appearance, which no Swift token names.
+    out property <color> selection: #3f638bff;
+    // The boxes that share one hollow (`SizeFields`, `DateFields`): a keycap tall, their digits titles.
+    out property <length> boxes-height: DS.control-keycap-height;
+    out property <length> size-box: DS.control-export-size-field-width;
+    out property <length> date-box: DS.control-date-field-width;
+    out property <length> year-box: DS.control-year-field-width;
+}

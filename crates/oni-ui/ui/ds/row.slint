@@ -144,9 +144,9 @@ export component Row inherits Rectangle {
     row := HorizontalLayout {
         // Renamed, the typed name starts where the title stood.
         padding-left: root.badged ? Space.xs
-            : root.renaming ? RowStyle.padding + root.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.padding
+            : root.renaming ? RowStyle.padding + root.indent + RowStyle.chevron-zone + RowStyle.slot + 2 * RowStyle.gap - FieldStyle.across
             : RowStyle.padding + root.indent;
-        padding-right: root.badged ? Space.xs : RowStyle.padding;
+        padding-right: root.badged ? Space.xs : root.renaming ? FieldStyle.across : RowStyle.padding;
         padding-top: root.badged ? Space.xs : 0px;
         // `PaperProfilesSheet.group`: a heading an `xs` above its first line.
         padding-bottom: root.badged || root.heading ? Space.xs : 0px;

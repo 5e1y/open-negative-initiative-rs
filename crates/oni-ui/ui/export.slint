@@ -1,7 +1,7 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm } from "ds/ds.slint";
+import { Icons, Space, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields } from "ds/ds.slint";
 import { ExportLine, PaperRow, Exporting } from "export_state.slint";
 export { ExportLine, PaperRow, Exporting }
 
@@ -216,20 +216,11 @@ export component ExportPanel inherits Surface {
                     HorizontalLayout {
                         spacing: Space.s;
                         alignment: start;
-                        width-box := TextField { width: FormStyle.size-field;
-                            value: Exporting.width-text;
-                            placeholder: @tr("W");
+                        SizeFields {
+                            width-value: Exporting.width-text;
+                            height-value: Exporting.height-text;
                             enabled: Exporting.size-enabled;
-                            accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
-                            left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
-                        }
-                        Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
-                        height-box := TextField { width: FormStyle.size-field;
-                            value: Exporting.height-text;
-                            placeholder: @tr("H");
-                            enabled: Exporting.size-enabled;
-                            accepted(t) => { Exporting.size-typed(width-box.text, height-box.text); }
-                            left(t) => { Exporting.size-typed(width-box.text, height-box.text); }
+                            typed(w, h) => { Exporting.size-typed(w, h); }
                         }
                         if Exporting.resized: Button { has-icon: true; square: true; icon: Icons.reset; help: @tr("Full resolution"); clicked => { Exporting.full-size(); } }
                     }

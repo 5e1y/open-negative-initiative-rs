@@ -3,7 +3,8 @@
 import { DS } from "tokens.slint";
 import { Colour, Space, State, TileStyle, ButtonStyle } from "theme.slint";
 import { Label, Picture, TextRole, Tone, Clicks } from "base.slint";
-import { Button, TextField } from "controls.slint";
+import { Button } from "controls.slint";
+export { DateFields } from "fields.slint";
 import { Icons } from "icons.slint";
 import { Medal } from "marks.slint";
 
@@ -45,23 +46,6 @@ export component EmptyState inherits VerticalLayout {
         alignment: center;
         Button { text: root.action; clicked => { root.acted(); } }
     }
-}
-
-// `DateFields`: month, day and year typed by hand, committed on Return or when the focus leaves.
-export component DateFields inherits HorizontalLayout {
-    in-out property <string> month;
-    in-out property <string> day;
-    in-out property <string> year;
-    out property <bool> editing: m.editing || d.editing || y.editing;
-    callback committed(string, string, string);
-    spacing: Space.xs;
-    height: ButtonStyle.height;
-    m := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("MM"); text <=> root.month; accepted => { root.committed(root.month, root.day, root.year); } }
-    Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    d := TextField { width: DS.control-date-field-width; centred: true; role: TextRole.title; placeholder: @tr("DD"); text <=> root.day; accepted => { root.committed(root.month, root.day, root.year); } }
-    Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
-    y := TextField { width: DS.control-year-field-width; centred: true; role: TextRole.title; placeholder: @tr("YYYY"); text <=> root.year; accepted => { root.committed(root.month, root.day, root.year); } }
-    changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
 }
 
 // Where a reorder would land: a line in the selected colour.

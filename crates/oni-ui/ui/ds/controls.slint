@@ -7,6 +7,8 @@ import { Dot } from "marks.slint";
 import { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button } from "button.slint";
 import { SliderFill, Knob, Slider } from "slider.slint";
 export { ButtonKind, ButtonSize, Look, KeyInk, ButtonInk, Button, SliderFill, Knob, Slider }
+import { TextField, RenameField } from "fields.slint";
+export { TextField, RenameField }
 
 // Where a group of keys sits in its row; `fill` spans it, its worded keys sharing the width.
 export enum GroupAlign { start, end, center, fill }
@@ -95,131 +97,5 @@ export component Toggle inherits HorizontalLayout {
         wrap: root.wrap ? word-wrap : no-wrap;
         horizontal-stretch: root.wrap ? 1 : 0;
         TouchArea { enabled: root.enabled; clicked => { Clicks.press(); root.toggled(!root.on); } }
-    }
-}
-
-// The serial of the last field entered, so a window's return to its field keeps its selection.
-global FieldFocus {
-    in-out property <int> serial;
-}
-
-// `DSTextField`: the field on the canvas's dark, its edge lit while it holds the focus. Entered by a
-// click, Tab or its owner, it selects its whole value, as AppKit's field does; once in, a click
-// places the caret, a double click selects a word and a triple click the line.
-export component TextField inherits HorizontalLayout {
-    in-out property <string> text <=> input.text;
-    // The owner's text, pushed in at each change: a binding on `text` dies at the first key typed.
-    in property <string> value;
-    in property <string> placeholder;
-    // A unit after the box, as "px" beside a size.
-    in property <string> suffix;
-    // Lines that wrap in a box `lines-height` tall, as a report's message or a photo's note.
-    in property <bool> multiline;
-    in property <length> lines-height: DS.control-report-message-height;
-    // The words centred in the box, as a date's digits.
-    in property <bool> centred;
-    // The face of the words typed: a label's, or a title's as a date's digits.
-    in property <TextRole> role: TextRole.label;
-    in property <bool> focused-look;
-    in property <bool> enabled: true;
-    out property <bool> editing: input.has-focus;
-    callback edited(string);
-    // Return; and the focus leaving the field, which a typed value also commits on.
-    callback accepted(string);
-    callback left(string);
-    public function take-focus() { input.focus(); }
-    public function take-focus-selecting() { input.focus(); input.select-all(); }
-    // The `FieldFocus` serial this field took when last entered; -1 before it ever was.
-    property <int> held: -1;
-    init => { if (root.value != "") { input.text = root.value; } }
-    changed value => { input.text = root.value; }
-    spacing: Space.xxs;
-    opacity: root.enabled ? 1 : State.disabled;
-    box := Rectangle {
-        horizontal-stretch: 1;
-        height: root.multiline ? root.lines-height : ButtonStyle.height;
-        border-radius: ButtonStyle.radius;
-        background: Colour.canvas;
-        border-width: (input.has-focus || root.focused-look) ? Stroke.line : Stroke.hairline;
-        border-color: (input.has-focus || root.focused-look) ? Colour.accent : Colour.separator;
-        clip: root.multiline;
-        // A centred box spans its whole width, so a date's digits never meet its padding.
-        input := TextInput {
-            x: root.centred ? 0px : FieldStyle.padding;
-            y: root.multiline ? FieldStyle.padding : 0px;
-            width: parent.width - 2 * self.x;
-            height: root.multiline ? parent.height - 2 * FieldStyle.padding : parent.height;
-            single-line: !root.multiline;
-            wrap: root.multiline ? word-wrap : no-wrap;
-            vertical-alignment: root.multiline ? top : center;
-            horizontal-alignment: root.centred ? TextHorizontalAlignment.center : TextHorizontalAlignment.left;
-            font-family: Type.family;
-            font-size: root.role == TextRole.title ? Type.title : Type.label;
-            color: Colour.ink;
-            enabled: root.enabled;
-            edited => { root.edited(self.text); }
-            accepted => { root.accepted(self.text); }
-            changed has-focus => {
-                if (self.has-focus) {
-                    // A return with no other field entered meanwhile is the window's coming back.
-                    if (root.held != FieldFocus.serial) { self.select-all(); }
-                    FieldFocus.serial += 1;
-                    root.held = FieldFocus.serial;
-                } else {
-                    root.left(self.text);
-                }
-            }
-        }
-        if input.text == "" && !input.has-focus && !root.focused-look: Label {
-            x: input.x;
-            y: input.y;
-            width: input.width;
-            height: root.multiline ? self.preferred-height : input.height;
-            text: root.placeholder;
-            tone: Tone.tertiary;
-            centred: root.centred;
-        }
-        // Over the field until it holds the focus: the press enters it, then the input takes the clicks.
-        TouchArea {
-            enabled: root.enabled && !input.has-focus;
-            mouse-cursor: MouseCursor.text;
-            pointer-event(event) => {
-                if (event.kind == PointerEventKind.down && event.button == PointerEventButton.left) {
-                    input.focus();
-                    input.select-all();
-                }
-            }
-        }
-    }
-    if root.suffix != "": Label { text: root.suffix; tone: Tone.secondary; }
-}
-
-// `RenameField`: a name typed over in place, entered at once with its value selected; Return or the
-// focus leaving commits it, Escape gives the old one back.
-export component RenameField inherits FocusScope {
-    in property <string> text;
-    in property <string> placeholder;
-    callback edited(string);
-    callback committed(string);
-    callback cancelled();
-    property <bool> done;
-    key-pressed(event) => {
-        if (event.text == Key.Escape) {
-            root.done = true;
-            root.cancelled();
-            return accept;
-        }
-        reject
-    }
-    VerticalLayout {
-        alignment: center;
-        TextField {
-            text: root.text;
-            placeholder: root.placeholder;
-            init => { self.take-focus(); }
-            edited(t) => { root.edited(t); }
-            accepted(t) => { if (!root.done) { root.done = true; root.committed(t); } }
-            left(t) => { if (!root.done) { root.done = true; root.committed(t); } }
-        }
     }
 }

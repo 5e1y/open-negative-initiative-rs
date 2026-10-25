@@ -321,6 +321,26 @@ msgstr "Terminé"
 msgid "OK"
 msgstr "OK"
 
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "W"
+msgstr "L"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "H"
+msgstr "H"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "MM"
+msgstr "MM"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "DD"
+msgstr "JJ"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "YYYY"
+msgstr "AAAA"
+
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
 msgstr "rendu impossible"
@@ -328,18 +348,6 @@ msgstr "rendu impossible"
 #: crates/oni-ui/ui/ds/keypad.slint
 msgid "REMEASURE ROLL"
 msgstr "REMESURER LA PELLICULE"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "MM"
-msgstr "MM"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "DD"
-msgstr "JJ"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "YYYY"
-msgstr "AAAA"
 
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "Previous"
@@ -596,14 +604,6 @@ msgstr "Taille"
 #: crates/oni-ui/ui/export.slint
 msgid "Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution."
 msgstr "Pixels de la première photo. Le côté saisi est celui sur lequel se cale la limite pour chaque photo du lot : la largeur d’un paysage est son grand côté. Jamais d’agrandissement ; vide signifie pleine résolution."
-
-#: crates/oni-ui/ui/export.slint
-msgid "W"
-msgstr "L"
-
-#: crates/oni-ui/ui/export.slint
-msgid "H"
-msgstr "H"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Full resolution"

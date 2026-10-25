@@ -1,7 +1,7 @@
 // The forms of export and colour management: a labelled field, a note, a preview slot, progress, the
 // status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, FieldStyle, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle } from "theme.slint";
 import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
@@ -15,8 +15,6 @@ export global FormStyle {
     out property <length> label-width: DS.control-exif-label-width;
     out property <length> caption: DS.control-export-caption-height;
     out property <length> preview-floor: DS.control-export-preview-floor;
-    // `SizeFields`: Swift's width is the digits' own, the hollow's padding laid outside it.
-    out property <length> size-field: DS.control-export-size-field-width + 2 * FieldStyle.padding;
     out property <length> progress: DS.control-inline-progress-width;
     out property <length> chip-icon: DS.control-icon-size * 0.7;
     out property <length> paper-width: DS.control-paper-sheet-width;
@@ -39,7 +37,7 @@ export component Field inherits VerticalLayout {
     spacing: FormStyle.row-gap;
     // As tall without its "?" as with it, so every field keeps one rhythm.
     if root.stacked: HorizontalLayout {
-        spacing: Space.s;
+        spacing: Space.xs;
         alignment: start;
         min-height: SectionStyle.help-mark;
         Label { text: root.label; tone: Tone.secondary; }
@@ -199,6 +197,8 @@ export component EditableTitle inherits VerticalLayout {
         TouchArea { clicked => { root.renaming = true; } }
     }
     if root.renaming: RenameField {
+        role: TextRole.title;
+        outdent: true;
         text: root.text;
         placeholder: root.placeholder;
         committed(t) => { root.renaming = false; root.committed(t); }

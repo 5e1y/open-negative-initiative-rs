@@ -486,7 +486,7 @@ hand. The website does the same with `sync-app-tokens.mjs`, which refuses name c
 | `DSTabBar` | Condensed tabs, marks for settings in hidden tabs, hover shows the label | `HorizontalLayout` of tabs, `accessible-role: tab` | `[a11y]` |
 | `DSToggle` | A switch: cross and check in a hollow, the held state lit | Component, `accessible-role: checkbox` | `[a11y]` |
 | `DSPicker` | Value in a hollow, chevron key, drops the system menu | 4.8 | `[menu]` |
-| `DSTextField`, `DSField` | Field in a hollow, lit edge while focused; multiline grows | `TextInput` / `TextEdit` in a recessed `Rectangle` | Text editing, IME and undo come from Slint, which differ from NSTextField's. |
+| `DSTextField`, `DSField` | Field in a hollow, lit edge while focused; multiline grows | ds `TextField`, `SizeFields`, `DateFields`: a `TextInput` in an `Inward` hollow (ds/fields.slint) | Text editing, IME and undo come from Slint, which differ from NSTextField's. |
 | `DSHelp` | "?" beside a heading; the note drawn by the help layer | 4.2 | |
 | `DSHover` | Fill for area elements; state for self-drawn ones | `TouchArea.has-hover` | |
 | `DSGesture` | Count of hands on controls | Rust counter (section 3) | |

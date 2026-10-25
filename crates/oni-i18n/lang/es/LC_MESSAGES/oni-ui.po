@@ -321,6 +321,26 @@ msgstr "OK"
 msgid "OK"
 msgstr "Aceptar"
 
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "W"
+msgstr "An"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "H"
+msgstr "Al"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "MM"
+msgstr "MM"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "DD"
+msgstr "DD"
+
+#: crates/oni-ui/ui/ds/fields.slint
+msgid "YYYY"
+msgstr "AAAA"
+
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
 msgstr "no se pudo mostrar"
@@ -328,18 +348,6 @@ msgstr "no se pudo mostrar"
 #: crates/oni-ui/ui/ds/keypad.slint
 msgid "REMEASURE ROLL"
 msgstr "VOLVER A MEDIR"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "MM"
-msgstr "MM"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "DD"
-msgstr "DD"
-
-#: crates/oni-ui/ui/ds/organise.slint
-msgid "YYYY"
-msgstr "AAAA"
 
 #: crates/oni-ui/ui/ds/roll.slint
 msgid "Previous"
@@ -596,14 +604,6 @@ msgstr "Tamaño"
 #: crates/oni-ui/ui/export.slint
 msgid "Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution."
 msgstr "Píxeles de la primera foto. El lado que escribes es el que limita cada foto del lote: el ancho de una horizontal es su lado largo. Nunca se amplía; vacío significa resolución completa."
-
-#: crates/oni-ui/ui/export.slint
-msgid "W"
-msgstr "An"
-
-#: crates/oni-ui/ui/export.slint
-msgid "H"
-msgstr "Al"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Full resolution"

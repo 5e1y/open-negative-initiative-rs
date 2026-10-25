@@ -1,22 +1,9 @@
-// The lab's Fields page: Slint copies of the Swift app's text fields (`dsTextField`, `DSField`), each a
-// hollow floored in the canvas, built on depth.slint's `Inward`.
+// The lab's Fields page: the design system's own text fields (`dsTextField`, `DSField`), each a hollow
+// floored in the canvas on depth.slint's `Inward`, live beside its states forced through the DS's props.
 import { Slider, ScrollView } from "std-widgets.slint";
 import { DS } from "../ui/ds/tokens.slint";
-import { Icons } from "../ui/ds/icons.slint";
-import { Keycap, Outward, Inward, Depth } from "depth.slint";
-
-// The field chrome's own tunables, Swift's values as defaults (DSTextField.swift, DSSlider.swift:276).
-export global FieldLook {
-    // DS.Radius.card, DS.Control.fieldHeight, DS.Space.md across, DS.Space.sm down when multiline.
-    in-out property <float> radius: 12;
-    in-out property <float> height: 32;
-    in-out property <float> pad-x: 16;
-    in-out property <float> pad-y: 8;
-    // AppKit's dark label, placeholder and disabled-control text alphas on white.
-    in-out property <float> text-alpha: 0.85;
-    in-out property <float> placeholder-alpha: 0.25;
-    in-out property <float> disabled-alpha: 0.25;
-}
+import { TextField, Field, FieldLayout, SizeFields, DateFields, TextRole } from "../ui/ds/ds.slint";
+import { Depth } from "depth.slint";
 
 // One tunable, as lab.slint's `Tune`.
 component Tune inherits Rectangle {
@@ -44,202 +31,6 @@ component Caption inherits Text {
     color: #ffffff59;
     font-size: 10px;
     wrap: word-wrap;
-}
-
-// `dsTextField`'s chrome (DSTextField.swift:18): the canvas floor, the recess, the edge, the lit rim
-// below, and the ring while focused; children lie in the padded hollow.
-component Well inherits Rectangle {
-    in property <bool> multiline;
-    in property <bool> ring;
-    property <length> radius: FieldLook.radius * 1px;
-    height: FieldLook.height * 1px;
-    Inward {
-        width: parent.width;
-        height: parent.height;
-        ground: DS.palette-canvas;
-        radius: root.radius;
-        hollow: true;
-        lit: root.ring;
-        HorizontalLayout {
-            padding-left: FieldLook.pad-x * 1px;
-            padding-right: FieldLook.pad-x * 1px;
-            padding-top: root.multiline ? FieldLook.pad-y * 1px : 0;
-            padding-bottom: root.multiline ? FieldLook.pad-y * 1px : 0;
-            @children
-        }
-    }
-}
-
-// The words of a field and its placeholder, shown while the text is empty, focused or not, as SwiftUI does.
-component Entry inherits Rectangle {
-    in-out property <string> text;
-    in property <string> placeholder;
-    in property <length> font-size: DS.typo-label-size;
-    in property <bool> multiline;
-    in property <bool> centred;
-    in property <bool> enabled: true;
-    // False for a forced specimen: it shows its state and takes no focus.
-    in property <bool> live: true;
-    out property <bool> has-focus: input.has-focus;
-    horizontal-stretch: 1;
-    Text {
-        width: parent.width;
-        height: parent.height;
-        visible: input.text == "";
-        text: root.placeholder;
-        font-size: root.font-size;
-        color: rgba(255, 255, 255, root.enabled ? FieldLook.placeholder-alpha : FieldLook.disabled-alpha);
-        vertical-alignment: root.multiline ? top : center;
-        horizontal-alignment: root.centred ? center : left;
-        overflow: elide;
-    }
-    input := TextInput {
-        width: parent.width;
-        height: parent.height;
-        text <=> root.text;
-        enabled: root.enabled && root.live;
-        single-line: !root.multiline;
-        wrap: root.multiline ? word-wrap : no-wrap;
-        font-size: root.font-size;
-        color: rgba(255, 255, 255, root.enabled ? FieldLook.text-alpha : FieldLook.disabled-alpha);
-        selection-background-color: #3f638bff;
-        vertical-alignment: root.multiline ? top : center;
-        horizontal-alignment: root.centred ? center : left;
-    }
-}
-
-// `TextField(...).dsTextField(focused:)`: one entry in its hollow, a suffix such as ".jpg" at its end.
-component Field inherits Well {
-    in-out property <string> text;
-    in property <string> placeholder;
-    in property <length> font-size: DS.typo-label-size;
-    in property <bool> enabled: true;
-    in property <bool> live: true;
-    in property <bool> force-focus;
-    in property <string> suffix;
-    ring: entry.has-focus || root.force-focus;
-    entry := Entry {
-        text <=> root.text;
-        placeholder: root.placeholder;
-        font-size: root.font-size;
-        multiline: root.multiline;
-        enabled: root.enabled;
-        live: root.live;
-    }
-    if root.suffix != "": Text {
-        text: root.suffix;
-        font-size: DS.typo-label-size;
-        color: DS.palette-text-secondary;
-        vertical-alignment: center;
-    }
-}
-
-// `DSField`'s label row (DSField.swift:22): the label in secondary, the help mark beside it.
-component LabelRow inherits HorizontalLayout {
-    in property <string> label;
-    in property <bool> help;
-    spacing: DS.space-xs;
-    alignment: start;
-    Text {
-        text: root.label;
-        font-size: DS.typo-label-size;
-        color: DS.palette-text-secondary;
-        vertical-alignment: center;
-    }
-    // DSHelp.swift:9: the question mark, tertiary, secondary under the hand, DS.Space.xxs around it.
-    if root.help: Rectangle {
-        width: DS.control-help-mark-size + 2 * DS.space-xxs;
-        Image {
-            width: DS.control-help-mark-size;
-            height: DS.control-help-mark-size;
-            source: Icons.question;
-            colorize: mark.has-hover ? DS.palette-text-secondary : DS.palette-text-tertiary;
-        }
-        mark := TouchArea { }
-    }
-}
-
-// `DSField`: the label row above its control, DS.Space.xs between, the control full width.
-component LabelAbove inherits VerticalLayout {
-    in property <string> label;
-    in property <bool> help;
-    spacing: DS.space-xs;
-    LabelRow { label: root.label; help: root.help; }
-    @children
-}
-
-// ExportSurface.swift:134 `field`: the label beside, DS.Control.exifLabelWidth wide, DS.Space.sm to the field.
-component LabelBeside inherits HorizontalLayout {
-    in property <string> label;
-    spacing: DS.space-sm;
-    Text {
-        width: DS.control-exif-label-width;
-        text: root.label;
-        font-size: DS.typo-label-size;
-        color: DS.palette-text-secondary;
-        vertical-alignment: center;
-    }
-    @children
-}
-
-// SizeFields (ExportSurface.swift:384): W × H in one hollow with one focus, DS.Control.keycapHeight tall.
-component SizeBoxes inherits Well {
-    in property <string> w;
-    in property <string> h;
-    in property <bool> enabled: true;
-    in property <bool> live: true;
-    in property <bool> force-focus;
-    height: DS.control-keycap-height;
-    ring: wide.has-focus || high.has-focus || root.force-focus;
-    HorizontalLayout {
-        alignment: center;
-        spacing: DS.space-xs;
-        wide := Entry {
-            width: DS.control-export-size-field-width; horizontal-stretch: 0;
-            text: root.w; placeholder: "W"; font-size: DS.typo-title-size; centred: true;
-            enabled: root.enabled; live: root.live;
-        }
-        Text { text: "×"; font-size: DS.typo-title-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-        high := Entry {
-            width: DS.control-export-size-field-width; horizontal-stretch: 0;
-            text: root.h; placeholder: "H"; font-size: DS.typo-title-size; centred: true;
-            enabled: root.enabled; live: root.live;
-        }
-    }
-}
-
-// DateFields (InfoSidebar.swift:282): MM / DD / YYYY in one hollow with one focus, hugging its boxes.
-component DateBoxes inherits Well {
-    in property <string> month;
-    in property <string> day;
-    in property <string> year;
-    in property <bool> enabled: true;
-    in property <bool> live: true;
-    in property <bool> force-focus;
-    height: DS.control-keycap-height;
-    width: 2 * DS.control-date-field-width + DS.control-year-field-width + 4 * DS.space-xs + 12px + 2 * FieldLook.pad-x * 1px;
-    ring: mm.has-focus || dd.has-focus || yy.has-focus || root.force-focus;
-    HorizontalLayout {
-        alignment: center;
-        spacing: DS.space-xs;
-        mm := Entry {
-            width: DS.control-date-field-width; horizontal-stretch: 0;
-            text: root.month; placeholder: "MM"; font-size: DS.typo-title-size; centred: true;
-            enabled: root.enabled; live: root.live;
-        }
-        Text { text: "/"; font-size: DS.typo-title-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-        dd := Entry {
-            width: DS.control-date-field-width; horizontal-stretch: 0;
-            text: root.day; placeholder: "DD"; font-size: DS.typo-title-size; centred: true;
-            enabled: root.enabled; live: root.live;
-        }
-        Text { text: "/"; font-size: DS.typo-title-size; color: DS.palette-text-secondary; vertical-alignment: center; }
-        yy := Entry {
-            width: DS.control-year-field-width; horizontal-stretch: 0;
-            text: root.year; placeholder: "YYYY"; font-size: DS.typo-title-size; centred: true;
-            enabled: root.enabled; live: root.live;
-        }
-    }
 }
 
 // A specimen: the element on top, its caption under it.
@@ -279,7 +70,7 @@ export component FieldsPage inherits Rectangle {
             spacing: 28px;
             alignment: start;
 
-            // The field tunables, three columns.
+            // The hollow's depth tunables; its gauges are the DS's `FieldStyle`.
             Rectangle {
                 background: DS.palette-canvas;
                 border-radius: 8px;
@@ -288,24 +79,12 @@ export component FieldsPage inherits Rectangle {
                     spacing: 20px;
                     VerticalLayout {
                         alignment: start;
-                        Heading { text: "HOLLOW"; }
-                        Tune { label: "radius"; maximum: 20; value <=> FieldLook.radius; }
-                        Tune { label: "height"; minimum: 20; maximum: 48; value <=> FieldLook.height; }
-                        Tune { label: "pad across"; maximum: 32; value <=> FieldLook.pad-x; }
-                        Tune { label: "pad down"; maximum: 20; value <=> FieldLook.pad-y; }
-                    }
-                    VerticalLayout {
-                        alignment: start;
                         Heading { text: "EDGES"; }
                         Tune { label: "edge"; value <=> Depth.well-edge; }
                         Tune { label: "lip soft"; value <=> Depth.well-lip-soft; }
                     }
                     VerticalLayout {
                         alignment: start;
-                        Heading { text: "TEXT"; }
-                        Tune { label: "text"; value <=> FieldLook.text-alpha; }
-                        Tune { label: "placeholder"; value <=> FieldLook.placeholder-alpha; }
-                        Tune { label: "disabled"; value <=> FieldLook.disabled-alpha; }
                         Heading { text: "WELL (DEPTH)"; }
                         Tune { label: "shade"; value <=> Depth.well-shade; }
                         Tune { label: "lip"; maximum: 0.3; value <=> Depth.well-lip; }
@@ -316,12 +95,12 @@ export component FieldsPage inherits Rectangle {
             Row {
                 name: "SINGLE LINE";
                 source: "DSTextField.swift:6 · PresetEditor.swift:81 · DSDialog.swift:64 · InfoSidebar.swift:210";
-                Specimen { cell: 240px; caption: "live: click and type"; Field { placeholder: "Preset name"; } }
-                Specimen { caption: "rest, empty"; Field { placeholder: "Preset name"; live: false; } }
-                Specimen { caption: "hover = rest (Swift draws none, the I-beam only)"; Field { placeholder: "Preset name"; live: false; } }
-                Specimen { caption: "focused: the rim ring"; Field { placeholder: "Preset name"; live: false; force-focus: true; } }
-                Specimen { caption: "filled"; Field { text: "Portra warm"; live: false; } }
-                Specimen { caption: "disabled: the text fades, the chrome stays"; Field { text: "Portra warm"; enabled: false; } }
+                Specimen { cell: 240px; caption: "live: click and type"; TextField { placeholder: "Preset name"; } }
+                Specimen { caption: "rest, empty"; TextField { placeholder: "Preset name"; } }
+                Specimen { caption: "hover = rest (Swift draws none, the I-beam only)"; TextField { placeholder: "Preset name"; } }
+                Specimen { caption: "focused: the rim ring"; TextField { placeholder: "Preset name"; focused-look: true; } }
+                Specimen { caption: "filled"; TextField { value: "Portra warm"; } }
+                Specimen { caption: "disabled: the text fades, the chrome stays"; TextField { value: "Portra warm"; enabled: false; } }
             }
 
             Row {
@@ -332,7 +111,7 @@ export component FieldsPage inherits Rectangle {
                     caption: "live field, then the failure in DS.Palette.warning (VStack DS.Space.md)";
                     VerticalLayout {
                         spacing: DS.space-md;
-                        Field { placeholder: "e.g. Leica M6"; }
+                        TextField { placeholder: "e.g. Leica M6"; }
                         Text { text: "The report could not be sent: no connection."; font-size: DS.typo-label-size; color: DS.palette-warning; wrap: word-wrap; }
                     }
                 }
@@ -341,8 +120,8 @@ export component FieldsPage inherits Rectangle {
             Row {
                 name: "SEARCH / FILTER";
                 source: "PaperProfilesSheet.swift:130 · the same field, no glass icon";
-                Specimen { cell: 240px; caption: "live"; Field { placeholder: "Filter, e.g. P900 matte"; } }
-                Specimen { caption: "filled, focused"; Field { text: "P900"; live: false; force-focus: true; } }
+                Specimen { cell: 240px; caption: "live"; TextField { placeholder: "Filter, e.g. P900 matte"; } }
+                Specimen { caption: "filled, focused"; TextField { value: "P900"; focused-look: true; } }
             }
 
             Row {
@@ -351,20 +130,20 @@ export component FieldsPage inherits Rectangle {
                 Specimen {
                     cell: 240px;
                     caption: "live, TextField axis vertical, lineLimit 3 reserved";
-                    Field { multiline: true; height: 3 * 16px + 2 * FieldLook.pad-y * 1px; placeholder: "What this look is for"; }
+                    TextField { multiline: true; lines-height: 3 * DS.typo-label-size * 1.25; placeholder: "What this look is for"; }
                 }
                 Specimen {
                     cell: 240px;
                     caption: "live, TextEditor framed 60 tall";
-                    Field { multiline: true; height: DS.control-project-description-height + 2 * FieldLook.pad-y * 1px; }
+                    TextField { multiline: true; lines-height: DS.control-project-description-height; }
                 }
                 Specimen {
                     caption: "filled, focused";
-                    Field { multiline: true; height: 3 * 16px + 2 * FieldLook.pad-y * 1px; live: false; force-focus: true; text: "Warm skin, soft greens, for overcast days."; }
+                    TextField { multiline: true; lines-height: 3 * DS.typo-label-size * 1.25; focused-look: true; value: "Warm skin, soft greens, for overcast days."; }
                 }
                 Specimen {
                     caption: "disabled";
-                    Field { multiline: true; height: 3 * 16px + 2 * FieldLook.pad-y * 1px; enabled: false; text: "Warm skin, soft greens, for overcast days."; }
+                    TextField { multiline: true; lines-height: 3 * DS.typo-label-size * 1.25; enabled: false; value: "Warm skin, soft greens, for overcast days."; }
                 }
             }
 
@@ -374,32 +153,31 @@ export component FieldsPage inherits Rectangle {
                 Specimen {
                     cell: 240px;
                     caption: "live, a row's name, DS.Typo.label in a 32 row";
-                    Field { height: DS.control-film-sidebar-row-height; text: "Roll #8"; }
+                    TextField { value: "Roll #8"; }
                 }
                 Specimen {
                     cell: 240px;
-                    caption: "live, a roll title, DS.Typo.title, led by -DS.Space.md so the text stays put";
-                    Field { font-size: DS.typo-title-size; text: "Roll #8"; }
+                    caption: "live, a roll title, DS.Typo.title, led by -DS.Space.md so the text stays put (RenameField's outdent)";
+                    TextField { role: TextRole.title; value: "Roll #8"; }
                 }
-                Specimen { caption: "focused, as entered"; Field { font-size: DS.typo-title-size; text: "Roll #8"; live: false; force-focus: true; } }
+                Specimen { caption: "focused, as entered"; TextField { role: TextRole.title; value: "Roll #8"; focused-look: true; } }
             }
 
             Row {
                 name: "NUMERIC: SIZE";
                 source: "ExportSurface.swift:384 SizeFields · boxes DS.Control.exportSizeFieldWidth, DS.Typo.title, centred";
-                Specimen { cell: 240px; caption: "live, one focus for the pair"; SizeBoxes { w: "6048"; h: "4032"; } }
-                Specimen { cell: 200px; caption: "rest, empty"; SizeBoxes { live: false; } }
-                Specimen { cell: 200px; caption: "focused"; SizeBoxes { w: "6048"; h: "4032"; live: false; force-focus: true; } }
-                Specimen { cell: 200px; caption: "disabled"; SizeBoxes { w: "6048"; h: "4032"; enabled: false; } }
+                Specimen { cell: 240px; caption: "live, one focus for the pair"; SizeFields { width-value: "6048"; height-value: "4032"; } }
+                Specimen { cell: 200px; caption: "rest, empty"; SizeFields { } }
+                Specimen { cell: 200px; caption: "focused"; SizeFields { width-value: "6048"; height-value: "4032"; focused-look: true; } }
+                Specimen { cell: 200px; caption: "disabled"; SizeFields { width-value: "6048"; height-value: "4032"; enabled: false; } }
             }
 
             Row {
                 name: "DATE BOXES";
                 source: "InfoSidebar.swift:282 DateFields · DS.Control.dateFieldWidth, yearFieldWidth, DS.Typo.title";
-                Specimen { cell: 200px; caption: "live, one focus for the three"; DateBoxes { month: "9"; day: "5"; year: "2026"; } }
-                Specimen { cell: 180px; caption: "rest, empty"; DateBoxes { live: false; } }
-                Specimen { cell: 180px; caption: "focused"; DateBoxes { month: "9"; day: "5"; year: "2026"; live: false; force-focus: true; } }
-                Specimen { cell: 180px; caption: "disabled (Swift never disables it)"; DateBoxes { month: "9"; day: "5"; year: "2026"; enabled: false; } }
+                Specimen { cell: 200px; caption: "live, one focus for the three"; DateFields { month: "9"; day: "5"; year: "2026"; } }
+                Specimen { cell: 180px; caption: "rest, empty"; DateFields { } }
+                Specimen { cell: 180px; caption: "focused"; DateFields { month: "9"; day: "5"; year: "2026"; focused-look: true; } }
             }
 
             Row {
@@ -408,12 +186,12 @@ export component FieldsPage inherits Rectangle {
                 Specimen {
                     cell: 280px;
                     caption: "live, the label row above, DS.Space.xs";
-                    LabelAbove { label: "Name"; Field { placeholder: "Preset name"; } }
+                    Field { label: "Name"; TextField { placeholder: "Preset name"; } }
                 }
                 Specimen {
                     cell: 280px;
-                    caption: "with its help mark (hover it)";
-                    LabelAbove { label: "Pass Order"; help: true; Field { text: "Red, Green, Blue"; live: false; } }
+                    caption: "with its help mark";
+                    Field { label: "Pass Order"; help: "The order the passes run in."; TextField { value: "Red, Green, Blue"; } }
                 }
             }
 
@@ -425,13 +203,13 @@ export component FieldsPage inherits Rectangle {
                     caption: "live, the EXIF block, DS.Space.xs between lines";
                     VerticalLayout {
                         spacing: DS.space-xs;
-                        LabelBeside { label: "Name"; Field { text: "Roll8_012"; suffix: ".jpg"; } }
-                        LabelBeside { label: "Camera"; Field { placeholder: "Leica M6"; } }
-                        LabelBeside { label: "Lens"; Field { placeholder: "Summicron 50 mm"; } }
-                        LabelBeside { label: "ISO"; Field { placeholder: "400"; } }
-                        LabelBeside { label: "Date"; Field { placeholder: "2026:09:05 10:00:00"; } }
-                        LabelBeside { label: "Artist"; Field { placeholder: "Your name"; } }
-                        LabelBeside { label: "Copyright"; Field { placeholder: "© 2026 Your name"; } }
+                        Field { layout: FieldLayout.column; label: "Name"; TextField { value: "Roll8_012"; suffix: ".jpg"; } }
+                        Field { layout: FieldLayout.column; label: "Camera"; TextField { placeholder: "Leica M6"; } }
+                        Field { layout: FieldLayout.column; label: "Lens"; TextField { placeholder: "Summicron 50 mm"; } }
+                        Field { layout: FieldLayout.column; label: "ISO"; TextField { placeholder: "400"; } }
+                        Field { layout: FieldLayout.column; label: "Date"; TextField { placeholder: "2026:09:05 10:00:00"; } }
+                        Field { layout: FieldLayout.column; label: "Artist"; TextField { placeholder: "Your name"; } }
+                        Field { layout: FieldLayout.column; label: "Copyright"; TextField { placeholder: "© 2026 Your name"; } }
                     }
                 }
                 Specimen {
@@ -439,9 +217,9 @@ export component FieldsPage inherits Rectangle {
                     caption: "disabled, as the block is while no frame is exportable";
                     VerticalLayout {
                         spacing: DS.space-xs;
-                        LabelBeside { label: "Name"; Field { text: "Roll8_012"; suffix: ".jpg"; enabled: false; } }
-                        LabelBeside { label: "Camera"; Field { text: "Nikon Z f"; enabled: false; } }
-                        LabelBeside { label: "ISO"; Field { placeholder: "400"; enabled: false; } }
+                        Field { layout: FieldLayout.column; label: "Name"; TextField { value: "Roll8_012"; suffix: ".jpg"; enabled: false; } }
+                        Field { layout: FieldLayout.column; label: "Camera"; TextField { value: "Nikon Z f"; enabled: false; } }
+                        Field { layout: FieldLayout.column; label: "ISO"; TextField { placeholder: "400"; enabled: false; } }
                     }
                 }
             }
