@@ -2581,6 +2581,13 @@
     "detail": "windows_labels_say_explorer_and_ctrl flagged the xattr name com.apple.FinderInfo (oni-library roots/finder.rs) as a Mac word shown to the user; literals starting with com.apple. are identifiers read from the disk, never labels, and a twin keeps one passing while a planted label is still caught."
   },
   {
+    "id": 369,
+    "type": "fix",
+    "title": "A move supersedes the folder read in flight, so New Roll and its undo keep the photos selected",
+    "status": "done",
+    "detail": "followed() maps the selection to the moved paths, but a read started before the move (the folder watcher's, after the previous undo) landed after it with the old paths, and lay_grid dropped every pick: after a partial undo the bar said \"5 photos\" with its keys greyed instead of \"3 selected\". Lot 17's 50 ms second look at freshly written files (roots::settled) widened that window; under the window suite's load the check failed 4 times in 6, never before lot 17. followed() now bumps the read generation itself (locate.rs did it alone), as Swift's followed keeps the moved selection; told::an_undo_that_cannot_put_every_photo_back_says_how_many asserts A and B picked in the roll and C in Scans after the partial undo, its twin that the set as if every photo came back is told apart."
+  },
+  {
     "id": 370,
     "type": "fix",
     "title": "An export never lands on an original",

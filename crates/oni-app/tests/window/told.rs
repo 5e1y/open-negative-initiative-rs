@@ -8,6 +8,7 @@ use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use oni_library::paths;
 use slint::{ComponentHandle, Model};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -164,6 +165,13 @@ pub(crate) fn an_undo_that_cannot_put_every_photo_back_says_how_many() {
     assert!(scans.join("C.tif").exists() && roll.join("A.tif").exists() && roll.join("B.tif").exists(), "C back, A and B kept in the roll");
     assert_eq!(std::fs::read(scans.join("A.tif")).unwrap(), b"another file", "the file that took A's name is untouched");
     assert!(roll.is_dir(), "the roll folder holding them stays");
+    rig.until("the folder read again", Duration::from_secs(30), || ctl.state.borrow().read_done());
+    // `followed`: the picks go where the disk put each photo, C back, A and B still in the roll.
+    let at = |folder: &Path, name: &str| (paths::canonical(folder), name.to_owned());
+    let picked: HashSet<(String, String)> = ctl.state.borrow().picked().iter().map(|p| at(Path::new(&paths::parent(p)), &paths::name(p))).collect();
+    assert_eq!(picked, HashSet::from([at(&roll, "A.tif"), at(&roll, "B.tif"), at(&scans, "C.tif")]), "the three photos stay selected");
+    // Twin: the picks as if every photo had come back are told apart, folder by folder.
+    assert_ne!(picked, names.iter().map(|n| at(&scans, n)).collect::<HashSet<_>>());
     rig.settle();
     println!("shot {}", rig.shot("told-undo").display());
     let _ = std::fs::remove_dir_all(&d.root);
