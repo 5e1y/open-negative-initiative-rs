@@ -1,9 +1,9 @@
-//! `oni [folder or file]` opens a folder of scans, else the one last opened, else nothing; `--board` shows
-//! the design system's board; `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
+//! `oni [folder or file]` opens a folder of scans, else the one last opened, else nothing;
+//! `ONI_BENCH=1` drags sixty Exposure notches, prints their centiles and quits.
 
 use oni_app::app::{Options, Shell};
 use oni_app::render::{Device, Engine};
-use oni_app::{Board, bench, timing};
+use oni_app::{bench, timing};
 use oni_core::{Archive, EditorStore};
 use slint::ComponentHandle;
 use oni_app::viewport::{self, Wheel};
@@ -16,12 +16,6 @@ use std::path::PathBuf;
 static ALLOCATOR: oni_app::mapped::Mapped = oni_app::mapped::Mapped;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().any(|a| a == "--board") {
-        let board = Board::new()?;
-        oni_app::keycaps::serve(&board);
-        board.run()?;
-        return Ok(());
-    }
     let support = timing::support();
     // Before any write, the log included: a second launch on the same folder leaves it as it is.
     let _instance = match oni_app::instance::hold(&support) {

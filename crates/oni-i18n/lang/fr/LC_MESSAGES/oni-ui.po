@@ -230,10 +230,6 @@ msgid "Show Console"
 msgstr "Afficher la console"
 
 #: crates/oni-ui/ui/app.slint
-msgid "Design System…"
-msgstr "Système de design…"
-
-#: crates/oni-ui/ui/app.slint
 msgid "What's New in ONI {}"
 msgstr "Nouveautés d’ONI {}"
 
@@ -4315,13 +4311,13 @@ msgstr "L’original est introuvable : son disque est débranché ou le fichier 
 msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
 msgstr "Une version plus récente d’ONI a écrit ces réglages, et celle-ci ne les réécrit jamais."
 
-#: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
-msgid "another app is using it"
-msgstr "une autre app l’utilise"
-
 #: crates/oni-library/src/refusal.rs
 msgid "The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."
 msgstr "Le nom de la photo est trop long pour un fichier de réglages à côté d’elle. Raccourcissez-le pour garder ses modifications."
+
+#: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
+msgid "another app is using it"
+msgstr "une autre app l’utilise"
 
 #: crates/oni-library/src/refusal.rs
 msgid "it is no longer there"

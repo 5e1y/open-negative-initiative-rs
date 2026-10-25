@@ -94,7 +94,7 @@ mod tests {
     }
 
     /// Every source a shown text comes from: the Rust of the crates that word the window, and the
-    /// interface's files; the design board's samples and this file aside, and checks.
+    /// interface's files; this file and the checks aside.
     fn label_sources() -> Vec<PathBuf> {
         let crates = Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
         let mut out = Vec::new();
@@ -104,7 +104,7 @@ mod tests {
                 let path = entry.path();
                 let name = entry.file_name().to_string_lossy().into_owned();
                 if path.is_dir() {
-                    if name != "board" && name != "tests" {
+                    if name != "tests" {
                         stack.push(path);
                     }
                 } else if (name.ends_with(".rs") || name.ends_with(".slint")) && name != "tests.rs" && !path.ends_with("oni-app/src/platform.rs") {

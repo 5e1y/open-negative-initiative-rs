@@ -230,10 +230,6 @@ msgid "Show Console"
 msgstr "Mostrar consola"
 
 #: crates/oni-ui/ui/app.slint
-msgid "Design System…"
-msgstr "Sistema de diseño…"
-
-#: crates/oni-ui/ui/app.slint
 msgid "What's New in ONI {}"
 msgstr "Novedades de ONI {}"
 
@@ -4315,13 +4311,13 @@ msgstr "No se encuentra el original: su disco está desconectado o el archivo se
 msgid "A newer version of ONI wrote these settings, and this one never rewrites them."
 msgstr "Una versión más reciente de ONI escribió estos ajustes, y esta nunca los reescribe."
 
-#: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
-msgid "another app is using it"
-msgstr "otra app lo está usando"
-
 #: crates/oni-library/src/refusal.rs
 msgid "The photo's name is too long for a settings file beside it. Shorten the name to keep its edits."
 msgstr "El nombre de la foto es demasiado largo para un archivo de ajustes a su lado. Acórtalo para conservar sus cambios."
+
+#: crates/oni-library/src/refusal.rs crates/oni-library/src/roll_folder/carry.rs
+msgid "another app is using it"
+msgstr "otra app lo está usando"
 
 #: crates/oni-library/src/refusal.rs
 msgid "it is no longer there"

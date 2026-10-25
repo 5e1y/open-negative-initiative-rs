@@ -32,7 +32,7 @@ export { Editors } from "editors.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
 export { Preparing, RollCell, Canvas, Mark, Act, KeyWords }
-export { Board, FieldProbe, ScrollProbe, KeyProbe } from "ds/board/board.slint";
+export { FieldProbe, ScrollProbe, KeyProbe } from "ds/probes.slint";
 export { Raster, KeycapLook, Depth } from "ds/ds.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach } from "ds/ds.slint";
 
@@ -244,7 +244,6 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: @tr("Check for Updates…"); activated => { App.menu(Act.check-updates); } }
             MenuSeparator { }
             MenuItem { title: @tr("Show Console"); activated => { App.menu(Act.console); } }
-            if App.dev: MenuItem { title: @tr("Design System…"); activated => { App.menu(Act.design-system); } }
             MenuItem { title: @tr("What's New in ONI {}", Help.release); activated => { App.menu(Act.welcome); } }
             MenuItem { title: @tr("Show What's New Again"); activated => { App.menu(Act.whats-new); } }
             MenuItem { title: @tr("Report a Bug / Give Feedback…"); activated => { App.menu(Act.report); } }

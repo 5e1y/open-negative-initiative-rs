@@ -68,8 +68,14 @@ built by `build.rs`, so a new camera arrives by updating that copy, never from t
 - **One feature set for every command**: every crate depends on `oni-hack` (cargo-hakari), so `cargo run`,
   `scripts/check` and a one-crate test never rebuild Slint for another feature set. After any dependency
   change, run `cargo hakari generate && cargo hakari manage-deps`. The phone-link crates stay outside it.
+- **Dev and test builds read the interface at run time** (Slint's live preview, set by `oni-ui/build.rs` for
+  the `debug` profile): `oni-ui` is a thin layer compiled in seconds, a `.slint` edit reaches a window
+  check in about 15 s, the full check runs in about 2 min. Its `@tr` texts stay English, so a French
+  look is judged on the app profile. `--profile app` and `--release` compile the interface (about 12 min).
 - **An interface edit needs no build in `scripts/live`**: the app reads the `.slint` files at launch and
   reloads them on each save (Slint's live preview), in `target/live`.
+- **The design system is seen in the 2.5D lab** (`scripts/ds-lab`, `crates/oni-ui/lab`), never in the app:
+  it reloads on each save and tunes `Depth` live; the app holds no showcase of its own.
 - **The app the owner runs is `--profile app`** (release's numbers, incremental, 256 units): an edit
   relinks in seconds. `--release` stays the shipped build. Debug objects are not kept (`split-debuginfo
   = "off"`), so `target/` holds what is linked and nothing older. The window checks are one binary (`tests/window`) that runs each

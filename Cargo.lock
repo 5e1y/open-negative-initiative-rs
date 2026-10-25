@@ -2748,6 +2748,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "i-slint-live-preview"
+version = "1.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4615af975820ccc500c8783185eb5b9c2cbedb0acd49c47212607d556b57a0d"
+dependencies = [
+ "i-slint-compiler",
+ "i-slint-core",
+ "notify",
+ "slint-interpreter",
+]
+
+[[package]]
 name = "i-slint-renderer-femtovg"
 version = "1.18.1"
 dependencies = [
@@ -4394,10 +4406,8 @@ dependencies = [
  "getrandom 0.4.3",
  "half",
  "hashbrown 0.17.1",
- "i-slint-backend-selector",
  "i-slint-common",
  "i-slint-compiler",
- "i-slint-core",
  "icu_locale_core",
  "icu_properties",
  "icu_provider",
@@ -4406,11 +4416,10 @@ dependencies = [
  "libc",
  "litemap",
  "log",
- "lyon_extra",
- "lyon_geom",
- "lyon_path",
  "memchr",
+ "mio",
  "naga-types",
+ "notify",
  "num-traits",
  "objc2 0.6.5",
  "objc2-app-kit 0.3.2",
@@ -4420,7 +4429,6 @@ dependencies = [
  "objc2-quartz-core 0.3.2",
  "once_cell",
  "percent-encoding",
- "pin-weak",
  "portable-atomic",
  "potential_utf",
  "proc-macro2",
@@ -4430,6 +4438,8 @@ dependencies = [
  "serde_core",
  "serde_json",
  "simd-adler32",
+ "slint",
+ "slint-interpreter",
  "slotmap",
  "smallvec",
  "stable_deref_trait",
@@ -4444,7 +4454,6 @@ dependencies = [
  "toml_edit",
  "tracing",
  "tracing-core",
- "url",
  "uuid",
  "wgpu",
  "wgpu-types",
@@ -5921,6 +5930,7 @@ dependencies = [
  "i-slint-common",
  "i-slint-core",
  "i-slint-core-macros",
+ "i-slint-live-preview",
  "i-slint-renderer-femtovg",
  "i-slint-renderer-software",
  "num-traits",

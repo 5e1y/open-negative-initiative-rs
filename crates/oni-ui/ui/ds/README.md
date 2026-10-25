@@ -12,7 +12,6 @@ and every screen picks it up.
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `base.slint`, `badge.slint`, `controls.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
-| `board/` | The board: one base component a page, a row per variant, a live column then one per forced state (`Look`, `hover-tab`, `focused-look`, `on`, `enabled`) | By hand |
 
 The test `the_committed_tokens_are_the_swift_ones` fails when `tokens.slint` no longer matches the
 Swift source, so the generator stays the only source of `DS`.
@@ -29,17 +28,16 @@ Swift source, so the generator stays the only source of `DS`.
 - **A value with no Swift token** (a channel hue, a medal foil, the tooltip ground): it is written once
   in `theme.slint`, with a comment saying why.
 
-To check the result, run `cargo run --release -p oni-app --bin oni -- --board`. It opens the board, as
-Help > Design System… does in a build without a release's stamp (the list on its left or the arrow keys
-walk its pages); the window check `board` shoots each page to `ONI_SHOTS` as `board-<nn>-<name>.png`.
-`board/probe.slint` holds the pieces the window checks click at fixed places (fields, a scrolled page,
-a keycap). The board's windows answer `Raster.keycap` too, so its shots show the real keycaps.
+To see the result, run `scripts/ds-lab`: the 2.5D lab (`crates/oni-ui/lab`) shows every family in its
+states, reloads on each save and tunes `Depth` live; `scripts/ds-lab --shot FILE PAGE WxH` renders a page.
+The app holds no showcase of its own, so its interface compiles without one. `probes.slint` holds the
+pieces the window checks click at fixed places (fields, a scrolled page, a keycap).
 
 ## Keycaps
 
 Every `Button` but the ghost is a `Keycap`: a raster of Swift's `KeycapStyle` that Rust draws when the
 window asks `Raster.keycap(KeycapLook)`. `oni_app::keycaps::serve` answers it on a window (the `Shell`
-does it for the main window, the board and the console; a check building a window alone calls it);
+does it for the main window and the console; a check building a window alone calls it);
 an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache by the look's numbers
 (oni-keycap's `look::Cache`, shared with oni-lab) draws a still key once and a pressed one once a frame.
 

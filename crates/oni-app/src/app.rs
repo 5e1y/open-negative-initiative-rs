@@ -392,7 +392,6 @@ pub struct State {
     report_round: u64,
     /// The console window while it is open, and the timer that reads the log into it.
     console: Option<(crate::ConsoleWindow, Timer)>,
-    board: Option<crate::Board>,
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
     pub(crate) making_sheet: Option<sheets::Making>,
