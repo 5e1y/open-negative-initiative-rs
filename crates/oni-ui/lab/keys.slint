@@ -74,14 +74,14 @@ export component LiveKey inherits Rectangle {
 component Legend inherits Text {
     in property <KeycapVariant> variant: small;
     color: DS.palette-text-on-fill;
-    font-size: root.variant == KeycapVariant.mini ? 9px : root.variant == KeycapVariant.small ? 10.5px : 14px;
+    font-size: root.variant == KeycapVariant.mini ? 9px : 10.5px;
     font-weight: 700;
     letter-spacing: 0.5px;
     horizontal-alignment: center;
     vertical-alignment: center;
 }
 
-// A glyph at `iconSize` scaled by the variant (28 pt large), centred on the face.
+// A glyph at `iconSize` (28 pt) scaled by the variant, centred on the face.
 component Glyph inherits Image {
     in property <float> factor: 0.525;
     width: 28px * root.factor;
@@ -135,7 +135,7 @@ component IconKey inherits LiveKey {
     in property <image> glyph: Icons.rotate;
     width: self.height;
     height: DS.control-keycap-height;
-    Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : root.variant == KeycapVariant.small ? 0.525 : 1; }
+    Glyph { source: root.glyph; factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525; }
 }
 
 // A scanner key (`LabKeyboard.styled`): 46 pt, a 13 pt legend inked by the albedo's luminance.
@@ -191,13 +191,7 @@ export component KeysPage inherits Rectangle {
             // Every size the Swift app gives a keycap: its variant (factor, legend), its height, and where.
             Section {
                 title: "SIZES";
-                source: "Keycap.Variant · large 1 (legend 14, glyph 28), small 0.525 (10.5), mini 0.38 (9); DS.Control heights";
-                StateRow {
-                    label: "large · bench 70";
-                    PanelWord { variant: large; text: "ADD"; width: 104px; height: 70px; }
-                    IconKey { variant: large; height: 70px; }
-                    Caption { text: "keycap-lab's own size"; vertical-alignment: center; }
-                }
+                source: "Keycap.Variant · small 0.525 (legend 10.5), mini 0.38 (9); DS.Control heights";
                 StateRow {
                     label: "small · wide 60";
                     PanelWord { height: DS.control-keycap-wide-height; text: "AUTO"; }

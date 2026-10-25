@@ -19,7 +19,7 @@ export global Raster {
 }
 
 // `Keycap.Variant`: every length at 1, 0.525 or 0.38, as `KeycapStyle.scaled(by:)`.
-export enum KeycapVariant { large, small, mini }
+export enum KeycapVariant { small, mini }
 
 // Swift's `KeycapStyle`, the physical subset: a lit frustum (four flat walls, a dished face) over a socket.
 export global Depth {
@@ -116,8 +116,8 @@ export global Depth {
 // 0 rests, 1 is fully pressed; the variant or a free `factor` sizes every length.
 export component Keycap inherits Rectangle {
     in property <color> albedo: DS.palette-keycap;
-    in property <KeycapVariant> variant: large;
-    in property <float> factor: root.variant == KeycapVariant.small ? 0.525 : root.variant == KeycapVariant.mini ? 0.38 : 1;
+    in property <KeycapVariant> variant: small;
+    in property <float> factor: root.variant == KeycapVariant.mini ? 0.38 : 0.525;
     in property <length> radius: Depth.corner * root.factor;
     in property <length> face-radius: Depth.face-corner * root.factor;
     in property <float> depth;

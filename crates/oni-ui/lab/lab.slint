@@ -44,12 +44,12 @@ component DepthsPage inherits Rectangle {
             spacing: 12px;
             alignment: start;
             Heading { text: "KEYCAP"; }
-            // The large cap, pressed as `KeycapPress` presses it.
+            // The small cap, pressed as `KeycapPress` presses it.
             LiveKey {
-                width: 140px;
-                height: 64px;
-                variant: large;
-                Text { text: "EXPORT"; color: DS.palette-text-on-fill; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; horizontal-alignment: center; vertical-alignment: center; width: parent.width; height: parent.height; }
+                width: 97px;
+                height: DS.control-keycap-height;
+                variant: small;
+                Text { text: "EXPORT"; color: DS.palette-text-on-fill; font-weight: 700; font-size: 10.5px; letter-spacing: 0.5px; horizontal-alignment: center; vertical-alignment: center; width: parent.width; height: parent.height; }
             }
         }
         VerticalLayout {
