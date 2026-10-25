@@ -3566,5 +3566,12 @@
     "title": "The measure's screen draws each frame's histogram and morphs it into the next one's",
     "status": "done",
     "detail": "While Prepare the Roll measures, the card shows the frame just read, the count, and its histogram in the plot well (ds TraceWell, TraceStyle): luminance under red, green and blue, each area tinted under its line, the line glowing in two widths, the three frames before as fading luminances, a hairline at the luminance's median. The measure's thread counts each frame's tile as the editor counts its picture (128 bins) and sends it once per frame; this thread eases the curves from one histogram to the next over 320 ms at the frame tick, then stops ticking. A measure starting or landing clears it, so the well is empty until its first frame lands. Window check prepare_measure, with the stale-well twin."
+  },
+  {
+    "id": 640,
+    "type": "feature",
+    "title": "A help mark's card in the editor panel opens left of the panel, under its tab bar",
+    "status": "done",
+    "detail": "TipLayer takes the panel's anchor from app.slint (its left edge, root.width less the panel's width, and the tab bar's foot, the bar's height plus PanelState.header the panel lays from its rule) and opens every card from a mark inside the panel with its right edge TipStyle.card-gap left of the panel and its top at the foot, held in the window by Tips.place so a short window lifts it. Marks off the panel (gallery Info, export and prepare columns, sheets) and every tooltip keep their place under the mark; a sheet over the window drops the anchor. Window check help_card with its twins (a card beside its mark, a note over the canvas, the gallery's column)."
   }
 ]
