@@ -1,6 +1,7 @@
 // The editors' plots: a recessed screen holding a histogram, lines and dots Rust lays out, and the
 // track whose handles a press catches; every gesture is handed to Rust with its place in points.
 import { Colour, Space, Stroke, SliderStyle, PlotStyle } from "theme.slint";
+import { Inward } from "depth.slint";
 import { Label, Picture, Ground, Fit, TextRole, Tone } from "base.slint";
 import { Knob, Rail } from "slider.slint";
 
@@ -48,8 +49,8 @@ export global Inks {
     }
 }
 
-// `dsPlotScreen`: the canvas floor, quarter lines across it, the histogram, then what Rust draws.
-// `plot` names it in every callback; positions are in the plot's own points.
+// `dsPlotScreen`: the canvas floor, quarter lines engraved, the histogram and what Rust draws, all under
+// the hollow's shade (`Inward`), its lit rim below. `plot` names it in every callback; positions in points.
 export component Plot inherits Rectangle {
     in property <int> plot;
     in property <image> histogram;
@@ -74,6 +75,9 @@ export component Plot inherits Rectangle {
     background: root.screen ? Colour.canvas : transparent;
     border-radius: root.screen ? PlotStyle.radius : 0px;
     clip: true;
+    drop-shadow-color: root.screen ? Colour.white.with-alpha(SliderStyle.rim) : transparent;
+    drop-shadow-blur: SliderStyle.rim-blur;
+    drop-shadow-offset-y: SliderStyle.rim-drop;
     changed width => { root.resized(root.plot, self.width, self.height); }
     changed height => { root.resized(root.plot, self.width, self.height); }
     changed window-x => { root.placed(root.plot, self.window-x, self.window-y); }
@@ -84,12 +88,12 @@ export component Plot inherits Rectangle {
         for k in 3: Rectangle {
             x: parent.width * (k + 1) / 4;
             width: Stroke.hairline;
-            background: Colour.separator;
+            background: Colour.white.with-alpha(PlotStyle.grid);
         }
         for k in 3: Rectangle {
             y: parent.height * (k + 1) / 4;
             height: Stroke.hairline;
-            background: Colour.separator;
+            background: Colour.white.with-alpha(PlotStyle.grid);
         }
     }
     Picture {
@@ -131,6 +135,16 @@ export component Plot inherits Rectangle {
         }
     }
     @children
+    if root.screen: Inward {
+        ground: transparent;
+        hollow: true;
+        radius: PlotStyle.radius;
+    }
+    if root.screen: Rectangle {
+        border-radius: PlotStyle.radius;
+        border-width: Stroke.line;
+        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+    }
     keys := FocusScope {
         enabled: root.focusable;
         changed has-focus => { root.focus-changed(root.plot, self.has-focus); }
@@ -224,6 +238,26 @@ export component LevelsTrack inherits Rectangle {
             }
             EventResult.reject
         }
+    }
+}
+
+// `DSHandle`: a curve point's disc, a `handleIdle` hairline at rest, grown with a white line when
+// active; it takes no hit, the plot around it catching the hand in a grab's box.
+export component CurvePoint inherits Rectangle {
+    in property <color> tint: Colour.ink;
+    in property <bool> active;
+    width: SliderStyle.grab;
+    height: SliderStyle.grab;
+    Rectangle {
+        width: PlotStyle.point * (root.active ? PlotStyle.point-grow : 1);
+        height: self.width;
+        border-radius: self.width / 2;
+        background: root.tint;
+        border-width: root.active ? Stroke.line : Stroke.hairline;
+        border-color: root.active ? Colour.handle-active : Colour.handle-idle;
+        drop-shadow-color: Colour.contrast-edge-idle;
+        drop-shadow-blur: PlotStyle.point-blur * (root.active ? 2 : 1);
+        drop-shadow-offset-y: PlotStyle.point-drop;
     }
 }
 

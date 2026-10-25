@@ -8,7 +8,9 @@ and every screen picks it up.
 | File | What it holds | Who writes it |
 |---|---|---|
 | `tokens.slint` | `DS`, every constant of the Swift app's `DSTokens.swift`, under flat names | `cargo run -p oni-app --bin oni-tokens`, never by hand |
-| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SliderStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `FieldStyle` (in `theme_fields.slint`), `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `PlotStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme.slint` | The semantic groups: `Colour`, `Space`, `Radius`, `Stroke`, `Type`, `State`, `Motion`, then one `*Style` per component (`ButtonStyle`, `SectionStyle`, `TabsStyle`, `ToggleStyle`, `RowStyle`, `TileStyle`, `SheetStyle`, `MenuStyle`, `TipStyle`, `CardStyle`, `StatusStyle`, `ShellStyle`) | By hand. Each value is bound to a `DS` token wherever the Swift app has one |
+| `theme_fields.slint` | `FieldStyle`, re-exported by `theme.slint` | By hand |
+| `theme_sliders.slint` | `SliderStyle` and `PlotStyle`, re-exported by `theme.slint`; their in-out values are the ones the lab tunes live | By hand |
 | `depth.slint` | The three depths every 2.5D element stands on: `Keycap` (Swift's lit frustum, rasterised by oni-keycap through the `Raster` global), `Outward` (a raised surface) and `Inward` (a sunk well), and `Depth`, their tunables | By hand. The 2.5D lab (`crates/oni-ui/lab`, `scripts/ds-lab`) re-exports it and tunes `Depth` live |
 | `base.slint`, `badge.slint`, `controls.slint`, `fields.slint`, `containers.slint`, `collections.slint`, `marks.slint` (discs, rings, traces) | The components | By hand. They read only `theme.slint` and `depth.slint` |
 | `ds.slint` | The single import screens use | By hand |
@@ -43,7 +45,7 @@ an unserved window, as slint-viewer's, shows each cap's flat stand-in. One cache
 
 - **Sizes** (`ButtonSize`): `regular` is `DSPanelButton`'s standard 40 pt key, `small` the same small
   variant at 24, `mini` the 26 pt mini key of the sections and the header plates, `key` the scanner's
-  46 pt key; a stepped slider's keys are `key`s at `ScannerStyle.step-key` with a larger `legend-size`.
+  46 pt key; a stepped slider's keys are `key`s at `SliderStyle.step-key` with a larger `legend-size`.
 - **Colour**: a kind's tint or `fill` is the cap's albedo, else the keycap grey; `on` makes a plain key
   pale (`DSPanelButton(pale:)`) and rings a tinted one. The legend inks dark on a light cap, light on a
   dark one (`KeyInk.light`); a disabled key fades its legend alone.
@@ -66,6 +68,17 @@ holds the focus (`focused-look` forces it). Disabled, the words fade and the chr
 - **`SizeFields`, `DateFields`**: two or three centred entries in one hollow a keycap tall, lit while any
   of them holds the focus; the size boxes fill their row, the date boxes hug theirs.
 - **`Field`** lays a label above (`stacked`, with its help mark), beside (`column`) or spread before it.
+
+## Sliders and plots
+
+- **Rail** (`DSRail` in `dsRecessed`): the track grey or the bipolar gradient, the fill on its own round, then
+  `Inward`'s shade, the black edge and the lit rim (`SliderStyle.rim`) over an opaque `under`; `vertical` runs low to high upwards.
+- **Knob** (`DSBarHandle`): a `Keycap` at `SliderStyle.knob-factor`, level walls, no shadow, edged in black, two
+  white grip lines centred on its face. It grows by a scale on the rise spring, so its raster is drawn once.
+- **Slider**: the rail and the knob move together on the settle spring for a value from elsewhere, never under
+  the hand; the stepped slider's knob carries its grip too.
+- **Plot** (`dsPlotScreen`): the canvas, the quarters engraved, the content, then `Inward { hollow }` and the rim;
+  `screen: false` is the panel's bare histogram. `CurvePoint` is `DSHandle`, the disc a curve point shows.
 
 ## The rule: screens use only the design system
 

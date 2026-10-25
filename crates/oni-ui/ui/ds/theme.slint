@@ -2,6 +2,7 @@
 // One edit here restyles every component that reads the group; screens never read `DS` directly.
 import { DS } from "tokens.slint";
 export { DS }
+export { SliderStyle, PlotStyle } from "theme_sliders.slint";
 
 // Surfaces from back to front, then inks, then the meaning colours.
 export global Colour {
@@ -178,30 +179,6 @@ export global ButtonStyle {
     out property <length> mini-plate-radius: 16px * ButtonStyle.mini-factor;
 }
 
-export global SliderStyle {
-    out property <length> row: DS.control-handle-length;
-    out property <length> track: DS.control-track-height;
-    out property <length> track-radius: Radius.track;
-    out property <length> knob-width: DS.control-handle-thickness;
-    out property <length> knob-height: DS.control-handle-length;
-    out property <length> knob-radius: Radius.badge;
-    out property <float> knob-grow: DS.control-knob-grow;
-    out property <length> grip: DS.control-knob-line * 1px;
-    out property <length> grip-gap: DS.control-knob-line-gap * 1px;
-    // The slider's cap, a keycap's grey lifted a quarter so it reads over its rail.
-    out property <color> knob: DS.palette-keycap.brighter(0.25);
-    out property <color> knob-edge: DS.palette-track-line;
-    // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
-    out property <color> grip-ink: Colour.ink-on-fill;
-    // A stepped slider's rest, ticked on its rail.
-    out property <color> rest-ink: Colour.ink-secondary;
-    out property <float> ramp-start: 0.45;
-    out property <float> ramp-end: 0.9;
-    out property <length> label-gap: Space.xs;
-    // `DS.Control.grabSize`: a handle's catch on a track several handles share.
-    out property <length> grab: DS.control-grab-size;
-}
-
 export global SectionStyle {
     out property <length> inset: Space.m;
     // In a sheet, flush with its title and keys, closer under the title.
@@ -296,20 +273,6 @@ export global TipStyle {
     out property <length> card-radius: Radius.control;
 }
 
-// The plots: the panel's main histogram and an editor's screen, its round, then the handles' and
-// bands' inks Swift's views write as literals, which no token holds.
-export global PlotStyle {
-    out property <length> main: DS.control-main-histogram-height;
-    out property <length> block: DS.control-histogram-height;
-    out property <length> radius: Radius.card;
-    // `LevelsView.Grip.tint`: the three inner handles' greys, `Color(white:)` in the Swift view.
-    out property <color> grey-quarter: #404040;
-    out property <color> grey-half: #808080;
-    out property <color> grey-three-quarters: #bfbfbf;
-    // `SpectrogramPanel.tint`: each band's centre at saturation 0.85 and full brightness.
-    out property <[color]> bands: [#ff2626, #ff9326, #ffff26, #26ff26, #26ffff, #2626ff, #9326ff, #ff26ff];
-}
-
 export global CardStyle {
     out property <length> inset: DS.control-card-inset;
     out property <length> radius: Radius.card;
@@ -329,7 +292,7 @@ export global CropStyle {
 
 // Compare's split guide: a grab the width of a handle, a line that grows under the hand.
 export global SplitStyle {
-    out property <length> grab: SliderStyle.grab;
+    out property <length> grab: DS.control-grab-size;
     out property <length> grow: DS.control-guide-grow;
     out property <length> label-inset: DS.control-split-label-inset;
 }
@@ -359,10 +322,8 @@ export global ScannerStyle {
     out property <length> face-bar: DS.control-mode-bar-width;
     out property <length> legend: DS.scanner-key-legend-size;
     out property <length> key-padding: DS.scanner-key-padding-h;
-    // `LabKeyboard`'s 46 pt key; a stepped slider's − and + keys at a standard key's height, their sign larger.
+    // `LabKeyboard`'s 46 pt key.
     out property <length> key-height: DS.scanner-key-height;
-    out property <length> step-key: DS.control-keycap-height;
-    out property <length> step-legend: 18px;
     // `LabKeyboard.cap`'s two tones: the keycap's grey, and the canvas's dark.
     out property <color> cap-light: DS.palette-keycap;
     out property <color> cap-dark: DS.palette-canvas;

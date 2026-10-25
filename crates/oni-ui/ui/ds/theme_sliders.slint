@@ -1,0 +1,61 @@
+// The sliders' and plots' gauges and relief: a rail milled into the panel (`dsRecessed`), a knob that
+// is a small level keycap, the plot screen sunk at a card's corner. The 2.5D lab tunes the in-out ones live.
+import { DS } from "tokens.slint";
+
+export global SliderStyle {
+    in-out property <length> track: DS.control-track-height;
+    in-out property <length> track-radius: DS.radius-track;
+    // `DS.Control.handleThickness` along the travel, `handleLength` across it; the row is the knob's height.
+    in-out property <length> knob-width: DS.control-handle-thickness;
+    in-out property <length> knob-height: DS.control-handle-length;
+    out property <length> row: SliderStyle.knob-height;
+    // `Keycap.Variant.small`: the knob is a small key, its walls level, its face the keycap grey.
+    in-out property <float> knob-factor: 0.525;
+    in-out property <float> knob-grow: DS.control-knob-grow;
+    in-out property <length> grip: DS.control-knob-line * 1px;
+    in-out property <length> grip-gap: DS.control-knob-line-gap * 1px;
+    out property <color> knob: DS.palette-keycap;
+    out property <color> knob-edge: DS.palette-track-line;
+    // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
+    out property <color> grip-ink: DS.palette-text-on-fill;
+    // The 1 pt `trackLine` edge round the rail, the knob and a plot screen, as an opacity.
+    in-out property <float> edge: 1;
+    // `dsRecessed`'s lit lower rim outside the hollow: white at 0.4, blurred 0.7, dropped 1.
+    in-out property <float> rim: 0.4;
+    in-out property <length> rim-blur: 0.7px;
+    in-out property <length> rim-drop: 1px;
+    // `DS.Motion.rise`, the knob's grow, and `settle`, a value arriving from elsewhere.
+    in-out property <duration> rise: 120ms;
+    in-out property <duration> settle: DS.motion-settle-response * 1s;
+    // A stepped slider's rest, ticked on its rail.
+    out property <color> rest-ink: DS.palette-text-secondary;
+    out property <float> ramp-start: 0.45;
+    out property <float> ramp-end: 0.9;
+    out property <length> label-gap: DS.space-xs;
+    // `DS.Control.grabSize`: a handle's catch on a track several handles share.
+    out property <length> grab: DS.control-grab-size;
+    // A stepped slider's − and + keys at a standard key's height, their sign larger than a word.
+    in-out property <length> step-key: DS.control-keycap-height;
+    in-out property <length> step-legend: 18px;
+}
+
+// The plots: the panel's main histogram and an editor's screen, its round and engraved quarters, then
+// the handles' and bands' inks Swift's views write as literals, which no token holds.
+export global PlotStyle {
+    out property <length> main: DS.control-main-histogram-height;
+    out property <length> block: DS.control-histogram-height;
+    in-out property <length> radius: DS.radius-card;
+    // The quarter lines' white, `separator` as the lab reads it.
+    in-out property <float> grid: 0.12;
+    // `DSHandle`, a curve point: 9 pt, grown when active, its shadow blurred 1 pt (2 when active), dropped 0.5.
+    out property <length> point: DS.control-handle-size;
+    out property <float> point-grow: DS.control-handle-grow;
+    out property <length> point-blur: 1px;
+    out property <length> point-drop: 0.5px;
+    // `LevelsView.Grip.tint`: the three inner handles' greys, `Color(white:)` in the Swift view.
+    out property <color> grey-quarter: #404040;
+    out property <color> grey-half: #808080;
+    out property <color> grey-three-quarters: #bfbfbf;
+    // `SpectrogramPanel.tint`: each band's centre at saturation 0.85 and full brightness.
+    out property <[color]> bands: [#ff2626, #ff9326, #ffff26, #26ff26, #26ffff, #2626ff, #9326ff, #ff26ff];
+}
