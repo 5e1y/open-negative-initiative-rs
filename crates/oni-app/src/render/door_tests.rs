@@ -74,6 +74,59 @@ fn a_resize_during_an_export_waits_one_submission_not_the_render() {
     assert!(longest > took / 2, "the twin's whole-render gate went unseen: {longest:?} of {took:?}");
 }
 
+/// Each lock of the editor's engine while `busy` runs on another thread: how long each waited.
+fn locks_during(shared: &Shared, busy: impl FnOnce() + Send + 'static) -> (Vec<Duration>, Duration) {
+    let done = Arc::new(AtomicBool::new(false));
+    let (flag, started) = (done.clone(), Instant::now());
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(());
+        busy();
+        flag.store(true, Ordering::Release);
+    });
+    rx.recv().unwrap();
+    let mut waits = Vec::new();
+    while !done.load(Ordering::Acquire) {
+        let asked = Instant::now();
+        drop(shared.lock().unwrap());
+        waits.push(asked.elapsed());
+        std::thread::sleep(Duration::from_millis(8));
+    }
+    (waits, started.elapsed())
+}
+
+/// An export on an engine apart leaves the editor's engine free: its renders wait a submission, never
+/// the export's whole frame.
+#[test]
+fn an_export_on_an_engine_apart_leaves_the_editors_engine_free() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the engine apart is not exercised");
+        return;
+    };
+    let shared = Engine::shared(&device);
+    let settings = engine::prewarm::busy();
+    let apart = shared.apart().unwrap();
+    let rendering = settings.clone();
+    let (waits, took) = locks_during(&shared, move || {
+        let mut e = apart.lock().unwrap();
+        crate::export::render_full(&mut e, decoded(), &rendering).unwrap();
+    });
+    let longest = waits.iter().max().copied().unwrap_or_default();
+    println!("export apart {:.0} ms; {}", took.as_secs_f64() * 1000.0, spread(&waits));
+    assert!(waits.len() >= 5, "the render was too short to judge: {took:?}");
+    assert!(longest < Duration::from_millis(50), "the editor's engine waited {longest:?} during an export apart");
+
+    // Twin: the export on the editor's own engine makes its lock wait the whole render.
+    let exporting = shared.clone();
+    let (waits, took) = locks_during(&shared, move || {
+        let mut e = exporting.lock().unwrap();
+        crate::export::render_full(&mut e, decoded(), &settings).unwrap();
+    });
+    let longest = waits.iter().max().copied().unwrap_or_default();
+    println!("twin: export shared {:.0} ms; {}", took.as_secs_f64() * 1000.0, spread(&waits));
+    assert!(longest > took / 2, "the twin's shared lock went unseen: {longest:?} of {took:?}");
+}
+
 /// The interface thread holding the door renders through it: a lock taken before the queued release
 /// runs would otherwise wait for the only thread that can release it.
 #[test]

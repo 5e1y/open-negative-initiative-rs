@@ -235,6 +235,8 @@ export global SheetStyle {
     out property <length> notice-width: DS.control-notice-width;
     // A transient notice's stay, long enough to read two lines twice; Swift's waited for its key.
     out property <duration> linger: 8s;
+    // A job that went well says so this long before its card leaves.
+    out property <duration> brief: 2s;
     // The card's lift off the window, with no scrim under it.
     out property <length> shadow: Space.l;
     // The pairing code's side, wide enough for a phone's camera across a desk.

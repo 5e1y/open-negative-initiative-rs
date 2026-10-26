@@ -158,10 +158,29 @@ impl Ctl {
         let failure = self.state.borrow_mut().store.flush();
         // Edits kept from a refused write are lost on quitting too, so they ask the same.
         let kept = self.state.borrow().store.editor_ref().and_then(|e| e.unsaved().first().map(|u| u.message.clone()));
-        let Some(message) = failure.or(kept) else { return slint::CloseRequestResponse::HideWindow };
+        let Some(message) = failure.or(kept) else { return self.quit_exporting() };
         self.ask(
             tr("Your latest settings could not be saved"),
             &tr!("{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem \u{2014} for instance by freeing space or reconnecting the volume the originals live on.", message = message),
+            tr("Quit Anyway"),
+            false,
+            Pending::QuitAnyway,
+        );
+        slint::CloseRequestResponse::KeepWindowShown
+    }
+
+    /// An export under way asks the same before quitting: the frames left would not be written.
+    fn quit_exporting(self: &Rc<Self>) -> slint::CloseRequestResponse {
+        let (exporting, done, total) = {
+            let c = self.export.borrow();
+            (c.exporting, c.progress, c.job.as_ref().map_or(0, |j| j.names.len()))
+        };
+        if !exporting {
+            return slint::CloseRequestResponse::HideWindow;
+        }
+        self.ask(
+            tr("An export is under way"),
+            &tr!("{done} of {total} photos are written. Quitting now stops the export, and the photos left are not written.", done = done, total = total),
             tr("Quit Anyway"),
             false,
             Pending::QuitAnyway,

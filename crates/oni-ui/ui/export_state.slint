@@ -102,6 +102,18 @@ export global Exporting {
     callback confirmed(bool);
     callback notice-closed();
     callback auto-paper();
+    // The export under way once the surface closed, which its card over the canvas follows.
+    in property <bool> job-shown;
+    in property <bool> job-running;
+    in property <bool> job-stopping;
+    in property <bool> job-failed;
+    in property <float> job-fraction;
+    in property <string> job-title;
+    in property <string> job-count;
+    in property <string> job-name;
+    in property <string> job-message;
+    callback job-stop();
+    callback job-closed();
     // The paper profiles sheet: the sources in two groups, the chosen one's card, its offered files.
     in property <bool> papers-shown;
     in property <[string]> paper-direct;

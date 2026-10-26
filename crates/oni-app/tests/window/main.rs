@@ -21,6 +21,7 @@ mod editors;
 mod explorer;
 mod export_paper_window;
 mod export_entering;
+mod export_flow;
 mod export_window;
 mod extended;
 mod freshness;
@@ -117,6 +118,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone", export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone),
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
     ("export_entering::entering_the_export_reads_no_scan_on_the_interface_thread", export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
+    ("export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner", export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),
     ("extended::a_patch_is_swift_s_on_swift_s_source", extended::a_patch_is_swift_s_on_swift_s_source),
     ("extended::a_frame_renders_its_swift_patches_as_swift_does", extended::a_frame_renders_its_swift_patches_as_swift_does),
@@ -205,6 +207,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded", phone_canvas::a_phone_step_reaches_the_canvas_with_the_panel_folded),
     ("session::the_tile_size_and_the_muted_clicks_outlast_the_session", session::the_tile_size_and_the_muted_clicks_outlast_the_session),
     ("sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right", sheet_layout::the_welcome_fits_or_scrolls_and_a_notices_key_sits_right),
+    ("sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height", sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height),
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),

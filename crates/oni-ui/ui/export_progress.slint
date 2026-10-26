@@ -1,0 +1,16 @@
+import { JobCard } from "ds/ds.slint";
+import { Exporting } from "export_state.slint";
+
+// The export under way, over the canvas while the hand goes on: the count, the file being written, Stop.
+export component ExportProgress inherits JobCard {
+    title: Exporting.job-title;
+    count: Exporting.job-count;
+    detail: Exporting.job-name;
+    fraction: Exporting.job-fraction;
+    message: Exporting.job-message;
+    running: Exporting.job-running;
+    stopping: Exporting.job-stopping;
+    failed: Exporting.job-failed;
+    stop => { Exporting.job-stop(); }
+    closed => { Exporting.job-closed(); }
+}

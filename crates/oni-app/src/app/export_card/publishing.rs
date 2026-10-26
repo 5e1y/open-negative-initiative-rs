@@ -52,7 +52,14 @@ impl Ctl {
         e.set_shown(c.shown);
         e.set_on_paper(space.paper().is_some());
         e.set_count(count as i32);
-        e.set_subtitle(export::subtitle(&c.targets, c.exporting, c.progress, c.stopped).into());
+        // One export at a time: the surface reopened meanwhile waits for the one under way.
+        let subtitle = if c.exporting {
+            let total = c.job.as_ref().map_or(0, |j| j.names.len());
+            tr!("An export is under way, {done} of {total}: this one can start once it ends.", done = c.progress, total = total)
+        } else {
+            export::subtitle(&c.targets, false, 0, c.stopped)
+        };
+        e.set_subtitle(subtitle.into());
         e.set_extension(format!(".{}", c.settings.format().file_extension()).into());
         e.set_format(Format::ALL.iter().position(|f| *f == c.settings.format()).unwrap_or(0) as i32);
         let on_profile = matches!(space, Space::Profile(_));
@@ -104,6 +111,7 @@ impl Ctl {
             e.set_notice_message(message.as_str().into());
         }
         drop(c);
+        self.publish_job();
         self.publish_menus();
     }
 }

@@ -190,11 +190,11 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     assert!(Tint::ALL.iter().any(|t| t.wants_dark_ink()) && Tint::ALL.iter().any(|t| !t.wants_dark_ink()), "twin: one ink for all would miss a tint");
     assert_eq!(deck.get_form_balance(), 0, "the photo's own balance proposes Not carried");
     // The menu drops under its field: its third line, Automatic, is where the pointer finds it.
-    // The sheet hangs a margin under the content's top, 86 px higher than centred under the menu bar.
-    click(&rig, 640.0, 455.0);
+    // The sheet is centred in the window, 86 px lower than a margin under its top.
+    click(&rig, 640.0, 541.0);
     rig.settle();
     println!("shot {}", rig.shot("preset-balance-menu").display());
-    click(&rig, 600.0, 555.0);
+    click(&rig, 600.0, 641.0);
     rig.settle();
     assert_eq!(deck.get_form_balance(), 2, "Automatic picked under the field");
     deck.invoke_save_cancelled();
@@ -210,8 +210,8 @@ pub(crate) fn the_deck_answers_the_pointer_as_swift_s_carousel() {
     rig.pump();
     assert!(deck.get_rows() == rows, "a keystroke keeps the rows' model");
     assert_eq!(deck.get_rows().row_data(0).unwrap().name.as_str(), "Renamed", "twin: the row shows the name typed");
-    // The editor hangs a margin under the content's top, 146 px higher than centred.
-    click(&rig, 745.0, 132.0);
+    // The editor is centred in the window, 146 px lower than a margin under its top.
+    click(&rig, 745.0, 278.0);
     rig.key("\n");
     assert!(!deck.get_editing(), "Return in a field is Done");
     let _ = std::fs::remove_dir_all(&root);

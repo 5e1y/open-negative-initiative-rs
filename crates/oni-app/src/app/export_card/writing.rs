@@ -1,7 +1,6 @@
 //! Writing: the batch off this thread, its clashes, its progress and its journal.
 
 use super::*;
-use oni_i18n::tr;
 
 impl Ctl {
     /// `runExport`: one file asks for its name, a batch for a folder; then any clash asks, Replace
@@ -56,9 +55,10 @@ impl Ctl {
         }
     }
 
-    /// `writeExport`: in order off this thread, the stop honoured between files, an earlier export
-    /// replaced only when `replacing`; the first line's artist and copyright are remembered.
+    /// `writeExport`: in order off this thread on an engine apart, the stop honoured between files, an
+    /// earlier export replaced only when `replacing`; the first line's artist and copyright are remembered.
     pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
+        let started = destinations.clone();
         let (plan, export, stop) = {
             let mut c = self.export.borrow_mut();
             c.exporting = true;
@@ -80,8 +80,8 @@ impl Ctl {
                 .collect();
             (plan, c.settings.clone(), c.stop.clone())
         };
-        self.publish_export();
-        let engine: Shared = self.engine.clone();
+        self.job_started(&started);
+        let engine: Shared = self.export_engine();
         let support = self.export.borrow().support.clone();
         let journal = crate::app::year::journal_in(&support);
         std::thread::Builder::new()
@@ -90,14 +90,7 @@ impl Ctl {
                 let mut ledger = oni_export::file::Ledger::in_support(&support);
                 for (target, destination, metadata) in plan {
                     if stop.load(Ordering::Relaxed) {
-                        return with_shell(|c| {
-                            {
-                                let mut card = c.export.borrow_mut();
-                                card.exporting = false;
-                                card.stopped = Some(card.progress);
-                            }
-                            c.publish_export();
-                        });
+                        return with_shell(|c| c.export_ended(job::End::Stopped));
                     }
                     let to = oni_export::Landing { path: &destination, ledger: &mut ledger, replacing };
                     match export::write_one(&engine, &target, to, &export, &metadata) {
@@ -112,21 +105,11 @@ impl Ctl {
                         Err(e) => {
                             let name = target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
                             let message = format!("{name}: {e}");
-                            return with_shell(move |c| {
-                                {
-                                    let mut card = c.export.borrow_mut();
-                                    card.exporting = false;
-                                    card.notice = Some((tr("Export Failed").into(), message));
-                                }
-                                c.publish_export();
-                            });
+                            return with_shell(move |c| c.export_ended(job::End::Failed(message)));
                         }
                     }
                 }
-                with_shell(|c| {
-                    c.export.borrow_mut().exporting = false;
-                    c.leave_export();
-                });
+                with_shell(|c| c.export_ended(job::End::Written));
             })
             .expect("export thread");
     }

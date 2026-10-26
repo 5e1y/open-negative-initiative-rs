@@ -15,3 +15,5 @@ tagged where the note says so: measured on our files, said by a cited source, or
   S1R and a RAF, the per-camera matrix between them, and how rolls prepared in the Swift app recover.
 - [sensor-colours.md](sensor-colours.md): negatives decoded in the sensor's own colours, no camera matrix,
   on roll #8 and the S1R roll against the matrix and the Swift app; the per-roll setting it would become.
+- [i18n-dev-builds.md](i18n-dev-builds.md): why the window's `@tr` texts stay English in dev and test builds,
+  read in Slint 1.18's interpreter and live preview.

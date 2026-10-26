@@ -4448,5 +4448,33 @@
     "title": "In a project, the editor's walk follows the project, not the folder",
     "status": "done",
     "detail": "On the Projects tab the editor's arrows, the phone's Walk and the Scanner screen's FRAME count read the archive's group of the open photo: from a project they walked the folder open (A03 to A04 instead of the project's B04), stopped dead on a member from another folder, and the gallery came back on a photo the project does not show, so nothing was selected. Swift's labFrames: the open frame's project on the Projects tab (editingProject, the first project holding the photo opened), else its roll or day. State::lab_frames reads the project's band as laid, open_photo sets the editing project, and walk, place and Move Out read it. Window check project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder: a project of photos from two folders, the gallery's arrows and ⇧ in its order, ⌘G on the ringed photo, → and ↑ in the editor along the project and stopping at its end, the gallery back on the photo walked to; twin: the same gestures on the archive walk the folder."
+  },
+  {
+    "id": 880,
+    "type": "feature",
+    "title": "An export unfolds beside the editor: the surface closes, the folder opens, a card counts the frames",
+    "status": "done",
+    "detail": "Owner's design, beyond Swift. On Export, once the destination is known and the export starts, the surface closes back to where it was opened (the editor, or the gallery), the destination folder opens in the Finder or the Explorer (system::show_folder, the folder itself), and ExportProgress, built on a new DS JobCard (Raised, Progress, one key), floats at the canvas's top-left (CardStyle.padding + Space.m): the title, n of N, the file under way, the bar and Stop, the existing cooperative stop between frames. Done lingers SheetStyle.brief (2 s), held while hovered, then leaves; Stopped says how many were written; a failure keeps the existing message (frame: error) in the card until OK, no sheet over the window. One export at a time: a second is refused, the surface reopened meanwhile saying 'An export is under way, n of N: this one can start once it ends.' with its key waiting; the surface's Cancel only leaves it; quitting mid-export asks through QuitGuard's alert (Quit Anyway). Window check export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner: three frames from the editor, the surface closed onto the editor, the reveal recorded with the destination folder, the count advancing to 3 of 3, the card gone after its stay, the reopened surface refusing a second export, the quit asking; twins: an unwritable folder fails and the card keeps the failure past the stay, its OK key found at the canvas's top-left, no question on quitting once idle."
+  },
+  {
+    "id": 881,
+    "type": "perf",
+    "title": "Exports render on an engine apart, so the editor never waits a whole frame",
+    "status": "done",
+    "detail": "The export locked the shared engine for each frame's full render (190 ms on 12 MP, about twice on a 24 MP frame), so every editor render asked meanwhile waited it. Shared::apart builds an engine on the same device and door, reading the same masks and patches; the export card makes it once and hands it to write_one, whose API is unchanged. Unit check render::door_tests::an_export_on_an_engine_apart_leaves_the_editors_engine_free: the editor's locks wait under 50 ms (measured 0.0 ms) during an export render apart; twin: on the shared engine a lock waits the whole render (152 of 162 ms)."
+  },
+  {
+    "id": 882,
+    "type": "bug",
+    "title": "Every modal sheet is centred in the window's height",
+    "status": "done",
+    "detail": "The DS Sheet hung its card a margin under the window's top, centred across only. Its card now sits at (height - card) / 2, a SheetStyle.margin kept above and below, so every confirm, notice, dialog and sheet built on Sheet or AskSheet is centred at once; anchored popups (menus, pickers, the help card, tooltips) keep their anchors. Window check sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height: a confirm, the New Roll confirm, the welcome, the report, the settings and the stock picker each move their key down by half of 200 px of growth (±1 px); twin: a picker's menu picks the same line at both heights, and the old top-hung card moves 0. Checks clicking at fixed places (preset deck, launch notice, export replace prompt, notice key) follow the centred cards."
+  },
+  {
+    "id": 883,
+    "type": "research",
+    "title": "The window's @tr texts stay English in dev builds: Slint 1.18's interpreter reads no bundle",
+    "status": "done",
+    "detail": "Read in slint-interpreter, i-slint-core and the live-preview generator 1.18.1: bundled translations are generated code only, the live preview passes no bundle to the interpreter, and its @tr asks an external translator (i-slint-core internals behind a feature no public slint feature enables) or gettext (unix, .mo catalogues and a libintl macOS lacks; one shared feature set would make the shipped app link Homebrew's). Not wired; written in docs/research/i18n-dev-builds.md. French and Spanish looks are judged on --profile app or --release."
   }
 ]

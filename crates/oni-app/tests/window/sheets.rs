@@ -185,12 +185,12 @@ pub(crate) fn the_exports_replace_prompt_answers_the_export() {
     assert!(e.get_confirm_shown(), "the clash asks");
     rig.settle();
     println!("shot {}", rig.shot("export-replace").display());
-    // The prompt hangs from the window's top, its keys at its right: the pointer sweeps them, Cancel
+    // The prompt is centred in the window, its keys at its right: the pointer sweeps them, Cancel
     // asked again; Return replaces nothing, as the key is destructive.
     rig.key("\r");
     assert!(e.get_confirm_shown(), "Return does not replace files");
     let (mut cancelled, mut replaced) = (0, false);
-    'sweep: for y in (24..400).step_by(4) {
+    'sweep: for y in (24..776).step_by(4) {
         for x in (640..840).step_by(8) {
             click(&rig, x as f32, y as f32);
             if !e.get_confirm_shown() {

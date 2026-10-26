@@ -1,11 +1,11 @@
-// The forms of export and colour management: a labelled field, a note, a preview slot, progress, the
-// status bar and a title typed over.
+// The forms of export and colour management: a labelled field, a note, a preview slot, progress and
+// a job's card, the status bar and a title typed over.
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle, SurfaceStyle } from "theme.slint";
-import { Label, Icon, Picture, Ground, TextRole, Tone } from "base.slint";
+import { Colour, Space, Radius, Motion, ButtonStyle, SectionStyle, StatusStyle, ScannerStyle, SurfaceStyle, SheetStyle } from "theme.slint";
+import { Label, Icon, Picture, Ground, TextRole, Tone, Raised, Lift, Gap } from "base.slint";
 import { Badge, BadgeTone, Metal } from "badge.slint";
 import { HelpMark } from "containers.slint";
-import { RenameField } from "controls.slint";
+import { RenameField, Button, ButtonKind, ButtonGroup, GroupAlign } from "controls.slint";
 import { Icons } from "icons.slint";
 import { Inward } from "depth.slint";
 
@@ -93,6 +93,49 @@ export component Progress inherits Inward {
         background: Colour.selected;
         drop-shadow-color: Colour.selected;
         drop-shadow-blur: SurfaceStyle.progress-glow;
+    }
+}
+
+// A long job's card floated over a view, the hand free beside it: its title and count, the item under
+// way, its bar and its key; a job that went well leaves after `SheetStyle.brief`, held while hovered.
+export component JobCard inherits Rectangle {
+    in property <string> title;
+    in property <string> count;
+    in property <string> detail;
+    in property <float> fraction;
+    // What went wrong, kept until its key closes the card.
+    in property <string> message;
+    in property <bool> running;
+    in property <bool> stopping;
+    in property <bool> failed;
+    callback stop();
+    callback closed();
+    width: SheetStyle.width;
+    height: card.height;
+    linger := Timer {
+        interval: SheetStyle.brief;
+        running: !root.running && !root.failed && !hover.has-hover;
+        triggered => { root.closed(); }
+    }
+    hover := TouchArea {
+        card := Raised {
+            lift: Lift.sheet;
+            pad: Gap.m;
+            gap: Gap.s;
+            width: root.width;
+            HorizontalLayout {
+                spacing: Space.s;
+                Label { role: TextRole.section; text: root.title; overflow: elide; horizontal-stretch: 1; }
+                Label { role: TextRole.value; tone: Tone.secondary; text: root.count; }
+            }
+            if root.detail != "": Label { role: TextRole.note; text: root.detail; overflow: elide; }
+            Progress { fraction: root.fraction; }
+            if root.message != "": Label { text: root.message; tone: Tone.secondary; wrap: word-wrap; }
+            ButtonGroup { plate: true; align: GroupAlign.end;
+                if root.running: Button { text: @tr("Stop"); enabled: !root.stopping; clicked => { root.stop(); } }
+                if !root.running: Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { root.closed(); } }
+            }
+        }
     }
 }
 

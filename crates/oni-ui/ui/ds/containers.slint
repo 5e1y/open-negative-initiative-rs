@@ -103,8 +103,8 @@ export component Section inherits VerticalLayout {
 // question, the title face else; `bar`, the title beside its exit key above a rule, as a board's.
 export enum SheetHeader { leading, bar }
 
-// A window-modal sheet hung from the window's top; no scrim is drawn, yet a click beside the card
-// reaches nothing, as Swift's sheet ignores it. Escape closes it.
+// A window-modal sheet centred in the window, a margin kept above and below; no scrim is drawn, yet a
+// click beside the card reaches nothing, as Swift's sheet ignores it. Escape closes it.
 export component Sheet inherits Rectangle {
     in property <string> title;
     in property <SheetHeader> header: SheetHeader.leading;
@@ -123,7 +123,7 @@ export component Sheet inherits Rectangle {
     // The step between the content's groups; a notice's are a wider step apart.
     in property <Gap> gap: Gap.m;
     callback dismissed();
-    // The height the sheet takes hung in a room that holds it whole.
+    // The height the sheet takes, its margins included, in a room that holds it whole.
     out property <length> hung-height: (root.card-height > 0 ? root.card-height : column.preferred-height) + 2 * SheetStyle.margin;
     property <bool> fixed: root.card-height > 0;
     property <bool> edge: root.bleed || root.header == SheetHeader.bar;
@@ -142,7 +142,7 @@ export component Sheet inherits Rectangle {
         }
         card := Raised {
             lift: Lift.sheet;
-            y: SheetStyle.margin;
+            y: (root.height - self.height) / 2;
             width: root.card-width > 0 ? root.card-width : root.wide ? SheetStyle.wide-width : SheetStyle.width;
             height: min(root.fixed ? root.card-height : column.preferred-height, root.height - 2 * SheetStyle.margin);
             Scroller {
