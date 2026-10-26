@@ -2,28 +2,35 @@
 //! and sends each phone the screen the app publishes.
 
 use std::collections::{HashMap, HashSet};
+use std::future::Future;
+use std::io;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::{Duration, Instant};
 
 use sha2::{Digest, Sha256};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::TcpListener;
-use tokio::sync::{mpsc, watch};
+use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc, watch};
 use tokio::time::timeout;
 
 use crate::Error;
 use crate::noise::{self, Identity, Mode, PublicKey};
 use crate::pairing::PairingCode;
 use crate::scanner::{Command, State};
-use crate::wire::{Import, OLDEST, PROTOCOL, ToHost, ToPhone};
+use crate::wire::{self, Import, OLDEST, PROTOCOL, ToHost, ToPhone};
 
 /// A QR code stays valid this long, and for one phone only.
 const PAIRING_WINDOW: Duration = Duration::from_secs(120);
 /// A phone pings every two seconds; this much silence closes its connection.
 const SILENCE: Duration = Duration::from_secs(10);
 const HANDSHAKE: Duration = Duration::from_secs(5);
+/// Connections still in their handshake at once; past it a new one is closed unheard, so a flood
+/// of strangers cannot exhaust the descriptors a paired phone needs.
+const HANDSHAKES: usize = 16;
+/// After a failed accept, such as a full descriptor table, before the next one.
+const ACCEPT_PAUSE: Duration = Duration::from_millis(100);
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HostEvent {
@@ -32,16 +39,20 @@ pub enum HostEvent {
         phone: PublicKey,
         name: String,
     },
+    /// `connection` tells a phone's reconnection from its old link, which may end after it.
     Connected {
         phone: PublicKey,
         name: String,
+        connection: u64,
     },
     Command {
         phone: PublicKey,
+        connection: u64,
         command: Command,
     },
     Disconnected {
         phone: PublicKey,
+        connection: u64,
     },
 }
 
@@ -65,6 +76,7 @@ struct Shared {
     screen: watch::Sender<(State, HashMap<u64, u64>)>,
     taken: Mutex<HashMap<u64, u64>>,
     connections: AtomicU64,
+    handshakes: Arc<Semaphore>,
     revoked: watch::Sender<u64>,
     import: Mutex<Option<(String, u16)>>,
     events: mpsc::UnboundedSender<(HostEvent, Option<Taken>)>,
@@ -117,6 +129,7 @@ impl Host {
             screen: watch::channel((State::default(), HashMap::new())).0,
             taken: Mutex::new(HashMap::new()),
             connections: AtomicU64::new(0),
+            handshakes: Arc::new(Semaphore::new(HANDSHAKES)),
             revoked: watch::channel(0).0,
             import: Mutex::new(None),
             events,
@@ -126,16 +139,17 @@ impl Host {
 
     /// Accepts phones on TCP until the host is dropped; returns the bound address.
     pub async fn listen(&self, addr: SocketAddr) -> Result<SocketAddr, Error> {
-        let listener = TcpListener::bind(addr).await?;
+        let listener = Arc::new(TcpListener::bind(addr).await?);
         let local = listener.local_addr()?;
-        let weak = Arc::downgrade(&self.shared);
-        tokio::spawn(async move {
-            while let Ok((stream, _)) = listener.accept().await {
-                let Some(shared) = weak.upgrade() else { break };
+        let accept = move || {
+            let listener = listener.clone();
+            async move {
+                let (stream, _) = listener.accept().await?;
                 let _ = stream.set_nodelay(true);
-                tokio::spawn(serve(shared, stream));
+                Ok(stream)
             }
-        });
+        };
+        tokio::spawn(accepting(Arc::downgrade(&self.shared), accept));
         Ok(local)
     }
 
@@ -144,7 +158,9 @@ impl Host {
     where
         S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
     {
-        tokio::spawn(serve(self.shared.clone(), stream));
+        if let Some(permit) = self.shared.admit() {
+            tokio::spawn(serve(self.shared.clone(), stream, permit));
+        }
     }
 
     pub fn open_pairing(&self, addresses: Vec<SocketAddr>) -> PairingCode {
@@ -161,6 +177,17 @@ impl Host {
     pub fn revoke(&self, phone: PublicKey) {
         self.shared.trusted.lock().expect("trusted lock").remove(&phone);
         self.shared.revoked.send_modify(|generation| *generation += 1);
+    }
+
+    /// Forgets every phone, those trusted in memory only included, and closes their connections.
+    pub fn revoke_all(&self) {
+        self.shared.trusted.lock().expect("trusted lock").clear();
+        self.shared.revoked.send_modify(|generation| *generation += 1);
+    }
+
+    /// True while `phone` may connect: a pairing the app hears of late may have been forgotten since.
+    pub fn trusts(&self, phone: &PublicKey) -> bool {
+        self.shared.trusts(phone)
     }
 
     /// Tells phones where the LocalSend receiver listens, by its certificate's fingerprint.
@@ -214,9 +241,43 @@ impl Shared {
     fn emit(&self, event: HostEvent, taken: Option<Taken>) {
         let _ = self.events.send((event, taken));
     }
+
+    fn admit(&self) -> Option<OwnedSemaphorePermit> {
+        self.handshakes.clone().try_acquire_owned().ok()
+    }
 }
 
-async fn serve<S>(shared: Arc<Shared>, stream: S)
+/// Serves each accepted stream until the host is dropped; a failed accept waits, then goes on.
+async fn accepting<S, F, A>(weak: Weak<Shared>, mut accept: A)
+where
+    S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
+    F: Future<Output = io::Result<S>>,
+    A: FnMut() -> F,
+{
+    loop {
+        let accepted = accept().await;
+        let Some(shared) = weak.upgrade() else { break };
+        match accepted {
+            Ok(stream) => {
+                if let Some(permit) = shared.admit() {
+                    tokio::spawn(serve(shared, stream, permit));
+                }
+            }
+            Err(e) => {
+                tracing::warn!("phone link accept failed: {e}");
+                drop(shared);
+                tokio::time::sleep(ACCEPT_PAUSE).await;
+            }
+        }
+    }
+}
+
+/// True once `message` is written; a phone that stops reading counts as gone after `SILENCE`.
+async fn sent<W: AsyncWrite>(writer: &mut noise::Writer<W>, message: &ToPhone) -> bool {
+    matches!(timeout(SILENCE, writer.send(message)).await, Ok(Ok(())))
+}
+
+async fn serve<S>(shared: Arc<Shared>, stream: S, permit: OwnedSemaphorePermit)
 where
     S: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
@@ -239,18 +300,19 @@ where
     let import = shared.import.lock().expect("import lock").clone();
     let import = import.map(|(fingerprint, port)| Import { fingerprint, port, pin: shared.import_pin(&phone) });
     let spoken = if protocol >= OLDEST { protocol.min(PROTOCOL) } else { PROTOCOL };
-    if writer.send(&ToPhone::Welcome { protocol: spoken, name: shared.name.clone(), import }).await.is_err()
+    if !sent(&mut writer, &ToPhone::Welcome { protocol: spoken, name: shared.name.clone(), import }).await
         || protocol < OLDEST
     {
         return;
     }
+    drop(permit);
     if mode == Mode::Pairing {
         shared.trusted.lock().expect("trusted lock").insert(phone);
         shared.emit(HostEvent::Paired { phone, name: name.clone() }, None);
     }
     // Presses are counted per connection, so a reconnected phone starting from one is never ahead.
     let connection = shared.connections.fetch_add(1, Ordering::Relaxed);
-    shared.emit(HostEvent::Connected { phone, name }, None);
+    shared.emit(HostEvent::Connected { phone, name, connection }, None);
 
     // `recv` is not cancel-safe, so it runs on its own task and the loop selects on its channel.
     let (incoming, mut messages) = mpsc::channel(64);
@@ -264,25 +326,35 @@ where
     let mut screen = shared.screen.subscribe();
     let mut revoked = shared.revoked.subscribe();
     screen.mark_changed();
+    // Only the phone's own words prove it is there: the screens sent to it never put the deadline off.
+    let mut heard = tokio::time::Instant::now();
     loop {
         tokio::select! {
-            message = timeout(SILENCE, messages.recv()) => match message {
-                Ok(Some(ToHost::Press { seq, command })) => shared.emit(HostEvent::Command { phone, command }, Some(Taken { connection, seq })),
-                Ok(Some(ToHost::Ping { sent })) => {
-                    if writer.send(&ToPhone::Pong { sent }).await.is_err() { break }
+            message = messages.recv() => {
+                heard = tokio::time::Instant::now();
+                match message {
+                    Some(ToHost::Press { seq, command }) => {
+                        let command = wire::heard(command, spoken);
+                        shared.emit(HostEvent::Command { phone, connection, command }, Some(Taken { connection, seq }));
+                    }
+                    Some(ToHost::Ping { sent: at }) => {
+                        if !sent(&mut writer, &ToPhone::Pong { sent: at }).await { break }
+                    }
+                    Some(ToHost::Hello { .. }) => {}
+                    None => break,
                 }
-                Ok(Some(ToHost::Hello { .. })) => {}
-                Ok(None) | Err(_) => break,
-            },
+            }
+            _ = tokio::time::sleep_until(heard + SILENCE) => break,
             changed = screen.changed() => {
                 if changed.is_err() { break }
                 let (mut state, taken) = screen.borrow_and_update().clone();
                 state.applied = taken.get(&connection).copied().unwrap_or(0);
+                let state = wire::told(state, spoken);
                 let message = match spoken {
                     1 => ToPhone::State(state),
                     _ => ToPhone::Screen { panel: state.panel.clone(), state },
                 };
-                if writer.send(&message).await.is_err() { break }
+                if !sent(&mut writer, &message).await { break }
             }
             _ = revoked.changed() => {
                 if !shared.trusts(&phone) { break }
@@ -291,5 +363,8 @@ where
     }
     read_task.abort();
     shared.taken.lock().expect("taken lock").remove(&connection);
-    shared.emit(HostEvent::Disconnected { phone }, None);
+    shared.emit(HostEvent::Disconnected { phone, connection }, None);
 }
+
+#[cfg(test)]
+mod tests;

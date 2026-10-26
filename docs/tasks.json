@@ -3685,5 +3685,75 @@
     "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
     "status": "done",
     "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
+  },
+  {
+    "id": 720,
+    "type": "fix",
+    "title": "The phone link names each connection, so a phone's old link ending after its reconnection leaves it connected and its drag held",
+    "status": "done",
+    "detail": "A phone back on a new link within the desktop's SILENCE saw its old link time out afterwards: Disconnected carried only the key, so the sheet dropped the live phone, the toast said it disconnected, and Link released the new link's slider hold, splitting the drag into two undo steps. HostEvent::Connected, Command and Disconnected now carry the connection number serve already kept; Phone keeps one entry per connection (a phone is gone, and toasted, only when its last link ends; it is toasted connected only when new), and Link records the connection that holds a slider and lets go only when that one ends. Checks: a_reconnection_and_its_old_link_carry_their_own_connection (oni-link), an_old_link_ending_after_the_reconnection_leaves_the_phone_connected (phone.rs) and the_old_link_of_a_phone_back_on_a_new_one_leaves_its_drag_held (tests/link.rs), each with its twin."
+  },
+  {
+    "id": 721,
+    "type": "fix",
+    "title": "Phone link protocol 4: clicks in half steps, and a phone of protocol 3 or older adapted by the desktop",
+    "status": "done",
+    "detail": "#620 made the letters count half-unit steps without raising PROTOCOL, so a phone built before it read D +2 where the desktop read +1 and its keys moved half as far. PROTOCOL is 4 (wire::HALF_STEPS); for a phone speaking less, the host halves State.clicks toward zero before sending (wire::told, as the sidecar keeps whole counts) and doubles an incoming Step.by (wire::heard), so the old phone keeps whole units both ways. A phone of protocol 4 spells the steps itself: the mobile repository's branch protocol-4 (worktree ~/Documents/oni-mobile-protocol-4, not pushed) makes ScannerText.spelled write +0.5, +1, +1.5 as oni_keys::spelled does; its keypad sends the same ±1/±3 steps as the desktop's keypad. Check: a_protocol_3_phone_reads_and_steps_whole_units, its twin a phone of protocol 4 reading and pressing steps as they are."
+  },
+  {
+    "id": 722,
+    "type": "fix",
+    "title": "The phone link's listener survives a failed accept()",
+    "status": "done",
+    "detail": "Host::listen looped on `while let Ok(..) = accept()`: the first error (EMFILE, ECONNABORTED) ended the task until a restart, the sheet still showing a QR code nothing could answer. The accept loop (host::accepting) logs the error, pauses 100 ms and goes on; it stops only once the Host is dropped. Check: a_failed_accept_leaves_the_listener_serving_the_next_phone, its twin a stream accepted after the Host is gone is never answered."
+  },
+  {
+    "id": 723,
+    "type": "fix",
+    "title": "A vanished phone is let go within SILENCE, however much the desktop publishes",
+    "status": "done",
+    "detail": "The 10 s silence timeout was rebuilt on each select! turn, so every published screen restarted it, and a write to a phone that stopped reading blocked the loop until TCP gave up, minutes later. The loop keeps a `heard` clock, set only by the phone's own messages, with a sleep_until(heard + SILENCE) arm, and every write to the phone is bounded by SILENCE. Check: a_vanished_phone_is_let_go_while_the_desktop_keeps_publishing (5 kB screens every 200 ms on a cut wire, paused clock), its twin the same desktop with a reading phone stays connected two minutes."
+  },
+  {
+    "id": 724,
+    "type": "fix",
+    "title": "Forget Phones forgets a phone trusted for this session only, and a late pairing stays forgotten",
+    "status": "done",
+    "detail": "forget_all revoked only the keys in trusted.txt: a phone whose trust failed to write, or whose Paired event was still queued, stayed trusted in the Host's memory, connected and passing accepts_import_pin, and the late Paired then wrote it back. Host::revoke_all clears the in-memory set and bumps `revoked`; forget_all calls it; the Paired handler writes a key only while Host::trusts it. Check: revoke_all_forgets_a_phone_trusted_in_memory_only, its twin revoking another phone leaves this one trusted."
+  },
+  {
+    "id": 725,
+    "type": "fix",
+    "title": "The phone link closes a connection unheard past 16 handshakes at once",
+    "status": "done",
+    "detail": "Every accepted connection held a task and a descriptor for up to 5 + 5 s before its handshake timed out, without bound. A semaphore of 16 permits (HANDSHAKES), taken before the task is spawned and dropped once the Welcome is sent, closes any connection past it at once, on TCP and on Host::serve alike. Check: a_flood_of_silent_connections_closes_the_next_until_one_ends, its twin one silent connection gone and a phone pairs."
+  },
+  {
+    "id": 726,
+    "type": "fix",
+    "title": "The open frame's place is counted in usize: a group of 65 536 frames or more no longer panics on a phone Walk",
+    "status": "done",
+    "detail": "place() cast the position and the count to u16: at exactly 65 536 entries the count read 0 and walk() clamped to (0, -1), a panic on the UI thread; larger groups wrapped. place() returns usize, walk() steps with saturating usize arithmetic and stops at the ends (phone_link::walked), and only the wire's State saturates at u16::MAX (wire_place). lab::screen takes usize. Check: a_walk_in_a_group_past_the_wire_s_u16_stays_inside_it with its twin."
+  },
+  {
+    "id": 727,
+    "type": "fix",
+    "title": "The pairing code names every interface's address, the default route's first",
+    "status": "done",
+    "detail": "The QR named only the default route's source address: under a full-tunnel VPN that was the tunnel's, and on a Mac with Ethernet and Wi-Fi on two networks the Ethernet one, so the phone found no address. lan_addresses lists the default route's address, then each up IPv4 interface's (getifaddrs on macOS, GetAdaptersAddresses on Windows, with windows-sys's IpHelper, Ndis and WinSock features), without loopback or link-local, four at most, as the phone dials them in turn. Checks: the_code_names_every_interface_after_the_default_route with its twin, this_computer_lists_its_default_route_first."
+  },
+  {
+    "id": 728,
+    "type": "fix",
+    "title": "LocalSend: head and handshake timeouts, a connection cap, a bounded peer table, a policy that must decide, an upload that cannot stall",
+    "status": "done",
+    "detail": "The receiver built hyper without a timer, so its header_read_timeout was dropped and a silent connection was kept for ever, without bound. It now runs TokioTimer with a 10 s head timeout and closes a connection past 32 at once (receiver::Limits). A policy that has not decided in 120 s rejects, so a stranger's prompt no longer holds the session slot for ever. Discovery keeps 64 peers at most, the one heard from longest ago leaving, and answers 4 announcements at once at most. The sender's upload ends as SendError::Stalled when its body stops draining, or its answer stops coming, for 30 s. Checks: past_the_cap_a_connection_is_closed_unheard, a_connection_that_sends_no_request_is_closed, a_flood_of_announcements_keeps_the_table_bounded_and_the_peers_heard_lately, an_upload_to_a_peer_that_stops_reading_ends_as_stalled, each with its twin. The policy's timeout has no check of its own, and the demo's stdin prompt is unchanged."
+  },
+  {
+    "id": 729,
+    "type": "fix",
+    "title": "The phone inbox refuses a received sidecar, roll marker or dot name",
+    "status": "done",
+    "detail": "A peer could send DSC_0001.NEF.json or .oni-roll.json into a folder holding DSC_0001.NEF, and the file became the original's settings or the folder's roll marker, read as the truth on the next open. inbox::refused_name refuses a sanitised name that starts with a dot or ends in .json (ROLL_MARKER is both), and prepare-upload leaves such files out before the policy sees them, answering 204 when none is left. Checks: a_sidecar_a_roll_marker_or_a_dot_name_is_refused and a_sidecar_or_a_roll_marker_sent_beside_an_original_is_left_out, each with its twin."
   }
 ]

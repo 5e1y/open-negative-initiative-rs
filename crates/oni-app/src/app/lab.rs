@@ -80,7 +80,7 @@ pub struct Screen {
     pub finish: Vec<String>,
 }
 
-pub fn screen(s: &PipelineSettings, place: Option<(u16, u16)>) -> Screen {
+pub fn screen(s: &PipelineSettings, place: Option<(usize, usize)>) -> Screen {
     let channel = match s.mode {
         ConversionMode::Negative => "NEGA",
         ConversionMode::Positive => "POSI",
