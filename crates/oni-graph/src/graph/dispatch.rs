@@ -24,6 +24,16 @@ pub(super) fn texture_entry(binding: u32) -> wgpu::BindGroupLayoutEntry {
     }
 }
 
+/// The buffer every dispatch's uniforms are staged in, in turn.
+pub(super) fn ring(device: &wgpu::Device) -> wgpu::Buffer {
+    device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("uniforms"),
+        size: UNIFORM_RING,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    })
+}
+
 impl Graph {
     /// One stage over `output_rect`; `input` and each of `aux` is (texture, rectangle it covers, extent).
     pub(super) fn dispatch(
@@ -90,6 +100,14 @@ impl Graph {
             self.flush_uniforms();
             self.uniforms.at = 0;
             self.uniforms.staged_from = 0;
+            self.uniforms.wrapped = true;
+        }
+        // One submission staging past the whole ring goes on in a fresh one: its first dispatches still read the old.
+        if self.uniforms.wrapped && self.uniforms.at + size > self.uniforms.first {
+            self.flush_uniforms();
+            let u = &mut self.uniforms;
+            u.buffer = ring(&self.device);
+            (u.at, u.staged_from, u.first, u.wrapped) = (0, 0, 0, false);
         }
         let u = &mut self.uniforms;
         let at = u.at;
@@ -104,6 +122,7 @@ impl Graph {
     pub(super) fn submit(&mut self, encoder: wgpu::CommandEncoder) {
         let door = self.door.clone().filter(|d| d.enter());
         self.flush_uniforms();
+        (self.uniforms.first, self.uniforms.wrapped) = (self.uniforms.at, false);
         self.queue.submit([encoder.finish()]);
         if let Some(d) = door {
             d.leave();

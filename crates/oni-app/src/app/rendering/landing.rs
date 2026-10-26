@@ -79,7 +79,7 @@ impl Ctl {
             if s.open_path().map(Path::new) != Some(path) {
                 return;
             }
-            s.gpu.uncounted = Some(picture);
+            s.gpu.uncounted = Some(crate::app::canvas_gpu::Counted { picture, sheet: false });
             s.gpu.count_due();
         }
         self.watch_histogram();
@@ -183,8 +183,8 @@ impl Ctl {
             };
             g.current = Some(picture);
             // The histogram describes the whole picture at one size, never the zoom's part of it.
-            if counted.is_some() {
-                g.uncounted = counted;
+            if let Some(picture) = counted {
+                g.uncounted = Some(crate::app::canvas_gpu::Counted { picture, sheet: true });
             }
             g.count_due();
             (imported, shown, (wd, ht))

@@ -386,7 +386,7 @@ fn images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_res
     let size = (420, 210);
     let (copies, sheet) = (g.stats().copies, g.laid_out(&[(&ia, pa), (&ib, pb)], size).unwrap());
     assert_eq!(g.stats().copies, copies, "each image's last stage writes on the sheet, with no copy");
-    let read = g.read_back(&[&sheet]).remove(0);
+    let read = g.read_back(&[&sheet]).expect("read back").remove(0);
     let sheet_rect = Rect::new(0, 0, size.0, size.1);
     for ((image, at), pixels) in [(&ia, pa), (&ib, pb)].into_iter().zip(&rendered) {
         let e = image.extent();
@@ -400,5 +400,5 @@ fn images_laid_out_on_one_sheet_equal_each_render_at_its_place_and_leave_the_res
     assert!(g.laid_out(&[(&ib, (400, 0))], size).is_err());
     // Twin: the second sheet reuses nothing of the first under its clear corner.
     let again = g.laid_out(&[(&ib, pb)], size).unwrap();
-    assert_eq!(g.read_back(&[&again]).remove(0)[size.0 as usize * 5 + 10], [0.0; 4]);
+    assert_eq!(g.read_back(&[&again]).expect("read back").remove(0)[size.0 as usize * 5 + 10], [0.0; 4]);
 }

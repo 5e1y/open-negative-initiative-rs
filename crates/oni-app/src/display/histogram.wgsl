@@ -3,6 +3,8 @@ struct Measure {
     back: array<vec4<f32>, 3>,
     // The counted copy's columns and rows, then the picture's.
     grid: vec4<u32>,
+    // 1 in x on a sheet, whose clear gaps hold no picture to count.
+    clear: vec4<u32>,
 };
 
 @group(0) @binding(0) var<uniform> m: Measure;
@@ -25,7 +27,9 @@ fn bin(v: f32) -> u32 {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= m.grid.x || id.y >= m.grid.y) { return; }
     let at = vec2<i32>(i32(nearest(id.x, m.grid.x, m.grid.z)), i32(nearest(id.y, m.grid.y, m.grid.w)));
-    let p = textureLoad(picture, at, 0).xyz;
+    let sample = textureLoad(picture, at, 0);
+    if (m.clear.x == 1u && sample.a == 0.0) { return; }
+    let p = sample.xyz;
     let shown = clamp(vec3<f32>(dot(m.to[0].xyz, p), dot(m.to[1].xyz, p), dot(m.to[2].xyz, p)), vec3<f32>(0.0), vec3<f32>(1.0));
     let v = vec3<f32>(dot(m.back[0].xyz, shown), dot(m.back[1].xyz, shown), dot(m.back[2].xyz, shown));
     for (var c = 0u; c < 3u; c++) {

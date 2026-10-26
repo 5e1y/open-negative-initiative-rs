@@ -216,13 +216,15 @@ impl Ctl {
                 full
             });
             with_shell(move |c| {
+                // Back in the gallery the editor's memory was let go: a build landing there is dropped.
+                let editing = c.window().is_none_or(|w| !w.global::<App>().get_gallery());
                 {
                     let mut s = c.state.borrow_mut();
                     // Another frame's build may hold the mark: only this one's is cleared.
                     if s.building_full.as_deref() == Some(path.as_str()) {
                         s.building_full = None;
                     }
-                    let current = s.open_path() == Some(path.as_str()) && s.reading.as_ref() == Some(&reading);
+                    let current = editing && s.open_path() == Some(path.as_str()) && s.reading.as_ref() == Some(&reading);
                     match built {
                         Some(Ok(full)) if current => s.full = Some((path, full)),
                         Some(Ok(_)) | None => {}
@@ -233,7 +235,9 @@ impl Ctl {
                     }
                 }
                 // Another frame opened meanwhile asks its own full resolution now that this one is done.
-                c.request_render();
+                if editing {
+                    c.request_render();
+                }
             });
         });
     }

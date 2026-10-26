@@ -40,6 +40,8 @@ pub enum Error {
     TooLarge,
     /// The pixel count does not match the size given.
     Size { expected: u64, got: usize },
+    /// A readback the GPU did not deliver: the device lost, or its buffer never made.
+    Lost(String),
 }
 
 /// Counters a check reads: what the GPU was asked to do, and what the pool holds.
@@ -148,9 +150,12 @@ struct Uniforms {
     align: u64,
     staged: Vec<u8>,
     staged_from: u64,
+    /// Where the submission being recorded staged its first uniforms, and whether it wrapped since.
+    first: u64,
+    wrapped: bool,
 }
 
-/// The ring's size: a render writes about a kilobyte a stage, so one never wraps onto itself.
+/// The ring's size: a render writes about a kilobyte a stage; a sheet of many images can stage more.
 const UNIFORM_RING: u64 = 4 << 20;
 
 static SOURCE_IDS: AtomicU64 = AtomicU64::new(1);

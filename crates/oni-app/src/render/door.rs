@@ -9,9 +9,11 @@ use std::sync::OnceLock;
 struct Gate {
     held: bool,
     inside: usize,
+    /// The thread holding the door, which passes it: it reconfigures, so submits nothing meanwhile.
+    holder: Option<std::thread::ThreadId>,
 }
 
-/// Threads submitting work pass through it; the interface thread holds it while it reconfigures.
+/// Threads pass through it for each submission or upload band; the interface thread holds it while it reconfigures.
 #[derive(Default)]
 pub(crate) struct Door {
     gate: Mutex<Gate>,
@@ -19,10 +21,11 @@ pub(crate) struct Door {
 }
 
 impl Door {
-    /// Waits while the door is held, then counts the caller inside.
+    /// Waits while another thread holds the door, then counts the caller inside.
     pub(crate) fn enter(&self) -> Result<(), String> {
+        let me = Some(std::thread::current().id());
         let mut g = self.gate.lock().map_err(|_| tr("the render gate failed earlier"))?;
-        while g.held {
+        while g.held && g.holder != me {
             g = self.turn.wait(g).map_err(|_| tr("the render gate failed earlier"))?;
         }
         g.inside += 1;
@@ -40,6 +43,7 @@ impl Door {
     pub(crate) fn hold(&self) {
         let Ok(mut g) = self.gate.lock() else { return };
         g.held = true;
+        g.holder = Some(std::thread::current().id());
         while g.inside > 0 {
             match self.turn.wait(g) {
                 Ok(next) => g = next,
@@ -51,6 +55,7 @@ impl Door {
     pub(crate) fn release(&self) {
         if let Ok(mut g) = self.gate.lock() {
             g.held = false;
+            g.holder = None;
         }
         self.turn.notify_all();
     }

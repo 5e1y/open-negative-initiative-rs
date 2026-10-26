@@ -20,10 +20,11 @@ impl<'a> Plan<'a> {
                 continue;
             }
             let mut ask = |j: usize, region: Rect| -> Result<(), Error> {
-                let region = region.intersect(&nodes[j].extent);
-                if region.is_empty() {
+                if region.is_empty() || nodes[j].extent.is_empty() {
                     return Err(Error::EmptyInput { stage: i.saturating_sub(1) });
                 }
+                // A request wholly past its input (a straightened frame's clear corner) reads the nearest edge, as `load` clamps.
+                let region = region.nearest_in(&nodes[j].extent);
                 rects[j] = Some(rects[j].map_or(region, |r| r.union(&region)));
                 Ok(())
             };

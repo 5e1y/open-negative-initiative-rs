@@ -49,16 +49,13 @@ impl Graph {
     pub fn from_device(device: wgpu::Device, queue: wgpu::Queue, adapter: String, max_side: u32) -> Self {
         let limits = device.limits();
         let uniforms = Uniforms {
-            buffer: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("uniforms"),
-                size: UNIFORM_RING,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            }),
+            buffer: dispatch::ring(&device),
             at: 0,
             align: u64::from(limits.min_uniform_buffer_offset_alignment).max(16),
             staged: Vec::new(),
             staged_from: 0,
+            first: 0,
+            wrapped: false,
         };
         Self {
             pool: Pool::new(device.clone()),

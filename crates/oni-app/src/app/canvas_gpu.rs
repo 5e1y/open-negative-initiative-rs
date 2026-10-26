@@ -2,6 +2,12 @@
 
 use super::*;
 
+/// The whole picture the histogram counts next; a sheet's clear gaps are no picture's.
+pub(super) struct Counted {
+    pub(super) picture: oni_graph::Source,
+    pub(super) sheet: bool,
+}
+
 impl Gpu {
     /// The display kernel's picture of `view` in `kept` when it has `size`, else in a new texture: that
     /// texture, and the image to show (a new texture's, or the `drawn` corner read back) or why Slint refused it.
@@ -18,7 +24,10 @@ impl Gpu {
     /// The `size` corner of `target` as a picture, on a window that cannot take the GPU's textures;
     /// none where Slint draws the texture itself.
     pub(super) fn read_back(&self, target: &wgpu::Texture, size: (u32, u32)) -> Option<Image> {
-        self.reads_back.then(|| image(&display::read_back(&self.device, &self.queue, target, size.0, size.1), size.0 as usize, size.1 as usize))
+        if !self.reads_back {
+            return None;
+        }
+        display::read_back(&self.device, &self.queue, target, size.0, size.1).map(|bytes| image(&bytes, size.0 as usize, size.1 as usize))
     }
 
     /// The histogram counted on a frame already shown, once its readback has landed; then the
@@ -35,9 +44,9 @@ impl Gpu {
     pub(super) fn count_due(&mut self) {
         let due = self.counted_at.is_none_or(|at| at.elapsed() >= crate::timing::IMAGE_INTERVAL);
         if due
-            && let Some(picture) = &self.uncounted
+            && let Some(Counted { picture, sheet }) = &self.uncounted
             && let Some(view) = picture.view()
-            && self.kernel.count(&self.device, &self.queue, view, picture.extent().w, picture.extent().h, self.screen, || with_shell(|c| c.publish_histogram()))
+            && self.kernel.count(&self.device, &self.queue, view, (picture.extent().w, picture.extent().h), self.screen, *sheet, || with_shell(|c| c.publish_histogram()))
         {
             self.uncounted = None;
             self.counted_at = Some(Instant::now());

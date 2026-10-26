@@ -198,7 +198,7 @@ fn the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not() {
     settings.sharpen.amount = 2.0;
     let port = crate::viewport::Viewport { scale: Some(1.0), offset: (-137.0, 91.0) };
     let (seen, zone) = engine.loupe(&full, &settings, &port, (640.0, 360.0), 1.0).unwrap().unwrap();
-    let seen = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&seen]).remove(0) };
+    let seen = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&seen]).unwrap().remove(0) };
     assert_eq!((zone.x, zone.y, zone.w, zone.h), (417, 129, 640, 360));
     let gap = |a: &[[f32; 4]], b: &[[f32; 4]]| a.iter().zip(b).flat_map(|(p, q)| (0..3).map(move |c| (p[c] - q[c]).abs())).fold(0.0f32, f32::max);
     let negative = engine.prepare(Decoded { linear: Linear { width: fw, height: fh, pixels: pixels.clone() }, full_width: fw as f64, undeclared: None }).unwrap();
@@ -210,7 +210,7 @@ fn the_loupe_shows_the_exported_pixels_and_a_crop_first_does_not() {
     let cut: Vec<[f32; 4]> = (0..zone.h as usize).flat_map(|r| pixels[(zone.y as usize + r) * fw + zone.x as usize..][..zone.w as usize].to_vec()).collect();
     let cropped = engine.full(Decoded { linear: Linear { width: zone.w as usize, height: zone.h as usize, pixels: cut }, full_width: f64::from(zone.w), undeclared: None }).unwrap();
     let (first, _) = engine.loupe(&cropped, &settings, &crate::viewport::Viewport::default(), (640.0, 360.0), 1.0).unwrap().unwrap();
-    let first = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&first]).remove(0) };
+    let first = Linear { width: zone.w as usize, height: zone.h as usize, pixels: engine.graph.read_back(&[&first]).unwrap().remove(0) };
     assert!(gap(&first.pixels, &seen.pixels) > 1e-3, "twin: a crop first reads invented rows");
 }
 

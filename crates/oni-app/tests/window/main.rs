@@ -20,6 +20,7 @@ mod export_paper_window;
 mod export_window;
 mod extended;
 mod freshness;
+mod full_release;
 mod frontier_look;
 mod gallery;
 mod gallery_cell;
@@ -138,6 +139,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
+    ("full_release::a_full_resolution_landing_in_the_gallery_is_let_go", full_release::a_full_resolution_landing_in_the_gallery_is_let_go),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),

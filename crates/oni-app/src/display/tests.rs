@@ -53,7 +53,7 @@ fn the_kernel_writes_what_its_cpu_reference_writes() {
         let k = Params::new(screen, w, h, 3);
         let target = Gpu::target(&device, w, h);
         gpu.run(&device, &queue, &source, &k, &target);
-        let got = read_back(&device, &queue, &target, w, h);
+        let got = read_back(&device, &queue, &target, w, h).expect("read back");
         let want = encode(&pixels, &k);
         let worst = got.iter().zip(&want).map(|(a, b)| a.abs_diff(*b)).max().unwrap();
         assert!(worst <= 1, "{screen:?}: {worst} levels apart");
@@ -80,7 +80,7 @@ fn the_zebra_stripes_what_the_screen_cannot_show_as_its_reference_does() {
     let k = Params::new(Screen::Srgb, w, h, 3).striped(zebra);
     let target = Gpu::target(&device, w, h);
     gpu.run(&device, &queue, &source, &k, &target);
-    let got = read_back(&device, &queue, &target, w, h);
+    let got = read_back(&device, &queue, &target, w, h).expect("read back");
     let want = encode(&pixels, &k);
     assert!(got.iter().zip(&want).all(|(a, b)| a.abs_diff(*b) <= 1));
     let plain = encode(&pixels, &Params::new(Screen::Srgb, w, h, 3));
@@ -105,8 +105,8 @@ fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
         (0..w * h).map(|i| [(i % w) as f32 / w as f32 * 1.2 - 0.1, 0.9 * (i / w) as f32 / h as f32, 0.4, 1.0]).collect();
     let gpu = Gpu::new(&device);
     let picture = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
-    assert!(gpu.count(&device, &queue, &picture, w, h, Screen::Srgb, || {}));
-    assert!(!gpu.count(&device, &queue, &picture, w, h, Screen::Srgb, || {}), "a second count waits for the first to be read");
+    assert!(gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, false, || {}));
+    assert!(!gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, false, || {}), "a second count waits for the first to be read");
     device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
     let counted = gpu.histogram().expect("the count landed");
     let close = |a: &oni_measure::histogram::Histogram, b: &oni_measure::histogram::Histogram| {
@@ -120,6 +120,35 @@ fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
     // Twin: the same picture counted for a P3 screen clips less and is another histogram.
     let p3 = crate::histogram::measure(&pixels, w as usize, h as usize, Screen::DisplayP3);
     assert!(close(&counted, &p3) > 1e-2, "{}", close(&counted, &p3));
+}
+
+/// A sheet's clear gaps hold no picture: counted on a sheet they are left out, as the CPU reference
+/// leaves them; a frame's own clear corners still count black off a sheet, as Swift's do.
+#[test]
+fn a_sheet_s_clear_gaps_are_not_counted_as_black() {
+    let Ok(oni_graph::Gpu { device, queue, .. }) = oni_graph::gpu() else {
+        eprintln!("no adapter: the sheet's count is not exercised");
+        return;
+    };
+    let (w, h) = (300u32, 200u32);
+    // Two pictures of a mid grey side by side, a clear band of 40 columns between them.
+    let pixels: Vec<[f32; 4]> = (0..w * h).map(|i| if (130..170).contains(&(i % w)) { [0.0; 4] } else { [0.4, 0.4, 0.4, 1.0] }).collect();
+    let picture = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
+    let counted = |sheet: bool| {
+        let gpu = Gpu::new(&device);
+        assert!(gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, sheet, || {}));
+        device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        gpu.histogram().expect("the count landed")
+    };
+    let sheet = counted(true);
+    let want = crate::histogram::measure_sheet(&pixels, w as usize, h as usize, Screen::Srgb);
+    assert_eq!(sheet.luma, want.luma, "the kernel counts what its reference counts");
+    assert_eq!(sheet.luma[0], 0.0, "no black where nothing lies");
+    assert_eq!(sheet.luma.iter().sum::<f32>(), (260 * 200) as f32, "the pictures alone");
+    // Twin: the same picture off a sheet counts its 40 clear columns black.
+    let frame = counted(false);
+    assert_eq!(frame.luma[0], (40 * 200) as f32);
+    assert_eq!(frame.luma, crate::histogram::measure(&pixels, w as usize, h as usize, Screen::Srgb).luma);
 }
 
 /// `pixels` laid in an rgba32float texture the kernel reads, the checks' input.

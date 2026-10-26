@@ -125,3 +125,34 @@ fn pixel(p: vec2<i32>) -> vec4<f32> {
         if self.honest { Rect::new(output.x + self.by, output.y, output.w, output.h) } else { output }
     }
 }
+
+/// Each pixel the input's `by` away, edges repeated; `honest` declares that reach, else one pixel of it.
+pub struct Reaching {
+    pub by: (i32, i32),
+    pub honest: bool,
+}
+
+impl Stage for Reaching {
+    fn name(&self) -> &'static str {
+        if self.honest { "reaching" } else { "lying-reaching" }
+    }
+
+    fn shader(&self) -> &'static str {
+        r#"
+struct Params { by: vec4<i32> }
+@group(0) @binding(3) var<uniform> params: Params;
+fn pixel(p: vec2<i32>) -> vec4<f32> {
+    return load(p + params.by.xy);
+}
+"#
+    }
+
+    fn params(&self) -> Vec<u8> {
+        [self.by.0, self.by.1, 0, 0].iter().flat_map(|v| v.to_le_bytes()).collect()
+    }
+
+    fn input_region(&self, output: Rect) -> Rect {
+        let (w, h) = if self.honest { (output.w, output.h) } else { (1, 1) };
+        Rect::new(output.x + self.by.0, output.y + self.by.1, w, h)
+    }
+}

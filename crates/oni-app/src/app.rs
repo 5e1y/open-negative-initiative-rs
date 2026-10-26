@@ -239,7 +239,7 @@ struct Gpu {
     /// The window cannot take the GPU's textures (Slint's software renderer): the canvas is read back.
     reads_back: bool,
     /// The whole picture the histogram counts next, at one size whatever the zoom; none once counted.
-    uncounted: Option<oni_graph::Source>,
+    uncounted: Option<canvas_gpu::Counted>,
     seed: u32,
     screen: display::Screen,
     /// When the last count started, which holds the counts to the image's cadence.

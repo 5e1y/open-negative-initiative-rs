@@ -277,6 +277,30 @@ fn rotation_turns_and_strokes_match() {
     judge("stroke mask", &out, &cpu::stroke_mask(&points, out_of(extent), 3.2).pixels, &cpu::stroke_mask(&points, out_of(extent), 3.4).pixels);
 }
 
+#[test]
+fn a_view_in_a_straightened_frame_s_clear_corner_renders_clear() {
+    let Some(mut g) = graph("a_view_in_a_straightened_frame_s_clear_corner_renders_clear") else { return };
+    let upright = Rect::new(0, 0, 400, 260);
+    let pixels = noise(upright.w, upright.h, 15, 0.1, 1.0);
+    let input = g.upload_at(upright, &pixels).unwrap();
+    let grid = Grid::new(0, 0, upright.w as usize, upright.h as usize, pixels);
+    let (k, rect) = geometry::rotation(10.0, upright);
+    // The bounding box's top-left corner: every pixel it reads lies past the upright frame.
+    let corner = Rect::new(rect.x, rect.y, 12, 8);
+    let out_of = |r: Rect| (r.x, r.y, r.w as usize, r.h as usize);
+    // Behind a stage, as the editor's chain is: the resampling reads a texture of its declared region.
+    let laid = Image::new(&input).then(oni_graph::stages::Gain([1.0; 4]));
+    let image = laid.clone().then(Resample { k, extent: rect });
+    let part = g.render(&image, corner, None).expect("a clear corner renders");
+    let reference = cpu::affine(&grid, out_of(corner), &k).pixels;
+    assert!(reference.iter().all(|p| *p == [0.0; 4]), "the corner reads nothing of the frame");
+    judge("a clear corner", &part, &reference, &vec![[0.5; 4]; part.len()]);
+    // Twin: edges repeated instead, the same corner reads the frame's nearest edge, not clear.
+    let held = oni_render::Affine { transparent: false, ..k };
+    let edged = g.render(&laid.then(Resample { k: held, extent: rect }), corner, None).expect("an edged corner renders");
+    judge("an edged corner", &edged, &cpu::affine(&grid, out_of(corner), &held).pixels, &reference);
+}
+
 /// Every settings family the pipeline branches on, each stage on.
 fn families() -> Vec<(&'static str, PipelineSettings)> {
     let mut pro = negative();

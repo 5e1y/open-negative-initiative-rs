@@ -4,6 +4,9 @@ use super::*;
 use oni_i18n::tr;
 
 mod inputs;
+mod kept;
+pub(crate) use kept::{INPUTS_KEPT, custom_for, patches_for};
+use kept::Kept;
 pub(crate) mod prewarm;
 mod originals;
 mod tiles;
@@ -92,12 +95,14 @@ pub struct Engine {
     fitted: view::Fitting,
     /// Laid after the pipeline on every render the editor shows, never on an export.
     pub proof: crate::proof::Proofing,
-    /// Where the custom flat-field masks are kept, and those read so far, `None` once one is gone.
+    /// Where the custom flat-field masks are kept, and those read lately.
     pub support: Option<PathBuf>,
-    custom: HashMap<String, Option<CustomFlatField>>,
-    /// Where the dust patches are kept, and those read so far, `None` while one is not generated.
+    custom: HashMap<String, Kept<CustomFlatField>>,
+    /// Where the dust patches are kept, and those read lately.
     pub caches: Option<PathBuf>,
-    patches: HashMap<Id, Option<Source>>,
+    patches: HashMap<Id, Kept<Source>>,
+    /// Counts the renders reading masks and patches, which date each one's last use.
+    reads: u64,
     /// `Negative.measure` and `measureSmall` of the preview whose id leads: what the input
     /// histograms read, the small one under the hand.
     measures: Option<(u64, Source, Source)>,
@@ -107,54 +112,49 @@ pub struct Engine {
     cache: oni_graph::Cache,
 }
 
-/// The engine every thread shares, behind a gate the interface thread closes while the window's
-/// surface is reconfigured: wgpu refuses a reconfigure that another thread submits work during.
+/// The engine every thread shares; its graph's submissions pass a gate the interface thread closes
+/// while the window's surface is reconfigured, as wgpu refuses a reconfigure that another thread submits work during.
 #[derive(Clone)]
 pub struct Shared(Arc<Gated>);
 
 pub(crate) struct Gated {
     engine: Mutex<Engine>,
+    /// The threads waiting for the engine, which a background job gives way to between its steps.
+    wanted: std::sync::atomic::AtomicUsize,
     door: Arc<Door>,
     uploader: oni_graph::Uploader,
 }
 
-/// The engine, locked by a thread the gate let through.
-pub struct EngineGuard<'a> {
-    engine: Option<MutexGuard<'a, Engine>>,
-    gated: &'a Gated,
-}
+/// The engine, locked by one thread.
+pub struct EngineGuard<'a>(MutexGuard<'a, Engine>);
 
 impl Deref for EngineGuard<'_> {
     type Target = Engine;
     fn deref(&self) -> &Engine {
-        self.engine.as_ref().expect("held until dropped")
+        &self.0
     }
 }
 
 impl DerefMut for EngineGuard<'_> {
     fn deref_mut(&mut self) -> &mut Engine {
-        self.engine.as_mut().expect("held until dropped")
-    }
-}
-
-impl Drop for EngineGuard<'_> {
-    fn drop(&mut self) {
-        self.engine.take();
-        self.gated.door.leave();
+        &mut self.0
     }
 }
 
 impl Shared {
-    /// Waits while the gate is held, then for the engine.
+    /// Waits for the engine; the gate is passed at each submission, so a reconfigure waits one, never a whole render.
     pub fn lock(&self) -> Result<EngineGuard<'_>, String> {
-        let gated = &*self.0;
-        gated.door.enter()?;
-        match gated.engine.lock() {
-            Ok(engine) => Ok(EngineGuard { engine: Some(engine), gated }),
-            Err(_) => {
-                gated.door.leave();
-                Err(tr("the render engine failed earlier").into())
-            }
+        self.0.wanted.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let locked = self.0.engine.lock();
+        self.0.wanted.fetch_sub(1, std::sync::atomic::Ordering::SeqCst);
+        locked.map(EngineGuard).map_err(|_| tr("the render engine failed earlier").into())
+    }
+
+    /// Waits until no other thread waits for the engine: the mutex is not fair, and a job relocking at
+    /// once would keep the window waiting for all its steps.
+    pub(crate) fn give_way(&self) {
+        while self.0.wanted.load(std::sync::atomic::Ordering::SeqCst) > 0 {
+            std::thread::sleep(Duration::from_millis(1));
         }
     }
 
@@ -165,13 +165,10 @@ impl Shared {
         Ok(())
     }
 
-    /// The decode laid on the GPU through the gate alone: a 24 MP upload holds the engine about
-    /// 100 ms, which every render asked meanwhile would wait.
+    /// The decode laid on the GPU beside the engine, band by band through the gate: a 24 MP upload
+    /// holds the engine about 100 ms, which every render asked meanwhile would wait.
     pub fn upload(&self, l: &Linear) -> Result<Source, String> {
-        self.0.door.enter()?;
-        let laid = self.0.uploader.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string());
-        self.0.door.leave();
-        laid
+        self.0.uploader.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())
     }
 
     /// `Engine::prepare` with the upload outside the engine.
@@ -202,25 +199,34 @@ impl Shared {
     pub fn release(&self) {
         self.0.door.release();
     }
+
+    #[cfg(test)]
+    pub(crate) fn door(&self) -> Arc<Door> {
+        self.0.door.clone()
+    }
 }
 
 impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
+        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), reads: 0, measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
     }
 
     pub fn shared(d: &Device) -> Shared {
-        let engine = Engine::on(d);
+        let door: Arc<Door> = Arc::default();
+        let mut engine = Engine::on(d);
+        engine.graph.through(door.clone());
         let uploader = engine.graph.uploader();
-        Shared(Arc::new(Gated { engine: Mutex::new(engine), door: Arc::default(), uploader }))
+        Shared(Arc::new(Gated { engine: Mutex::new(engine), wanted: Default::default(), door, uploader }))
     }
 
-    /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the
-    /// measuring copies and the pool's idle textures, a few hundred MB on a 24 MP frame.
+    /// What only the open frame's editor uses, dropped once it is left: the fitted copy, the masks and
+    /// patches read, the measuring copies and the pool's idle textures, a few hundred MB on a 24 MP frame.
     pub fn trim(&mut self) {
         self.fitted = Default::default();
+        self.custom.clear();
+        self.patches.clear();
         self.measures = None;
         self.read = [None, None];
         self.cache.clear();
@@ -338,19 +344,6 @@ impl Engine {
         self.read = [None, None];
     }
 
-    /// Each correction's patch from the cache, read and uploaded once; one not generated yet is left
-    /// out, and asked for again on the next render.
-    fn read_patches(&mut self, settings: &PipelineSettings) {
-        let Some(caches) = self.caches.clone() else { return };
-        for c in &settings.corrections {
-            if self.patches.get(&c.id).is_some_and(Option::is_some) {
-                continue;
-            }
-            let read = crate::patches::read(&caches, c.id).and_then(|(w, h, pixels)| self.graph.upload(w, h, &pixels).ok());
-            self.patches.insert(c.id, read);
-        }
-    }
-
     /// `Pipeline.apply` unproofed, with the masks and patches the canvas reads: an export's render.
     pub fn unproofed(&mut self, source: &Source, settings: &PipelineSettings, request: &Request) -> Result<Image, String> {
         self.read_custom(settings);
@@ -358,30 +351,4 @@ impl Engine {
         self.pipeline.image(&mut self.graph, source, settings, request, &inputs).map_err(|e| e.to_string())
     }
 
-    /// The custom mask the settings name, read and uploaded once per id.
-    fn read_custom(&mut self, settings: &PipelineSettings) {
-        self.read_patches(settings);
-        let f = &settings.flat_field;
-        let (Some(id), Some(support)) = (f.custom.as_ref().filter(|_| f.mask == FlatFieldMask::Custom), self.support.as_ref()) else { return };
-        // A miss is asked again, as Swift keeps only hits: a mask loaded later reaches the frames naming it.
-        if self.custom.get(id).is_some_and(Option::is_some) {
-            return;
-        }
-        let read = crate::flat_fields::read(support, id).and_then(|m| {
-            let mask = self.graph.upload(m.width, m.height, &m.pixels).ok()?;
-            Some(CustomFlatField { id: id.clone(), mask, peaks: m.peaks, per_channel: m.per_channel })
-        });
-        self.custom.insert(id.clone(), read);
-    }
-
-}
-
-/// The patches of the settings' own corrections that have been generated.
-pub(crate) fn patches_for<'a>(kept: &'a HashMap<Id, Option<Source>>, settings: &PipelineSettings) -> HashMap<Id, &'a Source> {
-    settings.corrections.iter().filter_map(|c| Some((c.id, kept.get(&c.id)?.as_ref()?))).collect()
-}
-
-/// The custom mask read for the settings' own id, which the pipeline lays only when the ids match.
-pub(crate) fn custom_for<'a>(kept: &'a HashMap<String, Option<CustomFlatField>>, settings: &PipelineSettings) -> Option<&'a CustomFlatField> {
-    kept.get(settings.flat_field.custom.as_deref()?)?.as_ref()
 }

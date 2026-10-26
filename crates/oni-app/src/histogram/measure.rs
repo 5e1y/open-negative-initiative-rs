@@ -36,6 +36,15 @@ pub fn counted(p: [f32; 4], to: &[[f32; 3]; 3], back: &[[f32; 3]; 3]) -> [f32; 3
 
 /// The CPU reference of the display's histogram kernel, on a linear Rec. 2020 picture rows top first.
 pub fn measure(pixels: &[[f32; 4]], width: usize, height: usize, screen: Screen) -> Histogram {
+    counted_of(pixels, width, height, screen, false)
+}
+
+/// `measure` on a sheet of pictures, whose clear gaps are left out.
+pub fn measure_sheet(pixels: &[[f32; 4]], width: usize, height: usize, screen: Screen) -> Histogram {
+    counted_of(pixels, width, height, screen, true)
+}
+
+fn counted_of(pixels: &[[f32; 4]], width: usize, height: usize, screen: Screen, sheet: bool) -> Histogram {
     let (to, back) = (screen.matrix(), screen.back());
     let (gw, gh) = grid(width, height);
     let mut rgb = vec![[0f32; 3]; BINS];
@@ -43,7 +52,11 @@ pub fn measure(pixels: &[[f32; 4]], width: usize, height: usize, screen: Screen)
     for gy in 0..gh {
         let y = nearest(gy, gh, height);
         for gx in 0..gw {
-            let v = counted(pixels[y * width + nearest(gx, gw, width)], &to, &back);
+            let p = pixels[y * width + nearest(gx, gw, width)];
+            if sheet && p[3] == 0.0 {
+                continue;
+            }
+            let v = counted(p, &to, &back);
             for c in 0..3 {
                 rgb[bin(v[c])][c] += 1.0;
             }

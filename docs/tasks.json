@@ -3587,5 +3587,75 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 670,
+    "type": "fix",
+    "title": "A view in a straightened frame's clear corner renders clear instead of blanking the canvas",
+    "status": "done",
+    "detail": "Plan::new refused any stage whose input region missed its input's extent (EmptyInput), so a crop-tool zoom into the clear corner of a straightened frame, where Resample maps the whole view past the upright frame, failed the render and showed 'could not be decoded'. An input region is now projected onto its input's extent (Rect::nearest_in): the intersection when they meet, else the edge rows or columns a clamped load reads, so every kernel reads what its `load` and `inside` give. Checks: oni-graph a_region_whose_input_lies_past_the_extent_reads_the_nearest_edge (twin: one edge pixel declared repeats down the rows) and oni-pipeline a_view_in_a_straightened_frame_s_clear_corner_renders_clear (twin: edges repeated read the frame, not clear); both failed with EmptyInput before."
+  },
+  {
+    "id": 671,
+    "type": "fix",
+    "title": "A window resize during an export, a heal or a long render waits one submission, not the whole render",
+    "status": "done",
+    "detail": "The engine's guard counted as inside the surface's door for its whole life, so Door::hold on a Resized or ScaleFactorChanged event froze the interface thread until an export frame's full-resolution render and readback ended. The engine's graph now passes the door per submission (graph.through(door)) and its uploads per 64 MB band, as the reader graphs did; Shared::lock takes the mutex alone. Measured in the dev profile (render::door_tests, 12 MP export render under the busy settings, holds every 8 ms): 16 holds over a 191 ms render, median 0.0 ms, longest 3.5 ms; twin, the door held across the render: one hold of 162 ms."
+  },
+  {
+    "id": 672,
+    "type": "fix",
+    "title": "The thread holding the surface's door passes it, so an interface-thread render before the queued release cannot deadlock",
+    "status": "done",
+    "detail": "Door::hold runs on the interface thread and its release is queued with invoke_from_event_loop; any engine submission on that thread in between waited for a release only it could run. The door records its holder's thread, which passes enter. Check the_holding_thread_passes_its_own_door_and_no_other, twin: another thread's render waits until the release."
+  },
+  {
+    "id": 673,
+    "type": "fix",
+    "title": "The launch prewarm takes the engine one variant at a time and gives way to waiters",
+    "status": "done",
+    "detail": "The prewarm thread held the engine for the whole compilation, so Shell::new's engine locks, and the window, waited for it. Shared::prewarm locks per size and variant, and between two waits while another thread waits for the engine (Shared::give_way: std's mutex is not fair, and an immediate relock kept the waiter out). Check a_lock_during_the_prewarm_waits_one_variant_not_the_whole_prewarm: 21 ms of a 178 ms prewarm in the dev profile; twin, the whole prewarm under one lock: 76 ms of 101 ms."
+  },
+  {
+    "id": 674,
+    "type": "fix",
+    "title": "A full-resolution build landing after the return to the gallery is dropped",
+    "status": "done",
+    "detail": "leave_editor_memory let go of the full frame, but a build in flight landed later, kept s.full (up to 1.6 GB on a 24 MP frame) and rendered the hidden canvas. The landing keeps the build and asks a render only while the editor shows. Window check full_release::a_full_resolution_landing_in_the_gallery_is_let_go (failed before: kept resident, a hidden render); twin: back in the editor the build lands and is kept."
+  },
+  {
+    "id": 675,
+    "type": "fix",
+    "title": "A sheet staging more than the 4 MiB uniform ring goes on in a fresh ring instead of overwriting its own first uniforms",
+    "status": "done",
+    "detail": "laid_out records every tile in one encoder; past 4 MiB of uniforms (about 8 000 dispatches at Metal's 256-byte alignment) the ring wrapped onto offsets the same unsubmitted encoder's first dispatches still read, drawing tiles with another's frame and parameters. The ring tracks where the submission began; a wrap that would reach it moves to a fresh buffer, the old one kept alive by its bind groups. Check a_sheet_staging_past_the_uniform_ring_draws_each_tile_with_its_own_uniforms (failed at error 0.61 before); twin: a tile judged on its neighbour's gains."
+  },
+  {
+    "id": 676,
+    "type": "fix",
+    "title": "A readback the GPU fails to deliver is an error, never a panic in whichever thread polls",
+    "status": "done",
+    "detail": "render_piece, Graph::read_back and display::read_back called expect in the map callback, on poll and on get_mapped_range: a device loss or an invalid buffer panicked the thread that polled the shared device (the interface thread, or the render thread holding and poisoning the engine). The map result now comes back through a channel and turns into Error::Lost (an empty Option for the display's readback). Not reproducible without losing the device: no check."
+  },
+  {
+    "id": 677,
+    "type": "fix",
+    "title": "An Edit Together sheet past the GPU's texture side is refused instead of laid on an invalid texture",
+    "status": "done",
+    "detail": "laid_out created the sheet without checking max_side, so a group of 745 frames or more at fit (a counted sheet past 16 384 px) left the grid and its histogram blank behind a logged validation error. It returns Error::TooLarge. Check a_sheet_past_the_texture_side_is_refused; twin: a sheet at the side itself is laid."
+  },
+  {
+    "id": 678,
+    "type": "fix",
+    "title": "The Edit Together histogram leaves the sheet's clear gaps out instead of counting them black",
+    "status": "done",
+    "detail": "The histogram kernel ignored alpha, so the counted sheet's gaps and letterbox bands piled into bin 0. On a sheet (Counted.sheet, set where Together hands its counted sheet) a sample of alpha 0 is skipped, in the kernel and in its CPU reference histogram::measure_sheet; a single frame still counts its clear corners black, as Swift's CIAreaHistogram does. Check a_sheet_s_clear_gaps_are_not_counted_as_black against the reference; twin: off a sheet the 40 clear columns count black."
+  },
+  {
+    "id": 679,
+    "type": "fix",
+    "title": "The engine keeps the masks and patches it reads under a 128 MB budget and lets them go with the editor",
+    "status": "done",
+    "detail": "Engine.custom and Engine.patches kept every custom flat-field mask (about 42 MB each) and dust patch read in the session. Both are now kept under INPUTS_KEPT (128 MB), the longest unused let go first and never one the current read names; trim (the return to the gallery) drops them, so a forgotten mask is read again from its file. Misses are no longer stored, as they were asked again anyway. Check the_patches_kept_stay_under_their_budget_and_go_with_the_editor; twin: a render naming more than the budget keeps every patch it names."
   }
 ]

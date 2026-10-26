@@ -18,7 +18,7 @@ fn tiles_laid_on_a_sheet_equal_each_render_alone_at_its_place() {
     sb.vignette.stops = 0.6;
     let places = [(0, 0), (320, 10)];
     let sheet = engine.render_laid(&[Laid::Frame(&a, &sa), Laid::Frame(&b, &sb)], 300, &|i, _| places[i], (640, 320)).unwrap();
-    let read = Linear { width: 640, height: 320, pixels: engine.graph.read_back(&[&sheet]).remove(0) };
+    let read = Linear { width: 640, height: 320, pixels: engine.graph.read_back(&[&sheet]).unwrap().remove(0) };
     let alone = [engine.render(&a, &sa, Some(300)).unwrap(), engine.render(&b, &sb, Some(300)).unwrap()];
     for (l, (x, y)) in alone.iter().zip(places) {
         for row in 0..l.height {
@@ -61,7 +61,7 @@ fn a_picture_standing_in_is_scaled_to_the_tile_side_at_its_place() {
     let grey = [0.25, 0.5, 0.75, 1.0];
     let picture = engine.picture(40, 20, &vec![grey; 800]).unwrap();
     let sheet = engine.render_laid(&[Laid::Shown(&picture)], 100, &|_, _| (10, 5), (200, 100)).unwrap();
-    let read = engine.graph.read_back(&[&sheet]).remove(0);
+    let read = engine.graph.read_back(&[&sheet]).unwrap().remove(0);
     let at = |x: usize, y: usize| read[y * 200 + x];
     // 40 × 20 at a side of 100 covers 100 × 50 from (10, 5): its middle and its far corner are the grey.
     let near = |p: [f32; 4]| p.iter().zip(grey).all(|(a, b)| (a - b).abs() < 2e-3);

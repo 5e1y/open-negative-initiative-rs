@@ -2,6 +2,17 @@
 
 use super::*;
 
+/// Waits for `slice` to map for reading; a failure comes back as an error, never a panic in whichever
+/// thread polls the shared device.
+pub(super) fn mapped(device: &wgpu::Device, slice: &wgpu::BufferSlice<'_>) -> Result<(), Error> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |r| {
+        let _ = tx.send(r);
+    });
+    device.poll(wgpu::PollType::wait_indefinitely()).map_err(|e| Error::Lost(e.to_string()))?;
+    rx.recv().map_err(|e| Error::Lost(e.to_string()))?.map_err(|e| Error::Lost(e.to_string()))
+}
+
 /// A readback row, padded to the 256 bytes a texture-to-buffer copy requires.
 pub(super) fn padded_row(width: u32) -> u64 {
     (width as u64 * BYTES_PER_PIXEL).div_ceil(256) * 256
@@ -76,6 +87,9 @@ impl Graph {
     /// Each image evaluated whole and laid with its corner at its place on one clear sheet of `size`,
     /// all in one submission: many small pictures pay one hand-over to the GPU and no readback.
     pub fn laid_out(&mut self, images: &[(&Image, (i32, i32))], size: (u32, u32)) -> Result<Source, Error> {
+        if size.0 > self.max_side || size.1 > self.max_side {
+            return Err(Error::TooLarge);
+        }
         let sheet_rect = Rect::new(0, 0, size.0, size.1);
         let mut encoder = self.device.create_command_encoder(&Default::default());
         // An output no source holds any more, cleared, where the device clears in place; else a fresh one.
@@ -196,10 +210,9 @@ impl Graph {
         self.submit(encoder);
         self.pool.release(texture);
         let slice = readback.slice(..);
-        slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));
-        self.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        mapped(&self.device, &slice)?;
         {
-            let mapped = slice.get_mapped_range().expect("mapped range");
+            let mapped = slice.get_mapped_range().map_err(|e| Error::Lost(e.to_string()))?;
             let width = piece.w as usize * BYTES_PER_PIXEL as usize;
             for y in 0..piece.h as usize {
                 let at = (piece.y - whole.y) as usize + y;

@@ -16,6 +16,7 @@ struct Measure {
     to: [[f32; 4]; 3],
     back: [[f32; 4]; 3],
     grid: [u32; 4],
+    clear: [u32; 4],
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -125,9 +126,10 @@ impl Gpu {
         queue.submit([encoder.finish()]);
     }
 
-    /// Counts `picture`, `width` by `height`, unless the last count is still being read; says whether it
-    /// did. `read` runs once the count can be read, on whichever thread the device was polled.
-    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, width: u32, height: u32, screen: Screen, read: impl FnOnce() + Send + 'static) -> bool {
+    /// Counts `picture`, `width` by `height`, its clear samples left out on a `sheet`, unless the last
+    /// count is still being read; says whether it did. `read` runs once the count can be read, on whichever thread the device was polled.
+    #[allow(clippy::too_many_arguments)]
+    pub fn count(&self, device: &wgpu::Device, queue: &wgpu::Queue, picture: &wgpu::TextureView, (width, height): (u32, u32), screen: Screen, sheet: bool, read: impl FnOnce() + Send + 'static) -> bool {
         use wgpu::util::DeviceExt;
         {
             let mut m = self.mapping.lock().expect("histogram mapping");
@@ -138,7 +140,7 @@ impl Gpu {
         }
         let (gw, gh) = crate::histogram::grid(width as usize, height as usize);
         let row = |r: [f32; 3]| [r[0], r[1], r[2], 0.0];
-        let k = Measure { to: screen.matrix().map(row), back: screen.back().map(row), grid: [gw as u32, gh as u32, width, height] };
+        let k = Measure { to: screen.matrix().map(row), back: screen.back().map(row), grid: [gw as u32, gh as u32, width, height], clear: [u32::from(sheet), 0, 0, 0] };
         let block = device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("histogram params"), contents: bytemuck::bytes_of(&k), usage: wgpu::BufferUsages::UNIFORM });
         let counting = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("histogram"),
@@ -191,8 +193,8 @@ impl Gpu {
 }
 
 /// The `w` × `h` corner of an rgba8 texture read back, rows packed: the canvas on a window that cannot
-/// take the GPU's textures, and the checks' reading of the kernel.
-pub fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32) -> Vec<u8> {
+/// take the GPU's textures, and the checks' reading of the kernel; none when the GPU fails to deliver it.
+pub fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, w: u32, h: u32) -> Option<Vec<u8>> {
     let row = (w * 4).div_ceil(256) * 256;
     let buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: None,
@@ -211,8 +213,12 @@ pub fn read_back(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Tex
     );
     queue.submit([encoder.finish()]);
     let slice = buffer.slice(..);
-    slice.map_async(wgpu::MapMode::Read, |r| r.expect("map"));
-    device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
-    let mapped = slice.get_mapped_range().expect("mapped range");
-    (0..h as usize).flat_map(|y| mapped[y * row as usize..y * row as usize + w as usize * 4].to_vec()).collect()
+    let (tx, rx) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |r| {
+        let _ = tx.send(r);
+    });
+    device.poll(wgpu::PollType::wait_indefinitely()).ok()?;
+    rx.recv().ok()?.ok()?;
+    let mapped = slice.get_mapped_range().ok()?;
+    Some((0..h as usize).flat_map(|y| mapped[y * row as usize..y * row as usize + w as usize * 4].to_vec()).collect())
 }

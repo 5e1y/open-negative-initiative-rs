@@ -11,6 +11,7 @@ impl std::fmt::Display for Error {
             Error::EmptyInput { stage } => write!(f, "stage {stage} reads nothing of its input"),
             Error::TooLarge => write!(f, "one output pixel needs more than the GPU's texture side"),
             Error::Size { expected, got } => write!(f, "{got} pixels given for {expected}"),
+            Error::Lost(e) => write!(f, "the GPU did not deliver a readback: {e}"),
         }
     }
 }

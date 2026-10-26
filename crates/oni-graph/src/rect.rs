@@ -47,6 +47,14 @@ impl Rect {
         )
     }
 
+    /// The part of `extent` a clamped read of `self` loads: their intersection, else the edge rows
+    /// or columns nearest to it.
+    pub fn nearest_in(&self, extent: &Rect) -> Self {
+        let x0 = self.x.clamp(extent.x, extent.right() - 1);
+        let y0 = self.y.clamp(extent.y, extent.bottom() - 1);
+        Self::from_corners(x0, y0, self.right().clamp(x0 + 1, extent.right()), self.bottom().clamp(y0 + 1, extent.bottom()))
+    }
+
     /// The smallest rectangle holding both.
     pub fn union(&self, other: &Rect) -> Self {
         if self.is_empty() {

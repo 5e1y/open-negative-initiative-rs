@@ -46,18 +46,13 @@ impl Graph {
     }
 
     fn laid_through(&mut self, extent: Rect, pixels: &[[f32; 4]], precision: Precision) -> Result<Source, Error> {
-        let door = self.door.clone().filter(|d| d.enter());
         let (queue, pool) = (&self.queue, &mut self.pool);
-        let made = laid(queue, self.max_side, extent, pixels, precision, |w, h, p| pool.create_owned(w, h, p));
-        if let Some(d) = door {
-            d.leave();
-        }
-        made
+        laid(queue, self.door.as_ref(), self.max_side, extent, pixels, precision, |w, h, p| pool.create_owned(w, h, p))
     }
 
-    /// What lays pixels beside the graph, from any thread.
+    /// What lays pixels beside the graph, from any thread, through the graph's door.
     pub fn uploader(&self) -> Uploader {
-        Uploader { device: self.device.clone(), queue: self.queue.clone(), max_side: self.max_side, meter: self.pool.meter.clone() }
+        Uploader { device: self.device.clone(), queue: self.queue.clone(), door: self.door.clone(), max_side: self.max_side, meter: self.pool.meter.clone() }
     }
 }
 
@@ -67,6 +62,7 @@ impl Graph {
 pub struct Uploader {
     device: wgpu::Device,
     queue: wgpu::Queue,
+    door: Option<Arc<dyn Door>>,
     max_side: u32,
     meter: Arc<Meter>,
 }
@@ -75,13 +71,21 @@ impl Uploader {
     /// As `Graph::upload_half`: a decode is held in half floats.
     pub fn upload(&self, width: u32, height: u32, pixels: &[[f32; 4]]) -> Result<Source, Error> {
         let make = |w, h, p| crate::texture::made(&self.device, &self.meter, w, h, false, p);
-        laid(&self.queue, self.max_side, Rect::new(0, 0, width, height), pixels, Precision::Half, make)
+        laid(&self.queue, self.door.as_ref(), self.max_side, Rect::new(0, 0, width, height), pixels, Precision::Half, make)
     }
 }
 
 /// `pixels` written over `extent` in tiles of at most `max_side`, each a texture `make` gives; in half
 /// floats when asked and one tile holds them, as only like formats copy across tiles.
-fn laid(queue: &wgpu::Queue, max_side: u32, extent: Rect, pixels: &[[f32; 4]], asked: Precision, mut make: impl FnMut(u32, u32, Precision) -> FloatTexture) -> Result<Source, Error> {
+fn laid(queue: &wgpu::Queue, door: Option<&Arc<dyn Door>>, max_side: u32, extent: Rect, pixels: &[[f32; 4]], asked: Precision, mut make: impl FnMut(u32, u32, Precision) -> FloatTexture) -> Result<Source, Error> {
+    // Each band passes the door on its own: a window reconfiguring waits one band, never a whole frame.
+    let passing = |write: &dyn Fn()| {
+        let entered = door.filter(|d| d.enter());
+        write();
+        if let Some(d) = entered {
+            d.leave();
+        }
+    };
     if pixels.len() as u64 != extent.area() {
         return Err(Error::Size { expected: extent.area(), got: pixels.len() });
     }
@@ -110,10 +114,11 @@ fn laid(queue: &wgpu::Queue, max_side: u32, extent: Rect, pixels: &[[f32; 4]], a
                     halves.clear();
                     halves.extend(floats.iter().map(|&v| ::half::f16::from_f32(v).to_bits()));
                     let layout = wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 8), rows_per_image: None };
-                    queue.write_texture(at, bytemuck::cast_slice(&halves), layout, size);
+                    passing(&|| queue.write_texture(at, bytemuck::cast_slice(&halves), layout, size));
                     continue;
                 }
-                queue.write_texture(at, &bytes[start as usize..end as usize], wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row as u32), rows_per_image: None }, size);
+                let layout = wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(row as u32), rows_per_image: None };
+                passing(&|| queue.write_texture(at, &bytes[start as usize..end as usize], layout, size));
             }
             tiles.push((Rect::new(extent.x + tx as i32, extent.y + ty as i32, w, h), texture));
         }
@@ -125,7 +130,7 @@ fn laid(queue: &wgpu::Queue, max_side: u32, extent: Rect, pixels: &[[f32; 4]], a
 impl Graph {
     /// Each source read back whole, row-major, every copy in one submission and one wait: many small
     /// pictures pay one round trip to the GPU, not one each.
-    pub fn read_back(&mut self, sources: &[&Source]) -> Vec<Vec<[f32; 4]>> {
+    pub fn read_back(&mut self, sources: &[&Source]) -> Result<Vec<Vec<[f32; 4]>>, Error> {
         let mut parts = Vec::new();
         let mut size = 0u64;
         for (i, s) in sources.iter().enumerate() {
@@ -136,7 +141,7 @@ impl Graph {
         }
         let mut out: Vec<Vec<[f32; 4]>> = sources.iter().map(|s| vec![[0.0; 4]; s.extent().area() as usize]).collect();
         if size == 0 {
-            return out;
+            return Ok(out);
         }
         let readback = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("readback"),
@@ -157,10 +162,9 @@ impl Graph {
         }
         self.submit(encoder);
         let slice = readback.slice(..);
-        slice.map_async(wgpu::MapMode::Read, |r| r.expect("readback map"));
-        self.device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        rendering::mapped(&self.device, &slice)?;
         {
-            let mapped = slice.get_mapped_range().expect("mapped range");
+            let mapped = slice.get_mapped_range().map_err(|e| Error::Lost(e.to_string()))?;
             for (i, rect, _, offset) in &parts {
                 let (extent, row) = (sources[*i].extent(), rendering::padded_row(rect.w) as usize);
                 let width = rect.w as usize * BYTES_PER_PIXEL as usize;
@@ -173,6 +177,6 @@ impl Graph {
             }
         }
         readback.unmap();
-        out
+        Ok(out)
     }
 }

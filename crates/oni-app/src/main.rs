@@ -86,9 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let warming = engine.clone();
     std::thread::spawn(move || {
         let started = std::time::Instant::now();
-        if let Ok(mut e) = warming.lock() {
-            e.prewarm();
-        }
+        warming.prewarm();
         timing::line(&format!("kernels compiled in {:.0} ms", started.elapsed().as_secs_f64() * 1000.0));
     });
     let gate = engine.clone();
