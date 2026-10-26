@@ -4189,5 +4189,40 @@
     "title": "The roll #8 checks read the roll's own reference and frames",
     "status": "done",
     "detail": "roll8 membership reads the reference the first frame names instead of a constant a re-prepared roll no longer carries; the export windows mirror only the roll's frames and marker, so a contact sheet made in the roll never takes the first tile, and say which photo opened when ⌘G misses."
+  },
+  {
+    "id": 770,
+    "type": "test",
+    "title": "The window checks on roll #8 close the RAW recalibration notice before they reach behind it",
+    "status": "done",
+    "detail": "A first launch on a library holding a RAW raises the neutral decode notice, a sheet: every menu goes dark under it, so ⌘G after a tile click opened nothing (export_window, export_paper_window), the bar's undo read false after a drag (headless) and the pointer never reached the base loupe (prepare_loupe with ONI_RAW_DIR). The app is right, the sheet is modal as Swift's; the checks close it. export_window asserts the notice is up and its twin that ⌘G under it opens nothing; prepare_loupe that RAWs raise it and TIFFs do not."
+  },
+  {
+    "id": 771,
+    "type": "test",
+    "title": "The roll #8 window mirrors lay the state their checks read",
+    "status": "done",
+    "detail": "auto_balance's mirror takes the first frame's balance off, so its twin (no press before the key) holds whatever the roll was left with; headless's mirror sets every medal to none and DSC_6435 on the Scanner face, so the medal keys and the Scanner-face twin never read the roll's own labels and faces."
+  },
+  {
+    "id": 772,
+    "type": "test",
+    "title": "The roll #8 sidecar copies stand beside stand-ins, as a write leaves them",
+    "status": "done",
+    "detail": "oni-core roll8, oni-measure roll_prepare and the phone link copy the sidecars beside empty stand-ins (roll_prepare and the link wrote none, and a write is refused beside a missing original) and write each once, so the print a write stamps (originalPrint) is in the bytes before a gesture: the byte-for-byte undo checks compare the gesture's own writes. roll_prepare lays the base-step draft on the frame its measure leaves out instead of reading one off the roll."
+  },
+  {
+    "id": 773,
+    "type": "test",
+    "title": "The real sidecar checks read the roll in Swift's form and lay the envelope they need",
+    "status": "done",
+    "detail": "real_files drops this app's own originalPrint line before comparing a roll #8 sidecar with the codec's Swift document (a roll touched by this app carried it), and its copies are written once beside their stand-in with no medal, the camera's lines and a base-step draft, so the read-write, label, trash and draft checks no longer need a roll still holding Swift's drafts."
+  },
+  {
+    "id": 774,
+    "type": "fix",
+    "title": "Two sidecars agree on numbers one f32 ulp apart, whatever their decimal spelling",
+    "status": "done",
+    "detail": "semantic_difference compared the decimals as f64, where two neighbouring f32s spelt shortest lie up to 1.7 ulps apart (-1.0909756 against -1.0909758), so the one-ulp twin of real_files failed on DSC_6442's red gain. Each number is read as the f32 it stores. Check neighbouring_f32s_spelt_shortest_are_rounding (one ulp forgiven; twin: two ulps seen), with or without the roll."
   }
 ]

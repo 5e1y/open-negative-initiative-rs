@@ -32,11 +32,18 @@ impl Roll {
                 continue;
             }
             std::fs::copy(entry.path(), dir.join(&name)).unwrap();
+            // An empty stand-in for each NEF: no sidecar is ever written beside a missing original.
             if let Some(original) = name.strip_suffix(".json").filter(|_| !name.starts_with('.')) {
+                std::fs::write(dir.join(original), b"").unwrap();
                 frames.push(dir.join(original).to_string_lossy().into_owned());
             }
         }
         frames.sort();
+        // Each sidecar as a write beside its stand-in leaves it, so the bytes a check compares are its gesture's.
+        for frame in &frames {
+            let loaded = sidecar::read(Path::new(frame), true, true).unwrap();
+            sidecar::write(&loaded.settings, Path::new(frame), sidecar::WriteOptions::default()).unwrap();
+        }
         Some(Roll { dir, frames })
     }
 
@@ -55,6 +62,16 @@ impl Roll {
     fn draft(&self, frame: &str) -> Option<sidecar::RollDraft> {
         sidecar::read(Path::new(frame), true, true).unwrap().roll_draft
     }
+}
+
+/// The draft Swift leaves on a frame of a roll prepared up to its base step.
+fn base_draft() -> sidecar::RollDraft {
+    serde_json::from_value(serde_json::json!({
+        "capture": "camera", "film": "negative", "flagged": false, "id": oni_settings::Id::new().to_string(), "passOrder": "bgr",
+        "flatField": { "amount": 1, "mask": "None", "temperature": 0, "tint": 0 },
+        "step": "base", "ticked": true, "window": [[0.1, 0.1], [0.8, 0.8]],
+    }))
+    .unwrap()
 }
 
 fn moved(a: &BTreeMap<String, Vec<u8>>, b: &BTreeMap<String, Vec<u8>>) -> Vec<String> {
@@ -90,7 +107,8 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
     let Some(roll) = Roll::copy("measure") else { return };
     // The drafts go first, so the bytes before can be the bytes after an undo, which keeps no draft.
     let kept = roll.frames.last().unwrap().clone();
-    assert!(roll.draft(&kept).is_some(), "roll #8 carries the draft of a Prepare the Roll left at its base step");
+    sidecar::set_roll_draft(Some(base_draft()), Path::new(&kept), true).unwrap();
+    assert!(roll.draft(&kept).is_some(), "the last frame carries the draft of a Prepare the Roll left at its base step");
     for f in &roll.frames[..roll.frames.len() - 1] {
         sidecar::set_roll_draft(None, Path::new(f), true).unwrap();
     }

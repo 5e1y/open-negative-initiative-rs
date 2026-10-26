@@ -427,8 +427,8 @@ pub fn compact(node: &Node) -> String {
 
 // MARK: - Semantic equality
 
-/// The first place two documents part, `None` when they agree: same keys, same strings and
-/// booleans, numbers within an `f32` epsilon relative to their magnitude.
+/// The first place two documents part, `None` when they agree: same keys, strings and booleans, and
+/// numbers within an `f32` epsilon once read as the `f32` they store, whatever their decimal spelling.
 pub fn semantic_difference(a: &Value, b: &Value) -> Option<String> {
     fn walk(a: &Value, b: &Value, path: &str) -> Option<String> {
         match (a, b) {
@@ -455,7 +455,7 @@ pub fn semantic_difference(a: &Value, b: &Value) -> Option<String> {
                 x.iter().zip(y).enumerate().find_map(|(i, (p, q))| walk(p, q, &format!("{path}[{i}]")))
             }
             (Value::Number(x), Value::Number(y)) => {
-                let (p, q) = (x.as_f64().unwrap_or(f64::NAN), y.as_f64().unwrap_or(f64::NAN));
+                let (p, q) = (f64::from(x.as_f64().unwrap_or(f64::NAN) as f32), f64::from(y.as_f64().unwrap_or(f64::NAN) as f32));
                 let scale = p.abs().max(q.abs()).max(1.0);
                 if (p - q).abs() <= f64::from(f32::EPSILON) * scale {
                     None

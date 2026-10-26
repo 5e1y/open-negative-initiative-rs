@@ -156,9 +156,16 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
         }));
     }
 
-    // The app opens on the gallery: the first photo is ringed and taken into the editor by ⌘G.
+    // The app opens on the gallery under the recalibration notice a RAW raises on a first launch.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
+    assert!(w.global::<oni_app::Notice>().get_shown(), "a library holding a RAW raises the notice");
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
+    rig.pump();
+    // Twin: the notice is a sheet, so ⌘G under it opens nothing.
+    rig.chord(slint::platform::Key::Control, "g");
+    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "⌘G reached behind the notice");
+    // Once it is closed, the first photo ringed is taken into the editor by ⌘G.
+    w.global::<oni_app::Notice>().invoke_close();
     rig.pump();
     rig.chord(slint::platform::Key::Control, "g");
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens: {:?}", ctl.state.borrow().open_path());
