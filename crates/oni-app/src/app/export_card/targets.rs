@@ -85,57 +85,64 @@ impl Ctl {
         }
     }
 
+    /// The previews on `PREVIEW_WORKERS` threads, each taking the next frame in order, so a decode
+    /// waits on no other frame's render; a newer pass stops them.
     pub(super) fn render_previews(self: &Rc<Self>, targets: Vec<Target>, generation: u64, pass: Arc<AtomicU64>) {
         let (engine, previews, screen, open) = {
             let s = self.state.borrow();
             (self.engine.clone(), s.previews.clone(), s.screen, s.negative.clone())
         };
         let room = self.export.borrow().room.clone();
-        let live = move || pass.load(Ordering::Relaxed) == generation;
-        std::thread::Builder::new()
-            .name("export previews".into())
-            .spawn(move || {
-                let asked = std::time::Instant::now();
-                for (i, target) in targets.into_iter().enumerate() {
-                    if !live() {
-                        return;
-                    }
-                    let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-                    let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
-                    let negative = match known {
-                        Some(n) => Ok(n),
-                        None => prepared(&engine, &path, crate::render::Reading::of(&target.settings)),
-                    };
-                    let full = negative.as_ref().ok().map(|n| {
-                        let (w, h) = n.size();
-                        (n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1)))
-                    });
-                    let size = full.map(|f| export::cropped_size(f, &target.settings));
-                    // The size lands at once, as the size boxes wait for it; the render waits for the room.
-                    with_shell(move |c| c.size_landed(generation, i, size));
-                    while live() && asked.elapsed() < ROOM_WAIT && room.lock().is_ok_and(|r| r.is_none()) {
-                        std::thread::sleep(std::time::Duration::from_millis(5));
-                    }
-                    let side = full.zip(size).zip(room.lock().ok().and_then(|r| *r)).map_or(PREVIEW_SIDE as usize, |((f, s), r)| preview_side(s, f.0.max(f.1), r));
-                    // One exact render per photo in the export space, as the canvas shows it: proofed.
-                    let picture = negative.and_then(|n| {
-                        let linear = engine.lock()?.render(&n, &target.settings, Some(side))?;
-                        let k = Params::new(screen, linear.width as u32, linear.height as u32, i as u32);
-                        Ok((crate::render::encoded(&linear, &k, 1), linear.width, linear.height))
-                    });
-                    with_shell(move |c| {
-                        if c.export.borrow().pass.load(Ordering::Relaxed) != generation {
+        let (targets, next, asked) = (Arc::new(targets), Arc::new(std::sync::atomic::AtomicUsize::new(0)), std::time::Instant::now());
+        for _ in 0..PREVIEW_WORKERS {
+            let (engine, previews, open, room, pass, targets, next) = (engine.clone(), previews.clone(), open.clone(), room.clone(), pass.clone(), targets.clone(), next.clone());
+            let live = move || pass.load(Ordering::Relaxed) == generation;
+            std::thread::Builder::new()
+                .name("export previews".into())
+                .spawn(move || {
+                    loop {
+                        let i = next.fetch_add(1, Ordering::SeqCst);
+                        let Some(target) = targets.get(i) else { return };
+                        if !live() {
                             return;
                         }
-                        c.export.borrow_mut().previews[i] = match picture {
-                            Ok((bytes, w, h)) => Preview::Ready(image(&bytes, w, h)),
-                            Err(_) => Preview::Failed,
+                        let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
+                        let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
+                        let negative = match known {
+                            Some(n) => Ok(n),
+                            None => prepared(&engine, &path, crate::render::Reading::of(&target.settings)),
                         };
-                        c.publish_line(i);
-                    });
-                }
-            })
-            .expect("export preview thread");
+                        let full = negative.as_ref().ok().map(|n| {
+                            let (w, h) = n.size();
+                            (n.full_width, n.full_width * f64::from(h) / f64::from(w.max(1)))
+                        });
+                        let size = full.map(|f| export::cropped_size(f, &target.settings));
+                        // The size lands at once, as the size boxes wait for it; the render waits for the room.
+                        with_shell(move |c| c.size_landed(generation, i, size));
+                        while live() && asked.elapsed() < ROOM_WAIT && room.lock().is_ok_and(|r| r.is_none()) {
+                            std::thread::sleep(std::time::Duration::from_millis(5));
+                        }
+                        let side = full.zip(size).zip(room.lock().ok().and_then(|r| *r)).map_or(PREVIEW_SIDE as usize, |((f, s), r)| preview_side(s, f.0.max(f.1), r));
+                        // One exact render per photo in the export space, as the canvas shows it: proofed.
+                        let picture = negative.and_then(|n| {
+                            let linear = engine.lock()?.render(&n, &target.settings, Some(side))?;
+                            let k = Params::new(screen, linear.width as u32, linear.height as u32, i as u32);
+                            Ok((crate::render::encoded(&linear, &k, 1), linear.width, linear.height))
+                        });
+                        with_shell(move |c| {
+                            if c.export.borrow().pass.load(Ordering::Relaxed) != generation {
+                                return;
+                            }
+                            c.export.borrow_mut().previews[i] = match picture {
+                                Ok((bytes, w, h)) => Preview::Ready(image(&bytes, w, h)),
+                                Err(_) => Preview::Failed,
+                            };
+                            c.publish_line(i);
+                        });
+                    }
+                })
+                .expect("export preview thread");
+        }
     }
 
     /// A target's size after its turns and crop, published and weighed when it changed.
@@ -154,7 +161,8 @@ impl Ctl {
         }
     }
 
-    /// `refreshEstimate`: the first target weighed on its 500 px sample, multiplied by the count.
+    /// `refreshEstimate`: the first target weighed on its 500 px sample, multiplied by the count; asked
+    /// of the weigher, so a burst of changes weighs the latest once.
     pub(super) fn weigh_export(self: &Rc<Self>) {
         let (target, full, export, generation, weighing) = {
             let mut c = self.export.borrow_mut();
@@ -167,24 +175,52 @@ impl Ctl {
             let s = self.state.borrow();
             (self.engine.clone(), s.previews.clone(), s.negative.clone())
         };
-        std::thread::spawn(move || {
-            if weighing.load(Ordering::Relaxed) != generation {
-                return;
-            }
-            let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-            let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
-            let negative = known.or_else(|| prepared(&engine, &path, crate::render::Reading::of(&target.settings)).ok());
-            let weighed = negative.and_then(|n| export::weigh(&engine, &n, full, &target.settings, &export));
-            with_shell(move |c| {
-                if c.export.borrow().weighing.load(Ordering::Relaxed) != generation {
-                    return;
-                }
-                c.export.borrow_mut().estimate = weighed;
-                c.publish_export();
-            });
-        });
+        let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
+        let known = open.filter(|(p, _)| *p == path).map(|(_, n)| n).or_else(|| previews.lock().ok()?.get(&path));
+        self.export.borrow().weigher.ask(Weigh { target, path, known, full, export, generation, weighing, engine });
     }
 }
+
+/// One weighing asked: the first target, its preview when one is at hand, and the export's settings.
+pub(super) struct Weigh {
+    target: Target,
+    path: String,
+    known: Option<Arc<crate::render::Negative>>,
+    full: (f64, f64),
+    export: Settings,
+    generation: u64,
+    weighing: Arc<AtomicU64>,
+    engine: Shared,
+}
+
+/// The weigher: the sample rendered once a frame and its settings, then each export's settings
+/// weighed on it, which encodes 500 px and decodes nothing.
+pub(super) fn weigher(runs: Arc<std::sync::atomic::AtomicUsize>) -> crate::latest::Worker<Weigh> {
+    let mut kept: Option<(PathBuf, oni_settings::PipelineSettings, Option<oni_export::Image>)> = None;
+    crate::latest::Worker::spawn("export estimate", move |w: Weigh| {
+        if w.weighing.load(Ordering::Relaxed) != w.generation {
+            return;
+        }
+        runs.fetch_add(1, Ordering::SeqCst);
+        if kept.as_ref().is_none_or(|(p, s, _)| *p != w.target.path || *s != w.target.settings) {
+            let negative = w.known.or_else(|| prepared(&w.engine, &w.path, crate::render::Reading::of(&w.target.settings)).ok());
+            let sample = negative.and_then(|n| export::sample(&w.engine, &n, &w.target.settings));
+            kept = Some((w.target.path.clone(), w.target.settings.clone(), sample));
+        }
+        let weighed = kept.as_ref().and_then(|(_, _, s)| s.as_ref()).map(|s| oni_export::estimate(s, w.full.0 * w.full.1, &w.export));
+        let generation = w.generation;
+        with_shell(move |c| {
+            if c.export.borrow().weighing.load(Ordering::Relaxed) != generation {
+                return;
+            }
+            c.export.borrow_mut().estimate = weighed;
+            c.publish_export();
+        });
+    })
+}
+
+/// Previews rendered at once: their decodes take the decode gate's two places.
+const PREVIEW_WORKERS: usize = crate::decode_gate::DECODES;
 
 /// How long the previews wait for the column's room before rendering at Swift's side; the column
 /// is laid out on the frame after the card shows.

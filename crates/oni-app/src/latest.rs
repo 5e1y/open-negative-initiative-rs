@@ -1,7 +1,7 @@
 //! The latest value asked of a thread: one waits at most, a newer one replacing it unseen, so a
 //! thread that renders never runs behind what is asked of it.
 
-use std::sync::{Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
 pub struct Latest<T> {
@@ -62,9 +62,72 @@ impl<T> Latest<T> {
     }
 }
 
+/// A thread of its own running `work` on the latest value asked, one at a time: the values asked
+/// while it works replace one another, so a burst of asks runs it twice at most.
+pub struct Worker<T> {
+    slot: Arc<Latest<T>>,
+}
+
+impl<T: Send + 'static> Worker<T> {
+    pub fn spawn(name: &str, mut work: impl FnMut(T) + Send + 'static) -> Worker<T> {
+        let slot = Arc::new(Latest::new());
+        let taken = slot.clone();
+        let _ = std::thread::Builder::new().name(name.into()).spawn(move || {
+            while let Taken::Value(value) = taken.take(None) {
+                work(value);
+            }
+        });
+        Worker { slot }
+    }
+
+    pub fn ask(&self, value: T) {
+        self.slot.put(value);
+    }
+}
+
+impl<T> Drop for Worker<T> {
+    fn drop(&mut self) {
+        self.slot.close();
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    /// Twenty asks while a slow piece of work runs; `coalesced` asks the worker, else a thread each.
+    fn runs(coalesced: bool) -> (usize, usize) {
+        let (count, last) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)));
+        let (c, l) = (count.clone(), last.clone());
+        let work = move |v: usize| {
+            std::thread::sleep(Duration::from_millis(20));
+            c.fetch_add(1, Ordering::SeqCst);
+            l.store(v, Ordering::SeqCst);
+        };
+        if coalesced {
+            let worker = Worker::spawn("check", work);
+            (1..=20).for_each(|v| worker.ask(v));
+            while last.load(Ordering::SeqCst) != 20 {
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        } else {
+            let work = Arc::new(Mutex::new(work));
+            let threads: Vec<_> = (1..=20).map(|v| { let w = work.clone(); std::thread::spawn(move || (w.lock().unwrap())(v)) }).collect();
+            threads.into_iter().for_each(|t| t.join().unwrap());
+        }
+        std::thread::sleep(Duration::from_millis(50));
+        (count.load(Ordering::SeqCst), last.load(Ordering::SeqCst))
+    }
+
+    #[test]
+    fn a_burst_of_asks_runs_the_work_twice_at_most_and_last_on_the_latest() {
+        let (count, last) = runs(true);
+        assert!(count <= 2, "the work ran {count} times");
+        assert_eq!(last, 20, "the latest value asked is the one worked on last");
+        // Twin: a thread for each ask runs it every time.
+        assert_eq!(runs(false).0, 20);
+    }
 
     #[test]
     fn a_newer_value_replaces_the_one_waiting_and_a_closed_slot_ends_the_wait() {

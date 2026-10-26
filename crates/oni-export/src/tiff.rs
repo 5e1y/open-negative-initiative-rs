@@ -1,6 +1,7 @@
 //! The TIFF writer: RGBA in 8 or 16 bits, ZIP (Deflate) or none, its ICC profile and the stated
 //! metadata, and no other tag.
 
+use std::borrow::Cow;
 use std::io::Write;
 
 use flate2::Compression;
@@ -50,17 +51,23 @@ pub fn encoded(
     primary: &Directory,
     exif: &Directory,
 ) -> Option<Vec<u8>> {
-    let (bits, bytes): (u16, Vec<u8>) = match pixels {
-        Quantised::Eight(v) => (8, v.clone()),
-        Quantised::Sixteen(v) => (16, v.iter().flat_map(|s| s.to_be_bytes()).collect()),
-    };
-    laid_out(width, height, (bits, UNSIGNED), &bytes, compress, icc, primary, exif)
+    // Each strip's bytes made where it is compressed, so the frame is never held a second time.
+    match pixels {
+        Quantised::Eight(v) => laid_out(width, height, (8, UNSIGNED), (v.len(), &|a, b| Cow::Borrowed(&v[a..b])), compress, icc, primary, exif),
+        Quantised::Sixteen(v) => {
+            let big_endian = |a: usize, b: usize| Cow::Owned(v[a / 2..b / 2].iter().flat_map(|s| s.to_be_bytes()).collect());
+            laid_out(width, height, (16, UNSIGNED), (v.len() * 2, &big_endian), compress, icc, primary, exif)
+        }
+    }
 }
+
+/// The bytes from one offset to another of a frame laid out row after row.
+type Bytes<'a> = (usize, &'a (dyn Fn(usize, usize) -> Cow<'a, [u8]> + Sync));
 
 /// A TIFF of half-float RGBA samples, rows top first, as Core Image writes `RGBAh`; no metadata.
 pub fn encoded_half(width: usize, height: usize, pixels: &[[f32; 4]], icc: &[u8]) -> Option<Vec<u8>> {
     let bytes: Vec<u8> = pixels.iter().flatten().flat_map(|v| half::f16::from_f32(*v).to_be_bytes()).collect();
-    laid_out(width, height, (16, FLOAT), &bytes, false, icc, &Directory::default(), &Directory::default())
+    laid_out(width, height, (16, FLOAT), (bytes.len(), &|a, b| Cow::Borrowed(&bytes[a..b])), false, icc, &Directory::default(), &Directory::default())
 }
 
 /// TIFF's SampleFormat: unsigned integers, IEEE floats.
@@ -72,19 +79,19 @@ fn laid_out(
     width: usize,
     height: usize,
     (bits, format): (u16, u16),
-    bytes: &[u8],
+    (length, bytes): Bytes<'_>,
     compress: bool,
     icc: &[u8],
     primary: &Directory,
     exif: &Directory,
 ) -> Option<Vec<u8>> {
     let row_bytes = width * 4 * bits as usize / 8;
-    if width == 0 || height == 0 || bytes.len() != row_bytes * height {
+    if width == 0 || height == 0 || length != row_bytes * height {
         return None;
     }
     let rows_per_strip = (STRIP_BYTES / row_bytes).clamp(1, height);
-    let strips: Vec<&[u8]> = bytes.chunks(rows_per_strip * row_bytes).collect();
-    let laid: Vec<Vec<u8>> = if compress { deflated(&strips) } else { strips.iter().map(|s| s.to_vec()).collect() };
+    let strips: Vec<(usize, usize)> = (0..length).step_by(rows_per_strip * row_bytes).map(|a| (a, (a + rows_per_strip * row_bytes).min(length))).collect();
+    let laid: Vec<Cow<[u8]>> = if compress { deflated(&strips, bytes).into_iter().map(Cow::Owned).collect() } else { strips.iter().map(|&(a, b)| bytes(a, b)).collect() };
 
     let mut offsets = Vec::with_capacity(laid.len());
     let mut at = 8usize;
@@ -133,7 +140,7 @@ fn laid_out(
     out.extend(b"MM\0*");
     out.extend(ifd_at.to_be_bytes());
     for strip in &laid {
-        out.extend(strip);
+        out.extend_from_slice(strip);
     }
     out.resize(at, 0);
     out.extend(&ifd_bytes);
@@ -153,16 +160,17 @@ fn placeholder_len(ifd: &Directory, exif: &Directory) -> usize {
 }
 
 /// Each strip as its own zlib stream, the strips shared among every core.
-fn deflated(strips: &[&[u8]]) -> Vec<Vec<u8>> {
+fn deflated<'a>(strips: &[(usize, usize)], bytes: &(dyn Fn(usize, usize) -> Cow<'a, [u8]> + Sync)) -> Vec<Vec<u8>> {
     let threads = std::thread::available_parallelism().map_or(1, |n| n.get()).min(strips.len().max(1));
     let per = strips.len().div_ceil(threads.max(1)).max(1);
     let mut out: Vec<Vec<u8>> = vec![Vec::new(); strips.len()];
     std::thread::scope(|scope| {
         for (group, slots) in strips.chunks(per).zip(out.chunks_mut(per)) {
             scope.spawn(move || {
-                for (strip, slot) in group.iter().zip(slots) {
+                for (&(a, b), slot) in group.iter().zip(slots) {
+                    let strip = bytes(a, b);
                     let mut z = ZlibEncoder::new(Vec::with_capacity(strip.len() / 2), Compression::default());
-                    z.write_all(strip).expect("writing into memory");
+                    z.write_all(&strip).expect("writing into memory");
                     *slot = z.finish().expect("writing into memory");
                 }
             });

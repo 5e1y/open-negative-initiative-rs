@@ -91,6 +91,9 @@ impl Preferences {
     /// A file that does not parse is set aside whole and the keys this holder knows go on; one the
     /// disk refuses to read is never replaced.
     fn write(&mut self, key: &str, value: Value) -> std::io::Result<()> {
+        // One write at a time in the process, so a holder on another thread never loses this one's key.
+        static WRITING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _turn = WRITING.lock().unwrap_or_else(|e| e.into_inner());
         let mut values = match Self::read(&self.file)? {
             Read::Parsed(values) => values,
             Read::Unreadable => {

@@ -88,8 +88,18 @@ impl Ctl {
             .name("export".into())
             .spawn(move || {
                 let mut ledger = oni_export::file::Ledger::in_support(&support);
-                for (target, destination, metadata) in plan {
-                    if stop.load(Ordering::Relaxed) {
+                let jobs: Vec<export::batch::Job> = plan.into_iter().map(|(target, destination, metadata)| export::batch::Job { target, destination, metadata }).collect();
+                let (end, _) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, replacing, &stop, |i| {
+                    let subject = oni_library::paths::canonical(&jobs[i].target.path);
+                    journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
+                    with_shell(|c| {
+                        c.export.borrow_mut().progress += 1;
+                        c.publish_export();
+                    });
+                });
+                match end {
+                    export::batch::End::Done => {}
+                    export::batch::End::Stopped => {
                         return with_shell(|c| {
                             {
                                 let mut card = c.export.borrow_mut();
@@ -99,28 +109,17 @@ impl Ctl {
                             c.publish_export();
                         });
                     }
-                    let to = oni_export::Landing { path: &destination, ledger: &mut ledger, replacing };
-                    match export::write_one(&engine, &target, to, &export, &metadata) {
-                        Ok(()) => {
-                            let subject = oni_library::paths::canonical(&target.path);
-                            journal.note(Gesture::Exported, Some(&subject), 0, 0, None, oni_settings::Date::now());
-                            with_shell(|c| {
-                                c.export.borrow_mut().progress += 1;
-                                c.publish_export();
-                            });
-                        }
-                        Err(e) => {
-                            let name = target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                            let message = format!("{name}: {e}");
-                            return with_shell(move |c| {
-                                {
-                                    let mut card = c.export.borrow_mut();
-                                    card.exporting = false;
-                                    card.notice = Some((tr("Export Failed").into(), message));
-                                }
-                                c.publish_export();
-                            });
-                        }
+                    export::batch::End::Failed(i, e) => {
+                        let name = jobs[i].target.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                        let message = format!("{name}: {e}");
+                        return with_shell(move |c| {
+                            {
+                                let mut card = c.export.borrow_mut();
+                                card.exporting = false;
+                                card.notice = Some((tr("Export Failed").into(), message));
+                            }
+                            c.publish_export();
+                        });
                     }
                 }
                 with_shell(|c| {

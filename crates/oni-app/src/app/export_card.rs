@@ -18,7 +18,7 @@ use slint::{ComponentHandle, Image, Model, ModelRc, SharedString, VecModel};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicUsize, Ordering};
 use std::time::Instant;
 
 mod entering;
@@ -89,6 +89,12 @@ pub struct Card {
     weighing: Arc<AtomicU64>,
     /// The lines' reading, its own: a preview pass started again leaves the lines to land.
     reading: Arc<AtomicU64>,
+    /// The estimate weighed on a thread of its own, on the latest settings asked.
+    weigher: crate::latest::Worker<targets::Weigh>,
+    /// The weighings run, read back by the checks.
+    weighed: Arc<AtomicUsize>,
+    /// The settings kept on a thread of its own, the latest asked written once.
+    saver: crate::latest::Worker<String>,
     artist: String,
     copyright: String,
     last_profile: String,
@@ -125,6 +131,11 @@ impl Card {
         let settings = prefs.string(oni_export::settings::PREFERENCE_KEY).and_then(Settings::from_raw_value).unwrap_or_default();
         let colour_only = prefs.bool(PROOF_COLOUR_ONLY).unwrap_or(false);
         let text = |k: &str| prefs.string(k).unwrap_or_default().to_owned();
+        let weighed = Arc::new(AtomicUsize::new(0));
+        let kept = support.to_path_buf();
+        let saver = crate::latest::Worker::spawn("export settings", move |raw: String| {
+            let _ = Preferences::load(&kept).set(oni_export::settings::PREFERENCE_KEY, Value::from(raw));
+        });
         Card {
             shown: false,
             return_gallery: true,
@@ -150,6 +161,9 @@ impl Card {
             pass: Arc::default(),
             weighing: Arc::default(),
             reading: Arc::default(),
+            weigher: targets::weigher(weighed.clone()),
+            weighed,
+            saver,
             installed: OutputProfile::last_installed(),
             pending: false,
             prefs,
@@ -174,9 +188,9 @@ impl Card {
         let _ = self.prefs.set(key, value);
     }
 
+    /// The settings kept off this thread: a write costs the disk's flush, a burst of changes one write.
     fn save_settings(&mut self) {
-        let raw = self.settings.raw_value();
-        self.save(oni_export::settings::PREFERENCE_KEY, Value::from(raw));
+        self.saver.ask(self.settings.raw_value());
     }
 
     fn line(&self, i: usize) -> ExportLine {
@@ -223,6 +237,12 @@ impl Card {
 /// The surface's state, read back by the checks.
 pub fn card(ctl: &Ctl) -> std::cell::Ref<'_, Card> {
     ctl.export.borrow()
+}
+
+/// The estimate shown, `None` while one is weighed, and the weighings run, read back by the checks.
+pub fn estimate(ctl: &Ctl) -> (Option<u64>, usize) {
+    let c = ctl.export.borrow();
+    (c.estimate, c.weighed.load(Ordering::SeqCst))
 }
 
 /// Lines of the surface as Slint was last given them, read back by the checks.

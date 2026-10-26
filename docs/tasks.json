@@ -4448,5 +4448,44 @@
     "title": "In a project, the editor's walk follows the project, not the folder",
     "status": "done",
     "detail": "On the Projects tab the editor's arrows, the phone's Walk and the Scanner screen's FRAME count read the archive's group of the open photo: from a project they walked the folder open (A03 to A04 instead of the project's B04), stopped dead on a member from another folder, and the gallery came back on a photo the project does not show, so nothing was selected. Swift's labFrames: the open frame's project on the Projects tab (editingProject, the first project holding the photo opened), else its roll or day. State::lab_frames reads the project's band as laid, open_photo sets the editing project, and walk, place and Move Out read it. Window check project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder: a project of photos from two folders, the gallery's arrows and ⇧ in its order, ⌘G on the ringed photo, → and ↑ in the editor along the project and stopping at its end, the gallery back on the photo walked to; twin: the same gestures on the archive walk the folder."
+  },
+  {
+    "id": 870,
+    "type": "perf",
+    "title": "A batch export runs as a pipeline: two frames decoding, one on the GPU, one written",
+    "status": "done",
+    "detail": "Measured on roll #8's test copy (24 Mpx NEF, M2 Max under load, interleaved runs): one frame at a time, a JPEG cost 0.95 s of LibRaw decode, 0.16 s of render and readback, 0.93 s of conversion and 0.13 s of encode, and each stage waited on the others. export::batch::write_batch runs them as a pipeline: DECODERS (the decode gate's 2) threads decode frames in order, one thread uploads beside the engine (render_full_beside, through Shared::upload) and renders, this thread encodes and writes; each stage hands on through a slot of one, so IN_FLIGHT (4) frames at most are held. The renders move to export/renders.rs; oni_export::write is split into lands (the refusals before any work), file_bytes and land, the batch running the same three steps. A stop or a failure starts no frame and writes none after it; writing.rs only calls write_batch, its progress unchanged. Checks: export::batch tests a_batch_writes_in_order_and_holds_no_more_than_its_frames_in_flight (twin: an unbounded hand-on holds more than IN_FLIGHT), a_stop_or_a_failure_writes_nothing_after_it (twin: every frame without them), a_batch_writes_the_bytes_one_frame_at_a_time_writes (JPEG and TIFF, ICC creation date aside; the render beside the engine bit for bit the render inside it; twins: one byte, one ulp moved are caught).",
+    "outcome": "20 frames: JPEG 45.7 s to 11.0 s (2.29 to 0.55 s a frame), TIFF 16-bit 67.8 s to 30.3 s; 2 frames: JPEG 4.3 to 1.7 s, TIFF 6.5 to 3.9 s. Peak memory 1.26 to 2.05 GB (JPEG), 2.10 to 2.92 GB (TIFF), 4 frames held at most. Files byte for byte as before on 2 frames in both formats (export_speed bench, ONI_BENCH_SAME)."
+  },
+  {
+    "id": 871,
+    "type": "perf",
+    "title": "The conversion to the export's space runs on every core, the TIFF's strips made where they are compressed",
+    "status": "done",
+    "detail": "converted ran the space's curve on one core, 0.93 s a 24 Mpx frame. oni_colour::legs::banded runs pieces of PIECE (16) rows on every core, each writing its own slice of the output, so the bytes are the same whichever thread ran a piece; a profile's table is read pixel by pixel and takes the same pieces, a CMM's matrix keeps its 256-row bands on one core. The TIFF writer makes each strip's big-endian bytes inside the thread that compresses it, so the frame is never copied whole a second time. Checks: oni-export conversion::the_conversion_on_every_core_is_the_conversion_on_one (JPEG sRGB, TIFF P3 and ProPhoto, odd sides, values past both ends, varying alpha; twin: one sample a level off is caught); peak::an_export_holds_one_float_frame_at_its_peak still holds under 1.75 frames (its twin: a second frame held breaks it).",
+    "outcome": "Conversion 0.93 s to 0.12-0.15 s a frame; TIFF encode about the same (Deflate, already on every core)."
+  },
+  {
+    "id": 872,
+    "type": "perf",
+    "title": "A change on the export screen costs nothing on the interface thread and weighs the estimate once",
+    "status": "done",
+    "detail": "Each change wrote the preferences on the interface thread (read, write, flush: 3 to 20 ms, every notch of the quality slider) and spawned a thread that rendered the first target's 500 px sample again, decoding it when no preview was at hand. The settings are now kept by a latest::Worker of their own (the latest asked written once; preference writes serialised across threads so no holder loses another's key), and the estimate by a second Worker that renders the sample once per frame and settings and then only weighs each export's settings on it. Checks: latest::tests::a_burst_of_asks_runs_the_work_twice_at_most_and_last_on_the_latest (twin: a thread an ask runs 20 times); window check export_speed::a_burst_of_changes_weighs_the_estimate_twice_at_most (ten quality steps weighed once or twice, the last quality kept in the preferences; twin: four steps each waited for weigh four times).",
+    "outcome": "20 targets: a change 3-6 ms on the interface thread (ten quality steps 56 ms) to under 0.3 ms; the estimate up to date after 6-59 ms instead of 53-120 ms; ten steps weigh twice instead of ten times."
+  },
+  {
+    "id": 873,
+    "type": "perf",
+    "title": "The export's previews render on two threads",
+    "status": "done",
+    "detail": "The previews were decoded and rendered one after the other, 0.36 s a cold half-size NEF decode, 55 ms a frame from the decode cache. PREVIEW_WORKERS (the decode gate's 2) threads take the next frame in order, so the lines still fill from the top and a newer pass stops them.",
+    "outcome": "20 targets: entering 8.0 s to 3.9 s (cold decodes); a space change 1.0 s to 0.68 s until every preview is up to date."
+  },
+  {
+    "id": 874,
+    "type": "bench",
+    "title": "The export bench: stages, batch, parameter changes, memory",
+    "status": "done",
+    "detail": "Window checks export_speed::an_export_is_timed_stage_by_stage and a_parameter_change_on_a_batch_is_timed, run with ONI_BENCH_EXPORT=<n> on roll #8 mirrored by hard links into a temporary folder: each stage of a frame timed alone, the batch's wall time, the most frames held and the process's peak memory; then the surface entered on n frames and each kind of change timed in the call, in the pumps and until every line and the estimate are current. ONI_BENCH_FORMAT=tiff, ONI_BENCH_KEEP and ONI_BENCH_SAME compare a run's files byte for byte with an earlier one's (the profile's creation date aside; twin: one byte moved is caught). Timing numbers come from --profile app."
   }
 ]

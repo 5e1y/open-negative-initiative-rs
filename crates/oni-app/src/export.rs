@@ -1,12 +1,9 @@
 //! Export as a mode of the card, the Swift `Export` and `ExportPanel` without their views: the
 //! targets, each frame's line, the labels that count them, the renders and the write.
 
-use crate::render::{Decoded, Engine, Negative, Shared};
 use oni_colour::{OutputProfile, Space};
-use oni_export::{ExifMetadata, Failure, Format, Image, Resize, Row, Settings};
-use oni_graph::Image as Recipe;
+use oni_export::{Format, Resize, Row};
 use oni_i18n::{tr, trn};
-use oni_pipeline::Request;
 use oni_settings::PipelineSettings;
 use oni_settings::film::{Film, film_stock};
 use std::collections::BTreeSet;
@@ -14,7 +11,11 @@ use std::path::{Path, PathBuf};
 
 pub use oni_export::{PREVIEW_SIDE, SAMPLE_SIDE};
 
+pub mod batch;
 pub mod clash;
+mod renders;
+
+pub use renders::*;
 
 /// Rows the full-resolution render reads back at a time, so a frame never needs every stage at once.
 const BAND_ROWS: u32 = 1024;
@@ -218,71 +219,11 @@ pub fn edited_in_note(edited_in: Option<&Space>, space: &Space, batch: bool) -> 
     }
 }
 
-// MARK: - Renders
-
-/// `RawDecode.linear(source)` at full resolution, the export's own decode.
-pub fn full_decode(path: &Path, reading: crate::render::Reading) -> Result<Decoded, Failure> {
-    crate::render::decode_full(path, reading).map_err(|_| Failure::Decode)
-}
-
-/// `Pipeline.apply` at full resolution and unproofed, with the canvas's masks and patches, read
-/// back in bands of rows; the decode held in half floats, as the canvas holds it.
-pub fn render_full(engine: &mut Engine, decoded: Decoded, settings: &PipelineSettings) -> Result<Image, Failure> {
-    let l = decoded.linear;
-    let source = engine.parts().0.upload_half(l.width as u32, l.height as u32, &l.pixels).map_err(|_| Failure::Render)?;
-    drop(l.pixels);
-    let image = engine.unproofed(&source, settings, &Request::default()).map_err(|_| Failure::Render)?;
-    let (graph, _) = engine.parts();
-    let out = read_back(graph, &image);
-    drop(source);
-    graph.purge();
-    out
-}
-
-fn read_back(graph: &mut oni_graph::Graph, image: &Recipe) -> Result<Image, Failure> {
-    let e = image.extent();
-    let mut pixels = Vec::with_capacity(e.area() as usize * 4);
-    for top in (0..e.h).step_by(BAND_ROWS as usize) {
-        let band = oni_graph::Rect::new(e.x, e.y + top as i32, e.w, BAND_ROWS.min(e.h - top));
-        let rows = graph.render(image, band, None).map_err(|_| Failure::Render)?;
-        pixels.extend(rows.into_iter().flatten());
-    }
-    Ok(Image { width: e.w as usize, height: e.h as usize, pixels })
-}
-
-/// `Pipeline.apply` on a preview reduced to `side`, unproofed: the estimate's sample.
-pub fn render_reduced(engine: &mut Engine, negative: &Negative, settings: &PipelineSettings, side: usize) -> Result<Image, Failure> {
-    let (w, h) = negative.size();
-    let scale = (side as f64 / w.max(h) as f64).min(1.0);
-    let request = Request { scale, full_width: Some(negative.full_width), ..Request::default() };
-    let image = engine.unproofed(&negative.preview, settings, &request).map_err(|_| Failure::Render)?;
-    read_back(engine.parts().0, &image)
-}
-
-/// `refreshEstimate`: the first target weighed on its 500 px sample, scaled to its pixel count.
-pub fn weigh(engine: &Shared, negative: &Negative, full: (f64, f64), settings: &PipelineSettings, export: &Settings) -> Option<u64> {
-    let sample = render_reduced(&mut *engine.lock().ok()?, negative, settings, SAMPLE_SIDE as usize).ok()?;
-    Some(oni_export::estimate(&sample, full.0 * full.1, export))
-}
-
-/// One frame written: its full render, its file, then its line kept in its sidecar.
-pub fn write_one(engine: &Shared, target: &Target, to: oni_export::Landing<'_>, export: &Settings, metadata: &ExifMetadata) -> Result<(), Failure> {
-    let render = || {
-        let decoded = full_decode(&target.path, crate::render::Reading::of(&target.settings))?;
-        let mut engine = engine.lock().map_err(|_| Failure::Render)?;
-        render_full(&mut engine, decoded, &target.settings)
-    };
-    let date = (!metadata.date.is_empty()).then_some(metadata.date.as_str());
-    oni_export::write(&target.path, to, render, &target.settings.paper_correction, export, metadata, date)?;
-    let mosaic = oni_decode::decodes_via_mosaic(&target.path);
-    let _ = oni_settings::sidecar::set_exif(metadata.clone(), &target.path, mosaic);
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::render::Linear;
+    use crate::render::{Decoded, Engine, Linear};
+    use oni_export::Image;
 
     #[test]
     fn the_target_is_the_selection_else_the_open_photo() {

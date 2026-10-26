@@ -225,30 +225,54 @@ pub enum Quantised {
 /// Rows converted at a time: a full float frame costs 750 MB.
 pub const BAND: usize = 256;
 
+/// Rows a core converts at a time: small enough that every core's working copy weighs little.
+pub const PIECE: usize = 16;
+
+/// `band(top, rows, out)` over pieces of `piece` rows, `out` split into each piece's own `row`
+/// samples a row; on every core when `cores`, so the result is the same whichever thread ran a piece.
+pub fn banded<T: Send>(height: usize, row: usize, out: &mut [T], piece: usize, cores: bool, band: impl Fn(usize, usize, &mut [T]) -> Option<()> + Sync) -> Option<()> {
+    if row == 0 || piece == 0 || out.len() != row * height {
+        return None;
+    }
+    let pieces: Vec<(usize, &mut [T])> = out.chunks_mut(piece * row).enumerate().map(|(i, o)| (i * piece, o)).collect();
+    let threads = if cores { std::thread::available_parallelism().map_or(1, |n| n.get()) } else { 1 };
+    let per = pieces.len().div_ceil(threads.min(pieces.len()).max(1)).max(1);
+    let mut groups: Vec<Vec<(usize, &mut [T])>> = Vec::new();
+    for p in pieces {
+        match groups.last_mut() {
+            Some(g) if g.len() < per => g.push(p),
+            _ => groups.push(vec![p]),
+        }
+    }
+    let band = &band;
+    let run = move |group: Vec<(usize, &mut [T])>| group.into_iter().all(|(top, o)| band(top, o.len() / row, o).is_some());
+    let done = if groups.len() == 1 {
+        groups.into_iter().all(run)
+    } else {
+        std::thread::scope(|scope| {
+            let runs: Vec<_> = groups.into_iter().map(|g| scope.spawn(move || run(g))).collect();
+            runs.into_iter().all(|r| r.join().unwrap_or(false))
+        })
+    };
+    done.then_some(())
+}
+
 impl OutputProfile {
     /// The frame into this profile, quantised to `bits` (8 or 16). `render(top, rows, out)` fills
     /// one band of working-space RGBA rows, top first; the clip and the rounding are done here.
-    pub fn converted(
-        &self,
-        width: usize,
-        height: usize,
-        bits: u32,
-        mut render: impl FnMut(usize, usize, &mut [f32]),
-    ) -> Option<Quantised> {
+    pub fn converted(&self, width: usize, height: usize, bits: u32, render: impl Fn(usize, usize, &mut [f32]) + Sync) -> Option<Quantised> {
         if !(bits == 8 || bits == 16) || width == 0 || height == 0 {
             return None;
         }
         let loaded = self.loaded()?;
         let legs = legs(&loaded.data)?;
+        // A table is read pixel by pixel, so any piece converts alike; a CMM's matrix keeps its bands.
+        let (piece, cores) = if matches!(legs.to_profile, Leg::Table(_)) { (PIECE, true) } else { (BAND, false) };
         let samples = width * 4;
         let scale = if bits == 16 { 65535.0 } else { 255.0 };
-        // Sized once: a vector doubling as it fills holds two copies at its last growth.
-        let (mut out16, mut out8) = if bits == 16 { (Vec::with_capacity(samples * height), Vec::new()) } else { (Vec::new(), Vec::with_capacity(samples * height)) };
-        let mut source = vec![0.0f32; samples * BAND];
-        for top in (0..height).step_by(BAND) {
-            let rows = BAND.min(height - top);
-            let band = &mut source[..samples * rows];
-            render(top, rows, band);
+        let device = |top: usize, rows: usize| {
+            let mut band = vec![0.0f32; samples * rows];
+            render(top, rows, &mut band);
             // Premultiplied, as Core Image renders: a clear pixel, a contact sheet's gutter, writes black.
             for p in band.chunks_exact_mut(4) {
                 let a = p[3].clamp(0.0, 1.0);
@@ -257,14 +281,23 @@ impl OutputProfile {
                 }
                 p[3] = 1.0;
             }
-            let device = run(&legs, band)?;
-            if bits == 16 {
-                out16.extend(device.iter().map(|v| (v * scale).round() as u16));
-            } else {
-                out8.extend(device.iter().map(|v| (v * scale).round() as u8));
-            }
+            run(&legs, &band)
+        };
+        if bits == 16 {
+            let mut out = vec![0u16; samples * height];
+            banded(height, samples, &mut out, piece, cores, |top, rows, o| {
+                o.iter_mut().zip(device(top, rows)?).for_each(|(o, v)| *o = (v * scale).round() as u16);
+                Some(())
+            })?;
+            Some(Quantised::Sixteen(out))
+        } else {
+            let mut out = vec![0u8; samples * height];
+            banded(height, samples, &mut out, piece, cores, |top, rows, o| {
+                o.iter_mut().zip(device(top, rows)?).for_each(|(o, v)| *o = (v * scale).round() as u8);
+                Some(())
+            })?;
+            Some(Quantised::Eight(out))
         }
-        Some(if bits == 16 { Quantised::Sixteen(out16) } else { Quantised::Eight(out8) })
     }
 }
 

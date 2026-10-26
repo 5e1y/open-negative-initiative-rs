@@ -132,10 +132,9 @@ pub fn converted(image: &Image, export: &Settings) -> Result<Rendered, Failure> 
             .ok_or(Failure::Render)?,
         space => {
             let scale = if bits == 16 { 65535.0 } else { 255.0 };
-            // Sized once: a vector doubling as it fills holds two copies at its last growth.
-            let (mut eight, mut sixteen) = if bits == 16 { (Vec::new(), Vec::with_capacity(w * h * 4)) } else { (Vec::with_capacity(w * h * 4), Vec::new()) };
-            for band in image.pixels.chunks(oni_colour::legs::BAND * w * 4) {
-                let mut encoded = space.encoded(band).ok_or(Failure::Render)?;
+            let encoded = |top: usize, rows: usize| {
+                let band = &image.pixels[top * w * 4..(top + rows) * w * 4];
+                let mut encoded = space.encoded(band)?;
                 // Premultiplied, as Core Image renders: a clear pixel, a contact sheet's gutter, writes black.
                 for (p, s) in encoded.chunks_exact_mut(4).zip(band.chunks_exact(4)) {
                     let a = s[3].clamp(0.0, 1.0);
@@ -144,14 +143,25 @@ pub fn converted(image: &Image, export: &Settings) -> Result<Rendered, Failure> 
                     }
                     p[3] = a;
                 }
-                let quantised = encoded.iter().map(|v| (v.clamp(0.0, 1.0) * scale).round());
-                if bits == 16 {
-                    sixteen.extend(quantised.map(|v| v as u16));
-                } else {
-                    eight.extend(quantised.map(|v| v as u8));
-                }
+                Some(encoded.into_iter().map(move |v| (v.clamp(0.0, 1.0) * scale).round()))
+            };
+            if bits == 16 {
+                let mut out = vec![0u16; w * h * 4];
+                oni_colour::legs::banded(h, w * 4, &mut out, oni_colour::legs::PIECE, true, |top, rows, o| {
+                    o.iter_mut().zip(encoded(top, rows)?).for_each(|(o, v)| *o = v as u16);
+                    Some(())
+                })
+                .ok_or(Failure::Render)?;
+                Quantised::Sixteen(out)
+            } else {
+                let mut out = vec![0u8; w * h * 4];
+                oni_colour::legs::banded(h, w * 4, &mut out, oni_colour::legs::PIECE, true, |top, rows, o| {
+                    o.iter_mut().zip(encoded(top, rows)?).for_each(|(o, v)| *o = v as u8);
+                    Some(())
+                })
+                .ok_or(Failure::Render)?;
+                Quantised::Eight(out)
             }
-            if bits == 16 { Quantised::Sixteen(sixteen) } else { Quantised::Eight(eight) }
         }
     };
     Ok(Rendered { width: w, height: h, pixels, icc })
@@ -193,15 +203,28 @@ pub fn write(
     metadata: &ExifMetadata,
     date_override: Option<&str>,
 ) -> Result<(), Failure> {
-    let lands = match file::standing(to.path, to.ledger) {
+    lands(source, to.path, to.ledger, to.replacing)?;
+    let bytes = file_bytes(source, render()?, paper, export, metadata, date_override)?;
+    land(to, &bytes)
+}
+
+/// Whether a frame of `source` may land at `destination`: never on its source, nor on a file ONI did
+/// not export, nor on an earlier export unless `replacing`.
+pub fn lands(source: &Path, destination: &Path, ledger: &file::Ledger, replacing: bool) -> Result<(), Failure> {
+    let lands = match file::standing(destination, ledger) {
         file::Standing::Free => true,
-        file::Standing::Export => to.replacing,
+        file::Standing::Export => replacing,
         file::Standing::Original => false,
     };
-    if !lands || file::canonical(to.path) == file::canonical(source) {
+    if !lands || file::canonical(destination) == file::canonical(source) {
         return Err(Failure::WouldOverwriteOriginal);
     }
-    let full = render()?;
+    Ok(())
+}
+
+/// The file's bytes from the full frame: resized, its paper laid, converted, then encoded with its
+/// metadata; the date stated, else the scan's own.
+pub fn file_bytes(source: &Path, full: Image, paper: &PaperCorrection, export: &Settings, metadata: &ExifMetadata, date_override: Option<&str>) -> Result<Vec<u8>, Failure> {
     let scale = export.resize.scale(full.width as f64, full.height as f64);
     let mut out = resized(full, scale);
     let icc = export.space().icc_data().map_or(0, |icc| icc.len());
@@ -212,8 +235,12 @@ pub fn write(
     let rendered = converted(&out, export)?;
     drop(out);
     let date = date_override.map(str::to_owned).or_else(|| capture_date(source));
-    let data = encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))?;
-    match file::put(to.path, &data, to.ledger, to.replacing) {
+    encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))
+}
+
+/// The bytes written at the landing, which the ledger then vouches for.
+pub fn land(to: Landing<'_>, bytes: &[u8]) -> Result<(), Failure> {
+    match file::put(to.path, bytes, to.ledger, to.replacing) {
         Ok(()) => {
             let _ = to.ledger.note(to.path);
             Ok(())

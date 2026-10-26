@@ -180,7 +180,7 @@ fn the_automatic_key_solves_the_paper_s_white() {
 
 // MARK: - Converting a picture
 
-fn gradient(rows: usize) -> impl FnMut(usize, usize, &mut [f32]) {
+fn gradient(rows: usize) -> impl Fn(usize, usize, &mut [f32]) + Sync {
     let (c0, c1) = ([0.9f32, 0.02, 0.1], [0.02f32, 0.6, 0.95]);
     move |top, n, out| {
         for r in 0..n {
