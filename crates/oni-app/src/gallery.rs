@@ -190,6 +190,18 @@ impl Layout {
         if first > last { 0..0 } else { first..last + 1 }
     }
 
+    /// The most cells `cells` gives for a viewport, wherever it scrolls: the tiles keep one slot each
+    /// while the grid moves, so a scroll remakes no tile.
+    pub fn slots(&self, viewport: f32) -> usize {
+        if self.count == 0 || viewport <= 0.0 {
+            return 0;
+        }
+        let span = viewport + 2.0 * OVERSCAN as f32 * self.row_pitch();
+        // A row cut at each end of the span, one more where a band ends inside it.
+        let rows = (span / self.row_pitch()).ceil() as usize + 2;
+        (rows * self.columns).min(self.count)
+    }
+
     /// The bands whose header is in view, by index.
     pub fn headers(&self, top: f32, viewport: f32) -> Range<usize> {
         if self.bands.is_empty() || viewport <= 0.0 {
@@ -306,6 +318,19 @@ mod tests {
         // Twin: past the second band's top the second header is the one held, never the first.
         assert_eq!(l.pinned(b.top + 50.0), Some((1, b.top + 50.0)));
         assert_eq!(l.pinned(b.top), None, "the second header in place");
+    }
+
+    #[test]
+    fn the_slots_hold_the_cells_in_view_wherever_the_grid_scrolls() {
+        let groups = vec![("A".to_string(), String::new(), 37), ("B".to_string(), String::new(), 5), ("C".to_string(), String::new(), 600)];
+        let l = Layout::new(&groups, 6, 1000.0, Metrics::GALLERY);
+        let viewport = 700.0;
+        let slots = l.slots(viewport);
+        let lens: std::collections::HashSet<usize> = (0..2000).map(|k| l.cells(k as f32 * 7.3, viewport).len()).collect();
+        assert!(lens.iter().all(|n| *n <= slots), "{lens:?} within {slots}");
+        // Twin: the cells in view vary as the grid scrolls, so a count taken from them would remake tiles.
+        assert!(lens.len() > 1, "{lens:?}");
+        assert!(slots < l.count / 4, "the slots stay near the view: {slots}");
     }
 
     fn roll(count: usize) -> Vec<(String, String, usize)> {

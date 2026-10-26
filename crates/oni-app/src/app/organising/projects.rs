@@ -138,8 +138,8 @@ impl Ctl {
             (rows, paths)
         };
         self.lay_column(crate::app::tree_column::Which::Projects, &mut rows, paths);
+        self.deliver_column(crate::app::tree_column::Which::Projects, rows);
         let lib = w.global::<Library>();
-        lib.set_project_rows(ModelRc::new(VecModel::from(rows)));
         lib.set_projects_any_open(!self.state.borrow().org.project_expanded.is_empty());
         self.pin_column(crate::app::tree_column::Which::Projects);
     }

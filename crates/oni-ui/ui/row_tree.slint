@@ -4,19 +4,23 @@ import { Scroller, RowKind, TileView, CardStyle, Row, Ground, Tips } from "ds/ds
 import { TreeRow, TreePin } from "library.slint";
 
 export component RowTree inherits HorizontalLayout {
+    // The rows near the view, each placed by Rust and named by its index among all the tree's rows.
     in property <[TreeRow]> rows;
     in property <TreePin> pin;
     in property <length> content-height;
-    // The column's scroll, both ways: Rust centres the selection, the wheel moves it.
-    in-out property <length> viewport-y;
+    // The scroll Rust asks, applied at each count of `asks`: a two-way binding would not survive a wheel,
+    // which removes the Flickable's bindings.
+    in property <length> viewport-y;
+    in property <int> asks;
     // The projects' tree: a row's kind 1 a project, else a photo; the archive's 0 a folder, 1 a roll, 2 a photo.
     in property <bool> projects;
     // A row's left press moved carries the pick, as the projects' rows do.
     in property <bool> draggable;
-    // The column created at its size, then each later size; a scroll, which may pin another row.
+    // The column created at its size, then each later size; its scroll moved by any means, which may
+    // pin another row and bring pictures near.
     callback shown(length, length);
     callback resized(length, length);
-    callback scrolled();
+    callback scrolled(length);
     // The content under no row, its gaps included: it drops the picks and the ring.
     callback empty-clicked();
     callback row-clicked(int, bool, bool);
@@ -36,23 +40,26 @@ export component RowTree inherits HorizontalLayout {
     pure function kind(k: int) -> RowKind {
         root.projects ? (k == 1 ? RowKind.project : RowKind.photo) : k == 0 ? RowKind.folder : k == 1 ? RowKind.roll : RowKind.photo
     }
+    changed asks => { scroller.content-y = root.viewport-y; }
     padding-left: CardStyle.inset;
     padding-right: CardStyle.inset;
     Rectangle {
         clip: true;
-        Scroller {
+        scroller := Scroller {
             content-height: root.content-height;
-            content-y <=> root.viewport-y;
-            init => { root.shown(self.width, self.height); }
+            init => {
+                root.shown(self.width, self.height);
+                self.content-y = root.viewport-y;
+            }
             changed width => { root.resized(self.width, self.height); }
             changed height => { root.resized(self.width, self.height); }
-            changed content-y => { root.scrolled(); }
+            changed content-y => { root.scrolled(self.content-y); }
             TouchArea {
                 width: parent.width;
                 height: root.content-height;
                 clicked => { root.empty-clicked(); }
             }
-            for row[i] in root.rows: Rectangle {
+            for row in root.rows: Rectangle {
                 x: row.x;
                 y: row.y;
                 width: row.width;
@@ -70,13 +77,13 @@ export component RowTree inherits HorizontalLayout {
                     expandable: row.expandable;
                     expanded: row.expanded;
                     selected: row.selected;
-                    clicked => { root.row-clicked(i, self.command, self.shift); }
-                    double-clicked => { root.row-double-clicked(i); }
-                    folded => { root.row-folded(i); }
+                    clicked => { root.row-clicked(row.index, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(row.index); }
+                    folded => { root.row-folded(row.index); }
                     menu(x, y) => {
-                        if (root.row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                        if (root.row-menu(row.index)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
                     }
-                    dragged(px, py, x, y) => { if (root.draggable) { root.row-dragged(i, row.x + px, row.y + py, row.x + x, row.y + y); } }
+                    dragged(px, py, x, y) => { if (root.draggable) { root.row-dragged(row.index, row.x + px, row.y + py, row.x + x, row.y + y); } }
                     released(dropped) => { if (root.draggable) { root.drag-ended(dropped); } }
                 }
                 if row.thumb: TileView {
@@ -102,16 +109,16 @@ export component RowTree inherits HorizontalLayout {
                             self.command = event.modifiers.control || event.modifiers.meta;
                             self.shift = event.modifiers.shift;
                         }
-                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.row-menu(i)) {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.row-menu(row.index)) {
                             root.open-menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                         }
                         if (root.draggable && ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel)) {
                             root.drag-ended(event.kind == PointerEventKind.up);
                         }
                     }
-                    moved => { if (root.draggable && self.pressed) { root.row-dragged(i, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
-                    clicked => { root.row-clicked(i, self.command, self.shift); }
-                    double-clicked => { root.row-double-clicked(i); }
+                    moved => { if (root.draggable && self.pressed) { root.row-dragged(row.index, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
+                    clicked => { root.row-clicked(row.index, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(row.index); }
                 }
                 // `rename`: a double click types over a folder's or a project's name.
                 if row.renaming: Row {
@@ -119,7 +126,7 @@ export component RowTree inherits HorizontalLayout {
                     width: parent.width;
                     title: row.title;
                     depth: row.depth;
-                    committed(t) => { root.rename-committed(i, t); }
+                    committed(t) => { root.rename-committed(row.index, t); }
                     cancelled => { root.rename-cancelled(); }
                     edited(t) => { root.rename-edited(t); }
                 }

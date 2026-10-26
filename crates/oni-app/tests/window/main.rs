@@ -120,6 +120,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests", keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests),
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
+    ("library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches", library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches),
+    ("library_column::a_long_tree_makes_only_the_rows_near_its_view", library_column::a_long_tree_makes_only_the_rows_near_its_view),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it", library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it),
     ("library_wide::a_project_from_a_still_lists_after_b_opens", library_wide::a_project_from_a_still_lists_after_b_opens),

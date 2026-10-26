@@ -131,21 +131,21 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     let rows = project_rows(&lib);
     let walk_y = rows[at(&lib, "Walk")].y;
     let pin = || lib.get_project_pin();
-    lib.set_project_viewport_y(-(rows[3].y + 1.0));
+    common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     assert!(pin().shown && pin().row.title == "Trip" && pin().push == 0.0, "Trip held over its photos: {:?}", pin());
-    lib.set_project_viewport_y(-(walk_y - h / 2.0));
+    common::scroll_projects(&lib, -(walk_y - h / 2.0));
     rig.pump();
     assert!(pin().shown && pin().row.title == "Trip" && (pin().push + h / 2.0).abs() < 0.01, "Walk pushes Trip up: {:?}", pin());
-    lib.set_project_viewport_y(-(walk_y + 3.0 * h));
+    common::scroll_projects(&lib, -(walk_y + 3.0 * h));
     rig.pump();
     assert_eq!(pin().row.title, "Walk", "Walk takes its place");
-    lib.set_project_viewport_y(0.0);
+    common::scroll_projects(&lib, 0.0);
     rig.pump();
     assert!(!pin().shown, "twin: at the top, nothing is held");
 
     // A click on the pinned row clicks its project and centres it; its chevron folds it.
-    lib.set_project_viewport_y(-(rows[3].y + 1.0));
+    common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     rest(&rig);
     let pinned_middle = (left + 120.0, LIST_TOP + h / 2.0);
@@ -154,7 +154,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     assert_eq!(open(), "B00", "beside a photo, Trip's first photo opens");
     assert!(project_rows(&lib)[at(&lib, "B00.tif")].selected, "and rings under Trip");
     assert_eq!(lib.get_project_viewport_y(), 0.0, "Trip brought back to the middle, held at the top");
-    lib.set_project_viewport_y(-(rows[3].y + 1.0));
+    common::scroll_projects(&lib, -(rows[3].y + 1.0));
     rig.pump();
     rest(&rig);
     let chevron = (left + ds.get_space_sm() + ds.get_control_film_sidebar_chevron_zone_width() / 2.0, LIST_TOP + h / 2.0);
@@ -164,7 +164,7 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     assert_eq!(open(), "B00", "twin: the fold opens nothing");
 
     // A photo dragged onto a project joins it and leaves its own; the ring and the chip show meanwhile.
-    lib.set_project_viewport_y(0.0);
+    common::scroll_projects(&lib, 0.0);
     rig.pump();
     let middle = |title: &str| {
         let r = project_rows(&lib)[at(&lib, title)].clone();
@@ -231,14 +231,14 @@ pub(crate) fn the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swi
     rig.pump();
     let rows: Vec<TreeRow> = lib.get_rows().iter().collect();
     let roll_a = rows.iter().position(|r| r.title == "Roll A").expect("Roll A has a row");
-    lib.set_tree_viewport_y(0.0);
+    common::scroll_tree(&lib, 0.0);
     rig.pump();
     assert!(!lib.get_tree_pin().shown, "at the top, nothing is held");
-    lib.set_tree_viewport_y(-(rows[roll_a + 3].y + 1.0));
+    common::scroll_tree(&lib, -(rows[roll_a + 3].y + 1.0));
     rig.pump();
     assert!(lib.get_tree_pin().shown && lib.get_tree_pin().row.title == "Roll A", "{:?}", lib.get_tree_pin());
     let roll_b = rows.iter().position(|r| r.title == "Roll B").expect("Roll B has a row");
-    lib.set_tree_viewport_y(-(rows[roll_b + 3].y + 1.0));
+    common::scroll_tree(&lib, -(rows[roll_b + 3].y + 1.0));
     rig.pump();
     assert_eq!(lib.get_tree_pin().row.title, "Roll B", "twin: over Roll B's photos, Roll B is held");
     rig.shot("tree-leftovers-archive-pin");
