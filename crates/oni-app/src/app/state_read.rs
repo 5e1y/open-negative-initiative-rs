@@ -205,11 +205,11 @@ impl State {
     }
 
     /// The open frame's place in its group, one-based, and the group's count.
-    pub(super) fn place(&self) -> Option<(u16, u16)> {
+    pub(super) fn place(&self) -> Option<(usize, usize)> {
         let open = self.open_path()?;
         let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open))?;
         let at = group.entries.iter().position(|e| e.path == open)?;
-        Some((at as u16 + 1, group.entries.len() as u16))
+        Some((at + 1, group.entries.len()))
     }
 }
 

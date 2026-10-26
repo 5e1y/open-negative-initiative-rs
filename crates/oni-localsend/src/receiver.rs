@@ -16,20 +16,23 @@ use axum::response::{IntoResponse, Json, Response};
 use axum::routing::{get, post};
 use futures_util::StreamExt;
 use futures_util::future::BoxFuture;
-use hyper_util::rt::TokioIo;
 use serde::Deserialize;
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
 use tokio_rustls::TlsAcceptor;
 use tokio_util::sync::CancellationToken;
-use tower::ServiceExt;
 
 use crate::discovery::Peers;
 use crate::identity::Identity;
-use crate::inbox::{PartFile, sanitize_file_name};
+use crate::inbox::{PartFile, refused_name, sanitize_file_name};
 use crate::model::*;
 
-const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
+mod serving;
+
+use serving::{Limits, serve};
+
+/// A policy that has not decided by then rejects, so a stranger's question never holds the slot.
+const DECIDE: Duration = Duration::from_secs(120);
 /// A session that receives no byte for this long is cancelled, so a vanished sender frees the slot.
 const SESSION_IDLE: Duration = Duration::from_secs(60);
 const PROGRESS_STEP: u64 = 1 << 20;
@@ -176,8 +179,8 @@ impl Receiver {
             rename_lock: Arc::new(Mutex::new(())),
         });
         let shutdown = CancellationToken::new();
-        let task =
-            tokio::spawn(serve(listener, TlsAcceptor::from(Arc::new(tls)), router(shared.clone()), shutdown.clone()));
+        let acceptor = TlsAcceptor::from(Arc::new(tls));
+        let task = tokio::spawn(serve(listener, acceptor, router(shared.clone()), shutdown.clone(), Limits::DEFAULT));
         Ok((Self { shared, local_addr, shutdown, task: Some(task) }, rx))
     }
 
@@ -211,38 +214,6 @@ impl Drop for Receiver {
     fn drop(&mut self) {
         self.shutdown.cancel();
     }
-}
-
-async fn serve(listener: TcpListener, acceptor: TlsAcceptor, app: Router, shutdown: CancellationToken) {
-    let connections = tokio_util::task::TaskTracker::new();
-    loop {
-        let (tcp, peer) = tokio::select! {
-            _ = shutdown.cancelled() => break,
-            accepted = listener.accept() => match accepted {
-                Ok(pair) => pair,
-                Err(e) => {
-                    tracing::warn!("accept failed: {e}");
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                    continue;
-                }
-            },
-        };
-        let (acceptor, app, shutdown) = (acceptor.clone(), app.clone(), shutdown.clone());
-        connections.spawn(async move {
-            let Ok(Ok(tls)) = tokio::time::timeout(HANDSHAKE_TIMEOUT, acceptor.accept(tcp)).await else { return };
-            let service = hyper::service::service_fn(move |mut req: axum::http::Request<hyper::body::Incoming>| {
-                req.extensions_mut().insert(ConnectInfo(peer));
-                app.clone().oneshot(req)
-            });
-            let conn = hyper::server::conn::http1::Builder::new().serve_connection(TokioIo::new(tls), service);
-            tokio::select! {
-                _ = conn => {}
-                _ = shutdown.cancelled() => {}
-            }
-        });
-    }
-    connections.close();
-    connections.wait().await;
 }
 
 fn router(shared: Arc<Shared>) -> Router {
@@ -392,6 +363,10 @@ async fn prepare_upload(
     if shared.pin.is_some() && shared.pin != query.pin {
         return StatusCode::UNAUTHORIZED.into_response();
     }
+    let mut files: Vec<FileMeta> = request.files.into_values().filter(|f| !refused_name(&f.file_name)).collect();
+    if files.is_empty() {
+        return StatusCode::NO_CONTENT.into_response();
+    }
     {
         let mut slot = shared.slot.lock().unwrap();
         if !matches!(*slot, Slot::Free) {
@@ -401,9 +376,9 @@ async fn prepare_upload(
     }
     let guard = DecidingGuard(&shared);
 
-    let mut files: Vec<FileMeta> = request.files.into_values().collect();
     files.sort_by(|a, b| a.id.cmp(&b.id));
-    match shared.policy.decide(&request.info, &files, query.pin.as_deref()).await {
+    let decided = tokio::time::timeout(DECIDE, shared.policy.decide(&request.info, &files, query.pin.as_deref())).await;
+    match decided.unwrap_or(Decision::Reject) {
         Decision::Reject => return StatusCode::FORBIDDEN.into_response(),
         Decision::Accept(ids) => files.retain(|f| ids.contains(&f.id)),
         Decision::AcceptAll => {}
@@ -580,3 +555,6 @@ async fn cancel(
         None => StatusCode::OK,
     }
 }
+
+#[cfg(test)]
+mod tests;

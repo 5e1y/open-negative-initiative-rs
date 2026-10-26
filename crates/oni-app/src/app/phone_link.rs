@@ -109,7 +109,7 @@ impl Ctl {
         let s = &mut *self.state.borrow_mut();
         let place = s.place();
         let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return };
-        p.link.frame = place;
+        p.link.frame = place.map(wire_place);
         p.link.sliders = Box::new(sliders);
         p.link.refresh(store);
     }
@@ -148,7 +148,7 @@ impl Ctl {
             let place = s.place();
             let revision = s.store.revision();
             let (Some(p), Some(store)) = (s.phone.as_mut(), s.store.editor()) else { return receipt.applied() };
-            p.link.frame = place;
+            p.link.frame = place.map(wire_place);
             p.link.sliders = Box::new(sliders);
             let out = p.link.handle(store, event, receipt);
             (out, store.revision() != revision)
@@ -167,24 +167,29 @@ impl Ctl {
         match out {
             Some(Outward::Paired { phone, name }) => {
                 let support = self.state.borrow().support.clone();
+                // Forget Phones between the pairing and this event already cut it: it stays forgotten.
+                if !self.state.borrow().phone.as_ref().is_some_and(|p| p.trusts(&phone)) {
+                    return;
+                }
                 if let Err(e) = phone::trust(&support, phone) {
                     self.say(&tr!("{name} is paired for this session only: {error}", name = name, error = e));
                 }
                 self.pairing_status(&tr!("Paired with {name}.", name = name));
             }
-            Some(Outward::Connected { phone, name }) => {
+            Some(Outward::Connected { phone, name, connection }) => {
                 timing::line("phone connected");
-                self.say(&tr!("{name} connected", name = name));
-                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
-                    p.connected(phone, name);
+                let new = self.state.borrow_mut().phone.as_mut().is_some_and(|p| p.connected(phone, connection, name.clone()));
+                if new {
+                    self.say(&tr!("{name} connected", name = name));
                 }
                 self.show_phones();
             }
-            Some(Outward::Disconnected { phone }) => {
+            // A phone back on a new link before its old one ended is still connected.
+            Some(Outward::Disconnected { phone, connection }) => {
                 timing::line("phone disconnected");
-                self.say(tr("The phone disconnected"));
-                if let Some(p) = self.state.borrow_mut().phone.as_mut() {
-                    p.disconnected(phone);
+                let gone = self.state.borrow_mut().phone.as_mut().is_some_and(|p| p.disconnected(phone, connection));
+                if gone {
+                    self.say(tr("The phone disconnected"));
                 }
                 self.show_phones();
             }
@@ -208,7 +213,7 @@ impl Ctl {
         let target = {
             let s = self.state.borrow();
             let Some((at, count)) = s.place() else { return };
-            let to = (i32::from(at) - 1 + i32::from(by)).clamp(0, i32::from(count) - 1) as usize;
+            let to = walked(at, count, by);
             let open = s.open_path().unwrap_or_default();
             let group = s.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
             group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
@@ -217,5 +222,35 @@ impl Ctl {
         self.state.borrow_mut().designate(&path);
         self.open_photo(&path);
         self.publish_tiles();
+    }
+}
+
+/// The frame's place as the wire carries it, past 65 535 held at the end.
+fn wire_place((at, count): (usize, usize)) -> (u16, u16) {
+    let saturated = |n: usize| u16::try_from(n).unwrap_or(u16::MAX);
+    (saturated(at), saturated(count))
+}
+
+/// The zero-based index `by` frames from the one-based `at` in a group of `count`, the ends stopping it.
+fn walked(at: usize, count: usize, by: i8) -> usize {
+    let from = at.saturating_sub(1);
+    let to = if by < 0 { from.saturating_sub(usize::from(by.unsigned_abs())) } else { from.saturating_add(by as usize) };
+    to.min(count.saturating_sub(1))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_walk_in_a_group_past_the_wire_s_u16_stays_inside_it() {
+        assert_eq!(walked(65_536, 65_536, 1), 65_535, "the last frame of 65 536 stops the walk");
+        assert_eq!(walked(65_536, 65_536, -3), 65_532);
+        assert_eq!(walked(1, 1, -1), 0);
+        assert_eq!(walked(1, 0, 1), 0, "an empty group never panics");
+        assert_eq!(wire_place((70_000, 70_000)), (u16::MAX, u16::MAX));
+        // Twin: a u16 cast reads a group of 65 536 as empty, and wraps past it.
+        assert_eq!((65_536usize as u16, 70_000usize as u16), (0, 4464));
+        assert_eq!(wire_place((7, 36)), (7, 36));
     }
 }

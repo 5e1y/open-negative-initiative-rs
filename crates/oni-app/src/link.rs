@@ -71,8 +71,8 @@ fn clamp(clicks: i64) -> i8 {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Outward {
     Paired { phone: PublicKey, name: String },
-    Connected { phone: PublicKey, name: String },
-    Disconnected { phone: PublicKey },
+    Connected { phone: PublicKey, name: String, connection: u64 },
+    Disconnected { phone: PublicKey, connection: u64 },
     Walk(i8),
     /// The face switched on the store, for the host to remember as its own switch does.
     Face(Face),
@@ -84,8 +84,9 @@ pub struct Link {
     pub frame: Option<(u16, u16)>,
     pub sliders: Box<dyn Sliders>,
     published: Option<State>,
-    /// The slider a phone's hand holds: the store records its moves as one step on release.
-    held: Option<Param>,
+    /// The slider a phone's hand holds, and the connection it holds it on: the store records its
+    /// moves as one step on release.
+    held: Option<(Param, u64)>,
 }
 
 impl Link {
@@ -106,12 +107,15 @@ impl Link {
     /// One event: a press lands on the store as one command, is marked taken, then the screen goes out.
     pub fn handle(&mut self, store: &mut EditorStore, event: HostEvent, receipt: Receipt) -> Option<Outward> {
         let out = match event {
-            HostEvent::Command { command, .. } => self.command(store, command),
+            HostEvent::Command { command, connection, .. } => self.command(store, command, connection),
             HostEvent::Paired { phone, name } => Some(Outward::Paired { phone, name }),
-            HostEvent::Connected { phone, name } => Some(Outward::Connected { phone, name }),
-            HostEvent::Disconnected { phone } => {
-                self.let_go(store);
-                Some(Outward::Disconnected { phone })
+            HostEvent::Connected { phone, name, connection } => Some(Outward::Connected { phone, name, connection }),
+            // A phone's old link ending after its reconnection leaves the new link's drag alone.
+            HostEvent::Disconnected { phone, connection } => {
+                if self.held.is_some_and(|(_, on)| on == connection) {
+                    self.let_go(store);
+                }
+                Some(Outward::Disconnected { phone, connection })
             }
         };
         receipt.applied();
@@ -128,14 +132,14 @@ impl Link {
         }
     }
 
-    fn command(&mut self, store: &mut EditorStore, command: oni_link::Command) -> Option<Outward> {
+    fn command(&mut self, store: &mut EditorStore, command: oni_link::Command, connection: u64) -> Option<Outward> {
         // `DSSlider`'s drag: the first place holds the store, every later one lands under that hold.
         if let oni_link::Command::SetParam { param, position } = command {
             let set = self.sliders.command(store, param, Move::To(position))?;
-            if self.held != Some(param) {
+            if self.held != Some((param, connection)) {
                 self.let_go(store);
                 store.hold();
-                self.held = Some(param);
+                self.held = Some((param, connection));
             }
             store.apply(set);
             return None;
