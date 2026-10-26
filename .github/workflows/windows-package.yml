@@ -73,7 +73,7 @@ jobs:
           $app = "$env:LOCALAPPDATA\Programs\Open Negative Initiative"
           $shell = New-Object -ComObject WScript.Shell
           foreach ($lang in "fr", "en") {
-            $p = Start-Process $setup -ArgumentList "/LANG=$lang" -PassThru
+            $p = Start-Process $setup -ArgumentList "/LANG=$lang", "/LOG=$pwd\shots\setup-$lang.log" -PassThru
             Start-Sleep 8
             # The mode dialog, the welcome, the folder, the tasks and the summary, each passed by Enter.
             for ($i = 1; $i -le 5; $i++) {

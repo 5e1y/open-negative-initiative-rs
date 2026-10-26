@@ -92,28 +92,31 @@ begin
   end;
 end;
 
-procedure Show(Kind: String);
 var
-  Images: TArrayOfGraphic;
-  I: Integer;
+  Splash, Dimmed: TArrayOfGraphic;
+  Shown: Boolean;
+
+// Every picture extracted and loaded once, at the wizard's start, as the pages swap them often.
+procedure InitializeWizard;
 begin
   try
-    Images := Pictures(Kind);
-    try
-      WizardSetBackImage(Images, True, True, 255);
-    finally
-      for I := 0 to GetArrayLength(Images) - 1 do Images[I].Free;
-    end;
+    Splash := Pictures('splash');
+    Dimmed := Pictures('page');
   except
-    Log('No background picture: ' + GetExceptionMessage);
+    Log('No background pictures: ' + GetExceptionMessage);
   end;
 end;
 
 // The splash greets and closes; the pages between keep the photograph dimmed under their text.
 procedure CurPageChanged(CurPageID: Integer);
+var
+  Wanted: Boolean;
 begin
-  if (CurPageID = wpWelcome) or (CurPageID = wpFinished) then
-    Show('splash')
+  Wanted := (CurPageID = wpWelcome) or (CurPageID = wpFinished);
+  if (Wanted = Shown) or (GetArrayLength(Splash) = 0) or (GetArrayLength(Dimmed) = 0) then Exit;
+  if Wanted then
+    WizardSetBackImage(Splash, True, True, 255)
   else
-    Show('page');
+    WizardSetBackImage(Dimmed, True, True, 255);
+  Shown := Wanted;
 end;
