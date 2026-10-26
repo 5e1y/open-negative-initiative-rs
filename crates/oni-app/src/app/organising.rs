@@ -125,6 +125,13 @@ pub struct Organising {
     pub bands: Vec<Band>,
     /// The photos shown whose original is not there, from `presence` alone.
     pub missing: HashSet<String>,
+    /// `tile_flags` of the bands and the missing above, cut once each time they are laid.
+    pub flags: HashMap<String, (i32, bool, bool)>,
+    /// The archive a read cut off this thread from the rows it landed, which the next lay takes
+    /// when they are still the rows held.
+    pub staged: Option<crate::library::Archive>,
+    /// Every thumbnail drawn and landed since launch, a redraw included.
+    pub thumbnails_landed: usize,
     /// Each photo's state as the reads and the looks off this thread last published it.
     pub presence: HashMap<String, oni_library::presence::Presence>,
     pub opened_presence: oni_library::presence::Presence,
@@ -212,7 +219,8 @@ impl State {
     pub(super) fn selected(&self) -> Vec<String> {
         let picks = &self.picks.selection;
         let mut out: Vec<String> = self.order.iter().filter(|p| picks.contains(*p)).cloned().collect();
-        let mut rest: Vec<String> = picks.iter().filter(|p| !out.contains(p)).cloned().collect();
+        let shown: HashSet<&String> = out.iter().collect();
+        let mut rest: Vec<String> = picks.iter().filter(|p| !shown.contains(p)).cloned().collect();
         rest.sort();
         out.extend(rest);
         out

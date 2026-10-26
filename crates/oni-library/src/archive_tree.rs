@@ -66,6 +66,32 @@ pub fn first_path(node: &Node) -> Option<&str> {
     }
 }
 
+/// One row of the tree laid flat, borrowed from the tree it lies in.
+#[derive(Debug, Clone, Copy)]
+pub enum Laid<'a> {
+    Folder(&'a Node),
+    Photo(&'a Entry),
+}
+
+/// `flatten`'s rows in its order, each lent to `row` with its depth rather than copied with its subtree.
+pub fn walk<'a>(nodes: &'a [Node], expanded: &HashSet<NodeId>, depth: usize, row: &mut dyn FnMut(Laid<'a>, usize)) {
+    for node in nodes {
+        match node {
+            Node::Photo(entry) => row(Laid::Photo(entry), depth),
+            Node::Folder { path, group, children } => {
+                row(Laid::Folder(node), depth);
+                if !expanded.contains(&NodeId::Folder(path.clone())) {
+                    continue;
+                }
+                walk(children, expanded, depth + 1, row);
+                for entry in group.iter().flat_map(|g| &g.entries) {
+                    row(Laid::Photo(entry), depth + 1);
+                }
+            }
+        }
+    }
+}
+
 /// Laid flat with each node's depth: a folder opens into its children then its own photos.
 pub fn flatten(nodes: &[Node], expanded: &HashSet<NodeId>, depth: usize) -> Vec<(Node, usize)> {
     let mut rows = Vec::new();
@@ -145,6 +171,21 @@ mod tests {
         // Twin: a closed subfolder hides the photo it holds.
         assert!(!open.iter().any(|(n, _)| n.id() == NodeId::Photo("/r/trip/day2/c".into())));
         assert_eq!((outer.count(), outer.entries().len()), (3, 3));
+        // The walk lends the rows `flatten` copies, in its order and at its depths.
+        let lent = |expanded: &HashSet<NodeId>| {
+            let mut lent = Vec::new();
+            walk(&nodes, expanded, 0, &mut |row, depth| {
+                lent.push((match row { Laid::Folder(n) => n.id(), Laid::Photo(e) => NodeId::Photo(e.path.clone()) }, depth))
+            });
+            lent
+        };
+        let open = HashSet::from([NodeId::Folder("/r/trip".into()), NodeId::Folder("/r/trip/day2".into())]);
+        for expanded in [HashSet::new(), open.clone()] {
+            let copied: Vec<(NodeId, usize)> = flatten(&nodes, &expanded, 0).iter().map(|(n, d)| (n.id(), *d)).collect();
+            assert_eq!(lent(&expanded), copied);
+        }
+        // Twin: the walk sees a fold, so the comparison above is not of two empty lists.
+        assert_ne!(lent(&HashSet::new()), lent(&open));
     }
 
     #[test]

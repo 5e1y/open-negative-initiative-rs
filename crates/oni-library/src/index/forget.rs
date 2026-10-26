@@ -1,13 +1,49 @@
 //! The rows under a folder, read and forgotten as one: Remove from Library takes a folder gone out
 //! of the cache alone, its sidecars and originals never touched.
 
-use super::{Entry, LibraryIndex};
-use crate::paths::holds;
+use super::{COLUMNS, Entry, LibraryIndex, entry};
+use crate::paths::{holds, normal};
+use std::collections::HashSet;
+
+/// The `LIKE` pattern every path at `folder` or under it matches: its ASCII head, which `LIKE` folds
+/// as a case-blind volume does and every composition spells alike; `holds` then trims the rest.
+pub(super) fn head_pattern(folder: &str) -> String {
+    let folder = normal(folder);
+    let head = &folder[..folder.find(|c: char| !c.is_ascii()).unwrap_or(folder.len())];
+    let mut pattern: String = head.chars().flat_map(|c| if matches!(c, '\\' | '%' | '_') { vec!['\\', c] } else { vec![c] }).collect();
+    pattern.push('%');
+    pattern
+}
 
 impl LibraryIndex {
-    /// Every row at `folder` or under it, in `all`'s order, whichever spelling holds it.
+    /// Every row at `folder` or under it, in `all`'s order, whichever spelling holds it; the rows of
+    /// other folders are left in SQLite, never read into rows.
     pub fn under(&self, folder: &str) -> Vec<Entry> {
-        self.all().into_iter().filter(|e| holds(folder, &e.path)).collect()
+        let sql = format!("SELECT {COLUMNS} FROM photos WHERE path LIKE ? ESCAPE '\\' ORDER BY COALESCE(captured_at, imported_at) ASC, path ASC");
+        let Ok(mut statement) = self.connection.prepare_cached(&sql) else { return Vec::new() };
+        let Ok(rows) = statement.query_map([head_pattern(folder)], entry) else { return Vec::new() };
+        rows.filter_map(Result::ok).filter(|e| holds(folder, &e.path)).collect()
+    }
+
+    /// The paths of `under`'s rows alone.
+    pub fn paths_under(&self, folder: &str) -> HashSet<String> {
+        let Ok(mut statement) = self.connection.prepare_cached("SELECT path FROM photos WHERE path LIKE ? ESCAPE '\\'") else { return HashSet::new() };
+        let Ok(rows) = statement.query_map([head_pattern(folder)], |r| r.get::<_, String>(0)) else { return HashSet::new() };
+        rows.filter_map(Result::ok).filter(|p| holds(folder, p)).collect()
+    }
+
+    /// Every path the index holds, no row read whole.
+    pub fn paths(&self) -> HashSet<String> {
+        let Ok(mut statement) = self.connection.prepare_cached("SELECT path FROM photos") else { return HashSet::new() };
+        let Ok(rows) = statement.query_map([], |r| r.get::<_, String>(0)) else { return HashSet::new() };
+        rows.filter_map(Result::ok).collect()
+    }
+
+    /// The paths whose fingerprint starts with `mark`.
+    pub fn marked(&self, mark: &str) -> Vec<String> {
+        let Ok(mut statement) = self.connection.prepare_cached("SELECT path FROM photos WHERE substr(fingerprint, 1, length(?1)) = ?1") else { return Vec::new() };
+        let Ok(rows) = statement.query_map([mark], |r| r.get::<_, String>(0)) else { return Vec::new() };
+        rows.filter_map(Result::ok).collect()
     }
 
     /// The rows under `folder` taken out of the index in one transaction, all or none; the rows
@@ -74,6 +110,32 @@ mod tests {
         // Twin: a folder named like the start of another forgets nothing of it.
         assert!(index.forget("/r/Rol").unwrap().is_empty());
         assert_eq!(index.count(), 2);
+    }
+
+    /// A folder's rows read by their head alone answer as the whole index read and trimmed did,
+    /// accents, `%` and `_` in the names included.
+    #[test]
+    fn a_folder_s_rows_are_its_head_s_trimmed() {
+        let index = index(&[
+            ("/r/\u{c9}t\u{e9} 50%_off/a.tif", "a"),
+            ("/r/\u{c9}t\u{e9} 50%_off/Sub/b.tif", "b"),
+            ("/r/\u{c9}t\u{e9} 50%_offX/c.tif", "c"),
+            ("/r/a_b/d.tif", "d"),
+            ("/r/aXb/e.tif", "e"),
+            ("/s/f.tif", "f"),
+        ]);
+        for folder in ["/r/\u{c9}t\u{e9} 50%_off", "/r/a_b", "/r", "/s", "/t"] {
+            let whole: Vec<String> = index.all().into_iter().filter(|e| holds(folder, &e.path)).map(|e| e.path).collect();
+            let head: Vec<String> = index.under(folder).into_iter().map(|e| e.path).collect();
+            assert_eq!(head, whole, "{folder}");
+            assert_eq!(index.paths_under(folder), whole.into_iter().collect::<HashSet<_>>(), "{folder}");
+        }
+        assert_eq!(index.under("/r/a_b").len(), 1, "`_` matches itself alone");
+        assert_eq!(head_pattern("/r/a_b%"), "/r/a\\_b\\%%");
+        assert_eq!(head_pattern("/r/\u{c9}t\u{e9}"), "/r/%", "the head stops before the accent");
+        // Twin: the bare `LIKE` of `_` would take the sibling `aXb` too.
+        let bare: i64 = index.connection.query_row("SELECT COUNT(*) FROM photos WHERE path LIKE '/r/a_b/%'", [], |r| r.get(0)).unwrap();
+        assert_eq!(bare, 2);
     }
 
     #[test]

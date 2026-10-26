@@ -210,9 +210,12 @@ impl EditorStore {
         self.measured.clear();
     }
 
+    /// The library's paths: a roll whose frames are all still there stays found, as Swift keeps it;
+    /// one that lost a frame, moved or gone, is scanned again on the next ask.
     pub fn set_archive_paths(&mut self, paths: Vec<String>) {
+        let held: std::collections::HashSet<&String> = paths.iter().collect();
+        self.measured.retain(|_, members| members.iter().all(|p| held.contains(p)));
         self.archive.paths = paths;
-        self.measured.clear();
     }
 
     /// The fields moved since the last call: what a view re-reads, and nothing else.

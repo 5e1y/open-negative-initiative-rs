@@ -73,6 +73,11 @@ impl State {
         self.painted.0
     }
 
+    /// Every thumbnail drawn and landed since launch, a redraw included.
+    pub fn thumbnails_landed(&self) -> usize {
+        self.org.thumbnails_landed
+    }
+
     /// Whether the opened folder's read has landed whole.
     pub fn read_done(&self) -> bool {
         self.read_done

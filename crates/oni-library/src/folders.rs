@@ -4,7 +4,7 @@
 use crate::archive_tree::Node;
 use crate::film_group::{self, FilmGroup, FilmKey};
 use crate::index::Entry;
-use crate::paths::{self, holds};
+use crate::paths::{self, NameKey, holds};
 use oni_settings::{Date, Film, roll_folder};
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -55,15 +55,22 @@ pub fn group(folder: &str, root: &str, entries: Vec<Entry>, roll: Option<Film>) 
         .map(film_group::capture)
         .min_by(|a, b| crate::seconds(*a).total_cmp(&crate::seconds(*b)))
         .unwrap_or(crate::distant_past());
-    let mut entries = entries;
-    entries.sort_by(shot);
     FilmGroup {
         id: FilmKey::Folder(folder.to_owned()),
         film: roll,
         start,
-        entries,
+        entries: in_shooting_order(entries),
         heading: Some(paths::relative(folder, root)),
     }
+}
+
+/// `shot`'s order, each photo's time and name read once rather than at every comparison.
+fn in_shooting_order(entries: Vec<Entry>) -> Vec<Entry> {
+    // `shot` takes 0 and -0 for one time, which `total_cmp` tells apart.
+    let at = |e: &Entry| crate::seconds(film_group::capture(e)) + 0.0;
+    let mut keyed: Vec<(f64, NameKey, Entry)> = entries.into_iter().map(|e| (at(&e), NameKey::new(&name(&e.path)), e)).collect();
+    keyed.sort_by(|a, b| a.0.total_cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+    keyed.into_iter().map(|(_, _, e)| e).collect()
 }
 
 /// The root's children: every folder holding a photo at any depth, newest first by its latest
@@ -115,31 +122,29 @@ pub fn tree(
     let stamp = |f: &str| {
         latest.get(f).or_else(|| made.get(f)).copied().map(crate::seconds).unwrap_or(crate::DISTANT_PAST_SECONDS)
     };
-    let newest_first = |a: &String, b: &String| {
-        let (da, db) = (stamp(a), stamp(b));
-        if da != db { db.total_cmp(&da) } else { by_name(a, b) }
+    // Newest first, the name breaking a tie, each folder's stamp and name read once.
+    let newest_first = |folders: Option<&BTreeSet<String>>| -> Vec<String> {
+        let mut keyed: Vec<(f64, NameKey, &String)> =
+            folders.into_iter().flatten().map(|f| (stamp(f), NameKey::new(&name(f)), f)).collect();
+        keyed.sort_by(|a, b| if a.0 != b.0 { b.0.total_cmp(&a.0) } else { a.1.cmp(&b.1) });
+        keyed.into_iter().map(|(_, _, f)| f.clone()).collect()
     };
-    fn node(
-        folder: &str,
-        root: &str,
-        by_folder: &HashMap<String, Vec<Entry>>,
-        children: &HashMap<String, BTreeSet<String>>,
-        rolls: &HashMap<String, Film>,
-        newest_first: &dyn Fn(&String, &String) -> Ordering,
-    ) -> Node {
-        let own = by_folder.get(folder).map(|e| group(folder, root, e.clone(), rolls.get(folder).cloned()));
-        let mut subfolders: Vec<&String> = children.get(folder).map(|c| c.iter().collect()).unwrap_or_default();
-        subfolders.sort_by(|a, b| newest_first(a, b));
-        let subfolders =
-            subfolders.into_iter().map(|f| node(f, root, by_folder, children, rolls, newest_first)).collect();
-        Node::Folder { path: folder.to_owned(), group: own, children: subfolders }
+    struct Cut<'a> {
+        root: &'a str,
+        by_folder: HashMap<String, Vec<Entry>>,
+        children: &'a HashMap<String, BTreeSet<String>>,
+        rolls: &'a HashMap<String, Film>,
     }
-    let mut top: Vec<&String> = children.get(root).map(|c| c.iter().collect()).unwrap_or_default();
-    top.sort_by(|a, b| newest_first(a, b));
-    let mut out: Vec<Node> =
-        top.into_iter().map(|f| node(f, root, &by_folder, &children, rolls, &newest_first)).collect();
-    if let Some(loose) = by_folder.get(root) {
-        let loose = group(root, root, loose.clone(), rolls.get(root).cloned());
+    fn node(cut: &mut Cut, folder: String, newest_first: &dyn Fn(Option<&BTreeSet<String>>) -> Vec<String>) -> Node {
+        let own = cut.by_folder.remove(&folder).map(|e| group(&folder, cut.root, e, cut.rolls.get(&folder).cloned()));
+        let subfolders = newest_first(cut.children.get(&folder)).into_iter().map(|f| node(cut, f, newest_first)).collect();
+        Node::Folder { path: folder, group: own, children: subfolders }
+    }
+    let loose = by_folder.remove(root);
+    let mut cut = Cut { root, by_folder, children: &children, rolls };
+    let mut out: Vec<Node> = newest_first(children.get(root)).into_iter().map(|f| node(&mut cut, f, &newest_first)).collect();
+    if let Some(loose) = loose {
+        let loose = group(root, root, loose, rolls.get(root).cloned());
         out.extend(loose.entries.into_iter().map(Node::Photo));
     }
     out
@@ -153,21 +158,36 @@ pub fn groups(
     rolls: &HashMap<String, Film>,
     made: &HashMap<String, Date>,
 ) -> Vec<FilmGroup> {
-    fn walk(nodes: Vec<Node>) -> Vec<FilmGroup> {
-        nodes
-            .into_iter()
-            .flat_map(|node| match node {
-                Node::Folder { group, children, .. } => {
-                    let mut out = walk(children);
-                    out.extend(group);
-                    out
-                }
-                _ => Vec::new(),
-            })
-            .collect()
+    tree_and_groups(root, entries, rolls, &[], made).1
+}
+
+/// `tree` and `groups` cut in one walk: the empty folders the survey adds hold no group, so the
+/// groups of the whole tree are those of its photos alone.
+pub fn tree_and_groups(
+    root: &str,
+    entries: &[Entry],
+    rolls: &HashMap<String, Film>,
+    folders: &[String],
+    made: &HashMap<String, Date>,
+) -> (Vec<Node>, Vec<FilmGroup>) {
+    let nodes = tree(root, entries, rolls, folders, made);
+    let groups = groups_of(root, &nodes, rolls);
+    (nodes, groups)
+}
+
+/// The groups a tree cut by `tree` holds, laid as `groups` lays them.
+pub fn groups_of(root: &str, nodes: &[Node], rolls: &HashMap<String, Film>) -> Vec<FilmGroup> {
+    fn walk(nodes: &[Node], out: &mut Vec<FilmGroup>) {
+        for node in nodes {
+            if let Node::Folder { group, children, .. } = node {
+                walk(children, out);
+                out.extend(group.iter().cloned());
+            }
+        }
     }
-    let inside: Vec<Entry> = entries.iter().filter(|e| parent(&e.path) == root).cloned().collect();
-    let mut out = walk(tree(root, entries, rolls, &[], made));
+    let mut out = Vec::new();
+    walk(nodes, &mut out);
+    let inside: Vec<Entry> = nodes.iter().filter_map(|n| if let Node::Photo(e) = n { Some(e.clone()) } else { None }).collect();
     if !inside.is_empty() {
         out.push(group(root, root, inside, rolls.get(root).cloned()));
     }
@@ -180,14 +200,18 @@ fn stem_key(path: &str) -> String {
 }
 
 fn is_kind(path: &str, kinds: &[&str]) -> bool {
-    let ext = paths::extension(path).to_ascii_lowercase();
-    !ext.is_empty() && kinds.contains(&ext.as_str())
+    let ext = paths::extension(path);
+    !ext.is_empty() && kinds.iter().any(|k| ext.eq_ignore_ascii_case(k))
 }
 
 /// A RAW+JPEG pair as one photo: a JPEG with no sidecar beside a RAW of its stem among `images`, the
 /// disk's files (a RAW in the ONI Trash too), is left out and named as the RAW's companion.
 pub fn paired(entries: &[Entry], images: &[String], sidecars: &HashMap<String, Date>) -> (Vec<Entry>, HashMap<String, String>) {
     use crate::library::{JPEG_EXTENSIONS, RAW_EXTENSIONS};
+    // A folder of RAWs alone, or of scans, pairs nothing: its stems are never cut.
+    if !entries.iter().any(|e| is_kind(&e.path, JPEG_EXTENSIONS) && !sidecars.contains_key(&e.path)) {
+        return (entries.to_vec(), HashMap::new());
+    }
     let mut raws: HashMap<String, &String> = HashMap::new();
     for image in images.iter().filter(|i| is_kind(i, RAW_EXTENSIONS)) {
         raws.entry(stem_key(image)).and_modify(|r| *r = (*r).min(image)).or_insert(image);
@@ -245,6 +269,39 @@ mod tests {
             .collect();
         assert!(plain.contains(&"2026/Juin".to_owned()) && !plain.contains(&"Portra".to_owned()));
         assert!(!groups.iter().flat_map(|g| &g.entries).any(|e| e.path == "/Elsewhere/y.RW2"));
+    }
+
+    /// One walk cuts the tree and the gallery's groups; the survey's empty folders move no group.
+    #[test]
+    fn the_groups_cut_with_the_tree_are_the_gallery_s() {
+        let made = HashMap::from([("/R/New".to_owned(), Date::since_reference_date(99.0))]);
+        let rolls = HashMap::from([("/R/2026/Juin".to_owned(), Film::new("Portra"))]);
+        let empty = ["/R/New".to_owned(), "/R/2026/Empty".to_owned()];
+        let (nodes, cut) = tree_and_groups("/R", &entries(), &rolls, &empty, &made);
+        assert_eq!(cut, groups("/R", &entries(), &rolls, &made));
+        assert_eq!(nodes, tree("/R", &entries(), &rolls, &empty, &made));
+        // Twin: a photo in the new folder gives it a group, which the comparison sees.
+        let mut more = entries();
+        more.push(entry("New/n.RW2", 50.0));
+        assert_ne!(tree_and_groups("/R", &more, &rolls, &empty, &made).1, cut);
+    }
+
+    /// The keys read once order the photos as `shot` does, ties broken by the Finder's name order.
+    #[test]
+    fn a_group_s_photos_lie_in_shot_s_order() {
+        let photos: Vec<Entry> =
+            [("f10.RW2", 5.0), ("f2.RW2", 5.0), ("\u{c9}t\u{e9}.RW2", 5.0), ("Etna.RW2", 5.0), ("a.RW2", 1.0), ("z.RW2", -0.0), ("y.RW2", 0.0)]
+                .iter()
+                .map(|(n, at)| entry(n, *at))
+                .collect();
+        let mut by_shot = photos.clone();
+        by_shot.sort_by(shot);
+        let laid = in_shooting_order(photos.clone());
+        assert_eq!(laid, by_shot);
+        // Twin: the names' bytes would put f10 before f2 and the composed Été last.
+        let mut bytes = photos;
+        bytes.sort_by(|a, b| crate::seconds(film_group::capture(a)).total_cmp(&crate::seconds(film_group::capture(b))).then_with(|| a.path.cmp(&b.path)));
+        assert_ne!(laid, bytes);
     }
 
     #[test]

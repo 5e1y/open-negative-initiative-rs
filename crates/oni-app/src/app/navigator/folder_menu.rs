@@ -200,7 +200,7 @@ impl Ctl {
             if inside {
                 std::sync::Arc::make_mut(&mut s.survey).folders.push(made.clone());
                 if let Some(archive) = s.archive.as_mut() {
-                    archive.expanded.insert(NodeId::Folder(folder.to_owned()));
+                    archive.unfold(NodeId::Folder(folder.to_owned()));
                 }
             }
             if !tree {

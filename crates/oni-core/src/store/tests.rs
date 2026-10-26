@@ -239,3 +239,22 @@ fn a_flush_taken_on_switch_stays_silent() {
     assert_eq!(Knob::Vignette.get(&written), 0.5);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// The library's paths laid again keep a roll's frames found while every one is still there, so a
+/// lay reads no sidecar; a frame gone has its roll scanned again on the next ask.
+#[test]
+fn a_roll_s_frames_found_outlive_a_lay_that_keeps_them() {
+    let paths: Vec<String> = ["/r/a.tif", "/r/b.tif", "/r/c.tif"].iter().map(|p| p.to_string()).collect();
+    let mut store = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
+    let (kept, lost) = (oni_settings::Id::new(), oni_settings::Id::new());
+    store.measured.insert(kept, ["/r/a.tif".to_string()].into());
+    store.measured.insert(lost, ["/r/c.tif".to_string()].into());
+    let mut more = paths.clone();
+    more.push("/r/d.tif".into());
+    store.set_archive_paths(more.clone());
+    assert_eq!((store.measured_group(kept).map(|m| m.len()), store.measured_group(lost).map(|m| m.len())), (Some(1), Some(1)));
+    // Twin: a frame gone takes its roll's found frames with it.
+    more.retain(|p| p != "/r/c.tif");
+    store.set_archive_paths(more);
+    assert!(store.measured_group(kept).is_some() && store.measured_group(lost).is_none());
+}
