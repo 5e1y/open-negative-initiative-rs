@@ -17,6 +17,7 @@ mod editor_routes;
 mod editors;
 mod explorer;
 mod export_paper_window;
+mod export_entering;
 mod export_window;
 mod extended;
 mod freshness;
@@ -102,6 +103,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("explorer::return_renames_and_double_click_does_not", explorer::return_renames_and_double_click_does_not),
     ("export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone", export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone),
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
+    ("export_entering::entering_the_export_reads_no_scan_on_the_interface_thread", export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),
     ("extended::a_patch_is_swift_s_on_swift_s_source", extended::a_patch_is_swift_s_on_swift_s_source),
     ("extended::a_frame_renders_its_swift_patches_as_swift_does", extended::a_frame_renders_its_swift_patches_as_swift_does),

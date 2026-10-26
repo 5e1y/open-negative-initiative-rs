@@ -208,3 +208,28 @@ int oni_identify(const char *path, void *stream, char make[64], char model[64], 
     if (stream) oni_stream_free(stream);
     return rc;
 }
+
+// What the file says of its making, as LibRaw reads it from the metadata: nothing is decoded.
+typedef struct {
+    char make[64], model[64], lens[128], artist[64];
+    float iso;
+} oni_described;
+
+// `stream`, when given, is freed before the call returns.
+int oni_describe(const char *path, void *stream, oni_described *out)
+{
+    memset(out, 0, sizeof *out);
+    libraw_data_t *lr = libraw_init(0);
+    if (!lr) { if (stream) oni_stream_free(stream); return -1; }
+    int rc = oni_attach(lr, path, stream);
+    if (rc == LIBRAW_SUCCESS) {
+        strncpy(out->make, lr->idata.make, 63);
+        strncpy(out->model, lr->idata.model, 63);
+        strncpy(out->lens, lr->lens.Lens, 127);
+        strncpy(out->artist, lr->other.artist, 63);
+        out->iso = lr->other.iso_speed;
+    }
+    libraw_close(lr);
+    if (stream) oni_stream_free(stream);
+    return rc;
+}

@@ -119,8 +119,13 @@ fn a_typed_name_stays_in_the_chosen_folder() {
     let folder = Path::new("/r/chosen");
     let source = Path::new("/r/roll/P1.NEF");
     for (typed, expected) in [
-        ("..\\x", "..-x.jpg"),
-        ("../../Best/Frame 3", "..-..-Best-Frame 3.jpg"),
+        ("..\\x", "-x.jpg"),
+        ("../../Best/Frame 3", "-..-Best-Frame 3.jpg"),
+        (".Frame 3", "Frame 3.jpg"),
+        ("... x", "x.jpg"),
+        (". ", "P1.jpg"),
+        // Twin: a dot inside the name is the hand's and stays.
+        ("Frame.3", "Frame.3.jpg"),
         ("CON", "CON-.jpg"),
         ("nul", "nul-.jpg"),
         ("a?b", "a-b.jpg"),
@@ -133,9 +138,10 @@ fn a_typed_name_stays_in_the_chosen_folder() {
         assert_eq!(landed.parent(), Some(folder), "{typed}");
         assert_eq!(landed.file_name().unwrap().to_string_lossy(), expected, "{typed}");
     }
-    // Twin: the same text joined as typed climbs out of the folder.
+    // Twin: the same text joined as typed climbs out of the folder, and made portable alone it hides.
     let raw = folder.join("../../Best/Frame 3.jpg");
     assert_ne!(raw.parent(), Some(folder));
+    assert!(oni_library::file_names::portable(".Frame 3").starts_with('.'));
 }
 
 #[cfg(unix)]
@@ -178,4 +184,23 @@ fn a_failed_export_keeps_the_previous_one() {
     write(&source, to, frame, &PaperCorrection::default(), &bright, &ExifMetadata::default(), None).unwrap();
     assert_ne!(std::fs::read(&path).unwrap(), before);
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn a_frame_past_a_jpeg_s_side_says_so() {
+    let dir = scratch("too-large");
+    let source = dir.join("P1.NEF");
+    std::fs::write(&source, b"raw").unwrap();
+    let wide = |width: usize| move || Ok(Image { width, height: 1, pixels: vec![0.4; width * 4] });
+    let mut ledger = Ledger::in_support(&dir.join("Support"));
+    let path = dir.join("wide.jpg");
+    let to = Landing { path: &path, ledger: &mut ledger, replacing: false };
+    let refused = write(&source, to, wide(65536), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None);
+    assert_eq!(refused, Err(Failure::TooLargeForJpeg));
+    assert_ne!(Failure::TooLargeForJpeg.to_string(), Failure::Write(std::io::ErrorKind::InvalidData).to_string(), "a message of its own");
+    assert!(!path.exists());
+    // Twin: one pixel narrower is a JPEG.
+    let to = Landing { path: &path, ledger: &mut ledger, replacing: false };
+    write(&source, to, wide(65535), &PaperCorrection::default(), &Settings::default(), &ExifMetadata::default(), None).unwrap();
+    assert!(is_jpeg(&path));
 }

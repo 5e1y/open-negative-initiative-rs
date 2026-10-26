@@ -242,14 +242,19 @@ impl OutputProfile {
         let legs = legs(&loaded.data)?;
         let samples = width * 4;
         let scale = if bits == 16 { 65535.0 } else { 255.0 };
-        let mut out16 = Vec::new();
-        let mut out8 = Vec::new();
+        // Sized once: a vector doubling as it fills holds two copies at its last growth.
+        let (mut out16, mut out8) = if bits == 16 { (Vec::with_capacity(samples * height), Vec::new()) } else { (Vec::new(), Vec::with_capacity(samples * height)) };
         let mut source = vec![0.0f32; samples * BAND];
         for top in (0..height).step_by(BAND) {
             let rows = BAND.min(height - top);
             let band = &mut source[..samples * rows];
             render(top, rows, band);
+            // Premultiplied, as Core Image renders: a clear pixel, a contact sheet's gutter, writes black.
             for p in band.chunks_exact_mut(4) {
+                let a = p[3].clamp(0.0, 1.0);
+                for v in &mut p[..3] {
+                    *v *= a;
+                }
                 p[3] = 1.0;
             }
             let device = run(&legs, band)?;

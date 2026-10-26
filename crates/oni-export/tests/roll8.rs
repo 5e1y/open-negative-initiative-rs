@@ -290,7 +290,7 @@ fn the_estimate_holds_on_roll_8() {
         let full_pixels = (full.width * full.height) as f64;
         let scale = oni_export::SAMPLE_SIDE / full.width.max(full.height) as f64;
         // The reduced decode rendered, as the estimate sees it.
-        let preview = as_set(path, resized(&full, scale));
+        let preview = as_set(path, resized(full.clone(), scale));
         let full = as_set(path, full);
         for (i, export) in [&jpeg, &tiff].into_iter().enumerate() {
             let started = Instant::now();

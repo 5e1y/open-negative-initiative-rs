@@ -6,6 +6,16 @@ use oni_colour::Quantised;
 use crate::ifd::{Directory, Value};
 use crate::metadata::tag;
 
+/// A JPEG states each side in 16 bits.
+pub const MOST_SIDE: usize = 65535;
+/// A profile rides in at most 254 APP2 segments of 65,519 bytes each, as the encoder counts them.
+pub const MOST_ICC: usize = 254 * 65519;
+
+/// Whether a frame of this size and profile fits the format at all.
+pub fn fits(width: usize, height: usize, icc: usize) -> bool {
+    width <= MOST_SIDE && height <= MOST_SIDE && icc <= MOST_ICC
+}
+
 /// The encoder's 1–100 scale from the export's 0–1 quality.
 pub fn quality(q: f64) -> u8 {
     (q * 100.0).round().clamp(1.0, 100.0) as u8
@@ -68,4 +78,20 @@ pub fn grey(width: usize, height: usize, value: u8, quality_: f64) -> Option<Vec
     let encoder = Encoder::new(&mut out, quality(quality_));
     encoder.encode(&pixels, u16::try_from(width).ok()?, u16::try_from(height).ok()?, ColorType::Luma).ok()?;
     Some(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_frame_fits_up_to_the_format_s_own_limits() {
+        assert!(fits(MOST_SIDE, MOST_SIDE, MOST_ICC));
+        // Twin: one past any of the three does not, where the encoder would refuse it.
+        assert!(!fits(MOST_SIDE + 1, 1, 0) && !fits(1, MOST_SIDE + 1, 0) && !fits(1, 1, MOST_ICC + 1));
+        let pixels = Quantised::Eight(vec![0; 4]);
+        let (primary, exif) = (Directory::default(), Directory::default());
+        assert!(encoded(1, 1, &pixels, 0.9, &vec![0; MOST_ICC + 1], &primary, &exif).is_none());
+        assert!(encoded(1, 1, &pixels, 0.9, &vec![0; MOST_ICC], &primary, &exif).is_some());
+    }
 }

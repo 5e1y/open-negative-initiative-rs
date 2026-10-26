@@ -97,11 +97,12 @@ fn taps(output: usize, scale: f64) -> Vec<Taps> {
 /// radius in the produced file.
 /// Premultiplied while resampled, as Core Image resamples: a clear pixel, whatever colour the
 /// chain gave it, lends a neighbour nothing.
-pub fn resized(image: &Image, scale: f64) -> Image {
+pub fn resized(image: Image, scale: f64) -> Image {
+    // The frame itself, never a copy: a 24 Mpx frame weighs 384 MB.
     if scale.is_nan() || scale >= 1.0 {
-        return image.clone();
+        return image;
     }
-    let mut premultiplied = image.clone();
+    let mut premultiplied = image;
     for p in premultiplied.pixels.chunks_exact_mut(4) {
         let a = p[3].clamp(0.0, 1.0);
         for v in &mut p[..3] {
@@ -218,7 +219,7 @@ mod tests {
         // 512 of 837 leaves the short side on 341.33: neither axis lands on the source grid.
         let source = plate(837, 558, 0.16);
         let ratio = 512.0 / 837.0;
-        let shrunk = resized(&source, ratio);
+        let shrunk = resized(source.clone(), ratio);
         assert!((edge_alpha(&shrunk) - 1.0).abs() < 1e-6, "edge alpha {}", edge_alpha(&shrunk));
         let (w, h) = Resize::LongestEdge(512).output_size(837.0, 558.0);
         assert_eq!((shrunk.width as f64, shrunk.height as f64), (w, h));
@@ -246,7 +247,7 @@ mod tests {
         let pixels: Vec<f32> = (0..w * h).flat_map(|_| [sample(), sample(), sample(), 1.0]).collect();
         let source = Image { width: w, height: h, pixels: pixels.clone() };
         let buffer: ImageBuffer<Rgba<f32>, Vec<f32>> = ImageBuffer::from_raw(w as u32, h as u32, pixels).unwrap();
-        let ours = resized(&source, 0.5);
+        let ours = resized(source.clone(), 0.5);
         let worst = |filter| {
             let theirs = imageops::resize(&buffer, 200, 150, filter);
             let mut worst = 0.0f32;
@@ -272,21 +273,32 @@ mod tests {
     #[test]
     fn full_scale_returns_the_frame_untouched() {
         let source = plate(10, 7, 0.4);
-        assert_eq!(resized(&source, 1.0), source);
-        assert_eq!(resized(&source, f64::NAN), source, "a scale that is no number reads as no resize");
+        assert_eq!(resized(source.clone(), 1.0), source);
+        assert_eq!(resized(source.clone(), f64::NAN), source, "a scale that is no number reads as no resize");
         // Twin: a real reduction does change the frame.
-        assert_ne!(resized(&source, 0.5), source);
+        assert_ne!(resized(source.clone(), 0.5), source);
+    }
+
+    #[test]
+    fn full_scale_hands_back_the_same_pixels_without_a_copy() {
+        let source = plate(10, 7, 0.4);
+        let at = source.pixels.as_ptr();
+        assert_eq!(resized(source, 1.0).pixels.as_ptr(), at);
+        // Twin: a reduction is a frame of its own.
+        let source = plate(10, 7, 0.4);
+        let at = source.pixels.as_ptr();
+        assert_ne!(resized(source, 0.5).pixels.as_ptr(), at);
     }
 
     #[test]
     fn a_size_rounding_to_nothing_is_an_empty_frame() {
         let source = plate(837, 558, 0.4);
         for scale in [0.0, -0.5, 1e-9, 1e-12] {
-            let out = resized(&source, scale);
+            let out = resized(source.clone(), scale);
             assert_eq!((out.width, out.height, out.pixels.len()), (0, 0, 0), "scale {scale}");
         }
         // Twin: the smallest scale that still rounds one row keeps a frame of 2 × 1.
-        let thin = resized(&source, 1.0 / 558.0);
+        let thin = resized(source.clone(), 1.0 / 558.0);
         assert_eq!((thin.width, thin.height), (2, 1));
         assert!(thin.pixels.chunks(4).all(|p| (p[0] - 0.4).abs() < 1e-5));
     }
