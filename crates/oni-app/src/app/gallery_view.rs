@@ -224,6 +224,8 @@ impl Ctl {
         }
         {
             let mut s = self.state.borrow_mut();
+            // A sidecar written may measure the roll shown: its banner is read again.
+            s.org.guide.measured = None;
             let Some(index) = &s.index else { return };
             library::refresh(index, paths);
             // With no folder open, a photo restored from the ONI Trash leaves it all the same.

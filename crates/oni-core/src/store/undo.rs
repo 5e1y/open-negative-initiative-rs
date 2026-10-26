@@ -55,6 +55,13 @@ impl EditorStore {
         if let Some(marks) = &step.trash {
             self.lay_trash(marks, undoing);
         }
+        if let Some(m) = &step.marker {
+            let film = if undoing { &m.before } else { &m.after };
+            match oni_library::folders::set_roll(film.as_ref(), &m.folder) {
+                Ok(()) => self.marked = Some((m.folder.clone(), film.clone())),
+                Err(e) => self.failure = Some(oni_i18n::tr!("The roll could not be written in its folder: {error}", error = refusal::cause(&e))),
+            }
+        }
         let changed = self.write_back(if undoing { &step.before } else { &step.after });
         // The open frame laid back is an editor step too, as Swift records every change but a replay:
         // its next edit never starts from the state just undone.

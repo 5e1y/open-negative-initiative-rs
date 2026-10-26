@@ -1,0 +1,16 @@
+// The info sidebar's guide in place of "Select a roll" while the selection lies outside any roll.
+export global RollGuide {
+    in property <bool> shown;
+    in property <string> count;
+    in-out property <string> name;
+    in property <string> proposed;
+    in property <string> stock;
+    in property <image> stock-artwork;
+    in property <bool> stock-has-artwork;
+    in property <string> key;
+    in property <bool> enabled;
+    in property <string> note;
+    callback name-edited(string);
+    callback pick-stock();
+    callback create();
+}

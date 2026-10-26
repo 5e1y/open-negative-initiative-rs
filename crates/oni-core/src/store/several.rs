@@ -133,14 +133,32 @@ impl EditorStore {
     }
 
     fn film_on(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: impl Fn(usize) -> String) -> usize {
+        self.roll_on(paths, None, |s| s.film = film.clone(), label)
+    }
+
+    /// A roll's marker and what it writes on its frames, one gallery step: the marker first, so a
+    /// marker the disk refuses leaves every frame as it was.
+    pub fn lay_roll(&mut self, paths: &[String], marker: Option<Marker>, edit: impl Fn(&mut PipelineSettings), label: &str) -> usize {
+        self.roll_on(paths, marker, edit, |_| label.to_string())
+    }
+
+    fn roll_on(&mut self, paths: &[String], marker: Option<Marker>, edit: impl Fn(&mut PipelineSettings), label: impl Fn(usize) -> String) -> usize {
+        if let Some(m) = marker.as_ref().filter(|m| m.before != m.after) {
+            if let Err(e) = oni_library::folders::set_roll(m.after.as_ref(), &m.folder) {
+                self.failure = Some(oni_i18n::tr!("The roll could not be written in its folder: {error}", error = refusal::cause(&e)));
+                return 0;
+            }
+            self.marked = Some((m.folder.clone(), m.after.clone()));
+        }
         let open = self.path().map(str::to_string);
         let mut before = Settings::new();
         let mut after = Settings::new();
+        let mut next = self.settings.clone();
+        edit(&mut next);
         // The open frame joins the gallery step, as `applyFilm`'s, and records its own editor step.
         if let Some(open) = open.as_ref().filter(|p| paths.contains(p) && self.takes_hands())
-            && self.settings.film != film
+            && self.settings != next
         {
-            let next = PipelineSettings { film: film.clone(), ..self.settings.clone() };
             before.insert(open.clone(), self.settings.clone());
             after.insert(open.clone(), next.clone());
             let now = self.now();
@@ -151,13 +169,13 @@ impl EditorStore {
         let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         let (was, now) = self.modify_with(&others, true, |_, s| {
             let mut next = s.clone();
-            next.film = film.clone();
+            edit(&mut next);
             Some(next)
         });
         before.extend(was);
         after.extend(now);
         let count = before.len();
-        self.gallery.record(&before, &after, &label(count), None);
+        self.gallery.record_marked(&before, &after, &label(count), marker);
         count
     }
 }

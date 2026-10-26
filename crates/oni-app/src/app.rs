@@ -195,7 +195,7 @@ enum Pending {
     DeletePreset(oni_settings::Id),
     UpdatePreset(oni_settings::Id),
     ResetToDefault(oni_library::roll_membership::ResetReach),
-    NewRoll(Box<oni_library::roll_folder::Plan>),
+    NewRoll(Box<oni_library::roll_folder::Plan>, bool),
     QuitAnyway,
     DownloadUpdate,
     Locate(navigator::Asked),

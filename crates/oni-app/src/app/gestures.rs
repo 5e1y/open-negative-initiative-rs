@@ -47,14 +47,17 @@ impl Ctl {
         if self.busy_said(title) {
             return;
         }
-        let failure = {
+        let (failure, marked) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             run(store);
-            store.failure.take()
+            (store.failure.take(), store.marked.take())
         };
         if let Some(message) = failure {
             self.told(title, &message);
+        }
+        if let Some((folder, film)) = marked {
+            self.marker_landed(&folder, film);
         }
         self.landed(touched);
     }
@@ -107,17 +110,20 @@ impl Ctl {
         if !moves.is_empty() && self.unsaved_among(title, &moves) {
             return;
         }
-        let (failure, walk) = {
+        let (failure, walk, marked) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             if undo { store.undo(Surface::Gallery) } else { store.redo(Surface::Gallery) };
-            (store.failure.take(), store.walking.take())
+            (store.failure.take(), store.walking.take(), store.marked.take())
         };
         if let Some(walk) = walk {
             return self.walk_off_thread(title, walk, touched);
         }
         if let Some(message) = failure {
             self.told(title, &message);
+        }
+        if let Some((folder, film)) = marked {
+            self.marker_landed(&folder, film);
         }
         self.landed(&touched);
     }
@@ -324,7 +330,7 @@ impl Ctl {
             Some(Pending::DeletePreset(id)) => self.delete_preset(id),
             Some(Pending::UpdatePreset(id)) => self.update_preset(id),
             Some(Pending::ResetToDefault(reach)) => self.reset_to_default(reach),
-            Some(Pending::NewRoll(plan)) => self.lay_new_roll(*plan),
+            Some(Pending::NewRoll(plan, named)) => self.lay_new_roll(*plan, named),
             Some(Pending::QuitAnyway) => {
                 self.state.borrow_mut().quitting = true;
                 let _ = slint::quit_event_loop();

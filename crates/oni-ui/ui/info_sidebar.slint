@@ -1,6 +1,8 @@
 // `InfoSidebar` beside the gallery: the roll a selection stands on, or its project.
-import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, DateFields, Icons, TextField, CardStack } from "ds/ds.slint";
+import { Section, Label, Tone, TextRole, Space, ShellStyle, Surface, Scroller, EditableTitle, StockIcon, StockStyle, Button, ButtonKind, ButtonSize, DateFields, Icons, TextField, CardStack, Field, WarningBand } from "ds/ds.slint";
 import { Library } from "library.slint";
+import { RollGuide } from "roll_guide.slint";
+import { KeyWords } from "key_words.slint";
 
 export component Info inherits Surface {
     width: ShellStyle.info-width;
@@ -10,11 +12,68 @@ export component Info inherits Surface {
         body := VerticalLayout {
             width: parent.width;
             alignment: start;
-            if Library.info-kind == 0: VerticalLayout {
+            if Library.info-kind == 0 && !RollGuide.shown: VerticalLayout {
                 padding: Space.m;
                 Label { text: Library.info-empty; tone: Tone.secondary; }
             }
+            // The photos outside any roll, guided into one; nothing is made before the key.
+            if Library.info-kind == 0 && RollGuide.shown: VerticalLayout {
+                Section {
+                    title: @tr("Not in a roll yet");
+                    separated: false;
+                    Label { text: @tr("A roll groups the frames of one film: measured once, they share base, levels and dyes."); tone: Tone.secondary; wrap: word-wrap; }
+                }
+                Section {
+                    title: @tr("1 · Frames");
+                    Label { text: RollGuide.count; }
+                    Label { text: @tr("Select the whole film ({})", KeyWords.command + "A"); tone: Tone.secondary; wrap: word-wrap; }
+                }
+                Section {
+                    title: @tr("2 · Name and Stock");
+                    Field {
+                        label: @tr("Name");
+                        TextField {
+                            text <=> RollGuide.name;
+                            placeholder: RollGuide.proposed;
+                            edited(t) => { RollGuide.name-edited(t); }
+                        }
+                    }
+                    Field {
+                        label: @tr("Stock");
+                        HorizontalLayout {
+                            spacing: Space.s;
+                            if RollGuide.stock-has-artwork: StockIcon { artwork: RollGuide.stock-artwork; has-artwork: true; side: StockStyle.row; }
+                            Button {
+                                horizontal-stretch: 1;
+                                text: RollGuide.stock != "" ? RollGuide.stock : @tr("Pick the film…");
+                                clicked => { RollGuide.pick-stock(); }
+                            }
+                        }
+                    }
+                }
+                Section {
+                    title: @tr("3 · Make the Roll");
+                    Button {
+                        kind: ButtonKind.accent;
+                        text: RollGuide.key;
+                        enabled: RollGuide.enabled;
+                        clicked => { RollGuide.create(); }
+                    }
+                    if RollGuide.note != "": Label { text: RollGuide.note; tone: Tone.secondary; wrap: word-wrap; }
+                    Label { text: @tr("Next: Prepare the Roll measures it."); tone: Tone.secondary; wrap: word-wrap; }
+                }
+            }
             if Library.info-kind == 1: VerticalLayout {
+                if Library.roll-unmeasured: VerticalLayout {
+                    padding: Space.m;
+                    spacing: Space.s;
+                    WarningBand { text: @tr("Not measured yet"); }
+                    Button {
+                        size: ButtonSize.plate;
+                        text: @tr("PREPARE THE ROLL…");
+                        clicked => { Library.prepare-shown-roll(); }
+                    }
+                }
                 Section {
                     title: @tr("Roll");
                     separated: false;
@@ -35,6 +94,7 @@ export component Info inherits Surface {
                     }
                     if Library.stock != "": Label { text: Library.stock; role: TextRole.title; centred: true; }
                     if Library.stock-note != "": Label { text: Library.stock-note; tone: Tone.secondary; wrap: word-wrap; centred: true; }
+                    if Library.stock-dyes != "": Label { text: Library.stock-dyes; role: TextRole.note; tone: Tone.secondary; centred: true; }
                     Button { text: @tr("Select Roll Type"); clicked => { Library.select-roll-type(); } }
                 }
                 Section {

@@ -17,6 +17,11 @@ impl Ctl {
     /// The photos of one folder laid out off this thread, then the confirm naming the folder made
     /// and counting the files moved; photos of several folders are refused, with the reason.
     pub(in crate::app) fn new_roll_from(self: &Rc<Self>, targets: &HashSet<String>) {
+        self.new_roll_named(targets, None);
+    }
+
+    /// `new_roll_from`, under the name and the stock the roll guide typed, when it did.
+    pub(in crate::app) fn new_roll_named(self: &Rc<Self>, targets: &HashSet<String>, named: Option<(String, Option<String>)>) {
         if self.busy_said(tr("New Roll")) {
             return;
         }
@@ -35,12 +40,19 @@ impl Ctl {
         };
         let earliest = earliest.unwrap_or_else(oni_settings::Date::now);
         let _ = std::thread::Builder::new().name("planning a roll".into()).spawn(move || {
-            let plan = roll_folder::plan(&ordered, earliest, &parent);
-            with_shell(move |c| c.ask_new_roll(plan));
+            let plan = match named {
+                Some((name, stock)) => {
+                    let mut plan = roll_folder::plan_named(&ordered, &name, &parent);
+                    plan.film.stock = stock;
+                    (plan, true)
+                }
+                None => (roll_folder::plan(&ordered, earliest, &parent), false),
+            };
+            with_shell(move |c| c.ask_new_roll(plan.0, plan.1));
         });
     }
 
-    fn ask_new_roll(self: &Rc<Self>, plan: roll_folder::Plan) {
+    fn ask_new_roll(self: &Rc<Self>, plan: roll_folder::Plan, named: bool) {
         if plan.units.is_empty() {
             let why = if plan.absent > 0 { oni_library::refusal::left_out(plan.absent) } else { tr("Nothing could move: every name is taken in the roll's folder.").into() };
             return self.told(tr("New Roll"), &why);
@@ -58,11 +70,11 @@ impl Ctl {
             message.push_str(&trn("One photo stays out: its original cannot be found.", "{n} photos stay out: their originals cannot be found.", plan.absent as u64));
         }
         let key = trn("Move Photo", "Move {n} Photos", plan.picked as u64);
-        self.ask(&title, &message, &key, false, Pending::NewRoll(Box::new(plan)));
+        self.ask(&title, &message, &key, false, Pending::NewRoll(Box::new(plan), named));
     }
 
     /// The confirmed roll: its folder made and each frame moved whole, off this thread.
-    pub(in crate::app) fn lay_new_roll(self: &Rc<Self>, plan: roll_folder::Plan) {
+    pub(in crate::app) fn lay_new_roll(self: &Rc<Self>, plan: roll_folder::Plan, named: bool) {
         if self.busy_said(tr("New Roll")) {
             return;
         }
@@ -75,11 +87,12 @@ impl Ctl {
         self.on_disk(
             tr("Moving the photos into the roll"),
             move || roll_folder::carry_out(&plan, &roll_folder::rename_new).map_err(|e| oni_library::refusal::cause(&e)),
-            move |c, made| c.new_roll_landed(&parent, made),
+            move |c, made| c.new_roll_landed(&parent, made, named),
         );
     }
 
-    fn new_roll_landed(self: &Rc<Self>, parent: &str, made: Result<roll_folder::Made, String>) {
+    /// A roll the guide named takes no rename in the tree; its stock's dyes follow as a step of their own.
+    fn new_roll_landed(self: &Rc<Self>, parent: &str, made: Result<roll_folder::Made, String>, named: bool) {
         let made = match made {
             Ok(made) => made,
             Err(e) => return self.told(tr("New Roll"), &tr!("The roll's folder could not be made: {e}", e = e)),
@@ -89,13 +102,16 @@ impl Ctl {
         }
         let moves = made.disk.moves.clone();
         let Some(folder) = made.disk.folder.clone().filter(|_| !moves.is_empty()) else { return };
+        let stock = made.disk.film.as_ref().and_then(|f| f.stock.clone());
         {
             let mut s = self.state.borrow_mut();
             if let Some(archive) = s.archive.as_mut() {
                 archive.unfold(TreeId::Folder(parent.to_owned()));
                 archive.unfold(TreeId::Folder(folder.clone()));
             }
-            s.rename_request = Some(folder);
+            if !named {
+                s.rename_request = Some(folder.clone());
+            }
             if let Some(store) = s.store.editor() {
                 store.record_disk(made.disk, tr("New Roll"));
                 store.forget_measured();
@@ -103,6 +119,9 @@ impl Ctl {
         }
         self.journal_count(oni_library::journal::Kind::Rolled, moves.len());
         self.followed(&moves);
+        if let Some(stock) = stock {
+            self.dyes_follow(&folder, &stock);
+        }
         self.publish_bar();
     }
 

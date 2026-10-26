@@ -7,7 +7,7 @@ use crate::fields::{Family, FieldSet};
 use crate::history::{Companion, History};
 use crate::parameters;
 use crate::presets::Preset;
-use oni_library::gallery_history::{self, GalleryHistory, Step, Trash};
+use oni_library::gallery_history::{self, GalleryHistory, Marker, Step, Trash};
 use oni_library::{refusal, roll_membership, trash};
 use oni_i18n::{tr, trn};
 use oni_keys::{Channel, Effect, Letter, Machine};
@@ -125,6 +125,8 @@ pub struct EditorStore {
     pub failure: Option<String>,
     /// The last undo or redo of a roll on the disk, for the host to run off its thread.
     pub walking: Option<oni_library::roll_folder::Walk>,
+    /// The roll marker a gesture, an undo or a redo last wrote, for the host to show the folder's roll.
+    pub marked: Option<(String, Option<oni_settings::Film>)>,
     /// Frames left with edits their sidecar refused, kept until a write takes them or the hand drops them.
     unsaved: Vec<opening::Unsaved>,
 }
@@ -151,6 +153,7 @@ impl EditorStore {
             epoch: Instant::now(),
             failure: None,
             walking: None,
+            marked: None,
             unsaved: Vec::new(),
         }
     }

@@ -357,7 +357,7 @@ msgstr "Précédent"
 msgid "Next"
 msgstr "Suivant"
 
-#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nom"
 
@@ -824,6 +824,50 @@ msgstr "Rien n’est encore enregistré."
 #: crates/oni-ui/ui/help.slint
 msgid "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."
 msgstr "Laissez cette fenêtre ouverte, reproduisez le problème, puis cliquez sur Copier. S’il faut forcer l’app à quitter, le fichier ci-dessus conserve tout."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Not in a roll yet"
+msgstr "Pas encore dans une pellicule"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "A roll groups the frames of one film: measured once, they share base, levels and dyes."
+msgstr "Une pellicule regroupe les vues d'un même film : mesurées une fois, elles partagent base, niveaux et colorants."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "1 · Frames"
+msgstr "1 · Vues"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Select the whole film ({})"
+msgstr "Sélectionnez tout le film ({})"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "2 · Name and Stock"
+msgstr "2 · Nom et film"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Stock"
+msgstr "Film"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Pick the film…"
+msgstr "Choisir le film…"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "3 · Make the Roll"
+msgstr "3 · Créer la pellicule"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Next: Prepare the Roll measures it."
+msgstr "Ensuite : Préparer la pellicule la mesure."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Not measured yet"
+msgstr "Pas encore mesurée"
+
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "PREPARE THE ROLL…"
+msgstr "PRÉPARER LA PELLICULE…"
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -1446,10 +1490,6 @@ msgid "This photo was never measured with its roll, so these settings act on it 
 msgstr "Cette photo n’a jamais été mesurée avec sa pellicule : ces réglages n’agissent que sur elle."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "PREPARE THE ROLL…"
-msgstr "PRÉPARER LA PELLICULE…"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Acts on this photo, the only one measured with its roll."
 msgstr "Agit sur cette photo, la seule mesurée avec sa pellicule."
 
@@ -1645,23 +1685,23 @@ msgstr "Soustrait le débordement de chaque colorant dans les deux autres canaux
 msgid "Dyes"
 msgstr "Colorants"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Kodak"
 msgstr "Kodak"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Fuji"
 msgstr "Fuji"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Generic"
 msgstr "Générique"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "ECN-2"
 msgstr "ECN-2"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "E-6"
 msgstr "E-6"
 
@@ -2619,7 +2659,7 @@ msgstr "Renommer…"
 msgid "Back to a Folder"
 msgstr "Reconvertir en dossier"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/roll_guide.rs
 msgid "Make a Roll"
 msgstr "Convertir en pellicule"
 
@@ -2995,7 +3035,7 @@ msgstr "Définir la date de prise de vue"
 msgid "Default, from this roll's {mode} mode"
 msgstr "Par défaut, d’après le mode {mode} de cette pellicule"
 
-#: crates/oni-app/src/app/organising/info_sidebar.rs
+#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
 msgid "The roll could not be written in its folder: {error}"
 msgstr "La pellicule n’a pas pu être écrite dans son dossier : {error}"
 
@@ -3166,6 +3206,34 @@ msgid "{n} original missing"
 msgid_plural "{n} originals missing"
 msgstr[0] "{n} original introuvable"
 msgstr[1] "{n} originaux introuvables"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Make this folder a roll"
+msgstr "Faire de ce dossier une pellicule"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Move into a new roll"
+msgstr "Déplacer dans une nouvelle pellicule"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Set Film Stock"
+msgstr "Définir l’émulsion"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Dyes: {family}"
+msgstr "Colorants : {family}"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-app/src/picking.rs
+msgid "{n} selected"
+msgid_plural "{n} selected"
+msgstr[0] "{n} sélectionnée"
+msgstr[1] "{n} sélectionnées"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "{n} folder"
+msgid_plural "{n} folders"
+msgstr[0] "{n} dossier"
+msgstr[1] "{n} dossiers"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -3553,10 +3621,6 @@ msgstr "Ouverture des vues ensemble"
 msgid "Loading full resolution"
 msgstr "Chargement en pleine résolution"
 
-#: crates/oni-app/src/app/stock_picker.rs
-msgid "Set Film Stock"
-msgstr "Définir l’émulsion"
-
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
 msgstr "{count} vues ensemble"
@@ -3866,12 +3930,6 @@ msgstr "{verb} ({count} photos)"
 #: crates/oni-app/src/picking.rs
 msgid "{photos} in the ONI Trash"
 msgstr "{photos} dans la Corbeille ONI"
-
-#: crates/oni-app/src/picking.rs
-msgid "{n} selected"
-msgid_plural "{n} selected"
-msgstr[0] "{n} sélectionnée"
-msgstr[1] "{n} sélectionnées"
 
 #: crates/oni-app/src/platform.rs
 msgid "Show in Finder"

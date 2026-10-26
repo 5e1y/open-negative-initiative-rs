@@ -58,6 +58,7 @@ mod presets;
 mod presence;
 mod quit;
 mod rgb_passes;
+mod roll_guide;
 mod roll_tab;
 mod rolls;
 mod scanner;
@@ -191,6 +192,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field", sheets::a_sheet_is_modal_and_escape_closes_it_from_its_own_field),
     ("sheets::the_exports_replace_prompt_answers_the_export", sheets::the_exports_replace_prompt_answers_the_export),
     ("sheets::a_clash_with_an_original_offers_rename_and_keeps_it", sheets::a_clash_with_an_original_offers_rename_and_keeps_it),
+    ("roll_guide::photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_their_dyes", roll_guide::photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_their_dyes),
     ("stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork", stocks::a_rolls_stock_is_picked_by_brand_and_shown_with_its_artwork),
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),

@@ -133,6 +133,11 @@ impl Nav {
         }
     }
 
+    /// A folder made a roll or a folder again by a hand, shown before the disk is listed again.
+    pub(in crate::app) fn roll_edited(&mut self, folder: &str, roll: bool) {
+        self.roll_edits.insert(folder.to_owned(), roll);
+    }
+
     /// `rollFolders`: the opened folder's rolls and the listed rows', with the hand's edits on top.
     pub(super) fn rolls(&self) -> HashSet<String> {
         let mut out: HashSet<String> = self.opened_rolls.union(&self.listed_rolls).cloned().collect();

@@ -4301,5 +4301,19 @@
     "title": "On the Scanner face, Compare's before is the Pro face's plain conversion",
     "status": "done",
     "detail": "compare::reference renders the reset frame on the Pro face whatever the live face, so the Scanner's table and keypad show as part of the after; the same before on either face. Owner's call, beyond Swift. Check on_the_scanner_face_the_before_is_the_pro_faces_plain_conversion, its twin the bar's reset keeping the Scanner face."
+  },
+  {
+    "id": 830,
+    "type": "feature",
+    "title": "The info sidebar guides photos outside any roll into one, and an unmeasured roll offers Prepare the Roll",
+    "status": "done",
+    "detail": "Owner's design, beyond Swift. On the archive, a selection whose anchor resolves no roll shows a guide in place of Select a roll: the selection and its folders counted, a name prefilled with New Roll's date, the stock picker on a new target (StockTarget::Guide), and one key. The whole folder selected: Make this folder a roll writes the marker with the name and stock and the stock's dyes on its frames, one gallery step (a roll marker is now part of a gallery step, Marker in gallery_history, written and walked back by the store), no file moved. Part of it: Move into a new roll runs New Roll under that name (roll_folder::plan_named, numbered past a taken name) and stock, its confirm first, no rename asked in the tree; the dyes follow as a step of their own after the move. Photos of several folders disable the key with New Roll's reason. A roll no frame of which carries a rollReference, read off the interface thread and read again after every gesture, tops its card with Not measured yet and PREPARE THE ROLL…, the toolbar's Prepare Roll on the roll's frames. Window check photos_outside_a_roll_are_guided_into_one_and_its_stock_writes_their_dyes, with its twins (the roll card inside a roll, Move into a new roll on part of a folder, the banner gone once a frame is measured)."
+  },
+  {
+    "id": 831,
+    "type": "feature",
+    "title": "A roll's stock writes the dye family it names on every frame of the roll",
+    "status": "done",
+    "detail": "Owner's design, beyond Swift. film::STOCK_DYES maps every stock of FILM_STOCKS (as long as the catalogue, so a new stock cannot go unmapped) and dye_family reads it: Kodak C-41, Fuji C-41, ECN-2, E-6, generic C-41, none for black and white. Picking a roll's stock writes the marker (or the members' sidecar roll) and the family on every frame in one gallery step (EditorStore::lay_roll), a family picked by hand overwritten and the dose kept; a black-and-white stock writes no family. The open frame takes it at once, its Dyes tabs with it; the roll card notes Dyes: <family> under the stock. Checks every_stock_names_its_dyes (twin: an unknown key names none), a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_one_step (twin: a frame outside the roll keeps its family; the marker alone is a step too) and the window check of #830."
   }
 ]

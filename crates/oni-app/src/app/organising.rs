@@ -29,6 +29,7 @@ mod oni_trash;
 mod members;
 mod status_bar;
 mod info_sidebar;
+pub(in crate::app) mod roll_guide;
 mod band_rename;
 mod tree_menu;
 
@@ -179,6 +180,8 @@ pub struct Organising {
     pub(in crate::app) restore_told: Option<(String, Vec<String>)>,
     /// The gesture whose writes or moves run off this thread, named; the others wait for it.
     pub(in crate::app) disk_busy: Option<String>,
+    /// The roll guide's draft and whether the roll shown is measured.
+    pub(in crate::app) guide: roll_guide::Guide,
 }
 
 /// Seconds on a clock that only goes forward, as `systemUptime` is.
@@ -387,5 +390,6 @@ impl Ctl {
         lib.on_camera_body_committed(move |t| p.camera_body_committed(&t));
         let p = me.clone();
         lib.on_description_committed(move |t| p.description_committed(&t));
+        Ctl::wire_guide(me, window);
     }
 }

@@ -18,7 +18,12 @@ pub use units::{Unit, files, plan_units};
 
 /// The earliest capture as year, month, day in local time, numbered past the names taken beside it.
 pub fn name_for(earliest: Date, parent: &str) -> String {
-    let base = dated(earliest);
+    numbered(&dated(earliest), parent)
+}
+
+/// `base`, numbered past the names taken in `parent`.
+pub fn numbered(base: &str, parent: &str) -> String {
+    let base = base.to_owned();
     let mut name = base.clone();
     let mut rank = 2;
     while std::fs::symlink_metadata(paths::join(parent, &name)).is_ok() {
@@ -89,8 +94,13 @@ impl Plan {
 
 /// New Roll laid out on the disk as it stands: the folder's name, each frame and the files it carries.
 pub fn plan(photos: &[String], earliest: Date, parent: &str) -> Plan {
+    plan_named(photos, &dated(earliest), parent)
+}
+
+/// `plan` under a name a hand typed, numbered past the names taken beside it.
+pub fn plan_named(photos: &[String], base: &str, parent: &str) -> Plan {
     let present: Vec<String> = photos.iter().filter(|p| std::fs::symlink_metadata(p).is_ok()).cloned().collect();
-    let name = name_for(earliest, parent);
+    let name = numbered(base, parent);
     let units = plan_units(&present, &paths::join(parent, &name));
     let moving: std::collections::HashSet<&str> = units.iter().flat_map(|u| u.moves.iter().map(|m| m.from.as_str())).collect();
     Plan {

@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 /// The gestures on the selection or the roll, each owing ⌘Z one gallery step.
-const BATCH: [&str; 13] = [
+const BATCH: [&str; 14] = [
     "reset_frames",
     "apply_mode",
     "apply_preset",
@@ -19,6 +19,7 @@ const BATCH: [&str; 13] = [
     "move_to_trash",
     "restore_from_trash",
     "land_roll",
+    "lay_roll",
 ];
 
 /// Each method of the store's sources, by name, with its body up to the next declaration.

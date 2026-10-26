@@ -8,6 +8,7 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         if s.org.projects_surface {
+            w.global::<crate::RollGuide>().set_shown(false);
             let Some(group) = s.project_group() else {
                 lib.set_info_kind(0);
                 lib.set_info_empty(tr("Select a project").into());
@@ -47,10 +48,13 @@ impl Ctl {
             lib.set_info_kind(0);
             lib.set_info_empty(tr("Select a roll").into());
             s.org.info_loaded = None;
-            return;
+            drop(s);
+            return self.publish_guide();
         };
+        w.global::<crate::RollGuide>().set_shown(false);
         let film = &roll.film;
         lib.set_info_kind(1);
+        lib.set_stock_dyes(roll_guide::dyes_note(film.stock.as_deref()).into());
         lib.set_info_title(film.name.clone().into());
         // `heroStock`: the stock a hand picked, else the first photo's mode's default, said so.
         let mode = roll.first.as_ref().and_then(|e| e.mode);
@@ -78,6 +82,10 @@ impl Ctl {
             lib.set_camera_body(film.camera_body.clone().unwrap_or_default().into());
             s.org.info_loaded = Some(key);
         }
+        let measure_key = format!("{} {}", film.id, roll.paths.join("\n"));
+        drop(s);
+        let unmeasured = self.roll_measured(measure_key, &roll.paths) == Some(false);
+        lib.set_roll_unmeasured(unmeasured);
     }
 
     /// `updateRoll`: a folder's roll is its marker; a roll its sidecars name is written on each

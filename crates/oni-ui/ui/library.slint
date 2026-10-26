@@ -197,6 +197,10 @@ export global Library {
     in-out property <string> description;
     in property <[StockCount]> stocks;
     in property <[image]> stack;
+    // The dyes the roll's stock writes on its frames, and whether no frame of the roll is measured.
+    in property <string> stock-dyes;
+    in property <bool> roll-unmeasured;
+    callback prepare-shown-roll();
     callback surface-picked(int);
     // A row's click with ⌘ and ⇧, its right click answering whether a menu opens, a click on no row.
     callback row-clicked(int, bool, bool);

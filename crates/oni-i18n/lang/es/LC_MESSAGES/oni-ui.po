@@ -357,7 +357,7 @@ msgstr "Anterior"
 msgid "Next"
 msgstr "Siguiente"
 
-#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/row.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/presets.slint
 msgid "Name"
 msgstr "Nombre"
 
@@ -824,6 +824,50 @@ msgstr "Aún no hay nada registrado."
 #: crates/oni-ui/ui/help.slint
 msgid "Keep this open, reproduce the fault, then Copy. If the app has to be forced to quit, the file above still holds everything."
 msgstr "Deja esto abierto, reproduce el fallo y pulsa Copiar. Si hay que forzar la salida de la app, el archivo de arriba lo conserva todo."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Not in a roll yet"
+msgstr "Aún no está en un rollo"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "A roll groups the frames of one film: measured once, they share base, levels and dyes."
+msgstr "Un rollo agrupa los fotogramas de una misma película: medidos una vez, comparten base, niveles y tintes."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "1 · Frames"
+msgstr "1 · Fotogramas"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Select the whole film ({})"
+msgstr "Selecciona toda la película ({})"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "2 · Name and Stock"
+msgstr "2 · Nombre y película"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Stock"
+msgstr "Película"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Pick the film…"
+msgstr "Elegir la película…"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "3 · Make the Roll"
+msgstr "3 · Crear el rollo"
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Next: Prepare the Roll measures it."
+msgstr "Después: Preparar el rollo lo mide."
+
+#: crates/oni-ui/ui/info_sidebar.slint
+msgid "Not measured yet"
+msgstr "Aún sin medir"
+
+#: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel/roll_tab.slint
+msgid "PREPARE THE ROLL…"
+msgstr "PREPARAR EL ROLLO…"
 
 #: crates/oni-ui/ui/info_sidebar.slint crates/oni-ui/ui/panel.slint
 msgid "Roll"
@@ -1446,10 +1490,6 @@ msgid "This photo was never measured with its roll, so these settings act on it 
 msgstr "Esta foto nunca se midió con su rollo, así que estos ajustes solo actúan sobre ella."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "PREPARE THE ROLL…"
-msgstr "PREPARAR EL ROLLO…"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Acts on this photo, the only one measured with its roll."
 msgstr "Actúa sobre esta foto, la única medida con su rollo."
 
@@ -1645,23 +1685,23 @@ msgstr "Resta lo que cada tinte filtra a los otros dos canales, para que los col
 msgid "Dyes"
 msgstr "Tintes"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Kodak"
 msgstr "Kodak"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Fuji"
 msgstr "Fuji"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Generic"
 msgstr "Genérico"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "ECN-2"
 msgstr "ECN-2"
 
-#: crates/oni-ui/ui/panel/roll_tab.slint
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-ui/ui/panel/roll_tab.slint
 msgid "E-6"
 msgstr "E-6"
 
@@ -2619,7 +2659,7 @@ msgstr "Renombrar…"
 msgid "Back to a Folder"
 msgstr "Volver a carpeta"
 
-#: crates/oni-app/src/app/navigator/folder_menu.rs
+#: crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/organising/roll_guide.rs
 msgid "Make a Roll"
 msgstr "Convertir en rollo"
 
@@ -2995,7 +3035,7 @@ msgstr "Definir fecha de toma"
 msgid "Default, from this roll's {mode} mode"
 msgstr "Por defecto, según el modo {mode} de este rollo"
 
-#: crates/oni-app/src/app/organising/info_sidebar.rs
+#: crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-core/src/store/several.rs crates/oni-core/src/store/undo.rs
 msgid "The roll could not be written in its folder: {error}"
 msgstr "No se pudo escribir el rollo en su carpeta: {error}"
 
@@ -3166,6 +3206,34 @@ msgid "{n} original missing"
 msgid_plural "{n} originals missing"
 msgstr[0] "{n} original no encontrado"
 msgstr[1] "{n} originales no encontrados"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Make this folder a roll"
+msgstr "Convertir esta carpeta en rollo"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Move into a new roll"
+msgstr "Mover a un rollo nuevo"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Set Film Stock"
+msgstr "Definir tipo de película"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "Dyes: {family}"
+msgstr "Tintes: {family}"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs crates/oni-app/src/picking.rs
+msgid "{n} selected"
+msgid_plural "{n} selected"
+msgstr[0] "{n} seleccionada"
+msgstr[1] "{n} seleccionadas"
+
+#: crates/oni-app/src/app/organising/roll_guide.rs
+msgid "{n} folder"
+msgid_plural "{n} folders"
+msgstr[0] "{n} carpeta"
+msgstr[1] "{n} carpetas"
 
 #: crates/oni-app/src/app/organising/tree_menu.rs crates/oni-library/src/project.rs
 msgid "Delete Project"
@@ -3553,10 +3621,6 @@ msgstr "Abriendo los fotogramas juntos"
 msgid "Loading full resolution"
 msgstr "Cargando la resolución completa"
 
-#: crates/oni-app/src/app/stock_picker.rs
-msgid "Set Film Stock"
-msgstr "Definir tipo de película"
-
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
 msgstr "{count} fotogramas juntos"
@@ -3866,12 +3930,6 @@ msgstr "{verb} ({count} fotos)"
 #: crates/oni-app/src/picking.rs
 msgid "{photos} in the ONI Trash"
 msgstr "{photos} en la Papelera de ONI"
-
-#: crates/oni-app/src/picking.rs
-msgid "{n} selected"
-msgid_plural "{n} selected"
-msgstr[0] "{n} seleccionada"
-msgstr[1] "{n} seleccionadas"
 
 #: crates/oni-app/src/platform.rs
 msgid "Show in Finder"

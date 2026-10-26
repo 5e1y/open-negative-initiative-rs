@@ -3,7 +3,6 @@
 
 use super::Ctl;
 use crate::{Exporting, StockBrand, StockCell, StockRow, Stocks};
-use oni_i18n::tr;
 use oni_settings::film::FILM_STOCKS;
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::rc::Rc;
@@ -15,6 +14,8 @@ pub(crate) enum StockTarget {
     Roll,
     /// The export row whose film field opened it: this frame alone.
     Export,
+    /// The roll the info sidebar's guide would make, written once the roll is.
+    Guide,
 }
 
 impl Ctl {
@@ -62,7 +63,8 @@ impl Ctl {
         let target = self.state.borrow_mut().stock_target.take();
         let kind = i.and_then(|i| FILM_STOCKS.get(i));
         match (target, kind) {
-            (Some(StockTarget::Roll), Some(kind)) => self.update_roll(tr("Set Film Stock"), |f| f.stock = Some(kind.id.to_string())),
+            (Some(StockTarget::Roll), Some(kind)) => self.set_roll_stock(kind.id),
+            (Some(StockTarget::Guide), Some(kind)) => self.guide_stock_chosen(kind.id),
             (Some(StockTarget::Export), _) => w.global::<Exporting>().invoke_stock_chosen(i.map_or(-1, |i| i as i32)),
             _ => {}
         }
