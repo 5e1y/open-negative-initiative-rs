@@ -3755,5 +3755,40 @@
     "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
     "status": "done",
     "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
+  },
+  {
+    "id": 760,
+    "type": "fix",
+    "title": "A pasted preset code inflates to 1 MB at most",
+    "status": "done",
+    "detail": "from_share_code inflated the whole deflate stream before the checksum or the JSON could refuse it, so a short pasted code of zero runs claimed hundreds of MB to GB on the interface thread (deflate reaches about 1000:1). The inflate now stops at MAX_SHARE_JSON + 1 byte (1 MiB) and a JSON past the cap is refused. Check a_code_inflating_past_the_cap_is_refused_and_one_under_it_reads (a code under 10 KB inflating past 1 MiB, valid JSON and checksum, is refused; twin: the same code 1000 bytes under the cap reads). The Swift app inflates without a cap too."
+  },
+  {
+    "id": 761,
+    "type": "fix",
+    "title": "The journal's name table numbers a new name by the file's lines",
+    "status": "done",
+    "detail": "index numbered a new name by the count of distinct names, so once names.txt held a duplicate line (a name with a newline is written with a space, then noted again in that spelling) every later name took another name's line. A new name is now the file's next line, the table is keyed by the written spelling, and a name whose line cannot be written records NOTHING. Check a_new_name_takes_the_file_s_next_line_past_a_duplicate (a table with a duplicate line, a name with a newline then its spelt form; twin: the distinct-name count lands on the duplicate). The Swift journal numbers the same way as before."
+  },
+  {
+    "id": 762,
+    "type": "fix",
+    "title": "A .cube on a domain other than 0 to 1 is refused",
+    "status": "done",
+    "detail": "The Frontier table reader skipped every DOMAIN_ line, so a cube on another domain was sampled as if on display code 0 to 1, every colour at the wrong node. DOMAIN_MIN must now read 0 0 0 and DOMAIN_MAX 1 1 1, else the file is refused with its line. Check a_cube_on_another_domain_is_refused_and_one_on_zero_to_one_reads (1.2 max, a negative min, two values refused; twin: the domain ONI writes, spelt as 0 or 0.0, reads)."
+  },
+  {
+    "id": 763,
+    "type": "fix",
+    "title": "A contact-sheet grid without columns or rows lays no cell",
+    "status": "done",
+    "detail": "sheet_cells divided by grid.columns, so a sidecar grid of 0 columns panicked on the measuring thread when Auto was pressed; a huge frame count iterated without end. A grid without rows or columns lays nothing, and frames stop at columns x rows, past which every cell fell below the extent anyway. Check a_sheet_grid_without_columns_or_rows_lays_no_cell (0 columns, 0 rows, -1 columns; twin: a 3 x 2 grid lays its six, and 1000 or i64::MAX frames lay the same six)."
+  },
+  {
+    "id": 764,
+    "type": "fix",
+    "title": "An ISO date whose zone holds a non-ASCII character is refused, not a panic",
+    "status": "done",
+    "detail": "parse_iso8601 sliced the six-byte zone at byte 3, which panicked inside a two-byte character (2023-11-14T22:13:20+0é00), on any sidecar or preferences read. The colon is compared as a byte. Check a_zone_with_a_non_ascii_character_is_refused (parse and serde both refuse; twin: +00:00 reads)."
   }
 ]
