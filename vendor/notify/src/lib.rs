@@ -217,6 +217,9 @@ pub mod inotify;
 pub mod kqueue;
 #[cfg(target_os = "windows")]
 pub mod windows;
+// ONI: compiled everywhere, so the Windows watch's decisions are checked on any system.
+#[doc(hidden)]
+pub mod rdcw_completion;
 
 pub mod null;
 pub mod poll;

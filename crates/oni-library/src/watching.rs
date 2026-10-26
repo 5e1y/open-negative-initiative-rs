@@ -33,8 +33,38 @@ pub struct Touched {
 
 enum Order {
     Set { deep: Vec<String>, flat: Vec<String> },
+    /// Every watch let go, answered once it is.
+    Release(Sender<()>),
+    Resume,
     Event(notify::Result<notify::Event>),
     Stop,
+}
+
+/// The folders last asked, watched unless a rename holds the watches released.
+#[derive(Default)]
+struct Asked {
+    deep: Vec<String>,
+    flat: Vec<String>,
+    released: usize,
+}
+
+impl Asked {
+    /// What to watch from now on, `None` while released.
+    fn set(&mut self, deep: Vec<String>, flat: Vec<String>) -> Option<(Vec<String>, Vec<String>)> {
+        (self.deep, self.flat) = (deep, flat);
+        (self.released == 0).then(|| (self.deep.clone(), self.flat.clone()))
+    }
+
+    fn release(&mut self) -> (Vec<String>, Vec<String>) {
+        self.released += 1;
+        Default::default()
+    }
+
+    /// The folders asked meanwhile, once the last release ends.
+    fn resume(&mut self) -> Option<(Vec<String>, Vec<String>)> {
+        self.released = self.released.checked_sub(1)?;
+        (self.released == 0).then(|| (self.deep.clone(), self.flat.clone()))
+    }
 }
 
 /// FSEvents on the Mac, whichever backend another crate's features unify into notify: kqueue holds one
@@ -63,16 +93,23 @@ impl Watch {
             )
             .ok();
             let mut held = Held::default();
+            let mut asked = Asked::default();
             let mut burst = Burst::new(pace);
+            let mut watch = |held: &mut Held, folders: Option<(Vec<String>, Vec<String>)>| {
+                if let (Some(w), Some((deep, flat))) = (watcher.as_mut(), folders) {
+                    held.set(w, &computer, deep, flat);
+                }
+            };
             loop {
                 let wait = burst.due().map_or(Duration::from_secs(3600), |due| due.saturating_duration_since(Instant::now()));
                 match inbox.recv_timeout(wait) {
                     Ok(Order::Stop) | Err(RecvTimeoutError::Disconnected) => return,
-                    Ok(Order::Set { deep, flat }) => {
-                        if let Some(w) = watcher.as_mut() {
-                            held.set(w, &computer, deep, flat);
-                        }
+                    Ok(Order::Set { deep, flat }) => watch(&mut held, asked.set(deep, flat)),
+                    Ok(Order::Release(done)) => {
+                        watch(&mut held, Some(asked.release()));
+                        let _ = done.send(());
                     }
+                    Ok(Order::Resume) => watch(&mut held, asked.resume()),
                     Ok(Order::Event(Ok(event))) => burst.note(Instant::now(), held.touched(&event)),
                     Ok(Order::Event(Err(_))) => {}
                     Err(RecvTimeoutError::Timeout) => {}
@@ -88,6 +125,30 @@ impl Watch {
     /// What is watched from now on, in place of what was; a folder the rules refuse is left out.
     pub fn set(&self, deep: Vec<String>, flat: Vec<String>) {
         let _ = self.orders.send(Order::Set { deep, flat });
+    }
+
+    /// Every watch let go until the value returned drops: Windows refuses to rename a folder while
+    /// a watch holds a handle on it or below it, and to eject its disk.
+    pub fn released(&self) -> Released {
+        let (done, answered) = mpsc::channel();
+        if self.orders.send(Order::Release(done)).is_ok() {
+            let _ = answered.recv_timeout(RELEASE);
+        }
+        Released { orders: self.orders.clone() }
+    }
+}
+
+/// The longest a release is waited for: the watching thread answers between two events.
+const RELEASE: Duration = Duration::from_secs(2);
+
+/// The watches let go while this lives, the folders asked meanwhile watched once it drops.
+pub struct Released {
+    orders: Sender<Order>,
+}
+
+impl Drop for Released {
+    fn drop(&mut self) {
+        let _ = self.orders.send(Order::Resume);
     }
 }
 

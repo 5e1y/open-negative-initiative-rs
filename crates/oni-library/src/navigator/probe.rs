@@ -9,8 +9,28 @@ use std::time::{Duration, Instant};
 /// The drive letters that answer, `C:/` and on.
 pub(super) fn drives() -> Vec<String> {
     let letters = (b'A'..=b'Z').map(|l| format!("{}:/", l as char)).collect();
-    answered(letters, |d| Path::new(&d).is_dir().then_some(d))
+    answered(letters, |d| {
+        quiet_errors();
+        Path::new(&d).is_dir().then_some(d)
+    })
 }
+
+/// An empty card reader or optical drive answers on this thread alone, never with the system's
+/// "No Disk" window over the app.
+#[cfg(windows)]
+fn quiet_errors() {
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn SetThreadErrorMode(new: u32, old: *mut u32) -> i32;
+    }
+    const SEM_FAILCRITICALERRORS: u32 = 0x0001;
+    const SEM_NOOPENFILEERRORBOX: u32 = 0x8000;
+    // SAFETY: sets this thread's own error mode; the former one is not asked for.
+    unsafe { SetThreadErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX, std::ptr::null_mut()) };
+}
+
+#[cfg(not(windows))]
+fn quiet_errors() {}
 
 /// The disks mounted in `volumes`, each as its realpath names it, the boot one left out.
 pub(super) fn mounted(volumes: &str) -> Vec<String> {

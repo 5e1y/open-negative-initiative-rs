@@ -5,8 +5,13 @@ use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
 use oni_i18n::{marked, tr};
 use slint::{ComponentHandle, Timer, TimerMode};
+use std::collections::VecDeque;
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
+use std::path::Path;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 /// Sends one report: the message and, when ticked, the sealed log; a check hands its own.
@@ -20,6 +25,58 @@ pub const EDITION: &str = "1.2.1";
 const SITE: &str = "https://open-negative-initiative.com";
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
+/// `Diagnostics.ceiling`: the lines the console shows, or a long session lays out megabytes each read.
+const CONSOLE_LINES: usize = 4000;
+/// How far from its end a first read of the log starts, well past the ceiling's lines.
+const FIRST_READ: u64 = 1 << 20;
+
+/// The log's last lines, each read taking only the bytes written since the one before.
+#[derive(Default)]
+pub(crate) struct Tail {
+    read: u64,
+    lines: VecDeque<String>,
+    /// The bytes after the last line's end, which the next read completes.
+    partial: Vec<u8>,
+}
+
+impl Tail {
+    /// The lines written since the last read; `false` when none came. A shorter file is a new log.
+    pub(crate) fn follow(&mut self, path: &Path) -> bool {
+        let Ok(mut file) = File::open(path) else { return false };
+        let Ok(length) = file.metadata().map(|m| m.len()) else { return false };
+        if length < self.read {
+            *self = Tail::default();
+        }
+        if length == self.read {
+            return false;
+        }
+        let cut = self.read == 0 && length > FIRST_READ;
+        if cut {
+            self.read = length - FIRST_READ;
+        }
+        let mut bytes = Vec::new();
+        if file.seek(SeekFrom::Start(self.read)).is_err() || file.take(length - self.read).read_to_end(&mut bytes).is_err() {
+            return false;
+        }
+        self.read += bytes.len() as u64;
+        self.partial.extend_from_slice(&bytes);
+        let Some(end) = self.partial.iter().rposition(|b| *b == b'\n') else { return false };
+        let rest = self.partial.split_off(end + 1);
+        let whole = std::mem::replace(&mut self.partial, rest);
+        let mut lines = whole[..end].split(|b| *b == b'\n').map(|l| String::from_utf8_lossy(l).into_owned());
+        if cut {
+            lines.next();
+        }
+        self.lines.extend(lines);
+        let over = self.lines.len().saturating_sub(CONSOLE_LINES);
+        self.lines.drain(..over);
+        true
+    }
+
+    pub(crate) fn text(&self) -> String {
+        self.lines.iter().map(String::as_str).collect::<Vec<_>>().join("\n")
+    }
+}
 
 /// `WhatsNew.notes`: (id, word, note), in Swift's order; the word and note translated where shown.
 pub const NOTES: [(&str, &str, &str); 6] = [
@@ -238,75 +295,36 @@ impl Ctl {
                 console.on_reveal(move || system::reveal(&revealed));
                 console.set_reveal_word(crate::platform::reveal_log(crate::platform::Platform::THIS).into());
                 let timer = Timer::default();
-                let weak = console.as_weak();
-                // Read only while the window is up: closed, it costs nothing.
-                timer.start(TimerMode::Repeated, CONSOLE_REFRESH, move || {
-                    if let Some(c) = weak.upgrade().filter(|c| c.window().is_visible()) {
-                        crate::timing::flush();
-                        c.set_log(std::fs::read_to_string(&log).unwrap_or_default().into());
-                        c.set_blocks(crate::watchdog::blocks() as i32);
+                let (weak, tail, reading) = (console.as_weak(), Arc::new(Mutex::new(Tail::default())), Arc::new(AtomicBool::new(false)));
+                // Read only while the window is up, off this thread: closed, it costs nothing.
+                let refresh = move || {
+                    if weak.upgrade().is_none_or(|c| !c.window().is_visible()) || reading.swap(true, Ordering::AcqRel) {
+                        return;
                     }
-                });
+                    let (weak, tail, reading, log) = (weak.clone(), tail.clone(), reading.clone(), log.clone());
+                    std::thread::spawn(move || {
+                        crate::timing::flush();
+                        let text = tail.lock().ok().and_then(|mut t| t.follow(&log).then(|| t.text()));
+                        let blocks = crate::watchdog::blocks() as i32;
+                        reading.store(false, Ordering::Release);
+                        let _ = weak.upgrade_in_event_loop(move |c| {
+                            if let Some(text) = text {
+                                c.set_log(text.into());
+                            }
+                            c.set_blocks(blocks);
+                        });
+                    });
+                };
+                let _ = console.show();
+                refresh();
+                timer.start(TimerMode::Repeated, CONSOLE_REFRESH, refresh);
                 self.state.borrow_mut().console = Some((console.clone_strong(), timer));
                 console
             }
         };
-        let log = crate::timing::log_path(&self.state.borrow().support);
-        crate::timing::flush();
-        console.set_log(std::fs::read_to_string(log).unwrap_or_default().into());
-        console.set_blocks(crate::watchdog::blocks() as i32);
         let _ = console.show();
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_notes_are_swifts_and_each_names_its_heading_once() {
-        let ids: Vec<&str> = NOTES.iter().map(|(i, _, _)| *i).collect();
-        assert_eq!(ids, ["machine.1.3.1", "keypad.1.3.1", "effects.scanner.1.3.1", "curves.scanner.1.3.1", "lighting.1.3.1", "space.1.3.1"]);
-        assert!(NOTES.iter().all(|(_, w, _)| *w == "New" || *w == "Updated"));
-        let mut unique = ids.clone();
-        unique.dedup();
-        assert_eq!(unique.len(), ids.len());
-        assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.2.1"));
-    }
-
-    #[test]
-    fn the_menu_and_the_heading_name_the_editions_release() {
-        assert_eq!(release(EDITION), "1.2");
-        assert_eq!(release("1.3"), "1.3");
-        assert_eq!(release("2.0.4.1"), "2.0");
-        // Twin: the edition itself, or the menu's former 1.1, is not what both name.
-        assert_ne!(release(EDITION), EDITION);
-        assert_ne!(release(EDITION), "1.1");
-    }
-
-    /// `WhatsNew.selfCheck`: every note hangs on a heading the interface draws, and every heading's
-    /// id has its note, or a note is never seen and a heading draws nothing.
-    #[test]
-    fn every_note_hangs_on_a_heading_and_every_heading_has_its_note() {
-        fn walk(dir: &std::path::Path, hung: &mut std::collections::BTreeSet<String>) {
-            for entry in std::fs::read_dir(dir).unwrap().flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    walk(&path, hung);
-                } else if path.extension().is_some_and(|e| e == "slint") {
-                    let text = std::fs::read_to_string(&path).unwrap();
-                    hung.extend(text.split("News.read(\"").skip(1).filter_map(|rest| rest.split('"').next().map(String::from)));
-                }
-            }
-        }
-        let mut hung = std::collections::BTreeSet::new();
-        walk(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-ui/ui"), &mut hung);
-        let noted: std::collections::BTreeSet<String> = NOTES.iter().map(|(i, _, _)| (*i).to_string()).collect();
-        assert!(!hung.is_empty());
-        assert_eq!(hung, noted, "each note on a heading, each heading's id noted");
-        // Twin: a note named nowhere is caught.
-        let mut ghost = noted.clone();
-        ghost.insert("ghost.1.3.1".into());
-        assert_eq!(ghost.difference(&hung).collect::<Vec<_>>(), ["ghost.1.3.1"]);
-    }
-}
+mod tests;

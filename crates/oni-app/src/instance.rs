@@ -3,6 +3,7 @@
 
 use oni_i18n::tr;
 use std::fs::{File, OpenOptions, TryLockError};
+use std::io::Write as _;
 use std::path::Path;
 
 /// The lock's file in the support folder, which this app alone reads.
@@ -37,9 +38,24 @@ pub fn hold(support: &Path) -> Held {
 pub fn refused(support: &Path) {
     oni_i18n::set(crate::language::resolved(crate::language::chosen(&crate::preferences::Preferences::load(support))));
     let (title, message) = (tr("Open Negative Initiative is already open"), tr("Switch to its window: two copies at once would write over each other's work."));
-    eprintln!("{title}: {message} ({})", support.join(FILE).display());
-    let by_hand = crate::bench::requested().is_none() && std::env::var_os("ONI_BACKGROUND").is_none_or(|v| v != "1");
-    if by_hand {
+    // A closed stderr fails the write, which `eprintln!` turns into a panic.
+    let _ = writeln!(std::io::stderr().lock(), "{title}: {message} ({})", support.join(FILE).display());
+    if by_hand() {
         crate::system::alert(title, message);
     }
+}
+
+/// A start that failed, said in a window of the system's to a launch by hand, the log named.
+pub fn could_not_start(support: &Path, cause: &str) {
+    oni_i18n::set(crate::language::resolved(crate::language::chosen(&crate::preferences::Preferences::load(support))));
+    let log = crate::timing::log_path(support);
+    let message = tr!("{cause}\n\nThe log holds the details: {log}", cause = cause, log = log.display().to_string());
+    if by_hand() {
+        crate::system::alert(&tr("Open Negative Initiative could not start"), &message);
+    }
+}
+
+/// Neither a bench nor a launch behind the other windows, which a check makes and no one reads.
+fn by_hand() -> bool {
+    crate::bench::requested().is_none() && std::env::var_os("ONI_BACKGROUND").is_none_or(|v| v != "1")
 }

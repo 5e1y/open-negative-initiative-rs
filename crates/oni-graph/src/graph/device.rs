@@ -19,8 +19,16 @@ pub fn gpu() -> Result<Gpu, Error> {
     GPU.get_or_init(|| pollster::block_on(open_gpu())).clone()
 }
 
+/// DirectX 12 on Windows, the path its checks run, where wgpu would try Vulkan and GL first; Metal on
+/// the Mac. `WGPU_BACKEND` names others for a try.
+fn backends(named: Option<wgpu::Backends>, windows: bool) -> wgpu::Backends {
+    named.unwrap_or(if windows { wgpu::Backends::DX12 } else { wgpu::Backends::default() })
+}
+
 async fn open_gpu() -> Result<Gpu, Error> {
-    let instance = wgpu::Instance::default();
+    let mut descriptor = wgpu::InstanceDescriptor::new_without_display_handle();
+    descriptor.backends = backends(wgpu::Backends::from_env(), cfg!(windows));
+    let instance = wgpu::Instance::new(descriptor);
     let options = wgpu::RequestAdapterOptions { power_preference: wgpu::PowerPreference::HighPerformance, ..Default::default() };
     let adapter = instance.request_adapter(&options).await.map_err(|e| Error::NoAdapter(e.to_string()))?;
     // The adapter's own limits, as the defaults stop textures at 8 192 px; clearing a texture in place
@@ -111,5 +119,19 @@ impl Graph {
     /// The bytes idle textures may hold between renders.
     pub fn idle_budget(&mut self, bytes: u64) {
         self.pool.idle_bytes = bytes;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_runs_on_directx_12_unless_a_backend_is_named() {
+        assert_eq!(backends(None, true), wgpu::Backends::DX12);
+        assert_eq!(backends(Some(wgpu::Backends::VULKAN), true), wgpu::Backends::VULKAN);
+        // Twin: wgpu's own default would let Vulkan or GL win on a Windows PC; the Mac keeps it.
+        assert!(wgpu::Backends::default().contains(wgpu::Backends::VULKAN | wgpu::Backends::GL));
+        assert_eq!(backends(None, false), wgpu::Backends::default());
     }
 }

@@ -166,7 +166,7 @@ impl Ctl {
             Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, tr!("an item named “{name}” already exists", name = trimmed)))
         } else {
             let rename = |from: &Path, to: &Path| std::fs::rename(from, to);
-            oni_library::roll_folder::retried(Path::new(path), Path::new(&target), &rename, &std::thread::sleep, Platform::THIS)
+            self.unwatched(|| oni_library::roll_folder::retried(Path::new(path), Path::new(&target), &rename, &std::thread::sleep, Platform::THIS))
         };
         if let Err(e) = moved {
             self.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
