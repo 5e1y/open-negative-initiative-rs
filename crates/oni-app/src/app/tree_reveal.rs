@@ -127,16 +127,16 @@ mod tests {
         let mut archive = Archive::load(&scans);
         let folder = |p: &str| NodeId::Folder(paths::canonical(&scans.join(p)));
         let every: HashSet<NodeId> = ["", "A", "B", "B/C"].iter().map(|p| folder(p)).collect();
-        assert_eq!(archive.expanded, every, "the opened folder and every folder under it start unfolded");
+        assert_eq!(*archive.expanded(), every, "the opened folder and every folder under it start unfolded");
 
-        archive.expanded.clear();
+        archive.set_expanded(HashSet::new());
         let c = paths::canonical(&scans.join("B/C/c.NEF"));
         let shown = |a: &Archive| a.rows().iter().any(|r| r.id == NodeId::Photo(c.clone()));
         assert!(!shown(&archive), "twin: a folded tree hides the photo");
         assert!(archive.unfold_to(&c));
         assert!(shown(&archive));
         let above: HashSet<NodeId> = ["", "B", "B/C"].iter().map(|p| folder(p)).collect();
-        assert_eq!(archive.expanded, above, "a folder beside the photo's stays folded");
+        assert_eq!(*archive.expanded(), above, "a folder beside the photo's stays folded");
         assert!(!archive.unfold_to(&c), "twin: unfolded already, nothing is added");
         let _ = std::fs::remove_dir_all(&root);
     }

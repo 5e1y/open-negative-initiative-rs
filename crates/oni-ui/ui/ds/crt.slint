@@ -1,0 +1,153 @@
+// `LabScreen`'s glass, shared by the Scanner face and the measure's bank: the phosphor's ink and its
+// glow on the dark glass, scanlines over everything.
+import { Space, Stroke, ScannerStyle, CrtStyle, Type } from "theme.slint";
+import { Label, Tone } from "base.slint";
+
+// One histogram on a screen, in its points: the area under it and its edge; the roll's ends too.
+export struct CrtCurve { area: string, edge: string, black: length, white: length }
+// A frame before, fading on its channel's screen as a phosphor's afterglow; `fade` 1 is the latest.
+export struct CrtEcho { channel: int, edge: string, fade: float }
+
+// The glass: what it holds, then `LabScreen`'s scanlines, laid once per size in a layer of their own.
+export component CrtScreen inherits Rectangle {
+    // Rounded as a track in the measure's bank; square in the plot band, as `LabScreen` is.
+    in property <bool> rounded;
+    background: ScannerStyle.glass;
+    border-radius: root.rounded ? CrtStyle.radius : 0px;
+    clip: true;
+    @children
+    Rectangle {
+        cache-rendering-hint: true;
+        for i in floor(root.height / ScannerStyle.scanline-pitch): Rectangle {
+            y: i * ScannerStyle.scanline-pitch;
+            height: Stroke.line;
+            background: ScannerStyle.scanline;
+        }
+    }
+}
+
+// The glow behind a line: its glyphs' outer stroke only, so it never veils the ink it surrounds.
+component Halo inherits Text {
+    in property <float> strength;
+    color: transparent;
+    stroke: ScannerStyle.lcd-ink.with-alpha(root.strength * ScannerStyle.phosphor-glow-ink);
+    stroke-style: outside;
+}
+
+// A line on the glass in the phosphor's ink, the value size when `large`, glowing as `LabScreen` does.
+export component CrtLine inherits Label {
+    in property <bool> large;
+    font-family: ScannerStyle.mono;
+    font-size: root.large ? ScannerStyle.screen-value : ScannerStyle.screen-label;
+    font-weight: root.large ? ScannerStyle.value-weight : Type.medium;
+    tone: Tone.lcd;
+    Halo {
+        width: parent.width; height: parent.height;
+        text: root.text; font-family: root.font-family; font-size: root.font-size; font-weight: root.font-weight;
+        horizontal-alignment: root.horizontal-alignment; vertical-alignment: root.vertical-alignment; overflow: root.overflow;
+        strength: CrtStyle.glow-far;
+        stroke-width: CrtStyle.text-glow-far;
+    }
+    Halo {
+        width: parent.width; height: parent.height;
+        text: root.text; font-family: root.font-family; font-size: root.font-size; font-weight: root.font-weight;
+        horizontal-alignment: root.horizontal-alignment; vertical-alignment: root.vertical-alignment; overflow: root.overflow;
+        strength: CrtStyle.glow-near;
+        stroke-width: CrtStyle.text-glow-near;
+    }
+}
+
+// One of the roll's ends, its line in its near halo; `x` is the line's centre.
+component EndMark inherits Rectangle {
+    width: 0px;
+    Rectangle {
+        x: -CrtStyle.trace-glow-near / 2;
+        width: CrtStyle.trace-glow-near;
+        background: ScannerStyle.lcd-ink.with-alpha(CrtStyle.glow-near * ScannerStyle.phosphor-glow-ink);
+    }
+    Rectangle {
+        x: -Stroke.line / 2;
+        width: Stroke.line;
+        background: ScannerStyle.lcd-ink.with-alpha(CrtStyle.end);
+    }
+}
+
+// A histogram in phosphor: the frames before as fading echoes, the area, the edge in its two halos,
+// and for the roll its black and white, what lies past them dimmed. Nothing drawn while `lit` is off.
+export component CrtTrace inherits Rectangle {
+    in property <bool> lit;
+    in property <CrtCurve> curve;
+    in property <int> channel;
+    in property <[CrtEcho]> echoes;
+    in property <bool> ended;
+    callback resized(length, length);
+    changed width => { root.resized(self.width, self.height); }
+    changed height => { root.resized(self.width, self.height); }
+    init => { root.resized(self.width, self.height); }
+    for e in root.echoes: Path {
+        width: root.width; height: root.height; fit: preserve;
+        visible: e.channel == root.channel;
+        commands: e.edge;
+        stroke: ScannerStyle.lcd-ink.with-alpha(CrtStyle.echo * e.fade);
+        stroke-width: Stroke.hairline;
+    }
+    if root.lit: Path {
+        width: root.width; height: root.height; fit: preserve;
+        commands: root.curve.area;
+        fill: ScannerStyle.lcd-ink.with-alpha(CrtStyle.area);
+    }
+    if root.lit: Path {
+        width: root.width; height: root.height; fit: preserve;
+        commands: root.curve.edge;
+        stroke: ScannerStyle.lcd-ink.with-alpha(CrtStyle.glow-far * ScannerStyle.phosphor-glow-ink);
+        stroke-width: CrtStyle.trace-glow-far;
+        stroke-line-join: round;
+    }
+    if root.lit: Path {
+        width: root.width; height: root.height; fit: preserve;
+        commands: root.curve.edge;
+        stroke: ScannerStyle.lcd-ink.with-alpha(CrtStyle.glow-near * ScannerStyle.phosphor-glow-ink);
+        stroke-width: CrtStyle.trace-glow-near;
+        stroke-line-join: round;
+    }
+    if root.lit: Path {
+        width: root.width; height: root.height; fit: preserve;
+        commands: root.curve.edge;
+        stroke: ScannerStyle.lcd-ink;
+        stroke-width: Stroke.trace;
+        stroke-line-join: round;
+    }
+    if root.lit && root.ended: Rectangle {
+        x: 0px;
+        width: max(0px, root.curve.black);
+        background: ScannerStyle.glass.with-alpha(CrtStyle.clipped);
+    }
+    if root.lit && root.ended: Rectangle {
+        x: min(root.width, root.curve.white);
+        width: max(0px, root.width - self.x);
+        background: ScannerStyle.glass.with-alpha(CrtStyle.clipped);
+    }
+    if root.lit && root.ended: EndMark { x: root.curve.black; height: root.height; }
+    if root.lit && root.ended: EndMark { x: root.curve.white; height: root.height; }
+}
+
+// A picture on the glass, cross-fading from the one before as the next lands, whole inside the screen.
+export component CrtPicture inherits Rectangle {
+    in property <image> first;
+    in property <image> second;
+    in property <bool> second-shown;
+    Image {
+        width: root.width; height: root.height;
+        source: root.first;
+        image-fit: contain;
+        opacity: root.second-shown ? 0 : 1;
+        animate opacity { duration: CrtStyle.fade; easing: ease-in-out; }
+    }
+    Image {
+        width: root.width; height: root.height;
+        source: root.second;
+        image-fit: contain;
+        opacity: root.second-shown ? 1 : 0;
+        animate opacity { duration: CrtStyle.fade; easing: ease-in-out; }
+    }
+}

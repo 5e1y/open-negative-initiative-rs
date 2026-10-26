@@ -122,3 +122,14 @@ fn a_pan_inside_the_margin_rendered_needs_no_render_and_one_past_it_does() {
     let (past, laid) = moved(200.0, 0.0);
     assert!(!past.covered_by(laid));
 }
+
+#[test]
+fn a_fraction_of_a_line_on_windows_is_a_touch_surface_that_pans() {
+    let touch = lines(0.25, -0.5, true);
+    assert_eq!(touch, Wheel { dx: 15.0, dy: -30.0, precise: true });
+    assert!(!zooms(touch.precise, false), "a two-finger scroll pans");
+    // Twin: a wheel's whole notch still zooms, and a Mac's fractional lines stay a wheel's.
+    let notch = lines(0.0, 1.0, true);
+    assert!(!notch.precise && zooms(notch.precise, false));
+    assert!(!lines(0.25, -0.5, false).precise);
+}

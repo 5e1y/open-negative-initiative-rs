@@ -7,7 +7,7 @@ use std::time::Duration;
 use oni_link::noise;
 use oni_link::wire::{self, OLDEST, PROTOCOL, ToHost, ToPhone};
 use oni_link::{
-    Channel, Clicks, Command, Display, Error, Face, Host, HostEvent, Identity, Machine, Panel, PairingCode, Param,
+    Channel, Clicks, Command, Display, Error, Face, Host, HostEvent, Identity, Letter, Machine, Panel, PairingCode, Param,
     Remote, Row, State, Tab,
 };
 use serde::Deserialize;
@@ -139,14 +139,14 @@ async fn hello<T: serde::de::DeserializeOwned>(protocol: u16) -> (Result<ToPhone
 
 #[tokio::test]
 async fn a_protocol_1_phone_is_answered_in_its_own_version_without_the_panel() {
-    assert_eq!((OLDEST, PROTOCOL), (1, 3));
+    assert_eq!((OLDEST, PROTOCOL), (1, 4));
     let (welcome, state) = hello::<OldToPhone>(1).await;
     assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 1, .. })), "{welcome:?}");
     let Ok(OldToPhone::State(state)) = state else { panic!("the old phone reads its screen: {state:?}") };
     assert_eq!(state.frame, Some((3, 12)));
     // Twin: a phone of this protocol is sent the panel, which the old decoding cannot read as a screen.
     let (welcome, screen) = hello::<ToPhone>(PROTOCOL).await;
-    assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 3, .. })));
+    assert!(matches!(welcome, Ok(ToPhone::Welcome { protocol: 4, .. })));
     assert!(matches!(screen, Ok(ToPhone::Screen { panel, .. }) if panel.rows.len() == 2));
     // A protocol 2 phone, which steps its sliders and never drags them, still reads the panel.
     let (welcome, screen) = hello::<ToPhone>(2).await;
@@ -154,6 +154,39 @@ async fn a_protocol_1_phone_is_answered_in_its_own_version_without_the_panel() {
     assert!(matches!(screen, Ok(ToPhone::Screen { panel, .. }) if panel.rows.len() == 2));
     let (_, old) = hello::<OldToPhone>(PROTOCOL).await;
     assert!(!matches!(old, Ok(OldToPhone::State(_))));
+}
+
+/// A phone speaking `protocol` on a desktop at D +1.5 (3 steps) and TEMP −0.5: the D it reads,
+/// then the step its "+3" key lands as on the desktop.
+async fn halves(protocol: u16) -> (i8, i8, Command) {
+    let (host, mut events) = Host::new(Identity::generate(), "Studio".into(), []);
+    let addr = host.listen("127.0.0.1:0".parse().unwrap()).await.unwrap();
+    host.publish(State { clicks: Clicks { d: 3, w: -1, ..Clicks::default() }, ..State::default() });
+    let code = host.open_pairing(vec![addr]);
+    let stream = Remote::dial(&[addr]).await.unwrap();
+    let (mut reader, mut writer) =
+        noise::initiate(stream, &Identity::generate(), code.host, Some(code.secret)).await.unwrap();
+    writer.send(&ToHost::Hello { protocol, name: "Phone".into() }).await.unwrap();
+    timeout(WAIT, reader.recv::<ToPhone>()).await.unwrap().unwrap();
+    let Ok(Ok(ToPhone::Screen { state, .. })) = timeout(WAIT, reader.recv::<ToPhone>()).await else { panic!("a screen") };
+    writer.send(&ToHost::Press { seq: 1, command: Command::Step { letter: Letter::D, by: 3 } }).await.unwrap();
+    let pressed = loop {
+        if let Some(HostEvent::Command { command, .. }) = timeout(WAIT, events.next()).await.unwrap() {
+            break command;
+        }
+    };
+    (state.clicks.d, state.clicks.w, pressed)
+}
+
+#[tokio::test]
+async fn a_protocol_3_phone_reads_and_steps_whole_units() {
+    let (d, w, pressed) = halves(3).await;
+    assert_eq!((d, w), (1, 0), "halved toward zero, as the sidecar keeps whole counts");
+    assert_eq!(pressed, Command::Step { letter: Letter::D, by: 6 }, "its +3 is three whole units");
+    // Twin: a phone of this protocol reads and presses steps as they are.
+    let (d, w, pressed) = halves(PROTOCOL).await;
+    assert_eq!((d, w), (3, -1));
+    assert_eq!(pressed, Command::Step { letter: Letter::D, by: 3 });
 }
 
 #[tokio::test]

@@ -146,7 +146,7 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
 
     // `anchoredHere`: a row clicked opens its photo and leaves the column where the hand put it.
     let scrolled = lib.get_tree_viewport_y() + 40.0;
-    lib.set_tree_viewport_y(scrolled);
+    common::scroll_tree(&lib, scrolled);
     let (_, b16) = photo(&lib, "B16").expect("B16 has a row");
     assert!(in_view(&lib, height, &b16), "B16 is in view to be clicked");
     rest(&rig);
@@ -167,6 +167,8 @@ pub(crate) fn opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view()
 
     // `openFromTree`: a folded roll's name opens its first photo and unfolds; its chevron only folds.
     lib.invoke_row_folded(folder(&lib, "Roll A").0 as i32);
+    // The fold shortens the column, whose scroller holds its scroll within the content.
+    rig.pump();
     assert_eq!(open_name(&ctl), "B16", "twin: the chevron opens nothing");
     let still = lib.get_tree_viewport_y();
     rest(&rig);

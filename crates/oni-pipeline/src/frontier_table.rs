@@ -59,7 +59,16 @@ pub fn read(text: &str) -> Result<ColorCube, String> {
     let mut nodes = Vec::new();
     for (number, line) in text.lines().enumerate() {
         let line = line.trim();
-        if line.is_empty() || line.starts_with('#') || line.starts_with("TITLE") || line.starts_with("DOMAIN_") {
+        if line.is_empty() || line.starts_with('#') || line.starts_with("TITLE") {
+            continue;
+        }
+        // The nodes are sampled on display code 0 to 1: another domain would read every colour off its node.
+        let domain = [("DOMAIN_MIN", 0.0f32), ("DOMAIN_MAX", 1.0)].into_iter().find_map(|(key, bound)| Some((line.strip_prefix(key)?, bound)));
+        if let Some((rest, bound)) = domain {
+            let values: Vec<Option<f32>> = rest.split_whitespace().map(|v| v.parse().ok()).collect();
+            if values.len() != 3 || values.iter().any(|v| *v != Some(bound)) {
+                return Err(format!("line {}: a domain other than 0 to 1", number + 1));
+            }
             continue;
         }
         if let Some(n) = line.strip_prefix("LUT_3D_SIZE") {
@@ -103,6 +112,17 @@ mod tests {
         assert!(read(short).is_err());
         assert!(read("LUT_1D_SIZE 4\n0 0 0\n").is_err());
         assert!(read("LUT_3D_SIZE 2\n0 0 0\n1 0 0\n0 1 0\n1 1 0\n0 0 1\n1 0 1\n0 1 1\nnan 1 1\n").is_err());
+    }
+
+    #[test]
+    fn a_cube_on_another_domain_is_refused_and_one_on_zero_to_one_reads() {
+        let nodes = "0 0 0\n1 0 0\n0 1 0\n1 1 0\n0 0 1\n1 0 1\n0 1 1\n1 1 1\n";
+        assert!(read(&format!("LUT_3D_SIZE 2\nDOMAIN_MIN 0 0 0\nDOMAIN_MAX 1.2 1.2 1.2\n{nodes}")).is_err());
+        assert!(read(&format!("LUT_3D_SIZE 2\nDOMAIN_MIN -0.1 0 0\n{nodes}")).is_err());
+        assert!(read(&format!("LUT_3D_SIZE 2\nDOMAIN_MAX 1 1\n{nodes}")).is_err());
+        // Twin: the domain ONI writes, spelt either way, reads.
+        assert!(read(&format!("LUT_3D_SIZE 2\nDOMAIN_MIN 0 0 0\nDOMAIN_MAX 1 1 1\n{nodes}")).is_ok());
+        assert!(read(&format!("LUT_3D_SIZE 2\nDOMAIN_MIN 0.0 0.0 0.0\nDOMAIN_MAX 1.000000 1.0 1\n{nodes}")).is_ok());
     }
 
     #[test]

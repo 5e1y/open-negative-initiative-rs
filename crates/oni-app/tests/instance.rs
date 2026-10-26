@@ -14,7 +14,12 @@ fn scratch(label: &str) -> PathBuf {
 
 /// The app as a hand would launch it, on the check's own folders, behind the other windows.
 fn launch(root: &Path) -> Child {
-    Command::new(env!("CARGO_BIN_EXE_oni"))
+    command(root).spawn().unwrap()
+}
+
+fn command(root: &Path) -> Command {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_oni"));
+    command
         .env("ONI_SUPPORT", root.join("support"))
         .env("ONI_CACHES", root.join("caches"))
         .env("ONI_INDEX", root.join("caches/index.sqlite"))
@@ -23,9 +28,8 @@ fn launch(root: &Path) -> Child {
         .env_remove("ONI_RAW_DIR")
         .env_remove("ONI_BENCH")
         .stdout(Stdio::null())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap()
+        .stderr(Stdio::piped());
+    command
 }
 
 /// Every file under `dir` with its bytes and its modification date; the lock by its length alone, as
@@ -95,5 +99,27 @@ fn a_second_instance_does_not_write() {
     let _ = alone.kill();
     let _ = alone.wait();
     assert!(ended.is_none() && log.exists(), "the launch alone went on: {ended:?}");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_start_that_fails_writes_its_cause_to_the_log_and_ends() {
+    let root = scratch("fatal");
+    let log = root.join("support/Logs/oni.log");
+    // A backend this system lacks: no adapter answers, as on a PC whose driver refuses the device.
+    let mut failing = command(&root).env("WGPU_BACKEND", if cfg!(windows) { "metal" } else { "dx12" }).spawn().unwrap();
+    let status = waited(&mut failing, || false, Duration::from_secs(60)).unwrap();
+    let written = std::fs::read_to_string(&log).unwrap_or_default();
+    assert_eq!(status.code(), Some(1), "{written}");
+    assert!(written.contains("fatal: no GPU adapter"), "{written}");
+    // Twin: on the system's own backend the same launch passes the device and goes on.
+    let _ = std::fs::remove_file(&log);
+    let mut alone = command(&root).env_remove("WGPU_BACKEND").spawn().unwrap();
+    let opened = || std::fs::read_to_string(&log).is_ok_and(|l| l.contains("GPU: "));
+    let ended = waited(&mut alone, opened, Duration::from_secs(60));
+    let _ = alone.kill();
+    let _ = alone.wait();
+    let written = std::fs::read_to_string(&log).unwrap_or_default();
+    assert!(ended.is_none() && !written.contains("fatal:"), "{ended:?}: {written}");
     let _ = std::fs::remove_dir_all(&root);
 }

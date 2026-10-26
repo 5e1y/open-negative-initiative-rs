@@ -134,3 +134,26 @@ pub(crate) fn a_field_ends_on_a_click_beside_it_and_a_rename_commits() {
     assert_eq!(p.get_committed(), "Roll 9", "the cancelled name is not committed");
     rig.shot("outside-field");
 }
+
+pub(crate) fn a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing() {
+    let (rig, p) = probe();
+    let (y, month, day, key) = (p.get_date_y(), p.get_month_x(), p.get_day_x(), (p.get_key_x(), p.get_key_y()));
+
+    // February typed over the month, then a click on the day: the three boxes keep one editing, so
+    // nothing is committed, as Swift's single focus does.
+    click(&rig, &p, month, y);
+    assert!(p.get_date_editing(), "a click enters the month");
+    typed(&rig, "4");
+    pause(&rig);
+    click(&rig, &p, day, y);
+    assert!(p.get_date_editing(), "the day takes the editing over from the month");
+    assert_eq!(p.get_commits(), 0, "moving to the day commits nothing half typed");
+    typed(&rig, "15");
+
+    // Twin: a click beside the boxes ends the editing and commits the date once, whole.
+    pause(&rig);
+    click(&rig, &p, key.0, key.1);
+    assert!(!p.get_date_editing(), "a click beside the date ends its editing");
+    assert_eq!((p.get_commits(), p.get_date_committed().as_str()), (1, "4/15/1999"));
+    rig.shot("outside-date");
+}

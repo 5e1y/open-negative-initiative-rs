@@ -47,9 +47,10 @@ impl EditorStore {
         let open = self.path().map(str::to_string);
         let mut before = Settings::new();
         let mut after = Settings::new();
+        let handled: Vec<String> = written.iter().map(|(p, _, _)| p.clone()).collect();
         for (path, was, now) in written {
             if Some(path) == open.as_ref() {
-                if !self.writable() {
+                if !self.takes_hands() {
                     continue;
                 }
                 before.insert(path.clone(), self.settings.clone());
@@ -57,7 +58,7 @@ impl EditorStore {
                 let at = self.now();
                 self.replace(now.clone());
                 self.last_change = Some(at);
-                self.settle(at);
+                self.settle_beside(at, &handled);
                 continue;
             }
             let options = WriteOptions { roll_draft: Some(None), ..WriteOptions::default() };
@@ -118,13 +119,14 @@ impl EditorStore {
                 }
             }
             let blank = parameters::unconverted(&self.settings);
-            if blank != self.settings {
+            if blank != self.settings && self.takes_hands() {
                 before.insert(current.clone(), self.settings.clone());
                 after.insert(current.clone(), blank.clone());
                 let at = self.now();
                 self.replace(blank);
                 self.last_change = Some(at);
-                self.settle(at);
+                let handled: Vec<String> = files.iter().cloned().collect();
+                self.settle_beside(at, &handled);
             }
         }
         let others: Vec<String> = files.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();

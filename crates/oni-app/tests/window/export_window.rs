@@ -29,12 +29,17 @@ fn scratch() -> PathBuf {
     dir
 }
 
-/// Roll #8 as hard links beside copies of its sidecars, so no sidecar is written beside the originals.
+/// Roll #8's frames as hard links beside copies of their sidecars and marker, so no sidecar is written
+/// beside the originals and a contact sheet made in the roll never takes the first tile.
 fn mirror(roll: &Path, into: &Path) -> PathBuf {
     let dir = into.join("Roll #8");
     std::fs::create_dir_all(&dir).unwrap();
     for entry in std::fs::read_dir(roll).unwrap() {
         let from = entry.unwrap().path();
+        let name = from.file_name().unwrap().to_string_lossy();
+        if !name.starts_with("DSC_") && name != ".oni-roll.json" {
+            continue;
+        }
         let to = dir.join(from.file_name().unwrap());
         if from.extension().is_some_and(|e| e == "json") {
             std::fs::copy(&from, &to).unwrap();
@@ -151,12 +156,19 @@ pub(crate) fn the_export_surface_writes_what_the_proofed_canvas_shows_and_only_o
         }));
     }
 
-    // The app opens on the gallery: the first photo is ringed and taken into the editor by ⌘G.
+    // The app opens on the gallery under the recalibration notice a RAW raises on a first launch.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
+    assert!(w.global::<oni_app::Notice>().get_shown(), "a library holding a RAW raises the notice");
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
+    // Twin: the notice is a sheet, so ⌘G under it opens nothing.
     rig.chord(slint::platform::Key::Control, "g");
-    assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens");
+    assert!(ctl.state.borrow().open_path().is_none() && w.global::<App>().get_gallery(), "⌘G reached behind the notice");
+    // Once it is closed, the first photo ringed is taken into the editor by ⌘G.
+    w.global::<oni_app::Notice>().invoke_close();
+    rig.pump();
+    rig.chord(slint::platform::Key::Control, "g");
+    assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")), "the first photo opens: {:?}", ctl.state.borrow().open_path());
     rig.until("the first render", LONG, || ctl.state.borrow().renders() >= 1);
     let first = ctl.state.borrow().open_path().unwrap().to_string();
     assert!(first.ends_with("DSC_6432.NEF"), "{first}");

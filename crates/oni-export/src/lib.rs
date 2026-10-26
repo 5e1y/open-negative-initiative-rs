@@ -55,6 +55,8 @@ pub enum Failure {
     Write(std::io::ErrorKind),
     Profile,
     WouldOverwriteOriginal,
+    /// Past a JPEG's 65,535 pixels a side or its 16.7 MB profile.
+    TooLargeForJpeg,
 }
 
 impl fmt::Display for Failure {
@@ -72,6 +74,9 @@ impl fmt::Display for Failure {
                 std::io::ErrorKind::NotFound => tr("The folder is no longer there: the file could not be written."),
                 _ => tr("The file could not be written."),
             },
+            Failure::TooLargeForJpeg => tr(
+                "Too large for a JPEG, which holds at most 65,535 pixels a side and a 16.7 MB profile: choose TIFF or a smaller size.",
+            ),
             Failure::WouldOverwriteOriginal => tr(
                 "A file ONI did not export already has that name, an original perhaps: it is left as it was. Pick another folder or another name.",
             ),
@@ -81,12 +86,13 @@ impl fmt::Display for Failure {
 
 impl std::error::Error for Failure {}
 
-/// The file name a typed stem yields: one portable component that cannot manufacture a path, the
-/// original's name when empty so no hidden `.tiff` is written, the format's extension added.
+/// The file name a typed stem yields: one portable component that cannot manufacture a path, its
+/// leading dots dropped and the original's name when empty, so no hidden file is written.
 pub fn name(source: &Path, typed: &str, format: Format) -> String {
-    let mut stem = oni_library::file_names::portable(typed.trim_matches(is_blank));
+    let shown = |text: &str| oni_library::file_names::portable(text).trim_start_matches(|c| c == '.' || is_blank(c)).to_owned();
+    let mut stem = shown(typed.trim_matches(is_blank));
     if stem.is_empty() {
-        stem = oni_library::file_names::portable(&self::stem(source));
+        stem = shown(&self::stem(source));
     }
     if stem.is_empty() {
         stem = "export".into();
@@ -126,8 +132,8 @@ pub fn converted(image: &Image, export: &Settings) -> Result<Rendered, Failure> 
             .ok_or(Failure::Render)?,
         space => {
             let scale = if bits == 16 { 65535.0 } else { 255.0 };
-            let mut eight = Vec::new();
-            let mut sixteen = Vec::new();
+            // Sized once: a vector doubling as it fills holds two copies at its last growth.
+            let (mut eight, mut sixteen) = if bits == 16 { (Vec::new(), Vec::with_capacity(w * h * 4)) } else { (Vec::with_capacity(w * h * 4), Vec::new()) };
             for band in image.pixels.chunks(oni_colour::legs::BAND * w * 4) {
                 let mut encoded = space.encoded(band).ok_or(Failure::Render)?;
                 // Premultiplied, as Core Image renders: a clear pixel, a contact sheet's gutter, writes black.
@@ -195,10 +201,16 @@ pub fn write(
     if !lands || file::canonical(to.path) == file::canonical(source) {
         return Err(Failure::WouldOverwriteOriginal);
     }
-    let out = render()?;
-    let mut out = resized(&out, export.resize.scale(out.width as f64, out.height as f64));
+    let full = render()?;
+    let scale = export.resize.scale(full.width as f64, full.height as f64);
+    let mut out = resized(full, scale);
+    let icc = export.space().icc_data().map_or(0, |icc| icc.len());
+    if export.format() == Format::Jpeg && !jpeg::fits(out.width, out.height, icc) {
+        return Err(Failure::TooLargeForJpeg);
+    }
     oni_colour::paper::laid(paper, &mut out.pixels, export.space());
     let rendered = converted(&out, export)?;
+    drop(out);
     let date = date_override.map(str::to_owned).or_else(|| capture_date(source));
     let data = encoded(&rendered, export, date.as_deref(), metadata).ok_or(Failure::Write(std::io::ErrorKind::InvalidData))?;
     match file::put(to.path, &data, to.ledger, to.replacing) {

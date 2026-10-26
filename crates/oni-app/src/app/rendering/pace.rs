@@ -64,6 +64,7 @@ impl Ctl {
             let sizes = [(f64::from(plots.get_output_width()), f64::from(plots.get_output_height())), (under.w, under.h)];
             // Traced off this thread, 1.5 ms a plot; a trace overtaken by a later one is dropped.
             let (ticket, writer) = (TRACES.fetch_add(1, Ordering::SeqCst) + 1, self.plot_writer());
+            let since = [Slot::Output, Slot::Saturation].map(super::plots::clears);
             super::plots::plot(move |p| {
                 if TRACES.load(Ordering::SeqCst) != ticket {
                     return;
@@ -71,8 +72,8 @@ impl Ctl {
                 let [output, saturation] = [Slot::Output, Slot::Saturation].map(|slot| p.trace(&writer, slot, &h, None, sizes[slot as usize], scale));
                 with_shell(move |c| {
                     let Some(w) = c.window() else { return };
-                    super::plots::land(&w, Slot::Output, output);
-                    super::plots::land(&w, Slot::Saturation, saturation);
+                    super::plots::land_since(&w, Slot::Output, since[0], output);
+                    super::plots::land_since(&w, Slot::Saturation, since[1], saturation);
                     if let Some(at) = counted {
                         c.state.borrow_mut().notches.record_histogram(at.elapsed());
                     }
@@ -87,6 +88,11 @@ impl Ctl {
         let me = Rc::downgrade(self);
         self.writer.start(TimerMode::SingleShot, WRITE_DELAY, move || {
             let Some(me) = me.upgrade() else { return };
+            // A gesture moving files may be moving this frame's: the write waits for its landing,
+            // which follows the frame to its new path, or it would land beside the old one.
+            if me.state.borrow().org.disk_busy.is_some() {
+                return me.schedule_write();
+            }
             let failure = {
                 let mut s = me.state.borrow_mut();
                 if s.slides.iter().any(|sl| sl.live.is_some()) {

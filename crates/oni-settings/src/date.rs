@@ -68,7 +68,7 @@ impl Date {
         }
         let offset = match &text[19..] {
             "Z" => 0,
-            zone if zone.len() == 6 && (zone.starts_with('+') || zone.starts_with('-')) && &zone[3..4] == ":" => {
+            zone if zone.len() == 6 && (zone.starts_with('+') || zone.starts_with('-')) && zone.as_bytes()[3] == b':' => {
                 let h = num(20..22)?;
                 let m = num(23..25)?;
                 let sign = if zone.starts_with('-') { -1 } else { 1 };
@@ -150,5 +150,14 @@ mod tests {
         // Twin: a fractional second is refused, as the formatter's default options refuse it.
         assert_eq!(Date::parse_iso8601("2023-11-14T22:13:20.5Z"), None);
         assert_ne!(Date::from_unix_seconds(1_700_000_001.0).iso8601(), stamped.iso8601());
+    }
+
+    /// A zone of six bytes with a character across its colon is refused, not sliced mid-character.
+    #[test]
+    fn a_zone_with_a_non_ascii_character_is_refused() {
+        assert_eq!(Date::parse_iso8601("2023-11-14T22:13:20+0\u{e9}00"), None);
+        assert!(serde_json::from_str::<Date>("\"2023-11-14T22:13:20-0\u{e9}00\"").is_err());
+        // Twin: the same zone in ASCII reads.
+        assert_eq!(Date::parse_iso8601("2023-11-14T22:13:20+00:00"), Some(Date::from_unix_seconds(1_700_000_000.0)));
     }
 }

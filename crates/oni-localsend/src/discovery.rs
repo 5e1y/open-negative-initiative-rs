@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use socket2::{Domain, Protocol as SockProtocol, Socket, Type};
 use tokio::net::UdpSocket;
-use tokio::sync::broadcast;
+use tokio::sync::{Semaphore, broadcast};
 
 use crate::model::{Announcement, DEFAULT_PORT, DeviceInfo};
 use crate::sender::Target;
@@ -17,6 +17,12 @@ pub const MULTICAST_GROUP: Ipv4Addr = Ipv4Addr::new(224, 0, 0, 167);
 /// Datagrams get lost on Wi-Fi: the start announcement is repeated after these delays.
 const ANNOUNCE_DELAYS: [Duration; 3] = [Duration::ZERO, Duration::from_millis(500), Duration::from_secs(2)];
 const REGISTER_TIMEOUT: Duration = Duration::from_secs(5);
+/// Peers kept at most; past it the one heard from longest ago leaves, so made-up announcements
+/// cannot grow the table without end.
+const PEERS: usize = 64;
+/// Answers in flight at once; an announcement past them goes unanswered, so a flood of them
+/// cannot turn this device into a sender of requests to wherever they name.
+const ANSWERS: usize = 4;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Peer {
@@ -39,8 +45,15 @@ impl Peer {
 #[derive(Clone)]
 pub struct Peers {
     own_fingerprint: String,
-    table: Arc<Mutex<HashMap<String, Peer>>>,
+    table: Arc<Mutex<Table>>,
     changes: broadcast::Sender<Peer>,
+}
+
+/// Each peer with the tick it was last heard at.
+#[derive(Default)]
+struct Table {
+    peers: HashMap<String, (Peer, u64)>,
+    tick: u64,
 }
 
 impl Peers {
@@ -55,14 +68,23 @@ impl Peers {
         }
         let peer = Peer { info, ip };
         let mut table = self.table.lock().unwrap();
-        if table.get(&peer.info.fingerprint) != Some(&peer) {
-            table.insert(peer.info.fingerprint.clone(), peer.clone());
+        table.tick += 1;
+        let tick = table.tick;
+        let changed = table.peers.get(&peer.info.fingerprint).is_none_or(|(known, _)| *known != peer);
+        table.peers.insert(peer.info.fingerprint.clone(), (peer.clone(), tick));
+        if table.peers.len() > PEERS {
+            let oldest = table.peers.iter().min_by_key(|(_, (_, heard))| *heard).map(|(key, _)| key.clone());
+            if let Some(oldest) = oldest {
+                table.peers.remove(&oldest);
+            }
+        }
+        if changed {
             let _ = self.changes.send(peer);
         }
     }
 
     pub fn list(&self) -> Vec<Peer> {
-        self.table.lock().unwrap().values().cloned().collect()
+        self.table.lock().unwrap().peers.values().map(|(peer, _)| peer.clone()).collect()
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<Peer> {
@@ -97,6 +119,7 @@ struct Inner {
     group: SocketAddrV4,
     peers: Peers,
     client: reqwest::Client,
+    answering: Arc<Semaphore>,
 }
 
 impl Discovery {
@@ -110,6 +133,7 @@ impl Discovery {
             socket,
             peers,
             client: crate::tls::https_client(None).map_err(io::Error::other)?,
+            answering: Arc::new(Semaphore::new(ANSWERS)),
         });
         let task = tokio::spawn(listen(inner.clone()));
         let announcer = inner.clone();
@@ -169,9 +193,14 @@ async fn listen(inner: Arc<Inner>) {
             continue;
         }
         inner.peers.insert(message.info.clone(), from.ip());
-        if message.announce {
+        if message.announce
+            && let Ok(permit) = inner.answering.clone().try_acquire_owned()
+        {
             let inner = inner.clone();
-            tokio::spawn(async move { inner.answer(&message.info, from.ip()).await });
+            tokio::spawn(async move {
+                inner.answer(&message.info, from.ip()).await;
+                drop(permit);
+            });
         }
     }
 }
@@ -190,4 +219,42 @@ fn multicast_socket(group: Ipv4Addr, port: u16, interface: Ipv4Addr) -> io::Resu
     socket.set_multicast_loop_v4(true)?;
     socket.set_nonblocking(true)?;
     Ok(socket)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::{DeviceType, PROTOCOL_VERSION, Protocol};
+
+    fn device(fingerprint: &str) -> DeviceInfo {
+        DeviceInfo {
+            alias: "Phone".into(),
+            version: PROTOCOL_VERSION.into(),
+            device_model: None,
+            device_type: Some(DeviceType::Mobile),
+            fingerprint: fingerprint.into(),
+            port: DEFAULT_PORT,
+            protocol: Protocol::Https,
+            download: false,
+        }
+    }
+
+    #[test]
+    fn a_flood_of_announcements_keeps_the_table_bounded_and_the_peers_heard_lately() {
+        let peers = Peers::new("me");
+        let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 20));
+        peers.insert(device("phone"), ip);
+        peers.insert(device("tablet"), ip);
+        for n in 0..PEERS * 4 {
+            peers.insert(device(&format!("made-up {n}")), ip);
+            if n % 10 == 0 {
+                peers.insert(device("phone"), ip);
+            }
+        }
+        let known: Vec<String> = peers.list().into_iter().map(|p| p.info.fingerprint).collect();
+        assert_eq!(known.len(), PEERS);
+        assert!(known.contains(&"phone".to_string()), "a peer that keeps announcing stays");
+        // Twin: a peer silent through the flood is the one that leaves.
+        assert!(!known.contains(&"tablet".to_string()));
+    }
 }

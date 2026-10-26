@@ -23,6 +23,11 @@ impl Ctl {
             let shown: HashSet<String> = order.iter().cloned().collect();
             s.shown_picks_mut().selection.retain(|p| shown.contains(p));
             s.order = order;
+            s.org.flags = bands
+                .iter()
+                .flat_map(|b| &b.entries)
+                .map(|e| (e.path.clone(), (library::medal_index(e.label), s.org.missing.contains(&e.path), e.leads_passes)))
+                .collect();
             s.org.bands = bands;
             // Each surface is its own `GalleryEngine`, which lands afresh when switched to.
             let surface = if s.org.projects_surface { 1 } else { u8::from(s.trash_shown()) * 2 };
@@ -75,13 +80,9 @@ impl Ctl {
         lib.set_projects_empty(if s.org.projects.is_empty() { tr("No Projects") } else { "" }.into());
     }
 
-    /// The tile flags the bands carry: medal, missing original, a triplet's lead.
-    pub(in crate::app) fn tile_flags(s: &State) -> HashMap<String, (i32, bool, bool)> {
-        s.org
-            .bands
-            .iter()
-            .flat_map(|b| &b.entries)
-            .map(|e| (e.path.clone(), (library::medal_index(e.label), s.org.missing.contains(&e.path), e.leads_passes)))
-            .collect()
+    /// The tile flags the bands carry: medal, missing original, a triplet's lead; cut as the bands
+    /// are laid, so a thumbnail landing reads them rather than cutting them for every photo.
+    pub(in crate::app) fn tile_flags(s: &State) -> &HashMap<String, (i32, bool, bool)> {
+        &s.org.flags
     }
 }

@@ -31,7 +31,17 @@ fn more_descriptors() {
     }
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// A start that fails is written to the log and said in a window of the system's: a windowed build
+/// and an app opened from the Finder have no stderr.
+fn main() {
+    if let Err(e) = run() {
+        timing::fatal(&e.to_string());
+        oni_app::instance::could_not_start(&timing::support(), &e.to_string());
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_os = "macos")]
     more_descriptors();
     let support = timing::support();
@@ -43,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(2);
         }
         oni_app::instance::Held::Unknown(e) => {
-            eprintln!("no instance lock in {} ({e})", support.display());
+            timing::line(&format!("no instance lock in the support folder ({e})"));
             None
         }
     };
@@ -52,6 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(()) => timing::line("log: oni.log, in the app's support folder"),
         Err(e) => timing::line(&format!("no log file ({e}); stderr only")),
     }
+    timing::keep_panics();
     // One device for the pipeline, the display kernel and the window, so the canvas texture is shared.
     let gpu = Device::open()?;
     let info = gpu.adapter.get_info();
@@ -156,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         if let WindowEvent::MouseWheel { delta, .. } = event {
             let wheel = match *delta {
-                MouseScrollDelta::LineDelta(dx, dy) => Wheel { dx: f64::from(dx), dy: f64::from(dy), precise: false },
+                MouseScrollDelta::LineDelta(dx, dy) => viewport::lines(dx, dy, cfg!(windows)),
                 MouseScrollDelta::PixelDelta(p) => {
                     let scale = f64::from(window.scale_factor());
                     Wheel { dx: p.x / scale, dy: p.y / scale, precise: true }

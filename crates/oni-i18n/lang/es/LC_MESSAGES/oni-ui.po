@@ -121,7 +121,7 @@ msgstr "Actualizar"
 msgid "Show the Selected Photo"
 msgstr "Mostrar la foto seleccionada"
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Edición"
 
@@ -385,15 +385,15 @@ msgstr "EN PELÍCULA"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1685,7 +1685,7 @@ msgstr "Intensidad"
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
 msgstr "Desactivado en una hoja de contactos: sus fotogramas son copias reducidas. Los ajustes se conservan para cuando una fotografía los reciba."
 
-#: crates/oni-ui/ui/panel/state.slint
+#: crates/oni-app/src/app/prepare/trace.rs crates/oni-ui/ui/panel/state.slint
 msgid "FRAME --/--"
 msgstr "FOTOGRAMA --/--"
 
@@ -1784,10 +1784,6 @@ msgstr "Lectura del escaneo"
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Aquí se muestra el escaneo completo, con su margen incluido."
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Reading the first frame…"
-msgstr "Leyendo el primer fotograma…"
 
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
@@ -2199,11 +2195,11 @@ msgid_plural "{n} items from other folders were left out: ONI opens one folder a
 msgstr[0] "Un elemento de otra carpeta se dejó fuera: ONI abre una carpeta cada vez."
 msgstr[1] "{n} elementos de otras carpetas se dejaron fuera: ONI abre una carpeta cada vez."
 
-#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
 msgid "Something Went Wrong"
 msgstr "Algo ha fallado"
 
-#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/navigator/locate.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/navigator/locate.rs
 msgid "The library index cannot be opened"
 msgstr "No se puede abrir el índice de la fototeca"
 
@@ -2372,6 +2368,10 @@ msgstr "ONI crea la carpeta «{folder}» en «{parent}» y mueve a ella {files}:
 #: crates/oni-app/src/app/gestures/disk.rs crates/oni-library/src/roll_folder.rs
 msgid "The roll's folder could not be made: {e}"
 msgstr "No se pudo crear la carpeta del rollo: {e}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
+msgstr "No se ha movido nada porque no se pudieron guardar los ajustes de la foto abierta: {error}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
 msgid "Move This Photo into a New Roll?"
@@ -2650,10 +2650,6 @@ msgstr "«{name}» ya no es favorita."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder was not renamed, as the open photo's settings could not be saved: {error}"
 msgstr "No se ha renombrado la carpeta porque no se pudieron guardar los ajustes de la foto abierta: {error}"
-
-#: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "an item named “{name}” already exists"
-msgstr "ya existe un elemento llamado “{name}”"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be made inside “{folder}”: {cause}."
@@ -2988,12 +2984,12 @@ msgid "Rename Roll"
 msgstr "Renombrar rollo"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "Set Shot Date"
-msgstr "Definir fecha de toma"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Camera Body"
 msgstr "Definir cuerpo de cámara"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Shot Date"
+msgstr "Definir fecha de toma"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
@@ -3335,6 +3331,24 @@ msgstr "{count} fotogramas, agrupados en la última medición del rollo."
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
 
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "Reading the first frame…"
+msgstr "Leyendo el primer fotograma…"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL"
+msgstr "ROLLO"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME {at}/{count}"
+msgstr "FOTOGRAMA {at}/{count}"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL · {n} FRAME"
+msgid_plural "ROLL · {n} FRAMES"
+msgstr[0] "ROLLO · {n} FOTOGRAMA"
+msgstr[1] "ROLLO · {n} FOTOGRAMAS"
+
 #: crates/oni-app/src/app/presets/deck.rs
 msgid "Delete “{name}”"
 msgstr "Eliminar “{name}”"
@@ -3466,6 +3480,10 @@ msgstr "Se eliminan la medición de su rollo y todos los ajustes de su aspecto, 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset to Default"
 msgstr "Restablecer valores predeterminados"
+
+#: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
+msgid "Balance"
+msgstr "Balance"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -3795,6 +3813,14 @@ msgstr "Open Negative Initiative ya está abierto"
 msgid "Switch to its window: two copies at once would write over each other's work."
 msgstr "Cambia a su ventana: dos copias abiertas a la vez sobrescribirían el trabajo de la otra."
 
+#: crates/oni-app/src/instance.rs
+msgid "Open Negative Initiative could not start"
+msgstr "Open Negative Initiative no pudo iniciarse"
+
+#: crates/oni-app/src/instance.rs
+msgid "{cause}\n\nThe log holds the details: {log}"
+msgstr "{cause}\n\nEl registro da los detalles: {log}"
+
 #: crates/oni-app/src/organise/cells.rs
 msgid "Add to Project"
 msgstr "Añadir al proyecto"
@@ -4002,10 +4028,6 @@ msgstr "Solo veo oro"
 #: crates/oni-app/src/wrapped.rs
 msgid "Your go-to balance"
 msgstr "Tu balance de cabecera"
-
-#: crates/oni-app/src/wrapped.rs
-msgid "Balance"
-msgstr "Balance"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "Your signature look"
@@ -4236,6 +4258,12 @@ msgid "Join the roll"
 msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Unir al rollo"
 msgstr[1] "Unir al rollo con {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "{label} · {n} photo"
+msgid_plural "{label} · {n} photos"
+msgstr[0] "{label} · {n} foto"
+msgstr[1] "{label} · {n} fotos"
 
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"
@@ -4488,6 +4516,10 @@ msgstr "La carpeta ya no está: no se pudo escribir el archivo."
 #: crates/oni-export/src/lib.rs
 msgid "The file could not be written."
 msgstr "No se pudo escribir el archivo."
+
+#: crates/oni-export/src/lib.rs
+msgid "Too large for a JPEG, which holds at most 65,535 pixels a side and a 16.7 MB profile: choose TIFF or a smaller size."
+msgstr "Demasiado grande para un JPEG, que admite como máximo 65.535 píxeles por lado y un perfil de 16,7 MB: elige TIFF o un tamaño menor."
 
 #: crates/oni-export/src/lib.rs
 msgid "A file ONI did not export already has that name, an original perhaps: it is left as it was. Pick another folder or another name."

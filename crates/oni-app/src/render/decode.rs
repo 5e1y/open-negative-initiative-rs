@@ -95,9 +95,14 @@ pub fn cut_short() -> String {
     tr("the file ends before its picture does: an interrupted copy? Copy it again from its source.").into()
 }
 
+/// A place among the decodes; a thread whose work was superseded meanwhile gets an empty error, said nowhere.
+fn place() -> Result<crate::decode_gate::Slot<'static>, String> {
+    crate::decode_gate::slot().ok_or_else(String::new)
+}
+
 /// A RAW through LibRaw, at half size when `side` (0: whole) fits in half the sensor.
 fn mosaic(path: &Path, side: usize) -> Result<Decoded, String> {
-    let _slot = crate::decode_gate::slot();
+    let _slot = place()?;
     let (d, factor) = oni_decode::decode_for(path, 1.0, side).map_err(|e| if e.is_cut_short() { cut_short() } else { tr!("LibRaw cannot decode it (code {code})", code = e.0) })?;
     let full_width = (d.width * factor) as f64;
     Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
@@ -217,7 +222,7 @@ pub(crate) fn laid(pass: &Linear, fit: &oni_settings::frame::Fit, w: usize, h: u
 /// The container's own channels, or converted from its ColorMatrix1 when the windows were measured
 /// so; a file naming no matrix is in the working space already. `full` 0 reads the decode's width.
 pub(crate) fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full: usize) -> Result<Decoded, String> {
-    let _slot = crate::decode_gate::slot();
+    let _slot = place()?;
     let mut d = oni_decode::container::linear(path, side).ok_or(tr("its samples are unreadable"))?;
     if reading.primaries_converted {
         let (matrix, illuminant) = oni_decode::container::calibration(path).ok_or(tr("its container is unreadable"))?;
@@ -234,7 +239,7 @@ pub(crate) fn linear_scan(path: &Path, side: Option<f64>, reading: Reading, full
 
 /// `plainLinear`: the file's curve undone in its profile, else the chosen encoding, else sRGB.
 pub(crate) fn plain(path: &Path, side: Option<f64>, reading: Reading) -> Result<Decoded, String> {
-    let _slot = crate::decode_gate::slot();
+    let _slot = place()?;
     let mut e = oni_decode::plain::read(path, side).ok_or(tr("no image reader takes it"))?;
     oni_colour::source::Source::of(e.icc.as_deref(), reading.source_encoding, e.grey).linearise(&mut e.pixels, !reading.primaries_converted);
     let undeclared = e.icc.is_none().then_some(e.grey);

@@ -260,9 +260,11 @@ fn walk(folder: &Path, spelt: &str, alive: &dyn Fn() -> bool, computer: &Compute
             return true;
         }
     };
-    let mut children: Vec<PathBuf> = listing.filter_map(|e| e.ok().map(|e| e.path())).collect();
-    children.sort_by(|a, b| paths::standard_order(&a.to_string_lossy(), &b.to_string_lossy()).then_with(|| a.cmp(b)));
-    for child in children {
+    // Each path weighed once: under a folder named with an accent, every comparison would weigh both.
+    let mut children: Vec<(paths::NameKey, PathBuf)> =
+        listing.filter_map(|e| e.ok().map(|e| e.path())).map(|p| (paths::NameKey::new(&p.to_string_lossy()), p)).collect();
+    children.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)));
+    for (_, child) in children {
         let name = child.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
         if !alive() {
             return false;

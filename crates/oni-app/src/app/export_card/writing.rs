@@ -7,6 +7,7 @@ impl Ctl {
     /// `runExport`: one file asks for its name, a batch for a folder; then any clash asks, Replace
     /// offered for ONI's earlier exports alone, Rename for anything else.
     pub fn run_export(self: &Rc<Self>) {
+        self.rows_now();
         let (targets, rows, format, support) = {
             let c = self.export.borrow();
             (c.targets.clone(), c.rows.clone(), c.settings.format(), c.support.clone())

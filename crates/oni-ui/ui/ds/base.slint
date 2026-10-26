@@ -215,6 +215,8 @@ export component Surface inherits Rectangle {
 // a rounded clip renders the whole card into a texture of its own, so `CardCorners` covers it instead.
 export component Card inherits Rectangle {
     in property <bool> dimmed;
+    // The screen's pixels to a point, which a move to a screen of another density changes.
+    out property <float> density: 1px / 1phx;
     background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
     border-radius: CardStyle.radius;
 }

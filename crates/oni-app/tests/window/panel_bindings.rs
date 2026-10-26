@@ -26,7 +26,7 @@ fn click(rig: &common::Rig, x: f32, y: f32) {
 }
 
 /// A shell on one TIFF naming no profile, its frame open and rendered.
-fn opened(name: &str) -> Option<(common::Rig, Shell, PathBuf)> {
+pub(crate) fn opened(name: &str) -> Option<(common::Rig, Shell, PathBuf)> {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -171,6 +171,28 @@ pub(crate) fn the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_win
     rig.key(&named(Key::Return));
     rig.settle();
     assert!(!e.get_resized(), "the box shows 96, not the 48 typed before Full resolution");
+
+    // 8000 is past the full edge, so Full resolution stays and the owner republishes the same 96:
+    // the box shows it again, so a height typed next is the edge that decides.
+    width_box();
+    rig.key("8000");
+    rig.key(&named(Key::Return));
+    rig.settle();
+    assert_eq!((e.get_width_text().as_str(), e.get_resized()), ("96", false), "8000 is refused");
+    let height_box = || click(&rig, 1034.0, 584.0);
+    height_box();
+    rig.key("32");
+    rig.key(&named(Key::Return));
+    rig.settle();
+    assert_eq!((e.get_height_text().as_str(), e.get_resized()), ("32", true), "the height typed after a refused width resizes");
+    // Twin: a width the photo holds still decides, the height following its ratio.
+    click(&rig, 1112.0, 584.0);
+    rig.settle();
+    width_box();
+    rig.key("48");
+    rig.key(&named(Key::Return));
+    rig.settle();
+    assert_eq!((e.get_width_text().as_str(), e.get_height_text().as_str()), ("48", "32"));
 
     // Load a Profile… in the chip's popover closes it before the file window opens.
     // CANCEL, then the space chip over the canvas, then its popover's Custom tab.

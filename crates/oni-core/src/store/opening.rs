@@ -98,6 +98,35 @@ impl EditorStore {
         self.unsaved.push(kept);
     }
 
+    /// Every path the store holds goes where the disk moved it: the open frame, the edits kept for
+    /// a refused write, the frames together and the editor's steps; the files are the same ones.
+    pub fn follow(&mut self, moves: &[gallery_history::Move]) {
+        let moved = |path: &str| {
+            moves.iter().find(|m| oni_library::paths::holds(&m.from, path)).map(|m| oni_library::paths::moved(path, &m.from, &m.to))
+        };
+        if let Some(open) = self.open.as_mut()
+            && let Some(to) = moved(&open.path)
+        {
+            open.stamp = stamp(&to).or(open.stamp);
+            open.path = to;
+        }
+        for kept in &mut self.unsaved {
+            if let Some(to) = moved(&kept.path) {
+                kept.stamp = stamp(&to).or(kept.stamp);
+                kept.path = to;
+            }
+        }
+        self.together.follow(&moved);
+        self.history.follow(&moved);
+        self.measured.clear();
+    }
+
+    /// The gallery's steps follow a move made outside them, a folder renamed or found elsewhere; a
+    /// step's own moves never do, or its undo would walk from where it already stands.
+    pub fn follow_gallery(&mut self, moves: &[gallery_history::Move]) {
+        self.gallery.follow(moves);
+    }
+
     /// The frames left with edits no write took yet, oldest first.
     pub fn unsaved(&self) -> &[Unsaved] {
         &self.unsaved

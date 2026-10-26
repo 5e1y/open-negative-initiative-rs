@@ -38,6 +38,7 @@ mod flat_masks;
 mod tutorial;
 mod draft_base;
 mod trace;
+mod negative;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
@@ -225,6 +226,11 @@ impl Roll {
     /// The frames whose preview has landed, which a check waits for before reading one.
     pub fn previewed(&self) -> usize {
         self.tiles.len()
+    }
+
+    /// The roll shown, by its frames' paths.
+    fn roll(&self) -> Vec<String> {
+        self.sources.iter().map(|f| f.path.clone()).collect()
     }
 
     /// Every frame's sidecar read, which the bench waits for.

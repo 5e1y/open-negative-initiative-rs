@@ -26,12 +26,17 @@ fn scratch() -> PathBuf {
     dir
 }
 
-/// Roll #8 as hard links beside copies of its sidecars, so no sidecar is written beside the originals.
+/// Roll #8's frames as hard links beside copies of their sidecars and marker, so no sidecar is written
+/// beside the originals and a contact sheet made in the roll never takes the first tile.
 fn mirror(roll: &Path, into: &Path) -> PathBuf {
     let dir = into.join("Roll #8");
     std::fs::create_dir_all(&dir).unwrap();
     for entry in std::fs::read_dir(roll).unwrap() {
         let from = entry.unwrap().path();
+        let name = from.file_name().unwrap().to_string_lossy();
+        if !name.starts_with("DSC_") && name != ".oni-roll.json" {
+            continue;
+        }
         let to = dir.join(from.file_name().unwrap());
         if from.extension().is_some_and(|e| e == "json") {
             std::fs::copy(&from, &to).unwrap();
@@ -147,8 +152,10 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     };
     let stops = || ctl.state.borrow().store().settings().paper_correction.stops;
 
-    // The app opens on the gallery: the first photo is ringed and taken into the editor by ⌘G.
+    // The app opens on the gallery, the RAW's recalibration notice closed: the first photo is ringed
+    // and taken into the editor by ⌘G.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
+    w.global::<oni_app::Notice>().invoke_close();
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
     rig.chord(slint::platform::Key::Control, "g");

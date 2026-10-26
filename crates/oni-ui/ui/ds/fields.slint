@@ -22,6 +22,8 @@ component Entry inherits Rectangle {
     // The pointer on the hollow's padding around the words, which keeps the editing as they do.
     in property <bool> rim;
     out property <bool> editing: input.has-focus;
+    // The pointer on the words, entered or not, which a sibling box sharing the focus reads as its own.
+    out property <bool> hovered: hover.has-hover || entering.has-hover;
     callback edited(string);
     callback accepted(string);
     callback left(string);
@@ -78,7 +80,7 @@ component Entry inherits Rectangle {
         }
     }
     // Over the entry until it holds the focus: the press enters it, then the input takes the clicks.
-    TouchArea {
+    entering := TouchArea {
         enabled: root.enabled && !input.has-focus;
         mouse-cursor: MouseCursor.text;
         pointer-event(event) => {
@@ -202,6 +204,13 @@ export component SizeFields inherits HorizontalLayout {
     init => { wide.text = root.width-value; high.text = root.height-value; }
     changed width-value => { wide.text = root.width-value; }
     changed height-value => { high.text = root.height-value; }
+    // `SizeFields.commit` loads both boxes again: a value refused leaves the owner's unchanged, so
+    // no `changed` would put it back.
+    function commit() {
+        root.typed(wide.text, high.text);
+        wide.text = root.width-value;
+        high.text = root.height-value;
+    }
     Inward {
         horizontal-stretch: 1;
         min-width: row.min-width;
@@ -218,15 +227,15 @@ export component SizeFields inherits HorizontalLayout {
             wide := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
                 placeholder: @tr("W"); role: TextRole.title; centred: true; enabled: root.enabled;
-                accepted => { root.typed(wide.text, high.text); }
-                left => { root.typed(wide.text, high.text); }
+                accepted => { root.commit(); }
+                left => { root.commit(); }
             }
             Label { text: "×"; role: TextRole.title; tone: Tone.secondary; }
             high := Entry {
                 width: FieldStyle.size-box; horizontal-stretch: 0;
                 placeholder: @tr("H"); role: TextRole.title; centred: true; enabled: root.enabled;
-                accepted => { root.typed(wide.text, high.text); }
-                left => { root.typed(wide.text, high.text); }
+                accepted => { root.commit(); }
+                left => { root.commit(); }
             }
         }
     }
@@ -240,6 +249,9 @@ export component DateFields inherits HorizontalLayout {
     in-out property <string> year <=> y.text;
     in property <bool> focused-look;
     out property <bool> editing: m.editing || d.editing || y.editing;
+    // The middle of the month's and the day's boxes in the window, where a check aims its clicks.
+    out property <length> month-x: m.absolute-position.x + m.width / 2;
+    out property <length> day-x: d.absolute-position.x + d.width / 2;
     callback committed(string, string, string);
     changed editing => { if (!self.editing) { root.committed(root.month, root.day, root.year); } }
     alignment: start;
@@ -250,6 +262,9 @@ export component DateFields inherits HorizontalLayout {
         radius: FieldStyle.radius;
         hollow: true;
         lit: root.editing || root.focused-look;
+        // The hollow around the boxes, one focus for the three: a press on it or on a sibling box
+        // keeps the editing, so a date half typed is not committed.
+        rim := TouchArea { }
         row := HorizontalLayout {
             padding-left: FieldStyle.across;
             padding-right: FieldStyle.across;
@@ -257,18 +272,21 @@ export component DateFields inherits HorizontalLayout {
             m := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
                 placeholder: @tr("MM"); role: TextRole.title; centred: true;
+                rim: rim.has-hover || d.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
             Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
             d := Entry {
                 width: FieldStyle.date-box; horizontal-stretch: 0;
                 placeholder: @tr("DD"); role: TextRole.title; centred: true;
+                rim: rim.has-hover || m.hovered || y.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
             Label { role: TextRole.title; tone: Tone.secondary; text: "/"; }
             y := Entry {
                 width: FieldStyle.year-box; horizontal-stretch: 0;
                 placeholder: @tr("YYYY"); role: TextRole.title; centred: true;
+                rim: rim.has-hover || m.hovered || d.hovered;
                 accepted => { root.committed(root.month, root.day, root.year); }
             }
         }

@@ -53,6 +53,8 @@ impl Ctl {
             c.clamp_column(Which::Archive);
             c.follow_tree();
             c.pin_column(Which::Archive);
+            // A taller column brings more rows near.
+            c.fill_tree_thumbnails(None);
         });
         // The column shown again, beside a photo or back on the archive: centred on the photo.
         let me = Rc::downgrade(self);
@@ -64,6 +66,7 @@ impl Ctl {
             }
             c.centre_tree();
             c.pin_column(Which::Archive);
+            c.fill_tree_thumbnails(None);
         });
         let me = Rc::downgrade(self);
         lib.on_tree_layout_next(move || {

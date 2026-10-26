@@ -152,7 +152,7 @@ impl Ctl {
         if let Some(message) = failure {
             self.told(tr("Something Went Wrong"), &message);
         }
-        self.followed(&[Move { from: old.to_owned(), to: new.to_owned() }]);
+        self.followed_outside(&[Move { from: old.to_owned(), to: new.to_owned() }]);
         self.publish_navigator();
     }
 

@@ -27,6 +27,13 @@ pub fn sanitize_file_name(name: &str) -> String {
     if device { format!("_{cleaned}") } else { cleaned.into() }
 }
 
+/// A name the inbox never writes: a dot name hides, and a `.json` would land as an original's
+/// sidecar or as the roll marker (`.oni-roll.json`), read as the truth on the next open.
+pub fn refused_name(name: &str) -> bool {
+    let name = sanitize_file_name(name);
+    name.starts_with('.') || name.to_ascii_lowercase().ends_with(".json")
+}
+
 /// A file being received. Dropped before `finish`, it deletes itself, so a failed upload leaves nothing.
 pub(crate) struct PartFile {
     path: PathBuf,
@@ -115,6 +122,17 @@ mod tests {
             ("P1072392.RW2", "P1072392.RW2"),
         ] {
             assert_eq!(sanitize_file_name(input), want, "{input}");
+        }
+    }
+
+    #[test]
+    fn a_sidecar_a_roll_marker_or_a_dot_name_is_refused() {
+        for name in ["DSC_0001.NEF.json", ".oni-roll.json", "x.JSON", ".hidden", "../.profile", "a/b.json"] {
+            assert!(refused_name(name), "{name}");
+        }
+        // Twin: originals and their look-alikes are received.
+        for name in ["DSC_0001.NEF", "P1072392.RW2", "scan.dng", "notes.json.txt", "json"] {
+            assert!(!refused_name(name), "{name}");
         }
     }
 

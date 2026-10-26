@@ -1,6 +1,6 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
 // page, a step keycap, a field's lip three ways, a plate, and fields and pickers to press beside.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker } from "ds.slint";
+import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -20,6 +20,8 @@ export component FieldProbe inherits AppWindow {
     out property <int> picked: -1;
     out property <length> bar-y: bar.y;
     out property <length> bar-width: bar.width;
+    out property <bool> pill-shown: bar.pill-shown;
+    out property <length> pill-x: bar.pill-x;
     min-width: 0;
     min-height: 0;
     preferred-width: 400px;
@@ -161,8 +163,8 @@ export component GroupProbe inherits AppWindow {
     }
 }
 
-// A key monitor around a field, a name typed over, a key and two pickers side by side, where the
-// checks press beside a field or a menu.
+// A key monitor around a field, a name typed over, a key, two pickers side by side and a date, where
+// the checks press beside a field or a menu, or from one date box to the next.
 export component OutsideProbe inherits AppWindow {
     title: "ONI Outside Probe";
     in-out property <string> text <=> field.text;
@@ -181,6 +183,13 @@ export component OutsideProbe inherits AppWindow {
     out property <length> text-x: field.absolute-position.x + FieldStyle.across;
     out property <length> field-y: field.absolute-position.y + field.height / 2;
     out property <length> rename-y: slot.absolute-position.y + slot.height / 2;
+    // The date's boxes, the middle of the first two, the last date committed and how many were.
+    out property <length> date-y: date.absolute-position.y + date.height / 2;
+    out property <length> month-x: date.month-x;
+    out property <length> day-x: date.day-x;
+    out property <bool> date-editing: date.editing;
+    out property <string> date-committed;
+    out property <int> commits;
     out property <length> key-x: key.absolute-position.x + key.width / 2;
     out property <length> key-y: key.absolute-position.y + key.height / 2;
     out property <length> first-x: first.absolute-position.x + first.width / 2;
@@ -221,6 +230,12 @@ export component OutsideProbe inherits AppWindow {
                 spacing: Space.l;
                 first := Picker { value: "One"; entries: ["One", "Two", "Three"]; chosen(i) => { root.first-chosen = i; } }
                 second := Picker { value: "Red"; entries: ["Red", "Green"]; }
+            }
+            date := DateFields {
+                month: "2";
+                day: "31";
+                year: "1999";
+                committed(m, d, y) => { root.date-committed = m + "/" + d + "/" + y; root.commits += 1; }
             }
         }
     }

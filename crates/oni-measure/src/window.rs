@@ -128,13 +128,17 @@ pub fn sheet_reads(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
         .collect()
 }
 
-/// `ContactSheet.Grid.cells`: the tiles as laid, the first row at the top.
+/// `ContactSheet.Grid.cells`: the tiles as laid, the first row at the top. A sidecar's grid without
+/// rows or columns lays nothing, and frames past its last cell fall below the extent.
 pub fn sheet_cells(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
+    if grid.columns <= 0 || grid.rows <= 0 {
+        return Vec::new();
+    }
     let columns = grid.columns as f64;
     let laid = columns * grid.tile.width + (columns + 1.0) * grid.margin;
     let scale = if laid > 0.0 { extent.width / laid } else { 1.0 };
     let (w, h, m) = (grid.tile.width * scale, grid.tile.height * scale, grid.margin * scale);
-    (0..grid.frames.max(0))
+    (0..grid.frames.clamp(0, grid.columns.saturating_mul(grid.rows)))
         .filter_map(|index| {
             let row = (grid.rows - 1 - index / grid.columns) as f64;
             let at = Rect::new(extent.x + m + (index % grid.columns) as f64 * (w + m), extent.y + m + row * (h + m), w, h);
@@ -147,6 +151,7 @@ pub fn sheet_cells(grid: &ContactSheetGrid, extent: &Rect) -> Vec<Rect> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oni_settings::cg::Size;
 
     fn extent() -> Rect {
         Rect::new(0.0, 0.0, 1400.0, 933.0)
@@ -190,6 +195,18 @@ mod tests {
         propose(&mut g, false);
         // Twin: a window the hand placed is left where it is.
         assert_eq!(g.measure_window, Some(Rect::new(0.3, 0.3, 0.1, 0.1)));
+    }
+
+    #[test]
+    fn a_sheet_grid_without_columns_or_rows_lays_no_cell() {
+        let grid = |columns, rows, frames| ContactSheetGrid { columns, rows, frames, tile: Size { width: 36.0, height: 24.0 }, margin: 2.0, windows: None };
+        assert!(sheet_reads(&grid(0, 2, 4), &extent()).is_empty());
+        assert!(sheet_cells(&grid(3, 0, 4), &extent()).is_empty());
+        assert!(sheet_cells(&grid(-1, 2, 4), &extent()).is_empty());
+        // Twin: a whole grid still lays its six, and frames past them add none, however many.
+        assert_eq!(sheet_cells(&grid(3, 2, 6), &extent()).len(), 6);
+        assert_eq!(sheet_cells(&grid(3, 2, 1000), &extent()), sheet_cells(&grid(3, 2, 6), &extent()));
+        assert_eq!(sheet_cells(&grid(3, 2, i64::MAX), &extent()).len(), 6);
     }
 
     #[test]

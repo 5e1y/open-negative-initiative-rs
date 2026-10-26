@@ -2,7 +2,7 @@
 //! window's return, and Refresh saying what moved. Every wait has a deadline, never a fixed sleep.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Navigator, Told};
+use oni_app::{Library, Navigator, Told};
 use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use oni_library::paths;
@@ -283,6 +283,40 @@ pub(crate) fn refresh_says_what_changed() {
     let _ = std::fs::remove_dir_all(&d.root);
 }
 
+pub(crate) fn two_refreshes_at_once_land_only_the_latest_read() {
+    let Some(gpu) = gpu("two reads at once") else { return };
+    let d = disk("twice", &["Home/Scans/Roll 8/A.tif", "Home/Scans/Roll 8/B.tif"]);
+    let rig = rig();
+    let shell = d.launch(&gpu);
+    let ctl = shell.ctl.clone();
+    ctl.set_watching(false);
+    opened(&rig, &shell, &d.path("Home/Scans/Roll 8"), 2);
+    rig.settle();
+    let counts = || (ctl.state.borrow().reads(), ctl.state.borrow().reads_whole());
+    let landed = |(reads, _): (usize, usize), more: usize| {
+        rig.until("the reads landed", Duration::from_secs(30), || counts().0 == reads + more && ctl.state.borrow().read_done());
+        rig.settle();
+    };
+
+    // Twin first: two Refreshes one after the other land whole twice.
+    let before = counts();
+    ctl.act(oni_app::Act::Refresh);
+    landed(before, 1);
+    ctl.act(oni_app::Act::Refresh);
+    landed(before, 2);
+    assert_eq!(counts().1, before.1 + 2, "each read alone lands whole");
+
+    // Two asked before either lands: the first is superseded, only the latest lands.
+    let before = counts();
+    ctl.act(oni_app::Act::Refresh);
+    ctl.act(oni_app::Act::Refresh);
+    landed(before, 2);
+    assert_eq!(counts().1, before.1 + 1, "an older read running beside a newer one never lands");
+    assert_eq!(names(&shell), ["A.tif", "B.tif"]);
+    drop((ctl, shell));
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
 fn row_titles(shell: &Shell) -> Vec<String> {
     let rows = shell.window.global::<Navigator>().get_rows();
     (0..rows.row_count()).filter_map(|i| rows.row_data(i)).map(|r| r.title.to_string()).collect()
@@ -327,5 +361,40 @@ pub(crate) fn a_rename_changing_only_case_renames_and_a_true_collision_is_refuse
     assert_eq!(told(&shell), "The folder could not be renamed: an item of that name is already there");
     assert_eq!(on_disk(&d.root.join("Home/Scans")), ["Roll 3", "Roll 5"]);
     drop(shell);
+    let _ = std::fs::remove_dir_all(&d.root);
+}
+
+pub(crate) fn a_rename_waits_for_a_move_under_way() {
+    let Some(gpu) = gpu("a rename during a move") else { return };
+    let d = disk("busy", &["Home/Scans/Roll 3/A.tif", "Home/Scans/Roll 3/B.tif"]);
+    let rig = rig();
+    let shell = d.launch(&gpu);
+    let ctl = shell.ctl.clone();
+    shell.add(&d.root.join("Home/Scans/Roll 3"));
+    rig.until("Roll 3 read", Duration::from_secs(30), || ctl.state.borrow().read_done() && row_titles(&shell).contains(&"Roll 3".to_string()));
+    rig.settle();
+    shell.window.global::<Library>().invoke_tile_clicked(0, false, false);
+    rig.pump();
+
+    // Asked while the move to the ONI Trash runs, before anything lands: refused, said, nothing renamed.
+    let n = shell.window.global::<Navigator>();
+    let at = |title: &str| row_titles(&shell).iter().position(|t| t == title).unwrap() as i32;
+    ctl.act(oni_app::Act::Remove);
+    assert!(ctl.state.borrow().disk_busy(), "the move runs");
+    assert!(n.invoke_row_menu(at("Roll 3")));
+    let lines = n.get_menu_lines();
+    let item = (0..lines.row_count()).filter_map(|i| lines.row_data(i)).position(|l| l.text == "Rename…").expect("Rename… in the menu");
+    n.invoke_menu_chosen(item as i32);
+    n.invoke_rename_committed(at("Roll 3"), "Portra".into());
+    assert!(told(&shell).contains("is still under way"), "{}", told(&shell));
+    rig.landed(&ctl);
+    assert_eq!(on_disk(&d.root.join("Home/Scans")), ["Roll 3"]);
+    shell.window.global::<Told>().invoke_closed();
+
+    // Twin: the move landed, the same rename goes through.
+    rename(&rig, &shell, "Roll 3", "Portra");
+    rig.until("Portra on the disk", Duration::from_secs(10), || on_disk(&d.root.join("Home/Scans")) == ["Portra"]);
+    assert_eq!(told(&shell), "");
+    drop((ctl, shell));
     let _ = std::fs::remove_dir_all(&d.root);
 }

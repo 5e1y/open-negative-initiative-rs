@@ -1,7 +1,8 @@
 // Prepare the Roll: the panel with its five steps, the card that shows a frame, the flags' sheet or
 // the base's scan, and the step keys the bar shows meanwhile. Rust holds every value and rule.
-import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize, TraceWell, TraceStyle } from "ds/ds.slint";
+import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
+import { MeasureFloor } from "measure_floor.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 
 component RollSlider inherits Slider {
@@ -349,40 +350,7 @@ component FrameCard inherits Rectangle {
     }
 }
 
-// The measure under way: the frame just read and the count over its histogram, which morphs into
-// each next frame's; the well stays empty until the first one lands.
-component MeasureFloor inherits Rectangle {
-    VerticalLayout {
-        padding: CardStyle.padding;
-        alignment: center;
-        HorizontalLayout {
-            alignment: center;
-            VerticalLayout {
-                width: min(root.width - 2 * CardStyle.padding, TraceStyle.width);
-                spacing: Space.s;
-                HorizontalLayout {
-                    spacing: Space.s;
-                    Label {
-                        role: TextRole.value; horizontal-stretch: 1; overflow: elide;
-                        tone: Preparing.traced ? Tone.primary : Tone.secondary;
-                        text: Preparing.traced ? Preparing.trace-name : @tr("Reading the first frame…");
-                    }
-                    Label { role: TextRole.value; tone: Tone.secondary; text: Preparing.trace-count; }
-                }
-                TraceWell {
-                    height: self.width * TraceStyle.ratio;
-                    curves: Preparing.trace-curves;
-                    trail: Preparing.trace-trail;
-                    marked: Preparing.traced;
-                    marker: Preparing.trace-marker;
-                    resized(w, h) => { Preparing.trace-resized(w, h); }
-                }
-            }
-        }
-    }
-}
-
-// `rollFloor`: the flags' sheet, the base's scan, the frame card, or the measure's histogram.
+// `rollFloor`: the flags' sheet, the base's scan, the frame card, or the measure's screens.
 export component RollFloor inherits Card {
     if Preparing.step == 3: FlagSheet { width: parent.width; height: parent.height; }
     if Preparing.step == 2: BaseSurface { width: parent.width; height: parent.height; }

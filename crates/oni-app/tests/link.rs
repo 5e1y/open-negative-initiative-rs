@@ -29,6 +29,8 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     let dir = std::env::temp_dir().join(format!("oni-core-link-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::copy(source.join("DSC_6440.NEF.json"), dir.join("DSC_6440.NEF.json")).unwrap();
+    // An empty stand-in for the NEF: no sidecar is ever written beside a missing original.
+    std::fs::write(dir.join("DSC_6440.NEF"), b"").unwrap();
     let frame = dir.join("DSC_6440.NEF").to_string_lossy().into_owned();
 
     let mut store = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| true));
@@ -174,6 +176,12 @@ async fn the_phone_switches_the_face_and_steps_a_slider_the_host_resolves() {
 
 /// A store on a plain file with the Exposure slider, driven by a Host; the phone that pairs with it.
 async fn exposure_desk(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::path::PathBuf) {
+    let (store, remote, dir, _) = exposure_desk_dialled(name).await;
+    (store, remote, dir)
+}
+
+/// The same, with what the phone dials again by: the address, its identity and the desktop's key.
+async fn exposure_desk_dialled(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::path::PathBuf, (std::net::SocketAddr, Identity)) {
     let dir = std::env::temp_dir().join(format!("oni-core-link-{name}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let frame = dir.join("frame.tif");
@@ -191,10 +199,35 @@ async fn exposure_desk(name: &str) -> (Arc<Mutex<EditorStore>>, Remote, std::pat
     let (l, s) = (link.clone(), store.clone());
     tokio::spawn(async move { drive(events, &l, &s, |_| {}).await });
     let code = PairingCode::parse(&host.open_pairing(vec![addr]).to_uri()).unwrap();
-    let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &Identity::generate(), &code, "Phone")
-        .await
-        .unwrap();
-    (store, remote, dir)
+    let me = Identity::generate();
+    let remote = Remote::pair(Remote::dial(&code.addresses).await.unwrap(), &me, &code, "Phone").await.unwrap();
+    (store, remote, dir, (addr, me))
+}
+
+#[tokio::test]
+async fn the_old_link_of_a_phone_back_on_a_new_one_leaves_its_drag_held() {
+    let (store, old, dir, (addr, me)) = exposure_desk_dialled("relink").await;
+    let new = Remote::connect(Remote::dial(&[addr]).await.unwrap(), &me, old.host(), "Phone").await.unwrap();
+    let mut display = new.display();
+    until(&mut display, |d| !d.state.panel.rows.is_empty()).await;
+    new.slide(Param::Exposure, 0.75);
+    until(&mut display, |d| d.state.applied == 1).await;
+    let held = || !store.lock().unwrap().can_undo(Surface::Editor);
+    assert!(held(), "held, the drag is not a step yet");
+    drop(old);
+    tokio::time::sleep(Duration::from_millis(500)).await;
+    assert!(held(), "the old link's end leaves the new link's drag held");
+    assert!(new.display().borrow().connected);
+    // Twin: the end of the link that holds the drag records it as a step.
+    drop(new);
+    timeout(Duration::from_secs(15), async {
+        while held() {
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .expect("the drag became a step");
+    let _ = std::fs::remove_dir_all(&dir);
 }
 
 /// Longer than the history's coalescing window, so two unheld changes this far apart are two steps.

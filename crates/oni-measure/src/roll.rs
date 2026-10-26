@@ -24,6 +24,8 @@ pub struct Measured {
     pub tails: [[f32; 2]; 3],
     /// Each channel's median at `balance.stops`, off the same histogram as the tails.
     pub median: Option<[f32; 3]>,
+    /// That histogram's counts, each bin at its index over the last on the counted 0…1 window.
+    pub counts: Vec<[f32; 3]>,
 }
 
 /// `RollReference.measured`: a frame's Classic through `reading`, which renders it at given gains.
@@ -42,7 +44,29 @@ pub fn measured(path: &str, settings: &PipelineSettings, mut reading: impl FnMut
     let scale = (after.rgb.len().saturating_sub(1)).max(1) as f32;
     let medians: Vec<f32> = (0..3).filter_map(|c| auto_levels::median(&after.channel(c)).map(|m| m / scale)).collect();
     let median = (medians.len() == 3).then(|| [medians[0], medians[1], medians[2]]);
-    Some(Measured { path: path.to_string(), balance: Balance { stops: moved, levels, shift }, tails, median })
+    Some(Measured { path: path.to_string(), balance: Balance { stops: moved, levels, shift }, tails, median, counts: after.rgb })
+}
+
+/// The roll's histogram as `combined` reads it: every frame's counts moved to the roll's gains, as
+/// its tails are, and summed into `bins` over 0…1; a count moved past either end is dropped.
+pub fn summed(frames: &[Measured], roll: &RollReference, mode: ConversionMode, bins: usize) -> Vec<[f32; 3]> {
+    let mut out = vec![[0.0f32; 3]; bins];
+    if bins == 0 {
+        return out;
+    }
+    for f in frames {
+        let last = f.counts.len().saturating_sub(1).max(1) as f32;
+        for c in 0..3 {
+            let s = auto_levels::shift(roll.stops[c] - f.balance.stops[c], mode);
+            for (i, b) in f.counts.iter().enumerate() {
+                let x = i as f32 / last + s;
+                if (0.0..=1.0).contains(&x) {
+                    out[((x * bins as f32) as usize).min(bins - 1)][c] += b[c];
+                }
+            }
+        }
+    }
+    out
 }
 
 fn middle(values: &mut [f32]) -> f32 {

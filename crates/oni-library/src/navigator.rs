@@ -120,7 +120,9 @@ pub fn children(folder: &str) -> Option<Vec<String>> {
             out.push(target);
         }
     }
-    out.sort_by(|a, b| paths::standard_order(&paths::name(a), &paths::name(b)));
+    let mut keyed: Vec<(paths::NameKey, String)> = out.into_iter().map(|p| (paths::NameKey::new(&paths::name(&p)), p)).collect();
+    keyed.sort_by(|a, b| a.0.cmp(&b.0));
+    let mut out: Vec<String> = keyed.into_iter().map(|(_, p)| p).collect();
     out.dedup();
     Some(out)
 }

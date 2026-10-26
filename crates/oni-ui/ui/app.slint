@@ -9,6 +9,7 @@ import { Info } from "info_sidebar.slint";
 import { CardStatus } from "card_status.slint";
 import { Canvas, Mark, CanvasCard } from "canvas.slint";
 import { Tree } from "library_tree.slint";
+import { FloatingColumn } from "floating.slint";
 import { Navigator, FolderLine, WelcomeLine, CatchUpLine, RootsCatchUpSheet } from "navigator.slint";
 import { Pairing, PairingSheet } from "pairing.slint";
 import { AppSettings, SettingsSheet } from "settings.slint";
@@ -144,8 +145,8 @@ export component MainWindow inherits AppWindow {
     out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
     out property <length> tabs-foot: ShellStyle.bar-height + PanelState.header + (App.panel-hidden ? Space.s : 0px);
     // `revealedLibrary` and `revealedPanel`: a hidden column slid over the card by the pointer.
-    property <bool> revealed-library;
-    property <bool> revealed-panel;
+    out property <bool> revealed-library;
+    out property <bool> revealed-panel;
     property <bool> beside-photo: !App.gallery && !Exporting.shown && !Preparing.shown;
     // `mode == .gallery`: the grid mounts afresh each time it shows, and lands on the open photo.
     out property <bool> grid-shown: App.gallery && !Exporting.shown && !Preparing.shown;
@@ -289,8 +290,10 @@ export component MainWindow inherits AppWindow {
                 vertical-stretch: 1;
                 // The gallery always lists the library; beside a photo the column can be hidden.
                 if (App.gallery || !App.library-hidden) && !Exporting.shown: Tree { width: ShellStyle.library-width; beside-photo: !App.gallery; cache-rendering-hint: true; }
-                Rectangle {
+                // Hovered while the pointer is on the card and no popup holds it, which a held column reads.
+                card-area := TouchArea {
                     horizontal-stretch: 1;
+                    enabled: root.revealed-library || root.revealed-panel;
                     // `card`: flush with the columns and the status bar, inset on all four sides only on export.
                     property <length> status: StatusStyle.height + 2 * Space.s;
                     card := CanvasCard {
@@ -354,37 +357,17 @@ export component MainWindow inherits AppWindow {
                         height: card.height;
                         changed has-hover => { if (self.has-hover) { root.revealed-panel = true; } }
                     }
-                    if root.beside-photo && App.library-hidden: TouchArea {
-                        y: 0;
-                        width: ShellStyle.library-width + 2 * Space.s;
-                        height: card.height;
-                        x: root.revealed-library ? 0 : -self.width;
-                        visible: root.revealed-library || self.x > -self.width;
-                        animate x { duration: root.revealed-library ? Motion.slide : 0ms; }
-                        changed has-hover => { if (!self.has-hover) { root.revealed-library = false; } }
-                        Raised {
-                            lift: Lift.float;
-                            x: Space.s; y: Space.s;
-                            width: parent.width - 2 * Space.s;
-                            height: parent.height - 2 * Space.s;
-                            Tree { width: parent.width; height: parent.height; beside-photo: true; }
-                        }
+                    if root.beside-photo && App.library-hidden: FloatingColumn {
+                        revealed <=> root.revealed-library;
+                        room: parent.width; card-hovered: card-area.has-hover;
+                        width: ShellStyle.library-width + 2 * Space.s; height: card.height;
+                        Tree { width: parent.width; height: parent.height; beside-photo: true; cache-rendering-hint: true; }
                     }
-                    if root.beside-photo && App.panel-hidden: TouchArea {
-                        y: 0;
-                        width: ShellStyle.panel-width + 2 * Space.s;
-                        height: card.height;
-                        x: root.revealed-panel ? parent.width - self.width : parent.width;
-                        visible: root.revealed-panel || self.x < parent.width;
-                        animate x { duration: root.revealed-panel ? Motion.slide : 0ms; }
-                        changed has-hover => { if (!self.has-hover) { root.revealed-panel = false; } }
-                        Raised {
-                            lift: Lift.float;
-                            x: Space.s; y: Space.s;
-                            width: parent.width - 2 * Space.s;
-                            height: parent.height - 2 * Space.s;
-                            Panel { height: parent.height; }
-                        }
+                    if root.beside-photo && App.panel-hidden: FloatingColumn {
+                        revealed <=> root.revealed-panel; trailing: true;
+                        room: parent.width; card-hovered: card-area.has-hover;
+                        width: ShellStyle.panel-width + 2 * Space.s; height: card.height;
+                        Panel { height: parent.height; }
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { cache-rendering-hint: true; }
@@ -421,6 +404,9 @@ export component MainWindow inherits AppWindow {
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
     if Told.shown: ToldNotice { room: root.width; room-height: root.height; }
+    // A press hides a tooltip, as AppKit's: the key may change its help or vanish under the hand.
+    property <int> presses: Outside.presses;
+    changed presses => { if (!Tip.card) { Tip.shown = false; } }
     tips := TipLayer {
         room: root.width; room-height: root.height; anchored: root.beside-photo && !root.sheet-shown;
         anchor-x: root.panel-x; anchor-y: root.tabs-foot; anchor-width: ShellStyle.panel-width;

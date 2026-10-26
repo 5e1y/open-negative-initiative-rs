@@ -73,6 +73,11 @@ impl State {
         self.painted.0
     }
 
+    /// Every thumbnail drawn and landed since launch, a redraw included.
+    pub fn thumbnails_landed(&self) -> usize {
+        self.org.thumbnails_landed
+    }
+
     /// Whether the opened folder's read has landed whole.
     pub fn read_done(&self) -> bool {
         self.read_done
@@ -111,6 +116,11 @@ impl State {
     pub fn forget_tiles(&mut self) {
         self.thumbs.clear();
         self.asked.clear();
+    }
+
+    /// How many thumbnails memory holds, which only the rows and cells near a view ask.
+    pub fn tiles_held(&self) -> usize {
+        self.thumbs.len()
     }
 
     /// The photo's fingerprint as the index holds it, which names its thumbnail's file.
@@ -205,11 +215,11 @@ impl State {
     }
 
     /// The open frame's place in its group, one-based, and the group's count.
-    pub(super) fn place(&self) -> Option<(u16, u16)> {
+    pub(super) fn place(&self) -> Option<(usize, usize)> {
         let open = self.open_path()?;
         let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open))?;
         let at = group.entries.iter().position(|e| e.path == open)?;
-        Some((at as u16 + 1, group.entries.len() as u16))
+        Some((at + 1, group.entries.len()))
     }
 }
 

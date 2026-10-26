@@ -52,6 +52,15 @@ impl Ctl {
         }
     }
 
+    /// A thumbnail landed reaches the roll's cells too; its tiles and rows took it in place, so the
+    /// grid is not laid again for each of a folder's thumbnails.
+    pub(super) fn thumbnail_reached(&self, fingerprint: &str) {
+        self.relay_thumbnail(fingerprint);
+        if self.state.borrow().prepare.shown {
+            self.publish_prepare();
+        }
+    }
+
     /// The cells in view and one row either side, the only tiles Slint is given.
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
@@ -65,7 +74,6 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         let range = s.layout.cells(s.scroll, s.grid.1);
-        let flags = Ctl::tile_flags(&s);
         // A cell reads the folder, never renders: a photo with no file waits for the pass or an edit.
         let mut asking = Vec::new();
         for i in range.clone() {
@@ -78,6 +86,7 @@ impl Ctl {
             s.asked.insert(fingerprint.clone());
             let _ = s.disk.send(fingerprint);
         }
+        let flags = Ctl::tile_flags(&s);
         let tiles: Vec<Tile> = range
             .clone()
             .filter_map(|i| {
@@ -116,7 +125,7 @@ impl Ctl {
                 Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into(), renaming }
             })
             .collect();
-        let slots = range.len();
+        let slots = range.len().max(s.layout.slots(s.grid.1));
         s.visible = range;
         let (height, scroll) = (s.layout.height, s.scroll);
         drop(s);
@@ -252,7 +261,7 @@ impl Ctl {
         let _ = std::thread::Builder::new().name("tidying".into()).spawn(move || {
             crate::decode_gate::in_background();
             let Some(index) = LibraryIndex::open(&index_path) else { return };
-            let sweeping = library::tidy::settled(&index_path);
+            let sweeping = library::tidy::settled(&index, &index_path);
             let done = library::tidy::tidy(&index, &support, &computer, &kept, sweeping);
             crate::timing::line(&format!("tidy: {} rows pruned, {} thumbnails swept", done.pruned, done.swept));
             if done.pruned > 0 {

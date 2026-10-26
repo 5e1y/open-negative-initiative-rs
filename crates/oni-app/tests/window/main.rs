@@ -9,7 +9,9 @@ mod auto_balance;
 mod button_group;
 mod canvas_layout;
 mod canvas_switch;
+mod column_menu;
 mod contact_sheet;
+mod density;
 mod depth_lip;
 mod design_system;
 mod editor_leftovers;
@@ -17,6 +19,7 @@ mod editor_routes;
 mod editors;
 mod explorer;
 mod export_paper_window;
+mod export_entering;
 mod export_window;
 mod extended;
 mod freshness;
@@ -72,8 +75,10 @@ mod together;
 mod together_all;
 mod told;
 mod toolbar;
+mod tooltip;
 mod tree_hand;
 mod transition;
+mod tree_cost;
 mod tree_leftovers;
 mod updates;
 mod visible;
@@ -103,6 +108,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("explorer::return_renames_and_double_click_does_not", explorer::return_renames_and_double_click_does_not),
     ("export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone", export_paper_window::a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_alone),
     ("export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata", export_window::the_export_surface_writes_what_the_proofed_canvas_shows_and_only_onis_metadata),
+    ("export_entering::entering_the_export_reads_no_scan_on_the_interface_thread", export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),
     ("extended::a_patch_is_swift_s_on_swift_s_source", extended::a_patch_is_swift_s_on_swift_s_source),
     ("extended::a_frame_renders_its_swift_patches_as_swift_does", extended::a_frame_renders_its_swift_patches_as_swift_does),
@@ -121,6 +127,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests", keycap_cost::a_press_draws_one_key_a_frame_and_nothing_once_it_rests),
     ("launch::the_splash_names_the_version_and_the_notice_covers_the_window", launch::the_splash_names_the_version_and_the_notice_covers_the_window),
     ("library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll", library_column::the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll),
+    ("library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches", library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches),
+    ("library_column::a_long_tree_makes_only_the_rows_near_its_view", library_column::a_long_tree_makes_only_the_rows_near_its_view),
     ("masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does", masks::the_mask_library_loads_renames_shows_remembers_and_moves_a_photo_out_as_swift_does),
     ("library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it", library_wide::a_trash_made_in_a_lists_after_b_opens_and_restore_all_restores_it),
     ("library_wide::a_project_from_a_still_lists_after_b_opens", library_wide::a_project_from_a_still_lists_after_b_opens),
@@ -135,12 +143,18 @@ const CHECKS: &[(&str, fn())] = &[
     ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
+    ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),
+    ("tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed", tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed),
+    ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
+    ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
     ("full_release::a_full_resolution_landing_in_the_gallery_is_let_go", full_release::a_full_resolution_landing_in_the_gallery_is_let_go),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
+    ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
+    ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),
@@ -152,7 +166,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face", phone_tabs::the_phone_s_tabs_step_the_panel_s_sliders_and_switch_the_face),
     ("prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step", prepare::a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one_gallery_step),
     ("prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read", prepare_leftovers::the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_frame_it_cannot_read),
-    ("prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well", prepare_measure::each_frame_measured_morphs_the_histogram_and_a_measure_opens_on_an_empty_well),
+    ("prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark", prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark),
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
@@ -185,6 +199,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("transition::a_new_camera_is_matched_once_behind_the_sheet", transition::a_new_camera_is_matched_once_behind_the_sheet),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
+    ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
+    ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),
     ("tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift", tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift),
     ("updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded", updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded),
     ("locate::locate_follows_favourite_rows_and_projects", locate::locate_follows_favourite_rows_and_projects),

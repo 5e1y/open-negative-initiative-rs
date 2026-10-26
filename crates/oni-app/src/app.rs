@@ -56,6 +56,7 @@ mod opening;
 use crate::slider_track::{position, position_on, stored_at, stored_on, track_on};
 mod sidebar_tree;
 mod tree_column;
+mod tree_rows;
 mod project_drop;
 mod tree_reveal;
 mod tree_clicks;

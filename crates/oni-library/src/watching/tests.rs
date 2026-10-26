@@ -152,3 +152,60 @@ fn a_deep_watch_holds_no_descriptor_per_file() {
     notify::Watcher::watch(&mut kqueue, Path::new(&deep), notify::RecursiveMode::Recursive).unwrap();
     assert!(descriptors() >= before + 400, "kqueue: {} descriptors more", descriptors().saturating_sub(before));
 }
+
+#[test]
+fn a_release_lets_every_watch_go_and_its_end_watches_what_was_asked_meanwhile() {
+    let (a, b) = (vec!["/A".to_owned()], vec!["/B".to_owned()]);
+    let mut asked = Asked::default();
+    assert_eq!(asked.set(a.clone(), Vec::new()), Some((a.clone(), Vec::new())));
+    assert_eq!(asked.release(), (Vec::new(), Vec::new()));
+    assert_eq!(asked.set(b.clone(), Vec::new()), None, "nothing is watched while a rename runs");
+    assert_eq!(asked.release(), (Vec::new(), Vec::new()));
+    assert_eq!(asked.resume(), None, "an inner release's end leaves the outer one standing");
+    assert_eq!(asked.resume(), Some((b.clone(), Vec::new())));
+    // Twin: a resume with no release standing changes nothing.
+    assert_eq!(asked.resume(), None);
+    assert_eq!(asked.set(a.clone(), Vec::new()), Some((a, Vec::new())));
+}
+
+#[test]
+fn a_photo_dropped_while_the_watches_are_released_is_not_told() {
+    let (_scratch, computer, root) = rig("watch-released");
+    let (roll, scans) = (paths::join(&root, "Home/Scans/Roll 8"), paths::join(&root, "Home/Scans"));
+    let (watch, calls) = live(&computer, &roll, &scans);
+    let released = watch.released();
+    std::fs::write(Path::new(&roll).join("C.nef"), b"x").unwrap();
+    std::thread::sleep(Duration::from_millis(1500));
+    assert!(calls.lock().unwrap().is_empty(), "{:?}", calls.lock().unwrap());
+    // Twin: once the release ends, a photo dropped is told again.
+    drop(released);
+    let mut n = 0;
+    until("the watch back", Duration::from_secs(30), || {
+        n += 1;
+        std::fs::write(Path::new(&roll).join(format!("D-{n}.nef")), b"x").unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        !calls.lock().unwrap().is_empty()
+    });
+}
+
+#[test]
+fn an_overflow_on_windows_is_a_rescan_of_the_folder_and_the_read_goes_on() {
+    use notify::rdcw_completion::{completion, rescan, Completion, ERROR_NOTIFY_ENUM_DIR};
+    let exists = || true;
+    assert_eq!(completion(ERROR_NOTIFY_ENUM_DIR, 0, exists), Completion::Rescan);
+    assert_eq!(completion(0, 0, exists), Completion::Rescan, "a buffer discarded whole reads nothing");
+    assert_eq!(completion(5, 0, || false), Completion::Gone);
+    // Twin: a read that wrote its changes is parsed, and an unknown error still ends the watch.
+    assert_eq!(completion(0, 120, exists), Completion::Changes);
+    assert_eq!(completion(5, 120, exists), Completion::Changes);
+    assert_eq!(completion(87, 120, exists), Completion::Failed);
+    assert_eq!(completion(995, 0, exists), Completion::Stopped);
+
+    // The rescan touches every watched folder under the one whose read overflowed.
+    let held = Held { deep: vec![("D:/Scans/Roll 8".into(), "D:/Scans/Roll 8".into())], flat: vec![("D:/Scans".into(), "D:/Scans".into())] };
+    let touched = held.touched(&rescan(std::path::PathBuf::from("D:/Scans")));
+    assert_eq!(touched, Touched { deep: vec!["D:/Scans/Roll 8".into()], flat: vec!["D:/Scans".into()] });
+    // Twin: the same path told as a plain change touches nothing, it being a folder that stays.
+    let plain = notify::Event::new(EventKind::Other).add_path(std::path::PathBuf::from("D:/Scans"));
+    assert_eq!(held.touched(&plain), Touched::default());
+}

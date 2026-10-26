@@ -2,8 +2,8 @@
 
 use oni_settings::codec::{self, Source};
 use oni_settings::json::semantic_difference;
-use oni_settings::sidecar::{self, WriteOptions};
-use oni_settings::{ConversionMode, Date, Face, Medal, PipelineSettings, ScannerMachine, roll_folder};
+use oni_settings::sidecar::{self, ExifMetadata, RollDraft, WriteOptions};
+use oni_settings::{ConversionMode, Date, Face, Id, Medal, PipelineSettings, ScannerMachine, roll_folder};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
@@ -33,6 +33,12 @@ fn value(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
 }
 
+/// The sidecar as Swift writes it: without the key this app adds for the original it was written for.
+fn swift_form(text: &str) -> String {
+    let own = format!("  \"{}\" : ", sidecar::identity::KEY);
+    text.split_inclusive('\n').filter(|line| !line.starts_with(&own)).collect()
+}
+
 #[test]
 fn every_roll_8_sidecar_round_trips() {
     let Some(roll) = oni_fixtures::raw_dir("every_roll_8_sidecar_round_trips") else { return };
@@ -40,7 +46,7 @@ fn every_roll_8_sidecar_round_trips() {
     assert_eq!(files.len(), 38, "roll #8 holds 38 sidecars");
     let mut identical = 0;
     for path in &files {
-        let original = std::fs::read_to_string(path).unwrap();
+        let original = swift_form(&std::fs::read_to_string(path).unwrap());
         assert_eq!(value(&original)["version"], 19);
         let written = rewritten(path, true);
         if let Some(why) = semantic_difference(&value(&original), &value(&written)) {
@@ -86,7 +92,7 @@ fn differences(a: &Value, b: &Value, path: &str, out: &mut Vec<String>) {
 fn twin_a_moved_field_in_a_roll_8_sidecar_is_seen() {
     let Some(roll) = oni_fixtures::raw_dir("twin_a_moved_field_in_a_roll_8_sidecar_is_seen") else { return };
     let path = roll.join("DSC_6442.NEF.json");
-    let original = std::fs::read_to_string(&path).unwrap();
+    let original = swift_form(&std::fs::read_to_string(&path).unwrap());
     let data = original.as_bytes();
     let decoded = codec::decode(data).unwrap();
     let encode = |settings: &PipelineSettings, label: Medal| {
@@ -115,6 +121,13 @@ fn twin_a_moved_field_in_a_roll_8_sidecar_is_seen() {
     let text = encode(&ulp, decoded.label);
     assert_ne!(text, original);
     assert!(semantic_difference(&value(&original), &value(&text)).is_none());
+}
+
+#[test]
+fn neighbouring_f32s_spelt_shortest_are_rounding() {
+    // An f32 and its neighbour one ulp past it, each spelt shortest, agree; twin: two ulps past it.
+    assert_eq!(semantic_difference(&json!(-1.0909756), &json!(-1.0909758)), None);
+    assert!(semantic_difference(&json!(-1.0909756), &json!(-1.0909759)).is_some());
 }
 
 #[test]
@@ -201,14 +214,33 @@ fn scratch(name: &str) -> PathBuf {
     dir
 }
 
-/// A copy of a roll #8 sidecar beside an empty stand-in: the sidecar is the truth, and a write
-/// needs an original beside it.
+/// A roll #8 sidecar beside an empty stand-in as a write there leaves it, with no medal, the camera's
+/// lines and a draft: the sidecar is the truth, and a write needs an original beside it.
 fn copied(roll: &Path, dir: &Path, frame: &str) -> (PathBuf, String) {
-    let text = std::fs::read_to_string(roll.join(format!("{frame}.json"))).unwrap();
+    let text = swift_form(&std::fs::read_to_string(roll.join(format!("{frame}.json"))).unwrap());
     let original = dir.join(frame);
     std::fs::write(&original, b"").unwrap();
     std::fs::write(sidecar::url_for(&original), &text).unwrap();
-    (original, text)
+    let loaded = sidecar::read(&original, true, true).unwrap();
+    let exif = ExifMetadata { camera: "NIKON CORPORATION NIKON Z f".into(), ..Default::default() };
+    let options = WriteOptions {
+        label: Some(Medal::None),
+        exif: loaded.exif.is_none().then_some(exif),
+        roll_draft: loaded.roll_draft.is_none().then(|| Some(base_draft())),
+        ..Default::default()
+    };
+    sidecar::write(&loaded.settings, &original, options).unwrap();
+    (original.clone(), std::fs::read_to_string(sidecar::url_for(&original)).unwrap())
+}
+
+/// The draft Swift leaves on a frame of a roll prepared up to its base step.
+fn base_draft() -> RollDraft {
+    serde_json::from_value(json!({
+        "capture": "camera", "film": "negative", "flagged": false, "id": Id::new().to_string(), "passOrder": "bgr",
+        "flatField": { "amount": 1, "mask": "None", "temperature": 0, "tint": 0 },
+        "step": "base", "ticked": true, "window": [[0.1, 0.1], [0.8, 0.8]],
+    }))
+    .unwrap()
 }
 
 #[test]

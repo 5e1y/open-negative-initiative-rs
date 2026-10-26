@@ -3,11 +3,45 @@
 use crate::DecodeError;
 use crate::source::{Route, Source};
 use std::ffi::CStr;
-use std::os::raw::{c_char, c_int, c_void};
+use std::os::raw::{c_char, c_float, c_int, c_void};
 use std::path::Path;
 
 unsafe extern "C" {
     fn oni_identify(path: *const c_char, stream: *mut c_void, make: *mut c_char, model: *mut c_char, dng: *mut c_int) -> c_int;
+    fn oni_describe(path: *const c_char, stream: *mut c_void, out: *mut Described) -> c_int;
+}
+
+#[repr(C)]
+struct Described {
+    make: [c_char; 64],
+    model: [c_char; 64],
+    lens: [c_char; 128],
+    artist: [c_char; 64],
+    iso: c_float,
+}
+
+/// What a RAW says of its making, as LibRaw reads it: maker and model as it names them, the lens
+/// the EXIF names, the artist, the ISO; empty or zero where the file says nothing.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Description {
+    pub make: String,
+    pub model: String,
+    pub lens: String,
+    pub artist: String,
+    pub iso: f32,
+}
+
+/// `path`'s description from its metadata alone; an error for a file LibRaw cannot open.
+pub fn describe(path: &Path) -> Result<Description, DecodeError> {
+    let mut source = Source::open(path, Route::PLATFORM)?;
+    let mut out = Described { make: [0; 64], model: [0; 64], lens: [0; 128], artist: [0; 64], iso: 0.0 };
+    let rc = unsafe { oni_describe(source.name(), source.take(), &mut out) };
+    if rc != 0 {
+        return Err(DecodeError(rc));
+    }
+    // SAFETY: the shim copies one byte short of each buffer, which it zeroed first.
+    let text = |b: &[c_char]| unsafe { CStr::from_ptr(b.as_ptr()) }.to_string_lossy().trim().to_string();
+    Ok(Description { make: text(&out.make), model: text(&out.model), lens: text(&out.lens), artist: text(&out.artist), iso: out.iso })
 }
 
 /// Maker and model as LibRaw names them, so two files of one body always share a key.

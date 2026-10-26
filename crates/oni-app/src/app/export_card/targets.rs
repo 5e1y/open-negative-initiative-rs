@@ -3,38 +3,86 @@
 use super::*;
 
 impl Ctl {
-    /// Every line at once from the sidecars, then each frame decoded once for its size and preview,
-    /// in order, off this thread; a newer pass or a space change stops this one.
+    /// Each line from its sidecar or the scan's head, and each frame decoded once for its size and
+    /// preview, in order, off this thread; a newer pass stops them.
     pub(super) fn read_targets(self: &Rc<Self>) {
-        let (targets, generation, pass, artist, copyright, rolls) = {
+        let (targets, generation, pass) = {
             let c = self.export.borrow();
-            let s = self.state.borrow();
-            let rolls: Vec<Option<oni_settings::Film>> = c
-                .targets
-                .iter()
-                .map(|t| {
-                    let path = oni_library::paths::normal(&t.path.to_string_lossy()).into_owned();
-                    s.archive.as_ref().and_then(|a| a.entries().into_iter().find(|e| e.path == path).and_then(|e| e.film.clone()))
-                })
-                .collect();
-            let generation = c.pass.fetch_add(1, Ordering::Relaxed) + 1;
-            (c.targets.clone(), generation, c.pass.clone(), c.artist.clone(), c.copyright.clone(), rolls)
+            (c.targets.clone(), c.pass.fetch_add(1, Ordering::Relaxed) + 1, c.pass.clone())
         };
-        let rows: Vec<Row> = targets.iter().zip(&rolls).map(|(t, roll)| export::opening_row(&t.path, roll.as_ref(), &artist, &copyright)).collect();
-        let low = targets.iter().filter(|t| oni_decode::is_low_precision(&t.path)).count();
+        self.read_rows();
+        self.render_previews(targets, generation, pass);
+    }
+
+    /// What every line opens on: the targets, their roll, and the artist and copyright last written.
+    fn row_sources(&self) -> (Vec<Target>, Vec<Option<oni_settings::Film>>, String, String) {
+        let c = self.export.borrow();
+        let s = self.state.borrow();
+        // One map for the whole batch, the first entry of a path winning as a search would.
+        let films: std::collections::HashMap<String, Option<oni_settings::Film>> =
+            s.archive.as_ref().map(|a| a.entries().iter().rev().map(|e| (e.path.clone(), e.film.clone())).collect()).unwrap_or_default();
+        let rolls = c.targets.iter().map(|t| films.get(oni_library::paths::normal(&t.path.to_string_lossy()).as_ref()).cloned().flatten()).collect();
+        (c.targets.clone(), rolls, c.artist.clone(), c.copyright.clone())
+    }
+
+    /// The lines land one by one from their own thread, so the surface shows before any scan is read.
+    fn read_rows(self: &Rc<Self>) {
+        let (targets, rolls, artist, copyright) = self.row_sources();
+        let (reading, generation) = {
+            let c = self.export.borrow();
+            (c.reading.clone(), c.reading.fetch_add(1, Ordering::Relaxed) + 1)
+        };
+        std::thread::Builder::new()
+            .name("export rows".into())
+            .spawn(move || {
+                let mut low = 0;
+                for (i, (target, roll)) in targets.iter().zip(&rolls).enumerate() {
+                    if reading.load(Ordering::Relaxed) != generation {
+                        return;
+                    }
+                    let row = export::opening_row(&target.path, roll.as_ref(), &artist, &copyright);
+                    low += usize::from(oni_decode::is_low_precision(&target.path));
+                    with_shell(move |c| c.row_landed(generation, i, row));
+                }
+                with_shell(move |c| {
+                    {
+                        let mut card = c.export.borrow_mut();
+                        if card.reading.load(Ordering::Relaxed) != generation {
+                            return;
+                        }
+                        card.low_precision = low;
+                    }
+                    c.publish_export();
+                });
+            })
+            .expect("export rows thread");
+    }
+
+    /// A line typed in before it lands keeps the typing.
+    fn row_landed(self: &Rc<Self>, generation: u64, i: usize, row: Row) {
         {
             let mut c = self.export.borrow_mut();
-            // A line typed in before it lands keeps the typing.
-            for (i, row) in rows.into_iter().enumerate() {
-                if c.rows[i].is_none() {
-                    c.rows[i] = Some(row);
-                }
+            if c.reading.load(Ordering::Relaxed) != generation || c.rows.get(i).is_none_or(Option::is_some) {
+                return;
             }
-            c.low_precision = low;
+            c.rows[i] = Some(row);
         }
-        self.publish_lines();
-        self.publish_export();
-        self.render_previews(targets, generation, pass);
+        self.publish_line(i);
+    }
+
+    /// Every line still on its way read here and now, as a write cannot wait for them.
+    pub(super) fn rows_now(self: &Rc<Self>) {
+        if self.export.borrow().rows.iter().all(Option::is_some) {
+            return;
+        }
+        let (targets, rolls, artist, copyright) = self.row_sources();
+        for (i, (target, roll)) in targets.iter().zip(&rolls).enumerate() {
+            if self.export.borrow().rows.get(i).is_some_and(Option::is_none) {
+                let row = export::opening_row(&target.path, roll.as_ref(), &artist, &copyright);
+                self.export.borrow_mut().rows[i] = Some(row);
+                self.publish_line(i);
+            }
+        }
     }
 
     pub(super) fn render_previews(self: &Rc<Self>, targets: Vec<Target>, generation: u64, pass: Arc<AtomicU64>) {

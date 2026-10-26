@@ -87,6 +87,8 @@ pub struct Card {
     /// Each batch's pass and each estimate carry a generation; a newer one makes them stop.
     pass: Arc<AtomicU64>,
     weighing: Arc<AtomicU64>,
+    /// The lines' reading, its own: a preview pass started again leaves the lines to land.
+    reading: Arc<AtomicU64>,
     artist: String,
     copyright: String,
     last_profile: String,
@@ -147,6 +149,7 @@ impl Card {
             stop: Arc::default(),
             pass: Arc::default(),
             weighing: Arc::default(),
+            reading: Arc::default(),
             installed: OutputProfile::last_installed(),
             pending: false,
             prefs,

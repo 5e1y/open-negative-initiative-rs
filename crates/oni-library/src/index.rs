@@ -106,6 +106,7 @@ impl LibraryIndex {
             self.connection.execute_batch("DROP TABLE IF EXISTS photos; DROP TABLE IF EXISTS stamps")?;
             self.connection.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION}"))?;
         }
+        let made = rebuilt::lacks_photos(&self.connection)?;
         self.connection.execute_batch(
             "CREATE TABLE IF NOT EXISTS photos (
                 path TEXT PRIMARY KEY NOT NULL,
@@ -130,8 +131,14 @@ impl LibraryIndex {
             CREATE INDEX IF NOT EXISTS photos_fingerprint ON photos(fingerprint);
             CREATE INDEX IF NOT EXISTS photos_label ON photos(label);",
         )?;
-        stamps::prepare(&self.connection)
+        stamps::prepare(&self.connection)?;
+        rebuilt::prepare(&self.connection)?;
+        if made {
+            self.note_rebuilt(std::time::SystemTime::now())?;
+        }
+        Ok(())
     }
+
 
     /// `body` inside one transaction, committed whole or rolled back.
     fn in_one(&self, body: impl FnOnce() -> rusqlite::Result<()>) -> rusqlite::Result<()> {
@@ -383,6 +390,7 @@ fn frames(picked: &[&Entry], rows: &[Entry]) -> Vec<Entry> {
 
 mod forget;
 pub mod prune;
+mod rebuilt;
 mod spelling;
 mod stamps;
 pub use stamps::Stamped;

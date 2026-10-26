@@ -52,6 +52,29 @@ fn a_folder_read_twice_reads_its_files_once_and_drops_a_photo_gone() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+#[test]
+fn a_read_superseded_after_its_survey_removes_no_row() {
+    let root = std::env::temp_dir().join(format!("oni-app-superseded-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Scans");
+    write(&folder.join("A.NEF"), b"first");
+    let index = LibraryIndex::open(&root.join("Caches/index.sqlite")).unwrap();
+    let scans = paths::canonical(&folder);
+    // A row the survey never listed, as a move just wrote it under its new name.
+    let moved = paths::join(&scans, "Roll/B.NEF");
+    index.upsert(&Entry::new(&moved, Date::since_reference_date(8e8), "5-no-date-b")).unwrap();
+    let computer = Computer { home: scans.clone(), volumes: paths::canonical(&root.join("Volumes")) };
+    let kept = root.join("Surveys");
+    // Alive through the survey, superseded once the survey is kept: before any row is weighed.
+    read_rows(&scans, &index, &Place { computer: &computer, kept: Some(&kept) }, &|| !kept.exists(), &mut |_, _, _| {});
+    assert!(index.row(&moved).is_some(), "a read superseded keeps the rows written meanwhile");
+    // Twin: a read still alive drops the row its survey did not list.
+    let _ = std::fs::remove_dir_all(&kept);
+    read_rows(&scans, &index, &Place { computer: &computer, kept: None }, &|| true, &mut |_, _, _| {});
+    assert!(index.row(&moved).is_none());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 #[cfg(unix)]
 #[test]
 fn a_folder_reached_through_a_link_lists_the_photos_on_its_real_path() {
@@ -71,7 +94,7 @@ fn a_folder_reached_through_a_link_lists_the_photos_on_its_real_path() {
     // Twin: the same rows laid under the link as written fall outside every group.
     let survey = roots::survey(&[paths::canonical(&real)], &|| true);
     let rows: Vec<Entry> = archive.entries().into_iter().cloned().collect();
-    let raw = Archive::from_rows(&through.to_string_lossy(), &rows, &survey, None);
+    let raw = Archive::from_rows(&through.to_string_lossy(), &rows, &Arc::new(survey), None);
     assert!(raw.entries().is_empty(), "the twin must lose the photos the link hides");
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -302,4 +325,75 @@ fn a_raw_jpeg_pair_is_one_tile_in_the_archive() {
     write(&folder.join("DSC_1.JPG.json"), b"{}");
     assert_eq!(names(&Archive::load(&folder)).len(), 3);
     let _ = std::fs::remove_dir_all(&root);
+}
+
+/// Two rolls of three photos and an empty folder under `/R/Scans`, as a survey would list them.
+fn synthetic() -> (Vec<Entry>, Arc<Survey>) {
+    let rows: Vec<Entry> = ["Roll A/a1.NEF", "Roll A/a2.NEF", "Roll A/a3.NEF", "Roll B/b1.NEF", "Roll B/b2.NEF", "Roll B/b3.NEF"]
+        .iter()
+        .enumerate()
+        .map(|(i, p)| {
+            let mut e = Entry::new(&format!("/R/Scans/{p}"), Date::since_reference_date(8e8), &format!("print-{i}"));
+            e.captured_at = Some(Date::since_reference_date(8e8 + i as f64 * 60.0));
+            e
+        })
+        .collect();
+    let survey = Survey {
+        images: rows.iter().map(|e| e.path.clone()).collect(),
+        folders: ["Roll A", "Roll B", "Empty"].iter().map(|f| format!("/R/Scans/{f}")).collect(),
+        ..Survey::default()
+    };
+    (rows, Arc::new(survey))
+}
+
+#[test]
+fn a_lay_on_the_same_rows_keeps_the_tree_and_a_medal_moves_its_row_alone() {
+    let (rows, survey) = synthetic();
+    let folder = "/R/Scans";
+    let cut = Archive::from_rows(folder, &rows, &survey, None);
+    let laid = cut.rows();
+    // The same rows under a survey read again, its sidecars' dates moved: the tree held stands.
+    let mut again = (*survey).clone();
+    again.sidecars.insert(rows[0].path.clone(), Date::since_reference_date(9e8));
+    let (kept, how) = Archive::relaid(Some(cut), None, folder, &rows, &Arc::new(again), None);
+    assert_eq!((how, kept.rows()), (Relaid::Kept, laid.clone()));
+    // A medal moves its photo's caption and its gallery entry, nothing else.
+    let mut medalled = rows.clone();
+    medalled[4].label = Medal::Gold;
+    let (archive, how) = Archive::relaid(Some(kept), None, folder, &medalled, &survey, None);
+    assert_eq!(how, Relaid::Medals);
+    let changed: Vec<usize> = archive.rows().iter().zip(&laid).enumerate().filter(|(_, (a, b))| a != b).map(|(i, _)| i).collect();
+    let b2 = archive.rows().iter().position(|r| r.id == NodeId::Photo(rows[4].path.clone())).unwrap();
+    assert_eq!((changed, archive.rows()[b2].caption.clone()), (vec![b2], medal(Medal::Gold)));
+    assert_eq!(archive.entries().iter().find(|e| e.path == rows[4].path).map(|e| e.label), Some(Medal::Gold));
+    // Under a filter the medal cuts the gallery again, the tree kept.
+    let (filtered, how) = Archive::relaid(Some(archive), None, folder, &medalled, &survey, Some(Medal::Gold));
+    assert_eq!((how, filtered.entries().len(), filtered.rows().len()), (Relaid::Regrouped, 1, laid.len()));
+    // Twin: a row that moved otherwise, its print here, cuts the tree whole.
+    let mut moved = medalled.clone();
+    moved[1].fingerprint = "print-new".into();
+    assert_eq!(Archive::relaid(Some(filtered), None, folder, &moved, &survey, None).1, Relaid::Cut);
+    // Twin: a folder new on the disk cuts it too.
+    let mut grown = (*survey).clone();
+    grown.folders.push("/R/Scans/Roll C".into());
+    let held = Archive::from_rows(folder, &rows, &survey, None);
+    assert_eq!(Archive::relaid(Some(held), None, folder, &rows, &Arc::new(grown), None).1, Relaid::Cut);
+}
+
+#[test]
+fn a_tree_cut_off_the_thread_is_taken_only_for_the_rows_it_was_cut_from() {
+    let (rows, survey) = synthetic();
+    let folder = "/R/Scans";
+    // A staged archive marked by its folds, so taking it shows in its rows.
+    let staged = |rows: &[Entry]| {
+        let mut a = Archive::from_rows(folder, rows, &survey, None);
+        a.set_expanded(HashSet::new());
+        a
+    };
+    let (taken, how) = Archive::relaid(None, Some(staged(&rows)), folder, &rows, &survey, None);
+    assert_eq!((how, taken.rows().len()), (Relaid::Cut, 1), "the staged archive is taken as cut");
+    // Twin: one cut from other rows is refused, the lay cutting its own from the rows held.
+    let fewer = &rows[..5];
+    let (cut, _) = Archive::relaid(None, Some(staged(fewer)), folder, &rows, &survey, None);
+    assert_eq!((cut.rows().len(), cut.entries().len()), (10, 6), "every folder unfolded over the six photos held");
 }

@@ -240,3 +240,15 @@ fn write_tiff(path: &std::path::Path, w: usize, h: usize, tone: f32, linear_raw:
     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
     std::fs::write(path, out).unwrap();
 }
+
+/// The archive column asked to stand at `y`, as Rust asks it: its scroller moves and says so back.
+pub fn scroll_tree(lib: &oni_app::Library, y: f32) {
+    lib.set_tree_viewport_y(y);
+    lib.set_tree_scroll_asks(lib.get_tree_scroll_asks().wrapping_add(1));
+}
+
+/// The projects' column asked to stand at `y`, as Rust asks it.
+pub fn scroll_projects(lib: &oni_app::Library, y: f32) {
+    lib.set_project_viewport_y(y);
+    lib.set_project_scroll_asks(lib.get_project_scroll_asks().wrapping_add(1));
+}

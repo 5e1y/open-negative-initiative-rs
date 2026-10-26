@@ -114,6 +114,8 @@ pub struct Organising {
     pub trash_picked: Option<String>,
     /// Every photo in the ONI Trash, whichever folder holds it.
     pub trashed: Vec<Entry>,
+    /// The folder each trash row shows, by row, as last published: a click names the row it landed on.
+    pub trash_lines: Vec<String>,
     pub projects: Vec<Project>,
     /// `projects.json` as last read or written, which tells this app's changes from another's.
     pub projects_read: Vec<Project>,
@@ -125,6 +127,13 @@ pub struct Organising {
     pub bands: Vec<Band>,
     /// The photos shown whose original is not there, from `presence` alone.
     pub missing: HashSet<String>,
+    /// `tile_flags` of the bands and the missing above, cut once each time they are laid.
+    pub flags: HashMap<String, (i32, bool, bool)>,
+    /// The archive a read cut off this thread from the rows it landed, which the next lay takes
+    /// when they are still the rows held.
+    pub staged: Option<crate::library::Archive>,
+    /// Every thumbnail drawn and landed since launch, a redraw included.
+    pub thumbnails_landed: usize,
     /// Each photo's state as the reads and the looks off this thread last published it.
     pub presence: HashMap<String, oni_library::presence::Presence>,
     pub opened_presence: oni_library::presence::Presence,
@@ -133,6 +142,8 @@ pub struct Organising {
     pub left: Vec<String>,
     /// The opened folder's reads started, which the checks count.
     pub reads: usize,
+    /// The opened folder's reads that landed whole, which the checks count.
+    pub reads_whole: usize,
     menu: Vec<Item>,
     menu_path: Option<String>,
     menu_lists: (Vec<(Id, String)>, Vec<(Id, String)>),
@@ -142,6 +153,8 @@ pub struct Organising {
     row_click: Option<(Column, usize, Instant)>,
     /// What the sidebar's fields were last loaded from, so a refresh never overwrites typing.
     info_loaded: Option<String>,
+    /// The name typed over in the sidebar's title, and the roll or project it was typed for.
+    title_draft: Option<(String, String)>,
     /// The surface last laid: 0 the archive, 1 the projects, 2 the ONI Trash.
     laid_surface: Option<u8>,
     /// `renaming` and `draft`: the heading typed over, and what its field holds now.
@@ -210,7 +223,8 @@ impl State {
     pub(super) fn selected(&self) -> Vec<String> {
         let picks = &self.picks.selection;
         let mut out: Vec<String> = self.order.iter().filter(|p| picks.contains(*p)).cloned().collect();
-        let mut rest: Vec<String> = picks.iter().filter(|p| !out.contains(p)).cloned().collect();
+        let shown: HashSet<&String> = out.iter().collect();
+        let mut rest: Vec<String> = picks.iter().filter(|p| !shown.contains(p)).cloned().collect();
         rest.sort();
         out.extend(rest);
         out
@@ -361,6 +375,8 @@ impl Ctl {
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
+        let p = me.clone();
+        lib.on_title_edited(move |t| p.title_edited(&t));
         let p = me.clone();
         lib.on_select_roll_type(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();

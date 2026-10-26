@@ -17,6 +17,16 @@ fn renamed_refused(e: &std::io::Error, platform: Platform) -> String {
     tr!("The folder could not be renamed: {error}", error = oni_library::refusal::cause(e))
 }
 
+/// `from` named `to` on the disk, as `moveItem` refuses an existing target: never over an item there,
+/// even one arriving after a look, as `rename(2)` replaces an empty folder; a change of case alone renames.
+fn renamed_on_disk(from: &str, to: &str) -> std::io::Result<()> {
+    if same_item(from, to) {
+        let rename = |from: &Path, to: &Path| std::fs::rename(from, to);
+        return oni_library::roll_folder::retried(Path::new(from), Path::new(to), &rename, &std::thread::sleep, Platform::THIS);
+    }
+    oni_library::roll_folder::rename_new(Path::new(from), Path::new(to))
+}
+
 impl State {
     /// The one folder menu, the navigator's and the tree's alike: Open, the favourite, Rename…, the
     /// roll, New Folder Inside, Show in Finder; out of reach, only what writes nothing under it.
@@ -147,6 +157,10 @@ impl Ctl {
         if trimmed.is_empty() || trimmed == paths::name(path) {
             return self.publish_navigator();
         }
+        // A move or a mark under way writes under the old name to its end.
+        if self.busy_said(tr("Rename")) {
+            return self.publish_navigator();
+        }
         // A separator would move the folder rather than name it, a leading dot would hide it.
         if let Some(why) = oni_library::names::refused(trimmed, Platform::THIS) {
             self.told(tr("Rename"), &why);
@@ -161,14 +175,7 @@ impl Ctl {
             return self.publish_navigator();
         }
         let target = paths::join(&paths::parent(path), trimmed);
-        // `moveItem` refuses an existing target; `rename(2)` would replace an empty folder.
-        let moved = if Path::new(&target).exists() && !same_item(path, &target) {
-            Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, tr!("an item named “{name}” already exists", name = trimmed)))
-        } else {
-            let rename = |from: &Path, to: &Path| std::fs::rename(from, to);
-            oni_library::roll_folder::retried(Path::new(path), Path::new(&target), &rename, &std::thread::sleep, Platform::THIS)
-        };
-        if let Err(e) = moved {
+        if let Err(e) = self.unwatched(|| renamed_on_disk(path, &target)) {
             self.told(tr("Rename"), &renamed_refused(&e, Platform::THIS));
             return self.publish_navigator();
         }
@@ -200,7 +207,7 @@ impl Ctl {
             if inside {
                 std::sync::Arc::make_mut(&mut s.survey).folders.push(made.clone());
                 if let Some(archive) = s.archive.as_mut() {
-                    archive.expanded.insert(NodeId::Folder(folder.to_owned()));
+                    archive.unfold(NodeId::Folder(folder.to_owned()));
                 }
             }
             if !tree {
@@ -245,5 +252,30 @@ impl Ctl {
             s.nav.model.reveal(folder, &computer);
         }
         self.publish_navigator();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_rename_never_replaces_a_folder_made_meanwhile() {
+        let root = std::env::temp_dir().join(format!("oni-rename-new-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let (from, to) = (root.join("Roll 3"), root.join("Portra"));
+        let (a, b) = (from.to_string_lossy().into_owned(), to.to_string_lossy().into_owned());
+        // Another app makes an empty folder of the name between the look and the rename.
+        std::fs::create_dir_all(&from).unwrap();
+        std::fs::create_dir_all(&to).unwrap();
+        let refused = renamed_on_disk(&a, &b).unwrap_err();
+        assert_eq!(refused.kind(), std::io::ErrorKind::AlreadyExists);
+        assert!(from.is_dir() && to.is_dir(), "both folders stay");
+        // Twin: a plain rename takes the empty folder's place, which the guard exists to refuse.
+        if cfg!(unix) {
+            std::fs::rename(&from, &to).unwrap();
+            assert!(!from.exists() && to.is_dir());
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

@@ -3512,6 +3512,13 @@
     "detail": "OutsideProbe (ds/probes.slint) lays a key monitor round a field, a rename, a key and two pickers. outside::a_menu_closes… : a click beside a menu closes it and the key under it counts nothing (twins: the key counts a click with no menu down, a click inside picks its line); a click on the other picker opens it (twin: a click on the open picker closes it and opens none). outside::a_field_ends… : a click beside the field ends its editing and the next key reaches the monitor, a rename commits (twins: a click inside keeps the focus and the key goes in at the caret; a click inside the rename keeps it, Escape cancels). Each mutation of the rule makes its check fail."
   },
   {
+    "id": 613,
+    "type": "test",
+    "title": "The panel's binding checks aimed again after the taller keys and tab bars",
+    "status": "done",
+    "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
     "id": 615,
     "type": "fix",
     "title": "A section ending on a well or a raised face draws its lip and shadow whole",
@@ -3582,11 +3589,641 @@
     "detail": "TipLayer takes the panel's anchor from app.slint (its left edge, root.width less the panel's width, and the tab bar's foot, the bar's height plus PanelState.header the panel lays from its rule) and opens every card from a mark inside the panel with its right edge TipStyle.card-gap left of the panel and its top at the foot, held in the window by Tips.place so a short window lifts it. Marks off the panel (gallery Info, export and prepare columns, sheets) and every tooltip keep their place under the mark; a sheet over the window drops the anchor. Window check help_card with its twins (a card beside its mark, a note over the canvas, the gallery's column)."
   },
   {
-    "id": 613,
-    "type": "test",
-    "title": "The panel's binding checks aimed again after the taller keys and tab bars",
+    "id": 650,
+    "type": "fix",
+    "title": "The sidebar trees follow every scroll, so the rows it reaches get their pictures",
     "status": "done",
-    "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+    "detail": "The trees' scroll was bound both ways to Library.tree-viewport-y and project-viewport-y, but a wheel or trackpad scroll removes the Flickable's bindings (Slint's remove_binding before its smooth-scroll animation): from the first wheel on, Rust read a frozen scroll, the near-view rule gave pictures to the rows around the old place only, and the rows scrolled into view stayed empty until another event laid the column. The scroll now goes one way each: Rust asks a place (viewport-y plus a count of asks the RowTree applies), and the scroller reports every move, wheel, knob, key or reveal, with its value (tree-scrolled(y), project-scrolled(y)); Slint runs that change handler once a frame. A size change fills the rows a taller column brings near. Window check library_column::a_scroll_brings_the_pictures_of_the_rows_it_reaches: in a 1,100-photo column scrolled by the wheel without a resize, the scroll reaches Rust and the rows in view get their pictures, the top row left far away lets its picture go; after an ask far down, no row three screens away holds one (twin). The tree checks that scrolled by writing the property now ask as Rust does (common::scroll_tree, scroll_projects)."
+  },
+  {
+    "id": 651,
+    "type": "fix",
+    "title": "A tree asks only the thumbnails of the rows near its view, and asks again those memory let go",
+    "status": "done",
+    "detail": "Laying a tree asked every photo row's thumbnail file: past MEMORY_LIMIT (1,000) memory dropped its least recent half, often the rows on screen, and a scroll never asked them again (fill_tree_thumbnails only read memory). Laying now asks the rows near the view only, nothing while the column has no size, and a fill asks the near rows whose picture is not in memory, read off the interface thread as before. Same window check: with memory emptied (forget_tiles) and the column laid again, fewer than a quarter of the 1,100 thumbnails are asked (599 when every row asks, the twin), and the rows an ask brings into view read theirs back (a timeout when a fill asks nothing, the twin)."
+  },
+  {
+    "id": 652,
+    "type": "performance",
+    "title": "A long sidebar tree makes only the rows near its view and tells Slint only the rows that changed",
+    "status": "done",
+    "detail": "RowTree laid every row of a tree with a plain for: 2,000 photos made some 20,000 elements that every frame evaluated and drew, and publish_tree replaced the whole model on every photo opened (M34). The rows now live in one Rust model per tree (app/tree_rows.rs, TreeRows): Library.rows and project-rows still hold every row, each carrying its index, for Rust and the checks; Library.near-rows and project-near-rows are a window over them, the rows within the near-view rule's reach (a screen above the view to two below), the only ones the column makes. A scroll, a resize or a landing moves the window: rows leaving it are removed and rows entering it added, the rest kept; a row changed reaches the window in place; a tree laid again with the same count tells only the rows that differ, a new count resets. Rows keep their own x and y, as the archive's pairs lay two thumbnails a line, so the window is cut in Rust rather than by Slint's ListView, which stacks one element a line. mark_tree reads each row's mark without copying it. The revealed column carries cache-rendering-hint as the docked one does. Window check library_column::a_long_tree_makes_only_the_rows_near_its_view: in a 2,000-photo column, 17 rows made at the top and 26 mid-column, exactly the rows in reach and under a tenth of the tree (2,001 made when the window holds every row, the twin), every row in view made with its picture. Sixty Exposure notches handled and drawn by the software renderer beside it in the dev profile (interpreted interface): p50 59 to 258 ms before, 11 to 12 ms after, as beside a 30-photo tree (11.9 ms). Unit checks in tree_rows.rs, each with its twin. ONI_BENCH drags now also report the interface's frames."
+  },
+  {
+    "id": 653,
+    "type": "performance",
+    "title": "A thumbnail landing reaches its tiles and rows in place, without laying the gallery again",
+    "status": "done",
+    "detail": "Each thumbnail landed, read from the folder or drawn, called publish_tiles, which relit the whole tree, rebuilt every tile in view, asked the cells again and laid the headings (M38): a 2,000-photo folder did so 2,000 times while loading, about 0.5 ms each on the interface thread. A landing now goes through thumbnail_reached: relay_thumbnail puts the picture on the tiles and rows already showing its photo, and the roll's cells are published when Prepare the Roll is shown, as before. The gallery, visible and prepare window checks pass unchanged."
+  },
+  {
+    "id": 654,
+    "type": "performance",
+    "title": "The gallery keeps one slot count while it scrolls, so a scroll remakes no tile",
+    "status": "done",
+    "detail": "lay_tiles maps each cell in view to the slot index % slots, but the slot count was the range's length, which changes as rows and band ends enter and leave the view: the model was replaced and every tile remade at each such step (M35). The count is now the most cells the view can hold wherever it scrolls (gallery::Layout::slots: the viewport and a row of slack either side, one cut row at each end, one more for a band ending inside), the range's own length when it is ever larger. Unit check the_slots_hold_the_cells_in_view_wherever_the_grid_scrolls (2,000 scroll positions over three bands within the count, which stays near the view; twin: the range's length varies). Window check scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way: a 300-point knob drag over 1,200 photos keeps the same tiles model."
+  },
+  {
+    "id": 655,
+    "type": "feature",
+    "title": "The roll's histogram summed as the roll combines its frames",
+    "status": "done",
+    "detail": "Each measured frame keeps the levels histogram its tails and median were read off (Measured.counts), and roll::summed lays every frame's counts at the roll's gains, moved as the tails are, into the bins of 0…1, so the measure can show the roll so far with the black and white combined reads. Test the_roll_s_histogram_sums_every_frame_moved_to_the_roll_s_gains, its twin the last frame alone."
+  },
+  {
+    "id": 656,
+    "type": "feature",
+    "title": "One CRT glass for the Scanner face's screen and the measure: ds crt.slint",
+    "status": "done",
+    "detail": "CrtScreen (LabScreen's glass, its scanlines in one cached layer), CrtLine (the phosphor ink with LabScreen's glow, a near and a far halo on the glyphs' outer stroke, since Slint has no text shadow), CrtTrace (a phosphor histogram, its echoes, the roll's ends and what lies past them dimmed) and CrtPicture (a cross-fading picture); CrtStyle holds their values. LabScreen now draws on it and gains the glow Swift's has."
+  },
+  {
+    "id": 657,
+    "type": "feature",
+    "title": "The measure step as a bank of CRT screens: the place, the negative, three channels",
+    "status": "done",
+    "detail": "The 2.5D plot well in its card (TraceWell, TraceStyle) is gone. The measure shows FRAME 03/08 and the frame's name on a screen line, the frame's negative reduced on the measure's thread with its lights blooming and cross-fading as the next lands, and red, green and blue each on its own screen, morphing into the next frame's with the frames before as fading echoes. Curves are published as whole models: a screen reading its curve by index is not woken by a row written in place. Nothing ticks once the morph rests."
+  },
+  {
+    "id": 658,
+    "type": "feature",
+    "title": "The roll's screen: its histogram building up frame by frame, its black and white placed",
+    "status": "done",
+    "detail": "After each frame that votes, the worker combines the roll so far and sends its summed histogram and each channel's black and white once per frame; the roll's screen draws them as three bands with their ends as phosphor lines that move as the estimate settles. The base is read before the frames, so the black shown is the one the roll takes; the reading itself is unchanged."
+  },
+  {
+    "id": 659,
+    "type": "test",
+    "title": "The measure's window check follows the CRT bank and the roll",
+    "status": "done",
+    "detail": "prepare_measure: every screen dark at the start, after a stop and after landing (no channel, echo, negative or roll); three channels per landing, the place on two digits, the negative shown; the roll's count never shrinks and reaches several frames, its histogram moves, each black left of its white. Twins: the histogram moved between landings, and a roll showing the last frame alone would stay at one."
+  },
+  {
+    "id": 660,
+    "type": "fix",
+    "title": "A gallery undo or redo that lays the open frame back is an editor step too",
+    "status": "done",
+    "detail": "write_back put the open frame back with replace() alone, so the editor's history still stood on the state the gallery had just undone: an edit then recorded on top of a pasted state the user had undone, an editor ⌘Z brought the paste back, and under Edit Together the frames together showed and took the open frame's pre-paste fields. take_back now records the restored state with History::record_apart, a step neither the gesture before nor after merges with, as Swift's deferred record runs for every change but a replay. Test a_paste_undone_in_the_gallery_never_comes_back_with_an_editor_undo, its twin the paste left standing where the editor undo lands."
+  },
+  {
+    "id": 661,
+    "type": "fix",
+    "title": "Edits made while files move, or kept after a refused write, follow the photo to its new path",
+    "status": "done",
+    "detail": "followed() moved the rows, picks and projects but never the store: the open frame's next write and the edits kept unsaved stayed under the old path, so the moved photo opened without them and Retry Unsaved answered 'cannot be found' forever. EditorStore::follow now carries the open frame, every Unsaved (its stamp read again), the frames together and the editor companions, and followed() calls it first. The deferred write waits while a disk gesture runs, so it never lays a fresh sidecar beside a photo about to leave; ⌘G back onto the open frame is refused while one runs, as open_in_editor already was; New Roll and a gallery undo or redo of one refuse to move the open frame when its settings could not be written, as rename_folder does. Test edits_kept_unsaved_and_the_open_frame_follow_a_move, its twin the unfollowed photo opening without them."
+  },
+  {
+    "id": 662,
+    "type": "fix",
+    "title": "Sending the open frame to the ONI Trash after a refused write keeps its edits",
+    "status": "done",
+    "detail": "mark_begun and took() flushed, ignored the failure, then closed the frame, so the edits a sidecar refused were dropped silently and nothing asked on quitting. Both now close through close(), whose leave() keeps a refused write's edits in unsaved; sidecar::write keeps the trash mark, so a retry never restores the photo. Test a_frame_trashed_after_a_refused_write_keeps_its_edits_unsaved (the sidecar's place taken by a folder), its twin a write taken keeping nothing back."
+  },
+  {
+    "id": 663,
+    "type": "fix",
+    "title": "The info sidebar's typing is written before ⌘G, Export, Prepare the Roll or a quit hides it",
+    "status": "done",
+    "detail": "The camera body, the shot date, the project's description and the roll's or project's name committed only on Return or on the focus leaving; ⌘G, ⌘E and ⌘Q destroy the sidebar with no focus-out, so the text was dropped. EditableTitle now hands its draft to Library.title-edited, and commit_info_drafts writes whatever the fields hold that differs from the roll or project, as one step, from toggle_mode, act (Export, Prepare the Roll) and last_writes; it leaves the drafts in their fields while a disk gesture runs. Window check gallery: the camera body and title typed write nothing until ⌘G, then are on the roll's marker."
+  },
+  {
+    "id": 664,
+    "type": "fix",
+    "title": "Ungroup and a roll set from the sidebar put the open frame in the gallery step and record its editor step",
+    "status": "done",
+    "detail": "set_film changed the open frame with replace() alone: a gallery ⌘Z regrouped every frame but the open one, an editor ⌘Z dropped the last real edit with the film, and the film rode on the next unrelated step. The open frame is now in before and after and settles its own step, as Swift's applyFilm; Swift's updateRoll leaves it out of the gallery step, a departure kept since it is the same bug. apply_film counts the photos in its label as applyFilm does ('Ungroup · 2 photos'); set_film keeps updateRoll's plain label. Test ungroup_takes_the_open_frame_in_its_gallery_step_and_its_editor_step, its twin an editor undo taking a film change back alone."
+  },
+  {
+    "id": 665,
+    "type": "fix",
+    "title": "A gesture on frames edited together writes each one once and its gallery step reads their true before",
+    "status": "done",
+    "detail": "lay_on, land_roll and reset_to_default settled the open frame first, whose propagate_together wrote its fields on the frames together, then read those frames back already written: the gallery step's before was a mix, and a paste dropped them from the step. settle_beside now leaves the frames the gesture writes itself to it; a frame together that no target names still takes the step. Test a_paste_on_frames_together_is_undone_from_the_gallery_to_their_own_settings, its twin the frame left out of the targets taking the paste."
+  },
+  {
+    "id": 666,
+    "type": "fix",
+    "title": "Edit Together keeps a roll's measured fields on the frames of that roll and decode",
+    "status": "done",
+    "detail": "A levels handle, the gains, the density ceiling, the flat-field or the mode moved on the open frame were laid whole on every frame together, so a frame of another roll or another decode lost the windows measured on its own film base. propagate_together and together_live now skip the Roll Settings family for a frame whose roll reference or decode differs. Test a_roll_field_moved_together_stays_on_the_frames_of_that_roll, its twin a frame of the same roll taking the window."
+  },
+  {
+    "id": 667,
+    "type": "fix",
+    "title": "Gallery undo follows a folder renamed or found elsewhere",
+    "status": "done",
+    "detail": "Renaming the folder New Roll makes, as the app proposes at once, left every gallery step under the old name: ⌘Z then found no file to put back and spent its step. GalleryHistory::follow rewrites every step's settings keys, trash paths, roll folder and moves; followed_outside calls it for rename_folder and locate, never for a step's own moves. Swift has the same gap; the owner accepts departures that fix real bugs. Test a_folder_renamed_after_a_new_roll_is_where_its_undo_walks_from, its twin a photo outside the folder keeping its path; window check new_roll renames the roll then undoes it."
+  },
+  {
+    "id": 668,
+    "type": "fix",
+    "title": "⌘Z within the settle delay, gestures on an inert open frame, Paste to Roll and Auto Balance during a move",
+    "status": "done",
+    "detail": "An undo or redo now records the step still waiting first, so a ⌘Z within 150 ms of a nudge takes that nudge back and not the step before (test an_undo_within_the_settle_delay_takes_back_the_step_still_waiting, its twin the redo bringing it back). lay_on, paste_to_roll, set_film, land_roll and reset_to_default leave an open frame whose original is out of sight or whose sidecar this version cannot write alone (takes_hands), as land_roll did (test a_gesture_on_several_leaves_an_open_frame_out_of_sight_alone, its twin the frame in sight taking the paste). Paste to Roll and Auto Balance refuse while a disk gesture runs, the balance at its landing too, so its step never cuts the one whose walk still runs."
+  },
+  {
+    "id": 669,
+    "type": "fix",
+    "title": "A quit right after a disk gesture starts waits for it",
+    "status": "done",
+    "detail": "wait_for_disk took the gesture lock, which the spawned thread may not have taken yet: a quit landing first ended the process while the move began. Gestures are now counted in flight before their thread starts and uncounted once run (or once the spawn fails); wait_for_disk waits for none."
+  },
+  {
+    "id": 680,
+    "type": "fix",
+    "title": "A LinearRaw DNG or an sRAW is read whole at factor 1 when a small copy is asked",
+    "status": "done",
+    "detail": "oni_open asked LibRaw for half size from the frame's size alone, but LibRaw halves only a mosaic (raw2image_start: filters set, no colour3/4 or float image), so a compressed linear DNG or a Canon sRAW came back whole while ONI counted a factor of 2: the maker's crop halved into a top-left window, full_width doubled, the wrong window kept under the HALF key. oni_process now clears half_size and the half flag on the same condition LibRaw shrinks on, and a decode is kept under its key whatever its factor. Mosaics take the same path as before. Check a_linear_dng_is_read_whole_at_factor_one (a LinearRaw DNG at HALF reads factor 1 and bit for bit the whole decode; twin: a mosaic of the same size reads factor 2 at half the crop)."
+  },
+  {
+    "id": 681,
+    "type": "fix",
+    "title": "The maker's crop is placed from the margins LibRaw cuts, as an ActiveArea DNG, a CR2 or a RAF holds it",
+    "status": "done",
+    "detail": "LibRaw keeps raw_inset_crops in the raw's coordinates (a DNG's DefaultCropOrigin plus its ActiveArea margins), while the image it hands out starts at left_margin and top_margin: the window was shifted by the margins or, past the image, dropped. oni_process subtracts the margins and writes zero sizes for an unknown crop or one inside the margins. NEF and RW2 (margins 0) decode bit for bit as before at sides 0, HALF and 2000 in every colour mode; the Fujifilm RAF now takes its 6240 x 4155 crop instead of the uncropped 6246 x 4170. Check a_default_crop_lands_inside_the_active_area (a DNG with ActiveArea decodes bit for bit as the same frame without margins; twin: a window shifted by the margins differs)."
+  },
+  {
+    "id": 682,
+    "type": "fix",
+    "title": "An embedded RGB preview shorter than its sides is no preview, never a panic of the thumbnail thread",
+    "status": "done",
+    "detail": "LibRaw can hand out a bitmap preview whose data_size is the strip's declared length, shorter than width x height x 3, and turned() indexed past it, ending the only thumbnail thread. embedded_by takes a bitmap only when both sides are positive and the bytes cover them, cut to that length. Check a_bitmap_shorter_than_its_sides_is_no_preview (one byte short and a zero or negative side read None; twin: the whole rows read and a longer buffer is cut to the sides)."
+  },
+  {
+    "id": 683,
+    "type": "fix",
+    "title": "The TIFF probe reads its file a 64 KB window at a time, not a seek and a read a field",
+    "status": "done",
+    "detail": "Reader on a file did a seek and a read_exact per u8, u16 or u32, so a directory's arrays (strip offsets, a 4096-entry linearization table) cost thousands of syscalls per probe, on the UI thread for a selection. A Window keeps 64 KB around the last field (a quarter of it behind) and refills only when a field falls outside. Check a_probe_reads_a_window_not_a_field_at_a_time (a 256 x 256 LinearRaw TIFF with a 4096-entry table probes as its bytes in 3 reads at most; twin: a window as small as a field takes more than 4096)."
+  },
+  {
+    "id": 684,
+    "type": "fix",
+    "title": "LibRaw's name route keeps a path's own bytes, so a name that is not UTF-8 still opens",
+    "status": "done",
+    "detail": "Source::open built the C string from to_string_lossy, which replaces invalid bytes with U+FFFD and names another file on a volume from another system. On Unix the CString is the OsStr's bytes. Check a_name_that_is_not_utf8_keeps_its_bytes (the name reaches the shim byte for byte; twin: the lossy text differs)."
+  },
+  {
+    "id": 685,
+    "type": "fix",
+    "title": "Two writers of one decode never share a part file, and a stopped writer's part is trimmed",
+    "status": "done",
+    "detail": "store wrote every writer of a key into one '<key>.part', and File::create truncated the file another writer was still filling, which could leave a zero band in a kept decode; a part left by a kill was never counted nor removed. Each writer now has its own part (pid and a counter), and trim removes parts older than ten minutes. Check two_writers_of_one_frame_never_share_a_part_and_a_stale_part_goes (two parts differ, a stale one goes; twin: a fresh one stays)."
+  },
+  {
+    "id": 686,
+    "type": "fix",
+    "title": "A decode read back is dated as used on Windows too",
+    "status": "done",
+    "detail": "read_in noted the use with set_modified on a read-only handle, which Windows refuses (FILE_WRITE_ATTRIBUTES), so its cache let go the first written, not the least used. The date is now set through a handle opened for writing. Check a_decode_read_back_is_dated_as_used (twin: a decode not read keeps its date)."
+  },
+  {
+    "id": 687,
+    "type": "fix",
+    "title": "A tiled LinearRaw TIFF reads each tile's rows at the tile's width",
+    "status": "done",
+    "detail": "In one column of tiles wider than the image, a row's offset inside a tile was counted at the image's width, so every row after the first started early and the picture came out sheared with padding mixed in. The stride inside a tile is now the tile's width. Check a_tile_wider_than_the_image_reads_its_rows_at_its_own_width (5-wide image in 16-wide tiles decodes as the same strips; twin: the padding reads 1.0, which the picture never does; the image-width stride fails it)."
+  },
+  {
+    "id": 688,
+    "type": "fix",
+    "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
+    "status": "done",
+    "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
+  },
+  {
+    "id": 690,
+    "type": "perf",
+    "title": "The archive's tree is cut again only when its shape moves",
+    "status": "done",
+    "detail": "Archive keeps what it was cut from (folder, rows, survey, filter) and its rows laid flat. A lay on the same rows and survey keeps it (a read again on focus, opening a photo, a thumbnail landing); medals alone are set on its photos, groups and row captions in one walk; a filter alone cuts the groups again; anything else cuts it whole. The survey is compared on what a tree reads (images, rolls, folders, made, the JPEGs holding a sidecar), so an edit's sidecar moves no tree. The read's thread cuts each landing's archive, the copies and the tile keys, and the lay takes that archive when the rows held are its own. The rows are walked by reference, a folder's row no longer copying its subtree. library::cuts() counts the trees laid and the row lists laid flat; window check tree_cost (opening a photo, its thumbnail landing and a read that finds nothing new cut nothing; twins: a fold lays the rows again, a new folder cuts the tree) and unit checks of the delta with their twins."
+  },
+  {
+    "id": 691,
+    "type": "perf",
+    "title": "A folder's rows are read from the index by the folder's head, never the whole index",
+    "status": "done",
+    "detail": "LibraryIndex::under, paths_under and stamps_under query `path LIKE` the folder's ASCII head (escaped), which LIKE folds as a case-blind volume does, then trim with paths::holds; shown_under reads the folder's rows alone, a pass's lead lying beside it. unresolved reads the paths alone and drop_invented asks SQLite for the invented prints. A read and each medal no longer read 20000 rows of other folders into memory (M36). Check: the rows by head equal the whole index trimmed, accents, % and _ included, with its twin."
+  },
+  {
+    "id": 692,
+    "type": "perf",
+    "title": "Names weighed once for every sort of the tree and the survey",
+    "status": "done",
+    "detail": "paths::NameKey weighs a name once for standard_order (its steps, accents and composition kept lazily); a group's photos, a folder's subfolders, the survey's children and the navigator's listing sort on keys. A path under a folder named with an accent was weighed at every comparison: 7000 such paths sorted in 560 ms, now 16 ms. The tree and the gallery's groups are cut in one walk (folders::tree_and_groups, groups_of), the entries moved rather than copied twice, and paired cuts no stem when no lone JPEG is there. Checks: the key orders every pair as standard_order, a group lies in shot's order, the groups cut with the tree are the gallery's, each with its twin."
+  },
+  {
+    "id": 693,
+    "type": "perf",
+    "title": "A thumbnail landing reads the tile flags rather than cutting them for every photo",
+    "status": "done",
+    "detail": "tile_flags is cut when lay_grid lays the bands and read after, rather than rebuilt for every photo at each publish_tiles; State::selected looks its picks up in a set (M37); landed_presence keeps each path's key. On 7000 photos the thumbnail pass's interface time fell from 24.6 s to 14.1 s (dev profile, before the virtualised tree), its longest landing from 181 ms to 77 ms."
+  },
+  {
+    "id": 694,
+    "type": "perf",
+    "title": "The roll's frames found outlive a lay that keeps them all",
+    "status": "done",
+    "detail": "EditorStore::set_archive_paths no longer forgets every roll's frames found at each lay_archive, which reread every sidecar (M32): a roll whose frames are all still there stays found, as Swift keeps measuredGroups; one that lost a frame is scanned again on the next ask. Check with its twin."
+  },
+  {
+    "id": 695,
+    "type": "test",
+    "title": "The tree's cost measured on a library of 7000 photos",
+    "status": "done",
+    "detail": "library::bench::tree_bench (cargo test -p oni-app --lib tree_bench -- --ignored --nocapture) times the survey, the index reads, the pairs, the tree, the groups, the row list and each event's share on 5000 photos in 200 folders, 2000 flat and 20000 rows elsewhere; window check tree_cost::the_tree_s_cost_on_a_big_folder (ONI_TREE_BENCH=1) times the interface thread's share of the read, the thumbnail pass, a read again, opening a photo, a fold and a medal in the app."
+  },
+  {
+    "id": 700,
+    "type": "feature",
+    "title": "A Windows installer dressed as the splash",
+    "status": "done",
+    "detail": "packaging/windows/oni.iss (Inno Setup 6.7, dark wizard): the version's splash photograph with the logo, the version and the credit behind the welcome and finish pages, dimmed behind the others (art.py draws them from the splash folder, Inter and the logo at every DPI size). Per-user install without an administrator, all users on offer; Start menu entry, optional desktop icon, launch at the end, uninstaller; English, French, Spanish. The manual Windows package workflow builds it beside the zip, as artifacts only, and with `shots` walks its pages into pictures."
+  },
+  {
+    "id": 701,
+    "type": "feature",
+    "title": "ONI.exe carries the app icon",
+    "status": "done",
+    "detail": "crates/oni-app/build.rs compiles packaging/windows/oni.ico (app-icon.png at 16 to 256 px) into the Windows executable's resources through winresource, a Windows-only build dependency; the Explorer, the taskbar and the installer show it."
+  },
+  {
+    "id": 710,
+    "type": "fix",
+    "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
+    "status": "done",
+    "detail": "Tips.hover hid the tip only when the text left matched the one shown, so a key whose help changed under the hand (EDITOR/GALLERY, Show/Hide Library, De-dust) or vanished under it left its old tooltip floating. The window now hides a tooltip (not a help mark's card) on every press, as AppKit does, and Button hides the tip it told when it is left or when its help changes while hovered. Checked by a_tooltip_hides_on_a_press_and_with_the_help_it_showed, with its twins (hovered again, the key shows its new help)."
+  },
+  {
+    "id": 711,
+    "type": "fix",
+    "title": "The export's W and H boxes load the owner's values again after each commit",
+    "status": "done",
+    "detail": "A width refused (past the full edge, or no digits) left Resize::Full, so Rust republished the same text, `changed width-value` never fired and the box kept the refused value; the height typed next was then ignored, typed_size seeing W still edited. SizeFields now reloads both boxes after `typed`, as Swift's commit calls load(shown). Checked in the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window: 8000 refused shows 96, the H typed next resizes; twin, a width the photo holds still decides."
+  },
+  {
+    "id": 712,
+    "type": "fix",
+    "title": "A hidden column revealed by the pointer stays while its menu holds the pointer",
+    "status": "done",
+    "detail": "A popup takes every pointer event from the window's tree, so the revealed Library or Panel lost its hover as soon as the pointer reached its menu and slid away, the menu with it. The card is now a TouchArea, enabled while a column is revealed, whose hover says the pointer is on the card: a column left after a press in it, with the card not hovered, is held until the pointer comes back to it or meets the card. Both columns are one FloatingColumn (floating.slint). Checked by a_revealed_column_stays_while_its_menu_holds_the_pointer, with its twins (no press: hides at once; menu closed over the column: kept until left)."
+  },
+  {
+    "id": 713,
+    "type": "fix",
+    "title": "Moving from one date box to the next keeps the editing and commits nothing half typed",
+    "status": "done",
+    "detail": "Each DateFields box ended its editing on a press outside itself, so a click from MM to DD committed the month half typed (and could clamp the day). The sibling boxes and the hollow now count as the box's rim, one focus for the three as Swift's. Checked by a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing on OutsideProbe, its twin a click beside the date committing once, whole."
+  },
+  {
+    "id": 714,
+    "type": "fix",
+    "title": "A tab bar whose selection lies beyond its tabs, as De-dust's, shows no pill",
+    "status": "done",
+    "detail": "The pill's x followed `selected` alone, so De-dust's tab 4 slid it out of the four-tab bar and back. The pill hides while the selection is outside the tabs and waits where it stood, as Swift's DSTabBar draws none. Checked in a_tab_bar_bound_one_way_follows_its_owner_after_a_click, its twin the pill back under the first tab."
+  },
+  {
+    "id": 715,
+    "type": "fix",
+    "title": "A move to a screen of another density renders the canvas and traces the plots again",
+    "status": "done",
+    "detail": "The logical size stays across a 1x to 2x move, so no `changed width` fired: the canvas kept its old pixel count and the plots their old rasters until the next gesture. Card publishes its density (1px / 1phx), CanvasCard calls Canvas.resized on its change, and Ctl::resized traces every plot again when the window's scale factor moved. Checked by a_screen_of_another_density_renders_the_canvas_and_the_plots_again (render, output histogram and levels at twice the pixels), its twin the same density announced again rendering nothing."
+  },
+  {
+    "id": 720,
+    "type": "fix",
+    "title": "The phone link names each connection, so a phone's old link ending after its reconnection leaves it connected and its drag held",
+    "status": "done",
+    "detail": "A phone back on a new link within the desktop's SILENCE saw its old link time out afterwards: Disconnected carried only the key, so the sheet dropped the live phone, the toast said it disconnected, and Link released the new link's slider hold, splitting the drag into two undo steps. HostEvent::Connected, Command and Disconnected now carry the connection number serve already kept; Phone keeps one entry per connection (a phone is gone, and toasted, only when its last link ends; it is toasted connected only when new), and Link records the connection that holds a slider and lets go only when that one ends. Checks: a_reconnection_and_its_old_link_carry_their_own_connection (oni-link), an_old_link_ending_after_the_reconnection_leaves_the_phone_connected (phone.rs) and the_old_link_of_a_phone_back_on_a_new_one_leaves_its_drag_held (tests/link.rs), each with its twin."
+  },
+  {
+    "id": 721,
+    "type": "fix",
+    "title": "Phone link protocol 4: clicks in half steps, and a phone of protocol 3 or older adapted by the desktop",
+    "status": "done",
+    "detail": "#620 made the letters count half-unit steps without raising PROTOCOL, so a phone built before it read D +2 where the desktop read +1 and its keys moved half as far. PROTOCOL is 4 (wire::HALF_STEPS); for a phone speaking less, the host halves State.clicks toward zero before sending (wire::told, as the sidecar keeps whole counts) and doubles an incoming Step.by (wire::heard), so the old phone keeps whole units both ways. A phone of protocol 4 spells the steps itself: the mobile repository's branch protocol-4 (worktree ~/Documents/oni-mobile-protocol-4, not pushed) makes ScannerText.spelled write +0.5, +1, +1.5 as oni_keys::spelled does; its keypad sends the same ±1/±3 steps as the desktop's keypad. Check: a_protocol_3_phone_reads_and_steps_whole_units, its twin a phone of protocol 4 reading and pressing steps as they are."
+  },
+  {
+    "id": 722,
+    "type": "fix",
+    "title": "The phone link's listener survives a failed accept()",
+    "status": "done",
+    "detail": "Host::listen looped on `while let Ok(..) = accept()`: the first error (EMFILE, ECONNABORTED) ended the task until a restart, the sheet still showing a QR code nothing could answer. The accept loop (host::accepting) logs the error, pauses 100 ms and goes on; it stops only once the Host is dropped. Check: a_failed_accept_leaves_the_listener_serving_the_next_phone, its twin a stream accepted after the Host is gone is never answered."
+  },
+  {
+    "id": 723,
+    "type": "fix",
+    "title": "A vanished phone is let go within SILENCE, however much the desktop publishes",
+    "status": "done",
+    "detail": "The 10 s silence timeout was rebuilt on each select! turn, so every published screen restarted it, and a write to a phone that stopped reading blocked the loop until TCP gave up, minutes later. The loop keeps a `heard` clock, set only by the phone's own messages, with a sleep_until(heard + SILENCE) arm, and every write to the phone is bounded by SILENCE. Check: a_vanished_phone_is_let_go_while_the_desktop_keeps_publishing (5 kB screens every 200 ms on a cut wire, paused clock), its twin the same desktop with a reading phone stays connected two minutes."
+  },
+  {
+    "id": 724,
+    "type": "fix",
+    "title": "Forget Phones forgets a phone trusted for this session only, and a late pairing stays forgotten",
+    "status": "done",
+    "detail": "forget_all revoked only the keys in trusted.txt: a phone whose trust failed to write, or whose Paired event was still queued, stayed trusted in the Host's memory, connected and passing accepts_import_pin, and the late Paired then wrote it back. Host::revoke_all clears the in-memory set and bumps `revoked`; forget_all calls it; the Paired handler writes a key only while Host::trusts it. Check: revoke_all_forgets_a_phone_trusted_in_memory_only, its twin revoking another phone leaves this one trusted."
+  },
+  {
+    "id": 725,
+    "type": "fix",
+    "title": "The phone link closes a connection unheard past 16 handshakes at once",
+    "status": "done",
+    "detail": "Every accepted connection held a task and a descriptor for up to 5 + 5 s before its handshake timed out, without bound. A semaphore of 16 permits (HANDSHAKES), taken before the task is spawned and dropped once the Welcome is sent, closes any connection past it at once, on TCP and on Host::serve alike. Check: a_flood_of_silent_connections_closes_the_next_until_one_ends, its twin one silent connection gone and a phone pairs."
+  },
+  {
+    "id": 726,
+    "type": "fix",
+    "title": "The open frame's place is counted in usize: a group of 65 536 frames or more no longer panics on a phone Walk",
+    "status": "done",
+    "detail": "place() cast the position and the count to u16: at exactly 65 536 entries the count read 0 and walk() clamped to (0, -1), a panic on the UI thread; larger groups wrapped. place() returns usize, walk() steps with saturating usize arithmetic and stops at the ends (phone_link::walked), and only the wire's State saturates at u16::MAX (wire_place). lab::screen takes usize. Check: a_walk_in_a_group_past_the_wire_s_u16_stays_inside_it with its twin."
+  },
+  {
+    "id": 727,
+    "type": "fix",
+    "title": "The pairing code names every interface's address, the default route's first",
+    "status": "done",
+    "detail": "The QR named only the default route's source address: under a full-tunnel VPN that was the tunnel's, and on a Mac with Ethernet and Wi-Fi on two networks the Ethernet one, so the phone found no address. lan_addresses lists the default route's address, then each up IPv4 interface's (getifaddrs on macOS, GetAdaptersAddresses on Windows, with windows-sys's IpHelper, Ndis and WinSock features), without loopback or link-local, four at most, as the phone dials them in turn. Checks: the_code_names_every_interface_after_the_default_route with its twin, this_computer_lists_its_default_route_first."
+  },
+  {
+    "id": 728,
+    "type": "fix",
+    "title": "LocalSend: head and handshake timeouts, a connection cap, a bounded peer table, a policy that must decide, an upload that cannot stall",
+    "status": "done",
+    "detail": "The receiver built hyper without a timer, so its header_read_timeout was dropped and a silent connection was kept for ever, without bound. It now runs TokioTimer with a 10 s head timeout and closes a connection past 32 at once (receiver::Limits). A policy that has not decided in 120 s rejects, so a stranger's prompt no longer holds the session slot for ever. Discovery keeps 64 peers at most, the one heard from longest ago leaving, and answers 4 announcements at once at most. The sender's upload ends as SendError::Stalled when its body stops draining, or its answer stops coming, for 30 s. Checks: past_the_cap_a_connection_is_closed_unheard, a_connection_that_sends_no_request_is_closed, a_flood_of_announcements_keeps_the_table_bounded_and_the_peers_heard_lately, an_upload_to_a_peer_that_stops_reading_ends_as_stalled, each with its twin. The policy's timeout has no check of its own, and the demo's stdin prompt is unchanged."
+  },
+  {
+    "id": 729,
+    "type": "fix",
+    "title": "The phone inbox refuses a received sidecar, roll marker or dot name",
+    "status": "done",
+    "detail": "A peer could send DSC_0001.NEF.json or .oni-roll.json into a folder holding DSC_0001.NEF, and the file became the original's settings or the folder's roll marker, read as the truth on the next open. inbox::refused_name refuses a sanitised name that starts with a dot or ends in .json (ROLL_MARKER is both), and prepare-upload leaves such files out before the policy sees them, answering 204 when none is left. Checks: a_sidecar_a_roll_marker_or_a_dot_name_is_refused and a_sidecar_or_a_roll_marker_sent_beside_an_original_is_left_out, each with its twin."
+  },
+  {
+    "id": 730,
+    "type": "fix",
+    "title": "A disk that stops answering never freezes the interface through the refused folders' lock",
+    "status": "done",
+    "detail": "The volumes thread filtered nav.refused under its guard, so read_dir on a hung SMB mount held the mutex the interface takes in publish_navigator, at every MOUNTS tick. The list is copied out and probed with the lock free. Check a_refused_folder_is_probed_with_the_lock_free (twin: the list filtered under its guard finds the lock taken)."
+  },
+  {
+    "id": 731,
+    "type": "fix",
+    "title": "Two reads of the opened folder at once land only the latest",
+    "status": "done",
+    "detail": "read_again reused the current generation, so a Refresh, the settle timer, a volume back or Locate during a read ran two reads that both landed: an older survey could land last, read_done flipped back and fill, tidy and open ran twice. Each folder read takes a ticket; a later read stops the earlier at its next alive() and its landings are dropped, the generation, and with it the thumbnails' pass, left alone. Window check two_refreshes_at_once_land_only_the_latest_read (twin: two Refreshes one after the other land whole twice)."
+  },
+  {
+    "id": 732,
+    "type": "fix",
+    "title": "Edit Together decodes of a group left give their place to the next group's",
+    "status": "done",
+    "detail": "A decoder thread checked GROUPS only before taking a path, then waited in decode_gate::slot() and decoded for a group gone, ahead of the current tiles and of a photo opened next. decode_gate::only_while sets a thread's predicate; slot() gives the place back when it no longer holds, and tile_source checks the group again before laying the tile. Check a_decode_superseded_while_it_waits_takes_no_place (twin: one still wanted takes its place)."
+  },
+  {
+    "id": 733,
+    "type": "fix",
+    "title": "A roll mask still decoding when its roll is left lands on no other roll",
+    "status": "done",
+    "detail": "roll_mask_taken and roll_mask_loaded wrote r.flat with no check of the roll, so a mask asked in one roll landed on the next one entered. Both landings compare the roll shown, by its frames, with the one asked; a measure that leaves the roll open keeps its mask. Window check in prepare_masks: a load held by a pipe until R2 shows leaves R2 bare (twin: the same load with R2 shown names the panel)."
+  },
+  {
+    "id": 734,
+    "type": "fix",
+    "title": "A folder read superseded after its survey removes no index row",
+    "status": "done",
+    "detail": "read_rows removed every row its survey did not list without checking alive(), so a read in flight erased the rows a New Roll move had just rewritten under their new names. The removal pass checks alive() before each row. Check a_read_superseded_after_its_survey_removes_no_row (twin: a read still alive drops the row)."
+  },
+  {
+    "id": 735,
+    "type": "fix",
+    "title": "The previous photo's histograms never show on the next",
+    "status": "done",
+    "detail": "A trace asked before clear() (no inputs for the new photo, or a failed render) still landed after it. Each slot counts its clears; a trace lands only when no clear came since its ask, its texture let go with the clear. Check a_trace_asked_before_a_clear_lands_nowhere (twins: the slot not cleared, and a trace asked after the clear, land)."
+  },
+  {
+    "id": 736,
+    "type": "fix",
+    "title": "One writer at a time per sidecar across the app",
+    "status": "done",
+    "detail": "set_exif after an export and the Prepare draft queue read a sidecar then wrote it back, so the store's debounced flush landing between them was overwritten with older settings. sidecar::write and every read-modify-write helper (update, set_label, set_exif, set_roll_draft, set_trashed) hold the sidecar's own lock from the read to the rename. Check a_field_set_waits_for_the_write_holding_its_sidecar (twin: another photo's sidecar is free)."
+  },
+  {
+    "id": 737,
+    "type": "fix",
+    "title": "An original re-dated by a tool keeps its sidecar; a new sheet never inherits a sidecar left behind",
+    "status": "done",
+    "detail": "A scan whose date exiftool set right by rewriting it differed in date and digest, so its sidecar was set aside as an orphan. Each write now stores originalTail, the digest of the last block, Rust's own key as originalPrint is; a last block alike is the same photo, and a block of under 64 byte values (a scan's black or clipped bottom rows) stores none, so namesakes ending alike stay foreign. A new contact sheet also counts a name as taken when its sidecar exists, so it never takes a trashed sheet's medal or mark. Checks an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar (twins: another photo of that name, and another scan ending in black, stay foreign) and a_sheet_never_takes_the_name_of_a_sidecar_left_behind (twin: a free name is taken)."
+  },
+  {
+    "id": 738,
+    "type": "fix",
+    "title": "The thumbnail sweep waits a day after the index's rows were thrown away",
+    "status": "done",
+    "detail": "tidy::settled read only the index file's birth, so after a schema drop in an old file the first read's few rows decided the sweep and up to SWEPT tiles of other folders were deleted. The index dates each creation of its photos table in a rebuilt table the Swift app never reads; settled uses it, the file's birth standing in for an index never dated. Checks a_schema_drop_dates_the_rebuild_and_a_plain_open_keeps_its_date and the_sweep_waits_on_the_rebuild_date_not_the_file_birth (twin: dated now, it has not settled)."
+  },
+  {
+    "id": 739,
+    "type": "fix",
+    "title": "A folder rename waits for a disk gesture and never replaces a folder; a trash row acts on the folder it showed",
+    "status": "done",
+    "detail": "rename_folder ran without busy_said, so a folder could be renamed under a running move or mark; it is refused and said now. Its rename looked for the target then renamed plainly, which replaces an empty folder made meanwhile: rename_new (RENAME_EXCL) renames, a change of case alone plainly. The ONI Trash's folder rows resolved their index against the trash cut anew (a tidy prune reads it without republishing); each row's folder is kept as published. Checks a_rename_waits_for_a_move_under_way (window; twin: once landed the rename goes through), a_rename_never_replaces_a_folder_made_meanwhile (twin: a plain rename replaces it) and a_trash_row_names_the_folder_it_showed (twin: the index read anew names another folder)."
+  },
+  {
+    "id": 740,
+    "type": "fix",
+    "title": "Entering export reads each scan's head alone, and its lines land from a thread of their own",
+    "status": "done",
+    "detail": "Entering export built every line on the interface thread, and each line without a typed box read the whole RAW for its Exif: 36 NEF were about 1.8 GB before the surface showed. The scan's Exif is now read from the file's head (1 MB, grown fourfold only while a directory or a value runs past it; a container through a buffered reader), and the lines are read on an 'export rows' thread of their own generation, landing one by one; the roll of each target comes from one map of the archive instead of a search per target. A write started before every line landed reads the rest at once. Checks: a_scan_s_facts_come_from_its_head_alone (roll #8 and the S1R RW2s: 1 MB of 30 to 70 MB read, the same facts as the whole file; twin: a 4 KB head grows, and parsed as it is lacks the lens) and the window check entering_the_export_reads_no_scan_on_the_interface_thread (2 frames: no line is read when enter_export returns, then both land; twin: read on the interface thread, the same lines are there at once)."
+  },
+  {
+    "id": 741,
+    "type": "fix",
+    "title": "CR3, RAF and ORF exports state their camera, lens, ISO and date, read by LibRaw",
+    "status": "done",
+    "detail": "The Exif reader opens TIFF, JPEG, PNG, HEIF and WebP only, so a CR3, RAF or ORF line opened empty and its file was written with no date. A RAW the reader cannot open now asks LibRaw through a new oni_describe shim beside oni_identify (maker, model, EXIF lens, artist, ISO; nothing decoded), and its date is the DateTimeOriginal the file stores, read by oni-settings' header reader. LibRaw names the maker its own way (Fujifilm, not FUJIFILM). Check: a_cr3_raf_or_orf_states_its_camera_lens_iso_and_date under ONI_RAW_DIR, skipped when none is there (run on a Fujifilm X-E4 RAF; twin: the Exif reader alone opens none of them)."
+  },
+  {
+    "id": 742,
+    "type": "fix",
+    "title": "An export holds one float frame at its peak",
+    "status": "done",
+    "detail": "resized took the frame by reference and cloned it at full size, and the shadowed binding kept the render alive to the end of the write: two float frames (768 MB at 24 Mpx) plus the quantised copy grown by doubling. resized now takes the frame by value and hands it back untouched at full size, the float frame is dropped once converted, and both quantised buffers are sized once. Checks: full_scale_hands_back_the_same_pixels_without_a_copy (twin: a reduction is a frame of its own) and an_export_holds_one_float_frame_at_its_peak, counted by the test binary's allocator on a 96 MB frame: 156 MB, under 1.75 frames (twin: a second frame held through the export breaks the bound; the code before this change fails it)."
+  },
+  {
+    "id": 743,
+    "type": "fix",
+    "title": "A profile export premultiplies alpha, so a clear pixel writes black",
+    "status": "done",
+    "detail": "OutputProfile::converted forced alpha to 1 without scaling the colour, so a contact sheet's clear gutters exported through a Custom profile came out in whatever colour the chain left there, where the matrix spaces write black as Core Image does. The band is now premultiplied before the profile's legs. Check: a_clear_pixel_converts_to_black_through_a_profile (twin: the same colour opaque converts far from black)."
+  },
+  {
+    "id": 744,
+    "type": "fix",
+    "title": "A JPEG past its format's limits says so",
+    "status": "done",
+    "detail": "A JPEG wider or taller than 65,535 pixels, or with a profile past the 254 APP2 segments the encoder takes (16.6 MB), failed with 'The file could not be written.' The write now checks jpeg::fits after the resize and returns Failure::TooLargeForJpeg, whose message names the limits, in French and Spanish too. Checks: a_frame_fits_up_to_the_format_s_own_limits (twin: one past any limit is refused, as the encoder refuses it) and a_frame_past_a_jpeg_s_side_says_so (65,536 px refused with its own message; twin: 65,535 px writes a JPEG)."
+  },
+  {
+    "id": 745,
+    "type": "fix",
+    "title": "A typed name starting with a dot no longer writes a hidden file",
+    "status": "done",
+    "detail": "name() trimmed only trailing dots, so '.Frame 3' or '..\\x' wrote a file macOS hides. Leading dots and blanks are now dropped after the name is made portable, the original's name taking over when nothing is left; a dot inside the name stays. The Swift app writes the same hidden file. Check: a_typed_name_stays_in_the_chosen_folder (twin: 'Frame.3' keeps its dot, and portable alone still yields a hidden name)."
+  },
+  {
+    "id": 746,
+    "type": "fix",
+    "title": "A profile replaced at its path is read again",
+    "status": "done",
+    "detail": "The parsed profiles and the proof cubes were cached by path alone, so an .icc overwritten in the Finder kept exporting and proofing with the old one until relaunch. Both caches now hold the file's length and modification time and rebuild when either changes. Check: a_profile_replaced_at_its_path_is_read_again (twin: untouched, the same parse and cube are handed back)."
+  },
+  {
+    "id": 750,
+    "type": "fix",
+    "title": "The console reads only the log's new lines, off the interface thread, and shows its last 4000",
+    "status": "done",
+    "detail": "Every 500 ms the console waited on the log's flush (up to 2 s) and read the whole oni.log on the interface thread, then laid out all of it, so a long session stuttered while it was open. A Tail now reads the bytes written since its last read on a thread of its own, keeps Swift's Diagnostics.ceiling of 4000 lines (a first read starts 1 MiB from the end on a whole line), and sets the text only when lines came. Checks the_console_reads_only_what_came_and_keeps_the_last_lines (twin: a log started again is read from its start) and a_first_read_of_a_long_log_starts_near_its_end_on_a_whole_line (twin: the read began inside a line)."
+  },
+  {
+    "id": 751,
+    "type": "fix",
+    "title": "A start that fails writes its cause to the log and says it in a window of the system's",
+    "status": "done",
+    "detail": "main returned its error to Rust's runtime, which prints it on stderr: a windowed Windows build or an app opened from the Finder showed nothing and the log stopped after its first line. main now runs the start in run(); an error is written as 'fatal: ...', flushed, then said by rfd's alert with the log's path (not under a bench or ONI_BACKGROUND), and the process ends with 1. WGPU_BACKEND is now honoured, so a backend the system lacks stands for a refused device. Check a_start_that_fails_writes_its_cause_to_the_log_and_ends (tests/instance.rs; twin: the system's own backend passes the device and goes on) and a_failed_start_writes_its_cause_before_the_process_ends (twin: a child ending otherwise has no fatal line)."
+  },
+  {
+    "id": 752,
+    "type": "fix",
+    "title": "A panic is written to the log with its thread, place and backtrace",
+    "status": "done",
+    "detail": "No panic hook existed, so a panic left its words on a stderr no one reads (windowed Windows build, Finder launch) and never in oni.log or the sealed bug report. timing::keep_panics, installed once the log file is open, writes the thread, the message with its place and a forced backtrace, flushes (except on the log thread itself), then runs the default hook. Check a_panic_is_written_to_the_log_and_still_said_on_stderr, run in a child process of the test binary (twin: the same panic under the default hook alone leaves the log without it)."
+  },
+  {
+    "id": 753,
+    "type": "fix",
+    "title": "Windows: renaming a folder lets every watch go while it runs",
+    "status": "done",
+    "detail": "ReadDirectoryChangesW holds a handle on each watched folder, and Windows refuses to rename a folder with a handle on it or below it: renaming a parent of the opened folder in the navigator failed with 'another app is using it'. Watch::released lets every watch go, answered by the watching thread, until its guard drops, then watches what was asked meanwhile; rename_folder runs its rename inside Ctl::unwatched. Explorer renames and Safely Remove are not covered: DBT_DEVICEQUERYREMOVE is a window message sent to a window procedure winit owns (its message hook sees posted messages only), so it needs a window of ONI's own, a subclass of winit's, or CM_Register_Notification per volume, none of which builds or runs on the Mac. Checks a_release_lets_every_watch_go_and_its_end_watches_what_was_asked_meanwhile (twin: a resume with no release changes nothing) and a_photo_dropped_while_the_watches_are_released_is_not_told (twin: told again once the release ends)."
+  },
+  {
+    "id": 754,
+    "type": "fix",
+    "title": "Windows: a watch whose buffer overflows tells a rescan and reads on",
+    "status": "done",
+    "detail": "In the vendored notify, a ReadDirectoryChangesW completion with ERROR_NOTIFY_ENUM_DIR (1022) ended the watch for the session, and one of zero bytes (the buffer discarded) parsed a zeroed entry and told nothing, so a bulk copy into the opened folder was missed. The decision is now notify::rdcw_completion::completion, compiled on every system: 1022 or zero bytes tell an Event flagged Rescan on the folder and start the next read; its codes are asserted equal to windows-sys's at compile time. Check an_overflow_on_windows_is_a_rescan_of_the_folder_and_the_read_goes_on (oni-library; twin: a read with bytes is parsed, an unknown error still ends the watch, and the same path as a plain change touches nothing)."
+  },
+  {
+    "id": 755,
+    "type": "fix",
+    "title": "Windows: sidecar, preference, index-side and export writes wait out a file held for a moment",
+    "status": "done",
+    "detail": "write_atomically in oni-settings and oni-library and the export's create and replace renamed once, so an antivirus or a cloud client holding the target or the temporary (errors 5, 32, 33) failed the save, the last flush at quit included. oni_settings::atomic::retried, with the half-second PAUSES, now carries the rule roll_folder::retried used for folder moves (which delegates to it), and every one of these renames goes through atomic::renamed. Check a_file_held_for_a_moment_on_windows_is_written_once_it_is_let_go, the hold simulated by an injected rename (twins: held past every pause, a missing folder, and the same violation off Windows fail at once and leave no temporary)."
+  },
+  {
+    "id": 756,
+    "type": "fix",
+    "title": "Windows: the GPU is opened on DirectX 12",
+    "status": "done",
+    "detail": "wgpu::Instance::default() enables every backend, and wgpu tries Vulkan and GL before DirectX 12, so a PC with a Vulkan driver ran an untested path while the checks ran WARP on DX12. The instance now asks DX12 on Windows and the default elsewhere, WGPU_BACKEND naming another for a try. Check windows_runs_on_directx_12_unless_a_backend_is_named (twin: wgpu's default holds Vulkan and GL). The unwrap on the surface configuration in the vendored femtovg stays: it needs an adapter that cannot present, and the panic is now logged (#752)."
+  },
+  {
+    "id": 757,
+    "type": "fix",
+    "title": "Windows: a two-finger touchpad scroll on the image pans",
+    "status": "done",
+    "detail": "winit reports a precision touchpad on Windows as LineDelta in fractions of a line, which the window hook took for a wheel, and a wheel zooms. viewport::lines takes a fractional line on Windows for a touch surface, in Slint's 60 points a line; a whole notch stays a wheel's. Check a_fraction_of_a_line_on_windows_is_a_touch_surface_that_pans (twin: a whole notch zooms, and a Mac's fractional lines stay a wheel's)."
+  },
+  {
+    "id": 758,
+    "type": "fix",
+    "title": "Windows: the drive probe raises no 'No Disk' window, and the executable carries a manifest",
+    "status": "done",
+    "detail": "Computer's rows probe A: to Z:, and an empty card reader or optical drive could raise the system's critical-error window; each probe thread now sets SEM_FAILCRITICALERRORS and SEM_NOOPENFILEERRORBOX for itself. build.rs embeds a manifest beside the icon: longPathAware for the Win32 calls std does not prefix, Common Controls 6 for rfd's dialogs, asInvoker; per-monitor DPI awareness v2 is left to winit, which sets it when its event loop starts. Neither builds on the Mac: the probe's code was checked for x86_64-pc-windows-msvc in a scratch crate, the manifest parsed as XML."
+  },
+  {
+    "id": 759,
+    "type": "fix",
+    "title": "Diagnostics: bounded timing samples, no zombie helpers, a paper download kept in its folder, a log that outlives stderr",
+    "status": "done",
+    "detail": "The notch, view, histogram and publish samples grew for the whole run; each now keeps its last 10 000 (the oldest half dropped), counts and session indices still whole (check a_long_session_keeps_a_bounded_tail_and_its_whole_count). open and explorer were spawned and dropped, leaving a zombie per Reveal or link; system::launched waits for each on a thread (check a_helper_program_leaves_no_zombie_once_it_ends; twin: a dropped child stays listed). A paper download took the link's decoded last segment as its name, so %5C or C: led outside its scratch folder on Windows; it is now file_names::portable inside the folder (check a_download_lands_inside_its_folder_whatever_the_link_spells; twin: a plain name is kept). The log thread's eprintln! panicked on a closed stderr and ended the log; it, the instance refusal and the lock warning now write and ignore the error."
+  },
+  {
+    "id": 760,
+    "type": "fix",
+    "title": "A pasted preset code inflates to 1 MB at most",
+    "status": "done",
+    "detail": "from_share_code inflated the whole deflate stream before the checksum or the JSON could refuse it, so a short pasted code of zero runs claimed hundreds of MB to GB on the interface thread (deflate reaches about 1000:1). The inflate now stops at MAX_SHARE_JSON + 1 byte (1 MiB) and a JSON past the cap is refused. Check a_code_inflating_past_the_cap_is_refused_and_one_under_it_reads (a code under 10 KB inflating past 1 MiB, valid JSON and checksum, is refused; twin: the same code 1000 bytes under the cap reads). The Swift app inflates without a cap too."
+  },
+  {
+    "id": 761,
+    "type": "fix",
+    "title": "The journal's name table numbers a new name by the file's lines",
+    "status": "done",
+    "detail": "index numbered a new name by the count of distinct names, so once names.txt held a duplicate line (a name with a newline is written with a space, then noted again in that spelling) every later name took another name's line. A new name is now the file's next line, the table is keyed by the written spelling, and a name whose line cannot be written records NOTHING. Check a_new_name_takes_the_file_s_next_line_past_a_duplicate (a table with a duplicate line, a name with a newline then its spelt form; twin: the distinct-name count lands on the duplicate). The Swift journal numbers the same way as before."
+  },
+  {
+    "id": 762,
+    "type": "fix",
+    "title": "A .cube on a domain other than 0 to 1 is refused",
+    "status": "done",
+    "detail": "The Frontier table reader skipped every DOMAIN_ line, so a cube on another domain was sampled as if on display code 0 to 1, every colour at the wrong node. DOMAIN_MIN must now read 0 0 0 and DOMAIN_MAX 1 1 1, else the file is refused with its line. Check a_cube_on_another_domain_is_refused_and_one_on_zero_to_one_reads (1.2 max, a negative min, two values refused; twin: the domain ONI writes, spelt as 0 or 0.0, reads)."
+  },
+  {
+    "id": 763,
+    "type": "fix",
+    "title": "A contact-sheet grid without columns or rows lays no cell",
+    "status": "done",
+    "detail": "sheet_cells divided by grid.columns, so a sidecar grid of 0 columns panicked on the measuring thread when Auto was pressed; a huge frame count iterated without end. A grid without rows or columns lays nothing, and frames stop at columns x rows, past which every cell fell below the extent anyway. Check a_sheet_grid_without_columns_or_rows_lays_no_cell (0 columns, 0 rows, -1 columns; twin: a 3 x 2 grid lays its six, and 1000 or i64::MAX frames lay the same six)."
+  },
+  {
+    "id": 764,
+    "type": "fix",
+    "title": "An ISO date whose zone holds a non-ASCII character is refused, not a panic",
+    "status": "done",
+    "detail": "parse_iso8601 sliced the six-byte zone at byte 3, which panicked inside a two-byte character (2023-11-14T22:13:20+0é00), on any sidecar or preferences read. The colon is compared as a byte. Check a_zone_with_a_non_ascii_character_is_refused (parse and serde both refuse; twin: +00:00 reads)."
+  },
+  {
+    "id": 702,
+    "type": "test",
+    "title": "The roll #8 checks read the roll's own reference and frames",
+    "status": "done",
+    "detail": "roll8 membership reads the reference the first frame names instead of a constant a re-prepared roll no longer carries; the export windows mirror only the roll's frames and marker, so a contact sheet made in the roll never takes the first tile, and say which photo opened when ⌘G misses."
+  },
+  {
+    "id": 770,
+    "type": "test",
+    "title": "The window checks on roll #8 close the RAW recalibration notice before they reach behind it",
+    "status": "done",
+    "detail": "A first launch on a library holding a RAW raises the neutral decode notice, a sheet: every menu goes dark under it, so ⌘G after a tile click opened nothing (export_window, export_paper_window), the bar's undo read false after a drag (headless) and the pointer never reached the base loupe (prepare_loupe with ONI_RAW_DIR). The app is right, the sheet is modal as Swift's; the checks close it. export_window asserts the notice is up and its twin that ⌘G under it opens nothing; prepare_loupe that RAWs raise it and TIFFs do not."
+  },
+  {
+    "id": 771,
+    "type": "test",
+    "title": "The roll #8 window mirrors lay the state their checks read",
+    "status": "done",
+    "detail": "auto_balance's mirror takes the first frame's balance off, so its twin (no press before the key) holds whatever the roll was left with; headless's mirror sets every medal to none and DSC_6435 on the Scanner face, so the medal keys and the Scanner-face twin never read the roll's own labels and faces."
+  },
+  {
+    "id": 772,
+    "type": "test",
+    "title": "The roll #8 sidecar copies stand beside stand-ins, as a write leaves them",
+    "status": "done",
+    "detail": "oni-core roll8, oni-measure roll_prepare and the phone link copy the sidecars beside empty stand-ins (roll_prepare and the link wrote none, and a write is refused beside a missing original) and write each once, so the print a write stamps (originalPrint) is in the bytes before a gesture: the byte-for-byte undo checks compare the gesture's own writes. roll_prepare lays the base-step draft on the frame its measure leaves out instead of reading one off the roll."
+  },
+  {
+    "id": 773,
+    "type": "test",
+    "title": "The real sidecar checks read the roll in Swift's form and lay the envelope they need",
+    "status": "done",
+    "detail": "real_files drops this app's own originalPrint line before comparing a roll #8 sidecar with the codec's Swift document (a roll touched by this app carried it), and its copies are written once beside their stand-in with no medal, the camera's lines and a base-step draft, so the read-write, label, trash and draft checks no longer need a roll still holding Swift's drafts."
+  },
+  {
+    "id": 774,
+    "type": "fix",
+    "title": "Two sidecars agree on numbers one f32 ulp apart, whatever their decimal spelling",
+    "status": "done",
+    "detail": "semantic_difference compared the decimals as f64, where two neighbouring f32s spelt shortest lie up to 1.7 ulps apart (-1.0909756 against -1.0909758), so the one-ulp twin of real_files failed on DSC_6442's red gain. Each number is read as the f32 it stores. Check neighbouring_f32s_spelt_shortest_are_rounding (one ulp forgiven; twin: two ulps seen), with or without the roll."
   },
   {
     "id": 670,
@@ -3614,7 +4251,7 @@
     "type": "fix",
     "title": "The launch prewarm takes the engine one variant at a time and gives way to waiters",
     "status": "done",
-    "detail": "The prewarm thread held the engine for the whole compilation, so Shell::new's engine locks, and the window, waited for it. Shared::prewarm locks per size and variant, and between two waits while another thread waits for the engine (Shared::give_way: std's mutex is not fair, and an immediate relock kept the waiter out). Check a_lock_during_the_prewarm_waits_one_variant_not_the_whole_prewarm: 21 ms of a 178 ms prewarm in the dev profile; twin, the whole prewarm under one lock: 76 ms of 101 ms."
+    "detail": "The prewarm thread held the engine for the whole compilation, so Shell::new's engine locks, and the window, waited for it. Shared::prewarm locks per size and variant, and between two waits while another thread waits for the engine (Shared::give_way: std's mutex is not fair, and an immediate relock kept the waiter out). Check a_lock_during_the_prewarm_waits_one_variant_not_the_whole_prewarm: a lock asked 20 ms in is granted while the prewarm still runs (the prewarm goes on more than 10 ms past it); twin, the whole prewarm under one lock: the lock is granted only as it ends."
   },
   {
     "id": 674,
@@ -3656,6 +4293,6 @@
     "type": "fix",
     "title": "The engine keeps the masks and patches it reads under a 128 MB budget and lets them go with the editor",
     "status": "done",
-    "detail": "Engine.custom and Engine.patches kept every custom flat-field mask (about 42 MB each) and dust patch read in the session. Both are now kept under INPUTS_KEPT (128 MB), the longest unused let go first and never one the current read names; trim (the return to the gallery) drops them, so a forgotten mask is read again from its file. Misses are no longer stored, as they were asked again anyway. Check the_patches_kept_stay_under_their_budget_and_go_with_the_editor; twin: a render naming more than the budget keeps every patch it names."
+    "detail": "Engine.custom and Engine.patches kept every custom flat-field mask (about 42 MB each) and dust patch read in the session. Both are now kept under INPUTS_KEPT (128 MB), the longest unused let go first and never one the current read names; trim (the return to the gallery) drops them, so a forgotten mask is read again from its file. Misses are no longer stored, as they were asked again anyway. Check the_patches_kept_stay_under_their_budget_and_go_with_the_editor; twin: a render naming more than the budget keeps every patch it names. The budget and its reads live in render/engine/kept.rs."
   }
 ]

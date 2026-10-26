@@ -9,7 +9,6 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 
 const ROLL_ID: &str = "BC402E4A-035E-4A3A-B279-FB7E35D1DDEA";
-const REFERENCE_ID: &str = "16399A5F-7AED-48E4-A01C-F5F0E7266154";
 const FRAMES: usize = 38;
 
 /// The reference roll, or `None` after a line naming the check skipped.
@@ -165,7 +164,8 @@ fn an_index_rebuilt_from_the_sidecars_finds_every_frame() {
 fn roll_membership_reads_the_reference_id_each_sidecar_names() {
     let Some(copy) = Copy::new("membership") else { return };
     let members = copy.members();
-    let reference = Id::parse(REFERENCE_ID).unwrap();
+    // The reference a re-prepared roll names, read off one frame: every frame must name the same.
+    let reference = roll_membership::reference(&members[0]).expect("the first frame names its roll's reference");
     assert_eq!(roll_membership::measured(reference, &members).len(), FRAMES);
     // Twin: another id names no frame of the roll.
     assert!(roll_membership::measured(Id::new(), &members).is_empty());

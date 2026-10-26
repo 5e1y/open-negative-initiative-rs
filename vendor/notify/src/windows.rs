@@ -19,10 +19,18 @@ use std::ptr;
 use std::slice;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use crate::rdcw_completion::{completion, rescan, Completion};
 use windows_sys::Win32::Foundation::{
-    CloseHandle, ERROR_ACCESS_DENIED, ERROR_OPERATION_ABORTED, ERROR_SUCCESS, HANDLE,
-    INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
+    CloseHandle, HANDLE, INVALID_HANDLE_VALUE, WAIT_OBJECT_0,
 };
+
+// ONI: the codes `rdcw_completion` spells out are the system's own.
+const _: () = assert!(
+    crate::rdcw_completion::ERROR_SUCCESS == windows_sys::Win32::Foundation::ERROR_SUCCESS
+        && crate::rdcw_completion::ERROR_ACCESS_DENIED == windows_sys::Win32::Foundation::ERROR_ACCESS_DENIED
+        && crate::rdcw_completion::ERROR_OPERATION_ABORTED == windows_sys::Win32::Foundation::ERROR_OPERATION_ABORTED
+        && crate::rdcw_completion::ERROR_NOTIFY_ENUM_DIR == windows_sys::Win32::Foundation::ERROR_NOTIFY_ENUM_DIR
+);
 use windows_sys::Win32::Storage::FileSystem::{
     CreateFileW, ReadDirectoryChangesW, FILE_ACTION_ADDED, FILE_ACTION_MODIFIED,
     FILE_ACTION_REMOVED, FILE_ACTION_RENAMED_NEW_NAME, FILE_ACTION_RENAMED_OLD_NAME,
@@ -330,32 +338,25 @@ fn start_read(
 
 unsafe extern "system" fn handle_event(
     error_code: u32,
-    _bytes_written: u32,
+    bytes_written: u32,
     overlapped: *mut OVERLAPPED,
 ) {
     let overlapped: Box<OVERLAPPED> = Box::from_raw(overlapped);
     let request: Box<ReadDirectoryRequest> = Box::from_raw(overlapped.hEvent as *mut _);
 
-    match error_code {
-        ERROR_OPERATION_ABORTED => {
+    // ONI: an overflow (1022) or a read of nothing tells a rescan and reads on, where it ended the watch.
+    match completion(error_code, bytes_written, || request.data.dir.exists()) {
+        Completion::Stopped => {
             // received when dir is unwatched or watcher is shutdown; return and let overlapped/request get drop-cleaned
             ReleaseSemaphore(request.data.complete_sem, 1, ptr::null_mut());
             return;
         }
-        ERROR_ACCESS_DENIED => {
-            // This could happen when the watched directory is deleted or trashed, first check if it's the case.
-            // If so, unwatch the directory and return, otherwise, continue to handle the event.
-            if !request.data.dir.exists() {
-                request.unwatch();
-                ReleaseSemaphore(request.data.complete_sem, 1, ptr::null_mut());
-                return;
-            }
+        Completion::Gone => {
+            request.unwatch();
+            ReleaseSemaphore(request.data.complete_sem, 1, ptr::null_mut());
+            return;
         }
-        ERROR_SUCCESS => {
-            // Success, continue to handle the event
-        }
-        _ => {
-            // Some unidentified error occurred, log and unwatch the directory, then return.
+        Completion::Failed => {
             log::error!(
                 "unknown error in ReadDirectoryChangesW for directory {}: {}",
                 request.data.dir.display(),
@@ -365,6 +366,19 @@ unsafe extern "system" fn handle_event(
             ReleaseSemaphore(request.data.complete_sem, 1, ptr::null_mut());
             return;
         }
+        Completion::Rescan => {
+            start_read(
+                &request.data,
+                request.event_handler.clone(),
+                request.handle,
+                request.action_tx.clone(),
+            );
+            if let Ok(mut guard) = request.event_handler.lock() {
+                guard.handle_event(Ok(rescan(request.data.dir.clone())));
+            }
+            return;
+        }
+        Completion::Changes => {}
     }
 
     // Get the next request queued up as soon as possible
