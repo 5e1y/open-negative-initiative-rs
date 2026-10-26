@@ -4329,5 +4329,12 @@
     "title": "In a project, the editor's walk follows the project, not the folder",
     "status": "done",
     "detail": "On the Projects tab the editor's arrows, the phone's Walk and the Scanner screen's FRAME count read the archive's group of the open photo: from a project they walked the folder open (A03 to A04 instead of the project's B04), stopped dead on a member from another folder, and the gallery came back on a photo the project does not show, so nothing was selected. Swift's labFrames: the open frame's project on the Projects tab (editingProject, the first project holding the photo opened), else its roll or day. State::lab_frames reads the project's band as laid, open_photo sets the editing project, and walk, place and Move Out read it. Window check project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder: a project of photos from two folders, the gallery's arrows and ⇧ in its order, ⌘G on the ringed photo, → and ↑ in the editor along the project and stopping at its end, the gallery back on the photo walked to; twin: the same gestures on the archive walk the folder."
+  },
+  {
+    "id": 704,
+    "type": "refactor",
+    "title": "The info sidebar's roll and project resolution in its own module",
+    "status": "done",
+    "detail": "organising.rs passed its 400-line ceiling once project navigation and the submenus met; roll_stock, roll and project_group move unchanged into organising/resolving.rs."
   }
 ]
