@@ -179,6 +179,8 @@ impl Ctl {
         for _ in 0..DECODERS.min(paths.len()) {
             let (engine, next, paths, previews) = (self.engine.clone(), next.clone(), paths.clone(), previews.clone());
             std::thread::spawn(move || {
+                // A group left while a decode waits for its place gives that place to the next group's.
+                crate::decode_gate::only_while(move || GROUPS.load(Ordering::Relaxed) == id);
                 loop {
                     let Some((i, path)) = paths.get(next.fetch_add(1, Ordering::Relaxed)).cloned() else { return };
                     if GROUPS.load(Ordering::Relaxed) != id {
@@ -187,7 +189,7 @@ impl Ctl {
                     let preview = previews.lock().expect("previews").get(&path);
                     let made = match preview {
                         Some(p) => engine.lock().and_then(|mut e| e.tile_of(&p, TILE)).map(Arc::new),
-                        None => tile_source(&engine, &path),
+                        None => tile_source(&engine, &path, id),
                     };
                     let Ok(negative) = made else { continue };
                     with_shell(move |c| c.tile_decoded(id, i, negative));

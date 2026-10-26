@@ -175,5 +175,37 @@ pub(crate) fn the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_i
     println!("stops on the mask {masked:?}, bare {bare:?}, again {again:?}");
     assert!((0..3).any(|c| (masked[c] - bare[c]).abs() > 1e-3), "the mask reaches the measure");
     assert!((0..3).all(|c| (masked[c] - again[c]).abs() < 1e-4), "twin: the same mask measures the same");
+
+    // A mask still loading when its roll is left lands on no other roll: a pipe holds the read
+    // until R2 shows, then gives the panel's bytes.
+    #[cfg(unix)]
+    {
+        let pipe = root.join("Rig/slow.tif");
+        assert!(std::process::Command::new("mkfifo").arg(&pipe).status().unwrap().success());
+        let panel = std::fs::read(&panel_file).unwrap();
+        let give = |pipe: &Path| {
+            let (pipe, panel) = (pipe.to_path_buf(), panel.clone());
+            std::thread::spawn(move || std::fs::write(pipe, panel).unwrap());
+        };
+        prepare("R1");
+        *chosen.borrow_mut() = Some(pipe.clone());
+        p.invoke_load_flat();
+        assert!(p.get_loading_flat());
+        w.global::<Bar>().invoke_act(oni_app::Act::LeaveRoll);
+        rig.pump();
+        prepare("R2");
+        p.invoke_mask_chosen(line("None selected"));
+        rig.pump();
+        assert!(!p.get_flat_masked());
+        give(&pipe);
+        rig.until("the late mask landed", Duration::from_secs(30), || !p.get_loading_flat());
+        rig.settle();
+        assert!(!p.get_flat_masked(), "R1's mask never lands on R2");
+        // Twin: the same load with R2 still shown names the panel as its mask.
+        p.invoke_load_flat();
+        give(&pipe);
+        rig.until("the mask landed", Duration::from_secs(30), || !p.get_loading_flat());
+        assert!(p.get_flat_masked() && p.get_mask_title() == "panel");
+    }
     let _ = std::fs::remove_dir_all(&root);
 }

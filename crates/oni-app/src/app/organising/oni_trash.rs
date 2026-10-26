@@ -13,7 +13,7 @@ impl Ctl {
 
     pub(in crate::app) fn publish_trash_rows(&self) {
         let Some(w) = self.window() else { return };
-        let lines: Vec<TrashLine> = {
+        let (lines, shown): (Vec<TrashLine>, Vec<String>) = {
             let s = self.state.borrow();
             let count = s.org.trashed.len();
             let unfolded = count > 0 && s.org.trash_unfolded;
@@ -29,9 +29,11 @@ impl Ctl {
                 present: count > 0,
                 restore_help: if count > 0 { tr("Restore every photo in the ONI Trash") } else { "" }.into(),
             }];
+            let mut shown = vec![String::new()];
             if unfolded {
                 let home = home();
                 for folder in oni_library::trash::folders(&s.org.trashed) {
+                    shown.push(folder.path.clone());
                     let heading = oni_library::trash::heading(&folder.path, &home);
                     let (trail, title) = match heading.rfind('/') {
                         Some(cut) => (format!("{}/", &heading[..cut]), heading[cut + 1..].to_string()),
@@ -51,15 +53,17 @@ impl Ctl {
                     });
                 }
             }
-            lines
+            (lines, shown)
         };
+        self.state.borrow_mut().org.trash_lines = shown;
         w.global::<Library>().set_trash_rows(ModelRc::new(VecModel::from(lines)));
         self.trash_synced();
     }
 
+    /// The folder row `i` shows and its photos in the ONI Trash now; none for the trash's own row.
     pub(super) fn trash_folder(&self, i: usize) -> Option<(String, usize)> {
         let s = self.state.borrow();
-        oni_library::trash::folders(&s.org.trashed).into_iter().nth(i.checked_sub(1)?).map(|f| (f.path, f.count))
+        shown_folder(&s.org.trash_lines, &s.org.trashed, i)
     }
 
     /// `onClick(1)`: the trash row folds, a folder row is picked.
@@ -192,5 +196,30 @@ impl Ctl {
             // A field behind the sheet would keep the keys its Return and typing are meant for.
             w.invoke_refocus();
         }
+    }
+}
+
+/// The folder `lines` shows at row `i`, while the trash still holds photos of it, and how many.
+fn shown_folder(lines: &[String], trashed: &[Entry], i: usize) -> Option<(String, usize)> {
+    let path = lines.get(i).filter(|p| !p.is_empty())?;
+    oni_library::trash::folders(trashed).into_iter().find(|f| f.path == *path).map(|f| (f.path, f.count))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use oni_settings::Date;
+
+    #[test]
+    fn a_trash_row_names_the_folder_it_showed() {
+        let entry = |path: &str, at: f64| Entry { trashed_at: Some(Date::since_reference_date(at)), ..Entry::new(path, Date::since_reference_date(0.0), path) };
+        let lines = ["".to_string(), "/r/A".to_string(), "/r/B".to_string()];
+        // A's photos left the trash after the rows were laid: its row acts on nothing, never on B.
+        let now = [entry("/r/B/b.tif", 1.0)];
+        assert_eq!(shown_folder(&lines, &now, 1), None);
+        assert_eq!(shown_folder(&lines, &now, 2), Some(("/r/B".to_string(), 1)));
+        // Twin: A's row read as the trash's first folder cut anew, as a row index would, names B.
+        assert_eq!(oni_library::trash::folders(&now).first().map(|f| f.path.clone()), Some("/r/B".to_string()));
+        assert_eq!(shown_folder(&lines, &now, 0), None, "the trash's own row is no folder");
     }
 }

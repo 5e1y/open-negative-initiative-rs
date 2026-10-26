@@ -10,6 +10,31 @@ use std::sync::{OnceLock, mpsc};
 /// The levels' and curves' traces asked last: one overtaken by a later reading is dropped.
 static INPUT_TRACES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Each slot's clears: a trace asked before one lands nowhere, so a photo left never shows its plots
+/// on the next. Its texture goes with the clear, so the next trace imports a new one.
+static CLEARS: [std::sync::atomic::AtomicU64; 4] = [const { std::sync::atomic::AtomicU64::new(0) }; 4];
+
+/// The slot's clears so far, which a trace keeps from its ask to its landing.
+pub(super) fn clears(slot: Slot) -> u64 {
+    CLEARS[slot as usize].load(Ordering::SeqCst)
+}
+
+fn cleared(slot: Slot) {
+    CLEARS[slot as usize].fetch_add(1, Ordering::SeqCst);
+}
+
+/// Whether a trace asked at `asked` clears may still land.
+fn lands(slot: Slot, asked: u64) -> bool {
+    clears(slot) == asked
+}
+
+/// `traced` shown unless the slot was cleared since its trace was asked.
+pub(super) fn land_since(w: &MainWindow, slot: Slot, asked: u64, traced: Traced) {
+    if lands(slot, asked) {
+        land(w, slot, traced);
+    }
+}
+
 /// The four plots a histogram is traced into.
 #[derive(Clone, Copy)]
 pub(super) enum Slot {
@@ -116,6 +141,7 @@ fn forgotten(slot: Slot) -> Image {
 
 /// A plot emptied from the interface thread, its texture let go with it.
 pub(super) fn clear(w: &MainWindow, slot: Slot) {
+    cleared(slot);
     land(w, slot, Traced::Empty);
     let _ = forgotten(slot);
 }
@@ -166,6 +192,7 @@ impl Ctl {
         };
         // Traced off this thread, 1.5 ms a plot, as the picture's histogram is.
         let (scale, ticket, writer) = (w.window().scale_factor(), INPUT_TRACES.fetch_add(1, Ordering::SeqCst) + 1, self.plot_writer());
+        let since = (clears(Slot::Levels), clears(Slot::Curves));
         plot(move |p| {
             if INPUT_TRACES.load(Ordering::SeqCst) != ticket {
                 return;
@@ -174,8 +201,8 @@ impl Ctl {
             let curves = p.trace(&writer, Slot::Curves, &i.curves, focus.1, (curves.w, curves.h), scale);
             with_shell(move |c| {
                 let Some(w) = c.window() else { return };
-                land(&w, Slot::Levels, levels);
-                land(&w, Slot::Curves, curves);
+                land_since(&w, Slot::Levels, since.0, levels);
+                land_since(&w, Slot::Curves, since.1, curves);
             });
         });
     }
@@ -190,5 +217,21 @@ impl Ctl {
             Plot::Saturation => self.state.borrow_mut().histogram_dirty = true,
             _ => {}
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_trace_asked_before_a_clear_lands_nowhere() {
+        let (levels, curves) = (clears(Slot::Levels), clears(Slot::Curves));
+        assert!(lands(Slot::Levels, levels), "a trace with no clear since lands");
+        cleared(Slot::Levels);
+        assert!(!lands(Slot::Levels, levels), "the photo left drops its trace");
+        // Twins: the slot not cleared, and a trace asked after the clear, both land.
+        assert!(lands(Slot::Curves, curves));
+        assert!(lands(Slot::Levels, clears(Slot::Levels)));
     }
 }

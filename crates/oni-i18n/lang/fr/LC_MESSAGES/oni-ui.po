@@ -2652,10 +2652,6 @@ msgid "The folder was not renamed, as the open photo's settings could not be sav
 msgstr "Le dossier n’a pas été renommé, car les réglages de la photo ouverte n’ont pas pu être enregistrés : {error}"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "an item named “{name}” already exists"
-msgstr "un élément nommé « {name} » existe déjà"
-
-#: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be made inside “{folder}”: {cause}."
 msgstr "Le dossier n’a pas pu être créé dans « {folder} » : {cause}."
 

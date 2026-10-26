@@ -36,10 +36,11 @@ pub fn tidy(index: &LibraryIndex, support: &Path, computer: &Computer, kept: &[S
     Tidied { pruned, swept }
 }
 
-/// Whether the index file was made more than `SETTLED` ago; unknown is not.
-pub fn settled(index_path: &Path) -> bool {
-    let made = std::fs::metadata(index_path).and_then(|m| m.created());
-    made.ok().and_then(|m| SystemTime::now().duration_since(m).ok()).is_some_and(|age| age >= SETTLED)
+/// Whether the index's rows were last thrown away more than `SETTLED` ago, a schema drop included;
+/// the file's birth stands in for an index never dated, and unknown is not settled.
+pub fn settled(index: &LibraryIndex, index_path: &Path) -> bool {
+    let made = index.rebuilt().or_else(|| std::fs::metadata(index_path).and_then(|m| m.created()).ok());
+    made.and_then(|m| SystemTime::now().duration_since(m).ok()).is_some_and(|age| age >= SETTLED)
 }
 
 #[cfg(test)]
@@ -72,10 +73,24 @@ mod tests {
         assert_eq!(tidy(&index, &support, &computer, &[], false), Tidied { pruned: 1, swept: 0 }, "an index just made sweeps nothing");
         assert!(index.row(&a).is_some() && index.row(&b).is_none());
         assert!(thumbnails::is_held(&support, "1-no-date-b"), "its tile waits for a settled index");
-        assert!(!settled(&at), "an index made now has not settled");
+        assert!(!settled(&index, &at), "an index made now has not settled");
         // Twin: settled, the tile of the row gone is swept and the live one kept.
         assert_eq!(tidy(&index, &support, &computer, &[], true), Tidied { pruned: 0, swept: 1 });
         assert!(thumbnails::is_held(&support, "1-no-date-a") && !thumbnails::is_held(&support, "1-no-date-b"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn the_sweep_waits_on_the_rebuild_date_not_the_file_birth() {
+        let root = std::env::temp_dir().join(format!("oni-app-rebuilt-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let at = root.join("index.sqlite");
+        let index = LibraryIndex::open(&at).unwrap();
+        index.note_rebuilt(SystemTime::now() - 2 * SETTLED).unwrap();
+        assert!(settled(&index, &at), "rows kept since long ago settle, whatever the file's birth");
+        // Twin: dated now, as a schema drop dates it, the index claims too little to sweep on.
+        index.note_rebuilt(SystemTime::now()).unwrap();
+        assert!(!settled(&index, &at));
         let _ = std::fs::remove_dir_all(&root);
     }
 }

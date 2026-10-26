@@ -151,6 +151,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),
     ("freshness::focus_rereads_the_opened_folder", freshness::focus_rereads_the_opened_folder),
     ("freshness::refresh_says_what_changed", freshness::refresh_says_what_changed),
+    ("freshness::two_refreshes_at_once_land_only_the_latest_read", freshness::two_refreshes_at_once_land_only_the_latest_read),
+    ("freshness::a_rename_waits_for_a_move_under_way", freshness::a_rename_waits_for_a_move_under_way),
     ("freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused", freshness::a_rename_changing_only_case_renames_and_a_true_collision_is_refused),
     ("presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return", presence::a_remembered_folder_on_a_disk_away_is_kept_and_reopens_on_return),
     ("presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so", presence::a_missing_path_on_the_command_line_opens_nothing_and_says_so),

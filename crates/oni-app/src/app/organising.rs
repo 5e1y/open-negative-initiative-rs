@@ -114,6 +114,8 @@ pub struct Organising {
     pub trash_picked: Option<String>,
     /// Every photo in the ONI Trash, whichever folder holds it.
     pub trashed: Vec<Entry>,
+    /// The folder each trash row shows, by row, as last published: a click names the row it landed on.
+    pub trash_lines: Vec<String>,
     pub projects: Vec<Project>,
     /// `projects.json` as last read or written, which tells this app's changes from another's.
     pub projects_read: Vec<Project>,
@@ -140,6 +142,8 @@ pub struct Organising {
     pub left: Vec<String>,
     /// The opened folder's reads started, which the checks count.
     pub reads: usize,
+    /// The opened folder's reads that landed whole, which the checks count.
+    pub reads_whole: usize,
     menu: Vec<Item>,
     menu_path: Option<String>,
     menu_lists: (Vec<(Id, String)>, Vec<(Id, String)>),

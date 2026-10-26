@@ -82,7 +82,9 @@ pub fn write(layout: &Layout, pixels: &[[f32; 4]], to: To<'_>) -> Result<PathBuf
         },
         To::Beside { lead, stem } => {
             for _ in 0..TRIES {
-                let destination = sheet::destination(lead, stem, |p| std::fs::symlink_metadata(p).is_ok());
+                // A sidecar left by a sheet gone takes its name too: a new sheet never inherits its medal or trash mark.
+                let taken = |p: &Path| std::fs::symlink_metadata(p).is_ok() || std::fs::symlink_metadata(sidecar::url_for(p)).is_ok();
+                let destination = sheet::destination(lead, stem, taken);
                 match file::create(&destination, &bytes) {
                     Ok(()) => return Ok(destination),
                     Err(Refused::Taken) => continue,
@@ -279,6 +281,21 @@ mod tests {
         std::fs::write(&wrong, encoded(&layout, &pixels, &srgb).unwrap()).unwrap();
         let off = centre(&layout, &crate::render::decode(&wrong, crate::render::Reading::default()).unwrap().linear);
         assert!((off[0] - value).abs() > 1e-3, "{} under sRGB", off[0]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_sheet_never_takes_the_name_of_a_sidecar_left_behind() {
+        let dir = std::env::temp_dir().join(format!("oni-sheet-orphan-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let (layout, pixels) = laid(&[("k".into(), plate(40, 40, 0.2))], "k", 30.0, &[]).unwrap();
+        let lead = dir.join("k");
+        // A sheet's file deleted outside the app, its sidecar left: the next sheet goes past its name.
+        std::fs::write(sidecar::url_for(&dir.join("sheet.tif")), br#"{"label":"gold"}"#).unwrap();
+        assert_eq!(write(&layout, &pixels, To::Beside { lead: &lead, stem: "sheet" }).unwrap(), dir.join("sheet 2.tif"));
+        // Twin: a name with no sidecar is taken as asked.
+        assert_eq!(write(&layout, &pixels, To::Beside { lead: &lead, stem: "free" }).unwrap(), dir.join("free.tif"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

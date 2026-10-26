@@ -99,6 +99,44 @@ fn a_foreign_sidecar_is_not_adopted() {
 }
 
 #[test]
+fn an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar() {
+    let dir = scratch("redated");
+    let photo = dir.join("SCAN_0001.tif");
+    std::fs::write(&photo, shot("2024:05:01 10:00:00", 3)).unwrap();
+    sidecar::set_label(Medal::Gold, &photo, false).unwrap();
+    // The new date written with more metadata ahead of the pixels: every block the print samples moves.
+    let rewritten = |date: &str, fill: u8| {
+        let mut bytes = shot(date, fill);
+        bytes.splice(64..64, std::iter::repeat_n(0u8, 1000));
+        bytes
+    };
+    std::fs::write(&photo, rewritten("1987:06:15 12:00:00", 3)).unwrap();
+    let loaded = sidecar::read(&photo, false, false).unwrap();
+    assert!(!loaded.foreign && loaded.label == Medal::Gold, "the same pixels, the same photo");
+    sidecar::set_label(Medal::Silver, &photo, false).unwrap();
+    assert!(!dir.join("SCAN_0001.tif (orphan).json").exists(), "nothing set aside");
+    assert!(stored(&photo)[identity::KEY].as_str().unwrap().contains("-1987:06:15 12:00:00-"));
+    // Twin: another photo of that name, its date and its pixels its own, is still foreign.
+    std::fs::write(&photo, rewritten("2001:02:03 04:05:06", 9)).unwrap();
+    assert!(sidecar::read(&photo, false, false).unwrap().foreign);
+
+    // A last block of one value, as a scan's black holder ends many files, tells no photo apart.
+    let blank = dir.join("scan0001.tif");
+    let black = |date: &str, fill: u8, pad: usize| {
+        let mut bytes = shot(date, fill);
+        let end = bytes.len();
+        bytes[end - 20_000..].fill(0);
+        bytes.splice(64..64, std::iter::repeat_n(0u8, pad));
+        bytes
+    };
+    std::fs::write(&blank, black("2024:05:01 10:00:00", 3, 0)).unwrap();
+    sidecar::set_label(Medal::Gold, &blank, false).unwrap();
+    assert!(stored(&blank).get(identity::TAIL).is_none(), "no tail stored");
+    std::fs::write(&blank, black("2026:01:01 08:00:00", 9, 1000)).unwrap();
+    assert!(sidecar::read(&blank, false, false).unwrap().foreign, "another scan of that name stays foreign");
+}
+
+#[test]
 fn a_name_too_long_for_its_sidecar_says_so() {
     let dir = scratch("long");
     // 251 characters: the photo's own name fits, `.json` after it would not.

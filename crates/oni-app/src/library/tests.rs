@@ -52,6 +52,29 @@ fn a_folder_read_twice_reads_its_files_once_and_drops_a_photo_gone() {
     let _ = std::fs::remove_dir_all(&root);
 }
 
+#[test]
+fn a_read_superseded_after_its_survey_removes_no_row() {
+    let root = std::env::temp_dir().join(format!("oni-app-superseded-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Scans");
+    write(&folder.join("A.NEF"), b"first");
+    let index = LibraryIndex::open(&root.join("Caches/index.sqlite")).unwrap();
+    let scans = paths::canonical(&folder);
+    // A row the survey never listed, as a move just wrote it under its new name.
+    let moved = paths::join(&scans, "Roll/B.NEF");
+    index.upsert(&Entry::new(&moved, Date::since_reference_date(8e8), "5-no-date-b")).unwrap();
+    let computer = Computer { home: scans.clone(), volumes: paths::canonical(&root.join("Volumes")) };
+    let kept = root.join("Surveys");
+    // Alive through the survey, superseded once the survey is kept: before any row is weighed.
+    read_rows(&scans, &index, &Place { computer: &computer, kept: Some(&kept) }, &|| !kept.exists(), &mut |_, _, _| {});
+    assert!(index.row(&moved).is_some(), "a read superseded keeps the rows written meanwhile");
+    // Twin: a read still alive drops the row its survey did not list.
+    let _ = std::fs::remove_dir_all(&kept);
+    read_rows(&scans, &index, &Place { computer: &computer, kept: None }, &|| true, &mut |_, _, _| {});
+    assert!(index.row(&moved).is_none());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
 #[cfg(unix)]
 #[test]
 fn a_folder_reached_through_a_link_lists_the_photos_on_its_real_path() {
