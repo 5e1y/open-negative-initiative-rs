@@ -149,6 +149,7 @@ pub struct Organising {
     /// The opened folder's reads that landed whole, which the checks count.
     pub reads_whole: usize,
     menu: Vec<Item>,
+    sub_menu: Vec<Item>,
     menu_path: Option<String>,
     menu_lists: (Vec<(Id, String)>, Vec<(Id, String)>),
     press: Option<(f32, f32)>,
@@ -375,6 +376,10 @@ impl Ctl {
         lib.on_context(move |x, y| p.context(x, y));
         let p = me.clone();
         lib.on_menu_chosen(move |i| p.menu_chosen(index(i)));
+        let p = me.clone();
+        lib.on_menu_opened(move |i| p.menu_opened(usize::try_from(i).ok()));
+        let p = me.clone();
+        lib.on_menu_sub_chosen(move |i| p.menu_sub_chosen(index(i)));
         let p = me.clone();
         lib.on_empty_acted(move || p.act(crate::Act::Open));
         let p = me.clone();

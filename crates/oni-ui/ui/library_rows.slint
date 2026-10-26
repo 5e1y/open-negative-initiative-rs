@@ -1,0 +1,58 @@
+// The library column's rows: a tree's row, the row pinned at its top, a drag in the projects' tree.
+import { Reach } from "ds/ds.slint";
+
+export struct TreeRow {
+    // Its place among the tree's rows, which a click or a menu names.
+    index: int,
+    depth: int,
+    title: string,
+    // The title cut for a narrow column, its tail kept whole; no tail, no cut.
+    head: string,
+    tail: string,
+    caption: string,
+    // 0 a folder, 1 a roll, 2 a photo.
+    kind: int,
+    // A roll's stock artwork, `TreeRowChrome`'s mini canister in place of its glyph.
+    stock: image,
+    has-stock: bool,
+    expandable: bool,
+    expanded: bool,
+    selected: bool,
+    // `TreeEngine.renaming`: the row's name typed over it.
+    renaming: bool,
+    // Its place in the column, a photo drawn as a thumbnail when `thumb`.
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    thumb: bool,
+    picture: image,
+    medal: int,
+    missing: bool,
+    away: Reach,
+    note: string,
+    rgb: bool,
+    gone-pass: string,
+}
+
+// `PinnedRow`: the open row held at a tree's top, and how far the next one pushes it up.
+export struct TreePin {
+    shown: bool,
+    index: int,
+    push: length,
+    row: TreeRow,
+}
+
+// A drag in the projects' tree: its chip at the pointer, and the ring or the line where it would land.
+export struct TreeDrag {
+    shown: bool,
+    chip: string,
+    x: length,
+    y: length,
+    ring: bool,
+    line: bool,
+    mark-x: length,
+    mark-y: length,
+    mark-width: length,
+    mark-height: length,
+}

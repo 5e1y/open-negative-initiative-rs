@@ -1,125 +1,21 @@
 //! The gallery on the headless window, driven by real pointer and key events: picks, opening, the
 //! medal picker, the cell menu, projects, the archive that moves nothing, the ONI Trash, the sidebar.
 
-use oni_app::app::{self, Options, Shell};
+use oni_app::app::{Options, Shell};
 use oni_app::{App, Confirm, Library, Menus};
 use oni_core::{Archive, EditorStore};
 use oni_library::index::LibraryIndex;
 use oni_settings::{Film, Medal};
 use slint::platform::{Key, PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, LogicalPosition, Model, SharedString};
+use slint::{ComponentHandle, Model, SharedString};
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use crate::common;
 
-struct Hand<'a> {
-    rig: &'a common::Rig,
-    w: &'a oni_app::MainWindow,
-    popup: std::cell::Cell<bool>,
-}
+mod hand;
+use hand::Hand;
 
-impl Hand<'_> {
-    fn centre(&self, caption: &str) -> (f32, f32) {
-        let lib = self.w.global::<Library>();
-        let t = app::tiles(self.w).into_iter().find(|t| t.caption == caption).unwrap_or_else(|| panic!("{caption} is shown"));
-        (lib.get_grid_x() + t.x + t.width / 2.0, lib.get_grid_y() + t.y - lib.get_scroll() + t.height / 2.0)
-    }
-
-    fn event(&self, e: WindowEvent) {
-        self.rig.window.dispatch_event(e);
-        self.rig.pump();
-    }
-
-    fn press_at(&self, (x, y): (f32, f32), button: PointerEventButton) {
-        let position = LogicalPosition::new(x, y);
-        self.event(WindowEvent::PointerMoved { position });
-        self.event(WindowEvent::PointerPressed { position, button });
-    }
-
-    fn release_at(&self, (x, y): (f32, f32), button: PointerEventButton) {
-        self.event(WindowEvent::PointerReleased { position: LogicalPosition::new(x, y), button });
-    }
-
-    fn click(&self, caption: &str, held: &[Key]) {
-        let at = self.centre(caption);
-        for k in held {
-            self.event(WindowEvent::KeyPressed { text: (*k).into() });
-        }
-        self.press_at(at, PointerEventButton::Left);
-        self.release_at(at, PointerEventButton::Left);
-        for k in held.iter().rev() {
-            self.event(WindowEvent::KeyReleased { text: (*k).into() });
-        }
-    }
-
-    fn right_click(&self, caption: &str) {
-        let at = self.centre(caption);
-        self.press_at(at, PointerEventButton::Right);
-        self.release_at(at, PointerEventButton::Right);
-        self.popup.set(true);
-    }
-
-    /// A press carried in eight steps to `to`, as a hand drags.
-    fn drag(&self, from: (f32, f32), to: (f32, f32)) {
-        self.press_at(from, PointerEventButton::Left);
-        for k in 1..=8 {
-            let f = k as f32 / 8.0;
-            let position = LogicalPosition::new(from.0 + (to.0 - from.0) * f, from.1 + (to.1 - from.1) * f);
-            self.event(WindowEvent::PointerMoved { position });
-        }
-        self.release_at(to, PointerEventButton::Left);
-    }
-
-    /// Lets the system's double-click interval pass, so the next click is a first one.
-    fn rest(&self) {
-        let start = Instant::now();
-        while start.elapsed() < oni_app::system::double_click() + Duration::from_millis(50) {
-            self.rig.pump();
-            std::thread::sleep(Duration::from_millis(10));
-        }
-    }
-
-    fn selected(&self) -> Vec<String> {
-        let mut tiles = app::tiles(self.w);
-        tiles.sort_by_key(|t| t.index);
-        tiles.into_iter().filter(|t| t.selected).map(|t| t.caption.to_string()).collect()
-    }
-
-    /// The sidebar's photo rows lit, in the tree's order.
-    fn lit_rows(&self) -> Vec<String> {
-        let rows = self.w.global::<Library>().get_rows();
-        (0..rows.row_count()).filter_map(|i| rows.row_data(i)).filter(|r| r.kind == 2 && r.selected).map(|r| r.title.to_string()).collect()
-    }
-
-    fn shown(&self) -> Vec<String> {
-        let mut tiles = app::tiles(self.w);
-        tiles.sort_by_key(|t| t.index);
-        tiles.into_iter().map(|t| t.caption.to_string()).collect()
-    }
-
-    fn menu(&self) -> Vec<String> {
-        let lines = self.w.global::<Library>().get_menu_lines();
-        (0..lines.row_count()).filter_map(|i| lines.row_data(i)).map(|l| l.text.to_string()).collect()
-    }
-
-    fn choose(&self, text: &str) -> bool {
-        let at = self.menu().iter().position(|l| l == text).unwrap_or_else(|| panic!("{text} in {:?}", self.menu()));
-        let kept = self.w.global::<Library>().invoke_menu_chosen(at as i32);
-        self.rig.pump();
-        if !kept && self.popup.replace(false) {
-            // The popup closes as the line's own click would close it: a click on the inert status bar.
-            let corner = (1270.0, 795.0);
-            self.press_at(corner, PointerEventButton::Left);
-            self.release_at(corner, PointerEventButton::Left);
-        }
-        kept
-    }
-
-    fn status(&self) -> String {
-        self.w.global::<Library>().get_status().to_string()
-    }
-}
 
 pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand() {
     let gpu = match oni_app::render::Device::open() {
@@ -240,11 +136,15 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(file.projects[0].name, "Project 1");
     assert_eq!(file.projects[0].members.len(), 2);
     // A right click outside the selection acts on that cell alone.
+    // The submenu opens beside the menu as the pointer rests on its line, no click; a plain line's rest opens none.
     hand.right_click("D");
     assert!(hand.menu().contains(&"Add to Project".to_string()));
-    assert!(hand.choose("Add to Project"), "a submenu keeps the menu open");
-    assert_eq!(hand.menu(), ["Project 1"]);
-    hand.choose("Project 1");
+    hand.rest_on(hand.centre("D"), "New Project from");
+    assert!(hand.sub_menu().is_empty(), "twin: resting on a plain line opens no submenu");
+    hand.rest_on(hand.centre("D"), "Add to Project");
+    assert_eq!(hand.sub_menu(), ["Project 1"], "resting on Add to Project opens its submenu");
+    assert!(hand.menu().contains(&"Add to Project".to_string()), "the menu stays beside it");
+    hand.choose_sub("Project 1");
     assert_eq!(hand.selected(), ["D"], "a verb selects its scope");
     assert_eq!(oni_library::project::load(&support).projects[0].members.len(), 3);
 

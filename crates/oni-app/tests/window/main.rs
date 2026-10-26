@@ -4,6 +4,7 @@
 mod common;
 mod runner;
 mod strict;
+mod submenus;
 mod archive;
 mod auto_balance;
 mod button_group;
@@ -143,6 +144,9 @@ const CHECKS: &[(&str, fn())] = &[
     ("told::a_new_folder_refused_by_the_disk_is_said", told::a_new_folder_refused_by_the_disk_is_said),
     ("told::a_rename_with_a_slash_says_why", told::a_rename_with_a_slash_says_why),
     ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
+    ("submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line", submenus::a_submenu_opens_on_the_pointer_at_rest_and_closes_on_another_line),
+    ("submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines", submenus::a_pointer_heading_for_the_submenu_keeps_it_open_across_other_lines),
+    ("submenus::a_click_or_the_arrow_opens_a_submenu_at_once_and_it_turns_at_the_window_s_edge", submenus::a_click_or_the_arrow_opens_a_submenu_at_once_and_it_turns_at_the_window_s_edge),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
     ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),

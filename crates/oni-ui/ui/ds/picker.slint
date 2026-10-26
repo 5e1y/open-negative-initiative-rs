@@ -1,0 +1,121 @@
+// The picker: a field naming the value chosen, whose menu drops under it.
+import { Colour, Radius, Space, State, ButtonStyle, MenuStyle, CardStyle, PickerStyle, TabsStyle } from "theme.slint";
+import { Label, Icon, Tone, Tips } from "base.slint";
+import { Outside } from "outside.slint";
+import { Look } from "button.slint";
+import { Icons } from "icons.slint";
+import { FormStyle } from "forms.slint";
+import { Inward, Keycap, KeycapVariant, Depth } from "depth.slint";
+import { MenuLine, FolderChoice, Menu } from "menu.slint";
+
+// A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
+// canvas's dark, `chip` the Working Space's words on no ground.
+export enum PickerFace { field, pill, chip }
+
+// A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
+// menu. The field is `DSPicker`'s hollow, its chevron on a mini key that sinks under the hand; a pill
+// or a chip lights the hover ground. Every face dims when it is out of reach.
+export component Picker inherits HorizontalLayout {
+    in property <PickerFace> face: PickerFace.field;
+    in property <string> label;
+    // Words in the secondary ink before the value, a middle dot between, as the chip's space.
+    in property <string> prefix;
+    in property <string> value;
+    in property <[string]> entries;
+    in property <int> current: -1;
+    in property <[MenuLine]> lines;
+    in property <[FolderChoice]> choices;
+    in property <bool> enabled: true;
+    // A pill that only names what its column lists takes no click, its note still shown.
+    in property <bool> pressable: true;
+    in property <string> help;
+    in property <Look> look: Look.live;
+    // Where the field starts, which a menu dropped under it aligns on.
+    out property <length> field-x: field.x;
+    out property <length> field-width: field.width;
+    // A popup the owner drops itself on `open`, as the Working Space chip's, held as its menu.
+    in property <bool> own-popup;
+    out property <bool> dropped: menu.is-open || root.own-popup;
+    callback open();
+    callback chosen(int);
+    property <bool> pill: root.face == PickerFace.pill;
+    property <bool> chip: root.face == PickerFace.chip;
+    property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
+    property <bool> well: root.face == PickerFace.field;
+    // The key's press on the grab spring: a hover sinks it as a keycap's, a press whole.
+    property <float> depth: !root.hovered ? 0 : area.pressed || root.look == Look.pressed ? 1 : Depth.hover-press;
+    animate depth { duration: TabsStyle.slide; easing: spring(0.38); }
+    // The press its field last took, and the one that closed its menu: a release whose press never
+    // came is a click a menu swallowed, which opens this picker, as AppKit's does, unless it closed its own.
+    property <int> down-at: -1;
+    property <int> closed-at: -1;
+    changed dropped => { if (!self.dropped) { root.closed-at = Outside.presses; } }
+    function drop() {
+        if (root.pressable) {
+            root.open();
+            if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
+                menu.show();
+            }
+        }
+    }
+    spacing: Space.s;
+    // A pill as tall as the key plate beside it, keys and inset alike.
+    height: root.pill ? ButtonStyle.small-height + 2 * ButtonStyle.plate-inset : root.chip ? CardStyle.padding : ButtonStyle.height;
+    if root.label != "": Label { text: root.label; }
+    field := Rectangle {
+        horizontal-stretch: 1;
+        border-radius: Radius.badge;
+        background: root.well || (root.chip && !root.hovered) ? Colour.hover.transparentize(1) : root.hovered ? Colour.hover : Colour.canvas;
+        opacity: root.enabled ? 1 : State.disabled;
+        accessible-role: button;
+        accessible-label: root.prefix != "" ? root.prefix + " · " + root.value : root.value;
+        accessible-enabled: root.enabled;
+        // As wide as its words on a chip, eliding the value once its room is short.
+        preferred-width: row.preferred-width;
+        if root.well: Inward { hollow: true; ground: Colour.canvas; radius: PickerStyle.radius; }
+        row := HorizontalLayout {
+            padding-left: root.well ? PickerStyle.padding : Space.s;
+            padding-right: root.well ? (root.height - PickerStyle.key) / 2 : Space.s;
+            spacing: root.chip ? Space.xs : Space.s;
+            if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
+            if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
+            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
+            if root.chip: VerticalLayout {
+                alignment: center;
+                Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: self.width; }
+            }
+            if root.well: VerticalLayout {
+                alignment: center;
+                Keycap {
+                    width: PickerStyle.key;
+                    height: PickerStyle.key;
+                    variant: KeycapVariant.mini;
+                    depth: root.depth;
+                    Icon { source: Icons.chevron-down; ink: PickerStyle.chevron-ink; width: PickerStyle.chevron; height: self.width; }
+                }
+            }
+        }
+        // Hovered even when it opens nothing, so the path a pill names still shows as its note.
+        area := TouchArea {
+            enabled: root.enabled;
+            clicked => { root.drop(); }
+            pointer-event(event) => {
+                if (event.button != PointerEventButton.left) { return; }
+                if (event.kind == PointerEventKind.down) { root.down-at = Outside.presses; }
+                if (event.kind == PointerEventKind.up && root.down-at != Outside.presses && root.closed-at != Outside.presses) { root.drop(); }
+            }
+            changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+        }
+    }
+    menu := Menu {
+        x: root.field-x;
+        y: root.height;
+        // A folder's list as wide as its pill; words at least the menu's own width.
+        span: root.choices.length > 0 ? root.field-width : root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
+        entries: root.entries;
+        current: root.current;
+        lines: root.lines;
+        choices: root.choices;
+        chosen(i) => { root.chosen(i); self.close(); }
+    }
+}

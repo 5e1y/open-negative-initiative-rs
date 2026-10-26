@@ -1,30 +1,36 @@
-// The menus: one popup for every list a key or a click opens, and the picker that drops it under its field.
-import { Colour, Space, Radius, Stroke, State, ButtonStyle, MenuStyle, FieldStyle, CardStyle } from "theme.slint";
-import { Label, Icon, Tone, Tips, Divider, Gap } from "base.slint";
-import { Outside } from "outside.slint";
+// The menus: one popup for every list a key or a click opens, a context menu's submenu beside it.
+import { Colour, Space, State, ButtonStyle, MenuStyle } from "theme.slint";
+import { Label, Icon, Tone, Divider, Gap } from "base.slint";
+import { Bounds } from "outside.slint";
 import { Popover } from "surfaces.slint";
 import { Look } from "button.slint";
 import { Icons } from "icons.slint";
-
 import { RowKind, RowForm, Row } from "row.slint";
 import { FormStyle } from "forms.slint";
-import { PickerStyle, TabsStyle } from "theme.slint";
-import { Inward, Keycap, KeycapVariant, Depth } from "depth.slint";
 
-// A line of a context menu: a rule above it, out of reach, or opening a submenu Rust lays in its place.
+// A line of a context menu: a rule above it, out of reach, or opening a submenu beside it.
 export struct MenuLine { text: string, enabled: bool, rule: bool, opens: bool }
 
 export struct FolderChoice { title: string, current: bool }
 
-// One line of a menu: its check, its word, its shortcut, the accent's band under the pointer.
+// What a menu shows its owner, which cannot read into a popup: the lines lit, the opener whose submenu
+// shows, the submenu turned left and where it lies, and how far left of its anchor the popup starts.
+export struct MenuState { lit: int, open: int, sub-lit: int, turned: bool, lead-x: length, sub-x: length, sub-y: length }
+
+// One line of a menu: its check, its word, its shortcut, the accent's band under the pointer, or on
+// the line its menu holds lit (`held`) when it does not follow the pointer alone (`by-hand`).
 export component MenuEntry inherits Rectangle {
     in property <string> text;
     in property <string> shortcut;
     in property <bool> enabled: true;
     in property <bool> checked;
     in property <Look> look: Look.live;
+    in property <bool> held;
+    in property <bool> by-hand: true;
+    // The pointer moving over it, in its popup's points.
+    callback pointed(length, length);
     callback activated();
-    property <bool> hovered: root.enabled && (area.has-hover || root.look != Look.live);
+    property <bool> hovered: root.enabled && ((root.by-hand && area.has-hover) || root.held || root.look != Look.live);
     height: ButtonStyle.height;
     border-radius: ButtonStyle.small-radius;
     background: root.hovered ? Colour.accent : Colour.raised.transparentize(1);
@@ -42,9 +48,14 @@ export component MenuEntry inherits Rectangle {
         Label { text: root.text; horizontal-stretch: 1; overflow: elide; }
         Label { text: root.shortcut; tone: Tone.secondary; }
     }
+    // Live on an out-of-reach line too, so resting on it still closes an open submenu.
     area := TouchArea {
-        enabled: root.enabled;
-        clicked => { root.activated(); }
+        clicked => { if (root.enabled) { root.activated(); } }
+        pointer-event(event) => {
+            if (event.kind == PointerEventKind.move) {
+                root.pointed(root.absolute-position.x + self.mouse-x, root.absolute-position.y + self.mouse-y);
+            }
+        }
     }
 }
 
@@ -74,146 +85,209 @@ export component PopupPanel inherits PopupWindow {
     }
 }
 
-// Words with the current one checked; or a context menu's lines; or the folder pill's choices.
-// A choice closes it, as a click outside does.
-export component Menu inherits PopupPanel {
+// Words with the current one checked, a context menu's lines, or the folder pill's choices; a choice
+// closes it. An opener's submenu opens beside it as AppKit's, at rest, on a click or on →.
+export component Menu inherits PopupWindow {
+    // A menu dropped under a field is as wide as it; a submenu as wide as its menu.
+    in property <length> span: MenuStyle.width;
     in property <[string]> entries;
     in property <int> current: -1;
     in property <[MenuLine]> lines;
     in property <[FolderChoice]> choices;
+    // The submenu its owner lays on `opened`, and where the menu's corner stands in the window.
+    in property <[MenuLine]> sub-lines;
+    in property <length> window-x;
+    in property <length> window-y;
     callback chosen(int);
-    kind: PopupKind.menu;
-    for word[i] in root.entries: MenuEntry {
-        text: word;
-        checked: i == root.current;
-        activated => { root.chosen(i); root.close(); }
+    // An opener's submenu asked for, -1 once it closes; a line of the submenu chosen.
+    callback opened(int);
+    callback sub-chosen(int);
+    // Where its owner anchors it: a submenu turned left starts the popup `lead-x` left of it.
+    in property <length> anchor-x;
+    callback state-changed(MenuState);
+    // The line lit by the pointer or the arrows, the opener whose submenu shows, and its own lit line.
+    property <int> lit: -1;
+    property <int> open: -1;
+    property <int> sub-lit: -1;
+    // A submenu turns to the menu's left when the window's edge leaves it no room on the right.
+    property <bool> turned: Bounds.width > 0 && root.left + 2 * root.span > Bounds.width && root.left >= root.span;
+    property <length> lead-x: root.shown && root.turned ? root.span : 0px;
+    property <bool> shown: root.open >= 0 && root.sub-lines.length > 0;
+    property <MenuState> state: { lit: root.lit, open: root.shown ? root.open : -1, sub-lit: root.sub-lit, turned: root.turned, lead-x: root.lead-x, sub-x: sub.x, sub-y: sub.y };
+    changed state => { root.state-changed(self.state); }
+    // The line the pointer rests on, the opener's top, and the pointer's last point, in the popup's points.
+    property <int> aim: -1;
+    property <length> open-y;
+    property <length> last-x;
+    property <length> last-y;
+    // Where the window holds the menu alone, its edges pushing it in.
+    property <length> left: Bounds.width > 0 ? max(0px, min(root.window-x, Bounds.width - root.span)) : root.window-x;
+    property <length> top: Bounds.height > 0 ? max(0px, min(root.window-y, Bounds.height - panel.height)) : root.window-y;
+    close-policy: close-on-click-outside;
+    forward-focus: keys;
+    x: root.anchor-x - root.lead-x;
+    width: root.shown ? 2 * root.span : root.span;
+    height: root.shown ? max(panel.height, sub.y + sub.height) : panel.height;
+
+    // A step towards the submenu, inside the cone from the last point to its near corners: the lines it
+    // crosses on the way leave the submenu open.
+    pure function heading(x: length, y: length) -> bool {
+        let edge = (root.turned ? sub.x + sub.width : sub.x) / 1px;
+        let dx = (x - root.last-x) / 1px;
+        let dy = (y - root.last-y) / 1px;
+        let ux = edge - root.last-x / 1px;
+        let up = (sub.y - root.last-y) / 1px;
+        let down = (sub.y + sub.height - root.last-y) / 1px;
+        let toward = root.turned ? dx < 0 : dx > 0;
+        return toward && (ux * dy - up * dx) * (ux * dy - down * dx) <= 0;
     }
-    for line[i] in root.lines: VerticalLayout {
-        if line.rule: Divider { engraved: false; }
-        MenuEntry {
-            text: line.text;
-            shortcut: line.opens ? "›" : "";
-            enabled: line.enabled;
-            activated => { root.chosen(i); }
+    function arm() {
+        if (wait.running) { wait.restart(); } else { wait.start(); }
+    }
+    function open-sub(i: int) {
+        wait.stop();
+        root.aim = i;
+        root.lit = i;
+        if (root.open != i) {
+            root.open = i;
+            root.sub-lit = -1;
+            root.opened(i);
         }
     }
-    for choice[i] in root.choices: Row {
-        form: RowForm.menu;
-        kind: RowKind.folder;
-        title: choice.title;
-        checked: choice.current;
-        clicked => { root.chosen(i); }
-    }
-}
-
-// A picker's face: `field` set in the panel as a text field is, `pill` a column header's name on the
-// canvas's dark, `chip` the Working Space's words on no ground.
-export enum PickerFace { field, pill, chip }
-
-// A field naming the value chosen, a chevron at its end; its words, lines or folders drop under it as a
-// menu. The field is `DSPicker`'s hollow, its chevron on a mini key that sinks under the hand; a pill
-// or a chip lights the hover ground. Every face dims when it is out of reach.
-export component Picker inherits HorizontalLayout {
-    in property <PickerFace> face: PickerFace.field;
-    in property <string> label;
-    // Words in the secondary ink before the value, a middle dot between, as the chip's space.
-    in property <string> prefix;
-    in property <string> value;
-    in property <[string]> entries;
-    in property <int> current: -1;
-    in property <[MenuLine]> lines;
-    in property <[FolderChoice]> choices;
-    in property <bool> enabled: true;
-    // A pill that only names what its column lists takes no click, its note still shown.
-    in property <bool> pressable: true;
-    in property <string> help;
-    in property <Look> look: Look.live;
-    // Where the field starts, which a menu dropped under it aligns on.
-    out property <length> field-x: field.x;
-    out property <length> field-width: field.width;
-    // A popup the owner drops itself on `open`, as the Working Space chip's, held as its menu.
-    in property <bool> own-popup;
-    out property <bool> dropped: menu.is-open || root.own-popup;
-    callback open();
-    callback chosen(int);
-    property <bool> pill: root.face == PickerFace.pill;
-    property <bool> chip: root.face == PickerFace.chip;
-    property <bool> hovered: root.enabled && root.pressable && (area.has-hover || root.look != Look.live);
-    property <bool> well: root.face == PickerFace.field;
-    // The key's press on the grab spring: a hover sinks it as a keycap's, a press whole.
-    property <float> depth: !root.hovered ? 0 : area.pressed || root.look == Look.pressed ? 1 : Depth.hover-press;
-    animate depth { duration: TabsStyle.slide; easing: spring(0.38); }
-    // The press its field last took, and the one that closed its menu: a release whose press never
-    // came is a click a menu swallowed, which opens this picker, as AppKit's does, unless it closed its own.
-    property <int> down-at: -1;
-    property <int> closed-at: -1;
-    changed dropped => { if (!self.dropped) { root.closed-at = Outside.presses; } }
-    function drop() {
-        if (root.pressable) {
-            root.open();
-            if (root.entries.length > 0 || root.lines.length > 0 || root.choices.length > 0) {
-                menu.show();
-            }
+    function close-sub() {
+        if (root.open >= 0) {
+            root.open = -1;
+            root.sub-lit = -1;
+            root.opened(-1);
         }
     }
-    spacing: Space.s;
-    // A pill as tall as the key plate beside it, keys and inset alike.
-    height: root.pill ? ButtonStyle.small-height + 2 * ButtonStyle.plate-inset : root.chip ? CardStyle.padding : ButtonStyle.height;
-    if root.label != "": Label { text: root.label; }
-    field := Rectangle {
-        horizontal-stretch: 1;
-        border-radius: Radius.badge;
-        background: root.well || (root.chip && !root.hovered) ? Colour.hover.transparentize(1) : root.hovered ? Colour.hover : Colour.canvas;
-        opacity: root.enabled ? 1 : State.disabled;
-        accessible-role: button;
-        accessible-label: root.prefix != "" ? root.prefix + " · " + root.value : root.value;
-        accessible-enabled: root.enabled;
-        // As wide as its words on a chip, eliding the value once its room is short.
-        preferred-width: row.preferred-width;
-        if root.well: Inward { hollow: true; ground: Colour.canvas; radius: PickerStyle.radius; }
-        row := HorizontalLayout {
-            padding-left: root.well ? PickerStyle.padding : Space.s;
-            padding-right: root.well ? (root.height - PickerStyle.key) / 2 : Space.s;
-            spacing: root.chip ? Space.xs : Space.s;
-            if root.prefix != "": Label { text: root.prefix; tone: Tone.secondary; }
-            if root.prefix != "": Label { text: "·"; tone: Tone.secondary; }
-            Label { text: root.value; horizontal-stretch: 1; overflow: elide; }
-            if root.chip: VerticalLayout {
-                alignment: center;
-                Icon { source: Icons.chevron-down; width: FormStyle.chip-icon; height: self.width; }
-            }
-            if root.well: VerticalLayout {
-                alignment: center;
-                Keycap {
-                    width: PickerStyle.key;
-                    height: PickerStyle.key;
-                    variant: KeycapVariant.mini;
-                    depth: root.depth;
-                    Icon { source: Icons.chevron-down; ink: PickerStyle.chevron-ink; width: PickerStyle.chevron; height: self.width; }
+    // The pointer at rest on a line: its submenu opens, or the open one closes.
+    function settle() {
+        wait.stop();
+        if (root.aim < 0 || root.aim == root.open) { return; }
+        root.lit = root.aim;
+        if (root.lines[root.aim].opens && root.lines[root.aim].enabled) { root.open-sub(root.aim); } else { root.close-sub(); }
+    }
+    function pointed(i: int, x: length, y: length) {
+        if (root.shown && i != root.open && root.heading(x, y)) {
+            root.aim = i;
+            root.arm();
+        } else {
+            if (i != root.aim) { root.arm(); }
+            root.aim = i;
+            root.lit = i;
+            root.sub-lit = -1;
+            if (i == root.open) { wait.stop(); }
+        }
+        root.last-x = x;
+        root.last-y = y;
+    }
+    function sub-pointed(j: int, x: length, y: length) {
+        wait.stop();
+        root.aim = root.open;
+        root.lit = root.open;
+        root.sub-lit = j;
+        root.last-x = x;
+        root.last-y = y;
+    }
+    // The arrows walk the lines, or the submenu's once it is entered; ← closes it.
+    function step(by: int) {
+        if (root.shown && root.sub-lit >= 0) {
+            root.sub-lit = max(0, min(root.sub-lit + by, root.sub-lines.length - 1));
+        } else if (root.lines.length > 0) {
+            root.lit = root.lit < 0 ? (by > 0 ? 0 : root.lines.length - 1) : max(0, min(root.lit + by, root.lines.length - 1));
+            root.aim = root.lit;
+        }
+    }
+    function enter() {
+        if (root.shown && root.sub-lit >= 0) {
+            if (root.sub-lines[root.sub-lit].enabled) { root.sub-chosen(root.sub-lit); }
+        } else if (root.lit >= 0 && root.lines[root.lit].enabled) {
+            if (root.lines[root.lit].opens) { root.open-sub(root.lit); root.sub-lit = 0; } else { root.chosen(root.lit); }
+        }
+    }
+    wait := Timer {
+        interval: MenuStyle.sub-delay;
+        running: false;
+        triggered => { root.settle(); }
+    }
+    keys := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.DownArrow) { root.step(1); return accept; }
+            if (event.text == Key.UpArrow) { root.step(-1); return accept; }
+            if (event.text == Key.RightArrow) {
+                if (root.sub-lit < 0 && root.lit >= 0 && root.lines[root.lit].opens && root.lines[root.lit].enabled) {
+                    root.open-sub(root.lit);
+                    root.sub-lit = 0;
                 }
+                return accept;
             }
-        }
-        // Hovered even when it opens nothing, so the path a pill names still shows as its note.
-        area := TouchArea {
-            enabled: root.enabled;
-            clicked => { root.drop(); }
-            pointer-event(event) => {
-                if (event.button != PointerEventButton.left) { return; }
-                if (event.kind == PointerEventKind.down) { root.down-at = Outside.presses; }
-                if (event.kind == PointerEventKind.up && root.down-at != Outside.presses && root.closed-at != Outside.presses) { root.drop(); }
-            }
-            changed has-hover => { Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height); }
+            if (event.text == Key.LeftArrow) { root.close-sub(); return accept; }
+            if (event.text == Key.Return || event.text == " ") { root.enter(); return accept; }
+            reject
         }
     }
-    menu := Menu {
-        x: root.field-x;
-        y: root.height;
-        // A folder's list as wide as its pill; words at least the menu's own width.
-        span: root.choices.length > 0 ? root.field-width : root.lines.length > 0 ? MenuStyle.width : max(MenuStyle.width, root.field-width);
-        entries: root.entries;
-        current: root.current;
-        lines: root.lines;
-        choices: root.choices;
-        chosen(i) => { root.chosen(i); self.close(); }
+    // A press on the popup's bare ground, beside a short submenu, closes the menu as one outside it does.
+    TouchArea {
+        pointer-event(event) => { if (event.kind == PointerEventKind.down) { root.close(); } }
+    }
+    panel := Popover {
+        x: root.lead-x;
+        y: 0px;
+        width: root.span;
+        menu: true;
+        tail: false;
+        pad: Gap.xs;
+        gap: Gap.none;
+        for word[i] in root.entries: MenuEntry {
+            text: word;
+            checked: i == root.current;
+            activated => { root.chosen(i); root.close(); }
+        }
+        for line[i] in root.lines: VerticalLayout {
+            property <bool> opening: i == root.open;
+            changed opening => { if (self.opening) { root.open-y = entry.absolute-position.y; } }
+            if line.rule: Divider { engraved: false; }
+            entry := MenuEntry {
+                text: line.text;
+                shortcut: line.opens ? "›" : "";
+                enabled: line.enabled;
+                by-hand: false;
+                held: i == root.lit || i == root.open;
+                pointed(x, y) => { root.pointed(i, x, y); }
+                activated => { if (line.opens) { root.open-sub(i); } else { root.chosen(i); } }
+            }
+        }
+        for choice[i] in root.choices: Row {
+            form: RowForm.menu;
+            kind: RowKind.folder;
+            title: choice.title;
+            checked: choice.current;
+            clicked => { root.chosen(i); }
+        }
+    }
+    // Its first line level with its opener's, held inside the window's bottom.
+    sub := Popover {
+        visible: root.shown;
+        x: root.turned ? 0px : root.span;
+        y: Bounds.height > 0 ? max(0px, min(root.open-y - Space.xs, Bounds.height - root.top - self.height)) : root.open-y - Space.xs;
+        width: root.span;
+        menu: true;
+        tail: false;
+        pad: Gap.xs;
+        gap: Gap.none;
+        for line[j] in root.sub-lines: VerticalLayout {
+            if line.rule: Divider { engraved: false; }
+            MenuEntry {
+                text: line.text;
+                enabled: line.enabled;
+                by-hand: false;
+                held: j == root.sub-lit;
+                pointed(x, y) => { root.sub-pointed(j, x, y); }
+                activated => { root.sub-chosen(j); }
+            }
+        }
     }
 }
