@@ -50,6 +50,13 @@ jobs:
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           & $iscc /Qp "/DAppVersion=$version" "/DTag=$version-$sha" "/DArt=$pwd\art" "/DExe=$pwd\target\release\oni.exe" "/DOutput=$pwd" packaging/windows/oni.iss
           if ($LASTEXITCODE) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ONI-windows
+          path: |
+            ONI-windows-*.zip
+            ONI-setup-*.exe
+          retention-days: 14
       - name: Shots
         if: ${{ inputs.shots }}
         shell: pwsh
@@ -63,28 +70,34 @@ jobs:
             $bitmap.Save("shots/$name.png")
           }
           $setup = (Get-ChildItem ONI-setup-*.exe)[0].FullName
+          $app = "$env:LOCALAPPDATA\Programs\Open Negative Initiative"
           $shell = New-Object -ComObject WScript.Shell
           foreach ($lang in "fr", "en") {
             $p = Start-Process $setup -ArgumentList "/LANG=$lang" -PassThru
             Start-Sleep 8
-            for ($i = 1; $i -le 7; $i++) {
+            # The mode dialog, the welcome, the folder, the tasks and the summary, each passed by Enter.
+            for ($i = 1; $i -le 5; $i++) {
               $shell.AppActivate($p.Id) | Out-Null
               Start-Sleep 1
               Shot "$lang-$i"
               $shell.SendKeys("{ENTER}")
-              Start-Sleep 6
+              Start-Sleep 5
             }
+            for ($t = 0; $t -lt 180 -and -not (Test-Path "$app\unins000.dat"); $t += 2) { Start-Sleep 2 }
+            Start-Sleep 5
+            $shell.AppActivate($p.Id) | Out-Null
+            Shot "$lang-6-finished"
+            $shell.SendKeys("{ENTER}")
+            Start-Sleep 20
+            Shot "$lang-7-app"
             Get-Process ONI, ONI-setup* -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep 2
+            Start-Process "$app\unins000.exe" -ArgumentList "/VERYSILENT" -Wait
+            Start-Sleep 5
+            if (Test-Path "$app\ONI.exe") { Write-Error "the uninstaller left ONI.exe"; exit 1 }
           }
       - uses: actions/upload-artifact@v4
-        with:
-          name: ONI-windows
-          path: |
-            ONI-windows-*.zip
-            ONI-setup-*.exe
-          retention-days: 14
-      - uses: actions/upload-artifact@v4
-        if: ${{ inputs.shots }}
+        if: ${{ always() && inputs.shots }}
         with:
           name: ONI-setup-shots
           path: shots
