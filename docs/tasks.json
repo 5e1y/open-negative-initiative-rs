@@ -3685,5 +3685,47 @@
     "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
     "status": "done",
     "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
+  },
+  {
+    "id": 710,
+    "type": "fix",
+    "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
+    "status": "done",
+    "detail": "Tips.hover hid the tip only when the text left matched the one shown, so a key whose help changed under the hand (EDITOR/GALLERY, Show/Hide Library, De-dust) or vanished under it left its old tooltip floating. The window now hides a tooltip (not a help mark's card) on every press, as AppKit does, and Button hides the tip it told when it is left or when its help changes while hovered. Checked by a_tooltip_hides_on_a_press_and_with_the_help_it_showed, with its twins (hovered again, the key shows its new help)."
+  },
+  {
+    "id": 711,
+    "type": "fix",
+    "title": "The export's W and H boxes load the owner's values again after each commit",
+    "status": "done",
+    "detail": "A width refused (past the full edge, or no digits) left Resize::Full, so Rust republished the same text, `changed width-value` never fired and the box kept the refused value; the height typed next was then ignored, typed_size seeing W still edited. SizeFields now reloads both boxes after `typed`, as Swift's commit calls load(shown). Checked in the_size_boxes_follow_their_owner_and_the_chip_closes_before_a_window: 8000 refused shows 96, the H typed next resizes; twin, a width the photo holds still decides."
+  },
+  {
+    "id": 712,
+    "type": "fix",
+    "title": "A hidden column revealed by the pointer stays while its menu holds the pointer",
+    "status": "done",
+    "detail": "A popup takes every pointer event from the window's tree, so the revealed Library or Panel lost its hover as soon as the pointer reached its menu and slid away, the menu with it. The card is now a TouchArea, enabled while a column is revealed, whose hover says the pointer is on the card: a column left after a press in it, with the card not hovered, is held until the pointer comes back to it or meets the card. Both columns are one FloatingColumn (floating.slint). Checked by a_revealed_column_stays_while_its_menu_holds_the_pointer, with its twins (no press: hides at once; menu closed over the column: kept until left)."
+  },
+  {
+    "id": 713,
+    "type": "fix",
+    "title": "Moving from one date box to the next keeps the editing and commits nothing half typed",
+    "status": "done",
+    "detail": "Each DateFields box ended its editing on a press outside itself, so a click from MM to DD committed the month half typed (and could clamp the day). The sibling boxes and the hollow now count as the box's rim, one focus for the three as Swift's. Checked by a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing on OutsideProbe, its twin a click beside the date committing once, whole."
+  },
+  {
+    "id": 714,
+    "type": "fix",
+    "title": "A tab bar whose selection lies beyond its tabs, as De-dust's, shows no pill",
+    "status": "done",
+    "detail": "The pill's x followed `selected` alone, so De-dust's tab 4 slid it out of the four-tab bar and back. The pill hides while the selection is outside the tabs and waits where it stood, as Swift's DSTabBar draws none. Checked in a_tab_bar_bound_one_way_follows_its_owner_after_a_click, its twin the pill back under the first tab."
+  },
+  {
+    "id": 715,
+    "type": "fix",
+    "title": "A move to a screen of another density renders the canvas and traces the plots again",
+    "status": "done",
+    "detail": "The logical size stays across a 1x to 2x move, so no `changed width` fired: the canvas kept its old pixel count and the plots their old rasters until the next gesture. Card publishes its density (1px / 1phx), CanvasCard calls Canvas.resized on its change, and Ctl::resized traces every plot again when the window's scale factor moved. Checked by a_screen_of_another_density_renders_the_canvas_and_the_plots_again (render, output histogram and levels at twice the pixels), its twin the same density announced again rendering nothing."
   }
 ]

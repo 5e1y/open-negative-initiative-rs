@@ -9,7 +9,9 @@ mod auto_balance;
 mod button_group;
 mod canvas_layout;
 mod canvas_switch;
+mod column_menu;
 mod contact_sheet;
+mod density;
 mod depth_lip;
 mod design_system;
 mod editor_leftovers;
@@ -71,6 +73,7 @@ mod together;
 mod together_all;
 mod told;
 mod toolbar;
+mod tooltip;
 mod tree_hand;
 mod transition;
 mod tree_leftovers;
@@ -134,6 +137,10 @@ const CHECKS: &[(&str, fn())] = &[
     ("new_roll::a_new_roll_asks_names_the_folder_and_counts_files", new_roll::a_new_roll_asks_names_the_folder_and_counts_files),
     ("outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it", outside::a_menu_closes_on_a_click_beside_it_which_reaches_nothing_under_it),
     ("outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits", outside::a_field_ends_on_a_click_beside_it_and_a_rename_commits),
+    ("outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing", outside::a_click_from_one_date_box_to_the_next_keeps_the_date_in_editing),
+    ("tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed", tooltip::a_tooltip_hides_on_a_press_and_with_the_help_it_showed),
+    ("column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer", column_menu::a_revealed_column_stays_while_its_menu_holds_the_pointer),
+    ("density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again", density::a_screen_of_another_density_renders_the_canvas_and_the_plots_again),
     ("freshness::a_file_dropped_in_the_opened_folder_appears", freshness::a_file_dropped_in_the_opened_folder_appears),
     ("freshness::a_disk_back_reopens_the_opened_folder", freshness::a_disk_back_reopens_the_opened_folder),
     ("freshness::a_watch_comes_back_with_its_disk", freshness::a_watch_comes_back_with_its_disk),

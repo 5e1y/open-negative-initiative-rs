@@ -1,5 +1,6 @@
 //! The tab bar on the headless window: a click only asks, the owner writes the choice, so a bar bound
-//! one way to its owner's value, as Settings' language, still follows it after a click.
+//! one way to its owner's value, as Settings' language, still follows it after a click; a choice
+//! beyond its tabs shows no pill.
 
 use oni_app::FieldProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -37,4 +38,16 @@ pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     probe.set_choice(2);
     rig.pump();
     assert_eq!(probe.get_shown(), 2);
+
+    // A selection beyond the tabs, as De-dust's, shows no pill, which waits where it stood.
+    let at = probe.get_pill_x();
+    assert!(probe.get_pill_shown());
+    probe.set_choice(3);
+    rig.settle();
+    assert!(!probe.get_pill_shown(), "no tab is selected, so no pill shows");
+    assert_eq!(probe.get_pill_x(), at, "the pill does not slide past the last tab");
+    // Twin: back on a tab, the pill shows under it.
+    probe.set_choice(0);
+    rig.settle();
+    assert!(probe.get_pill_shown() && probe.get_pill_x() < at, "the pill comes back under the first tab");
 }

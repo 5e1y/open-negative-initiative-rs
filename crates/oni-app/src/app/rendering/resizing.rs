@@ -11,6 +11,8 @@ thread_local! {
     static RESIZING: Cell<bool> = const { Cell::new(false) };
     /// The viewport and canvas size when the resize began, which every step scales from.
     static BEGAN: Cell<Option<(Viewport, (f64, f64))>> = const { Cell::new(None) };
+    /// The screen's density the plots were last traced at; zero before the first resize.
+    static SCALE: Cell<f32> = const { Cell::new(0.0) };
 }
 
 /// The picture was laid for a canvas of `view`, so a resize knows where it stood.
@@ -43,6 +45,13 @@ impl Ctl {
     /// The canvas took a new size: the picture shown is laid again where the view now puts it, the
     /// same texture stretched or moved, and the render at the new size waits for the hand to rest.
     pub(in crate::app) fn resized(self: &Rc<Self>) {
+        // A screen of another density: the plots' rasters are traced again at it.
+        if let Some(scale) = self.window().map(|w| w.window().scale_factor()) {
+            let before = SCALE.with(|s| s.replace(scale));
+            if before != 0.0 && before != scale {
+                crate::editors::Plot::ALL.into_iter().for_each(|plot| self.plot_resized(plot));
+            }
+        }
         let Some(view) = self.canvas_size() else { return };
         let moved = {
             let mut s = self.state.borrow_mut();
