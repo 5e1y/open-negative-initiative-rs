@@ -30,9 +30,14 @@ export global Tip {
     in-out property <bool> shown;
     // A help mark's note shows at once, as `dsHelpBubble` does; a tooltip waits the system's delay.
     in-out property <bool> at-once;
-    // A help mark's note is a card: its clip above, 4:3, then the note; a tooltip is a line of text.
+    // A help mark's note is a card: its demo above, square, then the note; a tooltip is a line of text.
     in-out property <bool> card;
+    // The help topic the card shows, Rust's key to its demo; `play` says it opened or closed ("").
+    in-out property <string> demo;
+    callback play(string);
+    // The demo's frame, and whether the topic has one: none, and the card shows no box.
     in-out property <image> clip;
+    in-out property <bool> has-clip;
 }
 
 export global Tones {
@@ -271,82 +276,6 @@ export component Inset inherits Inward {
         spacing: Tones.gap(root.gap);
         alignment: start;
         @children
-    }
-}
-
-// What a hovered control says: a line of text; as a help mark's note a card, its clip above, 4:3,
-// then the note, floating as `DSHelpBubble`. `natural-width` and `natural-height` are its unheld size.
-export component TipCard inherits Outward {
-    in property <bool> card;
-    in property <string> text;
-    in property <image> picture;
-    out property <length> natural-width: root.card ? TipStyle.card-width : tip-text.width + 2 * TipStyle.padding;
-    out property <length> natural-height: root.card ? column.preferred-height : tip-text.preferred-height + 2 * TipStyle.padding-y;
-    width: root.natural-width;
-    height: root.natural-height;
-    fill: root.card ? Colour.canvas : Colour.tip;
-    radius: root.card ? TipStyle.card-radius : TipStyle.radius;
-    clip: root.card;
-    tip-text := Label {
-        visible: !root.card;
-        role: TextRole.caption;
-        text: root.text;
-        wrap: word-wrap;
-        width: min(self.preferred-width, TipStyle.max-width);
-    }
-    column := VerticalLayout {
-        visible: root.card;
-        width: TipStyle.card-width;
-        padding: TipStyle.padding;
-        spacing: TipStyle.padding;
-        // The clip's place, empty until its GIF is made.
-        Picture {
-            height: (TipStyle.card-width - 2 * TipStyle.padding) * 3 / 4;
-            ground: Ground.skeleton;
-            rounded: true;
-            source: root.picture;
-        }
-        Label {
-            role: TextRole.caption;
-            font-weight: Type.medium;
-            tone: Tone.primary;
-            text: root.card ? root.text : "";
-            wrap: word-wrap;
-        }
-    }
-}
-
-// The tooltip, drawn above everything by the window that holds it, held inside it by `Tips.place`.
-export component TipLayer inherits TipCard {
-    in property <length> room;
-    in property <length> room-height;
-    // The editor panel's left edge, width and tab bar's foot in the window, while it stands under no sheet.
-    in property <bool> anchored;
-    in property <length> anchor-x;
-    in property <length> anchor-y;
-    in property <length> anchor-width;
-    card: Tip.card;
-    text: Tip.text;
-    picture: Tip.clip;
-    // A help mark in the panel opens its card at one place whatever its height: left of the panel,
-    // under its tab bar.
-    property <bool> at-panel: root.anchored && Tip.card && Tip.x >= root.anchor-x && Tip.x < root.anchor-x + root.anchor-width && Tip.y >= root.anchor-y;
-    out property <TipBox> box: root.at-panel
-        ? Tips.place(root.anchor-x - TipStyle.card-gap - root.natural-width, root.anchor-y, root.natural-width, root.natural-height, root.room, root.room-height)
-        : Tips.place(Tip.x, Tip.y, root.natural-width, root.natural-height, root.room, root.room-height);
-    x: root.box.x;
-    y: root.box.y;
-    width: root.box.width;
-    height: root.box.height;
-    // Shown after the delay by a timer: an animated opacity redraws the window for the whole delay.
-    property <bool> shown: Tip.shown;
-    property <bool> ready;
-    changed shown => { root.ready = false; }
-    visible: Tip.text != "" && Tip.shown && (Tip.at-once || root.ready);
-    Timer {
-        interval: Motion.tip-delay;
-        running: Tip.shown && !Tip.at-once && !root.ready;
-        triggered => { root.ready = true; }
     }
 }
 

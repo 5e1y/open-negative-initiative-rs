@@ -17,7 +17,7 @@ pub fn track_on(f: Field, s: &oni_settings::PipelineSettings) -> RangeInclusive<
 }
 
 /// `position` and `stored_at` on a settings' own track.
-pub(crate) fn position_on(f: Field, stored: f32, track: &RangeInclusive<f32>) -> f32 {
+pub fn position_on(f: Field, stored: f32, track: &RangeInclusive<f32>) -> f32 {
     track::position(f.shown(stored), track, f.spec().centre)
 }
 

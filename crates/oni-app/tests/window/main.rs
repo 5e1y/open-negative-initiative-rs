@@ -33,6 +33,11 @@ mod gestures;
 mod headless;
 mod help;
 mod help_card;
+mod help_demo;
+mod help_demo_roll;
+mod help_demo_color;
+mod help_demo_details;
+mod help_demo_language;
 mod keycap;
 mod keycap_cost;
 mod launch;
@@ -186,6 +191,11 @@ const CHECKS: &[(&str, fn())] = &[
     ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
     ("help_card::a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar", help_card::a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar),
+    ("help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo", help_demo_roll::the_roll_tabs_marks_play_each_its_own_demo),
+    ("help_demo_color::the_color_tabs_marks_play_their_own_demos", help_demo_color::the_color_tabs_marks_play_their_own_demos),
+    ("help_demo::a_help_mark_with_a_demo_plays_it_and_leaving_stops_it", help_demo::a_help_mark_with_a_demo_plays_it_and_leaving_stops_it),
+    ("help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip", help_demo_details::the_dust_mark_plays_its_demo_and_the_film_stock_mark_shows_no_clip),
+    ("help_demo_language::a_worded_demo_plays_in_the_app_s_language", help_demo_language::a_worded_demo_plays_in_the_app_s_language),
     ("sidebars::the_sidebars_lay_their_keys_on_plates_as_swift", sidebars::the_sidebars_lay_their_keys_on_plates_as_swift),
     ("space_chip::the_space_chips_tabs_take_the_pointer", space_chip::the_space_chips_tabs_take_the_pointer),
     ("scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag", scroll::a_surface_scrolls_by_the_wheel_and_never_by_a_drag),

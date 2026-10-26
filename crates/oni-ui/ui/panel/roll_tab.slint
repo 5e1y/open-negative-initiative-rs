@@ -9,6 +9,7 @@ export component RollPane inherits Pane {
     property <bool> flat-settings;
     Block {
         title: @tr("Measured Roll");
+        demo: "measured-roll";
         help: @tr("Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.");
         separated: false;
         // `rollBlock`: the rows a small gap apart, as Swift stacks them.
@@ -47,6 +48,7 @@ export component RollPane inherits Pane {
     }
     Block {
         title: @tr("Film Type");
+        demo: "film-type";
         help: @tr("What the film is: a colour negative, a slide or black and white.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
@@ -57,6 +59,7 @@ export component RollPane inherits Pane {
     }
     Block {
         title: @tr("Flat-Field");
+        demo: "flat-field";
         help: @tr("Evens out uneven lighting from the scanner, whatever you crop to.");
         block: 11;
         modified: Store.flat-field-modified;
@@ -113,6 +116,7 @@ export component RollPane inherits Pane {
     }
     if PanelState.undeclared: Block {
         title: @tr("Source Encoding");
+        demo: "source-encoding";
         help: @tr("This file names no color profile, so it is read as sRGB. A scanner's raw output is often linear: pick what the scanning software wrote, and the photograph is read again.");
         // No store block: the key writes no encoding, so any index only shows it.
         block: 0;
@@ -149,6 +153,7 @@ export component RollPane inherits Pane {
     // Between the balance that feeds it and the windows placed on it, where it acts.
     Block {
         title: @tr("Density Ceiling");
+        demo: "density-ceiling";
         help: @tr("Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.");
         block: 4;
         modified: Store.density-ceiling-modified;
@@ -170,6 +175,7 @@ export component RollPane inherits Pane {
     // the Scanner face run none.
     if PanelState.separation-shown: Block {
         title: @tr("Dye Separation");
+        demo: "dye-separation";
         help: @tr("Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");
         block: 5;
         modified: Store.dye-separation-modified;
@@ -186,6 +192,7 @@ export component RollPane inherits Pane {
     }
     if PanelState.separation-shown: Block {
         title: @tr("Balance Strength");
+        demo: "balance-strength";
         help: @tr("The share of Auto White Balance's correction Temperature and Tint take. Each photo keeps its own correction; the share is the roll's.");
         block: 3;
         modified: Store.balance-strength-modified;

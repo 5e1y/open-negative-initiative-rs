@@ -172,6 +172,8 @@ export component Slider inherits VerticalLayout {
     // `DSSlider.knob`: a cap in the colour the value carries, the chrome's grey otherwise.
     in property <color> knob: SliderStyle.knob;
     in property <bool> enabled: true;
+    // The readout above the track; a help card's demo shows the track alone, as it shows no words.
+    in property <bool> header: true;
     in property <Look> look: Look.live;
     in property <bool> stepped;
     in property <int> value;
@@ -209,7 +211,7 @@ export component Slider inherits VerticalLayout {
     pure function step-at(x: length) -> int {
         root.lowest + round(clamp(x / max(1px, track.width), 0, 1) * (root.highest - root.lowest))
     }
-    ValueHeader {
+    if root.header: ValueHeader {
         label: root.label;
         value: root.readout;
         enabled: root.enabled;

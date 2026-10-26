@@ -3932,6 +3932,13 @@
     "detail": "compare::reference renders the reset frame on the Pro face whatever the live face, so the Scanner's table and keypad show as part of the after; the same before on either face. Owner's call, beyond Swift. Check on_the_scanner_face_the_before_is_the_pro_faces_plain_conversion, its twin the bar's reset keeping the Scanner face."
   },
   {
+    "id": 704,
+    "type": "refactor",
+    "title": "The info sidebar's roll and project resolution in its own module",
+    "status": "done",
+    "detail": "organising.rs passed its 400-line ceiling once project navigation and the submenus met; roll_stock, roll and project_group move unchanged into organising/resolving.rs."
+  },
+  {
     "id": 710,
     "type": "fix",
     "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
@@ -4303,6 +4310,76 @@
     "detail": "semantic_difference compared the decimals as f64, where two neighbouring f32s spelt shortest lie up to 1.7 ulps apart (-1.0909756 against -1.0909758), so the one-ulp twin of real_files failed on DSC_6442's red gain. Each number is read as the f32 it stores. Check neighbouring_f32s_spelt_shortest_are_rounding (one ulp forgiven; twin: two ulps seen), with or without the roll."
   },
   {
+    "id": 780,
+    "type": "feature",
+    "title": "oni-demos films the help cards' demos: coded scenes of the real controls over the real render, written as small looping GIFs",
+    "status": "done",
+    "detail": "A new crate, crates/oni-demos, and scripts/demos. Each demo is a Demo (film.rs): a scene in scenes/<topic>.slint built from the design system's own components (Slider, Button, FrameOverlay, Picture), compiled by oni-lab's interpreter machinery (oni-lab now has a library: compile, pick, serve, Raster, Headless with a clock), shown on a headless software window at 2 px a point on a clock that moves only when a frame is shot, and driven by the pointer's real events; the photograph is a frame of roll #8 through the app's own engine (Engine.render on the preview, Engine.unproofed on the full decode for a 1:1 detail), at settings held in the crate (scenes/DSC_*.json, never the roll's sidecars); Auto White Balance's values come from measuring::balance_outcomes. The hand is drawn over each shot (cursor.rs). encode.rs writes the GIF: one palette (interface colours exact, photograph and interface gradients learnt apart by NeuQuant), each frame only where it changed, a photograph's pixel redrawn only past a tolerance, the smaller of transparent or opaque per frame. 20 fps, 488 px square, no text. Checks: the same frames give the same bytes (twin: a pixel moved gives other bytes), the interface plays back exact (twin: a frame a step late is seen), a film of the roll shot twice is the same GIF (twin: other packing, other bytes)."
+  },
+  {
+    "id": 781,
+    "type": "feature",
+    "title": "Three help cards play a demo above their note: Sharpening, Auto White Balance and Crop",
+    "status": "done",
+    "detail": "Section.demo names a help topic, which the help mark hands to Tip.demo on hover; TipLayer calls Tip.play with the topic while the card is open and with none when it closes. oni_app::demos maps a topic to its GIF (resources/demos/<topic>.gif, include_bytes!); app/help/clip.rs decodes it frame by frame on a thread of its own with the tutorials' Frames and lays each frame on Tip.clip at its own delay, stopped with the card. The card's 4:3 skeleton box became a square demo box, laid only when the topic has a demo (Tip.has-clip). Checks: each demo weighs at most 300 KB (twin: a file a byte past is caught), is square, runs on 20 fps steps and loops; window check help_demo: the Sharpening mark's card plays and its frame advances; twin: the Chroma Denoise mark shows no clip box and leaving a mark stops the clip. help_card's short-window part now opens a card with a demo, the only tall one. TipCard and TipLayer moved from ds/base.slint to ds/tip.slint, base.slint staying under the 400-line ceiling."
+  },
+  {
+    "id": 782,
+    "type": "feature",
+    "title": "oni-demos films scenes of sliders and editors: shared scene parts, the editors' drawings laid by the app's own code, a print proofed on a paper",
+    "status": "done",
+    "detail": "scenes/parts.slint holds the parts the Color demos share: Row (a Slider the hand drags, saying where its knob stands), Slides (the frame over two rows) and Edited (the frame over a Plot, square or wide, with or without its grid). A scene file re-exports its part under the part's own name, as the interpreter finds no alias. demos/slides.rs drags two rows in turn; demos/editing.rs replays strokes on a plot through an Editor (the app's curve::press and drag, spectrogram::grab and dragged, saturation::Presses), plot.rs turns the app's Drawing into the scene's PlotLine and PlotDot models, and Photo::proof lays a paper's proof as the canvas does. Each picture is rendered in two steps along a move, as each costs a GIF a redrawn photograph."
+  },
+  {
+    "id": 783,
+    "type": "feature",
+    "title": "The Color tab's help cards play their demos: Paper Correction, Lighting, Effects, Curves, Spectrogram Finishing, Saturation Curve",
+    "status": "done",
+    "detail": "Six GIFs in crates/oni-app/resources/demos, 5.5 to 5.6 s, 153 to 282 KB: the automatic paper key springs the three gains to oni_colour::paper::automatic on an installed paper profile (ILFORD CANpro-300, the strongest correction among those installed); Exposure then Shadows dragged right; Contrast then Vignette; a curve point raised in the middle then one lowered in the shadows; the blue band turned toward aqua then the green pulled out; the saturation curve's middle raised and its highlights lowered. oni_app::demos maps the topics, TOPICS becomes a slice, and the Color tab's blocks name them with demo:. The Scanner face's Effects keeps no demo: its keys are not the sliders filmed. Every frame of roll #8 is a stand-in, each demo naming the kind of picture it needs."
+  },
+  {
+    "id": 784,
+    "type": "test",
+    "title": "Checks for the Color tab's demos: their marks play them, every mark's topic ships, every film is played",
+    "status": "done",
+    "detail": "Window check help_demo_color: the Lighting mark opens a card playing the lighting clip whose frame advances; twin: the Effects mark, scrolled up by the wheel, names its own topic and shows another picture. oni_app::demos: every demo: a .slint mark names has a clip and every clip has its mark (twin: a mark naming a topic never filmed is caught); the size, square and 20 fps checks run over every topic. oni-demos: every demo filmed is one the app plays (twin: a topic none films is absent). Two films of the six give the same bytes."
+  },
+  {
+    "id": 800,
+    "type": "feature",
+    "title": "Help-card demos for Chroma Denoise and Texture: one slider's demo, shared",
+    "status": "done",
+    "detail": "oni-demos gains OneSlider (demos/slider.rs): a Spec names the topic, the frame and its settings, the field, the detail's centre and zoom, where the knob starts and the stops the hand drags it through; the picture is rendered at a few levels along the track, magnified past one to one when the effect is finer (photo::magnified, bilinear). Chroma Denoise goes from 0 to its most and back on a dark flat tone at twice one to one; Texture from its rest to its most, to its least and back on skin and fabric at one to one. Both scenes are the pilot's Sharpening scene re-exported (scenes/chroma-denoise.slint, texture.slint). Check: magnified keeps each pixel at its centre and mixes between (twin: a nearest-pixel scale jumps)."
+  },
+  {
+    "id": 801,
+    "type": "feature",
+    "title": "Help-card demo for Dust & Scratches: the hand paints over a speck, the app's own heal patches it",
+    "status": "done",
+    "detail": "demos/dust.rs and scenes/dust.slint: a detail of the frame three times one to one under the brush's Ring, the Brush Size slider beneath; the hand scrubs over a speck, the live Trace follows it, then the patch made by Engine::search_region and heal::generate (photo/heal.rs, written to a temporary caches folder this engine alone reads, removed at once) lands, with the CorrectionMark, the copied stroke and the dashed line to it, as the canvas draws them. Info sidebar: Film Stock, Shot Date, Camera Body and Film Stocks get no demo, their notes saying what a field never does (guessed, read off EXIF, a capture date, counted by roll), which no wordless clip shows; Roll, Project, Straighten, Rotate & Mirror and Measuring Window have no help mark."
+  },
+  {
+    "id": 802,
+    "type": "test",
+    "title": "The demos' checks cover the new topics; a window check plays the Dust & Scratches demo and finds no clip on the Film Stock card",
+    "status": "done",
+    "detail": "oni_app::demos: TOPICS is a slice holding chroma-denoise, texture and dust, each within 300 KB, square, at 20 fps and looping. Window check help_demo_details: the gallery's Info sidebar Film Stock mark opens a card naming no topic with no clip box; the editor's Dust & Scratches mark names dust and its frame advances, its card a square box taller than the Film Stock's. The pilot's help_demo, whose twin hovered Chroma Denoise, now asserts that mark plays its own demo (renamed a_help_mark_with_a_demo_plays_it_and_leaving_stops_it)."
+  },
+  {
+    "id": 815,
+    "type": "feature",
+    "title": "oni-demos films seven Roll tab demos: Measured Roll, Film Type, Flat-Field, Source Encoding, Density Ceiling, Dye Separation, Balance Strength",
+    "status": "done",
+    "detail": "Shared scenes in scenes/roll-parts.slint: SlideBody (a photograph, what a scene lays under it, the slider the hand drags) with PhotoSlider, PhotoTabs (three unnamed tabs) and PhotoToggle (the switch alone); Slint's interpreter shows no inherited property, so a scene with more forwards SlideBody's properties and the plain ones re-export the shared window under its own name. Shared gestures in demos/gesture.rs: Drag (the knob taken to a mark and back, the picture rendered at each step crossed) and Clicks (the hand clicking each aim at its second). Density Ceiling and Dye Separation are one Slide each, from the track's start to its end. Balance Strength reads Auto White Balance on a frame given a cool cast through Source Balance and doses its correction as Strength rises, Temperature and Tint following. Measured Roll moves Source Balance's Blue ↔ Yellow on this photo and three others of the roll. Film Type reads the frame as each mode carries it (parameters::carried). Source Encoding stands the decode for a linear unprofiled scan and reads it through oni_colour's Source as sRGB, Linear and Display P3. Flat-Field lights the decode with the shipped Valoi panel's fall-off and turns the flat-field on at the same Amount. Photo::restage re-lays a preview changed before the engine sees it. Each demo names the kind of photograph it needs beside its frame. Per-Channel Levels has no help mark, in Swift as here, so it has no demo. Sizes: 208 to 294 KB, 5 to 6 s."
+  },
+  {
+    "id": 816,
+    "type": "feature",
+    "title": "The Roll tab's help cards play their demos",
+    "status": "done",
+    "detail": "roll_tab.slint names a demo on each of its seven helped blocks; oni_app::demos maps the seven topics to their GIFs. Checks: every topic a mark names has its GIF and every GIF a mark (twin: the reader finds film-type and not per-channel-levels, which has no mark); each demo stays under 300 KB, square, at 20 fps and loops; window check help_demo_roll: the Film Type mark's card plays and its frame advances, leaving the mark stops it; twin: the Measured Roll mark plays another clip, so a card shows its own topic's."
+  },
+  {
     "id": 830,
     "type": "feature",
     "title": "The info sidebar guides photos outside any roll into one, and an unmeasured roll offers Prepare the Roll",
@@ -4317,6 +4394,48 @@
     "detail": "Owner's design, beyond Swift. film::STOCK_DYES maps every stock of FILM_STOCKS (as long as the catalogue, so a new stock cannot go unmapped) and dye_family reads it: Kodak C-41, Fuji C-41, ECN-2, E-6, generic C-41, none for black and white. Picking a roll's stock writes the marker (or the members' sidecar roll) and the family on every frame in one gallery step (EditorStore::lay_roll), a family picked by hand overwritten and the dose kept; a black-and-white stock writes no family. The open frame takes it at once, its Dyes tabs with it; the roll card notes Dyes: <family> under the stock. Checks every_stock_names_its_dyes (twin: an unknown key names none), a_roll_made_with_its_stock_writes_the_marker_and_the_families_and_undoes_as_one_step (twin: a frame outside the roll keeps its family; the marker alone is a step too) and the window check of #830."
   },
   {
+    "id": 840,
+    "type": "feature",
+    "title": "Every help-card demo is filmed from the owner's photograph; no roll #8 frame or setting remains",
+    "status": "done",
+    "detail": "oni-demos reads one photograph, ONI_DEMO_PHOTO or the owner's Lumix RW2 scan on the T7 disk, read-only (photo::source); its sidecar's settings are copied into scenes/P1071951.json (photo::base) and nothing is ever written beside it. Each demo frames or changes it in memory: photo::framed keeps its left three quarters, the details are crops of it, Measured Roll's other photos are three framings of it, Balance Strength and White Balance lay their cast, Dust paints a real hair on the red sail. The eleven roll #8 settings files and the Demo::frame of each demo are gone. Without the photograph, oni-demos and scripts/demos say so and stop; the film check skips. Photo::cover renders again a little larger when the engine's rounding leaves the picture a pixel short of its box, which had letterboxed the flat-field demo."
+  },
+  {
+    "id": 841,
+    "type": "fix",
+    "title": "The demos are drawn by the app's own FemtoVG renderer: round rail ends, clean tabs and toggles",
+    "status": "done",
+    "detail": "Slint 1.18's software renderer fills a linear gradient over its whole rectangle, ignoring the corner radius, and draws no drop shadow: every bipolar rail bled its colours past its round ends, and the tabs' and the toggle's raised pill showed a light square around it. The app draws with FemtoVG, which has neither fault, so the DS needed no change. stage.rs now gives the scene a window of its own (Offscreen) drawn by slint's FemtoVGWGPURenderer into a texture on the app's GPU device and read back by take_snapshot, the clock still the film's."
+  },
+  {
+    "id": 842,
+    "type": "feature",
+    "title": "Demo scenes on one grid: the controls just under the photograph, rows aligned as the panel's",
+    "status": "done",
+    "detail": "scenes/parts.slint: Scene lays the photograph over the scene's controls Space.s apart, the photograph taking all the room they leave, so no gap is left between them; Row is a DS Slider without its readout (Slider.header, a new DS property defaulting to true, as a demo shows no words); Keyed lays a key's room, its key when asked, then a Row centred on the key's middle, so a key and a slider share a baseline and every slider starts at one left edge with one width (White Balance, Paper Correction); Balance Strength, Lighting and Effects stack full-width rows Space.xs apart. The per-scene windows forward the photograph's box, as an interpreted window's base hides its properties. roll-parts.slint is folded into parts.slint."
+  },
+  {
+    "id": 843,
+    "type": "feature",
+    "title": "Each demo shows an obvious change: the picture follows the knob step by step, a double click brings it back",
+    "status": "done",
+    "detail": "A slider's demo now drags the knob from its rest, lets go, then double-clicks it as the panel's sliders take a double click: the value back to rest at once and, the second press answered as a double click (Row.double), the knob springing home (gesture::Drag, demos::slider); the picture follows in 4 to 16 renders along the drag, more where the change is cheap to draw. Views chosen where the effect lives: Sharpening, Texture and Chroma Denoise on details zoomed two and three times (the grating, the sand), Chroma's radius at its widest; Density Ceiling lowered to its least; Strength lowered to none so a yellow cast returns; Vignette darkening the bright corner; Crop tilted a few degrees; White Balance cast warm and green so both knobs travel; the spectrogram's yellow turned toward green and its red pulled out on a larger wheel; the saturation curve's shadows lowered so the red sail greys; a curve point's press redrawing the photograph at once; Source Encoding starting read right on its two named tabs; Flat-Field lit by the panel's fall-off with the photograph's own correction off; Paper Correction framed on the cream sail and the cap. The edits a loop undoes are undone just before it starts again, the springs settled by the seam. The hand's press disc is smaller. Dye Separation and Paper Correction change this photograph little by nature: their demos show the most they can."
+  },
+  {
+    "id": 844,
+    "type": "feature",
+    "title": "Demo GIFs pack obvious changes under 400 KB: interface colours counted off the photograph, gradients dithered",
+    "status": "done",
+    "detail": "encode.rs: the exact interface colours are counted where the photograph is not, so a large even tone of the photograph stays loose within the tolerance instead of forcing a redraw on every step (density ceiling 609 KB to 294 KB at the same steps); the interface's greys, keys and knobs, map onto a ramp of 40 greys of their own, so no learnt colour tints them; its colourful shades are learnt apart, each weighed by the root of its count, and dithered by place on a 4 x 4 ordered pattern, so a rail's gradient runs smooth. The ceiling rises from 300 to 400 KB (oni_app::demos::CEILING), the owner's allowance for following steps; each demo's tolerance, palette and step count are set against it (largest 377 KB)."
+  },
+  {
+    "id": 845,
+    "type": "feature",
+    "title": "Demos showing words are filmed in English, French and Spanish and play in the app's language",
+    "status": "done",
+    "detail": "Film Type's and Source Encoding's tabs carry their names, from the app's own catalogues (oni_i18n::tr). Demo::worded marks them; oni-demos films them once per language into <topic>.gif, <topic>.fr.gif and <topic>.es.gif (oni_app::demos::file). oni_app::demos::clip plays the clip of the language the app speaks, clip_in falling back to English for a demo without words; WORDED lists them. Checks: every clip of every language weighs at most 400 KB, is square, at 20 fps, and loops; a worded topic has its own film per language (twin: Lighting plays the English film in French); the demos filmed per language are those the app plays per language (twin: Lighting is filmed once); window check help_demo_language: in French Film Type's card plays the French film and not the English one; twin: back in English, the English film (the check fails with the language ignored)."
+  },
+  {
     "id": 860,
     "type": "fix",
     "title": "A context menu's submenu opens beside it as the pointer rests on its line, as AppKit's",
@@ -4329,12 +4448,5 @@
     "title": "In a project, the editor's walk follows the project, not the folder",
     "status": "done",
     "detail": "On the Projects tab the editor's arrows, the phone's Walk and the Scanner screen's FRAME count read the archive's group of the open photo: from a project they walked the folder open (A03 to A04 instead of the project's B04), stopped dead on a member from another folder, and the gallery came back on a photo the project does not show, so nothing was selected. Swift's labFrames: the open frame's project on the Projects tab (editingProject, the first project holding the photo opened), else its roll or day. State::lab_frames reads the project's band as laid, open_photo sets the editing project, and walk, place and Move Out read it. Window check project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder: a project of photos from two folders, the gallery's arrows and ⇧ in its order, ⌘G on the ringed photo, → and ↑ in the editor along the project and stopping at its end, the gallery back on the photo walked to; twin: the same gestures on the archive walk the folder."
-  },
-  {
-    "id": 704,
-    "type": "refactor",
-    "title": "The info sidebar's roll and project resolution in its own module",
-    "status": "done",
-    "detail": "organising.rs passed its 400-line ceiling once project navigation and the submenus met; roll_stock, roll and project_group move unchanged into organising/resolving.rs."
   }
 ]

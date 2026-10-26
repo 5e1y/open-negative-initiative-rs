@@ -4343,6 +4343,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "oni-demos"
+version = "0.1.0"
+dependencies = [
+ "color_quant",
+ "gif",
+ "oni-app",
+ "oni-colour",
+ "oni-core",
+ "oni-graph",
+ "oni-hack",
+ "oni-i18n",
+ "oni-lab",
+ "oni-pipeline",
+ "oni-settings",
+ "png",
+ "slint",
+ "slint-interpreter",
+ "weezl",
+]
+
+[[package]]
 name = "oni-export"
 version = "0.1.0"
 dependencies = [

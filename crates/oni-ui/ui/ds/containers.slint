@@ -23,6 +23,8 @@ export component HelpMark inherits Button {
 export component Section inherits VerticalLayout {
     in property <string> title;
     in property <string> help;
+    // The help topic whose demo the note's card plays, none for a note alone.
+    in property <string> demo;
     // `DSNewsPill`: the word while the block's note is news, and the note itself.
     in property <string> news;
     in property <string> news-note;
@@ -56,7 +58,7 @@ export component Section inherits VerticalLayout {
             }
             if root.help != "": VerticalLayout {
                 alignment: center;
-                HelpMark { note: root.help; }
+                HelpMark { note: root.help; demo: root.demo; }
             }
             if root.news != "": VerticalLayout {
                 alignment: center;

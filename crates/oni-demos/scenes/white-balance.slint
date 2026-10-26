@@ -1,0 +1,27 @@
+// Auto White Balance: the photograph with a cast over the balance key and Temperature and Tint; a
+// press on the key says `balanced`, and the two knobs spring to the values the app's reader found.
+import { Colour, Space, SliderFill } from "../../oni-ui/ui/ds/ds.slint";
+import { Scene, Keyed } from "parts.slint";
+export { Raster, Depth } from "../../oni-ui/ui/ds/ds.slint";
+
+export component WhiteBalance inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <float> temperature;
+    in property <float> tint;
+    in-out property <bool> balanced <=> t.pressed;
+    out property <length> key-x: t.key-x;
+    out property <length> key-y: t.key-y;
+    background: Colour.ground;
+    scene := Scene {
+        VerticalLayout {
+            spacing: Space.xs;
+            vertical-stretch: 0;
+            t := Keyed { key: true; at: root.temperature; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
+            Keyed { at: root.tint; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta; }
+        }
+    }
+}

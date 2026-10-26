@@ -1,0 +1,191 @@
+// The scenes' shared parts: the photograph filling what its controls leave, the controls just under
+// it on one grid, as the panel's rows lay them: one left edge, one width, a key sharing a row's middle.
+import { Colour, Space, Type, ButtonStyle, Picture, Slider, SliderStyle, SliderFill, Button, ButtonGroup, Icons, Tabs, Toggle, Plot, PlotLine, PlotDot } from "../../oni-ui/ui/ds/ds.slint";
+
+// A Slider without its readout, its knob following the hand's drag; `at` is where it stands, 0…1.
+// `double`: the next press is a double click's second, which the panel answers by letting the knob go.
+export component Row inherits Slider {
+    in-out property <float> at;
+    in property <bool> double;
+    property <float> grabbed;
+    out property <length> knob-x: self.absolute-position.x + SliderStyle.knob-width / 2 + root.at * (self.width - SliderStyle.knob-width);
+    out property <length> knob-y: self.absolute-position.y + self.height - SliderStyle.row / 2;
+    out property <length> travel: self.width - SliderStyle.knob-width;
+    header: false;
+    vertical-stretch: 0;
+    fraction: root.at;
+    press(field, fine) => { root.grabbed = root.at; root.double }
+    drag(field, dx, width, fine) => { root.at = clamp(root.grabbed + dx / width, 0, 1); }
+}
+
+// A grid row: a key's room at the left, its key when `key`, then the slider centred on the key's middle.
+export component Keyed inherits HorizontalLayout {
+    in property <bool> key;
+    in-out property <float> at <=> row.at;
+    in property <SliderFill> fill <=> row.fill;
+    in property <color> low <=> row.low;
+    in property <color> high <=> row.high;
+    in-out property <bool> pressed;
+    out property <length> key-x: cap.absolute-position.x + cap.width / 2;
+    out property <length> key-y: cap.absolute-position.y + cap.height / 2;
+    out property <length> knob-x: row.knob-x;
+    out property <length> knob-y: row.knob-y;
+    out property <length> travel: row.travel;
+    spacing: Space.s;
+    vertical-stretch: 0;
+    // A row without a key keeps the key's width, so every slider starts at one edge, and the row's height.
+    cap := Rectangle {
+        width: ButtonStyle.cap-height;
+        height: root.key ? ButtonStyle.cap-height : SliderStyle.row;
+        if root.key: ButtonGroup { plate: true;
+            Button { has-icon: true; square: true; icon: Icons.target; clicked => { root.pressed = true; } }
+        }
+    }
+    VerticalLayout {
+        alignment: center;
+        row := Row { }
+    }
+}
+
+// The help card's square: the photograph over what the scene lays under it, `Space.s` apart. A
+// scene's window holds it and forwards its photograph's box, as a window's base hides its properties.
+export component Scene inherits Rectangle {
+    in property <image> photo;
+    out property <length> photo-x: picture.absolute-position.x;
+    out property <length> photo-y: picture.absolute-position.y;
+    out property <length> photo-width: picture.width;
+    out property <length> photo-height: picture.height;
+    background: Colour.ground;
+    VerticalLayout {
+        padding: Space.m;
+        spacing: Space.s;
+        picture := Picture { source: root.photo; rounded: true; vertical-stretch: 1; }
+        @children
+    }
+}
+
+// The photograph over one slider the hand drags.
+export component OneRow inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in-out property <float> amount <=> a.at;
+    in property <bool> double;
+    out property <length> knob-x: a.knob-x;
+    out property <length> knob-y: a.knob-y;
+    out property <length> travel: a.travel;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    scene := Scene {
+        a := Row { double: root.double; }
+    }
+}
+
+// The photograph over two sliders the hand drags in turn.
+export component TwoRows inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in-out property <float> first <=> a.at;
+    in-out property <float> second <=> b.at;
+    out property <length> first-x: a.knob-x;
+    out property <length> first-y: a.knob-y;
+    out property <length> second-x: b.knob-x;
+    out property <length> second-y: b.knob-y;
+    out property <length> travel: a.travel;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    scene := Scene {
+        VerticalLayout {
+            spacing: Space.xs;
+            vertical-stretch: 0;
+            a := Row { }
+            b := Row { }
+        }
+    }
+}
+
+// The photograph over the panel's tabs, named in the film's language; the picture says what each reads as.
+export component PhotoTabs inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <[string]> labels;
+    in-out property <int> selected;
+    out property <length> tabs-x: bar.absolute-position.x;
+    out property <length> tabs-y: bar.absolute-position.y + bar.height / 2;
+    out property <length> tabs-width: bar.width;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    scene := Scene {
+        bar := Tabs {
+            vertical-stretch: 0;
+            tabs: root.labels;
+            marked: [false, false, false];
+            selected: root.selected;
+            picked(i) => { root.selected = i; }
+        }
+    }
+}
+
+// The photograph over a switch at the row's start, as the panel lays it.
+export component PhotoToggle inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in-out property <bool> on;
+    out property <length> switch-x: switch.absolute-position.x + switch.width / 2;
+    out property <length> switch-y: switch.absolute-position.y + switch.height / 2;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    scene := Scene {
+        HorizontalLayout {
+            alignment: start;
+            vertical-stretch: 0;
+            switch := Toggle { on: root.on; toggled(on) => { root.on = on; } }
+        }
+    }
+}
+
+// The photograph over an editor's plot, square unless `wide`, `side` points high.
+export component Edited inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <[PlotLine]> lines;
+    in property <[PlotDot]> dots;
+    in property <bool> wide;
+    in property <bool> grid: true;
+    in property <length> side: 104px;
+    out property <length> plot-x: plot.window-x;
+    out property <length> plot-y: plot.window-y;
+    out property <length> plot-width: plot.width;
+    out property <length> plot-height: plot.height;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    scene := Scene {
+        HorizontalLayout {
+            alignment: center;
+            vertical-stretch: 0;
+            plot := Plot {
+                // Wide, it asks more than the room and is given all of it.
+                preferred-width: root.wide ? 2 * root.side * 10 : root.side;
+                min-width: root.wide ? 0px : root.side;
+                height: root.side;
+                grid: root.grid;
+                lines: root.lines;
+                dots: root.dots;
+            }
+        }
+    }
+}

@@ -1,7 +1,7 @@
 // The key every screen presses, a `Keycap` of the Swift app: its kinds and sizes, a glyph, a word or
 // both, a keycap's band or a swatch.
 import { Colour, Space, Stroke, State, ButtonStyle, ScannerStyle } from "theme.slint";
-import { Label, Icon, TextRole, Tone, Tones, Tips, Clicks } from "base.slint";
+import { Label, Icon, TextRole, Tone, Tones, Tip, Tips, Clicks } from "base.slint";
 
 import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
@@ -96,8 +96,10 @@ export component Button inherits Rectangle {
     in property <bool> on;
     in property <bool> enabled: true;
     in property <string> help;
-    // A help mark's note, shown at once as a card where `help` waits the tooltip's delay.
+    // A help mark's note, shown at once as a card where `help` waits the tooltip's delay, and the
+    // help topic whose demo the card plays above it.
     in property <string> note;
+    in property <string> demo;
     // `DSPanelButton`'s capitals, posed here; an AppKit key, as the console's, keeps its word as written.
     in property <bool> capitals: true;
     // The widest word the key ever shows, so it keeps that width as its word changes.
@@ -233,6 +235,7 @@ export component Button inherits Rectangle {
         changed has-hover => {
             if (!self.has-hover) { root.lifted = false; }
             if (root.note != "") {
+                if (self.has-hover) { Tip.demo = root.demo; }
                 Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
             } else {
                 // Left, it hides the tooltip it showed, whatever its help says since.

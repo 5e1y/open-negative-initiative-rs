@@ -130,6 +130,7 @@ impl Ctl {
         let p = me.clone();
         help.on_report_closed(move || p.close_report());
         help.on_community(|| system::open_url(report::ISSUES));
+        clip::wire(window);
     }
 
     /// Each heading's word while its note is news, read from what earlier sessions saw.
@@ -326,5 +327,6 @@ impl Ctl {
     }
 }
 
+mod clip;
 #[cfg(test)]
 mod tests;

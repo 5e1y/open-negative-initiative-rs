@@ -6,6 +6,7 @@ import { StoreSlider, Block, Pane, DetailSlider } from "parts.slint";
 export component DetailsPane inherits Pane {
     Block {
         title: @tr("Sharpening");
+        demo: "sharpening";
         help: PanelState.sheet ? PanelState.off-on-sheet : @tr("Sharpens edges without adding color fringing.");
         separated: false;
         block: 6;
@@ -17,6 +18,7 @@ export component DetailsPane inherits Pane {
     // `DetailsPane`: a monochrome frame has no colour noise to smooth.
     if !PanelState.monochrome: Block {
         title: @tr("Chroma Denoise");
+        demo: "chroma-denoise";
         help: PanelState.sheet ? PanelState.off-on-sheet : @tr("Smooths color noise from the scan without touching the film grain.");
         block: 7;
         modified: Store.chroma-denoise-modified;
@@ -25,6 +27,7 @@ export component DetailsPane inherits Pane {
     }
     Block {
         title: @tr("Texture");
+        demo: "texture";
         help: @tr("Contrast at the scale of hair and fabric — leaves grain and overall tone alone.");
         block: 8;
         modified: Store.texture-modified;

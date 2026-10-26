@@ -8,6 +8,7 @@ import { StoreSlider, Block, Pane } from "parts.slint";
 export component CropPane inherits Pane {
     Section {
         title: @tr("Crop");
+        demo: "crop";
         help: @tr("Drag the corners on the photo to crop it. Copy and Paste carry the whole framing to other photographs, Paste to Roll to every frame of the roll; the settings paste never does.");
         separated: false;
         // All of the geometry but the measuring window, which has its own reset.

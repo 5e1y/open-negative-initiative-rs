@@ -1,0 +1,48 @@
+// Crop: the whole frame under the crop's overlay, then the Straighten slider. The hand drags a
+// corner in, then tilts the angle; the photograph is rendered at the angle the knob holds.
+import { Colour, Space, Type, Picture, FrameOverlay } from "../../oni-ui/ui/ds/ds.slint";
+import { Row } from "parts.slint";
+export { Raster, Depth } from "../../oni-ui/ui/ds/ds.slint";
+
+export component Crop inherits Window {
+    in property <image> photo;
+    in-out property <float> angle <=> straighten.at;
+    // The frame's inset from the photograph's corners, in points, which the corner's drag moves.
+    in-out property <length> inset-right;
+    in-out property <length> inset-bottom;
+    property <length> from-right;
+    property <length> from-bottom;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    out property <length> photo-x: picture.absolute-position.x;
+    out property <length> photo-y: picture.absolute-position.y;
+    out property <length> photo-width: picture.width;
+    out property <length> photo-height: picture.height;
+    out property <length> corner-x: picture.absolute-position.x + picture.width - root.inset-right;
+    out property <length> corner-y: picture.absolute-position.y + picture.height - root.inset-bottom;
+    out property <length> knob-x: straighten.knob-x;
+    out property <length> knob-y: straighten.knob-y;
+    out property <length> travel: straighten.travel;
+    VerticalLayout {
+        padding: Space.m;
+        spacing: Space.s;
+        picture := Picture {
+            source: root.photo;
+            vertical-stretch: 1;
+            FrameOverlay {
+                frame-x: 0;
+                frame-y: 0;
+                frame-width: parent.width - root.inset-right;
+                frame-height: parent.height - root.inset-bottom;
+                grabbed(handle) => { root.from-right = root.inset-right; root.from-bottom = root.inset-bottom; }
+                dragged(handle, dx, dy) => {
+                    if (handle == 4) {
+                        root.inset-right = clamp(root.from-right - dx, 0, parent.width / 2);
+                        root.inset-bottom = clamp(root.from-bottom - dy, 0, parent.height / 2);
+                    }
+                }
+            }
+        }
+        straighten := Row { }
+    }
+}

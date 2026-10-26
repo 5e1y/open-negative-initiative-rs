@@ -6,6 +6,10 @@ edition.workspace = true
 license.workspace = true
 publish = false
 
+[lib]
+path = "src/lib.rs"
+doctest = false
+
 [[bin]]
 name = "oni-lab"
 path = "src/main.rs"

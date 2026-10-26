@@ -1,8 +1,10 @@
 //! `--shot`: one component rendered headless by Slint's software renderer, keycaps included, to a
 //! PNG; at 2 pixels a point unless `ONI_LAB_SCALE` says otherwise, as a Retina screen shows it.
 
+use std::cell::Cell;
 use std::path::Path;
 use std::rc::Rc;
+use std::time::Duration;
 
 use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
 use slint::platform::{Platform, WindowAdapter, WindowEvent};
@@ -11,14 +13,25 @@ use slint_interpreter::ComponentHandle;
 use crate::raster::Raster;
 use crate::{compile, compile_source, pick, serve};
 
-struct Headless {
-    window: Rc<MinimalSoftwareWindow>,
+/// One software window and no screen; with a `clock`, time is what it says, so a film's animations
+/// land on the same frame at every run.
+pub struct Headless {
+    pub window: Rc<MinimalSoftwareWindow>,
+    pub clock: Option<Rc<Cell<Duration>>>,
 }
 
 impl Platform for Headless {
     fn create_window_adapter(&self) -> Result<Rc<dyn WindowAdapter>, slint::PlatformError> {
         Ok(self.window.clone())
     }
+
+    fn duration_since_start(&self) -> Duration {
+        self.clock.as_ref().map_or_else(|| START.with(|s| s.elapsed()), |c| c.get())
+    }
+}
+
+thread_local! {
+    static START: std::time::Instant = std::time::Instant::now();
 }
 
 fn size(text: Option<&str>) -> Result<(f32, f32), String> {
@@ -32,7 +45,7 @@ pub fn take(path: &Path, out: &Path, component: Option<&str>, wxh: Option<&str>)
     let (w, h) = size(wxh)?;
     let scale: f32 = std::env::var("ONI_LAB_SCALE").ok().and_then(|s| s.parse().ok()).unwrap_or(2.0);
     let window = MinimalSoftwareWindow::new(RepaintBufferType::NewBuffer);
-    slint::platform::set_platform(Box::new(Headless { window: window.clone() })).map_err(|e| e.to_string())?;
+    slint::platform::set_platform(Box::new(Headless { window: window.clone(), clock: None })).map_err(|e| e.to_string())?;
     window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: scale });
     let result = match component.and_then(|name| page(path, name)) {
         Some((file, name)) => compile_source(wrapper(&file, &name), &path.with_file_name("shot.slint")),

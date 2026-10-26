@@ -1,0 +1,29 @@
+// Paper Correction: the photograph proofed on a paper over the automatic key and the three gains; a
+// press on the key says `corrected`, and the gains spring to what the paper's profile asks.
+import { Colour, Space, SliderFill } from "../../oni-ui/ui/ds/ds.slint";
+import { Scene, Keyed } from "parts.slint";
+export { Raster, Depth } from "../../oni-ui/ui/ds/ds.slint";
+
+export component PaperCorrection inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <float> red;
+    in property <float> green;
+    in property <float> blue;
+    in-out property <bool> corrected <=> r.pressed;
+    out property <length> key-x: r.key-x;
+    out property <length> key-y: r.key-y;
+    background: Colour.ground;
+    scene := Scene {
+        VerticalLayout {
+            spacing: Space.xs;
+            vertical-stretch: 0;
+            r := Keyed { key: true; at: root.red; fill: SliderFill.bipolar; low: Colour.channel-cyan; high: Colour.channel-red; }
+            Keyed { at: root.green; fill: SliderFill.bipolar; low: Colour.channel-magenta; high: Colour.channel-green; }
+            Keyed { at: root.blue; fill: SliderFill.bipolar; low: Colour.channel-yellow; high: Colour.channel-blue; }
+        }
+    }
+}

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Films the help cards' demos again from the owner's photograph (ONI_DEMO_PHOTO, else the T7 disk),
+# stopping when it is missing. Usage: scripts/demos [--sheet FILE.png] [TOPIC…]
+set -euo pipefail
+cd "$(dirname "$0")/.."
+cargo run -q -p oni-demos -- "$@"

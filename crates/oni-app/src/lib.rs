@@ -7,6 +7,7 @@ pub mod app;
 pub mod bench;
 pub mod chrome;
 pub mod decode_gate;
+pub mod demos;
 pub mod display;
 pub mod editors;
 pub mod export;

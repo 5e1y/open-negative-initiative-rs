@@ -1,0 +1,427 @@
+{
+  "label" : "none",
+  "originalPrint" : "69724672-2026:04:29 20:43:52-ed78fb22d06db22c",
+  "originalTail" : "b4dd6c8a0262dfcb",
+  "settings" : {
+    "balanceStrength" : 0.67,
+    "captureStops" : 0,
+    "chroma" : {
+      "force" : 0.2,
+      "radius" : 4
+    },
+    "chromaDecompression" : 0.5,
+    "chromaDecompressionByHand" : false,
+    "corrections" : [
+
+    ],
+    "decodedFromMosaic" : true,
+    "density" : 0,
+    "densityCeiling" : 3.5,
+    "face" : "pro",
+    "flatField" : {
+      "amount" : 0.26845777,
+      "mask" : "Valoi Easy35 V1",
+      "temperature" : 0.39604414,
+      "tint" : -0.008775294
+    },
+    "gains" : {
+      "stops" : [
+        -0.8691208,
+        0,
+        1.2548476
+      ]
+    },
+    "geometry" : {
+      "angle" : 0,
+      "crop" : [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "measureWindow" : [
+        [
+          0.1,
+          0.1
+        ],
+        [
+          0.8,
+          0.8
+        ]
+      ],
+      "mirrored" : false,
+      "mirroredVertically" : false,
+      "portrait" : false,
+      "quarterTurns" : 0
+    },
+    "lensCorrected" : false,
+    "levels" : {
+      "blue" : {
+        "black" : 0.8730806,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.6365643
+      },
+      "green" : {
+        "black" : 0.8515413,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 2.0612679
+      },
+      "red" : {
+        "black" : 0.87316644,
+        "highlights" : 0.75,
+        "mid" : 0.5,
+        "shadows" : 0.25,
+        "white" : 1.8677658
+      }
+    },
+    "manualCurves" : {
+      "blue" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "contrast" : 0,
+      "green" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "linked" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "luma" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "red" : {
+        "points" : [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    "mode" : "negative",
+    "paperCorrection" : {
+      "stops" : [
+        0,
+        0,
+        0
+      ]
+    },
+    "primariesConverted" : false,
+    "print" : {
+      "blackPoint" : 0,
+      "blue" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "contrast" : 0,
+      "exposure" : 1.5,
+      "green" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "highlights" : 0,
+      "red" : {
+        "blacks" : 0,
+        "contrast" : 0,
+        "exposure" : 0,
+        "highlights" : 0,
+        "mids" : 0,
+        "shadows" : 0,
+        "whites" : 0
+      },
+      "shadows" : 0,
+      "whitePoint" : 0
+    },
+    "rollReference" : {
+      "base" : [
+        0.36512434,
+        0.35866907,
+        0.3650987
+      ],
+      "black" : [
+        0.36512434,
+        0.35866907,
+        0.3650987
+      ],
+      "id" : "6E886B1E-99C5-44EE-B2C5-86F50436859B",
+      "median" : [
+        0.45629898,
+        0.45792234,
+        0.45852214
+      ],
+      "stops" : [
+        -0.8691208,
+        0,
+        1.2548476
+      ],
+      "white" : [
+        0.66201967,
+        0.71978146,
+        0.89151174
+      ]
+    },
+    "rollReferenceDeclined" : false,
+    "saturation" : {
+      "points" : [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.25,
+          0.5
+        ],
+        [
+          0.5,
+          0.5
+        ],
+        [
+          0.75,
+          0.5
+        ],
+        [
+          1,
+          0.5
+        ]
+      ]
+    },
+    "scanner" : {
+      "c" : 0,
+      "d" : 0,
+      "m" : 0,
+      "w" : 0,
+      "y" : 0
+    },
+    "scannerFinish" : {
+      "contrast" : 0,
+      "manualCurves" : {
+        "blue" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "contrast" : 0,
+        "green" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "linked" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "luma" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        "red" : {
+          "points" : [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
+      },
+      "saturation" : {
+        "points" : [
+          [
+            0,
+            0.5
+          ],
+          [
+            0.25,
+            0.5
+          ],
+          [
+            0.5,
+            0.5
+          ],
+          [
+            0.75,
+            0.5
+          ],
+          [
+            1,
+            0.5
+          ]
+        ]
+      },
+      "secretSauce" : 0,
+      "spectrogram" : {
+        "hue" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "luma" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "saturation" : [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "vignette" : {
+        "stops" : 0
+      }
+    },
+    "scannerMachine" : "oni",
+    "secretSauce" : 0,
+    "separation" : 0.6,
+    "separationByHand" : false,
+    "sharpen" : {
+      "amount" : 1,
+      "halo" : 0.5,
+      "radius" : 2.092
+    },
+    "spectrogram" : {
+      "hue" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "luma" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "saturation" : [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "texture" : {
+      "amount" : 0
+    },
+    "vignette" : {
+      "stops" : 0
+    }
+  },
+  "version" : 19
+}

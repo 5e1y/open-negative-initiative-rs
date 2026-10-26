@@ -89,6 +89,8 @@ pub(crate) fn a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar() {
     // A short window holds the card whole: its top rises, its foot stays a margin in.
     rig.window.dispatch_event(WindowEvent::PointerMoved { position: LogicalPosition::new(10.0, 10.0) });
     rig.pump();
+    // A note with a demo, so its card is tall enough for a short window to cut.
+    tip.set_demo("sharpening".into());
     tips.invoke_note(true, "a note".into(), panel_x + 30.0, foot + 40.0);
     rig.pump();
     let tall = w.get_tip_box();
@@ -108,6 +110,7 @@ pub(crate) fn a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar() {
     assert!((held.y + held.height - (room - GAP)).abs() < 0.5 && held.y >= GAP - 0.5, "the card leaves a short window: {held:?} in {room}");
     assert!((held.x + held.width - (panel_x - GAP)).abs() < 0.5, "a short window keeps the card left of the panel");
     tips.invoke_note(false, "a note".into(), panel_x + 30.0, foot + 40.0);
+    tip.set_demo("".into());
     rig.window.set_size(slint::PhysicalSize::new(1280, 800));
     rig.settle();
 

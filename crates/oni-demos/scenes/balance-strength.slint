@@ -1,0 +1,30 @@
+// Balance Strength: the photograph with a cast over Temperature and Tint, then the Strength slider
+// the hand raises; the two follow it to the share of the correction it gives, the cast lifting.
+import { Colour, Space, SliderFill } from "../../oni-ui/ui/ds/ds.slint";
+import { Scene, Row } from "parts.slint";
+export { Raster, Depth } from "../../oni-ui/ui/ds/ds.slint";
+
+export component BalanceStrength inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <float> temperature;
+    in property <float> tint;
+    in-out property <float> amount <=> strength.at;
+    in property <bool> double;
+    out property <length> knob-x: strength.knob-x;
+    out property <length> knob-y: strength.knob-y;
+    out property <length> travel: strength.travel;
+    background: Colour.ground;
+    scene := Scene {
+        VerticalLayout {
+            spacing: Space.xs;
+            vertical-stretch: 0;
+            Row { at: root.temperature; fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
+            Row { at: root.tint; fill: SliderFill.bipolar; low: Colour.channel-green; high: Colour.channel-magenta; }
+            strength := Row { double: root.double; }
+        }
+    }
+}

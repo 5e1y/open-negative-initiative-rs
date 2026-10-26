@@ -1,0 +1,34 @@
+// Measured Roll: this photo over three others measured with it, then one of the roll's sliders;
+// moved here, it moves every photo of the roll.
+import { Colour, Space, Picture, SliderFill } from "../../oni-ui/ui/ds/ds.slint";
+import { Scene, Row } from "parts.slint";
+export { Raster, Depth } from "../../oni-ui/ui/ds/ds.slint";
+
+export component MeasuredRoll inherits Window {
+    in property <image> photo <=> scene.photo;
+    out property <length> photo-x: scene.photo-x;
+    out property <length> photo-y: scene.photo-y;
+    out property <length> photo-width: scene.photo-width;
+    out property <length> photo-height: scene.photo-height;
+    in property <image> first;
+    in property <image> second;
+    in property <image> third;
+    in-out property <float> amount <=> gain.at;
+    out property <length> knob-x: gain.knob-x;
+    out property <length> knob-y: gain.knob-y;
+    out property <length> travel: gain.travel;
+    out property <length> thumb-width: one.width;
+    out property <length> thumb-height: one.height;
+    background: Colour.ground;
+    scene := Scene {
+        HorizontalLayout {
+            spacing: Space.s;
+            vertical-stretch: 0;
+            one := Picture { source: root.first; rounded: true; height: self.width * 0.66; }
+            Picture { source: root.second; rounded: true; height: self.width * 0.66; }
+            Picture { source: root.third; rounded: true; height: self.width * 0.66; }
+        }
+        // Source Balance's Blue ↔ Yellow, drawn as the panel draws it on a negative.
+        gain := Row { fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow; }
+    }
+}
