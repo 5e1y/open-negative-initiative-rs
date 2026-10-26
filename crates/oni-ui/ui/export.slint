@@ -246,11 +246,11 @@ export component ExportPanel inherits Surface {
                 }
             }
         }
-        // Cancel and Export on one plate, the confirm taking the rest; mid-batch Cancel stops after the current file.
+        // Cancel and Export on one plate, the confirm taking the rest; an export under way is stopped from its card.
         ButtonGroup {
             plate: true;
             align: GroupAlign.fill;
-            Button { size: ButtonSize.plate; text: Exporting.exporting ? @tr("Stop") : @tr("Cancel"); clicked => { Exporting.cancel(); } }
+            Button { size: ButtonSize.plate; text: @tr("Cancel"); clicked => { Exporting.cancel(); } }
             // `DSActionButton`: its title as given, the busy one in its own case.
             Button {
                 size: ButtonSize.plate;

@@ -29,6 +29,7 @@ mod writing;
 mod publishing;
 mod wiring;
 
+pub mod job;
 pub mod paper_sheet;
 
 pub const PROOF_COLOUR_ONLY: &str = "proofColourOnly";
@@ -111,6 +112,11 @@ pub struct Card {
     quality: QualityHand,
     film_row: Option<usize>,
     pub notice: Option<(String, String)>,
+    /// The export under way or just ended, which the modal over the canvas follows.
+    pub job: Option<job::Job>,
+    /// The engine exports render on, apart from the editor's.
+    apart: Option<Shared>,
+    reveal: Option<job::Reveal>,
     model: Rc<VecModel<ExportLine>>,
     pub papers: paper_sheet::Sheet,
 }
@@ -174,6 +180,9 @@ impl Card {
             quality: QualityHand::default(),
             film_row: None,
             notice: None,
+            job: None,
+            apart: None,
+            reveal: None,
             model: Rc::new(VecModel::default()),
             papers: paper_sheet::Sheet::default(),
         }

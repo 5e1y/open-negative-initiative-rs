@@ -200,6 +200,20 @@ impl Shared {
         self.0.door.release();
     }
 
+    /// An engine of its own on this one's device and door, reading the same masks and patches: a long
+    /// job renders beside the editor, whose renders then wait one submission, never a whole frame.
+    pub fn apart(&self) -> Result<Shared, String> {
+        let (graph, support, caches) = {
+            let e = self.lock()?;
+            let (device, queue) = e.device();
+            (Graph::from_device(device, queue, e.adapter().to_owned(), oni_graph::TEXTURE_SIDE), e.support.clone(), e.caches.clone())
+        };
+        let mut engine = Engine::with(graph);
+        engine.support = support;
+        engine.caches = caches;
+        Ok(Engine::gated(engine, self.0.door.clone()))
+    }
+
     #[cfg(test)]
     pub(crate) fn door(&self) -> Arc<Door> {
         self.0.door.clone()
@@ -210,12 +224,18 @@ impl Engine {
     pub fn on(d: &Device) -> Engine {
         let info = d.adapter.get_info();
         let name = format!("{} ({:?})", info.name, info.backend);
-        Engine { graph: Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE), pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), reads: 0, measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
+        Engine::with(Graph::from_device(d.device.clone(), d.queue.clone(), name, oni_graph::TEXTURE_SIDE))
+    }
+
+    fn with(graph: Graph) -> Engine {
+        Engine { graph, pipeline: Pipeline::new(), fitted: Default::default(), proof: Default::default(), support: None, custom: HashMap::new(), caches: None, patches: HashMap::new(), reads: 0, measures: None, read: [None, None], cache: oni_graph::Cache::frontier() }
     }
 
     pub fn shared(d: &Device) -> Shared {
-        let door: Arc<Door> = Arc::default();
-        let mut engine = Engine::on(d);
+        Engine::gated(Engine::on(d), Arc::default())
+    }
+
+    fn gated(mut engine: Engine, door: Arc<Door>) -> Shared {
         engine.graph.through(door.clone());
         let uploader = engine.graph.uploader();
         Shared(Arc::new(Gated { engine: Mutex::new(engine), wanted: Default::default(), door, uploader }))

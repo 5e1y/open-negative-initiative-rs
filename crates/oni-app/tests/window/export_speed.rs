@@ -151,7 +151,9 @@ pub(crate) fn an_export_is_timed_stage_by_stage() {
     } else {
         let jobs: Vec<export::batch::Job> = all.iter().zip(&destinations).zip(&metadata).map(|((t, d), m)| export::batch::Job { target: t.clone(), destination: d.clone(), metadata: m.clone() }).collect();
         let stop = std::sync::atomic::AtomicBool::new(false);
-        let (end, peak) = export::batch::write_batch(&engine, &jobs, &export, &mut ledger, false, &stop, |_| {});
+        // The engine apart the surface writes on, as the app runs it.
+        let apart = engine.apart().unwrap();
+        let (end, peak) = export::batch::write_batch(&apart, &jobs, &export, &mut ledger, false, &stop, |_| {});
         assert_eq!(end, export::batch::End::Done);
         held = peak;
     }

@@ -202,6 +202,10 @@ impl Ctl {
         e.on_export(move || p.run_export());
         let p = me.clone();
         e.on_confirmed(move |replace| p.confirmed(replace));
+        let p = me.clone();
+        e.on_job_stop(move || p.stop_job());
+        let p = me.clone();
+        e.on_job_closed(move || p.close_job());
         // `PaperCorrection.automatic`: the paper's own white, read off its profile alone.
         let p = me.clone();
         e.on_auto_paper(move || {

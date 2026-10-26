@@ -21,6 +21,7 @@ import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperSheet, PaperRow } from "export.slint";
+import { ExportProgress } from "export_progress.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
 import { Confirm, ConfirmSheet } from "confirm.slint";
 import { Transition, TransitionLine, TransitionSheet } from "transition.slint";
@@ -369,6 +370,11 @@ export component MainWindow inherits AppWindow {
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.panel-width + 2 * Space.s; height: card.height;
                         Panel { height: parent.height; }
+                    }
+                    // The export under way at the canvas's top-left corner, the editor and the gallery free beside it.
+                    if Exporting.job-shown && !Exporting.shown: ExportProgress {
+                        x: CardStyle.padding + Space.m;
+                        y: CardStyle.padding + Space.m;
                     }
                 }
                 if !App.panel-hidden && !App.gallery && !Exporting.shown && !Preparing.shown: Panel { cache-rendering-hint: true; }

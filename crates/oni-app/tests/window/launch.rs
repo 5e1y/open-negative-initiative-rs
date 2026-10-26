@@ -44,7 +44,7 @@ pub(crate) fn the_splash_names_the_version_and_the_notice_covers_the_window() {
     assert!(!closed.get(), "a click beside the notice leaves it open");
     // GOT IT sits at the card's right, under its bullets: the sweep finds it right of the middle.
     let mut found = None;
-    'sweep: for y in (24..400).step_by(4) {
+    'sweep: for y in (24..876).step_by(4) {
         for x in (720 - 210..720 + 210).step_by(6) {
             click(x as f32, y as f32);
             if closed.get() {

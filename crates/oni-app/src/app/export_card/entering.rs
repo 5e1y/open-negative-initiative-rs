@@ -62,8 +62,6 @@ impl Ctl {
             }
             c.shown = true;
             c.stopped = None;
-            c.stop.store(false, Ordering::Relaxed);
-            c.progress = 0;
             c.rows = vec![None; targets.len()];
             c.sizes = vec![None; targets.len()];
             c.previews = vec![Preview::Waiting; targets.len()];
@@ -102,16 +100,12 @@ impl Ctl {
         self.request_render();
     }
 
+    /// Cancel leaves the surface; an export under way goes on, stopped from its modal alone.
     pub(super) fn cancel_export(self: &Rc<Self>) {
-        let exporting = self.export.borrow().exporting;
-        if exporting {
-            self.export.borrow().stop.store(true, Ordering::Relaxed);
-        } else {
-            self.leave_export();
-        }
+        self.leave_export();
     }
 
-    /// Esc on the surface is Cancel, or Stop mid-batch.
+    /// Esc on the surface is Cancel.
     pub(in crate::app) fn export_escape(self: &Rc<Self>) -> bool {
         let (shown, sheet) = {
             let c = self.export.borrow();

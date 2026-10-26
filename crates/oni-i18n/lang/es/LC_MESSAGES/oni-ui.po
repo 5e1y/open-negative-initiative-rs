@@ -317,7 +317,7 @@ msgstr "Ocultar {}"
 msgid "Done"
 msgstr "OK"
 
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
 msgid "OK"
 msgstr "Aceptar"
 
@@ -340,6 +340,10 @@ msgstr "DD"
 #: crates/oni-ui/ui/ds/fields.slint
 msgid "YYYY"
 msgstr "AAAA"
+
+#: crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/prepare.slint
+msgid "Stop"
+msgstr "Detener"
 
 #: crates/oni-ui/ui/ds/forms.slint
 msgid "could not be rendered"
@@ -625,15 +629,11 @@ msgstr "Más brillante en pantallas HDR"
 msgid "EXIF as set beside each photo; nothing of the scanner unless left there"
 msgstr "EXIF tal como se definió junto a cada foto; nada del escáner salvo lo que se dejó ahí"
 
-#: crates/oni-ui/ui/export.slint crates/oni-ui/ui/prepare.slint
-msgid "Stop"
-msgstr "Detener"
-
 #: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-ui/ui/export.slint
 msgid "Exporting…"
 msgstr "Exportando…"
 
@@ -2178,12 +2178,20 @@ msgid "Quit Anyway"
 msgstr "Salir de todos modos"
 
 #: crates/oni-app/src/app/actions.rs
+msgid "An export is under way"
+msgstr "Hay una exportación en curso"
+
+#: crates/oni-app/src/app/actions.rs
 msgid "The preference cannot be kept: {e}"
 msgstr "No se puede conservar la preferencia: {e}"
 
 #: crates/oni-app/src/app/actions.rs
 msgid "{message}\n\nQuitting now discards the changes made since the last successful save. Cancel to keep the app open and fix the problem — for instance by freeing space or reconnecting the volume the originals live on."
 msgstr "{message}\n\nSi sales ahora, se descartan los cambios hechos desde el último guardado correcto. Cancela para mantener la app abierta y resolver el problema; por ejemplo, liberando espacio o volviendo a conectar el volumen donde están los originales."
+
+#: crates/oni-app/src/app/actions.rs
+msgid "{done} of {total} photos are written. Quitting now stops the export, and the photos left are not written."
+msgstr "Ya se han escrito {done} de {total} fotos. Salir ahora detiene la exportación y las fotos restantes no se escriben."
 
 #: crates/oni-app/src/app/archive_view/adding.rs crates/oni-app/src/app/navigator/rows.rs
 msgid "ONI reads every folder on it, which takes long on a full disk. A folder of scans inside it opens at once: pick one under it."
@@ -2261,6 +2269,30 @@ msgstr "Corrección"
 msgid "Correction {n}"
 msgstr "Corrección {n}"
 
+#: crates/oni-app/src/app/export_card/job.rs
+msgid "Stopping after this photo…"
+msgstr "Deteniendo tras esta foto…"
+
+#: crates/oni-app/src/app/export_card/job.rs
+msgid "Export Failed"
+msgstr "No se pudo exportar"
+
+#: crates/oni-app/src/app/export_card/job.rs
+msgid "{done} of {total}"
+msgstr "{done} de {total}"
+
+#: crates/oni-app/src/app/export_card/job.rs
+msgid "{n} photo exported"
+msgid_plural "{n} photos exported"
+msgstr[0] "{n} foto exportada"
+msgstr[1] "{n} fotos exportadas"
+
+#: crates/oni-app/src/app/export_card/job.rs crates/oni-app/src/export.rs
+msgid "Stopped after {n} file was written."
+msgid_plural "Stopped after {n} files were written."
+msgstr[0] "Detenido tras escribir {n} archivo."
+msgstr[1] "Detenido tras escribir {n} archivos."
+
 #: crates/oni-app/src/app/export_card/paper_sheet.rs
 msgid "Nothing to install: the file held no RGB printer profile (CMYK profiles are not supported)."
 msgstr "Nada que instalar: el archivo no contenía ningún perfil de impresora RGB (los perfiles CMYK no son compatibles)."
@@ -2308,6 +2340,10 @@ msgid "Hide What This Screen Cannot Show"
 msgstr "Ocultar lo que esta pantalla no puede mostrar"
 
 #: crates/oni-app/src/app/export_card/publishing.rs
+msgid "An export is under way, {done} of {total}: this one can start once it ends."
+msgstr "Hay una exportación en curso, {done} de {total}: esta podrá empezar cuando termine."
+
+#: crates/oni-app/src/app/export_card/publishing.rs
 msgid "Until a profile is chosen, the picture stays in {space}."
 msgstr "Hasta que se elija un perfil, la imagen se queda en {space}."
 
@@ -2318,10 +2354,6 @@ msgstr "Elige perfiles ICC, o el zip en el que los distribuye un fabricante de p
 #: crates/oni-app/src/app/export_card/settings.rs
 msgid "Where should the {count} files be written?"
 msgstr "¿Dónde se deben guardar los {count} archivos?"
-
-#: crates/oni-app/src/app/export_card/writing.rs
-msgid "Export Failed"
-msgstr "No se pudo exportar"
 
 #: crates/oni-app/src/app/frontier_look.rs
 msgid "Export the Frontier look"
@@ -3844,12 +3876,6 @@ msgstr "Estas imágenes se editaron en {edited}. Las vistas previas las muestran
 #: crates/oni-app/src/export.rs
 msgid "This image was edited in {edited}. The previews show them in {space}."
 msgstr "Esta imagen se editó en {edited}. Las vistas previas la muestran en {space}."
-
-#: crates/oni-app/src/export.rs
-msgid "Stopped after {n} file was written."
-msgid_plural "Stopped after {n} files were written."
-msgstr[0] "Detenido tras escribir {n} archivo."
-msgstr[1] "Detenido tras escribir {n} archivos."
 
 #: crates/oni-app/src/export.rs
 msgid "{n} Profile Installed"
