@@ -11,7 +11,8 @@ use std::time::Duration;
 
 use crate::common;
 
-/// Roll #8 as hard links beside copies of its sidecars, so no sidecar is written beside the originals.
+/// Roll #8 as hard links beside copies of its sidecars, so no sidecar is written beside the originals;
+/// the first frame carries no balance.
 fn mirror(roll: &Path) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("oni-app-balance-{}", std::process::id())).join("Roll #8");
     let _ = std::fs::remove_dir_all(dir.parent().unwrap());
@@ -25,6 +26,8 @@ fn mirror(roll: &Path) -> PathBuf {
             std::fs::hard_link(&from, &to).unwrap();
         }
     }
+    let unbalanced = |s: &oni_settings::PipelineSettings| oni_settings::PipelineSettings { balance_filters: None, ..s.clone() };
+    oni_settings::sidecar::update(&dir.join("DSC_6432.NEF"), true, unbalanced).unwrap();
     dir
 }
 

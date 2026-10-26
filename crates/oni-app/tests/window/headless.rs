@@ -29,7 +29,20 @@ fn mirror(roll: &Path) -> PathBuf {
             std::fs::hard_link(&from, &to).unwrap();
         }
     }
+    // The state the check reads, whatever the roll was left in: no medal, one frame on the Scanner face.
+    for frame in frames(&dir) {
+        oni_settings::sidecar::set_label(oni_settings::Medal::None, &frame, true).unwrap();
+    }
+    let scanner = |s: &oni_settings::PipelineSettings| oni_settings::PipelineSettings { face: oni_settings::Face::Scanner, ..s.clone() };
+    oni_settings::sidecar::update(&dir.join("DSC_6435.NEF"), true, scanner).unwrap();
     dir
+}
+
+/// The roll's NEFs in the folder, in name order.
+fn frames(dir: &Path) -> Vec<PathBuf> {
+    let mut out: Vec<PathBuf> = std::fs::read_dir(dir).unwrap().map(|e| e.unwrap().path()).filter(|p| p.extension().is_some_and(|e| e == "NEF")).collect();
+    out.sort();
+    out
 }
 
 /// Each file's name, size and modification time, in name order.
@@ -85,6 +98,8 @@ pub(crate) fn the_window_opens_roll_8_and_a_slider_drives_the_canvas() {
     // A folder opens on the gallery and nothing in the editor, until a tile is opened.
     rig.until("the library read", Duration::from_secs(120), || ctl.state.borrow().read_done());
     assert!(w.global::<App>().get_gallery() && ctl.state.borrow().open_path().is_none());
+    // The recalibration notice a RAW raises on a first launch is a sheet, closed so the bar's keys live.
+    w.global::<oni_app::Notice>().invoke_close();
     w.global::<Library>().invoke_tile_opened(0);
     assert!(!w.global::<App>().get_gallery());
 

@@ -64,6 +64,9 @@ pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
     let (lib, p) = (w.global::<Library>(), w.global::<Preparing>());
     shell.open_folder(&folder);
     rig.until("the folder read", Duration::from_secs(60), || ctl.state.borrow().read_done());
+    // RAWs raise the recalibration notice, a sheet the pointer cannot reach the loupe through.
+    assert_eq!(w.global::<oni_app::Notice>().get_shown(), size.is_none());
+    w.global::<oni_app::Notice>().invoke_close();
     rig.settle();
     let first = oni_app::app::tiles(w).into_iter().min_by_key(|t| t.index).unwrap().index;
     lib.invoke_tile_clicked(first, false, false);

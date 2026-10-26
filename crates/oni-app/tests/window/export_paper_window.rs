@@ -152,8 +152,10 @@ pub(crate) fn a_paper_proofs_the_canvas_and_its_correction_is_laid_on_the_paper_
     };
     let stops = || ctl.state.borrow().store().settings().paper_correction.stops;
 
-    // The app opens on the gallery: the first photo is ringed and taken into the editor by ⌘G.
+    // The app opens on the gallery, the RAW's recalibration notice closed: the first photo is ringed
+    // and taken into the editor by ⌘G.
     rig.until("the library read", LONG, || ctl.state.borrow().read_done());
+    w.global::<oni_app::Notice>().invoke_close();
     w.global::<oni_app::Library>().invoke_tile_clicked(0, false, false);
     rig.pump();
     rig.chord(slint::platform::Key::Control, "g");

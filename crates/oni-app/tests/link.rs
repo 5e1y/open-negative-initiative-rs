@@ -29,6 +29,8 @@ async fn presses_from_the_phone_edit_the_open_frame_and_its_screen_comes_back() 
     let dir = std::env::temp_dir().join(format!("oni-core-link-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::copy(source.join("DSC_6440.NEF.json"), dir.join("DSC_6440.NEF.json")).unwrap();
+    // An empty stand-in for the NEF: no sidecar is ever written beside a missing original.
+    std::fs::write(dir.join("DSC_6440.NEF"), b"").unwrap();
     let frame = dir.join("DSC_6440.NEF").to_string_lossy().into_owned();
 
     let mut store = EditorStore::new(Archive::new(vec![frame.clone()], |_: &Path| true));

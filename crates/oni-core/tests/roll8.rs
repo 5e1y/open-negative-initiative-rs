@@ -39,6 +39,11 @@ impl Roll {
             }
         }
         frames.sort();
+        // Each sidecar as a write beside its stand-in leaves it, so the bytes a check compares are its gesture's.
+        for frame in &frames {
+            let loaded = sidecar::read(Path::new(frame), true, true).unwrap();
+            sidecar::write(&loaded.settings, Path::new(frame), sidecar::WriteOptions::default()).unwrap();
+        }
         Some(Roll { dir, frames })
     }
 
