@@ -121,7 +121,7 @@ msgstr "Actualiser"
 msgid "Show the Selected Photo"
 msgstr "Afficher la photo sélectionnée"
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Édition"
 
@@ -385,15 +385,15 @@ msgstr "EN ARGENTIQUE"
 msgid "Luma"
 msgstr "Luma"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "R"
 msgstr "R"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "G"
 msgstr "G"
 
-#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/prepare_state.slint
+#: crates/oni-ui/ui/editors.slint crates/oni-ui/ui/measure_floor.slint crates/oni-ui/ui/prepare_state.slint
 msgid "B"
 msgstr "B"
 
@@ -1685,7 +1685,7 @@ msgstr "Intensité"
 msgid "Off on a contact sheet: its frames are reduced copies. The settings are kept for when a photograph takes them."
 msgstr "Désactivé sur une planche contact : ses vues sont des copies réduites. Les réglages sont conservés pour le jour où une photo les reprendra."
 
-#: crates/oni-ui/ui/panel/state.slint
+#: crates/oni-app/src/app/prepare/trace.rs crates/oni-ui/ui/panel/state.slint
 msgid "FRAME --/--"
 msgstr "VUE --/--"
 
@@ -1784,10 +1784,6 @@ msgstr "Lecture du scan"
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
 msgstr "Le scan entier, bord du film compris, s’affiche ici."
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Reading the first frame…"
-msgstr "Lecture de la première vue…"
 
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-ui/ui/prepare_state.slint
 msgid "NEXT"
@@ -2372,6 +2368,10 @@ msgstr "ONI crée le dossier « {folder} » dans « {parent} » et y déplace {f
 #: crates/oni-app/src/app/gestures/disk.rs crates/oni-library/src/roll_folder.rs
 msgid "The roll's folder could not be made: {e}"
 msgstr "Le dossier de la pellicule n’a pas pu être créé : {e}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
+msgstr "Rien n’a été déplacé, car les réglages de la photo ouverte n’ont pas pu être enregistrés : {error}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
 msgid "Move This Photo into a New Roll?"
@@ -2988,12 +2988,12 @@ msgid "Rename Roll"
 msgstr "Renommer la pellicule"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "Set Shot Date"
-msgstr "Définir la date de prise de vue"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Camera Body"
 msgstr "Définir le boîtier"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Shot Date"
+msgstr "Définir la date de prise de vue"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
@@ -3335,6 +3335,24 @@ msgstr "{count} vues, regroupées lors de la dernière mesure de la pellicule."
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} mesurées, {flagged} marquées"
 
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "Reading the first frame…"
+msgstr "Lecture de la première vue…"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL"
+msgstr "PELLICULE"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "FRAME {at}/{count}"
+msgstr "VUE {at}/{count}"
+
+#: crates/oni-app/src/app/prepare/trace.rs
+msgid "ROLL · {n} FRAME"
+msgid_plural "ROLL · {n} FRAMES"
+msgstr[0] "PELLICULE · {n} VUE"
+msgstr[1] "PELLICULE · {n} VUES"
+
 #: crates/oni-app/src/app/presets/deck.rs
 msgid "Delete “{name}”"
 msgstr "Supprimer « {name} »"
@@ -3466,6 +3484,10 @@ msgstr "La mesure de leur pellicule et tous les réglages de leur look disparais
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset to Default"
 msgstr "Rétablir les réglages par défaut"
+
+#: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
+msgid "Balance"
+msgstr "Balance"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -4004,10 +4026,6 @@ msgid "Your go-to balance"
 msgstr "Votre balance fétiche"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Balance"
-msgstr "Balance"
-
-#: crates/oni-app/src/wrapped.rs
 msgid "Your signature look"
 msgstr "Votre look signature"
 
@@ -4236,6 +4254,12 @@ msgid "Join the roll"
 msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Rejoindre la pellicule"
 msgstr[1] "Rejoindre la pellicule avec {n} photos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "{label} · {n} photo"
+msgid_plural "{label} · {n} photos"
+msgstr[0] "{label} · {n} photo"
+msgstr[1] "{label} · {n} photos"
 
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"

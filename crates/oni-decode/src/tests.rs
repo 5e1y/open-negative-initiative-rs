@@ -1,6 +1,8 @@
 //! The decode's own checks: the conversion, the routes and the depth of each file kind.
 use super::*;
 
+mod frames;
+
 /// Adobe's matrix for the Nikon Z f, as LibRaw holds it.
 const Z_F: M3 = [
     [1.1607, -0.4491, -0.0977],

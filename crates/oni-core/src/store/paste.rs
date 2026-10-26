@@ -46,6 +46,9 @@ impl EditorStore {
     /// The open frame in memory, then every other frame of its roll as part of that one step; a
     /// frame never measured takes the paste alone.
     pub fn paste_to_roll(&mut self) {
+        if !self.takes_hands() {
+            return;
+        }
         let Some(donor) = self.paste_source() else { return };
         let Some(id) = self.settings.roll_reference.as_ref().map(|r| r.id) else {
             let open: Vec<String> = self.path().map(str::to_string).into_iter().collect();
@@ -97,7 +100,7 @@ impl EditorStore {
         let mut before = Settings::new();
         let mut after = Settings::new();
         let open = self.path().map(str::to_string);
-        if let Some(open) = open.as_ref().filter(|p| targets.contains(p)) {
+        if let Some(open) = open.as_ref().filter(|p| targets.contains(p) && self.takes_hands()) {
             let next = transform(open, &self.settings);
             if next != self.settings {
                 before.insert(open.clone(), self.settings.clone());
@@ -105,7 +108,7 @@ impl EditorStore {
                 let now = self.now();
                 self.replace(next);
                 self.last_change = Some(now);
-                self.settle(now);
+                self.settle_beside(now, targets);
             }
         }
         let others: Vec<String> = targets.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();

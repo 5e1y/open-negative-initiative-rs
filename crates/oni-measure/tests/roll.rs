@@ -3,7 +3,7 @@
 
 use oni_core::balance::{Suggestion, written};
 use oni_measure::auto_levels::{Balance, shift};
-use oni_measure::roll::{Measured, combined};
+use oni_measure::roll::{Measured, combined, summed};
 use oni_pipeline::conversion::{colour_factor, decompression_weights};
 use oni_settings::axis::density_axis;
 use oni_settings::frame::RollReference;
@@ -16,7 +16,7 @@ fn rest() -> [Suggestion; 3] {
 }
 
 fn measured(stops: [f32; 3], tails: [[f32; 2]; 3], median: Option<[f32; 3]>) -> Measured {
-    Measured { path: String::new(), balance: Balance { stops, levels: rest(), shift: [0.0; 3] }, tails, median }
+    Measured { path: String::new(), balance: Balance { stops, levels: rest(), shift: [0.0; 3] }, tails, median, counts: Vec::new() }
 }
 
 fn frame(white: f32, stops: [f32; 3]) -> Measured {
@@ -108,4 +108,29 @@ fn a_frame_on_the_roll_s_window_carries_its_colour_whole_and_a_narrower_one_by_i
     let mut off = narrowed.clone();
     off.roll_reference = None;
     assert_eq!(colour_factor(&off), 1.0);
+}
+
+#[test]
+fn the_roll_s_histogram_sums_every_frame_moved_to_the_roll_s_gains() {
+    // Five bins on 0…1, each frame lit in one; the roll's gains are the middle frame's.
+    let lit = |at: usize, stops: f32| {
+        let mut f = measured([stops; 3], [[0.1, 0.9]; 3], None);
+        f.counts = (0..5).map(|i| if i == at { [4.0; 3] } else { [0.0; 3] }).collect();
+        f
+    };
+    let frames = [lit(1, 0.0), lit(2, 0.0), lit(2, 0.0)];
+    let roll = combined(&frames, NEGATIVE, None).unwrap();
+    let sum = summed(&frames, &roll, NEGATIVE, 4);
+    assert_eq!(sum.iter().map(|b| b[0]).sum::<f32>(), 12.0, "every frame's counts kept");
+    assert_eq!((sum[1][0], sum[2][0]), (4.0, 8.0), "{sum:?}");
+    // Twin: the last frame alone is a third of the roll, so a roll that kept one frame shows.
+    let one = summed(&frames[2..], &roll, NEGATIVE, 4);
+    assert_ne!(one, sum);
+    // A frame off the roll's gains is moved as its tails are, by the shift between them.
+    let off = [lit(2, 0.0), lit(2, 0.0), lit(2, 0.2)];
+    let roll = combined(&off, NEGATIVE, None).unwrap();
+    let moved = summed(&off, &roll, NEGATIVE, 400);
+    let x = 0.5 + shift(roll.stops[0] - 0.2, NEGATIVE);
+    assert!((0.0..1.0).contains(&x) && (x - 0.5).abs() > 0.005, "{x}");
+    assert_eq!((moved[200][0], moved[(x * 400.0) as usize][0]), (8.0, 4.0));
 }

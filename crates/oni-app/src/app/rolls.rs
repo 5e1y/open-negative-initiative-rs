@@ -134,7 +134,7 @@ impl Ctl {
         if members.is_empty() {
             return;
         }
-        self.gesture(&members, |store| store.set_film(&members, None, tr("Ungroup")));
+        self.gesture(&members, |store| store.apply_film(&members, None, tr("Ungroup")));
     }
 
     // MARK: - Reset to Default
@@ -216,7 +216,7 @@ impl Ctl {
     /// `runAutoBalance`: each target read off this thread, the open frame on its live settings and
     /// the others on their own sidecars, the key showing how far the run is; one undo step.
     pub(super) fn run_auto_balance(self: &Rc<Self>, strategy: Strategy) {
-        if self.state.borrow().batch.is_some() {
+        if self.state.borrow().batch.is_some() || self.busy_said(tr("Balance")) {
             return;
         }
         let frames: Vec<(String, PipelineSettings)> = {
@@ -274,6 +274,12 @@ impl Ctl {
             with_shell(move |c| {
                 let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
                 let measure = |path: &str, _: &PipelineSettings| outcomes.get(path).cloned();
+                // A gesture moving files began meanwhile: the balance lands on none, its step never
+                // cutting the one whose walk still runs.
+                if c.busy_said(tr("Balance")) {
+                    c.state.borrow_mut().batch = None;
+                    return c.publish_batch();
+                }
                 let failure = {
                     let mut s = c.state.borrow_mut();
                     s.batch = None;

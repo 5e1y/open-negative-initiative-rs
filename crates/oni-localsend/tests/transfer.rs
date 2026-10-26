@@ -155,6 +155,22 @@ async fn traversal_names_land_as_plain_names_inside_the_destination() {
 }
 
 #[tokio::test]
+async fn a_sidecar_or_a_roll_marker_sent_beside_an_original_is_left_out() {
+    let (src, dst) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
+    let (receiver, _events) = start(dst.path(), |_| {}).await;
+    let planted = [write(src.path(), "DSC_0001.NEF.json", b"{}"), write(src.path(), ".oni-roll.json", b"{}")];
+    let report = send_files(&me("S"), &target(&receiver), &planted, None).await.unwrap();
+    assert_eq!((report.session_id, report.skipped.len()), (None, 2), "nothing to receive");
+    assert!(names(dst.path()).is_empty());
+    // Twin: the original beside them is received, and only it.
+    let original = write(src.path(), "DSC_0001.NEF", b"raw");
+    let all = [planted[0].clone(), original.clone(), planted[1].clone()];
+    let report = send_files(&me("S"), &target(&receiver), &all, None).await.unwrap();
+    assert_eq!(report.sent, vec![original]);
+    assert_eq!(names(dst.path()), ["DSC_0001.NEF"]);
+}
+
+#[tokio::test]
 async fn a_second_file_of_the_same_name_gets_a_suffix() {
     let (src, dst) = (tempfile::tempdir().unwrap(), tempfile::tempdir().unwrap());
     let (receiver, _events) = start(dst.path(), |_| {}).await;

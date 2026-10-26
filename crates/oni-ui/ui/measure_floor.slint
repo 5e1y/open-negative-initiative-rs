@@ -1,0 +1,98 @@
+// Prepare the Roll's last step while it measures: the bank of scanner screens the frames pass on.
+import { CardStyle, CrtStyle, CrtScreen, CrtLine, CrtTrace, CrtPicture } from "ds/ds.slint";
+import { Preparing } from "prepare_state.slint";
+
+// One channel of the frame just read on its own screen, the frames before fading behind it.
+component ChannelScreen inherits CrtScreen {
+    in property <int> channel;
+    in property <string> name;
+    callback resized(length, length);
+    CrtTrace {
+        x: CrtStyle.padding; y: CrtStyle.padding;
+        width: parent.width - 2 * CrtStyle.padding; height: parent.height - 2 * CrtStyle.padding;
+        lit: Preparing.traced;
+        curve: Preparing.trace-curves[root.channel];
+        channel: root.channel;
+        echoes: Preparing.trace-trail;
+        resized(w, h) => { root.resized(w, h); }
+    }
+    CrtLine { x: CrtStyle.padding; y: CrtStyle.padding; text: root.name; }
+}
+
+// One channel of the roll so far, a band of the roll's screen: its letter, its histogram, its ends.
+component RollBand inherits HorizontalLayout {
+    in property <int> channel;
+    in property <string> name;
+    callback resized(length, length);
+    spacing: CrtStyle.padding;
+    CrtLine { text: root.name; width: CrtStyle.gap * 2; }
+    CrtTrace {
+        horizontal-stretch: 1;
+        lit: Preparing.roll-curves.length > root.channel;
+        curve: Preparing.roll-curves[root.channel];
+        channel: root.channel;
+        ended: true;
+        resized(w, h) => { root.resized(w, h); }
+    }
+}
+
+// The measure as a bank of scanner screens: the place, the frame's negative and three channels
+// morphing into the next's, the roll summed so far with its ends; all dark until a frame lands.
+export component MeasureFloor inherits Rectangle {
+    property <length> bank: min(root.width - 2 * CardStyle.padding, CrtStyle.bank);
+    property <length> negative-width: (root.bank - CrtStyle.gap) * CrtStyle.negative-share;
+    property <length> negative-height: root.negative-width * CrtStyle.negative-ratio;
+    VerticalLayout {
+        padding: CardStyle.padding;
+        alignment: center;
+        HorizontalLayout {
+            alignment: center;
+            VerticalLayout {
+                width: root.bank;
+                spacing: CrtStyle.gap;
+                CrtScreen {
+                    rounded: true;
+                    HorizontalLayout {
+                        padding: CrtStyle.padding;
+                        spacing: CrtStyle.padding;
+                        CrtLine { text: Preparing.trace-count; }
+                        CrtLine { text: Preparing.trace-name; horizontal-stretch: 1; horizontal-alignment: right; overflow: elide; }
+                    }
+                }
+                HorizontalLayout {
+                    height: root.negative-height;
+                    spacing: CrtStyle.gap;
+                    CrtScreen {
+                        width: root.negative-width;
+                        rounded: true;
+                        CrtPicture {
+                            x: CrtStyle.padding; y: CrtStyle.padding;
+                            width: parent.width - 2 * CrtStyle.padding; height: parent.height - 2 * CrtStyle.padding;
+                            first: Preparing.negative-a;
+                            second: Preparing.negative-b;
+                            second-shown: Preparing.negative-second;
+                        }
+                    }
+                    VerticalLayout {
+                        spacing: CrtStyle.gap;
+                        ChannelScreen { rounded: true; channel: 0; name: @tr("R"); resized(w, h) => { Preparing.trace-resized(w, h); } }
+                        ChannelScreen { rounded: true; channel: 1; name: @tr("G"); }
+                        ChannelScreen { rounded: true; channel: 2; name: @tr("B"); }
+                    }
+                }
+                CrtScreen {
+                    height: root.negative-height * CrtStyle.roll-share;
+                    rounded: true;
+                    VerticalLayout {
+                        padding: CrtStyle.padding;
+                        spacing: CrtStyle.padding;
+                        CrtLine { text: Preparing.roll-line; }
+                        RollBand { vertical-stretch: 1; channel: 0; name: @tr("R"); resized(w, h) => { Preparing.roll-trace-resized(w, h); } }
+                        RollBand { vertical-stretch: 1; channel: 1; name: @tr("G"); }
+                        RollBand { vertical-stretch: 1; channel: 2; name: @tr("B"); }
+                    }
+                }
+            }
+        }
+    }
+}

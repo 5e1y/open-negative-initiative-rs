@@ -214,6 +214,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     let resized_from = Cell::new(None::<(Instant, usize)>);
     let unfilled = Cell::new(0usize);
     let zoomed_at = Cell::new(None::<usize>);
+    let dragged_at = Cell::new(None::<Instant>);
     let phase = Cell::new(Phase::Loading);
     let done = RefCell::new(Some(done));
     let started = Instant::now();
@@ -258,6 +259,8 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                         *drawn.borrow_mut() = frame_clock(&ctl);
                         resized_from.set(Some((Instant::now(), ctl.state.borrow().renders())));
                     } else {
+                        *drawn.borrow_mut() = frame_clock(&ctl);
+                        dragged_at.set(Some(Instant::now()));
                         g.invoke_press(field, false);
                     }
                     phase.set(Phase::Dragging { notch: 0, from });
@@ -308,6 +311,9 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                 let notches = ctl.state.borrow().notches().summary(from, &title);
                 let mut report = format!("{notches}\n{}\n{}", ctl.state.borrow().notches().cadence(from), ctl.state.borrow().notches().histograms());
                 report = format!("{report}\n{}", ctl.state.borrow().notches().publishes());
+                if let Some(since) = dragged_at.get() {
+                    report = format!("{report}\n{}", frames_since(&drawn.borrow().borrow(), since));
+                }
                 if mode == Mode::Compare {
                     let s = ctl.state.borrow();
                     report.push_str(&format!("\ncompare: {} before rendered over the drag, split at {:.2}", s.befores(), s.split().unwrap_or(-1.0)));

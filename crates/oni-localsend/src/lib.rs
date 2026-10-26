@@ -11,7 +11,7 @@ mod tls;
 
 pub use discovery::{Discovery, DiscoveryConfig, MULTICAST_GROUP, Peer, Peers};
 pub use identity::{Identity, fingerprint};
-pub use inbox::sanitize_file_name;
+pub use inbox::{refused_name, sanitize_file_name};
 pub use model::*;
 pub use receiver::{AcceptAll, AcceptFingerprints, AcceptPolicy, Decision, Event, Receiver, ReceiverConfig};
 pub use sender::{SendError, SendReport, Target, register, send_files};

@@ -30,7 +30,8 @@ pub enum Command {
     ReleaseParam { param: Param },
 }
 
-/// Each letter in steps, half the unit the desktop's screen reads: 3 is shown +1.5.
+/// Each letter in steps, half the unit the desktop's screen reads: 3 is shown +1.5. A phone below
+/// protocol 4 reads and steps whole units, the desktop converting.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Clicks {
     pub d: i8,

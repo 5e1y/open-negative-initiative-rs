@@ -68,10 +68,10 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     let held = |title: &str| picture(&lib, title).size().width > 0;
     rig.until("the thumbnails in view", Duration::from_secs(60), || rows(&lib).iter().filter(|r| r.y < 300.0).all(|r| r.kind != 2 || r.picture.size().width > 0));
     assert!(!held("P29"), "a row far below the view holds no picture");
-    lib.set_tree_viewport_y(-900.0);
+    common::scroll_tree(&lib, -900.0);
     rig.until("P29's picture once scrolled near", Duration::from_secs(30), || held("P29"));
     assert!(!held("P00"), "twin: the row scrolled far away lets its picture go");
-    lib.set_tree_viewport_y(0.0);
+    common::scroll_tree(&lib, 0.0);
     rig.until("P00's picture back", Duration::from_secs(30), || held("P00"));
     rig.settle();
 
@@ -87,7 +87,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // The wheel's scroll stays through every notch on the open photo.
     let scrolled = centred + 30.0;
-    lib.set_tree_viewport_y(scrolled);
+    common::scroll_tree(&lib, scrolled);
     rig.until("the rows scrolled near hold their pictures", Duration::from_secs(30), || held("P19") && held("P20"));
     let p20 = picture(&lib, "P20");
     let p19 = picture(&lib, "P19");
@@ -104,7 +104,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     assert!(picture(&lib, "P19") == p19, "twin: a photo not edited keeps its picture");
 
     // Back from the gallery, the column centres on the photo again.
-    lib.set_tree_viewport_y(scrolled);
+    common::scroll_tree(&lib, scrolled);
     ctl.act(oni_app::Act::ToggleMode);
     rig.shot("column-gallery");
     ctl.act(oni_app::Act::ToggleMode);
@@ -127,7 +127,7 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
 
     // A resize lays the same rows in place and keeps the scroll within the content.
     let model: ModelRc<TreeRow> = lib.get_rows();
-    lib.set_tree_viewport_y(-10.0);
+    common::scroll_tree(&lib, -10.0);
     rig.until("P05's picture near the top", Duration::from_secs(30), || held("P05"));
     let before = rows(&lib)[photo_row(&lib, "P05")].clone();
     lib.invoke_tree_resized(320.0, 500.0);
@@ -136,12 +136,14 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     let after = rows(&lib)[photo_row(&lib, "P05")].clone();
     assert!(after.width != before.width && after.picture == before.picture, "the row takes the new width and keeps its picture");
     assert_eq!(lib.get_tree_viewport_y(), -10.0, "a resize keeps the scroll");
-    lib.set_tree_viewport_y(-100_000.0);
+    common::scroll_tree(&lib, -100_000.0);
     lib.invoke_tree_resized(320.0, 520.0);
     let floor = -(lib.get_tree_content_height() - 520.0);
     assert!((lib.get_tree_viewport_y() - floor).abs() < 0.5, "the scroll clamped to the content: {} against {floor}", lib.get_tree_viewport_y());
+    let pairs = rows(&lib)[photo_row(&lib, "P05")].clone();
     lib.invoke_tree_layout_next();
-    assert!(lib.get_rows() != model, "twin: a new layout lays new rows");
+    let next = rows(&lib)[photo_row(&lib, "P05")].clone();
+    assert!((next.thumb, next.width) != (pairs.thumb, pairs.width), "twin: a new layout lays the rows anew");
 
     // The chevron folds a group; a double click on its name renames nothing, its menu does.
     let group = rows(&lib).iter().position(|r| r.kind != 2 && r.expandable).expect("a group row") as i32;
@@ -165,6 +167,174 @@ pub(crate) fn the_column_follows_the_open_photo_and_keeps_the_wheel_s_scroll() {
     assert_eq!(renamed.expanded, unfolded, "and folds nothing");
     lib.invoke_row_rename_cancelled();
     assert!(!rows(&lib)[group as usize].renaming, "twin: Escape leaves the name as it was");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A column many screens tall, scrolled by the wheel and by an ask, never resized: the rows brought
+/// into view get their pictures, and the rows left far away hold none; memory let go is read back.
+pub(crate) fn a_scroll_brings_the_pictures_of_the_rows_it_reaches() {
+    use slint::platform::WindowEvent;
+    use slint::LogicalPosition;
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the column's scroll is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-column-scroll-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let count = 400;
+    for i in 0..count {
+        common::plain_tiff(&folder.join(format!("P{i:04}.tif")), 24, 16, 0.3 + (i % 40) as f32 / 80.0);
+    }
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let engine = oni_app::render::Engine::shared(&gpu);
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let lib = shell.window.global::<Library>();
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(120), || ctl.state.borrow().read_done());
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_opened(0);
+    rig.until("P0000 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    // The window drawn, as on screen: the column takes its size from the layout.
+    rig.drawn();
+    rig.settle();
+    let page = ctl.state.borrow().tree_height();
+    let top = || -lib.get_tree_viewport_y();
+    let photos_in_view = || rows(&lib).into_iter().filter(|r| r.kind == 2 && r.y + r.height > top() && r.y < top() + page).collect::<Vec<_>>();
+    let shown = || photos_in_view().iter().all(|r| r.picture.size().width > 0);
+    // Far: three screens or more from the view, past the near rows' margin.
+    let far_held = || rows(&lib).iter().filter(|r| r.kind == 2 && (r.y + r.height < top() - 3.0 * page || r.y > top() + 3.0 * page) && r.picture.size().width > 0).count();
+    assert!(page > 0.0 && lib.get_tree_content_height() > 20.0 * page, "a column many screens tall: {} for {page}", lib.get_tree_content_height());
+    rig.until("the pictures at the top", Duration::from_secs(120), shown);
+    rig.until("every thumbnail drawn", Duration::from_secs(120), || ctl.state.borrow().loaded() >= count);
+
+    // The wheel over the column: its scroll reaches Rust, and the rows it brings get their pictures.
+    let over = LogicalPosition::new(130.0, 600.0);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: over });
+    for _ in 0..30 {
+        rig.window.dispatch_event(WindowEvent::PointerScrolled { position: over, delta_x: 0.0, delta_y: -100.0 });
+        rig.pump();
+        rig.drawn();
+    }
+    rig.settle();
+    rig.drawn();
+    assert!(top() > 3.0 * page, "the wheel scrolled the column, as Rust reads it: {} for {page}", top());
+    assert!(photos_in_view().len() >= 4, "photos in view: {}", photos_in_view().len());
+    rig.until("the pictures the wheel brought", Duration::from_secs(30), shown);
+    assert!(rows(&lib)[photo_row(&lib, "P0000")].picture.size().width == 0, "twin: the top row left far away lets its picture go");
+
+    // Memory let go, as past its limit: the column laid again reads only the rows near its view.
+    ctl.state.borrow_mut().forget_tiles();
+    for _ in 0..oni_app::sidebar::Layout::ALL.len() {
+        lib.invoke_tree_layout_next();
+    }
+    rig.until("the pictures read back", Duration::from_secs(30), shown);
+    rig.settle();
+    let held = ctl.state.borrow().tiles_held();
+    assert!(held < count / 4, "only the rows near the view asked their thumbnails: {held} of {count}");
+
+    // An ask far down, as a reveal or a key: the rows it brings read theirs.
+    let deep = lib.get_tree_content_height() * 0.8;
+    common::scroll_tree(&lib, -deep);
+    rig.pump();
+    rig.drawn();
+    assert_eq!(top(), deep);
+    rig.until("the pictures the ask brought", Duration::from_secs(30), shown);
+    assert_eq!(far_held(), 0, "twin: no row far from the view holds a picture");
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A tree of 2,000 photos beside the open one: a drag on Exposure costs each frame what it shows,
+/// never the rows far from the column's view.
+pub(crate) fn a_long_tree_makes_only_the_rows_near_its_view() {
+    use slint::platform::WindowEvent;
+    use std::time::Instant;
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the long tree is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-long-tree-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let (folder, support, caches) = (root.join("Scans"), root.join("Support"), root.join("Caches"));
+    let count = 2000;
+    for i in 0..count {
+        common::plain_tiff(&folder.join(format!("P{i:04}.tif")), 24, 16, 0.3 + (i % 40) as f32 / 80.0);
+    }
+    let rig = common::rig(PathBuf::from(env!("CARGO_TARGET_TMPDIR")));
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let engine = oni_app::render::Engine::shared(&gpu);
+    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
+    let shell = Shell::new(Box::new(store), engine, options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let lib = shell.window.global::<Library>();
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(120), || ctl.state.borrow().read_done());
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_opened(0);
+    rig.until("P0000 rendered", Duration::from_secs(120), || ctl.state.borrow().renders() >= 1);
+    rig.drawn();
+    // `ONI_TREE_FRAMES=1` measures the frames once every thumbnail is drawn, the GPU free.
+    if std::env::var_os("ONI_TREE_FRAMES").is_some() {
+        rig.until("every thumbnail drawn", Duration::from_secs(300), || ctl.state.borrow().loaded() >= count);
+    }
+    rig.settle();
+    rig.drawn();
+    assert_eq!(rows(&lib).iter().filter(|r| r.kind == 2).count(), count, "every photo has its row");
+    let page = ctl.state.borrow().tree_height();
+    // The rows Slint makes: those a screen above the view to two below, nothing past them.
+    let bounded = |at: &str| {
+        let top = -lib.get_tree_viewport_y();
+        let made: Vec<TreeRow> = lib.get_near_rows().iter().collect();
+        let reach = rows(&lib).into_iter().filter(|r| r.y + r.height > top - page && r.y < top + 2.0 * page).count();
+        assert!(!made.is_empty() && made.len() == reach && made.len() < count / 10, "{at}: {} rows made for {reach} in reach", made.len());
+        // Twin: every row in view is made, with its picture.
+        let in_view: Vec<TreeRow> = rows(&lib).into_iter().filter(|r| r.y + r.height > top && r.y < top + page).collect();
+        for r in &in_view {
+            let m = made.iter().find(|m| m.index == r.index).unwrap_or_else(|| panic!("{at}: {} in view is not made", r.title));
+            assert!(r.kind != 2 || m.picture.size().width > 0, "{at}: {} in view has no picture", m.title);
+        }
+        println!("{at}: {} rows made of {}", made.len(), rows(&lib).len());
+    };
+    rig.until("the pictures in view", Duration::from_secs(60), || {
+        let top = -lib.get_tree_viewport_y();
+        lib.get_near_rows().iter().filter(|r| r.kind == 2 && r.y + r.height > top && r.y < top + page).all(|r| r.picture.size().width > 0)
+    });
+    bounded("at the top");
+    common::scroll_tree(&lib, -(lib.get_tree_content_height() / 2.0));
+    rig.pump();
+    rig.until("the pictures mid-column", Duration::from_secs(30), || {
+        let top = -lib.get_tree_viewport_y();
+        lib.get_near_rows().iter().filter(|r| r.kind == 2 && r.y + r.height > top && r.y < top + page).all(|r| r.picture.size().width > 0)
+    });
+    rig.drawn();
+    bounded("mid-column");
+
+    // Sixty notches of Exposure, each handled and drawn as a frame.
+    let store = shell.window.global::<StoreGlobal>();
+    let field = Field::Exposure.index();
+    let mut frames = Vec::new();
+    store.invoke_press(field, false);
+    for notch in 1..=60 {
+        let start = Instant::now();
+        store.invoke_drag(field, notch as f32 * 2.0, 300.0, false);
+        rig.pump();
+        rig.drawn();
+        frames.push(start.elapsed().as_secs_f64() * 1e3);
+    }
+    store.invoke_release(field);
+    frames.sort_by(f64::total_cmp);
+    println!("a notch handled and drawn beside {count} rows: p50 {:.2} ms, p90 {:.2} ms, worst {:.2} ms", frames[30], frames[54], frames[59]);
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

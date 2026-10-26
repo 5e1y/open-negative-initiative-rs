@@ -25,6 +25,8 @@ impl Ctl {
         let c = me.clone();
         p.on_trace_resized(move |w, h| c.trace_resized(w, h));
         let c = me.clone();
+        p.on_roll_trace_resized(move |w, h| c.roll_trace_resized(w, h));
+        let c = me.clone();
         p.on_film_picked(move |i| {
             if let Some(m) = usize::try_from(i).ok().and_then(|i| ConversionMode::ALL.get(i).copied()) {
                 c.state.borrow_mut().prepare.film = m;

@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::io::{self, Read};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use futures_util::{StreamExt, TryStreamExt};
 use reqwest::StatusCode;
@@ -15,6 +17,9 @@ use crate::model::*;
 
 const PARALLEL_UPLOADS: usize = 3;
 const READ_CHUNK: usize = 1 << 20;
+/// An upload whose body stops draining, or whose answer stops coming, this long has lost its
+/// receiver: a phone leaving Wi-Fi mid-send hears of it then, not at TCP's minutes.
+const STALL: Duration = Duration::from_secs(30);
 
 /// Where to send. `fingerprint`, when set, is pinned: a peer presenting another certificate is refused.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,6 +53,8 @@ pub enum SendError {
     ChecksumMismatch(PathBuf),
     #[error("unexpected HTTP status {0}")]
     Status(u16),
+    #[error("the receiver stopped answering")]
+    Stalled,
     #[error("not a file: {0}")]
     NotAFile(PathBuf),
     #[error(transparent)]
@@ -128,7 +135,7 @@ pub async fn send_files(
                 .post(target.url("upload"))
                 .query(&[("sessionId", session), ("fileId", &id), ("token", &token)])
                 .header(CONTENT_LENGTH, size);
-            upload(request, path)
+            upload(request, path, STALL)
         })
         .buffer_unordered(PARALLEL_UPLOADS)
         .try_collect()
@@ -144,10 +151,27 @@ pub async fn send_files(
     Ok(SendReport { session_id: Some(accepted.session_id), sent, skipped })
 }
 
-async fn upload(request: reqwest::RequestBuilder, path: PathBuf) -> Result<PathBuf, SendError> {
+/// Streams one file; each chunk taken by the connection puts the `stall` deadline off.
+async fn upload(request: reqwest::RequestBuilder, path: PathBuf, stall: Duration) -> Result<PathBuf, SendError> {
     let file = tokio::fs::File::open(&path).await?;
-    let response =
-        request.body(reqwest::Body::wrap_stream(ReaderStream::with_capacity(file, READ_CHUNK))).send().await?;
+    let moved = Arc::new(Mutex::new(tokio::time::Instant::now()));
+    let touched = moved.clone();
+    let body = ReaderStream::with_capacity(file, READ_CHUNK).inspect(move |_| {
+        *touched.lock().unwrap_or_else(|e| e.into_inner()) = tokio::time::Instant::now();
+    });
+    let send = request.body(reqwest::Body::wrap_stream(body)).send();
+    tokio::pin!(send);
+    let response = loop {
+        let deadline = *moved.lock().unwrap_or_else(|e| e.into_inner()) + stall;
+        tokio::select! {
+            response = &mut send => break response?,
+            _ = tokio::time::sleep_until(deadline) => {
+                if moved.lock().unwrap_or_else(|e| e.into_inner()).elapsed() >= stall {
+                    return Err(SendError::Stalled);
+                }
+            }
+        }
+    };
     match response.status() {
         s if s.is_success() => Ok(path),
         StatusCode::UNPROCESSABLE_ENTITY => Err(SendError::ChecksumMismatch(path)),
@@ -195,5 +219,55 @@ fn mime_type(name: &str) -> &'static str {
         "heic" => "image/heic",
         "dng" => "image/x-adobe-dng",
         _ => "application/octet-stream",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    /// A plain HTTP peer that reads the request head, then drains the body and answers, or stops reading.
+    async fn peer(drains: bool) -> SocketAddr {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            let (mut tcp, _) = listener.accept().await.unwrap();
+            let mut buf = vec![0u8; 1 << 16];
+            let n = tcp.read(&mut buf).await.unwrap_or(0);
+            if !drains {
+                return tokio::time::sleep(Duration::from_secs(3600)).await;
+            }
+            let head = buf[..n].windows(4).position(|w| w == b"\r\n\r\n").map_or(n, |at| at + 4);
+            let mut body = n - head;
+            while body < BODY {
+                match tcp.read(&mut buf).await {
+                    Ok(0) | Err(_) => return,
+                    Ok(n) => body += n,
+                }
+            }
+            let _ = tcp.write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 0\r\n\r\n").await;
+            tokio::time::sleep(Duration::from_secs(3600)).await;
+        });
+        addr
+    }
+
+    /// More than every socket buffer between the two ends holds.
+    const BODY: usize = 64 << 20;
+
+    async fn sent_to(drains: bool) -> Result<PathBuf, SendError> {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("scan.dng");
+        std::fs::write(&path, vec![7u8; BODY]).unwrap();
+        let addr = peer(drains).await;
+        let request = crate::tls::https_client(None).unwrap().post(format!("http://{addr}/upload")).header(CONTENT_LENGTH, BODY);
+        tokio::time::timeout(Duration::from_secs(60), upload(request, path, Duration::from_millis(500))).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn an_upload_to_a_peer_that_stops_reading_ends_as_stalled() {
+        assert!(matches!(sent_to(false).await, Err(SendError::Stalled)));
+        // Twin: a peer that drains the body and answers takes the file.
+        assert!(sent_to(true).await.is_ok());
     }
 }

@@ -5,12 +5,32 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::Error;
 use crate::panel::Panel;
-use crate::scanner::{Command, State};
+use crate::scanner::{Clicks, Command, State};
 
 /// Raised on any change of meaning. A desktop answers every phone from `OLDEST` on in the phone's
 /// own version; a phone wants the desktop's to be its own.
-pub const PROTOCOL: u16 = 3;
+pub const PROTOCOL: u16 = 4;
 pub const OLDEST: u16 = 1;
+/// From this protocol on, a letter's clicks and steps count half units; before it, whole ones.
+pub const HALF_STEPS: u16 = 4;
+
+/// The screen as a phone speaking `protocol` reads it: whole units before `HALF_STEPS`, a half
+/// dropped toward zero as the sidecar drops it.
+pub fn told(mut state: State, protocol: u16) -> State {
+    if protocol < HALF_STEPS {
+        let Clicks { d, c, m, y, w } = state.clicks;
+        state.clicks = Clicks { d: d / 2, c: c / 2, m: m / 2, y: y / 2, w: w / 2 };
+    }
+    state
+}
+
+/// A press from a phone speaking `protocol`, in this protocol's steps.
+pub fn heard(command: Command, protocol: u16) -> Command {
+    match command {
+        Command::Step { letter, by } if protocol < HALF_STEPS => Command::Step { letter, by: by.saturating_mul(2) },
+        other => other,
+    }
+}
 
 /// A Noise message is at most 65 535 bytes, its tag 16 of them.
 pub const MAX_PLAINTEXT: usize = 65_535 - 16;

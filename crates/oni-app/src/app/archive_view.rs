@@ -198,8 +198,7 @@ impl Ctl {
         if let Some(message) = failure {
             self.say(&message);
         }
-        self.relay_thumbnail(&fingerprint);
-        self.publish_tiles();
+        self.thumbnail_reached(&fingerprint);
     }
 
     /// A file read from the folder; one absent stays asked, so only a render fills its tile.
@@ -210,8 +209,7 @@ impl Ctl {
             s.asked.remove(&fingerprint);
             s.thumbs.insert(fingerprint.clone(), image(&rgba, w, h));
         }
-        self.relay_thumbnail(&fingerprint);
-        self.publish_tiles();
+        self.thumbnail_reached(&fingerprint);
     }
 
     /// `offerNeutralDecodeNotice`: once a library holds a RAW, until it is dismissed once.
@@ -288,7 +286,7 @@ impl Ctl {
         s.org.tree_ids = ids;
         drop(guard);
         self.lay_column(tree_column::Which::Archive, &mut rows, paths);
-        w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
+        self.deliver_column(tree_column::Which::Archive, rows);
         self.follow_tree();
         if let Some(i) = landed {
             self.centre_row(tree_column::Which::Archive, i);
@@ -296,37 +294,29 @@ impl Ctl {
         self.pin_column(tree_column::Which::Archive);
     }
 
-    /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll, and
-    /// only a row whose light changed is read from the model.
+    /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
     pub(super) fn mark_tree(&self) {
         let Some(w) = self.window() else { return };
         let model = w.global::<Library>().get_rows();
-        let relit: Vec<(usize, bool)> = {
-            let mut guard = self.state.borrow_mut();
-            let s = &mut *guard;
-            if model.row_count() != s.tree.paths.len() || s.tree.marked.len() != s.tree.paths.len() {
-                drop(guard);
-                return self.publish_tree();
+        let s = self.state.borrow();
+        if model.row_count() != s.tree.paths.len() {
+            drop(s);
+            return self.publish_tree();
+        }
+        for (i, path) in s.tree.paths.iter().enumerate() {
+            let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
+            let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
+            // A row whose mark holds is not copied: a pick relights a few rows of thousands.
+            let rows = model.as_any().downcast_ref::<super::tree_rows::TreeRows>();
+            if rows.and_then(|r| r.selected(i)) == Some(marked) {
+                continue;
             }
-            let mut relit = Vec::new();
-            for (i, path) in s.tree.paths.iter().enumerate() {
-                let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
-                let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
-                if s.tree.marked[i] != marked {
-                    relit.push((i, marked));
-                }
-            }
-            for &(i, marked) in &relit {
-                s.tree.marked[i] = marked;
-            }
-            relit
-        };
-        for (i, marked) in relit {
             if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
                 row.selected = marked;
                 model.set_row_data(i, row);
             }
         }
+        drop(s);
         self.pin_column(tree_column::Which::Archive);
     }
 }

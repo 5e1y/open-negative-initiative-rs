@@ -29,18 +29,22 @@ pub(crate) fn server_config(identity: &Identity) -> Result<rustls::ServerConfig,
 /// An HTTPS client for LocalSend peers. LocalSend never verifies the chain; with `expected_fingerprint`
 /// the handshake fails unless the presented certificate hashes to it.
 pub fn https_client(expected_fingerprint: Option<&str>) -> Result<reqwest::Client, reqwest::Error> {
+    let tls = client_config(expected_fingerprint);
+    reqwest::Client::builder().tls_backend_preconfigured(tls).connect_timeout(CONNECT_TIMEOUT).no_proxy().build()
+}
+
+pub(crate) fn client_config(expected_fingerprint: Option<&str>) -> rustls::ClientConfig {
     let provider = provider();
     let verifier = PeerVerifier {
         expected: expected_fingerprint.map(str::to_ascii_lowercase),
         algorithms: provider.signature_verification_algorithms,
     };
-    let tls = rustls::ClientConfig::builder_with_provider(provider)
+    rustls::ClientConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .expect("ring supports the default versions")
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(verifier))
-        .with_no_client_auth();
-    reqwest::Client::builder().tls_backend_preconfigured(tls).connect_timeout(CONNECT_TIMEOUT).no_proxy().build()
+        .with_no_client_auth()
 }
 
 /// Whether an error chain carries a pinned-fingerprint refusal.

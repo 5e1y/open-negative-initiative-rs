@@ -367,7 +367,7 @@ export component MainWindow inherits AppWindow {
                             x: Space.s; y: Space.s;
                             width: parent.width - 2 * Space.s;
                             height: parent.height - 2 * Space.s;
-                            Tree { width: parent.width; height: parent.height; beside-photo: true; }
+                            Tree { width: parent.width; height: parent.height; beside-photo: true; cache-rendering-hint: true; }
                         }
                     }
                     if root.beside-photo && App.panel-hidden: TouchArea {

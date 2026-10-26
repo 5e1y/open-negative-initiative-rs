@@ -38,6 +38,7 @@ mod flat_masks;
 mod tutorial;
 mod draft_base;
 mod trace;
+mod negative;
 pub use model::*;
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.

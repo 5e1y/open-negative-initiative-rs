@@ -87,6 +87,11 @@ impl Ctl {
         let me = Rc::downgrade(self);
         self.writer.start(TimerMode::SingleShot, WRITE_DELAY, move || {
             let Some(me) = me.upgrade() else { return };
+            // A gesture moving files may be moving this frame's: the write waits for its landing,
+            // which follows the frame to its new path, or it would land beside the old one.
+            if me.state.borrow().org.disk_busy.is_some() {
+                return me.schedule_write();
+            }
             let failure = {
                 let mut s = me.state.borrow_mut();
                 if s.slides.iter().any(|sl| sl.live.is_some()) {

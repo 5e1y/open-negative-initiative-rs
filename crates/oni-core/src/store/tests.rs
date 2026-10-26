@@ -2,6 +2,9 @@ use super::*;
 use crate::fields::Field;
 use crate::knob::Knob;
 
+/// What a gesture leaves with the open frame: its undo steps, its kept edits, its moves.
+mod kept;
+
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);

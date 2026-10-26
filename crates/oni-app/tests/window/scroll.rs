@@ -239,6 +239,7 @@ pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
     assert!(ctl.state.borrow().visible().start == 0 && !lib.get_pinned_shown(), "at the top the first tiles show, no heading pinned");
     let (left, top) = (lib.get_grid_x(), lib.get_grid_y());
     let edge = left + width - INSET - KNOB / 2.0;
+    let slots = lib.get_tiles();
 
     // A drag of 300 points in 60 moves, each timed from the event to the tiles laid.
     let mut slowest = Duration::ZERO;
@@ -257,6 +258,7 @@ pub(crate) fn the_gallery_knob_scrolls_the_grid_the_wheel_s_way() {
     assert!((scroll - 300.0 * ratio).abs() < 1.0, "the knob scrolled the grid {scroll} for {}", 300.0 * ratio);
     assert!(travel > 300.0 && scroll > 10.0 * page, "the drag crossed many pages: {scroll}");
     assert!(slowest < Duration::from_millis(16), "a knob move took {slowest:?}, past a frame");
+    assert!(lib.get_tiles() == slots, "the scroll kept the tiles' slots, so it remade no tile");
 
     // The tiles laid are those in view, the heading pinned at the new top, as after a wheel.
     let tiles = oni_app::app::tiles(&shell.window);

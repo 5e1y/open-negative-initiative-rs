@@ -74,10 +74,10 @@ enum Job {
     Read(mpsc::SyncSender<(Vec<Record>, Vec<String>)>),
 }
 
-/// The thread's side: the folder and the name table's indices, read once and then kept.
+/// The thread's side: the folder, the name table's indices and its line count, read once and then kept.
 struct Writer {
     folder: PathBuf,
-    indices: Option<HashMap<String, u32>>,
+    indices: Option<(HashMap<String, u32>, u32)>,
 }
 
 impl Journal {
@@ -103,7 +103,7 @@ impl Journal {
                         if let Some(name) = name {
                             record.value = writer.index(&name);
                         }
-                        writer.write(&encode(&record), &writer.events(), Some(&header()));
+                        let _ = writer.write(&encode(&record), &writer.events(), Some(&header()));
                     }
                     Job::Read(reply) => {
                         let records = decode(&std::fs::read(writer.events()).unwrap_or_default());
@@ -150,17 +150,23 @@ impl Writer {
         self.folder.join("names.txt")
     }
 
+    /// A name's line in the table, keyed as written; a new one is the file's next line, or
+    /// `NOTHING` when it cannot be written, so a record never points at another name's line.
     fn index(&mut self, name: &str) -> u32 {
         if self.indices.is_none() {
             self.indices = Some(self.load_indices());
         }
-        let table = self.indices.as_mut().expect("loaded above");
-        if let Some(known) = table.get(name) {
+        let line = name.replace('\n', " ");
+        if let Some(known) = self.indices.as_ref().and_then(|(table, _)| table.get(&line)) {
             return *known;
         }
-        let next = table.len() as u32;
-        table.insert(name.to_owned(), next);
-        self.write(format!("{}\n", name.replace('\n', " ")).as_bytes(), &self.names(), None);
+        if !self.write(format!("{line}\n").as_bytes(), &self.names(), None) {
+            return NOTHING;
+        }
+        let (table, count) = self.indices.as_mut().expect("loaded above");
+        let next = *count;
+        table.insert(line, next);
+        *count += 1;
         next
     }
 
@@ -171,24 +177,24 @@ impl Writer {
         lines
     }
 
-    fn load_indices(&self) -> HashMap<String, u32> {
+    /// Each name at its first line, and the number of lines, which a duplicate line sets above the names'.
+    fn load_indices(&self) -> (HashMap<String, u32>, u32) {
+        let lines = self.lines();
         let mut table = HashMap::new();
-        for (rank, line) in self.lines().into_iter().enumerate() {
-            table.entry(line).or_insert(rank as u32);
+        for (rank, line) in lines.iter().enumerate() {
+            table.entry(line.clone()).or_insert(rank as u32);
         }
-        table
+        (table, lines.len() as u32)
     }
 
-    fn write(&self, data: &[u8], path: &Path, header: Option<&[u8]>) {
+    fn write(&self, data: &[u8], path: &Path, header: Option<&[u8]>) -> bool {
         if std::fs::create_dir_all(&self.folder).is_err() {
-            return;
+            return false;
         }
         if !path.exists() && std::fs::write(path, header.unwrap_or(&[])).is_err() {
-            return;
+            return false;
         }
-        if let Ok(mut file) = std::fs::OpenOptions::new().append(true).open(path) {
-            let _ = file.write_all(data);
-        }
+        std::fs::OpenOptions::new().append(true).open(path).is_ok_and(|mut file| file.write_all(data).is_ok())
     }
 }
 
@@ -291,6 +297,24 @@ mod tests {
         let _ = held.recv();
         assert_eq!(journal.read().0.len(), 51, "the read sees every gesture handed before it");
         assert_eq!(written(), 51);
+    }
+
+    /// A record names the line it was written on, past a duplicate line and a name holding a newline.
+    #[test]
+    fn a_new_name_takes_the_file_s_next_line_past_a_duplicate() {
+        let scratch = Scratch::new("journal-duplicate");
+        std::fs::write(scratch.path().join("names.txt"), "/a.RW2\n/a.RW2\n").unwrap();
+        let journal = Journal::new(scratch.path().to_path_buf());
+        let day = Date::since_reference_date(812_000_000.0);
+        journal.note(Kind::Opened, Some("/b.RW2"), 0, 0, None, day);
+        journal.note(Kind::Preset, Some("/a.RW2"), 0, 0, Some("two\nlines"), day);
+        journal.note(Kind::Preset, Some("/a.RW2"), 0, 0, Some("two lines"), day);
+        let (records, names) = journal.read();
+        assert_eq!(names, ["/a.RW2", "/a.RW2", "/b.RW2", "two lines"]);
+        assert_eq!(names[records[0].subject as usize], "/b.RW2");
+        assert_eq!((records[1].subject, records[1].value, records[2].value), (0, 3, 3));
+        // Twin: the count of distinct names lands on the duplicate, another name's line.
+        assert_ne!(names[1], "/b.RW2");
     }
 
     #[test]

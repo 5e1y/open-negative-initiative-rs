@@ -114,6 +114,26 @@ impl History {
         Some(self.serials[self.cursor])
     }
 
+    /// Records a state as a step of its own, which neither the gesture before nor the one after
+    /// merges with: a state laid from outside the hand, as a gallery undo's.
+    pub fn record_apart(&mut self, next: PipelineSettings, now: f64) -> Option<u64> {
+        self.last = None;
+        let serial = self.record(next, now);
+        self.last = None;
+        serial
+    }
+
+    /// Every companion's frame named where `moved` sends it, so a step laid back finds its file.
+    pub fn follow(&mut self, moved: &dyn Fn(&str) -> Option<String>) {
+        let rekeyed = |held: &mut BTreeMap<String, PipelineSettings>| {
+            *held = std::mem::take(held).into_iter().map(|(p, s)| (moved(&p).unwrap_or(p), s)).collect();
+        };
+        for companion in self.companions.iter_mut().flatten() {
+            rekeyed(&mut companion.before);
+            rekeyed(&mut companion.after);
+        }
+    }
+
     /// A step of the other frames alone, the open one unchanged.
     pub fn lay(&mut self, companion: Companion) {
         let current = self.current().clone();

@@ -1,10 +1,12 @@
-//! The measure's histogram: each frame's counted off its tile on the measure's thread, then morphed
-//! here from the frame before's into it at the frame tick, and held until the next one lands.
+//! The measure's screens: each frame's channels and its negative, and the roll's histogram summed so
+//! far with its ends; counted on the measure's thread, morphed here at the frame tick until they rest.
 
 use super::super::{FRAME_TICK, SHELL};
 use super::*;
 use crate::display::Screen;
-use crate::{Ink, TraceCurve};
+use crate::{CrtCurve, CrtEcho};
+use oni_measure::roll::Measured;
+use oni_settings::frame::RollReference;
 use slint::{Model, Timer, TimerMode};
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -13,20 +15,17 @@ use std::time::Duration;
 pub(in crate::app) const BINS: usize = 128;
 /// One frame's histogram becoming the next one's, eased in and out.
 const MORPH: Duration = Duration::from_millis(320);
-/// The frames before, kept as fading luminances behind the one drawn.
+/// The frames before, kept as the phosphor's fading afterglow behind the one drawn.
 const TRAIL: usize = 3;
-/// The tallest bin's share of the well's height, so a peak never touches the rim.
+/// The tallest bin's share of the screen's height, so a peak never touches the rim.
 const HEADROOM: f32 = 0.9;
-const LUMA: usize = 3;
-/// Luminance first, under the three channels, as the editor's histogram lays them.
-const CURVES: [(usize, Ink); 4] = [(LUMA, Ink::Primary), (0, Ink::Red), (1, Ink::Green), (2, Ink::Blue)];
 
-/// One frame's histogram as drawn: per bin the red, green, blue and luminance heights, 0 to 1, and
-/// where half its luminance lies, 0 to 1.
+/// A histogram as a screen draws it: per bin the red, green and blue heights, 0 to 1, and for the
+/// roll each channel's black and white on the same 0…1 axis.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(in crate::app) struct Drawn {
-    pub bins: Vec<[f32; 4]>,
-    pub median: f32,
+    pub bins: Vec<[f32; 3]>,
+    pub ends: Option<[[f32; 2]; 3]>,
 }
 
 impl Drawn {
@@ -36,41 +35,45 @@ impl Drawn {
             return None;
         }
         let h = crate::histogram::measure(&tile.pixels, tile.width, tile.height, screen);
-        let luma = crate::histogram::coarsened(&h.luma, BINS);
-        let channels: Vec<Vec<f32>> = (0..3).map(|c| crate::histogram::heights(&crate::histogram::coarsened(&h.channel(c), BINS))).collect();
-        let heights = crate::histogram::heights(&luma);
-        let bins = (0..BINS).map(|i| [channels[0][i], channels[1][i], channels[2][i], heights[i]]).collect();
-        Some(Drawn { bins, median: median(&luma) })
+        Some(Drawn::stacked((0..3).map(|c| crate::histogram::coarsened(&h.channel(c), BINS)).collect(), None))
     }
 
-    /// A flat histogram where `to`'s median stands: the first frame rises from it.
+    /// The roll so far, as `combined` reads it: its frames summed at its gains, its black and white.
+    pub fn roll(frames: &[Measured], roll: &RollReference, mode: ConversionMode) -> Drawn {
+        let sum = roll::summed(frames, roll, mode, BINS);
+        let ends = [0, 1, 2].map(|c| [roll.black[c], roll.white[c]]);
+        Drawn::stacked((0..3).map(|c| sum.iter().map(|b| b[c]).collect()).collect(), Some(ends))
+    }
+
+    /// Each channel's counts scaled to its own peak, as the editor's histogram scales them.
+    fn stacked(channels: Vec<Vec<f32>>, ends: Option<[[f32; 2]; 3]>) -> Drawn {
+        let heights: Vec<Vec<f32>> = channels.iter().map(|c| crate::histogram::heights(c)).collect();
+        let n = heights.iter().map(Vec::len).min().unwrap_or(0);
+        Drawn { bins: (0..n).map(|i| [heights[0][i], heights[1][i], heights[2][i]]).collect(), ends }
+    }
+
+    /// A flat histogram where `to`'s ends stand: the first one rises from it.
     fn floor(to: &Drawn) -> Drawn {
-        Drawn { bins: vec![[0.0; 4]; to.bins.len()], median: to.median }
+        Drawn { bins: vec![[0.0; 3]; to.bins.len()], ends: to.ends }
     }
 
     /// `k` of the way from this histogram to `to`.
     pub fn mixed(&self, to: &Drawn, k: f32) -> Drawn {
         let at = |a: f32, b: f32| a + (b - a) * k;
         let bins = to.bins.iter().enumerate().map(|(i, b)| self.bins.get(i).map_or(*b, |a| std::array::from_fn(|c| at(a[c], b[c])))).collect();
-        Drawn { bins, median: at(self.median, to.median) }
+        let ends = match (self.ends, to.ends) {
+            (Some(a), Some(b)) => Some(std::array::from_fn(|c| [at(a[c][0], b[c][0]), at(a[c][1], b[c][1])])),
+            (_, b) => b,
+        };
+        Drawn { bins, ends }
     }
 }
 
-/// Where the cumulated counts pass half their total, 0 to 1; 0 for none.
-pub(in crate::app) fn median(counts: &[f32]) -> f32 {
-    let total: f32 = counts.iter().sum();
-    if total <= 0.0 {
-        return 0.0;
-    }
-    let mut run = 0.0;
-    for (i, c) in counts.iter().enumerate() {
-        if run + c >= total / 2.0 {
-            let within = if *c > 0.0 { (total / 2.0 - run) / c } else { 0.0 };
-            return (i as f32 + within) / counts.len() as f32;
-        }
-        run += c;
-    }
-    1.0
+/// What one frame read sends: its histogram and negative, and the roll's once the frame voted.
+pub(in crate::app) struct Landed {
+    pub name: String,
+    pub frame: Option<(Drawn, Bitmap)>,
+    pub roll: Option<(Drawn, usize)>,
 }
 
 /// Cubic ease in and out, 0 to 1 over 0 to 1.
@@ -79,9 +82,9 @@ pub(in crate::app) fn eased(t: f32) -> f32 {
     if t < 0.5 { 4.0 * t * t * t } else { 1.0 - (-2.0 * t + 2.0).powi(3) / 2.0 }
 }
 
-/// A channel's top edge in the well's points, smoothed through the bins' midpoints, and the area
+/// A channel's top edge in the screen's points, smoothed through the bins' midpoints, and the area
 /// closed under it.
-pub(in crate::app) fn shapes(bins: &[[f32; 4]], channel: usize, size: (f32, f32)) -> (String, String) {
+pub(in crate::app) fn shapes(bins: &[[f32; 3]], channel: usize, size: (f32, f32)) -> (String, String) {
     use std::fmt::Write;
     let (w, h) = size;
     let n = bins.len();
@@ -102,24 +105,61 @@ pub(in crate::app) fn shapes(bins: &[[f32; 4]], channel: usize, size: (f32, f32)
     (area, edge)
 }
 
-/// What the measure's screen draws: the histogram shown, the one it is becoming, and the trail.
+/// Each channel's curve in a screen `size` points wide, its ends placed when it carries them.
+fn curves(d: &Drawn, size: (f32, f32)) -> Vec<CrtCurve> {
+    (0..3)
+        .map(|c| {
+            let (area, edge) = shapes(&d.bins, c, size);
+            let [black, white] = d.ends.map_or([0.0; 2], |e| e[c]);
+            CrtCurve { area: area.into(), edge: edge.into(), black: black.clamp(0.0, 1.0) * size.0, white: white.clamp(0.0, 1.0) * size.0 }
+        })
+        .collect()
+}
+
+/// A histogram on its way from the one shown to the one landed.
 #[derive(Default)]
-pub(in crate::app) struct Trace {
+struct Morph {
     from: Option<Drawn>,
     to: Option<Drawn>,
+}
+
+impl Morph {
+    fn shown(&self, k: f32) -> Option<Drawn> {
+        let to = self.to.as_ref()?;
+        Some(self.from.as_ref().map_or_else(|| to.clone(), |from| from.mixed(to, k)))
+    }
+
+    /// `to` landed: the one shown at `k` morphs into it, and the one it was becoming is returned.
+    fn landed(&mut self, to: Drawn, k: f32) -> Option<Drawn> {
+        self.from = Some(self.shown(k).unwrap_or_else(|| Drawn::floor(&to)));
+        self.to.replace(to)
+    }
+
+    fn rest(&mut self) {
+        self.from = None;
+    }
+}
+
+/// What the measure's screens draw: the frame's and the roll's histograms morphing, the trail, the negative.
+#[derive(Default)]
+pub(in crate::app) struct Trace {
+    frame: Morph,
+    roll: Morph,
     since: Option<Instant>,
     trail: VecDeque<Drawn>,
     name: String,
+    voted: usize,
+    /// The two negatives cross-fading, and whether the second is the one shown.
+    negatives: [Image; 2],
+    second: bool,
     size: (f32, f32),
+    roll_size: (f32, f32),
     timer: Timer,
 }
 
 impl Trace {
-    /// The histogram drawn now.
-    fn shown(&self, now: Instant) -> Option<Drawn> {
-        let to = self.to.as_ref()?;
-        let k = self.since.map_or(1.0, |at| eased(now.duration_since(at).as_secs_f32() / MORPH.as_secs_f32()));
-        Some(self.from.as_ref().map_or_else(|| to.clone(), |from| from.mixed(to, k)))
+    fn k(&self, now: Instant) -> f32 {
+        self.since.map_or(1.0, |at| eased(now.duration_since(at).as_secs_f32() / MORPH.as_secs_f32()))
     }
 
     fn moving(&self, now: Instant) -> bool {
@@ -128,42 +168,64 @@ impl Trace {
 }
 
 impl Ctl {
-    /// A measure starting or landing: nothing drawn, so a measure never opens on another's histogram.
+    /// A measure starting or landing: every screen dark, so a measure never opens on another's.
     pub(in crate::app) fn trace_cleared(&self) {
         {
             let mut s = self.state.borrow_mut();
             let t = &mut s.prepare.trace;
             t.timer.stop();
-            let size = t.size;
-            *t = Trace { size, ..Trace::default() };
+            let (size, roll_size) = (t.size, t.roll_size);
+            *t = Trace { size, roll_size, ..Trace::default() };
         }
         self.publish_trace();
+        self.publish_negatives();
     }
 
-    /// A frame's histogram landed: the one drawn now morphs into it, the one it was becoming joins the trail.
-    pub(in crate::app) fn trace_landed(&self, name: String, drawn: Drawn) {
-        {
+    /// A frame read: what it carries morphs in, the frame its histogram replaces joins the trail.
+    pub(in crate::app) fn trace_landed(&self, landed: Landed) {
+        let negative = {
             let mut s = self.state.borrow_mut();
             let t = &mut s.prepare.trace;
             let now = Instant::now();
-            let from = t.shown(now).unwrap_or_else(|| Drawn::floor(&drawn));
-            if let Some(before) = t.to.take() {
-                t.trail.push_back(before);
-                while t.trail.len() > TRAIL {
-                    t.trail.pop_front();
-                }
-            }
-            t.from = Some(from);
-            t.to = Some(drawn);
-            t.since = Some(now);
-            t.name = name;
-            if !t.timer.running() {
-                t.timer.start(TimerMode::Repeated, FRAME_TICK, || {
-                    if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
-                        me.publish_trace();
+            let k = t.k(now);
+            if landed.frame.is_none() && landed.roll.is_none() {
+                None
+            } else {
+                // Both histograms restart their morph together: the one not landing rests where it stands.
+                match landed.frame {
+                    Some((drawn, negative)) => {
+                        if let Some(before) = t.frame.landed(drawn, k) {
+                            t.trail.push_back(before);
+                            while t.trail.len() > TRAIL {
+                                t.trail.pop_front();
+                            }
+                        }
+                        t.second = !t.second;
+                        t.negatives[usize::from(t.second)] = picture(&negative);
+                        t.name = landed.name;
                     }
-                });
+                    None => t.frame.from = t.frame.shown(k),
+                }
+                match landed.roll {
+                    Some((roll, voted)) => {
+                        t.roll.landed(roll, k);
+                        t.voted = voted;
+                    }
+                    None => t.roll.from = t.roll.shown(k),
+                }
+                t.since = Some(now);
+                if !t.timer.running() {
+                    t.timer.start(TimerMode::Repeated, FRAME_TICK, || {
+                        if let Some(me) = SHELL.with(|s| s.borrow().upgrade()) {
+                            me.publish_trace();
+                        }
+                    });
+                }
+                Some(())
             }
+        };
+        if negative.is_some() {
+            self.publish_negatives();
         }
         self.publish_trace();
     }
@@ -173,44 +235,73 @@ impl Ctl {
         self.publish_trace();
     }
 
-    /// The histogram as it stands this tick; the tick stops once it rests.
+    pub(in crate::app) fn roll_trace_resized(&self, w: f32, h: f32) {
+        self.state.borrow_mut().prepare.trace.roll_size = (w, h);
+        self.publish_trace();
+    }
+
+    fn publish_negatives(&self) {
+        let Some(w) = self.window() else { return };
+        let s = self.state.borrow();
+        let t = &s.prepare.trace;
+        let p = w.global::<Preparing>();
+        p.set_negative_a(t.negatives[0].clone());
+        p.set_negative_b(t.negatives[1].clone());
+        p.set_negative_second(t.second);
+    }
+
+    /// The screens as they stand this tick; the tick stops once they rest.
     pub(in crate::app) fn publish_trace(&self) {
         let Some(w) = self.window() else { return };
-        let (shown, trail, name, size, count) = {
+        let (frame, roll, trail, name, voted, size, roll_size, progress) = {
             let mut s = self.state.borrow_mut();
-            let count = s.prepare.progress.map(|(done, total)| format!("{done} / {total}")).unwrap_or_default();
+            let progress = s.prepare.progress;
             let t = &mut s.prepare.trace;
             let now = Instant::now();
+            let k = t.k(now);
             if !t.moving(now) {
                 t.timer.stop();
                 t.since = None;
+                t.frame.rest();
+                t.roll.rest();
             }
-            (t.shown(now), t.trail.clone(), t.name.clone(), t.size, count)
+            (t.frame.shown(k), t.roll.shown(k), t.trail.clone(), t.name.clone(), t.voted, t.size, t.roll_size, progress)
         };
         let p = w.global::<Preparing>();
-        p.set_traced(shown.is_some());
-        p.set_trace_name(name.into());
-        p.set_trace_count(count.into());
-        p.set_trace_marker(shown.as_ref().map_or(0.0, |d| d.median * size.0));
-        let curves: Vec<TraceCurve> = shown
+        p.set_traced(frame.is_some());
+        p.set_trace_name(if frame.is_some() { name.to_uppercase() } else { tr("Reading the first frame…").to_uppercase() }.into());
+        p.set_trace_count(frame_line(progress).into());
+        p.set_roll_voted(voted as i32);
+        p.set_roll_line(if roll.is_some() { trn("ROLL · {n} FRAME", "ROLL · {n} FRAMES", voted as u64) } else { tr("ROLL").to_string() }.into());
+        // Whole models: a screen reads its curve by index, which a row written in place does not wake.
+        p.set_trace_curves(ModelRc::new(VecModel::from(frame.as_ref().map_or_else(Vec::new, |d| curves(d, size)))));
+        p.set_roll_curves(ModelRc::new(VecModel::from(roll.as_ref().map_or_else(Vec::new, |d| curves(d, roll_size)))));
+        let echoes: Vec<CrtEcho> = trail
             .iter()
-            .flat_map(|d| {
-                CURVES.into_iter().map(move |(c, ink)| {
-                    let (area, edge) = shapes(&d.bins, c, size);
-                    TraceCurve { area: area.into(), edge: edge.into(), ink }
-                })
+            .enumerate()
+            .flat_map(|(i, d)| {
+                let fade = (i + 1) as f32 / trail.len() as f32;
+                (0..3).map(move |c| CrtEcho { channel: c as i32, edge: shapes(&d.bins, c, size).1.into(), fade })
             })
             .collect();
-        laid(&p.get_trace_curves(), curves, |m| p.set_trace_curves(m));
-        let edges: Vec<SharedString> = trail.iter().map(|d| shapes(&d.bins, LUMA, size).1.into()).collect();
-        laid(&p.get_trace_trail(), edges, |m| p.set_trace_trail(m));
+        laid(&p.get_trace_trail(), echoes, |m| p.set_trace_trail(m));
     }
 }
 
-/// Rows written into the kept model when its length holds, so the paths drawn are kept, not made again.
-fn laid<T: Clone + 'static>(model: &ModelRc<T>, rows: Vec<T>, set: impl FnOnce(ModelRc<T>)) {
+/// `LabScreen`'s place line: the frame read of the frames asked, both on two digits.
+fn frame_line(progress: Option<(usize, usize)>) -> String {
+    match progress {
+        Some((done, total)) if done > 0 => tr!("FRAME {at}/{count}", at = format!("{done:02}"), count = format!("{total:02}")),
+        Some((_, total)) => tr!("FRAME {at}/{count}", at = "--", count = format!("{total:02}")),
+        None => tr("FRAME --/--").to_string(),
+    }
+}
+
+/// Rows written into the kept model when its length holds, only those that changed, so the paths
+/// drawn are kept, not made again.
+fn laid<T: Clone + PartialEq + 'static>(model: &ModelRc<T>, rows: Vec<T>, set: impl FnOnce(ModelRc<T>)) {
     match model.as_any().downcast_ref::<VecModel<T>>().filter(|m| m.row_count() == rows.len()) {
-        Some(kept) => rows.into_iter().enumerate().for_each(|(i, r)| kept.set_row_data(i, r)),
+        Some(kept) => rows.into_iter().enumerate().filter(|(i, r)| kept.row_data(*i).as_ref() != Some(r)).for_each(|(i, r)| kept.set_row_data(i, r)),
         None => set(ModelRc::new(VecModel::from(rows))),
     }
 }
@@ -219,46 +310,46 @@ fn laid<T: Clone + 'static>(model: &ModelRc<T>, rows: Vec<T>, set: impl FnOnce(M
 mod tests {
     use super::*;
 
-    fn flat(v: f32, median: f32) -> Drawn {
-        Drawn { bins: vec![[v; 4]; BINS], median }
+    fn flat(v: f32, ends: Option<[[f32; 2]; 3]>) -> Drawn {
+        Drawn { bins: vec![[v; 3]; BINS], ends }
     }
 
     #[test]
     fn the_morph_eases_from_one_histogram_to_the_next_and_rests_on_it() {
         assert_eq!((eased(0.0), eased(0.5), eased(1.0)), (0.0, 0.5, 1.0));
         assert!(eased(0.1) < 0.1 && eased(0.9) > 0.9, "slow at both ends");
-        let (a, b) = (flat(0.2, 0.3), flat(0.6, 0.7));
+        let (a, b) = (flat(0.2, Some([[0.1, 0.5]; 3])), flat(0.6, Some([[0.3, 0.9]; 3])));
         let mid = a.mixed(&b, 0.5);
-        assert!((mid.bins[5][2] - 0.4).abs() < 1e-6 && (mid.median - 0.5).abs() < 1e-6);
+        assert!((mid.bins[5][2] - 0.4).abs() < 1e-6);
+        let ends = mid.ends.unwrap();
+        assert!((ends[1][0] - 0.2).abs() < 1e-6 && (ends[1][1] - 0.7).abs() < 1e-6, "the ends move as the estimate settles: {ends:?}");
         assert_eq!(a.mixed(&b, 1.0), b);
         // Twin: a morph that jumped would already stand on the next histogram halfway.
         assert_ne!(mid, b);
     }
 
     #[test]
-    fn a_tile_is_counted_into_its_bins_and_its_median() {
+    fn a_tile_is_counted_into_each_channel_s_bins() {
         let tile = |v: f32| oni_measure::sheet::Picture { width: 40, height: 20, pixels: vec![[v, v, v, 1.0]; 800] };
         let d = Drawn::of(&tile(0.5), Screen::Srgb).unwrap();
         assert_eq!(d.bins.len(), BINS);
-        let peak = (0..BINS).find(|&i| d.bins[i][LUMA] == 1.0).unwrap();
+        let peak = (0..BINS).find(|&i| d.bins[i][1] == 1.0).unwrap();
         assert!(peak.abs_diff(BINS / 2) <= 1, "the grey's bin peaks: {peak}");
-        assert_eq!(d.bins[BINS / 4][0], 0.0);
-        assert!((d.median - 0.5).abs() < 2.0 / BINS as f32, "{}", d.median);
+        assert_eq!((d.bins[BINS / 4][0], d.ends), (0.0, None));
         // Twin: another grey lands elsewhere.
         let dark = Drawn::of(&tile(0.2), Screen::Srgb).unwrap();
         assert_ne!(dark.bins, d.bins);
-        assert!(dark.median < 0.3);
         assert!(Drawn::of(&oni_measure::sheet::Picture { width: 0, height: 0, pixels: Vec::new() }, Screen::Srgb).is_none());
     }
 
     #[test]
-    fn the_shapes_span_the_well_and_close_under_the_edge() {
-        let (area, edge) = shapes(&flat(1.0, 0.5).bins, LUMA, (256.0, 100.0));
+    fn the_shapes_span_the_screen_and_the_ends_stand_on_its_width() {
+        let (area, edge) = shapes(&flat(1.0, None).bins, 0, (256.0, 100.0));
         assert!(edge.starts_with("M 0 10.00") && edge.ends_with("L 256.00 10.00"), "{edge}");
         assert!(area.starts_with(&edge) && area.ends_with("L 256.00 100.00 L 0 100.00 Z"));
-        // Twin: an empty well draws nothing rather than a degenerate path.
-        assert_eq!(shapes(&flat(1.0, 0.5).bins, LUMA, (0.0, 100.0)), (String::new(), String::new()));
-        assert_eq!(median(&[0.0, 2.0, 0.0, 0.0]), 0.375);
-        assert_eq!(median(&[0.0; 4]), 0.0);
+        let roll = curves(&flat(0.5, Some([[0.25, 0.75], [0.0, 1.0], [-0.1, 1.2]])), (200.0, 50.0));
+        assert_eq!(roll.iter().map(|c| (c.black, c.white)).collect::<Vec<_>>(), [(50.0, 150.0), (0.0, 200.0), (0.0, 200.0)]);
+        // Twin: an empty screen draws nothing rather than a degenerate path.
+        assert_eq!(shapes(&flat(1.0, None).bins, 0, (0.0, 100.0)), (String::new(), String::new()));
     }
 }
