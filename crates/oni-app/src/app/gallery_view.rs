@@ -52,6 +52,15 @@ impl Ctl {
         }
     }
 
+    /// A thumbnail landed reaches the roll's cells too; its tiles and rows took it in place, so the
+    /// grid is not laid again for each of a folder's thumbnails.
+    pub(super) fn thumbnail_reached(&self, fingerprint: &str) {
+        self.relay_thumbnail(fingerprint);
+        if self.state.borrow().prepare.shown {
+            self.publish_prepare();
+        }
+    }
+
     /// The cells in view and one row either side, the only tiles Slint is given.
     pub(super) fn publish_tiles(&self) {
         // Every change of the picks lays the tiles: the sidebar's rows follow them here.
@@ -116,7 +125,7 @@ impl Ctl {
                 Heading { y: b.top, title: b.title.clone().into(), caption: b.caption.clone().into(), renaming }
             })
             .collect();
-        let slots = range.len();
+        let slots = range.len().max(s.layout.slots(s.grid.1));
         s.visible = range;
         let (height, scroll) = (s.layout.height, s.scroll);
         drop(s);

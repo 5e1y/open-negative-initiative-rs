@@ -268,8 +268,7 @@ impl Ctl {
         if let Some(message) = failure {
             self.say(&message);
         }
-        self.relay_thumbnail(&fingerprint);
-        self.publish_tiles();
+        self.thumbnail_reached(&fingerprint);
     }
 
     /// A file read from the folder; one absent stays asked, so only a render fills its tile.
@@ -280,8 +279,7 @@ impl Ctl {
             s.asked.remove(&fingerprint);
             s.thumbs.insert(fingerprint.clone(), image(&rgba, w, h));
         }
-        self.relay_thumbnail(&fingerprint);
-        self.publish_tiles();
+        self.thumbnail_reached(&fingerprint);
     }
 
     /// `offerNeutralDecodeNotice`: once a library holds a RAW, until it is dismissed once.
@@ -358,7 +356,7 @@ impl Ctl {
         s.org.tree_ids = ids;
         drop(guard);
         self.lay_column(tree_column::Which::Archive, &mut rows, paths);
-        w.global::<Library>().set_rows(ModelRc::new(VecModel::from(rows)));
+        self.deliver_column(tree_column::Which::Archive, rows);
         self.follow_tree();
         if let Some(i) = landed {
             self.centre_row(tree_column::Which::Archive, i);
@@ -378,6 +376,11 @@ impl Ctl {
         for (i, path) in s.tree.paths.iter().enumerate() {
             let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
             let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
+            // A row whose mark holds is not copied: a pick relights a few rows of thousands.
+            let rows = model.as_any().downcast_ref::<super::tree_rows::TreeRows>();
+            if rows.and_then(|r| r.selected(i)) == Some(marked) {
+                continue;
+            }
             if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
                 row.selected = marked;
                 model.set_row_data(i, row);

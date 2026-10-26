@@ -152,71 +152,12 @@ impl Ctl {
         })
     }
 
-    /// Whether a row lies within a screen of the column's view, the rows that keep their pictures.
-    fn near_view(&self, which: Which) -> impl Fn(&Frame) -> bool + use<> {
-        let top = self.column_top(which);
-        // A column not laid out yet has no view: every row is near until it has one.
-        let height = self.state.borrow().laid(which).size.1;
-        move |f: &Frame| height <= 0.0 || (f.y + f.height > top - height && f.y < top + 2.0 * height)
-    }
-
-    /// How far the tree has scrolled, in points from its top.
-    fn column_top(&self, which: Which) -> f32 {
-        let Some(w) = self.window() else { return 0.0 };
-        let lib = w.global::<Library>();
-        -match which {
-            Which::Archive => lib.get_tree_viewport_y(),
-            Which::Projects => lib.get_project_viewport_y(),
-        }
-    }
-
-    /// The column asked to stand at `top`; its scroller says so back, which fills the rows come near.
-    fn scroll_column(&self, which: Which, top: f32) {
-        let Some(w) = self.window() else { return };
-        let lib = w.global::<Library>();
-        match which {
-            Which::Archive => {
-                lib.set_tree_viewport_y(-top);
-                lib.set_tree_scroll_asks(lib.get_tree_scroll_asks().wrapping_add(1));
-            }
-            Which::Projects => {
-                lib.set_project_viewport_y(-top);
-                lib.set_project_scroll_asks(lib.get_project_scroll_asks().wrapping_add(1));
-            }
-        }
-    }
-
-    /// The column's scroll moved, by the wheel, the knob or an ask: the row pinned and the pictures
-    /// near the view follow. Slint runs the change handler once a frame, however many events moved it.
-    fn column_scrolled(&self, which: Which, y: f32) {
-        let Some(w) = self.window() else { return };
-        let lib = w.global::<Library>();
-        match which {
-            Which::Archive => lib.set_tree_viewport_y(y),
-            Which::Projects => lib.set_project_viewport_y(y),
-        }
-        self.pin_column(which);
-        self.fill_tree_thumbnails(None);
-    }
-
-    /// Whether a photo's thumbnail file may be read: one is known, not in memory, not asked yet.
-    fn askable(s: &State, fingerprint: &str) -> bool {
-        !fingerprint.starts_with(thumbnails::PENDING) && !s.thumbs.contains(fingerprint) && !s.asked.contains(fingerprint)
-    }
-
-    fn ask_rows(s: &mut State, asking: Vec<String>) {
-        for fingerprint in asking {
-            if s.asked.insert(fingerprint.clone()) {
-                let _ = s.disk.send(fingerprint);
-            }
-        }
-    }
-
     /// A thumbnail landed or drawn again after the rows were laid reaches its row in place; only
     /// the rows whose picture changed are read from the model.
     pub(super) fn fill_tree_thumbnails(&self, redrawn: Option<&str>) {
         for which in [Which::Archive, Which::Projects] {
             let Some(model) = self.column_model(which) else { return };
+            self.show_near(which);
             let near = self.near_view(which);
             let changed: Vec<(usize, Image, String)> = {
                 let mut guard = self.state.borrow_mut();
@@ -269,16 +210,9 @@ impl Ctl {
         if model.row_count() != paths.len() {
             return self.publish_column(which);
         }
-        let old: Vec<TreeRow> = model.iter().collect();
-        let mut rows = old.clone();
+        let mut rows: Vec<TreeRow> = model.iter().collect();
         self.lay_column(which, &mut rows, paths);
-        // Pictures compared by whether they are held, not pixel by pixel: a redraw is relayed apart.
-        let bare = |r: &TreeRow| TreeRow { picture: Image::default(), ..r.clone() };
-        for (i, (row, was)) in rows.into_iter().zip(&old).enumerate() {
-            if bare(&row) != bare(was) || (row.picture.size().width > 0) != (was.picture.size().width > 0) {
-                model.set_row_data(i, row);
-            }
-        }
+        self.deliver_column(which, rows);
         self.pin_column(which);
     }
 

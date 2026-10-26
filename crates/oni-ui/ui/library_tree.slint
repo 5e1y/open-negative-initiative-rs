@@ -70,7 +70,7 @@ export component Tree inherits Surface {
         }
         if Library.surface == 0 && root.beside-photo: RowTree {
             vertical-stretch: 1;
-            rows: Library.rows;
+            rows: Library.near-rows;
             pin: Library.tree-pin;
             content-height: Library.tree-content-height;
             viewport-y: Library.tree-viewport-y;
@@ -94,7 +94,7 @@ export component Tree inherits Surface {
             vertical-stretch: 1;
             projects: true;
             draggable: true;
-            rows: Library.project-rows;
+            rows: Library.project-near-rows;
             pin: Library.project-pin;
             content-height: Library.project-content-height;
             viewport-y: Library.project-viewport-y;

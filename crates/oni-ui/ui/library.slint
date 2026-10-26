@@ -32,6 +32,8 @@ export struct Heading {
 }
 
 export struct TreeRow {
+    // Its place among the tree's rows, which a click or a menu names.
+    index: int,
     depth: int,
     title: string,
     // The title cut for a narrow column, its tail kept whole; no tail, no cut.
@@ -110,6 +112,9 @@ export global Library {
     // A tree's scroll moved, which may pin another row; the pinned row's click; the column changing mode.
     callback tree-scrolled(length);
     callback project-scrolled(length);
+    // The rows near each tree's view, the only ones the column makes; `rows` holds them all.
+    in property <[TreeRow]> near-rows;
+    in property <[TreeRow]> project-near-rows;
     in property <TreePin> tree-pin;
     in property <TreePin> project-pin;
     callback tree-pin-clicked(bool, bool);

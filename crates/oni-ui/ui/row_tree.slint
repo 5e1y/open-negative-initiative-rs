@@ -4,6 +4,7 @@ import { Scroller, RowKind, TileView, CardStyle, Row, Ground, Tips } from "ds/ds
 import { TreeRow, TreePin } from "library.slint";
 
 export component RowTree inherits HorizontalLayout {
+    // The rows near the view, each placed by Rust and named by its index among all the tree's rows.
     in property <[TreeRow]> rows;
     in property <TreePin> pin;
     in property <length> content-height;
@@ -58,7 +59,7 @@ export component RowTree inherits HorizontalLayout {
                 height: root.content-height;
                 clicked => { root.empty-clicked(); }
             }
-            for row[i] in root.rows: Rectangle {
+            for row in root.rows: Rectangle {
                 x: row.x;
                 y: row.y;
                 width: row.width;
@@ -76,13 +77,13 @@ export component RowTree inherits HorizontalLayout {
                     expandable: row.expandable;
                     expanded: row.expanded;
                     selected: row.selected;
-                    clicked => { root.row-clicked(i, self.command, self.shift); }
-                    double-clicked => { root.row-double-clicked(i); }
-                    folded => { root.row-folded(i); }
+                    clicked => { root.row-clicked(row.index, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(row.index); }
+                    folded => { root.row-folded(row.index); }
                     menu(x, y) => {
-                        if (root.row-menu(i)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
+                        if (root.row-menu(row.index)) { root.open-menu(self.absolute-position.x + x, self.absolute-position.y + y); }
                     }
-                    dragged(px, py, x, y) => { if (root.draggable) { root.row-dragged(i, row.x + px, row.y + py, row.x + x, row.y + y); } }
+                    dragged(px, py, x, y) => { if (root.draggable) { root.row-dragged(row.index, row.x + px, row.y + py, row.x + x, row.y + y); } }
                     released(dropped) => { if (root.draggable) { root.drag-ended(dropped); } }
                 }
                 if row.thumb: TileView {
@@ -108,16 +109,16 @@ export component RowTree inherits HorizontalLayout {
                             self.command = event.modifiers.control || event.modifiers.meta;
                             self.shift = event.modifiers.shift;
                         }
-                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.row-menu(i)) {
+                        if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.row-menu(row.index)) {
                             root.open-menu(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
                         }
                         if (root.draggable && ((event.kind == PointerEventKind.up && event.button == PointerEventButton.left) || event.kind == PointerEventKind.cancel)) {
                             root.drag-ended(event.kind == PointerEventKind.up);
                         }
                     }
-                    moved => { if (root.draggable && self.pressed) { root.row-dragged(i, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
-                    clicked => { root.row-clicked(i, self.command, self.shift); }
-                    double-clicked => { root.row-double-clicked(i); }
+                    moved => { if (root.draggable && self.pressed) { root.row-dragged(row.index, row.x + self.pressed-x, row.y + self.pressed-y, row.x + self.mouse-x, row.y + self.mouse-y); } }
+                    clicked => { root.row-clicked(row.index, self.command, self.shift); }
+                    double-clicked => { root.row-double-clicked(row.index); }
                 }
                 // `rename`: a double click types over a folder's or a project's name.
                 if row.renaming: Row {
@@ -125,7 +126,7 @@ export component RowTree inherits HorizontalLayout {
                     width: parent.width;
                     title: row.title;
                     depth: row.depth;
-                    committed(t) => { root.rename-committed(i, t); }
+                    committed(t) => { root.rename-committed(row.index, t); }
                     cancelled => { root.rename-cancelled(); }
                     edited(t) => { root.rename-edited(t); }
                 }

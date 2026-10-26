@@ -3601,5 +3601,26 @@
     "title": "A tree asks only the thumbnails of the rows near its view, and asks again those memory let go",
     "status": "done",
     "detail": "Laying a tree asked every photo row's thumbnail file: past MEMORY_LIMIT (1,000) memory dropped its least recent half, often the rows on screen, and a scroll never asked them again (fill_tree_thumbnails only read memory). Laying now asks the rows near the view only, nothing while the column has no size, and a fill asks the near rows whose picture is not in memory, read off the interface thread as before. Same window check: with memory emptied (forget_tiles) and the column laid again, fewer than a quarter of the 1,100 thumbnails are asked (599 when every row asks, the twin), and the rows an ask brings into view read theirs back (a timeout when a fill asks nothing, the twin)."
+  },
+  {
+    "id": 652,
+    "type": "performance",
+    "title": "A long sidebar tree makes only the rows near its view and tells Slint only the rows that changed",
+    "status": "done",
+    "detail": "RowTree laid every row of a tree with a plain for: 2,000 photos made some 20,000 elements that every frame evaluated and drew, and publish_tree replaced the whole model on every photo opened (M34). The rows now live in one Rust model per tree (app/tree_rows.rs, TreeRows): Library.rows and project-rows still hold every row, each carrying its index, for Rust and the checks; Library.near-rows and project-near-rows are a window over them, the rows within the near-view rule's reach (a screen above the view to two below), the only ones the column makes. A scroll, a resize or a landing moves the window: rows leaving it are removed and rows entering it added, the rest kept; a row changed reaches the window in place; a tree laid again with the same count tells only the rows that differ, a new count resets. Rows keep their own x and y, as the archive's pairs lay two thumbnails a line, so the window is cut in Rust rather than by Slint's ListView, which stacks one element a line. mark_tree reads each row's mark without copying it. The revealed column carries cache-rendering-hint as the docked one does. Window check library_column::a_long_tree_makes_only_the_rows_near_its_view: in a 2,000-photo column, 17 rows made at the top and 26 mid-column, exactly the rows in reach and under a tenth of the tree (2,001 made when the window holds every row, the twin), every row in view made with its picture. Sixty Exposure notches handled and drawn by the software renderer beside it in the dev profile (interpreted interface): p50 59 to 258 ms before, 11 to 12 ms after, as beside a 30-photo tree (11.9 ms). Unit checks in tree_rows.rs, each with its twin. ONI_BENCH drags now also report the interface's frames."
+  },
+  {
+    "id": 653,
+    "type": "performance",
+    "title": "A thumbnail landing reaches its tiles and rows in place, without laying the gallery again",
+    "status": "done",
+    "detail": "Each thumbnail landed, read from the folder or drawn, called publish_tiles, which relit the whole tree, rebuilt every tile in view, asked the cells again and laid the headings (M38): a 2,000-photo folder did so 2,000 times while loading, about 0.5 ms each on the interface thread. A landing now goes through thumbnail_reached: relay_thumbnail puts the picture on the tiles and rows already showing its photo, and the roll's cells are published when Prepare the Roll is shown, as before. The gallery, visible and prepare window checks pass unchanged."
+  },
+  {
+    "id": 654,
+    "type": "performance",
+    "title": "The gallery keeps one slot count while it scrolls, so a scroll remakes no tile",
+    "status": "done",
+    "detail": "lay_tiles maps each cell in view to the slot index % slots, but the slot count was the range's length, which changes as rows and band ends enter and leave the view: the model was replaced and every tile remade at each such step (M35). The count is now the most cells the view can hold wherever it scrolls (gallery::Layout::slots: the viewport and a row of slack either side, one cut row at each end, one more for a band ending inside), the range's own length when it is ever larger. Unit check the_slots_hold_the_cells_in_view_wherever_the_grid_scrolls (2,000 scroll positions over three bands within the count, which stays near the view; twin: the range's length varies). Window check scroll::the_gallery_knob_scrolls_the_grid_the_wheel_s_way: a 300-point knob drag over 1,200 photos keeps the same tiles model."
   }
 ]
