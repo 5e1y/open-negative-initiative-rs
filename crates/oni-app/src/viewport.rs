@@ -159,6 +159,20 @@ pub struct Wheel {
     pub precise: bool,
 }
 
+/// Slint's points for one line of a wheel, as its winit backend scales a `LineDelta`.
+pub const POINTS_PER_LINE: f64 = 60.0;
+
+/// A platform's lines as a wheel event: on Windows a touch surface speaks in fractions of a line,
+/// a wheel in whole ones, so a fraction stands for the touch surface's points.
+pub fn lines(dx: f32, dy: f32, fractions_touch: bool) -> Wheel {
+    let (dx, dy) = (f64::from(dx), f64::from(dy));
+    if fractions_touch && (dx.fract() != 0.0 || dy.fract() != 0.0) {
+        Wheel { dx: dx * POINTS_PER_LINE, dy: dy * POINTS_PER_LINE, precise: true }
+    } else {
+        Wheel { dx, dy, precise: false }
+    }
+}
+
 thread_local! {
     static WHEEL: std::cell::Cell<Option<Wheel>> = const { std::cell::Cell::new(None) };
 }

@@ -4009,6 +4009,76 @@
     "detail": "The parsed profiles and the proof cubes were cached by path alone, so an .icc overwritten in the Finder kept exporting and proofing with the old one until relaunch. Both caches now hold the file's length and modification time and rebuild when either changes. Check: a_profile_replaced_at_its_path_is_read_again (twin: untouched, the same parse and cube are handed back)."
   },
   {
+    "id": 750,
+    "type": "fix",
+    "title": "The console reads only the log's new lines, off the interface thread, and shows its last 4000",
+    "status": "done",
+    "detail": "Every 500 ms the console waited on the log's flush (up to 2 s) and read the whole oni.log on the interface thread, then laid out all of it, so a long session stuttered while it was open. A Tail now reads the bytes written since its last read on a thread of its own, keeps Swift's Diagnostics.ceiling of 4000 lines (a first read starts 1 MiB from the end on a whole line), and sets the text only when lines came. Checks the_console_reads_only_what_came_and_keeps_the_last_lines (twin: a log started again is read from its start) and a_first_read_of_a_long_log_starts_near_its_end_on_a_whole_line (twin: the read began inside a line)."
+  },
+  {
+    "id": 751,
+    "type": "fix",
+    "title": "A start that fails writes its cause to the log and says it in a window of the system's",
+    "status": "done",
+    "detail": "main returned its error to Rust's runtime, which prints it on stderr: a windowed Windows build or an app opened from the Finder showed nothing and the log stopped after its first line. main now runs the start in run(); an error is written as 'fatal: ...', flushed, then said by rfd's alert with the log's path (not under a bench or ONI_BACKGROUND), and the process ends with 1. WGPU_BACKEND is now honoured, so a backend the system lacks stands for a refused device. Check a_start_that_fails_writes_its_cause_to_the_log_and_ends (tests/instance.rs; twin: the system's own backend passes the device and goes on) and a_failed_start_writes_its_cause_before_the_process_ends (twin: a child ending otherwise has no fatal line)."
+  },
+  {
+    "id": 752,
+    "type": "fix",
+    "title": "A panic is written to the log with its thread, place and backtrace",
+    "status": "done",
+    "detail": "No panic hook existed, so a panic left its words on a stderr no one reads (windowed Windows build, Finder launch) and never in oni.log or the sealed bug report. timing::keep_panics, installed once the log file is open, writes the thread, the message with its place and a forced backtrace, flushes (except on the log thread itself), then runs the default hook. Check a_panic_is_written_to_the_log_and_still_said_on_stderr, run in a child process of the test binary (twin: the same panic under the default hook alone leaves the log without it)."
+  },
+  {
+    "id": 753,
+    "type": "fix",
+    "title": "Windows: renaming a folder lets every watch go while it runs",
+    "status": "done",
+    "detail": "ReadDirectoryChangesW holds a handle on each watched folder, and Windows refuses to rename a folder with a handle on it or below it: renaming a parent of the opened folder in the navigator failed with 'another app is using it'. Watch::released lets every watch go, answered by the watching thread, until its guard drops, then watches what was asked meanwhile; rename_folder runs its rename inside Ctl::unwatched. Explorer renames and Safely Remove are not covered: DBT_DEVICEQUERYREMOVE is a window message sent to a window procedure winit owns (its message hook sees posted messages only), so it needs a window of ONI's own, a subclass of winit's, or CM_Register_Notification per volume, none of which builds or runs on the Mac. Checks a_release_lets_every_watch_go_and_its_end_watches_what_was_asked_meanwhile (twin: a resume with no release changes nothing) and a_photo_dropped_while_the_watches_are_released_is_not_told (twin: told again once the release ends)."
+  },
+  {
+    "id": 754,
+    "type": "fix",
+    "title": "Windows: a watch whose buffer overflows tells a rescan and reads on",
+    "status": "done",
+    "detail": "In the vendored notify, a ReadDirectoryChangesW completion with ERROR_NOTIFY_ENUM_DIR (1022) ended the watch for the session, and one of zero bytes (the buffer discarded) parsed a zeroed entry and told nothing, so a bulk copy into the opened folder was missed. The decision is now notify::rdcw_completion::completion, compiled on every system: 1022 or zero bytes tell an Event flagged Rescan on the folder and start the next read; its codes are asserted equal to windows-sys's at compile time. Check an_overflow_on_windows_is_a_rescan_of_the_folder_and_the_read_goes_on (oni-library; twin: a read with bytes is parsed, an unknown error still ends the watch, and the same path as a plain change touches nothing)."
+  },
+  {
+    "id": 755,
+    "type": "fix",
+    "title": "Windows: sidecar, preference, index-side and export writes wait out a file held for a moment",
+    "status": "done",
+    "detail": "write_atomically in oni-settings and oni-library and the export's create and replace renamed once, so an antivirus or a cloud client holding the target or the temporary (errors 5, 32, 33) failed the save, the last flush at quit included. oni_settings::atomic::retried, with the half-second PAUSES, now carries the rule roll_folder::retried used for folder moves (which delegates to it), and every one of these renames goes through atomic::renamed. Check a_file_held_for_a_moment_on_windows_is_written_once_it_is_let_go, the hold simulated by an injected rename (twins: held past every pause, a missing folder, and the same violation off Windows fail at once and leave no temporary)."
+  },
+  {
+    "id": 756,
+    "type": "fix",
+    "title": "Windows: the GPU is opened on DirectX 12",
+    "status": "done",
+    "detail": "wgpu::Instance::default() enables every backend, and wgpu tries Vulkan and GL before DirectX 12, so a PC with a Vulkan driver ran an untested path while the checks ran WARP on DX12. The instance now asks DX12 on Windows and the default elsewhere, WGPU_BACKEND naming another for a try. Check windows_runs_on_directx_12_unless_a_backend_is_named (twin: wgpu's default holds Vulkan and GL). The unwrap on the surface configuration in the vendored femtovg stays: it needs an adapter that cannot present, and the panic is now logged (#752)."
+  },
+  {
+    "id": 757,
+    "type": "fix",
+    "title": "Windows: a two-finger touchpad scroll on the image pans",
+    "status": "done",
+    "detail": "winit reports a precision touchpad on Windows as LineDelta in fractions of a line, which the window hook took for a wheel, and a wheel zooms. viewport::lines takes a fractional line on Windows for a touch surface, in Slint's 60 points a line; a whole notch stays a wheel's. Check a_fraction_of_a_line_on_windows_is_a_touch_surface_that_pans (twin: a whole notch zooms, and a Mac's fractional lines stay a wheel's)."
+  },
+  {
+    "id": 758,
+    "type": "fix",
+    "title": "Windows: the drive probe raises no 'No Disk' window, and the executable carries a manifest",
+    "status": "done",
+    "detail": "Computer's rows probe A: to Z:, and an empty card reader or optical drive could raise the system's critical-error window; each probe thread now sets SEM_FAILCRITICALERRORS and SEM_NOOPENFILEERRORBOX for itself. build.rs embeds a manifest beside the icon: longPathAware for the Win32 calls std does not prefix, Common Controls 6 for rfd's dialogs, asInvoker; per-monitor DPI awareness v2 is left to winit, which sets it when its event loop starts. Neither builds on the Mac: the probe's code was checked for x86_64-pc-windows-msvc in a scratch crate, the manifest parsed as XML."
+  },
+  {
+    "id": 759,
+    "type": "fix",
+    "title": "Diagnostics: bounded timing samples, no zombie helpers, a paper download kept in its folder, a log that outlives stderr",
+    "status": "done",
+    "detail": "The notch, view, histogram and publish samples grew for the whole run; each now keeps its last 10 000 (the oldest half dropped), counts and session indices still whole (check a_long_session_keeps_a_bounded_tail_and_its_whole_count). open and explorer were spawned and dropped, leaving a zombie per Reveal or link; system::launched waits for each on a thread (check a_helper_program_leaves_no_zombie_once_it_ends; twin: a dropped child stays listed). A paper download took the link's decoded last segment as its name, so %5C or C: led outside its scratch folder on Windows; it is now file_names::portable inside the folder (check a_download_lands_inside_its_folder_whatever_the_link_spells; twin: a plain name is kept). The log thread's eprintln! panicked on a closed stderr and ended the log; it, the instance refusal and the lock warning now write and ignore the error."
+  },
+  {
     "id": 760,
     "type": "fix",
     "title": "A pasted preset code inflates to 1 MB at most",

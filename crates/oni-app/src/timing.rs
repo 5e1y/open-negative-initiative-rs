@@ -68,7 +68,8 @@ fn sink() -> &'static Sink {
                 for w in rx {
                     match w {
                         Written::Line(stamped) => {
-                            eprintln!("{stamped}");
+                            // A closed stderr fails the write, which `eprintln!` turns into this thread's end.
+                            let _ = writeln!(std::io::stderr().lock(), "{stamped}");
                             if let Ok(mut file) = sink().file.lock()
                                 && let Some(f) = file.as_mut()
                             {
@@ -116,6 +117,28 @@ pub fn line(text: &str) {
     }
 }
 
+/// A panic's thread, message, place and backtrace written to the log, then the default hook's words:
+/// a windowed Windows build and an app opened from the Finder have no stderr to read them on.
+pub fn keep_panics() {
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let thread = std::thread::current();
+        let name = thread.name().unwrap_or("unnamed");
+        line(&format!("panic on thread {name}: {info}\n{}", std::backtrace::Backtrace::force_capture()));
+        // The log thread cannot wait on its own queue.
+        if name != "log" {
+            flush();
+        }
+        default(info);
+    }));
+}
+
+/// A start that failed: its cause written to the log before the process ends.
+pub fn fatal(cause: &str) {
+    line(&format!("fatal: {cause}"));
+    flush();
+}
+
 /// The three jobs a render serves.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
@@ -148,19 +171,42 @@ fn ms(d: Duration) -> f64 {
     d.as_secs_f64() * 1000.0
 }
 
+/// The samples kept of each kind, the oldest half dropped past it, so a day of sliding holds a few
+/// hundred kilobytes; counts and indices still run over the whole session.
+pub const KEPT: usize = 10_000;
+
 /// The notch renders shown: each one's time from the store write to the screen, and the gaps
 /// between two shown while the hand moves.
 #[derive(Default)]
 pub struct Notches {
     latencies: Vec<Duration>,
-    /// Each gap with the index of the render that ended it.
+    /// The latencies dropped before the first kept, which session indices start from.
+    dropped: usize,
+    /// Each gap with the session index of the render that ended it.
     gaps: Vec<(usize, Duration)>,
     last_shown: Option<Instant>,
     reported: usize,
     /// From a frame's encode to its histogram on the panel, each.
-    histograms: Vec<Duration>,
+    histograms: Ring,
     /// Each store publish's time on the interface thread.
-    publishes: Vec<Duration>,
+    publishes: Ring,
+}
+
+/// The last samples, `KEPT` at most, and how many came.
+#[derive(Default)]
+struct Ring {
+    kept: Vec<Duration>,
+    seen: usize,
+}
+
+impl Ring {
+    fn push(&mut self, sample: Duration) {
+        self.seen += 1;
+        self.kept.push(sample);
+        if self.kept.len() > KEPT {
+            self.kept.drain(..KEPT / 2);
+        }
+    }
 }
 
 impl Notches {
@@ -170,7 +216,7 @@ impl Notches {
 
     /// The histograms drawn so far, for a bench counting them over a gesture.
     pub fn histogram_count(&self) -> usize {
-        self.histograms.len()
+        self.histograms.seen
     }
 
     pub fn record_publish(&mut self, took: Duration) {
@@ -179,22 +225,22 @@ impl Notches {
 
     /// The interface thread's publish of each edit over the run, the bench's line.
     pub fn publishes(&self) -> String {
-        if self.publishes.is_empty() {
+        if self.publishes.kept.is_empty() {
             return "publish: none".into();
         }
-        let c = Centiles::of(&self.publishes);
-        format!("publish: {} on the interface thread, p50 {:.2} ms, p99 {:.2} ms, worst {:.2} ms", self.publishes.len(), ms(c.p50), ms(c.p99), ms(c.worst))
+        let c = Centiles::of(&self.publishes.kept);
+        format!("publish: {} on the interface thread, p50 {:.2} ms, p99 {:.2} ms, worst {:.2} ms", self.publishes.seen, ms(c.p50), ms(c.p99), ms(c.worst))
     }
 
     /// The histograms' lag behind their frames over the run, the bench's line.
     pub fn histograms(&self) -> String {
-        if self.histograms.is_empty() {
+        if self.histograms.kept.is_empty() {
             return "histogram: none drawn".into();
         }
-        let c = Centiles::of(&self.histograms);
+        let c = Centiles::of(&self.histograms.kept);
         format!(
             "histogram: {} drawn, frame to panel p50 {:.1} ms, p99 {:.1} ms, worst {:.1} ms",
-            self.histograms.len(),
+            self.histograms.seen,
             ms(c.p50),
             ms(c.p99),
             ms(c.worst)
@@ -206,23 +252,29 @@ impl Notches {
         if let Some(last) = self.last_shown {
             let gap = shown.saturating_duration_since(last);
             if gap < IDLE {
-                self.gaps.push((self.latencies.len() - 1, gap));
+                self.gaps.push((self.count() - 1, gap));
             }
         }
         self.last_shown = Some(shown);
+        if self.latencies.len() > KEPT {
+            self.latencies.drain(..KEPT / 2);
+            self.dropped += KEPT / 2;
+            let dropped = self.dropped;
+            self.gaps.retain(|(i, _)| *i >= dropped);
+        }
     }
 
     pub fn count(&self) -> usize {
-        self.latencies.len()
+        self.dropped + self.latencies.len()
     }
 
     /// The renders since the last report, every `REPORT_EVERY`; `None` before that.
     pub fn due(&mut self) -> Option<String> {
-        if self.latencies.len() < self.reported + REPORT_EVERY {
+        if self.count() < self.reported + REPORT_EVERY {
             return None;
         }
         let from = self.reported;
-        self.reported = self.latencies.len();
+        self.reported = self.count();
         Some(self.summary(from, "last notches"))
     }
 
@@ -233,8 +285,9 @@ impl Notches {
 
     /// As `summary`, over the renders from `from` up to `to`.
     pub fn summary_between(&self, from: usize, to: usize, title: &str) -> String {
-        let end = to.min(self.latencies.len());
-        let latencies = &self.latencies[from.min(end)..end];
+        let end = to.min(self.count());
+        let kept = |i: usize| i.clamp(self.dropped, end.max(self.dropped)) - self.dropped;
+        let latencies = &self.latencies[kept(from.min(end))..kept(end)];
         let gaps: Vec<Duration> = self.gaps.iter().filter(|(i, _)| *i > from && *i < end).map(|(_, g)| *g).collect();
         let mut out = format!("{title}: {} notch renders", latencies.len());
         if latencies.is_empty() {
@@ -306,66 +359,4 @@ impl Centiles {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn notches(latencies_ms: &[u64], gap_ms: u64) -> Notches {
-        let mut n = Notches::default();
-        let start = Instant::now();
-        for (i, l) in latencies_ms.iter().enumerate() {
-            n.record(Duration::from_millis(*l), start + Duration::from_millis(gap_ms * i as u64));
-        }
-        n
-    }
-
-    #[test]
-    fn the_cadence_counts_the_beats_and_the_stalls() {
-        let steady = notches(&[3; 31], 33);
-        let line = steady.cadence(0);
-        assert!(line.contains("30 gaps") && line.contains("30 within 5 ms of 33.3 ms, 0 past 50 ms"), "{line}");
-        // Twin: one render held back 60 ms is a stall and leaves the beat.
-        let mut stalled = notches(&[3; 10], 33);
-        stalled.record(Duration::from_millis(3), stalled.last_shown.unwrap() + Duration::from_millis(60));
-        let line = stalled.cadence(0);
-        assert!(line.contains("9 within 5 ms of 33.3 ms, 1 past 50 ms"), "{line}");
-    }
-
-    #[test]
-    fn the_centiles_read_the_slow_tail_and_the_gaps_between_frames() {
-        // A hundred notches at 5 ms and two at 40 ms: the median stays, the 99th centile sees them.
-        let mut latencies = vec![5u64; 100];
-        latencies.extend([40, 40]);
-        let n = notches(&latencies, 10);
-        let text = n.summary(0, "drag");
-        assert!(text.starts_with("drag: 102 notch renders"), "{text}");
-        assert!(text.contains("p50 5.0 ms, p99 40.0 ms, worst 40.0 ms"), "{text}");
-        assert!(text.contains("worst gap 10.0 ms, 101 of 101 past 8.3 ms"), "{text}");
-        // Twin: at 8 ms apart no frame is past the budget.
-        let quick = notches(&latencies, 8);
-        assert!(quick.summary(0, "drag").contains("0 of 101 past 8.3 ms"));
-    }
-
-    #[test]
-    fn a_rest_between_two_drags_is_no_gap_and_a_report_covers_its_own_window() {
-        let mut n = Notches::default();
-        let start = Instant::now();
-        n.record(Duration::from_millis(3), start);
-        n.record(Duration::from_millis(3), start + Duration::from_secs(5));
-        assert!(n.summary(0, "x").contains("no gap"), "a five-second rest is not a frame");
-        // Twin: the same two renders 20 ms apart are a gap.
-        let mut m = Notches::default();
-        m.record(Duration::from_millis(3), start);
-        m.record(Duration::from_millis(3), start + Duration::from_millis(20));
-        assert!(m.summary(0, "x").contains("worst gap 20.0 ms"));
-
-        let mut r = notches(&vec![2; REPORT_EVERY - 1], 5);
-        assert!(r.due().is_none());
-        r.record(Duration::from_millis(9), Instant::now() + Duration::from_secs(9));
-        let report = r.due().expect("a report at the hundred-and-twentieth notch");
-        assert!(report.contains(&format!("{REPORT_EVERY} notch renders")), "{report}");
-        assert!(r.due().is_none(), "the next one waits for another window");
-        let since = r.count();
-        r.record(Duration::from_millis(7), Instant::now() + Duration::from_secs(20));
-        assert!(r.summary(since, "bench").contains("1 notch renders; end to end p50 7.0 ms"));
-    }
-}
+mod tests;

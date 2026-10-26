@@ -111,7 +111,7 @@ pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
         return Err(if e.kind() == io::ErrorKind::AlreadyExists { Refused::Taken } else { Refused::Io(e) });
     }
     drop(held);
-    std::fs::rename(&staged, destination).map_err(|e| {
+    oni_settings::atomic::renamed(&staged, destination).map_err(|e| {
         let _ = std::fs::remove_file(&staged);
         if std::fs::metadata(destination).is_ok_and(|m| m.len() == 0) {
             let _ = std::fs::remove_file(destination);
@@ -123,7 +123,7 @@ pub fn create(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
 /// A file ONI made before, swapped whole: until the rename lands the earlier one stays as it was.
 pub fn replace(destination: &Path, bytes: &[u8]) -> Result<(), Refused> {
     let staged = staged(destination, bytes)?;
-    std::fs::rename(&staged, destination).map_err(|e| {
+    oni_settings::atomic::renamed(&staged, destination).map_err(|e| {
         let _ = std::fs::remove_file(&staged);
         Refused::Io(e)
     })

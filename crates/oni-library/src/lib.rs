@@ -63,7 +63,7 @@ pub fn write_atomically(path: &std::path::Path, bytes: &[u8]) -> std::io::Result
         let mut file = std::fs::File::create(&temporary)?;
         file.write_all(bytes)?;
         file.sync_all()?;
-        std::fs::rename(&temporary, path)
+        oni_settings::atomic::renamed(&temporary, path)
     })();
     if result.is_err() {
         let _ = std::fs::remove_file(&temporary);

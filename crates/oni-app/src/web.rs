@@ -51,20 +51,48 @@ pub fn post_json(url: &str, body: String) -> Result<u16, String> {
     })
 }
 
-/// `URLSession.download(from:)`: the file written into `folder` under the link's own name.
-pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
+/// Where a download from `url` lands: the link's last name made one portable file inside `folder`,
+/// as a decoded `%5C` or `C:` would lead a Windows path out of it.
+fn landing(url: &str, folder: &Path) -> PathBuf {
     let name = url::Url::parse(url)
         .ok()
         .map(|u| oni_colour::paper_source::decoded_path(&u))
-        .and_then(|p| p.rsplit('/').next().map(str::to_owned))
+        .and_then(|p| p.rsplit('/').next().map(oni_library::file_names::portable))
         .filter(|n| !n.is_empty())
         .unwrap_or_else(|| "download".into());
+    oni_library::file_names::inside(folder, &name).unwrap_or_else(|| folder.join("download"))
+}
+
+/// `URLSession.download(from:)`: the file written into `folder` under the link's own name.
+pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
+    let path = landing(url, folder);
     let bytes = run(async {
         let response = client()?.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
         response.bytes().await.map_err(|e| e.to_string())
     })?;
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
-    let path = folder.join(name);
     std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
     Ok(path)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_download_lands_inside_its_folder_whatever_the_link_spells() {
+        let folder = Path::new("/scratch/paper-download-1");
+        for url in [
+            "https://cdn.shopify.com/x/..%5C..%5C..%5CUsers%5CPublic%5Cfoo.icc.zip",
+            "https://cdn.shopify.com/x/C:%5CUsers%5Cfoo.icc",
+            "https://cdn.shopify.com/x/..",
+        ] {
+            let path = landing(url, folder);
+            assert_eq!(path.parent(), Some(folder), "{url} → {}", path.display());
+            let name = path.file_name().unwrap().to_string_lossy().into_owned();
+            assert!(!name.contains(['\\', ':', '/']) && name != "..", "{url} → {name}");
+        }
+        // Twin: a plain link keeps its own name.
+        assert_eq!(landing("https://www.example.com/profiles/Hahnemuhle%20PhotoRag.icc", folder), folder.join("Hahnemuhle PhotoRag.icc"));
+    }
 }

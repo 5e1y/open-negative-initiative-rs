@@ -75,6 +75,14 @@ impl Ctl {
         self.rewatch();
     }
 
+    /// `during` run with every watch let go, as Windows renames no folder a watch holds or lies under.
+    pub(in crate::app) fn unwatched<R>(&self, during: impl FnOnce() -> R) -> R {
+        let released = self.state.borrow().nav.fresh.watch.as_ref().map(Watch::released);
+        let done = during();
+        drop(released);
+        done
+    }
+
     /// Watching on or off, for a check that proves the window's return alone.
     pub fn set_watching(&self, on: bool) {
         {
