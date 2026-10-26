@@ -1,6 +1,6 @@
 // Pieces at fixed places for the window checks that click or read them: fields and a tab bar, a scrolled
-// page, a step keycap, a field's lip three ways, a plate, and fields and pickers to press beside.
-import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields } from "ds.slint";
+// page, a step keycap, a field's lip three ways, a plate, fields and pickers to press beside, a submenu.
+import { Space, FieldStyle, RowStyle, ShellStyle, ScannerStyle, SectionStyle, AppWindow, TextField, Tabs, Scroller, Row, Section, Label, TextRole, Tone, Button, ButtonSize, ButtonGroup, ButtonStyle, RenameField, KeyMonitor, Picker, DateFields, Menu, MenuLine, MenuState, MenuStyle } from "ds.slint";
 
 export component FieldProbe inherits AppWindow {
     in-out property <string> first <=> one.text;
@@ -240,4 +240,64 @@ export component OutsideProbe inherits AppWindow {
         }
     }
     init => { keys.focus(); }
+}
+
+// A context menu dropped where the check asks: an opener of three lines between plain lines, then an
+// opener of one, whose submenus it lays as Rust does.
+export component SubmenuProbe inherits AppWindow {
+    title: "ONI Submenu Probe";
+    out property <int> open: root.state.open;
+    out property <int> lit: root.state.lit;
+    out property <int> sub-lit: root.state.sub-lit;
+    out property <bool> turned: root.state.turned;
+    out property <bool> sub-shown: root.state.open >= 0;
+    out property <bool> menu-open: menu.is-open;
+    out property <int> asked;
+    out property <int> chosen: -1;
+    out property <int> sub-chosen: -1;
+    // Where the lines and the submenu lie in the window, so the check aims its pointer.
+    out property <length> line-x: root.at-x + Space.l;
+    out property <length> line-top: root.at-y + Space.xs;
+    out property <length> line-height: ButtonStyle.height;
+    out property <length> span: MenuStyle.width;
+    out property <length> sub-left: root.at-x - root.state.lead-x + root.state.sub-x;
+    out property <length> sub-top: root.at-y + root.state.sub-y;
+    property <MenuState> state: { lit: -1, open: -1, sub-lit: -1 };
+    property <length> at-x;
+    property <length> at-y;
+    property <[MenuLine]> subs;
+    public function drop(x: length, y: length) {
+        root.at-x = x;
+        root.at-y = y;
+        root.asked = 0;
+        root.chosen = -1;
+        root.sub-chosen = -1;
+        root.state = { lit: -1, open: -1, sub-lit: -1 };
+        menu.show();
+    }
+    min-width: 0;
+    min-height: 0;
+    preferred-width: 800px;
+    preferred-height: 500px;
+    menu := Menu {
+        anchor-x: root.at-x;
+        y: root.at-y;
+        window-x: root.at-x;
+        window-y: root.at-y;
+        lines: [
+            { text: "Plain", enabled: true },
+            { text: "Add to", enabled: true, opens: true },
+            { text: "Middle", enabled: true },
+            { text: "Last", enabled: true },
+            { text: "Remove from", enabled: true, opens: true },
+        ];
+        sub-lines: root.subs;
+        chosen(i) => { root.chosen = i; self.close(); }
+        opened(i) => {
+            root.asked += 1;
+            root.subs = i == 1 ? [{ text: "One", enabled: true }, { text: "Two", enabled: true }, { text: "Three", enabled: true }] : i == 4 ? [{ text: "Only", enabled: true }] : [];
+        }
+        sub-chosen(j) => { root.sub-chosen = j; self.close(); }
+        state-changed(state) => { root.state = state; }
+    }
 }

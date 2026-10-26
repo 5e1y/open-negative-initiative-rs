@@ -1,0 +1,16 @@
+// The window every screen and probe opens in.
+import { Colour, Type, ShellStyle } from "theme.slint";
+import { Bounds } from "outside.slint";
+
+// The window: the ground, the font, the floor the Swift app sets, its size kept for a submenu's edge.
+export component AppWindow inherits Window {
+    min-width: ShellStyle.min-width;
+    min-height: ShellStyle.min-height;
+    preferred-width: ShellStyle.min-width;
+    preferred-height: ShellStyle.min-height;
+    background: Colour.ground;
+    default-font-family: Type.family;
+    init => { Bounds.width = self.width; Bounds.height = self.height; }
+    changed width => { Bounds.width = self.width; }
+    changed height => { Bounds.height = self.height; }
+}

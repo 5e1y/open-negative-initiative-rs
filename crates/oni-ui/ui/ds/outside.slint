@@ -13,3 +13,9 @@ export component KeyMonitor inherits FocusScope {
     property <int> released: Outside.released;
     changed released => { self.focus(); }
 }
+
+// The window's size, which the window keeps: a submenu turns back at its edge.
+export global Bounds {
+    in-out property <length> width;
+    in-out property <length> height;
+}

@@ -2,7 +2,7 @@
 import "../../fonts/Inter.ttf";
 import "../../fonts/Enriqueta-Regular.ttf";
 import { DS } from "tokens.slint";
-import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, SplitStyle, ShellStyle, ScannerStyle } from "theme.slint";
+import { Colour, Space, Radius, Stroke, Type, Motion, ButtonStyle, TipStyle, CardStyle, SplitStyle, ScannerStyle } from "theme.slint";
 import { Outward, Inward } from "depth.slint";
 
 // `note` is a block's wrapped line in the tertiary ink, the size of a value.
@@ -272,16 +272,6 @@ export component Inset inherits Inward {
         alignment: start;
         @children
     }
-}
-
-// The window: the ground, the font, the floor the Swift app sets.
-export component AppWindow inherits Window {
-    min-width: ShellStyle.min-width;
-    min-height: ShellStyle.min-height;
-    preferred-width: ShellStyle.min-width;
-    preferred-height: ShellStyle.min-height;
-    background: Colour.ground;
-    default-font-family: Type.family;
 }
 
 // What a hovered control says: a line of text; as a help mark's note a card, its clip above, 4:3,

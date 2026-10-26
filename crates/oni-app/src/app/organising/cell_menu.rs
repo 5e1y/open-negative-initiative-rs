@@ -75,10 +75,44 @@ impl Ctl {
                 project::member_projects(&s.org.projects, &s.reach(), &scope).into_iter().map(|p| (p.id, p.name.clone())).collect();
             s.org.menu_lists = (projects, member);
             s.org.menu = items;
+            s.org.sub_menu.clear();
             s.org.menu_path = path;
         }
-        w.global::<Library>().set_menu_lines(ModelRc::new(VecModel::from(lines)));
+        let lib = w.global::<Library>();
+        lib.set_menu_lines(ModelRc::new(VecModel::from(lines)));
+        lib.set_menu_sub_lines(ModelRc::default());
         true
+    }
+
+    /// The submenu an opener's line lays beside the menu, or none for any other line.
+    pub(in crate::app) fn menu_opened(self: &Rc<Self>, i: Option<usize>) {
+        let opener = i.and_then(|i| self.state.borrow().org.menu.get(i).cloned());
+        let sub: Vec<Item> = match opener {
+            Some(Item { act: Act::Cell(line), line: shown }) if shown.enabled && matches!(line.action, CellAction::AddTo | CellAction::RemoveFrom) => {
+                let (projects, member) = self.state.borrow().org.menu_lists.clone();
+                let none = HashSet::new();
+                let facts = CellFacts { missing: &none, rolled: &none, can_paste: false, projects, member_of: member };
+                organise::submenu(&line, &facts)
+                    .into_iter()
+                    .map(|l| Item { line: menu_line(&l.text, true, false, false), act: Act::Cell(l) })
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
+        let lines: Vec<MenuLine> = sub.iter().map(|i| i.line.clone()).collect();
+        self.state.borrow_mut().org.sub_menu = sub;
+        if let Some(w) = self.window() {
+            w.global::<Library>().set_menu_sub_lines(ModelRc::new(VecModel::from(lines)));
+        }
+    }
+
+    /// A line of the submenu shown, which closes the menu.
+    pub(in crate::app) fn menu_sub_chosen(self: &Rc<Self>, i: usize) -> bool {
+        let item = self.state.borrow().org.sub_menu.get(i).cloned();
+        if let Some(Item { act: Act::Cell(line), .. }) = item {
+            self.cell_act(line);
+        }
+        false
     }
 
     /// A line of the open menu; answers whether the menu stays, which a submenu's opener does.
@@ -90,15 +124,8 @@ impl Ctl {
         }
         match item.act {
             Act::Cell(line) if matches!(line.action, CellAction::AddTo | CellAction::RemoveFrom) => {
-                let (projects, member) = self.state.borrow().org.menu_lists.clone();
-                let none = HashSet::new();
-                let facts = CellFacts { missing: &none, rolled: &none, can_paste: false, projects, member_of: member };
-                let sub: Vec<Item> = organise::submenu(&line, &facts)
-                    .into_iter()
-                    .map(|l| Item { line: menu_line(&l.text, true, false, false), act: Act::Cell(l) })
-                    .collect();
-                let path = self.state.borrow().org.menu_path.clone();
-                return self.open_menu(sub, path);
+                self.menu_opened(Some(i));
+                return true;
             }
             Act::Cell(line) => self.cell_act(line),
             Act::Edit(path) => self.open_in_editor(&path),

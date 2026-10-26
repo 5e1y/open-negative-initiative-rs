@@ -147,9 +147,14 @@ export component Tree inherits Surface {
         menu.show();
     }
     menu := Menu {
-        x: root.menu-x;
+        anchor-x: root.menu-x;
         y: root.menu-y;
+        window-x: root.absolute-position.x + root.menu-x;
+        window-y: root.absolute-position.y + root.menu-y;
         lines: Library.menu-lines;
+        sub-lines: Library.menu-sub-lines;
         chosen(i) => { if (!Library.menu-chosen(i)) { menu.close(); } }
+        opened(i) => { Library.menu-opened(i); }
+        sub-chosen(i) => { if (!Library.menu-sub-chosen(i)) { menu.close(); } }
     }
 }

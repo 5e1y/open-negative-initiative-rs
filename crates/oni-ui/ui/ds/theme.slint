@@ -247,6 +247,8 @@ export global SheetStyle {
 
 export global MenuStyle {
     out property <length> width: DS.control-export-fields-width;
+    // How long the pointer rests on a line before its submenu opens or the open one closes, as AppKit's.
+    out property <duration> sub-delay: 200ms;
 }
 
 export global TipStyle {
