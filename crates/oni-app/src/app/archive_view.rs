@@ -3,6 +3,7 @@
 use super::*;
 
 mod adding;
+mod landing;
 
 impl Ctl {
     // MARK: - The archive
@@ -48,85 +49,6 @@ impl Ctl {
         self.read_folder(generation, folder, index_path);
     }
 
-    /// The read on its own thread and its own connection; each landing comes back to this thread.
-    pub(super) fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
-        let (current, computer) = {
-            let mut s = self.state.borrow_mut();
-            s.org.reads += 1;
-            (s.generation.clone(), s.nav.computer.clone())
-        };
-        std::thread::Builder::new()
-            .name("library".into())
-            .spawn(move || {
-                let Some(index) = LibraryIndex::open(&index_path) else {
-                    return with_shell(|c| c.told(tr("Something Went Wrong"), tr("The library index cannot be opened")));
-                };
-                let alive = || current.load(Ordering::Relaxed) == generation;
-                let kept = index_path.parent().map(|caches| caches.join("Surveys"));
-                let place = library::Place { computer: &computer, kept: kept.as_deref() };
-                library::read_rows(&folder, &index, &place, &alive, &mut |rows, done, survey| {
-                    let survey = survey.clone();
-                    with_shell(move |c| c.take_rows(generation, rows, done, survey));
-                });
-            })
-            .expect("library thread");
-    }
-
-    /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.
-    pub(super) fn take_rows(self: &Rc<Self>, generation: u64, rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>) {
-        {
-            let mut s = self.state.borrow_mut();
-            if s.generation.load(Ordering::Relaxed) != generation {
-                return;
-            }
-            s.copies = s.index.as_ref().map(LibraryIndex::copies).unwrap_or_default();
-            s.fingerprints = rows.iter().map(|e| (e.path.clone(), s.tile_key(e))).collect();
-            s.rows = rows;
-            s.survey = survey;
-            s.read_done = done;
-            s.landed_presence();
-        }
-        self.lay_archive();
-        if done {
-            self.tidy_once();
-            self.probe_presence();
-            self.navigator_read();
-            let order = self.state.borrow().order.clone();
-            self.offer_neutral_decode_notice(&order);
-            self.fill();
-            let opening = self.state.borrow_mut().opening.take();
-            let found = opening.and_then(|o| {
-                let s = self.state.borrow();
-                if o.is_empty() { s.order.first().cloned() } else { s.order.iter().find(|p| **p == o).cloned() }
-            });
-            if let Some(path) = found {
-                self.open_in_editor(&path);
-            }
-            self.wrapped_after_read();
-            self.read_once_settled();
-        }
-    }
-
-    /// A read that left files still being written reads the folder again once they may rest, so a
-    /// copy that ends with no further change is still printed whole.
-    fn read_once_settled(self: &Rc<Self>) {
-        let (settling, generation) = {
-            let s = self.state.borrow();
-            (!s.survey.settling.is_empty(), s.generation.load(Ordering::Relaxed))
-        };
-        if !settling {
-            return;
-        }
-        let me = Rc::downgrade(self);
-        Timer::single_shot(oni_library::roots::SETTLE * 2, move || {
-            if let Some(me) = me.upgrade()
-                && me.state.borrow().generation.load(Ordering::Relaxed) == generation
-            {
-                me.read_again();
-            }
-        });
-    }
-
     /// A roll marker this app just wrote, laid as the survey would have read it, with no read back.
     pub(super) fn roll_written(&self, folder: &str, film: Option<oni_settings::Film>) {
         let mut s = self.state.borrow_mut();
@@ -148,14 +70,21 @@ impl Ctl {
         };
         let (title, stock) = {
             let mut s = self.state.borrow_mut();
-            let mut archive = Archive::from_rows(&folder, &s.rows, &s.survey, s.filter);
             let fresh = std::mem::take(&mut s.reveal.fresh);
-            if let Some(old) = s.archive.as_ref().filter(|_| !fresh) {
-                let folded = old.folded();
-                archive.expanded.retain(|id| !folded.contains(id));
+            let (old, staged) = (s.archive.take(), s.org.staged.take());
+            let folded = old.as_ref().filter(|_| !fresh).map(Archive::folded);
+            let (mut archive, relaid) = Archive::relaid(old, staged, &folder, &s.rows, &s.survey, s.filter);
+            match (relaid, folded) {
+                (library::Relaid::Cut, Some(folded)) => archive.keep_folded(&folded),
+                (library::Relaid::Cut, None) => {}
+                _ if fresh => archive.unfold_every(),
+                _ => {}
             }
-            let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
-            s.store.set_archive(every);
+            // Rows alike but for their medals name the same photos: the store's list stands.
+            if relaid == library::Relaid::Cut {
+                let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
+                s.store.set_archive(every);
+            }
             let first = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
             s.archive = Some(archive);
             first
@@ -244,6 +173,7 @@ impl Ctl {
     pub(super) fn thumb_landed(&self, pass: Option<u64>, fingerprint: String, drawn: Result<(Vec<u8>, usize, usize), String>, name: String) {
         let failure = {
             let mut s = self.state.borrow_mut();
+            s.org.thumbnails_landed += 1;
             match pass {
                 Some(g) if g == s.generation.load(Ordering::Relaxed) => {
                     s.painted.0 += 1;
@@ -366,24 +296,37 @@ impl Ctl {
         self.pin_column(tree_column::Which::Archive);
     }
 
-    /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll.
+    /// The tree's rows relit after a pick, in place: the list keeps its rows and its scroll, and
+    /// only a row whose light changed is read from the model.
     pub(super) fn mark_tree(&self) {
         let Some(w) = self.window() else { return };
         let model = w.global::<Library>().get_rows();
-        let s = self.state.borrow();
-        if model.row_count() != s.tree.paths.len() {
-            drop(s);
-            return self.publish_tree();
-        }
-        for (i, path) in s.tree.paths.iter().enumerate() {
-            let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
-            let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
+        let relit: Vec<(usize, bool)> = {
+            let mut guard = self.state.borrow_mut();
+            let s = &mut *guard;
+            if model.row_count() != s.tree.paths.len() || s.tree.marked.len() != s.tree.paths.len() {
+                drop(guard);
+                return self.publish_tree();
+            }
+            let mut relit = Vec::new();
+            for (i, path) in s.tree.paths.iter().enumerate() {
+                let picked = s.org.tree_ids.get(i).is_some_and(|id| s.org.tree_pick.selection.contains(id));
+                let marked = picked || path.as_deref().is_some_and(|p| s.tree_marks(p));
+                if s.tree.marked[i] != marked {
+                    relit.push((i, marked));
+                }
+            }
+            for &(i, marked) in &relit {
+                s.tree.marked[i] = marked;
+            }
+            relit
+        };
+        for (i, marked) in relit {
             if let Some(mut row) = model.row_data(i).filter(|r| r.selected != marked) {
                 row.selected = marked;
                 model.set_row_data(i, row);
             }
         }
-        drop(s);
         self.pin_column(tree_column::Which::Archive);
     }
 }

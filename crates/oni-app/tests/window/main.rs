@@ -73,6 +73,7 @@ mod told;
 mod toolbar;
 mod tree_hand;
 mod transition;
+mod tree_cost;
 mod tree_leftovers;
 mod updates;
 mod visible;
@@ -183,6 +184,8 @@ const CHECKS: &[(&str, fn())] = &[
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("transition::a_new_camera_is_matched_once_behind_the_sheet", transition::a_new_camera_is_matched_once_behind_the_sheet),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),
+    ("tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree", tree_cost::opening_a_photo_or_a_thumbnail_landing_cuts_no_tree),
+    ("tree_cost::the_tree_s_cost_on_a_big_folder", tree_cost::the_tree_s_cost_on_a_big_folder),
     ("tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift", tree_leftovers::the_trees_pin_their_open_row_lay_thumbnails_and_take_a_drop_as_swift),
     ("updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded", updates::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded),
     ("locate::locate_follows_favourite_rows_and_projects", locate::locate_follows_favourite_rows_and_projects),

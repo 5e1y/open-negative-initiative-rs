@@ -84,7 +84,8 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
         entries.extend(waiting.iter().chain(unreadable).map(|p| library::waiting(p, survey.dated.get(p).copied())));
         entries
     };
-    let mut waiting: VecDeque<String> = library::unresolved(&survey.images, index).into();
+    let held = index.paths_under(&folder);
+    let mut waiting: VecDeque<String> = survey.images.iter().filter(|m| !held.contains(*m)).cloned().collect();
     land(shown(index, &waiting, &unreadable), waiting.is_empty() && again.is_empty(), &survey);
     if waiting.is_empty() && again.is_empty() {
         return;
@@ -184,7 +185,8 @@ pub fn refresh(index: &LibraryIndex, paths: &[String]) {
     let _ = index.upsert_all(&entries);
 }
 
-/// The index's rows for the gallery, the ONI Trash's and the composed passes left out.
+/// The index's rows for the gallery, the ONI Trash's and the composed passes left out: a pass's
+/// lead lies beside it, so the folder's rows alone tell which passes it composes.
 pub fn shown_under(index: &LibraryIndex, folder: &str) -> Vec<Entry> {
-    library_index::shown(&index.all()).into_iter().filter(|e| paths::holds(folder, &e.path)).collect()
+    library_index::shown(&index.under(folder))
 }

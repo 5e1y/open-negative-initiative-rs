@@ -18,8 +18,8 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             let Some(archive) = s.archive.as_mut() else { return };
-            let Some(row) = archive.rows().get(i).cloned() else { return };
-            archive.toggle(&row.id);
+            let Some(id) = archive.row(i).map(|r| r.id.clone()) else { return };
+            archive.toggle(&id);
         }
         self.publish_tree();
     }
@@ -66,8 +66,8 @@ impl Ctl {
         let (path, photo) = {
             let s = self.state.borrow();
             let Some(archive) = s.archive.as_ref() else { return };
-            let Some(row) = archive.rows().get(i).cloned() else { return };
-            match row.id {
+            let Some(row) = archive.row(i) else { return };
+            match row.id.clone() {
                 NodeId::Photo(path) => (Some(path), true),
                 id => (archive_tree::find(&archive.nodes, &id).and_then(archive_tree::first_path).map(str::to_owned), false),
             }
@@ -92,7 +92,7 @@ impl Ctl {
     /// `takeOff` on a photo row's double click; a folder's is its first click again, and never
     /// types over its name, which its menu renames.
     pub(super) fn row_double_clicked(self: &Rc<Self>, i: usize) {
-        let id = self.state.borrow().archive.as_ref().and_then(|a| a.rows().get(i).map(|r| r.id.clone()));
+        let id = self.state.borrow().archive.as_ref().and_then(|a| a.row(i).map(|r| r.id.clone()));
         if let Some(NodeId::Photo(path)) = id {
             self.open_in_editor(&path);
         }

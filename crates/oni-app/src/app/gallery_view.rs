@@ -65,7 +65,6 @@ impl Ctl {
         let lib = w.global::<Library>();
         let mut s = self.state.borrow_mut();
         let range = s.layout.cells(s.scroll, s.grid.1);
-        let flags = Ctl::tile_flags(&s);
         // A cell reads the folder, never renders: a photo with no file waits for the pass or an edit.
         let mut asking = Vec::new();
         for i in range.clone() {
@@ -78,6 +77,7 @@ impl Ctl {
             s.asked.insert(fingerprint.clone());
             let _ = s.disk.send(fingerprint);
         }
+        let flags = Ctl::tile_flags(&s);
         let tiles: Vec<Tile> = range
             .clone()
             .filter_map(|i| {

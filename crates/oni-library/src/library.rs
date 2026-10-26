@@ -6,7 +6,6 @@ use crate::relink;
 use oni_settings::codec::Envelope;
 use oni_settings::{Date, sidecar};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -102,14 +101,13 @@ pub fn indexed(path: &str) -> Option<Entry> {
 /// The members an index does not hold yet, everything a rebuild skipped because the disk was not
 /// there: read on every reload, so plugging the disk back in is the whole repair.
 pub fn unresolved(members: &[String], index: &LibraryIndex) -> Vec<String> {
-    let held: HashSet<String> = index.all().into_iter().map(|e| e.path).collect();
+    let held = index.paths();
     members.iter().filter(|m| !held.contains(*m)).cloned().collect()
 }
 
 /// Rows an older build invented, removed so a library carrying them heals on its next open.
 pub fn drop_invented(index: &LibraryIndex) -> rusqlite::Result<usize> {
-    let invented: Vec<String> =
-        index.all().into_iter().filter(|e| e.fingerprint.starts_with(INVENTED_MARK)).map(|e| e.path).collect();
+    let invented = index.marked(INVENTED_MARK);
     for path in &invented {
         index.remove(path)?;
     }

@@ -45,8 +45,8 @@ pub(super) fn prepare(connection: &Connection) -> rusqlite::Result<()> {
 impl LibraryIndex {
     /// Every stamp at `folder` or under it, by path.
     pub fn stamps_under(&self, folder: &str) -> HashMap<String, Stamped> {
-        let Ok(mut statement) = self.connection.prepare_cached("SELECT path, size, modified, sidecar FROM stamps") else { return HashMap::new() };
-        let Ok(rows) = statement.query_map([], |r| Ok((r.get::<_, String>(0)?, Stamped { size: r.get(1)?, modified: r.get(2)?, sidecar: r.get(3)? }))) else {
+        let Ok(mut statement) = self.connection.prepare_cached("SELECT path, size, modified, sidecar FROM stamps WHERE path LIKE ? ESCAPE '\\'") else { return HashMap::new() };
+        let Ok(rows) = statement.query_map([super::forget::head_pattern(folder)], |r| Ok((r.get::<_, String>(0)?, Stamped { size: r.get(1)?, modified: r.get(2)?, sidecar: r.get(3)? }))) else {
             return HashMap::new();
         };
         rows.filter_map(Result::ok).filter(|(p, _)| holds(folder, p)).collect()

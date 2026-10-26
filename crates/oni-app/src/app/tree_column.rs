@@ -33,6 +33,8 @@ pub(super) struct Laid {
     pub depths: Vec<usize>,
     pub open: Vec<bool>,
     pub photos: Vec<bool>,
+    /// Whether each row is lit as the model holds it, so a pick relights the rows it changed alone.
+    pub marked: Vec<bool>,
 }
 
 impl State {
@@ -133,6 +135,7 @@ impl Ctl {
         let laid = s.laid_mut(which);
         laid.pictures = rows.iter().map(|r| r.thumb.then(|| r.picture.size().width > 0)).collect();
         laid.open = rows.iter().map(|r| r.expandable && r.expanded).collect();
+        laid.marked = rows.iter().map(|r| r.selected).collect();
         (laid.paths, laid.frames, laid.total, laid.depths, laid.photos) = (paths, frames, total, depths, photos);
         drop(guard);
         let lib = w.global::<Library>();

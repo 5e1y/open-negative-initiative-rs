@@ -7,7 +7,7 @@ use std::path::Path;
 use unicode_normalization::{IsNormalized, UnicodeNormalization, is_nfc_quick};
 
 mod order;
-pub use order::standard_order;
+pub use order::{NameKey, standard_order};
 
 /// The path in the archive's spelling: on Windows each `\` a `/`; on macOS composed, which every Mac
 /// volume resolves to the same file; elsewhere as written, the disk telling the two forms apart.

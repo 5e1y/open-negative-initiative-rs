@@ -33,7 +33,14 @@ impl State {
     pub(in crate::app) fn landed_presence(&mut self) {
         let survey = self.survey.clone();
         for e in &self.rows {
-            self.org.presence.insert(e.path.clone(), survey.presence(&e.path));
+            let state = survey.presence(&e.path);
+            // Each path's key kept, never cloned again, as every landing passes every row.
+            match self.org.presence.get_mut(&e.path) {
+                Some(held) => *held = state,
+                None => {
+                    self.org.presence.insert(e.path.clone(), state);
+                }
+            }
         }
         self.org.opened_presence = self.opened.as_deref().map(|o| survey.presence(o)).unwrap_or_default();
     }

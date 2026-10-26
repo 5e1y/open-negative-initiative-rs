@@ -3587,5 +3587,47 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 690,
+    "type": "perf",
+    "title": "The archive's tree is cut again only when its shape moves",
+    "status": "done",
+    "detail": "Archive keeps what it was cut from (folder, rows, survey, filter) and its rows laid flat. A lay on the same rows and survey keeps it (a read again on focus, opening a photo, a thumbnail landing); medals alone are set on its photos, groups and row captions in one walk; a filter alone cuts the groups again; anything else cuts it whole. The survey is compared on what a tree reads (images, rolls, folders, made, the JPEGs holding a sidecar), so an edit's sidecar moves no tree. The read's thread cuts each landing's archive, the copies and the tile keys, and the lay takes that archive when the rows held are its own. The rows are walked by reference, a folder's row no longer copying its subtree. library::cuts() counts the trees laid and the row lists laid flat; window check tree_cost (opening a photo, its thumbnail landing and a read that finds nothing new cut nothing; twins: a fold lays the rows again, a new folder cuts the tree) and unit checks of the delta with their twins."
+  },
+  {
+    "id": 691,
+    "type": "perf",
+    "title": "A folder's rows are read from the index by the folder's head, never the whole index",
+    "status": "done",
+    "detail": "LibraryIndex::under, paths_under and stamps_under query `path LIKE` the folder's ASCII head (escaped), which LIKE folds as a case-blind volume does, then trim with paths::holds; shown_under reads the folder's rows alone, a pass's lead lying beside it. unresolved reads the paths alone and drop_invented asks SQLite for the invented prints. A read and each medal no longer read 20000 rows of other folders into memory (M36). Check: the rows by head equal the whole index trimmed, accents, % and _ included, with its twin."
+  },
+  {
+    "id": 692,
+    "type": "perf",
+    "title": "Names weighed once for every sort of the tree and the survey",
+    "status": "done",
+    "detail": "paths::NameKey weighs a name once for standard_order (its steps, accents and composition kept lazily); a group's photos, a folder's subfolders, the survey's children and the navigator's listing sort on keys. A path under a folder named with an accent was weighed at every comparison: 7000 such paths sorted in 560 ms, now 16 ms. The tree and the gallery's groups are cut in one walk (folders::tree_and_groups, groups_of), the entries moved rather than copied twice, and paired cuts no stem when no lone JPEG is there. Checks: the key orders every pair as standard_order, a group lies in shot's order, the groups cut with the tree are the gallery's, each with its twin."
+  },
+  {
+    "id": 693,
+    "type": "perf",
+    "title": "A thumbnail landing reads the tile flags and relights only the tree rows that changed",
+    "status": "done",
+    "detail": "tile_flags is cut when lay_grid lays the bands and read after, rather than rebuilt for every photo at each publish_tiles; mark_tree compares each row's light with the one the model holds (Laid::marked) and reads only the rows that changed; State::selected looks its picks up in a set (M37); landed_presence keeps each path's key. On 7000 photos the thumbnail pass's interface time fell from 24.6 s to 14.1 s (dev profile), its longest landing from 181 ms to 77 ms."
+  },
+  {
+    "id": 694,
+    "type": "perf",
+    "title": "The roll's frames found outlive a lay that keeps them all",
+    "status": "done",
+    "detail": "EditorStore::set_archive_paths no longer forgets every roll's frames found at each lay_archive, which reread every sidecar (M32): a roll whose frames are all still there stays found, as Swift keeps measuredGroups; one that lost a frame is scanned again on the next ask. Check with its twin."
+  },
+  {
+    "id": 695,
+    "type": "test",
+    "title": "The tree's cost measured on a library of 7000 photos",
+    "status": "done",
+    "detail": "library::bench::tree_bench (cargo test -p oni-app --lib tree_bench -- --ignored --nocapture) times the survey, the index reads, the pairs, the tree, the groups, the row list and each event's share on 5000 photos in 200 folders, 2000 flat and 20000 rows elsewhere; window check tree_cost::the_tree_s_cost_on_a_big_folder (ONI_TREE_BENCH=1) times the interface thread's share of the read, the thumbnail pass, a read again, opening a photo, a fold and a medal in the app."
   }
 ]

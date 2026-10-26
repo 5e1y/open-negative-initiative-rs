@@ -10,8 +10,11 @@ use oni_library::{Entry, folders, paths};
 use oni_i18n::tr;
 use oni_settings::Medal;
 use oni_settings::film::film_stock;
+use std::cell::OnceCell;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 /// `absorb`'s landing pace: rows read for the folder on screen reach the gallery this often.
@@ -59,9 +62,24 @@ pub struct Archive {
     pub root: String,
     pub nodes: Vec<Node>,
     pub groups: Vec<Group>,
-    pub expanded: HashSet<NodeId>,
+    expanded: HashSet<NodeId>,
     /// Each RAW whose JPEG of a RAW+JPEG pair stands behind it, by path: one tile, marked.
     pub companions: HashMap<String, String>,
+    basis: Basis,
+    /// The rows as last laid flat, kept until a fold or a medal moves them.
+    laid: OnceCell<Vec<Row>>,
+}
+
+fn band(g: FilmGroup) -> Group {
+    let title = g.film.as_ref().map(|f| f.name.clone()).or(g.heading.clone()).unwrap_or_default();
+    let stock = g.film.as_ref().and_then(|f| film_stock(f.stock.as_deref())).map(|k| k.display_name.to_string()).unwrap_or_default();
+    // `RollHeaderContent`: the folders above the roll, then its own name.
+    let (caption, header) = (g.trail().unwrap_or_default(), g.heading_title());
+    let folder = match g.id {
+        oni_library::film_group::FilmKey::Folder(path) => Some(path),
+        _ => None,
+    };
+    Group { caption, header, title, stock, film: g.film, folder, entries: g.entries }
 }
 
 impl Archive {
@@ -76,36 +94,30 @@ impl Archive {
     /// The tree and groups of `folder`'s photos: `entries` are what the index shows, the survey the
     /// folders and rolls on the disk, so a folder made in the app shows before it holds a photo.
     /// `filter` keeps exactly one medal in the gallery, never a tier above, and leaves the tree whole.
-    pub fn from_rows(folder: &str, entries: &[Entry], survey: &Survey, filter: Option<Medal>) -> Archive {
+    pub fn from_rows(folder: &str, entries: &[Entry], survey: &Arc<Survey>, filter: Option<Medal>) -> Archive {
         let root = Some(oni_library::paths::parent(folder)).filter(|p| p != folder).unwrap_or_else(|| folder.to_string());
-        let rolls = &survey.rolls;
-        let (entries, companions) = folders::paired(entries, &survey.images, &survey.sidecars);
-        let entries = &entries[..];
-        let nodes = folders::tree(&root, entries, rolls, &survey.folders, &survey.made);
-        let filtered: Vec<Entry> = entries.iter().filter(|e| filter.is_none_or(|m| e.label == m)).cloned().collect();
-        let groups = folders::groups(&root, &filtered, rolls, &survey.made)
-            .into_iter()
-            .map(|g| {
-                let title = g.film.as_ref().map(|f| f.name.clone()).or(g.heading.clone()).unwrap_or_default();
-                let stock = g
-                    .film
-                    .as_ref()
-                    .and_then(|f| film_stock(f.stock.as_deref()))
-                    .map(|k| k.display_name.to_string())
-                    .unwrap_or_default();
-                // `RollHeaderContent`: the folders above the roll, then its own name.
-                let (caption, header) = (g.trail().unwrap_or_default(), g.heading_title());
-                let folder = match g.id {
-                    oni_library::film_group::FilmKey::Folder(path) => Some(path),
-                    _ => None,
-                };
-                Group { caption, header, title, stock, film: g.film, folder, entries: g.entries }
-            })
-            .collect();
+        let (paired, companions) = folders::paired(entries, &survey.images, &survey.sidecars);
+        let nodes = folders::tree(&root, &paired, &survey.rolls, &survey.folders, &survey.made);
+        let basis = Basis { folder: folder.to_owned(), rows: entries.to_vec(), survey: survey.clone(), filter };
+        let mut archive = Archive { root, nodes, groups: Vec::new(), expanded: HashSet::new(), companions, basis, laid: OnceCell::new() };
+        archive.groups = archive.cut_groups(&paired);
         // `openFolder`: every folder under the opened one starts unfolded, the opened one included.
-        let mut expanded = HashSet::new();
-        folder_ids(&nodes, &mut expanded);
-        Archive { root, nodes, groups, expanded, companions }
+        archive.unfold_every();
+        archive
+    }
+
+    /// The gallery's bands under the basis's filter: the tree's own groups unfiltered, else those
+    /// of the photos wearing the medal alone.
+    fn cut_groups(&self, paired: &[Entry]) -> Vec<Group> {
+        let survey = &self.basis.survey;
+        let groups = match self.basis.filter {
+            None => folders::groups_of(&self.root, &self.nodes, &survey.rolls),
+            Some(m) => {
+                let filtered: Vec<Entry> = paired.iter().filter(|e| e.label == m).cloned().collect();
+                folders::groups(&self.root, &filtered, &survey.rolls, &survey.made)
+            }
+        };
+        groups.into_iter().map(band).collect()
     }
 
     /// `expandAncestors`: every folder above `path` up to the opened one unfolds; answers whether
@@ -121,7 +133,45 @@ impl Archive {
             }
             folder = up;
         }
+        if added {
+            self.laid.take();
+        }
         added
+    }
+
+    /// Every folder unfolded, the opened one included, as a folder just opened lays them.
+    pub fn unfold_every(&mut self) {
+        let mut every = HashSet::new();
+        folder_ids(&self.nodes, &mut every);
+        self.set_expanded(every);
+    }
+
+    /// The nodes unfolded, folders at any depth.
+    pub fn expanded(&self) -> &HashSet<NodeId> {
+        &self.expanded
+    }
+
+    pub fn set_expanded(&mut self, expanded: HashSet<NodeId>) {
+        if self.expanded != expanded {
+            self.expanded = expanded;
+            self.laid.take();
+        }
+    }
+
+    /// One node unfolded more.
+    pub fn unfold(&mut self, id: NodeId) {
+        if self.expanded.insert(id) {
+            self.laid.take();
+        }
+    }
+
+    /// The nodes in `folded` folded again, as a hand left them.
+    pub fn keep_folded(&mut self, folded: &HashSet<NodeId>) {
+        let before = self.expanded.len();
+        self.expanded.retain(|id| !folded.contains(id));
+        if self.expanded.len() != before {
+            self.laid.take();
+        }
     }
 
     /// Every node a hand left folded, a folder at any depth included.
@@ -136,24 +186,41 @@ impl Archive {
         self.groups.iter().flat_map(|g| g.entries.iter()).collect()
     }
 
+    /// The rows laid flat, laid again only once a fold or the tree moved.
+    pub fn laid(&self) -> &[Row] {
+        self.laid.get_or_init(|| self.lay())
+    }
+
+    /// The row at `i` as laid.
+    pub fn row(&self, i: usize) -> Option<&Row> {
+        self.laid().get(i)
+    }
+
     pub fn rows(&self) -> Vec<Row> {
-        archive_tree::flatten(&self.nodes, &self.expanded, 0)
-            .into_iter()
-            .map(|(node, depth)| {
-                let id = node.id();
-                let expanded = self.expanded.contains(&id);
-                let count = node.count();
-                // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
-                match &node {
-                    Node::Photo(e) => Row { id, depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded, stock: None },
-                    Node::Folder { path, group, .. } => {
-                        let roll = group.as_ref().filter(|g| g.film.is_some());
-                        let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
-                        Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
-                    }
+        self.laid().to_vec()
+    }
+
+    fn lay(&self) -> Vec<Row> {
+        ROW_LISTS.fetch_add(1, Ordering::Relaxed);
+        let mut rows = Vec::new();
+        archive_tree::walk(&self.nodes, &self.expanded, 0, &mut |laid, depth| {
+            // `FilmRow.title`: a photo's whole file name, a folder's own name, extensions kept.
+            rows.push(match laid {
+                archive_tree::Laid::Photo(e) => {
+                    Row { id: NodeId::Photo(e.path.clone()), depth, title: paths::name(&e.path), caption: medal(e.label), kind: 2, expandable: false, expanded: false, stock: None }
                 }
-            })
-            .collect()
+                archive_tree::Laid::Folder(node) => {
+                    let id = node.id();
+                    let Node::Folder { path, group, .. } = node else { unreachable!("a folder's row lends its folder") };
+                    let count = node.count();
+                    let roll = group.as_ref().filter(|g| g.film.is_some());
+                    let title = roll.and_then(|g| g.film.as_ref()).map(|f| f.name.clone()).unwrap_or_else(|| paths::name(path));
+                    let expanded = self.expanded.contains(&id);
+                    Row { id, depth, title, caption: count.to_string(), kind: if roll.is_some() { 1 } else { 0 }, expandable: count > 0, expanded, stock: roll.map(default_stock) }
+                }
+            });
+        });
+        rows
     }
 
     /// Opens or closes a row's node; a photo row answers its path instead.
@@ -164,30 +231,10 @@ impl Archive {
         if !self.expanded.remove(id) {
             self.expanded.insert(id.clone());
         }
+        self.laid.take();
         None
     }
 
-    /// Records a label already written to the sidecar, so the tree and the tiles show it.
-    pub fn set_label(&mut self, path: &str, label: Medal) {
-        fn walk(nodes: &mut [Node], path: &str, label: Medal) {
-            for n in nodes {
-                match n {
-                    Node::Photo(e) if e.path == path => e.label = label,
-                    Node::Folder { group, children, .. } => {
-                        walk(children, path, label);
-                        for e in group.iter_mut().flat_map(|g| g.entries.iter_mut()).filter(|e| e.path == path) {
-                            e.label = label;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-        walk(&mut self.nodes, path, label);
-        for e in self.groups.iter_mut().flat_map(|g| g.entries.iter_mut()).filter(|e| e.path == path) {
-            e.label = label;
-        }
-    }
 }
 
 fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {
@@ -228,8 +275,13 @@ pub fn medal_of(index: i32) -> Medal {
 }
 
 mod reading;
+mod relaid;
+pub use relaid::{Relaid, cuts};
+use relaid::{Basis, ROW_LISTS};
 pub use reading::{Land, Place, read_rows, read, refreshed, refresh, shown_under};
 pub mod tidy;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod bench;

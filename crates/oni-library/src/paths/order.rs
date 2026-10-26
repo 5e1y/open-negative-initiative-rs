@@ -94,6 +94,65 @@ pub fn standard_order(a: &str, b: &str) -> Ordering {
         .then_with(|| a.nfc().cmp(b.nfc()))
 }
 
+/// A name's place in `standard_order`, weighed once and compared many times, as a sort of
+/// thousands of names would weigh each name at every comparison.
+#[derive(Debug)]
+pub struct NameKey {
+    name: String,
+    weighed: std::cell::OnceCell<Weighed>,
+    composed: std::cell::OnceCell<String>,
+}
+
+impl NameKey {
+    pub fn new(name: &str) -> NameKey {
+        NameKey { name: name.to_owned(), weighed: Default::default(), composed: Default::default() }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn weighed(&self) -> &Weighed {
+        self.weighed.get_or_init(|| weigh(&self.name))
+    }
+
+    fn composed(&self) -> &str {
+        self.composed.get_or_init(|| self.name.nfc().collect())
+    }
+}
+
+impl Ord for NameKey {
+    fn cmp(&self, other: &NameKey) -> Ordering {
+        let (a, b) = (&self.name, &other.name);
+        if a == b {
+            return Ordering::Equal;
+        }
+        if a.is_ascii() && b.is_ascii() {
+            return ascii_order(a.as_bytes(), b.as_bytes());
+        }
+        let (x, y) = (self.weighed(), other.weighed());
+        x.steps
+            .cmp(&y.steps)
+            .then_with(|| x.accents.cmp(&y.accents))
+            .then_with(|| x.capitals.cmp(&y.capitals))
+            .then_with(|| self.composed().cmp(other.composed()))
+    }
+}
+
+impl PartialOrd for NameKey {
+    fn partial_cmp(&self, other: &NameKey) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for NameKey {
+    fn eq(&self, other: &NameKey) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+
+impl Eq for NameKey {}
+
 /// `standard_order` for two ASCII names in one pass and no allocation, as a survey sorts thousands.
 fn ascii_order(a: &[u8], b: &[u8]) -> Ordering {
     let class = |c: u8| if c.is_ascii_digit() { 1 } else if c.is_ascii_alphabetic() { 2 } else { 0 };
@@ -160,6 +219,20 @@ mod tests {
         }
         // Twin: the pass that ignored digits as numbers would put Roll 10 before Roll 2.
         assert_eq!("roll 10".to_lowercase().cmp(&"roll 2".to_lowercase()), Ordering::Less);
+    }
+
+    /// A key weighed once orders every pair as `standard_order` does, accents and compositions included.
+    #[test]
+    fn a_name_key_orders_as_standard_order() {
+        let names = ["Roll 2", "roll 10", "Roll 02", "a", "A", "", "007", "\u{c9}t\u{e9} 2025", "E\u{301}te\u{301} 2025", "Etre", "Ete 2025", "\u{152}uf", "Oeuvre", "Ni\u{f1}o", "Nina", "F\u{e9}vrier", "Zoo"];
+        for a in names {
+            for b in names {
+                assert_eq!(NameKey::new(a).cmp(&NameKey::new(b)), standard_order(a, b), "{a:?} against {b:?}");
+            }
+        }
+        // Twin: a key on the bytes alone puts the composed Été after Zoo.
+        let bytes = |a: &str, b: &str| a.as_bytes().cmp(b.as_bytes());
+        assert_ne!(bytes("\u{c9}t\u{e9} 2025", "Zoo"), NameKey::new("\u{c9}t\u{e9} 2025").cmp(&NameKey::new("Zoo")));
     }
 
     #[test]

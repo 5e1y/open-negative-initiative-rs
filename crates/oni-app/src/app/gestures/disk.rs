@@ -92,8 +92,8 @@ impl Ctl {
         {
             let mut s = self.state.borrow_mut();
             if let Some(archive) = s.archive.as_mut() {
-                archive.expanded.insert(TreeId::Folder(parent.to_owned()));
-                archive.expanded.insert(TreeId::Folder(folder.clone()));
+                archive.unfold(TreeId::Folder(parent.to_owned()));
+                archive.unfold(TreeId::Folder(folder.clone()));
             }
             s.rename_request = Some(folder);
             if let Some(store) = s.store.editor() {
@@ -163,7 +163,7 @@ impl Ctl {
         self.lay_archive();
         if !folded.is_empty() {
             if let Some(archive) = self.state.borrow_mut().archive.as_mut() {
-                archive.expanded.retain(|id| !folded.contains(id));
+                archive.keep_folded(&folded);
             }
             self.publish_tree();
         }
