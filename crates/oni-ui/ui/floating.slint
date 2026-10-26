@@ -1,0 +1,38 @@
+// `floating(_:)`: a hidden column slid over the card from its edge while the pointer is on it.
+import { Outside, Raised, Lift, Motion, Space } from "ds/ds.slint";
+
+// The column at the card's leading or trailing edge, out of sight until `revealed`. A press in it may
+// open its menu, which takes the pointer from every item under it: the column is then held until the
+// pointer comes back to it or meets the card beside it.
+export component FloatingColumn inherits TouchArea {
+    in-out property <bool> revealed;
+    in property <bool> trailing;
+    // The card's width, and whether the pointer is on it with no popup holding the pointer.
+    in property <length> room;
+    in property <bool> card-hovered;
+    property <int> entered-at;
+    property <bool> held;
+    y: 0;
+    x: root.trailing ? (root.revealed ? root.room - self.width : root.room) : (root.revealed ? 0 : -self.width);
+    visible: root.revealed || (root.trailing ? self.x < root.room : self.x > -self.width);
+    animate x { duration: root.revealed ? Motion.slide : 0ms; }
+    changed revealed => { self.held = false; }
+    changed has-hover => {
+        if (self.has-hover) {
+            self.entered-at = Outside.presses;
+            self.held = false;
+        } else if (root.card-hovered || Outside.presses == self.entered-at) {
+            root.revealed = false;
+        } else {
+            self.held = true;
+        }
+    }
+    changed card-hovered => { if (self.card-hovered && self.held && !self.has-hover) { root.revealed = false; } }
+    Raised {
+        lift: Lift.float;
+        x: Space.s; y: Space.s;
+        width: parent.width - 2 * Space.s;
+        height: parent.height - 2 * Space.s;
+        @children
+    }
+}

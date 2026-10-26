@@ -109,6 +109,8 @@ export component CanvasCard inherits Card {
     dimmed: Canvas.cropping;
     changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
     changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
+    // Moved to a screen of another density, the same size in points holds other pixels.
+    changed density => { Canvas.resized(); }
     Rectangle {
         x: CardStyle.padding;
         y: CardStyle.padding;

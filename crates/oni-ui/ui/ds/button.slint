@@ -235,10 +235,15 @@ export component Button inherits Rectangle {
             if (root.note != "") {
                 Tips.note(self.has-hover, root.note, root.absolute-position.x, root.absolute-position.y + root.height);
             } else {
-                Tips.hover(self.has-hover, root.help, root.absolute-position.x, root.absolute-position.y + root.height);
+                // Left, it hides the tooltip it showed, whatever its help says since.
+                if (self.has-hover) { root.told = root.help; }
+                Tips.hover(self.has-hover, root.told, root.absolute-position.x, root.absolute-position.y + root.height);
             }
         }
     }
+    // The help shown under the hand, hidden once it no longer says what the key does.
+    property <string> told;
+    changed help => { if (touch.has-hover) { Tips.hover(false, root.told, 0px, 0px); } }
     // Disabled under the hand, the key hears no release: it rises at once.
     changed enabled => {
         if (!root.enabled && root.down) {
