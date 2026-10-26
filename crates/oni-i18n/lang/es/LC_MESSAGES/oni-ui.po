@@ -4504,5 +4504,9 @@ msgid "The file could not be written."
 msgstr "No se pudo escribir el archivo."
 
 #: crates/oni-export/src/lib.rs
+msgid "Too large for a JPEG, which holds at most 65,535 pixels a side and a 16.7 MB profile: choose TIFF or a smaller size."
+msgstr "Demasiado grande para un JPEG, que admite como máximo 65.535 píxeles por lado y un perfil de 16,7 MB: elige TIFF o un tamaño menor."
+
+#: crates/oni-export/src/lib.rs
 msgid "A file ONI did not export already has that name, an original perhaps: it is left as it was. Pick another folder or another name."
 msgstr "Un archivo que ONI no exportó ya tiene ese nombre, quizá un original: se deja como estaba. Elige otra carpeta u otro nombre."

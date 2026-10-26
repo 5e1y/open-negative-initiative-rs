@@ -3685,5 +3685,54 @@
     "title": "LibRaw's handle stream reads through a 1 MB buffer, and on Windows without a lock per byte",
     "status": "done",
     "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
+  },
+  {
+    "id": 740,
+    "type": "fix",
+    "title": "Entering export reads each scan's head alone, and its lines land from a thread of their own",
+    "status": "done",
+    "detail": "Entering export built every line on the interface thread, and each line without a typed box read the whole RAW for its Exif: 36 NEF were about 1.8 GB before the surface showed. The scan's Exif is now read from the file's head (1 MB, grown fourfold only while a directory or a value runs past it; a container through a buffered reader), and the lines are read on an 'export rows' thread of their own generation, landing one by one; the roll of each target comes from one map of the archive instead of a search per target. A write started before every line landed reads the rest at once. Checks: a_scan_s_facts_come_from_its_head_alone (roll #8 and the S1R RW2s: 1 MB of 30 to 70 MB read, the same facts as the whole file; twin: a 4 KB head grows, and parsed as it is lacks the lens) and the window check entering_the_export_reads_no_scan_on_the_interface_thread (2 frames: no line is read when enter_export returns, then both land; twin: read on the interface thread, the same lines are there at once)."
+  },
+  {
+    "id": 741,
+    "type": "fix",
+    "title": "CR3, RAF and ORF exports state their camera, lens, ISO and date, read by LibRaw",
+    "status": "done",
+    "detail": "The Exif reader opens TIFF, JPEG, PNG, HEIF and WebP only, so a CR3, RAF or ORF line opened empty and its file was written with no date. A RAW the reader cannot open now asks LibRaw through a new oni_describe shim beside oni_identify (maker, model, EXIF lens, artist, ISO; nothing decoded), and its date is the DateTimeOriginal the file stores, read by oni-settings' header reader. LibRaw names the maker its own way (Fujifilm, not FUJIFILM). Check: a_cr3_raf_or_orf_states_its_camera_lens_iso_and_date under ONI_RAW_DIR, skipped when none is there (run on a Fujifilm X-E4 RAF; twin: the Exif reader alone opens none of them)."
+  },
+  {
+    "id": 742,
+    "type": "fix",
+    "title": "An export holds one float frame at its peak",
+    "status": "done",
+    "detail": "resized took the frame by reference and cloned it at full size, and the shadowed binding kept the render alive to the end of the write: two float frames (768 MB at 24 Mpx) plus the quantised copy grown by doubling. resized now takes the frame by value and hands it back untouched at full size, the float frame is dropped once converted, and both quantised buffers are sized once. Checks: full_scale_hands_back_the_same_pixels_without_a_copy (twin: a reduction is a frame of its own) and an_export_holds_one_float_frame_at_its_peak, counted by the test binary's allocator on a 96 MB frame: 156 MB, under 1.75 frames (twin: a second frame held through the export breaks the bound; the code before this change fails it)."
+  },
+  {
+    "id": 743,
+    "type": "fix",
+    "title": "A profile export premultiplies alpha, so a clear pixel writes black",
+    "status": "done",
+    "detail": "OutputProfile::converted forced alpha to 1 without scaling the colour, so a contact sheet's clear gutters exported through a Custom profile came out in whatever colour the chain left there, where the matrix spaces write black as Core Image does. The band is now premultiplied before the profile's legs. Check: a_clear_pixel_converts_to_black_through_a_profile (twin: the same colour opaque converts far from black)."
+  },
+  {
+    "id": 744,
+    "type": "fix",
+    "title": "A JPEG past its format's limits says so",
+    "status": "done",
+    "detail": "A JPEG wider or taller than 65,535 pixels, or with a profile past the 254 APP2 segments the encoder takes (16.6 MB), failed with 'The file could not be written.' The write now checks jpeg::fits after the resize and returns Failure::TooLargeForJpeg, whose message names the limits, in French and Spanish too. Checks: a_frame_fits_up_to_the_format_s_own_limits (twin: one past any limit is refused, as the encoder refuses it) and a_frame_past_a_jpeg_s_side_says_so (65,536 px refused with its own message; twin: 65,535 px writes a JPEG)."
+  },
+  {
+    "id": 745,
+    "type": "fix",
+    "title": "A typed name starting with a dot no longer writes a hidden file",
+    "status": "done",
+    "detail": "name() trimmed only trailing dots, so '.Frame 3' or '..\\x' wrote a file macOS hides. Leading dots and blanks are now dropped after the name is made portable, the original's name taking over when nothing is left; a dot inside the name stays. The Swift app writes the same hidden file. Check: a_typed_name_stays_in_the_chosen_folder (twin: 'Frame.3' keeps its dot, and portable alone still yields a hidden name)."
+  },
+  {
+    "id": 746,
+    "type": "fix",
+    "title": "A profile replaced at its path is read again",
+    "status": "done",
+    "detail": "The parsed profiles and the proof cubes were cached by path alone, so an .icc overwritten in the Finder kept exporting and proofing with the old one until relaunch. Both caches now hold the file's length and modification time and rebuild when either changes. Check: a_profile_replaced_at_its_path_is_read_again (twin: untouched, the same parse and cube are handed back)."
   }
 ]

@@ -31,7 +31,7 @@ pub struct Cube {
 }
 
 /// Locked: the canvas asks on its own thread, thumbnails off it.
-static CUBES: LazyLock<Mutex<HashMap<String, Arc<Cube>>>> = LazyLock::new(Default::default);
+static CUBES: LazyLock<Mutex<HashMap<String, (crate::profile::Stamp, Arc<Cube>)>>> = LazyLock::new(Default::default);
 
 impl Proof {
     pub const CUBE_SIDE: usize = 33;
@@ -101,11 +101,14 @@ impl Proof {
 
     pub fn cube(profile: &OutputProfile, colour_only: bool) -> Option<Arc<Cube>> {
         let key = format!("{}|{}", profile.path, colour_only);
-        if let Some(held) = CUBES.lock().unwrap().get(&key) {
-            return Some(held.clone());
+        let stamp = crate::profile::stamp(std::path::Path::new(&profile.path))?;
+        if let Some((held, cube)) = CUBES.lock().unwrap().get(&key)
+            && *held == stamp
+        {
+            return Some(cube.clone());
         }
         let built = Arc::new(Self::build_cube(profile, colour_only)?);
-        CUBES.lock().unwrap().insert(key, built.clone());
+        CUBES.lock().unwrap().insert(key, (stamp, built.clone()));
         Some(built)
     }
 

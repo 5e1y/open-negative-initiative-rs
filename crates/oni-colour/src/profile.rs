@@ -45,7 +45,15 @@ pub fn parse(data: &[u8]) -> Option<ColorProfile> {
     Some(profile)
 }
 
-static SPACES: LazyLock<Mutex<HashMap<String, Arc<Loaded>>>> = LazyLock::new(Default::default);
+/// A file's length and modification time: a profile replaced at the same path is read again.
+pub(crate) type Stamp = (u64, Option<std::time::SystemTime>);
+
+pub(crate) fn stamp(path: &Path) -> Option<Stamp> {
+    let meta = fs::metadata(path).ok()?;
+    Some((meta.len(), meta.modified().ok()))
+}
+
+static SPACES: LazyLock<Mutex<HashMap<String, (Stamp, Arc<Loaded>)>>> = LazyLock::new(Default::default);
 static SPACES_MADE: AtomicUsize = AtomicUsize::new(0);
 /// The first 128 bytes of a file, read once: the export preference is decoded on every read.
 static HEADERS: LazyLock<Mutex<HashMap<String, Vec<u8>>>> = LazyLock::new(Default::default);
@@ -86,11 +94,11 @@ impl OutputProfile {
 
     /// `None` once gone or unreadable, which an export reports instead of writing sRGB.
     pub fn loaded(&self) -> Option<Arc<Loaded>> {
-        if !Path::new(&self.path).exists() {
-            return None;
-        }
-        if let Some(held) = SPACES.lock().unwrap().get(&self.path) {
-            return Some(held.clone());
+        let stamp = stamp(Path::new(&self.path))?;
+        if let Some((held, made)) = SPACES.lock().unwrap().get(&self.path)
+            && *held == stamp
+        {
+            return Some(made.clone());
         }
         let data = fs::read(&self.path).ok()?;
         if !Self::is_rgb_output(&data) {
@@ -98,7 +106,7 @@ impl OutputProfile {
         }
         let profile = parse(&data)?;
         let made = Arc::new(Loaded { data, profile });
-        SPACES.lock().unwrap().insert(self.path.clone(), made.clone());
+        SPACES.lock().unwrap().insert(self.path.clone(), (stamp, made.clone()));
         SPACES_MADE.fetch_add(1, Ordering::Relaxed);
         Some(made)
     }
