@@ -27,7 +27,7 @@ impl State {
     }
 
     /// The first project holding `path`, as `Project.grouped(...).first` finds it.
-    fn project_of(&self, path: &str) -> Option<oni_settings::Id> {
+    pub(super) fn project_of(&self, path: &str) -> Option<oni_settings::Id> {
         project::grouped(&self.org.projects, &self.reach()).into_iter().find(|g| g.entries.iter().any(|e| e.path == path)).map(|g| g.id)
     }
 }

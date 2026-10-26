@@ -123,6 +123,9 @@ pub struct Organising {
     /// The projects' members the index holds beyond the opened folder's rows.
     pub standing: Vec<Entry>,
     pub project_ring: Option<NodeId>,
+    /// `editingProject`: the first project holding the photo opened on the Projects tab, which the
+    /// editor's walk follows.
+    pub editing_project: Option<Id>,
     pub project_expanded: HashSet<NodeId>,
     pub project_nodes: Vec<NodeId>,
     pub bands: Vec<Band>,

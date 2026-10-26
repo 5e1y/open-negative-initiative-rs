@@ -53,6 +53,7 @@ mod prepare_leftovers;
 mod prepare_masks;
 mod prepare_measure;
 mod prepare_loupe;
+mod project_walk;
 mod preset_deck;
 mod presets;
 mod presence;
@@ -178,6 +179,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("rolls::a_rolls_row_draws_its_stock", rolls::a_rolls_row_draws_its_stock),
     ("rolls::the_roll_gestures_reach_what_swift_reaches", rolls::the_roll_gestures_reach_what_swift_reaches),
     ("scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back", scanner::the_keypad_presses_the_phone_s_commands_and_the_lab_screen_reads_them_back),
+    ("project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder", project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder),
     ("sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view", sidebar_reveal::opening_a_photo_unfolds_its_folders_and_brings_its_row_into_view),
     ("help_card::a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar", help_card::a_panel_help_card_opens_left_of_the_panel_under_its_tab_bar),
     ("sidebars::the_sidebars_lay_their_keys_on_plates_as_swift", sidebars::the_sidebars_lay_their_keys_on_plates_as_swift),

@@ -214,12 +214,24 @@ impl State {
         self.building_full.as_ref().map(|_| LoadBar::busy(tr("Loading full resolution")))
     }
 
+    /// `labFrames`: the open frame's group, which the arrows walk: its project on the Projects tab,
+    /// read off the bands laid, else its roll or day.
+    pub(super) fn lab_frames(&self) -> &[oni_library::Entry] {
+        let Some(open) = self.open_path() else { return &[] };
+        let project = self.org.editing_project.filter(|_| self.org.projects_surface);
+        if let Some(band) = project.and_then(|id| self.org.bands.iter().find(|b| b.naming == Some(organising::Naming::Project(id)))) {
+            return &band.entries;
+        }
+        let group = self.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
+        group.map_or(&[], |g| &g.entries)
+    }
+
     /// The open frame's place in its group, one-based, and the group's count.
     pub(super) fn place(&self) -> Option<(usize, usize)> {
         let open = self.open_path()?;
-        let group = self.archive.as_ref()?.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open))?;
-        let at = group.entries.iter().position(|e| e.path == open)?;
-        Some((at + 1, group.entries.len()))
+        let frames = self.lab_frames();
+        let at = frames.iter().position(|e| e.path == open)?;
+        Some((at + 1, frames.len()))
     }
 }
 

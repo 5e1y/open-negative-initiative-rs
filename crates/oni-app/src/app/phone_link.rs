@@ -208,15 +208,14 @@ impl Ctl {
         self.publish_bar();
     }
 
-    /// `walk(by:)`: the neighbour in the open frame's group, opened and selected; the ends stop it.
+    /// `walk(by:)`: the neighbour in `labFrames`, opened and selected; the ends stop it.
     pub(super) fn walk(self: &Rc<Self>, by: i8) {
         let target = {
             let s = self.state.borrow();
             let Some((at, count)) = s.place() else { return };
             let to = walked(at, count, by);
             let open = s.open_path().unwrap_or_default();
-            let group = s.archive.as_ref().and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| e.path == open)));
-            group.and_then(|g| g.entries.get(to)).map(|e| e.path.clone()).filter(|p| p != open)
+            s.lab_frames().get(to).map(|e| e.path.clone()).filter(|p| p != open)
         };
         let Some(path) = target else { return };
         self.state.borrow_mut().designate(&path);

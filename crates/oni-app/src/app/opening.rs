@@ -27,6 +27,7 @@ impl Ctl {
                 .err();
             s.route.armed = armed.get();
             s.open = Some(path.to_string());
+            s.org.editing_project = if s.org.projects_surface { s.project_of(path) } else { None };
             s.opened_at = Instant::now();
             s.opens += 1;
             s.dust.next_photo();
