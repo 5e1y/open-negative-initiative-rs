@@ -3587,5 +3587,75 @@
     "title": "The panel's binding checks aimed again after the taller keys and tab bars",
     "status": "done",
     "detail": "panel_bindings pressed at fixed points that the plate keys (52), the 40 tab bars and the export column's new rows had moved: the Vertical switch, the Flat-Field chevron, the size box and its Full resolution key and CANCEL fell beside their controls. No behaviour broke: each control answers at its new place. The panel's presses are now measured from MainWindow.panel-x and tabs-foot, so a taller header moves them with it; the export sheet publishes no anchor and keeps its points. The undo twins (the switch back off, then on again) and the popover twin (its sRGB tab gone from under the pointer) stand."
+  },
+  {
+    "id": 660,
+    "type": "fix",
+    "title": "A gallery undo or redo that lays the open frame back is an editor step too",
+    "status": "done",
+    "detail": "write_back put the open frame back with replace() alone, so the editor's history still stood on the state the gallery had just undone: an edit then recorded on top of a pasted state the user had undone, an editor ⌘Z brought the paste back, and under Edit Together the frames together showed and took the open frame's pre-paste fields. take_back now records the restored state with History::record_apart, a step neither the gesture before nor after merges with, as Swift's deferred record runs for every change but a replay. Test a_paste_undone_in_the_gallery_never_comes_back_with_an_editor_undo, its twin the paste left standing where the editor undo lands."
+  },
+  {
+    "id": 661,
+    "type": "fix",
+    "title": "Edits made while files move, or kept after a refused write, follow the photo to its new path",
+    "status": "done",
+    "detail": "followed() moved the rows, picks and projects but never the store: the open frame's next write and the edits kept unsaved stayed under the old path, so the moved photo opened without them and Retry Unsaved answered 'cannot be found' forever. EditorStore::follow now carries the open frame, every Unsaved (its stamp read again), the frames together and the editor companions, and followed() calls it first. The deferred write waits while a disk gesture runs, so it never lays a fresh sidecar beside a photo about to leave; ⌘G back onto the open frame is refused while one runs, as open_in_editor already was; New Roll and a gallery undo or redo of one refuse to move the open frame when its settings could not be written, as rename_folder does. Test edits_kept_unsaved_and_the_open_frame_follow_a_move, its twin the unfollowed photo opening without them."
+  },
+  {
+    "id": 662,
+    "type": "fix",
+    "title": "Sending the open frame to the ONI Trash after a refused write keeps its edits",
+    "status": "done",
+    "detail": "mark_begun and took() flushed, ignored the failure, then closed the frame, so the edits a sidecar refused were dropped silently and nothing asked on quitting. Both now close through close(), whose leave() keeps a refused write's edits in unsaved; sidecar::write keeps the trash mark, so a retry never restores the photo. Test a_frame_trashed_after_a_refused_write_keeps_its_edits_unsaved (the sidecar's place taken by a folder), its twin a write taken keeping nothing back."
+  },
+  {
+    "id": 663,
+    "type": "fix",
+    "title": "The info sidebar's typing is written before ⌘G, Export, Prepare the Roll or a quit hides it",
+    "status": "done",
+    "detail": "The camera body, the shot date, the project's description and the roll's or project's name committed only on Return or on the focus leaving; ⌘G, ⌘E and ⌘Q destroy the sidebar with no focus-out, so the text was dropped. EditableTitle now hands its draft to Library.title-edited, and commit_info_drafts writes whatever the fields hold that differs from the roll or project, as one step, from toggle_mode, act (Export, Prepare the Roll) and last_writes; it leaves the drafts in their fields while a disk gesture runs. Window check gallery: the camera body and title typed write nothing until ⌘G, then are on the roll's marker."
+  },
+  {
+    "id": 664,
+    "type": "fix",
+    "title": "Ungroup and a roll set from the sidebar put the open frame in the gallery step and record its editor step",
+    "status": "done",
+    "detail": "set_film changed the open frame with replace() alone: a gallery ⌘Z regrouped every frame but the open one, an editor ⌘Z dropped the last real edit with the film, and the film rode on the next unrelated step. The open frame is now in before and after and settles its own step, as Swift's applyFilm; Swift's updateRoll leaves it out of the gallery step, a departure kept since it is the same bug. apply_film counts the photos in its label as applyFilm does ('Ungroup · 2 photos'); set_film keeps updateRoll's plain label. Test ungroup_takes_the_open_frame_in_its_gallery_step_and_its_editor_step, its twin an editor undo taking a film change back alone."
+  },
+  {
+    "id": 665,
+    "type": "fix",
+    "title": "A gesture on frames edited together writes each one once and its gallery step reads their true before",
+    "status": "done",
+    "detail": "lay_on, land_roll and reset_to_default settled the open frame first, whose propagate_together wrote its fields on the frames together, then read those frames back already written: the gallery step's before was a mix, and a paste dropped them from the step. settle_beside now leaves the frames the gesture writes itself to it; a frame together that no target names still takes the step. Test a_paste_on_frames_together_is_undone_from_the_gallery_to_their_own_settings, its twin the frame left out of the targets taking the paste."
+  },
+  {
+    "id": 666,
+    "type": "fix",
+    "title": "Edit Together keeps a roll's measured fields on the frames of that roll and decode",
+    "status": "done",
+    "detail": "A levels handle, the gains, the density ceiling, the flat-field or the mode moved on the open frame were laid whole on every frame together, so a frame of another roll or another decode lost the windows measured on its own film base. propagate_together and together_live now skip the Roll Settings family for a frame whose roll reference or decode differs. Test a_roll_field_moved_together_stays_on_the_frames_of_that_roll, its twin a frame of the same roll taking the window."
+  },
+  {
+    "id": 667,
+    "type": "fix",
+    "title": "Gallery undo follows a folder renamed or found elsewhere",
+    "status": "done",
+    "detail": "Renaming the folder New Roll makes, as the app proposes at once, left every gallery step under the old name: ⌘Z then found no file to put back and spent its step. GalleryHistory::follow rewrites every step's settings keys, trash paths, roll folder and moves; followed_outside calls it for rename_folder and locate, never for a step's own moves. Swift has the same gap; the owner accepts departures that fix real bugs. Test a_folder_renamed_after_a_new_roll_is_where_its_undo_walks_from, its twin a photo outside the folder keeping its path; window check new_roll renames the roll then undoes it."
+  },
+  {
+    "id": 668,
+    "type": "fix",
+    "title": "⌘Z within the settle delay, gestures on an inert open frame, Paste to Roll and Auto Balance during a move",
+    "status": "done",
+    "detail": "An undo or redo now records the step still waiting first, so a ⌘Z within 150 ms of a nudge takes that nudge back and not the step before (test an_undo_within_the_settle_delay_takes_back_the_step_still_waiting, its twin the redo bringing it back). lay_on, paste_to_roll, set_film, land_roll and reset_to_default leave an open frame whose original is out of sight or whose sidecar this version cannot write alone (takes_hands), as land_roll did (test a_gesture_on_several_leaves_an_open_frame_out_of_sight_alone, its twin the frame in sight taking the paste). Paste to Roll and Auto Balance refuse while a disk gesture runs, the balance at its landing too, so its step never cuts the one whose walk still runs."
+  },
+  {
+    "id": 669,
+    "type": "fix",
+    "title": "A quit right after a disk gesture starts waits for it",
+    "status": "done",
+    "detail": "wait_for_disk took the gesture lock, which the spawned thread may not have taken yet: a quit landing first ended the process while the move began. Gestures are now counted in flight before their thread starts and uncounted once run (or once the spawn fails); wait_for_disk waits for none."
   }
 ]

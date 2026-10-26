@@ -142,6 +142,8 @@ pub struct Organising {
     row_click: Option<(Column, usize, Instant)>,
     /// What the sidebar's fields were last loaded from, so a refresh never overwrites typing.
     info_loaded: Option<String>,
+    /// The name typed over in the sidebar's title, and the roll or project it was typed for.
+    title_draft: Option<(String, String)>,
     /// The surface last laid: 0 the archive, 1 the projects, 2 the ONI Trash.
     laid_surface: Option<u8>,
     /// `renaming` and `draft`: the heading typed over, and what its field holds now.
@@ -361,6 +363,8 @@ impl Ctl {
         lib.on_medal_picked(move |m| p.medal_picked(m));
         let p = me.clone();
         lib.on_title_committed(move |t| p.title_committed(&t));
+        let p = me.clone();
+        lib.on_title_edited(move |t| p.title_edited(&t));
         let p = me.clone();
         lib.on_select_roll_type(move || p.act(crate::Act::SelectRollType));
         let p = me.clone();

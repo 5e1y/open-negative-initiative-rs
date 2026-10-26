@@ -96,20 +96,16 @@ impl Ctl {
         if self.busy_said(title) {
             return;
         }
-        let (touched, disk): (Vec<String>, bool) = {
+        let (touched, moves): (Vec<String>, Vec<Move>) = {
             let mut s = self.state.borrow_mut();
             let Some(store) = s.store.editor() else { return };
             let history = store.gallery_history();
             let paths = if undo { history.undo_paths() } else { history.redo_paths() };
             let moves = if undo { history.undo_moves() } else { history.redo_moves() };
-            (paths.into_iter().collect(), !moves.is_empty())
+            (paths.into_iter().collect(), moves)
         };
-        if disk {
-            // The open frame's pending write lands before its file moves.
-            let failure = self.state.borrow_mut().store.flush();
-            if let Some(message) = failure {
-                self.told(title, &message);
-            }
+        if !moves.is_empty() && self.unsaved_among(title, &moves) {
+            return;
         }
         let (failure, walk) = {
             let mut s = self.state.borrow_mut();
@@ -165,6 +161,7 @@ impl Ctl {
             self.publish_tiles();
             return;
         }
+        self.commit_info_drafts();
         let ringed = {
             let s = self.state.borrow();
             s.picks.anchor.clone().filter(|_| !s.trash_shown())
@@ -172,6 +169,10 @@ impl Ctl {
         let Some(path) = ringed else { return };
         self.drop_split();
         if self.state.borrow().open.as_deref() == Some(path.as_str()) {
+            // As `open_in_editor`: no edit lands on a frame whose file a gesture may be moving.
+            if self.busy_said(tr("Edit")) {
+                return;
+            }
             w.global::<App>().set_gallery(false);
             self.land_tree_request();
             // A selection of several made in the gallery shows together as the editor comes back.
@@ -254,6 +255,9 @@ impl Ctl {
     }
 
     pub(super) fn lay_paste_to_roll(self: &Rc<Self>) {
+        if self.busy_said(tr("Paste to Roll")) {
+            return;
+        }
         let touched: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let open = s.open.clone();

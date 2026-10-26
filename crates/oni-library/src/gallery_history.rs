@@ -1,6 +1,7 @@
 //! Undo for gestures that act on several photographs at once, from the gallery. Kept apart from
 //! the open photo's history, so ⌘Z answers for the right stack.
 
+use crate::paths;
 use oni_settings::{Film, PipelineSettings};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -194,6 +195,28 @@ impl GalleryHistory {
         }
     }
 
+    /// Every step names its photos and folders where `moves` sent them, so an undo after a folder
+    /// is renamed reaches the files under their new name.
+    pub fn follow(&mut self, moves: &[Move]) {
+        let moved = |path: &str| {
+            moves.iter().find(|m| paths::holds(&m.from, path)).map_or_else(|| path.to_owned(), |m| paths::moved(path, &m.from, &m.to))
+        };
+        let rekeyed = |held: &mut Settings| *held = std::mem::take(held).into_iter().map(|(p, s)| (moved(&p), s)).collect();
+        for step in &mut self.steps {
+            rekeyed(&mut step.before);
+            rekeyed(&mut step.after);
+            if let Some(trash) = &mut step.trash {
+                trash.paths = trash.paths.iter().map(|p| moved(p)).collect();
+            }
+            if let Some(disk) = &mut step.disk {
+                disk.folder = disk.folder.as_deref().map(moved);
+                for m in &mut disk.moves {
+                    *m = Move { from: moved(&m.from), to: moved(&m.to) };
+                }
+            }
+        }
+    }
+
     pub fn undo_step(&mut self) -> Option<Step> {
         if !self.can_undo() {
             return None;
@@ -293,6 +316,26 @@ mod tests {
         let mut bare = GalleryHistory::default();
         bare.record(&Settings::new(), &Settings::new(), "Reset", None);
         assert!(reset.can_undo() && !bare.can_undo());
+    }
+
+    #[test]
+    fn a_folder_renamed_after_a_new_roll_is_where_its_undo_walks_from() {
+        let (neutral, edited) = pair();
+        let mut h = GalleryHistory::default();
+        h.record(&map(&[("/p/2026-10-26/A.NEF", &edited)]), &map(&[("/p/2026-10-26/A.NEF", &neutral)]), "Reset", None);
+        h.record(&map(&[("/q/B.NEF", &edited)]), &map(&[("/q/B.NEF", &neutral)]), "Reset", None);
+        let roll = Disk {
+            folder: Some("/p/2026-10-26".into()),
+            moves: vec![Move { from: "/p/A.NEF".into(), to: "/p/2026-10-26/A.NEF".into() }],
+            ..Disk::default()
+        };
+        h.record_disk(roll, "New Roll");
+        h.follow(&[Move { from: "/p/2026-10-26".into(), to: "/p/Portra".into() }]);
+        assert_eq!(h.undo_moves(), [Move { from: "/p/Portra/A.NEF".into(), to: "/p/A.NEF".into() }]);
+        assert_eq!(h.undo_step().and_then(|s| s.disk).and_then(|d| d.folder).as_deref(), Some("/p/Portra"));
+        assert_eq!(h.undo_paths(), BTreeSet::from(["/q/B.NEF".to_string()]), "twin: a photo outside the folder keeps its path");
+        h.undo_step();
+        assert_eq!(h.undo_paths(), BTreeSet::from(["/p/Portra/A.NEF".to_string()]), "a settings step under it follows");
     }
 
     #[test]

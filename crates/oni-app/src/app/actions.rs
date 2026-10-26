@@ -9,6 +9,10 @@ impl Ctl {
     pub fn act(self: &Rc<Self>, action: Act) {
         let Some(w) = self.window() else { return };
         let app = w.global::<App>();
+        // Export and Prepare the Roll hide the info sidebar as the editor does, its typing kept.
+        if matches!(action, Act::Export | Act::PrepareRoll) && app.get_gallery() {
+            self.commit_info_drafts();
+        }
         match action {
             Act::Undo | Act::Redo if app.get_gallery() => self.gallery_step(action == Act::Undo),
             Act::PrepareRoll => self.prepare_roll(),

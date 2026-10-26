@@ -32,6 +32,14 @@ pub(super) struct Together {
 }
 
 impl Together {
+    pub(super) fn follow(&mut self, moved: &dyn Fn(&str) -> Option<String>) {
+        for path in &mut self.paths {
+            if let Some(to) = moved(path) {
+                *path = to;
+            }
+        }
+    }
+
     /// Settings just written, kept for the frames among them.
     pub(super) fn landed(&mut self, written: &Settings) {
         for (path, held) in self.paths.iter().zip(&mut self.held) {
@@ -50,6 +58,15 @@ fn shared(before: &PipelineSettings, after: &PipelineSettings) -> Vec<Field> {
         fields.push(Field::Face);
     }
     fields
+}
+
+/// The `fields` moved on `open` that are laid on `other`: a roll's measured windows, gains and mode
+/// belong to its roll and its decode, so a frame of another keeps its own, and its face with them.
+fn laid(fields: &[Field], open: &PipelineSettings, other: &PipelineSettings) -> Vec<Field> {
+    let same_roll = open.roll_reference.as_ref().map(|r| r.id) == other.roll_reference.as_ref().map(|r| r.id)
+        && open.decoded_from_mosaic == other.decoded_from_mosaic;
+    let reached: Vec<Field> = fields.iter().copied().filter(|f| same_roll || f.family() != Some(Family::Roll)).collect();
+    if reached.iter().all(|f| *f == Field::Face) { Vec::new() } else { reached }
 }
 
 impl EditorStore {
@@ -73,22 +90,22 @@ impl EditorStore {
         paths
             .map(|(path, held)| {
                 let mut live = held.clone();
-                fields.iter().for_each(|f| f.carry(&self.settings, &mut live));
+                laid(&fields, &self.settings, held).iter().for_each(|f| f.carry(&self.settings, &mut live));
                 (path.clone(), live)
             })
             .collect()
     }
 
     /// The fields this step moved, but each frame's own, laid on the frames edited together.
-    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64) {
+    pub(super) fn propagate_together(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64, handled: &[String]) {
         let fields = shared(before, after);
-        if self.together.paths.is_empty() || fields.is_empty() {
+        let others: Vec<String> = self.together.paths.iter().filter(|p| !handled.contains(p)).cloned().collect();
+        if others.is_empty() || fields.is_empty() {
             return;
         }
-        let others = self.together.paths.clone();
         let (was, now) = self.modify(&others, |_, loaded| {
             let mut out = loaded.clone();
-            fields.iter().for_each(|f| f.carry(after, &mut out));
+            laid(&fields, after, loaded).iter().for_each(|f| f.carry(after, &mut out));
             (out != *loaded).then_some(out)
         });
         if !was.is_empty() {
@@ -134,6 +151,64 @@ mod tests {
         store.undo(Surface::Editor);
         assert_eq!(read(&b).vignette.stops, -0.7, "one undo takes the others back");
         assert_eq!(store.together_live()[0].1.vignette.stops, -0.7, "and shows them back");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// Frames a, b and c, b and c with a vignette of their own, and the store open on a.
+    fn three(label: &str, b_settings: PipelineSettings, c_settings: PipelineSettings) -> (EditorStore, std::path::PathBuf, [String; 3]) {
+        let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let [a, b, c] = ["a.tif", "b.tif", "c.tif"].map(|n| dir.join(n).to_string_lossy().into_owned());
+        std::fs::write(&a, b"").unwrap();
+        for (p, s) in [(&b, b_settings), (&c, c_settings)] {
+            std::fs::write(p, b"").unwrap();
+            sidecar::write(&s, Path::new(p), WriteOptions::default()).unwrap();
+        }
+        // c stays out of the archive, so no roll gesture reaches it but the step laid together.
+        let mut store = EditorStore::new(Archive::new(vec![a.clone(), b.clone()], |_: &Path| false));
+        store.open(&a).unwrap();
+        (store, dir, [a, b, c])
+    }
+
+    fn read(p: &str) -> PipelineSettings {
+        sidecar::read(Path::new(p), false, true).unwrap().settings
+    }
+
+    #[test]
+    fn a_paste_on_frames_together_is_undone_from_the_gallery_to_their_own_settings() {
+        let own = |stops| PipelineSettings { vignette: oni_settings::blocks::Vignette { stops, ..Default::default() }, ..PipelineSettings::default() };
+        let (mut store, dir, [a, b, c]) = three("together-paste", own(-0.7), own(-0.4));
+        store.set_together(vec![b.clone(), c.clone()]);
+        store.board.settings = Some(codec::encode_settings(&own(0.2)).unwrap());
+        store.paste_settings(&[a.clone(), b.clone()]);
+        assert_eq!((read(&b).vignette.stops, read(&c).vignette.stops), (0.2, 0.2), "a frame together left out of the targets takes the step");
+        store.undo(Surface::Gallery);
+        assert_eq!(read(&b).vignette.stops, -0.7, "the gallery undo lays its own settings back, not a mix");
+        // Twin: the frame no target named is the editor's step, which takes it back.
+        assert_eq!(read(&c).vignette.stops, 0.2);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_roll_field_moved_together_stays_on_the_frames_of_that_roll() {
+        let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
+        let (r1, r2) = (Id::new(), Id::new());
+        let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
+        let (mut store, dir, [_, b, c]) = three("together-rolls", on(r2), on(r1));
+        let mut next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
+        store.apply_at(Command::Write(Box::new(next.clone())), 0.0);
+        store.set_together(vec![b.clone(), c.clone()]);
+        next.levels.red.black = 0.2;
+        next.vignette.stops = 0.5;
+        store.apply_at(Command::Write(Box::new(next)), 5.0);
+        let live: Vec<f32> = store.together_live().iter().map(|(_, s)| s.levels.red.black).collect();
+        assert_eq!(read(&b).levels.red.black, 0.0, "another roll keeps its own windows");
+        assert_eq!(read(&b).vignette.stops, 0.5, "and takes the look");
+        assert_eq!(live[0], 0.0, "shown as written");
+        // Twin: a frame of the same roll takes the window moved.
+        assert_eq!(read(&c).levels.red.black, 0.2);
+        assert_eq!(live[1], 0.2);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

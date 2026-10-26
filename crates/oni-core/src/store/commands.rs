@@ -140,6 +140,12 @@ impl EditorStore {
     /// Records the open frame's step, then lays a Roll Settings gesture or a look pasted on the roll
     /// on every other frame naming the same reference, as part of that one step.
     pub(super) fn settle(&mut self, now: f64) {
+        self.settle_beside(now, &[]);
+    }
+
+    /// `settle`, the frames of `handled` left to the gesture writing them itself: a frame together
+    /// among them is written once, and the gesture's gallery step reads its true before.
+    pub(super) fn settle_beside(&mut self, now: f64, handled: &[String]) {
         self.deferred = None;
         let before = self.history.current().clone();
         let touched = std::mem::take(&mut self.roll_touched);
@@ -154,7 +160,7 @@ impl EditorStore {
         }
         if let Some(serial) = serial {
             let after = self.settings.clone();
-            self.propagate_together(&before, &after, serial);
+            self.propagate_together(&before, &after, serial, handled);
         }
     }
 

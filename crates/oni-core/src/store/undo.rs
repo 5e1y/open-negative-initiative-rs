@@ -5,6 +5,8 @@ use oni_library::roll_folder::Walk;
 
 impl EditorStore {
     pub fn undo(&mut self, surface: Surface) -> FieldSet {
+        // A step still waiting is recorded first, so the undo takes it back and not the one before.
+        self.release();
         match surface {
             Surface::Editor => {
                 let others = self.history.undo_companion().cloned();
@@ -24,6 +26,7 @@ impl EditorStore {
     }
 
     pub fn redo(&mut self, surface: Surface) -> FieldSet {
+        self.release();
         match surface {
             Surface::Editor => {
                 let others = self.history.redo_companion().cloned();
@@ -52,7 +55,14 @@ impl EditorStore {
         if let Some(marks) = &step.trash {
             self.lay_trash(marks, undoing);
         }
-        self.write_back(if undoing { &step.before } else { &step.after })
+        let changed = self.write_back(if undoing { &step.before } else { &step.after });
+        // The open frame laid back is an editor step too, as Swift records every change but a replay:
+        // its next edit never starts from the state just undone.
+        if !changed.is_empty() {
+            let now = self.now();
+            self.history.record_apart(self.settings.clone(), now);
+        }
+        changed
     }
 
     /// A walk that moved nothing gives its step back, so the same key offers it again.

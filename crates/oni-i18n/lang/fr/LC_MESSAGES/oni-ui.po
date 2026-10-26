@@ -121,7 +121,7 @@ msgstr "Actualiser"
 msgid "Show the Selected Photo"
 msgstr "Afficher la photo sélectionnée"
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Édition"
 
@@ -2374,6 +2374,10 @@ msgid "The roll's folder could not be made: {e}"
 msgstr "Le dossier de la pellicule n’a pas pu être créé : {e}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
+msgstr "Rien n’a été déplacé, car les réglages de la photo ouverte n’ont pas pu être enregistrés : {error}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
 msgid "Move This Photo into a New Roll?"
 msgid_plural "Move {n} Photos into a New Roll?"
 msgstr[0] "Déplacer cette photo dans une nouvelle pellicule ?"
@@ -2988,12 +2992,12 @@ msgid "Rename Roll"
 msgstr "Renommer la pellicule"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "Set Shot Date"
-msgstr "Définir la date de prise de vue"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Camera Body"
 msgstr "Définir le boîtier"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Shot Date"
+msgstr "Définir la date de prise de vue"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
@@ -3466,6 +3470,10 @@ msgstr "La mesure de leur pellicule et tous les réglages de leur look disparais
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset to Default"
 msgstr "Rétablir les réglages par défaut"
+
+#: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
+msgid "Balance"
+msgstr "Balance"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -4004,10 +4012,6 @@ msgid "Your go-to balance"
 msgstr "Votre balance fétiche"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Balance"
-msgstr "Balance"
-
-#: crates/oni-app/src/wrapped.rs
 msgid "Your signature look"
 msgstr "Votre look signature"
 
@@ -4236,6 +4240,12 @@ msgid "Join the roll"
 msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Rejoindre la pellicule"
 msgstr[1] "Rejoindre la pellicule avec {n} photos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "{label} · {n} photo"
+msgid_plural "{label} · {n} photos"
+msgstr[0] "{label} · {n} photo"
+msgstr[1] "{label} · {n} photos"
 
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"

@@ -363,6 +363,18 @@ pub(crate) fn the_gallery_picks_opens_labels_and_organises_as_swift_and_the_arch
     assert_eq!(marker().name, "Roll 8");
     rig.settle();
     println!("shot {}", rig.shot("gallery-organised").display());
+
+    // ⌘G hides the sidebar with no focus leaving its fields: what they hold is written first.
+    lib.set_camera_body("Nikon F3".into());
+    lib.invoke_title_edited("Roll 9".into());
+    rig.pump();
+    assert_eq!((marker().name.as_str(), marker().camera_body.as_deref()), ("Roll 8", Some("Leica M6")), "twin: nothing is written as it is typed");
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
+    assert!(!w.global::<App>().get_gallery());
+    assert_eq!((marker().name.as_str(), marker().camera_body.as_deref()), ("Roll 9", Some("Nikon F3")));
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

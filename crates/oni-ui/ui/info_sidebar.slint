@@ -18,7 +18,12 @@ export component Info inherits Surface {
                 Section {
                     title: @tr("Roll");
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: @tr("Roll name"); committed(t) => { Library.title-committed(t); } }
+                    EditableTitle {
+                        text: Library.info-title;
+                        placeholder: @tr("Roll name");
+                        edited(t) => { Library.title-edited(t); }
+                        committed(t) => { Library.title-committed(t); }
+                    }
                 }
                 Section {
                     title: @tr("Film Stock");
@@ -67,7 +72,12 @@ export component Info inherits Surface {
                 Section {
                     title: @tr("Project");
                     separated: false;
-                    EditableTitle { text: Library.info-title; placeholder: @tr("Project name"); committed(t) => { Library.title-committed(t); } }
+                    EditableTitle {
+                        text: Library.info-title;
+                        placeholder: @tr("Project name");
+                        edited(t) => { Library.title-edited(t); }
+                        committed(t) => { Library.title-committed(t); }
+                    }
                 }
                 CardStack { pictures: Library.stack; }
                 Section {
