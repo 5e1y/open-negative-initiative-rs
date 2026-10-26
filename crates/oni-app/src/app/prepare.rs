@@ -228,6 +228,11 @@ impl Roll {
         self.tiles.len()
     }
 
+    /// The roll shown, by its frames' paths.
+    fn roll(&self) -> Vec<String> {
+        self.sources.iter().map(|f| f.path.clone()).collect()
+    }
+
     /// Every frame's sidecar read, which the bench waits for.
     pub fn read_whole(&self) -> bool {
         !self.sources.is_empty() && self.read.len() >= self.sources.len()

@@ -29,6 +29,11 @@ impl State {
         self.org.reads
     }
 
+    /// The opened folder's reads that landed whole since launch.
+    pub fn reads_whole(&self) -> usize {
+        self.org.reads_whole
+    }
+
     /// Each row's state and the opened folder's, cut from the survey they landed with.
     pub(in crate::app) fn landed_presence(&mut self) {
         let survey = self.survey.clone();

@@ -10,6 +10,8 @@ use std::path::{Path, PathBuf};
 
 /// The key, Rust's own: Swift decodes past it, and a Swift rewrite drops it, which reads as unknown.
 pub const KEY: &str = "originalPrint";
+/// The digest of the original's last block, Rust's own too: a tool rewriting the metadata keeps it.
+pub const TAIL: &str = "originalTail";
 
 const BLOCK: usize = 16 * 1024;
 const FRACTIONS: [f64; 3] = [0.25, 0.5, 0.75];
@@ -85,15 +87,40 @@ fn parts(print: &str) -> Option<(&str, &str)> {
 
 /// Whether `stored` was written for another file than one printed `now`: two dates and two digests,
 /// as a date set right in place keeps its bytes, a file saved over its date; no date is never foreign.
-pub fn foreign(stored: &Value, now: Option<&str>) -> bool {
+/// A last block alike (`tail`) is the same photo whose date a tool set right by writing it anew.
+pub fn foreign(stored: &Value, now: Option<&str>, tail: impl FnOnce() -> Option<String>) -> bool {
     let (Some(was), Some(now)) = (stored.get(KEY).and_then(Value::as_str).and_then(parts), now.and_then(parts)) else { return false };
     let dated = |d: &str| d != "no-date";
-    dated(was.0) && dated(now.0) && was.0 != now.0 && was.1 != now.1
+    let apart = dated(was.0) && dated(now.0) && was.0 != now.0 && was.1 != now.1;
+    apart && stored.get(TAIL).and_then(Value::as_str).is_none_or(|was| tail().as_deref() != Some(was))
 }
 
 /// `original`'s print, the one a write stores. Reads three blocks of the file.
 pub fn of(original: &Path) -> Option<String> {
     print(original).map(|(text, _)| text)
+}
+
+/// Byte values a last block must hold to tell one photo: a scan's clipped or black bottom rows end
+/// many files alike, and name no photo.
+const TELLING: usize = 64;
+
+/// The digest of `original`'s last block, which a write stores beside its print; none for a block
+/// too uniform to tell a photo (`TELLING`). Reads one block.
+pub fn tail(original: &Path) -> Option<String> {
+    let metadata = std::fs::metadata(original).ok()?;
+    if in_cloud(&metadata) {
+        return None;
+    }
+    let mut file = File::open(original).ok()?;
+    file.seek(SeekFrom::Start(metadata.len().saturating_sub(BLOCK as u64))).ok()?;
+    let mut data = Vec::with_capacity(BLOCK);
+    file.take(BLOCK as u64).read_to_end(&mut data).ok()?;
+    let mut seen = [false; 256];
+    data.iter().for_each(|b| seen[*b as usize] = true);
+    if seen.iter().filter(|s| **s).count() < TELLING {
+        return None;
+    }
+    digest_at(original, metadata.len() as i64, &[1.0])
 }
 
 /// The sidecar's text as stored, `None` when absent or not JSON.
@@ -124,7 +151,7 @@ pub fn blank() -> Envelope {
 /// `codec::envelope` for `original`'s sidecar `data`: a foreign one reads blank, as no sidecar does.
 pub fn envelope(data: &[u8], original: &Path) -> Option<Envelope> {
     let value: Value = serde_json::from_slice(data).ok()?;
-    if value.get(KEY).is_some() && foreign(&value, of(original).as_deref()) {
+    if value.get(KEY).is_some() && foreign(&value, of(original).as_deref(), || tail(original)) {
         return Some(blank());
     }
     codec::envelope(data)

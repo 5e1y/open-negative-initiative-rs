@@ -267,3 +267,23 @@ fn the_trash_lists_a_triplet_once_whichever_folder_holds_it() {
     let alone: Vec<String> = trashed(&index.in_trash()).into_iter().map(|e| e.path).collect();
     assert_eq!(alone.len(), 2, "{alone:?}");
 }
+
+#[test]
+fn a_schema_drop_dates_the_rebuild_and_a_plain_open_keeps_its_date() {
+    let scratch = Scratch::new("rebuilt");
+    let at = scratch.path().join("index.sqlite");
+    let index = LibraryIndex::open(&at).unwrap();
+    let made = index.rebuilt().expect("a file made here is dated");
+    assert!(made.elapsed().unwrap() < std::time::Duration::from_secs(60));
+    let long_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(10 * 86_400);
+    index.note_rebuilt(long_ago).unwrap();
+    drop(index);
+    // Twin: an open at the same version throws nothing away and keeps the date.
+    let index = LibraryIndex::open(&at).unwrap();
+    let kept = index.rebuilt().unwrap();
+    assert!(kept.duration_since(long_ago).unwrap_or_default() < std::time::Duration::from_secs(1), "{kept:?}");
+    index.connection.execute_batch(&format!("PRAGMA user_version = {}", SCHEMA_VERSION - 1)).unwrap();
+    drop(index);
+    let index = LibraryIndex::open(&at).unwrap();
+    assert!(index.rebuilt().unwrap().elapsed().unwrap() < std::time::Duration::from_secs(60), "the drop is dated now");
+}

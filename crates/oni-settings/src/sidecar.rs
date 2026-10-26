@@ -17,7 +17,11 @@ use std::path::{Path, PathBuf};
 pub(crate) use crate::atomic::write_atomically;
 use std::time::{Duration, SystemTime};
 
+mod fields;
+mod held;
 pub mod identity;
+
+pub use fields::{set_exif, set_label, set_roll_draft, set_trashed, update};
 
 /// The EXIF a hand set for the export; every key is required, as the document writes them all.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
@@ -169,7 +173,7 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
     let data = std::fs::read(&path)?;
     if let Ok(value) = serde_json::from_slice::<Value>(&data)
         && value.get(identity::KEY).is_some()
-        && identity::foreign(&value, identity::of(original).as_deref())
+        && identity::foreign(&value, identity::of(original).as_deref(), || identity::tail(original))
     {
         return Ok(fresh(true));
     }
@@ -233,14 +237,20 @@ fn standing(path: &Path) -> Result<Option<(Value, Decoded)>, Error> {
 /// Writes the sidecar atomically, reading back the metadata the caller left out and keeping the
 /// keys a newer app added; never beside a missing original, nor over a newer or unreadable sidecar.
 pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
+    let _held = held::hold(original);
+    written(settings, original, options)
+}
+
+/// `write`, the sidecar already held.
+fn written(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
     original_present(original)?;
     let path = url_for(original);
     if path.file_name().is_some_and(|n| n.to_string_lossy().chars().count() > 255) {
         return Err(Error::TooLong);
     }
-    let print = identity::of(original);
+    let (print, tail) = (identity::of(original), identity::tail(original));
     // Another file's settings are kept aside whole, never written over nor taken for this one's.
-    let aside = identity::stored(&path)?.is_some_and(|v| identity::foreign(&v, print.as_deref()));
+    let aside = identity::stored(&path)?.is_some_and(|v| identity::foreign(&v, print.as_deref(), || tail.clone()));
     if aside {
         identity::set_aside(&path)?;
     }
@@ -255,119 +265,11 @@ pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions
         options.roll_draft.unwrap_or_else(|| existing.and_then(|e| e.roll_draft.clone())),
         options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
     );
-    let text = crate::kept::encoded(&document, standing.as_ref(), print.as_deref().map(|p| (identity::KEY, p)))?;
+    let own: Vec<(&str, &str)> = [(identity::KEY, print.as_deref()), (identity::TAIL, tail.as_deref())].into_iter().filter_map(|(k, v)| Some((k, v?))).collect();
+    let text = crate::kept::encoded(&document, standing.as_ref(), &own)?;
     write_atomically(&path, text.as_bytes())?;
     restore_modified(&path, prior);
     Ok(())
-}
-
-/// Reads, transforms and writes back; false on a newer format and when nothing changed.
-pub fn update(original: &Path, mosaic: bool, transform: impl FnOnce(&PipelineSettings) -> PipelineSettings) -> Result<bool, Error> {
-    let loaded = read(original, mosaic, true)?;
-    if !loaded.writable {
-        return Ok(false);
-    }
-    let next = transform(&loaded.settings);
-    if next == loaded.settings {
-        return Ok(false);
-    }
-    write(&next, original, WriteOptions::default())?;
-    Ok(true)
-}
-
-/// Sets a label without touching the settings or the revision.
-pub fn set_label(label: Medal, original: &Path, mosaic: bool) -> Result<(), Error> {
-    original_present(original)?;
-    // An unreadable sidecar is an error, never rewritten as defaults around the one field.
-    let existing = read(original, mosaic, true)?;
-    if !existing.writable {
-        return Err(Error::Newer);
-    }
-    let settings = existing.settings.clone();
-    write(
-        &settings,
-        original,
-        WriteOptions {
-            imported_at: existing.imported_at,
-            label: Some(label),
-            preserving_revision: true,
-            ..WriteOptions::default()
-        },
-    )
-}
-
-/// Sets the frame's EXIF, the settings and the revision untouched.
-pub fn set_exif(exif: ExifMetadata, original: &Path, mosaic: bool) -> Result<(), Error> {
-    original_present(original)?;
-    // An unreadable sidecar is an error, never rewritten as defaults around the one field.
-    let existing = read(original, mosaic, true)?;
-    if !existing.writable {
-        return Err(Error::Newer);
-    }
-    let settings = existing.settings.clone();
-    write(
-        &settings,
-        original,
-        WriteOptions {
-            imported_at: existing.imported_at,
-            label: Some(existing.label),
-            exif: Some(exif),
-            preserving_revision: true,
-            ..WriteOptions::default()
-        },
-    )
-}
-
-/// Sets or clears the roll a frame is prepared in; a frame never touched gains no sidecar for a clear.
-pub fn set_roll_draft(draft: Option<RollDraft>, original: &Path, mosaic: bool) -> Result<(), Error> {
-    original_present(original)?;
-    // An unreadable sidecar is an error, never rewritten as defaults around the draft.
-    let existing = read(original, mosaic, true)?;
-    if !existing.writable {
-        return Err(Error::Newer);
-    }
-    if existing.roll_draft.as_ref() == draft.as_ref() {
-        return Ok(());
-    }
-    if draft.is_none() && existing.is_new {
-        return Ok(());
-    }
-    let settings = existing.settings.clone();
-    write(
-        &settings,
-        original,
-        WriteOptions {
-            imported_at: existing.imported_at,
-            label: Some(existing.label),
-            roll_draft: Some(draft),
-            preserving_revision: true,
-            ..WriteOptions::default()
-        },
-    )
-}
-
-/// Marks the photo in the ONI Trash, or back on `None`; false on a newer format, an unreadable one an
-/// error, and a missing original `Unreachable` before its absent sidecar could read as a fresh photo.
-pub fn set_trashed(date: Option<Date>, original: &Path, mosaic: bool) -> Result<bool, Error> {
-    original_present(original)?;
-    // Caught up as every rewrite is: the document is stamped with today's version.
-    let existing = read(original, mosaic, true)?;
-    if !existing.writable {
-        return Ok(false);
-    }
-    if existing.trashed_at == date {
-        return Ok(true);
-    }
-    let options = WriteOptions {
-        imported_at: existing.imported_at,
-        label: Some(existing.label),
-        exif: existing.exif,
-        roll_draft: Some(existing.roll_draft),
-        trashed_at: Some(date),
-        preserving_revision: true,
-    };
-    write(&existing.settings, original, options)?;
-    Ok(true)
 }
 
 /// Deletes only the sidecar, never the original beside it; an absent sidecar is not an error.

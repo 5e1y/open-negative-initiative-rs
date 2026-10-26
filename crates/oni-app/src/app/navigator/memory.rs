@@ -145,7 +145,7 @@ impl Ctl {
                 if Arc::strong_count(&token) <= 1 {
                     return;
                 }
-                let answering: Vec<String> = refused.lock().expect("refused").iter().filter(|f| std::fs::read_dir(f).is_ok()).cloned().collect();
+                let answering = answering(&refused, |f| std::fs::read_dir(f).is_ok());
                 if !answering.is_empty() {
                     refused.lock().expect("refused").retain(|f| !answering.contains(f));
                 }
@@ -205,5 +205,35 @@ impl Ctl {
         if moved {
             self.retry_unsaved(false);
         }
+    }
+}
+
+/// The folders refused once that answer now, probed with the list copied out: a mount that hangs
+/// never holds the lock the interface takes to publish the navigator.
+fn answering(refused: &std::sync::Mutex<Vec<String>>, answers: impl Fn(&str) -> bool) -> Vec<String> {
+    let listed = refused.lock().expect("refused").clone();
+    listed.into_iter().filter(|f| answers(f)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    #[test]
+    fn a_refused_folder_is_probed_with_the_lock_free() {
+        let refused = Mutex::new(vec!["/a".to_string(), "/b".to_string()]);
+        let free = std::cell::Cell::new(true);
+        let probe = |f: &str| {
+            free.set(free.get() && refused.try_lock().is_ok());
+            f == "/b"
+        };
+        assert_eq!(answering(&refused, probe), ["/b"]);
+        assert!(free.get(), "the interface could take the lock while a probe ran");
+        // Twin: the list filtered under its guard holds the lock through every probe.
+        free.set(true);
+        let held: Vec<String> = refused.lock().unwrap().iter().filter(|f| probe(f)).cloned().collect();
+        assert_eq!(held, ["/b"]);
+        assert!(!free.get(), "a probe under the guard finds the lock taken");
     }
 }

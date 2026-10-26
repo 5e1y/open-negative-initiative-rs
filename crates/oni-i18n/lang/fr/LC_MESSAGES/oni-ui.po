@@ -2195,11 +2195,11 @@ msgid_plural "{n} items from other folders were left out: ONI opens one folder a
 msgstr[0] "Un élément d’un autre dossier laissé de côté : ONI ouvre un dossier à la fois."
 msgstr[1] "{n} éléments d’autres dossiers laissés de côté : ONI ouvre un dossier à la fois."
 
-#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
 msgid "Something Went Wrong"
 msgstr "Un problème est survenu"
 
-#: crates/oni-app/src/app/archive_view.rs crates/oni-app/src/app/navigator/locate.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/navigator/locate.rs
 msgid "The library index cannot be opened"
 msgstr "L’index de la photothèque ne peut pas être ouvert"
 
@@ -2650,10 +2650,6 @@ msgstr "« {name} » n’est plus un favori."
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder was not renamed, as the open photo's settings could not be saved: {error}"
 msgstr "Le dossier n’a pas été renommé, car les réglages de la photo ouverte n’ont pas pu être enregistrés : {error}"
-
-#: crates/oni-app/src/app/navigator/folder_menu.rs
-msgid "an item named “{name}” already exists"
-msgstr "un élément nommé « {name} » existe déjà"
 
 #: crates/oni-app/src/app/navigator/folder_menu.rs
 msgid "The folder could not be made inside “{folder}”: {cause}."

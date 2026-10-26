@@ -11,12 +11,23 @@ pub const DECODES: usize = 2;
 
 thread_local! {
     static BACKGROUND: Cell<bool> = const { Cell::new(false) };
+    static WANTED: std::cell::RefCell<Option<Box<dyn Fn() -> bool>>> = const { std::cell::RefCell::new(None) };
 }
 
 /// Marks the calling thread's decodes as background work: thumbnails, roll tiles, measuring copies,
 /// dust patches, which yield to any decode the hand waits on.
 pub fn in_background() {
     BACKGROUND.with(|b| b.set(true));
+}
+
+/// The calling thread's decodes are wanted while `wanted` holds: one superseded while it waited for
+/// its place decodes nothing, and leaves the place to the work that superseded it.
+pub fn only_while(wanted: impl Fn() -> bool + 'static) {
+    WANTED.with(|w| *w.borrow_mut() = Some(Box::new(wanted)));
+}
+
+fn wanted() -> bool {
+    WANTED.with(|w| w.borrow().as_ref().is_none_or(|f| f()))
 }
 
 pub struct Slots {
@@ -38,10 +49,11 @@ impl Drop for Slot<'_> {
     }
 }
 
-/// A place among the app's decodes, for the calling thread's kind of work.
-pub fn slot() -> Slot<'static> {
+/// A place among the app's decodes, for the calling thread's kind of work; none when the thread's
+/// work was superseded while it waited (`only_while`).
+pub fn slot() -> Option<Slot<'static>> {
     let (background, asked) = (BACKGROUND.with(Cell::get), std::time::Instant::now());
-    let slot = SLOTS.take(background);
+    let slot = SLOTS.take_wanted(background);
     let waited = asked.elapsed();
     if waited > std::time::Duration::from_millis(5) {
         let kind = if background { "a background" } else { "the hand's" };
@@ -72,6 +84,12 @@ impl Slots {
         }
         s.0 += 1;
         Slot(self)
+    }
+
+    /// `take`, then the place given back at once when the calling thread's work is no longer wanted.
+    pub fn take_wanted(&self, background: bool) -> Option<Slot<'_>> {
+        let slot = self.take(background);
+        wanted().then_some(slot)
     }
 }
 
@@ -140,6 +158,35 @@ mod tests {
         free_hand2.send(()).unwrap();
         assert!(second.recv_timeout(Duration::from_secs(5)).is_ok(), "then the background decode runs");
         free_second.send(()).unwrap();
+    }
+
+    #[test]
+    fn a_decode_superseded_while_it_waits_takes_no_place() {
+        static OWN: Slots = Slots::new();
+        let held = [OWN.take(false), OWN.take(false)];
+        let waiting = |still: bool| {
+            let (tx, rx) = mpsc::channel();
+            let wanted = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(true));
+            let flag = wanted.clone();
+            std::thread::spawn(move || {
+                only_while(move || flag.load(Ordering::SeqCst));
+                let slot = OWN.take_wanted(false);
+                tx.send(slot.is_some()).unwrap();
+            });
+            std::thread::sleep(Duration::from_millis(50));
+            wanted.store(still, Ordering::SeqCst);
+            rx
+        };
+        let superseded = waiting(false);
+        let [first, second] = held;
+        drop(first);
+        assert_eq!(superseded.recv_timeout(Duration::from_secs(5)), Ok(false), "superseded while it waited, it takes nothing");
+        // Twin: one still wanted when its place frees takes it.
+        let again = OWN.take(false);
+        let wanted = waiting(true);
+        drop(again);
+        assert_eq!(wanted.recv_timeout(Duration::from_secs(5)), Ok(true));
+        drop(second);
     }
 
     #[test]

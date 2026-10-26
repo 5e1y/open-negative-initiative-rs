@@ -11,13 +11,15 @@ const ENVELOPE: [&str; 7] = ["version", "importedAt", "label", "exif", "rollDraf
 /// A key the stored document holds and this version does not write, by its path of object keys.
 type Unknown = (Vec<String>, Value);
 
-/// `document`'s text, with the keys `stored` holds that this version does not know, and `own`, a
-/// key this version writes beside the document, set over any stored one.
-pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>, own: Option<(&str, &str)>) -> Result<String, json::Error> {
+/// `document`'s text, with the keys `stored` holds that this version does not know, and `own`, the
+/// keys this version writes beside the document, set over any stored ones.
+pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>, own: &[(&str, &str)]) -> Result<String, json::Error> {
     let mut node = carried(document, stored)?;
-    if let (Some((key, value)), Node::Obj(entries)) = (own, &mut node) {
-        entries.retain(|(k, _)| k != key);
-        entries.push((key.to_owned(), Node::Str(value.to_owned())));
+    if let Node::Obj(entries) = &mut node {
+        for (key, value) in own {
+            entries.retain(|(k, _)| k != key);
+            entries.push(((*key).to_owned(), Node::Str((*value).to_owned())));
+        }
     }
     Ok(json::pretty_sorted(&node))
 }

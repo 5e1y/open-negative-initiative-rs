@@ -13,9 +13,14 @@ pub(super) struct Landed {
     fingerprints: HashMap<String, String>,
 }
 
+/// The folder read asked last: a read still running when another starts stops and lands nothing,
+/// so an older survey never lands after a newer one, and the thumbnails' pass runs on.
+static READS: AtomicU64 = AtomicU64::new(0);
+
 impl Ctl {
     /// The read on its own thread and its own connection; each landing comes back to this thread.
     pub(super) fn read_folder(self: &Rc<Self>, generation: u64, folder: String, index_path: PathBuf) {
+        let ticket = READS.fetch_add(1, Ordering::Relaxed) + 1;
         let (current, computer, filter) = {
             let mut s = self.state.borrow_mut();
             s.org.reads += 1;
@@ -27,7 +32,7 @@ impl Ctl {
                 let Some(index) = LibraryIndex::open(&index_path) else {
                     return with_shell(|c| c.told(tr("Something Went Wrong"), tr("The library index cannot be opened")));
                 };
-                let alive = || current.load(Ordering::Relaxed) == generation;
+                let alive = || current.load(Ordering::Relaxed) == generation && READS.load(Ordering::Relaxed) == ticket;
                 let kept = index_path.parent().map(|caches| caches.join("Surveys"));
                 let place = library::Place { computer: &computer, kept: kept.as_deref() };
                 library::read_rows(&folder, &index, &place, &alive, &mut |rows, done, survey| {
@@ -36,17 +41,17 @@ impl Ctl {
                     let fingerprints = rows.iter().map(|e| (e.path.clone(), thumbnails::key(&e.fingerprint, &e.path, &copies))).collect();
                     let landed = Landed { staged: Archive::from_rows(&folder, &rows, survey, filter), copies, fingerprints };
                     let survey = survey.clone();
-                    with_shell(move |c| c.take_rows(generation, rows, done, survey, landed));
+                    with_shell(move |c| c.take_rows((generation, ticket), rows, done, survey, landed));
                 });
             })
             .expect("library thread");
     }
 
     /// `takeRows` then `layGallery`: the rows laid, the selection and the open photo kept by path.
-    pub(super) fn take_rows(self: &Rc<Self>, generation: u64, rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>, landed: Landed) {
+    pub(super) fn take_rows(self: &Rc<Self>, (generation, ticket): (u64, u64), rows: Vec<oni_library::Entry>, done: bool, survey: Arc<Survey>, landed: Landed) {
         {
             let mut s = self.state.borrow_mut();
-            if s.generation.load(Ordering::Relaxed) != generation {
+            if s.generation.load(Ordering::Relaxed) != generation || READS.load(Ordering::Relaxed) != ticket {
                 return;
             }
             s.copies = landed.copies;
@@ -55,6 +60,7 @@ impl Ctl {
             s.rows = rows;
             s.survey = survey;
             s.read_done = done;
+            s.org.reads_whole += usize::from(done);
             s.landed_presence();
         }
         self.lay_archive();

@@ -61,6 +61,10 @@ pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn 
     let (mut again, mut adopted) = (VecDeque::new(), Vec::new());
     // A row under a folder the disk refused is kept, offline or missing alike: a disk away loses no row.
     for row in index.under(&folder) {
+        // Superseded, the survey may predate a move whose rows were just written under new names.
+        if !alive() {
+            return;
+        }
         let unread = survey.unreadable.iter().any(|u| paths::holds(u, &row.path));
         let stale = survey.sizes.get(&row.path).is_some_and(|size| relink::is_stale(&row.fingerprint, *size));
         if (!listed.contains(row.path.as_str()) && !unread) || stale {

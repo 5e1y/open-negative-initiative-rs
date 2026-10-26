@@ -3960,6 +3960,76 @@
     "detail": "A peer could send DSC_0001.NEF.json or .oni-roll.json into a folder holding DSC_0001.NEF, and the file became the original's settings or the folder's roll marker, read as the truth on the next open. inbox::refused_name refuses a sanitised name that starts with a dot or ends in .json (ROLL_MARKER is both), and prepare-upload leaves such files out before the policy sees them, answering 204 when none is left. Checks: a_sidecar_a_roll_marker_or_a_dot_name_is_refused and a_sidecar_or_a_roll_marker_sent_beside_an_original_is_left_out, each with its twin."
   },
   {
+    "id": 730,
+    "type": "fix",
+    "title": "A disk that stops answering never freezes the interface through the refused folders' lock",
+    "status": "done",
+    "detail": "The volumes thread filtered nav.refused under its guard, so read_dir on a hung SMB mount held the mutex the interface takes in publish_navigator, at every MOUNTS tick. The list is copied out and probed with the lock free. Check a_refused_folder_is_probed_with_the_lock_free (twin: the list filtered under its guard finds the lock taken)."
+  },
+  {
+    "id": 731,
+    "type": "fix",
+    "title": "Two reads of the opened folder at once land only the latest",
+    "status": "done",
+    "detail": "read_again reused the current generation, so a Refresh, the settle timer, a volume back or Locate during a read ran two reads that both landed: an older survey could land last, read_done flipped back and fill, tidy and open ran twice. Each folder read takes a ticket; a later read stops the earlier at its next alive() and its landings are dropped, the generation, and with it the thumbnails' pass, left alone. Window check two_refreshes_at_once_land_only_the_latest_read (twin: two Refreshes one after the other land whole twice)."
+  },
+  {
+    "id": 732,
+    "type": "fix",
+    "title": "Edit Together decodes of a group left give their place to the next group's",
+    "status": "done",
+    "detail": "A decoder thread checked GROUPS only before taking a path, then waited in decode_gate::slot() and decoded for a group gone, ahead of the current tiles and of a photo opened next. decode_gate::only_while sets a thread's predicate; slot() gives the place back when it no longer holds, and tile_source checks the group again before laying the tile. Check a_decode_superseded_while_it_waits_takes_no_place (twin: one still wanted takes its place)."
+  },
+  {
+    "id": 733,
+    "type": "fix",
+    "title": "A roll mask still decoding when its roll is left lands on no other roll",
+    "status": "done",
+    "detail": "roll_mask_taken and roll_mask_loaded wrote r.flat with no check of the roll, so a mask asked in one roll landed on the next one entered. Both landings compare the roll shown, by its frames, with the one asked; a measure that leaves the roll open keeps its mask. Window check in prepare_masks: a load held by a pipe until R2 shows leaves R2 bare (twin: the same load with R2 shown names the panel)."
+  },
+  {
+    "id": 734,
+    "type": "fix",
+    "title": "A folder read superseded after its survey removes no index row",
+    "status": "done",
+    "detail": "read_rows removed every row its survey did not list without checking alive(), so a read in flight erased the rows a New Roll move had just rewritten under their new names. The removal pass checks alive() before each row. Check a_read_superseded_after_its_survey_removes_no_row (twin: a read still alive drops the row)."
+  },
+  {
+    "id": 735,
+    "type": "fix",
+    "title": "The previous photo's histograms never show on the next",
+    "status": "done",
+    "detail": "A trace asked before clear() (no inputs for the new photo, or a failed render) still landed after it. Each slot counts its clears; a trace lands only when no clear came since its ask, its texture let go with the clear. Check a_trace_asked_before_a_clear_lands_nowhere (twins: the slot not cleared, and a trace asked after the clear, land)."
+  },
+  {
+    "id": 736,
+    "type": "fix",
+    "title": "One writer at a time per sidecar across the app",
+    "status": "done",
+    "detail": "set_exif after an export and the Prepare draft queue read a sidecar then wrote it back, so the store's debounced flush landing between them was overwritten with older settings. sidecar::write and every read-modify-write helper (update, set_label, set_exif, set_roll_draft, set_trashed) hold the sidecar's own lock from the read to the rename. Check a_field_set_waits_for_the_write_holding_its_sidecar (twin: another photo's sidecar is free)."
+  },
+  {
+    "id": 737,
+    "type": "fix",
+    "title": "An original re-dated by a tool keeps its sidecar; a new sheet never inherits a sidecar left behind",
+    "status": "done",
+    "detail": "A scan whose date exiftool set right by rewriting it differed in date and digest, so its sidecar was set aside as an orphan. Each write now stores originalTail, the digest of the last block, Rust's own key as originalPrint is; a last block alike is the same photo, and a block of under 64 byte values (a scan's black or clipped bottom rows) stores none, so namesakes ending alike stay foreign. A new contact sheet also counts a name as taken when its sidecar exists, so it never takes a trashed sheet's medal or mark. Checks an_original_whose_date_a_tool_set_right_by_rewriting_it_keeps_its_sidecar (twins: another photo of that name, and another scan ending in black, stay foreign) and a_sheet_never_takes_the_name_of_a_sidecar_left_behind (twin: a free name is taken)."
+  },
+  {
+    "id": 738,
+    "type": "fix",
+    "title": "The thumbnail sweep waits a day after the index's rows were thrown away",
+    "status": "done",
+    "detail": "tidy::settled read only the index file's birth, so after a schema drop in an old file the first read's few rows decided the sweep and up to SWEPT tiles of other folders were deleted. The index dates each creation of its photos table in a rebuilt table the Swift app never reads; settled uses it, the file's birth standing in for an index never dated. Checks a_schema_drop_dates_the_rebuild_and_a_plain_open_keeps_its_date and the_sweep_waits_on_the_rebuild_date_not_the_file_birth (twin: dated now, it has not settled)."
+  },
+  {
+    "id": 739,
+    "type": "fix",
+    "title": "A folder rename waits for a disk gesture and never replaces a folder; a trash row acts on the folder it showed",
+    "status": "done",
+    "detail": "rename_folder ran without busy_said, so a folder could be renamed under a running move or mark; it is refused and said now. Its rename looked for the target then renamed plainly, which replaces an empty folder made meanwhile: rename_new (RENAME_EXCL) renames, a change of case alone plainly. The ONI Trash's folder rows resolved their index against the trash cut anew (a tidy prune reads it without republishing); each row's folder is kept as published. Checks a_rename_waits_for_a_move_under_way (window; twin: once landed the rename goes through), a_rename_never_replaces_a_folder_made_meanwhile (twin: a plain rename replaces it) and a_trash_row_names_the_folder_it_showed (twin: the index read anew names another folder)."
+  },
+  {
     "id": 740,
     "type": "fix",
     "title": "Entering export reads each scan's head alone, and its lines land from a thread of their own",

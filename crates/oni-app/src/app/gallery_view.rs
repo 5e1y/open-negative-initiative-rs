@@ -261,7 +261,7 @@ impl Ctl {
         let _ = std::thread::Builder::new().name("tidying".into()).spawn(move || {
             crate::decode_gate::in_background();
             let Some(index) = LibraryIndex::open(&index_path) else { return };
-            let sweeping = library::tidy::settled(&index_path);
+            let sweeping = library::tidy::settled(&index, &index_path);
             let done = library::tidy::tidy(&index, &support, &computer, &kept, sweeping);
             crate::timing::line(&format!("tidy: {} rows pruned, {} thumbnails swept", done.pruned, done.swept));
             if done.pruned > 0 {

@@ -10,26 +10,36 @@ impl Ctl {
     /// `takeRollFlatField`: the picked frame decoded as the roll's mask at the whole amount, then
     /// left out of the measurement it would skew; never offered to move out of the library.
     pub(in crate::app) fn take_roll_mask(self: &Rc<Self>) {
-        let (path, support) = {
+        let (path, support, roll) = {
             let mut s = self.state.borrow_mut();
             let Some(path) = s.prepare.flat_pick.clone().filter(|_| !s.masking.setting) else { return };
             s.masking.setting = true;
             // The decode reads the frame's sidecar, the open frame's as the hand left it.
             let _ = s.store.flush();
-            (path, s.support.clone())
+            (path, s.support.clone(), s.prepare.roll())
         };
         self.publish_prepare();
         self.publish_roll_tab();
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let result = flat_fields::load(&support, Path::new(&path), |p| masks::picture(&engine, p));
-            with_shell(move |c| c.roll_mask_taken(&path, result));
+            with_shell(move |c| c.roll_mask_taken(roll, &path, result));
         });
     }
 
-    fn roll_mask_taken(self: &Rc<Self>, path: &str, result: Result<Entry, Failure>) {
+    /// Whether Prepare still shows the roll a mask was asked for: one left meanwhile takes no mask.
+    fn same_roll(&self, roll: &[String]) -> bool {
+        let r = &self.state.borrow().prepare;
+        r.shown && r.roll() == roll
+    }
+
+    fn roll_mask_taken(self: &Rc<Self>, roll: Vec<String>, path: &str, result: Result<Entry, Failure>) {
         self.state.borrow_mut().masking.setting = false;
         self.masks_changed();
+        if !self.same_roll(&roll) {
+            self.publish_prepare();
+            return self.publish_roll_tab();
+        }
         match result {
             Ok(entry) => {
                 let r = &mut self.state.borrow_mut().prepare;
@@ -57,22 +67,26 @@ impl Ctl {
         let chosen = chooser();
         self.state.borrow_mut().masking.chooser = chooser;
         let Some(file) = chosen else { return };
-        let support = {
+        let (support, roll) = {
             let mut s = self.state.borrow_mut();
             s.prepare.loading_mask = true;
-            s.support.clone()
+            (s.support.clone(), s.prepare.roll())
         };
         self.publish_prepare();
         let engine = self.engine.clone();
         std::thread::spawn(move || {
             let result = flat_fields::load(&support, &file, |p| masks::picture(&engine, p));
-            with_shell(move |c| c.roll_mask_loaded(result));
+            with_shell(move |c| c.roll_mask_loaded(roll, result));
         });
     }
 
-    fn roll_mask_loaded(self: &Rc<Self>, result: Result<Entry, Failure>) {
+    fn roll_mask_loaded(self: &Rc<Self>, roll: Vec<String>, result: Result<Entry, Failure>) {
         self.state.borrow_mut().prepare.loading_mask = false;
         self.masks_changed();
+        if !self.same_roll(&roll) {
+            self.publish_prepare();
+            return self.publish_roll_tab();
+        }
         match result {
             Ok(entry) => {
                 let r = &mut self.state.borrow_mut().prepare;
