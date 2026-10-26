@@ -26,12 +26,17 @@ fn scratch() -> PathBuf {
     dir
 }
 
-/// Roll #8 as hard links beside copies of its sidecars, so no sidecar is written beside the originals.
+/// Roll #8's frames as hard links beside copies of their sidecars and marker, so no sidecar is written
+/// beside the originals and a contact sheet made in the roll never takes the first tile.
 fn mirror(roll: &Path, into: &Path) -> PathBuf {
     let dir = into.join("Roll #8");
     std::fs::create_dir_all(&dir).unwrap();
     for entry in std::fs::read_dir(roll).unwrap() {
         let from = entry.unwrap().path();
+        let name = from.file_name().unwrap().to_string_lossy();
+        if !name.starts_with("DSC_") && name != ".oni-roll.json" {
+            continue;
+        }
         let to = dir.join(from.file_name().unwrap());
         if from.extension().is_some_and(|e| e == "json") {
             std::fs::copy(&from, &to).unwrap();

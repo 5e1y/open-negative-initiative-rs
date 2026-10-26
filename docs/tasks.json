@@ -4042,5 +4042,12 @@
     "title": "An ISO date whose zone holds a non-ASCII character is refused, not a panic",
     "status": "done",
     "detail": "parse_iso8601 sliced the six-byte zone at byte 3, which panicked inside a two-byte character (2023-11-14T22:13:20+0é00), on any sidecar or preferences read. The colon is compared as a byte. Check a_zone_with_a_non_ascii_character_is_refused (parse and serde both refuse; twin: +00:00 reads)."
+  },
+  {
+    "id": 702,
+    "type": "test",
+    "title": "The roll #8 checks read the roll's own reference and frames",
+    "status": "done",
+    "detail": "roll8 membership reads the reference the first frame names instead of a constant a re-prepared roll no longer carries; the export windows mirror only the roll's frames and marker, so a contact sheet made in the roll never takes the first tile, and say which photo opened when ⌘G misses."
   }
 ]
