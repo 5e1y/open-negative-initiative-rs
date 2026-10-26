@@ -4294,5 +4294,12 @@
     "title": "The engine keeps the masks and patches it reads under a 128 MB budget and lets them go with the editor",
     "status": "done",
     "detail": "Engine.custom and Engine.patches kept every custom flat-field mask (about 42 MB each) and dust patch read in the session. Both are now kept under INPUTS_KEPT (128 MB), the longest unused let go first and never one the current read names; trim (the return to the gallery) drops them, so a forgotten mask is read again from its file. Misses are no longer stored, as they were asked again anyway. Check the_patches_kept_stay_under_their_budget_and_go_with_the_editor; twin: a render naming more than the budget keeps every patch it names. The budget and its reads live in render/engine/kept.rs."
+  },
+  {
+    "id": 703,
+    "type": "feature",
+    "title": "On the Scanner face, Compare's before is the Pro face's plain conversion",
+    "status": "done",
+    "detail": "compare::reference renders the reset frame on the Pro face whatever the live face, so the Scanner's table and keypad show as part of the after; the same before on either face. Owner's call, beyond Swift. Check on_the_scanner_face_the_before_is_the_pro_faces_plain_conversion, its twin the bar's reset keeping the Scanner face."
   }
 ]

@@ -8,7 +8,7 @@ use oni_settings::frame::{Correction, FlatField, FlatFieldMask, RollReference};
 use oni_settings::id::Id;
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::tone::Print;
-use oni_settings::{ConversionMode, PipelineSettings};
+use oni_settings::{ConversionMode, Face, PipelineSettings};
 
 #[test]
 fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_crop_and_dust() {
@@ -37,4 +37,17 @@ fn compares_before_is_the_frame_at_rest_with_its_window_rig_capture_crop_and_dus
     // Twin: a neutral block carrying the gains and levels alone misses the exposure and the flat-field.
     let former = PipelineSettings { mode: edited.mode, geometry: edited.geometry, gains: edited.gains, levels: edited.levels, ..PipelineSettings::default() };
     assert!(former.print.exposure != reference.print.exposure && former.flat_field != reference.flat_field);
+}
+
+#[test]
+fn on_the_scanner_face_the_before_is_the_pro_faces_plain_conversion() {
+    let roll = RollReference { id: Id::new(), stops: [0.4, 0.0, -0.3], black: [0.19, 0.23, 0.31], white: [0.53, 0.58, 0.67], base: None, median: None };
+    let mut pro = balance::written(&roll, &PipelineSettings::rest(ConversionMode::Negative, true));
+    pro.print.exposure += 0.5;
+    let scanner = PipelineSettings { face: Face::Scanner, scanner: ScannerClicks::new(2, 0, -1, 0, 0), ..pro.clone() };
+    let before = compare::reference(&scanner);
+    assert_eq!(before.face, Face::Pro, "the Scanner's before leaves its table out");
+    assert_eq!(before, compare::reference(&pro), "the same before on either face");
+    // Twin: the reset the bar lands on keeps the Scanner face, so its table would still show.
+    assert_eq!(oni_core::parameters::imported(&scanner).face, Face::Scanner);
 }
