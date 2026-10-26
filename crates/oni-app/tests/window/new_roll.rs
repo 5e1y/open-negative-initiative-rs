@@ -6,7 +6,7 @@ use oni_app::{Confirm, Told};
 use oni_core::{Archive, EditorStore};
 use oni_library::navigator::Computer;
 use oni_library::paths;
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -92,6 +92,22 @@ pub(crate) fn a_new_roll_asks_names_the_folder_and_counts_files() {
     assert_eq!(listed(&roll), [".oni-roll.json", "A.tif", "A.tif.xmp", "B.tif", "B.tif.pp3"]);
     assert!(scans.join("Roll 2/C.tif").exists() && listed(&scans) == [dated.as_str(), "Roll 2"], "{:?}", listed(&scans));
     assert_eq!(told(&shell), None, "a whole New Roll says nothing");
+
+    // The roll's name typed over the date the app proposes, then ⌘Z: the photos come back from it.
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.until("the roll's row named in place", Duration::from_secs(30), || lib.get_rows().iter().any(|r| r.renaming));
+    let row = lib.get_rows().iter().position(|r| r.renaming).unwrap();
+    lib.invoke_row_rename_committed(row as i32, "Portra".into());
+    rig.until("the roll renamed", Duration::from_secs(30), || ctl.state.borrow().read_done() && scans.join("Portra").is_dir());
+    assert!(scans.join("Portra/A.tif").exists() && !roll.exists(), "twin: the photos stand in the renamed folder");
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
+    ctl.act(oni_app::Act::Undo);
+    rig.landed(&ctl);
+    rig.until("the photos back", Duration::from_secs(30), || ctl.state.borrow().read_done() && scans.join("A.tif").exists());
+    assert_eq!(told(&shell), None, "nothing left behind to say");
+    let back = listed(&scans);
+    assert!(["A.tif", "A.tif.xmp", "B.tif", "B.tif.pp3"].iter().all(|n| back.iter().any(|b| b == n)) && !scans.join("Portra").exists(), "{back:?}");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

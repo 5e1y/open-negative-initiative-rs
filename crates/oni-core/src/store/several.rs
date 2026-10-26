@@ -121,18 +121,32 @@ impl EditorStore {
         n
     }
 
-    /// `updateRoll` and `applyFilm`: the roll on every target, the open frame's in memory and
-    /// written at rest, the others' sidecars at once as one gallery step; `None` ungroups.
+    /// `updateRoll`: the roll on every target, the open frame's in memory and written at rest, the
+    /// others' sidecars at once as one gallery step, the open frame in it too.
     pub fn set_film(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: &str) -> usize {
+        self.film_on(paths, film, |_| label.to_string())
+    }
+
+    /// `applyFilm`: `set_film`, its step counting the photos; `None` ungroups.
+    pub fn apply_film(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: &str) -> usize {
+        self.film_on(paths, film, |n| trn("{label} · {n} photo", "{label} · {n} photos", n as u64).replace("{label}", label))
+    }
+
+    fn film_on(&mut self, paths: &[String], film: Option<oni_settings::Film>, label: impl Fn(usize) -> String) -> usize {
         let open = self.path().map(str::to_string);
-        let mut count = 0;
-        if open.as_ref().is_some_and(|p| paths.contains(p)) {
-            let mut next = self.settings.clone();
-            next.film = film.clone();
-            if !self.replace(next).is_empty() {
-                self.last_change = Some(self.now());
-                count += 1;
-            }
+        let mut before = Settings::new();
+        let mut after = Settings::new();
+        // The open frame joins the gallery step, as `applyFilm`'s, and records its own editor step.
+        if let Some(open) = open.as_ref().filter(|p| paths.contains(p) && self.takes_hands())
+            && self.settings.film != film
+        {
+            let next = PipelineSettings { film: film.clone(), ..self.settings.clone() };
+            before.insert(open.clone(), self.settings.clone());
+            after.insert(open.clone(), next.clone());
+            let now = self.now();
+            self.replace(next);
+            self.last_change = Some(now);
+            self.settle_beside(now, paths);
         }
         let others: Vec<String> = paths.iter().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
         let (was, now) = self.modify_with(&others, true, |_, s| {
@@ -140,8 +154,10 @@ impl EditorStore {
             next.film = film.clone();
             Some(next)
         });
-        count += was.len();
-        self.gallery.record(&was, &now, label, None);
+        before.extend(was);
+        after.extend(now);
+        let count = before.len();
+        self.gallery.record(&before, &after, &label(count), None);
         count
     }
 }

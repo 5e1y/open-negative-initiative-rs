@@ -66,15 +66,15 @@ impl Ctl {
         lib.set_stock_artwork(artwork.unwrap_or_default());
         lib.set_stock(stock.into());
         lib.set_stock_note(note.into());
-        let default = if film.shot_date.is_none() { roll.first.as_ref().and_then(|e| e.captured_at) } else { None };
+        let default = default_date(&roll);
         lib.set_shot_date_set(film.shot_date.is_some());
         lib.set_shot_date_default(default.is_some());
         let key = format!("roll {} {:?} {:?} {:?}", film.id, film.shot_date, film.camera_body, default);
         if s.org.info_loaded.as_deref() != Some(key.as_str()) {
-            let (y, m, d) = oni_library::info::ymd(film.shot_date.or(default).unwrap_or_else(Date::now));
-            lib.set_month(m.to_string().into());
-            lib.set_day(d.to_string().into());
-            lib.set_year(y.to_string().into());
+            let [m, d, y] = date_fields(&roll);
+            lib.set_month(m.into());
+            lib.set_day(d.into());
+            lib.set_year(y.into());
             lib.set_camera_body(film.camera_body.clone().unwrap_or_default().into());
             s.org.info_loaded = Some(key);
         }
@@ -106,7 +106,71 @@ impl Ctl {
         self.publish_info();
     }
 
+    /// Which roll or project the sidebar shows, so a draft typed for one never lands on another.
+    fn info_subject(&self) -> Option<String> {
+        let s = self.state.borrow();
+        if s.org.projects_surface {
+            return s.project_group().map(|g| format!("project {}", g.id));
+        }
+        s.roll().filter(|_| !s.trash_shown()).map(|r| format!("roll {}", r.film.id))
+    }
+
+    pub(in crate::app) fn title_edited(&self, draft: &str) {
+        let subject = self.info_subject().filter(|_| !draft.is_empty());
+        self.state.borrow_mut().org.title_draft = subject.map(|on| (on, draft.to_string()));
+    }
+
+    /// What the sidebar's fields hold and never committed, written before a scene hides them: a
+    /// field destroyed with the focus never says it was left. One step for the roll's fields.
+    pub(in crate::app) fn commit_info_drafts(self: &Rc<Self>) {
+        // A disk gesture under way refuses the roll's write, so the drafts stay in their fields.
+        if self.state.borrow().org.disk_busy.is_some() {
+            return;
+        }
+        let Some(w) = self.window() else { return };
+        let lib = w.global::<Library>();
+        let subject = self.info_subject();
+        let draft = self.state.borrow_mut().org.title_draft.take();
+        let title = draft.filter(|(on, _)| Some(on) == subject.as_ref()).map(|(_, t)| t);
+        if self.state.borrow().org.projects_surface {
+            if lib.get_info_kind() == 2 {
+                self.description_committed(&lib.get_description());
+            }
+            if let Some(title) = title {
+                self.title_committed(&title);
+            }
+            return;
+        }
+        let Some(roll) = self.state.borrow().roll().filter(|_| lib.get_info_kind() == 1) else { return };
+        let mut film = roll.film.clone();
+        if let Some(name) = title.and_then(|t| picking::named(&t, &film.name)) {
+            film.name = name;
+        }
+        let body = lib.get_camera_body().trim().to_string();
+        if body != film.camera_body.clone().unwrap_or_default() {
+            film.camera_body = (!body.is_empty()).then_some(body);
+        }
+        let typed = [lib.get_month(), lib.get_day(), lib.get_year()].map(|t| t.to_string());
+        if typed != date_fields(&roll)
+            && let Some(date) = typed_date(&typed[0], &typed[1], &typed[2])
+        {
+            film.shot_date = Some(date);
+        }
+        if film == roll.film {
+            return;
+        }
+        let label = if film.name != roll.film.name {
+            tr("Rename Roll")
+        } else if film.camera_body != roll.film.camera_body {
+            tr("Set Camera Body")
+        } else {
+            tr("Set Shot Date")
+        };
+        self.update_roll(label, |f| *f = film);
+    }
+
     pub(in crate::app) fn title_committed(self: &Rc<Self>, draft: &str) {
+        self.state.borrow_mut().org.title_draft = None;
         if self.state.borrow().org.projects_surface {
             let renamed = {
                 let mut s = self.state.borrow_mut();
@@ -127,11 +191,7 @@ impl Ctl {
 
     /// `DateFields.commit`: month and year must read as numbers, the day falls back on the first.
     pub(in crate::app) fn shot_date_committed(self: &Rc<Self>, month: &str, day: &str, year: &str) {
-        let made = match (month.trim().parse::<u32>(), year.trim().parse::<i32>()) {
-            (Ok(m), Ok(y)) => oni_library::info::made(y, m, day.trim().parse().unwrap_or(1)),
-            _ => None,
-        };
-        match made {
+        match typed_date(month, day, year) {
             Some(date) => self.update_roll(tr("Set Shot Date"), |f| f.shot_date = Some(date)),
             None => {
                 self.state.borrow_mut().org.info_loaded = None;
@@ -166,5 +226,24 @@ impl Ctl {
         if set {
             self.save_projects();
         }
+    }
+}
+
+/// The first photo's capture, shown while the roll has no date of its own.
+fn default_date(roll: &Roll) -> Option<Date> {
+    if roll.film.shot_date.is_none() { roll.first.as_ref().and_then(|e| e.captured_at) } else { None }
+}
+
+/// The month, day and year the date fields show for `roll`.
+fn date_fields(roll: &Roll) -> [String; 3] {
+    let (y, m, d) = oni_library::info::ymd(roll.film.shot_date.or(default_date(roll)).unwrap_or_else(Date::now));
+    [m.to_string(), d.to_string(), y.to_string()]
+}
+
+/// The date the fields spell: month and year must read as numbers, the day falls back on the first.
+fn typed_date(month: &str, day: &str, year: &str) -> Option<Date> {
+    match (month.trim().parse::<u32>(), year.trim().parse::<i32>()) {
+        (Ok(m), Ok(y)) => oni_library::info::made(y, m, day.trim().parse().unwrap_or(1)),
+        _ => None,
     }
 }

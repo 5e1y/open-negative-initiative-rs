@@ -22,16 +22,15 @@ impl EditorStore {
     }
 
     /// Before a mark runs off the host's thread: the open frame among `paths` written, and closed
-    /// when it goes to the ONI Trash, so no edit lands on it meanwhile.
+    /// when it goes to the ONI Trash, so no edit lands on it meanwhile; a refused write keeps its edits.
     pub fn mark_begun(&mut self, paths: &[String], date: Option<Date>) {
         if !self.path().is_some_and(|p| paths.iter().any(|t| t == p)) {
             return;
         }
-        self.flush();
         if date.is_some() {
-            self.open = None;
-            self.history = History::default();
-            self.replace(PipelineSettings::default());
+            self.close();
+        } else {
+            self.flush();
         }
     }
 
@@ -65,9 +64,7 @@ impl EditorStore {
             self.failure = Some(message);
         }
         if marked && self.path().is_some_and(|p| outcome.done.iter().any(|d| d == p)) {
-            self.open = None;
-            self.history = History::default();
-            self.replace(PipelineSettings::default());
+            self.close();
         }
     }
 }

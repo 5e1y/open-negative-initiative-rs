@@ -3,14 +3,39 @@
 
 use super::*;
 use oni_library::roll_folder::{self, Walked};
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Condvar, Mutex, PoisonError};
 
-/// Held while a gesture's writes or moves run; a quit takes it to wait for the last one.
+/// Held while a gesture's writes or moves run, so they run one at a time.
 static RUNNING: Mutex<()> = Mutex::new(());
 
-/// Returns once no gesture's writes or moves run, so a quit never cuts a frame's move halfway.
+/// The gestures handed to a thread and not yet run, counted before the thread starts, so a quit
+/// landing first still waits for them.
+static IN_FLIGHT: Mutex<usize> = Mutex::new(0);
+static LANDED: Condvar = Condvar::new();
+
+/// Returns once no gesture's writes or moves run nor wait to, so a quit never cuts a frame's move halfway.
 pub(in crate::app) fn wait_for_disk() {
-    drop(RUNNING.lock().unwrap_or_else(PoisonError::into_inner));
+    let mut flying = IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner);
+    while *flying > 0 {
+        flying = LANDED.wait(flying).unwrap_or_else(PoisonError::into_inner);
+    }
+}
+
+/// One gesture counted in flight until dropped, its thread's run done or its spawn failed.
+struct Flight;
+
+impl Flight {
+    fn new() -> Flight {
+        *IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner) += 1;
+        Flight
+    }
+}
+
+impl Drop for Flight {
+    fn drop(&mut self) {
+        *IN_FLIGHT.lock().unwrap_or_else(PoisonError::into_inner) -= 1;
+        LANDED.notify_all();
+    }
 }
 
 impl Ctl {
@@ -30,10 +55,13 @@ impl Ctl {
     ) {
         self.state.borrow_mut().org.disk_busy = Some(busy.to_owned());
         let said = busy.to_owned();
+        let flight = Flight::new();
         let spawned = std::thread::Builder::new().name("disk gesture".into()).spawn(move || {
             let outcome = {
                 let _turn = RUNNING.lock().unwrap_or_else(PoisonError::into_inner);
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
+                let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run));
+                drop(flight);
+                outcome
             };
             with_shell(move |c| {
                 c.state.borrow_mut().org.disk_busy = None;

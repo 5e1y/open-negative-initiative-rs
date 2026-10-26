@@ -168,7 +168,7 @@ impl Ctl {
             CellAction::NewRoll => self.new_roll(),
             CellAction::Ungroup => {
                 let paths = line.scope.clone();
-                self.gesture(&paths, |store| store.set_film(&paths, None, tr("Ungroup")));
+                self.gesture(&paths, |store| store.apply_film(&paths, None, tr("Ungroup")));
             }
             CellAction::NewProject => self.new_project(&scope),
             CellAction::AddToProject(id) => self.ask_add_to_project(scope, id),

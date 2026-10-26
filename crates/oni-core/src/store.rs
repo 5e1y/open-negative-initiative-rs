@@ -176,6 +176,12 @@ impl EditorStore {
         self.open.as_ref().is_some_and(|o| o.absent)
     }
 
+    /// Whether a gesture may change the open frame: its original in sight and its sidecar one this
+    /// version writes, or the change would show and never be saved.
+    pub fn takes_hands(&self) -> bool {
+        self.writable() && !self.inert()
+    }
+
     /// Bumped by every change, from whatever hand.
     pub fn revision(&self) -> u64 {
         self.revision

@@ -245,6 +245,8 @@ export global Library {
     in-out property <length> grid-y;
     callback medal-picked(int);
     callback title-committed(string);
+    // The roll's or project's name as it is typed, empty once the field ends.
+    callback title-edited(string);
     callback select-roll-type();
     callback shot-date-committed(string, string, string);
     callback shot-date-cleared();

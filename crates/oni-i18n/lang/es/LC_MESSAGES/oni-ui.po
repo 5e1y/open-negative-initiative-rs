@@ -121,7 +121,7 @@ msgstr "Actualizar"
 msgid "Show the Selected Photo"
 msgstr "Mostrar la foto seleccionada"
 
-#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
+#: crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/organising/cell_menu.rs crates/oni-ui/ui/app.slint
 msgid "Edit"
 msgstr "Edición"
 
@@ -2370,6 +2370,10 @@ msgid "The roll's folder could not be made: {e}"
 msgstr "No se pudo crear la carpeta del rollo: {e}"
 
 #: crates/oni-app/src/app/gestures/disk.rs
+msgid "Nothing was moved, as the open photo's settings could not be saved: {error}"
+msgstr "No se ha movido nada porque no se pudieron guardar los ajustes de la foto abierta: {error}"
+
+#: crates/oni-app/src/app/gestures/disk.rs
 msgid "Move This Photo into a New Roll?"
 msgid_plural "Move {n} Photos into a New Roll?"
 msgstr[0] "¿Mover esta foto a un rollo nuevo?"
@@ -2984,12 +2988,12 @@ msgid "Rename Roll"
 msgstr "Renombrar rollo"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
-msgid "Set Shot Date"
-msgstr "Definir fecha de toma"
-
-#: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Set Camera Body"
 msgstr "Definir cuerpo de cámara"
+
+#: crates/oni-app/src/app/organising/info_sidebar.rs
+msgid "Set Shot Date"
+msgstr "Definir fecha de toma"
 
 #: crates/oni-app/src/app/organising/info_sidebar.rs
 msgid "Default, from this roll's {mode} mode"
@@ -3480,6 +3484,10 @@ msgstr "Se eliminan la medición de su rollo y todos los ajustes de su aspecto, 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Reset to Default"
 msgstr "Restablecer valores predeterminados"
+
+#: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
+msgid "Balance"
+msgstr "Balance"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -4018,10 +4026,6 @@ msgid "Your go-to balance"
 msgstr "Tu balance de cabecera"
 
 #: crates/oni-app/src/wrapped.rs
-msgid "Balance"
-msgstr "Balance"
-
-#: crates/oni-app/src/wrapped.rs
 msgid "Your signature look"
 msgstr "Tu sello personal"
 
@@ -4250,6 +4254,12 @@ msgid "Join the roll"
 msgid_plural "Join the roll with {n} photos"
 msgstr[0] "Unir al rollo"
 msgstr[1] "Unir al rollo con {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "{label} · {n} photo"
+msgid_plural "{label} · {n} photos"
+msgstr[0] "{label} · {n} foto"
+msgstr[1] "{label} · {n} fotos"
 
 #: crates/oni-library/src/lib.rs
 msgid "{file} cannot be read, so it is kept as it is: {error}"

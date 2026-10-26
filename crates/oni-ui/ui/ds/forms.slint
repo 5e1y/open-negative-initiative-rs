@@ -209,6 +209,8 @@ export component EditableTitle inherits VerticalLayout {
     in property <string> text;
     in property <string> placeholder;
     callback committed(string);
+    // What the field holds while it is typed over, empty once it ends.
+    callback edited(string);
     property <bool> renaming;
     if !root.renaming: Label {
         role: TextRole.title;
@@ -220,7 +222,8 @@ export component EditableTitle inherits VerticalLayout {
         outdent: true;
         text: root.text;
         placeholder: root.placeholder;
-        committed(t) => { root.renaming = false; root.committed(t); }
-        cancelled => { root.renaming = false; }
+        edited(t) => { root.edited(t); }
+        committed(t) => { root.renaming = false; root.edited(""); root.committed(t); }
+        cancelled => { root.renaming = false; root.edited(""); }
     }
 }

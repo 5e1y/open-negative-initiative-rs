@@ -67,9 +67,9 @@ impl Ctl {
             return;
         }
         self.drain_drafts();
-        let failure = self.state.borrow_mut().store.flush();
-        if let Some(message) = failure {
-            self.told(tr("New Roll"), &message);
+        let moving: Vec<Move> = plan.units.iter().flat_map(|u| u.moves.iter().cloned()).collect();
+        if self.unsaved_among(tr("New Roll"), &moving) {
+            return;
         }
         let parent = plan.parent.clone();
         self.on_disk(
@@ -106,6 +106,29 @@ impl Ctl {
         self.publish_bar();
     }
 
+    /// The open frame's settings written before its file moves; a refused write refuses the move,
+    /// said under `title`, or its edits would stay behind.
+    pub(in crate::app) fn unsaved_among(&self, title: &str, moves: &[Move]) -> bool {
+        let failure = self.state.borrow_mut().store.flush();
+        let Some(error) = failure else { return false };
+        let open = self.state.borrow().store.editor_ref().and_then(|e| e.path().map(str::to_string));
+        if !open.is_some_and(|o| moves.iter().any(|m| oni_library::paths::holds(&m.from, &o))) {
+            self.told(title, &error);
+            return false;
+        }
+        self.told(title, &tr!("Nothing was moved, as the open photo's settings could not be saved: {error}", error = error));
+        true
+    }
+
+    /// `followed`, for a move no gallery step made, a folder renamed or found elsewhere: the steps
+    /// follow it too, so an undo reaches the files under their new names.
+    pub(in crate::app) fn followed_outside(self: &Rc<Self>, moves: &[Move]) {
+        if let Some(store) = self.state.borrow_mut().store.editor() {
+            store.follow_gallery(moves);
+        }
+        self.followed(moves);
+    }
+
     /// `followed(_:)`: the index, the rows held, the picks, the rings, the folds, the projects'
     /// recorded paths and the open frame go where the disk moved them; the folder is read again.
     pub(in crate::app) fn followed(self: &Rc<Self>, moves: &[Move]) {
@@ -122,6 +145,10 @@ impl Ctl {
             let s = &mut *guard;
             // A read in flight surveyed the old names: superseded, its rows would drop the moved picks.
             s.generation.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            // The store first: the open frame's next write and the edits kept unsaved go to the new path.
+            if let Some(store) = s.store.editor() {
+                store.follow(moves);
+            }
             if let Some(index) = &s.index {
                 for row in index.all() {
                     if let Some(to) = moved(&row.path) {
