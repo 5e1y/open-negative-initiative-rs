@@ -5,6 +5,10 @@ use super::*;
 /// The share code's version and marker: a later format gets its own, and this one stays readable.
 pub const SHARE_CODE_PREFIX: &str = "ONI1:";
 
+/// The most a code's JSON inflates to: a preset holds a few KB, and deflate's 1000:1 would let a
+/// pasted megabyte claim a gigabyte on the interface thread.
+pub const MAX_SHARE_JSON: u64 = 1 << 20;
+
 /// The preset as one line: its carried rows laid on neutral settings, every key still at its
 /// default dropped, raw deflate plus an FNV-1a check, then base64url; the codec restores the rest.
 pub fn share_code(preset: &Preset) -> Result<String, json::Error> {
@@ -44,7 +48,10 @@ pub fn from_share_code(text: &str) -> Option<Preset> {
     }
     let (deflated, check) = packed.split_at(packed.len() - 4);
     let mut json = Vec::new();
-    flate2::read::DeflateDecoder::new(deflated).read_to_end(&mut json).ok()?;
+    flate2::read::DeflateDecoder::new(deflated).take(MAX_SHARE_JSON + 1).read_to_end(&mut json).ok()?;
+    if json.len() as u64 > MAX_SHARE_JSON {
+        return None;
+    }
     (checksum(&json) == check).then(|| decode(&json)).flatten()
 }
 

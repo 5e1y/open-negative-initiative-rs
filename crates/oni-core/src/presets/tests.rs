@@ -143,6 +143,30 @@ fn a_code_built_as_the_swift_app_builds_it_reads_back() {
     assert!(from_share_code(&format!("ONI1:{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&wrapped))).is_none());
 }
 
+/// A code whose JSON inflates past the cap is refused before it is held whole; one under it reads.
+#[test]
+fn a_code_inflating_past_the_cap_is_refused_and_one_under_it_reads() {
+    use base64::Engine;
+    use std::io::Write;
+    let code = |note_len: usize| {
+        let json = format!(
+            r#"{{"preset":{{"id":"3676F1B6-B28F-4B26-9125-71C8039CD81B","name":"Azure","note":"{}","parameters":["sharpen"],"tint":"teal"}},"settings":{{"sharpen":{{"amount":1.5}}}},"version":19}}"#,
+            " ".repeat(note_len)
+        );
+        let mut deflater = flate2::write::DeflateEncoder::new(Vec::new(), flate2::Compression::best());
+        deflater.write_all(json.as_bytes()).unwrap();
+        let mut packed = deflater.finish().unwrap();
+        packed.extend_from_slice(&checksum(json.as_bytes()));
+        format!("ONI1:{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&packed))
+    };
+    let cap = MAX_SHARE_JSON as usize;
+    let bomb = code(cap);
+    assert!(bomb.len() < 10_000, "a short paste inflating past a megabyte");
+    assert!(from_share_code(&bomb).is_none());
+    // Twin: a JSON just under the cap is a well-formed code and reads back.
+    assert!(from_share_code(&code(cap - 1000)).is_some_and(|p| p.name == "Azure"));
+}
+
 #[test]
 fn importing_never_overwrites_a_held_preset() {
     let dir = folder("import");
