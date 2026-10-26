@@ -74,6 +74,10 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Media_A
 clipboard-win = "5.4"
 rfd = { version = "0.17", default-features = false }
 
+# The executable's icon, compiled into its resources by the Windows SDK's `rc`.
+[target.'cfg(windows)'.build-dependencies]
+winresource = { version = "0.1", default-features = false }
+
 [dev-dependencies]
 femtovg = { version = "0.27", default-features = false, features = ["swash", "wgpu"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "tiff"] }

@@ -3792,6 +3792,62 @@
     "detail": "The handle route (Windows) wraps a FILE* whose get_char is fgetc, which takes the CRT lock on every byte, about 25 million for a 24 MP NEF, over the default 4 KB buffer. handle_stream sets a 1 MB buffer and, on Windows, reads with _fgetc_nolock: a stream is never shared between threads. The handle route still decodes the synthetic DNG and two frames of roll #8 bit for bit as the name route (the_handle_route_decodes_bit_for_bit_as_the_name_route with its twin). The Windows timing is not measured here."
   },
   {
+    "id": 690,
+    "type": "perf",
+    "title": "The archive's tree is cut again only when its shape moves",
+    "status": "done",
+    "detail": "Archive keeps what it was cut from (folder, rows, survey, filter) and its rows laid flat. A lay on the same rows and survey keeps it (a read again on focus, opening a photo, a thumbnail landing); medals alone are set on its photos, groups and row captions in one walk; a filter alone cuts the groups again; anything else cuts it whole. The survey is compared on what a tree reads (images, rolls, folders, made, the JPEGs holding a sidecar), so an edit's sidecar moves no tree. The read's thread cuts each landing's archive, the copies and the tile keys, and the lay takes that archive when the rows held are its own. The rows are walked by reference, a folder's row no longer copying its subtree. library::cuts() counts the trees laid and the row lists laid flat; window check tree_cost (opening a photo, its thumbnail landing and a read that finds nothing new cut nothing; twins: a fold lays the rows again, a new folder cuts the tree) and unit checks of the delta with their twins."
+  },
+  {
+    "id": 691,
+    "type": "perf",
+    "title": "A folder's rows are read from the index by the folder's head, never the whole index",
+    "status": "done",
+    "detail": "LibraryIndex::under, paths_under and stamps_under query `path LIKE` the folder's ASCII head (escaped), which LIKE folds as a case-blind volume does, then trim with paths::holds; shown_under reads the folder's rows alone, a pass's lead lying beside it. unresolved reads the paths alone and drop_invented asks SQLite for the invented prints. A read and each medal no longer read 20000 rows of other folders into memory (M36). Check: the rows by head equal the whole index trimmed, accents, % and _ included, with its twin."
+  },
+  {
+    "id": 692,
+    "type": "perf",
+    "title": "Names weighed once for every sort of the tree and the survey",
+    "status": "done",
+    "detail": "paths::NameKey weighs a name once for standard_order (its steps, accents and composition kept lazily); a group's photos, a folder's subfolders, the survey's children and the navigator's listing sort on keys. A path under a folder named with an accent was weighed at every comparison: 7000 such paths sorted in 560 ms, now 16 ms. The tree and the gallery's groups are cut in one walk (folders::tree_and_groups, groups_of), the entries moved rather than copied twice, and paired cuts no stem when no lone JPEG is there. Checks: the key orders every pair as standard_order, a group lies in shot's order, the groups cut with the tree are the gallery's, each with its twin."
+  },
+  {
+    "id": 693,
+    "type": "perf",
+    "title": "A thumbnail landing reads the tile flags rather than cutting them for every photo",
+    "status": "done",
+    "detail": "tile_flags is cut when lay_grid lays the bands and read after, rather than rebuilt for every photo at each publish_tiles; State::selected looks its picks up in a set (M37); landed_presence keeps each path's key. On 7000 photos the thumbnail pass's interface time fell from 24.6 s to 14.1 s (dev profile, before the virtualised tree), its longest landing from 181 ms to 77 ms."
+  },
+  {
+    "id": 694,
+    "type": "perf",
+    "title": "The roll's frames found outlive a lay that keeps them all",
+    "status": "done",
+    "detail": "EditorStore::set_archive_paths no longer forgets every roll's frames found at each lay_archive, which reread every sidecar (M32): a roll whose frames are all still there stays found, as Swift keeps measuredGroups; one that lost a frame is scanned again on the next ask. Check with its twin."
+  },
+  {
+    "id": 695,
+    "type": "test",
+    "title": "The tree's cost measured on a library of 7000 photos",
+    "status": "done",
+    "detail": "library::bench::tree_bench (cargo test -p oni-app --lib tree_bench -- --ignored --nocapture) times the survey, the index reads, the pairs, the tree, the groups, the row list and each event's share on 5000 photos in 200 folders, 2000 flat and 20000 rows elsewhere; window check tree_cost::the_tree_s_cost_on_a_big_folder (ONI_TREE_BENCH=1) times the interface thread's share of the read, the thumbnail pass, a read again, opening a photo, a fold and a medal in the app."
+  },
+  {
+    "id": 700,
+    "type": "feature",
+    "title": "A Windows installer dressed as the splash",
+    "status": "done",
+    "detail": "packaging/windows/oni.iss (Inno Setup 6.7, dark wizard): the version's splash photograph with the logo, the version and the credit behind the welcome and finish pages, dimmed behind the others (art.py draws them from the splash folder, Inter and the logo at every DPI size). Per-user install without an administrator, all users on offer; Start menu entry, optional desktop icon, launch at the end, uninstaller; English, French, Spanish. The manual Windows package workflow builds it beside the zip, as artifacts only, and with `shots` walks its pages into pictures."
+  },
+  {
+    "id": 701,
+    "type": "feature",
+    "title": "ONI.exe carries the app icon",
+    "status": "done",
+    "detail": "crates/oni-app/build.rs compiles packaging/windows/oni.ico (app-icon.png at 16 to 256 px) into the Windows executable's resources through winresource, a Windows-only build dependency; the Explorer, the taskbar and the installer show it."
+  },
+  {
     "id": 710,
     "type": "fix",
     "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
@@ -3986,47 +4042,5 @@
     "title": "An ISO date whose zone holds a non-ASCII character is refused, not a panic",
     "status": "done",
     "detail": "parse_iso8601 sliced the six-byte zone at byte 3, which panicked inside a two-byte character (2023-11-14T22:13:20+0é00), on any sidecar or preferences read. The colon is compared as a byte. Check a_zone_with_a_non_ascii_character_is_refused (parse and serde both refuse; twin: +00:00 reads)."
-  },
-  {
-    "id": 690,
-    "type": "perf",
-    "title": "The archive's tree is cut again only when its shape moves",
-    "status": "done",
-    "detail": "Archive keeps what it was cut from (folder, rows, survey, filter) and its rows laid flat. A lay on the same rows and survey keeps it (a read again on focus, opening a photo, a thumbnail landing); medals alone are set on its photos, groups and row captions in one walk; a filter alone cuts the groups again; anything else cuts it whole. The survey is compared on what a tree reads (images, rolls, folders, made, the JPEGs holding a sidecar), so an edit's sidecar moves no tree. The read's thread cuts each landing's archive, the copies and the tile keys, and the lay takes that archive when the rows held are its own. The rows are walked by reference, a folder's row no longer copying its subtree. library::cuts() counts the trees laid and the row lists laid flat; window check tree_cost (opening a photo, its thumbnail landing and a read that finds nothing new cut nothing; twins: a fold lays the rows again, a new folder cuts the tree) and unit checks of the delta with their twins."
-  },
-  {
-    "id": 691,
-    "type": "perf",
-    "title": "A folder's rows are read from the index by the folder's head, never the whole index",
-    "status": "done",
-    "detail": "LibraryIndex::under, paths_under and stamps_under query `path LIKE` the folder's ASCII head (escaped), which LIKE folds as a case-blind volume does, then trim with paths::holds; shown_under reads the folder's rows alone, a pass's lead lying beside it. unresolved reads the paths alone and drop_invented asks SQLite for the invented prints. A read and each medal no longer read 20000 rows of other folders into memory (M36). Check: the rows by head equal the whole index trimmed, accents, % and _ included, with its twin."
-  },
-  {
-    "id": 692,
-    "type": "perf",
-    "title": "Names weighed once for every sort of the tree and the survey",
-    "status": "done",
-    "detail": "paths::NameKey weighs a name once for standard_order (its steps, accents and composition kept lazily); a group's photos, a folder's subfolders, the survey's children and the navigator's listing sort on keys. A path under a folder named with an accent was weighed at every comparison: 7000 such paths sorted in 560 ms, now 16 ms. The tree and the gallery's groups are cut in one walk (folders::tree_and_groups, groups_of), the entries moved rather than copied twice, and paired cuts no stem when no lone JPEG is there. Checks: the key orders every pair as standard_order, a group lies in shot's order, the groups cut with the tree are the gallery's, each with its twin."
-  },
-  {
-    "id": 693,
-    "type": "perf",
-    "title": "A thumbnail landing reads the tile flags rather than cutting them for every photo",
-    "status": "done",
-    "detail": "tile_flags is cut when lay_grid lays the bands and read after, rather than rebuilt for every photo at each publish_tiles; State::selected looks its picks up in a set (M37); landed_presence keeps each path's key. On 7000 photos the thumbnail pass's interface time fell from 24.6 s to 14.1 s (dev profile, before the virtualised tree), its longest landing from 181 ms to 77 ms."
-  },
-  {
-    "id": 694,
-    "type": "perf",
-    "title": "The roll's frames found outlive a lay that keeps them all",
-    "status": "done",
-    "detail": "EditorStore::set_archive_paths no longer forgets every roll's frames found at each lay_archive, which reread every sidecar (M32): a roll whose frames are all still there stays found, as Swift keeps measuredGroups; one that lost a frame is scanned again on the next ask. Check with its twin."
-  },
-  {
-    "id": 695,
-    "type": "test",
-    "title": "The tree's cost measured on a library of 7000 photos",
-    "status": "done",
-    "detail": "library::bench::tree_bench (cargo test -p oni-app --lib tree_bench -- --ignored --nocapture) times the survey, the index reads, the pairs, the tree, the groups, the row list and each event's share on 5000 photos in 200 folders, 2000 flat and 20000 rows elsewhere; window check tree_cost::the_tree_s_cost_on_a_big_folder (ONI_TREE_BENCH=1) times the interface thread's share of the read, the thumbnail pass, a read again, opening a photo, a fold and a medal in the app."
   }
 ]
