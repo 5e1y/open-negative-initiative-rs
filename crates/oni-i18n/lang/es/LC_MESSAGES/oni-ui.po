@@ -1534,8 +1534,8 @@ msgid "Film Type"
 msgstr "Tipo de película"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated, and Auto Levels places its black and white on a click."
-msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal: su rollo nunca se mide ni se separan sus colorantes, y Niveles automáticos coloca su negro y su blanco con un clic."
+msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated; Prepare the Roll places each slide's own black and white inside the roll's measuring frame, and Auto Levels places them again on a click."
+msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal: su rollo nunca se mide ni se separan sus colorantes; Preparar el rollo coloca el negro y el blanco propios de cada diapositiva dentro del marco de medición del rollo, y Niveles automáticos los vuelve a colocar con un clic."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -1674,8 +1674,8 @@ msgid "AUTO LEVELS"
 msgstr "NIVELES AUTOMÁTICOS"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "One black and one white point for the three channels, read on this photo's RGB histogram; the colour stays as the slide holds it"
-msgstr "Un punto negro y un punto blanco para los tres canales, leídos en el histograma RGB de esta foto; el color queda como lo guarda la diapositiva"
+msgid "One black and one white point for the three channels, read on this photo's RGB histogram inside its measuring frame; the colour stays as the slide holds it"
+msgstr "Un punto negro y un punto blanco para los tres canales, leídos en el histograma RGB de esta foto dentro de su marco de medición; el color queda como lo guarda la diapositiva"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -3352,6 +3352,10 @@ msgstr[0] "No se pudo guardar la preparación de un fotograma: {cause}"
 msgstr[1] "No se pudo guardar la preparación de {n} fotogramas: {cause}"
 
 #: crates/oni-app/src/app/prepare/model.rs
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."
+msgstr "Dibuja el marco dentro de la imagen, lejos del soporte y de los bordes de la película, y usa el control deslizante para comprobarlo en cada escaneo. Cada diapositiva toma su propio negro y su propio blanco de lo que contiene este marco."
+
+#: crates/oni-app/src/app/prepare/model.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
 msgstr "Elige la película y con qué la digitalizaste. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
 
@@ -3442,12 +3446,6 @@ msgstr "{count} fotogramas, agrupados en la última medición del rollo."
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
-
-#: crates/oni-app/src/app/prepare/slides.rs
-msgid "PREPARE {n} FRAME"
-msgid_plural "PREPARE {n} FRAMES"
-msgstr[0] "PREPARAR {n} FOTOGRAMA"
-msgstr[1] "PREPARAR {n} FOTOGRAMAS"
 
 #: crates/oni-app/src/app/prepare/trace.rs
 msgid "Reading the first frame…"

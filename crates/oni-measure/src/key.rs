@@ -45,6 +45,11 @@ pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
     auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
+/// Prepare the Roll on a slide: the frame's own Auto levels key through its window, laid on `start`.
+pub fn slide_levelled(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<PipelineSettings> {
+    levels(r, copy, start).map(|b| balance::levelled(&b.core(), start))
+}
+
 /// `AutoLevels.ends`: step two alone, the gains held.
 pub fn ends(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<[Suggestion; 3]> {
     let h = r.reading(copy, s, Stage::Levels).histogram;

@@ -50,7 +50,7 @@ impl Ctl {
         let ticked = r.ticked();
         let flagged = r.flagged();
         let measuring = r.progress;
-        let m = measured(&frames);
+        let m = measured(&frames, r.film);
         let last = m.len().saturating_sub(1);
         let step = r.step;
         let status = match measuring {
@@ -69,7 +69,7 @@ impl Ctl {
                     Step::Base => r.base_frame == i,
                     _ => f.ticked,
                 },
-                flagged: f.flagged,
+                flagged: f.flagged && r.film != ConversionMode::Positive,
                 apart: apart.contains(&f.path),
                 ticked: f.ticked,
                 rgb: f.passes.is_some(),
@@ -90,9 +90,7 @@ impl Ctl {
             .collect();
         let look = r.look();
         let base_note = r.base.as_ref().map_or(tr("No base picked yet.").to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
-        let slides = r.film == ConversionMode::Positive;
-        let ending = step == last_step(r.capture, r.film);
-        let action = if ending && slides { slides_title(ticked) } else if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
+        let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title().to_string(),
@@ -130,7 +128,7 @@ impl Ctl {
         self.play_tutorial(measuring.is_none().then_some(step.index()));
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
         p.set_heading(heading.into());
-        p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail().into() });
+        p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail(film).into() });
         p.set_status(status.into());
         p.set_differ(if measuring.is_some() { SharedString::new() } else { differ_text(&frames).into() });
         p.set_left_out(left_out_text(left_out).into());
@@ -158,7 +156,7 @@ impl Ctl {
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(action.into());
-        p.set_action_enabled(if slides { !ending || ticked > 0 } else { step != Step::Window || ticked > flagged });
+        p.set_action_enabled(step != Step::Window || ticked > flagged);
         p.set_card_picture(card);
         self.publish_passes(&p);
         self.publish_card();

@@ -41,7 +41,6 @@ mod trace;
 mod negative;
 mod slides;
 pub use model::*;
-pub use slides::{last_step, slides_title};
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
 #[derive(Clone, Debug, PartialEq)]
@@ -271,7 +270,7 @@ impl Roll {
             return self.frames.iter().find(|f| &f.path == pick);
         }
         if self.step == Step::Window {
-            let m = measured(&self.frames);
+            let m = measured(&self.frames, self.film);
             return m.get(self.at).or(m.first()).copied();
         }
         self.frames.get(self.at).or(self.frames.first())
@@ -298,8 +297,9 @@ impl Roll {
         self.frames.iter().filter(|f| f.ticked).count()
     }
 
+    /// A slide roll's flags, left by a negative draft, keep no frame out.
     fn flagged(&self) -> usize {
-        self.frames.iter().filter(|f| f.ticked && f.flagged).count()
+        self.frames.iter().filter(|f| f.ticked && f.flagged && self.film != ConversionMode::Positive).count()
     }
 
     fn post(&self, job: Job) {

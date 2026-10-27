@@ -1,8 +1,8 @@
-//! A slide roll is a plain RAW editor's: Prepare the Roll asks no measure and writes no roll, an
-//! unmeasured slide opens in the editor, and Auto levels lays one RGB black and white on a click.
+//! A slide roll is a plain RAW editor's: Prepare the Roll places one window and levels each slide on
+//! its own, never a roll; an unprepared slide opens in the editor; Auto levels lays them on a click.
 
 use oni_app::app::{Options, Shell};
-use oni_app::{Library, PanelState, Preparing};
+use oni_app::{Framing, Library, PanelState, Preparing};
 use oni_core::{Archive, EditorStore};
 use oni_settings::frame::RollReference;
 use oni_settings::sidecar::{self, WriteOptions};
@@ -31,7 +31,7 @@ fn alike(s: &PipelineSettings) -> bool {
     s.levels.red == s.levels.green && s.levels.green == s.levels.blue
 }
 
-pub(crate) fn a_slide_roll_is_prepared_unmeasured_and_levelled_on_a_click() {
+pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the slides are not exercised"),
@@ -45,8 +45,11 @@ pub(crate) fn a_slide_roll_is_prepared_unmeasured_and_levelled_on_a_click() {
     // The negatives stand on a roll already, so they open in the editor.
     let mut measured = PipelineSettings::rest(ConversionMode::Negative, false);
     measured.roll_reference = Some(RollReference { id: Id::new(), stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None });
+    // The slides are unprepared positives, so one opens in the editor before any roll.
+    let slide = PipelineSettings::rest(ConversionMode::Positive, false);
     for i in 0..FRAMES {
         sidecar::write(&measured, &canonical(&negatives, i), WriteOptions::default()).unwrap();
+        sidecar::write(&slide, &canonical(&slides, i), WriteOptions::default()).unwrap();
     }
     let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
     std::fs::create_dir_all(&shots).unwrap();
@@ -67,6 +70,27 @@ pub(crate) fn a_slide_roll_is_prepared_unmeasured_and_levelled_on_a_click() {
     shell.open_folder(&slides);
     rig.until("the slides read", Duration::from_secs(30), || ctl.state.borrow().read_done());
     rig.settle();
+    // A slide never prepared opens in the editor, no roll asked.
+    let opened = oni_app::app::tiles(w).iter().map(|t| t.index).max().unwrap();
+    lib.invoke_tile_opened(opened);
+    rig.until("a slide open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("F2.tif")));
+    rig.settle();
+    assert!(!p.get_shown(), "a slide asks for no roll");
+    assert!(!w.global::<Framing>().get_has_window(), "nor opens on a window");
+
+    // Auto levels: one black and white on every channel, the gains at rest, one undo.
+    let rest = settings();
+    panel.invoke_auto_levels();
+    rig.until("the slide levelled", Duration::from_secs(60), || settings().levels != rest.levels);
+    let s = settings();
+    assert!(alike(&s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "{:?} {:?}", s.levels, s.gains);
+    assert!(s.levels.red.black > rest.levels.red.black || s.levels.red.white < rest.levels.red.white);
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
+    assert_eq!(settings().levels, rest.levels, "one undo takes the key back");
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
+
     lib.invoke_tile_clicked(first(), false, false);
     rig.pump();
     ctl.act(oni_app::Act::PrepareRoll);
@@ -79,36 +103,42 @@ pub(crate) fn a_slide_roll_is_prepared_unmeasured_and_levelled_on_a_click() {
     assert_eq!(p.get_action_title().as_str(), "NEXT");
     p.invoke_film_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, true, true, true], "a slide roll has no base, flags or window");
-    assert_eq!(p.get_action_title().as_str(), "PREPARE 3 FRAMES", "no measure to run");
+    assert_eq!(skipped(), [false, true, true, true, false], "a slide roll has no base and no flags, but its window");
     p.invoke_advance();
-    rig.until("the slides written", Duration::from_secs(30), || !p.get_shown());
+    rig.pump();
+    assert_eq!(p.get_step(), 4, "the film leads to the window");
+    assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
+    assert!(p.get_window_shown());
+    let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
+    let rest = disk(1);
+    p.invoke_advance();
+    rig.until("the slides levelled", Duration::from_secs(60), || !p.get_shown());
     rig.settle();
-    for i in 0..FRAMES {
-        let s = sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
-        assert_eq!((s.mode, s.roll_reference.is_none(), s.gains.stops), (ConversionMode::Positive, true, [0.0; 3]), "F{i}");
-    }
     rig.until("a slide open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some());
     rig.settle();
+    // The open frame landed in memory, the others on disk; each its own black and white.
+    let open = ctl.state.borrow().open_path().map(str::to_string).unwrap();
+    let laid = |i: usize| if open.ends_with(&format!("F{i}.tif")) { settings() } else { disk(i) };
+    let frames: Vec<PipelineSettings> = (0..FRAMES).map(laid).collect();
+    let window = frames[0].geometry.measure_window;
+    for (i, s) in frames.iter().enumerate() {
+        assert_eq!((s.mode, s.roll_reference.is_none(), s.gains.stops), (ConversionMode::Positive, true, [0.0; 3]), "F{i}");
+        assert!(alike(s) && s.levels != rest.levels, "F{i}: {:?}", s.levels);
+        assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
+    }
+    let ends: Vec<(f32, f32)> = frames.iter().map(|s| (s.levels.red.black, s.levels.red.white)).collect();
+    assert!(ends[0] != ends[1] && ends[1] != ends[2] && ends[0] != ends[2], "each slide its own: {ends:?}");
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
-
-    // Another slide opened, never measured, stays in the editor.
-    let opened = oni_app::app::tiles(w).iter().map(|t| t.index).max().unwrap();
-    lib.invoke_tile_opened(opened);
-    rig.until("the other slide open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.ends_with("F2.tif")));
-    rig.settle();
-    assert!(!p.get_shown(), "a slide asks for no roll");
-
-    // Auto levels: one black and white on every channel, the gains at rest, one undo.
-    let rest = settings();
-    panel.invoke_auto_levels();
-    rig.until("the slide levelled", Duration::from_secs(60), || settings().levels != rest.levels);
-    let s = settings();
-    assert!(alike(&s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "{:?} {:?}", s.levels, s.gains);
-    assert!(s.levels.red.black > rest.levels.red.black || s.levels.red.white < rest.levels.red.white);
+    assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
+    // One gallery undo takes every frame back, a redo lays them again.
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
     ctl.act(oni_app::Act::Undo);
     rig.pump();
-    assert_eq!(settings().levels, rest.levels, "one undo takes the key back");
+    rig.until("every slide back", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).levels == rest.levels && disk(i).geometry.measure_window.is_none()));
+    ctl.act(oni_app::Act::Redo);
+    rig.pump();
+    rig.until("every slide levelled again", Duration::from_secs(10), || (0..FRAMES).all(|i| alike(&disk(i)) && disk(i).levels != rest.levels));
 
     // Twin: a negative on its roll levels each channel on its own, the gains aligned.
     shell.open_folder(&negatives);

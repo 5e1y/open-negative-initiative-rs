@@ -49,7 +49,7 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Film Type");
         demo: "film-type";
-        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated, and Auto Levels places its black and white on a click.");
+        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated; Prepare the Roll places each slide's own black and white inside the roll's measuring frame, and Auto Levels places them again on a click.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];
@@ -169,7 +169,7 @@ export component RollPane inherits Pane {
         if PanelState.slide: Button {
             size: ButtonSize.plate;
             text: @tr("AUTO LEVELS");
-            help: @tr("One black and one white point for the three channels, read on this photo's RGB histogram; the colour stays as the slide holds it");
+            help: @tr("One black and one white point for the three channels, read on this photo's RGB histogram inside its measuring frame; the colour stays as the slide holds it");
             enabled: !PanelState.levelling;
             clicked => { PanelState.auto-levels(); }
         }

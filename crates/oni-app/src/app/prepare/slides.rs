@@ -1,31 +1,21 @@
-//! A slide roll: never measured, so Prepare the Roll walks its film and flat-field alone and writes
-//! each frame on the roll unmeasured (owner's call).
+//! A slide roll: one measuring window for the roll, then each frame's own Auto Levels read through
+//! it, never a roll reference (owner's call).
 
 use super::*;
-
-/// The step whose key ends the roll: the window's measure, or a slide's last step.
-pub fn last_step(capture: Capture, film: ConversionMode) -> Step {
-    Step::ALL.into_iter().rev().find(|s| !s.skipped(capture, film)).unwrap_or(Step::Film)
-}
-
-/// A slide roll's key: its frames written on the roll, unmeasured.
-pub fn slides_title(n: usize) -> String {
-    trn("PREPARE {n} FRAME", "PREPARE {n} FRAMES", n as u64)
-}
 
 impl Roll {
     /// The roll's film, its step brought back inside the steps that film walks.
     pub(super) fn set_film(&mut self, film: ConversionMode) {
         self.film = film;
         if self.step.skipped(self.capture, film) {
-            self.step = last_step(self.capture, film);
+            self.step = Step::Window;
         }
     }
 }
 
 impl Ctl {
-    /// A slide roll: every ticked frame written on the roll's film and flat-field off this thread,
-    /// unmeasured, then landed as a measure lands (owner's call).
+    /// A slide roll: every ticked frame on the roll's film, window and flat-field, levelled on its own
+    /// off this thread, counted and stoppable as a measure, then landed as one gallery step.
     pub(super) fn prepare_slides(self: &Rc<Self>) {
         let job = {
             let mut s = self.state.borrow_mut();
@@ -36,8 +26,9 @@ impl Ctl {
             if picked.is_empty() || r.progress.is_some() {
                 return;
             }
+            r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
-            let (mask, session) = (r.mask(), r.session);
+            let (window, mask, stop, session) = (r.window, r.mask(), r.stop.clone(), r.session);
             let job: Job = Box::new(move || {
                 let asked = picked.len();
                 let common = CaptureExposure::common(&picked.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
@@ -45,22 +36,29 @@ impl Ctl {
                     (Some(c), Some(own)) => own.stops() - c.stops(),
                     _ => 0.0,
                 };
-                let written: Written = picked
-                    .iter()
-                    .filter_map(|path| {
-                        let before = if Some(path) == open.as_ref() {
-                            live.clone()
-                        } else {
-                            match sidecar::read(Path::new(path), mosaic(path), true) {
-                                Ok(l) if l.writable => l.settings,
-                                _ => return None,
-                            }
-                        };
-                        let after = roll::slide(&before, mask.as_ref(), stops(path));
-                        Some((path.clone(), before, after))
-                    })
-                    .collect();
-                with_shell(move |c| c.land_measure(session, Some(written), None, false, asked));
+                let m = crate::measuring::measurer();
+                let mut written: Written = Vec::new();
+                for path in &picked {
+                    if stop.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    let before = if Some(path) == open.as_ref() {
+                        Some(live.clone())
+                    } else {
+                        sidecar::read(Path::new(path), mosaic(path), true).ok().filter(|l| l.writable).map(|l| l.settings)
+                    };
+                    if let Some(before) = before {
+                        let start = roll::slide(&before, window, mask.as_ref(), stops(path));
+                        if let Some(after) = m.and_then(|m| m.with(path, &start, |r, copy| key::slide_levelled(r, copy, &start))) {
+                            written.push((path.clone(), before, after));
+                        }
+                    }
+                    let landed = trace::Landed { name: oni_library::paths::name(path), frame: None, roll: None };
+                    with_shell(move |c| c.measure_progressed(session, landed));
+                }
+                let stopped = stop.load(Ordering::Relaxed);
+                let written = (!stopped).then_some(written);
+                with_shell(move |c| c.land_measure(session, written, None, stopped, asked));
             });
             job
         };
@@ -68,7 +66,6 @@ impl Ctl {
         self.publish_prepare();
         self.publish_bar();
     }
-
 }
 
 #[cfg(test)]
@@ -76,27 +73,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_slide_roll_stops_at_the_flat_field_with_no_measure() {
+    fn a_slide_roll_walks_its_film_flat_field_and_window_alone() {
         let p = ConversionMode::Positive;
         assert_eq!(neighbour(Step::Film, 1, Capture::Camera, p), Step::FlatField);
-        assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, p), Step::FlatField, "no base, flags or window");
-        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, p), Step::Film, "a scanner's slides have the film alone");
-        assert_eq!((last_step(Capture::Camera, p), last_step(Capture::Scanner, p)), (Step::FlatField, Step::Film));
-        assert!([Step::Base, Step::Flags, Step::Window].iter().all(|s| s.skipped(Capture::Camera, p)));
-        // Twin: a negative roll still walks to its measure.
+        assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, p), Step::Window, "no base and no flags");
+        assert_eq!(neighbour(Step::Window, -1, Capture::Camera, p), Step::FlatField);
+        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, p), Step::Window, "a scanner's slides skip the flat-field");
+        assert!([Step::Base, Step::Flags].iter().all(|s| s.skipped(Capture::Camera, p)) && !Step::Window.skipped(Capture::Camera, p));
+        assert_ne!(Step::Window.detail(p), Step::Window.detail(ConversionMode::Negative));
+        // Twin: a negative roll still walks its base and flags.
         let n = ConversionMode::Negative;
         assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, n), Step::Base);
         assert!(![Step::Base, Step::Flags, Step::Window].iter().any(|s| s.skipped(Capture::Camera, n)));
     }
 
     #[test]
-    fn a_roll_turned_to_slides_leaves_the_steps_they_skip() {
+    fn a_roll_turned_to_slides_leaves_the_steps_they_skip_and_its_flags_count_no_more() {
         let mut r = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
         r.set_film(ConversionMode::Positive);
-        assert_eq!(r.step, Step::FlatField, "a slide roll has no flags step");
-        // Twin: a negative roll keeps its step.
+        assert_eq!(r.step, Step::Window, "a slide roll has no flags step");
+        let mut frames = vec![Frame::new("a", ""), Frame::new("b", "")];
+        frames[1].flagged = true;
+        assert_eq!(measured(&frames, ConversionMode::Positive).len(), 2, "a flag a negative draft left is not a slide's");
+        // Twin: a negative roll keeps its step and leaves its flagged frame out of the measure.
         let mut n = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
         n.set_film(ConversionMode::Negative);
         assert_eq!(n.step, Step::Flags);
+        assert_eq!(measured(&frames, ConversionMode::Negative).len(), 1);
     }
 }

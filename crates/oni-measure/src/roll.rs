@@ -141,15 +141,16 @@ pub fn start(before: &PipelineSettings, film: ConversionMode, window: Rect, mask
     s
 }
 
-/// The settings a slide of the roll is written with, never measured: the look and any earlier roll
-/// at rest, framing, flat-field and dust carried over, on the roll's mask.
-pub fn slide(before: &PipelineSettings, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
+/// The settings a slide of the roll is levelled from, on no roll: the look and any earlier roll at
+/// rest, framing, flat-field and dust carried over, on the roll's window and mask.
+pub fn slide(before: &PipelineSettings, window: Rect, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
     let mut bare = before.clone();
     bare.roll_reference = None;
     let mut s = parameters::carried(&parameters::imported(&bare), ConversionMode::Positive);
     s.corrections = before.corrections.clone();
     s.capture_stops = capture_stops;
     s.primaries_converted = false;
+    s.geometry.measure_window = Some(window);
     if let Some(m) = mask {
         s.flat_field = m.clone();
     }
