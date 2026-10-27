@@ -196,6 +196,9 @@ impl State {
         if let Some(gesture) = &self.org.disk_busy {
             return Some(LoadBar::busy(gesture));
         }
+        if let Some(bar) = balance_bar(self.batch, std::time::Instant::now()) {
+            return Some(bar);
+        }
         let (done, total) = self.creating;
         if done < total {
             return Some(LoadBar::counted(tr("Creating thumbnails"), done, total));
@@ -262,9 +265,28 @@ impl LoadBar {
     }
 }
 
+/// The balance key's run in the status bar, once it has lasted past `BALANCE_BAR_AFTER`.
+fn balance_bar(batch: Option<super::rolls::Batch>, now: std::time::Instant) -> Option<LoadBar> {
+    let b = batch.filter(|b| now.duration_since(b.started) >= super::rolls::BALANCE_BAR_AFTER)?;
+    Some(LoadBar::counted(tr("Auto white balance"), b.done, b.total))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::LoadBar;
+    use super::{LoadBar, balance_bar};
+    use crate::app::rolls::{BALANCE_BAR_AFTER, Batch};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn a_balance_run_counts_in_the_status_bar_once_it_outlasts_its_delay() {
+        let started = Instant::now();
+        let run = Some(Batch { done: 2, total: 5, started });
+        let late = balance_bar(run, started + BALANCE_BAR_AFTER + Duration::from_millis(1)).expect("a long run shows");
+        assert_eq!((late.count(), late.fraction()), ("2/5".to_string(), 0.4));
+        // Twin: a quick run stays off the bar, and no run never shows.
+        assert!(balance_bar(run, started + BALANCE_BAR_AFTER - Duration::from_millis(1)).is_none());
+        assert!(balance_bar(None, started + Duration::from_secs(5)).is_none());
+    }
 
     #[test]
     fn a_counted_load_reads_its_count_and_fraction_and_a_busy_one_sweeps() {

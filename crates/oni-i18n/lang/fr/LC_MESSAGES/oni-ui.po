@@ -2981,6 +2981,10 @@ msgstr[1] "Les modifications de {n} photos n’ont pas pu être enregistrées"
 msgid "{name} · decoding"
 msgstr "{name} · décodage"
 
+#: crates/oni-app/src/app/options.rs
+msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
+msgstr "Choisissez un dossier : toutes les photos qu’il contient s’affichent dans les archives. Rien n’est copié ni déplacé."
+
 #: crates/oni-app/src/app/organising/cell_menu.rs
 msgid "Move"
 msgstr "Déplacer"
@@ -3653,6 +3657,10 @@ msgstr "Ouverture des vues ensemble"
 msgid "Loading full resolution"
 msgstr "Chargement en pleine résolution"
 
+#: crates/oni-app/src/app/state_read.rs
+msgid "Auto white balance"
+msgstr "Balance des blancs automatique"
+
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
 msgstr "{count} vues ensemble"
@@ -3740,10 +3748,6 @@ msgstr "la vignette ne peut pas être encodée"
 #: crates/oni-app/src/app/workers.rs
 msgid "the thumbnail cannot be read back"
 msgstr "la vignette ne peut pas être relue"
-
-#: crates/oni-app/src/app.rs
-msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
-msgstr "Choisissez un dossier : toutes les photos qu’il contient s’affichent dans les archives. Rien n’est copié ni déplacé."
 
 #: crates/oni-app/src/app.rs
 msgid "Another Roll"

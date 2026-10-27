@@ -28,11 +28,15 @@ pub(super) struct RollScope {
 }
 
 /// A run of the balance key under way.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub(super) struct Batch {
     pub done: usize,
     pub total: usize,
+    pub started: std::time::Instant,
 }
+
+/// A balance run shows in the status bar once it lasts this long; a quicker one never flashes it.
+pub(super) const BALANCE_BAR_AFTER: std::time::Duration = std::time::Duration::from_millis(300);
 
 impl super::State {
     /// `rollMembers`: the targets carrying a roll, in the gallery only.
@@ -240,7 +244,7 @@ impl Ctl {
             return;
         }
         self.disarm_window();
-        self.state.borrow_mut().batch = Some(Batch { done: 0, total: frames.len() });
+        self.state.borrow_mut().batch = Some(Batch { done: 0, total: frames.len(), started: std::time::Instant::now() });
         self.publish_batch();
         std::thread::spawn(move || {
             // Each frame's measuring copy is a decode, 0.35 s of the 0.4 s a frame takes, made off the

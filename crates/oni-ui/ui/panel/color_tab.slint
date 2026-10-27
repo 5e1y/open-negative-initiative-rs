@@ -1,5 +1,5 @@
 // The Color tab: Pro's blocks, or the Scanner face's machine and keypad.
-import { Colour, Space, SliderFill, Section, Tabs, Button, ButtonSize, Label, TextRole, Tone, ScannerStyle, Progress, ButtonGroup, GroupAlign } from "../ds/ds.slint";
+import { Colour, Space, SliderFill, Section, Tabs, Button, ButtonSize, Label, TextRole, Tone, ScannerStyle, ButtonGroup, GroupAlign } from "../ds/ds.slint";
 import { Store } from "../store.slint";
 import { News } from "../help.slint";
 import { Editors, CurvesEditor, SpectrogramEditor, SaturationEditor } from "../editors.slint";
@@ -51,13 +51,9 @@ export component ColorPane inherits Pane {
         modified: Store.color-modified;
         demo: "white-balance";
         help: @tr("Auto White Balance reads the frame's light as it prints, its bright areas weighing more than a large warm subject, and corrects it with Temperature and Tint; the levels stay where the roll's measurement put them, and the Roll tab holds Balance strength, the share of that correction the two sliders take. Temperature and Tint move the colour alone and never how light the photograph is. Color density is the same control as saturation.");
-        if PanelState.balancing: VerticalLayout {
-            spacing: Space.xs;
-            Progress { fraction: PanelState.balance-fraction; }
-            Label { role: TextRole.note; text: PanelState.balance-progress; }
-        }
-        // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key.
-        if !PanelState.balancing: ButtonGroup { plate: true;
+        // `keyPlate(.balance)`: the crop's warning printed inside the plate, over the key. A run keeps the
+        // key in place, idle, and counts in the status bar, so the panel never jumps.
+        ButtonGroup { plate: true;
             align: GroupAlign.fill;
             VerticalLayout {
                 if PanelState.crop-first: VerticalLayout {
@@ -74,11 +70,12 @@ export component ColorPane inherits Pane {
                     size: ButtonSize.plate;
                     text: @tr("AUTO WHITE BALANCE");
                     help: @tr("The frame's light toward grey with Temperature and Tint, scaled by Balance strength");
+                    enabled: !PanelState.balancing;
                     clicked => { PanelState.auto-balance(); }
                 }
             }
         }
-        if !PanelState.balancing && PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
+        if PanelState.balance-note != "": Label { role: TextRole.note; text: PanelState.balance-note; }
         StoreSlider {
             field: 0; label: @tr("Temperature"); fraction: Store.temperature-fraction; readout: Store.temperature-readout; value-text: Store.temperature-value;
             fill: SliderFill.bipolar; low: Colour.channel-blue; high: Colour.channel-yellow;

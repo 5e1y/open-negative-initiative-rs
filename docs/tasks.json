@@ -4531,5 +4531,12 @@
     "status": "done",
     "detail": "The navigator's roll rows draw their stock's artwork in place of the film-roll glyph, as the archive tree's rows do: the stock picked, else the first photo's mode's default (TreeRowChrome.defaultStock), the negative one when the photos are not read; a roll outside the opened folder reads the stock in its marker while listed, off the interface thread. Every roll row's artwork is drawn once a stock and a pixel side (stocks::row_icon, DS stock icon size at the window's scale) and shared, where an SVG source was drawn again, filters included, by each row the virtualised tree made.",
     "outcome": "Unit test stocks::a_row_icon_is_drawn_once_at_the_rows_side (twins: another side, another stock, an unknown one); window check rolls::the_navigators_rolls_draw_their_stock: Portra draws Portra (twin: not the default), no stock draws the negative default, a plain folder keeps its glyph, a listed roll its marker's stock."
+  },
+  {
+    "id": 705,
+    "type": "feature",
+    "title": "Auto White Balance counts in the status bar and keeps its key in place",
+    "status": "done",
+    "detail": "The balance key no longer gives way to a shorter progress bar, which made the panel jump: it stays, idle while the run goes, and a run lasting past 300 ms counts in the card's status bar as 'Auto white balance n/N'; a quicker one never flashes it. Check a_balance_run_counts_in_the_status_bar_once_it_outlasts_its_delay, its twins a quick run and no run."
   }
 ]

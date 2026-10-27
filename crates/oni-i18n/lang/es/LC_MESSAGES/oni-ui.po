@@ -2981,6 +2981,10 @@ msgstr[1] "No se han podido guardar los cambios de {n} fotos"
 msgid "{name} · decoding"
 msgstr "{name} · decodificando"
 
+#: crates/oni-app/src/app/options.rs
+msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
+msgstr "Elige una carpeta: todas las fotos que contiene aparecen en el archivo. No se copia ni se mueve nada."
+
 #: crates/oni-app/src/app/organising/cell_menu.rs
 msgid "Move"
 msgstr "Mover"
@@ -3653,6 +3657,10 @@ msgstr "Abriendo los fotogramas juntos"
 msgid "Loading full resolution"
 msgstr "Cargando la resolución completa"
 
+#: crates/oni-app/src/app/state_read.rs
+msgid "Auto white balance"
+msgstr "Balance de blancos automático"
+
 #: crates/oni-app/src/app/together.rs
 msgid "{count} frames together"
 msgstr "{count} fotogramas juntos"
@@ -3740,10 +3748,6 @@ msgstr "no se puede codificar la miniatura"
 #: crates/oni-app/src/app/workers.rs
 msgid "the thumbnail cannot be read back"
 msgstr "no se puede volver a leer la miniatura"
-
-#: crates/oni-app/src/app.rs
-msgid "Choose a folder: every photo under it shows in the archive. Nothing is copied or moved."
-msgstr "Elige una carpeta: todas las fotos que contiene aparecen en el archivo. No se copia ni se mueve nada."
 
 #: crates/oni-app/src/app.rs
 msgid "Another Roll"
