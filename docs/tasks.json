@@ -4655,5 +4655,12 @@
     "title": "A slide's white point mirrors its saturation",
     "status": "done",
     "detail": "The white point's saturation (Print.pointsCurve) took a negative's sense on a slide, where it moves the print the other way: on a positive the high end now loses saturation as the white point rises; the black point keeps the negative's sense. Owner's call, beyond Swift. Check in finishing's points test, its twin the black end unchanged."
+  },
+  {
+    "id": 994,
+    "type": "release",
+    "title": "1.4.1: a slide's white point saturation",
+    "status": "done",
+    "detail": "oni-app's version 1.4.1, carrying #993; Mac universal (Intel and Apple Silicon), Windows zip, appcast."
   }
 ]
