@@ -74,7 +74,7 @@ fn measurer() -> Measurer {
             let (d, factor) = oni_decode::decode_in(path, 1.0, PREVIEW_SIDE as usize, colours).map_err(|e| format!("LibRaw {}", e.0))?;
             Ok(Decoded { width: d.width as u32, height: d.height as u32, full_width: (d.width * factor) as f64, pixels: d.pixels })
         }),
-        Box::new(|_: &PipelineSettings| format!("{}", READING.load(Ordering::Relaxed))),
+        Box::new(|_: &Path, _: &PipelineSettings| format!("{}", READING.load(Ordering::Relaxed))),
     )
 }
 

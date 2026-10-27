@@ -243,6 +243,12 @@ pub fn write(settings: &PipelineSettings, original: &Path, options: WriteOptions
 
 /// `write`, the sidecar already held.
 fn written(settings: &PipelineSettings, original: &Path, options: WriteOptions) -> Result<(), Error> {
+    written_with(settings, original, options, None).map(|_| ())
+}
+
+/// `written`, with `kept` set under `AUTO_BALANCE` over any stored value; one that would lose a key
+/// the sidecar holds is not written, and says so.
+fn written_with(settings: &PipelineSettings, original: &Path, options: WriteOptions, kept: Option<&Value>) -> Result<bool, Error> {
     original_present(original)?;
     let path = url_for(original);
     if path.file_name().is_some_and(|n| n.to_string_lossy().chars().count() > 255) {
@@ -265,11 +271,46 @@ fn written(settings: &PipelineSettings, original: &Path, options: WriteOptions) 
         options.roll_draft.unwrap_or_else(|| existing.and_then(|e| e.roll_draft.clone())),
         options.trashed_at.unwrap_or_else(|| existing.and_then(|e| e.trashed_at)),
     );
-    let own: Vec<(&str, &str)> = [(identity::KEY, print.as_deref()), (identity::TAIL, tail.as_deref())].into_iter().filter_map(|(k, v)| Some((k, v?))).collect();
+    let mut own: Vec<(&str, Value)> = [(identity::KEY, print), (identity::TAIL, tail)].into_iter().filter_map(|(k, v)| Some((k, Value::String(v?)))).collect();
+    own.extend(kept.map(|v| (AUTO_BALANCE, v.clone())));
     let text = crate::kept::encoded(&document, standing.as_ref(), &own)?;
+    if kept.is_some() && !standing.as_ref().is_none_or(|(stored, _)| serde_json::from_str(&text).is_ok_and(|now| crate::kept::holds(stored, &now))) {
+        return Ok(false);
+    }
     write_atomically(&path, text.as_bytes())?;
     restore_modified(&path, prior);
-    Ok(())
+    Ok(true)
+}
+
+/// Auto White Balance kept with the frame under a key Rust alone writes: Swift decodes past it, and a
+/// Swift rewrite drops it, which only costs a reading again.
+pub const AUTO_BALANCE: &str = "autoBalance";
+
+/// The value kept under `AUTO_BALANCE`; `None` when absent, unreadable or written for another file.
+pub fn auto_balance(original: &Path) -> Option<Value> {
+    let data = std::fs::read(url_for(original)).ok()?;
+    let value: Value = serde_json::from_slice(&data).ok()?;
+    let kept = value.get(AUTO_BALANCE)?.clone();
+    let foreign = value.get(identity::KEY).is_some() && identity::foreign(&value, identity::of(original).as_deref(), || identity::tail(original));
+    (!foreign).then_some(kept)
+}
+
+/// Sets `value` under `AUTO_BALANCE` around the settings as they stand, the revision kept; only in a
+/// sidecar of this version written for this file, never seeding nor migrating one. Whether it wrote.
+pub fn set_auto_balance(original: &Path, mosaic: bool, value: &Value) -> Result<bool, Error> {
+    let _held = held::hold(original);
+    original_present(original)?;
+    let Some((stored, decoded)) = standing(&url_for(original))? else { return Ok(false) };
+    if decoded.version != codec::VERSION || stored.get(AUTO_BALANCE).is_some_and(|v| crate::kept::same(v, value)) {
+        return Ok(false);
+    }
+    let existing = read(original, mosaic, true)?;
+    // Written back as they stand: settings a read would move are never rewritten for a balance.
+    if !existing.writable || existing.foreign || existing.is_new || existing.settings != decoded.settings {
+        return Ok(false);
+    }
+    let options = WriteOptions { imported_at: existing.imported_at, label: Some(existing.label), preserving_revision: true, ..WriteOptions::default() };
+    written_with(&existing.settings, original, options, Some(value))
 }
 
 /// Deletes only the sidecar, never the original beside it; an absent sidecar is not an error.

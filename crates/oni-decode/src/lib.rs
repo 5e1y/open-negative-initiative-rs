@@ -329,8 +329,12 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, match
 
 fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, route: Route) -> Result<(Linear, usize), DecodeError> {
     // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's.
-    let key = (side == 0 || side == HALF).then(|| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}", exposure_gain.to_bits()))).flatten();
-    if let Some(k) = key.as_deref().and_then(cache::read) {
+    let keyed = |side: usize| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}|{:016x}", exposure_gain.to_bits(), rendition::print()));
+    let key = (side == 0 || side == HALF).then(|| keyed(side)).flatten();
+    // A shorter copy LibRaw reads at half size is the `HALF` decode pixel for pixel: one kept serves it.
+    let half = (side > HALF).then(|| keyed(HALF)).flatten();
+    let kept = key.as_deref().and_then(cache::read).or_else(|| half.as_deref().and_then(cache::read).filter(|k| k.factor == 2 && k.width.max(k.height) >= side));
+    if let Some(k) = kept {
         let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &k.matrix);
         let (width, height) = linear::upright(k.flip, (k.width, k.height));
         return Ok((Linear { width, height, pixels }, k.factor));
