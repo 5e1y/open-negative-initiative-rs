@@ -336,7 +336,7 @@ mod tests {
         let draft = RollDraft {
             id,
             step: "flags".into(),
-            film: ConversionMode::Positive,
+            film: ConversionMode::Negative,
             capture: "scanner".into(),
             pass_order: None,
             flat_field: None,
@@ -348,7 +348,7 @@ mod tests {
         r.resume(None, 0);
         assert!(r.frames[0].ticked, "with no draft yet a frame keeps its tick");
         r.resume(Some(&draft), 1);
-        assert_eq!((r.step, r.film, r.capture), (Step::Flags, ConversionMode::Positive, Capture::Scanner));
+        assert_eq!((r.step, r.film, r.capture), (Step::Flags, ConversionMode::Negative, Capture::Scanner));
         assert_eq!(r.base, Some(BasePick { path: "b".into(), unit: (0.1, 0.2), radius: 3.0 }));
         assert!(!r.frames[0].ticked, "a frame landed before the draft, of none, is left out");
         assert!(r.frames[1].ticked && r.frames[1].flagged);

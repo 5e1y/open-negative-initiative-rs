@@ -317,8 +317,8 @@ impl Roll {
         {
             self.draft_id = Some(d.id);
             self.step = Step::named(&d.step).unwrap_or(self.step);
-            self.set_film(d.film);
             self.capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
+            self.set_film(d.film);
             self.pass_order = d.pass_order.unwrap_or(self.pass_order);
             self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());
             // Written back in this machine's spelling with the next draft.

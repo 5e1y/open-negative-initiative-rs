@@ -88,4 +88,15 @@ mod tests {
         assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, n), Step::Base);
         assert!(![Step::Base, Step::Flags, Step::Window].iter().any(|s| s.skipped(Capture::Camera, n)));
     }
+
+    #[test]
+    fn a_roll_turned_to_slides_leaves_the_steps_they_skip() {
+        let mut r = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+        r.set_film(ConversionMode::Positive);
+        assert_eq!(r.step, Step::FlatField, "a slide roll has no flags step");
+        // Twin: a negative roll keeps its step.
+        let mut n = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+        n.set_film(ConversionMode::Negative);
+        assert_eq!(n.step, Step::Flags);
+    }
 }

@@ -87,12 +87,14 @@ fn density_axis_sense_is_measured_in_every_mode() {
         let step = slope(DECADE_PAIR, mode);
         let up = density_axis::brightens(mode);
         println!("[{}] worst signed step {step:+.6}", mode.raw_value());
-        assert!(if up { step > 0.0 } else { step < 0.0 }, "[{}] the ceiling moves the render against its sense: {step:+.6}", mode.raw_value());
+        // A slide renders on the axis' base whatever its ceiling (owner's call).
+        let held = mode == ConversionMode::Positive;
+        assert!(if held { step == 0.0 } else if up { step > 0.0 } else { step < 0.0 }, "[{}] the ceiling moves the render against its sense: {step:+.6}", mode.raw_value());
         measured.push((mode, step));
     }
     let of = |m| measured.iter().find(|(x, _)| *x == m).map(|(_, s)| *s).unwrap();
-    // Twin: one sense for both modes would make the two measurements agree in sign.
-    assert!(of(ConversionMode::Negative) * of(ConversionMode::Positive) < 0.0);
+    // Twin: the same sweep moves a negative and a black and white frame, a slide's alone stays.
+    assert!(of(ConversionMode::Negative) != 0.0 && of(ConversionMode::Monochrome) != 0.0 && of(ConversionMode::Positive) == 0.0);
 
     let opening = |rgb: V3| {
         let range = density_axis::range();
