@@ -4560,5 +4560,13 @@
     "title": "A slide opens without the measuring window armed",
     "status": "done",
     "detail": "Swift's adopt arms the measuring window on any frame never balanced, inviting its measure; slides are never measured since #920, so every slide opened on the window. opening_window now leaves a positive as it stands, proposing and arming nothing; its Auto keys still read the frame's default inset window. Check in balance's opening test, its twin a fresh negative still armed."
+  },
+  {
+    "id": 940,
+    "type": "feature",
+    "title": "Prepare the Roll on slides: one measuring window, each frame's own RGB Auto Levels",
+    "status": "done",
+    "detail": "Owner's call beyond Swift, positive only: Prepare the Roll on a slide roll walks Film, Flat-Field and the Window step again, the negative's component and gesture. The one window is laid on every frame as geometry.measure_window, in the scan's fractions as roll::start lays a negative's, so each frame sees it in its own crop. The final key, MEASURE N FRAMES, runs on each ticked frame the positive AUTO LEVELS key through that window (key::slide_levelled): one black and white on the frame's RGB composite, gains at rest, three equal per-channel levels, no roll reference; off the interface thread, counted and stoppable, landed as one gallery step through land_roll, so undo restores every frame's levels and window and a second run re-levels each frame. The measuring copies come from the measurer's decode cache. Base and Flags stay skipped: no roll vote, so a flag would keep nothing out; a flag a negative draft left counts for nothing on a slide roll. #706 holds: a slide never prepared opens with no window. Window step help, Film Type and Auto Levels help in English, French and Spanish. Negative and B&W paths untouched.",
+    "outcome": "oni-measure/tests/slide_roll.rs: three synthetic slides of different exposures each get their own RGB black and white through the window, all three different, gains 0, per-channel equal; the same frames without their near-white border read the same (twin: a window over the whole scan moves the white); a negative roll of the same frames still combines into one reference with aligned gains; the window is the same absolute rect on frames of different crops (twin: their in-crop windows differ). Window check slides: the slide roll walks Film then Window, MEASURE 3 FRAMES lays one window and three different levels, the Crop tab shows the window unarmed, one gallery undo restores every frame and redo lays them again; an unprepared slide opens with no window. Real slides (temp copy of three test Positif sidecars, Swift's window): 326 black 1.0346 white 2.8871, 329 0.8195 / 2.4974, 331 0.9734 / 2.9755, about 0.2 s a frame."
   }
 ]

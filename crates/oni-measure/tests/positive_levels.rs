@@ -105,7 +105,7 @@ fn the_composite_takes_the_outermost_ends_and_the_summed_counts_without_them() {
 }
 
 #[test]
-fn a_slide_joins_its_roll_unmeasured_its_earlier_roll_and_look_at_rest() {
+fn a_slide_joins_its_roll_on_its_window_unmeasured_its_earlier_roll_and_look_at_rest() {
     let mut before = PipelineSettings::rest(POSITIVE, true);
     before.gains.stops = [0.2, 0.0, -0.5];
     before.print.exposure = 0.7;
@@ -118,12 +118,13 @@ fn a_slide_joins_its_roll_unmeasured_its_earlier_roll_and_look_at_rest() {
         median: None,
     });
     let mask = FlatField { amount: 0.5, ..FlatField::default() };
-    let s = roll::slide(&before, Some(&mask), 0.3);
+    let window = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
+    let s = roll::slide(&before, window, Some(&mask), 0.3);
     let rest = PipelineSettings::rest(POSITIVE, true);
     assert_eq!((s.mode, s.roll_reference.as_ref(), s.gains, s.levels), (POSITIVE, None, rest.gains, rest.levels));
     assert_eq!((s.print.exposure, s.capture_stops, s.flat_field.amount), (rest.print.exposure, 0.3, 0.5));
+    assert_eq!(s.geometry.measure_window, Some(window), "the roll's window laid on the slide");
     // Twin: a negative's start keeps its roll and lays the window to measure on.
-    let window = oni_settings::cg::Rect::new(0.1, 0.1, 0.8, 0.8);
     let mut negative = before.clone();
     negative.mode = NEGATIVE;
     let n = roll::start(&negative, NEGATIVE, window, Some(&mask), 0.3);

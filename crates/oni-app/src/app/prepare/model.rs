@@ -31,8 +31,9 @@ impl Step {
         }
     }
 
-    pub fn detail(self) -> &'static str {
+    pub fn detail(self, film: ConversionMode) -> &'static str {
         match self {
+            Step::Window if film == ConversionMode::Positive => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."),
             Step::Film => tr("Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
@@ -56,13 +57,13 @@ impl Step {
         Step::ALL.into_iter().find(|s| s.name() == name)
     }
 
-    /// A scanner lights its film evenly: it needs no flat-field. A slide's roll is never measured,
-    /// so it has no base, flags or window (owner's call).
+    /// A scanner lights its film evenly: it needs no flat-field. Each slide is levelled on its own,
+    /// so a slide roll has no base and no roll for a flag to keep out (owner's call).
     pub fn skipped(self, capture: Capture, film: ConversionMode) -> bool {
         match self {
             Step::FlatField => capture == Capture::Scanner,
-            Step::Base | Step::Flags | Step::Window => film == ConversionMode::Positive,
-            Step::Film => false,
+            Step::Base | Step::Flags => film == ConversionMode::Positive,
+            Step::Film | Step::Window => false,
         }
     }
 }
@@ -134,9 +135,10 @@ impl Frame {
     }
 }
 
-/// `RollFrame.measured`: the frames ticked and not flagged.
-pub fn measured(frames: &[Frame]) -> Vec<&Frame> {
-    frames.iter().filter(|f| f.ticked && !f.flagged).collect()
+/// `RollFrame.measured`: the frames ticked and not flagged; a slide roll has no flags.
+pub fn measured(frames: &[Frame], film: ConversionMode) -> Vec<&Frame> {
+    let slides = film == ConversionMode::Positive;
+    frames.iter().filter(|f| f.ticked && (slides || !f.flagged)).collect()
 }
 
 /// `RollFrame.aspect`: the scan's width over height after its quarter turns.
@@ -300,7 +302,6 @@ mod tests {
         assert_eq!(neighbour(Step::Film, -1, Capture::Camera, n), Step::Film);
         // Twin: on a camera the flat-field is a step of its own.
         assert_ne!(neighbour(Step::Base, -1, Capture::Camera, n), Step::Film);
-        assert_eq!((last_step(Capture::Camera, n), last_step(Capture::Scanner, n)), (Step::Window, Step::Window));
         assert_eq!(Step::ALL.map(Step::name), ["film", "flatField", "base", "flags", "window"]);
         assert_eq!(Step::named("flags"), Some(Step::Flags));
         assert_eq!(Capture::ALL.map(Capture::raw), ["scanner", "camera", "rgbPasses"]);
@@ -311,7 +312,6 @@ mod tests {
         assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
         assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
     }
-
 
     /// `RollFrameView.selfCheck`: a quarter-turned, cropped frame shows in its render's shape.
     #[test]
