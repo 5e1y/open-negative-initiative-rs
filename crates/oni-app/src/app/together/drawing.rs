@@ -4,12 +4,12 @@
 use super::*;
 use crate::latest::Taken;
 
-/// A frame decoded at half size when it can, reduced to a tile and laid on the GPU, unless the group
-/// `id` was left meanwhile.
+/// A frame decoded at half size, reduced to a tile and laid on the GPU, unless the group `id` was left
+/// meanwhile; a RAW's half decode is the editor's, kept on disk, which the balance's copy reads.
 pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Negative>, String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
-    let mut decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), TILE)?;
+    let mut decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), oni_decode::HALF)?;
     if GROUPS.load(Ordering::Relaxed) != id {
         return Err(String::new());
     }

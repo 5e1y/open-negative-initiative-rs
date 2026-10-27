@@ -106,6 +106,7 @@ impl Ctl {
                 Some(message) => me.say(&message),
                 None => me.schedule_redraw(),
             }
+            me.balance_at_rest();
         });
     }
 

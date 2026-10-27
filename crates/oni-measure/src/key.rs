@@ -85,6 +85,55 @@ pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSetti
     Some(Outcome { reference, filters })
 }
 
+/// The settings `outcome` reads: every field no reading of it reaches laid at rest, so a look moved
+/// after the press leaves the balance's fingerprint as it was. A field left here only costs a reading.
+pub fn balance_inputs(s: &PipelineSettings) -> PipelineSettings {
+    let rest = PipelineSettings::default();
+    PipelineSettings {
+        // `unlit` and `filtered` write the whole print the filters read; before the levels it is bypassed.
+        print: rest.print,
+        // `truncated` lays these at rest in front of every stage a reading takes, the face on Pro.
+        manual_curves: rest.manual_curves,
+        spectrogram: rest.spectrogram,
+        saturation: rest.saturation,
+        vignette: rest.vignette,
+        secret_sauce: rest.secret_sauce,
+        texture: rest.texture,
+        chroma: rest.chroma,
+        sharpen: rest.sharpen,
+        face: rest.face,
+        // Read on the Scanner's face alone, which no reading takes.
+        scanner: rest.scanner,
+        scanner_machine: rest.scanner_machine,
+        scanner_finish: rest.scanner_finish,
+        balance_filters: None,
+        balance_strength: rest.balance_strength,
+        balance_method: None,
+        // Read past the render or never: the paper's correction, the gallery's order and the roll's name.
+        paper_correction: rest.paper_correction,
+        manual_order: None,
+        film: None,
+        roll_reference_declined: false,
+        ..s.clone()
+    }
+}
+
+/// FNV-1a on 128 bits: the same text gives the same print in every build and on every system.
+fn fnv(bytes: &[u8]) -> String {
+    let mut h: u128 = 0x6c62_272e_07bb_0142_62b8_2175_6295_c58d;
+    for b in bytes {
+        h ^= u128::from(*b);
+        h = h.wrapping_mul(0x0000_0000_0100_0000_0000_0000_0000_013b);
+    }
+    format!("{h:032x}")
+}
+
+/// What a kept outcome is valid for: the reading's code (`build.rs`), `facts` the host says of the
+/// files the frame reads (its original, passes, mask and patches), and the settings the reading reads.
+pub fn balance_fingerprint(s: &PipelineSettings, facts: &str) -> String {
+    fnv(format!("{}\n{facts}\n{:?}", env!("ONI_READING_CODE"), balance_inputs(s)).as_bytes())
+}
+
 /// `AutomaticKey.outcome`: on a sheet standing on its roll, each frame read alone through its own
 /// window and the mean laid, as a press over the whole roll averaged would.
 pub fn outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
@@ -149,8 +198,9 @@ pub type Decode = dyn Fn(&Path, &PipelineSettings) -> Result<Decoded, String> + 
 /// `Negative.previewSide`, the copy the measuring one is reduced from.
 pub const PREVIEW_SIDE: f64 = 2000.0;
 
-/// What a decode depends on besides the path, so a measuring copy is reused only for the same read.
-pub type Reading = dyn Fn(&PipelineSettings) -> String + Send + Sync;
+/// What a decode reads besides the path, the file's own state included, so a measuring copy is
+/// reused only for the same read of the same bytes.
+pub type Reading = dyn Fn(&Path, &PipelineSettings) -> String + Send + Sync;
 
 /// Measuring copies kept: the open frame and the one before, 21 MB each at 1400 px.
 const KEPT: usize = 2;
@@ -178,10 +228,21 @@ impl Measurer {
 
     /// Every reading laid with the custom mask and dust patches its frame names, read from `files`.
     pub fn laying(self, files: std::sync::Arc<dyn Files>) -> Measurer {
-        if let Ok(mut e) = self.engine.lock() {
-            e.resident = Resident::new(files);
-        }
+        self.engine().resident = Resident::new(files);
         self
+    }
+
+    /// The engine, past a reading that panicked holding it: its copies and inputs dropped, so the
+    /// next reading starts clean rather than every press finding nothing for the rest of the session.
+    fn engine(&self) -> std::sync::MutexGuard<'_, Engine> {
+        self.engine.lock().unwrap_or_else(|poisoned| {
+            self.engine.clear_poison();
+            let mut e = poisoned.into_inner();
+            e.kept.clear();
+            e.resident = std::mem::take(&mut e.resident).emptied();
+            e.graph.purge();
+            e
+        })
     }
 
     /// `RawDecode.measuring(url)`: the preview, then the measuring copy, each edge rebuilt.
@@ -201,12 +262,12 @@ impl Measurer {
 
     /// The frame's measuring copy, the kept one when the same file was read the same way.
     fn kept(&self, path: &str, s: &PipelineSettings) -> Option<(std::sync::Arc<Source>, f64)> {
-        let key = format!("{path}\u{0}{}", (self.reading)(s));
-        if let Some(found) = self.engine.lock().ok()?.kept.iter().find(|k| k.0 == key) {
+        let key = format!("{path}\u{0}{}", (self.reading)(Path::new(path), s));
+        if let Some(found) = self.engine().kept.iter().find(|k| k.0 == key) {
             return Some((found.1.clone(), found.2));
         }
         let d = (self.decode)(Path::new(path), s).ok()?;
-        let mut guard = self.engine.lock().ok()?;
+        let mut guard = self.engine();
         let e = &mut *guard;
         let source = std::sync::Arc::new(Self::copy(&mut e.graph, &mut e.pipeline, &d)?);
         e.kept.retain(|k| k.0 != key);
@@ -225,7 +286,7 @@ impl Measurer {
     /// Reads one frame with `read`, on its measuring copy; `None` where the file reads nothing.
     pub fn with<T>(&self, path: &str, s: &PipelineSettings, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
         let (source, full_width) = self.kept(path, s)?;
-        let mut guard = self.engine.lock().ok()?;
+        let mut guard = self.engine();
         let Engine { graph, pipeline, resident, .. } = &mut *guard;
         resident.fresh();
         let out = read(&mut Reader { graph, pipeline, laying: Laying::Read(resident) }, Copy { source: &source, full_width: Some(full_width) });
@@ -237,7 +298,7 @@ impl Measurer {
     /// then read with `read`.
     pub fn reduced<T>(&self, path: &str, s: &PipelineSettings, side: f64, read: impl FnOnce(&mut Reader, Copy) -> Option<T>) -> Option<T> {
         let d = (self.decode)(Path::new(path), s).ok()?;
-        let mut guard = self.engine.lock().ok()?;
+        let mut guard = self.engine();
         let Engine { graph, pipeline, resident, .. } = &mut *guard;
         resident.fresh();
         let uploaded = graph.upload(d.width, d.height, &d.pixels).ok()?;

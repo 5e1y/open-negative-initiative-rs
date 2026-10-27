@@ -45,6 +45,11 @@ impl Group {
     pub(in crate::app) fn loaded(&self) -> (usize, usize) {
         (self.negatives.iter().flatten().count(), self.paths.len())
     }
+
+    /// The frames whose sources are decoded, in the gallery's order.
+    pub(in crate::app) fn decoded(&self) -> impl Iterator<Item = &String> {
+        self.paths.iter().zip(&self.negatives).filter(|(_, n)| n.is_some()).map(|(p, _)| p)
+    }
 }
 
 /// What a tile shows: its frame on its settings, or its thumbnail while the frame decodes.
@@ -245,6 +250,7 @@ impl Ctl {
         };
         if landed {
             self.request_render();
+            self.balance_ahead();
         }
     }
 

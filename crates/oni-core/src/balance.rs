@@ -117,6 +117,36 @@ pub struct Outcome {
     pub filters: [f32; 3],
 }
 
+/// An outcome kept with the fingerprint of everything it was read from, as a sidecar holds it.
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct Kept {
+    pub fingerprint: String,
+    /// The roll the frame was read on; none for a slide, read as it stands.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference: Option<RollReference>,
+    pub filters: [f32; 3],
+}
+
+impl Kept {
+    pub fn new(fingerprint: String, outcome: &Outcome) -> Kept {
+        Kept { fingerprint, reference: outcome.reference.clone(), filters: outcome.filters }
+    }
+
+    /// The outcome when kept for `fingerprint`, never one read from anything else.
+    pub fn outcome_for(&self, fingerprint: &str) -> Option<Outcome> {
+        (self.fingerprint == fingerprint).then(|| Outcome { reference: self.reference.clone(), filters: self.filters })
+    }
+
+    pub fn value(&self) -> Option<serde_json::Value> {
+        serde_json::to_value(self).ok()
+    }
+
+    /// `None` for a value that does not read whole, which is read again rather than guessed.
+    pub fn of(value: &serde_json::Value) -> Option<Kept> {
+        serde_json::from_value(value.clone()).ok()
+    }
+}
+
 /// The outcome laid on a frame, dosed by its Balance strength.
 pub fn applied_outcome(outcome: &Outcome, settings: &PipelineSettings) -> PipelineSettings {
     let mut out = match (&settings.roll_reference, &outcome.reference) {
@@ -200,6 +230,17 @@ mod tests {
 
     fn reference() -> RollReference {
         RollReference { id: Id::new(), stops: [0.2, 0.0, -0.3], black: [0.1, 0.12, 0.15], white: [0.8, 0.82, 0.9], base: None, median: None }
+    }
+
+    #[test]
+    fn a_kept_outcome_reads_back_whole_for_its_fingerprint_alone() {
+        let outcome = Outcome { reference: Some(RollReference { median: Some([0.4, 0.5, 0.6]), ..reference() }), filters: [0.31, 0.06, -0.37] };
+        let kept = Kept::new("a1".into(), &outcome);
+        let back = Kept::of(&kept.value().unwrap()).unwrap();
+        assert_eq!(back.outcome_for("a1"), Some(outcome));
+        // Twin: kept for another fingerprint, it is never served, nor is a value that does not read.
+        assert_eq!(back.outcome_for("a2"), None);
+        assert_eq!(Kept::of(&serde_json::json!({"fingerprint": "a1", "filters": [0.0, 0.0]})), None);
     }
 
     #[test]

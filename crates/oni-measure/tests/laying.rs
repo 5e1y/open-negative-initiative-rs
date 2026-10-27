@@ -38,7 +38,7 @@ fn measurer(files: Option<Fake>) -> Option<Measurer> {
             let pixels = (0..SIZE.0 * SIZE.1).map(|i| [0.2 + (i % 7) as f32 * 0.02, 0.3, 0.25, 1.0]).collect();
             Ok(Decoded { width: SIZE.0, height: SIZE.1, pixels, full_width: f64::from(SIZE.0) })
         }),
-        Box::new(|_| String::new()),
+        Box::new(|_, _| String::new()),
     );
     Some(match files {
         Some(f) => m.laying(Arc::new(f)),

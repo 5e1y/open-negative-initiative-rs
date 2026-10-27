@@ -31,6 +31,11 @@ impl Resident {
         Resident { files: Some(files), mask: None, patches: HashMap::new() }
     }
 
+    /// Every upload dropped, the files kept to read them again.
+    pub fn emptied(self) -> Resident {
+        Resident { files: self.files, mask: None, patches: HashMap::new() }
+    }
+
     /// The patches dropped, so the next read takes them from their files: a correction's patch is
     /// generated again under the same id.
     pub fn fresh(&mut self) {

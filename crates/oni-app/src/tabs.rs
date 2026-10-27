@@ -1,6 +1,7 @@
 //! `PanelTab`'s routes: the crop and De-dust are left for the last panel the hand was in, recorded
 //! on every route, and Return validates the frames a hand draws, the measuring window first.
 
+pub const ROLL: i32 = 0;
 pub const CROP: i32 = 1;
 pub const COLOR: i32 = 2;
 pub const DEDUST: i32 = 4;

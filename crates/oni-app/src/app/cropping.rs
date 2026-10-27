@@ -187,7 +187,9 @@ impl Ctl {
     /// A tab opened: the toolbar's De-dust key lit on De-dust alone, and on Crop the framing the
     /// hand last chose is handed to this frame if chosen on another.
     pub(super) fn tab_opened(self: &Rc<Self>, tab: i32) {
+        let left = self.state.borrow().route.shown;
         self.state.borrow_mut().route.moved(tab);
+        self.balance_on_leaving(left, tab);
         if let Some(w) = self.window() {
             w.global::<Bar>().set_dedust(tab == 4);
         }

@@ -9,7 +9,7 @@ use oni_library::roll_membership::{self, ResetReach};
 use oni_measure::choice;
 use oni_i18n::{tr, trn};
 use oni_settings::PipelineSettings;
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, ModelRc, VecModel};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::rc::Rc;
@@ -217,8 +217,9 @@ impl Ctl {
         }
     }
 
-    /// `runAutoBalance`: each target read off this thread, the open frame on its live settings and
-    /// the others on their own sidecars, the key showing how far the run is; one undo step.
+    /// `runAutoBalance`: the open frame on its live settings and the others on their own sidecars; a
+    /// frame whose balance is kept for them lands at once, the others read off this thread, the key
+    /// showing how far the run is; one undo step.
     pub(super) fn run_auto_balance(self: &Rc<Self>, strategy: Strategy) {
         if self.state.borrow().batch.is_some() || self.busy_said(tr("Balance")) {
             return;
@@ -244,21 +245,33 @@ impl Ctl {
             return;
         }
         self.disarm_window();
-        self.state.borrow_mut().batch = Some(Batch { done: 0, total: frames.len(), started: std::time::Instant::now() });
+        let (mut kept, mut lacking) = (HashMap::new(), Vec::new());
+        for (path, s) in &frames {
+            match crate::measuring::kept(path, s) {
+                Some(outcome) => drop(kept.insert(path.clone(), outcome)),
+                None => lacking.push((path.clone(), s.clone())),
+            }
+        }
+        let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
+        if lacking.is_empty() {
+            return self.land_balance(&targets, strategy, &kept);
+        }
+        self.state.borrow_mut().batch = Some(Batch { done: 0, total: lacking.len(), started: std::time::Instant::now() });
         self.publish_batch();
         std::thread::spawn(move || {
             // Each frame's measuring copy is a decode, 0.35 s of the 0.4 s a frame takes, made off the
             // GPU's lock: a few at once, as Edit Together opens its frames.
-            let frames = Arc::new(frames);
-            let (next, done, outcomes) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)), Arc::new(Mutex::new(HashMap::new())));
+            let frames = Arc::new(lacking);
+            let (next, done, outcomes) = (Arc::new(AtomicUsize::new(0)), Arc::new(AtomicUsize::new(0)), Arc::new(Mutex::new(kept)));
             let workers: Vec<_> = (0..BALANCERS.min(frames.len()))
                 .map(|_| {
                     let (frames, next, done, outcomes) = (frames.clone(), next.clone(), done.clone(), outcomes.clone());
                     std::thread::spawn(move || {
                         crate::decode_gate::in_background();
-                        while let Some(frame) = frames.get(next.fetch_add(1, Ordering::Relaxed)) {
-                            let found = crate::measuring::balance_outcomes(std::slice::from_ref(frame));
-                            outcomes.lock().expect("outcomes").extend(found);
+                        while let Some((path, s)) = frames.get(next.fetch_add(1, Ordering::Relaxed)) {
+                            if let Some(found) = crate::measuring::measured(path, s) {
+                                outcomes.lock().expect("outcomes").insert(path.clone(), found);
+                            }
                             let count = done.fetch_add(1, Ordering::Relaxed) + 1;
                             with_shell(move |c| {
                                 if let Some(b) = c.state.borrow_mut().batch.as_mut() {
@@ -274,28 +287,9 @@ impl Ctl {
                 let _ = worker.join();
             }
             let outcomes = std::mem::take(&mut *outcomes.lock().expect("outcomes"));
-            let frames = Arc::try_unwrap(frames).unwrap_or_else(|f| (*f).clone());
             with_shell(move |c| {
-                let targets: Vec<String> = frames.into_iter().map(|(p, _)| p).collect();
-                let measure = |path: &str, _: &PipelineSettings| outcomes.get(path).cloned();
-                // A gesture moving files began meanwhile: the balance lands on none, its step never
-                // cutting the one whose walk still runs.
-                if c.busy_said(tr("Balance")) {
-                    c.state.borrow_mut().batch = None;
-                    return c.publish_batch();
-                }
-                let failure = {
-                    let mut s = c.state.borrow_mut();
-                    s.batch = None;
-                    let failure = s.store.editor().and_then(|e| e.auto_balance(&targets, strategy, &measure));
-                    s.last_change = Some(std::time::Instant::now());
-                    failure
-                };
-                c.publish_batch();
-                c.landed(&targets);
-                if let Some(f) = failure {
-                    c.say(&f);
-                }
+                c.state.borrow_mut().batch = None;
+                c.land_balance(&targets, strategy, &outcomes);
             });
         });
     }
@@ -359,6 +353,26 @@ impl Ctl {
         }
     }
 
+    /// The outcomes laid on the targets, one undo step; none while a gesture moving files runs, its
+    /// step never cutting the one whose walk still runs.
+    fn land_balance(self: &Rc<Self>, targets: &[String], strategy: Strategy, outcomes: &HashMap<String, oni_core::balance::Outcome>) {
+        if self.busy_said(tr("Balance")) {
+            return self.publish_batch();
+        }
+        let measure = |path: &str, _: &PipelineSettings| outcomes.get(path).cloned();
+        let failure = {
+            let mut s = self.state.borrow_mut();
+            let failure = s.store.editor().and_then(|e| e.auto_balance(targets, strategy, &measure));
+            s.last_change = Some(std::time::Instant::now());
+            failure
+        };
+        self.publish_batch();
+        self.landed(targets);
+        if let Some(f) = failure {
+            self.say(&f);
+        }
+    }
+
     fn publish_batch(&self) {
         let Some(w) = self.window() else { return };
         let batch = self.state.borrow().batch;
@@ -367,6 +381,42 @@ impl Ctl {
         if let Some(b) = batch {
             panel.set_balance_fraction(b.done as f32 / b.total.max(1) as f32);
             panel.set_balance_progress(choice::progress(b.done, b.total).into());
+        }
+    }
+}
+
+/// The tabs whose strokes and fields the balance is read again for only once they are left: the
+/// Roll's, the crop's and De-dust's.
+const READ_ON_LEAVING: [i32; 3] = [crate::tabs::ROLL, crate::tabs::CROP, crate::tabs::DEDUST];
+
+impl Ctl {
+    /// Every frame shown read ahead for the balance key, nothing laid: the open one first, on its live
+    /// settings and with its measuring copy, then those together whose sources stand, on their sidecars'.
+    pub(super) fn balance_ahead(&self) {
+        let frames = {
+            let s = self.state.borrow();
+            let Some(open) = s.open_path().map(str::to_string) else { return };
+            let mut frames = vec![(open.clone(), Some(s.store.settings().clone()), true)];
+            if let Some(g) = s.together.as_ref() {
+                frames.extend(g.decoded().filter(|p| **p != open).map(|p| (p.clone(), None, false)));
+            }
+            frames
+        };
+        crate::measuring::ahead(frames);
+    }
+
+    /// The balance read again as a gesture that may move it ends, at the hand's rest, unless on a tab
+    /// read again only once left.
+    pub(super) fn balance_at_rest(&self) {
+        if !READ_ON_LEAVING.contains(&self.state.borrow().route.shown) {
+            self.balance_ahead();
+        }
+    }
+
+    /// A tab left: one read again only once left asks the balance again, once.
+    pub(super) fn balance_on_leaving(&self, left: i32, now: i32) {
+        if left != now && READ_ON_LEAVING.contains(&left) {
+            self.balance_ahead();
         }
     }
 }
