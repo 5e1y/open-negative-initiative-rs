@@ -34,7 +34,7 @@ pub fn cube_input(pixel: [f32; 4], frontier: &PipelineSettings) -> Option<[f64; 
 /// Pro at rest on a scanned pixel, to display sRGB code: the conversion, the points' saturation, the clip.
 pub fn pro_code(pixel: [f32; 4], pro: &PipelineSettings) -> [f64; 3] {
     let mut out = cpu::stage47(pixel, &conversion::stage47(pro));
-    if let Some(k) = finishing::saturation(&finishing::points_curve(&pro.print)) {
+    if let Some(k) = finishing::saturation(&finishing::points_curve(&pro.print, pro.mode)) {
         out = cpu::saturation_curve(out, &k);
     }
     let code = cpu::scanner_encode(cpu::output_clip(out), &ScannerEncode { root: 1.0 });

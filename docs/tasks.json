@@ -4648,5 +4648,12 @@
     "title": "The Windows build is stamped as the Mac one",
     "status": "done",
     "detail": "The package workflow fetches the whole history and builds with ONI_VERSION from oni-app's version and ONI_BUILD = 10000 + the commit count, as scripts/release-build does, so a Windows build compares with the update feed as the Mac build does."
+  },
+  {
+    "id": 993,
+    "type": "fix",
+    "title": "A slide's black and white points mirror their saturation",
+    "status": "done",
+    "detail": "The points' saturation line (Print.pointsCurve) took a negative's sense on a slide, where the points move the print the other way: the low end now gains saturation and the high end loses it on a positive. Owner's call, beyond Swift. Check in finishing's points test, its twin the negative's line unchanged."
   }
 ]

@@ -297,7 +297,7 @@ impl Pipeline {
         let extent = graded.extent();
         let mut run: Vec<_> = finishing::spectrogram(&s.spectrogram).map(|k| stages::spectrogram(&k)).into_iter().collect();
         if !mono && points {
-            run.extend(saturation(&finishing::points_curve(&s.print)));
+            run.extend(saturation(&finishing::points_curve(&s.print, s.mode)));
         }
         run.extend(saturation(&s.saturation));
         if s.vignette.stops != 0.0 {

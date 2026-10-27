@@ -6,6 +6,7 @@ use oni_settings::blocks::{ChromaDenoise, Sharpen, Texture};
 use oni_settings::cg::Point;
 use oni_settings::curves::{Curve, CurveSet, SaturationCurve};
 use oni_settings::spectrogram::{Band, Spectrogram};
+use oni_settings::ConversionMode;
 use oni_settings::tone::{Print, contrast};
 
 /// `CurveSet.rgbLUT` and `lumaLUT` with the kernel's flags; `None` when all five curves rest.
@@ -73,11 +74,14 @@ pub fn sauce(amount: f32) -> SaturationCurve {
 }
 
 /// `Print.pointsCurve`: the black and white points' saturation, a line from the black's to the white's.
-pub fn points_curve(print: &Print) -> SaturationCurve {
+/// A slide's points move its print the other way, so their saturation is mirrored (owner's call).
+pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
     if print.bypassed || (print.black_point == 0.0 && print.white_point == 0.0) {
         return SaturationCurve::default();
     }
     let (black, white) = print.held_points();
+    let sense = if mode == ConversionMode::Positive { -1.0 } else { 1.0 };
+    let (black, white) = (sense * black, sense * white);
     let low = f64::from(((1.0 - Print::POINT_SATURATION_GAIN * black) / 2.0).clamp(0.0, 1.0));
     let high = f64::from(((1.0 + Print::POINT_SATURATION_GAIN * white) / 2.0).clamp(0.0, 1.0));
     let points = SaturationCurve::resting().into_iter().map(|p| Point::new(p.x, low + p.x * (high - low))).collect();
@@ -200,10 +204,15 @@ mod tests {
 
     #[test]
     fn the_points_lay_a_line_of_saturation() {
-        assert!(points_curve(&Print::default()).is_neutral());
-        let p = points_curve(&Print { black_point: 0.1, white_point: 0.1, ..Print::default() });
+        let neg = ConversionMode::Negative;
+        assert!(points_curve(&Print::default(), neg).is_neutral());
+        let pointed = Print { black_point: 0.1, white_point: 0.1, ..Print::default() };
+        let p = points_curve(&pointed, neg);
         assert!(p.points[0].y < 0.5 && p.points[4].y > 0.5);
         let mid = (p.points[0].y + p.points[4].y) / 2.0;
         assert!((p.points[2].y - mid).abs() < 1e-9);
+        // A slide's points mirror the negative's: the low end gains saturation, the high end loses it.
+        let slide = points_curve(&pointed, ConversionMode::Positive);
+        assert!((slide.points[0].y - (1.0 - p.points[0].y)).abs() < 1e-9 && (slide.points[4].y - (1.0 - p.points[4].y)).abs() < 1e-9);
     }
 }
