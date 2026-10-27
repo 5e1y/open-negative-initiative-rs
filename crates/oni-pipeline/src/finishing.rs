@@ -74,14 +74,14 @@ pub fn sauce(amount: f32) -> SaturationCurve {
 }
 
 /// `Print.pointsCurve`: the black and white points' saturation, a line from the black's to the white's.
-/// A slide's points move its print the other way, so their saturation is mirrored (owner's call).
+/// A slide's white point moves its print the other way, so its saturation is mirrored (owner's call).
 pub fn points_curve(print: &Print, mode: ConversionMode) -> SaturationCurve {
     if print.bypassed || (print.black_point == 0.0 && print.white_point == 0.0) {
         return SaturationCurve::default();
     }
     let (black, white) = print.held_points();
     let sense = if mode == ConversionMode::Positive { -1.0 } else { 1.0 };
-    let (black, white) = (sense * black, sense * white);
+    let white = sense * white;
     let low = f64::from(((1.0 - Print::POINT_SATURATION_GAIN * black) / 2.0).clamp(0.0, 1.0));
     let high = f64::from(((1.0 + Print::POINT_SATURATION_GAIN * white) / 2.0).clamp(0.0, 1.0));
     let points = SaturationCurve::resting().into_iter().map(|p| Point::new(p.x, low + p.x * (high - low))).collect();
@@ -211,8 +211,8 @@ mod tests {
         assert!(p.points[0].y < 0.5 && p.points[4].y > 0.5);
         let mid = (p.points[0].y + p.points[4].y) / 2.0;
         assert!((p.points[2].y - mid).abs() < 1e-9);
-        // A slide's points mirror the negative's: the low end gains saturation, the high end loses it.
+        // A slide's white point mirrors the negative's, its black point stays as it is.
         let slide = points_curve(&pointed, ConversionMode::Positive);
-        assert!((slide.points[0].y - (1.0 - p.points[0].y)).abs() < 1e-9 && (slide.points[4].y - (1.0 - p.points[4].y)).abs() < 1e-9);
+        assert!((slide.points[0].y - p.points[0].y).abs() < 1e-9 && (slide.points[4].y - (1.0 - p.points[4].y)).abs() < 1e-9);
     }
 }

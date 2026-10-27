@@ -4652,8 +4652,8 @@
   {
     "id": 993,
     "type": "fix",
-    "title": "A slide's black and white points mirror their saturation",
+    "title": "A slide's white point mirrors its saturation",
     "status": "done",
-    "detail": "The points' saturation line (Print.pointsCurve) took a negative's sense on a slide, where the points move the print the other way: the low end now gains saturation and the high end loses it on a positive. Owner's call, beyond Swift. Check in finishing's points test, its twin the negative's line unchanged."
+    "detail": "The white point's saturation (Print.pointsCurve) took a negative's sense on a slide, where it moves the print the other way: on a positive the high end now loses saturation as the white point rises; the black point keeps the negative's sense. Owner's call, beyond Swift. Check in finishing's points test, its twin the black end unchanged."
   }
 ]
