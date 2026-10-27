@@ -4634,5 +4634,12 @@
     "title": "What's new for the release: everything the Rust app brings",
     "status": "done",
     "detail": "The welcome sheet's points rewritten as one list, a few words each and one line at most: the rebuild, colours kept, faster export beside the editor, instant Auto White Balance, the steadier roll measure, slides, Scanner fixes, the roll guide, dyes from the stock, stock icons, help demos, big folders, project walking, hover submenus, safety. English, French and Spanish. The sheet checks' tall window grows to hold it."
+  },
+  {
+    "id": 991,
+    "type": "release",
+    "title": "The app stamped 1.4.0, above the Swift app's 1.3.1",
+    "status": "done",
+    "detail": "oni-app's version 1.4.0, so the splash, the What's new heading, the Windows installer and the update feed name the Rust build after the last Swift release. Built for macOS by scripts/release-build and for Windows by the manual package workflow; nothing published."
   }
 ]
