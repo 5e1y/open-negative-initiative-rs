@@ -19,7 +19,7 @@ const WAIT: Duration = Duration::from_secs(20);
 /// The app as launched: the roll's folder read and its first frame opened.
 fn launch(rig: &common::Rig, engine: &Shared, root: &Path) -> Shell {
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };
     let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));
@@ -170,5 +170,49 @@ pub(crate) fn a_phone_pairs_from_the_sheet_and_steps_the_open_frame() {
     drop(pairing);
     drop(ctl);
     drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// The switch off hides the link's key, menu and Settings page and starts nothing, a phone paired
+/// before included; on, each is back and the paired phone finds the desktop listening.
+pub(crate) fn the_switch_off_hides_the_link_and_listens_nowhere() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the window is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-phone-switch-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let support = root.join("Support");
+    oni_app::phone::trust(&support, oni_link::Identity::generate().public()).unwrap();
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let engine = Engine::shared(&gpu);
+    let shell = |phone: bool| {
+        let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
+        let options = Options { support: support.clone(), caches: root.join("Caches"), picker: Box::new(|| None), phone, ..Options::default() };
+        let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+        shell.window.show().unwrap();
+        rig.pump();
+        shell
+    };
+
+    let off = shell(false);
+    let pairing = off.window.global::<Pairing>();
+    assert!(!pairing.get_available(), "no key, menu item or Settings page names the phone");
+    assert!(off.ctl.state.borrow().phone().is_none(), "a paired phone starts nothing while the switch is off");
+    off.window.global::<App>().invoke_menu(oni_app::Act::PairPhone);
+    rig.pump();
+    assert!(!pairing.get_shown() && off.ctl.state.borrow().phone().is_none(), "Pair Phone opens nothing");
+    drop(pairing);
+    drop(off);
+
+    // Twin: on, the entries are back and the paired phone finds the desktop listening at launch.
+    let on = shell(true);
+    assert!(on.window.global::<Pairing>().get_available());
+    let ctl = on.ctl.clone();
+    rig.until("the link listening", WAIT, || ctl.state.borrow().phone().and_then(|p| p.bound()).is_some());
+    drop(ctl);
+    drop(on);
     let _ = std::fs::remove_dir_all(&root);
 }

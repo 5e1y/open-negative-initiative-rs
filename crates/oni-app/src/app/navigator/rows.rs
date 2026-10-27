@@ -18,6 +18,7 @@ impl Ctl {
             let rolls = s.nav.rolls();
             let opened = if s.org.trash_open { None } else { s.opened.clone() };
             let model = &s.nav.model;
+            let side = crate::stocks::row_side(&w);
             // Two favourites named alike carry the folders above them, only there: siblings never are.
             let trails = if model.favourites_only { walk::trails(&favourites) } else { HashMap::new() };
             let lines: Vec<FolderLine> = rows
@@ -27,6 +28,8 @@ impl Ctl {
                     let (caption, help) = reach::row_words(presence, path, &s.nav.computer);
                     let title = s.nav.computer.name(path);
                     let (head, tail) = walk::split_end(&title);
+                    let roll = rolls.contains(path);
+                    let stock = roll.then(|| crate::stocks::row_icon(s.nav.stock(path), side)).flatten();
                     FolderLine {
                     title: title.into(),
                     head: head.into(),
@@ -37,7 +40,7 @@ impl Ctl {
                     // Out of reach, it promises no folder inside.
                     chevron: presence.is_present() && model.listings.get(path).is_none_or(|c| !c.is_empty()),
                     unfolded: model.unfolded.contains(path),
-                    kind: if rolls.contains(path) {
+                    kind: if roll {
                         1
                     } else if opened.as_deref() == Some(path.as_str()) {
                         2
@@ -52,6 +55,8 @@ impl Ctl {
                     caption: caption.into(),
                     help: help.into(),
                     renaming: model.renaming.as_deref() == Some(path.as_str()),
+                    has_stock: stock.is_some(),
+                    stock: stock.unwrap_or_default(),
                 }})
                 .collect();
             let blank = s.blank_words();

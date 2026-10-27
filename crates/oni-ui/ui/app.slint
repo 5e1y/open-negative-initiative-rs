@@ -168,7 +168,7 @@ export component MainWindow inherits AppWindow {
         Menu {
             title: @tr("File");
             MenuItem { title: @tr("Open Folder…"); shortcut: @keys(Control + "o"); enabled: Menus.live.open; activated => { App.menu(Act.open); } }
-            MenuItem { title: @tr("Pair Phone…"); activated => { App.menu(Act.pair-phone); } }
+            if Pairing.available: MenuItem { title: @tr("Pair Phone…"); activated => { App.menu(Act.pair-phone); } }
             MenuItem { title: @tr("Settings…"); shortcut: @keys(Control + ","); activated => { App.menu(Act.settings); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.mode; shortcut: @keys(Control + "g"); enabled: Menus.live.toggle-mode; activated => { App.menu(Act.toggle-mode); } }

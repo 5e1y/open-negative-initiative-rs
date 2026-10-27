@@ -196,7 +196,7 @@ Statuses are defined in [README.md](README.md).
 | Help: Console, What's New, Report, Year on Film | `UI/EditorCommands.swift:96-100` | `app.slint` Help menu, `app/help.rs`, `app/year.rs` | done | Show My Year on Film is live while the summary is not shown | oni-app/tests/help.rs::the_help_menus_surfaces_behave_as_swifts, `oni-app/tests/wrapped.rs::every_gesture_is_noted_and_the_year_reads_back_as_its_deck` |
 | Check for Updates… | `UI/EditorCommands.swift:105` | `app.slint` Help menu | done | First in Help, since Slint owns the macOS application menu | `oni-app/tests/updates.rs::updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever_downloaded` |
 | Enabled state of every item | `UI/EditorCommands.swift` `.disabled(!live(...))` | `app.rs` `publish_menus` | partial | Swift's rules, and every item whose gesture this build lacks dark, save the Help menu's | `oni-app/tests/gestures.rs::the_menus_name_what_they_do_and_the_gestures_reach_every_target` |
-| Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame` |
+| Pair Phone… | none | `app.slint:41` | port-only | | `oni-app/tests/phone.rs::a_phone_pairs_from_the_sheet_and_steps_the_open_frame`; hidden while `phone::READY` is off (#900) |
 
 ## Keys outside the menus
 

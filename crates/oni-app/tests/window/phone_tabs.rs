@@ -18,7 +18,7 @@ const WAIT: Duration = Duration::from_secs(20);
 
 fn launch(rig: &common::Rig, engine: &Shared, root: &Path) -> Shell {
     let store = EditorStore::new(Archive::new(Vec::new(), |_: &Path| true));
-    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), ..Options::default() };
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), phone: true, ..Options::default() };
     let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
     rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
     rig.window.set_size(slint::PhysicalSize::new(2 * 1280, 2 * 800));

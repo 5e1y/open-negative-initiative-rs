@@ -3,6 +3,7 @@ import { Act } from "act.slint";
 import { Icons, Button, ButtonGroup, ButtonKind, Surface, ShellStyle, ScannerStyle, Tabs } from "ds/ds.slint";
 import { Preparing } from "prepare.slint";
 import { KeyWords } from "key_words.slint";
+import { Pairing } from "pairing.slint";
 
 // `rollStepKeys`: one key per step on one plate, the current one lit, a lamp on each step behind it.
 export component RollStepKeys inherits ButtonGroup {
@@ -209,7 +210,7 @@ export component Toolbar inherits Surface {
                 help: @tr("Report a Bug / Give Feedback");
             }
         }
-        Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
+        if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
         if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? Act.export : Act.add-folder;

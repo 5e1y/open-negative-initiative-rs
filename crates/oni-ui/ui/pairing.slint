@@ -2,6 +2,8 @@
 import { Sheet, Picture, Ground, Label, Tone, Button, ButtonKind, SheetStyle, ButtonGroup, GroupAlign } from "ds/ds.slint";
 
 export global Pairing {
+    // The phone link offered at all, Rust's `phone::READY`: off hides every entry to it.
+    in property <bool> available;
     in property <bool> shown;
     in property <image> code;
     // The code's text, which a check pairs from as the phone's camera would.

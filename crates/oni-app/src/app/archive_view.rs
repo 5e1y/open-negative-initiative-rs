@@ -68,7 +68,7 @@ impl Ctl {
             self.read_library();
             return self.lay_grid();
         };
-        let (title, stock) = {
+        let (title, stock, restocked) = {
             let mut s = self.state.borrow_mut();
             let fresh = std::mem::take(&mut s.reveal.fresh);
             let (old, staged) = (s.archive.take(), s.org.staged.take());
@@ -85,9 +85,10 @@ impl Ctl {
                 let every: Vec<String> = s.rows.iter().map(|e| e.path.clone()).collect();
                 s.store.set_archive(every);
             }
-            let first = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
+            let (title, stock) = archive.groups.first().map(|g| (g.title.clone(), g.stock.clone())).unwrap_or_default();
+            let restocked = s.nav.set_opened_stocks(archive.roll_stocks());
             s.archive = Some(archive);
-            first
+            (title, stock, restocked)
         };
         if let Some(w) = self.window() {
             let lib = w.global::<Library>();
@@ -98,6 +99,9 @@ impl Ctl {
         self.lay_grid();
         self.publish_tree();
         self.publish_bar();
+        if restocked {
+            self.publish_navigator();
+        }
     }
 
     /// `fillOpened`: the pass over the opened folder's rows, which draws those with no file; a
@@ -237,6 +241,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         self.unfold_archive();
         let beside_photo = !w.global::<App>().get_gallery();
+        let side = crate::stocks::row_side(&w);
         let mut guard = self.state.borrow_mut();
         let s = &mut *guard;
         let Some(archive) = &s.archive else { return };
@@ -265,6 +270,7 @@ impl Ctl {
                 };
                 let title = renamed.clone().unwrap_or(r.title);
                 let (head, tail) = oni_library::navigator::split_end(&title);
+                let stock = r.stock.and_then(|id| crate::stocks::row_icon(id, side));
                 TreeRow {
                     depth: r.depth as i32,
                     // `explicitName`: a name typed over is the folder's own, never its roll's.
@@ -274,8 +280,8 @@ impl Ctl {
                     tail: tail.into(),
                     caption: r.caption.into(),
                     kind: r.kind,
-                    stock: r.stock.and_then(crate::stocks::icon).unwrap_or_default(),
-                    has_stock: r.stock.and_then(crate::stocks::icon).is_some(),
+                    stock: stock.clone().unwrap_or_default(),
+                    has_stock: stock.is_some(),
                     expandable: r.expandable,
                     expanded: r.expanded,
                     selected: path.as_deref().is_some_and(|p| s.tree_marks(p)) || s.org.tree_pick.selection.contains(&r.id),

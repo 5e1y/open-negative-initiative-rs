@@ -86,6 +86,9 @@ pub(super) struct Nav {
     listed_rolls: HashSet<String>,
     /// Make a Roll and Back to a Folder until the folder is read again.
     roll_edits: HashMap<String, bool>,
+    /// Each roll's stock: the opened folder's as its tree draws them, a listed one's from its marker.
+    opened_stocks: HashMap<String, &'static str>,
+    listed_stocks: HashMap<String, &'static str>,
     /// Held by the mounts' reader, which ends once the window's state is gone.
     watcher: Arc<()>,
     /// The folders the disk refused, the opened one among them, which the mounts' reader tries.
@@ -122,6 +125,8 @@ impl Nav {
             opened_rolls: HashSet::new(),
             listed_rolls: HashSet::new(),
             roll_edits: HashMap::new(),
+            opened_stocks: HashMap::new(),
+            listed_stocks: HashMap::new(),
             watcher: Arc::new(()),
             refused: Arc::default(),
             presence: HashMap::new(),
@@ -139,6 +144,22 @@ impl Nav {
     }
 
     /// `rollFolders`: the opened folder's rolls and the listed rows', with the hand's edits on top.
+    /// The roll's stock, else the negative default its tree row draws when its photos are not read.
+    pub(super) fn stock(&self, folder: &str) -> &'static str {
+        self.opened_stocks
+            .get(folder)
+            .or_else(|| self.listed_stocks.get(folder))
+            .copied()
+            .unwrap_or_else(|| oni_settings::film::default_stock_id(oni_settings::ConversionMode::Negative))
+    }
+
+    /// The opened folder's roll stocks; true when one changed, so the rows are laid again.
+    pub(super) fn set_opened_stocks(&mut self, stocks: HashMap<String, &'static str>) -> bool {
+        let changed = stocks != self.opened_stocks;
+        self.opened_stocks = stocks;
+        changed
+    }
+
     pub(super) fn rolls(&self) -> HashSet<String> {
         let mut out: HashSet<String> = self.opened_rolls.union(&self.listed_rolls).cloned().collect();
         for (folder, roll) in &self.roll_edits {

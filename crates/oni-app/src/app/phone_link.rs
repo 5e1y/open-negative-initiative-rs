@@ -10,7 +10,7 @@ impl Ctl {
 
     /// The link's Host on its own thread, once; its events come back to this thread one by one.
     pub(super) fn start_phone(self: &Rc<Self>) {
-        if self.state.borrow().phone.is_some() {
+        if !self.state.borrow().phone_offered || self.state.borrow().phone.is_some() {
             return;
         }
         let support = self.state.borrow().support.clone();
@@ -22,6 +22,9 @@ impl Ctl {
 
     /// The sheet with a fresh one-time code, once the Host listens.
     pub(super) fn pair_phone(self: &Rc<Self>) {
+        if !self.state.borrow().phone_offered {
+            return;
+        }
         if let Some(w) = self.window() {
             let p = w.global::<Pairing>();
             p.set_code(Image::default());

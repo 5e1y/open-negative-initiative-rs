@@ -38,6 +38,9 @@ export struct FolderLine {
     caption: string,
     help: string,
     renaming: bool,
+    // A roll's stock artwork, drawn in place of the film-roll glyph.
+    stock: image,
+    has-stock: bool,
 }
 
 // A former library's folder; one on a disk away is shown, not offered.
@@ -129,6 +132,8 @@ component Rows inherits Scroller {
                 expandable: row.chevron;
                 expanded: row.unfolded;
                 kind: row.kind == 1 ? RowKind.roll : row.kind == 2 ? RowKind.opened : RowKind.folder;
+                stock: row.stock;
+                has-stock: row.has-stock;
                 picked: row.picked;
                 selected: row.opened;
                 favourite: row.favourite;

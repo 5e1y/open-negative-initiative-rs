@@ -3,9 +3,9 @@
 
 use super::*;
 
-/// One folder's listing: its subfolders (`None` while the disk refuses it), its state, and whether
-/// its roll marker is there.
-type Listing = (Option<Vec<String>>, Presence, bool);
+/// One folder's listing: its subfolders (`None` while the disk refuses it), its state, whether
+/// its roll marker is there, and the stock the marker names.
+type Listing = (Option<Vec<String>>, Presence, bool, Option<&'static str>);
 
 impl Ctl {
     /// The navigator waits for the folder opened, whose read marks its rolls.
@@ -39,7 +39,12 @@ impl Ctl {
                 presence::looked(folder);
                 folders::marker(folder).is_file()
             };
-            (children, state, roll)
+            let stock = roll
+                .then(|| oni_settings::film::roll_folder::roll(Path::new(folder)))
+                .flatten()
+                .and_then(|film| oni_settings::film::film_stock(film.stock.as_deref()))
+                .map(|kind| kind.id);
+            (children, state, roll, stock)
         };
         favourites::read_apart(wanted, LISTERS, favourites::STUCK, read, |landed| with_shell(move |c| c.listed_apart(landed)));
     }
@@ -49,7 +54,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             let mut found = Vec::with_capacity(landed.len());
             let mut listed = Vec::with_capacity(landed.len());
-            for (folder, (children, state, roll)) in landed {
+            for (folder, (children, state, roll, stock)) in landed {
                 if children.is_some() {
                     // A mark of the hand's that the disk now shows is no longer needed.
                     if s.nav.roll_edits.get(&folder) == Some(&roll) {
@@ -60,6 +65,10 @@ impl Ctl {
                     } else {
                         s.nav.listed_rolls.remove(&folder);
                     }
+                    match stock {
+                        Some(id) => s.nav.listed_stocks.insert(folder.clone(), id),
+                        None => s.nav.listed_stocks.remove(&folder),
+                    };
                 }
                 found.push((folder.clone(), state));
                 listed.push((folder, children));

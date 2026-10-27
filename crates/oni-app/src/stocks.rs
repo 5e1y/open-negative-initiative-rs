@@ -51,7 +51,11 @@ const ARTWORK: [(&str, &[u8]); 41] = [
 
 thread_local! {
     static DECODED: RefCell<HashMap<&'static str, Image>> = RefCell::new(HashMap::new());
+    static ROW_ICONS: RefCell<HashMap<(&'static str, u32), Image>> = RefCell::new(HashMap::new());
 }
+
+/// Every artwork's root opens on this side, which `sized` sets to the pixels wanted.
+const ARTWORK_HEAD: &str = r#"<svg width="48" height="48""#;
 
 /// The stock's artwork, `None` when it has none.
 pub fn icon(id: &str) -> Option<Image> {
@@ -64,6 +68,33 @@ pub fn icon(id: &str) -> Option<Image> {
         d.borrow_mut().insert(key, image.clone());
         Some(image)
     })
+}
+
+/// The stock's artwork drawn once at `side` pixels, which every row a virtualised tree makes shares:
+/// an SVG source is drawn again, filters included, by each row it lands in.
+pub fn row_icon(id: &str, side: u32) -> Option<Image> {
+    let (key, data) = ARTWORK.iter().find(|(k, _)| *k == id)?;
+    ROW_ICONS.with(|cache| {
+        if let Some(image) = cache.borrow().get(&(*key, side)) {
+            return Some(image.clone());
+        }
+        let pixels = Image::load_from_svg_data(&sized(data, side)?).ok()?.to_rgba8()?;
+        let image = Image::from_rgba8(pixels);
+        cache.borrow_mut().insert((*key, side), image.clone());
+        Some(image)
+    })
+}
+
+/// A tree row's stock side in the window's pixels, `RowStyle.slot` at its scale.
+pub fn row_side(w: &crate::MainWindow) -> u32 {
+    use slint::ComponentHandle;
+    (w.global::<crate::DS>().get_control_film_sidebar_stock_icon_size() * w.window().scale_factor()).round().max(1.0) as u32
+}
+
+/// The artwork with its root's side set to `side` pixels; `None` for a root of another shape.
+fn sized(data: &[u8], side: u32) -> Option<Vec<u8>> {
+    let rest = std::str::from_utf8(data).ok()?.strip_prefix(ARTWORK_HEAD)?;
+    Some(format!(r#"<svg width="{side}" height="{side}"{rest}"#).into_bytes())
 }
 
 /// `FilmStockCatalog.byBrand`: the brands in the catalogue's order, each with its stocks, as indices.
@@ -92,5 +123,20 @@ mod tests {
         let brands: Vec<&str> = by_brand().iter().map(|(b, _)| *b).collect();
         assert_eq!(&brands[..3], ["Generic", "AgfaPhoto", "CineStill"]);
         assert_eq!(by_brand().iter().map(|(_, l)| l.len()).sum::<usize>(), oni_settings::film::FILM_STOCKS.len());
+    }
+
+    #[test]
+    fn a_row_icon_is_drawn_once_at_the_rows_side() {
+        for (id, _) in ARTWORK {
+            let image = row_icon(id, 44).unwrap_or_else(|| panic!("{id} draws at a row's side"));
+            assert_eq!((image.size().width, image.size().height), (44, 44), "{id}");
+        }
+        let portra = row_icon("kodak-portra", 44).unwrap().to_rgba8().unwrap();
+        assert!(portra.as_slice().iter().any(|p| p.a > 0), "the artwork's pixels are drawn");
+        // Twin: another side is drawn apart, another stock draws other pixels, an unknown one none.
+        assert_eq!(row_icon("kodak-portra", 22).unwrap().size().width, 22);
+        assert_ne!(row_icon("ilford-hp5", 44).unwrap().to_rgba8().unwrap().as_slice(), portra.as_slice());
+        assert!(row_icon("no-such-stock", 44).is_none());
+        ROW_ICONS.with(|c| assert!(c.borrow().contains_key(&("kodak-portra", 44)), "kept for the next row"));
     }
 }

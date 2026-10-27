@@ -53,13 +53,17 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the bar is not exercised"),
     };
-    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
     let engine = oni_app::render::Engine::shared(&gpu);
-    let options = Options { support, caches, picker: Box::new(|| None), ..Options::default() };
-    let shell = Shell::new(Box::new(store), engine, options).unwrap();
-    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
-    shell.window.show().unwrap();
-    rig.until("the bar laid", Duration::from_secs(5), || true);
+    let bar = |phone: bool| {
+        let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+        let options = Options { support: support.clone(), caches: caches.clone(), picker: Box::new(|| None), phone, ..Options::default() };
+        let shell = Shell::new(Box::new(store), engine.clone(), options).unwrap();
+        rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+        shell.window.show().unwrap();
+        rig.until("the bar laid", Duration::from_secs(5), || true);
+        shell
+    };
+    let shell = bar(true);
     // ADD FOLDER, the gear, the phone and FEEDBACKS with their gaps, then the room before FEEDBACKS.
     let keys = |w: u32| {
         let (w, px) = drawn(&rig, w);
@@ -71,4 +75,11 @@ pub(crate) fn the_bars_keys_keep_their_widths_as_the_window_widens() {
     assert_eq!((narrow[2], narrow[4]), (narrow[2], narrow[2]), "the gear and the phone are square keys alike");
     // Twin: the room before them does grow with the window.
     assert!(wide[7] > narrow[7] + 100, "the room before the keys grows: {narrow:?} {wide:?}");
+    drop(shell);
+
+    // The phone switch off: the gear's gap meets FEEDBACKS, with no phone key between them.
+    let shell = bar(false);
+    let hidden = keys(1440);
+    assert_eq!((&hidden[..3], &hidden[3..5]), (&narrow[..3], &narrow[5..7]), "no phone key: {hidden:?} {narrow:?}");
+    drop(shell);
 }

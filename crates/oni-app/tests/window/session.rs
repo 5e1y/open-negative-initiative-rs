@@ -46,8 +46,8 @@ pub(crate) fn the_tile_size_and_the_muted_clicks_outlast_the_session() {
     let sheet = first.window.global::<AppSettings>();
     assert!(sheet.get_shown() && first.window.get_sheet_shown());
     // Each section's page, which the shots show.
-    for (i, name) in ["general", "editor", "frontier", "phone", "about"].iter().enumerate() {
-        sheet.set_section(i as i32);
+    for (i, name) in [(0, "general"), (1, "editor"), (2, "frontier"), (4, "about")] {
+        sheet.set_section(i);
         rig.pump();
         rig.shot(&format!("settings-{name}"));
     }

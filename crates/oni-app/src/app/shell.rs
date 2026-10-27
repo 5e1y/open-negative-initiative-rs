@@ -134,6 +134,7 @@ impl Shell {
             board_seen: None,
             screen_gamut: false,
             support: options.support.clone(),
+            phone_offered: options.phone,
             phone: None,
             picker: options.picker,
             discard: options.discard,
@@ -179,8 +180,9 @@ impl Shell {
         ctl.read_library();
         ctl.publish_trash_rows();
         ctl.start_updates();
+        window.global::<Pairing>().set_available(options.phone);
         // A phone paired before finds the desktop listening again; nothing pairs until asked.
-        if phone::has_trusted(&options.support) {
+        if options.phone && phone::has_trusted(&options.support) {
             ctl.start_phone();
         }
         Ok(Shell { window, ctl })

@@ -190,3 +190,72 @@ pub(crate) fn a_rolls_row_draws_its_stock() {
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// The navigator's roll rows draw their stock as the tree's do: the one picked, else the negative
+/// default; a folder keeps its glyph, and a roll outside the opened folder reads its own marker.
+pub(crate) fn the_navigators_rolls_draw_their_stock() {
+    use oni_app::{FolderLine, Navigator};
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the navigator is not exercised"),
+    };
+    let made = std::env::temp_dir().join(format!("oni-app-navigator-stock-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&made);
+    std::fs::create_dir_all(&made).unwrap();
+    let root = PathBuf::from(oni_library::paths::canonical(&made));
+    let (home, volumes) = (root.join("Home"), root.join("Volumes"));
+    std::fs::create_dir_all(&volumes).unwrap();
+    for (folder, name) in [("Scans/Portra", "A.tif"), ("Scans/Bare", "B.tif"), ("Scans/Loose", "C.tif"), ("Away/Listed", "D.tif")] {
+        common::linear_tiff(&home.join(folder).join(name), 64, 48, 0.5);
+    }
+    let roll = |name: &str, stock: Option<&str>| {
+        let mut film = Film::new(name);
+        film.stock = stock.map(str::to_owned);
+        film
+    };
+    oni_settings::film::roll_folder::set_roll(Some(&roll("Portra Roll", Some("kodak-portra"))), &home.join("Scans/Portra")).unwrap();
+    oni_settings::film::roll_folder::set_roll(Some(&roll("Bare Roll", None)), &home.join("Scans/Bare")).unwrap();
+    oni_settings::film::roll_folder::set_roll(Some(&roll("Listed Roll", Some("ilford-hp5"))), &home.join("Away/Listed")).unwrap();
+    let p = |path: &Path| oni_library::paths::normal(&path.to_string_lossy()).into_owned();
+    let shots = std::env::var_os("ONI_SHOTS").map(PathBuf::from).unwrap_or_else(|| PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("shots"));
+    std::fs::create_dir_all(&shots).unwrap();
+    let rig = common::rig(shots);
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let computer = oni_library::navigator::Computer { home: p(&home), volumes: p(&volumes) };
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), computer, ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 2.0 });
+    rig.window.set_size(slint::PhysicalSize::new(2560, 1600));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let w = &shell.window;
+    let n = w.global::<Navigator>();
+    let lines = || -> Vec<FolderLine> { n.get_rows().iter().collect() };
+    let line = |title: &str| lines().into_iter().find(|l| l.title == title);
+    shell.add(&home.join("Scans"));
+    rig.until("Scans read", Duration::from_secs(30), || ctl.state.borrow().read_done() && line("Scans").is_some_and(|l| l.opened));
+    n.invoke_row_folded(lines().iter().position(|l| l.title == "Scans").unwrap() as i32);
+    n.invoke_row_folded(lines().iter().position(|l| l.title == "Away").unwrap() as i32);
+    rig.until("both listed", Duration::from_secs(10), || line("Portra").is_some() && line("Listed").is_some_and(|l| l.kind == 1));
+
+    // The row's pixels are the artwork drawn once at the row's side: 22 points at scale 2.
+    let drawn = |l: &FolderLine| l.has_stock.then(|| l.stock.to_rgba8().unwrap().as_slice().to_vec());
+    let artwork = |id: &str| Some(oni_app::stocks::row_icon(id, 44).unwrap().to_rgba8().unwrap().as_slice().to_vec());
+    let portra = line("Portra").unwrap();
+    assert_eq!(portra.kind, 1);
+    assert_eq!(drawn(&portra), artwork("kodak-portra"), "a roll on Portra draws Portra");
+    assert_ne!(drawn(&portra), artwork("generic-color-negative"), "twin: not the default");
+    assert_eq!(drawn(&line("Bare").unwrap()), artwork("generic-color-negative"), "no stock: its mode's default");
+    let loose = line("Loose").unwrap();
+    assert!(loose.kind == 0 && !loose.has_stock, "a plain folder keeps its folder glyph");
+    assert_eq!(drawn(&line("Listed").unwrap()), artwork("ilford-hp5"), "a roll outside the opened folder reads its marker");
+
+    // The archive tree's roll rows share the same pixels.
+    let rows = w.global::<Library>().get_rows();
+    let tree = |title: &str| rows.iter().find(|r| r.title == title).unwrap_or_else(|| panic!("{title} in the tree"));
+    assert_eq!(tree("Portra Roll").stock.to_rgba8().unwrap().as_slice().to_vec(), artwork("kodak-portra").unwrap());
+    assert!(!tree("Loose").has_stock, "twin: the tree's folder keeps its glyph");
+    drop(ctl);
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&made);
+}

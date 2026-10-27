@@ -181,6 +181,13 @@ impl Archive {
         self.nodes.iter().map(Node::id).chain(folders).filter(|id| !self.expanded.contains(id)).collect()
     }
 
+    /// Each roll folder's stock as its tree row draws it (`default_stock`), by path.
+    pub fn roll_stocks(&self) -> HashMap<String, &'static str> {
+        let mut out = HashMap::new();
+        roll_stocks(&self.nodes, &mut out);
+        out
+    }
+
     /// Every photo in gallery order.
     pub fn entries(&self) -> Vec<&Entry> {
         self.groups.iter().flat_map(|g| g.entries.iter()).collect()
@@ -235,6 +242,17 @@ impl Archive {
         None
     }
 
+}
+
+fn roll_stocks(nodes: &[Node], out: &mut HashMap<String, &'static str>) {
+    for node in nodes {
+        if let Node::Folder { path, group, children } = node {
+            if let Some(group) = group.as_ref().filter(|g| g.film.is_some()) {
+                out.insert(path.clone(), default_stock(group));
+            }
+            roll_stocks(children, out);
+        }
+    }
 }
 
 fn folder_ids(nodes: &[Node], out: &mut HashSet<NodeId>) {

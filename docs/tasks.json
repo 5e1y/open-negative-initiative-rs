@@ -4515,5 +4515,21 @@
     "title": "The export bench: stages, batch, parameter changes, memory",
     "status": "done",
     "detail": "Window checks export_speed::an_export_is_timed_stage_by_stage and a_parameter_change_on_a_batch_is_timed, run with ONI_BENCH_EXPORT=<n> on roll #8 mirrored by hard links into a temporary folder: each stage of a frame timed alone, the batch's wall time, the most frames held and the process's peak memory; then the surface entered on n frames and each kind of change timed in the call, in the pumps and until every line and the estimate are current. ONI_BENCH_FORMAT=tiff, ONI_BENCH_KEEP and ONI_BENCH_SAME compare a run's files byte for byte with an earlier one's (the profile's creation date aside; twin: one byte moved is caught). Timing numbers come from --profile app."
+  },
+  {
+    "id": 900,
+    "type": "feature",
+    "title": "The phone link is hidden behind one switch until the feature is ready",
+    "status": "done",
+    "detail": "phone::READY (false) is the one switch: Options.phone takes it, or ONI_PHONE=1, and publishes Pairing.available. Off, the toolbar's phone key, File > Pair Phone… and the Settings Phone page are hidden (About keeps section 4), Pair Phone opens nothing and no Host starts, a phone paired before included, so no port is opened. The folded bench and the phone checks turn it on through Options.phone. Options moves to app/options.rs, which keeps app.rs under its ceiling.",
+    "outcome": "Window check phone::the_switch_off_hides_the_link_and_listens_nowhere (twin: on, the paired phone finds the desktop listening); toolbar check: off, the gear's gap meets FEEDBACKS with no phone key (twin: on, four keys as before)."
+  },
+  {
+    "id": 901,
+    "type": "feature",
+    "title": "A roll's row in the sidebar draws its film stock",
+    "status": "done",
+    "detail": "The navigator's roll rows draw their stock's artwork in place of the film-roll glyph, as the archive tree's rows do: the stock picked, else the first photo's mode's default (TreeRowChrome.defaultStock), the negative one when the photos are not read; a roll outside the opened folder reads the stock in its marker while listed, off the interface thread. Every roll row's artwork is drawn once a stock and a pixel side (stocks::row_icon, DS stock icon size at the window's scale) and shared, where an SVG source was drawn again, filters included, by each row the virtualised tree made.",
+    "outcome": "Unit test stocks::a_row_icon_is_drawn_once_at_the_rows_side (twins: another side, another stock, an unknown one); window check rolls::the_navigators_rolls_draw_their_stock: Portra draws Portra (twin: not the default), no stock draws the negative default, a plain folder keeps its glyph, a listed roll its marker's stock."
   }
 ]

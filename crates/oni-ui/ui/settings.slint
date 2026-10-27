@@ -1,6 +1,7 @@
 // The Settings sheet the header's gear opens: the app's own choices by section, each kept in the
 // preferences file, the sections listed on the left as macOS and Windows settings windows list theirs.
 import { Act } from "act.slint";
+import { Pairing } from "pairing.slint";
 import { Sheet, SheetStyle, SectionStyle, Button, ButtonGroup, GroupAlign, Section, Tabs, Label, Tone, TextRole, Row, Toggle, Divider, RowForm } from "ds/ds.slint";
 
 export global AppSettings {
@@ -159,16 +160,23 @@ export component SettingsSheet inherits Sheet {
     title: @tr("Settings");
     card-width: SheetStyle.settings-width;
     dismissed => { AppSettings.close(); }
+    property <[{ name: string, section: int }]> pages: [
+        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier look"), section: 2 },
+        { name: @tr("Phone"), section: 3 }, { name: @tr("About"), section: 4 }];
+    property <[{ name: string, section: int }]> pages-without-phone: [
+        { name: @tr("General"), section: 0 }, { name: @tr("Editor"), section: 1 }, { name: @tr("Frontier look"), section: 2 },
+        { name: @tr("About"), section: 4 }];
     HorizontalLayout {
         spacing: SheetStyle.gap;
         VerticalLayout {
             width: SheetStyle.settings-rail;
             alignment: start;
-            for name[i] in [@tr("General"), @tr("Editor"), @tr("Frontier look"), @tr("Phone"), @tr("About")]: Row {
+            // Each page keeps its section number, so About stays 4 while the Phone page is hidden.
+            for page in Pairing.available ? root.pages : root.pages-without-phone: Row {
                 form: RowForm.sidebar;
-                title: name;
-                selected: AppSettings.section == i;
-                clicked => { AppSettings.section = i; }
+                title: page.name;
+                selected: AppSettings.section == page.section;
+                clicked => { AppSettings.section = page.section; }
             }
         }
         Divider { vertical: true; hairline: true; }
@@ -179,7 +187,7 @@ export component SettingsSheet inherits Sheet {
             if AppSettings.section == 0: GeneralPage { }
             if AppSettings.section == 1: EditorPage { }
             if AppSettings.section == 2: FrontierPage { }
-            if AppSettings.section == 3: PhonePage { }
+            if AppSettings.section == 3 && Pairing.available: PhonePage { }
             if AppSettings.section == 4: AboutPage { }
         }
     }

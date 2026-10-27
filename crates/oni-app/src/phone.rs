@@ -11,6 +11,15 @@ mod addresses;
 
 use addresses::lan_addresses;
 
+/// Whether the app offers the phone link: off hides every entry to it and opens no port, while
+/// the feature waits to be ready; `ONI_PHONE=1` turns it on for the checks and benches that pair.
+pub const READY: bool = false;
+
+/// `READY`, or `ONI_PHONE=1`.
+pub fn offered() -> bool {
+    READY || std::env::var("ONI_PHONE").is_ok_and(|v| v == "1")
+}
+
 /// A fixed port, so a paired phone finds the desktop at the same address after a restart; when it
 /// is taken, any free port, which only a new pairing then tells the phone, and later launches try first.
 pub const PORT: u16 = 53318;

@@ -111,8 +111,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         bench::requested().is_none().then(|| std::sync::Arc::new(oni_transition::apple::CoreImage) as _);
     #[cfg(not(target_os = "macos"))]
     let transition = None;
+    // The folded bench pairs a phone, so it offers the link whatever the switch says.
+    let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
     // The window's adapter is made here, while the hook still knows the main window is the one built.
-    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, caches: oni_app::system::caches(), canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), transition, ..Options::default() }).inspect(|s| {
+    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, caches: oni_app::system::caches(), canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), transition, phone, ..Options::default() }).inspect(|s| {
         s.window.window();
     }))?;
     // `Diagnostics.startWatchdog`: the interface thread beats, a thread of its own watches it.
