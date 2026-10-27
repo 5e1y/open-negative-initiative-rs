@@ -107,8 +107,7 @@ fn the_histogram_kernel_counts_what_its_cpu_reference_counts() {
     let picture = upload(&device, &queue, &pixels, w, h).create_view(&Default::default());
     assert!(gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, false, || {}));
     assert!(!gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, false, || {}), "a second count waits for the first to be read");
-    device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
-    let counted = gpu.histogram().expect("the count landed");
+    let counted = landed(&device, &gpu);
     let close = |a: &oni_measure::histogram::Histogram, b: &oni_measure::histogram::Histogram| {
         let total: f32 = b.luma.iter().sum();
         let apart: f32 = a.rgb.iter().zip(&b.rgb).map(|(x, y)| (0..3).map(|c| (x[c] - y[c]).abs()).sum::<f32>()).sum();
@@ -137,8 +136,7 @@ fn a_sheet_s_clear_gaps_are_not_counted_as_black() {
     let counted = |sheet: bool| {
         let gpu = Gpu::new(&device);
         assert!(gpu.count(&device, &queue, &picture, (w, h), Screen::Srgb, sheet, || {}));
-        device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
-        gpu.histogram().expect("the count landed")
+        landed(&device, &gpu)
     };
     let sheet = counted(true);
     let want = crate::histogram::measure_sheet(&pixels, w as usize, h as usize, Screen::Srgb);
@@ -170,4 +168,17 @@ pub fn upload(device: &wgpu::Device, queue: &wgpu::Queue, pixels: &[[f32; 4]], w
         wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
     );
     texture
+}
+
+/// The count read back once its map has landed: under load the map's callback can trail the poll.
+fn landed(device: &wgpu::Device, gpu: &Gpu) -> oni_measure::histogram::Histogram {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        device.poll(wgpu::PollType::wait_indefinitely()).expect("poll");
+        if let Some(h) = gpu.histogram() {
+            return h;
+        }
+        assert!(std::time::Instant::now() < deadline, "the count never landed");
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
 }

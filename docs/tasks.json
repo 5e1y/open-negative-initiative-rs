@@ -4583,5 +4583,12 @@
     "title": "The merged slides and kept balance stay under their file ceilings",
     "status": "done",
     "detail": "Merging #920 and #910-911 took rolls.rs to 429 lines and oni-decode's lib.rs to 403: the Auto levels key moves unchanged into app/rolls/levelling.rs, the 3x3 arithmetic into oni-decode/src/m3.rs. The kept balance's checks read a slide's absent roll through its option."
+  },
+  {
+    "id": 708,
+    "type": "test",
+    "title": "The GPU histogram checks wait for their count to land",
+    "status": "done",
+    "detail": "Under a loaded machine the map's callback could trail a single poll, so two display checks read no histogram and failed now and then; they poll until the count lands, bounded at 10 s. Their assertions and twins are unchanged."
   }
 ]
