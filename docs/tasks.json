@@ -4613,5 +4613,12 @@
     "title": "A roll's black and white: the chroma of the frames' median, the depth of a percentile",
     "status": "done",
     "detail": "Owner's call, beyond Swift. Each end's per-channel shape is the frames' trimmed median (10 % left out each side, one at least from three frames up), moved as one block so green sits at its 20th percentile for the black and 80th for the white. One or two tinted frames no longer tint the roll, and the roll keeps its contrast; a few frames' deepest shadows clip, the Blacks slider there to take them back. A picked film base still sets the black. Checks: the roll tests, and two warm-black frames leaving the roll's black neutral, the twin the former second-extreme rule taking their tint."
+  },
+  {
+    "id": 975,
+    "type": "check",
+    "title": "A Swift user's upgrade, checked on the owner's own rolls and support folder",
+    "status": "done",
+    "detail": "Headless example `upgrade_check` (every sidecar under a scans folder read; a copy of rolls rendered against the Swift thumbnails and written back; a copy of the support folder loaded) and the window check `upgrade` (ONI_UPGRADE_ROLLS mirrored, each roll opened, its first frame double-clicked and left: no sidecar edited, only this app's own keys added beside a current one; the twin, a notch, is seen). On the owner's data: 1589 sidecars (v11 to v19) and 46 roll markers read, 28 frames from 14 rolls rendered and round-tripped, presets, masks, projects, favourites, roots, library, index, transition table and journal loaded; nothing broke."
   }
 ]

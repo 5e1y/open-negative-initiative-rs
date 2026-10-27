@@ -6,6 +6,7 @@ mod runner;
 mod strict;
 mod submenus;
 mod archive;
+mod upgrade;
 mod auto_balance;
 mod balance_kept;
 mod button_group;
@@ -245,6 +246,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed", gallery_cell::a_raw_jpeg_pair_is_one_tile_and_a_heic_is_sealed),
     ("visible::a_triplet_with_a_pass_gone_is_marked", visible::a_triplet_with_a_pass_gone_is_marked),
     ("wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck", wrapped::every_gesture_is_noted_and_the_year_reads_back_as_its_deck),
+    ("upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar", upgrade::a_swift_roll_opened_and_left_rewrites_no_sidecar),
 ];
 
 fn main() {
