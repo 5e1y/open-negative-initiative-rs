@@ -3967,6 +3967,13 @@
     "detail": "Under a loaded machine the map's callback could trail a single poll, so two display checks read no histogram and failed now and then; they poll until the count lands, bounded at 10 s. Their assertions and twins are unchanged."
   },
   {
+    "id": 709,
+    "type": "feature",
+    "title": "A roll's black and white: the chroma of the frames' median, the depth of a percentile",
+    "status": "done",
+    "detail": "Owner's call, beyond Swift. Each end's per-channel shape is the frames' trimmed median (10 % left out each side, one at least from three frames up), moved as one block so green sits at its 20th percentile for the black and 80th for the white. One or two tinted frames no longer tint the roll, and the roll keeps its contrast; a few frames' deepest shadows clip, the Blacks slider there to take them back. A picked film base still sets the black. Checks: the roll tests, and two warm-black frames leaving the roll's black neutral, the twin the former second-extreme rule taking their tint."
+  },
+  {
     "id": 710,
     "type": "fix",
     "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
@@ -4608,11 +4615,11 @@
     "outcome": "oni-measure/tests/slide_roll.rs: on three synthetic slides the key after Prepare returns Prepare's settings whole, and a second press the same (twin: the window moved over the bright border, the white moves past 0.05). Window check slides: two presses on the prepared open slide leave its settings equal (twin: the key moves an unprepared slide's levels, earlier in the check). A key reading after the levels (Stage::GlobalLevels) fails both."
   },
   {
-    "id": 709,
-    "type": "feature",
-    "title": "A roll's black and white: the chroma of the frames' median, the depth of a percentile",
+    "id": 975,
+    "type": "check",
+    "title": "A Swift user's upgrade, checked on the owner's own rolls and support folder",
     "status": "done",
-    "detail": "Owner's call, beyond Swift. Each end's per-channel shape is the frames' trimmed median (10 % left out each side, one at least from three frames up), moved as one block so green sits at its 20th percentile for the black and 80th for the white. One or two tinted frames no longer tint the roll, and the roll keeps its contrast; a few frames' deepest shadows clip, the Blacks slider there to take them back. A picked film base still sets the black. Checks: the roll tests, and two warm-black frames leaving the roll's black neutral, the twin the former second-extreme rule taking their tint."
+    "detail": "Headless example `upgrade_check` (every sidecar under a scans folder read; a copy of rolls rendered against the Swift thumbnails and written back; a copy of the support folder loaded) and the window check `upgrade` (ONI_UPGRADE_ROLLS mirrored, each roll opened, its first frame double-clicked and left: no sidecar edited, only this app's own keys added beside a current one; the twin, a notch, is seen). On the owner's data: 1589 sidecars (v11 to v19) and 46 roll markers read, 28 frames from 14 rolls rendered and round-tripped, presets, masks, projects, favourites, roots, library, index, transition table and journal loaded; nothing broke."
   },
   {
     "id": 990,
