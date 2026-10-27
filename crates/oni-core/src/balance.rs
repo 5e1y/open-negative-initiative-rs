@@ -94,9 +94,10 @@ pub fn unbalanced(settings: &PipelineSettings) -> bool {
 
 /// `adopt`: a frame never balanced opens where a balance begins, the window its key proposes armed;
 /// a sheet drops the margin an earlier opening proposed, so it reads its grid. Whether it is armed.
+/// A slide is never measured, so it never opens on a window (owner's call, beyond Swift).
 pub fn opening_window(settings: &mut PipelineSettings) -> bool {
     let sheet = settings.sheet.is_some();
-    let armed = unbalanced(settings) && !sheet;
+    let armed = unbalanced(settings) && !sheet && settings.mode != ConversionMode::Positive;
     let g = &mut settings.geometry;
     if armed {
         g.propose_measure_window(false);
@@ -250,6 +251,9 @@ mod tests {
         let mut fresh = PipelineSettings::rest(ConversionMode::Negative, true);
         assert!(opening_window(&mut fresh));
         assert_eq!(fresh.geometry.measure_window, Some(proposal(fresh.geometry.crop, false)));
+        // A slide, never measured, opens as it stands: no window proposed, none armed.
+        let mut slide = PipelineSettings::rest(ConversionMode::Positive, true);
+        assert!(unbalanced(&slide) && !opening_window(&mut slide) && slide.geometry.measure_window.is_none());
         let mut balanced = written(&reference(), &PipelineSettings::rest(ConversionMode::Negative, true));
         assert!(!unbalanced(&balanced));
         assert!(!opening_window(&mut balanced) && balanced.geometry.measure_window.is_none(), "a balanced frame opens as it was");

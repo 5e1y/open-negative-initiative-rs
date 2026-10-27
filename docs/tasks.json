@@ -4553,5 +4553,12 @@
     "status": "done",
     "detail": "A positive on the Scanner face sat 1.1 to 1.4 stops over its Pro render (three ARW slides, mean luminance 2.2 to 2.7 times Pro's, on both machines): the ONI and Frontier looks add about a stop (OniLook exposure 0.9976 and its S), fitted on a negative entering them with Lighting's 1.5 rest left out, while a slide rests at 0 and loses nothing. The machine now enters the look at resting_exposure(mode) - 1.5: -1.5 for a slide, 0 for a negative or B&W, which render bit for bit as before. Slides land 0.25 to 0.4 stop over Pro, as negatives do (0.2 to 0.5), no clipping added. Pipeline::chain takes the machine's settings, so a check renders the former chain.",
     "outcome": "oni-pipeline/tests/scanner_positive.rs: a slide at rest within 0.5 stop of Pro on both machines and no more clipped (twin: the former entry sits +0.9 stop and fails); negatives and B&W on both machines bit for bit against the former settings with clicks and contrast (twin: a slide differs). Real files: Roll #8 frames 6432 and 6433 hash identical before and after on Pro and both machines."
+  },
+  {
+    "id": 706,
+    "type": "fix",
+    "title": "A slide opens without the measuring window armed",
+    "status": "done",
+    "detail": "Swift's adopt arms the measuring window on any frame never balanced, inviting its measure; slides are never measured since #920, so every slide opened on the window. opening_window now leaves a positive as it stands, proposing and arming nothing; its Auto keys still read the frame's default inset window. Check in balance's opening test, its twin a fresh negative still armed."
   }
 ]
