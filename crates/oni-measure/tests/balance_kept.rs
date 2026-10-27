@@ -177,8 +177,8 @@ fn measurer(check: &str, decode: Box<key::Decode>) -> Option<Measurer> {
 
 /// Two outcomes alike bit for bit; a roll of one is measured under a new id each time.
 fn alike(a: &Outcome, b: &Outcome) -> bool {
-    let id = a.reference.as_ref().expect("a negative stands on a roll").id;
-    let bare = |o: &Outcome| Outcome { reference: o.reference.clone().map(|r| RollReference { id, ..r }), filters: o.filters };
+    let id = a.reference.as_ref().map(|r| r.id);
+    let bare = |o: &Outcome| Outcome { reference: o.reference.clone().map(|r| RollReference { id: id.unwrap_or(r.id), ..r }), filters: o.filters };
     bare(a) == bare(b)
 }
 
