@@ -17,6 +17,12 @@ pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Ne
     Ok(Arc::new(engine.prepare(decoded)?))
 }
 
+/// Whether the frame's sidecar reads it as a slide, the key its kept preview is found by.
+pub(super) fn read_as_slide(path: &str) -> bool {
+    let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
+    oni_settings::sidecar::read(Path::new(path), mosaic, true).is_ok_and(|l| render::Reading::of(&l.settings).slide)
+}
+
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
 pub(super) fn draw_grids(engine: Shared) {
     loop {

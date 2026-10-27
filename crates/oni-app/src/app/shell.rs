@@ -59,6 +59,7 @@ impl Shell {
             reveal: Default::default(),
             shelf: Default::default(),
             batch: None,
+            levelling: false,
             org: Default::default(),
             // A stored count off the ladder lands on its nearest rung.
             columns: Preferences::load(&options.support)

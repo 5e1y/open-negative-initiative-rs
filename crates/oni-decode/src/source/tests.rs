@@ -100,7 +100,7 @@ fn mosaic_dng(path: &Path) {
 }
 
 fn decode_by(path: &Path, route: Route, side: usize, gain: f32) -> Result<Linear, DecodeError> {
-    decoded_by(path, gain, side, Colours::Matrix, true, route).map(|(linear, _)| linear)
+    decoded_by(path, gain, side, Colours::Matrix, true, crate::Neutral::Swift, route).map(|(linear, _)| linear)
 }
 
 /// Every channel of every pixel, as its bits, so two decodes compare exactly.

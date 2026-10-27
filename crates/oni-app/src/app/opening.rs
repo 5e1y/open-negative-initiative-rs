@@ -108,7 +108,7 @@ impl Ctl {
             let s = self.state.borrow();
             (s.previews.clone(), s.reading.clone().unwrap_or_else(|| render::Reading::of(s.store.settings())))
         };
-        let known = previews.lock().expect("previews").get(path);
+        let known = previews.lock().expect("previews").get(path, converted.slide);
         if let Some(negative) = known {
             self.state.borrow_mut().negative = Some((path.to_string(), negative));
             self.prepare_measure(path);
@@ -122,7 +122,7 @@ impl Ctl {
             let Some(prepared) = crate::decode_gate::PREVIEW.run(ticket, || prepared_keeping(&engine, &path, converted.clone())) else { return };
             with_shell(move |c| match prepared {
                 Ok((negative, full)) => {
-                    c.state.borrow().previews.lock().expect("previews").insert(path.clone(), negative.clone());
+                    c.state.borrow().previews.lock().expect("previews").insert(path.clone(), converted.slide, negative.clone());
                     if c.state.borrow().open_path() == Some(path.as_str()) {
                         let mut s = c.state.borrow_mut();
                         // The decode read the whole frame: it is the full resolution, kept rather than read again.

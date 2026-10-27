@@ -15,7 +15,7 @@ export component RollPane inherits Pane {
         // `rollBlock`: the rows a small gap apart, as Swift stacks them.
         VerticalLayout {
             spacing: Space.s;
-            if PanelState.roll-state == 0: WarningBand { text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
+            if PanelState.roll-state == 0 && !PanelState.slide: WarningBand { text: @tr("This photo was never measured with its roll, so these settings act on it alone."); }
             if PanelState.roll-state == 0: Button {
                 size: ButtonSize.plate;
                 text: @tr("PREPARE THE ROLL…");
@@ -49,7 +49,7 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Film Type");
         demo: "film-type";
-        help: @tr("What the film is: a colour negative, a slide or black and white.");
+        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated, and Auto Levels places its black and white on a click.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];
@@ -151,7 +151,7 @@ export component RollPane inherits Pane {
         }
     }
     // Between the balance that feeds it and the windows placed on it, where it acts.
-    Block {
+    if !PanelState.slide: Block {
         title: @tr("Density Ceiling");
         demo: "density-ceiling";
         help: @tr("Reveals more detail in the densest parts of the negative, at the cost of more visible noise there.");
@@ -166,6 +166,13 @@ export component RollPane inherits Pane {
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;
         LevelsEditor { histogram: Plots.levels; revision: Plots.levels-revision; }
+        if PanelState.slide: Button {
+            size: ButtonSize.plate;
+            text: @tr("AUTO LEVELS");
+            help: @tr("One black and one white point for the three channels, read on this photo's RGB histogram; the colour stays as the slide holds it");
+            enabled: !PanelState.levelling;
+            clicked => { PanelState.auto-levels(); }
+        }
         if Editors.low-precision: HorizontalLayout {
             alignment: start;
             Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }
@@ -173,7 +180,7 @@ export component RollPane inherits Pane {
     }
     // After the per-channel windows: a balanced grey is its fixed point. Monochrome, RGB passes and
     // the Scanner face run none.
-    if PanelState.separation-shown: Block {
+    if PanelState.separation-shown && !PanelState.slide: Block {
         title: @tr("Dye Separation");
         demo: "dye-separation";
         help: @tr("Subtracts each dye's spill into the other two channels, so colors separate while greys stay put. The family names the film's dye set; the dose depends on the light and sensor it was captured with.");

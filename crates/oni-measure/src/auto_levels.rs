@@ -83,6 +83,23 @@ pub fn placement(h: &Histogram, threshold: f32) -> Option<[Suggestion; 3]> {
     Some([suggest(h, 0, threshold)?, suggest(h, 1, threshold)?, suggest(h, 2, threshold)?])
 }
 
+/// One pair of ends on the RGB composite, the three channels' counts summed, laid on every channel;
+/// the reading's outermost ends in place of the counts' where it carries them.
+pub fn composite(h: &Histogram, threshold: f32) -> Option<[Suggestion; 3]> {
+    if h.is_empty() {
+        return None;
+    }
+    let summed: Vec<f32> = h.rgb.iter().map(|b| b[0] + b[1] + b[2]).collect();
+    let mut out = suggest_counts(&summed, threshold)?;
+    if let Some(e) = h.ends.as_ref().filter(|e| e.len() == 3) {
+        let low = e.iter().map(|t| t[0]).fold(f32::INFINITY, f32::min);
+        let high = e.iter().map(|t| t[1]).fold(f32::NEG_INFINITY, f32::max);
+        out.black = low.max(0.0).min(1.0 - MINIMUM_SPAN);
+        out.white = high.max(out.black + MINIMUM_SPAN).min(1.0);
+    }
+    Some([out; 3])
+}
+
 /// The bin, fractional, below which `fraction` of the counts lie.
 pub fn quantile(counts: &[f32], fraction: f32) -> Option<f32> {
     let total = sum(counts);
@@ -182,6 +199,19 @@ pub fn two_steps(
     let after = if moved == stops { h.clone() } else { remeasuring(moved) };
     let levels = placement(&after, threshold)?;
     Some(Balance { stops: moved, levels, shift })
+}
+
+/// The Auto levels key: a slide read once at rest gains, one black and white on its RGB composite
+/// (owner's call); any other film Classic's two steps from its own gains.
+pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
+    if mode != ConversionMode::Positive {
+        let first = reading(stops);
+        return if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) };
+    }
+    let rest = [Gains::BASE; 3];
+    let h = reading(rest);
+    let levels = composite(&h, 0.0)?;
+    Some(Balance { stops: rest, levels, shift: [0, 1, 2].map(|c| shift(rest[c] - stops[c], mode)) })
 }
 
 /// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.

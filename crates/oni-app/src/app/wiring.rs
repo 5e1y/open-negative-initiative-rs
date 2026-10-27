@@ -176,6 +176,8 @@ impl Ctl {
             p.act(crate::Act::AutoBalance);
         });
         let p = me.clone();
+        window.global::<PanelState>().on_auto_levels(move || p.auto_levels());
+        let p = me.clone();
         window.global::<PanelState>().on_film_type_picked(move |i| {
             p.film_type(i);
             p.publish_bar();

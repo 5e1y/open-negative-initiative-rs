@@ -238,6 +238,7 @@ impl Ctl {
     }
 
     /// Whether `roll` has a measured frame, read off this thread once per roll; `None` while it reads.
+    /// A slide is never measured, so a roll holding one asks for no measure.
     pub(super) fn roll_measured(&self, key: String, frames: &[String]) -> Option<bool> {
         let mosaic = {
             let mut s = self.state.borrow_mut();
@@ -253,7 +254,7 @@ impl Ctl {
         let _ = std::thread::Builder::new().name("reading a roll's measure".into()).spawn(move || {
             let measured = frames.iter().any(|p| {
                 let path = std::path::Path::new(p);
-                oni_settings::sidecar::read(path, mosaic(path), false).is_ok_and(|l| l.settings.roll_reference.is_some())
+                oni_settings::sidecar::read(path, mosaic(path), false).is_ok_and(|l| measured_or_slide(&l.settings))
             });
             super::super::with_shell(move |c| c.measured_landed(&key, measured));
         });
@@ -276,5 +277,23 @@ impl Ctl {
         let Some(roll) = self.state.borrow().roll() else { return };
         self.commit_info_drafts();
         self.roll_of(roll.paths, |c, paths, left| c.enter_roll(&paths, left));
+    }
+}
+
+/// A frame the roll guide counts as needing no measure: measured with its roll, or a slide.
+pub(crate) fn measured_or_slide(s: &oni_settings::PipelineSettings) -> bool {
+    s.roll_reference.is_some() || s.mode == oni_settings::ConversionMode::Positive
+}
+
+#[cfg(test)]
+mod slide_tests {
+    use super::measured_or_slide;
+    use oni_settings::{ConversionMode, PipelineSettings};
+
+    #[test]
+    fn a_slide_never_asks_its_roll_for_a_measure() {
+        assert!(measured_or_slide(&PipelineSettings::rest(ConversionMode::Positive, true)));
+        // Twin: an unmeasured negative still raises the banner.
+        assert!(!measured_or_slide(&PipelineSettings::rest(ConversionMode::Negative, true)));
     }
 }

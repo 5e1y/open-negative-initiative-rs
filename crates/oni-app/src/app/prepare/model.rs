@@ -56,22 +56,27 @@ impl Step {
         Step::ALL.into_iter().find(|s| s.name() == name)
     }
 
-    /// A scanner lights its film evenly: it needs no flat-field.
-    pub fn skipped(self, capture: Capture) -> bool {
-        self == Step::FlatField && capture == Capture::Scanner
+    /// A scanner lights its film evenly: it needs no flat-field. A slide's roll is never measured,
+    /// so it has no base, flags or window (owner's call).
+    pub fn skipped(self, capture: Capture, film: ConversionMode) -> bool {
+        match self {
+            Step::FlatField => capture == Capture::Scanner,
+            Step::Base | Step::Flags | Step::Window => film == ConversionMode::Positive,
+            Step::Film => false,
+        }
     }
 }
 
 /// `RollPanel.neighbour`: one step either way past the skipped ones, held at either end.
-pub fn neighbour(step: Step, way: i32, capture: Capture) -> Step {
+pub fn neighbour(step: Step, way: i32, capture: Capture, film: ConversionMode) -> Step {
     let at = |i: i32| usize::try_from(i).ok().and_then(|i| Step::ALL.get(i).copied());
     let mut next = at(step.index() as i32 + way).unwrap_or(step);
-    while next.skipped(capture)
+    while next.skipped(capture, film)
         && let Some(further) = at(next.index() as i32 + way)
     {
         next = further;
     }
-    next
+    if next.skipped(capture, film) { step } else { next }
 }
 
 /// `RollPanel.stepFilled`: NEXT once the step holds its value, SKIP before.
@@ -287,13 +292,15 @@ mod tests {
 
     #[test]
     fn the_steps_walk_past_the_flat_field_on_a_scanner_and_hold_at_either_end() {
-        assert_eq!(neighbour(Step::Film, 1, Capture::Camera), Step::FlatField);
-        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner), Step::Base);
-        assert_eq!(neighbour(Step::Base, -1, Capture::Scanner), Step::Film);
-        assert_eq!(neighbour(Step::Window, 1, Capture::Camera), Step::Window);
-        assert_eq!(neighbour(Step::Film, -1, Capture::Camera), Step::Film);
+        let n = ConversionMode::Negative;
+        assert_eq!(neighbour(Step::Film, 1, Capture::Camera, n), Step::FlatField);
+        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, n), Step::Base);
+        assert_eq!(neighbour(Step::Base, -1, Capture::Scanner, n), Step::Film);
+        assert_eq!(neighbour(Step::Window, 1, Capture::Camera, n), Step::Window);
+        assert_eq!(neighbour(Step::Film, -1, Capture::Camera, n), Step::Film);
         // Twin: on a camera the flat-field is a step of its own.
-        assert_ne!(neighbour(Step::Base, -1, Capture::Camera), Step::Film);
+        assert_ne!(neighbour(Step::Base, -1, Capture::Camera, n), Step::Film);
+        assert_eq!((last_step(Capture::Camera, n), last_step(Capture::Scanner, n)), (Step::Window, Step::Window));
         assert_eq!(Step::ALL.map(Step::name), ["film", "flatField", "base", "flags", "window"]);
         assert_eq!(Step::named("flags"), Some(Step::Flags));
         assert_eq!(Capture::ALL.map(Capture::raw), ["scanner", "camera", "rgbPasses"]);
@@ -304,6 +311,7 @@ mod tests {
         assert_eq!(left_out_text(1), "1 frame of this folder, measured on another roll, is left out.");
         assert_eq!(left_out_text(2), "2 frames of this folder, measured on another roll, are left out.");
     }
+
 
     /// `RollFrameView.selfCheck`: a quarter-turned, cropped frame shows in its render's shape.
     #[test]

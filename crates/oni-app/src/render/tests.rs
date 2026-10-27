@@ -131,13 +131,17 @@ fn previews_keep_the_last_four_used() {
     };
     let mut kept = Previews::default();
     for k in 0..4 {
-        kept.insert(k.to_string(), one(&mut engine));
+        kept.insert(k.to_string(), false, one(&mut engine));
     }
-    assert!(kept.get("0").is_some(), "a use moves the frame to the back");
-    kept.insert("4".into(), one(&mut engine));
-    assert!(kept.get("1").is_none(), "the least recently used frame left");
+    assert!(kept.get("0", false).is_some(), "a use moves the frame to the back");
+    kept.insert("4".into(), false, one(&mut engine));
+    assert!(kept.get("1", false).is_none(), "the least recently used frame left");
     // Twin: the frame used just before the insertion stayed.
-    assert!(kept.get("0").is_some());
+    assert!(kept.get("0", false).is_some());
+    // A frame read as a negative is no slide's preview, and read as a slide replaces it.
+    assert!(kept.get("0", true).is_none() && kept.holds("0"));
+    kept.insert("0".into(), true, one(&mut engine));
+    assert!(kept.get("0", false).is_none() && kept.get("0", true).is_some());
 }
 
 /// A zoomed view renders only what the canvas shows: at 100 % from the full frame, the canvas's

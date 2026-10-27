@@ -68,6 +68,13 @@ pub fn applied(balance: &Balance, settings: &PipelineSettings) -> PipelineSettin
     out
 }
 
+/// The Auto levels key's balance on a frame: gains and windows, no key named.
+pub fn levelled(balance: &Balance, settings: &PipelineSettings) -> PipelineSettings {
+    let mut out = applied(balance, settings);
+    out.balance_method = None;
+    out
+}
+
 /// A frame standing on its roll's reference; no key named, so a paste inside the roll carries every handle raw.
 pub fn written(reference: &RollReference, settings: &PipelineSettings) -> PipelineSettings {
     let mut out = applied(&Balance::of(reference), settings);
@@ -100,18 +107,21 @@ pub fn opening_window(settings: &mut PipelineSettings) -> bool {
     armed
 }
 
-/// What the balance key found on one frame: the roll it stands on and the full correction.
+/// What the balance key found on one frame: the roll it stands on, none for a slide, which is read
+/// as it stands, and the full correction.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Outcome {
-    pub reference: RollReference,
+    pub reference: Option<RollReference>,
     /// Each channel's exposure on the print that would print the frame's light grey.
     pub filters: [f32; 3],
 }
 
 /// The outcome laid on a frame, dosed by its Balance strength.
 pub fn applied_outcome(outcome: &Outcome, settings: &PipelineSettings) -> PipelineSettings {
-    let mut out =
-        if settings.roll_reference.is_none() { written(&outcome.reference, settings) } else { settings.clone() };
+    let mut out = match (&settings.roll_reference, &outcome.reference) {
+        (None, Some(reference)) => written(reference, settings),
+        _ => settings.clone(),
+    };
     out.balance_method = None;
     out.balance_filters = Some(outcome.filters);
     let strength = out.balance_strength;
@@ -205,7 +215,7 @@ mod tests {
 
     #[test]
     fn the_outcome_is_dosed_by_balance_strength() {
-        let outcome = Outcome { reference: reference(), filters: [0.4, 0.0, -0.4] };
+        let outcome = Outcome { reference: Some(reference()), filters: [0.4, 0.0, -0.4] };
         let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
         s.balance_strength = 0.5;
         let out = applied_outcome(&outcome, &s);
@@ -222,7 +232,7 @@ mod tests {
         let frames: Vec<(String, PipelineSettings)> =
             ["a", "b"].iter().map(|p| (p.to_string(), PipelineSettings::default())).collect();
         let measure = |path: &str, _: &PipelineSettings| {
-            Some(Outcome { reference: r.clone(), filters: if path == "a" { [0.2, 0.0, 0.0] } else { [0.4, 0.0, 0.0] } })
+            Some(Outcome { reference: Some(r.clone()), filters: if path == "a" { [0.2, 0.0, 0.0] } else { [0.4, 0.0, 0.0] } })
         };
         let each = run(&frames, Strategy::Each, &measure).0;
         let mean = run(&frames, Strategy::Average, &measure).0;

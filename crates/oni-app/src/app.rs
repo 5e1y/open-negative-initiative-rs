@@ -238,6 +238,8 @@ pub struct State {
     shelf: presets::Shelf,
     /// The balance key's run under way, which the key shows instead of itself.
     batch: Option<rolls::Batch>,
+    /// The Auto levels key reading its targets.
+    levelling: bool,
     org: organising::Organising,
     columns: usize,
     scroll: f32,

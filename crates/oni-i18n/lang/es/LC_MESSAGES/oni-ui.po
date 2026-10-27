@@ -1534,8 +1534,8 @@ msgid "Film Type"
 msgstr "Tipo de película"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the film is: a colour negative, a slide or black and white."
-msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro."
+msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated, and Auto Levels places its black and white on a click."
+msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal: su rollo nunca se mide ni se separan sus colorantes, y Niveles automáticos coloca su negro y su blanco con un clic."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -1668,6 +1668,14 @@ msgstr "Techo"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Per-Channel Levels"
 msgstr "Niveles por canal"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "AUTO LEVELS"
+msgstr "NIVELES AUTOMÁTICOS"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "One black and one white point for the three channels, read on this photo's RGB histogram; the colour stays as the slide holds it"
+msgstr "Un punto negro y un punto blanco para los tres canales, leídos en el histograma RGB de esta foto; el color queda como lo guarda la diapositiva"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -3435,6 +3443,12 @@ msgstr "{count} fotogramas, agrupados en la última medición del rollo."
 msgid "{measured} measured, {flagged} flagged"
 msgstr "{measured} medidos, {flagged} marcados"
 
+#: crates/oni-app/src/app/prepare/slides.rs
+msgid "PREPARE {n} FRAME"
+msgid_plural "PREPARE {n} FRAMES"
+msgstr[0] "PREPARAR {n} FOTOGRAMA"
+msgstr[1] "PREPARAR {n} FOTOGRAMAS"
+
 #: crates/oni-app/src/app/prepare/trace.rs
 msgid "Reading the first frame…"
 msgstr "Leyendo el primer fotograma…"
@@ -3588,6 +3602,10 @@ msgstr "Restablecer valores predeterminados"
 #: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
 msgid "Balance"
 msgstr "Balance"
+
+#: crates/oni-app/src/app/rolls.rs
+msgid "Auto Levels"
+msgstr "Niveles automáticos"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."
@@ -4328,6 +4346,12 @@ msgid "Apply “{name}”"
 msgid_plural "Apply “{name}” to {n} photos"
 msgstr[0] "Aplicar “{name}”"
 msgstr[1] "Aplicar “{name}” a {n} fotos"
+
+#: crates/oni-core/src/store/several.rs
+msgid "Auto levels on {n} photo"
+msgid_plural "Auto levels on {n} photos"
+msgstr[0] "Niveles automáticos en {n} foto"
+msgstr[1] "Niveles automáticos en {n} fotos"
 
 #: crates/oni-core/src/store/several.rs
 msgid "Balance {n} photo"

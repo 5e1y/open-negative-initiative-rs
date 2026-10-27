@@ -278,7 +278,9 @@ impl Ctl {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
         }
         let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !shown;
-        w.global::<PanelState>().set_separation_shown(separation);
+        let panel = w.global::<PanelState>();
+        panel.set_separation_shown(separation);
+        panel.set_slide(settings.mode == oni_settings::ConversionMode::Positive);
     }
 
     pub(super) fn wire_lab(me: &Rc<Ctl>, window: &MainWindow) {

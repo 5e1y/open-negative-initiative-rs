@@ -10,6 +10,14 @@ const Z_F: M3 = [
     [-0.0458, 0.1519, 0.7616],
 ];
 
+fn neutral_xyz() -> [f64; 3] {
+    white_xyz(Neutral::Swift)
+}
+
+fn converted_by(cam_xyz: &M3, stops: f64, colours: Colours) -> Option<Conversion> {
+    converted_on(cam_xyz, stops, colours, Neutral::Swift)
+}
+
 /// What LibRaw hands out for a white `w` whose most sensitive channel reaches the white level.
 fn rendered(conv: &Conversion, w: [f64; 3]) -> [f64; 3] {
     let n = apply(&Z_F, w);
@@ -147,4 +155,27 @@ fn every_plain_extension_has_its_reader_compiled_in() {
     // Twin: a format the reader knows but ONI does not build, and one it never knew, are not.
     assert!(!image::ImageFormat::from_extension("avif").unwrap().reading_enabled());
     assert!(!named_decodable(Path::new("a.avif")) && !named_decodable(Path::new("a.HEIC")) && !named_decodable(Path::new("a.psd")));
+}
+
+/// True when `w` has the chromaticity of a 5500 K Planckian radiator, (0.3324, 0.3408).
+fn planckian_5500(w: [f64; 3]) -> bool {
+    let (x, y) = (w[0] / w.iter().sum::<f64>(), w[1] / w.iter().sum::<f64>());
+    (x - 0.3324).abs() < 3e-4 && (y - 0.3408).abs() < 3e-4
+}
+
+#[test]
+fn a_slide_is_balanced_on_the_planckian_5500_k_and_a_negative_on_5000_k() {
+    assert!(planckian_5500(white_xyz(Neutral::Slide)), "{:?}", white_xyz(Neutral::Slide));
+    assert_eq!(white_xyz(Neutral::Swift), neutral_xyz(), "a negative's neutral is untouched");
+    let slide = converted_on(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix, Neutral::Slide).unwrap();
+    let level = DEFAULT_BASELINE_EV.exp2();
+    let out = rendered(&slide, white_xyz(Neutral::Slide));
+    assert!(out.iter().all(|v| (v - level).abs() < 1e-5), "the 5500 K white reads grey: {out:?}");
+    // Twin: the 5000 K white is warm on a slide's decode, and the 5500 K one cool on a negative's.
+    let warm = rendered(&slide, neutral_xyz());
+    assert!(warm[0] / warm[2] > 1.05, "{warm:?}");
+    let swift = converted_by(&Z_F, DEFAULT_BASELINE_EV, Colours::Matrix).unwrap();
+    let cool = rendered(&swift, white_xyz(Neutral::Slide));
+    assert!(cool[2] / cool[0] > 1.05, "{cool:?}");
+    assert!(!planckian_5500(neutral_xyz()));
 }

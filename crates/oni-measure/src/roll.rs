@@ -141,6 +141,21 @@ pub fn start(before: &PipelineSettings, film: ConversionMode, window: Rect, mask
     s
 }
 
+/// The settings a slide of the roll is written with, never measured: the look and any earlier roll
+/// at rest, framing, flat-field and dust carried over, on the roll's mask.
+pub fn slide(before: &PipelineSettings, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
+    let mut bare = before.clone();
+    bare.roll_reference = None;
+    let mut s = parameters::carried(&parameters::imported(&bare), ConversionMode::Positive);
+    s.corrections = before.corrections.clone();
+    s.capture_stops = capture_stops;
+    s.primaries_converted = false;
+    if let Some(m) = mask {
+        s.flat_field = m.clone();
+    }
+    s
+}
+
 /// One frame Prepare the Roll was asked to read; a flagged frame joins the roll without voting.
 #[derive(Clone, Debug)]
 pub struct Job {

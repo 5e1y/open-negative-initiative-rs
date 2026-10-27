@@ -9,6 +9,8 @@ pub mod plain;
 pub mod cache;
 mod linear;
 mod source;
+mod neutral;
+pub use neutral::{Neutral, SLIDE_KELVIN};
 
 use source::{Route, Source};
 use std::os::raw::{c_char, c_float, c_int, c_ushort, c_void};
@@ -60,7 +62,7 @@ type M3 = [[f64; 3]; 3];
 
 /// The neutral of the Swift app's `CIRAWFilter`, 5000 K and tint 0: Robertson's isotemperature node at
 /// 200 mired, on the Planckian locus, in CIE 1960 (u, v), the table DNG temperature and tint are read on.
-const NEUTRAL_UV: (f64, f64) = (0.21142, 0.32312);
+pub(crate) const NEUTRAL_UV: (f64, f64) = (0.21142, 0.32312);
 
 const D65_XY: (f64, f64) = (0.3127, 0.3290);
 const REC2020_XY: [(f64, f64); 3] = [(0.708, 0.292), (0.170, 0.797), (0.131, 0.046)];
@@ -139,8 +141,8 @@ fn xyz((x, y): (f64, f64)) -> [f64; 3] {
     [x / y, 1.0, (1.0 - x - y) / y]
 }
 
-fn neutral_xyz() -> [f64; 3] {
-    let (u, v) = NEUTRAL_UV;
+fn white_xyz(neutral: Neutral) -> [f64; 3] {
+    let (u, v) = neutral.uv();
     let d = u - 4.0 * v + 2.0;
     xyz((1.5 * u / d, v / d))
 }
@@ -184,8 +186,8 @@ pub enum Colours {
 
 /// The 5000 K balance of a camera whose `cam_xyz` maps XYZ to its channels: the neutral there reads
 /// (1, 1, 1) when its most sensitive channel reaches the white level, times `2^stops`.
-fn converted_by(cam_xyz: &M3, stops: f64, colours: Colours) -> Option<Conversion> {
-    let white = neutral_xyz();
+fn converted_on(cam_xyz: &M3, stops: f64, colours: Colours, neutral: Neutral) -> Option<Conversion> {
+    let white = white_xyz(neutral);
     let n = apply(cam_xyz, white);
     if n.iter().any(|v| !v.is_finite() || *v <= 0.0) {
         return None;
@@ -315,21 +317,27 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
 
 /// `decode` in LibRaw's own colours, the camera's rendition matrix left out: what it is measured on.
 pub fn decode_native(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
-    decoded(path, exposure_gain, 0, Colours::Matrix, false).map(|(linear, _)| linear)
+    decoded(path, exposure_gain, 0, Colours::Matrix, false, Neutral::Swift).map(|(linear, _)| linear)
 }
 
 /// `decode_for` in the given colours; the sensor's own never take a rendition matrix.
 pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, colours, true)
+    decoded(path, exposure_gain, side, colours, true, Neutral::Swift)
 }
 
-fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool) -> Result<(Linear, usize), DecodeError> {
-    decoded_by(path, exposure_gain, side, colours, matched, Route::PLATFORM)
+/// `decode_for` balanced on `neutral`.
+pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
+    decoded(path, exposure_gain, side, Colours::Matrix, true, neutral)
 }
 
-fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, route: Route) -> Result<(Linear, usize), DecodeError> {
+fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
+    decoded_by(path, exposure_gain, side, colours, matched, neutral, Route::PLATFORM)
+}
+
+fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
     // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's.
-    let key = (side == 0 || side == HALF).then(|| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}", exposure_gain.to_bits()))).flatten();
+    let slide = if neutral == Neutral::Slide { "|slide" } else { "" };
+    let key = (side == 0 || side == HALF).then(|| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}{slide}", exposure_gain.to_bits()))).flatten();
     if let Some(k) = key.as_deref().and_then(cache::read) {
         let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &k.matrix);
         let (width, height) = linear::upright(k.flip, (k.width, k.height));
@@ -354,7 +362,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, ma
     let d = &s.0;
     let cam_xyz: M3 = [0, 1, 2].map(|r| d.cam_xyz[r].map(f64::from));
     let conv = (d.colors == 3)
-        .then(|| converted_by(&cam_xyz, baseline(d.baseline_exposure), colours))
+        .then(|| converted_on(&cam_xyz, baseline(d.baseline_exposure), colours, neutral))
         .flatten();
     let conv = conv.ok_or(DecodeError(NO_COLOUR_MATRIX))?;
     let rc = unsafe { oni_process(&mut s.0, conv.mul.as_ptr()) };

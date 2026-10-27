@@ -90,7 +90,9 @@ impl Ctl {
             .collect();
         let look = r.look();
         let base_note = r.base.as_ref().map_or(tr("No base picked yet.").to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
-        let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
+        let slides = r.film == ConversionMode::Positive;
+        let ending = step == last_step(r.capture, r.film);
+        let action = if ending && slides { slides_title(ticked) } else if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
             None => step.title().to_string(),
@@ -100,7 +102,7 @@ impl Ctl {
         } else {
             String::new()
         };
-        let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture)).collect();
+        let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, r.film)).collect();
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
         let shown_path = shown_frame.as_ref().map(|f| f.path.clone());
         let show_card = shown_path != r.shown_path;
@@ -156,7 +158,7 @@ impl Ctl {
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(action.into());
-        p.set_action_enabled(step != Step::Window || ticked > flagged);
+        p.set_action_enabled(if slides { !ending || ticked > 0 } else { step != Step::Window || ticked > flagged });
         p.set_card_picture(card);
         self.publish_passes(&p);
         self.publish_card();

@@ -52,9 +52,10 @@ pub fn separation_rows(family: Option<SeparationFamily>, strength: f32, mode: Co
     }
 }
 
-/// `Separation.dose`: narrowband passes separated the dyes in the capture.
+/// `Separation.dose`: narrowband passes separated the dyes in the capture, and a positive renders as
+/// a plain RAW, its dyes never unmixed (owner's call).
 pub fn separation_dose(s: &PipelineSettings) -> f32 {
-    if s.rgb_passes.is_none() { s.separation } else { 0.0 }
+    if s.rgb_passes.is_none() && s.mode != ConversionMode::Positive { s.separation } else { 0.0 }
 }
 
 #[cfg(test)]
@@ -72,5 +73,23 @@ mod tests {
         // Twin: the bare dose, without `chromaKept`, multiplies the chroma and differs.
         let bare = separation_matrix(SeparationFamily::KodakC41, 0.6);
         assert!((0..3).any(|i| (0..3).any(|j| (bare[i][j] - rows[i][j]).abs() > 1e-3)));
+    }
+
+    #[test]
+    fn a_positive_never_unmixes_its_dyes_and_rests_on_the_base_ceiling() {
+        let mut s = PipelineSettings::rest(ConversionMode::Positive, true);
+        s.separation = 0.6;
+        s.separation_family = Some(SeparationFamily::E6);
+        s.density_ceiling = 2.4;
+        let k = stage47(&s);
+        assert_eq!(separation_dose(&s), 0.0);
+        assert_eq!([k.sep_r, k.sep_g, k.sep_b], IDENTITY, "an old sidecar's dose unmixes nothing");
+        assert_eq!(k.pedestal, oni_settings::axis::density_axis::pedestal(oni_settings::axis::density_axis::base()));
+        // Twin: a negative keeps its dose and its own ceiling.
+        s.mode = ConversionMode::Negative;
+        let k = stage47(&s);
+        assert_eq!(separation_dose(&s), 0.6);
+        assert_ne!([k.sep_r, k.sep_g, k.sep_b], IDENTITY);
+        assert_eq!(k.pedestal, oni_settings::axis::density_axis::pedestal(2.4));
     }
 }

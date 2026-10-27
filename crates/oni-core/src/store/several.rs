@@ -37,6 +37,35 @@ impl EditorStore {
 
     /// The balance key on every target, read from each frame's own sidecar, never the screen; the
     /// open frame's step carries the others, so one undo takes the press back.
+    /// The Auto levels key on every target it read, one undo step: the open frame in its own history,
+    /// the others beside it.
+    pub fn auto_levels(&mut self, found: &HashMap<String, balance::Balance>) -> usize {
+        let open = self.path().map(str::to_string);
+        let mut serial = None;
+        if let Some(b) = open.as_ref().and_then(|p| found.get(p))
+            && self.writable()
+        {
+            let now = self.now();
+            let next = balance::levelled(b, &self.settings);
+            self.replace(next);
+            self.last_change = Some(now);
+            serial = self.history.record(self.settings.clone(), now);
+        }
+        let others: Vec<String> = found.keys().filter(|p| Some(*p) != open.as_ref()).cloned().collect();
+        let (was, now) = self.modify(&others, |p, s| found.get(p).map(|b| balance::levelled(b, s)));
+        let n = was.len() + usize::from(serial.is_some());
+        if !was.is_empty() {
+            match serial {
+                Some(serial) => self.history.attach(Companion { before: was, after: now }, serial),
+                None => {
+                    let label = trn("Auto levels on {n} photo", "Auto levels on {n} photos", was.len() as u64);
+                    self.gallery.record(&was, &now, &label, None);
+                }
+            }
+        }
+        n
+    }
+
     pub fn auto_balance(&mut self, targets: &[String], strategy: Strategy, measure: &dyn Measure) -> Option<String> {
         let open = self.path().map(str::to_string);
         let frames: Vec<(String, PipelineSettings)> = targets

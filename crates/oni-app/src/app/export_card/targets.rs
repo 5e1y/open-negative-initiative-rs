@@ -107,7 +107,8 @@ impl Ctl {
                             return;
                         }
                         let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-                        let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path));
+                        let slide = crate::render::Reading::of(&target.settings).slide;
+                        let known = open.as_ref().filter(|(p, _)| *p == path).map(|(_, n)| n.clone()).or_else(|| previews.lock().ok()?.get(&path, slide));
                         let negative = match known {
                             Some(n) => Ok(n),
                             None => prepared(&engine, &path, crate::render::Reading::of(&target.settings)),
@@ -176,7 +177,8 @@ impl Ctl {
             (self.engine.clone(), s.previews.clone(), s.negative.clone())
         };
         let path = oni_library::paths::normal(&target.path.to_string_lossy()).into_owned();
-        let known = open.filter(|(p, _)| *p == path).map(|(_, n)| n).or_else(|| previews.lock().ok()?.get(&path));
+        let slide = crate::render::Reading::of(&target.settings).slide;
+        let known = open.filter(|(p, _)| *p == path).map(|(_, n)| n).or_else(|| previews.lock().ok()?.get(&path, slide));
         self.export.borrow().weigher.ask(Weigh { target, path, known, full, export, generation, weighing, engine });
     }
 }

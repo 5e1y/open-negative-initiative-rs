@@ -39,7 +39,9 @@ mod tutorial;
 mod draft_base;
 mod trace;
 mod negative;
+mod slides;
 pub use model::*;
+pub use slides::{last_step, slides_title};
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
 #[derive(Clone, Debug, PartialEq)]
@@ -315,7 +317,7 @@ impl Roll {
         {
             self.draft_id = Some(d.id);
             self.step = Step::named(&d.step).unwrap_or(self.step);
-            self.film = d.film;
+            self.set_film(d.film);
             self.capture = Capture::from_raw(&d.capture).unwrap_or(self.capture);
             self.pass_order = d.pass_order.unwrap_or(self.pass_order);
             self.flat = d.flat_field.clone().unwrap_or_else(|| self.flat.clone());

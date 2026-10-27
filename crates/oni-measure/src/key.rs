@@ -40,6 +40,11 @@ pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
     auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
+/// The Auto levels key on one frame, read in front of the levels.
+pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
+    auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
+}
+
 /// `AutoLevels.ends`: step two alone, the gains held.
 pub fn ends(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<[Suggestion; 3]> {
     let h = r.reading(copy, s, Stage::Levels).histogram;
@@ -63,15 +68,17 @@ pub fn filters(r: &mut Reader, copy: Copy, s: &PipelineSettings, keeping: fn([f3
     filter_balance::filters(false, |f| shades(r, copy, &base, f, keeping))
 }
 
-/// `FilterBalance.outcome`: a frame on no roll is first measured as a roll of one.
+/// `FilterBalance.outcome`: a negative on no roll is first measured as a roll of one; a slide is
+/// read as it stands, never given a roll (owner's call).
 pub fn balance_outcome(r: &mut Reader, copy: Copy, path: &str, s: &PipelineSettings) -> Option<Outcome> {
     let (reference, referenced) = match &s.roll_reference {
-        Some(own) => (own.clone(), s.clone()),
+        Some(own) => (Some(own.clone()), s.clone()),
+        None if s.mode == ConversionMode::Positive => (None, s.clone()),
         None => {
             let frame = roll_measured(r, copy, path, s)?;
             let roll = roll::combined(&[frame], s.mode, None)?;
             let on = balance::written(&roll, s);
-            (roll, on)
+            (Some(roll), on)
         }
     };
     let filters = filters(r, copy, &referenced, filter_balance::printable)?;

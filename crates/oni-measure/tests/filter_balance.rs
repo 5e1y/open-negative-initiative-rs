@@ -96,7 +96,7 @@ fn the_press_lands_the_three_means_together_through_the_kernel_and_the_dose_writ
     let mut referenced = s.clone();
     referenced.roll_reference = Some(reference.clone());
     referenced.balance_strength = 0.5;
-    let pressed = applied_outcome(&Outcome { reference, filters: found }, &referenced);
+    let pressed = applied_outcome(&Outcome { reference: Some(reference), filters: found }, &referenced);
     let moved = dosed(&pressed, 0.8);
     assert!((pressed.print.red.exposure - found[0] / 2.0).abs() < 1e-6 && (pressed.print.blue.exposure - found[2] / 2.0).abs() < 1e-6);
     assert_eq!(pressed.balance_filters, Some(found));

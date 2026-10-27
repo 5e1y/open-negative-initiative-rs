@@ -170,7 +170,7 @@ impl Ctl {
     /// is reduced from its preview at once, the others decoded, those held first.
     fn decode_together(&self, id: u64, mut paths: Vec<(usize, String)>) {
         let previews = self.state.borrow().previews.clone();
-        let held: Vec<bool> = paths.iter().map(|(_, p)| previews.lock().expect("previews").get(p).is_some()).collect();
+        let held: Vec<bool> = paths.iter().map(|(_, p)| previews.lock().expect("previews").holds(p)).collect();
         let mut order: Vec<usize> = (0..paths.len()).collect();
         order.sort_by_key(|&k| !held[k]);
         paths = order.into_iter().map(|k| paths[k].clone()).collect();
@@ -186,7 +186,8 @@ impl Ctl {
                     if GROUPS.load(Ordering::Relaxed) != id {
                         return;
                     }
-                    let preview = previews.lock().expect("previews").get(&path);
+                    let slide = drawing::read_as_slide(&path);
+                    let preview = previews.lock().expect("previews").get(&path, slide);
                     let made = match preview {
                         Some(p) => engine.lock().and_then(|mut e| e.tile_of(&p, TILE)).map(Arc::new),
                         None => tile_source(&engine, &path, id),

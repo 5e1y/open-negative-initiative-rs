@@ -67,6 +67,13 @@ pub fn balance_outcomes(frames: &[(String, PipelineSettings)]) -> HashMap<String
     frames.iter().filter_map(|(path, s)| m.balance(path, s).map(|o| (path.clone(), o))).collect()
 }
 
+/// Every frame's Auto levels key on the settings it will be levelled from; a frame that reads
+/// nothing is absent.
+pub fn levels_outcomes(frames: &[(String, PipelineSettings)]) -> HashMap<String, oni_core::balance::Balance> {
+    let Some(m) = measurer() else { return HashMap::new() };
+    frames.iter().filter_map(|(path, s)| m.with(path, s, |r, copy| oni_measure::key::levels(r, copy, s)).map(|b| (path.clone(), b.core()))).collect()
+}
+
 /// The open frame's measuring copy made off the interface thread once its preview stands, so Auto
 /// White Balance reads at once; the latest frame asked wins a walk.
 pub fn prepare(path: &str, s: &PipelineSettings) {

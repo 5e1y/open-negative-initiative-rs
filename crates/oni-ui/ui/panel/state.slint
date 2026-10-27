@@ -75,6 +75,10 @@ export global PanelState {
     in property <bool> crop-first;
     // `SettingsPane`: no Dye Separation in black and white, on RGB passes or on the Scanner face.
     in property <bool> separation-shown: true;
+    // A positive is a plain RAW: no roll measure, dyes or ceiling, its levels placed by its own key.
+    in property <bool> slide;
+    in property <bool> levelling;
+    callback auto-levels();
     callback auto-balance();
     callback tab-picked(int);
     // `RollScope`: 0 never measured, 1 measured, 2 its frames still being found.

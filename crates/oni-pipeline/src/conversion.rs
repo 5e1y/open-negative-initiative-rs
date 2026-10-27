@@ -25,6 +25,11 @@ fn vector(w: &Levels) -> [f32; 3] {
     [w.black, w.white, w.gamma()]
 }
 
+/// The ceiling the render reads: a positive's rests on the axis' base, a plain RAW's (owner's call).
+pub fn rendered_ceiling(s: &PipelineSettings) -> f32 {
+    if s.mode == ConversionMode::Positive { density_axis::base() } else { s.density_ceiling }
+}
+
 /// The fused kernel's arguments, in `Pipeline.apply`'s order.
 pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let mono = s.mode.is_monochrome();
@@ -34,7 +39,8 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
     let (decompression, film_share) = decompression_weights(s);
     let windows = lv.windows();
     let unreached = s.levels.windows();
-    let pedestal = density_axis::pedestal(s.density_ceiling);
+    let ceiling = rendered_ceiling(s);
+    let pedestal = density_axis::pedestal(ceiling);
     Stage47 {
         gain: s.gains.stops.map(f32::exp2),
         red: vector(&lv.red),
@@ -43,7 +49,7 @@ pub fn stage47(s: &PipelineSettings) -> Stage47 {
         invert: s.mode.invert_flag(),
         density: if mono { 1.0 } else { color_density::factor(s.density) },
         pedestal,
-        log_guard: density_axis::log_guard(s.density_ceiling),
+        log_guard: density_axis::log_guard(ceiling),
         window: pipeline::DMAX,
         low_points: windows.map(|w| w.shadow_ordinate()),
         high_points: windows.map(|w| w.highlight_ordinate()),

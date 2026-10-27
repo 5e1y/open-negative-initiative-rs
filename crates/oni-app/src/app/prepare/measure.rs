@@ -8,6 +8,9 @@ impl Ctl {
     /// `measureRoll`: every ticked frame read off this thread after the drafts' writes, the flagged
     /// ones riding without a vote; the base read, the roll combined, every frame written onto it.
     pub(in crate::app) fn measure_roll(self: &Rc<Self>) {
+        if self.state.borrow().prepare.film == ConversionMode::Positive {
+            return self.prepare_slides();
+        }
         let (job, session) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.clone();

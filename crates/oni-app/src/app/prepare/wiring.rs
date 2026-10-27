@@ -29,7 +29,7 @@ impl Ctl {
         let c = me.clone();
         p.on_film_picked(move |i| {
             if let Some(m) = usize::try_from(i).ok().and_then(|i| ConversionMode::ALL.get(i).copied()) {
-                c.state.borrow_mut().prepare.film = m;
+                c.state.borrow_mut().prepare.set_film(m);
                 c.publish_prepare();
             }
         });
@@ -91,11 +91,11 @@ impl Ctl {
         p.on_cancel(move || c.roll_cancel());
         let c = me.clone();
         p.on_back(move || {
-            let (step, capture) = {
+            let (step, capture, film) = {
                 let r = &c.state.borrow().prepare;
-                (r.step, r.capture)
+                (r.step, r.capture, r.film)
             };
-            c.step_to(neighbour(step, -1, capture));
+            c.step_to(neighbour(step, -1, capture, film));
         });
         let c = me.clone();
         p.on_advance(move || c.roll_advance());

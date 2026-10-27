@@ -2,7 +2,7 @@
 //! crop placed inside its ActiveArea.
 
 use crate::source::tests::{Tag, directory, scratch};
-use crate::{HALF, Linear, decode, decode_for};
+use crate::{HALF, Linear, Neutral, decode, decode_for, decode_on};
 use std::path::Path;
 
 const W: usize = 96;
@@ -110,5 +110,25 @@ fn a_default_crop_lands_inside_the_active_area() {
     let s = decode(&shifted, 1.0).unwrap();
     assert_eq!((s.width, s.height), size);
     assert!(bits(&a) != bits(&s));
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A slide's decode is balanced at 5500 K and kept apart from a negative's, so a frame turned to a
+/// positive never reads the other's decode back.
+#[test]
+fn a_slide_decodes_cooler_and_is_kept_under_its_own_key() {
+    let root = scratch("slide");
+    crate::cache::keep_in(root.join("Cache"), u64::MAX);
+    let mosaic = root.join("Slide.DNG");
+    dng(&mosaic, (W, H), 1, &(0..W * H).map(|i| at(i % W, i / W)).collect::<Vec<_>>(), crop((8, 4), (W - 16, H - 8)));
+    let mean = |l: &Linear| [0, 1, 2].map(|c| l.pixels.iter().map(|p| f64::from(p[c])).sum::<f64>());
+    let (swift, _) = decode_on(&mosaic, 1.0, 0, Neutral::Swift).unwrap();
+    let (slide, _) = decode_on(&mosaic, 1.0, 0, Neutral::Slide).unwrap();
+    let (a, b) = (mean(&swift), mean(&slide));
+    assert!(b[2] / b[0] < a[2] / a[0], "a 5500 K balance lowers blue against red: {a:?} {b:?}");
+    // Twin: the negative's decode read back from the cache is its own, bit for bit.
+    let (again, _) = decode_on(&mosaic, 1.0, 0, Neutral::Swift).unwrap();
+    assert!(bits(&again) == bits(&swift) && bits(&again) != bits(&slide));
+    assert!(bits(&decode_on(&mosaic, 1.0, 0, Neutral::Slide).unwrap().0) == bits(&slide));
     let _ = std::fs::remove_dir_all(&root);
 }

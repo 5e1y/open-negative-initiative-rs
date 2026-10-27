@@ -241,7 +241,7 @@ fn the_balance_key_writes_only_on_a_press_and_one_undo_takes_it_back() {
     let reads = std::sync::atomic::AtomicUsize::new(0);
     let measure = |_: &str, _: &PipelineSettings| {
         reads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        Some(Outcome { reference: reference.clone(), filters: [0.3, 0.0, -0.3] })
+        Some(Outcome { reference: Some(reference.clone()), filters: [0.3, 0.0, -0.3] })
     };
     // Opening and editing read nothing: the key alone measures.
     store.apply_at(Command::Step { knob: Knob::Exposure, by: 0.1 }, 0.0);
