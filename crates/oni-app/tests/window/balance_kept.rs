@@ -106,7 +106,7 @@ impl Rigged {
         self.rig.until(&format!("{what}: every balance read ahead"), Duration::from_secs(120), || self.kept(paths));
         for p in paths {
             let s = self.settings(p);
-            let kept = || measuring::kept(&p.to_string_lossy(), &s).unwrap().reference;
+            let kept = || measuring::kept(&p.to_string_lossy(), &s).unwrap().reference.expect("a negative is read on a roll");
             match &s.roll_reference {
                 // A roll of one is a roll of its own at each press, as Swift measures it afresh.
                 None => assert_ne!(kept().id, kept().id, "{what}: a kept roll of one gave its id twice"),
