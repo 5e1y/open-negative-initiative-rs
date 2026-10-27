@@ -3939,6 +3939,20 @@
     "detail": "organising.rs passed its 400-line ceiling once project navigation and the submenus met; roll_stock, roll and project_group move unchanged into organising/resolving.rs."
   },
   {
+    "id": 705,
+    "type": "feature",
+    "title": "Auto White Balance counts in the status bar and keeps its key in place",
+    "status": "done",
+    "detail": "The balance key no longer gives way to a shorter progress bar, which made the panel jump: it stays, idle while the run goes, and a run lasting past 300 ms counts in the card's status bar as 'Auto white balance n/N'; a quicker one never flashes it. Check a_balance_run_counts_in_the_status_bar_once_it_outlasts_its_delay, its twins a quick run and no run."
+  },
+  {
+    "id": 706,
+    "type": "fix",
+    "title": "A slide opens without the measuring window armed",
+    "status": "done",
+    "detail": "Swift's adopt arms the measuring window on any frame never balanced, inviting its measure; slides are never measured since #920, so every slide opened on the window. opening_window now leaves a positive as it stands, proposing and arming nothing; its Auto keys still read the frame's default inset window. Check in balance's opening test, its twin a fresh negative still armed."
+  },
+  {
     "id": 710,
     "type": "fix",
     "title": "A tooltip hides on any press and with the help it showed, so none stays stuck on screen",
@@ -4450,34 +4464,6 @@
     "detail": "On the Projects tab the editor's arrows, the phone's Walk and the Scanner screen's FRAME count read the archive's group of the open photo: from a project they walked the folder open (A03 to A04 instead of the project's B04), stopped dead on a member from another folder, and the gallery came back on a photo the project does not show, so nothing was selected. Swift's labFrames: the open frame's project on the Projects tab (editingProject, the first project holding the photo opened), else its roll or day. State::lab_frames reads the project's band as laid, open_photo sets the editing project, and walk, place and Move Out read it. Window check project_walk::a_project_walks_its_own_order_in_the_gallery_and_the_editor_and_the_archive_its_folder: a project of photos from two folders, the gallery's arrows and ⇧ in its order, ⌘G on the ringed photo, → and ↑ in the editor along the project and stopping at its end, the gallery back on the photo walked to; twin: the same gestures on the archive walk the folder."
   },
   {
-    "id": 880,
-    "type": "feature",
-    "title": "An export unfolds beside the editor: the surface closes, the folder opens, a card counts the frames",
-    "status": "done",
-    "detail": "Owner's design, beyond Swift. On Export, once the destination is known and the export starts, the surface closes back to where it was opened (the editor, or the gallery), the destination folder opens in the Finder or the Explorer (system::show_folder, the folder itself), and ExportProgress, built on a new DS JobCard (Raised, Progress, one key), floats at the canvas's top-left (CardStyle.padding + Space.m): the title, n of N, the file under way, the bar and Stop, the existing cooperative stop between frames. Done lingers SheetStyle.brief (2 s), held while hovered, then leaves; Stopped says how many were written; a failure keeps the existing message (frame: error) in the card until OK, no sheet over the window. One export at a time: a second is refused, the surface reopened meanwhile saying 'An export is under way, n of N: this one can start once it ends.' with its key waiting; the surface's Cancel only leaves it; quitting mid-export asks through QuitGuard's alert (Quit Anyway). Window check export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner: three frames from the editor, the surface closed onto the editor, the reveal recorded with the destination folder, the count advancing to 3 of 3, the card gone after its stay, the reopened surface refusing a second export, the quit asking; twins: an unwritable folder fails and the card keeps the failure past the stay, its OK key found at the canvas's top-left, no question on quitting once idle."
-  },
-  {
-    "id": 881,
-    "type": "perf",
-    "title": "Exports render on an engine apart, so the editor never waits a whole frame",
-    "status": "done",
-    "detail": "The export locked the shared engine for each frame's full render (190 ms on 12 MP, about twice on a 24 MP frame), so every editor render asked meanwhile waited it. Shared::apart builds an engine on the same device and door, reading the same masks and patches; the export card makes it once and hands it to write_one, whose API is unchanged. Unit check render::door_tests::an_export_on_an_engine_apart_leaves_the_editors_engine_free: the editor's locks wait under 50 ms (measured 0.0 ms) during an export render apart; twin: on the shared engine a lock waits the whole render (152 of 162 ms)."
-  },
-  {
-    "id": 882,
-    "type": "bug",
-    "title": "Every modal sheet is centred in the window's height",
-    "status": "done",
-    "detail": "The DS Sheet hung its card a margin under the window's top, centred across only. Its card now sits at (height - card) / 2, a SheetStyle.margin kept above and below, so every confirm, notice, dialog and sheet built on Sheet or AskSheet is centred at once; anchored popups (menus, pickers, the help card, tooltips) keep their anchors. Window check sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height: a confirm, the New Roll confirm, the welcome, the report, the settings and the stock picker each move their key down by half of 200 px of growth (±1 px); twin: a picker's menu picks the same line at both heights, and the old top-hung card moves 0. Checks clicking at fixed places (preset deck, launch notice, export replace prompt, notice key) follow the centred cards."
-  },
-  {
-    "id": 883,
-    "type": "research",
-    "title": "The window's @tr texts stay English in dev builds: Slint 1.18's interpreter reads no bundle",
-    "status": "done",
-    "detail": "Read in slint-interpreter, i-slint-core and the live-preview generator 1.18.1: bundled translations are generated code only, the live preview passes no bundle to the interpreter, and its @tr asks an external translator (i-slint-core internals behind a feature no public slint feature enables) or gettext (unix, .mo catalogues and a libintl macOS lacks; one shared feature set would make the shipped app link Homebrew's). Not wired; written in docs/research/i18n-dev-builds.md. French and Spanish looks are judged on --profile app or --release."
-  },
-  {
     "id": 870,
     "type": "perf",
     "title": "A batch export runs as a pipeline: two frames decoding, one on the GPU, one written",
@@ -4517,6 +4503,34 @@
     "detail": "Window checks export_speed::an_export_is_timed_stage_by_stage and a_parameter_change_on_a_batch_is_timed, run with ONI_BENCH_EXPORT=<n> on roll #8 mirrored by hard links into a temporary folder: each stage of a frame timed alone, the batch's wall time, the most frames held and the process's peak memory; then the surface entered on n frames and each kind of change timed in the call, in the pumps and until every line and the estimate are current. ONI_BENCH_FORMAT=tiff, ONI_BENCH_KEEP and ONI_BENCH_SAME compare a run's files byte for byte with an earlier one's (the profile's creation date aside; twin: one byte moved is caught). Timing numbers come from --profile app."
   },
   {
+    "id": 880,
+    "type": "feature",
+    "title": "An export unfolds beside the editor: the surface closes, the folder opens, a card counts the frames",
+    "status": "done",
+    "detail": "Owner's design, beyond Swift. On Export, once the destination is known and the export starts, the surface closes back to where it was opened (the editor, or the gallery), the destination folder opens in the Finder or the Explorer (system::show_folder, the folder itself), and ExportProgress, built on a new DS JobCard (Raised, Progress, one key), floats at the canvas's top-left (CardStyle.padding + Space.m): the title, n of N, the file under way, the bar and Stop, the existing cooperative stop between frames. Done lingers SheetStyle.brief (2 s), held while hovered, then leaves; Stopped says how many were written; a failure keeps the existing message (frame: error) in the card until OK, no sheet over the window. One export at a time: a second is refused, the surface reopened meanwhile saying 'An export is under way, n of N: this one can start once it ends.' with its key waiting; the surface's Cancel only leaves it; quitting mid-export asks through QuitGuard's alert (Quit Anyway). Window check export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner: three frames from the editor, the surface closed onto the editor, the reveal recorded with the destination folder, the count advancing to 3 of 3, the card gone after its stay, the reopened surface refusing a second export, the quit asking; twins: an unwritable folder fails and the card keeps the failure past the stay, its OK key found at the canvas's top-left, no question on quitting once idle."
+  },
+  {
+    "id": 881,
+    "type": "perf",
+    "title": "Exports render on an engine apart, so the editor never waits a whole frame",
+    "status": "done",
+    "detail": "The export locked the shared engine for each frame's full render (190 ms on 12 MP, about twice on a 24 MP frame), so every editor render asked meanwhile waited it. Shared::apart builds an engine on the same device and door, reading the same masks and patches; the export card makes it once and hands it to write_one, whose API is unchanged. Unit check render::door_tests::an_export_on_an_engine_apart_leaves_the_editors_engine_free: the editor's locks wait under 50 ms (measured 0.0 ms) during an export render apart; twin: on the shared engine a lock waits the whole render (152 of 162 ms)."
+  },
+  {
+    "id": 882,
+    "type": "bug",
+    "title": "Every modal sheet is centred in the window's height",
+    "status": "done",
+    "detail": "The DS Sheet hung its card a margin under the window's top, centred across only. Its card now sits at (height - card) / 2, a SheetStyle.margin kept above and below, so every confirm, notice, dialog and sheet built on Sheet or AskSheet is centred at once; anchored popups (menus, pickers, the help card, tooltips) keep their anchors. Window check sheet_layout::every_modal_sheet_is_centred_in_the_window_s_height: a confirm, the New Roll confirm, the welcome, the report, the settings and the stock picker each move their key down by half of 200 px of growth (±1 px); twin: a picker's menu picks the same line at both heights, and the old top-hung card moves 0. Checks clicking at fixed places (preset deck, launch notice, export replace prompt, notice key) follow the centred cards."
+  },
+  {
+    "id": 883,
+    "type": "research",
+    "title": "The window's @tr texts stay English in dev builds: Slint 1.18's interpreter reads no bundle",
+    "status": "done",
+    "detail": "Read in slint-interpreter, i-slint-core and the live-preview generator 1.18.1: bundled translations are generated code only, the live preview passes no bundle to the interpreter, and its @tr asks an external translator (i-slint-core internals behind a feature no public slint feature enables) or gettext (unix, .mo catalogues and a libintl macOS lacks; one shared feature set would make the shipped app link Homebrew's). Not wired; written in docs/research/i18n-dev-builds.md. French and Spanish looks are judged on --profile app or --release."
+  },
+  {
     "id": 900,
     "type": "feature",
     "title": "The phone link is hidden behind one switch until the feature is ready",
@@ -4533,11 +4547,20 @@
     "outcome": "Unit test stocks::a_row_icon_is_drawn_once_at_the_rows_side (twins: another side, another stock, an unknown one); window check rolls::the_navigators_rolls_draw_their_stock: Portra draws Portra (twin: not the default), no stock draws the negative default, a plain folder keeps its glyph, a listed roll its marker's stock."
   },
   {
-    "id": 705,
-    "type": "feature",
-    "title": "Auto White Balance counts in the status bar and keeps its key in place",
+    "id": 910,
+    "type": "perf",
+    "title": "Auto White Balance is read ahead and kept in the sidecar, so the press lands at once",
     "status": "done",
-    "detail": "The balance key no longer gives way to a shorter progress bar, which made the panel jump: it stays, idle while the run goes, and a run lasting past 300 ms counts in the card's status bar as 'Auto white balance n/N'; a quicker one never flashes it. Check a_balance_run_counts_in_the_status_bar_once_it_outlasts_its_delay, its twins a quick run and no run."
+    "detail": "A frame's balance outcome (its roll reference and filters) is kept under a fingerprint of exactly what the reading reads: the reading's code (oni-measure build.rs hashes the measure, pipeline, render, graph, settings and decode crates, the app's decode, mask and patch readers, and Cargo.lock), the files it reads (original and passes by size and date, the installed rendition matrices, the custom mask, each dust patch) and the settings with every field no reading reaches laid at rest (key::balance_inputs: Lighting, curves, saturation, spectrogram, vignette, sauce, texture, denoise, sharpening, the Scanner face, the balance laid, paper correction, order, the roll's name). Kept in memory and in the sidecar under the Rust-only key autoBalance, written through the held atomic writer with the revision kept, never seeding, migrating or losing a key of a sidecar, carried by later rewrites; a fingerprint that differs is never served. Read ahead, off the interface thread and behind the hand's decodes: as the open frame's preview stands, as each frame of Edit Together decodes, at the hand's rest after an edit, and once the Roll, Crop or De-dust tab is left (never stroke by stroke there), or a dust patch lands after it. The measurer recovers from a reading that panicked, its copies dropped, rather than reading nothing for the rest of the session. The press lands at once when every target is kept (no worker, no count on the key); only the frames missing are read, counted as #705 counts. A roll of one keeps a fresh id at each press, as Swift measures it afresh. Measured on roll #8 (app profile): the press with the balance kept 1.4 ms on the open frame and 17-34 ms on six frames together, against 0.2-0.5 s and 1.7-2.4 s read again.",
+    "outcome": "oni-measure balance_kept: every input moves the fingerprint, no look does (twin), and on a scene every pixel-moving input moves the outcome while no look moves a bit of it, on a roll and alone; on roll #8 the kept half decode reads the filters LibRaw's own reads (twin: a shifted window reads others). oni-settings auto_balance: the key round-trips, a rewrite carries it, a Swift key survives the balance's write, a sidecar without it reads as before, none is seeded (twins). oni-measure kept: a reading that panics leaves the next to read (twin: its copy decoded again). oni-core: a kept outcome serves its own fingerprint alone (twin). Window balance_kept: a kept balance lands within the call with no reading, alone and six together (twins: an input moved reads each again, counting); De-dust's strokes are read once on leaving the tab (twin: in and out unchanged reads nothing). Window transition: the camera matched writes no setting, the frame opened keeping only its balance under Rust's key."
+  },
+  {
+    "id": 911,
+    "type": "perf",
+    "title": "A measuring copy reads the half decode kept on disk, and Edit Together keeps its decodes there",
+    "status": "done",
+    "detail": "A RAW asked at a side LibRaw reads at half size is the editor's half decode pixel for pixel (pinned.c chooses half size on the sensor's side alone), so a kept half decode whose long side reaches the side asked serves it, in about 15 ms instead of LibRaw's 0.35-0.5 s; such a copy writes nothing to disk, so thumbnails and roll previews add no decode there. Edit Together decodes its frames at the editor's half size, kept on disk as the editor's are, so its balance read ahead and the frames reopened read them back. Every kept decode is keyed by the installed rendition table too, so a camera matched later never serves a decode folded without its matrix.",
+    "outcome": "oni-decode half_kept on roll #8: the copy served from the kept half decode equals LibRaw's own bit for bit, and a preview-side copy keeps no decode (twin: a copy longer than half the sensor is LibRaw's whole decode, never the half one). oni-measure balance_kept roll8: the balance read through the kept decode equals LibRaw's on two frames."
   },
   {
     "id": 920,
@@ -4555,11 +4578,11 @@
     "outcome": "oni-pipeline/tests/scanner_positive.rs: a slide at rest within 0.5 stop of Pro on both machines and no more clipped (twin: the former entry sits +0.9 stop and fails); negatives and B&W on both machines bit for bit against the former settings with clicks and contrast (twin: a slide differs). Real files: Roll #8 frames 6432 and 6433 hash identical before and after on Pro and both machines."
   },
   {
-    "id": 706,
-    "type": "fix",
-    "title": "A slide opens without the measuring window armed",
+    "id": 707,
+    "type": "refactor",
+    "title": "The merged slides and kept balance stay under their file ceilings",
     "status": "done",
-    "detail": "Swift's adopt arms the measuring window on any frame never balanced, inviting its measure; slides are never measured since #920, so every slide opened on the window. opening_window now leaves a positive as it stands, proposing and arming nothing; its Auto keys still read the frame's default inset window. Check in balance's opening test, its twin a fresh negative still armed."
+    "detail": "Merging #920 and #910-911 took rolls.rs to 429 lines and oni-decode's lib.rs to 403: the Auto levels key moves unchanged into app/rolls/levelling.rs, the 3x3 arithmetic into oni-decode/src/m3.rs. The kept balance's checks read a slide's absent roll through its option."
   },
   {
     "id": 940,

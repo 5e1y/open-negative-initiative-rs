@@ -1,6 +1,6 @@
 //! The transition from the earlier version in the window: a folder of a camera the table lacks opens
 //! behind the blocking sheet, the camera is matched through a stand-in for Apple's decode, every later
-//! decode of it folds the matrix, no sidecar is touched, and a later open asks nothing.
+//! decode of it folds the matrix, no setting is written, and a later open asks nothing.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Transition, TransitionLine};
@@ -74,7 +74,15 @@ pub(crate) fn a_new_camera_is_matched_once_behind_the_sheet() {
     let m = table.get("Nikon", "Z f").expect("the Z f in the table").matrix;
     assert!((0..3).all(|r| (0..3).all(|c| (m[r][c] - ZF[r][c]).abs() < 2e-3)), "{m:?}");
     assert!(oni_decode::rendition::matrix_for("Nikon", "Z f").is_some(), "installed for every later decode");
-    assert_eq!(std::fs::read(&sidecar).unwrap(), untouched, "twin: no sidecar is written");
+    // Twin: the match writes no setting; the frame opened keeps only its balance read ahead, Rust's own key.
+    let keys = |bytes: &[u8]| -> Vec<String> {
+        let v: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+        v.as_object().unwrap().keys().filter(|k| !["autoBalance", "originalPrint", "originalTail"].contains(&k.as_str())).cloned().collect()
+    };
+    let now = std::fs::read(&sidecar).unwrap();
+    assert_eq!(keys(&now), keys(&untouched), "twin: a key of the sidecar moved");
+    let read = |bytes: &[u8]| oni_settings::codec::decode(bytes).unwrap().settings;
+    assert_eq!(read(&now), read(&untouched), "twin: no setting is written");
     let ctl = shell.ctl.clone();
     rig.until("the frame in the editor", Duration::from_secs(60), || ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("DSC_6432.NEF")));
 

@@ -4,6 +4,7 @@
 use std::collections::HashMap;
 use std::ffi::CStr;
 use std::os::raw::c_char;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 pub type M3 = [[f32; 3]; 3];
@@ -11,12 +12,25 @@ pub type M3 = [[f32; 3]; 3];
 /// The table the process decodes with, by maker and model as LibRaw names them.
 static TABLE: RwLock<Option<Arc<HashMap<(String, String), M3>>>> = RwLock::new(None);
 
+/// The table's print, FNV-1a over its entries in order: what a decode kept or read ahead was folded with.
+static PRINT: AtomicU64 = AtomicU64::new(0);
+
 /// Replaces the table every later decode folds; empty restores LibRaw's own colours.
 pub fn install(entries: impl IntoIterator<Item = (String, String, M3)>) {
     let table: HashMap<(String, String), M3> = entries.into_iter().map(|(make, model, m)| ((make, model), m)).collect();
+    let mut sorted: Vec<_> = table.iter().collect();
+    sorted.sort_by(|a, b| a.0.cmp(b.0));
+    let text = format!("{sorted:?}");
+    let print = if table.is_empty() { 0 } else { text.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |h, b| (h ^ u64::from(b)).wrapping_mul(0x0100_0000_01b3)) };
     if let Ok(mut t) = TABLE.write() {
         *t = (!table.is_empty()).then(|| Arc::new(table));
+        PRINT.store(print, Ordering::SeqCst);
     }
+}
+
+/// The installed table's print, 0 for none: a decode depends on it as on its file.
+pub fn print() -> u64 {
+    PRINT.load(Ordering::SeqCst)
 }
 
 /// The matrix installed for a camera, if any.

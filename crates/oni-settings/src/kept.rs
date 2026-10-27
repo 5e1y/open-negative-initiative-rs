@@ -13,12 +13,12 @@ type Unknown = (Vec<String>, Value);
 
 /// `document`'s text, with the keys `stored` holds that this version does not know, and `own`, the
 /// keys this version writes beside the document, set over any stored ones.
-pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>, own: &[(&str, &str)]) -> Result<String, json::Error> {
+pub(crate) fn encoded(document: &SettingsDocument, stored: Option<&(Value, Decoded)>, own: &[(&str, Value)]) -> Result<String, json::Error> {
     let mut node = carried(document, stored)?;
     if let Node::Obj(entries) = &mut node {
         for (key, value) in own {
             entries.retain(|(k, _)| k != key);
-            entries.push(((*key).to_owned(), Node::Str((*value).to_owned())));
+            entries.push(((*key).to_owned(), node_of(value)));
         }
     }
     Ok(json::pretty_sorted(&node))
@@ -83,6 +83,17 @@ fn graft(node: &mut Node, path: &[String], value: &Value) {
     }
 }
 
+/// Every key `stored` holds with a value, at every depth of objects, is still in `now`.
+pub(crate) fn holds(stored: &Value, now: &Value) -> bool {
+    let (Value::Object(stored), Value::Object(now)) = (stored, now) else { return true };
+    stored.iter().filter(|(_, v)| !v.is_null()).all(|(k, v)| now.get(k).is_some_and(|w| holds(v, w)))
+}
+
+/// Two values as a sidecar writes them: a whole float and an integer read back are one number.
+pub(crate) fn same(a: &Value, b: &Value) -> bool {
+    json::pretty_sorted(&node_of(a)) == json::pretty_sorted(&node_of(b))
+}
+
 fn node_of(value: &Value) -> Node {
     match value {
         Value::Null => Node::Null,
@@ -95,5 +106,20 @@ fn node_of(value: &Value) -> Node {
         Value::String(s) => Node::Str(s.clone()),
         Value::Array(items) => Node::Arr(items.iter().map(node_of).collect()),
         Value::Object(map) => Node::Obj(map.iter().map(|(k, v)| (k.clone(), node_of(v))).collect()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn a_rewrite_holds_every_key_the_sidecar_held_at_every_depth() {
+        let stored = json!({"version": 19, "settings": {"mode": "negative", "swiftOnly": {"a": 1}}, "gone": null});
+        assert!(holds(&stored, &json!({"version": 19, "settings": {"mode": "negative", "swiftOnly": {"a": 2}}, "autoBalance": {}})));
+        // Twins: a key lost at the top, or deep under the settings.
+        assert!(!holds(&stored, &json!({"settings": {"mode": "negative", "swiftOnly": {"a": 1}}})));
+        assert!(!holds(&stored, &json!({"version": 19, "settings": {"mode": "negative", "swiftOnly": {}}})));
     }
 }

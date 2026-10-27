@@ -10,6 +10,8 @@ pub mod cache;
 mod linear;
 mod source;
 mod neutral;
+mod m3;
+use m3::{apply, inverse, mul};
 pub use neutral::{Neutral, SLIDE_KELVIN};
 
 use source::{Route, Source};
@@ -103,38 +105,6 @@ impl DecodeError {
 struct Conversion {
     mul: [f32; 3],
     matrix: [[f32; 3]; 3],
-}
-
-fn mul(a: &M3, b: &M3) -> M3 {
-    let mut m = [[0.0; 3]; 3];
-    for (r, row) in m.iter_mut().enumerate() {
-        for (c, cell) in row.iter_mut().enumerate() {
-            *cell = (0..3).map(|k| a[r][k] * b[k][c]).sum();
-        }
-    }
-    m
-}
-
-fn apply(m: &M3, v: [f64; 3]) -> [f64; 3] {
-    [0, 1, 2].map(|r| m[r][0] * v[0] + m[r][1] * v[1] + m[r][2] * v[2])
-}
-
-fn inverse(m: &M3) -> Option<M3> {
-    let cof = |r: usize, c: usize| {
-        let (r0, r1, c0, c1) = ((r + 1) % 3, (r + 2) % 3, (c + 1) % 3, (c + 2) % 3);
-        m[r0][c0] * m[r1][c1] - m[r0][c1] * m[r1][c0]
-    };
-    let det: f64 = (0..3).map(|c| m[0][c] * cof(0, c)).sum();
-    if det.abs() < 1e-12 || !det.is_finite() {
-        return None;
-    }
-    let mut inv = [[0.0; 3]; 3];
-    for (r, row) in inv.iter_mut().enumerate() {
-        for (c, cell) in row.iter_mut().enumerate() {
-            *cell = cof(c, r) / det;
-        }
-    }
-    Some(inv)
 }
 
 fn xyz((x, y): (f64, f64)) -> [f64; 3] {
@@ -337,8 +307,12 @@ fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, match
 fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
     // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's.
     let slide = if neutral == Neutral::Slide { "|slide" } else { "" };
-    let key = (side == 0 || side == HALF).then(|| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}{slide}", exposure_gain.to_bits()))).flatten();
-    if let Some(k) = key.as_deref().and_then(cache::read) {
+    let keyed = |side: usize| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}{slide}|{:016x}", exposure_gain.to_bits(), rendition::print()));
+    let key = (side == 0 || side == HALF).then(|| keyed(side)).flatten();
+    // A shorter copy LibRaw reads at half size is the `HALF` decode pixel for pixel: one kept serves it.
+    let half = (side > HALF).then(|| keyed(HALF)).flatten();
+    let kept = key.as_deref().and_then(cache::read).or_else(|| half.as_deref().and_then(cache::read).filter(|k| k.factor == 2 && k.width.max(k.height) >= side));
+    if let Some(k) = kept {
         let pixels = linear::converted(&k.raw, k.width, (0, 0, k.width, k.height), k.flip, &k.matrix);
         let (width, height) = linear::upright(k.flip, (k.width, k.height));
         return Ok((Linear { width, height, pixels }, k.factor));

@@ -172,6 +172,10 @@ impl Ctl {
                 if let Some(e) = failed {
                     timing::line(&format!("{}: dust patches not generated: {e}", crate::anonymity::token(&path)));
                 }
+                // A patch the balance reads landed after its tab was left.
+                if open && !made.is_empty() {
+                    c.balance_at_rest();
+                }
                 c.publish_dedust();
             });
         });

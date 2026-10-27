@@ -44,11 +44,11 @@ pub fn folder(support: &Path) -> PathBuf {
     support.join("FlatFields")
 }
 
-fn index(support: &Path) -> PathBuf {
+pub(crate) fn index(support: &Path) -> PathBuf {
     folder(support).join("masks.json")
 }
 
-fn file(support: &Path, id: &str) -> PathBuf {
+pub(crate) fn file(support: &Path, id: &str) -> PathBuf {
     folder(support).join(format!("{id}.tiff"))
 }
 
