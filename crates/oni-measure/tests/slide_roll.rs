@@ -39,7 +39,7 @@ fn measurer() -> Option<Measurer> {
             let pixels = frame(EXPOSURES[i], name.starts_with('f'));
             Ok(Decoded { width: SIDE.0, height: SIDE.1, pixels, full_width: f64::from(SIDE.0) })
         }),
-        Box::new(|s: &PipelineSettings| format!("{:?}", s.mode)),
+        Box::new(|_: &std::path::Path, s: &PipelineSettings| format!("{:?}", s.mode)),
     ))
 }
 
