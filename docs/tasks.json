@@ -4641,5 +4641,12 @@
     "title": "The app stamped 1.4.0, above the Swift app's 1.3.1",
     "status": "done",
     "detail": "oni-app's version 1.4.0, so the splash, the What's new heading, the Windows installer and the update feed name the Rust build after the last Swift release. Built for macOS by scripts/release-build and for Windows by the manual package workflow; nothing published."
+  },
+  {
+    "id": 992,
+    "type": "release",
+    "title": "The Windows build is stamped as the Mac one",
+    "status": "done",
+    "detail": "The package workflow fetches the whole history and builds with ONI_VERSION from oni-app's version and ONI_BUILD = 10000 + the commit count, as scripts/release-build does, so a Windows build compares with the update feed as the Mac build does."
   }
 ]

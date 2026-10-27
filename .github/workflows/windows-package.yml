@@ -13,12 +13,20 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           key: package
       - name: Build
-        run: cargo build --release -p oni-app --bin oni
+        shell: bash
+        # Stamped as scripts/release-build stamps the Mac build, so the update feed compares the same number.
+        run: |
+          export ONI_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' crates/oni-app/Cargo.toml | head -1)
+          export ONI_BUILD=$((10000 + $(git rev-list --count HEAD)))
+          echo "$ONI_VERSION (build $ONI_BUILD)"
+          cargo build --release -p oni-app --bin oni
       - name: Package
         shell: pwsh
         run: |
