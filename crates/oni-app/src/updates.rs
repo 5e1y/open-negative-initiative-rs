@@ -1,5 +1,5 @@
 //! `Updates`: the feed Sparkle reads, its items compared with this build and each archive checked
-//! against the EdDSA key before it is kept. It looks on its own and never installs.
+//! against the EdDSA key before it is kept. It looks on its own; an update installs once asked for.
 
 use base64::Engine as _;
 use oni_i18n::{marked, tr};
@@ -17,7 +17,7 @@ pub const PUBLIC_KEY_BYTES: usize = 32;
 pub const CHECK_INTERVAL: Duration = Duration::from_secs(43_200);
 /// `SULastCheckTime`, Sparkle's own key, kept under the same name.
 pub const LAST_CHECK_KEY: &str = "SULastCheckTime";
-/// `SUEnableAutomaticChecks` and `SUAutomaticallyUpdate`: it looks on its own, it never installs.
+/// `SUEnableAutomaticChecks` and `SUAutomaticallyUpdate`: it looks on its own, never installs unasked.
 pub const CHECKS_AUTOMATICALLY: bool = true;
 pub const INSTALLS_AUTOMATICALLY: bool = false;
 const SPARKLE: &str = "http://www.andymatuschak.org/xml-namespaces/sparkle";

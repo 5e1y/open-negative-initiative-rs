@@ -4662,5 +4662,19 @@
     "title": "1.4.1: a slide's white point saturation",
     "status": "done",
     "detail": "oni-app's version 1.4.1, carrying #993; Mac universal (Intel and Apple Silicon), Windows zip, appcast."
+  },
+  {
+    "id": 995,
+    "type": "fix",
+    "title": "An update installs itself on Mac and Windows",
+    "status": "done",
+    "detail": "The updater only downloaded the archive and showed it. Once its EdDSA signature holds, update_install hands the swap to a helper that waits for the app to quit, puts the new app in place (on a Mac only when its team matches the running app's) and starts it; the old one is deleted only once the new one runs, else it goes back and starts. Checks: the bundle of an executable (twin a bare binary), the team of a signature (twin ad hoc), the swap kept once the new app runs (twins a new app that does not run, a missing one)."
+  },
+  {
+    "id": 996,
+    "type": "release",
+    "title": "1.4.2: updates install themselves",
+    "status": "done",
+    "detail": "oni-app's version 1.4.2, carrying #995."
   }
 ]

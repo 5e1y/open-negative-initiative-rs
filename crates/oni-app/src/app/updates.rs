@@ -1,5 +1,5 @@
 //! `Updates` in the window: the feed read on a schedule off this thread, the bar's UPDATE key while
-//! an update waits, and a check asked for ending on Sparkle's dialogs; an archive is only downloaded.
+//! an update waits, and a check asked for ending on Sparkle's dialogs; a verified archive installs itself.
 
 use super::{Ctl, Pending, with_shell};
 use crate::updates::{self as feed, Item};
@@ -226,6 +226,15 @@ impl Ctl {
         };
         match kept {
             Ok(path) => {
+                // The update lays itself in place and the app reopens on it.
+                match crate::update_install::prepare(&path) {
+                    Ok(()) => {
+                        self.state.borrow_mut().quitting = true;
+                        let _ = slint::quit_event_loop();
+                        return;
+                    }
+                    Err(why) => crate::timing::line(&format!("update left to install by hand: {why}")),
+                }
                 if let Some(reveal) = reveal {
                     reveal(&path);
                 }

@@ -58,6 +58,7 @@ pub mod track;
 pub mod tutorial;
 pub mod tree_pick;
 pub mod updates;
+pub mod update_install;
 pub mod viewport;
 pub mod web;
 pub mod watchdog;
