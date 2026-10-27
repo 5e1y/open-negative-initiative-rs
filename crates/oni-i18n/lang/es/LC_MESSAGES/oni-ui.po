@@ -706,48 +706,144 @@ msgid "What's new in ONI {}"
 msgstr "Novedades de ONI {}"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."
-msgstr "Tus carpetas tal como están en el disco, una forma más sencilla de preparar un rollo y una red de seguridad para las fotos eliminadas."
+msgid "ONI, rebuilt: faster, steadier, on Mac and Windows."
+msgstr "ONI, reconstruido: más rápido, más fiable, en Mac y Windows."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Colours shift slightly"
-msgstr "Los colores cambian ligeramente"
+msgid "Rebuilt from scratch"
+msgstr "Reconstruido desde cero"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."
-msgstr "La separación de tintes reposa ahora en 60 % en lugar de 18 %. Las fotos que estaban en el valor anterior pasan al nuevo: rojos algo más intensos, amarillos algo más suaves y la saturación general sin cambios. Un valor que hayas definido tú se mantiene."
+msgid "Faster, lighter, and now on Windows too."
+msgstr "Más rápido, más ligero y ahora también en Windows."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Browse your folders"
-msgstr "Explora tus carpetas"
+msgid "Your colours carried over"
+msgstr "Tus colores se conservan"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."
-msgstr "La barra lateral muestra las carpetas de tus discos. Haz clic en una carpeta para abrirla, marca con una estrella las que usas a menudo y sube con Carpeta superior. Solo se lee la carpeta que abres, así que un disco enorme nunca te ralentiza. Las fotos aún no convertidas aparecen como escaneadas."
+msgid "Each camera is matched once to the earlier version, so your edits look the same."
+msgstr "Cada cámara se ajusta una vez a la versión anterior: tus ediciones se ven igual."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll, step by step"
-msgstr "Preparar el rollo, paso a paso"
+msgid "Export up to 4× faster"
+msgstr "Exportación hasta 4× más rápida"
 
 #: crates/oni-ui/ui/help.slint
-msgid "It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."
-msgstr "Se abre en el editor, en pasos más cortos con un breve vídeo cada uno. Elegir los fotogramas y marcar los raros son pasos distintos, y un rollo que dejas a medias continúa donde lo dejaste."
+msgid "Frames decode, render and encode side by side."
+msgstr "Los fotogramas se decodifican, procesan y codifican en paralelo."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Deleting is reversible"
-msgstr "Eliminar es reversible"
+msgid "Export beside the editor"
+msgstr "Exportar junto al editor"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."
-msgstr "Eliminar oculta una foto en la Papelera de ONI, en la barra lateral, y Restaurar la recupera. Nada se mueve ni se borra de tu disco."
+msgid "The destination opens at once; a small card follows the progress."
+msgstr "El destino se abre al instante; una pequeña tarjeta sigue el progreso."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Smoother"
-msgstr "Más fluido"
+msgid "Instant Auto White Balance"
+msgstr "Balance de blancos automático instantáneo"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."
-msgstr "Cambiar entre Pro y Escáner, arrastrar Temperatura y Matiz y abrir una carpeta ya no dan tirones. La pestaña Escáner luce ahora el aspecto propio de ONI."
+msgid "Read ahead when a photo opens, it lands at once, even on many frames."
+msgstr "Calculado al abrir una foto, se aplica al instante, incluso en varios fotogramas."
+
+#: crates/oni-ui/ui/help.slint
+msgid "A steadier roll measure"
+msgstr "Una medición del carrete más fiable"
+
+#: crates/oni-ui/ui/help.slint
+msgid "A tinted frame no longer tints the whole roll, and the roll keeps its contrast."
+msgstr "Un fotograma teñido ya no tiñe todo el carrete, que conserva su contraste."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Slides, simply"
+msgstr "Diapositivas, sin complicaciones"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Positives decode at 5500 K and each slide gets its own levels through one window."
+msgstr "Los positivos se decodifican a 5500 K y cada diapositiva tiene sus propios niveles, a través de una sola ventana."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Scanner and slides"
+msgstr "Escáner y diapositivas"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Slides no longer come out overexposed on the Scanner face."
+msgstr "Las diapositivas ya no salen sobreexpuestas en el modo Escáner."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Compare in Scanner"
+msgstr "Comparar en modo Escáner"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Before now shows the plain conversion, without the Scanner's look."
+msgstr "El antes muestra la conversión simple, sin el aspecto del Escáner."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Make a roll from the sidebar"
+msgstr "Crear un carrete desde la barra lateral"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Select photos outside a roll and a short guide takes you through it."
+msgstr "Selecciona fotos fuera de un carrete y una breve guía te acompaña."
+
+#: crates/oni-ui/ui/help.slint
+msgid "The film stock sets the dyes"
+msgstr "La película elige los tintes"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Picking Portra or Superia picks the matching dye separation."
+msgstr "Elegir Portra o Superia ajusta la separación de tintes correspondiente."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Stock icons on rolls"
+msgstr "El icono de la película en los carretes"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Each roll in the sidebar shows its film stock."
+msgstr "Cada carrete de la barra lateral muestra su película."
+
+#: crates/oni-ui/ui/help.slint
+msgid "A demo for every ?"
+msgstr "Una demo para cada ?"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Each help mark plays a short demo of what it does."
+msgstr "Cada marca de ayuda muestra una breve demo de lo que hace."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Smooth with thousands of photos"
+msgstr "Fluido con miles de fotos"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The sidebar and the gallery stay fluid on huge folders."
+msgstr "La barra lateral y la galería siguen fluidas en carpetas enormes."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Projects you can walk"
+msgstr "Recorrer los proyectos"
+
+#: crates/oni-ui/ui/help.slint
+msgid "The arrow keys follow the project's own order."
+msgstr "Las flechas siguen el orden del proyecto."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Menus that follow the pointer"
+msgstr "Menús que siguen al puntero"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Submenus open as you hover."
+msgstr "Los submenús se abren al pasar el puntero."
+
+#: crates/oni-ui/ui/help.slint
+msgid "Nothing gets lost"
+msgstr "Nada se pierde"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Safer undo, file moves and saves; a crash leaves a trace in the log."
+msgstr "Deshacer, mover y guardar son más seguros; un cierre inesperado deja rastro en el registro."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
@@ -3581,6 +3677,10 @@ msgstr "No se pudo mostrar: {e}"
 msgid "Missing mask"
 msgstr "Falta la máscara"
 
+#: crates/oni-app/src/app/rolls/levelling.rs
+msgid "Auto Levels"
+msgstr "Niveles automáticos"
+
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on the selected photo, not the one on screen."
 msgstr "Actúa sobre la foto seleccionada, no sobre la que está en pantalla."
@@ -3600,10 +3700,6 @@ msgstr "Restablecer valores predeterminados"
 #: crates/oni-app/src/app/rolls.rs crates/oni-app/src/wrapped.rs
 msgid "Balance"
 msgstr "Balance"
-
-#: crates/oni-app/src/app/rolls.rs
-msgid "Auto Levels"
-msgstr "Niveles automáticos"
 
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on {count} photos."

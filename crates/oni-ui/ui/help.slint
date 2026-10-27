@@ -66,13 +66,25 @@ export component WelcomeSheet inherits Sheet {
         VerticalLayout {
             spacing: Space.s;
             Label { text: @tr("What's new in ONI {}", Help.release); role: TextRole.heading; wrap: word-wrap; }
-            Label { text: @tr("Your folders as they are on disk, a simpler way to prepare a roll, and a safety net for deleted photos."); tone: Tone.secondary; wrap: word-wrap; }
+            Label { text: @tr("ONI, rebuilt: faster, steadier, on Mac and Windows."); tone: Tone.secondary; wrap: word-wrap; }
         }
-        Point { title: @tr("Colours shift slightly"); text: @tr("Dye Separation now rests at 60 % instead of 18 %. Photos left at the old value move to it: reds a touch richer, yellows a touch softer, overall saturation unchanged. A value you set yourself stays."); }
-        Point { title: @tr("Browse your folders"); text: @tr("The sidebar shows the folders on your disks. Click a folder to open it, star the ones you use often, and go up with Parent. Only the folder you open is read, so a huge disk never slows you down. Photos not converted yet show as scanned."); }
-        Point { title: @tr("Prepare the Roll, step by step"); text: @tr("It opens in the editor, in smaller steps with a short video each. Choosing the frames and flagging the odd ones are separate steps, and a roll you leave halfway picks up where you stopped."); }
-        Point { title: @tr("Deleting is reversible"); text: @tr("Delete hides a photo in the ONI Trash, in the sidebar, and Restore brings it back. Nothing on your disk is moved or erased."); }
-        Point { title: @tr("Smoother"); text: @tr("Switching between Pro and Scanner, dragging Temperature and Tint, and opening a folder no longer stutter. The Scanner tab now wears ONI's own look."); }
+        Point { title: @tr("Rebuilt from scratch"); text: @tr("Faster, lighter, and now on Windows too."); }
+        Point { title: @tr("Your colours carried over"); text: @tr("Each camera is matched once to the earlier version, so your edits look the same."); }
+        Point { title: @tr("Export up to 4× faster"); text: @tr("Frames decode, render and encode side by side."); }
+        Point { title: @tr("Export beside the editor"); text: @tr("The destination opens at once; a small card follows the progress."); }
+        Point { title: @tr("Instant Auto White Balance"); text: @tr("Read ahead when a photo opens, it lands at once, even on many frames."); }
+        Point { title: @tr("A steadier roll measure"); text: @tr("A tinted frame no longer tints the whole roll, and the roll keeps its contrast."); }
+        Point { title: @tr("Slides, simply"); text: @tr("Positives decode at 5500 K and each slide gets its own levels through one window."); }
+        Point { title: @tr("Scanner and slides"); text: @tr("Slides no longer come out overexposed on the Scanner face."); }
+        Point { title: @tr("Compare in Scanner"); text: @tr("Before now shows the plain conversion, without the Scanner's look."); }
+        Point { title: @tr("Make a roll from the sidebar"); text: @tr("Select photos outside a roll and a short guide takes you through it."); }
+        Point { title: @tr("The film stock sets the dyes"); text: @tr("Picking Portra or Superia picks the matching dye separation."); }
+        Point { title: @tr("Stock icons on rolls"); text: @tr("Each roll in the sidebar shows its film stock."); }
+        Point { title: @tr("A demo for every ?"); text: @tr("Each help mark plays a short demo of what it does."); }
+        Point { title: @tr("Smooth with thousands of photos"); text: @tr("The sidebar and the gallery stay fluid on huge folders."); }
+        Point { title: @tr("Projects you can walk"); text: @tr("The arrow keys follow the project's own order."); }
+        Point { title: @tr("Menus that follow the pointer"); text: @tr("Submenus open as you hover."); }
+        Point { title: @tr("Nothing gets lost"); text: @tr("Safer undo, file moves and saves; a crash leaves a trace in the log."); }
         HorizontalLayout {
             spacing: Space.s;
             Button { text: @tr("Website"); clicked => { Help.website(); } }

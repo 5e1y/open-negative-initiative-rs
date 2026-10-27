@@ -62,7 +62,7 @@ pub(crate) fn the_welcome_fits_or_scrolls_and_a_notices_key_sits_right() {
     help.set_welcome_shown(true);
 
     // Tall: GET STARTED in the window as it opens, the card's foot a margin above the window's.
-    let (w, h) = (1400.0, 1300.0);
+    let (w, h) = (1400.0, 2200.0);
     rig.window.set_size(PhysicalSize::new(w as u32, h as u32));
     window.show().unwrap();
     rig.settle();
@@ -137,7 +137,7 @@ pub(crate) fn every_modal_sheet_is_centred_in_the_window_s_height() {
     let window = MainWindow::new().unwrap();
     oni_app::keycaps::serve(&window);
     let heard = Rc::new(Cell::new(false));
-    let (w, h) = (1400.0f32, 1300.0f32);
+    let (w, h) = (1400.0f32, 2200.0f32);
     rig.window.set_size(PhysicalSize::new(w as u32, h as u32));
     window.show().unwrap();
 
