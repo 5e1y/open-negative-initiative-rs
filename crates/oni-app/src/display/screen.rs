@@ -7,6 +7,10 @@ pub enum Screen {
     DisplayP3,
 }
 
+/// The space the window's drawable is tagged with on the wgpu renderer (`vendor/i-slint-renderer-femtovg`):
+/// Display P3 on macOS, untagged sRGB elsewhere. The canvas encodes for it, the compositor matches it.
+pub const WINDOW: Screen = if cfg!(target_os = "macos") { Screen::DisplayP3 } else { Screen::Srgb };
+
 pub(super) type M3 = [[f64; 3]; 3];
 
 /// CIE xy of the red, green and blue primaries; every space here sits on D65.

@@ -4613,5 +4613,12 @@
     "title": "A roll's black and white: the chroma of the frames' median, the depth of a percentile",
     "status": "done",
     "detail": "Owner's call, beyond Swift. Each end's per-channel shape is the frames' trimmed median (10 % left out each side, one at least from three frames up), moved as one block so green sits at its 20th percentile for the black and 80th for the white. One or two tinted frames no longer tint the roll, and the roll keeps its contrast; a few frames' deepest shadows clip, the Blacks slider there to take them back. A picked film base still sets the black. Checks: the roll tests, and two warm-black frames leaving the roll's black neutral, the twin the former second-extreme rule taking their tint."
+  },
+  {
+    "id": 970,
+    "type": "bug",
+    "title": "The canvas is colour-matched on macOS: the drawable is tagged Display P3 and the canvas encodes for it",
+    "status": "done",
+    "detail": "The window's CAMetalLayer had no colorspace, so macOS showed the canvas's sRGB numbers as the panel's own Display P3: +17 % mean chroma on roll #8's DSC_6432 (C* 14.9 against the export's 12.7, skin ΔE 7.1). Swift tags its drawable with the screen's space; the vendored femtovg renderer now asks wgpu for Display P3 on macOS and the app's canvas, histogram and thumbnails encode for it (display::WINDOW), so the canvas proofed to the export's space matches the file. Check: three patches exported as Display P3 JPEG and read through the embedded ICC sit within ΔE 2 of the canvas read through the drawable's tag; the twin, sRGB numbers on an untagged P3 panel, is caught above ΔE 4."
   }
 ]

@@ -182,3 +182,50 @@ fn landed(device: &wgpu::Device, gpu: &Gpu) -> oni_measure::histogram::Histogram
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
 }
+
+/// Colours as CIELAB through a profile, the way a colour-managed viewer or the compositor reads them.
+fn seen(bytes: &[[u8; 3]], icc: &[u8]) -> Vec<[f64; 3]> {
+    let from = lcms2::Profile::new_icc(icc).unwrap();
+    let lab = lcms2::Profile::new_lab4_context(lcms2::GlobalContext::new(), &lcms2::white_point_from_temp(5003.0).unwrap()).unwrap();
+    let t: lcms2::Transform<[u8; 3], [f64; 3]> =
+        lcms2::Transform::new(&from, lcms2::PixelFormat::RGB_8, &lab, lcms2::PixelFormat::Lab_DBL, lcms2::Intent::RelativeColorimetric).unwrap();
+    let mut out = vec![[0.0; 3]; bytes.len()];
+    t.transform_pixels(bytes, &mut out);
+    out
+}
+
+/// The profile a drawable tagged for `screen` is matched through.
+fn tag(screen: Screen) -> Vec<u8> {
+    match screen {
+        Screen::Srgb => oni_colour::Space::Srgb,
+        Screen::DisplayP3 => oni_colour::Space::DisplayP3,
+    }
+    .icc_data()
+    .unwrap()
+}
+
+/// The largest CIE76 gap between the default export, read through its embedded profile, and the canvas
+/// encoded for `encoded_for` and read through `shown_as`.
+fn export_against_canvas(encoded_for: Screen, shown_as: &[u8]) -> f64 {
+    // Skin, sky and a saturated red, linear Rec. 2020.
+    let patches = [[0.42f32, 0.27, 0.19, 1.0], [0.14, 0.24, 0.48, 1.0], [0.45, 0.06, 0.04, 1.0]];
+    let export = oni_export::Settings::default();
+    let image = oni_export::Image { width: 3, height: 1, pixels: patches.concat() };
+    let file = oni_export::converted(&image, &export).unwrap();
+    let oni_colour::Quantised::Eight(written) = &file.pixels else { panic!("8-bit export") };
+    let written: Vec<[u8; 3]> = written.chunks(4).map(|p| [p[0], p[1], p[2]]).collect();
+    let k = Params { dither: 0.0, ..Params::new(encoded_for, 3, 1, 0) };
+    let canvas: Vec<[u8; 3]> = encode(&patches, &k).chunks(4).map(|p| [p[0], p[1], p[2]]).collect();
+    let (a, b) = (seen(&written, &file.icc), seen(&canvas, shown_as));
+    a.iter().zip(&b).map(|(x, y)| (0..3).map(|c| (x[c] - y[c]).powi(2)).sum::<f64>().sqrt()).fold(0.0, f64::max)
+}
+
+#[test]
+fn the_canvas_on_its_tagged_drawable_shows_the_exported_colours() {
+    assert_eq!(oni_export::Settings::default().space(), &oni_colour::Space::DisplayP3);
+    let gap = export_against_canvas(WINDOW, &tag(WINDOW));
+    assert!(gap <= 2.0, "the canvas sits {gap:.2} ΔE from the export");
+    // Twin: sRGB numbers on an untagged layer, which a Display P3 panel shows as its own, saturate.
+    let stretched = export_against_canvas(Screen::Srgb, &tag(Screen::DisplayP3));
+    assert!(stretched > 4.0, "the stretched canvas sits only {stretched:.2} ΔE from the export");
+}
