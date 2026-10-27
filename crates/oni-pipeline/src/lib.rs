@@ -105,11 +105,27 @@ impl Pipeline {
         // Taken before stage 0: the band is a fraction of the picture, the dosed radii export pixels.
         let reference = f64::from(e.w.max(e.h));
         let oni = scanner::on_oni_machine(settings);
-        let s = oni.as_ref().unwrap_or(settings);
+        self.chain(graph, input, settings, oni.as_ref(), (scale, reference), request.measuring, inputs)
+    }
+
+    /// `image` with the Scanner face's conversion given: `machine` is `on_oni_machine`'s settings for
+    /// `frame`, `None` on the Pro face; `at` is the scale and the reference length.
+    #[allow(clippy::too_many_arguments)]
+    pub fn chain(
+        &mut self,
+        graph: &mut Graph,
+        input: Image,
+        frame: &PipelineSettings,
+        machine: Option<&PipelineSettings>,
+        at: (f64, f64),
+        measuring: bool,
+        inputs: &Inputs,
+    ) -> Result<Image> {
+        let ((scale, reference), s) = (at, machine.unwrap_or(frame));
         let framed = self.framed(graph, input, s, scale, inputs)?;
         let out = framed.then(stages::stage47(&conversion::stage47(s)));
-        let looked = if oni.is_some() { self.oni_finish(graph, out, s, settings)? } else { out };
-        self.finishing(graph, looked, s, true, scale, reference, request.measuring)
+        let looked = if machine.is_some() { self.oni_finish(graph, out, s, frame)? } else { out };
+        self.finishing(graph, looked, s, true, scale, reference, measuring)
     }
 
     /// The recipe evaluated on the request's region and read back, with that region.

@@ -8,7 +8,7 @@ use oni_settings::blocks::SeparationFamily;
 use oni_settings::modes::{Face, ScannerMachine};
 use oni_settings::scanner::ScannerClicks;
 use oni_settings::tone::Print;
-use oni_settings::PipelineSettings;
+use oni_settings::{ConversionMode, PipelineSettings};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -211,6 +211,12 @@ pub fn frontier_rest() -> [f32; 3] {
     MACHINE.offset(&FRONTIER_REST)
 }
 
+/// The Lighting exposure a render enters the look at: the looks lend about a stop for a negative's 1.5 of
+/// rest left out, so a slide, resting at 0, enters as far under its own rest.
+pub fn look_entry_exposure(mode: ConversionMode) -> f32 {
+    Print::resting_exposure(mode) - Print::RESTING_EXPOSURE
+}
+
 /// `onOniMachine`: Pro's conversion with Lighting and Color Density at rest, but for the balance's
 /// filters and the face's Contrast, the gains moved by the clicks; `None` off the ONI machine.
 pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
@@ -219,7 +225,7 @@ pub fn on_oni_machine(s: &PipelineSettings) -> Option<PipelineSettings> {
         return None;
     }
     let mut out = s.as_scanner();
-    out.print = Print { contrast: s.scanner_finish.contrast, ..Print::default() };
+    out.print = Print { contrast: s.scanner_finish.contrast, exposure: look_entry_exposure(s.mode), ..Print::default() };
     if let Some(full) = s.balance_filters {
         out.print.set_filters(full.map(|f| f * s.balance_strength));
     }
@@ -247,7 +253,6 @@ pub const CHECK_GREY: [f32; 3] = [0.99, 1.37, 1.67];
 
 /// `ScannerRender.checkRoll`: a roll balanced as a measured one is, the grey on its median, on the Frontier.
 pub fn check_roll() -> PipelineSettings {
-    use oni_settings::ConversionMode;
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.face = Face::Scanner;
     s.scanner_machine = ScannerMachine::Frontier;
