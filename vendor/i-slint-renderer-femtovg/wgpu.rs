@@ -420,6 +420,15 @@ impl FemtoVGRenderer<WGPUBackend> {
             .copied()
             .unwrap_or_else(|| swapchain_capabilities.formats[0]);
         surface_config.format = swapchain_format;
+        // ONI: macOS tags the drawable Display P3, the space the canvas encodes for there (`display::WINDOW`);
+        // an untagged layer is not colour-matched: a P3 panel would stretch sRGB numbers, +17 % chroma.
+        if cfg!(target_os = "macos")
+            && swapchain_capabilities
+                .color_spaces(swapchain_format)
+                .contains(wgpu::SurfaceColorSpaces::DISPLAY_P3)
+        {
+            surface_config.color_space = wgpu::SurfaceColorSpace::DisplayP3;
+        }
 
         if let Some(mode) = composite_alpha_mode(transparent, &swapchain_capabilities.alpha_modes) {
             surface_config.alpha_mode = mode;

@@ -19,6 +19,7 @@ path = "src/bin/oni-tokens/main.rs"
 arboard = { version = "3.6", default-features = false }
 bytemuck.workspace = true
 jpeg-decoder = "0.3"
+lcms2.workspace = true
 jpeg-encoder = "0.7"
 oni-colour.workspace = true
 oni-core = { path = "../oni-core" }

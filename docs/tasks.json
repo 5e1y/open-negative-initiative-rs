@@ -4615,6 +4615,13 @@
     "outcome": "oni-measure/tests/slide_roll.rs: on three synthetic slides the key after Prepare returns Prepare's settings whole, and a second press the same (twin: the window moved over the bright border, the white moves past 0.05). Window check slides: two presses on the prepared open slide leave its settings equal (twin: the key moves an unprepared slide's levels, earlier in the check). A key reading after the levels (Stage::GlobalLevels) fails both."
   },
   {
+    "id": 970,
+    "type": "bug",
+    "title": "The canvas is colour-matched on macOS: the drawable is tagged Display P3 and the canvas encodes for it",
+    "status": "done",
+    "detail": "The window's CAMetalLayer had no colorspace, so macOS showed the canvas's sRGB numbers as the panel's own Display P3: +17 % mean chroma on roll #8's DSC_6432 (C* 14.9 against the export's 12.7, skin ΔE 7.1). Swift tags its drawable with the screen's space; the vendored femtovg renderer now asks wgpu for Display P3 on macOS and the app's canvas, histogram and thumbnails encode for it (display::WINDOW), so the canvas proofed to the export's space matches the file. Check: three patches exported as Display P3 JPEG and read through the embedded ICC sit within ΔE 2 of the canvas read through the drawable's tag; the twin, sRGB numbers on an untagged P3 panel, is caught above ΔE 4."
+  },
+  {
     "id": 975,
     "type": "check",
     "title": "A Swift user's upgrade, checked on the owner's own rolls and support folder",
