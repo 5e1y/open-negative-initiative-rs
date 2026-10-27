@@ -130,6 +130,15 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert!(ends[0] != ends[1] && ends[1] != ends[2] && ends[0] != ends[2], "each slide its own: {ends:?}");
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
+    // The key on a prepared slide finds Prepare's levels, press after press; its twin, the key
+    // moving an unprepared slide's levels, opens this check.
+    let prepared = settings();
+    for press in 0..2 {
+        panel.invoke_auto_levels();
+        rig.until("the key read", Duration::from_secs(60), || !panel.get_levelling());
+        rig.pump();
+        assert_eq!(settings(), prepared, "press {press}: {:?} against {:?}", settings().levels, prepared.levels);
+    }
     // One gallery undo takes every frame back, a redo lays them again.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();

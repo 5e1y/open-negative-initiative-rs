@@ -81,6 +81,29 @@ fn each_slide_takes_its_own_rgb_black_and_white_inside_the_roll_s_window() {
     assert!(whole.1 > read[0].1 + 0.05, "{whole:?} against {:?}", read[0]);
 }
 
+/// The Auto levels key on a frame's own settings, as the editor presses it.
+fn keyed(m: &Measurer, path: &str, s: &PipelineSettings) -> PipelineSettings {
+    m.with(path, s, |r, copy| key::levels(r, copy, s)).map(|b| oni_core::balance::levelled(&b.core(), s)).expect("the slide reads")
+}
+
+#[test]
+fn the_key_on_a_prepared_slide_finds_prepare_s_levels_and_again_the_same() {
+    let Some(m) = measurer() else { return eprintln!("no GPU adapter: the key's fixed point is not exercised") };
+    let rest = PipelineSettings::rest(ConversionMode::Positive, false);
+    for i in 0..3 {
+        let path = format!("f{i}");
+        let prepared = levelled(&m, &path, WINDOW, &rest);
+        let once = keyed(&m, &path, &prepared);
+        assert_eq!(once, prepared, "frame {i}: the key after Prepare moves nothing");
+        assert_eq!(keyed(&m, &path, &once), once, "frame {i}: a second press moves nothing");
+        // Twin: the window moved over the bright border, the key reads another histogram.
+        let mut moved = prepared.clone();
+        moved.geometry.measure_window = Some(Rect::UNIT);
+        let other = keyed(&m, &path, &moved);
+        assert!(other.levels.red.white > prepared.levels.red.white + 0.05, "frame {i}: {:?} against {:?}", ends(&other), ends(&prepared));
+    }
+}
+
 #[test]
 fn a_negative_roll_of_the_same_frames_still_combines_into_one_reference_and_aligns_its_gains() {
     let Some(m) = measurer() else { return eprintln!("no GPU adapter: the negative roll is not exercised") };
