@@ -75,8 +75,28 @@ fn middle(values: &mut [f32]) -> f32 {
     if values.len().is_multiple_of(2) { (values[m - 1] + values[m]) / 2.0 } else { values[m] }
 }
 
-/// `RollReference.combined`: gains on the median, each end on the second most extreme frame from
-/// three frames up; a picked base is every channel's black, moved to the roll's gains.
+/// The share of frames left out at each end before the median gives an end's chroma.
+pub const TRIM: f32 = 0.10;
+/// Where the black and the white sit among the frames sorted darkest first: a few frames' shadows
+/// and lights clipped for the roll's contrast, the Blacks slider there to take them back (owner's call).
+pub const DEPTH: [f32; 2] = [0.20, 0.80];
+
+/// The value at share `p` of the sorted values, the nearest rank.
+fn at(sorted: &[f32], p: f32) -> f32 {
+    sorted[((p * (sorted.len() - 1) as f32).round() as usize).min(sorted.len() - 1)]
+}
+
+/// The median once `TRIM` of the values, one at least from three up, is left out at each end.
+fn trimmed_median(sorted: &[f32]) -> f32 {
+    let n = sorted.len();
+    let k = ((TRIM * n as f32) as usize).max(usize::from(n >= 3)).min((n - 1) / 2);
+    let kept = &sorted[k..n - k];
+    let m = kept.len();
+    if m % 2 == 1 { kept[m / 2] } else { (kept[m / 2 - 1] + kept[m / 2]) / 2.0 }
+}
+
+/// `RollReference.combined`: gains on the median, each end's chroma on the trimmed median and its
+/// depth on `DEPTH` (beyond Swift); a picked base is every channel's black, moved to the roll's gains.
 pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]>) -> Option<RollReference> {
     if frames.is_empty() {
         return None;
@@ -92,17 +112,20 @@ pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]
             })
         })
         .collect();
-    let dropped = usize::from(frames.len() >= 3);
-    let mut black = [0, 1, 2].map(|c| {
-        let mut lows: Vec<f32> = moved.iter().map(|m| m[c][0]).collect();
-        lows.sort_by(|a, b| a.total_cmp(b));
-        lows[dropped]
-    });
-    let highs = [0, 1, 2].map(|c| {
-        let mut his: Vec<f32> = moved.iter().map(|m| m[c][1]).collect();
-        his.sort_by(|a, b| b.total_cmp(a));
-        his[dropped]
-    });
+    // Each end's chroma off the frames' trimmed median, its depth off the reference channel's
+    // percentile: one tinted frame cannot tint the roll, and the roll keeps its contrast.
+    let end = |e: usize| {
+        let sorted = [0, 1, 2].map(|c| {
+            let mut v: Vec<f32> = moved.iter().map(|m| m[c][e]).collect();
+            v.sort_by(|a, b| a.total_cmp(b));
+            v
+        });
+        let shape = [0, 1, 2].map(|c| trimmed_median(&sorted[c]));
+        let lift = at(&sorted[auto_levels::REFERENCE], DEPTH[e]) - shape[auto_levels::REFERENCE];
+        [0, 1, 2].map(|c| shape[c] + lift)
+    };
+    let mut black = end(0);
+    let highs = end(1);
     let shifted = base.map(|picked| [0, 1, 2].map(|c| picked[c] + auto_levels::shift(stops[c], mode)));
     // Each channel's black on the bare film itself: the scene's own zero, neutral by construction.
     if let Some(s) = shifted {

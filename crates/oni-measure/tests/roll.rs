@@ -43,7 +43,9 @@ fn a_picked_base_is_every_channel_s_black_and_reaches_the_roll_s_gains() {
     assert!(based.black == picked && based.base == Some(picked) && based.white == bare.white);
     // Twin: without it the roll's blacks stand off the film's own zero.
     assert!(bare.black != picked && bare.base.is_none(), "{:?}", bare.black);
-    assert_eq!(bare.black, [0.10, 0.17, 0.19], "each black on the second darkest frame");
+    // Chroma off each channel's trimmed median, depth off green's 20th percentile.
+    let expected = [0.085, 0.17, 0.19];
+    assert!((0..3).all(|c| (bare.black[c] - expected[c]).abs() < 1e-6), "{:?}", bare.black);
 
     let gained: Vec<Measured> = lows.iter().map(|l| dark(*l, [0.5, 0.0, -0.3])).collect();
     let landed = combined(&gained, NEGATIVE, Some(picked)).unwrap().black;
@@ -61,9 +63,10 @@ fn the_roll_s_gains_are_each_channel_s_median_and_the_tails_move_with_them() {
         None,
     )
     .unwrap();
-    let expected = 0.70 + shift(0.6 - 0.2, NEGATIVE);
+    // The median frame's tail moved to the roll's gains, lifted as green's is to its 80th percentile.
+    let expected = 0.70 + shift(0.6 - 0.2, NEGATIVE) + (0.80 - 0.70);
     assert_eq!(moved.stops, [0.6, 0.0, 0.0]);
-    assert_eq!(moved.white[0], expected, "the tail moves to {expected}");
+    assert!((moved.white[0] - expected).abs() < 1e-6, "the tail moves to {expected}, not {}", moved.white[0]);
     // Twin: left where its own gains read it, the tail would stay at 0.70.
     assert_ne!(moved.white[0], 0.70);
 }
@@ -133,4 +136,23 @@ fn the_roll_s_histogram_sums_every_frame_moved_to_the_roll_s_gains() {
     let x = 0.5 + shift(roll.stops[0] - 0.2, NEGATIVE);
     assert!((0.0..1.0).contains(&x) && (x - 0.5).abs() > 0.005, "{x}");
     assert_eq!((moved[200][0], moved[(x * 400.0) as usize][0]), (8.0, 4.0));
+}
+
+#[test]
+fn two_frames_with_a_tinted_black_leave_the_roll_s_black_neutral() {
+    let dark = |lows: [f32; 3]| measured([0.0; 3], [0, 1, 2].map(|c| [lows[c], 0.8]), None);
+    let neutral = [0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27].map(|l| dark([l, l, l]));
+    // Two frames whose darkest is warm: blue and green far below red.
+    let mut frames: Vec<Measured> = neutral.to_vec();
+    frames.extend([dark([0.20, 0.07, 0.05]), dark([0.21, 0.08, 0.06])]);
+    let black = combined(&frames, NEGATIVE, None).unwrap().black;
+    let spread = |b: [f32; 3]| b.iter().cloned().fold(f32::MIN, f32::max) - b.iter().cloned().fold(f32::MAX, f32::min);
+    assert!(spread(black) < 0.03, "the roll's black stays neutral: {black:?}");
+    // Twin: the second darkest frame per channel, as before, takes the warm frames' tint.
+    let second = |c: usize| {
+        let mut v: Vec<f32> = frames.iter().map(|f| f.tails[c][0]).collect();
+        v.sort_by(|a, b| a.total_cmp(b));
+        v[1]
+    };
+    assert!(spread([second(0), second(1), second(2)]) > 0.1);
 }
