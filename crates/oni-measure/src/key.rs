@@ -41,25 +41,36 @@ pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
     auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// The Auto levels key on one frame, read in front of the levels.
+/// The Auto levels key on one frame, read in front of the levels; a slide's moves its gains alone.
 pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
+    if s.mode == ConversionMode::Positive {
+        return slide_read(r, copy, s).map(|read| read.balance);
+    }
     auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
 /// Prepare the Roll on a slide: the frame's own Auto levels key through its window, laid on `start`.
 pub fn slide_levelled(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<PipelineSettings> {
-    slide_read(r, copy, start).map(|(settings, _)| settings)
+    slide_read(r, copy, start).map(|read| read.settings)
 }
 
-/// `slide_levelled`, with the reading at rest gains the roll's screen sums.
-pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<(PipelineSettings, Histogram)> {
-    let mut first = None;
-    let b = auto_levels::keyed(start.gains.stops, start.mode, |stops| {
-        let h = r.reading(copy, &at_gains(start, stops), Stage::Levels).histogram;
-        first.get_or_insert_with(|| h.clone());
-        h
-    })?;
-    Some((balance::levelled(&b.core(), start), first?))
+/// A slide read at rest gains through its window: its own gains, and the reading and cells a roll
+/// pools.
+pub struct SlideRead {
+    pub balance: Balance,
+    pub settings: PipelineSettings,
+    pub reading: Histogram,
+    pub cells: Vec<[f32; 3]>,
+}
+
+pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<SlideRead> {
+    let rest = [Gains::BASE; 3];
+    let read = r.reading(copy, &at_gains(start, rest), Stage::Levels);
+    let stops = crate::slide_gains::gains(&read.cells, start.mode)?;
+    let shift = [0, 1, 2].map(|c| auto_levels::shift(stops[c] - start.gains.stops[c], start.mode));
+    let balance = Balance { stops, levels: auto_levels::resting(start.mode), shift };
+    let settings = balance::levelled(&balance.core(), start);
+    Some(SlideRead { balance, settings, reading: read.histogram, cells: read.cells })
 }
 
 /// `AutoLevels.ends`: step two alone, the gains held.

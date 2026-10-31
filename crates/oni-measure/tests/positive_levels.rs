@@ -1,5 +1,5 @@
-//! The Auto levels key on a slide: read once at rest gains, red's and blue's medians brought onto
-//! green's by the gains alone, its windows at rest; a negative still gets Classic's steps.
+//! A slide's key: its cells' cast brought to grey by the gains alone, what cannot speak of the light
+//! left out, its windows at rest; a negative still gets Classic's steps.
 
 use oni_core::balance::levelled;
 use oni_measure::auto_levels::{self, Balance, keyed, shift};
@@ -53,43 +53,69 @@ fn pressed(mode: ConversionMode) -> (Balance, Vec<[f32; 3]>) {
     (b, asked)
 }
 
+/// A slide's cells: a magenta cast over its tones, a saturated red subject, clipped lights and the
+/// sensor's black.
+fn cells() -> Vec<[f32; 3]> {
+    let mut c: Vec<[f32; 3]> = (0..60).map(|i| 0.2 + 0.008 * i as f32).map(|v| [v + 0.03, v - 0.03, v + 0.03]).collect();
+    c.extend((0..30).map(|_| [0.8, 0.25, 0.2]));
+    c.extend((0..10).map(|_| [0.995; 3]));
+    c.extend((0..10).map(|_| [0.005; 3]));
+    c
+}
+
+/// Where each channel's median of `kept` lands once `stops` moved it.
+fn landed(kept: &[[f32; 3]], stops: [f32; 3]) -> [f32; 3] {
+    [0, 1, 2].map(|k| {
+        let mut v: Vec<f32> = kept.iter().map(|c| c[k]).collect();
+        v.sort_by(f32::total_cmp);
+        v[v.len() / 2] + shift(stops[k], POSITIVE)
+    })
+}
+
 #[test]
-fn auto_levels_on_a_slide_moves_its_gains_alone_and_leaves_its_windows_at_rest() {
-    let (b, asked) = pressed(POSITIVE);
-    assert_eq!(asked, vec![[0.0; 3]], "read once, at rest gains");
-    assert!(b.stops[1] == 0.0 && b.stops[0] != 0.0 && b.stops[2] != 0.0, "red and blue moved onto green: {:?}", b.stops);
+fn a_slide_s_gains_bring_its_cast_to_grey_and_leave_out_what_cannot_speak_of_the_light() {
+    let all = cells();
+    let stops = oni_measure::slide_gains::gains(&all, POSITIVE).expect("cells vote");
+    assert_eq!(stops[1], 0.0, "green holds");
+    let cast = &all[..60];
+    let at = landed(cast, stops);
+    assert!((at[0] - at[1]).abs() < 2e-3 && (at[2] - at[1]).abs() < 2e-3, "the cast lands grey: {at:?}");
+    let kept = oni_measure::slide_gains::voting(&all);
+    assert!(kept.iter().all(|c| c.iter().all(|v| (0.02..=0.98).contains(v))), "no black, no clipped light votes");
+    assert!(!kept.contains(&[0.8, 0.25, 0.2]), "the saturated subject votes not");
+    // Twin: every cell voting, the red subject pulls the balance off the cast's grey.
+    let medians = [0, 1, 2].map(|k| {
+        let mut v: Vec<f32> = all.iter().map(|c| c[k]).collect();
+        v.sort_by(f32::total_cmp);
+        v[v.len() / 2]
+    });
+    let naive = [medians[1] - medians[0], 0.0, medians[1] - medians[2]].map(|t| auto_levels::stops_for_shift(t, POSITIVE));
+    let off = landed(cast, naive);
+    assert!((off[0] - off[1]).abs() > 0.02 || (off[2] - off[1]).abs() > 0.02, "{off:?}");
+    // Nothing usable, nothing placed.
+    assert_eq!(oni_measure::slide_gains::gains(&[[0.0; 3], [1.0; 3]], POSITIVE), None);
+}
+
+#[test]
+fn a_slide_balanced_on_its_gains_keeps_its_windows_at_rest() {
+    let b = Balance { stops: [-0.2, 0.0, 0.3], levels: auto_levels::resting(POSITIVE), shift: [0.0; 3] };
     let on = levelled(&b.core(), &frame(POSITIVE));
     let rest = PipelineSettings::rest(POSITIVE, true).levels;
     for (c, (got, want)) in on.levels.windows().iter().zip(rest.windows()).enumerate() {
         assert!((got.black - want.black).abs() < 1e-4 && (got.white - want.white).abs() < 1e-4, "channel {c}'s window at rest: {got:?}");
     }
-    assert!(on.roll_reference.is_none() && on.balance_method.is_none(), "a key, never a roll");
-    // The gains bring each channel's median onto green's, as a white balance does.
-    let moved = reading(b.stops, POSITIVE);
-    let median = |c: usize| auto_levels::median(&moved.channel(c)).unwrap() * BIN;
-    assert!((median(0) - median(1)).abs() <= 2.0 * BIN && (median(2) - median(1)).abs() <= 2.0 * BIN, "{} {} {}", median(0), median(1), median(2));
-    // Twin: at rest the warm bands' medians stand apart.
-    let still = reading([0.0; 3], POSITIVE);
-    assert!((auto_levels::median(&still.channel(0)).unwrap() - auto_levels::median(&still.channel(2)).unwrap()).abs() * BIN > 0.1);
-
-    // Twin: the same frame as a negative brings red and blue onto green, each on its own window.
-    let (n, asked) = pressed(NEGATIVE);
-    assert_eq!(asked[0], frame(NEGATIVE).gains.stops, "a negative starts from the frame's gains");
-    assert!(n.stops[0] != 0.0 && n.stops[2] != 0.0, "{:?}", n.stops);
-    assert!(n.levels[0] != n.levels[2], "{:?}", n.levels);
+    assert_eq!(on.gains.stops, [-0.2, 0.0, 0.3]);
 }
 
 #[test]
-fn a_negative_s_key_is_classic_s_two_steps_and_a_slide_s_is_not() {
-    let (n, _) = pressed(NEGATIVE);
+fn a_negative_s_key_is_classic_s_two_steps() {
+    let (n, asked) = pressed(NEGATIVE);
+    assert_eq!(asked[0], frame(NEGATIVE).gains.stops, "a negative starts from the frame's gains");
     let stops = frame(NEGATIVE).gains.stops;
     let classic = auto_levels::two_steps(&reading(stops, NEGATIVE), stops, NEGATIVE, 0.0, |s| reading(s, NEGATIVE)).unwrap();
     assert_eq!(n, classic);
-    // Twin: the slide's composite is not what Classic places on the same frame.
-    let (slide, _) = pressed(POSITIVE);
-    let rest = [0.0; 3];
-    let classic = auto_levels::two_steps(&reading(rest, POSITIVE), rest, POSITIVE, 0.0, |s| reading(s, POSITIVE)).unwrap();
-    assert_ne!(slide.levels, classic.levels);
+    // Twin: the negative's gains move red and blue onto green, each channel on its own window.
+    assert!(n.stops[0] != 0.0 && n.stops[2] != 0.0 && n.levels[0] != n.levels[2], "{n:?}");
 }
 
 #[test]

@@ -137,6 +137,15 @@ export component RollPane inherits Pane {
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
+        // A slide's cast in two moves, each holding the other and the gains' mean (owner's call).
+        if PanelState.slide: StoreSlider {
+            field: 30; label: PanelState.gains-inverted ? @tr("Amber ↔ Blue") : @tr("Blue ↔ Amber"); fraction: Store.gain-temperature-fraction; readout: Store.gain-temperature-readout; value-text: Store.gain-temperature-value;
+            fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue; high: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow;
+        }
+        if PanelState.slide: StoreSlider {
+            field: 31; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-tint-fraction; readout: Store.gain-tint-readout; value-text: Store.gain-tint-value;
+            fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
+        }
         StoreSlider {
             field: 24; label: PanelState.gains-inverted ? @tr("Red ↔ Cyan") : @tr("Cyan ↔ Red"); fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;

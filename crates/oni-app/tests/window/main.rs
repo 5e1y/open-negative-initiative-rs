@@ -192,7 +192,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark", prepare_measure::each_frame_measured_morphs_its_screens_the_roll_sums_and_a_measure_opens_dark),
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
-    ("slides::a_slide_roll_is_levelled_frame_by_frame_through_one_window", slides::a_slide_roll_is_levelled_frame_by_frame_through_one_window),
+    ("slides::a_slide_roll_takes_its_unflagged_slides_gains_through_one_window", slides::a_slide_roll_takes_its_unflagged_slides_gains_through_one_window),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),
     ("quit::closing_writes_the_last_settings_and_a_failed_write_asks_first", quit::closing_writes_the_last_settings_and_a_failed_write_asks_first),

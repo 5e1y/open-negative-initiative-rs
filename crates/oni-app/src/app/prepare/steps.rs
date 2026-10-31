@@ -70,7 +70,7 @@ impl Ctl {
     pub(in crate::app) fn walk_window(self: &Rc<Self>, by: i32) {
         {
             let r = &mut self.state.borrow_mut().prepare;
-            let last = measured(&r.frames, r.walked()).len().saturating_sub(1) as i32;
+            let last = measured(&r.frames).len().saturating_sub(1) as i32;
             r.at = (r.at as i32 + by).clamp(0, last.max(0)) as usize;
         }
         self.publish_prepare();

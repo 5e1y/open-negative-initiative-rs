@@ -1726,12 +1726,12 @@ msgid "Source Balance"
 msgstr "Balance de origen"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Red ↔ Cyan"
-msgstr "Rojo ↔ Cian"
+msgid "Amber ↔ Blue"
+msgstr "Ámbar ↔ Azul"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Cyan ↔ Red"
-msgstr "Cian ↔ Rojo"
+msgid "Blue ↔ Amber"
+msgstr "Azul ↔ Ámbar"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Green ↔ Magenta"
@@ -1740,6 +1740,14 @@ msgstr "Verde ↔ Magenta"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Magenta ↔ Green"
 msgstr "Magenta ↔ Verde"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rojo ↔ Cian"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Cyan ↔ Red"
+msgstr "Cian ↔ Rojo"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Blue ↔ Yellow"
@@ -3472,8 +3480,12 @@ msgstr[0] "{names} no contiene nada que medir: toma los ajustes del carrete sin 
 msgstr[1] "{names} no contienen nada que medir: toman los ajustes del carrete sin influir en ellos."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide's gains are aligned on what this frame holds."
-msgstr "Dibuja el marco dentro de la imagen, lejos del portadiapositivas y de los bordes de la película, y compruébalo en cada escaneo con el deslizador. Las ganancias de cada diapositiva se alinean con lo que contiene este marco."
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. The roll's gains are read on what this frame holds in every unflagged slide."
+msgstr "Dibuja el marco dentro de la imagen, lejos del portadiapositivas y de los bordes de la película, y compruébalo en cada escaneo con el deslizador. Las ganancias del carrete se leen en lo que este marco contiene en cada diapositiva sin marcar."
+
+#: crates/oni-app/src/app/prepare/model/step.rs
+msgid "Flag slides whose colours stand apart: a sunset, a lit stage, one colour filling the frame. They still take the roll's gains, but left unflagged, one of them can tint the whole roll."
+msgstr "Marca las diapositivas de colores aparte: una puesta de sol, un escenario iluminado, un color que llena el encuadre. Reciben igualmente las ganancias del carrete, pero sin marcar, una sola puede teñir todo el carrete."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."

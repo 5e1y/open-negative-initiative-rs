@@ -16,6 +16,7 @@ pub mod reader;
 pub mod registration;
 pub mod roll;
 pub mod sheet;
+pub mod slide_gains;
 pub mod truncate;
 pub mod window;
 

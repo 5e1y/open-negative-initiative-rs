@@ -59,17 +59,25 @@ fn each_gain_row_names_the_end_the_hand_reaches_in_both_senses() {
         return;
     };
     let ends = right_ends(&panel("roll_tab.slint"));
-    assert_eq!(ends.len(), 3, "three gain rows on the Roll tab: {ends:?}");
+    assert_eq!(ends.len(), 5, "a slide's temperature and tint, then three gain rows on the Roll tab: {ends:?}");
+    let (cast, gains) = ends.split_at(2);
     for mode in [ConversionMode::Negative, ConversionMode::Positive] {
         let rest = render(&mut g, mode, false, |_| {});
         for (channel, (hue, complement)) in NAMES.iter().enumerate() {
             let moved = render(&mut g, mode, false, |s| s.gains.stops[channel] = 1.0);
             let gap = towards_complement(channel, moved) - towards_complement(channel, rest);
-            let right = if mode.inverts_gain_sense() { &ends[channel].0 } else { &ends[channel].1 };
+            let right = if mode.inverts_gain_sense() { &gains[channel].0 } else { &gains[channel].1 };
             let reached = if gap > 0.0 { complement } else { hue };
             assert!(gap.abs() > 1e-4 && right == reached, "{mode:?} {hue}: +1 stop moves {gap:+.5} towards the complement, the track ends on {right}");
         }
     }
+    // A slide's temperature and tint, one unit along each knob's axis, reach their right ends.
+    let rest = render(&mut g, ConversionMode::Positive, false, |_| {});
+    let warm = render(&mut g, ConversionMode::Positive, false, |s| s.gains.stops = [1.0, 0.0, -1.0]);
+    let tinted = render(&mut g, ConversionMode::Positive, false, |s| s.gains.stops = [-1.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0]);
+    let (amber, green) = (|p: V3| p[0] - p[2], |p: V3| p[1] - (p[0] + p[2]) / 2.0);
+    assert_eq!(cast[0].1, if amber(warm) > amber(rest) { "Amber" } else { "Blue" });
+    assert_eq!(cast[1].1, if green(tinted) > green(rest) { "Green" } else { "Magenta" });
     // Twin: every row's two ends swap with the sense, so a label read in the wrong mode names the opposite.
     assert!(ends.iter().all(|(inverted, plain)| inverted != plain), "{ends:?}");
     let wiring = std::fs::read_to_string(std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../oni-app/src/app/roll_tab.rs")).unwrap();

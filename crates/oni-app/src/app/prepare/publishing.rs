@@ -50,7 +50,7 @@ impl Ctl {
         let ticked = r.ticked();
         let flagged = r.flagged();
         let measuring = r.progress;
-        let m = measured(&frames, r.walked());
+        let m = measured(&frames);
         let last = m.len().saturating_sub(1);
         let step = r.step;
         let status = match measuring {
@@ -69,7 +69,7 @@ impl Ctl {
                     Step::Base => r.base_frame == i,
                     _ => f.ticked,
                 },
-                flagged: f.flagged && r.walked() != ConversionMode::Positive,
+                flagged: f.flagged,
                 apart: apart.contains(&f.path),
                 ticked: f.ticked,
                 rgb: f.passes.is_some(),

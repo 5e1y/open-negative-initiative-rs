@@ -52,10 +52,9 @@ impl Frame {
     }
 }
 
-/// `RollFrame.measured`: the frames ticked and not flagged; a slide roll has no flags.
-pub fn measured(frames: &[Frame], film: ConversionMode) -> Vec<&Frame> {
-    let slides = film == ConversionMode::Positive;
-    frames.iter().filter(|f| f.ticked && (slides || !f.flagged)).collect()
+/// `RollFrame.measured`: the frames ticked and not flagged.
+pub fn measured(frames: &[Frame]) -> Vec<&Frame> {
+    frames.iter().filter(|f| f.ticked && !f.flagged).collect()
 }
 
 /// `RollFrame.aspect`: the scan's width over height after its quarter turns.

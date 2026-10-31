@@ -1,5 +1,5 @@
-//! A slide roll is a plain RAW editor's: Prepare the Roll places one window and levels each slide on
-//! its own, its cast aligned away, never a roll; an unprepared slide opens in the editor.
+//! A slide roll: Prepare the Roll places one window and lays the unflagged slides' pooled gains on
+//! every slide, never a roll reference; an unprepared slide opens in the editor.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Preparing};
@@ -31,7 +31,7 @@ fn alike(s: &PipelineSettings) -> bool {
     s.levels.red == s.levels.green && s.levels.green == s.levels.blue
 }
 
-pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
+pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the slides are not exercised"),
@@ -108,11 +108,19 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert_eq!(skipped(), [false, true, false, false, false], "read as its own negative, a slide roll walks a negative's steps");
     p.invoke_positive_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, true, true, false], "its gains alone, it has no base and no flags, but its window");
+    assert_eq!(skipped(), [false, true, true, false, false], "its gains alone, it has no base, but its flags and window");
     p.invoke_advance();
     rig.pump();
-    assert_eq!(p.get_step(), 4, "the film leads to the window");
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
+    assert_eq!(p.get_step(), 3, "the film leads to the flags");
+    // A flagged slide votes not, yet takes the roll's gains below.
+    p.invoke_sheet_clicked(2);
+    rig.pump();
+    assert_eq!(p.get_flags_note().as_str(), "2 measured, 1 flagged");
+    assert!(p.get_cells().row_data(2).unwrap().flagged);
+    p.invoke_advance();
+    rig.pump();
+    assert_eq!(p.get_step(), 4);
+    assert_eq!(p.get_action_title().as_str(), "MEASURE 2 FRAMES");
     assert!(p.get_window_shown());
     let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
     let rest = disk(1);
@@ -135,18 +143,26 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");
     assert!(frames.iter().all(|s| s.measured_gains == Some(s.gains.stops) && s.gains == frames[0].gains), "one roll's gains on every slide, kept as its rest");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
-    // The key on a prepared slide finds Prepare's levels, press after press; its twin, the key
-    // moving an unprepared slide's levels, opens this check.
-    let prepared = settings();
-    for press in 0..2 {
+    // The key on the selected slide reads it alone: its own gains, a hair from the roll's as every
+    // slide holds one cast, its windows at rest; a second press finds the first's.
+    let (prepared, roll_gains) = (settings(), disk(0).gains.stops);
+    let mut pressed = Vec::new();
+    for _ in 0..2 {
         panel.invoke_auto_levels();
         rig.until("the key read", Duration::from_secs(60), || !panel.get_levelling());
         rig.pump();
-        assert_eq!(settings(), prepared, "press {press}: {:?} against {:?}", settings().levels, prepared.levels);
+        pressed.push(disk(0));
     }
-    // One gallery undo takes every frame back, a redo lays them again.
+    assert_eq!(pressed[0].gains, pressed[1].gains);
+    assert_ne!(pressed[0].gains.stops, roll_gains, "twin: the key reads the slide, not the roll");
+    assert!(alike(&pressed[0]) && pressed[0].gains.stops.iter().zip(roll_gains).all(|(a, b)| (a - b).abs() < 0.02), "{:?}", pressed[0].gains);
+    assert_eq!(settings(), prepared, "the open slide, unselected, keeps what Prepare laid");
+    // One gallery undo takes the key back, the next every frame of the measure, a redo lays them again.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
+    ctl.act(oni_app::Act::Undo);
+    rig.pump();
+    rig.until("the key taken back", Duration::from_secs(10), || disk(0).gains.stops == roll_gains);
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     rig.until("every slide back", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains == rest.gains && disk(i).geometry.measure_window.is_none()));

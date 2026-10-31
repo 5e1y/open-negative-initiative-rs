@@ -1,5 +1,5 @@
-//! A slide roll: one measuring window for the roll, each frame's gains read through it and the roll
-//! taking their median as one, never a roll reference (owner's call).
+//! A slide roll: one measuring window for the roll, its slides' cells pooled into one set of gains,
+//! never a roll reference (owner's call).
 
 use super::*;
 use super::trace::{BINS, Drawn};
@@ -42,7 +42,7 @@ impl Roll {
 
 impl Ctl {
     /// A slide roll: every ticked frame read on the roll's film, window and flat-field off this thread,
-    /// the roll's gains its slides' median laid on all, one step; a blank slide rides without a vote.
+    /// the unflagged slides' cells pooled into the roll's gains laid on all; a blank slide rides unvoting.
     pub(super) fn prepare_slides(self: &Rc<Self>) {
         let job = {
             let mut s = self.state.borrow_mut();
@@ -50,15 +50,16 @@ impl Ctl {
             let live = s.store.settings().clone();
             let screen = s.screen;
             let r = &mut s.prepare;
-            let picked: Vec<String> = r.frames.iter().filter(|f| f.ticked).map(|f| f.path.clone()).collect();
-            if picked.is_empty() || r.progress.is_some() {
+            let picked: Vec<Frame> = r.frames.iter().filter(|f| f.ticked).cloned().collect();
+            if !picked.iter().any(|f| !f.flagged) || r.progress.is_some() {
                 return;
             }
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
             let (window, mask, stop, session) = (r.window, r.mask(), r.stop.clone(), r.session);
             let job: Job = Box::new(move || {
-                let common = CaptureExposure::common(&picked.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
+                let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
+                let common = CaptureExposure::common(&paths.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
                 let stops = |path: &str| match (common, CaptureExposure::read(Path::new(path))) {
                     (Some(c), Some(own)) => own.stops() - c.stops(),
                     _ => 0.0,
@@ -66,10 +67,11 @@ impl Ctl {
                 let m = crate::measuring::measurer();
                 let side = oni_measure::sheet::roll_tile();
                 let mut written: Written = Vec::new();
-                let mut votes = Vec::new();
+                let mut pooled = Vec::new();
                 let mut blank = Vec::new();
                 let mut roll = SlideRoll::default();
-                for path in &picked {
+                for f in &picked {
+                    let path = &f.path;
                     if stop.load(Ordering::Relaxed) {
                         break;
                     }
@@ -87,18 +89,15 @@ impl Ctl {
                         if let Some((read, tile)) = read {
                             drawn = tile.as_ref().and_then(|t| Drawn::of(t, screen).zip(negative::of(t)));
                             match read {
-                                Some((settings, reading)) => {
-                                    roll.add(&reading.rgb);
+                                Some(read) if !f.flagged => {
+                                    roll.add(&read.reading.rgb);
                                     voted = true;
-                                    votes.push(settings.gains.stops);
-                                    // Measured whole, written on the frame's own crop.
-                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, ..settings }));
+                                    pooled.extend(read.cells);
                                 }
-                                None => {
-                                    blank.push(path.clone());
-                                    written.push((path.clone(), before, start));
-                                }
+                                Some(_) => {}
+                                None => blank.push(path.clone()),
                             }
+                            written.push((path.clone(), before, start));
                         }
                     }
                     let shown = voted.then(|| roll.drawn()).flatten();
@@ -106,15 +105,17 @@ impl Ctl {
                     with_shell(move |c| c.measure_progressed(session, landed));
                 }
                 let stopped = stop.load(Ordering::Relaxed);
-                // One set of gains for the roll, its slides' median, the base each one's Source Balance rests on.
-                let gains = roll::slide_gains(&votes);
-                for (_, _, s) in &mut written {
-                    if let Some(g) = gains {
-                        (s.gains.stops, s.measured_gains) = (g, Some(g));
+                // One set of gains for the roll, the base each frame's Source Balance rests on.
+                let gains = oni_measure::slide_gains::gains(&pooled, ConversionMode::Positive);
+                if let Some(g) = gains {
+                    let balance = oni_measure::auto_levels::Balance { stops: g, levels: oni_measure::auto_levels::resting(ConversionMode::Positive), shift: [0.0; 3] };
+                    for (_, _, s) in &mut written {
+                        *s = oni_core::balance::levelled(&balance.core(), s);
+                        s.measured_gains = Some(g);
                     }
                 }
                 let written = (!stopped).then(|| if gains.is_some() { written } else { Vec::new() });
-                with_shell(move |c| c.land_measure(session, written, None, stopped, &picked, &blank));
+                with_shell(move |c| c.land_measure(session, written, None, stopped, &paths, &blank));
             });
             job
         };
@@ -130,37 +131,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_slide_roll_walks_its_film_flat_field_and_window_alone() {
+    fn a_slide_roll_walks_its_film_flat_field_flags_and_window() {
         let p = ConversionMode::Positive;
         assert_eq!(neighbour(Step::Film, 1, Capture::Camera, p), Step::FlatField);
-        assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, p), Step::Window, "no base and no flags");
-        assert_eq!(neighbour(Step::Window, -1, Capture::Camera, p), Step::FlatField);
-        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, p), Step::Window, "a scanner's slides skip the flat-field");
-        assert!([Step::Base, Step::Flags].iter().all(|s| s.skipped(Capture::Camera, p)) && !Step::Window.skipped(Capture::Camera, p));
+        assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, p), Step::Flags, "no base");
+        assert_eq!(neighbour(Step::Flags, -1, Capture::Camera, p), Step::FlatField);
+        assert_eq!(neighbour(Step::Film, 1, Capture::Scanner, p), Step::Flags, "a scanner's slides skip the flat-field");
+        assert!(Step::Base.skipped(Capture::Camera, p) && ![Step::Flags, Step::Window].iter().any(|s| s.skipped(Capture::Camera, p)));
         assert_ne!(Step::Window.detail(p), Step::Window.detail(ConversionMode::Negative));
-        // Twin: a negative roll still walks its base and flags.
+        assert_ne!(Step::Flags.detail(p), Step::Flags.detail(ConversionMode::Negative));
+        // Twin: a negative roll still walks its base.
         let n = ConversionMode::Negative;
         assert_eq!(neighbour(Step::FlatField, 1, Capture::Camera, n), Step::Base);
         assert!(![Step::Base, Step::Flags, Step::Window].iter().any(|s| s.skipped(Capture::Camera, n)));
     }
 
     #[test]
-    fn a_roll_turned_to_slides_leaves_the_steps_they_skip_and_its_flags_count_no_more() {
-        let mut r = Roll { step: Step::Flags, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
+    fn a_roll_turned_to_slides_leaves_its_base_step_and_keeps_its_flags() {
+        let mut r = Roll { step: Step::Base, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
         r.set_film(ConversionMode::Positive);
-        assert_eq!(r.step, Step::Window, "a slide roll on its gains alone has no flags step");
-        // Twin: read as its own negative, it walks a negative's flags.
-        let mut inverted = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+        assert_eq!(r.step, Step::Window, "a slide roll on its gains alone has no base step");
+        let mut flags = Roll { step: Step::Flags, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
+        flags.set_film(ConversionMode::Positive);
+        assert_eq!(flags.step, Step::Flags);
+        // Twin: read as its own negative, it walks a negative's base.
+        let mut inverted = Roll { step: Step::Base, capture: Capture::Camera, ..Roll::default() };
         inverted.set_film(ConversionMode::Positive);
-        assert_eq!((inverted.step, inverted.walked()), (Step::Flags, ConversionMode::Negative));
+        assert_eq!((inverted.step, inverted.walked()), (Step::Base, ConversionMode::Negative));
         let mut frames = vec![Frame::new("a", ""), Frame::new("b", "")];
         frames[1].flagged = true;
-        assert_eq!(measured(&frames, ConversionMode::Positive).len(), 2, "a flag a negative draft left is not a slide's");
-        // Twin: a negative roll keeps its step and leaves its flagged frame out of the measure.
-        let mut n = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
-        n.set_film(ConversionMode::Negative);
-        assert_eq!(n.step, Step::Flags);
-        assert_eq!(measured(&frames, ConversionMode::Negative).len(), 1);
+        assert_eq!(measured(&frames).iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["a"], "a flagged slide votes not");
     }
 
     #[test]

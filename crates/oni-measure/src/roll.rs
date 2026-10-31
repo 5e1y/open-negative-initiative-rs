@@ -69,12 +69,6 @@ pub fn summed(frames: &[Measured], roll: &RollReference, mode: ConversionMode, b
     out
 }
 
-/// The gains a slide roll measured on its gains alone takes as one: each channel's median over the
-/// slides read, as a negative roll's stops are; `None` when none read.
-pub fn slide_gains(read: &[[f32; 3]]) -> Option<[f32; 3]> {
-    (!read.is_empty()).then(|| [0, 1, 2].map(|c| middle(&mut read.iter().map(|s| s[c]).collect::<Vec<_>>())))
-}
-
 fn middle(values: &mut [f32]) -> f32 {
     values.sort_by(|a, b| a.total_cmp(b));
     let m = values.len() / 2;

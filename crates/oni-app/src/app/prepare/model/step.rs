@@ -32,7 +32,8 @@ impl Step {
 
     pub fn detail(self, film: ConversionMode) -> &'static str {
         match self {
-            Step::Window if film == ConversionMode::Positive => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide's gains are aligned on what this frame holds."),
+            Step::Window if film == ConversionMode::Positive => tr("Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. The roll's gains are read on what this frame holds in every unflagged slide."),
+            Step::Flags if film == ConversionMode::Positive => tr("Flag slides whose colours stand apart: a sunset, a lit stage, one colour filling the frame. They still take the roll's gains, but left unflagged, one of them can tint the whole roll."),
             Step::Film => tr("Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."),
             Step::FlatField => tr("Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."),
             Step::Base => tr("Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."),
@@ -56,13 +57,13 @@ impl Step {
         Step::ALL.into_iter().find(|s| s.name() == name)
     }
 
-    /// A scanner lights its film evenly: it needs no flat-field. Each slide is levelled on its own,
-    /// so a slide roll has no base and no roll for a flag to keep out (owner's call).
+    /// A scanner lights its film evenly: it needs no flat-field. A slide has no film base to pick,
+    /// and its flags keep an odd slide out of the roll's gains (owner's call).
     pub fn skipped(self, capture: Capture, film: ConversionMode) -> bool {
         match self {
             Step::FlatField => capture == Capture::Scanner,
-            Step::Base | Step::Flags => film == ConversionMode::Positive,
-            Step::Film | Step::Window => false,
+            Step::Base => film == ConversionMode::Positive,
+            Step::Film | Step::Flags | Step::Window => false,
         }
     }
 }

@@ -69,6 +69,12 @@ fn a_double_click_on_the_ceiling_lands_on_the_frames_own_rest() {
     assert_eq!(Field::GainRed.double_click_base(&measured), 0.0, "a double click lands on Gains.base");
     // Twin: the block's reset lands on the roll's stops.
     assert_eq!(Field::GainRed.base(&measured), 0.3);
+    // A slide's temperature and tint rest on its measured gains', a double click on Gains.base.
+    let mut gained = slide.clone();
+    gained.measured_gains = Some([0.4, 0.1, -0.2]);
+    assert!((Field::GainTemperature.base(&gained) - 0.3).abs() < 1e-6 && (Field::GainTint.base(&gained) - 0.0).abs() < 1e-6);
+    assert_eq!(Field::GainTemperature.double_click_base(&gained), 0.0);
+    assert!(Field::GainTint.base(&PipelineSettings { measured_gains: Some([0.0, 0.3, 0.0]), ..slide }) > 0.29, "twin: green raised reads as tint");
 }
 
 /// The panel's Slint, its tabs' files after it.

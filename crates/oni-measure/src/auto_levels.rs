@@ -201,23 +201,20 @@ pub fn two_steps(
     Some(Balance { stops: moved, levels, shift })
 }
 
-/// The Auto levels key: a slide read once at rest gains, red's and blue's medians brought onto green's
-/// by the gains alone, as a white balance moves them, its windows at rest (owner's call); any other
-/// film Classic's two steps from its own gains.
+/// The Auto levels key on a negative or a black and white frame: Classic's two steps from its own
+/// gains. A slide's moves its gains alone (`key::slide_read`).
 pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
-    if mode != ConversionMode::Positive {
-        let first = reading(stops);
-        return if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) };
-    }
-    let rest = [Gains::BASE; 3];
-    let h = reading(rest);
-    let moved = recentred(&h, rest, mode, 0.0)?;
+    let first = reading(stops);
+    if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) }
+}
+
+/// Each channel's window at rest on `mode`'s axis, as a balance lays it.
+pub fn resting(mode: ConversionMode) -> [Suggestion; 3] {
     let ceiling = oni_settings::axis::density_axis::base();
-    let levels = LevelsChannel::PER_CHANNEL.map(|c| {
+    LevelsChannel::PER_CHANNEL.map(|c| {
         let w = oni_settings::levels::LevelsSet::resting(c, mode, ceiling);
         Suggestion { black: graduation::fraction(w.black, mode), white: graduation::fraction(w.white, mode), mid: w.mid, shadows: w.shadows, highlights: w.highlights }
-    });
-    Some(Balance { stops: moved, levels, shift: [0, 1, 2].map(|c| shift(moved[c] - stops[c], mode)) })
+    })
 }
 
 /// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.

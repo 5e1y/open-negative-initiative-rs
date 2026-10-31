@@ -4792,5 +4792,33 @@
     "title": "A slide roll measured on its gains alone takes one set of gains",
     "status": "done",
     "detail": "Owner's call: the gains-only measure balanced each slide on its own; a roll is balanced as one, as a negative roll is. Each slide's gains are read through the roll's window as before, then the roll takes each channel's median over the slides read (roll::slide_gains) and every slide, a blank one included, is written on it, kept as its measuredGains. Checks: slide_roll a slide roll takes its slides' median gains as one (twin: not the mean a stray slide would pull), the slides window check finds one set of gains on every slide."
+  },
+  {
+    "id": 1013,
+    "type": "fix",
+    "title": "A slide's gains are voted by its cells, the roll's pooled",
+    "status": "done",
+    "detail": "Owner's call: the gains-only measure read each slide's channel medians and took their median over the roll. Each slide's measuring cells are now read at rest gains; those touching the counted window's floor (0.02, the sensor's black) or ceiling (0.98, a clipped light) are left out, then only the half nearest the cells' typical chroma votes, so a saturated subject departs while the light's cast stays (oni-measure slide_gains). Prepare the Roll pools the voting cells of every slide into one set of gains, laid on all as measuredGains; the editor's key reads its slide's cells alone. Checks: positive_levels a slide's gains bring its cast to grey and leave out what cannot speak of the light (twin: every cell voting, the red subject pulls the balance off grey), the slides window check."
+  },
+  {
+    "id": 1014,
+    "type": "feature",
+    "title": "Prepare the Roll walks the Flags step on a slide roll",
+    "status": "done",
+    "detail": "Owner's call: a slide whose colours stand apart (a sunset, one colour filling the frame) is flagged out of the roll's vote yet takes the roll's gains. Step::skipped keeps Flags for a positive (the base step stays skipped), measured() drops flagged frames for every film, the sheet shows a slide's flags, the Flags step has its own text on slides; Prepare needs one unflagged slide. Checks: slides.rs a slide roll walks its film, flat-field, flags and window (twin: a negative walks its base), a roll turned to slides leaves its base step and keeps its flags, the slides window check flags one slide and measures 2 frames."
+  },
+  {
+    "id": 1015,
+    "type": "feature",
+    "title": "Source Balance on a slide has a temperature and a tint slider",
+    "status": "done",
+    "detail": "Owner's call: a slide's cast moved in two strokes over the three gains. Knob::GainTemperature reads half the red-blue gap, Knob::GainTint green against red and blue's mean; each writes along an axis that holds the other and the gains' mean, clamped to Gains::RANGE. App fields 30 and 31, resting on the measured gains, a double click on Gains.base; shown above the gains on a slide only (a negative keeps Swift's three rows), labelled Blue/Amber and Magenta/Green, swapped by the gain inversion; the phone link carries neither. Checks: knob the gains' temperature and tint move apart and hold the gains' mean (twin: red alone moves both), fields a slide's temperature and tint rest on its measured gains."
+  },
+  {
+    "id": 1016,
+    "type": "fix",
+    "title": "The slides window check follows the pooled roll and the per-slide key",
+    "status": "done",
+    "detail": "With the roll's gains pooled from its slides' cells, the editor's key on a slide reads that slide alone and lands a hair from the roll's gains; the check presses the key on the selected slide, finds it idempotent, takes it back with one undo and the measure with the next."
   }
 ]

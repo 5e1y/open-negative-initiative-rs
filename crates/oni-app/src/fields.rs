@@ -39,6 +39,8 @@ pub enum Field {
     FlatAmount,
     FlatTemperature,
     FlatTint,
+    GainTemperature,
+    GainTint,
 }
 
 /// The blocks a reset key clears, in the order of the Slint `Store`'s `*-modified` flags.
@@ -91,7 +93,7 @@ impl Block {
             Block::ChromaDenoise => &[ChromaAmount, ChromaRadius],
             Block::Texture => &[Texture],
             Block::PaperCorrection => &[PaperRed, PaperGreen, PaperBlue],
-            Block::SourceBalance => &[GainRed, GainGreen, GainBlue],
+            Block::SourceBalance => &[GainRed, GainGreen, GainBlue, GainTemperature, GainTint],
             Block::FlatField => &[FlatAmount, FlatTemperature, FlatTint],
         }
     }
@@ -160,7 +162,7 @@ pub struct Spec {
 }
 
 impl Field {
-    pub const ALL: [Field; 30] = [
+    pub const ALL: [Field; 32] = [
         Field::Temperature,
         Field::Tint,
         Field::ColorDensity,
@@ -191,6 +193,8 @@ impl Field {
         Field::FlatAmount,
         Field::FlatTemperature,
         Field::FlatTint,
+        Field::GainTemperature,
+        Field::GainTint,
     ];
 
     pub fn index(self) -> i32 {
@@ -234,6 +238,8 @@ impl Field {
             Field::FlatAmount => "flat-amount",
             Field::FlatTemperature => "flat-temperature",
             Field::FlatTint => "flat-tint",
+            Field::GainTemperature => "gain-temperature",
+            Field::GainTint => "gain-tint",
         }
     }
 
@@ -297,6 +303,8 @@ impl Field {
             Field::GainRed => s("Red", Gains::RANGE, 0.0, Readout::Stops),
             Field::GainGreen => s("Green", Gains::RANGE, 0.0, Readout::Stops),
             Field::GainBlue => s("Blue", Gains::RANGE, 0.0, Readout::Stops),
+            Field::GainTemperature => s("Temperature", Gains::RANGE, 0.0, Readout::Stops),
+            Field::GainTint => s("Tint", Gains::RANGE, 0.0, Readout::Stops),
             Field::FlatAmount => s("Amount", FlatField::AMOUNT_RANGE, 1.0, Readout::Percent),
             Field::FlatTemperature => s("Temperature", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
             Field::FlatTint => s("Tint", FlatField::COLOUR_RANGE, 0.0, Readout::Signed),
@@ -309,9 +317,11 @@ impl Field {
         match self {
             Field::DensityCeiling => oni_settings::axis::density_axis::rest(settings.decoded_from_mosaic, settings.mode),
             // `restingGains`: a measured roll is the frame's rest, its window's stops; a slide's, its own measure's.
-            Field::GainRed | Field::GainGreen | Field::GainBlue => {
-                let i = [Field::GainRed, Field::GainGreen, Field::GainBlue].iter().position(|f| *f == self).unwrap_or(0);
-                settings.roll_reference.as_ref().map(|r| r.stops[i]).or(settings.measured_gains.map(|g| g[i])).unwrap_or(0.0)
+            Field::GainRed | Field::GainGreen | Field::GainBlue | Field::GainTemperature | Field::GainTint => {
+                let rest = settings.roll_reference.as_ref().map(|r| r.stops).or(settings.measured_gains).unwrap_or([0.0; 3]);
+                let mut at = settings.clone();
+                at.gains.stops = rest;
+                self.knob().get(&at)
             }
             _ => self.spec().base,
         }
@@ -321,7 +331,7 @@ impl Field {
     /// reset goes to the roll's stops (`base`).
     pub fn double_click_base(self, settings: &oni_settings::PipelineSettings) -> f32 {
         match self {
-            Field::GainRed | Field::GainGreen | Field::GainBlue => self.spec().base,
+            Field::GainRed | Field::GainGreen | Field::GainBlue | Field::GainTemperature | Field::GainTint => self.spec().base,
             _ => self.base(settings),
         }
     }
@@ -359,6 +369,8 @@ impl Field {
             Field::FlatAmount => Knob::FlatFieldAmount,
             Field::FlatTemperature => Knob::FlatFieldTemperature,
             Field::FlatTint => Knob::FlatFieldTint,
+            Field::GainTemperature => Knob::GainTemperature,
+            Field::GainTint => Knob::GainTint,
         }
     }
 

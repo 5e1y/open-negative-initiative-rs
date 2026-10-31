@@ -427,6 +427,8 @@ fields! {
     FlatAmount => set_flat_amount_fraction, get_flat_amount_fraction, set_flat_amount_readout, set_flat_amount_value;
     FlatTemperature => set_flat_temperature_fraction, get_flat_temperature_fraction, set_flat_temperature_readout, set_flat_temperature_value;
     FlatTint => set_flat_tint_fraction, get_flat_tint_fraction, set_flat_tint_readout, set_flat_tint_value;
+    GainTemperature => set_gain_temperature_fraction, get_gain_temperature_fraction, set_gain_temperature_readout, set_gain_temperature_value;
+    GainTint => set_gain_tint_fraction, get_gain_tint_fraction, set_gain_tint_readout, set_gain_tint_value;
 }
 
 fn set_modified(g: &StoreGlobal, b: Block, on: bool) {

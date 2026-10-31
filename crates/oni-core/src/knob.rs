@@ -42,6 +42,10 @@ pub enum Handle {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Knob {
     Gain(Channel),
+    /// The gains' red against blue, half their gap, and green against their mean, the gains' own mean
+    /// held: a slide's cast in two moves (owner's call).
+    GainTemperature,
+    GainTint,
     DensityCeiling,
     /// The dye separation's dose, which a hand dialling it owns from then on.
     Separation,
@@ -76,7 +80,7 @@ impl Knob {
     /// The field a write of this knob moves.
     pub fn field(self) -> Field {
         match self {
-            Knob::Gain(_) => Field::Gains,
+            Knob::Gain(_) | Knob::GainTemperature | Knob::GainTint => Field::Gains,
             Knob::DensityCeiling => Field::DensityCeiling,
             Knob::Separation => Field::Separation,
             Knob::BalanceStrength => Field::BalanceStrength,
@@ -105,7 +109,7 @@ impl Knob {
     pub fn range(self, s: &PipelineSettings) -> Option<(f32, f32)> {
         let mono = s.mode.is_monochrome();
         Some(match self {
-            Knob::Gain(_) => Gains::RANGE,
+            Knob::Gain(_) | Knob::GainTemperature | Knob::GainTint => Gains::RANGE,
             Knob::DensityCeiling => {
                 let r = density_axis::range_for(s.decoded_from_mosaic);
                 (*r.start(), *r.end())
@@ -145,6 +149,8 @@ impl Knob {
         let p = &s.print;
         match self {
             Knob::Gain(c) => s.gains.stops[c.index()],
+            Knob::GainTemperature => gain_temperature(s.gains.stops),
+            Knob::GainTint => gain_tint(s.gains.stops),
             Knob::DensityCeiling => s.density_ceiling,
             Knob::Separation => s.separation,
             Knob::BalanceStrength => s.balance_strength,
@@ -195,6 +201,8 @@ impl Knob {
         let mut out = s.clone();
         match self {
             Knob::Gain(c) => out.gains.stops[c.index()] = v,
+            Knob::GainTemperature => shift_gains(&mut out.gains, GAIN_TEMPERATURE_AXIS, v - Knob::GainTemperature.get(s)),
+            Knob::GainTint => shift_gains(&mut out.gains, GAIN_TINT_AXIS, v - Knob::GainTint.get(s)),
             Knob::DensityCeiling => out.density_ceiling = v,
             Knob::Separation => {
                 out.separation = v;
@@ -242,6 +250,24 @@ impl Knob {
             Knob::Angle => out.geometry.angle = v,
         }
         out
+    }
+}
+
+/// Unit moves of the gains' temperature and tint, each leaving the other and the mean where they are.
+const GAIN_TEMPERATURE_AXIS: [f32; 3] = [1.0, 0.0, -1.0];
+const GAIN_TINT_AXIS: [f32; 3] = [-1.0 / 3.0, 2.0 / 3.0, -1.0 / 3.0];
+
+pub fn gain_temperature(g: [f32; 3]) -> f32 {
+    (g[0] - g[2]) / 2.0
+}
+
+pub fn gain_tint(g: [f32; 3]) -> f32 {
+    g[1] - (g[0] + g[2]) / 2.0
+}
+
+fn shift_gains(g: &mut Gains, axis: [f32; 3], by: f32) {
+    for (stop, a) in g.stops.iter_mut().zip(axis) {
+        *stop = (*stop + by * a).clamp(Gains::RANGE.0, Gains::RANGE.1);
     }
 }
 
@@ -296,6 +322,23 @@ mod tests {
         let mut raw = s.clone();
         raw.print.red.exposure = 0.8;
         assert!(Knob::Tint.get(&raw).abs() > 0.1);
+    }
+
+    #[test]
+    fn the_gains_temperature_and_tint_move_apart_and_hold_the_gains_mean() {
+        let mut s = PipelineSettings::default();
+        s.gains.stops = [0.3, -0.1, -0.5];
+        let mean = |s: &PipelineSettings| s.gains.stops.iter().sum::<f32>() / 3.0;
+        let warm = Knob::GainTemperature.set(&s, 0.6);
+        assert!((Knob::GainTemperature.get(&warm) - 0.6).abs() < 1e-6);
+        assert!((Knob::GainTint.get(&warm) - Knob::GainTint.get(&s)).abs() < 1e-6 && (mean(&warm) - mean(&s)).abs() < 1e-6);
+        let green = Knob::GainTint.set(&warm, 0.4);
+        assert!((Knob::GainTint.get(&green) - 0.4).abs() < 1e-6 && (Knob::GainTemperature.get(&green) - 0.6).abs() < 1e-6);
+        assert!((mean(&green) - mean(&s)).abs() < 1e-6);
+        assert_eq!(FieldSet::between(&s, &green).iter().collect::<Vec<_>>(), vec![Field::Gains]);
+        // Twin: moving red alone shifts the tint and the mean, which the axes exist to avoid.
+        let red = Knob::Gain(Channel::Red).set(&s, 0.9);
+        assert!((Knob::GainTint.get(&red) - Knob::GainTint.get(&s)).abs() > 0.1 && (mean(&red) - mean(&s)).abs() > 0.1);
     }
 
     #[test]

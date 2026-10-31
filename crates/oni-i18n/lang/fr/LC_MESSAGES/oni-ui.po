@@ -1726,12 +1726,12 @@ msgid "Source Balance"
 msgstr "Balance de la source"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Red ↔ Cyan"
-msgstr "Rouge ↔ Cyan"
+msgid "Amber ↔ Blue"
+msgstr "Ambre ↔ Bleu"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Cyan ↔ Red"
-msgstr "Cyan ↔ Rouge"
+msgid "Blue ↔ Amber"
+msgstr "Bleu ↔ Ambre"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Green ↔ Magenta"
@@ -1740,6 +1740,14 @@ msgstr "Vert ↔ Magenta"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Magenta ↔ Green"
 msgstr "Magenta ↔ Vert"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Red ↔ Cyan"
+msgstr "Rouge ↔ Cyan"
+
+#: crates/oni-ui/ui/panel/roll_tab.slint
+msgid "Cyan ↔ Red"
+msgstr "Cyan ↔ Rouge"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Blue ↔ Yellow"
@@ -3472,8 +3480,12 @@ msgstr[0] "{names} ne contient rien à mesurer : la vue prend les réglages de l
 msgstr[1] "{names} ne contiennent rien à mesurer : ces vues prennent les réglages de la pellicule sans peser dessus."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide's gains are aligned on what this frame holds."
-msgstr "Tracez le cadre à l’intérieur de l’image, à l’écart du passe-vue et des bords du film, et vérifiez-le sur chaque scan avec le curseur. Les gains de chaque diapositive sont alignés sur ce que ce cadre contient."
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. The roll's gains are read on what this frame holds in every unflagged slide."
+msgstr "Tracez le cadre à l’intérieur de l’image, à l’écart du passe-vue et des bords du film, et vérifiez-le sur chaque scan avec le curseur. Les gains de la pellicule sont lus sur ce que ce cadre contient dans chaque diapositive non marquée."
+
+#: crates/oni-app/src/app/prepare/model/step.rs
+msgid "Flag slides whose colours stand apart: a sunset, a lit stage, one colour filling the frame. They still take the roll's gains, but left unflagged, one of them can tint the whole roll."
+msgstr "Marquez les diapositives aux couleurs à part : un coucher de soleil, une scène éclairée, une couleur qui remplit l’image. Elles prennent quand même les gains de la pellicule, mais laissée non marquée, une seule peut teinter toute la pellicule."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."

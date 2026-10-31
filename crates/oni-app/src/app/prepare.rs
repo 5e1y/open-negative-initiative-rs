@@ -244,7 +244,7 @@ impl Roll {
             return self.frames.iter().find(|f| &f.path == pick);
         }
         if self.step == Step::Window {
-            let m = measured(&self.frames, self.walked());
+            let m = measured(&self.frames);
             return m.get(self.at).or(m.first()).copied();
         }
         self.frames.get(self.at).or(self.frames.first())
@@ -271,9 +271,8 @@ impl Roll {
         self.frames.iter().filter(|f| f.ticked).count()
     }
 
-    /// A slide roll's flags, left by a negative draft, keep no frame out.
     fn flagged(&self) -> usize {
-        self.frames.iter().filter(|f| f.ticked && f.flagged && self.walked() != ConversionMode::Positive).count()
+        self.frames.iter().filter(|f| f.ticked && f.flagged).count()
     }
 
     fn post(&self, job: Job) {
