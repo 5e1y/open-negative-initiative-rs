@@ -1,5 +1,5 @@
 //! Prepare the Roll on slides: one window for the roll, each frame levelled on its own through it,
-//! one RGB black and white, gains at rest; a negative roll still combines into one reference.
+//! its cast aligned away, gains at rest; a negative roll still combines into one reference.
 
 use oni_measure::key::{self, Decoded, Measurer};
 use oni_measure::roll;
@@ -64,7 +64,7 @@ fn each_slide_takes_its_own_rgb_black_and_white_inside_the_roll_s_window() {
     let read: Vec<(f32, f32)> = frames.iter().map(ends).collect();
     println!("slides through the window: {read:?}");
     for s in &frames {
-        assert!(alike(s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "{:?} {:?}", s.levels, s.gains);
+        assert!(!alike(s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "the cast aligned away: {:?} {:?}", s.levels, s.gains);
         assert_eq!(s.geometry.measure_window, Some(WINDOW));
         assert!(s.levels.red.black > rest.levels.red.black || s.levels.red.white < rest.levels.red.white, "{:?}", s.levels);
     }

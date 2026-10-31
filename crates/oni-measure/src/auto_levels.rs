@@ -201,7 +201,7 @@ pub fn two_steps(
     Some(Balance { stops: moved, levels, shift })
 }
 
-/// The Auto levels key: a slide read once at rest gains, one black and white on its RGB composite
+/// The Auto levels key: a slide read once at rest gains, its chroma aligned, then one black and white
 /// (owner's call); any other film Classic's two steps from its own gains.
 pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
     if mode != ConversionMode::Positive {
@@ -210,20 +210,36 @@ pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32
     }
     let rest = [Gains::BASE; 3];
     let h = reading(rest);
-    let levels = slide_points(&h, None)?;
+    let levels = slide_points(&h)?;
     Some(Balance { stops: rest, levels, shift: [0, 1, 2].map(|c| shift(rest[c] - stops[c], mode)) })
 }
 
-/// A slide's points: with a black picked on the roll, that black and each channel's own white, as a
-/// negative's channels are placed; else one black and white on the RGB composite (owner's call).
-pub fn slide_points(h: &Histogram, black: Option<[f32; 3]>) -> Option<[Suggestion; 3]> {
-    let Some(black) = black else { return composite(h, 0.0) };
-    let mut ends = placement(h, 0.0)?;
-    for (end, b) in ends.iter_mut().zip(black) {
-        end.black = b.clamp(0.0, 1.0 - MINIMUM_SPAN);
-        end.white = end.white.max(end.black + MINIMUM_SPAN).min(1.0);
+/// The shares of each channel's counts a slide's chroma is aligned on, clear of the ends a border or
+/// a specular light pins (owner's call).
+pub const CHROMA_SHARES: [f32; 2] = [0.10, 0.90];
+
+/// A slide's points: each channel's 10 % and 90 % brought onto green's, so its cast goes, then one
+/// black and one white on the aligned channels' outermost ends, laid as each channel's own window.
+pub fn slide_points(h: &Histogram) -> Option<[Suggestion; 3]> {
+    let ends = placement(h, 0.0)?;
+    let scale = (h.rgb.len() - 1) as f32;
+    let mut marks = [[0.0f32; 2]; 3];
+    for (c, mark) in marks.iter_mut().enumerate() {
+        let counts = h.channel(c);
+        *mark = CHROMA_SHARES.map(|q| quantile(&counts, q).map_or(f32::NAN, |b| b / scale));
+        if !(mark[1] - mark[0] >= MINIMUM_SPAN) {
+            return None;
+        }
     }
-    Some(ends)
+    let [low, high] = marks[REFERENCE];
+    let aligned = |c: usize, x: f32| low + (x - marks[c][0]) * (high - low) / (marks[c][1] - marks[c][0]);
+    let back = |c: usize, y: f32| marks[c][0] + (y - low) * (marks[c][1] - marks[c][0]) / (high - low);
+    let black = (0..3).map(|c| aligned(c, ends[c].black)).fold(f32::INFINITY, f32::min);
+    let white = (0..3).map(|c| aligned(c, ends[c].white)).fold(f32::NEG_INFINITY, f32::max);
+    Some([0, 1, 2].map(|c| {
+        let b = back(c, black).clamp(0.0, 1.0 - MINIMUM_SPAN);
+        Suggestion { black: b, white: back(c, white).max(b + MINIMUM_SPAN).min(1.0), ..ends[c] }
+    }))
 }
 
 /// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.

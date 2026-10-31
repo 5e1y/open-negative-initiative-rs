@@ -169,7 +169,7 @@ export component RollPane inherits Pane {
         if PanelState.slide: Button {
             size: ButtonSize.plate;
             text: @tr("AUTO LEVELS");
-            help: @tr("One black and one white point for the three channels, read on this photo's RGB histogram inside its measuring frame; the colour stays as the slide holds it");
+            help: @tr("Aligns the three channels on this photo's darkest and lightest tenths inside its measuring frame, so its cast goes, then places one black and one white point for all three");
             enabled: !PanelState.levelling;
             clicked => { PanelState.auto-levels(); }
         }

@@ -4713,5 +4713,12 @@
     "title": "A slide roll's measure lights its screens",
     "status": "done",
     "detail": "Prepare the Roll on slides sent no picture and no histogram, so the measure's bank of screens stayed dark. Each slide's tile now lands on the picture and channel screens as a negative's does, and the roll's screen sums the slides' readings with the median of the ends they placed (trace::SlideRoll), since each slide keeps its own. Check: trace a_slide_roll_sums_its_slides_and_stands_on_their_median_ends (twin: one slide stands on its own ends)."
+  },
+  {
+    "id": 1002,
+    "type": "feature",
+    "title": "A slide's chroma is aligned on its 10 % and 90 %, then one black and one white are placed",
+    "status": "done",
+    "detail": "Owner's call (2026-10-31): with #997 a slide roll still came out red. Prepare the Roll and Auto Levels on a slide now read each channel's 10 % and 90 % of its counts at rest gains, bring them onto green's (CHROMA_SHARES), and place one black and one white on the aligned channels' outermost ends; both steps land as each channel's own window (auto_levels::slide_points). #997's black pick is withdrawn: a slide roll skips the base step again and the base click moves to the next step the roll walks. Checks: positive_levels aligns a warm slide (twin: the composite's one window keeps the cast) and a red glint past 90 % pins the white, never the chroma (twin: each channel on its own 0 % and 100 % tints the lights); slide_roll and the slides window check find each slide's channels on windows of their own, gains at rest."
   }
 ]

@@ -1770,8 +1770,8 @@ msgid "AUTO LEVELS"
 msgstr "NIVELES AUTOMÁTICOS"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "One black and one white point for the three channels, read on this photo's RGB histogram inside its measuring frame; the colour stays as the slide holds it"
-msgstr "Un punto negro y un punto blanco para los tres canales, leídos en el histograma RGB de esta foto dentro de su marco de medición; el color queda como lo guarda la diapositiva"
+msgid "Aligns the three channels on this photo's darkest and lightest tenths inside its measuring frame, so its cast goes, then places one black and one white point for all three"
+msgstr "Alinea los tres canales en la décima parte más oscura y la más clara de esta foto, dentro de su marco de medición, para quitar su dominante, y luego coloca un solo punto negro y un solo punto blanco para los tres"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -2133,23 +2133,23 @@ msgstr "MARCAS"
 msgid "WINDOW"
 msgstr "VENTANA"
 
-#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "Select the Film Type"
 msgstr "Seleccionar el tipo de película"
 
-#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "Set Up the Flat-Field"
 msgstr "Configurar el flat-field"
 
-#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "Pick the Film Base"
 msgstr "Elegir la base de la película"
 
-#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "Flag the Frames Left Out"
 msgstr "Marcar los fotogramas excluidos"
 
-#: crates/oni-app/src/app/prepare/model.rs crates/oni-ui/ui/toolbar.slint
+#: crates/oni-app/src/app/prepare/model/step.rs crates/oni-ui/ui/toolbar.slint
 msgid "Place the Measuring Frame"
 msgstr "Colocar el marco de medición"
 
@@ -3455,35 +3455,27 @@ msgid_plural "{names} hold nothing to measure: they take the roll's settings wit
 msgstr[0] "{names} no contiene nada que medir: toma los ajustes del carrete sin influir en ellos."
 msgstr[1] "{names} no contienen nada que medir: toman los ajustes del carrete sin influir en ellos."
 
-#: crates/oni-app/src/app/prepare/model.rs
-msgid "Pick the Black"
-msgstr "Elegir el negro"
-
-#: crates/oni-app/src/app/prepare/model.rs
-msgid "Choose a scan, then click on unexposed film: the black border around the picture or the gap between two frames. Each slide then takes this black and its own white on each channel; skipped, each slide takes one black and one white for its three channels."
-msgstr "Elige un escaneo y haz clic en la película sin exponer: el borde negro alrededor de la imagen o el espacio entre dos fotogramas. Cada diapositiva toma entonces este negro y su propio blanco en cada canal; si se omite, cada diapositiva toma un solo negro y un solo blanco para sus tres canales."
-
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."
 msgstr "Dibuja el marco dentro de la imagen, lejos del soporte y de los bordes de la película, y usa el control deslizante para comprobarlo en cada escaneo. Cada diapositiva toma su propio negro y su propio blanco de lo que contiene este marco."
 
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
 msgstr "Elige la película y con qué la digitalizaste. Con un tipo de película equivocado, todos los fotogramas del rollo se convierten mal."
 
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Click the shot of the empty light panel, or pick one you loaded before. Skip it if your light is even; otherwise uneven light darkens or tints the corners of every frame."
 msgstr "Haz clic en la toma del panel de luz vacío, o elige una que ya hayas cargado. Omite este paso si tu luz es uniforme; si no, la luz desigual oscurece o tiñe las esquinas de cada fotograma."
 
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose a scan, then click on bare film: the border or the gap between two frames. A click on the picture instead shifts the blacks and colours of the whole roll."
 msgstr "Elige un escaneo y haz clic en la película sin imagen: el borde o el espacio entre dos fotogramas. Un clic en la imagen, en cambio, desplaza los negros y los colores de todo el rollo."
 
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Flag light leaks, the cut first frame and extreme shots: they are still converted, but left unflagged, one of them can wash out or tint the whole roll."
 msgstr "Marca las fugas de luz, el primer fotograma cortado y las tomas extremas: se siguen convirtiendo, pero sin marcar, una sola puede apagar o teñir todo el rollo."
 
-#: crates/oni-app/src/app/prepare/model.rs
+#: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. An edge caught inside skews the whole roll."
 msgstr "Dibuja el marco dentro de la imagen, lejos del soporte y de los bordes de la película, y usa el control deslizante para comprobarlo en cada escaneo. Un borde que quede dentro desvía todo el rollo."
 
@@ -3526,10 +3518,6 @@ msgstr[1] "Las pasadas de {n} fotogramas están más separadas que los propios f
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-app/src/app/roll_tab.rs
 msgid "None selected"
 msgstr "Ninguna seleccionada"
-
-#: crates/oni-app/src/app/prepare/publishing.rs
-msgid "No black picked yet."
-msgstr "Aún no se ha elegido ningún negro."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "No base picked yet."

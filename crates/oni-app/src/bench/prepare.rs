@@ -76,7 +76,10 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 }
             }
             Prep::Walking => {
-                if p.get_step() == 2 {
+                // A slide roll has no base and no flags: its film leads to the window.
+                if p.get_step() == 4 {
+                    phase.set(Prep::Window);
+                } else if p.get_step() == 2 {
                     phase.set(Prep::Base);
                 } else {
                     click_at(&w, action_key(&p));
@@ -95,12 +98,6 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 phase.set(Prep::Flags);
             }
             Prep::Flags => {
-                // A slide roll has no flags: its black picked, the window comes next.
-                if p.get_step() == 4 {
-                    note(format!("black picked, {}", p.get_base_note()));
-                    phase.set(Prep::Window);
-                    return;
-                }
                 if p.get_step() != 3 {
                     stuck("picking the base");
                     return;

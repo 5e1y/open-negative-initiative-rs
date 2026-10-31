@@ -89,12 +89,11 @@ impl Ctl {
             .map(SharedString::from)
             .collect();
         let look = r.look();
-        let unpicked = if r.film == ConversionMode::Positive { tr("No black picked yet.") } else { tr("No base picked yet.") };
-        let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
+        let base_note = r.base.as_ref().map_or(tr("No base picked yet.").to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
         let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
-            None => step.title(r.film).to_string(),
+            None => step.title().to_string(),
         };
         let passes_note = if r.capture == Capture::RgbPasses && r.grouping.is_none() {
             tr!("{count} frames, grouped when the roll was last measured.", count = frames.len())

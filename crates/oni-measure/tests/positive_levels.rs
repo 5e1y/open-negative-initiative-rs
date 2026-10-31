@@ -1,5 +1,5 @@
-//! The Auto levels key on a slide: read once at rest gains, one black and one white on the RGB
-//! composite laid on every channel, so its own colour stays; a negative still gets Classic's steps.
+//! The Auto levels key on a slide: read once at rest gains, each channel's 10 % and 90 % aligned, then
+//! one black and one white; a negative still gets Classic's steps.
 
 use oni_core::balance::levelled;
 use oni_measure::auto_levels::{self, Balance, keyed, shift};
@@ -53,28 +53,65 @@ fn pressed(mode: ConversionMode) -> (Balance, Vec<[f32; 3]>) {
     (b, asked)
 }
 
+/// Where `x` of channel `c` lands through the slide's windows, 0 on its black and 1 on its white.
+fn through(l: &[oni_core::balance::Suggestion; 3], c: usize, x: f32) -> f32 {
+    (x - l[c].black) / (l[c].white - l[c].black)
+}
+
+/// Channel `c`'s share `q` of its counts, on the 0…1 window.
+fn share(h: &Histogram, c: usize, q: f32) -> f32 {
+    auto_levels::quantile(&h.channel(c), q).unwrap() / (BINS - 1) as f32
+}
+
+/// Each channel's 10 % and 90 % land on the same grey, and the aligned channels' outermost ends on
+/// the one black and the one white.
+fn aligned(h: &Histogram, l: &[oni_core::balance::Suggestion; 3]) -> bool {
+    let at = |q: f32| [0, 1, 2].map(|c| through(l, c, share(h, c, q)));
+    let same = |v: [f32; 3]| (v[0] - v[1]).abs() < 2e-3 && (v[1] - v[2]).abs() < 2e-3;
+    same(at(0.10)) && same(at(0.90))
+}
+
 #[test]
-fn auto_levels_on_a_slide_lays_one_rgb_black_and_white_with_its_gains_at_rest() {
+fn auto_levels_on_a_slide_aligns_its_chroma_then_lays_one_black_and_white_with_its_gains_at_rest() {
     let (b, asked) = pressed(POSITIVE);
     assert_eq!(asked, vec![[0.0; 3]], "read once, at rest gains");
     assert_eq!(b.stops, [0.0; 3]);
+    let h = reading([0.0; 3], POSITIVE);
     let l = b.levels;
-    assert!(l[0] == l[1] && l[1] == l[2], "{l:?}");
-    // The composite's ends: the darkest channel's low, blue's, and the lightest's high, red's.
-    assert!((l[0].black - 0.15).abs() <= BIN && (l[0].white - 0.80).abs() <= BIN, "{l:?}");
+    assert!(aligned(&h, &l), "the warm cast aligned away: {l:?}");
+    let ends = h.ends.clone().unwrap();
+    let black = (0..3).map(|c| through(&l, c, ends[c][0])).fold(f32::INFINITY, f32::min);
+    let white = (0..3).map(|c| through(&l, c, ends[c][1])).fold(f32::NEG_INFINITY, f32::max);
+    assert!(black.abs() < 1e-3 && (white - 1.0).abs() < 1e-3, "one black and one white: {black} {white}");
     let on = levelled(&b.core(), &frame(POSITIVE));
     assert_eq!(on.gains.stops, [0.0; 3], "an earlier balance's gains dropped");
-    assert!(on.levels.red == on.levels.green && on.levels.green == on.levels.blue, "{:?}", on.levels);
     assert!(on.roll_reference.is_none() && on.balance_method.is_none(), "a key, never a roll");
-    // One window on every channel maps each alike: the warm bands keep their order and gaps.
-    let through = |x: f32| (x - l[0].black) / (l[0].white - l[0].black);
-    assert!(through(0.55) - through(0.46) > 0.1 && through(0.46) - through(0.385) > 0.1);
+    // Twin: the composite's one window on every channel keeps the cast.
+    let composite = auto_levels::composite(&h, 0.0).unwrap();
+    assert!(!aligned(&h, &composite));
 
     // Twin: the same frame as a negative brings red and blue onto green, each on its own window.
     let (n, asked) = pressed(NEGATIVE);
     assert_eq!(asked[0], frame(NEGATIVE).gains.stops, "a negative starts from the frame's gains");
     assert!(n.stops[0] != 0.0 && n.stops[2] != 0.0, "{:?}", n.stops);
     assert!(n.levels[0] != n.levels[2], "{:?}", n.levels);
+}
+
+/// A specular glint in red past its 90 % pins red's white yet never its chroma: the 10 % and 90 %
+/// stay grey, and the glint, aligned, sets the one white.
+#[test]
+fn a_slide_s_chroma_rests_on_its_10_and_90_percent_never_on_a_glint() {
+    let mut h = reading([0.0; 3], POSITIVE);
+    let glint = (0.95 / BIN).round() as usize;
+    h.rgb[glint][0] = 4.0;
+    h.ends = None;
+    let l = auto_levels::slide_points(&h).unwrap();
+    assert!(aligned(&h, &l), "{l:?}");
+    assert!((through(&l, 0, glint as f32 * BIN) - 1.0).abs() < 1e-3, "the glint is the white: {l:?}");
+    // Twin: each channel on its own 0 % and 100 % lets the glint tint every light.
+    let ends = auto_levels::placement(&h, 0.0).unwrap();
+    assert!(!aligned(&h, &ends));
+    assert!((through(&ends, 0, share(&h, 0, 0.9)) - through(&ends, 1, share(&h, 1, 0.9))).abs() > 0.02);
 }
 
 #[test]
@@ -102,26 +139,6 @@ fn the_composite_takes_the_outermost_ends_and_the_summed_counts_without_them() {
     // Twin: per channel, red's own ends are not the composite's.
     let per = auto_levels::placement(&h, 0.0).unwrap();
     assert!((per[0].black - counted[0].black).abs() > 0.1);
-}
-
-/// A black picked on the roll sets each channel's black and lets each channel place its own white,
-/// so a slide's cast at either end goes; with none, the composite's one pair stands.
-#[test]
-fn a_slide_on_a_picked_black_takes_it_on_each_channel_and_each_channel_s_own_white() {
-    let h = reading([0.0; 3], POSITIVE);
-    let black = [0.12, 0.10, 0.08];
-    let per = auto_levels::slide_points(&h, Some(black)).unwrap();
-    for c in 0..3 {
-        assert_eq!(per[c].black, black[c]);
-    }
-    for (c, white) in [0.80, 0.70, 0.62].into_iter().enumerate() {
-        assert!((per[c].white - white).abs() <= BIN, "channel {c}'s own white: {per:?}");
-    }
-    // Twin: no black picked, the composite's one black and white on all three channels.
-    let rgb = auto_levels::slide_points(&h, None).unwrap();
-    assert_eq!(rgb, auto_levels::composite(&h, 0.0).unwrap());
-    assert!(rgb.iter().all(|e| (e.black, e.white) == (rgb[0].black, rgb[0].white)));
-    assert_ne!(per, rgb);
 }
 
 #[test]
