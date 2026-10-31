@@ -119,6 +119,9 @@ impl Ctl {
     }
 
     pub(in crate::app) fn say(&self, text: &str) {
+        if !text.is_empty() && self.state.borrow().status != text {
+            crate::timing::shown("status", text);
+        }
         self.state.borrow_mut().status = text.to_string();
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_status(text.into());

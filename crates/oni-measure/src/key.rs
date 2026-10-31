@@ -3,6 +3,7 @@
 
 use crate::auto_levels::{self, Balance};
 use crate::filter_balance::{self, filtered, minkowski, unlit};
+use crate::histogram::Histogram;
 use crate::pipette;
 use crate::reader::{Copy, Laying, Reader, on_graph};
 use crate::roll::{self, Measured};
@@ -47,7 +48,24 @@ pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
 
 /// Prepare the Roll on a slide: the frame's own Auto levels key through its window, laid on `start`.
 pub fn slide_levelled(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<PipelineSettings> {
-    levels(r, copy, start).map(|b| balance::levelled(&b.core(), start))
+    slide_read(r, copy, start, None).map(|read| read.settings)
+}
+
+/// A slide levelled by Prepare the Roll, and the reading its points stand on.
+pub struct SlideRead {
+    pub settings: PipelineSettings,
+    pub reading: Histogram,
+    pub levels: [Suggestion; 3],
+}
+
+/// `slide_levelled` on the roll's picked `black`, when there is one, read once at rest gains.
+pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings, black: Option<[f32; 3]>) -> Option<SlideRead> {
+    let rest = [Gains::BASE; 3];
+    let reading = r.reading(copy, &at_gains(start, rest), Stage::Levels).histogram;
+    let levels = auto_levels::slide_points(&reading, black)?;
+    let shift = [0, 1, 2].map(|c| auto_levels::shift(rest[c] - start.gains.stops[c], start.mode));
+    let settings = balance::levelled(&Balance { stops: rest, levels, shift }.core(), start);
+    Some(SlideRead { settings, reading, levels })
 }
 
 /// `AutoLevels.ends`: step two alone, the gains held.

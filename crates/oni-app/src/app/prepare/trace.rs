@@ -46,7 +46,7 @@ impl Drawn {
     }
 
     /// Each channel's counts scaled to its own peak, as the editor's histogram scales them.
-    fn stacked(channels: Vec<Vec<f32>>, ends: Option<[[f32; 2]; 3]>) -> Drawn {
+    pub(super) fn stacked(channels: Vec<Vec<f32>>, ends: Option<[[f32; 2]; 3]>) -> Drawn {
         let heights: Vec<Vec<f32>> = channels.iter().map(|c| crate::histogram::heights(c)).collect();
         let n = heights.iter().map(Vec::len).min().unwrap_or(0);
         Drawn { bins: (0..n).map(|i| [heights[0][i], heights[1][i], heights[2][i]]).collect(), ends }

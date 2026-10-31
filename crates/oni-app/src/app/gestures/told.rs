@@ -21,6 +21,7 @@ impl Ctl {
 
     /// The notice, with a Show in Finder key on `folder` when what could not move was left there.
     pub(in crate::app) fn told_with(&self, title: &str, message: &str, folder: Option<String>) {
+        crate::timing::shown(title, message);
         let Some(w) = self.window() else { return };
         let key = if folder.is_some() { crate::app::navigator::reveal_word() } else { "" };
         {

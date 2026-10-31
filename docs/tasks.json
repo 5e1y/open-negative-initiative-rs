@@ -4676,5 +4676,42 @@
     "title": "1.4.2: updates install themselves",
     "status": "done",
     "detail": "oni-app's version 1.4.2, carrying #995."
+  },
+  {
+    "id": 997,
+    "type": "feature",
+    "title": "A slide roll's black is picked, and each slide is levelled on it channel by channel",
+    "status": "done",
+    "detail": "Owner's call beyond Swift (2026-10-31): slides come out magenta even scanned well. Prepare the Roll on a slide roll walks the base step again, titled Pick the Black: a click on unexposed film (the black border or the gap between frames) is read as each channel's black at rest gains (key::base on the positive). Each slide then takes that black on its three channels and each channel's own white from its reading (auto_levels::slide_points, key::slide_read); with no black picked, the composite's one black and white on every channel stands as before (#920). Flags stay skipped. The editor's AUTO LEVELS keeps the composite, as no black is stored on a slide. Checks: positive_levels a_slide_on_a_picked_black... (twin: none picked gives the composite), prepare slides steps (twin: a negative walks base and flags). Texts in English, French and Spanish. A click on the scan moves on to the next step the roll walks (a slide's window, a negative's flags) and picks nothing on a scan not laid yet, whose size is none. ONI_BENCH=prepare starts on the gallery when no photo was left open and walks a slide roll's black.",
+    "outcome": "ONI_BENCH=prepare on a copy of three slides of roll 2026-10-30 (P1073169-71): black picked on P1073169's border, 3 slides measured, landed and undone in 3.3 s. The window check slides now picks a black and finds one black for the roll and each channel's own white; it caught the pick going to the skipped flags step."
+  },
+  {
+    "id": 998,
+    "type": "fix",
+    "title": "A slide roll shares Roll Settings and Paste to Roll over its folder's slides",
+    "status": "done",
+    "detail": "A slide roll is prepared without a roll reference (#920), and every roll gesture keyed on that reference: a Source Balance change stayed on the open slide, Paste to Roll pasted on the open slide alone and its menu showed no count. Rolls are now keyed by RollKey (oni-library roll_membership): a reference, else for a slide (positive, no sheet, no pass) its folder. propagate_roll, paste_on_roll, measured_with, the menu's count and Paste Framing to Roll read it; a slide roll keeps each slide's own levels and film type. The found rolls are dropped when a write moves a frame onto or off a roll, and Join the Roll no longer seeds a never-scanned roll with the joined frames alone. Checks: roll_membership a_slide_roll_is_its_folder_s_slides (twins: the folder beside, a negative never measured, a sheet), store slides: Source Balance and Paste to Roll reach the folder's slides and leave their levels (twins: the negative beside and the next folder untouched)."
+  },
+  {
+    "id": 999,
+    "type": "fix",
+    "title": "A blank frame rides on its roll, and the measure names what it left out",
+    "status": "done",
+    "detail": "Owner's call beyond Swift (2026-10-31). On roll 2026-10-30 2, frame P1073212 (nearly unexposed) put every channel in one bin of the window, so Classic placed no end and the frame was left out ('1 of 37 frames could not be measured'); measured alone it took a reference of its own and every roll gesture skipped it. A frame whose own measure finds nothing now rides on the roll unvoting, as a flagged one does, and a slide holding nothing to level takes the roll's film, window and flat-field. The notice, titled Prepare the Roll, names the frames that held nothing and those that could not be read. Check: measure left_out names both (twin: nothing to say when every frame voted).",
+    "outcome": "ONI_BENCH=prepare on a copy of P1073211-13 with the roll's own window: P1073212 holds nothing to measure, rides on the roll (3 photos landed, P1073211 flagged), and the notice names it; with the window a fresh roll proposes, P1073212 measures."
+  },
+  {
+    "id": 1000,
+    "type": "diagnostics",
+    "title": "Every notice the interface shows is written to the log, its names left out",
+    "status": "done",
+    "detail": "The log kept none of the messages shown, so a reported error had to be pieced together from the journal and the sidecars. told, advise and a changed status line now write 'shown · title · message' through timing::shown; anonymity::unnamed replaces quoted spans and file names by <name>, as the log names no file. Check: anonymity a_notice_keeps_its_words_and_loses_its_names (twin: a notice naming nothing comes through whole)."
+  },
+  {
+    "id": 1001,
+    "type": "fix",
+    "title": "A slide roll's measure lights its screens",
+    "status": "done",
+    "detail": "Prepare the Roll on slides sent no picture and no histogram, so the measure's bank of screens stayed dark. Each slide's tile now lands on the picture and channel screens as a negative's does, and the roll's screen sums the slides' readings with the median of the ends they placed (trace::SlideRoll), since each slide keeps its own. Check: trace a_slide_roll_sums_its_slides_and_stands_on_their_median_ends (twin: one slide stands on its own ends)."
   }
 ]

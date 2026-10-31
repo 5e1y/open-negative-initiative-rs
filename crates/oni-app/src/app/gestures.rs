@@ -241,7 +241,7 @@ impl Ctl {
         self.journal_count(oni_library::journal::Kind::Pasted, changed.get());
     }
 
-    /// `pasteToRoll()`: a frame measured with no roll takes the paste alone; another roll's look asks first.
+    /// `pasteToRoll()`: a frame on no roll takes the paste alone; another roll's look asks first.
     pub(super) fn paste_to_roll(self: &Rc<Self>) {
         self.board_in();
         let check = {
@@ -267,10 +267,10 @@ impl Ctl {
         let touched: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let open = s.open.clone();
-            let id = s.store.settings().roll_reference.as_ref().map(|r| r.id);
             let Some(store) = s.store.editor() else { return };
+            let key = store.roll_key();
             store.paste_to_roll();
-            let mut touched: Vec<String> = id.and_then(|id| store.measured_group(id)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
+            let mut touched: Vec<String> = key.and_then(|k| store.measured_group(k)).map(|g| g.iter().cloned().collect()).unwrap_or_default();
             // `rollReach + 1`: the open frame counted once, whether or not its roll lists it.
             touched.retain(|p| Some(p) != open.as_ref());
             touched.extend(open);
@@ -285,9 +285,8 @@ impl Ctl {
         let targets: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let Some(open) = s.open.clone() else { return };
-            let id = s.store.settings().roll_reference.as_ref().map(|r| r.id);
             let Some(store) = s.store.editor() else { return };
-            let members = id.map(|id| store.measured_with(id)).unwrap_or_default();
+            let members = store.roll_key().map(|k| store.measured_with(k)).unwrap_or_default();
             std::iter::once(open.clone()).chain(members.into_iter().filter(|m| *m != open)).collect()
         };
         let size = self.image_size();

@@ -143,7 +143,10 @@ impl EditorStore {
         });
         let n = was.len();
         if n > 0 {
-            self.measured.entry(reference.id).or_default().extend(now.keys().cloned());
+            // A roll never scanned is found whole on the next ask, never as the frames joined alone.
+            if let Some(group) = self.measured.get_mut(&RollKey::Measured(reference.id)) {
+                group.extend(now.keys().cloned());
+            }
             let label = trn("Join the roll", "Join the roll with {n} photos", n as u64);
             self.gallery.record(&was, &now, &label, None);
         }

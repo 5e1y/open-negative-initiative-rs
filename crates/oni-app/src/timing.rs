@@ -117,6 +117,11 @@ pub fn line(text: &str) {
     }
 }
 
+/// A notice the interface showed, in the app's language, its names left out.
+pub fn shown(title: &str, message: &str) {
+    line(&format!("shown · {} · {}", crate::anonymity::unnamed(title), crate::anonymity::unnamed(message).replace('\n', " ")));
+}
+
 /// A panic's thread, message, place and backtrace written to the log, then the default hook's words:
 /// a windowed Windows build and an app opened from the Finder have no stderr to read them on.
 pub fn keep_panics() {

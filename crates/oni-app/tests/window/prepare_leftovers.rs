@@ -114,7 +114,7 @@ pub(crate) fn the_roll_takes_the_flat_field_sliders_kept_and_writes_a_flagged_fr
     p.invoke_advance();
     rig.until("the measure landed", Duration::from_secs(120), || !p.get_shown());
     let advice = w.global::<oni_app::Advice>();
-    assert_eq!(advice.get_message().as_str(), "1 of 4 frames could not be measured and were left as they were.");
+    assert_eq!(advice.get_message().as_str(), "D.tif could not be read and was left as it was.", "the frame left out, by its name");
     let id = |n: &str| loaded(&path("R1", n)).settings.roll_reference.map(|r| r.id);
     assert!(id("B.tif").is_some(), "the roll measured");
     assert_eq!(id("C.tif"), id("B.tif"), "the flagged frame rides on the roll, read or not");

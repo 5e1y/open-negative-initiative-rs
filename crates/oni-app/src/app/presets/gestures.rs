@@ -166,6 +166,7 @@ impl Ctl {
     }
 
     pub(in crate::app) fn advise(&self, title: &str, message: &str) {
+        crate::timing::shown(title, message);
         let Some(w) = self.window() else { return };
         let a = w.global::<Advice>();
         a.set_title(title.into());

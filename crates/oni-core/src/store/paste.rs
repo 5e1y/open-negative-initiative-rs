@@ -44,23 +44,23 @@ impl EditorStore {
     }
 
     /// The open frame in memory, then every other frame of its roll as part of that one step; a
-    /// frame never measured takes the paste alone.
+    /// frame on no roll takes the paste alone.
     pub fn paste_to_roll(&mut self) {
         if !self.takes_hands() {
             return;
         }
         let Some(donor) = self.paste_source() else { return };
-        let Some(id) = self.settings.roll_reference.as_ref().map(|r| r.id) else {
+        let Some(key) = self.roll_key() else {
             let open: Vec<String> = self.path().map(str::to_string).into_iter().collect();
             self.paste_settings(&open);
             return;
         };
         let pasted = look_settings::copied(&donor, &self.settings);
         if pasted == self.settings {
-            self.paste_on_roll(&donor, id, None);
+            self.paste_on_roll(&donor, key, None);
             return;
         }
-        self.roll_look = Some((donor, id));
+        self.roll_look = Some((donor, key));
         let now = self.now();
         self.replace(pasted);
         self.last_change = Some(now);

@@ -2,10 +2,60 @@
 //! Roll Settings writes every frame naming the same `RollReference` id in the folders it starts from.
 
 use crate::paths;
-use oni_settings::{Id, sidecar};
+use oni_settings::{ConversionMode, Id, PipelineSettings, sidecar};
 use serde_json::Value;
 use std::collections::{BTreeSet, HashSet};
 use std::path::Path;
+
+/// What makes frames one roll: the reference a measure wrote, or for a slide, which a measure never
+/// gives one (owner's call), the folder it sits in.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum RollKey {
+    Measured(Id),
+    Slides(String),
+}
+
+impl From<Id> for RollKey {
+    fn from(id: Id) -> RollKey {
+        RollKey::Measured(id)
+    }
+}
+
+impl RollKey {
+    /// The roll `settings` stand on at `path`; a slide's contact sheet or pass stands on none.
+    pub fn of(path: &str, settings: &PipelineSettings) -> Option<RollKey> {
+        match &settings.roll_reference {
+            Some(r) => Some(RollKey::Measured(r.id)),
+            None => slide(settings.mode, settings.sheet.is_some() || settings.pass_of.is_some(), path),
+        }
+    }
+}
+
+fn slide(mode: ConversionMode, apart: bool, path: &str) -> Option<RollKey> {
+    (mode == ConversionMode::Positive && !apart).then(|| RollKey::Slides(paths::parent(path)))
+}
+
+/// `RollKey::of` read off the sidecar's own keys, the rest of it never decoded.
+fn key_in(path: &str, settings: &Value) -> Option<RollKey> {
+    if let Some(id) = reference_in(settings) {
+        return Some(RollKey::Measured(id));
+    }
+    let mode = settings.get("mode").and_then(|m| serde_json::from_value::<ConversionMode>(m.clone()).ok())?;
+    let pass = settings.get("passOf").is_some_and(|p| !p.is_null());
+    slide(mode, has_sheet(settings) || pass, path)
+}
+
+/// The frames among `paths` standing on roll `key`: a slide roll is its folder's slides alone.
+pub fn members(key: &RollKey, paths: &[String]) -> HashSet<String> {
+    match key {
+        RollKey::Measured(id) => measured(*id, paths),
+        RollKey::Slides(folder) => paths
+            .iter()
+            .filter(|p| paths::parent(p) == *folder && settings(p).and_then(|s| key_in(p, &s)).as_ref() == Some(key))
+            .cloned()
+            .collect(),
+    }
+}
 
 fn settings(path: &str) -> Option<Value> {
     let data = std::fs::read(sidecar::url_for(Path::new(path))).ok()?;
@@ -130,5 +180,31 @@ mod tests {
         // Twin: a pick in both folders reaches both, as the reference alone would.
         let both = reset_reach(&[library[0].clone(), library[3].clone()], &library);
         assert_eq!(both.frames.len(), 4);
+    }
+
+    /// A slide roll, which no measure gives a reference, is its folder's slides: a negative never
+    /// measured, a slide's sheet and the slides of the folder beside stay out.
+    #[test]
+    fn a_slide_roll_is_its_folder_s_slides() {
+        let scratch = Scratch::new("roll-membership-slides");
+        let root = paths::normal(&scratch.path().to_string_lossy()).into_owned();
+        let slide = PipelineSettings { mode: ConversionMode::Positive, ..PipelineSettings::default() };
+        let grid = oni_settings::frame::ContactSheetGrid { columns: 1, rows: 1, frames: 1, tile: Default::default(), margin: 0.0, windows: None };
+        let sheet = PipelineSettings { sheet: Some(grid), ..slide.clone() };
+        let laid = [("Slides", "a.ARW", &slide), ("Slides", "b.ARW", &slide), ("Slides", "c.ARW", &PipelineSettings::default()), ("Slides", "sheet.tif", &sheet), ("Slides 2", "d.ARW", &slide)];
+        let mut library = Vec::new();
+        for (folder, name, settings) in laid {
+            let path = paths::join(&paths::join(&root, folder), name);
+            std::fs::create_dir_all(paths::parent(&path)).unwrap();
+            std::fs::write(&path, b"").unwrap();
+            sidecar::write(settings, Path::new(&path), WriteOptions::default()).unwrap();
+            library.push(path);
+        }
+        let key = RollKey::of(&library[0], &slide).expect("a slide stands on its folder");
+        assert_eq!(members(&key, &library), library[..2].iter().cloned().collect());
+        // Twin: the folder beside is a roll of its own, and a negative never measured stands on none.
+        assert_eq!(members(&RollKey::of(&library[4], &slide).unwrap(), &library), library[4..].iter().cloned().collect());
+        assert_eq!(RollKey::of(&library[2], &PipelineSettings::default()), None);
+        assert_eq!(RollKey::of(&library[3], &sheet), None);
     }
 }

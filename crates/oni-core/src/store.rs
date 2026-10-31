@@ -8,7 +8,8 @@ use crate::history::{Companion, History};
 use crate::parameters;
 use crate::presets::Preset;
 use oni_library::gallery_history::{self, GalleryHistory, Marker, Step, Trash};
-use oni_library::{refusal, roll_membership, trash};
+use oni_library::roll_membership::{self, RollKey};
+use oni_library::{refusal, trash};
 use oni_i18n::{tr, trn};
 use oni_keys::{Channel, Effect, Letter, Machine};
 use oni_settings::codec;
@@ -113,10 +114,10 @@ pub struct EditorStore {
     /// A hand edit of a Roll Settings field waiting for its step, to write the roll with it.
     roll_touched: bool,
     /// A look laid on the open frame waiting for its step, to lay it on the rest of the roll.
-    roll_look: Option<(PipelineSettings, Id)>,
+    roll_look: Option<(PipelineSettings, RollKey)>,
     /// Frames edited together with the open one, every step laid on them too.
     together: together::Together,
-    measured: HashMap<Id, BTreeSet<String>>,
+    measured: HashMap<RollKey, BTreeSet<String>>,
     pending: FieldSet,
     revision: u64,
     last_change: Option<f64>,

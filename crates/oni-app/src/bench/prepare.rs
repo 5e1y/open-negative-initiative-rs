@@ -48,8 +48,12 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
         let stuck = |what: &str| since.get().elapsed() > Duration::from_secs(120) && { finish(format!("prepare: stuck {what} at step {}", p.get_step())); true };
         match phase.get() {
             Prep::Loading => {
-                if ctl.state.borrow().renders() >= 1 {
-                    ctl.act(crate::Act::ToggleMode);
+                // A support with no photo left open starts on the gallery, once its folder is read.
+                let gallery = w.global::<crate::App>().get_gallery();
+                if ctl.state.borrow().renders() >= 1 || (gallery && ctl.state.borrow().read_done()) {
+                    if !gallery {
+                        ctl.act(crate::Act::ToggleMode);
+                    }
                     since.set(Instant::now());
                     phase.set(Prep::Picked);
                 } else if started.elapsed() > LOADING {
@@ -91,6 +95,12 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 phase.set(Prep::Flags);
             }
             Prep::Flags => {
+                // A slide roll has no flags: its black picked, the window comes next.
+                if p.get_step() == 4 {
+                    note(format!("black picked, {}", p.get_base_note()));
+                    phase.set(Prep::Window);
+                    return;
+                }
                 if p.get_step() != 3 {
                     stuck("picking the base");
                     return;
@@ -126,7 +136,9 @@ pub(super) fn prepare(ctl: &Rc<Ctl>, done: impl FnOnce(String) + 'static) {
                 let label = w.global::<crate::Menus>().get_titles().undo.to_string();
                 // Taken back, so the test copy reads its own measure again.
                 ctl.act(crate::Act::Undo);
-                finish(format!("prepare: {label} landed and undone in {:.1} s, no failure", started.elapsed().as_secs_f64()));
+                let advice = w.global::<crate::Advice>();
+                let said = if advice.get_shown() { format!(", told: {}", advice.get_message()) } else { String::new() };
+                finish(format!("prepare: {label} landed and undone in {:.1} s, no failure{said}", started.elapsed().as_secs_f64()));
             }
         }
     });

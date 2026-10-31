@@ -104,6 +104,26 @@ fn the_composite_takes_the_outermost_ends_and_the_summed_counts_without_them() {
     assert!((per[0].black - counted[0].black).abs() > 0.1);
 }
 
+/// A black picked on the roll sets each channel's black and lets each channel place its own white,
+/// so a slide's cast at either end goes; with none, the composite's one pair stands.
+#[test]
+fn a_slide_on_a_picked_black_takes_it_on_each_channel_and_each_channel_s_own_white() {
+    let h = reading([0.0; 3], POSITIVE);
+    let black = [0.12, 0.10, 0.08];
+    let per = auto_levels::slide_points(&h, Some(black)).unwrap();
+    for c in 0..3 {
+        assert_eq!(per[c].black, black[c]);
+    }
+    for (c, white) in [0.80, 0.70, 0.62].into_iter().enumerate() {
+        assert!((per[c].white - white).abs() <= BIN, "channel {c}'s own white: {per:?}");
+    }
+    // Twin: no black picked, the composite's one black and white on all three channels.
+    let rgb = auto_levels::slide_points(&h, None).unwrap();
+    assert_eq!(rgb, auto_levels::composite(&h, 0.0).unwrap());
+    assert!(rgb.iter().all(|e| (e.black, e.white) == (rgb[0].black, rgb[0].white)));
+    assert_ne!(per, rgb);
+}
+
 #[test]
 fn a_slide_joins_its_roll_on_its_window_unmeasured_its_earlier_roll_and_look_at_rest() {
     let mut before = PipelineSettings::rest(POSITIVE, true);

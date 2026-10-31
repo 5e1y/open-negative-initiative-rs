@@ -81,7 +81,7 @@ impl EditorStore {
     /// through their sidecars.
     pub(super) fn write_back(&mut self, restored: &Settings) -> FieldSet {
         for id in restored.values().filter_map(|s| s.roll_reference.as_ref().map(|r| r.id)) {
-            self.measured.remove(&id);
+            self.measured.remove(&RollKey::Measured(id));
         }
         let open = self.path().map(str::to_string);
         let mut changed = FieldSet::EMPTY;

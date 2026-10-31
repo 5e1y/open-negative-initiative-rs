@@ -138,7 +138,7 @@ impl EditorStore {
     }
 
     /// Records the open frame's step, then lays a Roll Settings gesture or a look pasted on the roll
-    /// on every other frame naming the same reference, as part of that one step.
+    /// on every other frame of the same roll, as part of that one step.
     pub(super) fn settle(&mut self, now: f64) {
         self.settle_beside(now, &[]);
     }
@@ -155,8 +155,8 @@ impl EditorStore {
             let after = self.settings.clone();
             self.propagate_roll(&before, &after, serial);
         }
-        if let Some((donor, id)) = look {
-            self.paste_on_roll(&donor, id, serial);
+        if let Some((donor, key)) = look {
+            self.paste_on_roll(&donor, key, serial);
         }
         if let Some(serial) = serial {
             let after = self.settings.clone();
@@ -164,31 +164,32 @@ impl EditorStore {
         }
     }
 
+    /// A Roll Settings step on the open frame's roll; a slide roll keeps each slide's own levels and
+    /// film type, the one a slide's own Auto levels placed and the one that makes it a slide.
     pub(super) fn propagate_roll(&mut self, before: &PipelineSettings, after: &PipelineSettings, serial: u64) {
-        let fields = roll_settings::changed(before, after);
-        let Some(id) = after.roll_reference.as_ref().map(|r| r.id) else { return };
+        let Some(path) = self.path().map(str::to_string) else { return };
+        let Some(key) = RollKey::of(&path, after).or_else(|| RollKey::of(&path, before)) else { return };
+        let mut fields = roll_settings::changed(before, after);
+        if matches!(key, RollKey::Slides(_)) {
+            fields.remove(&roll_settings::Field::Levels);
+            fields.remove(&roll_settings::Field::Mode);
+        }
         if fields.is_empty() {
             return;
         }
-        let others = self.others_on_roll(id);
-        let (was, now) = self.modify(&others, |_, loaded| {
-            if loaded.roll_reference.as_ref().map(|r| r.id) != Some(id) {
-                return None;
-            }
-            Some(roll_settings::copied(&fields, after, loaded))
+        let others = self.others_on_roll(&key);
+        let (was, now) = self.modify(&others, |p, loaded| {
+            (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| roll_settings::copied(&fields, after, loaded))
         });
         if !was.is_empty() {
             self.history.attach(Companion { before: was, after: now }, serial);
         }
     }
 
-    pub(super) fn paste_on_roll(&mut self, donor: &PipelineSettings, id: Id, serial: Option<u64>) {
-        let others = self.others_on_roll(id);
-        let (was, now) = self.modify(&others, |_, loaded| {
-            if loaded.roll_reference.as_ref().map(|r| r.id) != Some(id) {
-                return None;
-            }
-            Some(look_settings::copied(donor, loaded))
+    pub(super) fn paste_on_roll(&mut self, donor: &PipelineSettings, key: RollKey, serial: Option<u64>) {
+        let others = self.others_on_roll(&key);
+        let (was, now) = self.modify(&others, |p, loaded| {
+            (RollKey::of(p, loaded).as_ref() == Some(&key)).then(|| look_settings::copied(donor, loaded))
         });
         if was.is_empty() {
             return;
@@ -200,9 +201,14 @@ impl EditorStore {
         }
     }
 
-    /// The frames already found naming reference `id`, never scanning: what a menu title may read.
-    pub fn measured_group(&self, id: Id) -> Option<&BTreeSet<String>> {
-        self.measured.get(&id)
+    /// The roll the open frame stands on, as its settings in memory say.
+    pub fn roll_key(&self) -> Option<RollKey> {
+        RollKey::of(self.path()?, &self.settings)
+    }
+
+    /// The frames already found on roll `key`, never scanning: what a menu title may read.
+    pub fn measured_group(&self, key: impl Into<RollKey>) -> Option<&BTreeSet<String>> {
+        self.measured.get(&key.into())
     }
 
     /// Whether Copy Settings and the framing's Copy have filled the board.
@@ -210,21 +216,22 @@ impl EditorStore {
         self.board.settings.is_some()
     }
 
-    /// The frames naming reference `id` beside the open frame, scanned once per reference: a copy of
-    /// the roll elsewhere is not reached. The open frame counts by its settings in memory.
-    pub fn measured_with(&mut self, id: Id) -> BTreeSet<String> {
-        let mut found = match self.measured.get(&id) {
+    /// The frames on roll `key` beside the open frame, scanned once per roll: a copy of the roll
+    /// elsewhere is not reached. The open frame counts by its settings in memory.
+    pub fn measured_with(&mut self, key: impl Into<RollKey>) -> BTreeSet<String> {
+        let key = key.into();
+        let mut found = match self.measured.get(&key) {
             Some(known) => known.clone(),
             None => {
-                let scanned: BTreeSet<String> = roll_membership::measured(id, &self.archive.paths).into_iter().collect();
-                self.measured.insert(id, scanned.clone());
+                let scanned: BTreeSet<String> = roll_membership::members(&key, &self.archive.paths).into_iter().collect();
+                self.measured.insert(key.clone(), scanned.clone());
                 scanned
             }
         };
         if let Some(open) = &self.open {
             let folder = oni_library::paths::parent(&open.path);
             found.retain(|p| oni_library::paths::parent(p) == folder);
-            if self.settings.roll_reference.as_ref().map(|r| r.id) == Some(id) {
+            if RollKey::of(&open.path, &self.settings).as_ref() == Some(&key) {
                 found.insert(open.path.clone());
             } else {
                 found.remove(&open.path);
@@ -233,9 +240,9 @@ impl EditorStore {
         found
     }
 
-    pub(super) fn others_on_roll(&mut self, id: Id) -> Vec<String> {
+    pub(super) fn others_on_roll(&mut self, key: &RollKey) -> Vec<String> {
         let open = self.path().map(str::to_string);
-        self.measured_with(id).into_iter().filter(|p| Some(p) != open.as_ref()).collect()
+        self.measured_with(key.clone()).into_iter().filter(|p| Some(p) != open.as_ref()).collect()
     }
 
     /// Reads each frame's sidecar, lays `transform` and writes what moved; a sidecar from a newer
@@ -301,6 +308,15 @@ impl EditorStore {
         if gone > 0 {
             self.failure = Some(refusal::left_out(gone));
         }
+        // A frame that left or joined a roll has both rolls found again on the next ask.
+        let moved: Vec<RollKey> = before
+            .iter()
+            .filter_map(|(p, was)| Some((RollKey::of(p, was), RollKey::of(p, after.get(p)?))))
+            .filter(|(then, now)| then != now)
+            .flat_map(|(then, now)| [then, now])
+            .flatten()
+            .collect();
+        moved.iter().for_each(|k| _ = self.measured.remove(k));
         self.together.landed(&after);
         (before, after)
     }

@@ -137,7 +137,7 @@ impl EditorStore {
         before.extend(was);
         after.extend(now);
         for id in &reach.references {
-            self.measured.remove(id);
+            self.measured.remove(&oni_library::roll_membership::RollKey::Measured(*id));
         }
         let sheets: Vec<String> = reach.sheets.iter().cloned().collect();
         let mut binned = trash::Outcome::default();

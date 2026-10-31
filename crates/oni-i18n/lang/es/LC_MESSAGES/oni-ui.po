@@ -3438,14 +3438,30 @@ msgid "No frame of this roll could be measured: the files could not be read, or 
 msgstr "No se pudo medir ningún fotograma de este rollo: no se pudieron leer los archivos, o el marco de medición no contiene nada que equilibrar."
 
 #: crates/oni-app/src/app/prepare/measure.rs
-msgid "{missed} of {asked} frames could not be measured and were left as they were."
-msgstr "{missed} de {asked} fotogramas no se pudieron medir y se dejaron como estaban."
-
-#: crates/oni-app/src/app/prepare/measure.rs
 msgid "One frame's preparation could not be saved: {cause}"
 msgid_plural "{n} frames' preparation could not be saved: {cause}"
 msgstr[0] "No se pudo guardar la preparación de un fotograma: {cause}"
 msgstr[1] "No se pudo guardar la preparación de {n} fotogramas: {cause}"
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "{names} could not be read and was left as it was."
+msgid_plural "{names} could not be read and were left as they were."
+msgstr[0] "{names} no se pudo leer y se dejó como estaba."
+msgstr[1] "{names} no se pudieron leer y se dejaron como estaban."
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "{names} holds nothing to measure: it takes the roll's settings without weighing on them."
+msgid_plural "{names} hold nothing to measure: they take the roll's settings without weighing on them."
+msgstr[0] "{names} no contiene nada que medir: toma los ajustes del carrete sin influir en ellos."
+msgstr[1] "{names} no contienen nada que medir: toman los ajustes del carrete sin influir en ellos."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Pick the Black"
+msgstr "Elegir el negro"
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Choose a scan, then click on unexposed film: the black border around the picture or the gap between two frames. Each slide then takes this black and its own white on each channel; skipped, each slide takes one black and one white for its three channels."
+msgstr "Elige un escaneo y haz clic en la película sin exponer: el borde negro alrededor de la imagen o el espacio entre dos fotogramas. Cada diapositiva toma entonces este negro y su propio blanco en cada canal; si se omite, cada diapositiva toma un solo negro y un solo blanco para sus tres canales."
 
 #: crates/oni-app/src/app/prepare/model.rs
 msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."
@@ -3510,6 +3526,10 @@ msgstr[1] "Las pasadas de {n} fotogramas están más separadas que los propios f
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-app/src/app/roll_tab.rs
 msgid "None selected"
 msgstr "Ninguna seleccionada"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "No black picked yet."
+msgstr "Aún no se ha elegido ningún negro."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "No base picked yet."

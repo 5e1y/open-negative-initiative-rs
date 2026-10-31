@@ -103,10 +103,13 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert_eq!(p.get_action_title().as_str(), "NEXT");
     p.invoke_film_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, true, true, false], "a slide roll has no base and no flags, but its window");
+    assert_eq!(skipped(), [false, true, false, true, false], "a slide roll has no flags, but its black and its window");
     p.invoke_advance();
     rig.pump();
-    assert_eq!(p.get_step(), 4, "the film leads to the window");
+    assert_eq!((p.get_step(), p.get_action_title().as_str()), (2, "SKIP"), "the film leads to the black, which may be skipped");
+    p.invoke_advance();
+    rig.pump();
+    assert_eq!(p.get_step(), 4, "no black picked, the window next");
     assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
     assert!(p.get_window_shown());
     let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
@@ -148,6 +151,31 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     ctl.act(oni_app::Act::Redo);
     rig.pump();
     rig.until("every slide levelled again", Duration::from_secs(10), || (0..FRAMES).all(|i| alike(&disk(i)) && disk(i).levels != rest.levels));
+
+    // A black picked on the roll: each slide takes it on its three channels and each channel's own white.
+    ctl.act(oni_app::Act::PrepareRoll);
+    rig.until("the roll's surface again", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == FRAMES);
+    p.invoke_step_picked(2);
+    rig.until("the black's scan", Duration::from_secs(30), || p.get_scan_ready());
+    rig.settle();
+    // Drawn once, so the scan's place on the surface is laid before the click reads it.
+    rig.shot("slides-black");
+    let at = slint::LogicalPosition::new(p.get_base_origin_x() + p.get_scan_x() + p.get_scan_width() * 0.02, p.get_base_origin_y() + p.get_scan_y() + p.get_scan_height() * 0.5);
+    rig.window.dispatch_event(WindowEvent::PointerMoved { position: at });
+    rig.window.dispatch_event(WindowEvent::PointerPressed { position: at, button: slint::platform::PointerEventButton::Left });
+    rig.window.dispatch_event(WindowEvent::PointerReleased { position: at, button: slint::platform::PointerEventButton::Left });
+    rig.pump();
+    assert_eq!(p.get_step(), 4, "the black picked, the window next");
+    p.invoke_advance();
+    rig.until("the slides levelled on the black", Duration::from_secs(60), || !p.get_shown());
+    rig.settle();
+    let open = ctl.state.borrow().open_path().map(str::to_string).unwrap_or_default();
+    let on_black: Vec<PipelineSettings> = (0..FRAMES).map(|i| if open.ends_with(&format!("F{i}.tif")) { settings() } else { disk(i) }).collect();
+    let blacks = |s: &PipelineSettings| [s.levels.red.black, s.levels.green.black, s.levels.blue.black];
+    for (i, s) in on_black.iter().enumerate() {
+        assert!(!alike(s) && s.gains.stops == [0.0; 3], "F{i}: each channel its own: {:?}", s.levels);
+        assert_eq!(blacks(s), blacks(&on_black[0]), "F{i}: one black for the roll");
+    }
 
     // Twin: a negative on its roll levels each channel on its own, the gains aligned.
     shell.open_folder(&negatives);

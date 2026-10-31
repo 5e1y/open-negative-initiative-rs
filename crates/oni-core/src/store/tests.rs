@@ -4,6 +4,7 @@ use crate::knob::Knob;
 
 /// What a gesture leaves with the open frame: its undo steps, its kept edits, its moves.
 mod kept;
+mod slides;
 
 fn fresh(label: &str) -> (EditorStore, std::path::PathBuf) {
     let dir = std::env::temp_dir().join(format!("oni-core-store-{label}-{}", std::process::id()));
@@ -298,8 +299,8 @@ fn a_roll_s_frames_found_outlive_a_lay_that_keeps_them() {
     let paths: Vec<String> = ["/r/a.tif", "/r/b.tif", "/r/c.tif"].iter().map(|p| p.to_string()).collect();
     let mut store = EditorStore::new(Archive::new(paths.clone(), |_: &Path| false));
     let (kept, lost) = (oni_settings::Id::new(), oni_settings::Id::new());
-    store.measured.insert(kept, ["/r/a.tif".to_string()].into());
-    store.measured.insert(lost, ["/r/c.tif".to_string()].into());
+    store.measured.insert(kept.into(), ["/r/a.tif".to_string()].into());
+    store.measured.insert(lost.into(), ["/r/c.tif".to_string()].into());
     let mut more = paths.clone();
     more.push("/r/d.tif".into());
     store.set_archive_paths(more.clone());

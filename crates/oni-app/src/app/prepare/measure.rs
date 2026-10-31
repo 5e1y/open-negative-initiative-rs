@@ -27,7 +27,6 @@ impl Ctl {
             let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
-                let asked = paths.len();
                 let common = CaptureExposure::common(&paths.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
                 let stops = |path: &str| match (common, CaptureExposure::read(Path::new(path))) {
                     (Some(c), Some(own)) => own.stops() - c.stops(),
@@ -42,6 +41,7 @@ impl Ctl {
                 let side = oni_measure::sheet::roll_tile();
                 let mut tiles: Vec<(String, oni_measure::sheet::Picture)> = Vec::new();
                 let mut reads = Vec::new();
+                let mut blank = Vec::new();
                 // The base read first, so the roll's screen places the black the roll will take.
                 let base = pick.and_then(|p| {
                     let bare = if Some(&p.path) == open.as_ref() {
@@ -83,12 +83,13 @@ impl Ctl {
                         }
                         jobs.push(job);
                     } else if let Some((frame, tile)) = m.and_then(|m| {
-                        m.with(&f.path, &start, |r, copy| {
-                            let frame = key::roll_measured(r, copy, &f.path, &start)?;
-                            Some((frame, oni_measure::sheet::tile(r, copy, &start, side)))
-                        })
+                        m.with(&f.path, &start, |r, copy| Some((key::roll_measured(r, copy, &f.path, &start), oni_measure::sheet::tile(r, copy, &start, side))))
                     }) {
-                        frames.push(frame);
+                        // A frame holding nothing to place an end on, a blank one, rides on the roll unvoting as a flagged one does.
+                        match frame {
+                            Some(frame) => frames.push(frame),
+                            None => blank.push(f.path.clone()),
+                        }
                         jobs.push(job);
                         if let Some(tile) = tile {
                             drawn = trace::Drawn::of(&tile, screen).zip(negative::of(&tile));
@@ -107,7 +108,7 @@ impl Ctl {
                 let written: Option<Written> =
                     reference.map(|reference| jobs.iter().map(|j| (j.path.clone(), j.before.clone(), oni_core::balance::written(&reference, &j.start))).collect());
                 let sheet = written.as_ref().and_then(|_| sheet.written(&paths, &jobs, &tiles, &reads));
-                with_shell(move |c| c.land_measure(session, written, sheet, stopped, asked));
+                with_shell(move |c| c.land_measure(session, written, sheet, stopped, &paths, &blank));
             });
             (job, session)
         };
@@ -133,9 +134,9 @@ impl Ctl {
         self.publish_prepare();
     }
 
-    /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as
-    /// one gallery step, the drafts dropped, and the editor on the first frame unless the open one landed.
-    pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, sheet: Option<Sheet>, stopped: bool, asked: usize) {
+    /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
+    /// gallery step, the editor on the first frame unless the open one landed, and what was left out named.
+    pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, sheet: Option<Sheet>, stopped: bool, asked: &[String], blank: &[String]) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
@@ -179,7 +180,7 @@ impl Ctl {
         }
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
-        let message = failure.or_else(|| (written.len() < asked).then(|| tr!("{missed} of {asked} frames could not be measured and were left as they were.", missed = asked - written.len(), asked = asked)));
+        let message = failure.or_else(|| left_out(asked, &written, blank));
         let open = self.state.borrow().open.clone();
         if let Some(w) = self.window() {
             w.global::<App>().set_gallery(false);
@@ -203,7 +204,7 @@ impl Ctl {
             self.publish_tiles();
         }
         if let Some(m) = message {
-            self.advise(tr("Something Went Wrong"), &m);
+            self.advise(tr("Prepare the Roll"), &m);
         }
         self.publish_prepare();
         self.publish_bar();
@@ -253,5 +254,36 @@ impl Ctl {
             let _ = done.send(());
         }));
         let _ = waited.recv_timeout(DRAFT_FLUSH);
+    }
+}
+
+/// The frames a measure could not read, then those that held nothing to read, each by its name.
+fn left_out(asked: &[String], written: &Written, blank: &[String]) -> Option<String> {
+    let names = |paths: Vec<&String>| paths.iter().map(|p| oni_library::paths::name(p)).collect::<Vec<_>>().join(", ");
+    let unread: Vec<&String> = asked.iter().filter(|p| !written.iter().any(|(w, _, _)| w == *p)).collect();
+    let empty: Vec<&String> = blank.iter().filter(|p| written.iter().any(|(w, _, _)| w == *p)).collect();
+    let lines: Vec<String> = [
+        (!unread.is_empty()).then(|| trn("{names} could not be read and was left as it was.", "{names} could not be read and were left as they were.", unread.len() as u64).replace("{names}", &names(unread))),
+        (!empty.is_empty()).then(|| trn("{names} holds nothing to measure: it takes the roll's settings without weighing on them.", "{names} hold nothing to measure: they take the roll's settings without weighing on them.", empty.len() as u64).replace("{names}", &names(empty))),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    (!lines.is_empty()).then(|| lines.join("\n\n"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_measure_names_the_frames_it_could_not_read_and_those_that_held_nothing() {
+        let asked: Vec<String> = ["/r/a.RW2", "/r/b.RW2", "/r/c.RW2"].map(String::from).into();
+        let written: Written = asked[..2].iter().map(|p| (p.clone(), PipelineSettings::default(), PipelineSettings::default())).collect();
+        let said = left_out(&asked, &written, &asked[1..2]).expect("two frames to name");
+        assert!(said.contains("c.RW2 could not be read") && said.contains("b.RW2 holds nothing to measure"), "{said}");
+        assert!(!said.contains("a.RW2"));
+        // Twin: every frame read and voting, nothing is said.
+        assert_eq!(left_out(&asked[..2], &written, &[]), None);
     }
 }

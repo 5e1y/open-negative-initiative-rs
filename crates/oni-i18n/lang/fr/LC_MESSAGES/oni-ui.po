@@ -3438,14 +3438,30 @@ msgid "No frame of this roll could be measured: the files could not be read, or 
 msgstr "Aucune vue de cette pellicule n’a pu être mesurée : les fichiers n’ont pas pu être lus, ou le cadre de mesure ne contient rien à équilibrer."
 
 #: crates/oni-app/src/app/prepare/measure.rs
-msgid "{missed} of {asked} frames could not be measured and were left as they were."
-msgstr "Vues non mesurées, laissées telles quelles : {missed} sur {asked}."
-
-#: crates/oni-app/src/app/prepare/measure.rs
 msgid "One frame's preparation could not be saved: {cause}"
 msgid_plural "{n} frames' preparation could not be saved: {cause}"
 msgstr[0] "La préparation d’une vue n’a pas pu être enregistrée : {cause}"
 msgstr[1] "La préparation de {n} vues n’a pas pu être enregistrée : {cause}"
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "{names} could not be read and was left as it was."
+msgid_plural "{names} could not be read and were left as they were."
+msgstr[0] "{names} n’a pas pu être lu et a été laissé tel quel."
+msgstr[1] "{names} n’ont pas pu être lus et ont été laissés tels quels."
+
+#: crates/oni-app/src/app/prepare/measure.rs
+msgid "{names} holds nothing to measure: it takes the roll's settings without weighing on them."
+msgid_plural "{names} hold nothing to measure: they take the roll's settings without weighing on them."
+msgstr[0] "{names} ne contient rien à mesurer : la vue prend les réglages de la pellicule sans peser dessus."
+msgstr[1] "{names} ne contiennent rien à mesurer : ces vues prennent les réglages de la pellicule sans peser dessus."
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Pick the Black"
+msgstr "Prélever le noir"
+
+#: crates/oni-app/src/app/prepare/model.rs
+msgid "Choose a scan, then click on unexposed film: the black border around the picture or the gap between two frames. Each slide then takes this black and its own white on each channel; skipped, each slide takes one black and one white for its three channels."
+msgstr "Choisissez un scan, puis cliquez sur le film non exposé : le bord noir autour de l’image ou l’espace entre deux vues. Chaque diapositive prend alors ce noir et son propre blanc sur chaque canal ; sans prélèvement, chaque diapositive prend un seul noir et un seul blanc pour ses trois canaux."
 
 #: crates/oni-app/src/app/prepare/model.rs
 msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."
@@ -3510,6 +3526,10 @@ msgstr[1] "Les passes de {n} vues sont plus espacées que les vues entre elles, 
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-app/src/app/roll_tab.rs
 msgid "None selected"
 msgstr "Aucun sélectionné"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "No black picked yet."
+msgstr "Aucun noir prélevé pour l’instant."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "No base picked yet."

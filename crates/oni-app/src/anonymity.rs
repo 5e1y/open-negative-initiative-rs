@@ -38,6 +38,34 @@ fn scrubbed_line(line: &str) -> String {
     out
 }
 
+/// A notice as the log keeps it: every quoted span and every file name `<name>`, since a notice
+/// names what it speaks of and the log never does.
+pub fn unnamed(text: &str) -> String {
+    const QUOTES: [(char, char); 4] = [('\u{201c}', '\u{201d}'), ('\u{ab}', '\u{bb}'), ('"', '"'), ('\u{2018}', '\u{2019}')];
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some((at, open, close)) = QUOTES.iter().filter_map(|(o, c)| rest.find(*o).map(|i| (i, *o, *c))).min_by_key(|q| q.0) {
+        let inner = &rest[at + open.len_utf8()..];
+        let Some(end) = inner.find(close) else { break };
+        out.push_str(&rest[..at]);
+        out.push_str("<name>");
+        rest = &inner[end + close.len_utf8()..];
+    }
+    out.push_str(rest);
+    out.split(' ').map(|word| if file_named(word) { "<name>".to_string() + trailing(word) } else { word.to_string() }).collect::<Vec<_>>().join(" ")
+}
+
+/// Whether a word is a file's name: a stem, a dot and a short extension, a clause's mark after it.
+fn file_named(word: &str) -> bool {
+    let word = word.trim_end_matches(trailing(word));
+    word.rsplit_once('.').is_some_and(|(stem, ext)| !stem.is_empty() && (2..=4).contains(&ext.len()) && ext.chars().all(|c| c.is_ascii_alphanumeric()) && ext.chars().any(|c| c.is_ascii_alphabetic()))
+}
+
+fn trailing(word: &str) -> &str {
+    let kept = word.trim_end_matches([',', ':', ';', '.', ')', '!', '?']);
+    &word[kept.len()..]
+}
+
 /// Where a path begins: `/`, `~/` or a drive letter, at the line's start or after a space, a quote or
 /// a bracket, so `1/8` or `p50/p99` stay.
 fn path_start(text: &str) -> Option<usize> {
@@ -95,6 +123,18 @@ mod tests {
         assert!(found.is_empty(), "log lines naming a file: {found:#?}");
         let planted = "crate::timing::line(&format!(\"{}: decoded\", stem(&path)));";
         assert_eq!(naming_calls(planted).len(), 1, "twin: a stem written to the log is caught");
+    }
+
+    #[test]
+    fn a_notice_keeps_its_words_and_loses_its_names() {
+        let said = unnamed("P1073212.RW2, IMG_1.JPG: could not be read. The folder could not be made inside \u{201c}Mariage 2025\u{201d}: denied (os 13), 3.5 stops.");
+        for leak in ["P1073212", "IMG_1", "Mariage"] {
+            assert!(!said.contains(leak), "{leak} leaked: {said}");
+        }
+        assert_eq!(said, "<name>, <name>: could not be read. The folder could not be made inside <name>: denied (os 13), 3.5 stops.");
+        // Twin: a notice naming nothing comes through whole, its numbers and its sentences' ends kept.
+        let plain = "No frame of this roll could be measured: 2 of 3 frames. Try again.";
+        assert_eq!(unnamed(plain), plain);
     }
 
     #[test]

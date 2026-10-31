@@ -210,8 +210,20 @@ pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32
     }
     let rest = [Gains::BASE; 3];
     let h = reading(rest);
-    let levels = composite(&h, 0.0)?;
+    let levels = slide_points(&h, None)?;
     Some(Balance { stops: rest, levels, shift: [0, 1, 2].map(|c| shift(rest[c] - stops[c], mode)) })
+}
+
+/// A slide's points: with a black picked on the roll, that black and each channel's own white, as a
+/// negative's channels are placed; else one black and white on the RGB composite (owner's call).
+pub fn slide_points(h: &Histogram, black: Option<[f32; 3]>) -> Option<[Suggestion; 3]> {
+    let Some(black) = black else { return composite(h, 0.0) };
+    let mut ends = placement(h, 0.0)?;
+    for (end, b) in ends.iter_mut().zip(black) {
+        end.black = b.clamp(0.0, 1.0 - MINIMUM_SPAN);
+        end.white = end.white.max(end.black + MINIMUM_SPAN).min(1.0);
+    }
+    Some(ends)
 }
 
 /// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.
