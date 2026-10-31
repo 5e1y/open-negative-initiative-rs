@@ -4785,5 +4785,12 @@
     "title": "A slide's measured gains are its Source Balance's rest",
     "status": "done",
     "detail": "Owner's report: Source Balance offered its reset on a slide straight out of the gains-only measure, and the reset sent its gains to 0, undoing the measure. Its block rests on a roll reference's stops, which a slide has none of. A frame's measuredGains (a frame field, written only when present) now keeps the gains the gains-only measure placed: Source Balance rests on them (its reset key shows only once the hand departs from them and lands back on them), the imported state stands on them so Reset Scan does too, Reset to Default and a negative's measure drop them. On a slide roll a Source Balance move is laid on each other slide as an offset from its own measure, never as the open slide's gains. Checks: parameters the reset lands a slide back on its measured gains (twin: a slide never measured lands on rest), store slides the move reaches another slide as an offset (twin: not laid whole), the slides window check: no reset offered after the measure (twin: the key on a slide never measured departs from rest)."
+  },
+  {
+    "id": 1012,
+    "type": "fix",
+    "title": "A slide roll measured on its gains alone takes one set of gains",
+    "status": "done",
+    "detail": "Owner's call: the gains-only measure balanced each slide on its own; a roll is balanced as one, as a negative roll is. Each slide's gains are read through the roll's window as before, then the roll takes each channel's median over the slides read (roll::slide_gains) and every slide, a blank one included, is written on it, kept as its measuredGains. Checks: slide_roll a slide roll takes its slides' median gains as one (twin: not the mean a stray slide would pull), the slides window check finds one set of gains on every slide."
   }
 ]

@@ -130,3 +130,12 @@ fn the_roll_s_window_is_laid_whole_on_frames_of_different_crops() {
     // Twin: seen from inside each crop the window differs, so a window copied in crop space would move.
     assert_ne!(in_crop(&laid[0].geometry), in_crop(&laid[1].geometry));
 }
+
+#[test]
+fn a_slide_roll_takes_its_slides_median_gains_as_one() {
+    let read = [[-0.4, 0.0, 0.2], [-0.1, 0.0, 0.9], [-0.2, 0.0, 0.3]];
+    assert_eq!(roll::slide_gains(&read), Some([-0.2, 0.0, 0.3]), "each channel's median, one stray slide outvoted");
+    // Twin: the mean would follow the stray slide's blue.
+    assert_ne!(roll::slide_gains(&read).unwrap()[2], (0.2 + 0.9 + 0.3) / 3.0);
+    assert_eq!(roll::slide_gains(&[]), None);
+}

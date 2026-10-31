@@ -1,5 +1,5 @@
-//! A slide roll: one measuring window for the roll, then each frame's own gains aligned through it,
-//! never a roll reference (owner's call).
+//! A slide roll: one measuring window for the roll, each frame's gains read through it and the roll
+//! taking their median as one, never a roll reference (owner's call).
 
 use super::*;
 use super::trace::{BINS, Drawn};
@@ -41,8 +41,8 @@ impl Roll {
 }
 
 impl Ctl {
-    /// A slide roll: every ticked frame on the roll's film, window and flat-field, levelled on its own
-    /// off this thread, landed as one step; a blank slide is left unlevelled.
+    /// A slide roll: every ticked frame read on the roll's film, window and flat-field off this thread,
+    /// the roll's gains its slides' median laid on all, one step; a blank slide rides without a vote.
     pub(super) fn prepare_slides(self: &Rc<Self>) {
         let job = {
             let mut s = self.state.borrow_mut();
@@ -66,6 +66,7 @@ impl Ctl {
                 let m = crate::measuring::measurer();
                 let side = oni_measure::sheet::roll_tile();
                 let mut written: Written = Vec::new();
+                let mut votes = Vec::new();
                 let mut blank = Vec::new();
                 let mut roll = SlideRoll::default();
                 for path in &picked {
@@ -89,8 +90,9 @@ impl Ctl {
                                 Some((settings, reading)) => {
                                     roll.add(&reading.rgb);
                                     voted = true;
-                                    // Measured whole, written on the frame's own crop, its gains the base its Source Balance rests on.
-                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, measured_gains: Some(settings.gains.stops), ..settings }));
+                                    votes.push(settings.gains.stops);
+                                    // Measured whole, written on the frame's own crop.
+                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, ..settings }));
                                 }
                                 None => {
                                     blank.push(path.clone());
@@ -104,7 +106,14 @@ impl Ctl {
                     with_shell(move |c| c.measure_progressed(session, landed));
                 }
                 let stopped = stop.load(Ordering::Relaxed);
-                let written = (!stopped).then_some(written);
+                // One set of gains for the roll, its slides' median, the base each one's Source Balance rests on.
+                let gains = roll::slide_gains(&votes);
+                for (_, _, s) in &mut written {
+                    if let Some(g) = gains {
+                        (s.gains.stops, s.measured_gains) = (g, Some(g));
+                    }
+                }
+                let written = (!stopped).then(|| if gains.is_some() { written } else { Vec::new() });
                 with_shell(move |c| c.land_measure(session, written, None, stopped, &picked, &blank));
             });
             job

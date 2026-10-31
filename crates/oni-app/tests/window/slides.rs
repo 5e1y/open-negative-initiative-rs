@@ -133,7 +133,7 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     }
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
     assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");
-    assert!(frames.iter().all(|s| s.measured_gains == Some(s.gains.stops)), "each slide's measure kept as its rest");
+    assert!(frames.iter().all(|s| s.measured_gains == Some(s.gains.stops) && s.gains == frames[0].gains), "one roll's gains on every slide, kept as its rest");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
     // The key on a prepared slide finds Prepare's levels, press after press; its twin, the key
     // moving an unprepared slide's levels, opens this check.
