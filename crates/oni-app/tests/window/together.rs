@@ -47,6 +47,15 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     rig.settle();
     let tile = |name: &str| oni_app::app::tiles(w).iter().find(|t| t.caption == name).unwrap_or_else(|| panic!("{name}")).index;
     let path = |name: &str| folder.join(format!("{name}.tif"));
+    // Each frame's place on its roll: its rank in the folder's gallery order.
+    let mut shown = oni_app::app::tiles(w);
+    shown.sort_by_key(|t| t.index);
+    let place = |name: &str| (shown.iter().position(|t| t.caption == name).expect("a tile") + 1).to_string();
+    let numbers = || {
+        let mut n: Vec<String> = canvas.get_numbers().iter().map(|n| n.text.to_string()).collect();
+        n.sort();
+        n
+    };
 
     lib.invoke_tile_clicked(tile("A"), false, false);
     lib.invoke_tile_clicked(tile("B"), true, false);
@@ -68,8 +77,13 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
         canvas.get_status().as_str() == "3 frames together" && !near(at(third().0, third().1), at(gap().0, gap().1))
     });
     let size = canvas.get_frame().size();
-    assert!((f64::from(size.width) / f64::from(size.height) - 1224.0 / 400.0).abs() < 0.02, "three tiles on one row: {size:?}");
+    // Three tiles on one row, and the band under it that holds their numbers.
+    assert!((f64::from(size.width) / f64::from(size.height) - 3132.0 / 1108.0).abs() < 0.02, "three tiles on one row: {size:?}");
     assert!(near(at(gap().0, gap().1), at(cell().0 / 2, 1)), "twin: a gap and a cell's empty edge show the same ground");
+    // A contact sheet: each frame's number on its black.
+    rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
+    assert_eq!(numbers(), ["A", "B", "C"].map(place));
+    assert!(canvas.get_together() && at(gap().0, gap().1).is_some_and(|p| p.r.max(p.g).max(p.b) <= 2), "the gaps are black: {:?}", at(gap().0, gap().1));
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
     assert!(["A", "B", "C"].iter().all(|n| selected(n)), "the selection stays the frames shown");
 
@@ -120,6 +134,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_tile_opened(tile("D"));
     rig.until("D alone", Duration::from_secs(60), || canvas.get_status().contains(" × "));
     assert!(ctl.state.borrow().store().editor_ref().is_some_and(|e| e.together().is_empty()));
+    assert!(!canvas.get_together() && numbers().is_empty(), "twin: one frame alone on the canvas's own ground");
     // The full resolution is built as the frame opens, for every render, a stroke or a zoom.
     rig.until("D's full resolution", Duration::from_secs(10), || ctl.state.borrow().full_built());
 
@@ -128,6 +143,10 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_row_clicked(row("A"), true, false);
     rig.until("D and A together", Duration::from_secs(30), || canvas.get_status().as_str() == "2 frames together");
     assert!(ctl.state.borrow().open_path().is_some_and(|p| p.ends_with("D.tif")), "the open frame leads");
+    rig.until("their numbers", Duration::from_secs(30), || numbers().len() == 2);
+    let mut roll = vec![place("A"), place("D")];
+    roll.sort();
+    assert_eq!(numbers(), roll, "twin: numbered by the roll, not by the selection");
     // Twin: A taken out again leaves D alone on the canvas.
     lib.invoke_row_clicked(row("A"), true, false);
     rig.until("D alone again", Duration::from_secs(30), || canvas.get_status().contains(" × "));

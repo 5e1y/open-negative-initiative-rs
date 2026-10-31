@@ -11,6 +11,8 @@ use crate::latest::Latest;
 mod sheet;
 #[path = "together/drawing.rs"]
 mod drawing;
+#[path = "together/numbers.rs"]
+mod numbers;
 use drawing::{draw_grids, tile_source};
 use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
 
@@ -18,6 +20,9 @@ use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
 const COLUMNS: usize = 6;
 const TILE: usize = 1024;
 const GAP: usize = 30;
+/// The band under each row holding its frames' numbers, and their size, in the same pixels.
+const BAND: usize = 84;
+const NUMBER: usize = 56;
 /// The share of the full sheet the histogram counts, an eighth: 128 px a tile.
 const COUNTED_SCALE: f64 = 0.125;
 /// Decodes at once while a group opens: a half-size RAW holds about 100 MB until it is reduced.
@@ -30,6 +35,9 @@ pub(in crate::app) struct Group {
     negatives: Vec<Option<Arc<Negative>>>,
     /// Each frame's thumbnail on the GPU, shown in its tile until its source is decoded.
     stand_ins: Vec<Option<oni_graph::Source>>,
+    /// Each frame's place on its roll, and its picture's size on the full sheet once drawn.
+    numbers: Vec<Option<usize>>,
+    pictures: Vec<Option<(f64, f64)>>,
     asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
     shown: Option<((usize, usize), Window, f64)>,
@@ -72,6 +80,9 @@ struct Ask {
     counted: Option<Vec<Option<(Arc<Negative>, PipelineSettings)>>>,
 }
 
+/// Where a grid was drawn: its box of the full sheet, its scale and each tile's size drawn, by frame.
+type Laying = (Window, f64, Vec<(usize, (u32, u32))>);
+
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
 static SLOT: Latest<Ask> = Latest::new();
 static DRAWING: std::sync::Once = std::sync::Once::new();
@@ -100,13 +111,15 @@ impl Ctl {
             (paths.iter().map(kept).collect::<Vec<_>>(), g.is_none())
         };
         let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
-        let stand_ins = vec![None; paths.len()];
-        self.state.borrow_mut().together = Some(Group { id, paths, negatives, stand_ins, asked: None, shown: None, drawn: 0, latencies: Vec::new() });
+        let (stand_ins, numbers, pictures) = (vec![None; paths.len()], vec![None; paths.len()], vec![None; paths.len()]);
+        let group = Group { id, paths, negatives, stand_ins, numbers, pictures, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
+        self.state.borrow_mut().together = Some(group);
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
         self.stand_in(id, &lacking);
         self.decode_together(id, lacking);
+        self.number_frames(id);
         self.request_render();
         self.publish_tiles();
     }
@@ -150,6 +163,7 @@ impl Ctl {
         let (x, y, w, h) = (f64::from(window.0), f64::from(window.1), f64::from(window.2), f64::from(window.3));
         let whole = (window.2, window.3) == drawn;
         self.lay(Some(Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true }), size);
+        self.publish_numbers(p, full.0);
     }
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
@@ -161,6 +175,7 @@ impl Ctl {
         if let Some(e) = self.state.borrow_mut().store.editor() {
             e.set_together(Vec::new());
         }
+        self.unnumbered();
         self.state.borrow_mut().viewport.fit();
         let mut s = self.state.borrow_mut();
         s.requests.rendered = 0;
@@ -336,10 +351,14 @@ impl Ctl {
         self.state.borrow().together.as_ref().map_or(0, |g| g.drawn)
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, laid: Laying, counted: Option<oni_graph::Source>) {
         let size = (sheet.extent().w as usize, sheet.extent().h as usize);
+        let (window, scale, pictures) = laid;
         let count = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == group => {
+                for (i, (w, h)) in pictures {
+                    g.pictures[i] = Some((f64::from(w) / scale, f64::from(h) / scale));
+                }
                 g.shown = Some((size, window, scale));
                 g.drawn = revision;
                 g.latencies.push(at.elapsed());

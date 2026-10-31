@@ -28,23 +28,44 @@ pub(super) fn reduced(linear: render::Linear, side: usize) -> render::Linear {
     render::Linear { width: ow, height: oh, pixels }
 }
 
-/// A cell's side and the gap after it, in the sheet's pixels, at `scale` of the full sheet.
-pub(super) fn cell_at(scale: f64) -> (usize, usize) {
-    (((TILE as f64 * scale).round() as usize).max(1), (GAP as f64 * scale).round() as usize)
+/// A cell's side, the gap after it and the band under its row that holds the frames' numbers, in
+/// the sheet's pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct Cell {
+    pub tile: usize,
+    pub gap: usize,
+    pub band: usize,
 }
 
-/// A sheet of `count` tiles six to a row, with the gaps between them.
-pub(super) fn sheet_size(count: usize, (tile, gap): (usize, usize)) -> (u32, u32) {
+impl Cell {
+    /// From a cell's corner to the next one's across a row, and down to the next row's.
+    pub fn across(self) -> usize {
+        self.tile + self.gap
+    }
+
+    pub fn down(self) -> usize {
+        self.tile + self.band + self.gap
+    }
+}
+
+/// The cell at `scale` of the full sheet.
+pub(super) fn cell_at(scale: f64) -> Cell {
+    let at = |v: usize| (v as f64 * scale).round() as usize;
+    Cell { tile: at(TILE).max(1), gap: at(GAP), band: at(BAND) }
+}
+
+/// A sheet of `count` tiles six to a row, with the gaps between them and each row's band.
+pub(super) fn sheet_size(count: usize, c: Cell) -> (u32, u32) {
     let columns = count.clamp(1, COLUMNS);
     let rows = count.div_ceil(COLUMNS).max(1);
-    ((columns * tile + (columns - 1) * gap) as u32, (rows * tile + (rows - 1) * gap) as u32)
+    ((columns * c.across() - c.gap) as u32, (rows * c.down() - c.gap) as u32)
 }
 
 /// The corner of tile `i` of `size`, centred in its cell.
-pub(super) fn place(i: usize, size: (u32, u32), (tile, gap): (usize, usize)) -> (i32, i32) {
-    let (cx, cy) = ((i % COLUMNS) * (tile + gap), (i / COLUMNS) * (tile + gap));
+pub(super) fn place(i: usize, size: (u32, u32), c: Cell) -> (i32, i32) {
+    let (cx, cy) = ((i % COLUMNS) * c.across(), (i / COLUMNS) * c.down());
     let (w, h) = (size.0 as usize, size.1 as usize);
-    ((cx + tile.saturating_sub(w) / 2) as i32, (cy + tile.saturating_sub(h) / 2) as i32)
+    ((cx + c.tile.saturating_sub(w) / 2) as i32, (cy + c.tile.saturating_sub(h) / 2) as i32)
 }
 
 /// A sheet's rectangle in its pixels: x, y, width, height.
@@ -52,13 +73,13 @@ pub(super) type Window = (u32, u32, u32, u32);
 
 /// Which of `count` tiles a view showing `visible` of the sheet meets, and the cells' box around them,
 /// so a grid draws the tiles on screen alone, on a sheet no larger than they need.
-pub(super) fn seen(count: usize, (tile, gap): (usize, usize), visible: (f64, f64, f64, f64)) -> (Vec<bool>, Window) {
+pub(super) fn seen(count: usize, c: Cell, visible: (f64, f64, f64, f64)) -> (Vec<bool>, Window) {
     let (vx0, vy0, vx1, vy1) = (visible.0, visible.1, visible.0 + visible.2, visible.1 + visible.3);
     let mut corners = (u32::MAX, u32::MAX, 0, 0);
     let shows = (0..count)
         .map(|i| {
-            let (x, y) = ((i % COLUMNS) * (tile + gap), (i / COLUMNS) * (tile + gap));
-            let (x1, y1) = (x + tile, y + tile);
+            let (x, y) = ((i % COLUMNS) * c.across(), (i / COLUMNS) * c.down());
+            let (x1, y1) = (x + c.tile, y + c.tile + c.band);
             let meets = (x as f64) < vx1 && (x1 as f64) > vx0 && (y as f64) < vy1 && (y1 as f64) > vy0;
             if meets {
                 corners = (corners.0.min(x as u32), corners.1.min(y as u32), corners.2.max(x1 as u32), corners.3.max(y1 as u32));
@@ -66,7 +87,7 @@ pub(super) fn seen(count: usize, (tile, gap): (usize, usize), visible: (f64, f64
             meets
         })
         .collect::<Vec<_>>();
-    let whole = sheet_size(count, (tile, gap));
+    let whole = sheet_size(count, c);
     let window = if corners.0 == u32::MAX { (0, 0, whole.0, whole.1) } else { (corners.0, corners.1, corners.2 - corners.0, corners.3 - corners.1) };
     (shows, window)
 }
@@ -85,11 +106,11 @@ mod tests {
     fn a_grid_draws_the_tiles_its_view_meets_on_their_box_alone() {
         let cell = cell_at(1.0);
         // Zoomed on the second tile of the second row: it alone, on its own cell.
-        let at = (TILE + GAP) as f64;
-        let (shows, window) = seen(12, cell, (at + 10.0, at + 10.0, 300.0, 200.0));
+        let (across, down) = ((TILE + GAP) as f64, (TILE + BAND + GAP) as f64);
+        let (shows, window) = seen(12, cell, (across + 10.0, down + 10.0, 300.0, 200.0));
         assert_eq!(shows.iter().filter(|s| **s).count(), 1);
         assert!(shows[7] && !shows[0], "twin: a tile off the view is not drawn");
-        assert_eq!(window, ((TILE + GAP) as u32, (TILE + GAP) as u32, TILE as u32, TILE as u32));
+        assert_eq!(window, ((TILE + GAP) as u32, (TILE + BAND + GAP) as u32, TILE as u32, (TILE + BAND) as u32), "a cell's box holds its band");
         // The whole sheet in view: every tile, the whole sheet.
         let whole = sheet_size(12, cell);
         let (shows, window) = seen(12, cell, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));
@@ -109,18 +130,18 @@ mod tests {
     }
 
     #[test]
-    fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell() {
+    fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell_above_its_band() {
         let full = cell_at(1.0);
-        assert_eq!(sheet_size(7, full), ((6 * TILE + 5 * GAP) as u32, (2 * TILE + GAP) as u32));
-        assert_eq!(sheet_size(3, full), ((3 * TILE + 2 * GAP) as u32, TILE as u32), "a short row is only as wide as its tiles");
+        assert_eq!(sheet_size(7, full), ((6 * TILE + 5 * GAP) as u32, (2 * (TILE + BAND) + GAP) as u32));
+        assert_eq!(sheet_size(3, full), ((3 * TILE + 2 * GAP) as u32, (TILE + BAND) as u32), "a short row is only as wide as its tiles");
         let (long, short) = (TILE as u32, TILE as u32 / 2);
         let inset = (TILE / 4) as i32;
         assert_eq!(place(0, (long, short), full), (0, inset), "a landscape tile centred in its cell's height");
-        assert_eq!(place(6, (short, long), full), (inset, (TILE + GAP) as i32), "the seventh opens the second row");
-        // Twin: the second tile's cell starts past the first's and the gap.
+        assert_eq!(place(6, (short, long), full), (inset, (TILE + BAND + GAP) as i32), "the seventh opens the second row, under the first's band");
+        // Twin: the second tile's cell starts past the first's and the gap, with no band across.
         assert_eq!(place(1, (long, long), full), ((TILE + GAP) as i32, 0));
         // At half the scale, half the cells.
-        assert_eq!(sheet_size(7, cell_at(0.5)), ((6 * TILE / 2 + 5 * GAP / 2) as u32, (TILE + GAP / 2) as u32));
+        assert_eq!(sheet_size(7, cell_at(0.5)), ((6 * TILE / 2 + 5 * GAP / 2) as u32, (TILE + BAND + GAP / 2) as u32));
     }
 
     #[test]

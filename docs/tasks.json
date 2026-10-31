@@ -4834,5 +4834,12 @@
     "title": "A tab label longer than an even share takes room from its neighbours",
     "status": "done",
     "detail": "Export's Space bar gave each of its five tabs 70 pt, and Adobe RGB filled its own and touched the DP3 pill. As Swift's DSTabBar (a label on one line at its own width, maxWidth .infinity), the tabs share the bar evenly while all fit and a label needing more takes it from the shorter ones, a margin each side (TabsStyle.margin); the pill follows the held tab's frame, sliding on a change of tab and moving at once on a change of layout. Checks: tab_bar even labels get even tabs; Adobe RGB is wider than an even share (twin: sRGB narrower)."
+  },
+  {
+    "id": 1019,
+    "type": "feature",
+    "title": "Frames shown together lie on a contact sheet's black, each numbered in orange by its place on its roll",
+    "status": "done",
+    "detail": "Owner's call: Edit Together (several frames selected in the editor, six to a row) now reads as a contact sheet. The canvas and the gaps between tiles are black (Ground.sheet, the display kernel's ground at 0 while a group shows), and under each picture its place on its roll, its rank in its folder's shooting order with the contact sheets left out (Archive::folder_photos, roll_membership::is_sheet read off the main thread), in DS orange (Colour.edge-print, EdgePrint), sized with the sheet as print is. Each row gains a band under it (BAND 84 px of a 1024 px tile) so a portrait's number never lies on the row below; a landscape's number sits right under its picture. Checks: numbers a frame is numbered by its place in its folder, its sheets left out (twin: a sheet counted shifts it); a number lies under its picture whatever its side (twin: not at the row's band); sheet seven tiles lay two rows above their bands; window together the three frames carry their roll numbers on black gaps, one frame alone takes the canvas's ground back (twin), and D with A reads D's place on the roll, not its rank in the selection (twin)."
   }
 ]

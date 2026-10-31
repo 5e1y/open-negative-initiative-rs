@@ -2,10 +2,24 @@
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
 import { Colour, CropStyle, Space, Stroke } from "theme.slint";
 import { Badge } from "badge.slint";
-import { TextRole } from "base.slint";
+import { TextRole, Label } from "base.slint";
 import { RingTone, Ring } from "marks.slint";
 
 export enum FrameStyle { crop, window }
+
+// A frame's number under its picture on a sheet of frames, at the size the sheet's zoom gives it.
+export struct EdgeNumber {
+    x: length,
+    y: length,
+    text: string,
+}
+
+export component EdgePrint inherits Label {
+    in property <length> size;
+    ink: Colour.edge-print;
+    font-size: root.size;
+    vertical-alignment: top;
+}
 
 // One handle's grab: the press and the travel since it, in window coordinates, so the frame moving
 // under the hand never changes what the drag reads.

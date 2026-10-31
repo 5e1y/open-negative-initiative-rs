@@ -42,21 +42,24 @@ pub(super) fn draw_grids(engine: Shared) {
         let (wx, wy, ww, wh) = ask.window;
         let size = (ww, wh);
         let Ok(mut guard) = engine.lock() else { continue };
+        // Each tile's size as laid, which places its number under it.
+        let pictures = std::cell::RefCell::new(Vec::with_capacity(cells.len()));
         let at = |i: usize, tile| {
+            pictures.borrow_mut().push((cells[i], tile));
             let (x, y) = place(cells[i], tile, cell);
             (x - wx as i32, y - wy as i32)
         };
-        let Ok(sheet) = guard.render_laid(&present, cell.0, &at, size) else { continue };
+        let Ok(sheet) = guard.render_laid(&present, cell.tile, &at, size) else { continue };
         // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
         let counted = ask.counted.as_ref().and_then(|all| {
             let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
             let present: Vec<Laid> = all.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
             let cell = cell_at(COUNTED_SCALE);
-            guard.render_laid(&present, cell.0, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
+            guard.render_laid(&present, cell.tile, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
         });
         // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
         drop(guard);
-        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
+        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale, pictures.into_inner()));
         with_shell(move |c| c.grid_landed(group, revision, at, sheet, pipeline, laid, counted));
     }
 }

@@ -188,6 +188,15 @@ impl Archive {
         out
     }
 
+    /// A folder's photos in shooting order, whatever medal the gallery keeps: the roll its frames
+    /// are numbered on.
+    pub fn folder_photos(&self, folder: &str) -> Vec<String> {
+        match archive_tree::find(&self.nodes, &NodeId::Folder(folder.to_owned())) {
+            Some(Node::Folder { group: Some(g), .. }) => g.entries.iter().map(|e| e.path.clone()).collect(),
+            _ => Vec::new(),
+        }
+    }
+
     /// Every photo in gallery order.
     pub fn entries(&self) -> Vec<&Entry> {
         self.groups.iter().flat_map(|g| g.entries.iter()).collect()
