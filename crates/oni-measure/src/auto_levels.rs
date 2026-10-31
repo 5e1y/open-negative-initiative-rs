@@ -201,44 +201,52 @@ pub fn two_steps(
     Some(Balance { stops: moved, levels, shift })
 }
 
-/// The Auto levels key: a slide read once at rest gains, its chroma aligned, then one black and white
-/// (owner's call); any other film Classic's two steps from its own gains.
+/// The Auto levels key on a negative or a black and white frame: Classic's two steps from its own
+/// gains. A slide's key reads its cells together (`key::slide_read`).
 pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
-    if mode != ConversionMode::Positive {
-        let first = reading(stops);
-        return if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) };
-    }
-    let rest = [Gains::BASE; 3];
-    let h = reading(rest);
-    let levels = slide_points(&h)?;
-    Some(Balance { stops: rest, levels, shift: [0, 1, 2].map(|c| shift(rest[c] - stops[c], mode)) })
+    let first = reading(stops);
+    if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) }
 }
 
-/// The shares of each channel's counts a slide's chroma is aligned on, clear of the ends a border or
-/// a specular light pins (owner's call).
-pub const CHROMA_SHARES: [f32; 2] = [0.10, 0.90];
+/// Where a slide's chroma is read among its cells sorted darkest first, and the share of them on either
+/// side each mark takes: the shadows' and the lights' greys, clear of the clipped ends (owner's call).
+pub const CHROMA_MARKS: [f32; 2] = [0.10, 0.90];
+pub const CHROMA_BAND: f32 = 0.05;
 
-/// A slide's points: each channel's 10 % and 90 % brought onto green's, so its cast goes, then one
-/// black and one white on the aligned channels' outermost ends, laid as each channel's own window.
-pub fn slide_points(h: &Histogram) -> Option<[Suggestion; 3]> {
+/// A slide's points: the cells around its 10 % and 90 % of brightness, each read with its three
+/// channels together, brought to grey, then one black and one white on the aligned channels' ends.
+pub fn slide_points(h: &Histogram, cells: &[[f32; 3]], luma: &[f32]) -> Option<[Suggestion; 3]> {
     let ends = placement(h, 0.0)?;
-    let scale = (h.rgb.len() - 1) as f32;
-    let mut marks = [[0.0f32; 2]; 3];
-    for (c, mark) in marks.iter_mut().enumerate() {
-        let counts = h.channel(c);
-        *mark = CHROMA_SHARES.map(|q| quantile(&counts, q).map_or(f32::NAN, |b| b / scale));
-        if !(mark[1] - mark[0] >= MINIMUM_SPAN) {
-            return None;
-        }
+    if cells.len() != luma.len() || cells.is_empty() {
+        return None;
+    }
+    let mut order: Vec<usize> = (0..cells.len()).collect();
+    order.sort_by(|a, b| luma[*a].total_cmp(&luma[*b]));
+    let last = cells.len() - 1;
+    let band = |mark: f32| -> [f32; 3] {
+        let at = |q: f32| ((q.clamp(0.0, 1.0) * last as f32).round() as usize).min(last);
+        let held = &order[at(mark - CHROMA_BAND)..=at(mark + CHROMA_BAND)];
+        [0, 1, 2].map(|c| {
+            let mut v: Vec<f32> = held.iter().map(|&i| cells[i][c]).collect();
+            v.sort_by(f32::total_cmp);
+            v[v.len() / 2]
+        })
+    };
+    let (dark, light) = (band(CHROMA_MARKS[0]), band(CHROMA_MARKS[1]));
+    let marks: [[f32; 2]; 3] = [0, 1, 2].map(|c| [dark[c], light[c]]);
+    if marks.iter().any(|m| !(m[1] - m[0] >= MINIMUM_SPAN)) {
+        return None;
     }
     let [low, high] = marks[REFERENCE];
     let aligned = |c: usize, x: f32| low + (x - marks[c][0]) * (high - low) / (marks[c][1] - marks[c][0]);
     let back = |c: usize, y: f32| marks[c][0] + (y - low) * (marks[c][1] - marks[c][0]) / (high - low);
     let black = (0..3).map(|c| aligned(c, ends[c].black)).fold(f32::INFINITY, f32::min);
     let white = (0..3).map(|c| aligned(c, ends[c].white)).fold(f32::NEG_INFINITY, f32::max);
+    // Unbounded: a channel whose black lands past the counted window keeps it there, or its shadows
+    // fall darker than the others' and the grey goes.
     Some([0, 1, 2].map(|c| {
-        let b = back(c, black).clamp(0.0, 1.0 - MINIMUM_SPAN);
-        Suggestion { black: b, white: back(c, white).max(b + MINIMUM_SPAN).min(1.0), ..ends[c] }
+        let b = back(c, black);
+        Suggestion { black: b, white: back(c, white).max(b + MINIMUM_SPAN), ..ends[c] }
     }))
 }
 

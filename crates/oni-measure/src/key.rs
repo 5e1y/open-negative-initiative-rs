@@ -41,8 +41,11 @@ pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
     auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// The Auto levels key on one frame, read in front of the levels.
+/// The Auto levels key on one frame, read in front of the levels; a slide's reads its cells.
 pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
+    if s.mode == ConversionMode::Positive {
+        return slide_read(r, copy, s).map(|read| read.balance);
+    }
     auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
@@ -53,19 +56,21 @@ pub fn slide_levelled(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> O
 
 /// A slide levelled by Prepare the Roll, and the reading its points stand on.
 pub struct SlideRead {
+    pub balance: Balance,
     pub settings: PipelineSettings,
     pub reading: Histogram,
-    pub levels: [Suggestion; 3],
 }
 
-/// `slide_levelled`, read once at rest gains, with the reading the roll's screen sums.
+/// A slide's key read once at rest gains, its cells' colours read together, with the reading the
+/// roll's screen sums.
 pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<SlideRead> {
     let rest = [Gains::BASE; 3];
-    let reading = r.reading(copy, &at_gains(start, rest), Stage::Levels).histogram;
-    let levels = auto_levels::slide_points(&reading)?;
+    let read = r.reading(copy, &at_gains(start, rest), Stage::Levels);
+    let levels = auto_levels::slide_points(&read.histogram, &read.cells.rgb, &read.cells.luma)?;
     let shift = [0, 1, 2].map(|c| auto_levels::shift(rest[c] - start.gains.stops[c], start.mode));
-    let settings = balance::levelled(&Balance { stops: rest, levels, shift }.core(), start);
-    Some(SlideRead { settings, reading, levels })
+    let balance = Balance { stops: rest, levels, shift };
+    let settings = balance::levelled(&balance.core(), start);
+    Some(SlideRead { balance, settings, reading: read.histogram })
 }
 
 /// `AutoLevels.ends`: step two alone, the gains held.

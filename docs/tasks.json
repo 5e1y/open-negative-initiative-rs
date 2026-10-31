@@ -4720,5 +4720,13 @@
     "title": "A slide's chroma is aligned on its 10 % and 90 %, then one black and one white are placed",
     "status": "done",
     "detail": "Owner's call (2026-10-31): with #997 a slide roll still came out red. Prepare the Roll and Auto Levels on a slide now read each channel's 10 % and 90 % of its counts at rest gains, bring them onto green's (CHROMA_SHARES), and place one black and one white on the aligned channels' outermost ends; both steps land as each channel's own window (auto_levels::slide_points). #997's black pick is withdrawn: a slide roll skips the base step again and the base click moves to the next step the roll walks. Checks: positive_levels aligns a warm slide (twin: the composite's one window keeps the cast) and a red glint past 90 % pins the white, never the chroma (twin: each channel on its own 0 % and 100 % tints the lights); slide_roll and the slides window check find each slide's channels on windows of their own, gains at rest."
+  },
+  {
+    "id": 1003,
+    "type": "fix",
+    "title": "A slide's greys are read on its cells, three channels together",
+    "status": "done",
+    "detail": "#1002 aligned each channel's own 10 % and 90 % of counts, so red, green and blue were read on different parts of the frame and a coloured subject set the shadows' grey: magenta shadows stayed. The blocks reading now hands its kept cells (each cell's median, three channels together, and its luma) with the histogram; a slide's key sorts the cells by luma, takes the median of each channel over the cells between 5 % and 15 % and between 85 % and 95 % (CHROMA_MARKS, CHROMA_BAND), brings those two colours onto green's, then lays one black and one white on the aligned channels' ends. Each channel's black and white are no longer held inside 0…1: a held one darkened that channel's shadows against the others'. Auto Levels on a slide reads the same way (key::levels routes a slide to key::slide_read; keyed is Classic's alone). Check: positive_levels a slide's magenta shadows and bluish lights land grey with a red subject whose blue is the frame's darkest (twins: each channel's own 10 % and 90 %, each channel's own ends, the composite's one window leave the shadows magenta).",
+    "outcome": "On the owner's slides of 2026-10-30, through each slide's own measuring frame, cells sorted by brightness after the curves: P1073170's shadows from ±0.030 to ±0.012 off grey, P1073151's about as before, P1073169's mid-dark tones still magenta (g -0.053, b +0.041 at 45-55 %), a cast or the subject's own colour."
   }
 ]

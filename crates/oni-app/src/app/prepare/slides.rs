@@ -96,7 +96,7 @@ impl Ctl {
                             drawn = tile.as_ref().and_then(|t| Drawn::of(t, screen).zip(negative::of(t)));
                             match read {
                                 Some(read) => {
-                                    roll.add(&read.reading.rgb, &read.levels);
+                                    roll.add(&read.reading.rgb, &read.balance.levels);
                                     voted = true;
                                     written.push((path.clone(), before, read.settings));
                                 }
