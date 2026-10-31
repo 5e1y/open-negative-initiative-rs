@@ -25,9 +25,10 @@ pub struct Row {
 }
 
 /// Fields outside every row, with the reason: absent rather than unticked, so none is ticked by mistake.
-pub const EXCLUDED: [(&str, &str); 14] = [
+pub const EXCLUDED: [(&str, &str); 15] = [
     ("geometry", "depends on this frame's content: pasting one destroys hand-made cropping"),
     ("mode", "negative or positive is what the frame is, not a look one applies"),
+    ("invertedSource", "a positive read as its own negative is what the frame is, as its mode"),
     ("film", "which roll a frame belongs to: pasting a look would move photographs about"),
     ("manualOrder", "a frame's own hand-placed position among its siblings"),
     ("sheet", "a contact sheet's own grid, what this scan is"),
@@ -299,6 +300,7 @@ pub fn changed(settings: &PipelineSettings) -> BTreeSet<&'static str> {
 /// What every reset lands on: rest in the frame's mode, plus the file's own facts and its roll.
 pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
     let mut block = PipelineSettings::rest(settings.mode, settings.decoded_from_mosaic);
+    block.inverted_source = settings.inverted_source;
     block.sheet = settings.sheet.clone();
     block.film = settings.film.clone();
     block.face = settings.face;
@@ -332,9 +334,16 @@ pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
     block
 }
 
-/// The bar's reset; on the Scanner face Chrome is part of the face, the clicks are the edit.
+/// The bar's reset: the look back to rest and the crop gone, the measure's conversion kept, a roll's
+/// reference or a slide's own Roll Settings, which no reference holds (owner's call). On the Scanner
+/// face Chrome is part of the face, the clicks are the edit.
 pub fn reset_blank(settings: &PipelineSettings, scanner_face: bool) -> PipelineSettings {
     let mut blank = imported(settings);
+    if settings.roll_reference.is_none() && settings.mode == ConversionMode::Positive {
+        let all = oni_settings::settings::roll_settings::Field::ALL.into_iter().collect();
+        blank = oni_settings::settings::roll_settings::copied(&all, settings, &blank);
+    }
+    blank.geometry = oni_settings::frame::Geometry::reset_keeping(&settings.geometry);
     if scanner_face {
         blank.secret_sauce = settings.secret_sauce;
     } else {
@@ -348,6 +357,8 @@ pub fn carried(block: &PipelineSettings, next: ConversionMode) -> PipelineSettin
     use oni_settings::axis::density_axis;
     let mut moved = block.clone();
     moved.mode = next;
+    // A positive read as a negative is one as long as it stays a negative.
+    moved.inverted_source &= next == ConversionMode::Negative;
     moved.density_ceiling = density_axis::carried(block.density_ceiling, block.decoded_from_mosaic, block.mode, next);
     moved.levels = carried_levels(block, next, moved.density_ceiling);
     if block.print.exposure == oni_settings::tone::Print::resting_exposure(block.mode) {
@@ -372,74 +383,4 @@ fn carried_levels(block: &PipelineSettings, next: ConversionMode, to_ceiling: f3
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::fields::declared_names;
-
-    #[test]
-    fn every_field_is_a_rows_or_excluded_and_never_both() {
-        let covered: BTreeSet<&str> = all().iter().flat_map(|r| r.covers.iter().copied()).collect();
-        let excluded: BTreeSet<&str> = EXCLUDED.iter().map(|(f, _)| *f).collect();
-        let declared: BTreeSet<&str> = declared_names().iter().copied().collect();
-        assert!(covered.is_disjoint(&excluded));
-        assert_eq!(covered.union(&excluded).copied().collect::<BTreeSet<_>>(), declared);
-        // Twin: dropping one excluded field leaves the union short of the struct.
-        let short: BTreeSet<&str> = excluded.iter().copied().filter(|f| *f != "passOf").collect();
-        assert_ne!(covered.union(&short).copied().collect::<BTreeSet<_>>(), declared);
-    }
-
-    #[test]
-    fn a_row_carries_its_field_and_a_slider_carries_only_its_value() {
-        let mut donor = PipelineSettings::default();
-        donor.gains.stops = [0.4, -0.2, 0.1];
-        donor.sharpen.amount = 2.0;
-        let target = PipelineSettings::default();
-        let rows = BTreeSet::from(["gains".to_string()]);
-        assert_eq!(apply(&rows, &donor, &target).gains, donor.gains);
-        assert_eq!(apply(&rows, &donor, &target).sharpen, target.sharpen);
-        let one = BTreeSet::from(["gains.green".to_string()]);
-        assert_eq!(apply(&one, &donor, &target).gains.stops, [0.0, -0.2, 0.0]);
-        // Twin: a name no row or slider owns carries nothing.
-        let none = BTreeSet::from(["geometry".to_string()]);
-        assert_eq!(apply(&none, &donor, &target), target);
-    }
-
-    #[test]
-    fn lighting_leaves_the_filters_and_color_carries_them() {
-        let mut donor = PipelineSettings::default();
-        donor.print.exposure = 0.9;
-        donor.print.red.exposure = 0.3;
-        let target = PipelineSettings::default();
-        let lit = apply(&BTreeSet::from(["levelsGlobal".to_string()]), &donor, &target);
-        assert_eq!((lit.print.exposure, lit.print.red.exposure), (0.9, 0.0));
-        let coloured = apply(&BTreeSet::from(["curves".to_string()]), &donor, &target);
-        assert_eq!((coloured.print.exposure, coloured.print.red.exposure), (target.print.exposure, 0.3));
-    }
-
-    #[test]
-    fn the_reset_keeps_geometry_flat_field_and_dye_family() {
-        use oni_settings::blocks::SeparationFamily;
-        let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
-        s.geometry.angle = 2.5;
-        s.flat_field.amount = 0.4;
-        s.separation_family = Some(SeparationFamily::FujiC41);
-        s.separation = 1.3;
-        s.print.exposure = 0.2;
-        s.sharpen.amount = 2.5;
-        let blank = reset_blank(&s, false);
-        assert_eq!((blank.geometry.angle, blank.flat_field.amount), (2.5, 0.4));
-        assert_eq!(blank.separation_family, s.separation_family);
-        // Twin: the look goes back to rest, so the check sees a reset that kept too much.
-        let rest = PipelineSettings::rest(ConversionMode::Negative, true);
-        assert_eq!((blank.separation, blank.print.exposure, blank.sharpen), (rest.separation, rest.print.exposure, rest.sharpen));
-        assert_ne!(blank, s);
-    }
-
-    #[test]
-    fn changed_names_the_rows_off_rest() {
-        let mut s = PipelineSettings::rest(ConversionMode::Negative, false);
-        assert!(changed(&s).is_empty());
-        s.texture.amount = 0.5;
-        assert_eq!(changed(&s), BTreeSet::from(["texture"]));
-    }
-}
+mod tests;

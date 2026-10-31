@@ -50,7 +50,7 @@ impl Ctl {
         let ticked = r.ticked();
         let flagged = r.flagged();
         let measuring = r.progress;
-        let m = measured(&frames, r.film);
+        let m = measured(&frames, r.walked());
         let last = m.len().saturating_sub(1);
         let step = r.step;
         let status = match measuring {
@@ -69,7 +69,7 @@ impl Ctl {
                     Step::Base => r.base_frame == i,
                     _ => f.ticked,
                 },
-                flagged: f.flagged && r.film != ConversionMode::Positive,
+                flagged: f.flagged && r.walked() != ConversionMode::Positive,
                 apart: apart.contains(&f.path),
                 ticked: f.ticked,
                 rgb: f.passes.is_some(),
@@ -100,7 +100,9 @@ impl Ctl {
         } else {
             String::new()
         };
-        let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, r.film)).collect();
+        let walked = r.walked();
+        let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
+        let positive = i32::from(!r.positive_inverted);
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
         let shown_path = shown_frame.as_ref().map(|f| f.path.clone());
         let show_card = shown_path != r.shown_path;
@@ -128,7 +130,8 @@ impl Ctl {
         self.play_tutorial(measuring.is_none().then_some(step.index()));
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
         p.set_heading(heading.into());
-        p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail(film).into() });
+        p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail(walked).into() });
+        p.set_positive(positive);
         p.set_status(status.into());
         p.set_differ(if measuring.is_some() { SharedString::new() } else { differ_text(&frames).into() });
         p.set_left_out(left_out_text(left_out).into());

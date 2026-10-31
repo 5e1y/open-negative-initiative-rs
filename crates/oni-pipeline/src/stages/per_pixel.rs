@@ -32,6 +32,7 @@ impl Stage for PerPixel {
 
 kernel!(STAGE47, wgsl::STAGE47, call "stage47_px(v)");
 kernel!(EXPOSURE, wgsl::EXPOSURE_ADJUST, call "exposure_adjust_px(v)");
+kernel!(RECIPROCAL, wgsl::RECIPROCAL, call "reciprocal_px(v)");
 kernel!(OUTPUT_CLIP, wgsl::OUTPUT_CLIP, call "output_clip_px(v)");
 kernel!(FLAT_FIELD, [wgsl::FLAT_FIELD], "fn pixel(p: vec2<i32>) -> vec4<f32> { return flat_field_px(load(p), load1(p)); }");
 kernel!(SATURATION, wgsl::SATURATION_CURVE, call "saturation_curve_px(v)");
@@ -53,6 +54,11 @@ pub fn stage47(k: &Stage47) -> PerPixel {
 /// `CIExposureAdjust` by `ev` stops.
 pub fn exposure(ev: f32) -> PerPixel {
     PerPixel { name: "exposure-adjust", kernel: &EXPOSURE, params: uniform(HEAD, &[[ev, 0.0, 0.0, 0.0]]) }
+}
+
+/// A positive read as its own negative, its light inverted about `k`, held at `floor` below.
+pub fn reciprocal(k: f32, floor: f32) -> PerPixel {
+    PerPixel { name: "reciprocal", kernel: &RECIPROCAL, params: uniform(HEAD, &[[k, floor, 0.0, 0.0]]) }
 }
 
 pub fn output_clip() -> PerPixel {

@@ -13,6 +13,12 @@ pub type M3 = [[f32; 3]; 3];
 
 pub const IDENTITY: M3 = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
 
+/// The light a positive read as its own negative is inverted about: a slide's densest film, about
+/// 1e-3 of a camera scan's light, lands near a negative's clear base (owner's experiment).
+pub const INVERSION: f32 = 5e-4;
+/// The darkest light inverted, past which the sensor's black would read as endless density.
+pub const INVERSION_FLOOR: f32 = INVERSION / 64.0;
+
 mod decompression;
 mod points;
 mod separation;

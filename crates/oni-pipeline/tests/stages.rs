@@ -60,6 +60,8 @@ fn per_pixel_kernels_match_their_references() {
     let ev = |ev| ExposureAdjust { ev };
     per_pixel(&mut g, "exposure", &input, &pixels, stages::exposure(0.7), |p| cpu::exposure_adjust(p, &ev(0.7)), |p| cpu::exposure_adjust(p, &ev(0.72)));
     per_pixel(&mut g, "output clip", &input, &pixels, stages::output_clip(), cpu::output_clip, |p| p);
+    let rc = |k| oni_render::Reciprocal { k, floor: 0.05 };
+    per_pixel(&mut g, "reciprocal, its floor under the noise's zero", &input, &pixels, stages::reciprocal(0.4, 0.05), |p| cpu::reciprocal(p, &rc(0.4)), |p| cpu::reciprocal(p, &rc(0.41)));
 
     let sauce = finishing::saturation(&finishing::sauce(1.0)).unwrap();
     let less = finishing::saturation(&finishing::sauce(0.9)).unwrap();

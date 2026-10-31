@@ -4750,5 +4750,33 @@
     "title": "A cropped frame's thumbnail shows its crop",
     "status": "done",
     "detail": "Owner's call beyond Swift: Thumbnails.isConverted fell back on the camera's own preview for a frame back at rest, uncropped; a slide reset or never levelled showed its sprockets though cropped. A frame whose framing is not neutral now renders its own thumbnail. Check: scans a measured frame shows the render and a crop alone its framing (twin: a frame at rest and untouched shows its scan)."
+  },
+  {
+    "id": 1007,
+    "type": "revert",
+    "title": "A slide's levelling by statistics withdrawn: Auto Levels moves its gains alone",
+    "status": "done",
+    "detail": "Owner's call (2026-10-31): #1002 to #1004 (chroma aligned on 10/90 %, cells read together, near-grey midtones) gave random results on the owner's slides and are withdrawn. Auto Levels and Prepare the Roll's gains-only conversion bring a slide's red and blue medians onto green's by its gains alone, as a white balance does, its windows at rest, no black or white placed (auto_levels::keyed). Checks: positive_levels the gains alone move, the windows stay at rest (twins: at rest the warm medians stand apart; a negative still gets Classic's windows), slide_roll each slide takes its own gains inside the roll's window (twin: a window over the white border moves them)."
+  },
+  {
+    "id": 1008,
+    "type": "feature",
+    "title": "A positive roll can be read as its own negative",
+    "status": "done",
+    "detail": "Owner's experiment: the negative's conversion works well, so a positive may run it whole. A frame's invertedSource (written only when true, a Roll Settings field beside mode) adds one stage at the end of the chain's head, after the flat-field, the framing and the dust: each channel's light inverted about INVERSION (5e-4, a slide's densest film landing near a negative's clear base), held at INVERSION_FLOOR; the frame is then a negative in every respect but its dyes, never unmixed, their block hidden. Prepare the Roll's Film step offers a positive roll a Conversion, As a Negative (the default, remembered) or Gains Only: as a negative, the roll walks a negative's steps (the base picked on the black film between frames, flags, window) and is measured into one roll reference. A mode change off Negative drops the inversion. Checks: stages the reciprocal kernel against its CPU reference with the floor reached (twin: another k), inverted a positive read as its own negative keeps its tones' order (twin: a negative's own conversion runs the other way), separation no dye unmixed (twin: the same negative not inverted), the slides window check measures the same roll as a negative into one reference."
+  },
+  {
+    "id": 1009,
+    "type": "feature",
+    "title": "Prepare the Roll shows and measures every scan whole",
+    "status": "done",
+    "detail": "Owner's call: whatever a frame's crop, Prepare the Roll's tiles, card and previews show the whole scan, and the measure reads it uncropped (crop and straightening dropped from the measuring copy), its window in the scan's own fractions; the frames are written back on their own crop."
+  },
+  {
+    "id": 1010,
+    "type": "fix",
+    "title": "Reset Scan keeps the measure's conversion and drops the crop; Reset to Default drops every crop",
+    "status": "done",
+    "detail": "Owner's calls: Reset Scan (the bar's reset to the imported state) took a slide's measured gains and windows back to rest, as a slide stands on no roll reference; it now keeps a slide's Roll Settings, as a negative keeps its roll's reference, and drops the crop and the straightening, the measuring window kept. Reset to Default leaves every frame and pass on the default framing. Checks: parameters the reset drops the crop and keeps its window, flat-field and dye family (twin: the look goes to rest), the reset keeps a slide's measured conversion (twin: a negative never measured loses its gains)."
   }
 ]

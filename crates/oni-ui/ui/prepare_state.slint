@@ -18,6 +18,8 @@ export global Preparing {
     in property <string> differ;
     in property <string> left-out;
     in-out property <int> film;
+    // A positive roll's conversion: 0 read as its own negative, 1 its gains alone.
+    in-out property <int> positive;
     in-out property <int> capture: 1;
     in property <string> passes-note;
     // RGB Passes grouped: the first frame's files under their bands, the count, and what to check.
@@ -116,6 +118,7 @@ export global Preparing {
     callback roll-trace-resized(length, length);
     callback step-picked(int);
     callback film-picked(int);
+    callback positive-picked(int);
     callback capture-picked(int);
     callback pass-moved(int, int);
     callback shift-grouping();

@@ -21,6 +21,10 @@ use std::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PipelineSettings {
     pub mode: ConversionMode,
+    /// A positive read as its own negative, every density flipped before the negative's conversion
+    /// (owner's experiment); false, and unwritten, on every other frame.
+    #[serde(rename = "invertedSource", skip_serializing_if = "std::ops::Not::not", default)]
+    pub inverted_source: bool,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub film: Option<Film>,
     #[serde(rename = "manualOrder", skip_serializing_if = "Option::is_none", default)]
@@ -94,6 +98,7 @@ impl Default for PipelineSettings {
     fn default() -> Self {
         PipelineSettings {
             mode: ConversionMode::Negative,
+            inverted_source: false,
             film: None,
             manual_order: None,
             sheet: None,
@@ -284,8 +289,9 @@ pub mod roll_settings {
         ];
     }
 
-    pub const FIELD_NAMES: [&str; 12] = [
+    pub const FIELD_NAMES: [&str; 13] = [
         "mode",
+        "invertedSource",
         "sourceEncoding",
         "flatField",
         "gains",
@@ -303,7 +309,7 @@ pub mod roll_settings {
         Field::ALL
             .into_iter()
             .filter(|field| match field {
-                Field::Mode => before.mode != after.mode,
+                Field::Mode => before.mode != after.mode || before.inverted_source != after.inverted_source,
                 Field::SourceEncoding => before.source_encoding != after.source_encoding,
                 Field::FlatField => before.flat_field != after.flat_field,
                 Field::Gains => before.gains != after.gains,
@@ -344,7 +350,10 @@ pub mod roll_settings {
                 continue;
             }
             match field {
-                Field::Mode => out.mode = donor.mode,
+                Field::Mode => {
+                    out.mode = donor.mode;
+                    out.inverted_source = donor.inverted_source;
+                }
                 Field::SourceEncoding => out.source_encoding = donor.source_encoding,
                 Field::FlatField => out.flat_field = donor.flat_field.clone(),
                 Field::Gains => out.gains = donor.gains,

@@ -12,6 +12,8 @@ pub const STAGE47: &str = include_str!("wgsl/stage47.wgsl");
 pub const OUTPUT_CLIP: &str = include_str!("wgsl/output_clip.wgsl");
 /// `exposure_adjust_px(s)`.
 pub const EXPOSURE_ADJUST: &str = include_str!("wgsl/exposure_adjust.wgsl");
+/// `reciprocal_px(s)`.
+pub const RECIPROCAL: &str = include_str!("wgsl/reciprocal.wgsl");
 /// `flat_field_px(s, mask)`.
 pub const FLAT_FIELD: &str = include_str!("wgsl/flat_field.wgsl");
 /// `curves_px(s)`, reading `curves_rgb_lut(k)` and `curves_luma_lut(k)`.

@@ -277,7 +277,7 @@ impl Ctl {
         if !same(&lab.get_modified(), &modified) {
             lab.set_modified(ModelRc::new(VecModel::from(modified)));
         }
-        let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !shown;
+        let separation = !settings.mode.is_monochrome() && settings.rgb_passes.is_none() && !settings.inverted_source && !shown;
         let panel = w.global::<PanelState>();
         panel.set_separation_shown(separation);
         panel.set_slide(settings.mode == oni_settings::ConversionMode::Positive);

@@ -34,6 +34,18 @@ impl Ctl {
             }
         });
         let c = me.clone();
+        p.on_positive_picked(move |i| {
+            let inverted = i == 0;
+            {
+                let r = &mut c.state.borrow_mut().prepare;
+                r.positive_inverted = inverted;
+                let film = r.film;
+                r.set_film(film);
+            }
+            c.remember(POSITIVE_INVERTED_KEY, inverted.into());
+            c.publish_prepare();
+        });
+        let c = me.clone();
         p.on_capture_picked(move |i| {
             if let Some(capture) = usize::try_from(i).ok().and_then(|i| Capture::ALL.get(i).copied()) {
                 c.capture_picked(capture);
@@ -93,7 +105,7 @@ impl Ctl {
         p.on_back(move || {
             let (step, capture, film) = {
                 let r = &c.state.borrow().prepare;
-                (r.step, r.capture, r.film)
+                (r.step, r.capture, r.walked())
             };
             c.step_to(neighbour(step, -1, capture, film));
         });

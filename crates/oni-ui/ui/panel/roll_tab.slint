@@ -169,7 +169,7 @@ export component RollPane inherits Pane {
         if PanelState.slide: Button {
             size: ButtonSize.plate;
             text: @tr("AUTO LEVELS");
-            help: @tr("Aligns the three channels on this photo's darkest and lightest tenths inside its measuring frame, so its cast goes, then places one black and one white point for all three");
+            help: @tr("Moves this photo's gains so red's and blue's middle tones sit on green's inside its measuring frame, as a white balance does; its black and white points stay at rest");
             enabled: !PanelState.levelling;
             clicked => { PanelState.auto-levels(); }
         }

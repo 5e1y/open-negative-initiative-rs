@@ -144,7 +144,7 @@ impl Pipeline {
     }
 
     /// `Pipeline.framed`: the capture's exposure evened, the flat-field in the scan's own frame,
-    /// stage 0, then the corrections in the cropped frame a stroke is painted on.
+    /// stage 0, the corrections in the cropped frame a stroke is painted on, a positive read as a negative last.
     pub fn framed(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, scale: f64, inputs: &Inputs) -> Result<Image> {
         let mut out = image;
         if s.capture_stops != 0.0 {
@@ -152,7 +152,8 @@ impl Pipeline {
         }
         out = self.flat_field(graph, out, s, inputs)?;
         out = geometry::apply(out, &s.geometry, scale);
-        self.corrections(graph, out, s, scale, inputs)
+        let out = self.corrections(graph, out, s, scale, inputs)?;
+        Ok(if s.inverted_source { out.then(stages::reciprocal(conversion::INVERSION, conversion::INVERSION_FLOOR)) } else { out })
     }
 
     fn flat_field(&mut self, graph: &mut Graph, image: Image, s: &PipelineSettings, inputs: &Inputs) -> Result<Image> {

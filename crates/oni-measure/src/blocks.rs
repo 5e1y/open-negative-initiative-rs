@@ -83,9 +83,6 @@ pub struct Report {
 pub struct Reading {
     pub histogram: Histogram,
     pub report: Option<Report>,
-    /// The cells the histogram counts, each with its three channels together, so a colour is read
-    /// where it stands rather than channel by channel.
-    pub cells: Cells,
 }
 
 /// What one grid says of a counted image, one entry per cell: the medians and the two tails past `TAIL`.
@@ -252,8 +249,7 @@ pub fn reading(counted: &Plane, windows: &[Rect], bins: usize) -> Reading {
     let luma: Vec<f32> = kept.iter().map(|&i| cells.luma[i]).collect();
     let mut counted = histogram(&rgb, &luma, bins);
     counted.ends = Some(ends);
-    let held = Cells { rgb, luma, low: kept.iter().map(|&i| cells.low[i]).collect(), high: kept.iter().map(|&i| cells.high[i]).collect() };
-    Reading { histogram: counted, report: Some(Report { black, white, grids: vec![grid] }), cells: held }
+    Reading { histogram: counted, report: Some(Report { black, white, grids: vec![grid] }) }
 }
 
 #[cfg(test)]

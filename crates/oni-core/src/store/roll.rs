@@ -30,6 +30,11 @@ pub fn split(pass: &PipelineSettings, framing: Option<Geometry>) -> PipelineSett
     out
 }
 
+/// Reset to Default: back to unconverted, a pass split from its lead, every crop gone (owner's call).
+fn defaulted(settings: &PipelineSettings, framing: Option<Geometry>) -> PipelineSettings {
+    PipelineSettings { geometry: Geometry::default(), ..split(settings, framing) }
+}
+
 /// The undo label of a measure, counting frames, never the passes riding with them.
 pub fn measure_label(frames: usize) -> String {
     trn("Measure the roll", "Measure the roll of {n} photos", frames as u64)
@@ -118,7 +123,7 @@ impl EditorStore {
                     }
                 }
             }
-            let blank = parameters::unconverted(&self.settings);
+            let blank = defaulted(&self.settings, None);
             if blank != self.settings && self.takes_hands() {
                 before.insert(current.clone(), self.settings.clone());
                 after.insert(current.clone(), blank.clone());
@@ -133,7 +138,7 @@ impl EditorStore {
         for (pass, framing) in rgb_passes::framings(&others) {
             framings.entry(pass).or_insert(framing);
         }
-        let (was, now) = self.modify(&others, |path, loaded| Some(split(loaded, framings.get(path).copied())));
+        let (was, now) = self.modify(&others, |path, loaded| Some(defaulted(loaded, framings.get(path).copied())));
         before.extend(was);
         after.extend(now);
         for id in &reach.references {

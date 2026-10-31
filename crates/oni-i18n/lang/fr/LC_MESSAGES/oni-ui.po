@@ -1770,8 +1770,8 @@ msgid "AUTO LEVELS"
 msgstr "NIVEAUX AUTO"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Aligns the three channels on this photo's darkest and lightest tenths inside its measuring frame, so its cast goes, then places one black and one white point for all three"
-msgstr "Aligne les trois canaux sur le dixième le plus sombre et le dixième le plus clair de cette photo, dans son cadre de mesure, pour retirer sa dominante, puis place un seul point noir et un seul point blanc pour les trois"
+msgid "Moves this photo's gains so red's and blue's middle tones sit on green's inside its measuring frame, as a white balance does; its black and white points stay at rest"
+msgstr "Déplace les gains de cette photo pour que les tons moyens du rouge et du bleu rejoignent ceux du vert dans son cadre de mesure, comme une balance des blancs ; ses points noir et blanc restent au repos"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -1860,6 +1860,22 @@ msgstr "Charger…"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Settings differ across the roll"
 msgstr "Les réglages varient d’une vue à l’autre"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Conversion"
+msgstr "Conversion"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "As a negative: each slide is inverted and converted as a negative is, its roll measured and its black picked on the film between the frames. Gains only: each slide keeps its black and white points at rest, its gains alone moved as a white balance moves them."
+msgstr "Comme un négatif : chaque diapositive est inversée puis convertie comme un négatif, sa pellicule mesurée et son noir prélevé sur le film entre les vues. Gains seuls : chaque diapositive garde ses points noir et blanc au repos, seuls ses gains bougent, comme avec une balance des blancs."
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "As a Negative"
+msgstr "Comme un négatif"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "Gains Only"
+msgstr "Gains seuls"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
@@ -3456,8 +3472,8 @@ msgstr[0] "{names} ne contient rien à mesurer : la vue prend les réglages de l
 msgstr[1] "{names} ne contiennent rien à mesurer : ces vues prennent les réglages de la pellicule sans peser dessus."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide takes its own black and white from what this frame holds."
-msgstr "Tracez le cadre à l’intérieur de l’image, à l’écart du passe-vue et des bords du film, et vérifiez-le sur chaque scan avec le curseur. Chaque diapositive prend son propre noir et son propre blanc dans ce que ce cadre contient."
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Each slide's gains are aligned on what this frame holds."
+msgstr "Tracez le cadre à l’intérieur de l’image, à l’écart du passe-vue et des bords du film, et vérifiez-le sur chaque scan avec le curseur. Les gains de chaque diapositive sont alignés sur ce que ce cadre contient."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."

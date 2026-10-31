@@ -78,16 +78,16 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert!(!p.get_shown(), "a slide asks for no roll");
     assert!(!w.global::<Framing>().get_has_window(), "nor opens on a window");
 
-    // Auto levels: the warm cast aligned away on each channel's own window, the gains at rest, one undo.
+    // Auto levels: the warm cast's red and blue gains moved onto green's, the windows at rest, one undo.
     let rest = settings();
     panel.invoke_auto_levels();
-    rig.until("the slide levelled", Duration::from_secs(60), || settings().levels != rest.levels);
+    rig.until("the slide balanced", Duration::from_secs(60), || settings().gains != rest.gains);
     let s = settings();
-    assert!(!alike(&s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "{:?} {:?}", s.levels, s.gains);
-    assert!(s.levels.red.black > rest.levels.red.black || s.levels.red.white < rest.levels.red.white);
+    assert!(alike(&s) && s.roll_reference.is_none(), "{:?}", s.levels);
+    assert!(s.gains.stops[1] == 0.0 && s.gains.stops[0] * s.gains.stops[2] < 0.0, "red and blue moved apart: {:?}", s.gains);
     ctl.act(oni_app::Act::Undo);
     rig.pump();
-    assert_eq!(settings().levels, rest.levels, "one undo takes the key back");
+    assert_eq!(settings().gains, rest.gains, "one undo takes the key back");
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
 
@@ -103,7 +103,10 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     assert_eq!(p.get_action_title().as_str(), "NEXT");
     p.invoke_film_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, true, true, false], "a slide roll has no base and no flags, but its window");
+    assert_eq!(skipped(), [false, true, false, false, false], "read as its own negative, a slide roll walks a negative's steps");
+    p.invoke_positive_picked(1);
+    rig.pump();
+    assert_eq!(skipped(), [false, true, true, true, false], "its gains alone, it has no base and no flags, but its window");
     p.invoke_advance();
     rig.pump();
     assert_eq!(p.get_step(), 4, "the film leads to the window");
@@ -116,18 +119,16 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     rig.settle();
     rig.until("a slide open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some());
     rig.settle();
-    // The open frame landed in memory, the others on disk; each its own black and white.
+    // The open frame landed in memory, the others on disk; each its gains moved, its windows at rest.
     let open = ctl.state.borrow().open_path().map(str::to_string).unwrap();
     let laid = |i: usize| if open.ends_with(&format!("F{i}.tif")) { settings() } else { disk(i) };
     let frames: Vec<PipelineSettings> = (0..FRAMES).map(laid).collect();
     let window = frames[0].geometry.measure_window;
     for (i, s) in frames.iter().enumerate() {
-        assert_eq!((s.mode, s.roll_reference.is_none(), s.gains.stops), (ConversionMode::Positive, true, [0.0; 3]), "F{i}");
-        assert!(!alike(s) && s.levels != rest.levels, "F{i}: the cast aligned away: {:?}", s.levels);
+        assert_eq!((s.mode, s.roll_reference.is_none(), s.inverted_source), (ConversionMode::Positive, true, false), "F{i}");
+        assert!(alike(s) && s.gains.stops[1] == 0.0 && s.gains.stops[0] * s.gains.stops[2] < 0.0, "F{i}: {:?} {:?}", s.levels, s.gains);
         assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
     }
-    let ends: Vec<(f32, f32)> = frames.iter().map(|s| (s.levels.red.black, s.levels.red.white)).collect();
-    assert!(ends[0] != ends[1] && ends[1] != ends[2] && ends[0] != ends[2], "each slide its own: {ends:?}");
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
     // The key on a prepared slide finds Prepare's levels, press after press; its twin, the key
@@ -144,10 +145,32 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     rig.pump();
     ctl.act(oni_app::Act::Undo);
     rig.pump();
-    rig.until("every slide back", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).levels == rest.levels && disk(i).geometry.measure_window.is_none()));
+    rig.until("every slide back", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains == rest.gains && disk(i).geometry.measure_window.is_none()));
     ctl.act(oni_app::Act::Redo);
     rig.pump();
-    rig.until("every slide levelled again", Duration::from_secs(10), || (0..FRAMES).all(|i| !alike(&disk(i)) && disk(i).levels != rest.levels));
+    rig.until("every slide balanced again", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains != rest.gains));
+
+    // Read as its own negative, the same roll is measured as a negative's: one reference, no dyes unmixed.
+    lib.invoke_tile_clicked(first(), false, false);
+    rig.pump();
+    ctl.act(oni_app::Act::PrepareRoll);
+    rig.until("the roll's surface again", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == FRAMES);
+    p.invoke_positive_picked(0);
+    rig.pump();
+    assert_eq!(skipped(), [false, true, false, false, false]);
+    p.invoke_step_picked(4);
+    rig.pump();
+    p.invoke_advance();
+    rig.until("the slides measured as a negative", Duration::from_secs(60), || !p.get_shown());
+    rig.settle();
+    let open = ctl.state.borrow().open_path().map(str::to_string).unwrap_or_default();
+    let read = |i: usize| if open.ends_with(&format!("F{i}.tif")) { settings() } else { disk(i) };
+    let ids: Vec<_> = (0..FRAMES).map(|i| read(i).roll_reference.map(|r| r.id)).collect();
+    for i in 0..FRAMES {
+        let s = read(i);
+        assert_eq!((s.mode, s.inverted_source), (ConversionMode::Negative, true), "F{i}");
+    }
+    assert!(ids[0].is_some() && ids.iter().all(|id| *id == ids[0]), "one roll: {ids:?}");
 
     // Twin: a negative on its roll levels each channel on its own, the gains aligned.
     shell.open_folder(&negatives);

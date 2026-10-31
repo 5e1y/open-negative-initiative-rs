@@ -109,6 +109,16 @@ export component RollPanel inherits Surface {
                             picked(i) => { Preparing.film = i; Preparing.film-picked(i); }
                         }
                     }
+                    if Preparing.film == 1: Field {
+                        label: @tr("Conversion");
+                        help: @tr("As a negative: each slide is inverted and converted as a negative is, its roll measured and its black picked on the film between the frames. Gains only: each slide keeps its black and white points at rest, its gains alone moved as a white balance moves them.");
+                        Tabs {
+                            tabs: [@tr("As a Negative"), @tr("Gains Only")];
+                            marked: [false, false];
+                            selected: Preparing.positive;
+                            picked(i) => { Preparing.positive = i; Preparing.positive-picked(i); }
+                        }
+                    }
                     Field {
                         label: @tr("Digitised with");
                         Tabs {

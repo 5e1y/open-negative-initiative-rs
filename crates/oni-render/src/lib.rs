@@ -11,6 +11,7 @@ pub use kernel::color_matrix::ColorMatrix;
 pub use kernel::curves::{LUT_SIZE, Curves};
 pub use kernel::detail::{Detail, BLUR_FLOOR, detail_reach};
 pub use kernel::exposure_adjust::ExposureAdjust;
+pub use kernel::reciprocal::Reciprocal;
 pub use kernel::flat_field::FlatField;
 pub use kernel::gaussian::Gaussian;
 pub use kernel::orient::Orient;

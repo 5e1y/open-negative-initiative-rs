@@ -54,7 +54,7 @@ impl Ctl {
             let r = &mut s.prepare;
             let Some(path) = r.base_shown().map(|f| f.path.clone()) else { return };
             r.base = Some(BasePick { path, unit: ((x - rect.0) / rect.2, (y - rect.1) / rect.3), radius });
-            neighbour(Step::Base, 1, r.capture, r.film)
+            neighbour(Step::Base, 1, r.capture, r.walked())
         };
         self.step_to(next);
     }

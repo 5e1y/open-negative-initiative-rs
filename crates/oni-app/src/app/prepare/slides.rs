@@ -1,19 +1,19 @@
-//! A slide roll: one measuring window for the roll, then each frame's own Auto Levels read through
-//! it, never a roll reference (owner's call).
+//! A slide roll: one measuring window for the roll, then each frame's own gains aligned through it,
+//! never a roll reference (owner's call).
 
 use super::*;
 use super::trace::{BINS, Drawn};
 
-/// A slide roll's screen so far: its slides' readings summed, and each end every slide placed, the
-/// screen's ends their median, since each slide keeps its own.
+/// A slide roll's screen so far: its slides' readings summed, no ends, since a slide keeps its windows
+/// at rest and moves its gains alone.
 #[derive(Default)]
 pub(in crate::app) struct SlideRoll {
     sum: Vec<[f32; 3]>,
-    ends: Vec<[[f32; 2]; 3]>,
+    slides: usize,
 }
 
 impl SlideRoll {
-    pub fn add(&mut self, counts: &[[f32; 3]], levels: &[oni_core::balance::Suggestion; 3]) {
+    pub fn add(&mut self, counts: &[[f32; 3]]) {
         if self.sum.is_empty() {
             self.sum = vec![[0.0; 3]; BINS];
         }
@@ -22,21 +22,11 @@ impl SlideRoll {
             let at = ((i as f32 / last * BINS as f32) as usize).min(BINS - 1);
             (0..3).for_each(|c| self.sum[at][c] += b[c]);
         }
-        self.ends.push(levels.map(|l| [l.black, l.white]));
+        self.slides += 1;
     }
 
     pub fn drawn(&self) -> Option<(Drawn, usize)> {
-        let n = self.ends.len();
-        if n == 0 {
-            return None;
-        }
-        let median = |c: usize, e: usize| {
-            let mut v: Vec<f32> = self.ends.iter().map(|x| x[c][e]).collect();
-            v.sort_by(f32::total_cmp);
-            v[n / 2]
-        };
-        let ends = [0, 1, 2].map(|c| [median(c, 0), median(c, 1)]);
-        Some((Drawn::stacked((0..3).map(|c| self.sum.iter().map(|b| b[c]).collect()).collect(), Some(ends)), n))
+        (self.slides > 0).then(|| (Drawn::stacked((0..3).map(|c| self.sum.iter().map(|b| b[c]).collect()).collect(), None), self.slides))
     }
 }
 
@@ -44,7 +34,7 @@ impl Roll {
     /// The roll's film, its step brought back inside the steps that film walks.
     pub(super) fn set_film(&mut self, film: ConversionMode) {
         self.film = film;
-        if self.step.skipped(self.capture, film) {
+        if self.step.skipped(self.capture, self.walked()) {
             self.step = Step::Window;
         }
     }
@@ -91,14 +81,16 @@ impl Ctl {
                     let mut voted = false;
                     if let Some(before) = before {
                         let start = roll::slide(&before, window, mask.as_ref(), stops(path));
-                        let read = m.and_then(|m| m.with(path, &start, |r, copy| Some((key::slide_read(r, copy, &start), oni_measure::sheet::tile(r, copy, &start, side)))));
+                        let seen = uncropped(&start);
+                        let read = m.and_then(|m| m.with(path, &seen, |r, copy| Some((key::slide_read(r, copy, &seen), oni_measure::sheet::tile(r, copy, &seen, side)))));
                         if let Some((read, tile)) = read {
                             drawn = tile.as_ref().and_then(|t| Drawn::of(t, screen).zip(negative::of(t)));
                             match read {
-                                Some(read) => {
-                                    roll.add(&read.reading.rgb, &read.balance.levels);
+                                Some((settings, reading)) => {
+                                    roll.add(&reading.rgb);
                                     voted = true;
-                                    written.push((path.clone(), before, read.settings));
+                                    // Measured whole, written on the frame's own crop.
+                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, ..settings }));
                                 }
                                 None => {
                                     blank.push(path.clone());
@@ -145,9 +137,13 @@ mod tests {
 
     #[test]
     fn a_roll_turned_to_slides_leaves_the_steps_they_skip_and_its_flags_count_no_more() {
-        let mut r = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+        let mut r = Roll { step: Step::Flags, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
         r.set_film(ConversionMode::Positive);
-        assert_eq!(r.step, Step::Window, "a slide roll has no flags step");
+        assert_eq!(r.step, Step::Window, "a slide roll on its gains alone has no flags step");
+        // Twin: read as its own negative, it walks a negative's flags.
+        let mut inverted = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
+        inverted.set_film(ConversionMode::Positive);
+        assert_eq!((inverted.step, inverted.walked()), (Step::Flags, ConversionMode::Negative));
         let mut frames = vec![Frame::new("a", ""), Frame::new("b", "")];
         frames[1].flagged = true;
         assert_eq!(measured(&frames, ConversionMode::Positive).len(), 2, "a flag a negative draft left is not a slide's");
@@ -159,20 +155,19 @@ mod tests {
     }
 
     #[test]
-    fn a_slide_roll_sums_its_slides_and_stands_on_their_median_ends() {
-        let end = |b: f32, w: f32| oni_core::balance::Suggestion { black: b, white: w, mid: 0.5, shadows: 0.25, highlights: 0.75 };
+    fn a_slide_roll_sums_its_slides_and_places_no_ends() {
         let mut roll = SlideRoll::default();
         assert!(roll.drawn().is_none(), "dark until a slide lands");
         let counts = |at: usize| (0..1024).map(|i| if i == at { [1.0; 3] } else { [0.0; 3] }).collect::<Vec<_>>();
-        roll.add(&counts(100), &[end(0.1, 0.8); 3]);
-        roll.add(&counts(900), &[end(0.2, 0.9); 3]);
-        roll.add(&counts(900), &[end(0.3, 0.7); 3]);
+        roll.add(&counts(100));
+        roll.add(&counts(900));
+        roll.add(&counts(900));
         let (d, n) = roll.drawn().unwrap();
-        assert_eq!((n, d.ends.unwrap()[1]), (3, [0.2, 0.8]));
+        assert_eq!((n, d.ends), (3, None), "a slide's windows stay at rest");
         assert!(d.bins[100 * BINS / 1024][0] > 0.0 && d.bins[900 * BINS / 1024][0] == 1.0, "both readings summed, the tallest at the top");
-        // Twin: one slide alone stands on its own ends.
+        // Twin: one slide alone shows its own reading only.
         let mut one = SlideRoll::default();
-        one.add(&counts(100), &[end(0.3, 0.7); 3]);
-        assert_eq!(one.drawn().unwrap().0.ends.unwrap()[0], [0.3, 0.7]);
+        one.add(&counts(100));
+        assert_eq!(one.drawn().unwrap().0.bins[900 * BINS / 1024][0], 0.0);
     }
 }

@@ -22,7 +22,7 @@ impl Ctl {
             AMOUNT | TEMPERATURE | TINT => position(flat_field(i), v),
             PICKER => ((f64::from(v) - pipette::RADIUS_RANGE.0) / (pipette::RADIUS_RANGE.1 - pipette::RADIUS_RANGE.0)) as f32,
             _ => {
-                let last = measured(&r.frames, r.film).len().saturating_sub(1).max(1);
+                let last = measured(&r.frames, r.walked()).len().saturating_sub(1).max(1);
                 v / last as f32
             }
         }
@@ -85,7 +85,7 @@ impl Ctl {
             PICKER => (pipette::RADIUS_RANGE.0 + f64::from(at) * (pipette::RADIUS_RANGE.1 - pipette::RADIUS_RANGE.0)) as f32,
             _ => {
                 let r = &self.state.borrow().prepare;
-                let last = measured(&r.frames, r.film).len().saturating_sub(1).max(1);
+                let last = measured(&r.frames, r.walked()).len().saturating_sub(1).max(1);
                 at * last as f32
             }
         }
@@ -102,7 +102,7 @@ impl Ctl {
                 PICKER => s.prepare.picker = Some(value),
                 SCRUBBER => {
                     let r = &mut s.prepare;
-                    let last = measured(&r.frames, r.film).len().saturating_sub(1);
+                    let last = measured(&r.frames, r.walked()).len().saturating_sub(1);
                     r.at = (value.round().max(0.0) as usize).min(last);
                 }
                 _ => {}

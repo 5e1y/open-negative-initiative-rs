@@ -626,6 +626,7 @@ fn every_field_lives_in_exactly_one_family() {
         });
         s.balance_method = Some("classic".into());
         s.balance_filters = Some([0.0; 3]);
+        s.inverted_source = true;
         encoded(&s)["settings"].as_object().unwrap().keys().cloned().collect()
     };
     let families = |names: &[&str]| -> Vec<String> {
@@ -639,7 +640,7 @@ fn every_field_lives_in_exactly_one_family() {
     };
     let mut sorted = keys.clone();
     sorted.sort();
-    assert_eq!(keys.len(), 42);
+    assert_eq!(keys.len(), 43);
     assert_eq!(families(&oni_settings::settings::roll_settings::FIELD_NAMES), sorted);
     // Twin: a family missing one field no longer covers the document.
     let short = &oni_settings::settings::roll_settings::FIELD_NAMES[1..];

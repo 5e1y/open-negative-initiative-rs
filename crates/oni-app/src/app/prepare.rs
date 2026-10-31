@@ -40,7 +40,12 @@ mod draft_base;
 mod trace;
 mod negative;
 mod slides;
+mod sheet_plan;
+use sheet_plan::SheetPlan;
 pub use model::*;
+
+/// The preference a positive roll's conversion is remembered under: read as its own negative, or not.
+pub(in crate::app) const POSITIVE_INVERTED_KEY: &str = "positiveInverted";
 
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
 #[derive(Clone, Debug, PartialEq)]
@@ -57,45 +62,6 @@ type Job = Box<dyn FnOnce() + Send>;
 
 /// The longest a close waits for the drafts: a roll's sidecars take milliseconds each on a sound drive.
 const DRAFT_FLUSH: std::time::Duration = std::time::Duration::from_secs(10);
-
-/// What the measure's sheet is named after and may replace, read off the rows on this thread.
-struct SheetPlan {
-    film: Option<oni_settings::Film>,
-    earliest: oni_settings::Date,
-    /// The gallery group of the first frame: a sheet of the roll's former reference there is rewritten.
-    folder: Vec<String>,
-}
-
-impl SheetPlan {
-    fn of(rows: &[oni_library::Entry], archive: Option<&crate::library::Archive>, picked: &[Frame]) -> SheetPlan {
-        let known: Vec<&oni_library::Entry> = picked.iter().filter_map(|f| rows.iter().find(|e| e.path == f.path)).collect();
-        let film = known.iter().find_map(|e| e.film.clone());
-        let earliest =
-            known.iter().map(|e| oni_library::film_group::capture(e)).reduce(|a, b| if b < a { b } else { a }).unwrap_or_else(oni_settings::Date::now);
-        let first = picked.first().map(|f| f.path.as_str());
-        let folder = archive
-            .and_then(|a| a.groups.iter().find(|g| g.entries.iter().any(|e| Some(e.path.as_str()) == first)))
-            .map(|g| g.entries.iter().map(|e| e.path.clone()).collect())
-            .unwrap_or_default();
-        SheetPlan { film, earliest, folder }
-    }
-
-    /// The sheet laid from the measure's tiles and written over the roll's former sheet, else beside
-    /// the first frame; `None` when nothing lays or the file cannot be written.
-    fn written(&self, paths: &[String], jobs: &[roll::Job], tiles: &[(String, oni_measure::sheet::Picture)], reads: &[Option<Rect>]) -> Option<Sheet> {
-        let (layout, pixels) = sheets::laid(tiles, paths.first()?, oni_measure::sheet::roll_tile(), reads)?;
-        let former: HashSet<Id> = jobs.iter().filter_map(|j| j.before.roll_reference.as_ref().map(|r| r.id)).collect();
-        let replaced = self.folder.iter().find(|p| !paths.contains(p) && roll_membership::sheet_reference(p).is_some_and(|id| former.contains(&id)));
-        let stem = sheets::named(self.film.as_ref(), self.earliest);
-        let to = match replaced {
-            Some(p) => sheets::To::Over(Path::new(p)),
-            None => sheets::To::Beside { lead: Path::new(&paths[0]), stem: &stem },
-        };
-        let destination = sheets::write(&layout, &pixels, to).ok()?;
-        let mosaic = tiles.iter().all(|(p, _)| oni_decode::decodes_via_mosaic(Path::new(p)));
-        Some(Sheet { path: destination, grid: layout.grid, film: self.film.clone(), stands: sheets::stands(self.earliest), mosaic })
-    }
-}
 
 /// The roll being prepared: `mode == .roll` and every `roll…` value of the scene.
 pub(crate) struct Roll {
@@ -114,6 +80,8 @@ pub(crate) struct Roll {
     aspect: f64,
     flat: FlatField,
     film: ConversionMode,
+    /// A positive roll read as its own negative, else its gains aligned alone (owner's experiment).
+    positive_inverted: bool,
     capture: Capture,
     pass_order: PassOrder,
     base: Option<BasePick>,
@@ -167,6 +135,7 @@ impl Default for Roll {
         Roll {
             shown: false,
             back_to_gallery: true,
+            positive_inverted: true,
             frames: Vec::new(),
             sources: Vec::new(),
             pass_offset: 0,
@@ -220,6 +189,11 @@ impl Default for Roll {
 }
 
 impl Roll {
+    /// The film the steps and the measure walk: a positive read as its own negative walks a negative's.
+    pub(in crate::app) fn walked(&self) -> ConversionMode {
+        if self.film == ConversionMode::Positive && self.positive_inverted { ConversionMode::Negative } else { self.film }
+    }
+
     pub(super) fn new(require: bool) -> Roll {
         Roll { require, ..Roll::default() }
     }
@@ -270,7 +244,7 @@ impl Roll {
             return self.frames.iter().find(|f| &f.path == pick);
         }
         if self.step == Step::Window {
-            let m = measured(&self.frames, self.film);
+            let m = measured(&self.frames, self.walked());
             return m.get(self.at).or(m.first()).copied();
         }
         self.frames.get(self.at).or(self.frames.first())
@@ -299,7 +273,7 @@ impl Roll {
 
     /// A slide roll's flags, left by a negative draft, keep no frame out.
     fn flagged(&self) -> usize {
-        self.frames.iter().filter(|f| f.ticked && f.flagged && self.film != ConversionMode::Positive).count()
+        self.frames.iter().filter(|f| f.ticked && f.flagged && self.walked() != ConversionMode::Positive).count()
     }
 
     fn post(&self, job: Job) {
@@ -366,6 +340,14 @@ impl Roll {
 /// The scan's pixel size, read off its container's header.
 fn scan_size(path: &str) -> Option<(usize, usize)> {
     oni_decode::container::pixel_size(Path::new(path))
+}
+
+/// A frame as Prepare the Roll shows and measures it: its whole scan, whatever its crop.
+fn uncropped(s: &PipelineSettings) -> PipelineSettings {
+    let mut out = s.clone();
+    out.geometry.crop = Rect::UNIT;
+    out.geometry.angle = 0.0;
+    out
 }
 
 fn mosaic(path: &str) -> bool {

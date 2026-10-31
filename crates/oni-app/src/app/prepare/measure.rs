@@ -8,7 +8,7 @@ impl Ctl {
     /// `measureRoll`: every ticked frame read off this thread after the drafts' writes, the flagged
     /// ones riding without a vote; the base read, the roll combined, every frame written onto it.
     pub(in crate::app) fn measure_roll(self: &Rc<Self>) {
-        if self.state.borrow().prepare.film == ConversionMode::Positive {
+        if self.state.borrow().prepare.walked() == ConversionMode::Positive {
             return self.prepare_slides();
         }
         let (job, session) = {
@@ -22,7 +22,8 @@ impl Ctl {
             }
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
-            let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.film, r.stop.clone(), r.session);
+            let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.walked(), r.stop.clone(), r.session);
+            let inverted = film != r.film;
             let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked);
             let screen = s.screen;
             let job: Job = Box::new(move || {
@@ -44,11 +45,12 @@ impl Ctl {
                 let mut blank = Vec::new();
                 // The base read first, so the roll's screen places the black the roll will take.
                 let base = pick.and_then(|p| {
-                    let bare = if Some(&p.path) == open.as_ref() {
+                    let mut bare = if Some(&p.path) == open.as_ref() {
                         live.clone()
                     } else {
                         sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
                     };
+                    bare.inverted_source = inverted;
                     let unit = Point::new(p.unit.0, p.unit.1);
                     m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
                 });
@@ -65,14 +67,15 @@ impl Ctl {
                         }
                     };
                     let mut start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
+                    start.inverted_source = inverted;
                     if let Some(passes) = rgb_passes::named_by(&f.path) {
                         let passes = registrar.registered(&f.path, passes);
                         rgb_passes::hold_one(&f.path, passes.clone());
                         start.rgb_passes = Some(passes);
                     }
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
-                    // Every frame of the measure lays its tile, a flagged one too, on the measuring copy.
-                    let start = job.start.clone();
+                    // Every frame of the measure lays its tile, a flagged one too, on the measuring copy, uncropped.
+                    let start = uncropped(&job.start);
                     let mut drawn = None;
                     let voted = frames.len();
                     if f.flagged {

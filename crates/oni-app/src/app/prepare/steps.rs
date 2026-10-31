@@ -8,7 +8,7 @@ impl Ctl {
     pub(in crate::app) fn step_to(self: &Rc<Self>, step: Step) {
         let changed = {
             let r = &mut self.state.borrow_mut().prepare;
-            if !r.shown || r.progress.is_some() || step.skipped(r.capture, r.film) {
+            if !r.shown || r.progress.is_some() || step.skipped(r.capture, r.walked()) {
                 return;
             }
             let changed = r.step != step;
@@ -24,7 +24,7 @@ impl Ctl {
     pub(in crate::app) fn roll_advance(self: &Rc<Self>) {
         let (step, capture, film) = {
             let r = &self.state.borrow().prepare;
-            (r.step, r.capture, r.film)
+            (r.step, r.capture, r.walked())
         };
         if step == Step::Window {
             return self.measure_roll();
@@ -70,7 +70,7 @@ impl Ctl {
     pub(in crate::app) fn walk_window(self: &Rc<Self>, by: i32) {
         {
             let r = &mut self.state.borrow_mut().prepare;
-            let last = measured(&r.frames, r.film).len().saturating_sub(1) as i32;
+            let last = measured(&r.frames, r.walked()).len().saturating_sub(1) as i32;
             r.at = (r.at as i32 + by).clamp(0, last.max(0)) as usize;
         }
         self.publish_prepare();

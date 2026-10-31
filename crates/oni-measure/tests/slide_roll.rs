@@ -1,5 +1,5 @@
-//! Prepare the Roll on slides: one window for the roll, each frame levelled on its own through it,
-//! its cast aligned away, gains at rest; a negative roll still combines into one reference.
+//! Prepare the Roll on slides: one window for the roll, each frame's gains aligned on its own through
+//! it, its windows at rest; a negative roll still combines into one reference.
 
 use oni_measure::key::{self, Decoded, Measurer};
 use oni_measure::roll;
@@ -48,37 +48,30 @@ fn levelled(m: &Measurer, path: &str, window: Rect, before: &PipelineSettings) -
     m.with(path, &start, |r, copy| key::slide_levelled(r, copy, &start)).expect("the slide reads")
 }
 
-fn ends(s: &PipelineSettings) -> (f32, f32) {
-    (s.levels.red.black, s.levels.red.white)
-}
-
 fn alike(s: &PipelineSettings) -> bool {
     s.levels.red == s.levels.green && s.levels.green == s.levels.blue
 }
 
 #[test]
-fn each_slide_takes_its_own_rgb_black_and_white_inside_the_roll_s_window() {
+fn each_slide_takes_its_own_gains_inside_the_roll_s_window_its_windows_at_rest() {
     let Some(m) = measurer() else { return eprintln!("no GPU adapter: the slide roll is not exercised") };
     let rest = PipelineSettings::rest(ConversionMode::Positive, false);
     let frames: Vec<PipelineSettings> = (0..3).map(|i| levelled(&m, &format!("f{i}"), WINDOW, &rest)).collect();
-    let read: Vec<(f32, f32)> = frames.iter().map(ends).collect();
-    println!("slides through the window: {read:?}");
     for s in &frames {
-        assert!(!alike(s) && s.gains.stops == [0.0; 3] && s.roll_reference.is_none(), "the cast aligned away: {:?} {:?}", s.levels, s.gains);
+        assert!(alike(s) && s.roll_reference.is_none(), "{:?}", s.levels);
+        assert!((s.levels.red.black - rest.levels.red.black).abs() < 1e-4 && (s.levels.red.white - rest.levels.red.white).abs() < 1e-4, "{:?}", s.levels);
+        assert!(s.gains.stops[1] == 0.0 && s.gains.stops[0] < 0.0 && s.gains.stops[2] > 0.0, "the warm cast's red down, blue up: {:?}", s.gains);
         assert_eq!(s.geometry.measure_window, Some(WINDOW));
-        assert!(s.levels.red.black > rest.levels.red.black || s.levels.red.white < rest.levels.red.white, "{:?}", s.levels);
-    }
-    for (a, b) in [(0, 1), (1, 2), (0, 2)] {
-        assert!((read[a].0 - read[b].0).abs() > 1e-3 && (read[a].1 - read[b].1).abs() > 1e-3, "frames {a} and {b}: {read:?}");
     }
     // The border outside the window moves nothing: the same frames without it read the same.
-    for (i, own) in read.iter().enumerate() {
-        let bare = ends(&levelled(&m, &format!("bare{i}"), WINDOW, &rest));
-        assert!((bare.0 - own.0).abs() < 1e-4 && (bare.1 - own.1).abs() < 1e-4, "frame {i}: {bare:?} against {own:?}");
+    for (i, own) in frames.iter().enumerate() {
+        let bare = levelled(&m, &format!("bare{i}"), WINDOW, &rest);
+        let gap = (0..3).map(|c| (bare.gains.stops[c] - own.gains.stops[c]).abs()).fold(0.0, f32::max);
+        assert!(gap < 1e-3, "frame {i}: {:?} against {:?}", bare.gains, own.gains);
     }
-    // Twin: a window over the whole scan takes the border in, and the white moves to it.
-    let whole = ends(&levelled(&m, "f0", Rect::UNIT, &rest));
-    assert!(whole.1 > read[0].1 + 0.05, "{whole:?} against {:?}", read[0]);
+    // Twin: a window over the whole scan takes the white border in, and the gains move with it.
+    let whole = levelled(&m, "f0", Rect::UNIT, &rest);
+    assert!((whole.gains.stops[2] - frames[0].gains.stops[2]).abs() > 0.05, "{:?} against {:?}", whole.gains, frames[0].gains);
 }
 
 /// The Auto levels key on a frame's own settings, as the editor presses it.
@@ -87,7 +80,7 @@ fn keyed(m: &Measurer, path: &str, s: &PipelineSettings) -> PipelineSettings {
 }
 
 #[test]
-fn the_key_on_a_prepared_slide_finds_prepare_s_levels_and_again_the_same() {
+fn the_key_on_a_prepared_slide_finds_prepare_s_gains_and_again_the_same() {
     let Some(m) = measurer() else { return eprintln!("no GPU adapter: the key's fixed point is not exercised") };
     let rest = PipelineSettings::rest(ConversionMode::Positive, false);
     for i in 0..3 {
@@ -100,7 +93,7 @@ fn the_key_on_a_prepared_slide_finds_prepare_s_levels_and_again_the_same() {
         let mut moved = prepared.clone();
         moved.geometry.measure_window = Some(Rect::UNIT);
         let other = keyed(&m, &path, &moved);
-        assert!(other.levels.red.white > prepared.levels.red.white + 0.05, "frame {i}: {:?} against {:?}", ends(&other), ends(&prepared));
+        assert!((other.gains.stops[2] - prepared.gains.stops[2]).abs() > 0.05, "frame {i}: {:?} against {:?}", other.gains, prepared.gains);
     }
 }
 

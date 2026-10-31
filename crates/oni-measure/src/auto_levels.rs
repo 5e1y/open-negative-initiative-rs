@@ -201,131 +201,23 @@ pub fn two_steps(
     Some(Balance { stops: moved, levels, shift })
 }
 
-/// The Auto levels key on a negative or a black and white frame: Classic's two steps from its own
-/// gains. A slide's key reads its cells together (`key::slide_read`).
+/// The Auto levels key: a slide read once at rest gains, red's and blue's medians brought onto green's
+/// by the gains alone, as a white balance moves them, its windows at rest (owner's call); any other
+/// film Classic's two steps from its own gains.
 pub fn keyed(stops: [f32; 3], mode: ConversionMode, mut reading: impl FnMut([f32; 3]) -> Histogram) -> Option<Balance> {
-    let first = reading(stops);
-    if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) }
-}
-
-/// The tones a slide's chroma is read at, from its darkest cell to its lightest, and the share of that
-/// span each band takes on either side: the shadows' and the lights' greys, clear of the clipped ends.
-pub const CHROMA_MARKS: [f32; 2] = [0.10, 0.90];
-pub const CHROMA_BAND: f32 = 0.05;
-/// The fewest cells a band reads its colour on, the nearest tones taken when the band holds fewer.
-pub const BAND_CELLS: usize = 5;
-/// The midtones a slide's grey is snapped on, the quarter of them nearest grey, and how far from grey
-/// those may stand before the scene is taken for colour rather than a cast (Auto Color's own rule).
-pub const MID_TONES: [f32; 2] = [0.30, 0.70];
-pub const MID_KEPT: f32 = 0.25;
-pub const NEUTRAL_CHROMA: f32 = 0.08;
-
-/// A slide's points: its cells at 10 % and 90 % of its tones brought to grey, three channels read
-/// together, one black and one white on the aligned channels' ends, its near-grey midtones then grey too.
-pub fn slide_points(h: &Histogram, cells: &[[f32; 3]], luma: &[f32]) -> Option<[Suggestion; 3]> {
-    let ends = placement(h, 0.0)?;
-    if cells.len() != luma.len() || cells.is_empty() {
-        return None;
+    if mode != ConversionMode::Positive {
+        let first = reading(stops);
+        return if first.is_empty() { None } else { two_steps(&first, stops, mode, 0.0, reading) };
     }
-    let lo = luma.iter().copied().fold(f32::INFINITY, f32::min);
-    let hi = luma.iter().copied().fold(f32::NEG_INFINITY, f32::max);
-    let median = |values: Vec<f32>| -> f32 {
-        let mut v = values;
-        v.sort_by(f32::total_cmp);
-        v[v.len() / 2]
-    };
-    let band = |mark: f32| -> [f32; 3] {
-        let target = lo + mark * (hi - lo);
-        let mut near: Vec<usize> = (0..cells.len()).collect();
-        near.sort_by(|a, b| (luma[*a] - target).abs().total_cmp(&(luma[*b] - target).abs()));
-        let inside = near.iter().take_while(|&&i| (luma[i] - target).abs() <= CHROMA_BAND * (hi - lo)).count();
-        let held = &near[..inside.max(BAND_CELLS).min(near.len())];
-        [0, 1, 2].map(|c| median(held.iter().map(|&i| cells[i][c]).collect()))
-    };
-    let (dark, light) = (band(CHROMA_MARKS[0]), band(CHROMA_MARKS[1]));
-    let marks: [[f32; 2]; 3] = [0, 1, 2].map(|c| [dark[c], light[c]]);
-    if marks.iter().any(|m| !(m[1] - m[0] >= MINIMUM_SPAN)) {
-        return None;
-    }
-    let [low, high] = marks[REFERENCE];
-    let aligned = |c: usize, x: f32| low + (x - marks[c][0]) * (high - low) / (marks[c][1] - marks[c][0]);
-    let back = |c: usize, y: f32| marks[c][0] + (y - low) * (marks[c][1] - marks[c][0]) / (high - low);
-    let black = (0..3).map(|c| aligned(c, ends[c].black)).fold(f32::INFINITY, f32::min);
-    let white = (0..3).map(|c| aligned(c, ends[c].white)).fold(f32::NEG_INFINITY, f32::max);
-    // Unbounded: a channel whose black lands past the counted window keeps it there, or its shadows
-    // fall darker than the others' and the grey goes.
-    let mut points = [0, 1, 2].map(|c| {
-        let b = back(c, black);
-        Suggestion { black: b, white: back(c, white).max(b + MINIMUM_SPAN), ..ends[c] }
+    let rest = [Gains::BASE; 3];
+    let h = reading(rest);
+    let moved = recentred(&h, rest, mode, 0.0)?;
+    let ceiling = oni_settings::axis::density_axis::base();
+    let levels = LevelsChannel::PER_CHANNEL.map(|c| {
+        let w = oni_settings::levels::LevelsSet::resting(c, mode, ceiling);
+        Suggestion { black: graduation::fraction(w.black, mode), white: graduation::fraction(w.white, mode), mid: w.mid, shadows: w.shadows, highlights: w.highlights }
     });
-    // Green's window lays the greys' targets; red and blue are then solved to land on them at all three tones.
-    if let Some(mid) = neutral_mid(cells, luma, (lo, hi), &points) {
-        let g = &points[REFERENCE];
-        let on_green = |x: f32| ((x - g.black) / (g.white - g.black)).clamp(1e-3, 1.0 - 1e-3);
-        let targets = [on_green(dark[REFERENCE]), on_green(mid[REFERENCE]), on_green(light[REFERENCE])];
-        for c in (0..3).filter(|&c| c != REFERENCE) {
-            if let Some((black, white, m)) = three_point([dark[c], mid[c], light[c]], targets) {
-                points[c] = Suggestion { black, white, mid: m, ..points[c] };
-            }
-        }
-    }
-    Some(points)
-}
-
-/// The midtones' colour on their own channels, read on the quarter of them nearest grey through the
-/// two-point windows; `None` when even those stand past `NEUTRAL_CHROMA`.
-fn neutral_mid(cells: &[[f32; 3]], luma: &[f32], (lo, hi): (f32, f32), points: &[Suggestion; 3]) -> Option<[f32; 3]> {
-    let through = |c: usize, x: f32| (x - points[c].black) / (points[c].white - points[c].black);
-    let tones = lo + MID_TONES[0] * (hi - lo)..=lo + MID_TONES[1] * (hi - lo);
-    let mut mids: Vec<(usize, f32)> = (0..cells.len())
-        .filter(|&i| tones.contains(&luma[i]))
-        .map(|i| {
-            let t = [0, 1, 2].map(|c| through(c, cells[i][c]));
-            (i, t.iter().copied().fold(f32::MIN, f32::max) - t.iter().copied().fold(f32::MAX, f32::min))
-        })
-        .collect();
-    if mids.is_empty() {
-        return None;
-    }
-    mids.sort_by(|a, b| a.1.total_cmp(&b.1));
-    let near = &mids[..((mids.len() as f32 * MID_KEPT) as usize).max(1)];
-    let median = |values: Vec<f32>| {
-        let mut v = values;
-        v.sort_by(f32::total_cmp);
-        v[v.len() / 2]
-    };
-    if median(near.iter().map(|m| m.1).collect()) >= NEUTRAL_CHROMA {
-        return None;
-    }
-    Some([0, 1, 2].map(|c| median(near.iter().map(|&(i, _)| cells[i][c]).collect())))
-}
-
-/// The window and mid laying `x`'s three tones on `y`'s through `((x - black) / (white - black))^gamma`:
-/// for a gamma, the dark and the light fix the window; the gamma is bisected until the middle lands.
-pub fn three_point(x: [f32; 3], y: [f32; 3]) -> Option<(f32, f32, f32)> {
-    let range = oni_settings::levels::Levels::MID_RANGE;
-    let window = |gamma: f32| {
-        let (ud, ul) = (y[0].powf(1.0 / gamma), y[2].powf(1.0 / gamma));
-        let span = (x[2] - x[0]) / (ul - ud);
-        let black = x[0] - ud * span;
-        (black, black + span)
-    };
-    let miss = |gamma: f32| {
-        let (black, white) = window(gamma);
-        ((x[1] - black) / (white - black)).max(0.0).powf(gamma) - y[1]
-    };
-    // Gamma is ln 0.5 / ln mid: the mid range's ends bound it.
-    let (mut a, mut b) = (0.5f32.ln() / range.1.ln(), 0.5f32.ln() / range.0.ln());
-    if !(x[2] - x[0] >= MINIMUM_SPAN) || !(y[0] < y[1] && y[1] < y[2]) || miss(a).signum() == miss(b).signum() {
-        return None;
-    }
-    for _ in 0..48 {
-        let m = (a + b) / 2.0;
-        if miss(m).signum() == miss(a).signum() { a = m } else { b = m }
-    }
-    let gamma = (a + b) / 2.0;
-    let (black, white) = window(gamma);
-    Some((black, white, 0.5f32.powf(1.0 / gamma)))
+    Some(Balance { stops: moved, levels, shift: [0, 1, 2].map(|c| shift(moved[c] - stops[c], mode)) })
 }
 
 /// `AutoLevels.applied`: the balance laid on the frame, its key named when one is.
