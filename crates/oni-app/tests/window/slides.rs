@@ -85,6 +85,8 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
     let s = settings();
     assert!(alike(&s) && s.roll_reference.is_none(), "{:?}", s.levels);
     assert!(s.gains.stops[1] == 0.0 && s.gains.stops[0] * s.gains.stops[2] < 0.0, "red and blue moved apart: {:?}", s.gains);
+    rig.pump();
+    assert!(w.global::<oni_app::Store>().get_source_balance_modified(), "a slide never measured: the key's move departs from rest");
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     assert_eq!(settings().gains, rest.gains, "one undo takes the key back");
@@ -130,6 +132,8 @@ pub(crate) fn a_slide_roll_is_levelled_frame_by_frame_through_one_window() {
         assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
     }
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
+    assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");
+    assert!(frames.iter().all(|s| s.measured_gains == Some(s.gains.stops)), "each slide's measure kept as its rest");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
     // The key on a prepared slide finds Prepare's levels, press after press; its twin, the key
     // moving an unprepared slide's levels, opens this check.

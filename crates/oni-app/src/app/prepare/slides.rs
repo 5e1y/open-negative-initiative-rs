@@ -89,8 +89,8 @@ impl Ctl {
                                 Some((settings, reading)) => {
                                     roll.add(&reading.rgb);
                                     voted = true;
-                                    // Measured whole, written on the frame's own crop.
-                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, ..settings }));
+                                    // Measured whole, written on the frame's own crop, its gains the base its Source Balance rests on.
+                                    written.push((path.clone(), before, PipelineSettings { geometry: start.geometry, measured_gains: Some(settings.gains.stops), ..settings }));
                                 }
                                 None => {
                                     blank.push(path.clone());

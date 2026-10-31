@@ -23,6 +23,7 @@ use std::time::Instant;
 
 mod opening;
 mod commands;
+mod writes;
 mod undo;
 mod paste;
 mod several;

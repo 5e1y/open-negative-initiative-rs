@@ -67,6 +67,10 @@ pub struct PipelineSettings {
     pub roll_reference: Option<RollReference>,
     #[serde(rename = "rollReferenceDeclined")]
     pub roll_reference_declined: bool,
+    /// A slide's gains as its gains-only measure placed them, on no roll reference: what its Source
+    /// Balance rests on and a reset lands back on (owner's call).
+    #[serde(rename = "measuredGains", skip_serializing_if = "Option::is_none", default)]
+    pub measured_gains: Option<[f32; 3]>,
     #[serde(rename = "balanceMethod", skip_serializing_if = "Option::is_none", default)]
     pub balance_method: Option<String>,
     #[serde(rename = "balanceFilters", skip_serializing_if = "Option::is_none", default)]
@@ -123,6 +127,7 @@ impl Default for PipelineSettings {
             chroma_decompression_by_hand: false,
             roll_reference: None,
             roll_reference_declined: false,
+            measured_gains: None,
             balance_method: None,
             balance_filters: None,
             balance_strength: filter_balance::RESTING_STRENGTH,
@@ -219,7 +224,7 @@ pub mod look_settings {
     ];
 
     /// The frame's own facts, which neither a paste nor a roll gesture carries.
-    pub const FRAME_FIELDS: [&str; 15] = [
+    pub const FRAME_FIELDS: [&str; 16] = [
         "film",
         "manualOrder",
         "sheet",
@@ -230,6 +235,7 @@ pub mod look_settings {
         "corrections",
         "rollReference",
         "rollReferenceDeclined",
+        "measuredGains",
         "balanceMethod",
         "captureStops",
         "rgbPasses",

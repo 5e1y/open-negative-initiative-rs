@@ -25,7 +25,7 @@ pub struct Row {
 }
 
 /// Fields outside every row, with the reason: absent rather than unticked, so none is ticked by mistake.
-pub const EXCLUDED: [(&str, &str); 15] = [
+pub const EXCLUDED: [(&str, &str); 16] = [
     ("geometry", "depends on this frame's content: pasting one destroys hand-made cropping"),
     ("mode", "negative or positive is what the frame is, not a look one applies"),
     ("invertedSource", "a positive read as its own negative is what the frame is, as its mode"),
@@ -38,6 +38,7 @@ pub const EXCLUDED: [(&str, &str); 15] = [
     ("primariesConverted", "the decode this frame's windows were measured on"),
     ("rollReference", "the window this frame's roll was measured on, which a look from another roll must not move"),
     ("rollReferenceDeclined", "a choice kept for this frame alone"),
+    ("measuredGains", "the gains this slide's own measure placed, which no other frame's measure is"),
     ("captureStops", "how this scan's capture was exposed against its roll's"),
     ("rgbPasses", "the three files this frame is composed of"),
     ("passOf", "the frame a pass belongs to"),
@@ -316,6 +317,13 @@ pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
     // The dye family names the stock; the dose is a look and returns to rest.
     block.separation_family = settings.separation_family;
     block.roll_reference_declined = settings.roll_reference_declined;
+    // A slide measured on its gains alone stands on them, as a negative stands on its roll.
+    if settings.roll_reference.is_none()
+        && let Some(gains) = settings.measured_gains
+    {
+        block.measured_gains = Some(gains);
+        block.gains.stops = gains;
+    }
     match &settings.roll_reference {
         Some(reference) => balance::written(reference, &block),
         None => block,
@@ -326,6 +334,7 @@ pub fn imported(settings: &PipelineSettings) -> PipelineSettings {
 pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
     let mut unmeasured = settings.clone();
     unmeasured.roll_reference = None;
+    unmeasured.measured_gains = None;
     let mut block = imported(&unmeasured);
     block.corrections = settings.corrections.clone();
     block.capture_stops = 0.0;
@@ -335,14 +344,10 @@ pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
 }
 
 /// The bar's reset: the look back to rest and the crop gone, the measure's conversion kept, a roll's
-/// reference or a slide's own Roll Settings, which no reference holds (owner's call). On the Scanner
-/// face Chrome is part of the face, the clicks are the edit.
+/// reference or a slide's measured gains (owner's call). On the Scanner face Chrome is part of the
+/// face, the clicks are the edit.
 pub fn reset_blank(settings: &PipelineSettings, scanner_face: bool) -> PipelineSettings {
     let mut blank = imported(settings);
-    if settings.roll_reference.is_none() && settings.mode == ConversionMode::Positive {
-        let all = oni_settings::settings::roll_settings::Field::ALL.into_iter().collect();
-        blank = oni_settings::settings::roll_settings::copied(&all, settings, &blank);
-    }
     blank.geometry = oni_settings::frame::Geometry::reset_keeping(&settings.geometry);
     if scanner_face {
         blank.secret_sauce = settings.secret_sauce;

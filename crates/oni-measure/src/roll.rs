@@ -154,6 +154,7 @@ pub fn combined(frames: &[Measured], mode: ConversionMode, base: Option<[f32; 3]
 /// carried over, on the roll's film, window and mask.
 pub fn start(before: &PipelineSettings, film: ConversionMode, window: Rect, mask: Option<&FlatField>, capture_stops: f32) -> PipelineSettings {
     let mut s = parameters::carried(&parameters::imported(before), film);
+    s.measured_gains = None;
     s.corrections = before.corrections.clone();
     s.capture_stops = capture_stops;
     s.primaries_converted = false;

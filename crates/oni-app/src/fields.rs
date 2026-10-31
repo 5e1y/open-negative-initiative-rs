@@ -308,10 +308,10 @@ impl Field {
     pub fn base(self, settings: &oni_settings::PipelineSettings) -> f32 {
         match self {
             Field::DensityCeiling => oni_settings::axis::density_axis::rest(settings.decoded_from_mosaic, settings.mode),
-            // `restingGains`: a measured roll is the frame's rest, its window's stops.
+            // `restingGains`: a measured roll is the frame's rest, its window's stops; a slide's, its own measure's.
             Field::GainRed | Field::GainGreen | Field::GainBlue => {
                 let i = [Field::GainRed, Field::GainGreen, Field::GainBlue].iter().position(|f| *f == self).unwrap_or(0);
-                settings.roll_reference.as_ref().map_or(0.0, |r| r.stops[i])
+                settings.roll_reference.as_ref().map(|r| r.stops[i]).or(settings.measured_gains.map(|g| g[i])).unwrap_or(0.0)
             }
             _ => self.spec().base,
         }

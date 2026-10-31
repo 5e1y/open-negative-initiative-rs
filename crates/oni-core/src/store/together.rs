@@ -6,7 +6,7 @@ use crate::fields::{Field, FieldSet};
 
 /// A frame's own fields, which a step on the open frame never lays on the others: its file, its
 /// framing, its dust, its roll.
-const OWN: [Field; 15] = [
+const OWN: [Field; 16] = [
     Field::Film,
     Field::ManualOrder,
     Field::Sheet,
@@ -21,6 +21,7 @@ const OWN: [Field; 15] = [
     Field::Corrections,
     Field::RollReference,
     Field::RollReferenceDeclined,
+    Field::MeasuredGains,
     Field::BalanceMethod,
 ];
 

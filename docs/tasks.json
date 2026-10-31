@@ -4778,5 +4778,12 @@
     "title": "Reset Scan keeps the measure's conversion and drops the crop; Reset to Default drops every crop",
     "status": "done",
     "detail": "Owner's calls: Reset Scan (the bar's reset to the imported state) took a slide's measured gains and windows back to rest, as a slide stands on no roll reference; it now keeps a slide's Roll Settings, as a negative keeps its roll's reference, and drops the crop and the straightening, the measuring window kept. Reset to Default leaves every frame and pass on the default framing. Checks: parameters the reset drops the crop and keeps its window, flat-field and dye family (twin: the look goes to rest), the reset keeps a slide's measured conversion (twin: a negative never measured loses its gains)."
+  },
+  {
+    "id": 1011,
+    "type": "fix",
+    "title": "A slide's measured gains are its Source Balance's rest",
+    "status": "done",
+    "detail": "Owner's report: Source Balance offered its reset on a slide straight out of the gains-only measure, and the reset sent its gains to 0, undoing the measure. Its block rests on a roll reference's stops, which a slide has none of. A frame's measuredGains (a frame field, written only when present) now keeps the gains the gains-only measure placed: Source Balance rests on them (its reset key shows only once the hand departs from them and lands back on them), the imported state stands on them so Reset Scan does too, Reset to Default and a negative's measure drop them. On a slide roll a Source Balance move is laid on each other slide as an offset from its own measure, never as the open slide's gains. Checks: parameters the reset lands a slide back on its measured gains (twin: a slide never measured lands on rest), store slides the move reaches another slide as an offset (twin: not laid whole), the slides window check: no reset offered after the measure (twin: the key on a slide never measured departs from rest)."
   }
 ]

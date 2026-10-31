@@ -63,20 +63,21 @@ fn the_reset_drops_the_crop_and_keeps_its_window_flat_field_and_dye_family() {
     assert_ne!(blank, s);
 }
 
-/// A slide's measure stands on no reference: its Roll Settings are its conversion and stay.
+/// A slide's gains-only measure stands on no reference: its measured gains are its rest and a reset lands there.
 #[test]
-fn the_reset_keeps_a_slide_s_measured_conversion() {
+fn the_reset_lands_a_slide_back_on_its_measured_gains() {
     let mut slide = PipelineSettings::rest(ConversionMode::Positive, true);
-    slide.gains.stops = [-0.3, 0.0, 0.4];
-    slide.levels.red.white = 2.4;
+    slide.measured_gains = Some([-0.3, 0.0, 0.4]);
+    slide.gains.stops = [-0.1, 0.0, 0.6];
     slide.print.exposure = 0.6;
     let blank = reset_blank(&slide, false);
-    assert_eq!((blank.gains, blank.levels), (slide.gains, slide.levels), "the measure kept");
+    assert_eq!(blank.gains.stops, [-0.3, 0.0, 0.4], "the hand's move gone, the measure kept");
     assert_eq!(blank.print.exposure, PipelineSettings::rest(ConversionMode::Positive, true).print.exposure, "the look reset");
-    // Twin: a negative never measured has no conversion to keep: its gains go back to rest.
-    let mut negative = slide.clone();
-    negative.mode = ConversionMode::Negative;
-    assert_ne!(reset_blank(&negative, false).gains, slide.gains);
+    assert_eq!(unconverted(&slide).gains.stops, [0.0; 3], "reset to default forgets the measure");
+    // Twin: a slide never measured has no gains to land on but rest.
+    let mut bare = slide.clone();
+    bare.measured_gains = None;
+    assert_eq!(reset_blank(&bare, false).gains.stops, [0.0; 3]);
 }
 
 #[test]
