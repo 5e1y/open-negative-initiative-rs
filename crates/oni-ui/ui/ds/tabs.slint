@@ -20,13 +20,21 @@ export component Tabs inherits Rectangle {
     callback picked(int);
     // A selection outside the tabs, as De-dust's, shows no pill; it waits where it stood, so it never slides out.
     out property <bool> pill-shown: root.selected >= 0 && root.selected < root.tabs.length;
-    out property <length> pill-x: TabsStyle.inset + root.held * root.pitch;
+    // The held tab's place, written by that tab once laid: tabs share the bar evenly unless a label needs more.
+    out property <length> pill-x;
+    out property <length> pill-width;
     property <int> held;
+    // A change of tab slides the pill; a change of layout moves it at once, so a resize never trails it.
+    property <bool> sliding;
+    function hold(x: length, width: length, slide: bool) {
+        root.sliding = slide;
+        root.pill-x = x;
+        root.pill-width = width;
+    }
     init => { if (self.pill-shown) { root.held = root.selected; } }
     changed pill-shown => { if (self.pill-shown) { root.held = root.selected; } }
     changed selected => { if (self.pill-shown) { root.held = root.selected; } }
     height: TabsStyle.height;
-    property <length> pitch: (self.width - 2 * TabsStyle.inset + TabsStyle.gap) / max(1, root.tabs.length);
     Inward {
         hollow: true;
         ground: Colour.canvas;
@@ -36,46 +44,55 @@ export component Tabs inherits Rectangle {
             visible: root.pill-shown;
             x: root.pill-x;
             y: TabsStyle.inset;
-            width: root.pitch - TabsStyle.gap;
+            width: root.pill-width;
             height: root.height - 2 * TabsStyle.inset;
             radius: self.height / 2;
             fill: TabsStyle.pill;
-            animate x { duration: TabsStyle.slide; easing: spring(0.38); }
+            animate x, width { duration: root.sliding ? TabsStyle.slide : 0ms; easing: spring(0.38); }
         }
-        for name[i] in root.tabs: Rectangle {
-            x: TabsStyle.inset + i * root.pitch;
-            y: TabsStyle.inset;
-            width: root.pitch - TabsStyle.gap;
-            height: root.height - 2 * TabsStyle.inset;
-            accessible-role: tab;
-            accessible-label: name;
-            opacity: (i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle)
-                * (root.dimmed[i] && i != root.selected ? TabsStyle.idle : 1);
-            if root.swatches.length == 0: Label {
-                text: name;
-                centred: true;
-            }
-            if root.swatches.length > 0: Dot {
-                x: (parent.width - self.width) / 2;
-                y: (parent.height - self.height) / 2;
-                size: TabsStyle.swatch;
-                ink: root.swatches[i];
-            }
-            if root.marked[i]: Dot {
-                x: parent.width - self.width - TabsStyle.mark-inset;
-                y: TabsStyle.mark-inset;
-                size: TabsStyle.mark;
-                ink: Colour.accent;
-            }
-            touch := TouchArea {
-                clicked => {
-                    if (i != root.selected) { Clicks.press(); }
-                    root.picked(i);
+        HorizontalLayout {
+            padding: TabsStyle.inset;
+            spacing: TabsStyle.gap;
+            for name[i] in root.tabs: Rectangle {
+                property <bool> holds: i == root.held;
+                min-width: (root.swatches.length > 0 ? TabsStyle.swatch : label.preferred-width) + 2 * TabsStyle.margin;
+                preferred-width: TabsStyle.reach;
+                horizontal-stretch: 1;
+                init => { if (self.holds) { root.hold(self.x, self.width, false); } }
+                changed holds => { if (self.holds) { root.hold(self.x, self.width, true); } }
+                changed x => { if (self.holds) { root.hold(self.x, self.width, false); } }
+                changed width => { if (self.holds) { root.hold(self.x, self.width, false); } }
+                accessible-role: tab;
+                accessible-label: name;
+                opacity: (i == root.selected || touch.has-hover || i == root.hover-tab ? 1 : TabsStyle.idle)
+                    * (root.dimmed[i] && i != root.selected ? TabsStyle.idle : 1);
+                label := Label {
+                    visible: root.swatches.length == 0;
+                    text: name;
+                    centred: true;
                 }
-                // A swatch shows no name, so its tab gives it in the tooltip.
-                changed has-hover => {
-                    if root.swatches.length > 0 {
-                        Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                if root.swatches.length > 0: Dot {
+                    x: (parent.width - self.width) / 2;
+                    y: (parent.height - self.height) / 2;
+                    size: TabsStyle.swatch;
+                    ink: root.swatches[i];
+                }
+                if root.marked[i]: Dot {
+                    x: parent.width - self.width - TabsStyle.mark-inset;
+                    y: TabsStyle.mark-inset;
+                    size: TabsStyle.mark;
+                    ink: Colour.accent;
+                }
+                touch := TouchArea {
+                    clicked => {
+                        if (i != root.selected) { Clicks.press(); }
+                        root.picked(i);
+                    }
+                    // A swatch shows no name, so its tab gives it in the tooltip.
+                    changed has-hover => {
+                        if root.swatches.length > 0 {
+                            Tips.hover(self.has-hover, name, self.absolute-position.x, self.absolute-position.y + self.height);
+                        }
                     }
                 }
             }

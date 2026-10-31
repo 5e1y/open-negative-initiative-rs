@@ -1,6 +1,6 @@
 //! The tab bar on the headless window: a click only asks, the owner writes the choice, so a bar bound
 //! one way to its owner's value, as Settings' language, still follows it after a click; a choice
-//! beyond its tabs shows no pill.
+//! beyond its tabs shows no pill; a label longer than an even share takes room from its neighbours.
 
 use oni_app::FieldProbe;
 use slint::platform::{PointerEventButton, WindowEvent};
@@ -50,4 +50,21 @@ pub(crate) fn a_tab_bar_bound_one_way_follows_its_owner_after_a_click() {
     probe.set_choice(0);
     rig.settle();
     assert!(probe.get_pill_shown() && probe.get_pill_x() < at, "the pill comes back under the first tab");
+
+    // Short labels share the bar evenly: every tab is as wide as the others.
+    let even = probe.get_pill_width();
+    probe.set_choice(1);
+    rig.settle();
+    assert!((probe.get_pill_width() - even).abs() < 1.0, "even labels get even tabs");
+
+    // Export's spaces: Adobe RGB needs more than an even share and takes it from the shorter ones.
+    let share = (probe.get_space_width() - 2.0 * 4.0 - 4.0 * 1.0) / 5.0;
+    probe.set_space(2);
+    rig.settle();
+    let long = probe.get_space_pill_width();
+    assert!(long > share + 1.0, "Adobe RGB's tab is wider than an even share ({long} against {share})");
+    // Twin: sRGB gives room, so its tab is narrower than an even share.
+    probe.set_space(0);
+    rig.settle();
+    assert!(probe.get_space_pill_width() < share - 1.0, "sRGB's tab gives room to the long label");
 }

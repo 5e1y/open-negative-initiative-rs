@@ -4827,5 +4827,12 @@
     "title": "A slide roll measured on its gains alone lays its contact sheet",
     "status": "done",
     "detail": "Owner's call: Prepare the Roll on slides read on their gains alone wrote no contact sheet. It now lays every read slide's tile, flagged ones included, into the roll's sheet as a negative roll does; the sheet inherits the roll's gains and measuredGains (sheet::settings carries the donor's measured gains), stands on its folder's slide roll so Roll Settings and Paste to Roll reach it (a slide's pass still stands on none), and a measure of the same slides, on their gains or read as a negative, lays it again in place (roll_membership::is_slide_sheet). Checks: the slides window check finds one sheet on the roll's gains, of the folder's roll, rewritten in place by the measure as a negative; roll_membership a slide roll is its folder's slides and their sheet (twin: a pass stands on none); store slides the roll's sheet follows a Source Balance move as a slide does; sheet a sheet rests on its roll's measured gains."
+  },
+  {
+    "id": 1018,
+    "type": "fix",
+    "title": "A tab label longer than an even share takes room from its neighbours",
+    "status": "done",
+    "detail": "Export's Space bar gave each of its five tabs 70 pt, and Adobe RGB filled its own and touched the DP3 pill. As Swift's DSTabBar (a label on one line at its own width, maxWidth .infinity), the tabs share the bar evenly while all fit and a label needing more takes it from the shorter ones, a margin each side (TabsStyle.margin); the pill follows the held tab's frame, sliding on a change of tab and moving at once on a change of layout. Checks: tab_bar even labels get even tabs; Adobe RGB is wider than an even share (twin: sRGB narrower)."
   }
 ]

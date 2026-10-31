@@ -10,6 +10,10 @@ export global TabsStyle {
     out property <length> height: DS.control-tab-bar-height;
     out property <length> inset: DS.space-xs;
     out property <length> gap: DS.stroke-line;
+    // Room kept on each side of a label: a long one takes it from its neighbours rather than touching them.
+    out property <length> margin: DS.space-sm;
+    // Every tab asks for the whole bar, as SwiftUI's `maxWidth: .infinity`, so the bar shares out evenly while all fit.
+    out property <length> reach: 100000px;
     out property <length> mark: DS.space-xs;
     out property <length> mark-inset: DS.space-xxs;
     out property <length> swatch: DS.control-handle-size;
