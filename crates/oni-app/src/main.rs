@@ -63,6 +63,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => timing::line(&format!("no log file ({e}); stderr only")),
     }
     timing::keep_panics();
+    oni_app::system::verify_held_keys();
     // One device for the pipeline, the display kernel and the window, so the canvas texture is shared.
     let gpu = Device::open()?;
     let info = gpu.adapter.get_info();

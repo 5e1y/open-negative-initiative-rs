@@ -13,6 +13,25 @@ pub fn double_click() -> Duration {
     platform::double_click().filter(|d| !d.is_zero()).unwrap_or(DEFAULT_DOUBLE_CLICK)
 }
 
+static VERIFIED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// The app's own window asks the system which keys are down; a check's synthetic clicks carry keys
+/// no hand holds, so they are taken as sent.
+pub fn verify_held_keys() {
+    VERIFIED.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// A click's Command and Shift kept only while the system still holds them down: a release another
+/// app took, a screenshot's shortcut's, never leaves the window believing the key held.
+pub fn held(command: bool, shift: bool) -> (bool, bool) {
+    let down = VERIFIED.load(std::sync::atomic::Ordering::Relaxed).then(platform::modifiers).flatten();
+    kept((command, shift), down)
+}
+
+fn kept(asked: (bool, bool), down: Option<(bool, bool)>) -> (bool, bool) {
+    down.map_or(asked, |(c, s)| (asked.0 && c, asked.1 && s))
+}
+
 /// `NSOpenPanel` for one folder, or the system's own dialog; `None` when the hand cancels or no
 /// dialog exists on this system.
 pub fn pick_folder(message: &str) -> Option<PathBuf> {
@@ -160,6 +179,12 @@ mod platform {
         Duration::try_from_secs_f64(seconds).ok()
     }
 
+    pub fn modifiers() -> Option<(bool, bool)> {
+        use objc2_app_kit::NSEventModifierFlags as Flags;
+        let f = objc2_app_kit::NSEvent::modifierFlags_class();
+        Some((f.contains(Flags::Command) || f.contains(Flags::Control), f.contains(Flags::Shift)))
+    }
+
     pub fn pick_folder(message: &str) -> Option<PathBuf> {
         rfd::FileDialog::new().set_title(message).pick_folder()
     }
@@ -224,6 +249,13 @@ mod platform {
         // SAFETY: a plain read of a system setting, with no argument.
         let ms = unsafe { windows_sys::Win32::UI::Input::KeyboardAndMouse::GetDoubleClickTime() };
         Some(Duration::from_millis(u64::from(ms)))
+    }
+
+    pub fn modifiers() -> Option<(bool, bool)> {
+        use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetKeyState, VK_CONTROL, VK_SHIFT};
+        // SAFETY: a plain read of a key's state, the high bit set while it is down.
+        let down = |key: u16| unsafe { GetKeyState(i32::from(key)) } < 0;
+        Some((down(VK_CONTROL), down(VK_SHIFT)))
     }
 
     pub fn pick_folder(message: &str) -> Option<PathBuf> {
@@ -302,6 +334,10 @@ mod platform {
     use std::time::Duration;
 
     pub fn double_click() -> Option<Duration> {
+        None
+    }
+
+    pub fn modifiers() -> Option<(bool, bool)> {
         None
     }
 

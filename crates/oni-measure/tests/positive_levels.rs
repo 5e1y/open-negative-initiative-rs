@@ -1,5 +1,5 @@
-//! The Auto levels key on a slide: its cells around 10 % and 90 % of brightness brought to grey, their
-//! three channels read together, then one black and one white; a negative still gets Classic's steps.
+//! The Auto levels key on a slide: its cells at 10 % and 90 % of its tones brought to grey, three
+//! channels read together, then one black and one white and its near-grey midtones snapped.
 
 use oni_measure::auto_levels::{self, Balance, keyed, shift};
 use oni_measure::histogram::Histogram;
@@ -52,9 +52,10 @@ fn pressed(mode: ConversionMode) -> (Balance, Vec<[f32; 3]>) {
     (b, asked)
 }
 
-/// Where `x` of channel `c` lands through the slide's windows, 0 on its black and 1 on its white.
+/// Where `x` of channel `c` lands through the slide's windows and mids, as the levels kernel lays it.
 fn through(l: &[oni_core::balance::Suggestion; 3], c: usize, x: f32) -> f32 {
-    (x - l[c].black) / (l[c].white - l[c].black)
+    let gamma = 0.5f32.ln() / l[c].mid.ln();
+    ((x - l[c].black) / (l[c].white - l[c].black)).max(0.0).powf(gamma)
 }
 
 /// A slide's cells: magenta shadows, a red subject whose blue is the frame's darkest, mid greys and
@@ -85,7 +86,7 @@ fn grey(cells: &[[f32; 3]], band: std::ops::Range<usize>, l: &[oni_core::balance
         v[v.len() / 2]
     };
     let at = [0, 1, 2].map(|c| through(l, c, median(c)));
-    (at[0] - at[1]).abs() < 2e-3 && (at[1] - at[2]).abs() < 2e-3
+    (at[0] - at[1]).abs() < 5e-3 && (at[1] - at[2]).abs() < 5e-3
 }
 
 #[test]
@@ -93,12 +94,16 @@ fn a_slide_s_shadows_and_lights_are_read_together_on_its_cells_and_land_grey() {
     let (cells, luma) = scene();
     let h = counted(&cells, &luma);
     let l = auto_levels::slide_points(&h, &cells, &luma).expect("the slide reads");
-    assert!(grey(&cells, 5..16, &l), "the magenta shadows land grey: {l:?}");
-    assert!(grey(&cells, 84..95, &l), "the bluish lights land grey: {l:?}");
+    // The tones it reads: the shadows at 10 % of the span, the lights at 90 %, the grey midtones.
+    let (shadows, lights) = (19..40, 80..87);
+    assert!(grey(&cells, shadows.clone(), &l), "the magenta shadows land grey: {l:?}");
+    assert!(grey(&cells, lights.clone(), &l), "the bluish lights land grey: {l:?}");
+    assert!(grey(&cells, 60..80, &l), "the grey midtones land grey: {l:?}");
     let ends = h.ends.clone().unwrap();
     let black = (0..3).map(|c| through(&l, c, ends[c][0])).fold(f32::INFINITY, f32::min);
     let white = (0..3).map(|c| through(&l, c, ends[c][1])).fold(f32::NEG_INFINITY, f32::max);
-    assert!(black.abs() < 1e-3 && (white - 1.0).abs() < 1e-3, "one black and one white: {black} {white}");
+    // Within a hundredth: the midtones' bend moves the extremes a little.
+    assert!(black.abs() < 1e-2 && (white - 1.0).abs() < 1e-2, "one black and one white: {black} {white}");
     // Twins: each channel's own 10 % and 90 % (the red subject's blue read as the shadows'), each
     // channel on its own ends, and the composite's one window all leave the shadows magenta.
     let share = |c: usize, q: f32| auto_levels::quantile(&h.channel(c), q).unwrap() / 1023.0;
@@ -107,9 +112,26 @@ fn a_slide_s_shadows_and_lights_are_read_together_on_its_cells_and_land_grey() {
         let back = |y: f32| lo + (y - glo) * (hi - lo) / (ghi - glo);
         oni_core::balance::Suggestion { black: back(0.0), white: back(1.0), ..l[c] }
     });
-    assert!(!grey(&cells, 5..16, &apart));
-    assert!(!grey(&cells, 5..16, &auto_levels::placement(&h, 0.0).unwrap()));
-    assert!(!grey(&cells, 5..16, &auto_levels::composite(&h, 0.0).unwrap()));
+    assert!(!grey(&cells, shadows.clone(), &apart));
+    assert!(!grey(&cells, shadows.clone(), &auto_levels::placement(&h, 0.0).unwrap()));
+    assert!(!grey(&cells, shadows, &auto_levels::composite(&h, 0.0).unwrap()));
+}
+
+/// A scene whose midtones are all colour, a blue sea, keeps them: none stands near grey to snap.
+#[test]
+fn a_slide_whose_midtones_are_colour_keeps_them() {
+    let (mut cells, _) = scene();
+    for p in &mut cells[60..80] {
+        *p = [0.30, 0.45, 0.75];
+    }
+    let w = oni_settings::axis::pipeline::LUMA_WEIGHTS;
+    let luma: Vec<f32> = cells.iter().map(|p| p[0] * w[0] + p[1] * w[1] + p[2] * w[2]).collect();
+    let l = auto_levels::slide_points(&counted(&cells, &luma), &cells, &luma).expect("the slide reads");
+    assert!(l.iter().all(|e| e.mid == 0.5), "the sea is not a cast: {l:?}");
+    assert!(!grey(&cells, 60..80, &l), "it stays blue");
+    // Twin: the grey midtones of `scene` do snap.
+    let (cells, luma) = scene();
+    assert!(auto_levels::slide_points(&counted(&cells, &luma), &cells, &luma).unwrap().iter().any(|e| e.mid != 0.5));
 }
 
 #[test]

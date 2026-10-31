@@ -4728,5 +4728,27 @@
     "status": "done",
     "detail": "#1002 aligned each channel's own 10 % and 90 % of counts, so red, green and blue were read on different parts of the frame and a coloured subject set the shadows' grey: magenta shadows stayed. The blocks reading now hands its kept cells (each cell's median, three channels together, and its luma) with the histogram; a slide's key sorts the cells by luma, takes the median of each channel over the cells between 5 % and 15 % and between 85 % and 95 % (CHROMA_MARKS, CHROMA_BAND), brings those two colours onto green's, then lays one black and one white on the aligned channels' ends. Each channel's black and white are no longer held inside 0…1: a held one darkened that channel's shadows against the others'. Auto Levels on a slide reads the same way (key::levels routes a slide to key::slide_read; keyed is Classic's alone). Check: positive_levels a slide's magenta shadows and bluish lights land grey with a red subject whose blue is the frame's darkest (twins: each channel's own 10 % and 90 %, each channel's own ends, the composite's one window leave the shadows magenta).",
     "outcome": "On the owner's slides of 2026-10-30, through each slide's own measuring frame, cells sorted by brightness after the curves: P1073170's shadows from ±0.030 to ±0.012 off grey, P1073151's about as before, P1073169's mid-dark tones still magenta (g -0.053, b +0.041 at 45-55 %), a cast or the subject's own colour."
+  },
+  {
+    "id": 1004,
+    "type": "fix",
+    "title": "A slide's greys are read at 10 % and 90 % of its tones, and its near-grey midtones land grey too",
+    "status": "done",
+    "detail": "#1003 read the greys on the cells ranked 10 % and 90 % darkest: on a slide whose frame is half black the 10 % fell in crushed blacks, and the magenta the eye sees sits in the midtones, which two points per channel cannot reach. The marks now stand at 10 % and 90 % of the way from the darkest cell's luma to the lightest's (a band of 5 % of that span each side, five cells at least). After the two-point alignment and the one black and white, the midtones (30 to 70 % of the span) are read on the quarter of their cells nearest grey; when those stand within NEUTRAL_CHROMA of grey (Auto Color's rule: a scene of colour, a blue sea, is left alone), red's and blue's black, white and mid are solved together (three_point, the gamma bisected inside the mid's range) so the shadows, the midtones and the lights all land on green's grey. Checks: positive_levels the magenta shadows, grey midtones and bluish lights land grey (twins: each channel's own 10 %/90 %, each channel's ends and the composite leave the shadows magenta), a slide whose midtones are a blue sea keeps them (twin: grey midtones snap).",
+    "outcome": "Owner's slides of 2026-10-30, each through its own measuring frame, cells after the curves, 45-55 % band against the sidecars at rest: P1073169 g -0.057 b +0.064 to g -0.009 b +0.024; P1073172 -0.037/+0.047 to -0.009/+0.016; P1073170 within 0.02 of grey from the shadows to the midtones; P1073151 shadows back to grey, its sea still blue (+0.056 from +0.093)."
+  },
+  {
+    "id": 1005,
+    "type": "fix",
+    "title": "A modifier whose release another app took never sticks on a click",
+    "status": "done",
+    "detail": "After a screenshot's shortcut (Command-Shift-4), the release goes to the system's tool and the window keeps Command and Shift down: the gallery and the sidebar extended every click. The app's own window now asks the system which keys are down on each selection click (NSEvent.modifierFlags, GetKeyState) and drops a key it no longer holds: tile and row clicks, the gallery's release, the pinned rows. Checks drive clicks with synthetic keys, so only the app turns the check on (system::verify_held_keys). Check: system a key the system no longer holds never reaches a click (twin: with no answer from the system, the click's own keys stand)."
+  },
+  {
+    "id": 1006,
+    "type": "fix",
+    "title": "A cropped frame's thumbnail shows its crop",
+    "status": "done",
+    "detail": "Owner's call beyond Swift: Thumbnails.isConverted fell back on the camera's own preview for a frame back at rest, uncropped; a slide reset or never levelled showed its sprockets though cropped. A frame whose framing is not neutral now renders its own thumbnail. Check: scans a measured frame shows the render and a crop alone its framing (twin: a frame at rest and untouched shows its scan)."
   }
 ]

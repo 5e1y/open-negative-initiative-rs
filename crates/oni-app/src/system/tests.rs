@@ -109,3 +109,11 @@ fn a_helper_program_leaves_no_zombie_once_it_ends() {
     unsafe { libc::waitpid(pid as i32, std::ptr::null_mut(), 0) };
     assert!(gone(pid));
 }
+
+#[test]
+fn a_key_the_system_no_longer_holds_never_reaches_a_click() {
+    assert_eq!(super::kept((true, true), Some((false, false))), (false, false), "a stuck Command and Shift dropped");
+    assert_eq!(super::kept((false, true), Some((true, true))), (false, true), "a key held but not sent stays unsent");
+    // Twin: where the system says nothing, the click's own keys stand.
+    assert_eq!(super::kept((true, true), None), (true, true));
+}

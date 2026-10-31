@@ -314,7 +314,10 @@ impl Ctl {
         let p = me.clone();
         lib.on_project_row_folded(move |i| p.project_row_folded(index(i)));
         let p = me.clone();
-        lib.on_project_row_clicked(move |i, command, shift| p.project_row_clicked(index(i), command, shift));
+        lib.on_project_row_clicked(move |i, command, shift| {
+            let (command, shift) = crate::system::held(command, shift);
+            p.project_row_clicked(index(i), command, shift);
+        });
         let p = me.clone();
         lib.on_row_menu(move |i| p.row_menu(index(i)));
         let p = me.clone();
@@ -344,7 +347,10 @@ impl Ctl {
         let p = me.clone();
         lib.on_pointer_moved(move |x, y| p.pointer_moved(x, y));
         let p = me.clone();
-        lib.on_pointer_up(move |x, y, command, shift| p.pointer_up(x, y, command, shift));
+        lib.on_pointer_up(move |x, y, command, shift| {
+            let (command, shift) = crate::system::held(command, shift);
+            p.pointer_up(x, y, command, shift);
+        });
         let p = me.clone();
         lib.on_context(move |x, y| p.context(x, y));
         let p = me.clone();

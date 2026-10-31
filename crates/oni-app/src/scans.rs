@@ -6,9 +6,10 @@ use crate::render;
 use crate::thumbnails::{SIDE, jpeg};
 use std::path::Path;
 
-/// `Thumbnails.isConverted`: the settings differ from the frame taken back to unconverted.
+/// `Thumbnails.isConverted`: the settings differ from the frame taken back to unconverted, or its
+/// framing was touched, which the scan's own preview would drop (beyond Swift).
 pub fn is_converted(settings: &oni_settings::PipelineSettings) -> bool {
-    *settings != oni_core::parameters::unconverted(settings)
+    !settings.geometry.is_neutral() || *settings != oni_core::parameters::unconverted(settings)
 }
 
 /// The tile's JPEG of the file as it holds itself; `None` for a RAW carrying no preview it reads.
@@ -97,10 +98,10 @@ mod tests {
         assert!(is_converted(&moved), "twin: an edit converts it");
     }
 
-    /// `Thumbnails.scanChecks`: a frame measured on its roll shows the render, reset it shows its
-    /// scan again, and a crop alone converts nothing.
+    /// `Thumbnails.scanChecks`: a frame measured on its roll shows the render and reset its scan
+    /// again; a crop alone shows the render, which the scan's preview would show uncropped (owner's call).
     #[test]
-    fn a_measured_frame_shows_the_render_and_a_crop_alone_its_scan() {
+    fn a_measured_frame_shows_the_render_and_a_crop_alone_its_framing() {
         use oni_settings::frame::RollReference;
         let mut measured = oni_settings::PipelineSettings::rest(oni_settings::ConversionMode::Negative, true);
         let id = oni_settings::id::Id::new();
@@ -109,10 +110,11 @@ mod tests {
         let mut framed = oni_core::parameters::unconverted(&measured);
         assert!(!is_converted(&framed), "reset to default it shows its scan again");
         framed.geometry.crop = oni_settings::cg::Rect { x: 0.1, y: 0.1, width: 0.8, height: 0.8 };
-        assert!(!is_converted(&framed), "a crop is a fact of the frame");
-        // Twin: a look moved converts it.
-        framed.print.exposure += 0.5;
-        assert!(is_converted(&framed));
+        assert!(is_converted(&framed), "a cropped frame shows its crop");
+        // Twin: a look moved converts it, framed or not.
+        let mut looked = oni_core::parameters::unconverted(&measured);
+        looked.print.exposure += 0.5;
+        assert!(is_converted(&looked));
     }
 
     /// A file carrying no preview is read and reduced to the tile's side; one that is no image gives none.

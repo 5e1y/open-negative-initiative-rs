@@ -267,6 +267,7 @@ impl Ctl {
 
     /// `PinnedRow.onTap` off the chevron: the row clicked, then revealed in the middle.
     fn pin_clicked(self: &Rc<Self>, which: Which, command: bool, shift: bool) {
+        let (command, shift) = crate::system::held(command, shift);
         let Some(w) = self.window() else { return };
         let lib = w.global::<Library>();
         let i = match which {
