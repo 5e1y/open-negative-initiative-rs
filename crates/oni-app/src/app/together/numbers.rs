@@ -1,9 +1,9 @@
-//! Edit Together as a contact sheet: the canvas's black ground and each frame's place on its roll,
-//! orange under its picture as a film's edge print.
+//! Edit Together as a contact sheet: the sheet's black under its frames, and each frame's place on
+//! its roll, orange under its picture as a film's edge print.
 
 use super::*;
-use crate::EdgeNumber;
-use super::sheet::Cell;
+use crate::{EdgeNumber, SheetBox};
+use super::sheet::Area;
 
 impl Ctl {
     /// Each frame's place on its roll, read off this thread: a contact sheet's sidecar is opened to
@@ -47,27 +47,29 @@ impl Ctl {
         }
     }
 
-    /// Each number under its picture where the view lays the full sheet (`sheet`, in canvas pixels),
-    /// sized as the sheet is; those off the canvas are left out.
-    pub(super) fn publish_numbers(&self, sheet: (f64, f64, f64, f64), full_width: f64) {
+    /// The sheet's black where the view lays the full sheet (`sheet`, in canvas pixels), and each
+    /// number under its picture, sized as the sheet is; those off the canvas are left out.
+    pub(super) fn publish_numbers(&self, sheet: Area, full_width: f64) {
         let (Some(w), Some(view)) = (self.window(), self.canvas_size()) else { return };
         let density = f64::from(w.window().scale_factor());
         let k = sheet.2 / full_width.max(1.0);
         let laid = {
             let s = self.state.borrow();
             let Some(g) = s.together.as_ref() else { return };
-            under(&g.numbers, &g.pictures, cell_at(1.0))
+            under(&g.numbers, &g.sheet.pictures)
         };
-        let size = NUMBER as f64 * k;
+        let (size, band) = (NUMBER as f64 * k, ROWS_APART as f64 * k);
         let points = |v: f64| (v / density) as f32;
         let numbers: Vec<EdgeNumber> = laid
             .into_iter()
             .map(|(x, y, n)| (sheet.0 + x * k, sheet.1 + y * k, n))
-            .filter(|(x, y, _)| *x < view.0 && *y < view.1 && *x + 4.0 * size > 0.0 && *y + size > 0.0)
+            .filter(|(x, y, _)| *x < view.0 && *y < view.1 && *x + 4.0 * size > 0.0 && *y + band > 0.0)
             .map(|(x, y, n)| EdgeNumber { x: points(x), y: points(y), text: n.to_string().into() })
             .collect();
         let c = w.global::<Canvas>();
+        c.set_sheet(SheetBox { x: points(sheet.0), y: points(sheet.1), width: points(sheet.2), height: points(sheet.3) });
         c.set_number_size(points(size));
+        c.set_number_band(points(band));
         if let Some(m) = moved_to(&c.get_numbers(), numbers) {
             c.set_numbers(m);
         }
@@ -98,20 +100,9 @@ fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>, sheet: impl F
         .collect()
 }
 
-/// Where each numbered frame's number lies on the full sheet: under its picture's left edge, in the
-/// band's middle when the picture fills its cell.
-fn under(numbers: &[Option<usize>], pictures: &[Option<(f64, f64)>], c: Cell) -> Vec<(f64, f64, usize)> {
-    let tile = c.tile as f64;
-    numbers
-        .iter()
-        .zip(pictures)
-        .enumerate()
-        .filter_map(|(i, (n, p))| {
-            let (n, (w, h)) = ((*n)?, (*p)?);
-            let (x, y) = (((i % COLUMNS) * c.across()) as f64, ((i / COLUMNS) * c.down()) as f64);
-            Some((x + (tile - w).max(0.0) / 2.0, y + (tile + h.min(tile)) / 2.0 + (c.band - NUMBER) as f64 / 2.0, n))
-        })
-        .collect()
+/// Where each numbered frame's number band starts on the full sheet: at its picture's bottom left.
+fn under(numbers: &[Option<usize>], pictures: &[Area]) -> Vec<(f64, f64, usize)> {
+    numbers.iter().zip(pictures).filter_map(|(n, &(x, y, _, h))| Some((x, y + h, (*n)?))).collect()
 }
 
 /// The model rewritten in place when it holds as many numbers, so a pan keeps every label; else a new one.
@@ -146,17 +137,14 @@ mod tests {
 
     #[test]
     fn a_number_lies_under_its_picture_whatever_its_side() {
-        let (tile, offset) = (TILE as f64, (BAND - NUMBER) as f64 / 2.0);
-        let numbers = [Some(1), Some(2), Some(3), None];
-        let pictures = [Some((tile, 640.0)), None, Some((640.0, tile)), Some((tile, tile))];
-        let laid = under(&numbers, &pictures, cell_at(1.0));
-        // A landscape picture: under its own bottom edge, inside its cell.
-        assert_eq!(laid[0], (0.0, 832.0 + offset, 1));
-        assert_ne!(laid[0].1, tile + offset, "twin: not left at its row's band, away from its picture");
-        // A portrait one: at its own left edge, in its row's band, which holds it whole.
-        assert_eq!(laid[1], (2.0 * (tile + GAP as f64) + 192.0, tile + offset, 3));
-        assert!(laid[1].1 + NUMBER as f64 <= tile + BAND as f64);
-        // A frame not drawn yet, or with no number, has no label.
+        let sheet = laid(&[(3.0, 2.0), (2.0, 3.0), (3.0, 2.0)]);
+        let laid = under(&[Some(1), Some(2), None], &sheet.pictures);
+        let (x, y, _, h) = sheet.pictures[0];
+        assert_eq!(laid[0], (x, y + h, 1), "at a landscape picture's bottom, inside its row");
+        let (x, y, _, h) = sheet.pictures[1];
+        assert_eq!(laid[1], (x, y + h, 2), "at a portrait one's, the row's own");
+        assert!(laid[0].1 < laid[1].1, "twin: the landscape's band is not left at the row's bottom");
+        // A frame with no number has no label.
         assert_eq!(laid.len(), 2);
     }
 }

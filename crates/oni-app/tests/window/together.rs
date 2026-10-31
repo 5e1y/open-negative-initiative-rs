@@ -62,28 +62,28 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     lib.invoke_tile_clicked(tile("C"), true, false);
     rig.pump();
     lib.invoke_tile_opened(tile("B"));
-    // Each tile drawn once its source lands: the third cell's centre is a picture, not the ground the
-    // gap between two tiles shows.
+    // Each tile drawn once its source lands: the third picture's centre is a picture, not the black
+    // the gap between two tiles shows.
     let at = |x: usize, y: usize| canvas.get_frame().to_rgba8().filter(|b| b.width() as usize > x).map(|b| b.as_slice()[y * b.width() as usize + x]);
     // Within the dither's step: two grounds differ by a code at most.
     let near = |a: Option<slint::Rgba8Pixel>, b: Option<slint::Rgba8Pixel>| a.zip(b).is_some_and(|(a, b)| [a.r.abs_diff(b.r), a.g.abs_diff(b.g), a.b.abs_diff(b.b)].iter().all(|d| *d <= 2));
-    // The sheet is drawn at the share of its size the view shows: its cells and gaps scale with it.
-    let cell = || {
-        let k = f64::from(canvas.get_frame().size().width) / f64::from(3 * 400 + 2 * 12);
-        ((400.0 * k).round() as usize, (12.0 * k).round() as usize)
-    };
-    let (third, gap) = (|| { let (c, g) = cell(); (2 * (c + g) + c / 2, c / 2) }, || { let (c, g) = cell(); (c + g / 2, c / 2) });
+    let black = |p: Option<slint::Rgba8Pixel>| p.is_some_and(|p| p.r.max(p.g).max(p.b) <= 2);
+    // The tiles' box is drawn at the share of its size the view shows: 3:2 frames 1024 wide, 30 apart.
+    let k = || f64::from(canvas.get_frame().size().width) / f64::from(3 * 1024 + 2 * 30);
+    let (third, gap) = (|| (((2.0 * 1054.0 + 512.0) * k()) as usize, (341.0 * k()) as usize), || ((1039.0 * k()) as usize, (341.0 * k()) as usize));
     rig.until("the grid", Duration::from_secs(60), || {
         canvas.get_status().as_str() == "3 frames together" && !near(at(third().0, third().1), at(gap().0, gap().1))
     });
     let size = canvas.get_frame().size();
-    // Three tiles on one row, and the band under it that holds their numbers.
-    assert!((f64::from(size.width) / f64::from(size.height) - 3132.0 / 1108.0).abs() < 0.02, "three tiles on one row: {size:?}");
-    assert!(near(at(gap().0, gap().1), at(cell().0 / 2, 1)), "twin: a gap and a cell's empty edge show the same ground");
-    // A contact sheet: each frame's number on its black.
+    assert!((f64::from(size.width) / f64::from(size.height) - 3132.0 / 683.0).abs() < 0.05, "three tiles on one row: {size:?}");
+    assert!(black(at(gap().0, gap().1)) && !black(at(third().0, third().1)), "the gaps are black, the pictures not: {:?}", at(gap().0, gap().1));
+    // A contact sheet: the black under the frames with a margin, each frame's number on it.
+    let sheet = canvas.get_sheet();
+    let (fx, fy, fw, fh) = (canvas.get_frame_x(), canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
+    assert!(canvas.get_together() && sheet.x < fx && sheet.y < fy && sheet.x + sheet.width > fx + fw && sheet.y + sheet.height > fy + fh, "{fx} {fy} {fw} {fh}");
+    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (2.0 * 60.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap: {} × {}", sheet.width, sheet.height);
     rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
     assert_eq!(numbers(), ["A", "B", "C"].map(place));
-    assert!(canvas.get_together() && at(gap().0, gap().1).is_some_and(|p| p.r.max(p.g).max(p.b) <= 2), "the gaps are black: {:?}", at(gap().0, gap().1));
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
     assert!(["A", "B", "C"].iter().all(|n| selected(n)), "the selection stays the frames shown");
 

@@ -23,8 +23,10 @@ impl Engine {
                     continue;
                 }
             };
+            // Its crop spans `side` on its longest side however tight it is: a tile is the frame as framed.
             let (w, h) = negative.size();
-            let request = Request { scale: (side as f64 / w.max(h) as f64).min(1.0), full_width: Some(negative.full_width), ..Request::default() };
+            let (cw, ch) = crate::export::cropped_size((w as f64, h as f64), settings);
+            let request = Request { scale: side as f64 / cw.max(ch).max(1.0), full_width: Some(negative.full_width), ..Request::default() };
             self.read_custom(settings);
             let inputs = Inputs { patches: patches_for(&self.patches, settings), custom_flat_field: custom_for(&self.custom, settings) };
             let image = self.pipeline.image(&mut self.graph, &negative.preview, settings, &request, &inputs).map_err(|e| e.to_string())?;

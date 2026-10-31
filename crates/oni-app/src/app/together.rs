@@ -14,15 +14,17 @@ mod drawing;
 #[path = "together/numbers.rs"]
 mod numbers;
 use drawing::{draw_grids, tile_source};
-use sheet::{Window, cell_at, place, reduced, scale_for, seen, sheet_size};
+use sheet::{Sheet, Window, laid, reduced, scale_for, source_side};
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
 const COLUMNS: usize = 6;
 const TILE: usize = 1024;
 const GAP: usize = 30;
-/// The band under each row holding its frames' numbers, and their size, in the same pixels.
-const BAND: usize = 84;
+/// The rows' spacing and the sheet's margin, where the frames' numbers lie, and their size.
+const ROWS_APART: usize = 2 * GAP;
 const NUMBER: usize = 56;
+/// A frame's proportions until its thumbnail or its source lands: 35 mm's.
+const UNKNOWN: (f64, f64) = (3.0, 2.0);
 /// The share of the full sheet the histogram counts, an eighth: 128 px a tile.
 const COUNTED_SCALE: f64 = 0.125;
 /// Decodes at once while a group opens: a half-size RAW holds about 100 MB until it is reduced.
@@ -35,9 +37,9 @@ pub(in crate::app) struct Group {
     negatives: Vec<Option<Arc<Negative>>>,
     /// Each frame's thumbnail on the GPU, shown in its tile until its source is decoded.
     stand_ins: Vec<Option<oni_graph::Source>>,
-    /// Each frame's place on its roll, and its picture's size on the full sheet once drawn.
+    /// Each frame's place on its roll, and the sheet as its frames' proportions lay it.
     numbers: Vec<Option<usize>>,
-    pictures: Vec<Option<(f64, f64)>>,
+    sheet: Sheet,
     asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
     shown: Option<((usize, usize), Window, f64)>,
@@ -73,15 +75,13 @@ struct Ask {
     revision: u64,
     at: Instant,
     tiles: Vec<Option<Tile>>,
-    /// The share of the full sheet drawn, as the view shows it, and the box of it drawn.
+    /// The sheet laid, the share of it drawn as the view shows it, and the box of it drawn.
+    sheet: Sheet,
     scale: f64,
     window: Window,
     /// Every tile, when the settings or the sources moved: the histogram's sheet, drawn whole at a set scale.
     counted: Option<Vec<Option<(Arc<Negative>, PipelineSettings)>>>,
 }
-
-/// Where a grid was drawn: its box of the full sheet, its scale and each tile's size drawn, by frame.
-type Laying = (Window, f64, Vec<(usize, (u32, u32))>);
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
 static SLOT: Latest<Ask> = Latest::new();
@@ -111,8 +111,8 @@ impl Ctl {
             (paths.iter().map(kept).collect::<Vec<_>>(), g.is_none())
         };
         let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
-        let (stand_ins, numbers, pictures) = (vec![None; paths.len()], vec![None; paths.len()], vec![None; paths.len()]);
-        let group = Group { id, paths, negatives, stand_ins, numbers, pictures, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
+        let (stand_ins, numbers, sheet) = (vec![None; paths.len()], vec![None; paths.len()], laid(&vec![UNKNOWN; paths.len()]));
+        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
         self.state.borrow_mut().together = Some(group);
         if fresh {
             self.state.borrow_mut().viewport.fit();
@@ -154,9 +154,7 @@ impl Ctl {
     /// full sheet whatever share of it was drawn.
     fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) {
         let Some(view) = self.canvas_size() else { return };
-        let Some(count) = self.state.borrow().together.as_ref().map(|g| g.paths.len()) else { return };
-        let (drawn, full) = (sheet_size(count, cell_at(scale)), sheet_size(count, cell_at(1.0)));
-        let full = (f64::from(full.0), f64::from(full.1));
+        let Some((drawn, full)) = self.state.borrow().together.as_ref().map(|g| (g.sheet.drawn(scale), g.sheet.size)) else { return };
         let p = self.state.borrow().viewport.placement(full, view).image;
         // Canvas pixels a pixel of the sheet drawn, which shows its box at that box's place.
         let k = p.2 / f64::from(drawn.0);
@@ -206,11 +204,12 @@ impl Ctl {
                     if GROUPS.load(Ordering::Relaxed) != id {
                         return;
                     }
-                    let slide = drawing::read_as_slide(&path);
+                    let settings = drawing::settings_of(&path);
+                    let slide = settings.as_ref().is_some_and(|s| render::Reading::of(s).slide);
                     let preview = previews.lock().expect("previews").get(&path, slide);
-                    let made = match preview {
-                        Some(p) => engine.lock().and_then(|mut e| e.tile_of(&p, TILE)).map(Arc::new),
-                        None => tile_source(&engine, &path, id),
+                    let made = match (preview, settings) {
+                        (Some(p), Some(s)) => engine.lock().and_then(|mut e| e.tile_of(&p, source_side(&s, (p.size().0 as usize, p.size().1 as usize)))).map(Arc::new),
+                        _ => tile_source(&engine, &path, id),
                     };
                     let Ok(negative) = made else { continue };
                     with_shell(move |c| c.tile_decoded(id, i, negative));
@@ -287,17 +286,30 @@ impl Ctl {
         let ask = (|| {
             let mut s = self.state.borrow_mut();
             let g = s.together.as_mut()?;
-            let full = sheet_size(g.paths.len(), cell_at(1.0));
-            let full = (f64::from(full.0), f64::from(full.1));
+            // Each frame as framed, its crop and its quarter turns, else its thumbnail's proportions.
+            let settings = |path: &String| if Some(path) == open.as_ref() { Some(&lead) } else { live.get(path) };
+            let proportions: Vec<(f64, f64)> = g
+                .paths
+                .iter()
+                .zip(&g.negatives)
+                .zip(&g.stand_ins)
+                .map(|((path, n), stand_in)| match (n, settings(path), stand_in) {
+                    (Some(n), Some(s), _) => crate::export::cropped_size((f64::from(n.size().0), f64::from(n.size().1)), s),
+                    (_, _, Some(p)) => (f64::from(p.extent().w), f64::from(p.extent().h)),
+                    _ => UNKNOWN,
+                })
+                .collect();
+            g.sheet = laid(&proportions);
+            let full = g.sheet.size;
             let placed = view.map(|v| viewport.placement(full, v));
             let scale = scale_for(placed.map_or(full.0, |p| p.image.2), full.0);
             // The view's part of the sheet, in the drawn sheet's pixels: only the tiles it meets are drawn.
-            let drawn = sheet_size(g.paths.len(), cell_at(scale));
+            let drawn = g.sheet.drawn(scale);
             let visible = placed.map_or((0.0, 0.0, f64::from(drawn.0), f64::from(drawn.1)), |p| {
                 let k = f64::from(drawn.0) / p.image.2;
                 (p.visible.0 * k, p.visible.1 * k, p.visible.2 * k, p.visible.3 * k)
             });
-            let (shows, window) = seen(g.paths.len(), cell_at(scale), visible);
+            let (shows, window) = g.sheet.seen(scale, visible);
             let key = (revision, hovered, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window);
             if g.asked == Some(key) {
                 return None;
@@ -322,7 +334,7 @@ impl Ctl {
                     None => stand_in.clone().map(Tile::StandIn),
                 }.filter(|_| *shown))
                 .collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, scale, window, counted: moved.then_some(all) })
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all) })
         })();
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
@@ -351,14 +363,10 @@ impl Ctl {
         self.state.borrow().together.as_ref().map_or(0, |g| g.drawn)
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, laid: Laying, counted: Option<oni_graph::Source>) {
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
         let size = (sheet.extent().w as usize, sheet.extent().h as usize);
-        let (window, scale, pictures) = laid;
         let count = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == group => {
-                for (i, (w, h)) in pictures {
-                    g.pictures[i] = Some((f64::from(w) / scale, f64::from(h) / scale));
-                }
                 g.shown = Some((size, window, scale));
                 g.drawn = revision;
                 g.latencies.push(at.elapsed());

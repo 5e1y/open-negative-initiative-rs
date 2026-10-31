@@ -7,7 +7,15 @@ import { RingTone, Ring } from "marks.slint";
 
 export enum FrameStyle { crop, window }
 
-// A frame's number under its picture on a sheet of frames, at the size the sheet's zoom gives it.
+// A sheet of frames on the canvas, the black they lie on, and a frame's number under its picture,
+// centred in the band below it, at the size the sheet's zoom gives it.
+export struct SheetBox {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+}
+
 export struct EdgeNumber {
     x: length,
     y: length,
@@ -18,7 +26,6 @@ export component EdgePrint inherits Label {
     in property <length> size;
     ink: Colour.edge-print;
     font-size: root.size;
-    vertical-alignment: top;
 }
 
 // One handle's grab: the press and the travel since it, in window coordinates, so the frame moving

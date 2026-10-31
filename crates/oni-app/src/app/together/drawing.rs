@@ -4,8 +4,8 @@
 use super::*;
 use crate::latest::Taken;
 
-/// A frame decoded at half size, reduced to a tile and laid on the GPU, unless the group `id` was left
-/// meanwhile; a RAW's half decode is the editor's, kept on disk, which the balance's copy reads.
+/// A frame decoded at half size, reduced so its crop spans a tile and laid on the GPU, unless the group
+/// `id` was left meanwhile; a RAW's half decode is the editor's, kept on disk, which the balance's copy reads.
 pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Negative>, String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
@@ -13,14 +13,21 @@ pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Ne
     if GROUPS.load(Ordering::Relaxed) != id {
         return Err(String::new());
     }
-    decoded.linear = reduced(decoded.linear, TILE);
+    let side = source_side(&settings, (decoded.linear.width, decoded.linear.height));
+    decoded.linear = reduced(decoded.linear, side);
     Ok(Arc::new(engine.prepare(decoded)?))
 }
 
-/// Whether the frame's sidecar reads it as a slide, the key its kept preview is found by.
-pub(super) fn read_as_slide(path: &str) -> bool {
+/// The frame's settings as its sidecar holds them: whether it reads as a slide, the key its kept
+/// preview is found by, and its crop.
+pub(super) fn settings_of(path: &str) -> Option<PipelineSettings> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
-    oni_settings::sidecar::read(Path::new(path), mosaic, true).is_ok_and(|l| render::Reading::of(&l.settings).slide)
+    oni_settings::sidecar::read(Path::new(path), mosaic, true).ok().map(|l| l.settings)
+}
+
+/// A tile's longest side drawn at `scale`.
+fn side(scale: f64) -> usize {
+    ((TILE as f64 * scale).round() as usize).max(1)
 }
 
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
@@ -38,28 +45,25 @@ pub(super) fn draw_grids(engine: Shared) {
                 Tile::StandIn(picture) => Laid::Shown(picture),
             })
             .collect();
-        let cell = cell_at(ask.scale);
+        let (scale, sheet) = (ask.scale, &ask.sheet);
         let (wx, wy, ww, wh) = ask.window;
         let size = (ww, wh);
         let Ok(mut guard) = engine.lock() else { continue };
-        // Each tile's size as laid, which places its number under it.
-        let pictures = std::cell::RefCell::new(Vec::with_capacity(cells.len()));
         let at = |i: usize, tile| {
-            pictures.borrow_mut().push((cells[i], tile));
-            let (x, y) = place(cells[i], tile, cell);
+            let (x, y) = sheet.place(cells[i], tile, scale);
             (x - wx as i32, y - wy as i32)
         };
-        let Ok(sheet) = guard.render_laid(&present, cell.tile, &at, size) else { continue };
+        let Ok(drawn) = guard.render_laid(&present, side(scale), &at, size) else { continue };
         // The histogram's sheet: every tile at one scale, so a zoom never moves what it counts.
         let counted = ask.counted.as_ref().and_then(|all| {
             let cells: Vec<usize> = all.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
             let present: Vec<Laid> = all.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
-            let cell = cell_at(COUNTED_SCALE);
-            guard.render_laid(&present, cell.tile, &|i, tile| place(cells[i], tile, cell), sheet_size(all.len(), cell)).ok()
+            let place = |i: usize, tile| sheet.place(cells[i], tile, COUNTED_SCALE);
+            guard.render_laid(&present, side(COUNTED_SCALE), &place, sheet.drawn(COUNTED_SCALE)).ok()
         });
-        // The gaps are clear, so the screen's encoding lays the canvas's ground under them.
+        // The gaps are clear, so the screen's encoding lays the sheet's black under them.
         drop(guard);
-        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale, pictures.into_inner()));
-        with_shell(move |c| c.grid_landed(group, revision, at, sheet, pipeline, laid, counted));
+        let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
+        with_shell(move |c| c.grid_landed(group, revision, at, drawn, pipeline, laid, counted));
     }
 }

@@ -1,6 +1,6 @@
 // The editor's canvas card: the photo the display kernel wrote, its overlays and the keys in its band.
 import { Act } from "act.slint";
-import { DS, Card, CardCorners, Picture, Ground, SplitGuide, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone } from "ds/ds.slint";
+import { DS, Card, CardCorners, Picture, Ground, SplitGuide, SheetBox, EdgeNumber, EdgePrint, FrameOverlay, FrameStyle, CorrectionMark, Badge, Button, ButtonGroup, GroupAlign, ButtonSize, Label, TextRole, Space, Stroke, CardStyle, Icons, Progress, Tone, BadgeTone, Fit, Ring, Trace, TraceTone } from "ds/ds.slint";
 import { PanelState, Lab } from "panel.slint";
 import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
@@ -39,10 +39,12 @@ export global Canvas {
     in property <length> frame-height;
     // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
     in property <float> split: -1;
-    // Frames shown together: the sheet's black ground, and each frame's number at the sheet's scale.
+    // Frames shown together: the sheet's black, each frame's number at the sheet's scale in its band.
     in property <bool> together;
+    in property <SheetBox> sheet;
     in property <[EdgeNumber]> numbers;
     in property <length> number-size;
+    in property <length> number-band;
     in property <image> before;
     in property <length> before-x;
     in property <length> before-y;
@@ -124,8 +126,9 @@ export component CanvasCard inherits Card {
         Picture {
             width: parent.width;
             height: parent.height;
-            ground: Canvas.cropping ? Ground.canvas-cropping : Canvas.together ? Ground.sheet : Ground.canvas;
+            ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
         }
+        if Canvas.together: Picture { x: Canvas.sheet.x; y: Canvas.sheet.y; width: Canvas.sheet.width; height: Canvas.sheet.height; ground: Ground.sheet; }
         Picture {
             x: Canvas.frame-x;
             y: Canvas.frame-y;
@@ -138,7 +141,7 @@ export component CanvasCard inherits Card {
             clip-width: Canvas.frame-clip-width;
             clip-height: Canvas.frame-clip-height;
         }
-        for n in Canvas.numbers: EdgePrint { x: n.x; y: n.y; text: n.text; size: Canvas.number-size; }
+        for n in Canvas.numbers: EdgePrint { x: n.x; y: n.y; height: Canvas.number-band; text: n.text; size: Canvas.number-size; }
         // Held at the left edge: an element with no place is centred in its parent.
         if Canvas.split >= 0: Rectangle {
             x: 0;

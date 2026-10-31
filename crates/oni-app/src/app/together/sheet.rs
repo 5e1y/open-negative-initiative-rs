@@ -1,4 +1,4 @@
-//! Edit Together's sheet: tiles reduced to a cell and laid six to a row, at the share of its size shown.
+//! Edit Together's sheet: each frame framed to a tile and laid six to a row, at the share of its size shown.
 
 use super::*;
 
@@ -28,68 +28,85 @@ pub(super) fn reduced(linear: render::Linear, side: usize) -> render::Linear {
     render::Linear { width: ow, height: oh, pixels }
 }
 
-/// A cell's side, the gap after it and the band under its row that holds the frames' numbers, in
-/// the sheet's pixels.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) struct Cell {
-    pub tile: usize,
-    pub gap: usize,
-    pub band: usize,
+/// The longest side a frame's source is reduced to, so that its crop still spans `TILE` pixels: a
+/// frame cropped to half its width keeps twice as many.
+pub(super) fn source_side(settings: &PipelineSettings, size: (usize, usize)) -> usize {
+    let (w, h) = (size.0 as f64, size.1 as f64);
+    let (cw, ch) = crate::export::cropped_size((w, h), settings);
+    (TILE as f64 * w.max(h) / cw.max(ch).max(1.0)).ceil() as usize
 }
 
-impl Cell {
-    /// From a cell's corner to the next one's across a row, and down to the next row's.
-    pub fn across(self) -> usize {
-        self.tile + self.gap
-    }
+/// A rectangle on the full sheet: x, y, width, height.
+pub(super) type Area = (f64, f64, f64, f64);
 
-    pub fn down(self) -> usize {
-        self.tile + self.band + self.gap
-    }
-}
-
-/// The cell at `scale` of the full sheet.
-pub(super) fn cell_at(scale: f64) -> Cell {
-    let at = |v: usize| (v as f64 * scale).round() as usize;
-    Cell { tile: at(TILE).max(1), gap: at(GAP), band: at(BAND) }
-}
-
-/// A sheet of `count` tiles six to a row, with the gaps between them and each row's band.
-pub(super) fn sheet_size(count: usize, c: Cell) -> (u32, u32) {
-    let columns = count.clamp(1, COLUMNS);
-    let rows = count.div_ceil(COLUMNS).max(1);
-    ((columns * c.across() - c.gap) as u32, (rows * c.down() - c.gap) as u32)
-}
-
-/// The corner of tile `i` of `size`, centred in its cell.
-pub(super) fn place(i: usize, size: (u32, u32), c: Cell) -> (i32, i32) {
-    let (cx, cy) = ((i % COLUMNS) * c.across(), (i / COLUMNS) * c.down());
-    let (w, h) = (size.0 as usize, size.1 as usize);
-    ((cx + c.tile.saturating_sub(w) / 2) as i32, (cy + c.tile.saturating_sub(h) / 2) as i32)
-}
-
-/// A sheet's rectangle in its pixels: x, y, width, height.
+/// A sheet's rectangle in its drawn pixels: x, y, width, height.
 pub(super) type Window = (u32, u32, u32, u32);
 
-/// Which of `count` tiles a view showing `visible` of the sheet meets, and the cells' box around them,
-/// so a grid draws the tiles on screen alone, on a sheet no larger than they need.
-pub(super) fn seen(count: usize, c: Cell, visible: (f64, f64, f64, f64)) -> (Vec<bool>, Window) {
-    let (vx0, vy0, vx1, vy1) = (visible.0, visible.1, visible.0 + visible.2, visible.1 + visible.3);
-    let mut corners = (u32::MAX, u32::MAX, 0, 0);
-    let shows = (0..count)
-        .map(|i| {
-            let (x, y) = ((i % COLUMNS) * c.across(), (i / COLUMNS) * c.down());
-            let (x1, y1) = (x + c.tile, y + c.tile + c.band);
-            let meets = (x as f64) < vx1 && (x1 as f64) > vx0 && (y as f64) < vy1 && (y1 as f64) > vy0;
-            if meets {
-                corners = (corners.0.min(x as u32), corners.1.min(y as u32), corners.2.max(x1 as u32), corners.3.max(y1 as u32));
-            }
-            meets
-        })
-        .collect::<Vec<_>>();
-    let whole = sheet_size(count, c);
-    let window = if corners.0 == u32::MAX { (0, 0, whole.0, whole.1) } else { (corners.0, corners.1, corners.2 - corners.0, corners.3 - corners.1) };
-    (shows, window)
+/// A sheet laid at full scale: each picture's place and its size, and the sheet's, margin included.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(super) struct Sheet {
+    pub pictures: Vec<Area>,
+    pub size: (f64, f64),
+}
+
+/// Frames of these proportions six to a row, each `TILE` on its longest side whatever its crop: a
+/// column as wide as a tile, a row as tall as its tallest picture and each picture centred in both,
+/// `GAP` between columns, twice it between rows and around the sheet, where the numbers lie.
+pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
+    let (tile, gap, apart) = (TILE as f64, GAP as f64, ROWS_APART as f64);
+    let fitted: Vec<(f64, f64)> = proportions.iter().map(|&(w, h)| (tile * w / w.max(h).max(1e-9), tile * h / w.max(h).max(1e-9))).collect();
+    let columns = fitted.len().clamp(1, COLUMNS) as f64;
+    let mut pictures = Vec::with_capacity(fitted.len());
+    let mut y = apart;
+    for row in fitted.chunks(COLUMNS) {
+        let height = row.iter().map(|p| p.1).fold(0.0, f64::max);
+        for (c, &(w, h)) in row.iter().enumerate() {
+            pictures.push((apart + c as f64 * (tile + gap) + (tile - w) / 2.0, y + (height - h) / 2.0, w, h));
+        }
+        y += height + apart;
+    }
+    let width = 2.0 * apart + columns * tile + (columns - 1.0) * gap;
+    Sheet { pictures, size: (width, y.max(2.0 * apart)) }
+}
+
+impl Sheet {
+    /// Its size drawn at `scale`, in whole pixels.
+    pub fn drawn(&self, scale: f64) -> (u32, u32) {
+        ((self.size.0 * scale).ceil() as u32, (self.size.1 * scale).ceil() as u32)
+    }
+
+    /// The corner of tile `i` drawn at `scale`, a picture of `size` centred on its place.
+    pub fn place(&self, i: usize, size: (u32, u32), scale: f64) -> (i32, i32) {
+        let (x, y, w, h) = self.pictures[i];
+        let at = |v: f64, length: f64, drawn: u32| (v * scale + (length * scale - f64::from(drawn)) / 2.0).round() as i32;
+        (at(x, w, size.0), at(y, h, size.1))
+    }
+
+    /// Which tiles a view showing `visible` of the sheet drawn at `scale` meets, and the box around
+    /// them there, so a grid draws the tiles on screen alone, on a sheet no larger than they need.
+    pub fn seen(&self, scale: f64, visible: Area) -> (Vec<bool>, Window) {
+        let (vx0, vy0, vx1, vy1) = (visible.0, visible.1, visible.0 + visible.2, visible.1 + visible.3);
+        let mut corners = (f64::MAX, f64::MAX, 0.0f64, 0.0f64);
+        let shows = self
+            .pictures
+            .iter()
+            .map(|&(x, y, w, h)| {
+                let (x0, y0, x1, y1) = (x * scale, y * scale, (x + w) * scale, (y + h) * scale);
+                let meets = x0 < vx1 && x1 > vx0 && y0 < vy1 && y1 > vy0;
+                if meets {
+                    corners = (corners.0.min(x0), corners.1.min(y0), corners.2.max(x1), corners.3.max(y1));
+                }
+                meets
+            })
+            .collect();
+        let whole = self.drawn(scale);
+        if corners.0 == f64::MAX {
+            return (shows, (0, 0, whole.0, whole.1));
+        }
+        let (x0, y0) = (corners.0.floor().max(0.0) as u32, corners.1.floor().max(0.0) as u32);
+        let (x1, y1) = ((corners.2.ceil() as u32).min(whole.0), (corners.3.ceil() as u32).min(whole.1));
+        (shows, (x0, y0, x1 - x0, y1 - y0))
+    }
 }
 
 /// The share of the full sheet worth drawing for a view showing it `shown` wide in screen pixels:
@@ -102,20 +119,22 @@ pub(super) fn scale_for(shown: f64, full: f64) -> f64 {
 mod tests {
     use super::*;
 
+    const LANDSCAPE: (f64, f64) = (3.0, 2.0);
+    const PORTRAIT: (f64, f64) = (2.0, 3.0);
+
     #[test]
     fn a_grid_draws_the_tiles_its_view_meets_on_their_box_alone() {
-        let cell = cell_at(1.0);
-        // Zoomed on the second tile of the second row: it alone, on its own cell.
-        let (across, down) = ((TILE + GAP) as f64, (TILE + BAND + GAP) as f64);
-        let (shows, window) = seen(12, cell, (across + 10.0, down + 10.0, 300.0, 200.0));
+        let sheet = laid(&[LANDSCAPE; 12]);
+        let (x, y, w, h) = sheet.pictures[7];
+        // Zoomed on the second tile of the second row: it alone, on its own box.
+        let (shows, window) = sheet.seen(1.0, (x + 10.0, y + 10.0, 300.0, 200.0));
         assert_eq!(shows.iter().filter(|s| **s).count(), 1);
         assert!(shows[7] && !shows[0], "twin: a tile off the view is not drawn");
-        assert_eq!(window, ((TILE + GAP) as u32, (TILE + BAND + GAP) as u32, TILE as u32, (TILE + BAND) as u32), "a cell's box holds its band");
-        // The whole sheet in view: every tile, the whole sheet.
-        let whole = sheet_size(12, cell);
-        let (shows, window) = seen(12, cell, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));
+        assert_eq!(window, (x.floor() as u32, y.floor() as u32, ((x + w).ceil() - x.floor()) as u32, ((y + h).ceil() - y.floor()) as u32));
+        // The whole sheet in view: every tile.
+        let whole = sheet.drawn(1.0);
+        let (shows, _) = sheet.seen(1.0, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));
         assert!(shows.iter().all(|s| *s));
-        assert_eq!(window, (0, 0, whole.0, whole.1));
     }
 
     #[test]
@@ -130,18 +149,47 @@ mod tests {
     }
 
     #[test]
-    fn seven_tiles_lay_two_rows_of_six_each_centred_in_its_cell_above_its_band() {
-        let full = cell_at(1.0);
-        assert_eq!(sheet_size(7, full), ((6 * TILE + 5 * GAP) as u32, (2 * (TILE + BAND) + GAP) as u32));
-        assert_eq!(sheet_size(3, full), ((3 * TILE + 2 * GAP) as u32, (TILE + BAND) as u32), "a short row is only as wide as its tiles");
-        let (long, short) = (TILE as u32, TILE as u32 / 2);
-        let inset = (TILE / 4) as i32;
-        assert_eq!(place(0, (long, short), full), (0, inset), "a landscape tile centred in its cell's height");
-        assert_eq!(place(6, (short, long), full), (inset, (TILE + BAND + GAP) as i32), "the seventh opens the second row, under the first's band");
-        // Twin: the second tile's cell starts past the first's and the gap, with no band across.
-        assert_eq!(place(1, (long, long), full), ((TILE + GAP) as i32, 0));
-        // At half the scale, half the cells.
-        assert_eq!(sheet_size(7, cell_at(0.5)), ((6 * TILE / 2 + 5 * GAP / 2) as u32, (TILE + BAND + GAP / 2) as u32));
+    fn a_crop_spans_a_tile_landscape_across_and_portrait_down_its_rows_as_tall_as_their_tallest() {
+        let (tile, gap, apart) = (TILE as f64, GAP as f64, ROWS_APART as f64);
+        // Six landscape frames, the third cropped tight, then a portrait one opening the second row.
+        let mut frames = vec![LANDSCAPE; 6];
+        frames[2] = (300.0, 200.0);
+        frames.push(PORTRAIT);
+        let sheet = laid(&frames);
+        let low = tile * 2.0 / 3.0;
+        assert_eq!(sheet.pictures[0], (apart, apart, tile, low), "a landscape frame is a tile wide");
+        assert_eq!(sheet.pictures[2].2, tile, "a tight crop as wide as any other");
+        let (x, y, w, h) = sheet.pictures[6];
+        assert_eq!((w, h), (low, tile), "a portrait frame is a tile tall");
+        assert_eq!((x, y), (apart + (tile - low) / 2.0, apart + low + apart), "under the first row, twice the columns' gap apart");
+        assert_eq!(sheet.size, (2.0 * apart + 6.0 * tile + 5.0 * gap, apart + low + apart + tile + apart));
+        // Twin: a portrait frame in the first row makes it as tall as itself, the landscapes centred in it.
+        frames[1] = PORTRAIT;
+        let taller = laid(&frames);
+        assert_eq!(taller.pictures[0].1, apart + (tile - low) / 2.0);
+        assert_eq!(taller.pictures[6].1, apart + tile + apart, "the second row moves down with it");
+    }
+
+    #[test]
+    fn a_tile_is_placed_centred_on_its_picture_at_the_scale_drawn() {
+        let sheet = laid(&[LANDSCAPE, (1.0, 2.0)]);
+        let (x, y, w, h) = sheet.pictures[1];
+        assert_eq!((w, h), (TILE as f64 / 2.0, TILE as f64));
+        assert_eq!(sheet.place(1, (256, 512), 0.5), ((x * 0.5) as i32, (y * 0.5) as i32));
+        // Twin: a tile drawn two pixels short of its place sits a pixel in, not at its corner.
+        assert_eq!(sheet.place(1, (254, 512), 0.5).0, (x * 0.5) as i32 + 1);
+    }
+
+    #[test]
+    fn a_source_keeps_enough_pixels_for_its_crop_to_span_a_tile() {
+        let mut s = PipelineSettings::default();
+        assert_eq!(source_side(&s, (6000, 4000)), TILE);
+        (s.geometry.crop.width, s.geometry.crop.height) = (0.5, 0.5);
+        assert_eq!(source_side(&s, (6000, 4000)), 2 * TILE, "half of each side kept: twice the pixels");
+        // Twin: a crop of the height alone leaves the longest side, and the source, as they were.
+        s.geometry.crop.width = 1.0;
+        s.geometry.crop.height = 0.5;
+        assert_eq!(source_side(&s, (6000, 4000)), TILE);
     }
 
     #[test]

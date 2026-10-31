@@ -70,3 +70,29 @@ fn a_picture_standing_in_is_scaled_to_the_tile_side_at_its_place() {
     assert_eq!(at(112, 57), [0.0; 4]);
 }
 
+
+#[test]
+fn a_cropped_frame_spans_the_tile_side_as_an_uncropped_one_does() {
+    let Ok(device) = Device::open() else {
+        eprintln!("no adapter: the tiles are not exercised");
+        return;
+    };
+    let shared = Engine::shared(&device);
+    let mut engine = shared.lock().unwrap();
+    let pixels = (0..600 * 400).map(|i| [0.2 + (i % 7) as f32 * 0.02, 0.4, 0.6, 1.0]).collect();
+    let frame = engine.prepare(Decoded { linear: Linear { width: 600, height: 400, pixels }, full_width: 600.0, undeclared: None }).unwrap();
+    let mut cropped = PipelineSettings::default();
+    (cropped.geometry.crop.width, cropped.geometry.crop.height) = (0.5, 0.5);
+    let sizes = std::cell::RefCell::new(Vec::new());
+    let place = |_, size| {
+        sizes.borrow_mut().push(size);
+        (0, 0)
+    };
+    let whole = PipelineSettings::default();
+    engine.render_laid(&[Laid::Frame(&frame, &whole), Laid::Frame(&frame, &cropped)], 200, &place, (200, 200)).unwrap();
+    let sizes = sizes.into_inner();
+    assert_eq!(sizes[0].0, 200);
+    assert_eq!(sizes[1].0, 200, "a crop to a quarter of the frame is as wide as the whole: {sizes:?}");
+    // Twin: its proportions are its crop's, within the rounding of its edges.
+    assert!(sizes[1].1.abs_diff(sizes[0].1) <= 1, "{sizes:?}");
+}
