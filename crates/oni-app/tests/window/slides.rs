@@ -1,5 +1,5 @@
-//! A slide roll: Prepare the Roll places one window and lays the unflagged slides' pooled gains on
-//! every slide, never a roll reference; an unprepared slide opens in the editor.
+//! A slide roll: Prepare the Roll places one window, lays the unflagged slides' pooled gains on every
+//! slide and its contact sheet, never a roll reference; an unprepared slide opens in the editor.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Preparing};
@@ -143,6 +143,17 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     assert!(!w.global::<oni_app::Store>().get_source_balance_modified(), "the measured gains are the slide's rest: no reset offered");
     assert!(frames.iter().all(|s| s.measured_gains == Some(s.gains.stops) && s.gains == frames[0].gains), "one roll's gains on every slide, kept as its rest");
     assert!(w.global::<Framing>().get_has_window() && !w.global::<Framing>().get_armed(), "the Crop tab shows the window, unarmed");
+    // The measure lays its contact sheet beside the slides, on the roll's gains, one of its folder's roll.
+    let sheets = || {
+        let mut found: Vec<PathBuf> = std::fs::read_dir(&slides).unwrap().filter_map(|e| Some(e.ok()?.path())).filter(|p| p.extension().is_some_and(|x| x == "tif") && p.to_string_lossy().contains("contact sheet")).collect();
+        found.sort();
+        found
+    };
+    assert_eq!(sheets().len(), 1, "{:?}", sheets());
+    let laid = sidecar::read(&sheets()[0], false, true).unwrap().settings;
+    assert!(laid.sheet.is_some() && (laid.mode, laid.roll_reference.is_none()) == (ConversionMode::Positive, true), "{:?}", laid.mode);
+    assert!(laid.gains == frames[0].gains && laid.measured_gains == frames[0].measured_gains, "{:?} {:?}", laid.gains, laid.measured_gains);
+    assert!(oni_library::roll_membership::is_slide_sheet(&sheets()[0].to_string_lossy()));
     // The key on the selected slide reads it alone: its own gains, a hair from the roll's as every
     // slide holds one cast, its windows at rest; a second press finds the first's.
     let (prepared, roll_gains) = (settings(), disk(0).gains.stops);
@@ -191,6 +202,9 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
         assert_eq!((s.mode, s.inverted_source), (ConversionMode::Negative, true), "F{i}");
     }
     assert!(ids[0].is_some() && ids.iter().all(|id| *id == ids[0]), "one roll: {ids:?}");
+    // The slide roll's sheet is laid again in place, never a second beside it.
+    assert_eq!(sheets().len(), 1, "{:?}", sheets());
+    assert_eq!(sidecar::read(&sheets()[0], false, true).unwrap().settings.roll_reference.map(|r| r.id), ids[0]);
 
     // Twin: a negative on its roll levels each channel on its own, the gains aligned.
     shell.open_folder(&negatives);

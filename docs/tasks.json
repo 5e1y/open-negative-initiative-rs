@@ -4820,5 +4820,12 @@
     "title": "The slides window check follows the pooled roll and the per-slide key",
     "status": "done",
     "detail": "With the roll's gains pooled from its slides' cells, the editor's key on a slide reads that slide alone and lands a hair from the roll's gains; the check presses the key on the selected slide, finds it idempotent, takes it back with one undo and the measure with the next."
+  },
+  {
+    "id": 1017,
+    "type": "feature",
+    "title": "A slide roll measured on its gains alone lays its contact sheet",
+    "status": "done",
+    "detail": "Owner's call: Prepare the Roll on slides read on their gains alone wrote no contact sheet. It now lays every read slide's tile, flagged ones included, into the roll's sheet as a negative roll does; the sheet inherits the roll's gains and measuredGains (sheet::settings carries the donor's measured gains), stands on its folder's slide roll so Roll Settings and Paste to Roll reach it (a slide's pass still stands on none), and a measure of the same slides, on their gains or read as a negative, lays it again in place (roll_membership::is_slide_sheet). Checks: the slides window check finds one sheet on the roll's gains, of the folder's roll, rewritten in place by the measure as a negative; roll_membership a slide roll is its folder's slides and their sheet (twin: a pass stands on none); store slides the roll's sheet follows a Source Balance move as a slide does; sheet a sheet rests on its roll's measured gains."
   }
 ]

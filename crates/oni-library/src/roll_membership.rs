@@ -22,17 +22,18 @@ impl From<Id> for RollKey {
 }
 
 impl RollKey {
-    /// The roll `settings` stand on at `path`; a slide's contact sheet or pass stands on none.
+    /// The roll `settings` stand on at `path`; a slide's contact sheet stands on its folder's slides,
+    /// as a negative's does on its reference, while a slide's pass stands on none.
     pub fn of(path: &str, settings: &PipelineSettings) -> Option<RollKey> {
         match &settings.roll_reference {
             Some(r) => Some(RollKey::Measured(r.id)),
-            None => slide(settings.mode, settings.sheet.is_some() || settings.pass_of.is_some(), path),
+            None => slide(settings.mode, settings.pass_of.is_some(), path),
         }
     }
 }
 
-fn slide(mode: ConversionMode, apart: bool, path: &str) -> Option<RollKey> {
-    (mode == ConversionMode::Positive && !apart).then(|| RollKey::Slides(paths::parent(path)))
+fn slide(mode: ConversionMode, pass: bool, path: &str) -> Option<RollKey> {
+    (mode == ConversionMode::Positive && !pass).then(|| RollKey::Slides(paths::parent(path)))
 }
 
 /// `RollKey::of` read off the sidecar's own keys, the rest of it never decoded.
@@ -42,7 +43,7 @@ fn key_in(path: &str, settings: &Value) -> Option<RollKey> {
     }
     let mode = settings.get("mode").and_then(|m| serde_json::from_value::<ConversionMode>(m.clone()).ok())?;
     let pass = settings.get("passOf").is_some_and(|p| !p.is_null());
-    slide(mode, has_sheet(settings) || pass, path)
+    slide(mode, pass, path)
 }
 
 /// The frames among `paths` standing on roll `key`: a slide roll is its folder's slides alone.
@@ -88,6 +89,11 @@ fn has_sheet(settings: &Value) -> bool {
 /// Whether `path` is a contact sheet, read off its sidecar's grid alone.
 pub fn is_sheet(path: &str) -> bool {
     settings(path).is_some_and(|s| has_sheet(&s))
+}
+
+/// Whether `path` is the contact sheet of its folder's slide roll, which no reference names.
+pub fn is_slide_sheet(path: &str) -> bool {
+    settings(path).is_some_and(|s| has_sheet(&s) && matches!(key_in(path, &s), Some(RollKey::Slides(_))))
 }
 
 /// The reference a contact sheet's sidecar names, `None` for a photograph or a sheet of none.
@@ -182,8 +188,8 @@ mod tests {
         assert_eq!(both.frames.len(), 4);
     }
 
-    /// A slide roll, which no measure gives a reference, is its folder's slides: a negative never
-    /// measured, a slide's sheet and the slides of the folder beside stay out.
+    /// A slide roll, which no measure gives a reference, is its folder's slides and their sheet: a
+    /// negative never measured and the slides of the folder beside stay out.
     #[test]
     fn a_slide_roll_is_its_folder_s_slides() {
         let scratch = Scratch::new("roll-membership-slides");
@@ -201,10 +207,13 @@ mod tests {
             library.push(path);
         }
         let key = RollKey::of(&library[0], &slide).expect("a slide stands on its folder");
-        assert_eq!(members(&key, &library), library[..2].iter().cloned().collect());
+        assert_eq!(members(&key, &library), [0, 1, 3].map(|i| library[i].clone()).into_iter().collect());
+        assert!(is_slide_sheet(&library[3]) && !is_slide_sheet(&library[0]));
         // Twin: the folder beside is a roll of its own, and a negative never measured stands on none.
         assert_eq!(members(&RollKey::of(&library[4], &slide).unwrap(), &library), library[4..].iter().cloned().collect());
         assert_eq!(RollKey::of(&library[2], &PipelineSettings::default()), None);
-        assert_eq!(RollKey::of(&library[3], &sheet), None);
+        assert_eq!(RollKey::of(&library[3], &sheet), Some(key));
+        let pass = PipelineSettings { pass_of: Some(library[0].clone()), ..slide.clone() };
+        assert_eq!(RollKey::of(&library[0], &pass), None, "a slide's pass stands on none");
     }
 }

@@ -24,7 +24,7 @@ impl Ctl {
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.walked(), r.stop.clone(), r.session);
             let inverted = film != r.film;
-            let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked);
+            let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked, inverted);
             let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
@@ -110,7 +110,7 @@ impl Ctl {
                 let reference = if stopped { None } else { roll::combined(&frames, film, base) };
                 let written: Option<Written> =
                     reference.map(|reference| jobs.iter().map(|j| (j.path.clone(), j.before.clone(), oni_core::balance::written(&reference, &j.start))).collect());
-                let sheet = written.as_ref().and_then(|_| sheet.written(&paths, &jobs, &tiles, &reads));
+                let sheet = written.as_ref().and_then(|_| sheet.written(&paths, jobs.iter().map(|j| &j.before), &tiles, &reads));
                 with_shell(move |c| c.land_measure(session, written, sheet, stopped, &paths, &blank));
             });
             (job, session)

@@ -22,11 +22,18 @@ fn written(path: &str) -> PipelineSettings {
     sidecar::read(Path::new(path), false, true).unwrap().settings
 }
 
-/// Three slides, a negative never measured beside them and a slide in the folder next door.
+/// A slide roll's contact sheet, measured with it.
+fn sheet() -> PipelineSettings {
+    let grid = oni_settings::frame::ContactSheetGrid { columns: 1, rows: 1, frames: 1, tile: Default::default(), margin: 0.0, windows: None };
+    PipelineSettings { sheet: Some(grid), ..measured(1.0, 0.1) }
+}
+
+/// Two slides, a negative never measured beside them, a slide in the folder next door and the
+/// roll's contact sheet.
 fn slides(label: &str) -> (EditorStore, std::path::PathBuf, Vec<String>) {
     let dir = std::env::temp_dir().join(format!("oni-core-store-slides-{label}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
-    let laid = [("Roll/a.tif", measured(0.9, 0.3)), ("Roll/b.tif", measured(0.8, 0.1)), ("Roll/c.tif", PipelineSettings::default()), ("Roll 2/d.tif", slide(0.7))];
+    let laid = [("Roll/a.tif", measured(0.9, 0.3)), ("Roll/b.tif", measured(0.8, 0.1)), ("Roll/c.tif", PipelineSettings::default()), ("Roll 2/d.tif", slide(0.7)), ("Roll/sheet.tif", sheet())];
     let mut paths = Vec::new();
     for (name, settings) in laid {
         let path = dir.join(name).to_string_lossy().into_owned();
@@ -47,11 +54,13 @@ fn a_slide_s_source_balance_reaches_its_folder_s_slides_and_leaves_their_levels(
     assert!((b.gains.stops[2] - 0.2).abs() < 1e-6, "the other slide takes the move on its own measure, 0.1 up from 0.1: {:?}", b.gains);
     assert_eq!(b.measured_gains, Some([0.0, 0.0, 0.1]), "its measure stays its rest");
     assert_eq!(b.levels.red.white, 0.8, "and keeps the white its own Auto levels placed");
+    let laid = written(&paths[4]);
+    assert!((laid.gains.stops[2] - 0.2).abs() < 1e-6 && laid.sheet.is_some(), "the roll's sheet follows as a slide does: {:?}", laid.gains);
     // Twins: the move was not laid whole (0.4), and the negative beside and the next folder's slide stay.
     assert_ne!(b.gains.stops[2], 0.4);
     assert_eq!(written(&paths[2]).gains.stops[2], 0.0);
     assert_eq!(written(&paths[3]).gains.stops[2], 0.0);
-    assert_eq!(store.measured_with(store.roll_key().unwrap()).len(), 2);
+    assert_eq!(store.measured_with(store.roll_key().unwrap()).len(), 3);
     let _ = std::fs::remove_dir_all(&dir);
 }
 

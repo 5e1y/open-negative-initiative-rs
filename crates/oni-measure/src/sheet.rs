@@ -194,8 +194,8 @@ pub fn tile(r: &mut Reader, copy: Copy, s: &PipelineSettings, side: f64) -> Opti
     Some(Picture { width: f.w as usize, height: f.h as usize, pixels })
 }
 
-/// `ContactSheet.settings(inheriting:)`: the roll's window and Roll Settings and its own grid; the
-/// flat-field stays off, each frame carrying its own.
+/// `ContactSheet.settings(inheriting:)`: the roll's window and Roll Settings and its own grid, a
+/// slide roll's measured gains its rest; the flat-field stays off, each frame carrying its own.
 pub fn settings(donor: &PipelineSettings, grid: ContactSheetGrid, film: Option<Film>, mosaic: bool) -> PipelineSettings {
     let mut sheet = PipelineSettings::rest(donor.mode, mosaic);
     sheet.film = film;
@@ -203,6 +203,7 @@ pub fn settings(donor: &PipelineSettings, grid: ContactSheetGrid, film: Option<F
     let every: BTreeSet<Field> = Field::ALL.into_iter().collect();
     let mut sheet = roll_settings::copied(&every, donor, &sheet);
     sheet.roll_reference = donor.roll_reference.clone();
+    sheet.measured_gains = donor.measured_gains;
     sheet
 }
 
@@ -352,6 +353,7 @@ mod tests {
         let mut donor = PipelineSettings::default();
         donor.mode = oni_settings::ConversionMode::Positive;
         donor.gains.stops = [0.4, 0.0, -0.3];
+        donor.measured_gains = Some([0.4, 0.0, -0.3]);
         donor.levels.red.white = 2.2;
         donor.density_ceiling = 2.4;
         donor.flat_field = oni_settings::frame::FlatField { mask: oni_settings::frame::FlatFieldMask::Custom, custom: Some("3f9a0c7d51e2b846".into()), amount: 1.0, ..Default::default() };
@@ -359,6 +361,7 @@ mod tests {
         let grid = ContactSheetGrid { columns: 6, rows: 1, frames: 4, tile: Size { width: 300.0, height: 200.0 }, margin: 10.0, windows: None };
         let s = settings(&donor, grid.clone(), None, false);
         assert!(s.roll_reference == donor.roll_reference && s.gains == donor.gains && s.levels == donor.levels);
+        assert_eq!(s.measured_gains, donor.measured_gains, "a slide sheet rests on its roll's measured gains");
         assert!(s.density_ceiling == donor.density_ceiling && s.mode == donor.mode && s.sheet == Some(grid));
         assert_eq!(s.flat_field, oni_settings::frame::FlatField::default());
         let photo = roll_settings::copied(&BTreeSet::from([Field::FlatField]), &donor, &PipelineSettings::default());
