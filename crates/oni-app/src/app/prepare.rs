@@ -41,9 +41,6 @@ mod negative;
 mod slides;
 pub use model::*;
 
-/// The preference a positive roll's conversion is remembered under: read as its own negative, or not.
-pub(in crate::app) const POSITIVE_INVERTED_KEY: &str = "positiveInverted";
-
 /// `RollBasePick`: the bare film's point on a scan, origin top left, and the disc's radius.
 #[derive(Clone, Debug, PartialEq)]
 pub struct BasePick {
@@ -77,8 +74,6 @@ pub(crate) struct Roll {
     aspect: f64,
     flat: FlatField,
     film: ConversionMode,
-    /// A positive roll read as its own negative, else its gains aligned alone (owner's experiment).
-    positive_inverted: bool,
     capture: Capture,
     pass_order: PassOrder,
     base: Option<BasePick>,
@@ -132,7 +127,6 @@ impl Default for Roll {
         Roll {
             shown: false,
             back_to_gallery: true,
-            positive_inverted: true,
             frames: Vec::new(),
             sources: Vec::new(),
             pass_offset: 0,
@@ -186,11 +180,6 @@ impl Default for Roll {
 }
 
 impl Roll {
-    /// The film the steps and the measure walk: a positive read as its own negative walks a negative's.
-    pub(in crate::app) fn walked(&self) -> ConversionMode {
-        if self.film == ConversionMode::Positive && self.positive_inverted { ConversionMode::Negative } else { self.film }
-    }
-
     pub(super) fn new(require: bool) -> Roll {
         Roll { require, ..Roll::default() }
     }

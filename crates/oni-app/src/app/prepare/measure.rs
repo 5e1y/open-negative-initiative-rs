@@ -8,7 +8,7 @@ impl Ctl {
     /// `measureRoll`: every ticked frame read off this thread after the drafts' writes, the flagged
     /// ones riding without a vote; the base read, the roll combined, every frame written onto it.
     pub(in crate::app) fn measure_roll(self: &Rc<Self>) {
-        if self.state.borrow().prepare.walked() == ConversionMode::Positive {
+        if self.state.borrow().prepare.film == ConversionMode::Positive {
             return self.prepare_slides();
         }
         let (job, session) = {
@@ -22,8 +22,7 @@ impl Ctl {
             }
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
-            let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.walked(), r.stop.clone(), r.session);
-            let inverted = film != r.film;
+            let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.film, r.stop.clone(), r.session);
             let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
@@ -47,7 +46,7 @@ impl Ctl {
                     } else {
                         sidecar::read(Path::new(&p.path), mosaic(&p.path), true).map(|l| l.settings).unwrap_or_default()
                     };
-                    bare.inverted_source = inverted;
+                    bare.inverted_source = false;
                     let unit = Point::new(p.unit.0, p.unit.1);
                     m?.with(&p.path, &bare, |r, copy| key::base(r, copy, &bare, film, mask.as_ref(), stops(&p.path), unit, p.radius))
                 });
@@ -64,7 +63,7 @@ impl Ctl {
                         }
                     };
                     let mut start = roll::start(&before, film, window, mask.as_ref(), stops(&f.path));
-                    start.inverted_source = inverted;
+                    start.inverted_source = false;
                     if let Some(passes) = rgb_passes::named_by(&f.path) {
                         let passes = registrar.registered(&f.path, passes);
                         rgb_passes::hold_one(&f.path, passes.clone());

@@ -93,6 +93,10 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
 
+    // A slide once measured as its own negative is measured again on its gains alone.
+    let mut once = sidecar::read(&canonical(&slides, 1), false, true).unwrap().settings;
+    (once.mode, once.inverted_source) = (ConversionMode::Negative, true);
+    sidecar::write(&once, &canonical(&slides, 1), WriteOptions::default()).unwrap();
     lib.invoke_tile_clicked(first(), false, false);
     rig.pump();
     ctl.act(oni_app::Act::PrepareRoll);
@@ -105,10 +109,7 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     assert_eq!(p.get_action_title().as_str(), "NEXT");
     p.invoke_film_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, false, false, false], "read as its own negative, a slide roll walks a negative's steps");
-    p.invoke_positive_picked(1);
-    rig.pump();
-    assert_eq!(skipped(), [false, true, true, false, false], "its gains alone, it has no base, but its flags and window");
+    assert_eq!(skipped(), [false, true, true, false, false], "a slide roll on its gains alone has no base, but its flags and window");
     p.invoke_advance();
     rig.pump();
     assert_eq!(p.get_step(), 3, "the film leads to the flags");
@@ -150,7 +151,8 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
         found
     };
     assert!(sheets().is_empty(), "{:?}", sheets());
-    // The key on the selected slide reads it alone: its own gains, a hair from the roll's as every
+    assert_eq!(ctl.state.borrow().picked().len(), FRAMES, "the measure picks the whole roll");
+    // The key on the slides together reads each alone: its own gains, a hair from the roll's as every
     // slide holds one cast, its windows at rest; a second press finds the first's.
     let (prepared, roll_gains) = (settings(), disk(0).gains.stops);
     let mut pressed = Vec::new();
@@ -163,42 +165,19 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     assert_eq!(pressed[0].gains, pressed[1].gains);
     assert_ne!(pressed[0].gains.stops, roll_gains, "twin: the key reads the slide, not the roll");
     assert!(alike(&pressed[0]) && pressed[0].gains.stops.iter().zip(roll_gains).all(|(a, b)| (a - b).abs() < 0.02), "{:?}", pressed[0].gains);
-    assert_eq!(settings(), prepared, "the open slide, unselected, keeps what Prepare laid");
-    // One gallery undo takes the key back, the next every frame of the measure, a redo lays them again.
-    ctl.act(oni_app::Act::ToggleMode);
-    rig.pump();
+    assert_ne!(settings().gains, prepared.gains, "the open slide, among them, is read too");
+    // One undo beside the slides takes the key back, a gallery undo every frame of the measure, a redo lays them again.
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     rig.until("the key taken back", Duration::from_secs(10), || disk(0).gains.stops == roll_gains);
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
     ctl.act(oni_app::Act::Undo);
     rig.pump();
     rig.until("every slide back", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains == rest.gains && disk(i).geometry.measure_window.is_none()));
     ctl.act(oni_app::Act::Redo);
     rig.pump();
     rig.until("every slide balanced again", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains != rest.gains));
-
-    // Read as its own negative, the same roll is measured as a negative's: one reference, no dyes unmixed.
-    lib.invoke_tile_clicked(first(), false, false);
-    rig.pump();
-    ctl.act(oni_app::Act::PrepareRoll);
-    rig.until("the roll's surface again", Duration::from_secs(10), || p.get_shown() && p.get_cells().row_count() == FRAMES);
-    p.invoke_positive_picked(0);
-    rig.pump();
-    assert_eq!(skipped(), [false, true, false, false, false]);
-    p.invoke_step_picked(4);
-    rig.pump();
-    p.invoke_advance();
-    rig.until("the slides measured as a negative", Duration::from_secs(60), || !p.get_shown());
-    rig.settle();
-    let open = ctl.state.borrow().open_path().map(str::to_string).unwrap_or_default();
-    let read = |i: usize| if open.ends_with(&format!("F{i}.tif")) { settings() } else { disk(i) };
-    let ids: Vec<_> = (0..FRAMES).map(|i| read(i).roll_reference.map(|r| r.id)).collect();
-    for i in 0..FRAMES {
-        let s = read(i);
-        assert_eq!((s.mode, s.inverted_source), (ConversionMode::Negative, true), "F{i}");
-    }
-    assert!(ids[0].is_some() && ids.iter().all(|id| *id == ids[0]), "one roll: {ids:?}");
-    assert!(sheets().is_empty(), "nor read as a negative: {:?}", sheets());
 
     // Twin: a negative on its roll levels each channel on its own, the gains aligned.
     shell.open_folder(&negatives);

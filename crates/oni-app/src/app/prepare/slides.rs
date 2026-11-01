@@ -34,7 +34,7 @@ impl Roll {
     /// The roll's film, its step brought back inside the steps that film walks.
     pub(super) fn set_film(&mut self, film: ConversionMode) {
         self.film = film;
-        if self.step.skipped(self.capture, self.walked()) {
+        if self.step.skipped(self.capture, self.film) {
             self.step = Step::Window;
         }
     }
@@ -148,16 +148,16 @@ mod tests {
 
     #[test]
     fn a_roll_turned_to_slides_leaves_its_base_step_and_keeps_its_flags() {
-        let mut r = Roll { step: Step::Base, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
+        let mut r = Roll { step: Step::Base, capture: Capture::Camera, ..Roll::default() };
         r.set_film(ConversionMode::Positive);
         assert_eq!(r.step, Step::Window, "a slide roll on its gains alone has no base step");
-        let mut flags = Roll { step: Step::Flags, capture: Capture::Camera, positive_inverted: false, ..Roll::default() };
+        let mut flags = Roll { step: Step::Flags, capture: Capture::Camera, ..Roll::default() };
         flags.set_film(ConversionMode::Positive);
         assert_eq!(flags.step, Step::Flags);
-        // Twin: read as its own negative, it walks a negative's base.
-        let mut inverted = Roll { step: Step::Base, capture: Capture::Camera, ..Roll::default() };
-        inverted.set_film(ConversionMode::Positive);
-        assert_eq!((inverted.step, inverted.walked()), (Step::Base, ConversionMode::Negative));
+        // Twin: a negative roll keeps its base step.
+        let mut negative = Roll { step: Step::Base, capture: Capture::Camera, ..Roll::default() };
+        negative.set_film(ConversionMode::Negative);
+        assert_eq!(negative.step, Step::Base);
         let mut frames = vec![Frame::new("a", ""), Frame::new("b", "")];
         frames[1].flagged = true;
         assert_eq!(measured(&frames).iter().map(|f| f.path.as_str()).collect::<Vec<_>>(), ["a"], "a flagged slide votes not");

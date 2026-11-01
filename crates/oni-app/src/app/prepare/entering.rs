@@ -50,12 +50,10 @@ impl Ctl {
             }
             let gallery = w.global::<App>().get_gallery();
             s.shelf.hovered = None;
-            let inverted = s.preferences.value(POSITIVE_INVERTED_KEY).and_then(serde_json::Value::as_bool).unwrap_or(true);
             let r = &mut s.prepare;
             if !r.shown {
                 r.back_to_gallery = gallery;
             }
-            r.positive_inverted = inverted;
             r.frames = ordered.iter().map(|(p, f)| Frame::new(p, f)).collect();
             r.sources = r.frames.clone();
             (r.pass_offset, r.grouping) = (0, None);
@@ -154,9 +152,8 @@ impl Ctl {
                 }
                 r.window = read.geometry.measure_window.unwrap_or_else(|| oni_measure::window::proposal(&read.geometry.crop, false));
                 r.flat = crate::flat_fields::with_remembered(&read.flat_field, kept);
-                // A positive read as its own negative comes back as the positive it is.
+                // A slide once read as its own negative comes back as the positive it is.
                 r.film = if read.inverted_source { ConversionMode::Positive } else { read.mode };
-                r.positive_inverted |= read.inverted_source;
                 r.capture = if read.rgb_passes.is_some() {
                     Capture::RgbPasses
                 } else if read.decoded_from_mosaic {

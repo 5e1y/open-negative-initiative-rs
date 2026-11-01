@@ -100,9 +100,8 @@ impl Ctl {
         } else {
             String::new()
         };
-        let walked = r.walked();
+        let walked = r.film;
         let skipped: Vec<bool> = Step::ALL.iter().map(|s| s.skipped(r.capture, walked)).collect();
-        let positive = i32::from(!r.positive_inverted);
         let (film, capture, flat, left_out, at, has_base) = (r.film, r.capture, r.flat.clone(), r.left_out, r.at, r.base.is_some());
         let shown_path = shown_frame.as_ref().map(|f| f.path.clone());
         let show_card = shown_path != r.shown_path;
@@ -131,7 +130,6 @@ impl Ctl {
         p.set_skipped(ModelRc::new(VecModel::from(skipped)));
         p.set_heading(heading.into());
         p.set_detail(if measuring.is_some() { SharedString::new() } else { step.detail(walked).into() });
-        p.set_positive(positive);
         p.set_status(status.into());
         p.set_differ(if measuring.is_some() { SharedString::new() } else { differ_text(&frames).into() });
         p.set_left_out(left_out_text(left_out).into());
