@@ -4862,5 +4862,12 @@
     "title": "Export writes the selection as one contact sheet, as it shows together",
     "status": "done",
     "detail": "Owner's call: Export with two photos or more offers 'All photos on one sheet' (Contact sheet field, Card::sheet). The batch then writes one file named Contact Sheet: every frame decoded at half size and reduced so its crop spans a 1024 px tile (drawing::tile_decoded, shared with Edit Together), laid six to a row exactly as sheet::laid lays the canvas, rendered unproofed row by row on the export's engine so no texture outgrows the GPU (render_laid, export::read_laid), on opaque black, each frame numbered by its place on its roll (numbers::ranks) in Inter bold at the canvas's orange (Canvas.number-ink and number-weight, read from the design system), set with swash and blended over the black in sRGB as the screen blends it. The size fields, the dimensions and the estimate are the whole sheet's; the file carries the first line's artist and copyright and the first frame's date and paper correction; the stop is honoured between frames. Checks: print a number is set in the band under its picture, orange on black (twin: a regular weight lights fewer pixels); a band lies on the black, its gaps left black (twin: nothing lands outside its place); window export_sheet writes one file of the sheet's size, black in its gaps. The paper profiles sheet moves to export_papers.slint, keeping export.slint under its 400-line ceiling."
+  },
+  {
+    "id": 1023,
+    "type": "fix",
+    "title": "A cropped frame rounded a pixel past its tile no longer fails the contact sheet",
+    "status": "done",
+    "detail": "Owner's export of a 38-frame Lumix roll failed: the pipeline rounds a crop's edges outward, so P1073157 (crop 0.730 × 0.729) rendered 1025 × 684 on its 1024 × 683 place and laid_out refused the row (RegionOutside, now logged). Every drawn box keeps two pixels around its tiles (sheet::SLACK), which mends the canvas at full scale too. The exported sheet is laid on the sizes the panel measured, so the file is the size it said (3252 × 888, not 887). The 38 RW2s then write a 6414 × 5751 sheet in 8 s. Checks: sheet a tile a pixel larger than its place still lies inside the box (twin: no slack fails it); window export_sheet a 4:3 frame cropped as P1073157 was, the file the size the panel said."
   }
 ]

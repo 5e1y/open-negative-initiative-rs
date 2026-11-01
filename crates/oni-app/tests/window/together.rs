@@ -68,14 +68,16 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     // Within the dither's step: two grounds differ by a code at most.
     let near = |a: Option<slint::Rgba8Pixel>, b: Option<slint::Rgba8Pixel>| a.zip(b).is_some_and(|(a, b)| [a.r.abs_diff(b.r), a.g.abs_diff(b.g), a.b.abs_diff(b.b)].iter().all(|d| *d <= 2));
     let black = |p: Option<slint::Rgba8Pixel>| p.is_some_and(|p| p.r.max(p.g).max(p.b) <= 2);
-    // The tiles' box is drawn at the share of its size the view shows: 3:2 frames 1024 wide, 30 apart.
-    let k = || f64::from(canvas.get_frame().size().width) / f64::from(3 * 1024 + 2 * 30);
-    let (third, gap) = (|| (((2.0 * 1054.0 + 512.0) * k()) as usize, (341.0 * k()) as usize), || ((1039.0 * k()) as usize, (341.0 * k()) as usize));
+    // The tiles' box is drawn at the share of its size the view shows, two pixels of slack around it:
+    // 3:2 frames 1024 wide, 30 apart.
+    let k = || (f64::from(canvas.get_frame().size().width) - 4.0) / f64::from(3 * 1024 + 2 * 30);
+    let inside = |x: f64, y: f64| ((2.0 + x * k()) as usize, (2.0 + y * k()) as usize);
+    let (third, gap) = (|| inside(2.0 * 1054.0 + 512.0, 341.0), || inside(1039.0, 341.0));
     rig.until("the grid", Duration::from_secs(60), || {
         canvas.get_status().as_str() == "3 frames together" && !near(at(third().0, third().1), at(gap().0, gap().1))
     });
     let size = canvas.get_frame().size();
-    assert!((f64::from(size.width) / f64::from(size.height) - 3132.0 / 683.0).abs() < 0.05, "three tiles on one row: {size:?}");
+    assert!((f64::from(size.width - 4) / f64::from(size.height - 4) - 3132.0 / 683.0).abs() < 0.05, "three tiles on one row: {size:?}");
     assert!(black(at(gap().0, gap().1)) && !black(at(third().0, third().1)), "the gaps are black, the pictures not: {:?}", at(gap().0, gap().1));
     // A contact sheet: the black under the frames with a margin, each frame's number on it.
     let sheet = canvas.get_sheet();

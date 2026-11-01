@@ -20,14 +20,14 @@ pub(in crate::app) struct Lettering {
     pub weight: f32,
 }
 
-/// The sheet of `targets` at full scale in the working space, numbered by `numbers`; `None` once
-/// `stop` is raised. Rows are drawn one at a time, so no texture outgrows the GPU's side.
-pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], numbers: &[Option<usize>], lettering: Lettering, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
+/// The sheet of `targets` at full scale in the working space, laid on `sizes` (each frame's cropped
+/// size, else its tile's), numbered by `numbers`; `None` once `stop` is raised.
+pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, numbers: &[Option<usize>], lettering: Lettering, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
     let stopped = || stop.load(Ordering::Relaxed);
     let Some(negatives) = decoded(engine, targets, &stopped)? else { return Ok(None) };
-    let proportions: Vec<(f64, f64)> =
-        negatives.iter().zip(targets).map(|(n, t)| crate::export::cropped_size((f64::from(n.size().0), f64::from(n.size().1)), &t.settings)).collect();
-    let sheet = laid(&proportions);
+    let tiles = || negatives.iter().zip(targets).map(|(n, t)| crate::export::cropped_size((f64::from(n.size().0), f64::from(n.size().1)), &t.settings)).collect();
+    let sheet = laid(&sizes.filter(|s| s.len() == targets.len()).unwrap_or_else(tiles));
+    // Rows are drawn one at a time, so no texture outgrows the GPU's side.
     let (width, height) = sheet.drawn(1.0);
     let mut picture = black(width as usize, height as usize);
     for row in (0..targets.len()).collect::<Vec<_>>().chunks(COLUMNS) {
@@ -43,7 +43,10 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], numbers: &[Op
             (x - wx as i32, y - wy as i32)
         };
         let mut e = engine.lock().map_err(|_| Failure::Render)?;
-        let drawn = e.render_laid(&present, TILE, &at, (ww, wh)).map_err(|_| Failure::Render)?;
+        let drawn = e.render_laid(&present, TILE, &at, (ww, wh)).map_err(|error| {
+            crate::timing::line(&format!("contact sheet: row of {:?} at {:?} not drawn: {error}", row, (wx, wy, ww, wh)));
+            Failure::Render
+        })?;
         let band = crate::export::read_laid(&mut e, drawn)?;
         drop(e);
         laid_on(&mut picture, &band, (wx as usize, wy as usize));

@@ -42,6 +42,10 @@ pub(super) type Area = (f64, f64, f64, f64);
 /// A sheet's rectangle in its drawn pixels: x, y, width, height.
 pub(super) type Window = (u32, u32, u32, u32);
 
+/// Pixels a drawn box leaves around its tiles: the pipeline rounds a crop's edges outward, and a
+/// tile one pixel past its place would not be drawn.
+const SLACK: f64 = 2.0;
+
 /// A sheet laid at full scale: each picture's place and its size, and the sheet's, margin included.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct Sheet {
@@ -105,8 +109,8 @@ impl Sheet {
         if corners.0 == f64::MAX {
             return (shows, (0, 0, whole.0, whole.1));
         }
-        let (x0, y0) = (corners.0.floor().max(0.0) as u32, corners.1.floor().max(0.0) as u32);
-        let (x1, y1) = ((corners.2.ceil() as u32).min(whole.0), (corners.3.ceil() as u32).min(whole.1));
+        let (x0, y0) = ((corners.0 - SLACK).floor().max(0.0) as u32, (corners.1 - SLACK).floor().max(0.0) as u32);
+        let (x1, y1) = (((corners.2 + SLACK).ceil() as u32).min(whole.0), ((corners.3 + SLACK).ceil() as u32).min(whole.1));
         (shows, (x0, y0, x1 - x0, y1 - y0))
     }
 }
@@ -132,7 +136,11 @@ mod tests {
         let (shows, window) = sheet.seen(1.0, (x + 10.0, y + 10.0, 300.0, 200.0));
         assert_eq!(shows.iter().filter(|s| **s).count(), 1);
         assert!(shows[7] && !shows[0], "twin: a tile off the view is not drawn");
-        assert_eq!(window, (x.floor() as u32, y.floor() as u32, ((x + w).ceil() - x.floor()) as u32, ((y + h).ceil() - y.floor()) as u32));
+        let (x0, y0) = ((x - SLACK).floor(), (y - SLACK).floor());
+        assert_eq!(window, (x0 as u32, y0 as u32, ((x + w + SLACK).ceil() - x0) as u32, ((y + h + SLACK).ceil() - y0) as u32));
+        // A tile a pixel larger than its place, as a rounded crop renders, still lies inside the box.
+        let (px, py) = sheet.place(7, ((w + 1.0) as u32, (h + 1.0) as u32), 1.0);
+        assert!(px >= window.0 as i32 && py >= window.1 as i32 && px + w as i32 + 1 <= (window.0 + window.2) as i32 && py + h as i32 + 1 <= (window.1 + window.3) as i32);
         // The whole sheet in view: every tile.
         let whole = sheet.drawn(1.0);
         let (shows, _) = sheet.seen(1.0, (0.0, 0.0, f64::from(whole.0), f64::from(whole.1)));

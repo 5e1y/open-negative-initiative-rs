@@ -11,12 +11,14 @@ impl Ctl {
     pub(super) fn write_sheet(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
         let Some(destination) = destinations.into_iter().next() else { return };
         let Some(lettering) = self.lettering() else { return };
-        let (targets, export, stop, metadata) = {
+        let (targets, sizes, export, stop, metadata) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
             let first = c.rows.first().cloned().flatten().map(|r| r.metadata).unwrap_or_default();
             let metadata = ExifMetadata { artist: first.artist, copyright: first.copyright, ..ExifMetadata::default() };
-            (c.targets.clone(), c.settings.clone(), c.stop.clone(), metadata)
+            // The sizes the panel laid its sheet on, so the file is the size it said.
+            let sizes = c.sizes.iter().copied().collect::<Option<Vec<_>>>();
+            (c.targets.clone(), sizes, c.settings.clone(), c.stop.clone(), metadata)
         };
         let paths: Vec<String> = targets.iter().map(|t| oni_library::paths::normal(&t.path.to_string_lossy()).into_owned()).collect();
         let folders = self.roll_folders(&paths);
@@ -33,7 +35,7 @@ impl Ctl {
                         oni_export::lands(&t.path, &destination, &ledger, replacing)?;
                     }
                     let numbers = together::ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-                    let Some(sheet) = together::printed(&engine, &targets, &numbers, lettering, &stop)? else { return Ok(false) };
+                    let Some(sheet) = together::printed(&engine, &targets, sizes, &numbers, lettering, &stop)? else { return Ok(false) };
                     let first = &targets[0];
                     let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;
                     oni_export::land(oni_export::Landing { path: &destination, ledger: &mut ledger, replacing }, &bytes)?;
