@@ -83,6 +83,7 @@ impl Ctl {
             (ordered, r.session)
         };
         let paths: Vec<String> = ordered.into_iter().map(|(p, _)| p).collect();
+        self.dng_roll_entered(&paths);
         let reading = paths.clone();
         std::thread::spawn(move || {
             let captures: Vec<Option<CaptureExposure>> = reading.iter().map(|p| CaptureExposure::read(Path::new(p))).collect();

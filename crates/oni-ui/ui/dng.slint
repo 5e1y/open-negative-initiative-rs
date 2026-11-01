@@ -11,6 +11,8 @@ export global Converting {
     // -1 sweeps while no count is known.
     in property <float> fraction: -1;
     in property <string> count;
+    // Adobe DNG Converter is installed: the offer converts at once instead of downloading it.
+    in property <bool> ready;
     // A frame that could not be decoded asks for its folder to be converted.
     callback offered();
     callback install();
@@ -56,7 +58,11 @@ export component DngSheet inherits Sheet {
     }
     if Converting.stage != DngStage.choice: ButtonGroup { plate: true; align: GroupAlign.end;
         if Converting.stage != DngStage.failed: Button { text: @tr("Cancel"); clicked => { Converting.cancelled(); } }
-        if Converting.stage == DngStage.offer: Button { text: @tr("Download and Install"); kind: ButtonKind.accent; clicked => { Converting.install(); } }
+        if Converting.stage == DngStage.offer: Button {
+            text: Converting.ready ? @tr("Convert to DNG") : @tr("Download and Install");
+            kind: ButtonKind.accent;
+            clicked => { Converting.install(); }
+        }
         if Converting.stage == DngStage.failed: Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Converting.closed(); } }
     }
 }

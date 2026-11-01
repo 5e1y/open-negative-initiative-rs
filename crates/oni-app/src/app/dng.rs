@@ -1,6 +1,6 @@
-//! A folder's Nikon High Efficiency RAW made DNGs on a click: Adobe DNG Converter fetched and
-//! installed when missing, the frames converted beside their NEF files, then the NEFs kept or trashed
-//! as the person chooses, and the editor or the roll going on with the DNGs.
+//! The listed Nikon High Efficiency RAW made DNGs: offered as a folder is read and a roll entered,
+//! or on a failed frame's key; Adobe DNG Converter fetched and installed when missing, the frames
+//! converted beside their NEF files, the NEFs kept or trashed, and the editor or the roll going on.
 
 use super::{Ctl, with_shell};
 use crate::adobe_dng;
@@ -16,18 +16,21 @@ use std::time::{Duration, Instant};
 
 /// How often a running job's count reaches the sheet.
 const TICK: Duration = Duration::from_millis(100);
+/// How often an offer held behind another sheet looks again.
+const HOLD: Duration = Duration::from_millis(300);
 /// How long the folder read again is awaited before the frames converted are opened.
 const SETTLED: Duration = Duration::from_secs(20);
 
-/// Where the click came from, which the DNGs then take over.
+/// Where the offer came from, which the DNGs then take over.
 #[derive(Clone)]
 enum Origin {
+    Folder,
     Editor(String),
     Roll(Vec<String>),
 }
 
 struct Job {
-    folder: PathBuf,
+    raws: Vec<PathBuf>,
     origin: Origin,
     stop: Arc<AtomicBool>,
     converted: Vec<PathBuf>,
@@ -37,6 +40,10 @@ thread_local! {
     static JOB: RefCell<Option<Job>> = const { RefCell::new(None) };
     /// Polls the folder read again until the DNGs taken up are listed.
     static WAIT: slint::Timer = slint::Timer::default();
+    /// Holds an offer while another sheet is up, until it closes.
+    static HELD: slint::Timer = slint::Timer::default();
+    /// The folders whose reading offered the conversion once already.
+    static OFFERED: RefCell<std::collections::HashSet<String>> = RefCell::new(std::collections::HashSet::new());
 }
 
 fn megabytes(bytes: u64) -> u64 {
@@ -78,34 +85,101 @@ impl Ctl {
         JOB.with(|j| j.borrow().as_ref().is_some_and(|job| Arc::ptr_eq(&job.stop, stop)))
     }
 
-    /// The failed frame's folder, from the roll's base step or the editor; its converter next.
+    /// A failed frame's key: the listed HE NEFs converted at once, or the converter offered first.
     pub(in crate::app) fn dng_offered(self: &Rc<Self>) {
-        let (origin, path) = {
+        let origin = {
             let s = self.state.borrow();
             if s.prepare.shown {
-                let Some(base) = s.prepare.base_path() else { return };
-                (Origin::Roll(s.prepare.frame_paths()), base)
+                Origin::Roll(s.prepare.frame_paths())
             } else {
                 let Some(open) = s.open_path() else { return };
-                (Origin::Editor(open.to_string()), open.to_string())
+                Origin::Editor(open.to_string())
             }
         };
-        let Some(folder) = Path::new(&path).parent().map(Path::to_path_buf) else { return };
-        let stop = Arc::new(AtomicBool::new(false));
-        JOB.with(|j| *j.borrow_mut() = Some(Job { folder, origin, stop, converted: Vec::new() }));
-        match adobe_dng::installed() {
-            Some(program) => self.dng_convert(program),
-            None => self.dng_sheet(
-                DngStage::Offer,
-                &tr("ONI reads Nikon’s High Efficiency RAW through Adobe DNG Converter, free from Adobe, which writes a lossless DNG beside each file. ONI downloads it from Adobe (about 1.8 GB), then opens its installer."),
-                -1.0,
-                "",
-            ),
-        }
+        self.dng_propose(origin, true);
     }
 
-    /// The pinned installer fetched off this thread, then opened; the conversion follows its close.
+    /// A folder read whole offers its HE NEFs' conversion, once a session and over no other sheet.
+    pub(in crate::app) fn dng_folder_read(self: &Rc<Self>) {
+        let Some(opened) = self.state.borrow().opened().map(str::to_string) else { return };
+        if OFFERED.with(|o| !o.borrow_mut().insert(opened)) {
+            return;
+        }
+        self.dng_propose(Origin::Folder, false);
+    }
+
+    /// A roll entered with HE NEFs among its frames offers their conversion.
+    pub(in crate::app) fn dng_roll_entered(self: &Rc<Self>, frames: &[String]) {
+        self.dng_propose_among(Origin::Roll(frames.to_vec()), frames.to_vec(), false);
+    }
+
+    /// The listed HE NEFs found off this thread; a key's click converts them when it can, an offer
+    /// asks first. Nothing is asked while another sheet or job is up.
+    fn dng_propose(self: &Rc<Self>, origin: Origin, clicked: bool) {
+        let listed: Vec<String> = self.state.borrow().order().to_vec();
+        self.dng_propose_among(origin, listed, clicked);
+    }
+
+    fn dng_propose_among(self: &Rc<Self>, origin: Origin, listed: Vec<String>, clicked: bool) {
+        if JOB.with(|j| j.borrow().is_some()) {
+            return;
+        }
+        std::thread::spawn(move || {
+            let raws = adobe_dng::convertible(&listed);
+            with_shell(move |c| c.dng_proposed(origin, raws, clicked));
+        });
+    }
+
+    fn dng_proposed(self: &Rc<Self>, origin: Origin, raws: Vec<PathBuf>, clicked: bool) {
+        if raws.is_empty() || JOB.with(|j| j.borrow().is_some()) {
+            return;
+        }
+        // An offer waits for the sheet up to close, as a notice shown with the folder's reading.
+        if !clicked && self.window().is_some_and(|w| w.get_sheet_shown()) {
+            let me = Rc::downgrade(self);
+            let held = RefCell::new(Some((origin, raws)));
+            HELD.with(|h| {
+                h.start(slint::TimerMode::Repeated, HOLD, move || {
+                    let Some(me) = me.upgrade() else { return HELD.with(|h| h.stop()) };
+                    if me.window().is_some_and(|w| w.get_sheet_shown()) {
+                        return;
+                    }
+                    HELD.with(|h| h.stop());
+                    if let Some((origin, raws)) = held.borrow_mut().take() {
+                        me.dng_proposed(origin, raws, false);
+                    }
+                });
+            });
+            return;
+        }
+        let count = raws.len();
+        let stop = Arc::new(AtomicBool::new(false));
+        JOB.with(|j| *j.borrow_mut() = Some(Job { raws, origin, stop, converted: Vec::new() }));
+        let ready = adobe_dng::installed();
+        if let (true, Some(program)) = (clicked, &ready) {
+            return self.dng_convert(program.clone());
+        }
+        let found = trn(
+            "One listed photo is Nikon High Efficiency RAW, which ONI reads once it is converted to a lossless DNG beside it.",
+            "{n} listed photos are Nikon High Efficiency RAW, which ONI reads once they are converted to lossless DNGs beside them.",
+            count as u64,
+        );
+        let message = match ready {
+            Some(_) => found,
+            None => format!("{found}\n\n{}", tr("Adobe DNG Converter, free from Adobe, converts them: ONI downloads it from Adobe (about 1.8 GB), then opens its installer.")),
+        };
+        if let Some(w) = self.window() {
+            w.global::<Converting>().set_ready(ready.is_some());
+        }
+        self.dng_sheet(DngStage::Offer, &message, -1.0, "");
+    }
+
+    /// The offer's key: the conversion when the converter is there, else its installer fetched
+    /// off this thread and opened; the conversion follows its close.
     fn dng_install(self: &Rc<Self>) {
+        if let Some(program) = adobe_dng::installed() {
+            return self.dng_convert(program);
+        }
         let Some(stop) = JOB.with(|j| j.borrow().as_ref().map(|job| job.stop.clone())) else { return };
         self.dng_sheet(DngStage::Fetching, &tr("Downloading Adobe DNG Converter from Adobe…"), 0.0, "");
         let folder = crate::system::caches().join("Adobe DNG Converter");
@@ -164,13 +238,12 @@ impl Ctl {
         });
     }
 
-    /// The folder's High Efficiency NEFs converted off this thread, the count moving on the sheet.
+    /// The job's HE NEFs converted off this thread, the count moving on the sheet.
     fn dng_convert(self: &Rc<Self>, program: PathBuf) {
-        let Some((folder, stop)) = JOB.with(|j| j.borrow().as_ref().map(|job| (job.folder.clone(), job.stop.clone()))) else { return };
-        let converting = tr("Converting the folder’s High Efficiency NEF files to DNG…");
-        self.dng_sheet(DngStage::Converting, &converting, -1.0, "");
+        let Some((raws, stop)) = JOB.with(|j| j.borrow().as_ref().map(|job| (job.raws.clone(), job.stop.clone()))) else { return };
+        let converting = tr("Converting the High Efficiency NEF files to DNG…");
+        self.dng_sheet(DngStage::Converting, &converting, 0.0, "");
         std::thread::spawn(move || {
-            let raws = adobe_dng::convertible(&folder);
             let total = raws.len();
             let going = |done: usize| {
                 let (held, converting) = (stop.clone(), converting.clone());
@@ -243,6 +316,7 @@ impl Ctl {
             if job.converted.iter().any(|c| c == raw) { adobe_dng::twin(raw).to_string_lossy().into_owned() } else { path.to_string() }
         };
         let origin = match &job.origin {
+            Origin::Folder => Origin::Folder,
             Origin::Editor(path) => Origin::Editor(dng(path)),
             Origin::Roll(paths) => Origin::Roll(paths.iter().map(|p| dng(p)).collect()),
         };
@@ -255,6 +329,7 @@ impl Ctl {
         WAIT.with(|w| {
             w.start(slint::TimerMode::Repeated, TICK, move || {
                 let wanted = match &origin {
+                    Origin::Folder => &[][..],
                     Origin::Editor(path) => std::slice::from_ref(path),
                     Origin::Roll(paths) => paths.as_slice(),
                 };
@@ -267,6 +342,7 @@ impl Ctl {
                 }
                 WAIT.with(|w| w.stop());
                 match &origin {
+                    Origin::Folder => {}
                     Origin::Editor(path) => me.open_photo(path),
                     Origin::Roll(paths) => me.enter_roll(paths, 0),
                 }

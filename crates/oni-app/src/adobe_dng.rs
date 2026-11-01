@@ -74,12 +74,9 @@ pub fn is_nikon_he(path: &Path) -> bool {
     he
 }
 
-/// The folder's High Efficiency NEFs with no DNG beside them yet, in name order.
-pub fn convertible(folder: &Path) -> Vec<PathBuf> {
-    let Ok(listing) = std::fs::read_dir(folder) else { return Vec::new() };
-    let mut raws: Vec<PathBuf> = listing.flatten().map(|e| e.path()).filter(|p| is_nef(p) && !has_twin(p) && is_nikon_he(p)).collect();
-    raws.sort();
-    raws
+/// The High Efficiency NEFs among `paths` with no DNG beside them yet, in their order.
+pub fn convertible<P: AsRef<Path>>(paths: &[P]) -> Vec<PathBuf> {
+    paths.iter().map(|p| p.as_ref()).filter(|p| is_nef(p) && !has_twin(p) && is_nikon_he(p)).map(Path::to_path_buf).collect()
 }
 
 /// A folder's listing without the High Efficiency NEFs whose DNG it lists: the DNG is the photo.
@@ -96,7 +93,12 @@ pub fn superseded(images: &mut Vec<String>) {
 pub fn convert(converter: &Path, raws: &[PathBuf], going: &dyn Fn(usize) -> bool) -> Result<Vec<PathBuf>, String> {
     let mut converted = Vec::new();
     let mut said = None;
-    for batch in raws.chunks(BATCH) {
+    // Each run writes into one folder: a batch never spans two.
+    let mut batches: Vec<&[PathBuf]> = Vec::new();
+    for folder in raws.chunk_by(|a, b| a.parent() == b.parent()) {
+        batches.extend(folder.chunks(BATCH));
+    }
+    for batch in batches {
         let fresh: Vec<&PathBuf> = batch.iter().filter(|r| !has_twin(r)).collect();
         if let Some(folder) = fresh.first().and_then(|r| r.parent()) {
             let mut run = Command::new(converter);

@@ -69,7 +69,7 @@ fn a_high_efficiency_nef_leaves_the_listing_to_its_dng() {
     let (he, lossless) = (dir.join("HE.NEF"), dir.join("Lossless.NEF"));
     std::fs::copy(samples.join("Nikon_Z8_high_efficiency_low.NEF"), &he).unwrap();
     std::fs::copy(samples.join("Nikon_Z8_raw_14_bit_lossless_compression.NEF"), &lossless).unwrap();
-    assert_eq!(convertible(&dir), vec![he.clone()], "only the High Efficiency NEF asks to be converted");
+    assert_eq!(convertible(&[&he, &lossless]), vec![he.clone()], "only the High Efficiency NEF asks to be converted");
     let names = |paths: &[&Path]| paths.iter().map(|p| p.to_string_lossy().into_owned()).collect::<Vec<_>>();
     let mut listed = names(&[&he, &dir.join("HE.dng"), &lossless, &dir.join("Lossless.dng")]);
     superseded(&mut listed);

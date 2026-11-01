@@ -5065,5 +5065,12 @@
     "title": "The contact sheet key no longer loops the window's width",
     "status": "done",
     "detail": "#1042 laid the EXP. CONTACT SHEET key straight in the bar's layout, so its compact face changed the layout's widths, which decide compact: a binding loop Slint warns may panic. The key now sits in a zone sized by hidden copies (its word, a glyph key), as FEEDBACKS does. Check: the interface compiles with no binding loop warning."
+  },
+  {
+    "id": 1052,
+    "type": "fix",
+    "title": "The HE conversion is offered where the hand meets the files: the folder's reading and the roll's entry",
+    "status": "done",
+    "detail": "The owner's first try went through Prepare the Roll: the base step showed a readable frame, the measure left the HE frames out, and no key ever offered the conversion (#1050 offered it only on a failed editor frame or base scan). Now a folder read whole offers its listed HE NEFs once a session, and a roll entered with HE frames offers them; the offer waits behind a sheet already up (the RAW notice) and converts at once when Adobe DNG Converter is there (its key reads Convert to DNG), else downloads it first. A failed frame's key still converts without asking. The job takes the listed HE NEFs, subfolders included, each run writing into one folder. Check: window dng rewritten on the owner's path (folder offer behind the notice, once a session; a frame opened enters its roll, whose offer converts, the roll back on the DNGs with the NEFs kept; the base step's key converts at once, the NEF binned); fails without the roll's offer."
   }
 ]

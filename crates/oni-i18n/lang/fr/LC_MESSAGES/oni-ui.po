@@ -245,7 +245,7 @@ msgstr "Afficher mon année en argentique"
 msgid "Read-only: settings will not be saved"
 msgstr "Lecture seule : les réglages ne seront pas enregistrés"
 
-#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/prepare.slint
+#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/dng.slint crates/oni-ui/ui/prepare.slint
 msgid "Convert to DNG"
 msgstr "Convertir en DNG"
 
@@ -2442,8 +2442,8 @@ msgid "Correction {n}"
 msgstr "Correction {n}"
 
 #: crates/oni-app/src/app/dng.rs
-msgid "ONI reads Nikon’s High Efficiency RAW through Adobe DNG Converter, free from Adobe, which writes a lossless DNG beside each file. ONI downloads it from Adobe (about 1.8 GB), then opens its installer."
-msgstr "ONI lit le RAW High Efficiency de Nikon grâce à Adobe DNG Converter, gratuit chez Adobe, qui écrit un DNG sans perte à côté de chaque fichier. ONI le télécharge chez Adobe (environ 1,8 Go), puis ouvre son installeur."
+msgid "Adobe DNG Converter, free from Adobe, converts them: ONI downloads it from Adobe (about 1.8 GB), then opens its installer."
+msgstr "Adobe DNG Converter, gratuit chez Adobe, les convertit : ONI le télécharge chez Adobe (environ 1,8 Go), puis ouvre son installeur."
 
 #: crates/oni-app/src/app/dng.rs
 msgid "Downloading Adobe DNG Converter from Adobe…"
@@ -2458,8 +2458,8 @@ msgid "Adobe DNG Converter is not installed: its installer closed before the end
 msgstr "Adobe DNG Converter n’est pas installé : son installeur s’est fermé avant la fin."
 
 #: crates/oni-app/src/app/dng.rs
-msgid "Converting the folder’s High Efficiency NEF files to DNG…"
-msgstr "Conversion en DNG des fichiers NEF High Efficiency du dossier…"
+msgid "Converting the High Efficiency NEF files to DNG…"
+msgstr "Conversion en DNG des fichiers NEF High Efficiency…"
 
 #: crates/oni-app/src/app/dng.rs
 msgid "The folder holds no High Efficiency NEF file left to convert."
@@ -2484,6 +2484,12 @@ msgstr "Adobe DNG Converter n’a pas pu être installé : {error}"
 #: crates/oni-app/src/app/dng.rs crates/oni-app/src/app/export_card/job.rs
 msgid "{done} of {total}"
 msgstr "{done} sur {total}"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "One listed photo is Nikon High Efficiency RAW, which ONI reads once it is converted to a lossless DNG beside it."
+msgid_plural "{n} listed photos are Nikon High Efficiency RAW, which ONI reads once they are converted to lossless DNGs beside them."
+msgstr[0] "Une photo listée est en RAW High Efficiency de Nikon, qu’ONI lit une fois convertie en DNG sans perte à côté d’elle."
+msgstr[1] "{n} photos listées sont en RAW High Efficiency de Nikon, qu’ONI lit une fois converties en DNG sans perte à côté d’elles."
 
 #: crates/oni-app/src/app/dng.rs
 msgid "One DNG stands beside its NEF file, which ONI no longer shows."

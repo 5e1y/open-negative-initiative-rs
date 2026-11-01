@@ -70,6 +70,7 @@ impl Ctl {
             self.navigator_read();
             let order = self.state.borrow().order.clone();
             self.offer_neutral_decode_notice(&order);
+            self.dng_folder_read();
             self.fill();
             let opening = self.state.borrow_mut().opening.take();
             let found = opening.and_then(|o| {
