@@ -2198,12 +2198,12 @@ msgid "FEEDBACKS"
 msgstr "COMENTARIOS"
 
 #: crates/oni-ui/ui/toolbar.slint
-msgid "Phone Remote"
-msgstr "Control desde el teléfono"
-
-#: crates/oni-ui/ui/toolbar.slint
 msgid "EXP. CONTACT SHEET"
 msgstr "EXP. HOJA DE CONTACTOS"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Phone Remote"
+msgstr "Control desde el teléfono"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Export the photos picked as one contact sheet"
