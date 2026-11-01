@@ -229,6 +229,12 @@ impl State {
         group.map_or(&[], |g| &g.entries)
     }
 
+    /// The frame the editor goes on to once `leaving` goes to the ONI Trash with the open one.
+    pub(super) fn after_trash(&self, leaving: &[String]) -> Option<String> {
+        let paths: Vec<&str> = self.lab_frames().iter().map(|e| e.path.as_str()).collect();
+        after_trash(&paths, self.open_path()?, leaving)
+    }
+
     /// The open frame's place in its group, one-based, and the group's count.
     pub(super) fn place(&self) -> Option<(usize, usize)> {
         let open = self.open_path()?;
@@ -271,9 +277,17 @@ fn balance_bar(batch: Option<super::rolls::Batch>, now: std::time::Instant) -> O
     Some(LoadBar::counted(tr("Auto white balance"), b.done, b.total))
 }
 
+/// The first frame of the roll after `open` that stays, else the last before it; none while `open`
+/// itself stays.
+fn after_trash(roll: &[&str], open: &str, leaving: &[String]) -> Option<String> {
+    let at = roll.iter().position(|p| *p == open).filter(|_| leaving.iter().any(|l| l == open))?;
+    let stays = |p: &&&str| !leaving.iter().any(|l| l == **p);
+    roll[at + 1..].iter().find(stays).or_else(|| roll[..at].iter().rev().find(stays)).map(|p| (*p).to_owned())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{LoadBar, balance_bar};
+    use super::{LoadBar, after_trash, balance_bar};
     use crate::app::rolls::{BALANCE_BAR_AFTER, Batch};
     use std::time::{Duration, Instant};
 
@@ -286,6 +300,19 @@ mod tests {
         // Twin: a quick run stays off the bar, and no run never shows.
         assert!(balance_bar(run, started + BALANCE_BAR_AFTER - Duration::from_millis(1)).is_none());
         assert!(balance_bar(None, started + Duration::from_secs(5)).is_none());
+    }
+
+    #[test]
+    fn a_frame_trashed_in_the_editor_hands_on_to_the_next_else_the_one_before() {
+        let roll = ["a", "b", "c", "d"];
+        let gone = |p: &[&str]| p.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(after_trash(&roll, "b", &gone(&["b"])).as_deref(), Some("c"));
+        assert_eq!(after_trash(&roll, "b", &gone(&["b", "c"])).as_deref(), Some("d"), "past the others leaving with it");
+        assert_eq!(after_trash(&roll, "d", &gone(&["d"])).as_deref(), Some("c"), "the roll's end: the one before");
+        assert_eq!(after_trash(&roll, "c", &gone(&["c", "d", "b"])).as_deref(), Some("a"));
+        // Twin: the whole roll gone, or the open frame staying, leaves none.
+        assert_eq!(after_trash(&roll, "a", &gone(&roll)), None);
+        assert_eq!(after_trash(&roll, "a", &gone(&["b"])), None);
     }
 
     #[test]

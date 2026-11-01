@@ -1,7 +1,7 @@
 //! The editor's routes on the headless window: a frame never balanced opens with its measuring
 //! window armed, Return and the crop's way out, De-dust leaving the Lab, the brush kept, Space, a
 //! preset's automatic balance that asks nothing, ⌘A beside a photo showing its folder together and
-//! a plain click on the lead showing it alone.
+//! a plain click on the lead showing it alone, and a frame trashed there handing on to its neighbour.
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
@@ -174,6 +174,11 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     lib.invoke_row_clicked(row("D"), false, false);
     rig.until("D alone", Duration::from_secs(5), || canvas.get_status().contains(" × ") && ctl.state.borrow().open_path() == Some(names[3].as_str()));
+    // D to the ONI Trash from the editor: the editor stays, on C, as D ends the roll.
+    ctl.act(oni_app::Act::Remove);
+    rig.landed(&ctl);
+    assert!(!w.global::<App>().get_gallery() && ctl.state.borrow().open_path() == Some(names[2].as_str()), "the editor goes on to C");
+    assert_eq!(*ctl.state.borrow().picked(), HashSet::from([names[2].clone()]));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

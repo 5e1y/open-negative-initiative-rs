@@ -4925,5 +4925,12 @@
     "title": "A plain click on the photo leading frames shown together shows it alone again",
     "status": "done",
     "detail": "Owner's report: after ⌘A, a click in the column on the photo already open left the contact sheet on screen; only a click on another photo, which opens it, showed one frame. A plain click on a row of the archive tree or of the projects beside a photo now follows the selection it leaves, one photo, so the group ends whether the photo clicked was open or not (follow_selection). Checks: window editor_routes after ⌘A, a plain click on D, the open photo, shows D alone (failed before: the sheet stayed)."
+  },
+  {
+    "id": 1032,
+    "type": "feature",
+    "title": "A frame sent to the ONI Trash from the editor hands on to its neighbour",
+    "status": "done",
+    "detail": "Owner's call: Move to ONI Trash in the editor fell back on the gallery. The editor now stays and opens the roll's first frame after the open one that stays, else the last before it at the roll's end (State::after_trash over lab_frames, the frames leaving with it skipped); a roll emptied whole still falls back on the gallery, and the gallery's trash is unchanged. Checks: state_read a trashed frame hands on to the next, past those leaving with it, else the one before (twin: the whole roll gone, or the open frame staying, hands on to none); window editor_routes D trashed in the editor opens C, selected."
   }
 ]

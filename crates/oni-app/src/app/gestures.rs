@@ -293,10 +293,22 @@ impl Ctl {
         self.gesture(&targets, |store| store.paste_framing(&targets, size));
     }
 
-    /// `moveToOniTrash()`: each target's sidecar marked, its files untouched, one gallery step.
+    /// `moveToOniTrash()`: each target's sidecar marked, its files untouched, one gallery step. The
+    /// editor stays, on the roll's next frame, else the one before (owner's call).
     pub(super) fn move_to_trash(self: &Rc<Self>) {
         let targets = self.targets();
+        let beside = self.window().is_some_and(|w| !w.global::<App>().get_gallery());
+        let next = if beside { self.state.borrow().after_trash(&targets) } else { None };
         self.move_paths_to_trash(&targets);
+        if let Some(next) = next.filter(|_| self.state.borrow().open.is_none()) {
+            self.state.borrow_mut().designate(&next);
+            self.open_photo(&next);
+            if let Some(w) = self.window() {
+                w.global::<App>().set_gallery(false);
+            }
+            self.publish_tiles();
+            self.publish_bar();
+        }
     }
 
     /// The marks written off this thread: a roll of three hundred on a slow disk never stalls the window.
