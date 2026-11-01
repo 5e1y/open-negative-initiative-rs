@@ -163,7 +163,7 @@ export component Toolbar inherits Surface {
     // The bar's width with every word, read off hidden copies: the layout's widths never depend on
     // which face shows, or the window's width would loop through it.
     property <length> sides: 2 * ShellStyle.bar-padding + Bar.traffic-lights + mode.preferred-width + 2 * glyphs.preferred-width + 4 * ShellStyle.bar-gap
-        + (Preparing.shown ? 0px : ShellStyle.export-width + ShellStyle.bar-gap);
+        + (Preparing.shown ? 0px : ShellStyle.export-width + ShellStyle.bar-gap) + (Preparing.shown || Bar.targets < 2 ? 0px : sheet-sizing.preferred-width);
     property <length> full: root.sides + max(sizing.preferred-width, gallery-sizing.preferred-width) + feedback-sizing.preferred-width;
     property <bool> compact: root.width < root.full;
     // Under the keys, so only the room between them reaches it.
@@ -197,6 +197,7 @@ export component Toolbar inherits Surface {
             compact-sizing := EditorKeys { visible: false; compact: true; }
             compact-gallery-sizing := GalleryKeys { visible: false; compact: true; }
             feedback-sizing := Word { visible: false; text: @tr("FEEDBACKS"); }
+            sheet-sizing := Word { visible: false; text: @tr("EXP. CONTACT SHEET"); }
             glyph-sizing := Word { visible: false; has-icon: true; icon: Icons.chat; }
             glyphs := Item { visible: false; icon: Icons.settings; }
             if Preparing.shown: RollStepKeys { x: max(0px, min((root.width - self.width) / 2 - parent.x, parent.width - self.width)); width: self.preferred-width; }
@@ -226,7 +227,9 @@ export component Toolbar inherits Surface {
             plate: Bar.targets > 1;
             if Bar.targets > 1: Word {
                 action: Act.export-sheet;
-                text: @tr("EXP. CONTACT SHEET");
+                text: root.compact ? "" : @tr("EXP. CONTACT SHEET");
+                has-icon: root.compact;
+                icon: Icons.contact-sheet;
                 kind: ButtonKind.sheet;
                 help: @tr("Export the photos picked as one contact sheet");
             }
