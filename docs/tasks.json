@@ -4918,5 +4918,12 @@
     "title": "A contact sheet of positives lies on white, numbered in dark red under a black logo",
     "status": "done",
     "detail": "Owner's call: frames all positives (ConversionMode::Positive) show together and export on a white sheet, their numbers dark red (Colour.edge-print-positive) and the logo black; any other frame among them keeps the black sheet, orange numbers and white logo. The Canvas global carries both sets of inks (SheetInks: ground, number, logo) and `positive`; the canvas lays the sheet on Ground.paper and sets EdgePrint in the positive ink, the display kernel's ground goes to 1 (Group::ground), the logo plate is drawn again in its ink when the group's polarity changes (Ctl::sheet_polarity); the export reads the same inks (Ctl::inks), fills its sheet with the ground and lays tiles and plates over it as the screen blends them (Plate::lay_on takes the ground). The export panel's help names both, in fr and es too. Checks: numbers a sheet lies on white when every frame is a positive (twin: one negative, or none known); plate ink over its ground, black half covering white reads 0.5 in sRGB; print a clear pixel keeps a white ground; logo in black lights none (twin of its white); window export_sheet the positives' file is white in its gaps and margin, its number dark red, its logo black (twin: the foot white, no orange number); window together negatives lie on black."
+  },
+  {
+    "id": 1031,
+    "type": "fix",
+    "title": "A plain click on the photo leading frames shown together shows it alone again",
+    "status": "done",
+    "detail": "Owner's report: after ⌘A, a click in the column on the photo already open left the contact sheet on screen; only a click on another photo, which opens it, showed one frame. A plain click on a row of the archive tree or of the projects beside a photo now follows the selection it leaves, one photo, so the group ends whether the photo clicked was open or not (follow_selection). Checks: window editor_routes after ⌘A, a plain click on D, the open photo, shows D alone (failed before: the sheet stayed)."
   }
 ]

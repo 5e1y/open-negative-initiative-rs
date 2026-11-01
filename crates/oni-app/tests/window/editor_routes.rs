@@ -1,6 +1,7 @@
 //! The editor's routes on the headless window: a frame never balanced opens with its measuring
 //! window armed, Return and the crop's way out, De-dust leaving the Lab, the brush kept, Space, a
-//! preset's automatic balance that asks nothing, and ⌘A beside a photo showing its folder together.
+//! preset's automatic balance that asks nothing, ⌘A beside a photo showing its folder together and
+//! a plain click on the lead showing it alone.
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
@@ -8,7 +9,7 @@ use oni_app::{App, Canvas, Choice, Framing, Lab, Library, Menus, PanelState, Pre
 use oni_core::presets::{self, Preset, Tint};
 use oni_core::{Archive, EditorStore};
 use oni_settings::{ConversionMode, PipelineSettings};
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use slint::platform::{Key, WindowEvent};
 use std::collections::{BTreeSet, HashSet};
 use std::path::PathBuf;
@@ -168,6 +169,11 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.chord(Key::Control, "a");
     assert_eq!(*ctl.state.borrow().picked(), names.iter().cloned().collect::<HashSet<_>>());
     rig.until("four together", Duration::from_secs(30), || canvas.get_status().as_str() == "4 frames together");
+    // A plain click on the photo leading them, in the column, shows it alone again.
+    let row = |n: &str| lib.get_rows().iter().position(|r| r.kind == 2 && r.title == n).unwrap_or_else(|| panic!("{n}'s row")) as i32;
+    std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
+    lib.invoke_row_clicked(row("D"), false, false);
+    rig.until("D alone", Duration::from_secs(5), || canvas.get_status().contains(" × ") && ctl.state.borrow().open_path() == Some(names[3].as_str()));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -85,6 +85,8 @@ impl Ctl {
         if !reopened {
             self.open_photo(&path);
         }
+        // The frame leading a group, clicked alone, shows alone again.
+        self.follow_selection();
         self.publish_tiles();
         self.publish_organising();
     }
@@ -190,6 +192,9 @@ impl Ctl {
         };
         if let Some(path) = open {
             self.open_photo(&path);
+        }
+        if beside {
+            self.follow_selection();
         }
         self.publish_tiles();
         self.publish_organising();
