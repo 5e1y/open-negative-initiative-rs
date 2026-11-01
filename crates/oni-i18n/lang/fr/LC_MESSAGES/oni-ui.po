@@ -594,6 +594,18 @@ msgid "JPEG"
 msgstr "JPEG"
 
 #: crates/oni-ui/ui/export.slint
+msgid "Contact sheet"
+msgstr "Planche contact"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Writes one file: every photo six to a row on black, numbered in orange by its place on its roll, as they show together in the editor."
+msgstr "Écrit un seul fichier : toutes les photos, six par rangée sur fond noir, numérotées en orange selon leur place sur leur pellicule, comme elles s’affichent ensemble dans l’éditeur."
+
+#: crates/oni-ui/ui/export.slint
+msgid "All photos on one sheet"
+msgstr "Toutes les photos sur une planche"
+
+#: crates/oni-ui/ui/export.slint
 msgid "Compression"
 msgstr "Compression"
 
@@ -604,6 +616,10 @@ msgstr "ZIP, sans perte"
 #: crates/oni-ui/ui/export.slint
 msgid "Size"
 msgstr "Taille"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Pixels of the whole sheet. Never enlarged; empty means full resolution."
+msgstr "Pixels de la planche entière. Jamais d’agrandissement ; vide signifie pleine résolution."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution."
@@ -653,47 +669,47 @@ msgstr "Remplacer"
 msgid "Rename"
 msgstr "Renommer"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Paper Profiles"
 msgstr "Profils papier"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "DOWNLOAD HERE"
 msgstr "TÉLÉCHARGER ICI"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "ON THE MAKER’S SITE"
 msgstr "SUR LE SITE DU FABRICANT"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Open the Maker’s Page"
 msgstr "Ouvrir la page du fabricant"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not."
 msgstr "Téléchargez sur cette page le profil de votre imprimante et de votre papier, puis choisissez Charger un profil… et sélectionnez le fichier téléchargé, compressé ou non."
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Reading the maker’s page…"
 msgstr "Lecture de la page du fabricant…"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "The page lists no profile right now. Open it to look by hand."
 msgstr "La page ne propose aucun profil pour l’instant. Ouvrez-la pour chercher vous-même."
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Filter, e.g. P900 matte"
 msgstr "Filtrer, p. ex. P900 mat"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Installing…"
 msgstr "Installation…"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Uninstall"
 msgstr "Désinstaller"
 
-#: crates/oni-ui/ui/export.slint
+#: crates/oni-ui/ui/export_papers.slint
 msgid "Install"
 msgstr "Installer"
 
@@ -2463,6 +2479,10 @@ msgstr "taille totale estimée"
 msgid "estimated size"
 msgstr "taille estimée"
 
+#: crates/oni-app/src/app/export_card/publishing.rs
+msgid "EXPORT CONTACT SHEET"
+msgstr "EXPORTER LA PLANCHE CONTACT"
+
 #: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs
 msgid "Hide What This Screen Cannot Show"
 msgstr "Ne plus montrer ce que cet écran ne peut pas afficher"
@@ -2470,6 +2490,10 @@ msgstr "Ne plus montrer ce que cet écran ne peut pas afficher"
 #: crates/oni-app/src/app/export_card/publishing.rs
 msgid "An export is under way, {done} of {total}: this one can start once it ends."
 msgstr "Un export est en cours, {done} sur {total} : celui-ci pourra commencer une fois le premier terminé."
+
+#: crates/oni-app/src/app/export_card/publishing.rs
+msgid "{count} photos on one contact sheet. You will be asked for its name."
+msgstr "{count} photos sur une planche contact. Son nom vous sera demandé."
 
 #: crates/oni-app/src/app/export_card/publishing.rs
 msgid "Until a profile is chosen, the picture stays in {space}."
@@ -2482,6 +2506,10 @@ msgstr "Choisissez des profils ICC, ou l’archive zip dans laquelle un fabrican
 #: crates/oni-app/src/app/export_card/settings.rs
 msgid "Where should the {count} files be written?"
 msgstr "Où enregistrer les {count} fichiers ?"
+
+#: crates/oni-app/src/app/export_card/writing.rs
+msgid "Contact Sheet"
+msgstr "Planche contact"
 
 #: crates/oni-app/src/app/frontier_look.rs
 msgid "Export the Frontier look"

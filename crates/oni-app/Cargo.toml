@@ -50,6 +50,8 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls-no-p
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
+# A contact sheet's numbers set into its file in the interface's face.
+swash = "0.2"
 # `Updates`: the appcast read, and each archive's EdDSA signature checked before it is kept.
 roxmltree = "0.21"
 ring = "0.17"

@@ -4848,5 +4848,19 @@
     "title": "Frames together lie on a sheet of their own: every crop a tile wide, rows twice the columns' gap apart, the black under them alone",
     "status": "done",
     "detail": "Owner's look of #1019: rows stood far apart, a tight crop showed smaller than a whole frame, and the whole canvas went black. Now each frame is framed to a tile whatever its crop, a landscape 1024 px wide and a portrait 1024 px tall (render_laid's scale reads the crop through export::cropped_size, uncapped, and a frame's source is reduced so its crop keeps a tile's pixels, sheet::source_side); a column is a tile wide, a row as tall as its tallest picture, each picture centred in both (sheet::laid, from the frames' proportions: crop and quarter turns once decoded, the thumbnail's before, 3:2 before either), so a portrait row moves the rows around it; rows lie twice the columns' 30 px apart and the sheet keeps that margin around them, where the numbers sit centred under each picture. The black is the sheet's alone (Canvas.sheet, a Picture on Ground.sheet under the tiles), the canvas keeping its own ground around it. Checks: sheet a crop spans a tile, landscape across and portrait down, rows as tall as their tallest (twin: a portrait in the first row moves the second); a tile is placed centred on its picture at the scale drawn (twin: two pixels short sits one in); a source keeps enough pixels for its crop (twin: a crop of the short side keeps a tile); tiles a cropped frame spans the tile side as a whole one does; numbers a number lies under its picture (twin: a landscape's is not at its row's bottom); window together the gaps are black and the pictures not, the sheet's black encloses the frames with a margin."
+  },
+  {
+    "id": 1021,
+    "type": "feature",
+    "title": "Frames together: rows four columns' gaps apart, numbers in bold",
+    "status": "done",
+    "detail": "Owner's look of #1020: the rows stand twice as far apart again, 120 px (ROWS_APART, four times the columns' 30 px gap), while the sheet's margin and the band each number is centred in under its picture stay 60 px (MARGIN), so a number keeps to its picture's edge; the sheet ends on the margin after its last row. The numbers are set in bold (Type.bold, 700, EdgePrint). Checks: sheet a crop spans a tile, rows as tall as their tallest, rows twice the margin apart (twin: a portrait in the first row moves the second)."
+  },
+  {
+    "id": 1022,
+    "type": "feature",
+    "title": "Export writes the selection as one contact sheet, as it shows together",
+    "status": "done",
+    "detail": "Owner's call: Export with two photos or more offers 'All photos on one sheet' (Contact sheet field, Card::sheet). The batch then writes one file named Contact Sheet: every frame decoded at half size and reduced so its crop spans a 1024 px tile (drawing::tile_decoded, shared with Edit Together), laid six to a row exactly as sheet::laid lays the canvas, rendered unproofed row by row on the export's engine so no texture outgrows the GPU (render_laid, export::read_laid), on opaque black, each frame numbered by its place on its roll (numbers::ranks) in Inter bold at the canvas's orange (Canvas.number-ink and number-weight, read from the design system), set with swash and blended over the black in sRGB as the screen blends it. The size fields, the dimensions and the estimate are the whole sheet's; the file carries the first line's artist and copyright and the first frame's date and paper correction; the stop is honoured between frames. Checks: print a number is set in the band under its picture, orange on black (twin: a regular weight lights fewer pixels); a band lies on the black, its gaps left black (twin: nothing lands outside its place); window export_sheet writes one file of the sheet's size, black in its gaps. The paper profiles sheet moves to export_papers.slint, keeping export.slint under its 400-line ceiling."
   }
 ]

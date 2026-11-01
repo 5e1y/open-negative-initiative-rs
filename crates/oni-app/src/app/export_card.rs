@@ -26,6 +26,7 @@ mod targets;
 mod settings;
 mod quality;
 mod writing;
+mod contact;
 mod publishing;
 mod wiring;
 
@@ -71,6 +72,8 @@ pub struct Card {
     /// The space the frames were edited in when the surface opened, which the note compares to.
     edited_in: Option<Space>,
     pub settings: Settings,
+    /// A batch written as one contact sheet, as Edit Together lays it.
+    pub sheet: bool,
     pub colour_only: bool,
     pub gamut: bool,
     pub targets: Vec<Target>,
@@ -153,6 +156,7 @@ impl Card {
             copyright: text(COPYRIGHT),
             last_profile: text(LAST_PROFILE),
             settings,
+            sheet: false,
             targets: Vec::new(),
             rows: Vec::new(),
             sizes: Vec::new(),
@@ -188,9 +192,18 @@ impl Card {
         }
     }
 
-    /// The first target's full size after its turns and crop, once measured.
+    /// The first target's full size after its turns and crop, once measured; on a contact sheet, the
+    /// sheet's once every target is.
     fn full(&self) -> Option<(f64, f64)> {
+        if self.on_sheet() {
+            return self.sizes.iter().copied().collect::<Option<Vec<_>>>().map(|sizes| super::gallery_view::together::sheet_size(&sizes));
+        }
         self.sizes.first().copied().flatten()
+    }
+
+    /// Whether the batch is written as one contact sheet: two photos or more.
+    pub fn on_sheet(&self) -> bool {
+        self.sheet && self.targets.len() > 1
     }
 
     fn save(&mut self, key: &str, value: Value) {

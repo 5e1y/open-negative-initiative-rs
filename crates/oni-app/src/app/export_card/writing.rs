@@ -1,10 +1,11 @@
 //! Writing: the batch off this thread, its clashes, its progress and its journal.
 
 use super::*;
+use oni_i18n::tr;
 
 impl Ctl {
-    /// `runExport`: one file asks for its name, a batch for a folder; then any clash asks, Replace
-    /// offered for ONI's earlier exports alone, Rename for anything else.
+    /// `runExport`: one file or a contact sheet asks for its name, a batch for a folder; then any clash
+    /// asks, Replace offered for ONI's earlier exports alone, Rename for anything else.
     pub fn run_export(self: &Rc<Self>) {
         self.rows_now();
         let (targets, rows, format, support) = {
@@ -14,9 +15,10 @@ impl Ctl {
         if targets.is_empty() || self.export.borrow().exporting {
             return;
         }
-        let single = targets.len() == 1;
+        let sheet = self.export.borrow().on_sheet();
+        let single = targets.len() == 1 || sheet;
         let destinations = if single {
-            let typed = rows[0].as_ref().map_or("", |r| r.name.as_str());
+            let typed = if sheet { tr("Contact Sheet") } else { rows[0].as_ref().map_or("", |r| r.name.as_str()) };
             let name = oni_export::name(&targets[0].path, typed, format);
             let Some(destination) = self.ask_paths(&Ask::Save { name, extension: format.file_extension().into() }).into_iter().next() else { return };
             vec![destination]
@@ -58,19 +60,13 @@ impl Ctl {
     /// `writeExport`: in order off this thread on an engine apart, the stop honoured between files, an
     /// earlier export replaced only when `replacing`; the first line's artist and copyright are remembered.
     pub(super) fn write_export(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
+        if self.export.borrow().on_sheet() {
+            return self.write_sheet(destinations, replacing);
+        }
         let started = destinations.clone();
         let (plan, export, stop) = {
             let mut c = self.export.borrow_mut();
-            c.exporting = true;
-            c.progress = 0;
-            c.stopped = None;
-            c.stop.store(false, Ordering::Relaxed);
-            if let Some(Some(first)) = c.rows.first().cloned() {
-                c.artist = first.metadata.artist.clone();
-                c.copyright = first.metadata.copyright.clone();
-                c.save(ARTIST, Value::from(first.metadata.artist));
-                c.save(COPYRIGHT, Value::from(first.metadata.copyright));
-            }
+            c.start_writing();
             let plan: Vec<(Target, PathBuf, ExifMetadata)> = c
                 .targets
                 .iter()
@@ -109,5 +105,21 @@ impl Ctl {
                 with_shell(|c| c.export_ended(job::End::Written));
             })
             .expect("export thread");
+    }
+}
+
+impl Card {
+    /// An export begins: the key is busy and the first line's artist and copyright are remembered.
+    pub(super) fn start_writing(&mut self) {
+        self.exporting = true;
+        self.progress = 0;
+        self.stopped = None;
+        self.stop.store(false, Ordering::Relaxed);
+        if let Some(Some(first)) = self.rows.first().cloned() {
+            self.artist = first.metadata.artist.clone();
+            self.copyright = first.metadata.copyright.clone();
+            self.save(ARTIST, Value::from(first.metadata.artist));
+            self.save(COPYRIGHT, Value::from(first.metadata.copyright));
+        }
     }
 }

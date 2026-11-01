@@ -9,22 +9,8 @@ impl Ctl {
     /// Each frame's place on its roll, read off this thread: a contact sheet's sidecar is opened to
     /// leave it out of its folder's count.
     pub(super) fn number_frames(&self, id: u64) {
-        let (paths, folders) = {
-            let s = self.state.borrow();
-            let Some(g) = s.together.as_ref() else { return };
-            let folders: HashMap<String, Vec<String>> = g
-                .paths
-                .iter()
-                .map(|p| oni_library::paths::parent(p))
-                .collect::<HashSet<_>>()
-                .into_iter()
-                .map(|f| {
-                    let photos = s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default();
-                    (f, photos)
-                })
-                .collect();
-            (g.paths.clone(), folders)
-        };
+        let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
+        let folders = self.roll_folders(&paths);
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
@@ -32,6 +18,13 @@ impl Ctl {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
             with_shell(move |c| c.numbers_landed(id, numbers));
         });
+    }
+
+    /// Each folder of `paths` with its photos in shooting order, which `ranks` numbers them by.
+    pub(in crate::app) fn roll_folders(&self, paths: &[String]) -> HashMap<String, Vec<String>> {
+        let s = self.state.borrow();
+        let folders: HashSet<String> = paths.iter().map(|p| oni_library::paths::parent(p)).collect();
+        folders.into_iter().map(|f| (f.clone(), s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default())).collect()
     }
 
     fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>) {
@@ -58,7 +51,7 @@ impl Ctl {
             let Some(g) = s.together.as_ref() else { return };
             under(&g.numbers, &g.sheet.pictures)
         };
-        let (size, band) = (NUMBER as f64 * k, ROWS_APART as f64 * k);
+        let (size, band) = (NUMBER as f64 * k, MARGIN as f64 * k);
         let points = |v: f64| (v / density) as f32;
         let numbers: Vec<EdgeNumber> = laid
             .into_iter()
@@ -86,7 +79,7 @@ impl Ctl {
 
 /// Each frame's place on its roll from 1, its rank in its folder's shooting order with the contact
 /// sheets left out; a frame its folder does not list, or a sheet, has none.
-fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>, sheet: impl Fn(&str) -> bool) -> Vec<Option<usize>> {
+pub(in crate::app) fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>, sheet: impl Fn(&str) -> bool) -> Vec<Option<usize>> {
     let rolls: HashMap<&str, HashMap<&str, usize>> = folders
         .iter()
         .map(|(folder, photos)| {
@@ -101,7 +94,7 @@ fn ranks(paths: &[String], folders: &HashMap<String, Vec<String>>, sheet: impl F
 }
 
 /// Where each numbered frame's number band starts on the full sheet: at its picture's bottom left.
-fn under(numbers: &[Option<usize>], pictures: &[Area]) -> Vec<(f64, f64, usize)> {
+pub(super) fn under(numbers: &[Option<usize>], pictures: &[Area]) -> Vec<(f64, f64, usize)> {
     numbers.iter().zip(pictures).filter_map(|(n, &(x, y, _, h))| Some((x, y + h, (*n)?))).collect()
 }
 

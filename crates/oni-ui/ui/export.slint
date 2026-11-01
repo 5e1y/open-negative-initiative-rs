@@ -205,6 +205,11 @@ export component ExportPanel inherits Surface {
                         picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
                 }
+                if Exporting.count > 1: Field {
+                    label: @tr("Contact sheet");
+                    help: @tr("Writes one file: every photo six to a row on black, numbered in orange by its place on its roll, as they show together in the editor.");
+                    Toggle { label: @tr("All photos on one sheet"); on: Exporting.sheet; toggled(on) => { Exporting.sheet-set(on); } }
+                }
                 SpaceField { }
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }
                 if Exporting.format == 0: Field {
@@ -214,7 +219,9 @@ export component ExportPanel inherits Surface {
                 if Exporting.format == 1: QualitySlider { }
                 Field {
                     label: @tr("Size");
-                    help: @tr("Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution.");
+                    help: Exporting.sheet
+                        ? @tr("Pixels of the whole sheet. Never enlarged; empty means full resolution.")
+                        : @tr("Pixels of the first photo. The edge you type is the one the ceiling rides on every photo of the batch — the width of a landscape is its long edge. Never enlarged; empty means full resolution.");
                     HorizontalLayout {
                         spacing: Space.s;
                         alignment: start;
@@ -296,100 +303,4 @@ export component ExportNoticeSheet inherits AskSheet {
     message: Exporting.notice-message;
     keys: [{ text: @tr("OK"), role: AskRole.confirm }];
     answered => { Exporting.notice-closed(); }
-}
-
-// `PaperProfilesSheet`: the makers in a sidebar, what the chosen one offers in a card.
-export component PaperSheet inherits Sheet {
-    title: @tr("Paper Profiles");
-    header: SheetHeader.bar;
-    card-width: FormStyle.paper-width;
-    card-height: FormStyle.paper-height;
-    dismissed => { Exporting.papers-done(); }
-    HorizontalLayout {
-        vertical-stretch: 1;
-        Scroller {
-            width: FormStyle.paper-list;
-            content-height: makers.preferred-height;
-            makers := VerticalLayout {
-                padding-top: CardStyle.inset; padding-left: Space.s;
-                padding-right: Space.s;
-                padding-bottom: Space.m;
-                spacing: Space.m;
-                alignment: start;
-                VerticalLayout {
-                    Row { kind: RowKind.heading; title: @tr("DOWNLOAD HERE"); }
-                    for name[i] in Exporting.paper-direct: Row {
-                        form: RowForm.sidebar;
-                        title: name;
-                        picked: i == Exporting.paper-source;
-                        clicked => { Exporting.paper-picked(i); }
-                        glyph: Icons.archive;
-                        has-glyph: true;
-                    }
-                }
-                VerticalLayout {
-                    Row { kind: RowKind.heading; title: @tr("ON THE MAKER’S SITE"); }
-                    for name[i] in Exporting.paper-browsed: Row {
-                        form: RowForm.sidebar;
-                        title: name;
-                        picked: i + Exporting.paper-direct-count == Exporting.paper-source;
-                        clicked => { Exporting.paper-picked(i + Exporting.paper-direct-count); }
-                        glyph: Icons.arrow-right;
-                        has-glyph: true;
-                    }
-                }
-            }
-        }
-        VerticalLayout {
-            horizontal-stretch: 1;
-            padding-top: CardStyle.inset; padding-right: CardStyle.inset;
-            padding-bottom: CardStyle.inset;
-            Inset {
-                vertical-stretch: 1;
-                pad: Gap.l;
-                gap: Gap.m;
-                Label { text: Exporting.paper-name; role: TextRole.heading; }
-                Label { role: TextRole.note; text: Exporting.paper-note; }
-                HorizontalLayout {
-                    alignment: start;
-                    Button { text: @tr("Open the Maker’s Page"); clicked => { Exporting.paper-open-page(); } }
-                }
-                if Exporting.paper-browser: Label { role: TextRole.note;
-                    text: @tr("Download the profile for your printer and paper on the page, then choose Load a Profile… and pick the file you downloaded, zipped or not.");
-                }
-                if !Exporting.paper-browser && Exporting.paper-reading: Label { role: TextRole.note; text: @tr("Reading the maker’s page…"); }
-                if !Exporting.paper-browser && !Exporting.paper-reading && !Exporting.paper-any: Label { role: TextRole.note;
-                    text: @tr("The page lists no profile right now. Open it to look by hand.");
-                }
-                if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: TextField {
-                    value: Exporting.paper-filter;
-                    placeholder: @tr("Filter, e.g. P900 matte");
-                    edited(t) => { Exporting.paper-filter-typed(t); }
-                }
-                if !Exporting.paper-browser && !Exporting.paper-reading && Exporting.paper-any: ListView {
-                    vertical-stretch: 1;
-                    // As tall installing as with its key, so the list never jumps.
-                    for row[i] in Exporting.paper-rows: HorizontalLayout {
-                        spacing: Space.s;
-                        padding-top: Space.xs;
-                        padding-bottom: Space.xs; min-height: ButtonStyle.height + 2 * Space.xs;
-                        Label { text: row.title; tone: Tone.secondary; overflow: elide; horizontal-stretch: 1; }
-                        if row.installing: Label { role: TextRole.note; text: @tr("Installing…"); }
-                        if !row.installing && row.installed: Button {
-                            text: @tr("Uninstall");
-                            kind: ButtonKind.destructive;
-                            enabled: !Exporting.paper-busy;
-                            clicked => { Exporting.paper-uninstall(i); }
-                        }
-                        if !row.installing && !row.installed: Button {
-                            text: @tr("Install");
-                            enabled: !Exporting.paper-busy;
-                            clicked => { Exporting.paper-install(i); }
-                        }
-                    }
-                }
-                if Exporting.paper-message != "": Label { role: TextRole.note; text: Exporting.paper-message; }
-            }
-        }
-    }
 }

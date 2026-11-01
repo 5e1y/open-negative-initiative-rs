@@ -156,7 +156,8 @@ impl Ctl {
             card.sizes[i] = size;
         }
         self.publish_line(i);
-        if i == 0 {
+        // A contact sheet's size waits for every frame's.
+        if i == 0 || self.export.borrow().on_sheet() {
             self.publish_export();
             self.weigh_export();
         }

@@ -100,6 +100,11 @@ impl Ctl {
             p.export_changed(true);
         });
         let p = me.clone();
+        e.on_sheet_set(move |on| {
+            p.export.borrow_mut().sheet = on;
+            p.export_changed(true);
+        });
+        let p = me.clone();
         e.on_quality_press(move |_fine| {
             let now = Instant::now();
             let double = {

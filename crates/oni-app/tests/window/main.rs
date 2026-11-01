@@ -24,6 +24,7 @@ mod explorer;
 mod export_paper_window;
 mod export_entering;
 mod export_flow;
+mod export_sheet;
 mod export_window;
 mod export_speed;
 mod extended;
@@ -128,6 +129,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("export_speed::an_export_is_timed_stage_by_stage", export_speed::an_export_is_timed_stage_by_stage),
     ("export_entering::entering_the_export_reads_no_scan_on_the_interface_thread", export_entering::entering_the_export_reads_no_scan_on_the_interface_thread),
     ("export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner", export_flow::an_export_closes_its_surface_and_counts_its_frames_in_a_card_at_the_canvas_s_corner),
+    ("export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered", export_sheet::a_selection_exports_as_one_contact_sheet_black_and_numbered),
     ("extended::a_decode_outside_libraw_is_swift_s", extended::a_decode_outside_libraw_is_swift_s),
     ("extended::a_patch_is_swift_s_on_swift_s_source", extended::a_patch_is_swift_s_on_swift_s_source),
     ("extended::a_frame_renders_its_swift_patches_as_swift_does", extended::a_frame_renders_its_swift_patches_as_swift_does),

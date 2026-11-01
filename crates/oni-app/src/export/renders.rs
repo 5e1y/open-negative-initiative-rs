@@ -51,6 +51,15 @@ fn read_back(graph: &mut oni_graph::Graph, image: &Recipe) -> Result<Image, Fail
     Ok(Image { width: e.w as usize, height: e.h as usize, pixels })
 }
 
+/// A sheet laid on the GPU read back in bands of rows, then let go.
+pub fn read_laid(engine: &mut Engine, sheet: oni_graph::Source) -> Result<Image, Failure> {
+    let (graph, _) = engine.parts();
+    let out = read_back(graph, &Recipe::new(&sheet));
+    drop(sheet);
+    graph.purge();
+    out
+}
+
 /// `Pipeline.apply` on a preview reduced to `side`, unproofed: the estimate's sample.
 pub fn render_reduced(engine: &mut Engine, negative: &Negative, settings: &PipelineSettings, side: usize) -> Result<Image, Failure> {
     let (w, h) = negative.size();

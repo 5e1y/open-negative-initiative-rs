@@ -48,7 +48,8 @@ impl Ctl {
         let e = w.global::<Exporting>();
         let space = c.settings.space().clone();
         let count = c.targets.len();
-        let batch = count > 1;
+        let sheet = c.on_sheet();
+        let batch = count > 1 && !sheet;
         e.set_shown(c.shown);
         e.set_on_paper(space.paper().is_some());
         e.set_count(count as i32);
@@ -56,6 +57,8 @@ impl Ctl {
         let subtitle = if c.exporting {
             let total = c.job.as_ref().map_or(0, |j| j.names.len());
             tr!("An export is under way, {done} of {total}: this one can start once it ends.", done = c.progress, total = total)
+        } else if sheet && c.stopped.is_none() {
+            tr!("{count} photos on one contact sheet. You will be asked for its name.", count = count)
         } else {
             export::subtitle(&c.targets, false, 0, c.stopped)
         };
@@ -87,6 +90,7 @@ impl Ctl {
         e.set_size_enabled(c.full().is_some());
         e.set_resized(c.settings.resize != Resize::Full);
         e.set_hdr(c.settings.hdr);
+        e.set_sheet(c.sheet);
         e.set_bits(export::bits(c.settings.format()).into());
         let dims = c.full().map(|(fw, fh)| {
             let (ow, oh) = c.settings.resize.output_size(fw, fh);
@@ -94,11 +98,11 @@ impl Ctl {
         });
         e.set_dims(dims.unwrap_or_else(|| "—".into()).into());
         e.set_weight_label(if batch { tr("estimated total size") } else { tr("estimated size") }.into());
-        e.set_weight(export::weight(c.estimate, count).into());
+        e.set_weight(export::weight(c.estimate, if sheet { 1 } else { count }).into());
         e.set_low_precision(export::low_precision(c.low_precision, count).into());
         e.set_exporting(c.exporting);
         e.set_can_export(count > 0);
-        e.set_key_title(label::key(count).into());
+        e.set_key_title(if sheet { tr("EXPORT CONTACT SHEET").into() } else { label::key(count) }.into());
         e.set_menu_title(label::menu(if c.shown { count } else { selected }).into());
         e.set_menu_live(if c.shown { count > 0 && !c.exporting } else { has_photo || selected > 0 });
         e.set_gamut_title(if c.gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into());

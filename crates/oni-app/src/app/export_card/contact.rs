@@ -1,0 +1,68 @@
+//! A batch written as one contact sheet: its frames laid as Edit Together lays them, numbered by
+//! their place on their rolls, in one file.
+
+use super::*;
+use super::super::gallery_view::together::{self, Lettering};
+use oni_export::Failure;
+
+impl Ctl {
+    /// The sheet off this thread on an engine apart, the stop honoured between frames; it carries the
+    /// first line's artist and copyright, and the first frame's date and paper correction.
+    pub(super) fn write_sheet(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
+        let Some(destination) = destinations.into_iter().next() else { return };
+        let Some(lettering) = self.lettering() else { return };
+        let (targets, export, stop, metadata) = {
+            let mut c = self.export.borrow_mut();
+            c.start_writing();
+            let first = c.rows.first().cloned().flatten().map(|r| r.metadata).unwrap_or_default();
+            let metadata = ExifMetadata { artist: first.artist, copyright: first.copyright, ..ExifMetadata::default() };
+            (c.targets.clone(), c.settings.clone(), c.stop.clone(), metadata)
+        };
+        let paths: Vec<String> = targets.iter().map(|t| oni_library::paths::normal(&t.path.to_string_lossy()).into_owned()).collect();
+        let folders = self.roll_folders(&paths);
+        self.job_started(std::slice::from_ref(&destination));
+        let engine: Shared = self.export_engine();
+        let support = self.export.borrow().support.clone();
+        let journal = crate::app::year::journal_in(&support);
+        std::thread::Builder::new()
+            .name("export sheet".into())
+            .spawn(move || {
+                let mut ledger = oni_export::file::Ledger::in_support(&support);
+                let written = (|| {
+                    for t in &targets {
+                        oni_export::lands(&t.path, &destination, &ledger, replacing)?;
+                    }
+                    let numbers = together::ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
+                    let Some(sheet) = together::printed(&engine, &targets, &numbers, lettering, &stop)? else { return Ok(false) };
+                    let first = &targets[0];
+                    let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;
+                    oni_export::land(oni_export::Landing { path: &destination, ledger: &mut ledger, replacing }, &bytes)?;
+                    Ok::<_, Failure>(true)
+                })();
+                match written {
+                    Ok(true) => {
+                        journal.note(Gesture::Exported, None, 0, 0, None, oni_settings::Date::now());
+                        with_shell(|c| {
+                            c.export.borrow_mut().progress = 1;
+                            c.export_ended(job::End::Written);
+                        });
+                    }
+                    Ok(false) => with_shell(|c| c.export_ended(job::End::Stopped)),
+                    Err(e) => {
+                        let name = destination.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                        let message = format!("{name}: {e}");
+                        with_shell(move |c| c.export_ended(job::End::Failed(message)));
+                    }
+                }
+            })
+            .expect("export sheet thread");
+    }
+
+    /// The numbers' ink and weight as the canvas sets them.
+    fn lettering(&self) -> Option<Lettering> {
+        let w = self.window()?;
+        let c = w.global::<crate::Canvas>();
+        let ink = c.get_number_ink();
+        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
+    }
+}

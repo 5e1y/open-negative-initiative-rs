@@ -13,15 +13,27 @@ mod sheet;
 mod drawing;
 #[path = "together/numbers.rs"]
 mod numbers;
+#[path = "together/print.rs"]
+mod print;
 use drawing::{draw_grids, tile_source};
 use sheet::{Sheet, Window, laid, reduced, scale_for, source_side};
+pub(in crate::app) use numbers::ranks;
+pub(in crate::app) use print::{Lettering, printed};
+
+/// The full sheet's size in whole pixels for frames of these sizes, as their contact sheet is drawn.
+pub(in crate::app) fn sheet_size(sizes: &[(f64, f64)]) -> (f64, f64) {
+    let (w, h) = laid(sizes).drawn(1.0);
+    (f64::from(w), f64::from(h))
+}
 
 /// Tiles a row, each tile's longest side and the gap between them, in pixels.
 const COLUMNS: usize = 6;
 const TILE: usize = 1024;
 const GAP: usize = 30;
-/// The rows' spacing and the sheet's margin, where the frames' numbers lie, and their size.
-const ROWS_APART: usize = 2 * GAP;
+/// The sheet's margin and the band under each picture where its number lies, the rows' spacing,
+/// and the numbers' size.
+const MARGIN: usize = 2 * GAP;
+const ROWS_APART: usize = 4 * GAP;
 const NUMBER: usize = 56;
 /// A frame's proportions until its thumbnail or its source lands: 35 mm's.
 const UNKNOWN: (f64, f64) = (3.0, 2.0);

@@ -1,6 +1,6 @@
 // `FrameOverlay`: a frame over the shown image, the crop's or the measuring window's style, its
 // corners, edges and body held by the hand; Rust holds the rectangle and constrains every move.
-import { Colour, CropStyle, Space, Stroke } from "theme.slint";
+import { Colour, CropStyle, Space, Stroke, Type } from "theme.slint";
 import { Badge } from "badge.slint";
 import { TextRole, Label } from "base.slint";
 import { RingTone, Ring } from "marks.slint";
@@ -26,6 +26,7 @@ export component EdgePrint inherits Label {
     in property <length> size;
     ink: Colour.edge-print;
     font-size: root.size;
+    font-weight: Type.bold;
 }
 
 // One handle's grab: the press and the travel since it, in window coordinates, so the frame moving

@@ -57,6 +57,8 @@ export global Exporting {
     in property <bool> size-enabled;
     in property <bool> resized;
     in property <bool> hdr;
+    // Every photo on one contact sheet, as Edit Together lays them: one file for the batch.
+    in property <bool> sheet;
     in property <string> bits;
     in property <string> dims;
     in property <string> weight-label;
@@ -87,6 +89,7 @@ export global Exporting {
     callback colour-only-set(bool);
     callback compress-set(bool);
     callback hdr-set(bool);
+    callback sheet-set(bool);
     callback quality-press(bool) -> bool;
     callback quality-drag(length, length, bool);
     callback quality-release();

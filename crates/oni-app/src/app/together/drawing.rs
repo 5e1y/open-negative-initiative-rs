@@ -9,13 +9,19 @@ use crate::latest::Taken;
 pub(super) fn tile_source(engine: &Shared, path: &str, id: u64) -> Result<Arc<Negative>, String> {
     let mosaic = oni_decode::decodes_via_mosaic(Path::new(path));
     let settings = oni_settings::sidecar::read(Path::new(path), mosaic, true).map_err(|e| e.to_string())?.settings;
-    let mut decoded = render::decode_for(Path::new(path), render::Reading::of(&settings), oni_decode::HALF)?;
-    if GROUPS.load(Ordering::Relaxed) != id {
+    tile_decoded(engine, path, &settings, || GROUPS.load(Ordering::Relaxed) == id).map(Arc::new)
+}
+
+/// A frame on `settings` decoded at half size and reduced so its crop spans a tile, laid on the GPU
+/// while `wanted` still holds once the decode is done.
+pub(super) fn tile_decoded(engine: &Shared, path: &str, settings: &PipelineSettings, wanted: impl Fn() -> bool) -> Result<Negative, String> {
+    let mut decoded = render::decode_for(Path::new(path), render::Reading::of(settings), oni_decode::HALF)?;
+    if !wanted() {
         return Err(String::new());
     }
-    let side = source_side(&settings, (decoded.linear.width, decoded.linear.height));
+    let side = source_side(settings, (decoded.linear.width, decoded.linear.height));
     decoded.linear = reduced(decoded.linear, side);
-    Ok(Arc::new(engine.prepare(decoded)?))
+    engine.prepare(decoded)
 }
 
 /// The frame's settings as its sidecar holds them: whether it reads as a slide, the key its kept
