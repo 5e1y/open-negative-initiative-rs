@@ -4981,5 +4981,19 @@
     "title": "1.5.0",
     "status": "done",
     "detail": "oni-app's version 1.5.0, carrying #997 to #1038: contact sheets and their export, slide rolls, the measure landing whole, the 1.5 welcome."
+  },
+  {
+    "id": 1040,
+    "type": "feature",
+    "title": "A slide roll is measured on its gains alone; the reading as its own negative is withdrawn",
+    "status": "done",
+    "detail": "Owner's call: Prepare the Roll's Film step no longer offers a positive roll a Conversion (As a Negative / Gains Only): a slide roll walks Film, Flat-Field, Flags and Window and is measured on its gains alone. Roll.positive_inverted, walked(), the positiveInverted preference, Preparing.positive and positive-picked are gone. A slide measured as its own negative before still renders through the reciprocal stage (the sidecar's invertedSource), comes back to Prepare as a positive and is measured again on its gains, its invertedSource cleared. The welcome's slide point says so. Check: window slides, a slide once measured as its own negative lands as a positive on the roll's gains, invertedSource false."
+  },
+  {
+    "id": 1041,
+    "type": "docs",
+    "title": "The welcome sheet names its update",
+    "status": "done",
+    "detail": "Owner's call: the heading reads \"ONI 1.5, the slide film and contact sheet update\" in place of \"What's new in ONI 1.5\"; the Help menu's item keeps What's New in ONI 1.5. English, French and Spanish."
   }
 ]

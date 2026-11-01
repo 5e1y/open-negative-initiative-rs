@@ -718,8 +718,8 @@ msgid "EXPORT"
 msgstr "EXPORTAR"
 
 #: crates/oni-ui/ui/help.slint
-msgid "What's new in ONI {}"
-msgstr "Novedades de ONI {}"
+msgid "ONI {}, the slide film and contact sheet update"
+msgstr "ONI {}, la actualización de diapositivas y hojas de contactos"
 
 #: crates/oni-ui/ui/help.slint
 msgid "Contact sheets, slides, and the whole roll at a glance."
@@ -750,12 +750,12 @@ msgid "The export panel exports the selection as one sheet, with a preview; the 
 msgstr "El panel de exportación exporta la selección como una sola hoja, con vista previa; la tecla naranja EXP. HOJA DE CONTACTOS lo abre."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slides, an experiment"
-msgstr "Diapositivas, un experimento"
+msgid "Slide films"
+msgstr "Diapositivas"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll converts a slide roll as a negative or by its gains alone; tell us how it goes."
-msgstr "Preparar el rollo convierte un rollo de diapositivas como un negativo o solo por sus ganancias; cuéntanos qué tal."
+msgid "Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are."
+msgstr "Preparar el rollo equilibra un rollo de diapositivas con un solo juego de ganancias para todos los fotogramas, con sus negros y blancos tal como están."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Slides on white"
@@ -1820,22 +1820,6 @@ msgstr "Cargar…"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Settings differ across the roll"
 msgstr "Los ajustes varían a lo largo del rollo"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Conversion"
-msgstr "Conversión"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "As a negative: each slide is inverted and converted as a negative is, its roll measured and its black picked on the film between the frames. Gains only: each slide keeps its black and white points at rest, its gains alone moved as a white balance moves them."
-msgstr "Como un negativo: cada diapositiva se invierte y se convierte como un negativo, se mide su carrete y su negro se toma en la película entre los fotogramas. Solo ganancias: cada diapositiva mantiene sus puntos negro y blanco en reposo y solo se mueven sus ganancias, como con un balance de blancos."
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "As a Negative"
-msgstr "Como un negativo"
-
-#: crates/oni-ui/ui/prepare.slint
-msgid "Gains Only"
-msgstr "Solo ganancias"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "Digitised with"
