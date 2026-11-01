@@ -1,4 +1,4 @@
-//! Edit Together as a contact sheet: the sheet's black under its frames, its heading, and each
+//! Edit Together as a contact sheet: the sheet's black under its frames, its logo, and each
 //! frame's place on its roll, orange under its picture as a film's edge print.
 
 use super::*;
@@ -12,15 +12,15 @@ impl Ctl {
     pub(super) fn number_frames(&self, id: u64) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
         let folders = self.roll_folders(&paths);
-        let band = laid(&vec![UNKNOWN; paths.len()]).heading.2 as usize;
+        let band = laid(&vec![UNKNOWN; paths.len()]).band.2 as usize;
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-            let plate = super::heading::drawn(band);
-            let heading = (plate.rgba8(), plate.width, plate.height);
-            with_shell(move |c| c.numbers_landed(id, numbers, heading));
+            let plate = super::logo::drawn(band);
+            let logo = (plate.rgba8(), plate.width, plate.height);
+            with_shell(move |c| c.numbers_landed(id, numbers, logo));
         });
     }
 
@@ -49,7 +49,7 @@ impl Ctl {
         };
         let Some(shown) = shown else { return };
         if let Some(w) = self.window() {
-            w.global::<Canvas>().set_heading(image(&bytes, width, height));
+            w.global::<Canvas>().set_logo(image(&bytes, width, height));
         }
         if let Some(shown) = shown {
             self.lay_sheet(shown);
@@ -65,7 +65,7 @@ impl Ctl {
         let (laid, band) = {
             let s = self.state.borrow();
             let Some(g) = s.together.as_ref() else { return };
-            (under(&g.numbers, &g.sheet.pictures), g.sheet.heading)
+            (under(&g.numbers, &g.sheet.pictures), g.sheet.band)
         };
         let (size, number_band) = (NUMBER as f64 * k, MARGIN as f64 * k);
         let points = |v: f64| (v / density) as f32;
@@ -80,7 +80,7 @@ impl Ctl {
         c.set_number_size(points(size));
         c.set_number_band(points(number_band));
         let (hx, hy, hw, hh) = band;
-        c.set_heading_box(SheetBox { x: points(sheet.0 + hx * k), y: points(sheet.1 + hy * k), width: points(hw * k), height: points(hh * k) });
+        c.set_logo_box(SheetBox { x: points(sheet.0 + hx * k), y: points(sheet.1 + hy * k), width: points(hw * k), height: points(hh * k) });
         if let Some(m) = moved_to(&c.get_numbers(), numbers) {
             c.set_numbers(m);
         }
@@ -92,7 +92,7 @@ impl Ctl {
         let c = w.global::<Canvas>();
         c.set_together(false);
         c.set_numbers(ModelRc::default());
-        c.set_heading(slint::Image::default());
+        c.set_logo(slint::Image::default());
     }
 }
 

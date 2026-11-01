@@ -1,4 +1,4 @@
-//! Edit Together's sheet: each frame framed to a tile and laid five to a row under its heading, at the
+//! Edit Together's sheet: each frame framed to a tile and laid five to a row above its logo, at the
 //! share of its size shown.
 
 use super::*;
@@ -47,25 +47,25 @@ pub(super) type Window = (u32, u32, u32, u32);
 /// tile one pixel past its place would not be drawn.
 const SLACK: f64 = 2.0;
 
-/// A sheet laid at full scale: each picture's place and its size, the heading's band, and the
+/// A sheet laid at full scale: each picture's place and its size, the logo's band, and the
 /// sheet's size, margin included.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct Sheet {
     pub pictures: Vec<Area>,
-    pub heading: Area,
+    pub band: Area,
     pub size: (f64, f64),
 }
 
-/// Frames of these proportions five to a row under the `HEADER` band, each `TILE` on its longest side:
+/// Frames of these proportions five to a row above the `BAND`, each `TILE` on its longest side:
 /// a column a tile wide, a row as tall as its tallest picture and each picture centred in both, `GAP`
-/// between columns, `ROWS_APART` between rows, `MARGIN` around the sheet and under the band, `FOOT`
-/// under the last row.
+/// between columns, `ROWS_APART` between rows, `MARGIN` around the sheet, `FOOT` between the last row
+/// and the band.
 pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
     let (tile, gap, apart, margin) = (TILE as f64, GAP as f64, ROWS_APART as f64, MARGIN as f64);
     let fitted: Vec<(f64, f64)> = proportions.iter().map(|&(w, h)| (tile * w / w.max(h).max(1e-9), tile * h / w.max(h).max(1e-9))).collect();
     let columns = fitted.len().clamp(1, COLUMNS) as f64;
     let mut pictures = Vec::with_capacity(fitted.len());
-    let mut y = 2.0 * margin + HEADER as f64;
+    let mut y = margin;
     for row in fitted.chunks(COLUMNS) {
         let height = row.iter().map(|p| p.1).fold(0.0, f64::max);
         for (c, &(w, h)) in row.iter().enumerate() {
@@ -74,9 +74,9 @@ pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
         y += height + apart;
     }
     // The last row is followed by the foot, not the rows' spacing.
-    let bottom = if pictures.is_empty() { y } else { y - apart } + FOOT as f64;
+    let band = if pictures.is_empty() { y } else { y - apart } + FOOT as f64;
     let width = 2.0 * margin + columns * tile + (columns - 1.0) * gap;
-    Sheet { pictures, heading: (margin, margin, width - 2.0 * margin, HEADER as f64), size: (width, bottom) }
+    Sheet { pictures, band: (margin, band, width - 2.0 * margin, BAND as f64), size: (width, band + BAND as f64 + margin) }
 }
 
 impl Sheet {
@@ -165,22 +165,23 @@ mod tests {
 
     #[test]
     fn a_crop_spans_a_tile_landscape_across_and_portrait_down_its_rows_as_tall_as_their_tallest() {
-        let (tile, gap, apart, margin, header) = (TILE as f64, GAP as f64, ROWS_APART as f64, MARGIN as f64, HEADER as f64);
+        let (tile, gap, apart, margin, band) = (TILE as f64, GAP as f64, ROWS_APART as f64, MARGIN as f64, BAND as f64);
         // A row of landscape frames, the third cropped tight, then a portrait one opening the second row.
         let mut frames = vec![LANDSCAPE; COLUMNS];
         frames[2] = (300.0, 200.0);
         frames.push(PORTRAIT);
         let sheet = laid(&frames);
-        let (low, top) = (tile * 2.0 / 3.0, 2.0 * margin + header);
-        assert_eq!(sheet.heading, (margin, margin, sheet.size.0 - 2.0 * margin, header), "the heading's band inside the margin");
-        assert_eq!(sheet.pictures[0], (margin, top, tile, low), "a landscape frame is a tile wide, a margin under the heading");
+        let (low, top) = (tile * 2.0 / 3.0, margin);
+        assert_eq!(sheet.pictures[0], (margin, top, tile, low), "a landscape frame is a tile wide, inside the margin");
         assert_eq!(sheet.pictures[2].2, tile, "a tight crop as wide as any other");
         let (x, y, w, h) = sheet.pictures[COLUMNS];
         assert_eq!((w, h), (low, tile), "a portrait frame is a tile tall");
         assert_eq!((x, y), (margin + (tile - low) / 2.0, top + low + apart), "under the first row, four columns' gaps apart");
         assert_eq!(apart, 2.0 * margin, "twin: the rows stand twice as far apart as the margin");
         let columns = COLUMNS as f64;
-        assert_eq!(sheet.size, (2.0 * margin + columns * tile + (columns - 1.0) * gap, top + low + apart + tile + 4.0 * margin), "four margins under the last row");
+        let foot = top + low + apart + tile + 4.0 * margin;
+        assert_eq!(sheet.band, (margin, foot, sheet.size.0 - 2.0 * margin, band), "the logo's band four margins under the last row");
+        assert_eq!(sheet.size, (2.0 * margin + columns * tile + (columns - 1.0) * gap, foot + band + margin), "and a margin under it");
         // Twin: a portrait frame in the first row makes it as tall as itself, the landscapes centred in it.
         frames[1] = PORTRAIT;
         let taller = laid(&frames);

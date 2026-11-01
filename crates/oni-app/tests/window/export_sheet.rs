@@ -1,5 +1,5 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
-//! gaps, each frame's number in orange under its picture, the logo on top, a foot of four margins.
+//! gaps, each frame's number in orange under its picture, a foot of four margins and the logo's band.
 
 use oni_app::app::export_card::{self, Ask, job::End};
 use oni_app::app::{Options, Shell};
@@ -68,8 +68,8 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     rig.until("the lines and sizes", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some) && e.get_dims().as_str() != "—");
     assert_eq!(e.get_dims(), "1500 × 1000", "a batch's size is its first photo's");
 
-    // One sheet: three frames a tile wide, 30 px apart, a 60 px margin around them and under the
-    // 270 px heading, four under the last row, as tall as B.
+    // One sheet: three frames a tile wide, 30 px apart, as tall as B, a 60 px margin around them, four
+    // under them, then the 270 px logo band.
     e.invoke_sheet_set(true);
     rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 1398");
     assert_eq!(e.get_key_title(), "EXPORT CONTACT SHEET");
@@ -89,14 +89,14 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let orange = |p: [u8; 3]| p[0] > 180 && p[1] > 90 && p[1] < 200 && p[2] < 90;
     let white = |p: [u8; 3]| p.iter().all(|v| *v > 200);
     // Under the first picture, centred in B's row, its number in orange: red over green over blue.
-    let bottom = 390 + (767 - 683) / 2 + 683;
+    let bottom = 60 + (767 - 683) / 2 + 683;
     let numbered = count(60..260, bottom..bottom + 60, &orange);
     assert!(numbered > 100, "the first number is orange under its picture: {numbered} pixels");
-    // The heading: the white logo across the first column, nothing beside it or under it.
-    assert!(count(60..1084, 60..330, &white) > 20_000, "the logo");
-    assert_eq!(count(1114..3192, 60..330, &|p| !black(p)), 0, "twin: nothing beside the logo");
-    assert_eq!(count(60..3192, 336..384, &|p| !black(p)), 0, "twin: the margin under the heading stays black");
-    // Under the last row's numbers, its foot is black to the sheet's bottom.
-    assert_eq!(count(0..3252, 1224..1398, &|p| !black(p)), 0, "the foot under the numbers");
+    // The foot under the row's numbers, black; then the white logo across the first column, nothing
+    // beside it, and the margin under it.
+    assert_eq!(count(0..3252, 896..1064, &|p| !black(p)), 0, "the foot under the numbers");
+    assert!(count(60..1084, 1067..1337, &white) > 20_000, "the logo");
+    assert_eq!(count(1114..3192, 1067..1337, &|p| !black(p)), 0, "twin: nothing beside the logo");
+    assert_eq!(count(0..3252, 1344..1398, &|p| !black(p)) + count(0..3252, 0..56, &|p| !black(p)), 0, "twin: the margins under it and above the row");
     let _ = std::fs::remove_dir_all(&root);
 }

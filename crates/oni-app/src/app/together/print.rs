@@ -1,5 +1,5 @@
 //! Edit Together's sheet written as one file: each frame decoded at a tile's side and laid row by row
-//! as the canvas lays it, on the sheet's black under its heading, each number set as `EdgePrint` sets it.
+//! as the canvas lays it, on the sheet's black above its logo, each number set as `EdgePrint` sets it.
 
 use super::*;
 use super::numbers::under;
@@ -51,8 +51,8 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
     for (x, y, n) in under(&captions.numbers, &sheet.pictures) {
         number(&mut picture, (x, y), n, captions.lettering, &mut context);
     }
-    let (hx, hy, hw, _) = sheet.heading;
-    super::heading::drawn(hw as usize).lay_on(&mut picture, (hx as i64, hy as i64));
+    let (bx, by, bw, _) = sheet.band;
+    super::logo::drawn(bw as usize).lay_on(&mut picture, (bx as i64, by as i64));
     Ok(Some(picture))
 }
 

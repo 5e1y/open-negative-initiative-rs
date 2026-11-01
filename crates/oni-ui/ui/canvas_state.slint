@@ -43,9 +43,9 @@ export global Canvas {
     // The numbers' ink and weight, which a sheet written to a file sets them in too.
     out property <color> number-ink: Colour.edge-print;
     out property <int> number-weight: Type.bold;
-    // The sheet's heading, drawn by Rust at the sheet's full scale, and its band on the canvas.
-    in property <image> heading;
-    in property <SheetBox> heading-box;
+    // The sheet's logo band, drawn by Rust at the sheet's full scale, and its place on the canvas.
+    in property <image> logo;
+    in property <SheetBox> logo-box;
     in property <image> before;
     in property <length> before-x;
     in property <length> before-y;

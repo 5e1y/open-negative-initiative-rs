@@ -598,8 +598,8 @@ msgid "Contact sheet"
 msgstr "Hoja de contactos"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Writes one file, the sheet the editor shows the photos on together: five to a row on black under the logo, numbered in orange by their place on their roll."
-msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila sobre negro bajo el logo, numeradas en naranja según su lugar en su carrete."
+msgid "Writes one file, the sheet the editor shows the photos on together: five to a row on black above the logo, numbered in orange by their place on their roll."
+msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila sobre negro encima del logo, numeradas en naranja según su lugar en su carrete."
 
 #: crates/oni-ui/ui/export.slint
 msgid "All photos on one sheet"

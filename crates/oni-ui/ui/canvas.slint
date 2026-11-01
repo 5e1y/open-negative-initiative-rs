@@ -35,13 +35,13 @@ export component CanvasCard inherits Card {
         }
         if Canvas.together: Picture { x: Canvas.sheet.x; y: Canvas.sheet.y; width: Canvas.sheet.width; height: Canvas.sheet.height; ground: Ground.sheet; }
         if Canvas.together: Picture {
-            x: Canvas.heading-box.x;
-            y: Canvas.heading-box.y;
-            width: Canvas.heading-box.width;
-            height: Canvas.heading-box.height;
+            x: Canvas.logo-box.x;
+            y: Canvas.logo-box.y;
+            width: Canvas.logo-box.width;
+            height: Canvas.logo-box.height;
             ground: Ground.sheet;
             fit: Fit.fill;
-            source: Canvas.heading;
+            source: Canvas.logo;
         }
         Picture {
             x: Canvas.frame-x;

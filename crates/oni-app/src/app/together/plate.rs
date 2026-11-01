@@ -1,4 +1,4 @@
-//! Ink on a clear plate, as the sheet's numbers and heading are set: text in the interface's face
+//! Ink on a clear plate, as the sheet's numbers and logo are set: text in the interface's face
 //! and the logo, in sRGB premultiplied by coverage, laid over the sheet's black or shown as is.
 
 use oni_export::Image as Picture;

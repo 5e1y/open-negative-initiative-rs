@@ -4890,5 +4890,12 @@
     "title": "Contact sheet: the logo alone in the heading, a foot of four margins under the last row",
     "status": "done",
     "detail": "Owner's call: the EAN and the roll's name leave the heading, the logo alone stays a column wide at its left (heading::drawn takes the plate's width only; Heading, Ctl::heading_of, the EAN tables, Canvas.heading-ink, Plate::rect and text anchors go with them). The margin after the last row is four margins, 240 px (FOOT in sheet::laid). The export panel's help says the sheet lies under the logo, in fr and es too. Checks: heading the logo spans the first column, centred in the band, nothing else drawn (twin: a sheet narrower than a tile sets it across it, smaller); sheet four margins under the last row; plate text starts at its pen (twin: a pen further left); window export_sheet a 3252 × 1398 file, the logo, nothing beside it (twin), the margin under the heading and the foot black; window together the sheet's ratio with its foot."
+  },
+  {
+    "id": 1027,
+    "type": "feature",
+    "title": "Contact sheet: the logo's band moves to the sheet's bottom, under the foot",
+    "status": "done",
+    "detail": "Owner's call: the Open Negative Initiative band goes at the bottom. sheet::laid starts the rows at the margin; after the last row the foot (four margins), then the logo's band (BAND, 270 px), then the margin. The heading's names follow: HEADER is BAND, Sheet.heading is Sheet.band, together/heading.rs is together/logo.rs, Canvas.heading and heading-box are Canvas.logo and logo-box. The export panel's help says above the logo, in fr and es too. Checks: sheet the band four margins under the last row and a margin under it; window export_sheet the foot black, the logo at the bottom left, nothing beside it (twin), the margins under it and above the row black; window together the band's place on the canvas (twin: a margin under it)."
   }
 ]
