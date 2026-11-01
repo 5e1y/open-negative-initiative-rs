@@ -225,13 +225,22 @@ export component Toolbar inherits Surface {
         // Several photos picked: their contact sheet's key, orange as its numbers, on one plate with export.
         if !Preparing.shown: ButtonGroup {
             plate: Bar.targets > 1;
-            if Bar.targets > 1: Word {
-                action: Act.export-sheet;
-                text: root.compact ? "" : @tr("EXP. CONTACT SHEET");
-                has-icon: root.compact;
-                icon: Icons.contact-sheet;
-                kind: ButtonKind.sheet;
-                help: @tr("Export the photos picked as one contact sheet");
+            // As FEEDBACKS: the zone's widths come from hidden copies, so the face shown never loops the window's width.
+            if Bar.targets > 1: Rectangle {
+                min-width: glyph-sizing.preferred-width;
+                preferred-width: sheet-sizing.preferred-width;
+                max-width: sheet-sizing.preferred-width;
+                horizontal-stretch: 0;
+                Word {
+                    width: self.preferred-width;
+                    x: parent.width - self.width;
+                    action: Act.export-sheet;
+                    text: root.compact ? "" : @tr("EXP. CONTACT SHEET");
+                    has-icon: root.compact;
+                    icon: Icons.contact-sheet;
+                    kind: ButtonKind.sheet;
+                    help: @tr("Export the photos picked as one contact sheet");
+                }
             }
             if Bar.update-title == "": Word {
                 action: Bar.editing ? Act.export : Act.add-folder;

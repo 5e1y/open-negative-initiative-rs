@@ -212,6 +212,8 @@ impl Ctl {
             (shown.map(|p| oni_library::paths::name(&p)).unwrap_or_default(), r.base_frame.min(r.frames.len().saturating_sub(1)), r.frames.len(), failure)
         };
         p.set_base_name(name.into());
+        let convertible = failure.is_some() && self.state.borrow().prepare.base_path().is_some_and(|b| crate::adobe_dng::is_nikon_he(std::path::Path::new(&b)));
+        p.set_scan_convertible(convertible);
         p.set_scan_failure(failure.unwrap_or_default().into());
         p.set_base_can_previous(index > 0);
         p.set_base_can_next(index + 1 < count);

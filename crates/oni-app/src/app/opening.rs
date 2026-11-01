@@ -51,6 +51,7 @@ impl Ctl {
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_read_only(read_only);
             w.global::<Canvas>().set_failure("".into());
+            w.global::<Canvas>().set_convertible(false);
             w.global::<Canvas>().set_busy(!absent);
             if !absent {
                 w.global::<Canvas>().set_status(tr!("{name} · decoding", name = stem(path)).into());

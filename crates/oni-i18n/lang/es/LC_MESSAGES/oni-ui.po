@@ -245,6 +245,10 @@ msgstr "Mostrar mi año en película"
 msgid "Read-only: settings will not be saved"
 msgstr "Solo lectura: los ajustes no se guardarán"
 
+#: crates/oni-ui/ui/canvas.slint crates/oni-ui/ui/prepare.slint
+msgid "Convert to DNG"
+msgstr "Convertir a DNG"
+
 #: crates/oni-ui/ui/canvas.slint
 msgid "Show the Library ({})"
 msgstr "Mostrar la fototeca ({})"
@@ -272,6 +276,42 @@ msgstr "Ocultar el panel ({})"
 #: crates/oni-ui/ui/confirm.slint
 msgid "CANCEL"
 msgstr "CANCELAR"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "The DNGs Are Written"
+msgstr "Los DNG están escritos"
+
+#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/help.slint
+msgid "Nikon High Efficiency RAW"
+msgstr "RAW High Efficiency de Nikon"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "Keep the new DNGs only"
+msgstr "Conservar solo los nuevos DNG"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "Recommended. The NEF files go to the Trash."
+msgstr "Recomendado. Los archivos NEF van a la Papelera."
+
+#: crates/oni-ui/ui/dng.slint
+msgid "Keep the incompatible NEF files"
+msgstr "Conservar los archivos NEF incompatibles"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "The best option if you already opened them in another software."
+msgstr "La mejor opción si ya los abrió en otro programa."
+
+#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/dng.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: crates/oni-ui/ui/dng.slint
+msgid "Download and Install"
+msgstr "Descargar e instalar"
+
+#: crates/oni-ui/ui/dng.slint crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
+msgid "OK"
+msgstr "Aceptar"
 
 #: crates/oni-ui/ui/ds/base.slint
 msgid "before"
@@ -312,10 +352,6 @@ msgstr "Ocultar {}"
 #: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint
 msgid "Done"
 msgstr "OK"
-
-#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/ds/forms.slint crates/oni-ui/ui/export.slint crates/oni-ui/ui/presets.slint
-msgid "OK"
-msgstr "Aceptar"
 
 #: crates/oni-ui/ui/ds/fields.slint
 msgid "W"
@@ -645,10 +681,6 @@ msgstr "Más brillante en pantallas HDR"
 msgid "EXIF as set beside each photo; nothing of the scanner unless left there"
 msgstr "EXIF tal como se definió junto a cada foto; nada del escáner salvo lo que se dejó ahí"
 
-#: crates/oni-app/src/app/masks.rs crates/oni-ui/ui/export.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/prepare.slint crates/oni-ui/ui/presets.slint
-msgid "Cancel"
-msgstr "Cancelar"
-
 #: crates/oni-app/src/app/export_card/job.rs crates/oni-ui/ui/export.slint
 msgid "Exporting…"
 msgstr "Exportando…"
@@ -818,8 +850,12 @@ msgid "A scan that cannot be read says why"
 msgstr "Un escaneo ilegible dice por qué"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll no longer waits on it; Nikon’s High Efficiency RAW (HE, HE*) is named, as LibRaw does not read it yet."
-msgstr "Preparar el rollo ya no se queda esperándolo; el RAW High Efficiency de Nikon (HE, HE*) se nombra, ya que LibRaw aún no lo lee."
+msgid "Prepare the Roll no longer waits on it."
+msgstr "Preparar el rollo ya no se queda esperándolo."
+
+#: crates/oni-ui/ui/help.slint
+msgid "A click converts a folder’s HE and HE* NEF files to lossless DNGs through Adobe DNG Converter, which ONI downloads and installs when it is missing."
+msgstr "Un clic convierte los NEF HE y HE* de una carpeta en DNG sin pérdida con Adobe DNG Converter, que ONI descarga e instala si falta."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"
@@ -2273,6 +2309,38 @@ msgstr "CONTINUAR"
 msgid "Click or press → to turn · ← to go back · Esc to leave"
 msgstr "Haz clic o pulsa → para avanzar · ← para volver · Esc para salir"
 
+#: crates/oni-app/src/adobe_dng.rs
+msgid "Adobe DNG Converter wrote no DNG."
+msgstr "Adobe DNG Converter no escribió ningún DNG."
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "the installer's disk image cannot be opened"
+msgstr "la imagen de disco del instalador no se abre"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "the disk image holds no installer"
+msgstr "la imagen de disco no contiene ningún instalador"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "the installer is not signed by Adobe"
+msgstr "el instalador no está firmado por Adobe"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "the installer cannot be opened"
+msgstr "el instalador no se abre"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "the installer was not run"
+msgstr "el instalador no se ejecutó"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "Adobe DNG Converter runs on macOS and Windows only"
+msgstr "Adobe DNG Converter solo funciona en macOS y Windows"
+
+#: crates/oni-app/src/adobe_dng.rs
+msgid "Adobe DNG Converter could not run: {error}"
+msgstr "Adobe DNG Converter no pudo ejecutarse: {error}"
+
 #: crates/oni-app/src/app/actions.rs
 msgid "Your latest settings could not be saved"
 msgstr "No se han podido guardar tus últimos ajustes"
@@ -2373,6 +2441,62 @@ msgstr "Corrección"
 msgid "Correction {n}"
 msgstr "Corrección {n}"
 
+#: crates/oni-app/src/app/dng.rs
+msgid "ONI reads Nikon’s High Efficiency RAW through Adobe DNG Converter, free from Adobe, which writes a lossless DNG beside each file. ONI downloads it from Adobe (about 1.8 GB), then opens its installer."
+msgstr "ONI lee el RAW High Efficiency de Nikon con Adobe DNG Converter, gratuito de Adobe, que escribe un DNG sin pérdida junto a cada archivo. ONI lo descarga de Adobe (unos 1,8 GB) y luego abre su instalador."
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Downloading Adobe DNG Converter from Adobe…"
+msgstr "Descargando Adobe DNG Converter de Adobe…"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Adobe’s installer is open: follow it to the end. ONI converts the photos once Adobe DNG Converter is installed."
+msgstr "El instalador de Adobe está abierto: sígalo hasta el final. ONI convierte las fotos en cuanto Adobe DNG Converter esté instalado."
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Adobe DNG Converter is not installed: its installer closed before the end."
+msgstr "Adobe DNG Converter no está instalado: su instalador se cerró antes del final."
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Converting the folder’s High Efficiency NEF files to DNG…"
+msgstr "Convirtiendo a DNG los archivos NEF High Efficiency de la carpeta…"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "The folder holds no High Efficiency NEF file left to convert."
+msgstr "La carpeta ya no contiene archivos NEF High Efficiency por convertir."
+
+#: crates/oni-app/src/app/dng.rs
+msgid "{done} MB of {total} MB"
+msgstr "{done} MB de {total} MB"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "{done} MB"
+msgstr "{done} MB"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Adobe DNG Converter could not be downloaded: {error}"
+msgstr "No se pudo descargar Adobe DNG Converter: {error}"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "Adobe DNG Converter could not be installed: {error}"
+msgstr "No se pudo instalar Adobe DNG Converter: {error}"
+
+#: crates/oni-app/src/app/dng.rs crates/oni-app/src/app/export_card/job.rs
+msgid "{done} of {total}"
+msgstr "{done} de {total}"
+
+#: crates/oni-app/src/app/dng.rs
+msgid "One DNG stands beside its NEF file, which ONI no longer shows."
+msgid_plural "{n} DNGs stand beside their NEF files, which ONI no longer shows."
+msgstr[0] "Un DNG está junto a su archivo NEF, que ONI ya no muestra."
+msgstr[1] "{n} DNG están junto a sus archivos NEF, que ONI ya no muestra."
+
+#: crates/oni-app/src/app/dng.rs
+msgid "One NEF file could not be moved to the Trash."
+msgid_plural "{n} NEF files could not be moved to the Trash."
+msgstr[0] "Un archivo NEF no pudo ir a la Papelera."
+msgstr[1] "{n} archivos NEF no pudieron ir a la Papelera."
+
 #: crates/oni-app/src/app/export_card/job.rs
 msgid "Stopping after this photo…"
 msgstr "Deteniendo tras esta foto…"
@@ -2380,10 +2504,6 @@ msgstr "Deteniendo tras esta foto…"
 #: crates/oni-app/src/app/export_card/job.rs
 msgid "Export Failed"
 msgstr "No se pudo exportar"
-
-#: crates/oni-app/src/app/export_card/job.rs
-msgid "{done} of {total}"
-msgstr "{done} de {total}"
 
 #: crates/oni-app/src/app/export_card/job.rs
 msgid "{n} photo exported"
@@ -4200,6 +4320,10 @@ msgstr "La actualización no está firmada correctamente y no se ha podido valid
 #: crates/oni-app/src/viewport.rs
 msgid "preview"
 msgstr "vista previa"
+
+#: crates/oni-app/src/web.rs
+msgid "the download ended before the file did"
+msgstr "la descarga terminó antes que el archivo"
 
 #: crates/oni-app/src/wrapped.rs
 msgid "This year"

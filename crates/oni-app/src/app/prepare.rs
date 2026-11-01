@@ -243,6 +243,16 @@ impl Roll {
         if self.frames.is_empty() { None } else { self.frames.get(self.base_frame.min(self.frames.len() - 1)) }
     }
 
+    /// The frame the base step shows, by path.
+    pub(in crate::app) fn base_path(&self) -> Option<String> {
+        self.base_shown().map(|f| f.path.clone())
+    }
+
+    /// Every frame of the roll, by path, in its order.
+    pub(in crate::app) fn frame_paths(&self) -> Vec<String> {
+        self.frames.iter().map(|f| f.path.clone()).collect()
+    }
+
     /// The frames whose full resolution the loupe holds ready: the base frame from the roll's entry, its
     /// neighbours on the base step, none past it, so the loupe's first picture is already the sensor's.
     fn fulls_wanted(&self) -> Vec<String> {

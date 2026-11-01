@@ -6,6 +6,7 @@ import { PresetDeck } from "preset_deck.slint";
 import { SpaceChip } from "export.slint";
 import { Absent, AbsentNote } from "missing.slint";
 import { KeyWords } from "key_words.slint";
+import { Converting } from "dng.slint";
 
 import { Canvas, Mark } from "canvas_state.slint";
 export { Canvas, Mark }
@@ -238,11 +239,15 @@ export component CanvasCard inherits Card {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
     }
-    if Canvas.failure != "": Label { role: TextRole.note; tone: Tone.warning;
-        text: Canvas.failure;
+    if Canvas.failure != "": VerticalLayout {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        wrap: no-wrap;
+        spacing: Space.s;
+        Label { role: TextRole.note; tone: Tone.warning; text: Canvas.failure; wrap: no-wrap; }
+        if Canvas.convertible: HorizontalLayout {
+            alignment: center;
+            Button { text: @tr("Convert to DNG"); clicked => { Converting.offered(); } }
+        }
     }
     // Below the read-only badge, so the cached thumbnail stays in view.
     if Absent.title != "": AbsentNote {

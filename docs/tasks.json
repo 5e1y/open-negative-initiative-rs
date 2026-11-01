@@ -5022,7 +5022,7 @@
     "type": "feature",
     "title": "The welcome sheet comes back for 1.5.1, with the Windows fix",
     "status": "done",
-    "detail": "EDITION 1.5.1, so the welcome opens once more on every machine; its 1.5 points stay, then the release's own: a switch of window no longer blanks the window on Windows (#1044), large 16-bit TIFFs (#1048), a scan that cannot be read says why (#1047, #1049). The 1.5.0 photo stays, as a patch release has none of its own. fr and es translated. Checks: help unit test (edition 1.5.1, its release the app's), window help (welcomeSeen 1.5.1)."
+    "detail": "EDITION 1.5.1, so the welcome opens once more on every machine; its 1.5 points stay, then the release's own: a switch of window no longer blanks the window on Windows (#1044), large 16-bit TIFFs (#1048), a scan that cannot be read says why (#1047), Nikon High Efficiency RAW converted through Adobe DNG Converter (#1049, #1050). The 1.5.0 photo stays, as a patch release has none of its own. fr and es translated. Checks: help unit test (edition 1.5.1, its release the app's), window help (welcomeSeen 1.5.1)."
   },
   {
     "id": 1046,
@@ -5051,5 +5051,19 @@
     "title": "Nikon's High Efficiency RAW is named instead of a LibRaw code",
     "status": "done",
     "detail": "Issue 12: LibRaw 0.22 identifies Nikon's HE and HE* NEFs (TicoRAW) but cannot unpack them. oni_open answers -6 (NIKON_HE) on LibRaw's nikon_he_load_raw decoder, and the decode says what it is and to shoot Lossless compressed RAW. Check: oni-decode nikon_he on raw.pixls.us' Z 8 samples (ONI_NIKON_HE_DIR), both HE files named; twin, the lossless NEF decodes."
+  },
+  {
+    "id": 1050,
+    "type": "feature",
+    "title": "Nikon High Efficiency RAW converted to DNG on a click, through Adobe DNG Converter",
+    "status": "done",
+    "detail": "Owner's flow (issue 12), on macOS and Windows. A frame LibRaw names Nikon HE (editor failure, Prepare's base step) offers CONVERT TO DNG. With Adobe DNG Converter installed, the folder's HE NEFs without a DNG are converted beside them in batches of four (-c -dng1.4 -p1: lossless JPEG, mosaic kept, so LibRaw still demosaics); a DNG already there is never handed over. Without it, ONI downloads the pinned 18.0 installer from Adobe's versioned link (1.8 GB, streamed with its count, a stall of 60 s gives up), checks Adobe's signature (pkgutil: Developer ID Installer Adobe Inc. JQ525L2MZD, notarised; Authenticode O=Adobe Inc. on Windows), opens it for the person's licence and password, then converts. Then the owner's choice: Keep the new DNGs only (Recommended, the NEFs to the system Trash through the injected discard) or Keep the incompatible NEF files; either way the listing drops an HE NEF whose DNG stands beside it. The editor then opens the frame's DNG, the roll comes back on its frames' DNGs. Measured on raw.pixls.us' Z 8 samples: three NEFs in 1.9 s; a lossless NEF and its DNG decode with the same chroma, the DNG 0.23 EV darker from Adobe's BaselineExposure. Checks: adobe_dng unit tests (Adobe's signature report and its twins; batches, counts, an existing DNG untouched, a stop after one batch; the listing drops the HE NEF beside its DNG, twin with none); window dng with a stand-in converter (offer when missing, conversion, NEF binned, the DNG opened; twin, a NEF kept beside its DNG stays unlisted; fails without the listing's filter)."
+  },
+  {
+    "id": 1051,
+    "type": "fix",
+    "title": "The contact sheet key no longer loops the window's width",
+    "status": "done",
+    "detail": "#1042 laid the EXP. CONTACT SHEET key straight in the bar's layout, so its compact face changed the layout's widths, which decide compact: a binding loop Slint warns may panic. The key now sits in a zone sized by hidden copies (its word, a glyph key), as FEEDBACKS does. Check: the interface compiles with no binding loop warning."
   }
 ]

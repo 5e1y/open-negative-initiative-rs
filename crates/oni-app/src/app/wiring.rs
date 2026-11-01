@@ -192,6 +192,7 @@ impl Ctl {
             p.row_clicked(i.max(0) as usize, command, shift);
         });
         me.wire_tree(&lib);
+        me.wire_dng();
         let p = me.clone();
         lib.on_tile_clicked(move |i, toggle, extend| {
             p.grid_took_keys();

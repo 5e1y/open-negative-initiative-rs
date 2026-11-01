@@ -58,6 +58,7 @@ mod paper_sheet_window;
 mod phone;
 mod phone_canvas;
 mod phone_tabs;
+mod dng;
 mod prepare;
 mod prepare_leftovers;
 mod prepare_masks;
@@ -193,6 +194,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does", prepare_masks::the_roll_loads_and_takes_its_mask_and_shows_and_measures_through_it_as_swift_does),
     ("prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan", prepare_loupe::the_base_loupe_shows_the_full_resolution_first_never_the_scan),
     ("prepare_loupe::an_unreadable_scan_says_why_on_the_base_step", prepare_loupe::an_unreadable_scan_says_why_on_the_base_step),
+    ("dng::a_high_efficiency_nef_converts_and_the_editor_opens_its_dng", dng::a_high_efficiency_nef_converts_and_the_editor_opens_its_dng),
     ("slides::a_slide_roll_takes_its_unflagged_slides_gains_through_one_window", slides::a_slide_roll_takes_its_unflagged_slides_gains_through_one_window),
     ("preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel", preset_deck::the_deck_answers_the_pointer_as_swift_s_carousel),
     ("presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does", presets::a_preset_is_saved_previewed_applied_edited_shared_and_deleted_as_swift_does),

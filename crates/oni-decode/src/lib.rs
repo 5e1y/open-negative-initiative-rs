@@ -301,6 +301,13 @@ pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours)
     decoded(path, exposure_gain, side, colours, true, Neutral::Swift)
 }
 
+/// Whether `path` is Nikon's High Efficiency RAW, told by LibRaw's identification alone.
+pub fn is_nikon_he(path: &Path) -> bool {
+    let Ok(mut source) = Source::open(path, Route::PLATFORM) else { return false };
+    let mut s = Session(unsafe { std::mem::zeroed() });
+    unsafe { oni_open(source.name(), source.take(), 1.0, 0, &mut s.0) == NIKON_HE }
+}
+
 /// `decode_for` balanced on `neutral`.
 pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
     decoded(path, exposure_gain, side, Colours::Matrix, true, neutral)

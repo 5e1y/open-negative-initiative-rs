@@ -1,0 +1,62 @@
+// Nikon's High Efficiency RAW through Adobe DNG Converter: its install offered, fetched and run,
+// the folder's frames converted beside them, then which files stay.
+import { Sheet, Label, Button, ButtonGroup, GroupAlign, ButtonKind, Progress, TextRole, Tone, Space } from "ds/ds.slint";
+
+export enum DngStage { offer, fetching, installing, converting, choice, failed }
+
+export global Converting {
+    in property <bool> shown;
+    in property <DngStage> stage;
+    in property <string> message;
+    // -1 sweeps while no count is known.
+    in property <float> fraction: -1;
+    in property <string> count;
+    // A frame that could not be decoded asks for its folder to be converted.
+    callback offered();
+    callback install();
+    callback cancelled();
+    // True keeps the new DNGs only, the NEF files sent to the Trash.
+    callback kept(bool);
+    callback closed();
+}
+
+component Option inherits VerticalLayout {
+    in property <string> text;
+    in property <string> note;
+    in property <bool> recommended;
+    callback chosen();
+    spacing: Space.xs;
+    Button { text: root.text; kind: root.recommended ? ButtonKind.accent : ButtonKind.plain; clicked => { root.chosen(); } }
+    Label { role: TextRole.note; tone: Tone.secondary; text: root.note; wrap: word-wrap; }
+}
+
+export component DngSheet inherits Sheet {
+    property <bool> working: Converting.stage == DngStage.fetching || Converting.stage == DngStage.installing || Converting.stage == DngStage.converting;
+    title: Converting.stage == DngStage.choice ? @tr("The DNGs Are Written") : @tr("Nikon High Efficiency RAW");
+    question: true;
+    dismissed => {
+        if (Converting.stage == DngStage.failed) { Converting.closed(); } else if (Converting.stage != DngStage.choice) { Converting.cancelled(); }
+    }
+    Label { text: Converting.message; tone: Tone.secondary; wrap: word-wrap; }
+    if root.working: Progress { fraction: Converting.fraction; }
+    if root.working && Converting.count != "": Label { role: TextRole.note; tone: Tone.secondary; text: Converting.count; }
+    if Converting.stage == DngStage.choice: VerticalLayout {
+        spacing: Space.m;
+        Option {
+            text: @tr("Keep the new DNGs only");
+            note: @tr("Recommended. The NEF files go to the Trash.");
+            recommended: true;
+            chosen => { Converting.kept(true); }
+        }
+        Option {
+            text: @tr("Keep the incompatible NEF files");
+            note: @tr("The best option if you already opened them in another software.");
+            chosen => { Converting.kept(false); }
+        }
+    }
+    if Converting.stage != DngStage.choice: ButtonGroup { plate: true; align: GroupAlign.end;
+        if Converting.stage != DngStage.failed: Button { text: @tr("Cancel"); clicked => { Converting.cancelled(); } }
+        if Converting.stage == DngStage.offer: Button { text: @tr("Download and Install"); kind: ButtonKind.accent; clicked => { Converting.install(); } }
+        if Converting.stage == DngStage.failed: Button { text: @tr("OK"); kind: ButtonKind.accent; clicked => { Converting.closed(); } }
+    }
+}

@@ -108,6 +108,7 @@ pub type Discard = Box<dyn Fn(&Path) -> std::io::Result<()>>;
 pub type Shower = Box<dyn Fn(&Path)>;
 
 mod options;
+mod dng;
 pub use options::{Options, PICKER_MESSAGE};
 
 /// The thumbnails pass and the edits' redraws, one render at a time for the app, a redraw first.

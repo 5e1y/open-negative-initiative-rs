@@ -8,12 +8,19 @@ use std::time::Duration;
 /// Long enough for a 44 MB archive on a slow line, short enough that a dead host gives up.
 const TIMEOUT: Duration = Duration::from_secs(300);
 
-fn client() -> Result<reqwest::Client, String> {
+/// A gigabyte's download gives up only when its bytes stop coming this long.
+const STALL: Duration = Duration::from_secs(60);
+
+fn builder() -> reqwest::ClientBuilder {
     static PROVIDER: Once = Once::new();
     PROVIDER.call_once(|| {
         let _ = rustls::crypto::ring::default_provider().install_default();
     });
-    reqwest::Client::builder().timeout(TIMEOUT).user_agent(crate::updates::user_agent()).build().map_err(|e| e.to_string())
+    reqwest::Client::builder().user_agent(crate::updates::user_agent())
+}
+
+fn client() -> Result<reqwest::Client, String> {
+    builder().timeout(TIMEOUT).build().map_err(|e| e.to_string())
 }
 
 fn run<T>(work: impl std::future::Future<Output = Result<T, String>>) -> Result<T, String> {
@@ -72,6 +79,40 @@ pub fn download(url: &str, folder: &Path) -> Result<PathBuf, String> {
     })?;
     std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
     std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+/// `download` streamed for a file too large to hold: `going` hears the bytes written and the length
+/// announced, and stops it by answering false; the file shows under its name only once whole.
+pub fn download_counted(url: &str, folder: &Path, going: &dyn Fn(u64, Option<u64>) -> bool) -> Result<PathBuf, String> {
+    use std::io::Write;
+    let path = landing(url, folder);
+    let part = path.with_file_name(format!("{}.part", path.file_name().map(|n| n.to_string_lossy()).unwrap_or_default()));
+    std::fs::create_dir_all(folder).map_err(|e| e.to_string())?;
+    let written = run(async {
+        let client = builder().read_timeout(STALL).build().map_err(|e| e.to_string())?;
+        let mut response = client.get(url).send().await.map_err(|e| e.to_string())?.error_for_status().map_err(|e| e.to_string())?;
+        let total = response.content_length();
+        let mut file = std::io::BufWriter::new(std::fs::File::create(&part).map_err(|e| e.to_string())?);
+        let mut written = 0u64;
+        while let Some(chunk) = response.chunk().await.map_err(|e| e.to_string())? {
+            file.write_all(&chunk).map_err(|e| e.to_string())?;
+            written += chunk.len() as u64;
+            if !going(written, total) {
+                return Err(String::new());
+            }
+        }
+        file.flush().map_err(|e| e.to_string())?;
+        match total {
+            Some(total) if total != written => Err(oni_i18n::tr("the download ended before the file did").into()),
+            _ => Ok(written),
+        }
+    });
+    if written.is_err() {
+        let _ = std::fs::remove_file(&part);
+    }
+    written?;
+    std::fs::rename(&part, &path).map_err(|e| e.to_string())?;
     Ok(path)
 }
 

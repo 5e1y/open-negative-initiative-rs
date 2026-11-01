@@ -84,6 +84,8 @@ export global Preparing {
     in property <bool> scan-ready;
     // Why the base frame's scan cannot be read; empty while it is being read.
     in property <string> scan-failure;
+    // The scan that failed is Nikon's High Efficiency RAW, which a DNG of it reads.
+    in property <bool> scan-convertible;
     in property <image> scan;
     in property <length> scan-x;
     in property <length> scan-y;

@@ -18,6 +18,7 @@ impl Ctl {
             Ok(d) => d,
             Err((path, e)) => {
                 let name = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+                let convertible = crate::adobe_dng::is_nikon_he(&path);
                 if self.state.borrow().open_path().map(PathBuf::from) != Some(path) {
                     return;
                 }
@@ -26,6 +27,7 @@ impl Ctl {
                 w.global::<Canvas>().set_busy(false);
                 let failure = if e == crate::render::cut_short() { tr!("{name}: cut short", name = name) } else { tr!("{name}: could not be decoded", name = name) };
                 w.global::<Canvas>().set_failure(failure.into());
+                w.global::<Canvas>().set_convertible(convertible);
                 self.clear_output();
                 self.say(&tr!("Not rendered: {e}", e = e));
                 return;

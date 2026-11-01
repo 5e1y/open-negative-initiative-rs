@@ -3,6 +3,7 @@
 import { Colour, Space, Depth, ShellStyle, ButtonStyle, Surface, Card, CardCorners, Label, TextRole, Tone, Button, ButtonKind, ButtonGroup, GroupAlign, Pager, Icons, Tabs, Toggle, Slider, SliderFill, Field, Scroller, Picture, Ground, EmptyState, FrameOverlay, FrameStyle, CardStyle, RollStyle, TileView, TileMarks, RingPlacement, Ring, Loupe, PassReorder, Picker, Fit, ButtonSize } from "ds/ds.slint";
 import { RollCell, Preparing } from "prepare_state.slint";
 import { MeasureFloor } from "measure_floor.slint";
+import { Converting } from "dng.slint";
 export { RollCell, Preparing } from "prepare_state.slint";
 
 component RollSlider inherits Slider {
@@ -266,6 +267,8 @@ component BaseSurface inherits VerticalLayout {
             height: parent.height;
             title: Preparing.scan-failure == "" ? @tr("Reading the Scan") : @tr("This Scan Cannot Be Read");
             detail: Preparing.scan-failure == "" ? @tr("The whole scan, its rebate included, shows here.") : Preparing.scan-failure;
+            action: Preparing.scan-convertible ? @tr("Convert to DNG") : "";
+            acted => { Converting.offered(); }
         }
         if Preparing.scan-ready: Picture {
             x: Preparing.scan-x;

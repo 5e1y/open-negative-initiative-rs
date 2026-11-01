@@ -46,6 +46,7 @@ fn stamped(survey: &Survey, path: &str) -> Option<Stamped> {
 pub fn read_rows(folder: &str, index: &LibraryIndex, place: &Place, alive: &dyn Fn() -> bool, land: Land) {
     let folder = folder.to_string();
     let mut survey = roots::surveyed(std::slice::from_ref(&folder), alive, place.computer);
+    crate::adobe_dng::superseded(&mut survey.images);
     // A read superseded drops nothing: what its walk did not reach is unknown, never gone.
     if survey.stopped || !alive() {
         return;

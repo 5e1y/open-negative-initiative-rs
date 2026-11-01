@@ -29,13 +29,14 @@ import { Transition, TransitionLine, TransitionSheet } from "transition.slint";
 import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
 import { Told, ToldNotice } from "told.slint";
 import { KeyWords } from "key_words.slint";
+import { Converting, DngSheet, DngStage } from "dng.slint";
 
 export { DS, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, SplashWindow, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
 export { RollGuide } from "roll_guide.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
 export { MaskDialog, Confirm, Transition, TransitionLine, Absent, Unsaved, Told, Stocks, StockBrand, StockRow, StockCell }
-export { Preparing, RollCell, Canvas, Mark, Act, KeyWords }
+export { Preparing, RollCell, Canvas, Mark, Act, KeyWords, Converting, DngStage }
 export { FieldProbe, ScrollProbe, KeyProbe, DepthProbe, GroupProbe, OutsideProbe, SubmenuProbe } from "ds/probes.slint";
 export { Raster, KeycapLook, Depth } from "ds/ds.slint";
 export { Ink, PlotLine, PlotDot, PlotKnob, PlotReadout, FolderChoice, AskKey, AskRole, PreviewState, Reach, EdgeNumber, SheetBox, SheetInks } from "ds/ds.slint";
@@ -157,7 +158,7 @@ export component MainWindow inherits AppWindow {
     out property <bool> sheet-shown: Presets.saving || Presets.editing || Confirm.shown || Pairing.shown || AppSettings.shown || Notice.shown
         || Navigator.catch-up-shown || Exporting.confirm-shown || Exporting.notice-shown || Stocks.shown
         || Exporting.papers-shown || Help.welcome-shown || Help.report-shown || Choice.shown || MaskDialog.shown
-        || Advice.shown || Wrapped.shown || Transition.shown || Unsaved.shown;
+        || Advice.shown || Wrapped.shown || Transition.shown || Unsaved.shown || Converting.shown;
     changed sheet-shown => { App.sheet-changed(); }
     // Gives the key monitor the keyboard back after a click elsewhere than a field.
     public function refocus() { keys.focus(); }
@@ -406,6 +407,7 @@ export component MainWindow inherits AppWindow {
     if Wrapped.shown: WrappedView { x: 0; y: 0; width: root.width; height: root.height; }
     if Transition.shown: TransitionSheet { x: 0; y: 0; width: root.width; height: root.height; }
     if Unsaved.shown: UnsavedSheet { x: 0; y: 0; width: root.width; height: root.height; }
+    if Converting.shown: DngSheet { x: 0; y: 0; width: root.width; height: root.height; }
     // Last, so a question asked over another sheet, as quitting's, is drawn over it.
     if Confirm.shown: ConfirmSheet { x: 0; y: 0; width: root.width; height: root.height; }
 
