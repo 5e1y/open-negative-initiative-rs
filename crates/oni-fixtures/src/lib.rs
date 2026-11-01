@@ -7,6 +7,8 @@ use std::path::PathBuf;
 pub const RAW_DIR: (&str, &str) = ("ONI_RAW_DIR", "/mnt/user-data/uploads/Downloads/Roll #8");
 /// The Lumix S1R calibration RW2s.
 pub const LUMIX_DIR: (&str, &str) = ("ONI_LUMIX_DIR", "/mnt/user-data/uploads/Negs");
+/// raw.pixls.us' Nikon Z 8 samples: one lossless NEF, one in each High Efficiency mode.
+pub const NIKON_HE_DIR: (&str, &str) = ("ONI_NIKON_HE_DIR", "/mnt/user-data/uploads/Documents/oni-samples/Nikon Z 8");
 /// The Swift app's `--decode` and `--render` dumps.
 pub const REFERENCE_DIR: (&str, &str) = ("ONI_REFERENCE", "/mnt/user-data/uploads/Downloads/oni-reference");
 /// The Swift app's renders of `oni-pipeline/tests/adversarial/branches.json`, by `scripts/adversarial-dump.sh`.

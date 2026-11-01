@@ -264,8 +264,8 @@ component BaseSurface inherits VerticalLayout {
         if !Preparing.scan-ready: EmptyState {
             width: parent.width;
             height: parent.height;
-            title: @tr("Reading the Scan");
-            detail: @tr("The whole scan, its rebate included, shows here.");
+            title: Preparing.scan-failure == "" ? @tr("Reading the Scan") : @tr("This Scan Cannot Be Read");
+            detail: Preparing.scan-failure == "" ? @tr("The whole scan, its rebate included, shows here.") : Preparing.scan-failure;
         }
         if Preparing.scan-ready: Picture {
             x: Preparing.scan-x;

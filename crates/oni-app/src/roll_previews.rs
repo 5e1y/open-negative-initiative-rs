@@ -38,8 +38,9 @@ pub struct Bitmap {
 pub enum Out {
     Tile(String, Bitmap),
     Card(String, Bitmap),
-    /// The base's scan and the size of its full resolution, which the loupe is laid at before it lands.
-    Scan(String, Bitmap, (usize, usize)),
+    /// The base's scan and the size of its full resolution, which the loupe is laid at before it
+    /// lands; else why it cannot be read.
+    Scan(String, Result<(Bitmap, (usize, usize)), String>),
     /// The loupe's full resolution, none when it cannot be decoded.
     Full(String, Option<Bitmap>),
 }
@@ -256,8 +257,9 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 let scan = reduced(graph, &path, oni_measure::reader::MEASURE_SIDE).map(|s| (encoded(&s.linear, seed), whole(&s)));
                 let (lock, _) = &*queue;
                 let fresh = { let q = lock.lock().expect("roll previews"); current(&q) && q.scan.is_none() };
-                if fresh && let Some((b, size)) = scan {
-                    post(session, Out::Scan(path, b, size));
+                // An empty failure is a decode superseded while it waited, which a later ask answers.
+                if fresh && !matches!(&scan, Err(e) if e.is_empty()) {
+                    post(session, Out::Scan(path, scan));
                 }
             }
             // Posted whatever was asked since: the window keeps the base frame's and its neighbours'.
@@ -276,7 +278,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 });
             }
             Work::Large(path) => {
-                let large = reduced(graph, &path, oni_measure::reader::MEASURE_SIDE).map(Arc::new);
+                let large = reduced(graph, &path, oni_measure::reader::MEASURE_SIDE).ok().map(Arc::new);
                 let (lock, wake) = &*queue;
                 let mut q = lock.lock().expect("roll previews");
                 if let Some(large) = large.filter(|_| current(&q) && q.shown.as_deref() == Some(path.as_str())) {
@@ -286,7 +288,7 @@ fn run(queue: Arc<(Mutex<Queue>, Condvar)>, post: Post) {
                 }
             }
             Work::Decode(path) => {
-                let source = reduced(graph, &path, TILE_SIDE).map(Arc::new);
+                let source = reduced(graph, &path, TILE_SIDE).ok().map(Arc::new);
                 let (lock, _) = &*queue;
                 let mut q = lock.lock().expect("roll previews");
                 let (Some(source), true) = (source, current(&q) && q.settings.contains_key(&path)) else { continue };
@@ -322,10 +324,10 @@ fn reading(path: &str) -> Reading {
 }
 
 /// `RawDecode.linear(longestSide:)`, or the measuring copy: the decode reduced to `side`, its edge rebuilt.
-fn reduced(graph: &mut Graph, path: &str, side: f64) -> Option<Source> {
-    let decoded = render::decode_for(Path::new(path), reading(path), side.ceil() as usize).ok()?;
+fn reduced(graph: &mut Graph, path: &str, side: f64) -> Result<Source, String> {
+    let decoded = render::decode_for(Path::new(path), reading(path), side.ceil() as usize)?;
     let l = decoded.linear;
-    let uploaded = graph.upload(l.width as u32, l.height as u32, &l.pixels).ok()?;
+    let uploaded = graph.upload(l.width as u32, l.height as u32, &l.pixels).map_err(|e| e.to_string())?;
     drop(l.pixels);
     let long = l.width.max(l.height) as f64;
     let mut image = Image::new(&uploaded);
@@ -333,8 +335,8 @@ fn reduced(graph: &mut Graph, path: &str, side: f64) -> Option<Source> {
         image = oni_pipeline::stages::rebuilt_edge(image.lanczos(side / long));
     }
     let e = image.extent();
-    let pixels = graph.render(&image, e, None).ok()?;
-    Some(Source { linear: Linear { width: e.w as usize, height: e.h as usize, pixels }, full_width: decoded.full_width })
+    let pixels = graph.render(&image, e, None).map_err(|e| e.to_string())?;
+    Ok(Source { linear: Linear { width: e.w as usize, height: e.h as usize, pixels }, full_width: decoded.full_width })
 }
 
 /// `Pipeline.framed` on a held source, its mask and patches laid, then on screen values, inverted

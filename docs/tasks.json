@@ -5022,7 +5022,7 @@
     "type": "feature",
     "title": "The welcome sheet comes back for 1.5.1, with the Windows fix",
     "status": "done",
-    "detail": "EDITION 1.5.1, so the welcome opens once more on every machine; its 1.5 points stay and a last one tells that a switch of window no longer blanks the window on Windows (#1044). The 1.5.0 photo stays, as a patch release has none of its own. fr and es translated. Checks: help unit test (edition 1.5.1, its release the app's), window help (welcomeSeen 1.5.1)."
+    "detail": "EDITION 1.5.1, so the welcome opens once more on every machine; its 1.5 points stay, then the release's own: a switch of window no longer blanks the window on Windows (#1044), large 16-bit TIFFs (#1048), a scan that cannot be read says why (#1047, #1049). The 1.5.0 photo stays, as a patch release has none of its own. fr and es translated. Checks: help unit test (edition 1.5.1, its release the app's), window help (welcomeSeen 1.5.1)."
   },
   {
     "id": 1046,
@@ -5030,5 +5030,26 @@
     "title": "Version 1.5.1",
     "status": "done",
     "detail": "oni-app 1.5.1, for the release carrying #1044 and #1045."
+  },
+  {
+    "id": 1047,
+    "type": "fix",
+    "title": "A base scan that cannot be read says why instead of reading forever",
+    "status": "done",
+    "detail": "Issue 12: the roll previews' worker dropped a base scan whose decode failed, and Prepare never asked again, so the base step read 'Reading the Scan' forever with nothing in the log. The failure now lands (Out::Scan carries the decode's reason; one superseded while it waited still says nothing), the base step reads 'This Scan Cannot Be Read' with the reason, and the log names it under the frame's token. Check: window prepare_loupe, a broken TIFF beside a readable one, the reason shown on its base step; twin, the readable scan says nothing (fails when only a decoded scan is posted)."
+  },
+  {
+    "id": 1048,
+    "type": "fix",
+    "title": "Large 16-bit TIFFs read past the image reader's own 512 MB",
+    "status": "done",
+    "detail": "Issue 12: the image crate's default limits refuse a 45 Mpx 16-bit RGB TIFF written in one strip (272 MB of pixels, the strip past what the 512 MB leave), which ImageIO reads; the 8-bit export passed. plain::read now allows 4 GB, the export's budget. Check: oni-decode plain, a 600 x 400 16-bit TIFF in one strip reads; twin, the same under a 2 MB limit is refused."
+  },
+  {
+    "id": 1049,
+    "type": "fix",
+    "title": "Nikon's High Efficiency RAW is named instead of a LibRaw code",
+    "status": "done",
+    "detail": "Issue 12: LibRaw 0.22 identifies Nikon's HE and HE* NEFs (TicoRAW) but cannot unpack them. oni_open answers -6 (NIKON_HE) on LibRaw's nikon_he_load_raw decoder, and the decode says what it is and to shoot Lossless compressed RAW. Check: oni-decode nikon_he on raw.pixls.us' Z 8 samples (ONI_NIKON_HE_DIR), both HE files named; twin, the lossless NEF decodes."
   }
 ]

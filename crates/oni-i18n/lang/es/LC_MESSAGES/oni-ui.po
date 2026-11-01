@@ -806,6 +806,22 @@ msgid "Clicking outside the window and back no longer blanks it for an instant."
 msgstr "Hacer clic fuera de la ventana y volver ya no la deja en blanco un instante."
 
 #: crates/oni-ui/ui/help.slint
+msgid "Large 16-bit TIFFs"
+msgstr "TIFF de 16 bits grandes"
+
+#: crates/oni-ui/ui/help.slint
+msgid "A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."
+msgstr "Un TIFF de 16 bits de 45 Mpx o más se abre, en el editor y en Preparar el rollo."
+
+#: crates/oni-ui/ui/help.slint
+msgid "A scan that cannot be read says why"
+msgstr "Un escaneo ilegible dice por qué"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Prepare the Roll no longer waits on it; Nikon’s High Efficiency RAW (HE, HE*) is named, as LibRaw does not read it yet."
+msgstr "Preparar el rollo ya no se queda esperándolo; el RAW High Efficiency de Nikon (HE, HE*) se nombra, ya que LibRaw aún no lo lee."
+
+#: crates/oni-ui/ui/help.slint
 msgid "Website"
 msgstr "Sitio web"
 
@@ -1892,6 +1908,10 @@ msgstr "Midiendo…"
 #: crates/oni-ui/ui/prepare.slint
 msgid "Reading the Scan"
 msgstr "Lectura del escaneo"
+
+#: crates/oni-ui/ui/prepare.slint
+msgid "This Scan Cannot Be Read"
+msgstr "Este escaneo no se puede leer"
 
 #: crates/oni-ui/ui/prepare.slint
 msgid "The whole scan, its rebate included, shows here."
@@ -4072,6 +4092,10 @@ msgstr "su contenedor es ilegible"
 #: crates/oni-app/src/render/decode.rs
 msgid "the file ends before its picture does: an interrupted copy? Copy it again from its source."
 msgstr "el archivo termina antes que su imagen: ¿una copia interrumpida? Cópialo de nuevo desde su origen."
+
+#: crates/oni-app/src/render/decode.rs
+msgid "it is Nikon’s High Efficiency RAW (HE or HE*), which LibRaw does not read yet: set the camera to Lossless compressed RAW"
+msgstr "es el RAW High Efficiency de Nikon (HE o HE*), que LibRaw aún no lee: ajuste la cámara en RAW con compresión sin pérdida"
 
 #: crates/oni-app/src/render/decode.rs
 msgid "its samples are unreadable"

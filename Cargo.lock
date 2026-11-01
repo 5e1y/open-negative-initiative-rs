@@ -4341,6 +4341,7 @@ version = "0.1.0"
 dependencies = [
  "cc",
  "image",
+ "oni-fixtures",
  "oni-hack",
  "oni-settings",
 ]

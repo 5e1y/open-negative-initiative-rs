@@ -95,6 +95,8 @@ pub(crate) struct Roll {
     card: Option<(String, Image)>,
     /// The base's scan, its size, and its size at full resolution.
     scan: Option<(String, Image, (usize, usize), (usize, usize))>,
+    /// The base frame whose scan cannot be read, and why.
+    unreadable: Option<(String, String)>,
     /// The loupe's full resolutions, of the base frame and its neighbours, and the one asked since when.
     pub(in crate::app) fulls: Vec<(String, Image, (usize, usize))>,
     asked_full: Option<(String, Instant)>,
@@ -157,6 +159,7 @@ impl Default for Roll {
             tiles: HashMap::new(),
             card: None,
             scan: None,
+            unreadable: None,
             fulls: Vec::new(),
             asked_full: None,
             pointer: None,

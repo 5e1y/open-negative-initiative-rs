@@ -79,6 +79,8 @@ export component WelcomeSheet inherits Sheet {
         Point { title: @tr("Trash from the editor"); text: @tr("The next frame of the roll opens in its place."); }
         Point { title: @tr("{} beside a photo", KeyWords.command + "A"); text: @tr("The folder's photos show together; a click on one shows it alone again."); }
         Point { title: @tr("No more flicker on Windows"); text: @tr("Clicking outside the window and back no longer blanks it for an instant."); }
+        Point { title: @tr("Large 16-bit TIFFs"); text: @tr("A 16-bit TIFF of 45 Mpx and more opens, in the editor and in Prepare the Roll."); }
+        Point { title: @tr("A scan that cannot be read says why"); text: @tr("Prepare the Roll no longer waits on it; Nikon’s High Efficiency RAW (HE, HE*) is named, as LibRaw does not read it yet."); }
         HorizontalLayout {
             spacing: Space.s;
             Button { text: @tr("Website"); clicked => { Help.website(); } }

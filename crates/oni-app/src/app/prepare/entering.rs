@@ -67,7 +67,7 @@ impl Ctl {
             r.session += 1;
             r.tiles.clear();
             r.card = None;
-            r.scan = None;
+            (r.scan, r.unreadable) = (None, None);
             (r.fulls, r.asked_full) = (Vec::new(), None);
             r.asked_scan = None;
             r.shown_path = None;
@@ -185,7 +185,7 @@ impl Ctl {
             rgb_passes::release();
             r.tiles.clear();
             r.card = None;
-            r.scan = None;
+            (r.scan, r.unreadable) = (None, None);
             (r.fulls, r.asked_full) = (Vec::new(), None);
             if let Some(p) = &r.previews {
                 p.reset(r.session);

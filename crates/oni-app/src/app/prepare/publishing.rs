@@ -205,11 +205,14 @@ impl Ctl {
     pub(in crate::app) fn publish_base(&self) {
         let Some(w) = self.window() else { return };
         let p = w.global::<Preparing>();
-        let (name, index, count) = {
+        let (name, index, count, failure) = {
             let r = &self.state.borrow().prepare;
-            (r.base_shown().map(|f| oni_library::paths::name(&f.path)).unwrap_or_default(), r.base_frame.min(r.frames.len().saturating_sub(1)), r.frames.len())
+            let shown = r.base_shown().map(|f| f.path.clone());
+            let failure = r.unreadable.as_ref().filter(|(p, _)| shown.as_ref() == Some(p)).map(|(_, why)| sentence(why));
+            (shown.map(|p| oni_library::paths::name(&p)).unwrap_or_default(), r.base_frame.min(r.frames.len().saturating_sub(1)), r.frames.len(), failure)
         };
         p.set_base_name(name.into());
+        p.set_scan_failure(failure.unwrap_or_default().into());
         p.set_base_can_previous(index > 0);
         p.set_base_can_next(index + 1 < count);
         let Some((rect, size)) = self.scan_rect() else {
@@ -277,3 +280,10 @@ fn lay_cells(p: &Preparing, cells: Vec<RollCell>, sources: &[(String, u8)], laid
     }
 }
 
+/// A decode's reason, written after a colon elsewhere, as a sentence of its own.
+fn sentence(why: &str) -> String {
+    let mut chars = why.chars();
+    let first = chars.next().map(|c| c.to_uppercase().collect::<String>()).unwrap_or_default();
+    let end = if why.ends_with(['.', '?', '!']) { "" } else { "." };
+    format!("{first}{}{end}", chars.as_str())
+}

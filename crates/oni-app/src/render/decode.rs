@@ -107,7 +107,11 @@ fn place() -> Result<crate::decode_gate::Slot<'static>, String> {
 fn mosaic(path: &Path, side: usize, slide: bool) -> Result<Decoded, String> {
     let _slot = place()?;
     let neutral = if slide { oni_decode::Neutral::Slide } else { oni_decode::Neutral::Swift };
-    let (d, factor) = oni_decode::decode_on(path, 1.0, side, neutral).map_err(|e| if e.is_cut_short() { cut_short() } else { tr!("LibRaw cannot decode it (code {code})", code = e.0) })?;
+    let (d, factor) = oni_decode::decode_on(path, 1.0, side, neutral).map_err(|e| match e {
+        e if e.is_cut_short() => cut_short(),
+        e if e.is_nikon_he() => tr("it is Nikon’s High Efficiency RAW (HE or HE*), which LibRaw does not read yet: set the camera to Lossless compressed RAW").into(),
+        e => tr!("LibRaw cannot decode it (code {code})", code = e.0),
+    })?;
     let full_width = (d.width * factor) as f64;
     Ok(Decoded { linear: Linear { width: d.width, height: d.height, pixels: d.pixels }, full_width, undeclared: None })
 }

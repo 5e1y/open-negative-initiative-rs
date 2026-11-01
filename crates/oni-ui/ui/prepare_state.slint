@@ -82,6 +82,8 @@ export global Preparing {
     in-out property <length> footer-width;
     in-out property <length> footer-height;
     in property <bool> scan-ready;
+    // Why the base frame's scan cannot be read; empty while it is being read.
+    in property <string> scan-failure;
     in property <image> scan;
     in property <length> scan-x;
     in property <length> scan-y;

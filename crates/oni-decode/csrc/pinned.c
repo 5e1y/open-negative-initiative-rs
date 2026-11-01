@@ -85,6 +85,12 @@ int oni_open(const char *path, void *stream, float exposure_gain, int min_side, 
     out->raw = lr;
     int rc = oni_attach(lr, path, stream);
     if (rc != LIBRAW_SUCCESS) { oni_release(out); return rc; }
+    // -6 for Nikon's High Efficiency RAW, which LibRaw names but cannot unpack.
+    libraw_decoder_info_t decoder;
+    if (libraw_get_decoder_info(lr, &decoder) == LIBRAW_SUCCESS && decoder.decoder_name && !strcmp(decoder.decoder_name, "nikon_he_load_raw()")) {
+        oni_release(out);
+        return -6;
+    }
     int longest = lr->sizes.width > lr->sizes.height ? lr->sizes.width : lr->sizes.height;
     if (min_side > 0 && longest >= 2 * min_side) {
         p->half_size = 1;

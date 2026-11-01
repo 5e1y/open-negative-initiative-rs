@@ -93,10 +93,16 @@ pub struct DecodeError(pub i32);
 pub const NO_COLOUR_MATRIX: i32 = -4;
 /// The file ends before its pixels do: a copy interrupted or still running.
 pub const CUT_SHORT: i32 = -5;
+/// Nikon's High Efficiency RAW (HE, HE*), which LibRaw identifies but cannot unpack.
+pub const NIKON_HE: i32 = -6;
 
 impl DecodeError {
     pub fn is_cut_short(&self) -> bool {
         self.0 == CUT_SHORT
+    }
+
+    pub fn is_nikon_he(&self) -> bool {
+        self.0 == NIKON_HE
     }
 }
 

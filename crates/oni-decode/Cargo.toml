@@ -9,6 +9,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 oni-hack = { version = "0.1", path = "../oni-hack" }
 
 [dev-dependencies]
+oni-fixtures.workspace = true
 oni-settings.workspace = true
 
 [build-dependencies]

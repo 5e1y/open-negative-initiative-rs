@@ -18,10 +18,14 @@ impl Ctl {
                 }
                 Out::Card(path, b) => r.card = Some((path, picture(&b))),
                 // A picture drawn again for the same photo is laid again, whatever its size.
-                Out::Scan(path, b, whole) => {
+                Out::Scan(path, Ok((b, whole))) => {
                     let size = (b.width, b.height);
                     r.scan = Some((path, picture(&b), size, whole));
                     (r.laid_scan, r.laid_loupe) = (None, None);
+                }
+                Out::Scan(path, Err(why)) => {
+                    crate::timing::line(&format!("the base scan of {} cannot be read: {why}", crate::anonymity::token(&path)));
+                    r.unreadable = Some((path, why));
                 }
                 // Kept while the base frame or a neighbour; the next one missing is asked as it publishes.
                 Out::Full(path, b) => {

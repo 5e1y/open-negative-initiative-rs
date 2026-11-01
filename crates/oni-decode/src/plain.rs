@@ -1,7 +1,7 @@
 //! A file neither LibRaw nor the linear container reads, as ImageIO hands it to Core Image: its
 //! encoded values on [0, 1], upright, its embedded profile, and whether it holds one grey channel.
 
-use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, codecs::tiff::TiffDecoder, imageops::FilterType};
+use image::{DynamicImage, ImageDecoder, ImageFormat, ImageReader, Limits, codecs::tiff::TiffDecoder, imageops::FilterType};
 use std::path::Path;
 
 pub struct Encoded {
@@ -20,7 +20,18 @@ pub struct Encoded {
 /// sampled on its code values as ImageIO reduces before Core Image linearises; Catmull-Rom is the
 /// filter nearest ImageIO's, 0.002 to 0.005 off on three scans, where a triangle is 0.002 to 0.006.
 pub fn read(path: &Path, longest_side: Option<f64>) -> Option<Encoded> {
-    let reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
+    read_within(path, longest_side, ALLOWED)
+}
+
+/// What one read may allocate: the reader's own 512 MB refuse a 45 Mpx 16-bit TIFF in one strip,
+/// where ImageIO reads it; 4 GB is the export's budget.
+const ALLOWED: u64 = 4 << 30;
+
+fn read_within(path: &Path, longest_side: Option<f64>, allowed: u64) -> Option<Encoded> {
+    let mut reader = ImageReader::open(path).ok()?.with_guessed_format().ok()?;
+    let mut limits = Limits::default();
+    limits.max_alloc = Some(allowed);
+    reader.limits(limits);
     let tiff = reader.format() == Some(ImageFormat::Tiff);
     let mut decoder = reader.into_decoder().ok()?;
     let mut icc = decoder.icc_profile().ok().flatten();
@@ -87,6 +98,39 @@ mod tests {
         assert_eq!((small.width, small.height, small.full), (10, 5, (40, 20)));
         // Twin: a side past the file's own size leaves it whole, never enlarged.
         assert_eq!(read(&path, Some(400.0)).unwrap().width, 40);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// An uncompressed 16-bit RGB TIFF in one strip, as an editor may write a large scan.
+    fn one_strip(path: &Path, w: u32, h: u32) {
+        let data_len = w * h * 6;
+        let (bits_at, ifd_at) = (8 + data_len, 8 + data_len + 6);
+        let mut out = b"II*\0".to_vec();
+        out.extend(ifd_at.to_le_bytes());
+        out.extend((0..w * h * 3).flat_map(|i| ((i % 60_000) as u16).to_le_bytes()));
+        out.extend([16, 0, 16, 0, 16, 0]);
+        let entries: [(u16, u16, u32, u32); 8] = [(256, 4, 1, w), (257, 4, 1, h), (258, 3, 3, bits_at), (259, 3, 1, 1), (262, 3, 1, 2), (273, 4, 1, 8), (277, 3, 1, 3), (279, 4, 1, data_len)];
+        out.extend((entries.len() as u16).to_le_bytes());
+        for (tag, kind, count, value) in entries {
+            out.extend(tag.to_le_bytes());
+            out.extend(kind.to_le_bytes());
+            out.extend(count.to_le_bytes());
+            out.extend(if kind == 3 && count == 1 { u32::from(value as u16) } else { value }.to_le_bytes());
+        }
+        out.extend(0u32.to_le_bytes());
+        std::fs::write(path, out).unwrap();
+    }
+
+    #[test]
+    fn a_16_bit_tiff_in_one_strip_reads_past_the_readers_own_limit() {
+        let dir = std::env::temp_dir().join(format!("oni-plain-strip-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("Scan.tif");
+        one_strip(&path, 600, 400);
+        let read = read(&path, Some(300.0)).expect("the scan reads");
+        assert_eq!((read.width, read.height, read.full), (300, 200, (600, 400)));
+        // Twin: the same file under a limit as near its size as 512 MB is to a 45 Mpx scan is refused.
+        assert!(read_within(&path, Some(300.0), 2_000_000).is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

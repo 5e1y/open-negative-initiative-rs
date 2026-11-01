@@ -160,3 +160,44 @@ pub(crate) fn the_base_loupe_shows_the_full_resolution_first_never_the_scan() {
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
+
+/// A frame whose scan cannot be read says why on the base step, never left reading.
+pub(crate) fn an_unreadable_scan_says_why_on_the_base_step() {
+    let gpu = match oni_app::render::Device::open() {
+        Ok(gpu) => gpu,
+        Err(e) => return eprintln!("{e}: the base step's failure is not exercised"),
+    };
+    let root = std::env::temp_dir().join(format!("oni-app-prepare-unreadable-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&root);
+    let folder = root.join("Scans");
+    common::graded_tiff(&folder.join("A.tif"), 600, 400, 0.8);
+    std::fs::write(folder.join("B.tif"), b"II*\0not a picture").unwrap();
+    let rig = common::rig(std::env::temp_dir());
+    let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
+    let options = Options { support: root.join("Support"), caches: root.join("Caches"), picker: Box::new(|| None), require_roll: true, ..Options::default() };
+    let shell = Shell::new(Box::new(store), oni_app::render::Engine::shared(&gpu), options).unwrap();
+    rig.window.dispatch_event(WindowEvent::ScaleFactorChanged { scale_factor: 1.0 });
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    shell.window.show().unwrap();
+    let ctl = shell.ctl.clone();
+    let w = &shell.window;
+    let p = w.global::<Preparing>();
+    shell.open_folder(&folder);
+    rig.until("the folder read", Duration::from_secs(60), || ctl.state.borrow().read_done());
+    let first = oni_app::app::tiles(w).into_iter().min_by_key(|t| t.index).unwrap().index;
+    w.global::<Library>().invoke_tile_clicked(first, false, false);
+    rig.pump();
+    w.global::<Bar>().invoke_act(oni_app::Act::PrepareRoll);
+    rig.until("the roll's surface", Duration::from_secs(30), || p.get_shown());
+    p.invoke_step_picked(2);
+    rig.pump();
+    rig.until("the readable scan", Duration::from_secs(60), || p.get_scan_ready() && p.get_base_name() == "A.tif");
+    assert_eq!(p.get_scan_failure(), "", "twin: a scan read says nothing");
+    p.invoke_base_next();
+    rig.pump();
+    rig.until("the unreadable scan's reason", Duration::from_secs(60), || p.get_base_name() == "B.tif" && !p.get_scan_failure().is_empty());
+    assert!(!p.get_scan_ready());
+    println!("B.tif: {}", p.get_scan_failure());
+    drop(shell);
+    let _ = std::fs::remove_dir_all(&root);
+}
