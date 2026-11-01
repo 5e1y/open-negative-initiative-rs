@@ -5009,5 +5009,12 @@
     "title": "A contact sheet's ground, numbers and logo follow a resize at once",
     "status": "done",
     "detail": "Resizing the window moved the sheet's texture with the view while its ground, numbers and logo waited for the next render. A resize now lays the shown sheet again where the view lays it (Ctl::lay_together), every overlay with it. Check: window together, the window shrunk with the sheet shown, the texture's and the logo's places on the ground unchanged before any render; its twin, the ground did move (it fails without the fix)."
+  },
+  {
+    "id": 1044,
+    "type": "fix",
+    "title": "Switching to another window and back no longer blanks the window on Windows",
+    "status": "done",
+    "detail": "On Windows the menu bar is native (muda), and Slint rebuilds it whenever a value it reads changes, turning the whole window's drawing off and on meanwhile (WM_SETREDRAW): the window vanished, then showed white under its menu bar. Eight bare-key items read the key monitor's has-focus, which every switch of window turns. They now read KeyMonitor.held, which follows the focus within the window and ignores a window activation. Checks: oni-ui menus, every bare-key item guarded by keys.held, twins a line without the guard and one guarded by has-focus; window sheets, another window active, has-focus gone and held kept, and held lost to a field (fails when held follows every focus loss)."
   }
 ]

@@ -74,7 +74,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.pump();
     println!("shot {}", rig.shot("report-sheet").display());
     assert!(help.get_report_shown());
-    assert!(!w.get_keys_focused(), "the message field holds the keys");
+    assert!(!w.get_keys_focused() && !w.get_keys_held(), "the message field holds the keys");
     let live = menus.get_live();
     assert!(!live.remove && !live.medal && !live.export && !live.open && !live.undo, "nothing behind the sheet is live");
     rig.key("x");
@@ -87,6 +87,14 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     assert!(!help.get_report_shown(), "Escape from the field reaches the sheet");
     rig.pump();
     assert!(w.get_keys_focused() && menus.get_live().remove, "closed, the keys and the menus come back");
+
+    // Another window active leaves the menus' guard as it is: Windows blanks the window at each rebuild.
+    rig.window.dispatch_event(WindowEvent::WindowActiveChanged(false));
+    rig.pump();
+    assert!(!w.get_keys_focused() && w.get_keys_held(), "the focus leaves with the window, the guard stays");
+    rig.window.dispatch_event(WindowEvent::WindowActiveChanged(true));
+    rig.pump();
+    assert!(w.get_keys_focused() && w.get_keys_held(), "back, the key monitor holds the keyboard again");
 
     // The welcome is as modal as Swift's sheet: a click beside it leaves it, Return closes it.
     ctl.act(oni_app::Act::Welcome);

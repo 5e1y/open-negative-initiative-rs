@@ -12,6 +12,11 @@ export global Outside {
 export component KeyMonitor inherits FocusScope {
     property <int> released: Outside.released;
     changed released => { self.focus(); }
+    // Whether the keyboard is the monitor's within the window, a switch of window aside: the menus
+    // read it, as each change rebuilds Windows' menu bar and blanks the whole window meanwhile.
+    out property <bool> held;
+    focus-gained(reason) => { self.held = true; }
+    focus-lost(reason) => { if (reason != FocusReason.window-activation) { self.held = false; } }
 }
 
 // The window's size, which the window keeps: a submenu turns back at its edge.

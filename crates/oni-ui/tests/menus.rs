@@ -29,14 +29,14 @@ fn every_menu_shortcut_is_claimed_once() {
 }
 
 /// The menu lines whose shortcut is a bare key, and whether each answers only while the window's
-/// own key scope holds the focus.
+/// own key scope holds the keyboard, a switch of window aside.
 fn bare_keys(slint: &str) -> Vec<(String, bool)> {
     slint
         .lines()
         .filter_map(|l| {
             let chord = l.split("shortcut: @keys(").nth(1)?.split(')').next()?;
             let bare = !["Control", "Alt", "Meta"].iter().any(|m| chord.contains(m));
-            bare.then(|| (chord.to_string(), l.contains("&& keys.has-focus;")))
+            bare.then(|| (chord.to_string(), l.contains("&& keys.held;")))
         })
         .collect()
 }
@@ -48,8 +48,11 @@ fn a_bare_key_answers_only_while_the_window_holds_the_focus() {
     let app = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/ui/app.slint")).unwrap();
     let keys = bare_keys(&app);
     assert!(keys.len() >= 6 && keys.iter().all(|(_, guarded)| *guarded), "{keys:?}");
-    // Twin: a medal line written without the guard is caught.
-    let open = app.replace("enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-silver); }", "enabled: Menus.live.medal; activated => { App.menu(Act.medal-silver); }");
-    assert_ne!(open, app);
-    assert!(bare_keys(&open).iter().any(|(chord, guarded)| chord == "\"2\"" && !guarded));
+    // Twins: a medal line written without the guard, or guarded by the focus a switch of window turns.
+    let silver = "enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-silver); }";
+    for guard in ["", " && keys.has-focus"] {
+        let open = app.replace(silver, &format!("enabled: Menus.live.medal{guard}; activated => {{ App.menu(Act.medal-silver); }}"));
+        assert_ne!(open, app);
+        assert!(bare_keys(&open).iter().any(|(chord, guarded)| chord == "\"2\"" && !guarded), "{guard}");
+    }
 }

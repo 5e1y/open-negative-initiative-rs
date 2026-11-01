@@ -141,6 +141,7 @@ export component MainWindow inherits AppWindow {
     title: @tr("Open Negative Initiative");
     icon: @image-url("icons/app-icon.png");
     out property <bool> keys-focused: keys.has-focus;
+    out property <bool> keys-held: keys.held;
     // Where the shown note lands; a help mark in the editor panel opens left of it, under its tab bar.
     out property <TipBox> tip-box: tips.box;
     out property <length> panel-x: root.width - ShellStyle.panel-width - (App.panel-hidden ? Space.s : 0px);
@@ -176,8 +177,8 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: @tr("Refresh"); shortcut: @keys(Control + "r"); enabled: Menus.live.refresh; activated => { App.menu(Act.refresh); } }
             MenuItem { title: @tr("Show the Selected Photo"); enabled: Menus.live.show-selected; activated => { App.menu(Act.show-selected); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.has-focus; activated => { App.menu(Act.remove); } }
-            MenuItem { title: Menus.titles.restore; shortcut: @keys(Control + Shift + Backspace); enabled: Menus.live.restore && keys.has-focus; activated => { App.menu(Act.restore); } }
+            MenuItem { title: Menus.titles.remove; shortcut: @keys(Control + Backspace); enabled: Menus.live.remove && keys.held; activated => { App.menu(Act.remove); } }
+            MenuItem { title: Menus.titles.restore; shortcut: @keys(Control + Shift + Backspace); enabled: Menus.live.restore && keys.held; activated => { App.menu(Act.restore); } }
         }
         Menu {
             title: @tr("Edit");
@@ -196,8 +197,8 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: Menus.titles.panel; shortcut: @keys(Control + Alt + "]"); enabled: Menus.live.hide-panel; activated => { App.menu(Act.hide-panel); } }
             MenuItem { title: @tr("Crop and Straighten"); shortcut: @keys(Control + "k"); enabled: Menus.live.framing; activated => { App.menu(Act.framing); } }
             MenuItem { title: Menus.titles.correcting; enabled: Menus.live.correction; activated => { App.menu(Act.correction); } }
-            MenuItem { title: @tr("Bigger Brush"); shortcut: @keys("]"); enabled: Menus.live.bigger-brush && keys.has-focus; activated => { App.menu(Act.bigger-brush); } }
-            MenuItem { title: @tr("Smaller Brush"); shortcut: @keys("["); enabled: Menus.live.smaller-brush && keys.has-focus; activated => { App.menu(Act.smaller-brush); } }
+            MenuItem { title: @tr("Bigger Brush"); shortcut: @keys("]"); enabled: Menus.live.bigger-brush && keys.held; activated => { App.menu(Act.bigger-brush); } }
+            MenuItem { title: @tr("Smaller Brush"); shortcut: @keys("["); enabled: Menus.live.smaller-brush && keys.held; activated => { App.menu(Act.smaller-brush); } }
             MenuItem { title: Menus.titles.mirror; shortcut: @keys(Control + Shift + "m"); enabled: Menus.live.mirror; activated => { App.menu(Act.mirror); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.sound; activated => { App.menu(Act.toggle-sound); } }
@@ -207,10 +208,10 @@ export component MainWindow inherits AppWindow {
         }
         Menu {
             title: @tr("Labels");
-            MenuItem { title: @tr("None"); shortcut: @keys("0"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-none); } }
-            MenuItem { title: @tr("Bronze"); shortcut: @keys("1"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-bronze); } }
-            MenuItem { title: @tr("Silver"); shortcut: @keys("2"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-silver); } }
-            MenuItem { title: @tr("Gold"); shortcut: @keys("3"); enabled: Menus.live.medal && keys.has-focus; activated => { App.menu(Act.medal-gold); } }
+            MenuItem { title: @tr("None"); shortcut: @keys("0"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-none); } }
+            MenuItem { title: @tr("Bronze"); shortcut: @keys("1"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-bronze); } }
+            MenuItem { title: @tr("Silver"); shortcut: @keys("2"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-silver); } }
+            MenuItem { title: @tr("Gold"); shortcut: @keys("3"); enabled: Menus.live.medal && keys.held; activated => { App.menu(Act.medal-gold); } }
             MenuSeparator { }
             MenuItem { title: Menus.titles.filter; shortcut: @keys(Control + "l"); enabled: Menus.live.cycle-filter; activated => { App.menu(Act.cycle-filter); } }
         }
