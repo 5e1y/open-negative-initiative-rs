@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use crate::common;
 
-const FILM_TYPE: &str = "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are.";
+const FILM_TYPE: &str = "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K.";
 const MEASURED_ROLL: &str = "Every setting here is the roll's: moved on this photo, it reaches every photo measured with it, each keeping its own look. A photo of the folder left out of that measurement can join it, or the measured ones can become a roll of their own.";
 
 /// Sweeps the panel under its tab bar until the card saying `note` opens.

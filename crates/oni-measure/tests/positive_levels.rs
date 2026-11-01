@@ -1,5 +1,5 @@
-//! A slide's key: its cells' cast brought to grey by the gains alone, what cannot speak of the light
-//! left out, its windows at rest; a negative still gets Classic's steps.
+//! A slide's gains: the white picked brought to grey by them alone, a black or clipped one placing
+//! nothing, its windows at rest; a negative's key still gets Classic's steps.
 
 use oni_core::balance::levelled;
 use oni_measure::auto_levels::{self, Balance, keyed, shift};
@@ -53,47 +53,21 @@ fn pressed(mode: ConversionMode) -> (Balance, Vec<[f32; 3]>) {
     (b, asked)
 }
 
-/// A slide's cells: a magenta cast over its tones, a saturated red subject, clipped lights and the
-/// sensor's black.
-fn cells() -> Vec<[f32; 3]> {
-    let mut c: Vec<[f32; 3]> = (0..60).map(|i| 0.2 + 0.008 * i as f32).map(|v| [v + 0.03, v - 0.03, v + 0.03]).collect();
-    c.extend((0..30).map(|_| [0.8, 0.25, 0.2]));
-    c.extend((0..10).map(|_| [0.995; 3]));
-    c.extend((0..10).map(|_| [0.005; 3]));
-    c
-}
-
-/// Where each channel's median of `kept` lands once `stops` moved it.
-fn landed(kept: &[[f32; 3]], stops: [f32; 3]) -> [f32; 3] {
-    [0, 1, 2].map(|k| {
-        let mut v: Vec<f32> = kept.iter().map(|c| c[k]).collect();
-        v.sort_by(f32::total_cmp);
-        v[v.len() / 2] + shift(stops[k], POSITIVE)
-    })
-}
-
 #[test]
-fn a_slide_s_gains_bring_its_cast_to_grey_and_leave_out_what_cannot_speak_of_the_light() {
-    let all = cells();
-    let stops = oni_measure::slide_gains::gains(&all, POSITIVE).expect("cells vote");
-    assert_eq!(stops[1], 0.0, "green holds");
-    let cast = &all[..60];
-    let at = landed(cast, stops);
-    assert!((at[0] - at[1]).abs() < 2e-3 && (at[2] - at[1]).abs() < 2e-3, "the cast lands grey: {at:?}");
-    let kept = oni_measure::slide_gains::voting(&all);
-    assert!(kept.iter().all(|c| c.iter().all(|v| (0.02..=0.98).contains(v))), "no black, no clipped light votes");
-    assert!(!kept.contains(&[0.8, 0.25, 0.2]), "the saturated subject votes not");
-    // Twin: every cell voting, the red subject pulls the balance off the cast's grey.
-    let medians = [0, 1, 2].map(|k| {
-        let mut v: Vec<f32> = all.iter().map(|c| c[k]).collect();
-        v.sort_by(f32::total_cmp);
-        v[v.len() / 2]
-    });
-    let naive = [medians[1] - medians[0], 0.0, medians[1] - medians[2]].map(|t| auto_levels::stops_for_shift(t, POSITIVE));
-    let off = landed(cast, naive);
-    assert!((off[0] - off[1]).abs() > 0.02 || (off[2] - off[1]).abs() > 0.02, "{off:?}");
-    // Nothing usable, nothing placed.
-    assert_eq!(oni_measure::slide_gains::gains(&[[0.0; 3], [1.0; 3]], POSITIVE), None);
+fn a_picked_white_s_cast_is_brought_to_grey_by_the_gains_alone() {
+    // A white under a warm light: red above green above blue on the counted window.
+    let white = [0.74, 0.70, 0.61];
+    let stops = oni_measure::slide_gains::white(white, POSITIVE).expect("the white speaks of the light");
+    assert!(stops[0] < stops[1] && stops[1] < stops[2], "red down, blue up: {stops:?}");
+    let at = [0, 1, 2].map(|k| white[k] + shift(stops[k], POSITIVE));
+    assert!((at[0] - at[1]).abs() < 2e-3 && (at[2] - at[1]).abs() < 2e-3, "the white lands grey: {at:?}");
+    // Its colour alone moves: the gains' mean holds, where green held still would lift it.
+    assert!(stops.iter().sum::<f32>().abs() < 1e-5, "{stops:?}");
+    let green_held = [0, 1, 2].map(|k| auto_levels::stops_for_shift(white[1] - white[k], POSITIVE));
+    assert!(green_held.iter().sum::<f32>().abs() > 0.05, "{green_held:?}");
+    // Twins: a clipped light or the sensor's black holds no colour of the light, and places nothing.
+    assert_eq!(oni_measure::slide_gains::white([0.99, 0.97, 0.90], POSITIVE), None);
+    assert_eq!(oni_measure::slide_gains::white([0.30, 0.01, 0.20], POSITIVE), None);
 }
 
 #[test]

@@ -786,8 +786,8 @@ msgid "Slide films"
 msgstr "Diapositivas"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are."
-msgstr "Preparar el rollo equilibra un rollo de diapositivas con un solo juego de ganancias para todos los fotogramas, con sus negros y blancos tal como están."
+msgid "Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
+msgstr "Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Slides on white"
@@ -1642,8 +1642,8 @@ msgid "Film Type"
 msgstr "Tipo de película"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are."
-msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas con un solo juego de ganancias para todos los fotogramas, con sus negros y blancos tal como están."
+msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K."
+msgstr "Qué es la película: un negativo en color, una diapositiva o blanco y negro. Una diapositiva se lee como un RAW normal, sin separar nunca sus colorantes; Preparar el rollo equilibra un rollo de diapositivas sobre un blanco o un gris en el que hace clic, solo su color; sin clic, las diapositivas conservan los 5500 K de la cámara."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -3582,12 +3582,16 @@ msgstr[0] "{names} no contiene nada que medir: toma los ajustes del carrete sin 
 msgstr[1] "{names} no contienen nada que medir: toman los ajustes del carrete sin influir en ellos."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. The roll's gains are read on what this frame holds in every unflagged slide."
-msgstr "Dibuja el marco dentro de la imagen, lejos del portadiapositivas y de los bordes de la película, y compruébalo en cada escaneo con el deslizador. Las ganancias del carrete se leen en lo que este marco contiene en cada diapositiva sin marcar."
+msgid "Pick a White or Grey"
+msgstr "Elegir un blanco o un gris"
 
 #: crates/oni-app/src/app/prepare/model/step.rs
-msgid "Flag slides whose colours stand apart: a sunset, a lit stage, one colour filling the frame. They still take the roll's gains, but left unflagged, one of them can tint the whole roll."
-msgstr "Marca las diapositivas de colores aparte: una puesta de sol, un escenario iluminado, un color que llena el encuadre. Reciben igualmente las ganancias del carrete, pero sin marcar, una sola puede teñir todo el carrete."
+msgid "Draw the frame inside the picture, clear of the holder and the film's edges, and use the slider to check it on every scan. Every slide keeps it as its measuring frame."
+msgstr "Dibuje el marco dentro de la imagen, lejos del soporte y de los bordes de la película, y compruébelo en cada escaneo con el control deslizante. Cada diapositiva lo conserva como marco de medición."
+
+#: crates/oni-app/src/app/prepare/model/step.rs
+msgid "Choose a scan, then click on something white or grey: a cloud, a wall, a grey road, or the bare light through a sprocket hole. The roll's gains make its colour neutral and keep its brightness; skipped, the slides keep the camera's 5500 K. Avoid blacks: a slide's are rarely neutral."
+msgstr "Elija un escaneo y haga clic en algo blanco o gris: una nube, una pared, una carretera gris o la luz desnuda a través de una perforación. Las ganancias del rollo neutralizan su color y conservan su brillo; sin clic, las diapositivas conservan los 5500 K de la cámara. Evite los negros: los de una diapositiva rara vez son neutros."
 
 #: crates/oni-app/src/app/prepare/model/step.rs
 msgid "Choose the film and what you digitised it with. The wrong film type converts every frame of the roll wrong."
@@ -3648,6 +3652,10 @@ msgstr[1] "Las pasadas de {n} fotogramas están más separadas que los propios f
 #: crates/oni-app/src/app/prepare/publishing.rs crates/oni-app/src/app/roll_tab.rs
 msgid "None selected"
 msgstr "Ninguna seleccionada"
+
+#: crates/oni-app/src/app/prepare/publishing.rs
+msgid "Nothing picked: the slides keep 5500 K."
+msgstr "Nada elegido: las diapositivas conservan 5500 K."
 
 #: crates/oni-app/src/app/prepare/publishing.rs
 msgid "No base picked yet."

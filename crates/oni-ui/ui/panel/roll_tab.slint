@@ -49,7 +49,7 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Film Type");
         demo: "film-type";
-        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are.");
+        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll on a white or grey you click, its colour alone; without a click, the slides keep the camera's 5500 K.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];

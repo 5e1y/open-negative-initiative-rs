@@ -41,36 +41,20 @@ pub fn placed(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balanc
     auto_levels::two_steps(&first, s.gains.stops, s.mode, 0.0, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// The Auto levels key on one frame, read in front of the levels; a slide's moves its gains alone.
+/// The Auto levels key on one frame, read in front of the levels.
 pub fn levels(r: &mut Reader, copy: Copy, s: &PipelineSettings) -> Option<Balance> {
-    if s.mode == ConversionMode::Positive {
-        return slide_read(r, copy, s).map(|read| read.balance);
-    }
     auto_levels::keyed(s.gains.stops, s.mode, |stops| r.reading(copy, &at_gains(s, stops), Stage::Levels).histogram)
 }
 
-/// Prepare the Roll on a slide: the frame's own Auto levels key through its window, laid on `start`.
-pub fn slide_levelled(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<PipelineSettings> {
-    slide_read(r, copy, start).map(|read| read.settings)
-}
-
-/// A slide read at rest gains through its window: its own gains, and the reading and cells a roll
-/// pools.
+/// A slide read at rest gains through its window: what the roll's screen sums.
 pub struct SlideRead {
-    pub balance: Balance,
-    pub settings: PipelineSettings,
     pub reading: Histogram,
-    pub cells: Vec<[f32; 3]>,
 }
 
+/// `None` for a blank slide: no cell of it holds a colour, every one black or clipped.
 pub fn slide_read(r: &mut Reader, copy: Copy, start: &PipelineSettings) -> Option<SlideRead> {
-    let rest = [Gains::BASE; 3];
-    let read = r.reading(copy, &at_gains(start, rest), Stage::Levels);
-    let stops = crate::slide_gains::gains(&read.cells, start.mode)?;
-    let shift = [0, 1, 2].map(|c| auto_levels::shift(stops[c] - start.gains.stops[c], start.mode));
-    let balance = Balance { stops, levels: auto_levels::resting(start.mode), shift };
-    let settings = balance::levelled(&balance.core(), start);
-    Some(SlideRead { balance, settings, reading: read.histogram, cells: read.cells })
+    let read = r.reading(copy, &at_gains(start, [Gains::BASE; 3]), Stage::Levels);
+    read.cells.iter().any(crate::slide_gains::usable).then_some(SlideRead { reading: read.histogram })
 }
 
 /// `AutoLevels.ends`: step two alone, the gains held.

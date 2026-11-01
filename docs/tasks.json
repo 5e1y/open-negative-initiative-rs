@@ -5079,5 +5079,12 @@
     "title": "A slide's Source Balance shows temperature and tint alone; the AUTO LEVELS key is withdrawn",
     "status": "done",
     "detail": "Owner's call (2026-11-01): on a slide, Source Balance hides its three gain sliders and keeps the temperature and tint (fields 30, 31), which still move the same three gains; negatives keep Swift's three. The slide-only AUTO LEVELS key of Per-Channel Levels is withdrawn with what served it alone: PanelState.auto-levels and levelling, Ctl::auto_levels (rolls/levelling.rs), measuring::levels_outcomes, Several::auto_levels. oni-measure's auto levels stays, as the roll's measure uses it. The film type's help says what Prepare does to a slide now (one set of gains, its blacks and whites left). Checks: window slides without the key's sections; the catalogues hold no text of the key."
+  },
+  {
+    "id": 1054,
+    "type": "change",
+    "title": "A slide roll's gains come from a white or grey picked, its colour alone; none picked, none laid",
+    "status": "done",
+    "detail": "Owner's call (2026-11-01). The gains-only vote (#1011 to #1014: the cells' typical chroma brought to grey) is scene-bound: on the owner's 2025-07-16 2 roll of autumn leaves (Sony A7R II) it set blue +0.80 stop and turned the roll blue, where the clouds asked +0.30 and the river +0.47. Prepare the Roll now walks the base step on a slide roll as Pick a White or Grey: the point clicked is read uncropped at rest (key::base, positive), and slide_gains::white brings its colour to grey with the gains' mean held, as the bare light is brighter than the film's white (owner); a black or clipped pick places nothing. One gains for the roll, windows at rest, kept as measuredGains; skipped, every slide's gains go back to rest, the camera's 5500 K. The Flags step leaves slide rolls, nothing voting; the slide's reading stays for the roll's screen and its blank frames. Withdrawn: slide_gains::voting and gains, key::slide_levelled, the positive branch of key::levels. Checks: oni-measure positive_levels (a warm white to grey, the gains' mean held; twins, a clipped or black pick None, green held would lift the level), slide_roll (the neutral border asks no gains, a warm ramp red down and blue up, a darker exposure the same gains); prepare::slides step walk and film change; window slides (the white picked on a warm ramp, every slide red down and blue up with the mean held; twin, skipped, every slide at rest)."
   }
 ]

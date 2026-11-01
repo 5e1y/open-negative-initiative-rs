@@ -89,11 +89,14 @@ impl Ctl {
             .map(SharedString::from)
             .collect();
         let look = r.look();
-        let base_note = r.base.as_ref().map_or(tr("No base picked yet.").to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
-        let action = if step == Step::Window { measure_title(ticked - flagged) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
+        let unpicked = if r.film == ConversionMode::Positive { tr("Nothing picked: the slides keep 5500 K.") } else { tr("No base picked yet.") };
+        let base_note = r.base.as_ref().map_or(unpicked.to_string(), |b| tr!("On {name}", name = oni_library::paths::name(&b.path)));
+        // A slide roll walks no flags step: every slide ticked is measured.
+        let measured = if r.film == ConversionMode::Positive { ticked } else { ticked - flagged };
+        let action = if step == Step::Window { measure_title(measured) } else if filled(step, &r.flat, r.base.is_some()) { tr("NEXT").into() } else { tr("SKIP").into() };
         let heading = match measuring {
             Some((done, total)) => tr!("Measuring {done} of {total}\u{2026}", done = done, total = total),
-            None => step.title().to_string(),
+            None => step.title(r.film).to_string(),
         };
         let passes_note = if r.capture == Capture::RgbPasses && r.grouping.is_none() {
             tr!("{count} frames, grouped when the roll was last measured.", count = frames.len())
@@ -157,7 +160,7 @@ impl Ctl {
         lay_cells(&p, cells, &sources, &laid, &fresh);
         p.set_back_shown(step != Step::Film && measuring.is_none());
         p.set_action_title(action.into());
-        p.set_action_enabled(step != Step::Window || ticked > flagged);
+        p.set_action_enabled(step != Step::Window || measured > 0);
         p.set_card_picture(card);
         self.publish_passes(&p);
         self.publish_card();

@@ -1,10 +1,10 @@
-//! Prepare the Roll on slides: one window for the roll, each frame's gains aligned on its own through
-//! it, its windows at rest; a negative roll still combines into one reference.
+//! Prepare the Roll on slides: the roll's gains from a white picked on one slide, its windows at rest,
+//! one window laid on every slide; a negative roll still combines into one reference.
 
 use oni_measure::key::{self, Decoded, Measurer};
 use oni_measure::roll;
 use oni_measure::window::in_crop;
-use oni_settings::cg::Rect;
+use oni_settings::cg::{Point, Rect};
 use oni_settings::{ConversionMode, PipelineSettings};
 
 const SIDE: (u32, u32) = (300, 200);
@@ -43,9 +43,11 @@ fn measurer() -> Option<Measurer> {
     ))
 }
 
-fn levelled(m: &Measurer, path: &str, window: Rect, before: &PipelineSettings) -> PipelineSettings {
-    let start = roll::slide(before, window, None, 0.0);
-    m.with(path, &start, |r, copy| key::slide_levelled(r, copy, &start)).expect("the slide reads")
+/// The gains a click at `unit` on the frame's scan gives the roll, the frame read uncropped at rest.
+fn picked(m: &Measurer, path: &str, unit: (f64, f64)) -> Option<[f32; 3]> {
+    let bare = PipelineSettings::rest(ConversionMode::Positive, false);
+    let read = m.with(path, &bare, |r, copy| key::base(r, copy, &bare, ConversionMode::Positive, None, 0.0, Point::new(unit.0, unit.1), 4.0));
+    read.and_then(|f| oni_measure::slide_gains::white(f, ConversionMode::Positive))
 }
 
 fn alike(s: &PipelineSettings) -> bool {
@@ -53,48 +55,17 @@ fn alike(s: &PipelineSettings) -> bool {
 }
 
 #[test]
-fn each_slide_takes_its_own_gains_inside_the_roll_s_window_its_windows_at_rest() {
+fn a_white_picked_on_a_slide_gives_the_roll_its_gains() {
     let Some(m) = measurer() else { return eprintln!("no GPU adapter: the slide roll is not exercised") };
-    let rest = PipelineSettings::rest(ConversionMode::Positive, false);
-    let frames: Vec<PipelineSettings> = (0..3).map(|i| levelled(&m, &format!("f{i}"), WINDOW, &rest)).collect();
-    for s in &frames {
-        assert!(alike(s) && s.roll_reference.is_none(), "{:?}", s.levels);
-        assert!((s.levels.red.black - rest.levels.red.black).abs() < 1e-4 && (s.levels.red.white - rest.levels.red.white).abs() < 1e-4, "{:?}", s.levels);
-        assert!(s.gains.stops[1] == 0.0 && s.gains.stops[0] < 0.0 && s.gains.stops[2] > 0.0, "the warm cast's red down, blue up: {:?}", s.gains);
-        assert_eq!(s.geometry.measure_window, Some(WINDOW));
-    }
-    // The border outside the window moves nothing: the same frames without it read the same.
-    for (i, own) in frames.iter().enumerate() {
-        let bare = levelled(&m, &format!("bare{i}"), WINDOW, &rest);
-        let gap = (0..3).map(|c| (bare.gains.stops[c] - own.gains.stops[c]).abs()).fold(0.0, f32::max);
-        assert!(gap < 1e-3, "frame {i}: {:?} against {:?}", bare.gains, own.gains);
-    }
-    // Twin: a window over the whole scan takes the white border in, and the gains move with it.
-    let whole = levelled(&m, "f0", Rect::UNIT, &rest);
-    assert!((whole.gains.stops[2] - frames[0].gains.stops[2]).abs() > 0.05, "{:?} against {:?}", whole.gains, frames[0].gains);
-}
-
-/// The Auto levels key on a frame's own settings, as the editor presses it.
-fn keyed(m: &Measurer, path: &str, s: &PipelineSettings) -> PipelineSettings {
-    m.with(path, s, |r, copy| key::levels(r, copy, s)).map(|b| oni_core::balance::levelled(&b.core(), s)).expect("the slide reads")
-}
-
-#[test]
-fn the_key_on_a_prepared_slide_finds_prepare_s_gains_and_again_the_same() {
-    let Some(m) = measurer() else { return eprintln!("no GPU adapter: the key's fixed point is not exercised") };
-    let rest = PipelineSettings::rest(ConversionMode::Positive, false);
-    for i in 0..3 {
-        let path = format!("f{i}");
-        let prepared = levelled(&m, &path, WINDOW, &rest);
-        let once = keyed(&m, &path, &prepared);
-        assert_eq!(once, prepared, "frame {i}: the key after Prepare moves nothing");
-        assert_eq!(keyed(&m, &path, &once), once, "frame {i}: a second press moves nothing");
-        // Twin: the window moved over the bright border, the key reads another histogram.
-        let mut moved = prepared.clone();
-        moved.geometry.measure_window = Some(Rect::UNIT);
-        let other = keyed(&m, &path, &moved);
-        assert!((other.gains.stops[2] - prepared.gains.stops[2]).abs() > 0.05, "frame {i}: {:?} against {:?}", other.gains, prepared.gains);
-    }
+    // The near-white border is neutral: the roll's gains stay at rest.
+    let border = picked(&m, "f1", (0.1, 0.1)).expect("the border reads");
+    assert!(border.iter().all(|g| g.abs() < 0.02), "{border:?}");
+    // Twin: a click on the warm ramp brings it to grey, red down and blue up, the gains' mean held.
+    let ramp = picked(&m, "f1", (0.5, 0.5)).expect("the ramp reads");
+    assert!(ramp[0] < -0.05 && ramp[2] > 0.05 && ramp.iter().sum::<f32>().abs() < 1e-4, "{ramp:?}");
+    // The same click on a darker exposure of the same ramp asks the same gains: the light's colour, not its level.
+    let darker = picked(&m, "f0", (0.5, 0.5)).expect("the darker ramp reads");
+    assert!((0..3).all(|c| (darker[c] - ramp[c]).abs() < 0.05), "{darker:?} against {ramp:?}");
 }
 
 #[test]

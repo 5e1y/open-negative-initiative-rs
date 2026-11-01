@@ -1,5 +1,5 @@
-//! A slide roll: Prepare the Roll places one window, lays the unflagged slides' pooled gains on every
-//! slide, never a roll reference nor a contact sheet; an unprepared slide opens in the editor.
+//! A slide roll: Prepare the Roll places one window and lays the gains of the white picked on every
+//! slide, its level held; none picked, none laid; never a roll reference nor a contact sheet.
 
 use oni_app::app::{Options, Shell};
 use oni_app::{Framing, Library, PanelState, Preparing};
@@ -31,7 +31,7 @@ fn alike(s: &PipelineSettings) -> bool {
     s.levels.red == s.levels.green && s.levels.green == s.levels.blue
 }
 
-pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window() {
+pub(crate) fn a_slide_roll_takes_the_gains_of_the_white_picked_through_one_window() {
     let gpu = match oni_app::render::Device::open() {
         Ok(gpu) => gpu,
         Err(e) => return eprintln!("{e}: the slides are not exercised"),
@@ -97,19 +97,20 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     assert_eq!(p.get_action_title().as_str(), "NEXT");
     p.invoke_film_picked(1);
     rig.pump();
-    assert_eq!(skipped(), [false, true, true, false, false], "a slide roll on its gains alone has no base, but its flags and window");
+    assert_eq!(skipped(), [false, true, false, true, false], "a slide roll picks a white on its base step and has no flags");
     p.invoke_advance();
     rig.pump();
-    assert_eq!(p.get_step(), 3, "the film leads to the flags");
-    // A flagged slide votes not, yet takes the roll's gains below.
-    p.invoke_sheet_clicked(2);
+    assert_eq!(p.get_step(), 2, "the film leads to the white");
+    assert_eq!(p.get_action_title().as_str(), "SKIP");
+    // A white picked on a slide's warm ramp: its colour alone goes to grey on every slide.
+    rig.until("the scan read", Duration::from_secs(60), || p.get_scan_ready());
+    // Drawn first, so the base step's area has its size and the scan its place in it.
+    let _ = rig.drawn();
     rig.pump();
-    assert_eq!(p.get_flags_note().as_str(), "2 measured, 1 flagged");
-    assert!(p.get_cells().row_data(2).unwrap().flagged);
-    p.invoke_advance();
+    p.invoke_base_clicked(p.get_scan_x() + p.get_scan_width() * 0.5, p.get_scan_y() + p.get_scan_height() * 0.5);
     rig.pump();
-    assert_eq!(p.get_step(), 4);
-    assert_eq!(p.get_action_title().as_str(), "MEASURE 2 FRAMES");
+    assert_eq!(p.get_step(), 4, "the white leads to the window");
+    assert_eq!(p.get_action_title().as_str(), "MEASURE 3 FRAMES");
     assert!(p.get_window_shown());
     let disk = |i: usize| sidecar::read(&canonical(&slides, i), false, true).unwrap().settings;
     let rest = disk(1);
@@ -125,7 +126,8 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     let window = frames[0].geometry.measure_window;
     for (i, s) in frames.iter().enumerate() {
         assert_eq!((s.mode, s.roll_reference.is_none(), s.inverted_source), (ConversionMode::Positive, true, false), "F{i}");
-        assert!(alike(s) && s.gains.stops[1] == 0.0 && s.gains.stops[0] * s.gains.stops[2] < 0.0, "F{i}: {:?} {:?}", s.levels, s.gains);
+        let g = s.gains.stops;
+        assert!(alike(s) && g[0] < g[1] && g[1] < g[2] && g.iter().sum::<f32>().abs() < 1e-4, "F{i}: red down, blue up, the level held: {:?} {:?}", s.levels, s.gains);
         assert!(window.is_some() && s.geometry.measure_window == window, "F{i}: one window for the roll");
     }
     assert!(panel.get_slide(), "the Roll tab drops the measure's warning, the dyes and the ceiling");
@@ -149,6 +151,26 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     ctl.act(oni_app::Act::Redo);
     rig.pump();
     rig.until("every slide balanced again", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains != rest.gains));
+
+    // Twin: the white skipped, the slides keep the camera's 5500 K, their gains at rest.
+    lib.invoke_tile_clicked(first(), false, false);
+    rig.pump();
+    ctl.act(oni_app::Act::PrepareRoll);
+    rig.until("the roll again", Duration::from_secs(10), || p.get_shown());
+    p.invoke_film_picked(1);
+    p.invoke_step_picked(2);
+    rig.pump();
+    if p.get_has_base() {
+        p.invoke_clear_base();
+        rig.pump();
+    }
+    assert_eq!(p.get_action_title().as_str(), "SKIP");
+    p.invoke_advance();
+    rig.pump();
+    p.invoke_advance();
+    rig.until("the slides measured unpicked", Duration::from_secs(60), || !p.get_shown());
+    rig.settle();
+    rig.until("every slide at rest", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains.stops == [0.0; 3] && disk(i).measured_gains.is_none()));
 
     let _ = std::fs::remove_dir_all(&root);
 }
