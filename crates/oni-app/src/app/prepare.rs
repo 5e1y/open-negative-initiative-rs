@@ -1,7 +1,6 @@
 //! Prepare the Roll (`.roll`): five steps over the roll's frames, a draft in every sidecar, the
 //! measure off this thread with its progress and Stop, landed as one gallery step, then the editor.
 
-use super::sheets::{self, Sheet};
 use super::{Ctl, State, frames, position, stored_at, with_shell};
 use crate::fields::Field;
 use crate::framing::Handle;
@@ -40,8 +39,6 @@ mod draft_base;
 mod trace;
 mod negative;
 mod slides;
-mod sheet_plan;
-use sheet_plan::SheetPlan;
 pub use model::*;
 
 /// The preference a positive roll's conversion is remembered under: read as its own negative, or not.

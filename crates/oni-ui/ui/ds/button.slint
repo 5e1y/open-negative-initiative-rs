@@ -7,7 +7,7 @@ import { Keycap, KeycapVariant, Depth } from "depth.slint";
 import { Lamp } from "surfaces.slint";
 
 // `ghost` is a glyph alone on no cap, its tone lifting under the hand, as a help mark or a star.
-export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost }
+export enum ButtonKind { plain, accent, caution, destructive, update, confirm, ghost, sheet }
 // `regular` is `DSPanelButton`'s standard 40 pt key, `plate` its 52 pt `.plate` key, `small` the same
 // variant at 24, `mini` the 26 pt mini key of the headers, `key` the scanner's 46 pt key (`LabKeyboard`).
 export enum ButtonSize { regular, plate, small, mini, key }
@@ -29,6 +29,7 @@ export global ButtonInk {
         if (kind == ButtonKind.destructive) { return Colour.destructive; }
         if (kind == ButtonKind.update) { return Colour.update; }
         if (kind == ButtonKind.confirm) { return Colour.confirm; }
+        if (kind == ButtonKind.sheet) { return Colour.edge-print; }
         transparent
     }
 }

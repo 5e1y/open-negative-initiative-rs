@@ -1,9 +1,10 @@
 // Export as a mode of the card: one line per photo with its preview, the settings column on the right,
 // the space field shared with the Working Space chip, and the dialogs the export raises.
 import { News } from "help.slint";
-import { Icons, Space, Depth, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, ButtonSize } from "ds/ds.slint";
-import { ExportLine, PaperRow, Exporting } from "export_state.slint";
-export { ExportLine, PaperRow, Exporting }
+import { Icons, Space, Depth, ButtonStyle, Label, Tone, TextRole, Button, ButtonKind, Tabs, Toggle, Slider, TextField, Picker, Section, Sheet, Divider, Spacer, Surface, Scroller, ListView, HStack, VStack, Gap, ShellStyle, FormStyle, Field, Inset, PreviewSlot, PickerFace, PopupPanel, SheetHeader, AskSheet, AskRole, Icon, CardStyle, ButtonGroup, GroupAlign, Row, Badge, BadgeTone, FieldLayout, RowKind, RowForm, SizeFields, ButtonSize, Picture, Ground, Fit, EdgePrint } from "ds/ds.slint";
+import { ExportLine, PaperRow, SheetTile, Exporting } from "export_state.slint";
+import { Canvas } from "canvas_state.slint";
+export { ExportLine, PaperRow, SheetTile, Exporting }
 
 // `FrameFields`: the file name with its extension, then the EXIF the file will carry.
 component FrameFields inherits VerticalLayout {
@@ -54,11 +55,47 @@ component FrameFields inherits VerticalLayout {
     Spacer { }
 }
 
+// The contact sheet the export writes, as Rust fits it to this room: its ground, each frame's
+// preview at its place with its number under it, and the logo's band.
+component SheetPreview inherits Rectangle {
+    property <Ground> ground: Exporting.sheet-positive ? Ground.paper : Ground.sheet;
+    init => { Exporting.sheet-room(self.width, self.height); }
+    changed width => { Exporting.sheet-room(self.width, self.height); }
+    changed height => { Exporting.sheet-room(self.width, self.height); }
+    Picture {
+        x: Exporting.sheet-ground.x;
+        y: Exporting.sheet-ground.y;
+        width: Exporting.sheet-ground.width;
+        height: Exporting.sheet-ground.height;
+        ground: root.ground;
+    }
+    for t in Exporting.sheet-tiles: Picture { x: t.x; y: t.y; width: t.width; height: t.height; source: t.preview; fit: Fit.fill; ground: root.ground; }
+    for t in Exporting.sheet-tiles: EdgePrint {
+        x: t.x;
+        y: t.y + t.height;
+        height: Exporting.sheet-number-band;
+        text: t.number;
+        size: Exporting.sheet-number-size;
+        ink: Exporting.sheet-positive ? Canvas.positive-inks.number : Canvas.negative-inks.number;
+    }
+    Picture {
+        x: Exporting.sheet-logo-box.x;
+        y: Exporting.sheet-logo-box.y;
+        width: Exporting.sheet-logo-box.width;
+        height: Exporting.sheet-logo-box.height;
+        ground: root.ground;
+        fit: Fit.fill;
+        source: Exporting.sheet-logo;
+    }
+}
+
 // `ExportColumn`: the photographs about to be written, fields left and preview right.
 export component ExportColumn inherits Scroller {
     property <length> room-width: self.width - 2 * Space.l;
     property <length> room-height: self.height - 2 * Space.l;
     property <length> picture-width: self.room-width - FormStyle.fields-width - Space.l;
+    // Several photos on one sheet: the sheet itself in place of their lines.
+    property <bool> sheet: Exporting.sheet && Exporting.count > 1;
     content-height: max(column.preferred-height, self.height);
     init => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
     changed picture-width => { Exporting.preview-room(self.picture-width, self.room-height - FormStyle.caption, FormStyle.preview-floor); }
@@ -73,22 +110,27 @@ export component ExportColumn inherits Scroller {
         spacing: Space.l;
         // Centres a single frame under one screenful; above that the floor does nothing.
         alignment: center;
-        for line[i] in Exporting.lines: HorizontalLayout {
+        if root.sheet: SheetPreview { height: root.room-height; }
+        if !root.sheet: VerticalLayout {
             spacing: Space.l;
-            FrameFields { line: line; at: i; }
-            VerticalLayout {
-                spacing: Space.xs;
-                PreviewSlot {
-                    // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
-                    height: max(FormStyle.preview-floor, min(root.room-height - FormStyle.caption, root.picture-width / (line.aspect > 0 ? line.aspect : 1.5)));
-                    source: line.preview;
-                    state: line.state;
+            for line[i] in Exporting.lines: HorizontalLayout {
+                spacing: Space.l;
+                FrameFields { line: line; at: i; }
+                VerticalLayout {
+                    spacing: Space.xs;
+                    PreviewSlot {
+                        // The height a frame of that shape takes, so the list never jumps; unmeasured takes 3:2's.
+                        height: max(FormStyle.preview-floor, min(root.room-height - FormStyle.caption, root.picture-width / (line.aspect > 0 ? line.aspect : 1.5)));
+                        source: line.preview;
+                        state: line.state;
+                    }
+                    if line.caption != "": Label { text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
                 }
-                if line.caption != "": Label { text: line.caption; role: TextRole.value; tone: Tone.secondary; centred: true; }
             }
         }
     }
 }
+
 
 // The quality slider, its hand held by Rust like every other slider.
 component QualitySlider inherits Slider {
@@ -188,6 +230,17 @@ export component ExportPanel inherits Surface {
                     Label { text: @tr("Export"); role: TextRole.heading; }
                     Label { text: Exporting.subtitle; role: TextRole.value; tone: Tone.secondary; wrap: word-wrap; }
                 }
+                // First, as the bar's two keys offer it: every photo its own file, or all on one sheet.
+                if Exporting.count > 1: Field {
+                    label: @tr("Export As");
+                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives.");
+                    Tabs {
+                        tabs: [@tr("Separate Photos"), @tr("Contact Sheet")];
+                        marked: [false, false];
+                        selected: Exporting.sheet ? 1 : 0;
+                        picked(i) => { Exporting.sheet-set(i == 1); }
+                    }
+                }
                 // Three keys, one row: a click writes every row below at once and locks none.
                 ButtonGroup {
                     plate: true;
@@ -204,11 +257,6 @@ export component ExportPanel inherits Surface {
                         selected: Exporting.format;
                         picked(i) => { Exporting.format = i; Exporting.format-picked(i); }
                     }
-                }
-                if Exporting.count > 1: Field {
-                    label: @tr("Contact sheet");
-                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives.");
-                    Toggle { label: @tr("All photos on one sheet"); on: Exporting.sheet; toggled(on) => { Exporting.sheet-set(on); } }
                 }
                 SpaceField { }
                 if Exporting.edited-in != "": Label { role: TextRole.note; text: Exporting.edited-in; }

@@ -139,7 +139,10 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     rig.key(&key(Key::Escape));
     assert!(!wrapped.get_shown(), "Esc leaves");
 
-    // A photo in the ONI Trash counts for nothing: A was the only one opened.
+    // A photo in the ONI Trash counts for nothing: A was the only one opened. Trashed from the
+    // gallery, as the editor would go on to open B.
+    ctl.act(oni_app::Act::ToggleMode);
+    rig.pump();
     ctl.act(oni_app::Act::Remove);
     rig.landed(&ctl);
     rig.settle();
@@ -160,7 +163,7 @@ pub(crate) fn every_gesture_is_noted_and_the_year_reads_back_as_its_deck() {
     assert!(!wrapped.get_shown(), "never twice in a year");
 
     // New Roll from Selection notes the photos it gathered.
-    assert!(w.global::<oni_app::App>().get_gallery(), "the trashed photo left the editor");
+    assert!(w.global::<oni_app::App>().get_gallery());
     lib.invoke_tile_clicked(0, false, false);
     ctl.act(oni_app::Act::NewRoll);
     rig.roll_confirmed(&ctl, w);

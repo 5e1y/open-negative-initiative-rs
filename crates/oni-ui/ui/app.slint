@@ -20,7 +20,7 @@ import { Wrapped, WrappedFace, WrappedView } from "wrapped.slint";
 import { MaskDialog, MaskDialogSheet } from "masks.slint";
 import { Presets, PresetCard, CarriesLine, Advice, AdviceSheet, Choice, ChoiceSheet, PresetSaveSheet, PresetEditorSheet } from "presets.slint";
 import { PresetDeck } from "preset_deck.slint";
-import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperRow } from "export.slint";
+import { Exporting, ExportLine, ExportColumn, ExportPanel, SpaceChip, ExportConfirmSheet, ExportNoticeSheet, PaperRow, SheetTile } from "export.slint";
 import { PaperSheet } from "export_papers.slint";
 import { ExportProgress } from "export_progress.slint";
 import { Preparing, RollCell, RollPanel, RollFloor } from "prepare.slint";
@@ -30,7 +30,7 @@ import { Absent, Unsaved, UnsavedSheet } from "missing.slint";
 import { Told, ToldNotice } from "told.slint";
 import { KeyWords } from "key_words.slint";
 
-export { DS, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, SplashWindow, Exporting, ExportLine, PaperRow }
+export { DS, Clicks, Outside, Tip, Tips, TipBox, Icons, LabCell, Store, Plots, PanelState, DetailLoupe, Lab, Framing, Dedust, CorrectionRow, Bar, Library, Tile, Heading, TreeRow, TreePin, TreeDrag, TrashLine, StockCount, MenuLine, Navigator, FolderLine, WelcomeLine, CatchUpLine, Pairing, AppSettings, Notice, SplashWindow, Exporting, ExportLine, PaperRow, SheetTile }
 export { Editors } from "editors.slint";
 export { RollGuide } from "roll_guide.slint";
 export { Presets, PresetCard, CarriesLine, Advice, Choice, Help, News, ConsoleWindow, Wrapped, WrappedFace }
@@ -75,7 +75,6 @@ export struct MenuTitles {
     filter: string,
     roll: string,
     ungroup: string,
-    sheet: string,
     screen-gamut: string,
 }
 
@@ -107,7 +106,6 @@ export struct MenuLive {
     cycle-filter: bool,
     new-roll: bool,
     ungroup: bool,
-    contact-sheet: bool,
     measure-roll: bool,
     reset-to-default: bool,
     copy-settings: bool,
@@ -128,7 +126,7 @@ export global Menus {
         smaller: @tr("Zoom Out"), larger: @tr("Zoom In"), sound: @tr("Mute Key Clicks"), compare: @tr("Compare Before/After"),
         library: @tr("Hide the Library"), panel: @tr("Hide the Panel"), correcting: @tr("Remove Dust & Scratches"),
         mirror: @tr("Mirror Horizontally"), filter: @tr("Filter: All"), roll: @tr("Move into a New Roll…"),
-        ungroup: @tr("Ungroup"), sheet: @tr("New Contact Sheet"), screen-gamut: @tr("Show What This Screen Cannot Show"),
+        ungroup: @tr("Ungroup"), screen-gamut: @tr("Show What This Screen Cannot Show"),
     };
     in property <MenuLive> live: { open: true, cycle-filter: true };
     // `menus.presets`: each one's name and what it carries, under the targets' title.
@@ -221,7 +219,6 @@ export component MainWindow inherits AppWindow {
             MenuItem { title: Menus.titles.roll; shortcut: @keys(Control + Shift + "g"); enabled: Menus.live.new-roll; activated => { App.menu(Act.new-roll); } }
             MenuItem { title: Menus.titles.ungroup; shortcut: @keys(Control + Shift + Alt + "g"); enabled: Menus.live.ungroup; activated => { App.menu(Act.ungroup); } }
             MenuSeparator { }
-            MenuItem { title: Menus.titles.sheet; enabled: Menus.live.contact-sheet; activated => { App.menu(Act.contact-sheet); } }
             MenuItem { title: @tr("Prepare the Roll…"); enabled: Menus.live.measure-roll; activated => { App.menu(Act.prepare-roll); } }
             MenuItem { title: @tr("Reset to Default…"); enabled: Menus.live.reset-to-default; activated => { App.menu(Act.reset-to-default); } }
         }

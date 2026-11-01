@@ -10,7 +10,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let app = w.global::<App>();
         // Export and Prepare the Roll hide the info sidebar as the editor does, its typing kept.
-        if matches!(action, Act::Export | Act::PrepareRoll) && app.get_gallery() {
+        if matches!(action, Act::Export | Act::ExportSheet | Act::PrepareRoll) && app.get_gallery() {
             self.commit_info_drafts();
         }
         match action {
@@ -23,6 +23,7 @@ impl Ctl {
             Act::Reset => self.reset_all(),
             Act::ToggleMode if self.export.borrow().shown => {}
             Act::Export => self.export_act(),
+            Act::ExportSheet => self.export_sheet(),
             Act::ToggleMode => self.toggle_mode(),
             Act::HidePanel => app.set_panel_hidden(!app.get_panel_hidden()),
             Act::HideLibrary => app.set_library_hidden(!app.get_library_hidden()),
@@ -100,7 +101,8 @@ impl Ctl {
                 self.restore(&picked);
             }
             Act::NewRoll if app.get_gallery() => self.new_roll(),
-            Act::ContactSheet => self.make_contact_sheet(),
+            // The bar's key does what ⌘A does where the hand is.
+            Act::SelectAll => drop(self.key("a", true, false, false, false)),
             Act::ResetToDefault if app.get_gallery() => self.ask_reset_to_default(),
             Act::Ungroup => self.ungroup(),
             Act::Open => self.pick(false),

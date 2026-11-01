@@ -1,6 +1,17 @@
 // The export surface's state: its lines, its settings and the paper profiles sheet, which Rust sets.
 
-import { PreviewState } from "ds/ds.slint";
+import { PreviewState, SheetBox } from "ds/ds.slint";
+
+// A frame on the contact sheet the export writes, where the column lays it: its preview and its
+// number, empty when it has none.
+export struct SheetTile {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    preview: image,
+    number: string,
+}
 
 // One photo's line: its name and EXIF as typed, its preview and the size it will be written at.
 export struct ExportLine {
@@ -57,8 +68,16 @@ export global Exporting {
     in property <bool> size-enabled;
     in property <bool> resized;
     in property <bool> hdr;
-    // Every photo on one contact sheet, as Edit Together lays them: one file for the batch.
+    // Every photo on one contact sheet, as Edit Together lays them: one file for the batch, shown in
+    // the column as the file lays it, fitted to its room, white under positives.
     in property <bool> sheet;
+    in property <[SheetTile]> sheet-tiles;
+    in property <SheetBox> sheet-ground;
+    in property <SheetBox> sheet-logo-box;
+    in property <image> sheet-logo;
+    in property <length> sheet-number-size;
+    in property <length> sheet-number-band;
+    in property <bool> sheet-positive;
     in property <string> bits;
     in property <string> dims;
     in property <string> weight-label;
@@ -141,4 +160,5 @@ export global Exporting {
     // The room a line's preview takes in points: the picture's width, the height left under its caption
     // and the slot's floor; each preview is rendered at the size it is shown.
     callback preview-room(length, length, length);
+    callback sheet-room(length, length);
 }

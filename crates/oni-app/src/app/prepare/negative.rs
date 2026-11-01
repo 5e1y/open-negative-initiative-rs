@@ -14,7 +14,7 @@ const BLOOM_SIGMA: f32 = 3.0;
 const BLOOM: f32 = 0.6;
 
 /// The tile as the negative's screen shows it: reduced, on sRGB, its lights blooming into the glass.
-pub(in crate::app) fn of(tile: &oni_measure::sheet::Picture) -> Option<Bitmap> {
+pub(in crate::app) fn of(tile: &oni_measure::tiles::Picture) -> Option<Bitmap> {
     let (w, h) = (tile.width, tile.height);
     if w == 0 || h == 0 {
         return None;
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn the_negative_is_reduced_onto_its_screen_and_only_its_lights_bloom() {
-        let mut tile = oni_measure::sheet::Picture { width: 1200, height: 800, pixels: vec![[0.0, 0.0, 0.0, 1.0]; 960_000] };
+        let mut tile = oni_measure::tiles::Picture { width: 1200, height: 800, pixels: vec![[0.0, 0.0, 0.0, 1.0]; 960_000] };
         let b = of(&tile).unwrap();
         assert_eq!((b.width, b.height), (400, 267));
         assert!(b.rgba.chunks_exact(4).all(|p| p[0] < 4), "black stays black");

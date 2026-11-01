@@ -309,7 +309,8 @@ export global ShellStyle {
     out property <length> bar-gap: Space.m;
     out property <length> compact-gap: Space.s;
     out property <length> bar-height: DS.control-app-bar-keycap-height + 2 * Space.s;
-    out property <length> export-width: DS.control-app-bar-export-width;
+    // The export slot a hair narrower than `AppBar`'s (owner's call).
+    out property <length> export-width: DS.control-app-bar-export-width - Space.m;
     out property <length> filter-width: DS.control-app-bar-filter-width;
     out property <length> library-width: DS.control-film-sidebar-width;
     out property <length> panel-width: DS.control-panel-width;

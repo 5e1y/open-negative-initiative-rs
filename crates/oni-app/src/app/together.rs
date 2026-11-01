@@ -35,6 +35,19 @@ pub(in crate::app) fn positive<'a>(settings: impl IntoIterator<Item = &'a Pipeli
     }) && any
 }
 
+/// Where frames of these sizes lie on their contact sheet, one still unmeasured on 3:2, the logo's
+/// band and the sheet's size, in the full sheet's pixels.
+pub(in crate::app) fn sheet_places(sizes: &[Option<(f64, f64)>]) -> (Vec<(f64, f64, f64, f64)>, (f64, f64, f64, f64), (f64, f64)) {
+    let s = laid(&sizes.iter().map(|s| s.unwrap_or(UNKNOWN)).collect::<Vec<_>>());
+    (s.pictures, s.band, s.size)
+}
+
+/// The logo's band for a sheet `width` wide, in `ink`, as the canvas shows it.
+pub(in crate::app) fn logo_image(width: usize, ink: [f32; 3]) -> slint::Image {
+    let plate = logo::drawn(width, ink);
+    image(&plate.rgba8(), plate.width, plate.height)
+}
+
 /// The full sheet's size in whole pixels for frames of these sizes, as their contact sheet is drawn.
 pub(in crate::app) fn sheet_size(sizes: &[(f64, f64)]) -> (f64, f64) {
     let (w, h) = laid(sizes).drawn(1.0);
@@ -47,10 +60,10 @@ const TILE: usize = 1024;
 const GAP: usize = 30;
 /// The sheet's margin and the band under each picture where its number lies, the rows' spacing,
 /// the margin under the last row, and the numbers' size.
-const MARGIN: usize = 2 * GAP;
+pub(in crate::app) const MARGIN: usize = 2 * GAP;
 const ROWS_APART: usize = 4 * GAP;
 const FOOT: usize = 4 * MARGIN;
-const NUMBER: usize = 56;
+pub(in crate::app) const NUMBER: usize = 56;
 /// The logo's band across the sheet's bottom, under the foot and inside the margin: the logo a tile
 /// wide, 246 by 64, stands 266 px tall.
 const BAND: usize = 270;

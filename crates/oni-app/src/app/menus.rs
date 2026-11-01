@@ -12,7 +12,7 @@ impl Ctl {
         let (gallery, library_hidden, panel_hidden) = (app.get_gallery(), app.get_library_hidden(), app.get_panel_hidden());
         let dedust = w.global::<PanelState>().get_tab() == 4;
         let (painting, canvas) = (self.painting(), self.canvas_size());
-        let (titles, live, film_type, targets, filter_word) = {
+        let (titles, live, film_type, targets, filter_word, select_all) = {
             let mut s = self.state.borrow_mut();
             let open = s.open.is_some();
             let selected = s.picks.selection.len();
@@ -26,6 +26,8 @@ impl Ctl {
             let presets = s.shelf.held.len();
             let members = s.roll_members(gallery).len();
             let preparing = s.prepare.shown;
+            // The bar's ⌘A: the gallery's photos, or those beside the one open.
+            let select_all = !modal && !preparing && if gallery { !s.order.is_empty() } else { open };
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.compare.split.is_some(), s.screen_gamut, s.negative.is_some());
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
@@ -87,7 +89,6 @@ impl Ctl {
                 filter: filter.map_or(tr("Filter: All").into(), |m| tr!("Filter: {medal}", medal = library::medal(m))).into(),
                 roll: if count > 1 { tr!("Move {count} Photos into a New Roll…", count = count) } else { tr("Move into a New Roll…").into() }.into(),
                 ungroup: if members > 1 { tr!("Ungroup {count} Photos", count = members) } else { tr("Ungroup").into() }.into(),
-                sheet: sheets::title(s.making_sheet.is_some(), selected).into(),
                 screen_gamut: if screen_gamut { tr("Hide What This Screen Cannot Show") } else { tr("Show What This Screen Cannot Show") }.into(),
             };
             // A gesture this build lacks stays dark, whatever Swift's rule would say.
@@ -120,7 +121,6 @@ impl Ctl {
                 cycle_filter: true,
                 new_roll: gallery && count > 0,
                 ungroup: members > 0,
-                contact_sheet: sheets::can_make(s.making_sheet.is_some(), selected),
                 measure_roll: !preparing && count > 0,
                 reset_to_default: gallery && count > 0,
                 copy_settings: open,
@@ -154,7 +154,7 @@ impl Ctl {
             let live = if sheet { MenuLive::default() } else { live };
             let film_type = ConversionMode::ALL.iter().position(|m| *m == settings.mode).unwrap_or(0) as i32;
             let filter_word = filter.map_or(tr("ALL").to_string(), |m| library::medal(m).to_uppercase());
-            (titles, live, film_type, count, filter_word)
+            (titles, live, film_type, count, filter_word, select_all)
         };
         let menus = w.global::<Menus>();
         menus.set_titles(titles);
@@ -164,8 +164,7 @@ impl Ctl {
         panel.set_targets(targets as i32);
         let bar = w.global::<Bar>();
         bar.set_can_paste(live.paste_settings);
-        bar.set_can_sheet(live.contact_sheet);
-        bar.set_sheet_title(menus.get_titles().sheet);
+        bar.set_can_select_all(select_all);
         bar.set_can_prepare(live.measure_roll);
         panel.set_can_prepare(true);
         self.publish_presets();

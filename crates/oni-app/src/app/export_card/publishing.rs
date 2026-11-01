@@ -22,6 +22,7 @@ impl Ctl {
             model.set_vec(lines);
         }
         w.global::<Exporting>().set_lines(ModelRc::from(model));
+        self.publish_sheet_view();
     }
 
     pub(super) fn publish_line(&self, i: usize) {
@@ -35,6 +36,7 @@ impl Ctl {
         {
             model.set_row_data(i, line);
         }
+        self.publish_sheet_view();
     }
 
     /// Every property the surface, the chip and the menus read, read before any is set.
@@ -115,6 +117,7 @@ impl Ctl {
             e.set_notice_message(message.as_str().into());
         }
         drop(c);
+        self.publish_sheet_view();
         self.publish_job();
         self.publish_menus();
     }

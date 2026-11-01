@@ -30,7 +30,7 @@ pub(in crate::app) struct Drawn {
 
 impl Drawn {
     /// The tile counted as the editor counts its picture, on the measure's thread.
-    pub fn of(tile: &oni_measure::sheet::Picture, screen: Screen) -> Option<Drawn> {
+    pub fn of(tile: &oni_measure::tiles::Picture, screen: Screen) -> Option<Drawn> {
         if tile.width == 0 || tile.height == 0 {
             return None;
         }
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn a_tile_is_counted_into_each_channel_s_bins() {
-        let tile = |v: f32| oni_measure::sheet::Picture { width: 40, height: 20, pixels: vec![[v, v, v, 1.0]; 800] };
+        let tile = |v: f32| oni_measure::tiles::Picture { width: 40, height: 20, pixels: vec![[v, v, v, 1.0]; 800] };
         let d = Drawn::of(&tile(0.5), Screen::Srgb).unwrap();
         assert_eq!(d.bins.len(), BINS);
         let peak = (0..BINS).find(|&i| d.bins[i][1] == 1.0).unwrap();
@@ -339,7 +339,7 @@ mod tests {
         // Twin: another grey lands elsewhere.
         let dark = Drawn::of(&tile(0.2), Screen::Srgb).unwrap();
         assert_ne!(dark.bins, d.bins);
-        assert!(Drawn::of(&oni_measure::sheet::Picture { width: 0, height: 0, pixels: Vec::new() }, Screen::Srgb).is_none());
+        assert!(Drawn::of(&oni_measure::tiles::Picture { width: 0, height: 0, pixels: Vec::new() }, Screen::Srgb).is_none());
     }
 
     #[test]

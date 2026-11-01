@@ -167,12 +167,11 @@ pub(crate) fn a_roll_of_passes_is_grouped_by_threes_ordered_by_its_light_and_reg
     // The gallery shows each frame by its lead and the stray file; the seal names a lone lead.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
-    // The measure also lays the roll's contact sheet, which joins the library beside the frames.
-    let frames = || oni_app::app::tiles(w).into_iter().filter(|t| !t.caption.ends_with("\u{2014} contact sheet")).collect::<Vec<_>>();
+    // The measure lays no contact sheet: the frames alone stand in the library.
+    let frames = || oni_app::app::tiles(w);
     rig.until("the passes hidden", Duration::from_secs(10), || frames().len() == 3);
     let captions: Vec<String> = frames().iter().map(|t| t.caption.to_string()).collect();
     assert_eq!(captions, ["P0", "P3", "P6"]);
-    assert_eq!(oni_app::app::tiles(w).len(), 4, "and the roll's contact sheet");
     assert!(tile("P0").rgb && tile("P3").rgb && !tile("P6").rgb);
     lib.invoke_tile_clicked(tile("P3").index, false, false);
     rig.pump();

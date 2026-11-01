@@ -29,8 +29,7 @@ export global Bar {
     in property <bool> dedust;
     in property <int> targets: 1;
     // The menu's own rule and title for the keys, so the two surfaces cannot disagree.
-    in property <bool> can-sheet;
-    in property <string> sheet-title: @tr("New Contact Sheet");
+    in property <bool> can-select-all;
     in property <bool> can-prepare;
     in property <string> export-title: @tr("EXPORT");
     // `ExportButton`'s third face: an update outranks export and import alike, and says to what.
@@ -63,6 +62,14 @@ component Word inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
+// ⌘A from the bar: the whole roll selected where the hand is, shown together beside a photo.
+component SelectAll inherits Item {
+    action: Act.select-all;
+    icon: Icons.contact-sheet;
+    help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
+    enabled: Bar.can-select-all;
+}
+
 // Short of room the word gives way to its glyph, a square key.
 component ResetScan inherits Word {
     in property <bool> compact;
@@ -82,7 +89,7 @@ component EditorKeys inherits HorizontalLayout {
     ButtonGroup { plate: true;
         Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo; }
         Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
-        Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
+        SelectAll { }
     }
     ButtonGroup { plate: true;
         Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
@@ -128,9 +135,9 @@ component EditorKeys inherits HorizontalLayout {
 component GalleryKeys inherits HorizontalLayout {
     in property <bool> compact;
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
-    // The editor's first plate holds the contact sheet alone here, as in Swift's `centreKeys`.
+    // The editor's first plate holds the select-all key alone here, as in Swift's `centreKeys`.
     ButtonGroup { plate: true;
-        Item { action: Act.contact-sheet; icon: Icons.contact-sheet; help: Bar.sheet-title; enabled: Bar.can-sheet; }
+        SelectAll { }
     }
     ButtonGroup { plate: true;
         Item { action: Act.undo; icon: Icons.undo; help: Bar.undo-title + " (" + KeyWords.command + "Z)"; enabled: Bar.can-undo; }
@@ -212,6 +219,13 @@ export component Toolbar inherits Surface {
         }
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
+        // Several photos picked: their contact sheet exported in one key, orange as its numbers.
+        if !Preparing.shown && Bar.targets > 1: Word {
+            action: Act.export-sheet;
+            text: @tr("EXP. CONTACT SHEET");
+            kind: ButtonKind.sheet;
+            help: @tr("Export the photos picked as one contact sheet");
+        }
         if !Preparing.shown && Bar.update-title == "": Word {
             action: Bar.editing ? Act.export : Act.add-folder;
             text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");

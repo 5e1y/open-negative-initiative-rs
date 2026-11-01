@@ -27,6 +27,7 @@ mod settings;
 mod quality;
 mod writing;
 mod contact;
+mod sheet_view;
 mod publishing;
 mod wiring;
 
@@ -80,6 +81,10 @@ pub struct Card {
     pub rows: Vec<Option<Row>>,
     sizes: Vec<Option<(f64, f64)>>,
     previews: Vec<Preview>,
+    /// The room the column gives the sheet, in points, and its logo band last drawn, for its width
+    /// and its ground.
+    sheet_room: Option<(f64, f64)>,
+    logo: Option<((usize, bool), Image)>,
     /// The room a line's preview takes, once the column is laid out, which sizes each render.
     room: Arc<std::sync::Mutex<Option<targets::Room>>>,
     low_precision: usize,
@@ -161,6 +166,8 @@ impl Card {
             rows: Vec::new(),
             sizes: Vec::new(),
             previews: Vec::new(),
+            sheet_room: None,
+            logo: None,
             room: Arc::default(),
             low_precision: 0,
             estimate: None,

@@ -82,7 +82,7 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(!menus.get_live().toggle_mode && !menus.get_live().measure_roll, "⌘G and the item itself stay dark meanwhile");
     let live = menus.get_live();
     let behind = [live.export, live.framing, live.correction, live.mirror, live.smaller, live.larger, live.remove, live.undo, live.redo, live.reset];
-    let more = [live.copy_settings, live.paste_settings, live.paste_to_roll, live.medal, live.new_roll, live.contact_sheet, live.save_preset, live.apply_preset];
+    let more = [live.copy_settings, live.paste_settings, live.paste_to_roll, live.medal, live.new_roll, live.save_preset, live.apply_preset];
     assert!(behind.iter().chain(more.iter()).all(|on| !on), "nothing reaches the editor the roll hides: {live:?}");
     assert!(loaded(&canonical("B.tif")).roll_draft.is_none(), "twin: the film step writes no draft");
     rig.settle();
@@ -226,8 +226,8 @@ pub(crate) fn a_roll_is_prepared_left_resumed_from_its_draft_and_measured_as_one
     assert!(panel.get_can_prepare());
     panel.invoke_prepare_roll();
     rig.until("the roll from the editor", Duration::from_secs(10), || p.get_shown() && names() == 4);
-    // The measure's contact sheet still stands on the roll undone, so it counts as another roll's.
-    assert_eq!(p.get_left_out().as_str(), "1 frame of this folder, measured on another roll, is left out.");
+    // The measure lays no contact sheet, so nothing of the folder stands on another roll.
+    assert_eq!(p.get_left_out().as_str(), "");
     rig.key("\u{1b}");
     assert!(!p.get_shown() && !app.get_gallery(), "Cancel goes back to the editor it came from");
     let _ = std::fs::remove_dir_all(&root);

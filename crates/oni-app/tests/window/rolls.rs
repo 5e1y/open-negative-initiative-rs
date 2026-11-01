@@ -66,8 +66,8 @@ pub(crate) fn the_roll_gestures_reach_what_swift_reaches() {
     };
     let rest = || std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
 
-    // Nothing picked, nothing to prepare; the contact sheet stays dark while the build lacks it.
-    assert!(!menus.get_live().measure_roll && !w.global::<Bar>().get_can_prepare() && !w.global::<Bar>().get_can_sheet());
+    // Nothing picked, nothing to prepare; the bar's ⌘A key is live while the gallery shows photos.
+    assert!(!menus.get_live().measure_roll && !w.global::<Bar>().get_can_prepare() && w.global::<Bar>().get_can_select_all());
 
     // Ungroup names the photos it takes off their roll: A and B carry Roll 9, C does not.
     lib.invoke_tile_clicked(tile("A"), false, false);

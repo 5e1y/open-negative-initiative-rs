@@ -24,7 +24,6 @@ impl Ctl {
             r.progress = Some((0, picked.len()));
             let (window, mask, pick, film, stop, session) = (r.window, r.mask(), r.base.clone(), r.walked(), r.stop.clone(), r.session);
             let inverted = film != r.film;
-            let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked, inverted);
             let screen = s.screen;
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
@@ -39,9 +38,7 @@ impl Ctl {
                 let registrar = crate::passes::Registrar::new(&triplets);
                 let mut jobs: Vec<roll::Job> = Vec::new();
                 let mut frames = Vec::new();
-                let side = oni_measure::sheet::roll_tile();
-                let mut tiles: Vec<(String, oni_measure::sheet::Picture)> = Vec::new();
-                let mut reads = Vec::new();
+                let side = oni_measure::tiles::roll_tile();
                 let mut blank = Vec::new();
                 // The base read first, so the roll's screen places the black the roll will take.
                 let base = pick.and_then(|p| {
@@ -74,19 +71,17 @@ impl Ctl {
                         start.rgb_passes = Some(passes);
                     }
                     let job = roll::Job { path: f.path.clone(), before, start, flagged: f.flagged };
-                    // Every frame of the measure lays its tile, a flagged one too, on the measuring copy, uncropped.
+                    // Every frame of the measure draws its tile, a flagged one too, on the measuring copy, uncropped.
                     let start = uncropped(&job.start);
                     let mut drawn = None;
                     let voted = frames.len();
                     if f.flagged {
-                        if let Some(tile) = m.and_then(|m| m.with(&f.path, &start, |r, copy| oni_measure::sheet::tile(r, copy, &start, side))) {
+                        if let Some(tile) = m.and_then(|m| m.with(&f.path, &start, |r, copy| oni_measure::tiles::tile(r, copy, &start, side))) {
                             drawn = trace::Drawn::of(&tile, screen).zip(negative::of(&tile));
-                            tiles.push((f.path.clone(), tile));
-                            reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
                         jobs.push(job);
                     } else if let Some((frame, tile)) = m.and_then(|m| {
-                        m.with(&f.path, &start, |r, copy| Some((key::roll_measured(r, copy, &f.path, &start), oni_measure::sheet::tile(r, copy, &start, side))))
+                        m.with(&f.path, &start, |r, copy| Some((key::roll_measured(r, copy, &f.path, &start), oni_measure::tiles::tile(r, copy, &start, side))))
                     }) {
                         // A frame holding nothing to place an end on, a blank one, rides on the roll unvoting as a flagged one does.
                         match frame {
@@ -96,8 +91,6 @@ impl Ctl {
                         jobs.push(job);
                         if let Some(tile) = tile {
                             drawn = trace::Drawn::of(&tile, screen).zip(negative::of(&tile));
-                            tiles.push((f.path.clone(), tile));
-                            reads.push(oni_measure::window::in_crop(&start.geometry));
                         }
                     }
                     // The roll as it would combine now, sent once per frame that voted.
@@ -110,8 +103,7 @@ impl Ctl {
                 let reference = if stopped { None } else { roll::combined(&frames, film, base) };
                 let written: Option<Written> =
                     reference.map(|reference| jobs.iter().map(|j| (j.path.clone(), j.before.clone(), oni_core::balance::written(&reference, &j.start))).collect());
-                let sheet = written.as_ref().and_then(|_| sheet.written(&paths, jobs.iter().map(|j| &j.before), &tiles, &reads));
-                with_shell(move |c| c.land_measure(session, written, sheet, stopped, &paths, &blank));
+                with_shell(move |c| c.land_measure(session, written, stopped, &paths, &blank));
             });
             (job, session)
         };
@@ -139,7 +131,7 @@ impl Ctl {
 
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
     /// gallery step, the editor on the first frame unless the open one landed, and what was left out named.
-    pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, sheet: Option<Sheet>, stopped: bool, asked: &[String], blank: &[String]) {
+    pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
             let r = &mut s.prepare;
@@ -177,10 +169,6 @@ impl Ctl {
             s.prepare.shown = false;
             (failure, landed)
         };
-        // Adopted, never opened: the editor opens on the roll's first frame below.
-        if let (Some(sheet), Some((_, _, donor))) = (sheet, written.first()) {
-            self.adopt_sheet(&sheet, donor, false);
-        }
         let support = self.state.borrow().support.clone();
         crate::app::year::journal_in(&support).note(oni_library::journal::Kind::Measured, None, 0, landed as u32, None, oni_settings::Date::now());
         let message = failure.or_else(|| left_out(asked, &written, blank));

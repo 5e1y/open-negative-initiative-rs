@@ -4932,5 +4932,26 @@
     "title": "A frame sent to the ONI Trash from the editor hands on to its neighbour",
     "status": "done",
     "detail": "Owner's call: Move to ONI Trash in the editor fell back on the gallery. The editor now stays and opens the roll's first frame after the open one that stays, else the last before it at the roll's end (State::after_trash over lab_frames, the frames leaving with it skipped); a roll emptied whole still falls back on the gallery, and the gallery's trash is unchanged. Checks: state_read a trashed frame hands on to the next, past those leaving with it, else the one before (twin: the whole roll gone, or the open frame staying, hands on to none); window editor_routes D trashed in the editor opens C, selected."
+  },
+  {
+    "id": 1033,
+    "type": "feature",
+    "title": "The app makes no contact sheet: the bar's sheet key selects the whole roll as ⌘A does",
+    "status": "done",
+    "detail": "Owner's call: Swift's contact sheet, a 16-bit TIFF laid six to a row beside the roll and adopted as a photograph, leaves the app now that Edit Together and the export lay the roll as a contact sheet. Gone: New Contact Sheet (the Rolls menu item, app/sheets.rs, its load bar and its bench), the sheet Prepare the Roll laid after a measure for negatives and slides (prepare/sheet_plan.rs, adopt_sheet), and the laying and naming in oni-measure (sheet.rs becomes tiles.rs: the tile Prepare draws and its side). The bar's key keeps its place and glyph and now does what ⌘A does where the hand is (Act::SelectAll through the key path), live while photos show; its help reads Select the Whole Roll (⌘A), in fr and es. A sheet already on disk still opens on its grid (the sidecar's sheet, its measuring cells, roll membership). Parity: New Contact Sheet, the sheet's composition, its sidecar and its dimmed Details depart; ContactSheet.selfCheck departs. Checks: tiles a roll's tile holds 36 frames in 2^24 pixels (twin: a pixel more outgrows it); window editor_routes the bar's key shows the three left together; rolls the key live in the gallery; prepare, slides and rgb_passes a measure lays no sheet; the contact_sheet window check goes."
+  },
+  {
+    "id": 1034,
+    "type": "feature",
+    "title": "EXP. CONTACT SHEET: an orange bar key beside a narrower export key",
+    "status": "done",
+    "detail": "Owner's call: with several photos picked, an orange key EXP. CONTACT SHEET stands left of the blue export key, in the gallery as in the editor (Act::ExportSheet, Bar.targets > 1); it opens the export surface on the selection laid as one sheet, the blue key and ⌘E on separate photos (export_now and export_sheet set Card.sheet). The key's orange is the sheet's numbers' (ButtonKind.sheet, Colour.edge-print). The export slot is a hair narrower: ShellStyle.export-width is AppBar's 140 pt less Space.m. Translated in fr and es. Checks: window export_sheet on the gallery's three photos the bar counts three targets, the orange key opens the export on one sheet, the blue one on separate photos (twin)."
+  },
+  {
+    "id": 1035,
+    "type": "feature",
+    "title": "The export offers Separate Photos or Contact Sheet first, and shows the sheet it writes",
+    "status": "done",
+    "detail": "Owner's call: the contact sheet's toggle sat among the settings, too quiet. With several photos the panel opens on an Export As segmented control, Separate Photos or Contact Sheet, above the presets; on Contact Sheet the column shows the sheet itself in place of the photos' lines: each frame's preview at its place, its number under it in its ink and the logo's band, on black or white, laid by sheet::laid on the sizes measured (a frame unmeasured on 3:2) and fitted by Rust to the room the column reports (Exporting.sheet-room, sheet-tiles, sheet-ground, sheet-logo-box, sheet-number-size and -band; export_card/sheet_view.rs), the logo drawn once per width and ground. Checks: window export_sheet separate photos show no sheet (twin), the sheet in the column is three tiles in a row on the file's proportions, numbered 1 to 3, the band under them on black, white for the positives."
   }
 ]

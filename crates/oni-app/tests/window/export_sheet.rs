@@ -1,12 +1,13 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
 //! gaps, each frame's number in orange under its picture, a foot of four margins and the logo's band;
-//! the same three as positives on white, numbered in dark red, the logo black.
+//! the same three as positives on white, numbered in dark red, the logo black; the sheet shown in the
+//! column, and the bar's orange key opening the export on one sheet.
 
 use oni_app::app::export_card::{self, Ask, job::End};
 use oni_app::app::{Options, Shell};
 use oni_app::{Exporting, Library};
 use oni_core::{Archive, EditorStore};
-use slint::ComponentHandle;
+use slint::{ComponentHandle, Model};
 use slint::platform::WindowEvent;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -72,9 +73,21 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
 
     // One sheet: three frames a tile wide, 30 px apart, as tall as B, a 60 px margin around them, four
     // under them, then the 270 px logo band.
+    assert_eq!(e.get_sheet_tiles().row_count(), 0, "twin: separate photos show their lines");
     e.invoke_sheet_set(true);
     rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 1398");
     assert_eq!(e.get_key_title(), "EXPORT CONTACT SHEET");
+    // The column shows the sheet as the file lays it, fitted to its room: three tiles in a row,
+    // numbered, on the sheet's proportions, the logo's band under them.
+    // Laid out once drawn: the room the column gives the sheet is read then.
+    let _ = rig.drawn();
+    rig.until("the sheet in the column", LONG, || e.get_sheet_tiles().row_count() == 3);
+    let tiles: Vec<_> = (0..3).filter_map(|i| e.get_sheet_tiles().row_data(i)).collect();
+    let ground = e.get_sheet_ground();
+    assert!(((ground.width / ground.height) as f64 - 3252.0 / 1398.0).abs() < 0.01, "{ground:?}");
+    assert!(tiles[0].x < tiles[1].x && tiles[1].x < tiles[2].x && (tiles[0].width - tiles[2].width).abs() < 0.5, "one row, a tile wide each");
+    assert_eq!(tiles.iter().map(|t| t.number.to_string()).collect::<Vec<_>>(), ["1", "2", "3"]);
+    assert!(e.get_sheet_logo_box().y > tiles[1].y + tiles[1].height && !e.get_sheet_positive(), "the band under the row, on black");
     e.invoke_export();
     rig.until("the sheet written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
@@ -110,6 +123,7 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     ctl.enter_export(targets.into_iter().map(positive).collect());
     e.invoke_sheet_set(true);
     rig.until("the positives' sheet", LONG, || e.get_dims().as_str() == "3252 × 1398");
+    assert!(e.get_sheet_positive(), "the column shows the white sheet");
     e.invoke_export();
     rig.until("the positives written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
     assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
@@ -124,5 +138,24 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert!(numbered > 100, "the first number is dark red: {numbered} pixels");
     assert!(count(60..1084, 1067..1337, &dark) > 20_000, "the logo black");
     assert_eq!(count(0..3252, 896..1064, &|p| !paper(p)) + count(60..260, bottom..bottom + 60, &orange), 0, "twin: the foot white, no orange number");
+
+    // The bar's two keys on the gallery's three photos: the orange one opens the export on one sheet,
+    // the blue one on separate photos.
+    rig.until("the surface left", LONG, || !e.get_shown());
+    if !w.global::<oni_app::App>().get_gallery() {
+        ctl.act(oni_app::Act::ToggleMode);
+    }
+    rig.until("the gallery", LONG, || w.global::<oni_app::App>().get_gallery());
+    lib.invoke_tile_clicked(0, false, false);
+    lib.invoke_tile_clicked(1, true, false);
+    lib.invoke_tile_clicked(2, true, false);
+    rig.pump();
+    assert_eq!(w.global::<oni_app::Bar>().get_targets(), 3, "the orange key shows for several photos");
+    ctl.act(oni_app::Act::ExportSheet);
+    rig.until("the export on one sheet", LONG, || e.get_shown() && e.get_sheet());
+    ctl.leave_export();
+    ctl.act(oni_app::Act::Export);
+    rig.until("the export on separate photos", LONG, || e.get_shown());
+    assert!(!e.get_sheet(), "twin: the blue key writes each photo");
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -207,10 +207,6 @@ impl State {
             let waiting = self.rows.iter().filter(|e| e.fingerprint.starts_with(thumbnails::PENDING)).count();
             return Some(LoadBar::counted(tr("Reading the library"), self.rows.len() - waiting, self.rows.len()));
         }
-        if let Some(m) = self.making_sheet {
-            // Only the decode counts frames; writing, adopting and opening are opaque, so the bar goes busy.
-            return Some(if m.step.is_empty() { LoadBar::counted(tr("Making the contact sheet"), m.done, m.total) } else { LoadBar::busy(tr(m.step)) });
-        }
         if let Some((done, total)) = self.together.as_ref().map(|g| g.loaded()).filter(|(done, total)| done < total) {
             return Some(LoadBar::counted(tr("Opening the frames together"), done, total));
         }
@@ -317,7 +313,7 @@ mod tests {
 
     #[test]
     fn a_counted_load_reads_its_count_and_fraction_and_a_busy_one_sweeps() {
-        let counted = LoadBar::counted("Making the contact sheet", 3, 8);
+        let counted = LoadBar::counted("Opening the frames together", 3, 8);
         assert_eq!((counted.count(), counted.fraction()), ("3/8".to_string(), 0.375));
         let busy = LoadBar::busy("Writing the file");
         // Twin: a busy bar never reads as a bar stalled at nothing done.

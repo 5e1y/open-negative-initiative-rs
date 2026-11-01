@@ -81,10 +81,6 @@ msgstr "Mover a un rollo nuevo…"
 msgid "Ungroup"
 msgstr "Desagrupar"
 
-#: crates/oni-app/src/app/sheets.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/toolbar.slint
-msgid "New Contact Sheet"
-msgstr "Nueva hoja de contactos"
-
 #: crates/oni-app/src/app/export_card/publishing.rs crates/oni-app/src/app/menus.rs crates/oni-ui/ui/app.slint crates/oni-ui/ui/export_state.slint
 msgid "Show What This Screen Cannot Show"
 msgstr "Mostrar lo que esta pantalla no puede mostrar"
@@ -570,6 +566,22 @@ msgid "Export"
 msgstr "Exportar"
 
 #: crates/oni-ui/ui/export.slint
+msgid "Export As"
+msgstr "Exportar como"
+
+#: crates/oni-ui/ui/export.slint
+msgid "Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives."
+msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila encima del logo, numeradas según su lugar en su carrete, en naranja sobre negro, o en rojo oscuro sobre blanco cuando todas son positivos."
+
+#: crates/oni-ui/ui/export.slint
+msgid "Separate Photos"
+msgstr "Fotos separadas"
+
+#: crates/oni-app/src/app/export_card/writing.rs crates/oni-ui/ui/export.slint
+msgid "Contact Sheet"
+msgstr "Hoja de contactos"
+
+#: crates/oni-ui/ui/export.slint
 msgid "Instagram"
 msgstr "Instagram"
 
@@ -592,18 +604,6 @@ msgstr "TIFF 16 bits"
 #: crates/oni-ui/ui/export.slint
 msgid "JPEG"
 msgstr "JPEG"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Contact sheet"
-msgstr "Hoja de contactos"
-
-#: crates/oni-ui/ui/export.slint
-msgid "Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives."
-msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila encima del logo, numeradas según su lugar en su carrete, en naranja sobre negro, o en rojo oscuro sobre blanco cuando todas son positivos."
-
-#: crates/oni-ui/ui/export.slint
-msgid "All photos on one sheet"
-msgstr "Todas las fotos en una hoja"
 
 #: crates/oni-ui/ui/export.slint
 msgid "Compression"
@@ -2198,6 +2198,10 @@ msgid "ALL"
 msgstr "TODAS"
 
 #: crates/oni-ui/ui/toolbar.slint
+msgid "Select the Whole Roll ({})"
+msgstr "Seleccionar todo el rollo ({})"
+
+#: crates/oni-ui/ui/toolbar.slint
 msgid "RESET SCAN"
 msgstr "RESTABLECER ESCANEO"
 
@@ -2276,6 +2280,14 @@ msgstr "COMENTARIOS"
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Phone Remote"
 msgstr "Control desde el teléfono"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "EXP. CONTACT SHEET"
+msgstr "EXP. HOJA DE CONTACTOS"
+
+#: crates/oni-ui/ui/toolbar.slint
+msgid "Export the photos picked as one contact sheet"
+msgstr "Exportar las fotos elegidas en una sola hoja de contactos"
 
 #: crates/oni-ui/ui/toolbar.slint
 msgid "Star a folder of scans and open it · export stays on {}"
@@ -2387,7 +2399,7 @@ msgid_plural "{n} items from other folders were left out: ONI opens one folder a
 msgstr[0] "Un elemento de otra carpeta se dejó fuera: ONI abre una carpeta cada vez."
 msgstr[1] "{n} elementos de otras carpetas se dejaron fuera: ONI abre una carpeta cada vez."
 
-#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs crates/oni-app/src/app/sheets.rs
+#: crates/oni-app/src/app/archive_view/landing.rs crates/oni-app/src/app/gallery_view.rs crates/oni-app/src/app/gestures.rs crates/oni-app/src/app/navigator/folder_menu.rs crates/oni-app/src/app/navigator/locate.rs crates/oni-app/src/app/organising/info_sidebar.rs crates/oni-app/src/app/organising/projects.rs crates/oni-app/src/app/prepare/measure.rs
 msgid "Something Went Wrong"
 msgstr "Algo ha fallado"
 
@@ -2506,10 +2518,6 @@ msgstr "Elige perfiles ICC, o el zip en el que los distribuye un fabricante de p
 #: crates/oni-app/src/app/export_card/settings.rs
 msgid "Where should the {count} files be written?"
 msgstr "¿Dónde se deben guardar los {count} archivos?"
-
-#: crates/oni-app/src/app/export_card/writing.rs
-msgid "Contact Sheet"
-msgstr "Hoja de contactos"
 
 #: crates/oni-app/src/app/frontier_look.rs
 msgid "Export the Frontier look"
@@ -3785,34 +3793,6 @@ msgstr[1] "Restablecer {n} fotos"
 msgid "Version {version}"
 msgstr "Versión {version}"
 
-#: crates/oni-app/src/app/sheets.rs
-msgid "Making Contact Sheet…"
-msgstr "Creando hoja de contactos…"
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "Prepare this roll first: a contact sheet carries the window its roll was measured on."
-msgstr "Prepara antes este rollo: una hoja de contactos lleva la ventana con la que se midió su rollo."
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "The contact sheet could not be written."
-msgstr "No se pudo escribir la hoja de contactos."
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "New Contact Sheet from {count} Photos"
-msgstr "Nueva hoja de contactos con {count} fotos"
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "Writing the file"
-msgstr "Escribiendo el archivo"
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "Adding it to the library"
-msgstr "Añadiéndola a la fototeca"
-
-#: crates/oni-app/src/app/sheets.rs
-msgid "Opening it"
-msgstr "Abriéndola"
-
 #: crates/oni-app/src/app/state_read.rs
 msgid "Creating thumbnails"
 msgstr "Creando miniaturas"
@@ -3820,10 +3800,6 @@ msgstr "Creando miniaturas"
 #: crates/oni-app/src/app/state_read.rs
 msgid "Reading the library"
 msgstr "Leyendo la fototeca"
-
-#: crates/oni-app/src/app/state_read.rs
-msgid "Making the contact sheet"
-msgstr "Creando la hoja de contactos"
 
 #: crates/oni-app/src/app/state_read.rs
 msgid "Opening the frames together"

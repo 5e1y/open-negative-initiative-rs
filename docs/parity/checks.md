@@ -10,7 +10,7 @@ RAW only), then the ten it runs inline. Paths are under `Sources/OpenNegative/` 
 - **blocked**: the check guards a behaviour the port does not have yet, named beside it.
 - **departed**: the check guards a behaviour the owner chose to leave; not counted.
 
-Of 161 checks: 104 twin, 36 partial, 9 none, 12 blocked; one departed.
+Of 161 checks: 103 twin, 36 partial, 9 none, 12 blocked; two departed.
 
 | # | Check | Swift | Property | Rust twin | Rust test |
 |---|---|---|---|---|---|
@@ -28,7 +28,7 @@ Of 161 checks: 104 twin, 36 partial, 9 none, 12 blocked; one departed.
 | 12 | `FilmProbe.axisChecks` | `Pipeline/FilmProbe.swift` | the probe reads the axis the kernel runs | twin | `oni-measure/tests/axis.rs::the_density_a_reading_names_is_the_kernel_s_own_axis_at_both_ends_of_the_range`; Rust has no probe, so the axis formula a reading names is held against the kernel |
 | 13 | `Spectrogram.selfCheck` | `Checks/Pipeline/Spectrogram+Checks.swift:9` | the colour mixer reaches one band and no other | twin | `oni-pipeline/src/finishing.rs::every_band_owns_part_of_its_centre_and_the_packing_divides_by_it` |
 | 14 | `SpectrogramPanel.selfCheck` | `Checks/UI/SpectrogramPanel+Checks.swift:6` | the colour wheel is grabbed, never jumped to | twin | `oni-app/src/editors/spectrogram.rs::the_colour_wheel_is_grabbed_never_jumped_to` |
-| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | twin | `oni-measure/src/sheet.rs::the_sheet_lays_six_to_a_row_fitted_on_one_gap_with_nothing_painted_between`, `::the_cap_holds_and_nothing_is_dropped_to_hold_it`, `::a_sheet_stands_on_its_rolls_window_its_frames_flat_field_never_laid_twice`, `::a_sheet_is_named_by_its_roll_or_day_and_lands_in_its_folder_numbered`, `oni-app/src/app/sheets.rs::the_sheet_file_gives_its_pixels_back_in_working_light` |
+| 15 | `ContactSheet.selfCheck` | `Checks/Pipeline/ContactSheet+Checks.swift:9` | the contact sheet composes | departed | the app makes no contact sheet (owner's call, #1033) |
 | 16 | `Pipeline.measureWindowChecks` | `Checks/Pipeline/Pipeline+Checks.swift:9` | measurement window holds | partial | `oni-measure/src/window.rs::an_untouched_frame_reads_clear_of_its_edges_and_a_drawn_window_where_it_was_drawn`, `::the_window_is_seen_inside_the_crop_and_a_bypassed_crop_reads_the_frame`, `oni-pipeline/tests/sheet_detail.rs::a_sheet_renders_sharpening_and_chroma_denoise_off_and_a_photograph_does_not`; the window asserted on the rectangles, not through a rendered histogram |
 | 17 | `Blocks.selfCheck` | `Checks/Pipeline/Blocks+Checks.swift:8` | the block grid names its cells, drops a speck and keeps an area | twin | `oni-measure/tests/blocks.rs::the_grid_names_its_cells_as_a_sheet_is_read`, `::a_speck_never_votes_and_an_area_places_the_end_on_its_own_value`, `::the_tail_is_a_share_of_the_cell_so_a_hair_falls_and_a_thread_stays`, `::a_window_reads_only_what_it_holds_and_a_roll_reads_through_its_frames` |
 | 18 | `Film.selfCheck` | `Checks/Pipeline/Film+Checks.swift:6` | rolls group, and clearing one gives its frames back to their day | twin | `oni-library/tests/swift_checks.rs::rolls_take_their_frames_out_of_the_days_and_clearing_one_gives_them_back`, `::a_roll_is_offered_the_lowest_free_number`, `::the_day_is_computed_once_per_frame`, `::a_hand_placed_frame_reorders_inside_its_roll_and_never_walks_the_roll`, `::a_dragged_roll_leads_the_feed_and_a_day_reads_its_own_start`, `::a_rolls_three_inspector_fields_move_equality_apart_and_round_trip` |

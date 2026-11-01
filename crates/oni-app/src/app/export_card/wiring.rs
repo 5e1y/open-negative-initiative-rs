@@ -40,6 +40,11 @@ impl Ctl {
             p.preview_room((f64::from(w) * scale, f64::from(h) * scale, f64::from(floor) * scale));
         });
         let p = me.clone();
+        e.on_sheet_room(move |w, h| {
+            p.export.borrow_mut().sheet_room = Some((f64::from(w), f64::from(h)));
+            p.publish_sheet_view();
+        });
+        let p = me.clone();
         e.on_preset(move |i| {
             let Some(preset) = Preset::ALL.get(i as usize).copied() else { return };
             let before = p.export.borrow().settings.space().clone();

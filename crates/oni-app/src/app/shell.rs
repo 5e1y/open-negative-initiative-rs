@@ -145,7 +145,6 @@ impl Shell {
             console: None,
             nav: navigator::Nav::new(options.computer, options.identify),
             prepare: prepare::Roll::new(options.require_roll),
-            making_sheet: None,
             updates: updates::Updates::new(options.updates),
             year: year::Year::default(),
             transition: transition::Transition::new(options.transition, &options.support),

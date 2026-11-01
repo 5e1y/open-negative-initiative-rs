@@ -90,7 +90,6 @@ mod prepare;
 mod presets;
 mod roll_tab;
 mod rolls;
-mod sheets;
 mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
 mod transition;
@@ -338,7 +337,6 @@ pub struct State {
     console: Option<(crate::ConsoleWindow, Timer)>,
     nav: navigator::Nav,
     pub(crate) prepare: prepare::Roll,
-    pub(crate) making_sheet: Option<sheets::Making>,
     pub(crate) updates: updates::Updates,
     year: year::Year,
     transition: transition::Transition,

@@ -16,8 +16,6 @@
 //! `ONI_BENCH=console` opens the console window and waits for the session's log to show in it.
 //! `ONI_BENCH=prepare` prepares the open frame's roll from the gallery: the steps by the panel's key,
 //! the base clicked on its scan, a frame flagged on the sheet, the measure landed, then undone.
-//! `ONI_BENCH=sheet` picks the gallery's first six frames and makes their contact sheet, which it
-//! leaves beside them, opened.
 //! `ONI_BENCH=grid` opens up to 36 frames together and drags Exposure over them.
 //! `ONI_BENCH=folded` pairs a phone over loopback and steps Exposure (`ONI_FOLDED=scanner`: the Scanner
 //! keypad on Frontier) with the panel shown, then folded, counting each step rendered and drawn.
@@ -37,12 +35,11 @@ mod flows;
 mod presets;
 mod prepare;
 mod console;
-mod sheet;
 mod loupe;
 mod folded;
 mod grid;
 mod midzoom;
-use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, sheet::*, loupe::*, folded::*, grid::*, midzoom::*};
+use {zoom::*, crop::*, dedust::*, flows::*, presets::*, prepare::*, console::*, loupe::*, folded::*, grid::*, midzoom::*};
 
 pub const NOTCHES: usize = 60;
 
@@ -122,7 +119,6 @@ pub enum Mode {
     Presets,
     Prepare,
     Console,
-    Sheet,
     Loupe,
     Folded,
     Grid,
@@ -154,7 +150,6 @@ pub fn requested() -> Option<Mode> {
         "presets" => Some(Mode::Presets),
         "prepare" => Some(Mode::Prepare),
         "console" => Some(Mode::Console),
-        "sheet" => Some(Mode::Sheet),
         "loupe" => Some(Mode::Loupe),
         "folded" => Some(Mode::Folded),
         "grid" => Some(Mode::Grid),
@@ -199,9 +194,6 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
     }
     if mode == Mode::Prepare {
         return prepare(ctl, done);
-    }
-    if mode == Mode::Sheet {
-        return sheet(ctl, done);
     }
     if mode == Mode::Folded {
         return folded(ctl, done);
@@ -305,7 +297,7 @@ pub fn start(ctl: &Rc<Ctl>, mode: Mode, done: impl FnOnce(String) + 'static) {
                     Mode::Drag => format!("bench, {NOTCHES} notches dragged on {on}"),
                     Mode::Resize => format!("bench, {NOTCHES} notches dragged on {on}, the window resized on each"),
                     Mode::Settled => format!("bench, {NOTCHES} notches dragged on {on}, every thumbnail read"),
-                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Sheet | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
+                    Mode::Long | Mode::Zoom | Mode::Crop | Mode::Dedust | Mode::Flows | Mode::Presets | Mode::Prepare | Mode::Console | Mode::Loupe | Mode::Folded | Mode::Grid | Mode::Midzoom => format!("bench, {LONG} notches dragged on {on} for ten seconds"),
                     Mode::Compare => format!("bench, {NOTCHES} notches dragged on {on} beside Compare's before"),
                 };
                 let notches = ctl.state.borrow().notches().summary(from, &title);

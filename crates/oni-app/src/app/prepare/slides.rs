@@ -42,7 +42,7 @@ impl Roll {
 
 impl Ctl {
     /// A slide roll: every ticked frame read on the roll's film, window and flat-field off this thread,
-    /// the unflagged slides' cells pooled into the roll's gains laid on all, and its contact sheet laid.
+    /// the unflagged slides' cells pooled into the roll's gains laid on all.
     pub(super) fn prepare_slides(self: &Rc<Self>) {
         let job = {
             let mut s = self.state.borrow_mut();
@@ -57,7 +57,6 @@ impl Ctl {
             r.stop.store(false, Ordering::Relaxed);
             r.progress = Some((0, picked.len()));
             let (window, mask, stop, session) = (r.window, r.mask(), r.stop.clone(), r.session);
-            let sheet = SheetPlan::of(&s.rows, s.archive.as_ref(), &picked, true);
             let job: Job = Box::new(move || {
                 let paths: Vec<String> = picked.iter().map(|f| f.path.clone()).collect();
                 let common = CaptureExposure::common(&paths.iter().map(|p| CaptureExposure::read(Path::new(p))).collect::<Vec<_>>());
@@ -66,13 +65,11 @@ impl Ctl {
                     _ => 0.0,
                 };
                 let m = crate::measuring::measurer();
-                let side = oni_measure::sheet::roll_tile();
+                let side = oni_measure::tiles::roll_tile();
                 let mut written: Written = Vec::new();
                 let mut pooled = Vec::new();
                 let mut blank = Vec::new();
                 let mut roll = SlideRoll::default();
-                let mut tiles: Vec<(String, oni_measure::sheet::Picture)> = Vec::new();
-                let mut reads = Vec::new();
                 for f in &picked {
                     let path = &f.path;
                     if stop.load(Ordering::Relaxed) {
@@ -88,13 +85,9 @@ impl Ctl {
                     if let Some(before) = before {
                         let start = roll::slide(&before, window, mask.as_ref(), stops(path));
                         let seen = uncropped(&start);
-                        let read = m.and_then(|m| m.with(path, &seen, |r, copy| Some((key::slide_read(r, copy, &seen), oni_measure::sheet::tile(r, copy, &seen, side)))));
+                        let read = m.and_then(|m| m.with(path, &seen, |r, copy| Some((key::slide_read(r, copy, &seen), oni_measure::tiles::tile(r, copy, &seen, side)))));
                         if let Some((read, tile)) = read {
                             drawn = tile.as_ref().and_then(|t| Drawn::of(t, screen).zip(negative::of(t)));
-                            if let Some(tile) = tile {
-                                tiles.push((path.clone(), tile));
-                                reads.push(oni_measure::window::in_crop(&seen.geometry));
-                            }
                             match read {
                                 Some(read) if !f.flagged => {
                                     roll.add(&read.reading.rgb);
@@ -122,9 +115,7 @@ impl Ctl {
                     }
                 }
                 let written = (!stopped).then(|| if gains.is_some() { written } else { Vec::new() });
-                let laid = written.as_ref().filter(|w| !w.is_empty());
-                let sheet = laid.and_then(|w| sheet.written(&paths, w.iter().map(|(_, before, _)| before), &tiles, &reads));
-                with_shell(move |c| c.land_measure(session, written, sheet, stopped, &paths, &blank));
+                with_shell(move |c| c.land_measure(session, written, stopped, &paths, &blank));
             });
             job
         };
