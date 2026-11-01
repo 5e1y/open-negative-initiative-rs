@@ -4960,5 +4960,26 @@
     "title": "The contact-sheet key turns orange and toggles back to one photo; the orange export key shares the blue one's plate",
     "status": "done",
     "detail": "Owner's call: the bar's contact-sheet key takes the orange of EXP. CONTACT SHEET (ButtonKind.sheet). Pressed on a roll already picked whole, as ⌘A would pick it (Ctl::grid_whole in the gallery, keys::column_whole beside a photo), it picks the photo it came from alone again: the open one beside a photo, which then shows alone, the last picked in the gallery; else it does what ⌘A does (Ctl::select_roll). ⌘A itself is unchanged. With several photos picked, EXP. CONTACT SHEET and the export key stand on one plate (ButtonGroup, plated while both show). Checks: window editor_routes the key pressed again on the three together shows C alone, selected; window export_sheet in the gallery the key on the three picked leaves one, then picks the three again (twin)."
+  },
+  {
+    "id": 1037,
+    "type": "feature",
+    "title": "A roll measured opens whole, every frame shown together",
+    "status": "done",
+    "detail": "Owner's call: once Prepare the Roll's measure lands, every frame of the roll is picked and shown together on its contact sheet in the editor, led by the open frame when it landed, else the first (land_measure sets the selection to the prepared frames, then follow_selection). Check: window prepare, after the measure A, B and C are picked, D left out, and the canvas reads 3 frames together."
+  },
+  {
+    "id": 1038,
+    "type": "docs",
+    "title": "The welcome sheet's 1.5 edition, with its splash photo",
+    "status": "done",
+    "detail": "The edition is 1.5.0, so everyone sees the sheet again and its heading names 1.5 (it still named 1.2, the edition never moved with 1.4). Its points name what 1.5 brings: the whole roll once measured, contact sheets and their export, slides as an experiment and on white, Prepare's uncropped scans, RESET SCAN keeping the crop, trash from the editor, select-all beside a photo (the system's own key word). The splash and the sheet show the 1.5.0 photo by ultra_detente. Check: help tests, the edition's release is the app's, its twin the former 1.2. English, French and Spanish."
+  },
+  {
+    "id": 1039,
+    "type": "release",
+    "title": "1.5.0",
+    "status": "done",
+    "detail": "oni-app's version 1.5.0, carrying #997 to #1038: contact sheets and their export, slide rolls, the measure landing whole, the 1.5 welcome."
   }
 ]
