@@ -135,6 +135,12 @@ impl Face {
         text.chars().map(|c| advances.advance_width(font.charmap().map(c))).sum()
     }
 
+    /// The cap height and the descent at `size` pixels.
+    pub fn heights(&self, size: f32) -> (f32, f32) {
+        let m = self.font().metrics(&self.coords).scale(size);
+        (m.cap_height, m.descent)
+    }
+
     /// The baseline that centres a line of `size` pixels in a band from `top`, `height` tall, as a
     /// label centres its text.
     pub fn centred(&self, top: f32, height: f32, size: f32) -> f32 {
@@ -143,9 +149,11 @@ impl Face {
     }
 }
 
-/// The design system's orange in bold, as the checks set it.
+/// The design system's orange and white in bold, as the checks set them.
 #[cfg(test)]
 pub(super) const ORANGE: Lettering = Lettering { ink: [1.0, 159.0 / 255.0, 10.0 / 255.0], weight: 700.0 };
+#[cfg(test)]
+pub(super) const WHITE: Lettering = Lettering { ink: [1.0; 3], weight: 700.0 };
 
 #[cfg(test)]
 mod tests {

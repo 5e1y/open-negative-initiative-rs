@@ -18,18 +18,18 @@ impl Ctl {
         }
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-            let plate = lettering.map(|l| super::heading::drawn(&heading, band, l));
+            let plate = lettering.map(|(_, l)| super::heading::drawn(&heading, band, l));
             let heading = plate.map(|p| (p.rgba8(), p.width, p.height));
             with_shell(move |c| c.numbers_landed(id, numbers, heading));
         });
     }
 
-    /// The numbers' ink and weight as the canvas sets them.
-    pub(in crate::app) fn lettering(&self) -> Option<Lettering> {
+    /// The numbers' lettering and the heading's, their inks and weight as the canvas sets them.
+    pub(in crate::app) fn lettering(&self) -> Option<(Lettering, Lettering)> {
         let w = self.window()?;
         let c = w.global::<Canvas>();
-        let ink = c.get_number_ink();
-        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
+        let set = |ink: slint::Color| Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 };
+        Some((set(c.get_number_ink()), set(c.get_heading_ink())))
     }
 
     /// Each folder of `paths` with its photos in shooting order, which `ranks` numbers them by.

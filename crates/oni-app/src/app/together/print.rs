@@ -11,11 +11,12 @@ use super::heading::{self, Heading};
 use super::plate::{Anchor, Face, Lettering, Plate};
 use swash::scale::ScaleContext;
 
-/// What a sheet shows beside its frames: each one's number, the heading, and the ink they are set in.
+/// What a sheet shows beside its frames: each one's number, the heading, and the lettering each is set in.
 pub(in crate::app) struct Captions {
     pub numbers: Vec<Option<usize>>,
     pub heading: Heading,
     pub lettering: Lettering,
+    pub heading_lettering: Lettering,
 }
 
 /// The sheet of `targets` at full scale in the working space, laid on `sizes` (each frame's cropped
@@ -54,7 +55,7 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
         number(&mut picture, (x, y), n, captions.lettering, &mut context);
     }
     let (hx, hy, hw, _) = sheet.heading;
-    heading::drawn(&captions.heading, hw as usize, captions.lettering).lay_on(&mut picture, (hx as i64, hy as i64));
+    heading::drawn(&captions.heading, hw as usize, captions.heading_lettering).lay_on(&mut picture, (hx as i64, hy as i64));
     Ok(Some(picture))
 }
 

@@ -10,7 +10,7 @@ impl Ctl {
     /// first line's artist and copyright, and the first frame's date and paper correction.
     pub(super) fn write_sheet(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
         let Some(destination) = destinations.into_iter().next() else { return };
-        let Some(lettering) = self.lettering() else { return };
+        let Some((lettering, heading_lettering)) = self.lettering() else { return };
         let (targets, sizes, export, stop, metadata) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();
@@ -35,7 +35,7 @@ impl Ctl {
                         oni_export::lands(&t.path, &destination, &ledger, replacing)?;
                     }
                     let numbers = together::ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-                    let captions = Captions { numbers, heading, lettering };
+                    let captions = Captions { numbers, heading, lettering, heading_lettering };
                     let Some(sheet) = together::printed(&engine, &targets, sizes, &captions, &stop)? else { return Ok(false) };
                     let first = &targets[0];
                     let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;

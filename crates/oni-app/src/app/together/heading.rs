@@ -1,5 +1,5 @@
-//! The sheet's heading across its top: the logo at the left, an EAN-13 of the frame count and the
-//! roll's date in the middle, the roll's name at the right, set at the sheet's full scale.
+//! The sheet's heading across its top, each part a column wide: the logo at the left, an EAN-13 of
+//! the frame count and the roll's date in the middle, the roll's name at the right, at full scale.
 
 use super::*;
 use super::plate::{Anchor, Face, Lettering, Plate};
@@ -7,15 +7,11 @@ use resvg::{tiny_skia, usvg};
 use swash::scale::ScaleContext;
 
 const LOGO_SVG: &[u8] = include_bytes!("../../../../oni-ui/ui/icons/oni-logo.svg");
-/// The logo's height; an EAN module's width, its bars' height, its guards' reach below them to its
-/// digits' baseline and their size, in pixels of the full sheet.
-const LOGO: f32 = 48.0;
-const MODULE: i64 = 3;
-const BARS: i64 = 72;
-const GUARDS: i64 = 20;
-const DIGITS: f32 = 26.0;
-/// The room kept between the roll's name and the EAN: a longer name is set smaller.
-const CLEAR: f32 = 60.0;
+/// An EAN's width in modules, its first digit's seven included; its guards' reach below its bars
+/// and its digits' size, in modules.
+const SPAN: f32 = 102.0;
+const GUARDS: f32 = 8.0;
+const DIGITS: f32 = 9.0;
 
 /// What the heading says: the roll's name, the frames on the sheet, the roll's date as YYYYMMDD.
 #[derive(Clone, Debug, PartialEq)]
@@ -97,62 +93,74 @@ fn modules(digits: &[u8; 13]) -> Vec<bool> {
     bits
 }
 
-/// The heading on a clear plate `width` wide and `HEADER` tall: the logo against its left edge, the
-/// EAN centred, the roll's name against its right edge, smaller when it would reach the EAN.
+/// A column of the plate: its left, top, width and height.
+type Column = (f32, f32, f32, f32);
+
+/// The heading on a clear plate `width` wide and `HEADER` tall, in three columns a tile wide: the logo
+/// at the left, the EAN in the middle, the roll's name at the right, each across its column.
 pub(in crate::app) fn drawn(heading: &Heading, width: usize, lettering: Lettering) -> Plate {
     let mut plate = Plate::clear(width, HEADER);
     let mut context = ScaleContext::new();
-    logo(&mut plate, (HEADER as f32 - LOGO) / 2.0);
-    let half = bars(&mut plate, &ean(heading.count, &heading.date), lettering, &mut context);
-    if let Some(face) = Face::of(lettering.weight) {
-        let room = width as f32 / 2.0 - half - CLEAR;
-        let size = (NUMBER as f32).min(NUMBER as f32 * room / face.width(&heading.roll, NUMBER as f32).max(1.0)).max(8.0);
-        let baseline = face.centred(0.0, HEADER as f32, size);
-        plate.text((width as f32, baseline), &heading.roll, size, lettering, Anchor::End, &mut context);
-    }
+    // A sheet narrower than three tiles sets the whole heading smaller, centred in its band.
+    let column = (TILE as f32).min((width as f32 - 2.0 * GAP as f32) / 3.0).max(1.0);
+    let height = HEADER as f32 * column / TILE as f32;
+    let top = (HEADER as f32 - height) / 2.0;
+    logo(&mut plate, (0.0, top, column, height));
+    bars(&mut plate, ((width as f32 - column) / 2.0, top, column, height), &ean(heading.count, &heading.date), lettering, &mut context);
+    name(&mut plate, (width as f32 - column, top, column, height), &heading.roll, lettering, &mut context);
     plate
 }
 
-/// The logo `LOGO` tall from `top`, against the plate's left edge, in its own colours.
-fn logo(plate: &mut Plate, top: f32) {
+/// The logo as wide as `at` allows within its height, against its left edge, in its own colours.
+fn logo(plate: &mut Plate, at: Column) {
     let Ok(tree) = usvg::Tree::from_data(LOGO_SVG, &usvg::Options::default()) else { return };
     let size = tree.size();
-    let scale = LOGO / size.height();
-    let (w, h) = ((size.width() * scale).ceil() as u32, LOGO.ceil() as u32);
+    let scale = (at.2 / size.width()).min(at.3 / size.height());
+    let (w, h) = ((size.width() * scale).ceil() as u32, (size.height() * scale).ceil() as u32);
     let Some(mut pixmap) = tiny_skia::Pixmap::new(w, h) else { return };
     resvg::render(&tree, tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
+    let (left, top) = (at.0.round() as i64, (at.1 + (at.3 - h as f32) / 2.0).round() as i64);
     for (i, p) in pixmap.pixels().iter().enumerate() {
         let c = p.demultiply();
         let ink = [c.red(), c.green(), c.blue()].map(|v| f32::from(v) / 255.0);
-        plate.cover((i % w as usize) as i64, top.round() as i64 + (i / w as usize) as i64, f32::from(c.alpha()) / 255.0, ink);
+        plate.cover(left + (i % w as usize) as i64, top + (i / w as usize) as i64, f32::from(c.alpha()) / 255.0, ink);
     }
 }
 
-/// The EAN centred on the plate in `lettering`'s ink, its guards reaching down to its digits'
-/// baseline; half the block's width, its first digit included.
-fn bars(plate: &mut Plate, digits: &[u8; 13], lettering: Lettering, context: &mut ScaleContext) -> f32 {
-    let x0 = (plate.width as i64 - 95 * MODULE) / 2;
-    let top = (HEADER as i64 - BARS - GUARDS) / 2;
+/// The EAN across `at` in `lettering`'s ink, its first digit at its left, its guards reaching down
+/// to its digits' baseline at the column's bottom; each bar's edges on whole pixels.
+fn bars(plate: &mut Plate, at: Column, digits: &[u8; 13], lettering: Lettering, context: &mut ScaleContext) {
+    let module = at.2 / SPAN;
+    let x0 = at.0 + (SPAN - 95.0) * module;
+    let edge = |k: usize| (x0 + k as f32 * module).round() as i64;
     let guard = |k: usize| k < 3 || (45..50).contains(&k) || k >= 92;
+    let (top, bars) = (at.1.round() as i64, (at.3 - GUARDS * module).round() as i64);
     for (k, dark) in modules(digits).into_iter().enumerate() {
         if dark {
-            plate.rect((x0 + k as i64 * MODULE, top, MODULE, BARS + if guard(k) { GUARDS } else { 0 }), lettering.ink);
+            plate.rect((edge(k), top, edge(k + 1) - edge(k), if guard(k) { at.3.round() as i64 } else { bars }), lettering.ink);
         }
     }
-    let baseline = (top + BARS + GUARDS) as f32;
-    let at = |module: f32| x0 as f32 + module * MODULE as f32;
-    let mut digit = |module: f32, d: u8| plate.text((at(module), baseline), &d.to_string(), DIGITS, lettering, Anchor::Centre, context);
-    digit(-4.5, digits[0]);
+    let (baseline, size) = (at.1 + at.3, DIGITS * module);
+    let mut digit = |m: f32, d: u8, anchor| plate.text((x0 + m * module, baseline), &d.to_string(), size, lettering, anchor, context);
+    digit(-1.0, digits[0], Anchor::End);
     for i in 0..6 {
-        digit(3.0 + 7.0 * i as f32 + 3.5, digits[1 + i]);
-        digit(50.0 + 7.0 * i as f32 + 3.5, digits[7 + i]);
+        digit(3.0 + 7.0 * i as f32 + 3.5, digits[1 + i], Anchor::Centre);
+        digit(50.0 + 7.0 * i as f32 + 3.5, digits[7 + i], Anchor::Centre);
     }
-    plate.width as f32 / 2.0 - at(-9.0)
+}
+
+/// `text` across `at`, against its right edge, its capitals centred in its height; a short one is
+/// set no taller than its descenders still fit.
+fn name(plate: &mut Plate, at: Column, text: &str, lettering: Lettering, context: &mut ScaleContext) {
+    let Some(face) = Face::of(lettering.weight) else { return };
+    let (cap, descent) = face.heights(1.0);
+    let size = (at.2 / face.width(text, 1.0).max(1e-3)).min(at.3 / (cap + 2.0 * descent));
+    plate.text((at.0 + at.2, at.1 + (at.3 + cap * size) / 2.0), text, size, lettering, Anchor::End, context);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::plate::ORANGE;
+    use super::super::plate::{ORANGE, WHITE};
     use super::*;
 
     /// The digits read back from the modules by the tables, and each left digit's parity, G as true.
@@ -205,24 +213,36 @@ mod tests {
         (0..plate.width).filter(|&x| rows.clone().any(|y| plate.pixels[y * plate.width + x][3] > 0.5)).collect()
     }
 
+    /// The first and last columns of `plate` holding ink in `xs`.
+    fn span(plate: &Plate, xs: std::ops::Range<usize>) -> (usize, usize) {
+        let inked: Vec<usize> = columns(plate, 0..plate.height).into_iter().filter(|x| xs.contains(x)).collect();
+        (inked[0], *inked.last().unwrap())
+    }
+
     #[test]
-    fn the_heading_lays_the_logo_left_the_ean_centred_and_the_roll_right() {
-        let heading = Heading { roll: "Roll #8".into(), count: 38, date: "20261030".into() };
-        let width = 3000;
-        let plate = drawn(&heading, width, ORANGE);
-        let logo = columns(&plate, 30..90);
-        assert!(logo[0] < 4, "the logo against the left edge: {}", logo[0]);
-        let white = plate.pixels.iter().filter(|p| p[3] > 0.9 && p[2] > 0.9).count();
-        assert!(white > 500, "the logo in its own white: {white} pixels");
-        // The bars span 95 modules about the middle; the name ends at the right edge.
-        let middle = columns(&plate, 20..40);
-        let bars: Vec<usize> = middle.iter().copied().filter(|&x| x > 1000 && x < 2000).collect();
-        assert!((bars[0] as i64 - (1500 - 142)).abs() <= 3 && (*bars.last().unwrap() as i64 - (1500 + 142)).abs() <= 3, "{}..{}", bars[0], bars.last().unwrap());
-        assert!(*columns(&plate, 30..90).last().unwrap() > width - 8, "the roll's name against the right edge");
-        // Twin: a name too long for its half is set smaller, clear of the EAN.
-        let long = Heading { roll: "A very long roll name that would run into the barcode".into(), ..heading };
-        let crowded = drawn(&long, width, ORANGE);
-        let named: Vec<usize> = columns(&crowded, 30..90).into_iter().filter(|&x| x > 1500 + 142).collect();
-        assert!(named[0] as f32 >= 1500.0 + 142.0 + CLEAR - 4.0, "the name starts {} px from the middle", named[0] as i64 - 1500);
+    fn the_heading_sets_the_logo_the_ean_and_the_roll_each_across_a_column() {
+        let heading = Heading { roll: "2026-10-30".into(), count: 38, date: "20261030".into() };
+        // Five columns a tile wide, the middle one from 2108 to 3132, the last from 4216.
+        let width = 5 * TILE + 4 * GAP;
+        let plate = drawn(&heading, width, WHITE);
+        let (first, last) = span(&plate, 0..TILE + GAP);
+        assert!(first < 4 && last > TILE - 8, "the logo across the first column: {first}..{last}");
+        let (first, last) = span(&plate, 2 * (TILE + GAP)..3 * (TILE + GAP));
+        assert!(first < 2108 + 12 && (last as i64 - 3131).abs() <= 1, "the EAN across the middle one: {first}..{last}");
+        let (first, last) = span(&plate, 4 * (TILE + GAP)..width);
+        assert!(first < 4216 + 12 && last > width - 12, "the roll across the last one: {first}..{last}");
+        let bars = (0..plate.height).filter(|&y| plate.pixels[y * width + 2108 + 1024 - 2][3] > 0.5).count();
+        assert_eq!(bars, HEADER, "the end guard runs the band's height");
+        let lit = |p: &Plate| p.pixels.iter().filter(|p| p[3] > 0.9 && p[1] > 0.9).count();
+        assert!(lit(&plate) > 100_000, "set in white");
+        // Twin: in the numbers' orange, the EAN and the roll show no white, the logo alone does.
+        assert!(lit(&drawn(&heading, width, ORANGE)) < lit(&plate) / 2);
+        // Twin: a short name is no taller than its band, a sheet of one frame sets all three smaller.
+        let short = drawn(&Heading { roll: "R8".into(), ..heading.clone() }, width, WHITE);
+        let rows: Vec<usize> = (0..HEADER).filter(|&y| (4216..width).any(|x| short.pixels[y * width + x][3] > 0.5)).collect();
+        assert!(rows[0] > 8 && *rows.last().unwrap() < HEADER - 8, "rows {}..{}", rows[0], rows.last().unwrap());
+        let one = drawn(&heading, TILE, WHITE);
+        let third = (TILE - 2 * GAP) / 3;
+        assert!(span(&one, 0..third + GAP).1 < third + 2 && span(&one, TILE - third..TILE).0 > TILE - third - 2, "three thirds side by side");
     }
 }

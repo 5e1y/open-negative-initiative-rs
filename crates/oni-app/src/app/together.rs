@@ -41,8 +41,9 @@ const GAP: usize = 30;
 const MARGIN: usize = 2 * GAP;
 const ROWS_APART: usize = 4 * GAP;
 const NUMBER: usize = 56;
-/// The heading's band across the sheet's top, inside its margin and a margin above the first row.
-const HEADER: usize = 120;
+/// The heading's band across the sheet's top, inside its margin and a margin above the first row:
+/// the logo a tile wide, 246 by 64, stands 266 px tall.
+const HEADER: usize = 270;
 /// A frame's proportions until its thumbnail or its source lands: 35 mm's.
 const UNKNOWN: (f64, f64) = (3.0, 2.0);
 /// The share of the full sheet the histogram counts, an eighth: 128 px a tile.
