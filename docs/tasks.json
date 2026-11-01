@@ -4904,5 +4904,12 @@
     "title": "RESET SCAN keeps the crop: everything back to rest but the framing and the conversion",
     "status": "done",
     "detail": "Owner's call: the bar's reset (RESET SCAN, Reset to Imported State, the gallery cell's Reset, the phone's) keeps the whole framing, crop, straightening, rotation and measuring window, as imported() already did, besides the conversion it kept (the mode, a slide read as a negative, the roll's reference or a slide's measured gains). parameters::reset_blank no longer puts the geometry back to rest. Checks: parameters the reset keeps the framing, flat-field and dye family (twin: the look returns to rest), and the conversion (a slide read as a negative stays one); roll8 the bar's reset keeps framing, flat-field and roll, now true again."
+  },
+  {
+    "id": 1029,
+    "type": "feature",
+    "title": "⌘A beside a photo shows the folder's photos together",
+    "status": "done",
+    "detail": "Owner's call: ⌘A in the editor selected the folder the selection touches but left the open photo alone on the canvas; only ⌘ and ⇧ clicks entered the multi-selection. column_select_all now follows the selection as a click does (follow_selection), so the folder shows together on its contact sheet. Checks: window editor_routes ⌘A selects the folder's four photos and shows them together (twin: one photo, not together, before the key); the check moves to the test's end, as frames shown together keep their balance readings and a preset then lands at once."
   }
 ]

@@ -1,6 +1,6 @@
 //! The editor's routes on the headless window: a frame never balanced opens with its measuring
-//! window armed, Return and the crop's way out, De-dust leaving the Lab, the brush kept, Space and
-//! ⌘A beside a photo, and a preset's automatic balance that asks nothing.
+//! window armed, Return and the crop's way out, De-dust leaving the Lab, the brush kept, Space, a
+//! preset's automatic balance that asks nothing, and ⌘A beside a photo showing its folder together.
 
 use oni_app::app::{Options, Shell};
 use oni_app::preferences::{self, Preferences};
@@ -124,11 +124,6 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.pump();
     assert_eq!(panel.get_tab(), 2);
 
-    // ⌘A beside a photo completes the folder the selection touches.
-    assert_eq!(ctl.state.borrow().picked().len(), 1, "twin: the open photo alone before the key");
-    rig.chord(Key::Control, "a");
-    assert_eq!(*ctl.state.borrow().picked(), names.iter().cloned().collect::<HashSet<_>>());
-
     // Space leaves the Lab for the gallery, the menu item lit beside a photo only.
     w.global::<App>().invoke_menu(oni_app::Act::Emulator);
     rig.pump();
@@ -166,6 +161,13 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
         rig.pump();
         !panel.get_balancing()
     });
+
+    // ⌘A beside a photo completes the folder the selection touches, and shows it together.
+    assert_eq!(ctl.state.borrow().picked().len(), 1, "twin: the open photo alone before the key");
+    assert!(!canvas.get_together());
+    rig.chord(Key::Control, "a");
+    assert_eq!(*ctl.state.borrow().picked(), names.iter().cloned().collect::<HashSet<_>>());
+    rig.until("four together", Duration::from_secs(30), || canvas.get_status().as_str() == "4 frames together");
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }

@@ -101,7 +101,8 @@ impl Ctl {
     }
 
     /// `columnKeys`' ⌘A beside a photograph: every photo of the folders the selection touches, else
-    /// the open photo's folder; no ring is passed, as the tree rings no folder.
+    /// the open photo's folder, shown together as a selection by ⌘ or ⇧ is; no ring is passed, as the
+    /// tree rings no folder.
     fn column_select_all(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
@@ -116,6 +117,7 @@ impl Ctl {
             let open = s.open.clone();
             s.picks.selection = crate::picking::column_select_all(&groups, &s.picks.selection, None, open.as_deref());
         }
+        self.follow_selection();
         self.publish_tiles();
         self.publish_organising();
         self.publish_tree();
