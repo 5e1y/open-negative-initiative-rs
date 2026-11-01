@@ -4995,5 +4995,19 @@
     "title": "The welcome sheet names its update",
     "status": "done",
     "detail": "Owner's call: the heading reads \"ONI 1.5, the slide film and contact sheet update\" in place of \"What's new in ONI 1.5\"; the Help menu's item keeps What's New in ONI 1.5. English, French and Spanish."
+  },
+  {
+    "id": 1042,
+    "type": "fix",
+    "title": "The bar makes room for EXP. CONTACT SHEET",
+    "status": "done",
+    "detail": "With several photos picked the orange key stood beside export, but the bar's width with every word left it out, so the bar never turned compact and its keys ran out of room. Its width now counts the key while it shows, and compact it gives way to the contact-sheet glyph as RESET SCAN and FEEDBACKS do. No automated check: the owner judges the bar."
+  },
+  {
+    "id": 1043,
+    "type": "fix",
+    "title": "A contact sheet's ground, numbers and logo follow a resize at once",
+    "status": "done",
+    "detail": "Resizing the window moved the sheet's texture with the view while its ground, numbers and logo waited for the next render. A resize now lays the shown sheet again where the view lays it (Ctl::lay_together), every overlay with it. Check: window together, the window shrunk with the sheet shown, the texture's and the logo's places on the ground unchanged before any render; its twin, the ground did move (it fails without the fix)."
   }
 ]

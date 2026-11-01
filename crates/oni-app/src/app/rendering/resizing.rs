@@ -75,6 +75,8 @@ impl Ctl {
         };
         let unplaced = self.state.borrow().placed.is_none();
         match (moved, self.window()) {
+            // A contact sheet's overlays follow the view with its texture, not at its next render.
+            _ if self.lay_together() => {}
             (Some(p), _) => self.lay(Some(p), (0, 0)),
             // A thumbnail waiting for its render is laid again in the new frame.
             (None, Some(w)) if unplaced => {

@@ -104,6 +104,22 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     canvas.invoke_double_clicked();
     rig.until("twin: the sheet back to fitted", Duration::from_secs(60), || (canvas.get_frame_width() - fitted).abs() < 1.0);
     rig.settle();
+    // The window resized: the sheet's ground, numbers and logo follow its texture at once, before its render.
+    let held = || {
+        let s = canvas.get_sheet();
+        (s.width, canvas.get_frame_width() / s.width, (canvas.get_frame_x() - s.x) / s.width, (canvas.get_logo_box().y - s.y) / s.height)
+    };
+    let before = held();
+    rig.window.set_size(slint::PhysicalSize::new(1000, 700));
+    rig.drawn();
+    rig.pump();
+    let after = held();
+    assert!(canvas.get_frame_width() < fitted - 1.0, "the texture follows the smaller window");
+    assert!((after.0 - before.0).abs() > 1.0, "twin: the ground did move");
+    assert!((after.1 - before.1).abs() < 0.01 && (after.2 - before.2).abs() < 0.01 && (after.3 - before.3).abs() < 0.01, "{before:?} {after:?}");
+    rig.window.set_size(slint::PhysicalSize::new(1280, 800));
+    rig.drawn();
+    rig.settle();
     println!("shot {}", rig.shot("together-grid").display());
 
     let g = w.global::<StoreGlobal>();

@@ -215,6 +215,13 @@ impl Ctl {
         self.publish_numbers(p, full.0);
     }
 
+    /// The sheet shown laid again where the view now lays it, its ground, numbers and logo with it;
+    /// `false` while no sheet is shown.
+    pub(in crate::app) fn lay_together(&self) -> bool {
+        let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
+        shown.inspect(|&size| self.lay_sheet(size)).is_some()
+    }
+
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
     pub(in crate::app) fn leave_together(&self) {
         if self.state.borrow_mut().together.take().is_none() {
