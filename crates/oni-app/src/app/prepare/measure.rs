@@ -130,7 +130,7 @@ impl Ctl {
     }
 
     /// `landRoll`: nothing measured keeps the roll open and says why; else every frame written as one
-    /// gallery step, the editor on the first frame unless the open one landed, and what was left out named.
+    /// gallery step, the whole roll shown together led by the open frame or the first, what was left out named.
     pub(in crate::app) fn land_measure(self: &Rc<Self>, session: u64, written: Option<Written>, stopped: bool, asked: &[String], blank: &[String]) {
         let prepared: Vec<String> = {
             let mut s = self.state.borrow_mut();
@@ -192,8 +192,13 @@ impl Ctl {
             let first = written[0].0.clone();
             self.state.borrow_mut().designate(&first);
             self.open_photo(&first);
-            self.publish_tiles();
         }
+        // The whole roll picked and shown together at once, the open frame leading (owner's call).
+        self.state.borrow_mut().picks.selection = prepared.into_iter().collect();
+        self.follow_selection();
+        self.publish_tiles();
+        self.publish_organising();
+        self.publish_tree();
         if let Some(m) = message {
             self.advise(tr("Prepare the Roll"), &m);
         }
