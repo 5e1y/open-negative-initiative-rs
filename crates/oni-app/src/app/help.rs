@@ -21,7 +21,7 @@ pub type Reporter = Arc<dyn Fn(&str, Option<String>) -> Result<(), String> + Sen
 pub const SEEN_KEY: &str = "whatsNewSeen";
 /// `WelcomeSheet.preferenceKey` and `edition`: a new edition shows the sheet to everyone again.
 pub const WELCOME_KEY: &str = "welcomeSeen";
-pub const EDITION: &str = "1.5.0";
+pub const EDITION: &str = "1.5.1";
 const SITE: &str = "https://open-negative-initiative.com";
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);

@@ -5016,5 +5016,19 @@
     "title": "Switching to another window and back no longer blanks the window on Windows",
     "status": "done",
     "detail": "On Windows the menu bar is native (muda), and Slint rebuilds it whenever a value it reads changes, turning the whole window's drawing off and on meanwhile (WM_SETREDRAW): the window vanished, then showed white under its menu bar. Eight bare-key items read the key monitor's has-focus, which every switch of window turns. They now read KeyMonitor.held, which follows the focus within the window and ignores a window activation. Checks: oni-ui menus, every bare-key item guarded by keys.held, twins a line without the guard and one guarded by has-focus; window sheets, another window active, has-focus gone and held kept, and held lost to a field (fails when held follows every focus loss)."
+  },
+  {
+    "id": 1045,
+    "type": "feature",
+    "title": "The welcome sheet comes back for 1.5.1, with the Windows fix",
+    "status": "done",
+    "detail": "EDITION 1.5.1, so the welcome opens once more on every machine; its 1.5 points stay and a last one tells that a switch of window no longer blanks the window on Windows (#1044). The 1.5.0 photo stays, as a patch release has none of its own. fr and es translated. Checks: help unit test (edition 1.5.1, its release the app's), window help (welcomeSeen 1.5.1)."
+  },
+  {
+    "id": 1046,
+    "type": "chore",
+    "title": "Version 1.5.1",
+    "status": "done",
+    "detail": "oni-app 1.5.1, for the release carrying #1044 and #1045."
   }
 ]

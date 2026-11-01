@@ -78,6 +78,7 @@ export component WelcomeSheet inherits Sheet {
         Point { title: @tr("RESET SCAN keeps your crop"); text: @tr("Everything goes back to rest but the framing and the conversion."); }
         Point { title: @tr("Trash from the editor"); text: @tr("The next frame of the roll opens in its place."); }
         Point { title: @tr("{} beside a photo", KeyWords.command + "A"); text: @tr("The folder's photos show together; a click on one shows it alone again."); }
+        Point { title: @tr("No more flicker on Windows"); text: @tr("Clicking outside the window and back no longer blanks it for an instant."); }
         HorizontalLayout {
             spacing: Space.s;
             Button { text: @tr("Website"); clicked => { Help.website(); } }

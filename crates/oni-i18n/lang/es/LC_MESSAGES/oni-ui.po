@@ -798,6 +798,14 @@ msgid "The folder's photos show together; a click on one shows it alone again."
 msgstr "Las fotos de la carpeta se muestran juntas; un clic en una la vuelve a mostrar sola."
 
 #: crates/oni-ui/ui/help.slint
+msgid "No more flicker on Windows"
+msgstr "Sin parpadeo en Windows"
+
+#: crates/oni-ui/ui/help.slint
+msgid "Clicking outside the window and back no longer blanks it for an instant."
+msgstr "Hacer clic fuera de la ventana y volver ya no la deja en blanco un instante."
+
+#: crates/oni-ui/ui/help.slint
 msgid "Website"
 msgstr "Sitio web"
 
