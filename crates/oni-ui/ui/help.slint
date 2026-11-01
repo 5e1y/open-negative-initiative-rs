@@ -1,5 +1,6 @@
 // The Help menu's surfaces: the welcome sheet, Report a Bug, and the console window.
 import { Space, HelpStyle, SheetStyle, Label, TextRole, Tone, Button, ButtonKind, Toggle, Sheet, Divider, Scroller, LogText, AppWindow, Badge, Surface, WelcomePhoto, ButtonGroup, TextField } from "ds/ds.slint";
+import { KeyWords } from "key_words.slint";
 
 // `WhatsNew.notes`: each heading's word while its note is news, then the note; Rust marks a read one.
 export global News {
@@ -66,25 +67,17 @@ export component WelcomeSheet inherits Sheet {
         VerticalLayout {
             spacing: Space.s;
             Label { text: @tr("What's new in ONI {}", Help.release); role: TextRole.heading; wrap: word-wrap; }
-            Label { text: @tr("ONI, rebuilt: faster, steadier, on Mac and Windows."); tone: Tone.secondary; wrap: word-wrap; }
+            Label { text: @tr("Contact sheets, slides, and the whole roll at a glance."); tone: Tone.secondary; wrap: word-wrap; }
         }
-        Point { title: @tr("Rebuilt from scratch"); text: @tr("Faster, lighter, and now on Windows too."); }
-        Point { title: @tr("Your colours carried over"); text: @tr("Each camera is matched once to the earlier version, so your edits look the same."); }
-        Point { title: @tr("Export up to 4× faster"); text: @tr("Frames decode, render and encode side by side."); }
-        Point { title: @tr("Export beside the editor"); text: @tr("The destination opens at once; a small card follows the progress."); }
-        Point { title: @tr("Instant Auto White Balance"); text: @tr("Read ahead when a photo opens, it lands at once, even on many frames."); }
-        Point { title: @tr("A steadier roll measure"); text: @tr("A tinted frame no longer tints the whole roll, and the roll keeps its contrast."); }
-        Point { title: @tr("Slides, simply"); text: @tr("Positives decode at 5500 K and each slide gets its own levels through one window."); }
-        Point { title: @tr("Scanner and slides"); text: @tr("Slides no longer come out overexposed on the Scanner face."); }
-        Point { title: @tr("Compare in Scanner"); text: @tr("Before now shows the plain conversion, without the Scanner's look."); }
-        Point { title: @tr("Make a roll from the sidebar"); text: @tr("Select photos outside a roll and a short guide takes you through it."); }
-        Point { title: @tr("The film stock sets the dyes"); text: @tr("Picking Portra or Superia picks the matching dye separation."); }
-        Point { title: @tr("Stock icons on rolls"); text: @tr("Each roll in the sidebar shows its film stock."); }
-        Point { title: @tr("A demo for every ?"); text: @tr("Each help mark plays a short demo of what it does."); }
-        Point { title: @tr("Smooth with thousands of photos"); text: @tr("The sidebar and the gallery stay fluid on huge folders."); }
-        Point { title: @tr("Projects you can walk"); text: @tr("The arrow keys follow the project's own order."); }
-        Point { title: @tr("Menus that follow the pointer"); text: @tr("Submenus open as you hover."); }
-        Point { title: @tr("Nothing gets lost"); text: @tr("Safer undo, file moves and saves; a crash leaves a trace in the log."); }
+        Point { title: @tr("The whole roll, once measured"); text: @tr("After Prepare the Roll, every frame shows together, numbered by its place on the film."); }
+        Point { title: @tr("Contact sheets"); text: @tr("Select a few frames, or press the orange key for the whole roll: they lie together on one sheet."); }
+        Point { title: @tr("Export a contact sheet"); text: @tr("The export panel exports the selection as one sheet, with a preview; the orange EXP. CONTACT SHEET key opens it."); }
+        Point { title: @tr("Slides, an experiment"); text: @tr("Prepare the Roll converts a slide roll as a negative or by its gains alone; tell us how it goes."); }
+        Point { title: @tr("Slides on white"); text: @tr("A contact sheet of slides lies on white, numbered in red under a black logo."); }
+        Point { title: @tr("The whole scan in Prepare"); text: @tr("Prepare the Roll shows and measures every scan uncropped."); }
+        Point { title: @tr("RESET SCAN keeps your crop"); text: @tr("Everything goes back to rest but the framing and the conversion."); }
+        Point { title: @tr("Trash from the editor"); text: @tr("The next frame of the roll opens in its place."); }
+        Point { title: @tr("{} beside a photo", KeyWords.command + "A"); text: @tr("The folder's photos show together; a click on one shows it alone again."); }
         HorizontalLayout {
             spacing: Space.s;
             Button { text: @tr("Website"); clicked => { Help.website(); } }

@@ -67,7 +67,7 @@ pub(crate) fn a_sheet_is_modal_and_escape_closes_it_from_its_own_field() {
     rig.settle();
     let live = menus.get_live();
     assert!(live.remove && live.medal && live.export, "twin: with no sheet, the selection's items are live");
-    assert_eq!(help.get_release().as_str(), "1.2", "the menu and the welcome's heading name one release");
+    assert_eq!(help.get_release().as_str(), "1.5", "the menu and the welcome's heading name one release");
 
     // Report a Bug: its field takes the keys, the menus go dark behind it.
     ctl.act(oni_app::Act::Report);

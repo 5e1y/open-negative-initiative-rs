@@ -722,144 +722,80 @@ msgid "What's new in ONI {}"
 msgstr "Novedades de ONI {}"
 
 #: crates/oni-ui/ui/help.slint
-msgid "ONI, rebuilt: faster, steadier, on Mac and Windows."
-msgstr "ONI, reconstruido: más rápido, más fiable, en Mac y Windows."
+msgid "Contact sheets, slides, and the whole roll at a glance."
+msgstr "Hojas de contactos, diapositivas y todo el rollo de un vistazo."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Rebuilt from scratch"
-msgstr "Reconstruido desde cero"
+msgid "The whole roll, once measured"
+msgstr "Todo el rollo, una vez medido"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Faster, lighter, and now on Windows too."
-msgstr "Más rápido, más ligero y ahora también en Windows."
+msgid "After Prepare the Roll, every frame shows together, numbered by its place on the film."
+msgstr "Tras Preparar el rollo, todos los fotogramas se muestran juntos, numerados según su lugar en la película."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Your colours carried over"
-msgstr "Tus colores se conservan"
+msgid "Contact sheets"
+msgstr "Hojas de contactos"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Each camera is matched once to the earlier version, so your edits look the same."
-msgstr "Cada cámara se ajusta una vez a la versión anterior: tus ediciones se ven igual."
+msgid "Select a few frames, or press the orange key for the whole roll: they lie together on one sheet."
+msgstr "Selecciona algunos fotogramas, o pulsa la tecla naranja para todo el rollo: se colocan juntos en una hoja."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Export up to 4× faster"
-msgstr "Exportación hasta 4× más rápida"
+msgid "Export a contact sheet"
+msgstr "Exportar una hoja de contactos"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Frames decode, render and encode side by side."
-msgstr "Los fotogramas se decodifican, procesan y codifican en paralelo."
+msgid "The export panel exports the selection as one sheet, with a preview; the orange EXP. CONTACT SHEET key opens it."
+msgstr "El panel de exportación exporta la selección como una sola hoja, con vista previa; la tecla naranja EXP. HOJA DE CONTACTOS lo abre."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Export beside the editor"
-msgstr "Exportar junto al editor"
+msgid "Slides, an experiment"
+msgstr "Diapositivas, un experimento"
 
 #: crates/oni-ui/ui/help.slint
-msgid "The destination opens at once; a small card follows the progress."
-msgstr "El destino se abre al instante; una pequeña tarjeta sigue el progreso."
+msgid "Prepare the Roll converts a slide roll as a negative or by its gains alone; tell us how it goes."
+msgstr "Preparar el rollo convierte un rollo de diapositivas como un negativo o solo por sus ganancias; cuéntanos qué tal."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Instant Auto White Balance"
-msgstr "Balance de blancos automático instantáneo"
+msgid "Slides on white"
+msgstr "Diapositivas sobre blanco"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Read ahead when a photo opens, it lands at once, even on many frames."
-msgstr "Calculado al abrir una foto, se aplica al instante, incluso en varios fotogramas."
+msgid "A contact sheet of slides lies on white, numbered in red under a black logo."
+msgstr "Una hoja de contactos de diapositivas va sobre blanco, numerada en rojo bajo un logotipo negro."
 
 #: crates/oni-ui/ui/help.slint
-msgid "A steadier roll measure"
-msgstr "Una medición del carrete más fiable"
+msgid "The whole scan in Prepare"
+msgstr "El escaneo entero en Preparar"
 
 #: crates/oni-ui/ui/help.slint
-msgid "A tinted frame no longer tints the whole roll, and the roll keeps its contrast."
-msgstr "Un fotograma teñido ya no tiñe todo el carrete, que conserva su contraste."
+msgid "Prepare the Roll shows and measures every scan uncropped."
+msgstr "Preparar el rollo muestra y mide cada escaneo sin recortar."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slides, simply"
-msgstr "Diapositivas, sin complicaciones"
+msgid "RESET SCAN keeps your crop"
+msgstr "RESTABLECER ESCANEO conserva tu recorte"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Positives decode at 5500 K and each slide gets its own levels through one window."
-msgstr "Los positivos se decodifican a 5500 K y cada diapositiva tiene sus propios niveles, a través de una sola ventana."
+msgid "Everything goes back to rest but the framing and the conversion."
+msgstr "Todo vuelve a reposo salvo el encuadre y la conversión."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Scanner and slides"
-msgstr "Escáner y diapositivas"
+msgid "Trash from the editor"
+msgstr "Papelera desde el editor"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Slides no longer come out overexposed on the Scanner face."
-msgstr "Las diapositivas ya no salen sobreexpuestas en el modo Escáner."
+msgid "The next frame of the roll opens in its place."
+msgstr "El siguiente fotograma del rollo se abre en su lugar."
 
 #: crates/oni-ui/ui/help.slint
-msgid "Compare in Scanner"
-msgstr "Comparar en modo Escáner"
+msgid "{} beside a photo"
+msgstr "{} junto a una foto"
 
 #: crates/oni-ui/ui/help.slint
-msgid "Before now shows the plain conversion, without the Scanner's look."
-msgstr "El antes muestra la conversión simple, sin el aspecto del Escáner."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Make a roll from the sidebar"
-msgstr "Crear un carrete desde la barra lateral"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Select photos outside a roll and a short guide takes you through it."
-msgstr "Selecciona fotos fuera de un carrete y una breve guía te acompaña."
-
-#: crates/oni-ui/ui/help.slint
-msgid "The film stock sets the dyes"
-msgstr "La película elige los tintes"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Picking Portra or Superia picks the matching dye separation."
-msgstr "Elegir Portra o Superia ajusta la separación de tintes correspondiente."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Stock icons on rolls"
-msgstr "El icono de la película en los carretes"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Each roll in the sidebar shows its film stock."
-msgstr "Cada carrete de la barra lateral muestra su película."
-
-#: crates/oni-ui/ui/help.slint
-msgid "A demo for every ?"
-msgstr "Una demo para cada ?"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Each help mark plays a short demo of what it does."
-msgstr "Cada marca de ayuda muestra una breve demo de lo que hace."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Smooth with thousands of photos"
-msgstr "Fluido con miles de fotos"
-
-#: crates/oni-ui/ui/help.slint
-msgid "The sidebar and the gallery stay fluid on huge folders."
-msgstr "La barra lateral y la galería siguen fluidas en carpetas enormes."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Projects you can walk"
-msgstr "Recorrer los proyectos"
-
-#: crates/oni-ui/ui/help.slint
-msgid "The arrow keys follow the project's own order."
-msgstr "Las flechas siguen el orden del proyecto."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Menus that follow the pointer"
-msgstr "Menús que siguen al puntero"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Submenus open as you hover."
-msgstr "Los submenús se abren al pasar el puntero."
-
-#: crates/oni-ui/ui/help.slint
-msgid "Nothing gets lost"
-msgstr "Nada se pierde"
-
-#: crates/oni-ui/ui/help.slint
-msgid "Safer undo, file moves and saves; a crash leaves a trace in the log."
-msgstr "Deshacer, mover y guardar son más seguros; un cierre inesperado deja rastro en el registro."
+msgid "The folder's photos show together; a click on one shows it alone again."
+msgstr "Las fotos de la carpeta se muestran juntas; un clic en una la vuelve a mostrar sola."
 
 #: crates/oni-ui/ui/help.slint
 msgid "Website"

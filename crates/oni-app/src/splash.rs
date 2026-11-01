@@ -7,7 +7,11 @@ use slint::{ComponentHandle, Timer};
 use std::time::Duration;
 
 /// The pictures shipped, oldest first, each named after the version it opens.
-const PICTURES: [(&str, &str); 2] = [("1.0.0", include_str!("../../oni-ui/ui/splash/1.0.0.txt")), ("1.3.0", include_str!("../../oni-ui/ui/splash/1.3.0.txt"))];
+const PICTURES: [(&str, &str); 3] = [
+    ("1.0.0", include_str!("../../oni-ui/ui/splash/1.0.0.txt")),
+    ("1.3.0", include_str!("../../oni-ui/ui/splash/1.3.0.txt")),
+    ("1.5.0", include_str!("../../oni-ui/ui/splash/1.5.0.txt")),
+];
 /// `DS.Motion.splashMinimum`.
 const MINIMUM: Duration = Duration::from_millis(3330);
 
@@ -59,6 +63,7 @@ mod tests {
     fn a_version_shows_its_own_picture_and_any_other_the_newest() {
         assert_eq!(picture("1.0.0"), 0);
         assert_eq!(picture("1.3.0"), 1);
+        assert_eq!(picture("1.5.0"), 2);
         // Twin: a version with no picture of its own falls on the newest, never the first.
         assert_eq!(picture("0.1.0"), PICTURES.len() - 1);
         assert!(PICTURES.iter().all(|(_, credit)| !credit.trim().is_empty()));
