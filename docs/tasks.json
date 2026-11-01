@@ -5072,5 +5072,12 @@
     "title": "The HE conversion is offered where the hand meets the files: the folder's reading and the roll's entry",
     "status": "done",
     "detail": "The owner's first try went through Prepare the Roll: the base step showed a readable frame, the measure left the HE frames out, and no key ever offered the conversion (#1050 offered it only on a failed editor frame or base scan). Now a folder read whole offers its listed HE NEFs once a session, and a roll entered with HE frames offers them; the offer waits behind a sheet already up (the RAW notice) and converts at once when Adobe DNG Converter is there (its key reads Convert to DNG), else downloads it first. A failed frame's key still converts without asking. The job takes the listed HE NEFs, subfolders included, each run writing into one folder. Check: window dng rewritten on the owner's path (folder offer behind the notice, once a session; a frame opened enters its roll, whose offer converts, the roll back on the DNGs with the NEFs kept; the base step's key converts at once, the NEF binned); fails without the roll's offer."
+  },
+  {
+    "id": 1053,
+    "type": "change",
+    "title": "A slide's Source Balance shows temperature and tint alone; the AUTO LEVELS key is withdrawn",
+    "status": "done",
+    "detail": "Owner's call (2026-11-01): on a slide, Source Balance hides its three gain sliders and keeps the temperature and tint (fields 30, 31), which still move the same three gains; negatives keep Swift's three. The slide-only AUTO LEVELS key of Per-Channel Levels is withdrawn with what served it alone: PanelState.auto-levels and levelling, Ctl::auto_levels (rolls/levelling.rs), measuring::levels_outcomes, Several::auto_levels. oni-measure's auto levels stays, as the roll's measure uses it. The film type's help says what Prepare does to a slide now (one set of gains, its blacks and whites left). Checks: window slides without the key's sections; the catalogues hold no text of the key."
   }
 ]

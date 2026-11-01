@@ -49,7 +49,7 @@ export component RollPane inherits Pane {
     Block {
         title: @tr("Film Type");
         demo: "film-type";
-        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated; Prepare the Roll places each slide's own black and white inside the roll's measuring frame, and Auto Levels places them again on a click.");
+        help: @tr("What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are.");
         Tabs {
             tabs: [@tr("Negative"), @tr("Positive"), @tr("B&W")];
             marked: [false, false, false];
@@ -137,7 +137,8 @@ export component RollPane inherits Pane {
         block: 10;
         modified: Store.source-balance-modified;
         folded-by-default: true;
-        // A slide's cast in two moves, each holding the other and the gains' mean (owner's call).
+        // A slide's cast in two moves, each holding the other and the gains' mean; its three gains
+        // stay underneath, unshown (owner's call).
         if PanelState.slide: StoreSlider {
             field: 30; label: PanelState.gains-inverted ? @tr("Amber ↔ Blue") : @tr("Blue ↔ Amber"); fraction: Store.gain-temperature-fraction; readout: Store.gain-temperature-readout; value-text: Store.gain-temperature-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue; high: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow;
@@ -146,15 +147,15 @@ export component RollPane inherits Pane {
             field: 31; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-tint-fraction; readout: Store.gain-tint-readout; value-text: Store.gain-tint-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
         }
-        StoreSlider {
+        if !PanelState.slide: StoreSlider {
             field: 24; label: PanelState.gains-inverted ? @tr("Red ↔ Cyan") : @tr("Cyan ↔ Red"); fraction: Store.gain-red-fraction; readout: Store.gain-red-readout; value-text: Store.gain-red-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-red : Colour.channel-cyan; high: PanelState.gains-inverted ? Colour.channel-cyan : Colour.channel-red;
         }
-        StoreSlider {
+        if !PanelState.slide: StoreSlider {
             field: 25; label: PanelState.gains-inverted ? @tr("Green ↔ Magenta") : @tr("Magenta ↔ Green"); fraction: Store.gain-green-fraction; readout: Store.gain-green-readout; value-text: Store.gain-green-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-green : Colour.channel-magenta; high: PanelState.gains-inverted ? Colour.channel-magenta : Colour.channel-green;
         }
-        StoreSlider {
+        if !PanelState.slide: StoreSlider {
             field: 26; label: PanelState.gains-inverted ? @tr("Blue ↔ Yellow") : @tr("Yellow ↔ Blue"); fraction: Store.gain-blue-fraction; readout: Store.gain-blue-readout; value-text: Store.gain-blue-value;
             fill: SliderFill.bipolar; low: PanelState.gains-inverted ? Colour.channel-blue : Colour.channel-yellow; high: PanelState.gains-inverted ? Colour.channel-yellow : Colour.channel-blue;
         }
@@ -175,13 +176,6 @@ export component RollPane inherits Pane {
         modified: Editors.levels-modified;
         folded <=> Editors.levels-folded;
         LevelsEditor { histogram: Plots.levels; revision: Plots.levels-revision; }
-        if PanelState.slide: Button {
-            size: ButtonSize.plate;
-            text: @tr("AUTO LEVELS");
-            help: @tr("Moves this photo's gains so red's and blue's middle tones sit on green's inside its measuring frame, as a white balance does; its black and white points stay at rest");
-            enabled: !PanelState.levelling;
-            clicked => { PanelState.auto-levels(); }
-        }
         if Editors.low-precision: HorizontalLayout {
             alignment: start;
             Badge { tone: BadgeTone.warning; text: @tr("8-bit source — 256 levels per channel"); }

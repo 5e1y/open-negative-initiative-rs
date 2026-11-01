@@ -1642,8 +1642,8 @@ msgid "Film Type"
 msgstr "Type de film"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW: its roll is never measured nor its dyes separated; Prepare the Roll places each slide's own black and white inside the roll's measuring frame, and Auto Levels places them again on a click."
-msgstr "Ce qu’est le film : un négatif couleur, une diapositive ou du noir et blanc. Une diapositive est lue comme un RAW ordinaire : sa pellicule n’est jamais mesurée ni ses colorants séparés ; Préparer la pellicule place le noir et le blanc propres à chaque diapositive dans le cadre de mesure de la pellicule, et Niveaux auto les replace d’un clic."
+msgid "What the film is: a colour negative, a slide or black and white. A slide is read as a plain RAW, its dyes never separated; Prepare the Roll balances a slide roll with one set of gains for every slide, its blacks and whites left as they are."
+msgstr "Ce qu’est le film : un négatif couleur, une diapositive ou du noir et blanc. Une diapositive est lue comme un RAW ordinaire, ses colorants jamais séparés ; Préparer la pellicule équilibre une pellicule de diapositives avec un seul jeu de gains pour toutes les vues, leurs noirs et leurs blancs laissés tels quels."
 
 #: crates/oni-ui/ui/panel/roll_tab.slint crates/oni-ui/ui/prepare.slint
 msgid "Negative"
@@ -1784,14 +1784,6 @@ msgstr "Plafond"
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "Per-Channel Levels"
 msgstr "Niveaux par canal"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "AUTO LEVELS"
-msgstr "NIVEAUX AUTO"
-
-#: crates/oni-ui/ui/panel/roll_tab.slint
-msgid "Moves this photo's gains so red's and blue's middle tones sit on green's inside its measuring frame, as a white balance does; its black and white points stay at rest"
-msgstr "Déplace les gains de cette photo pour que les tons moyens du rouge et du bleu rejoignent ceux du vert dans son cadre de mesure, comme une balance des blancs ; ses points noir et blanc restent au repos"
 
 #: crates/oni-ui/ui/panel/roll_tab.slint
 msgid "8-bit source — 256 levels per channel"
@@ -3823,10 +3815,6 @@ msgstr "Rendu impossible : {e}"
 msgid "Missing mask"
 msgstr "Masque manquant"
 
-#: crates/oni-app/src/app/rolls/levelling.rs
-msgid "Auto Levels"
-msgstr "Niveaux auto"
-
 #: crates/oni-app/src/app/rolls.rs
 msgid "Acts on the selected photo, not the one on screen."
 msgstr "Agit sur la photo sélectionnée, pas sur celle affichée."
@@ -4562,12 +4550,6 @@ msgid "Apply “{name}”"
 msgid_plural "Apply “{name}” to {n} photos"
 msgstr[0] "Appliquer « {name} »"
 msgstr[1] "Appliquer « {name} » à {n} photos"
-
-#: crates/oni-core/src/store/several.rs
-msgid "Auto levels on {n} photo"
-msgid_plural "Auto levels on {n} photos"
-msgstr[0] "Niveaux auto sur {n} photo"
-msgstr[1] "Niveaux auto sur {n} photos"
 
 #: crates/oni-core/src/store/several.rs
 msgid "Balance {n} photo"

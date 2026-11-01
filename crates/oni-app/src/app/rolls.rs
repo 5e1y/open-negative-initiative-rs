@@ -2,7 +2,6 @@
 //! the Measured Roll block's Join and Roll of the N, and Auto White Balance over several frames
 //! with its Each or Average choice and its progress on the key.
 
-mod levelling;
 
 use super::{Ctl, Pending, with_shell};
 use crate::{App, Choice, PanelState};

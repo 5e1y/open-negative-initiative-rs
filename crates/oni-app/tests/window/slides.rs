@@ -78,18 +78,6 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     assert!(!p.get_shown(), "a slide asks for no roll");
     assert!(!w.global::<Framing>().get_has_window(), "nor opens on a window");
 
-    // Auto levels: the warm cast's red and blue gains moved onto green's, the windows at rest, one undo.
-    let rest = settings();
-    panel.invoke_auto_levels();
-    rig.until("the slide balanced", Duration::from_secs(60), || settings().gains != rest.gains);
-    let s = settings();
-    assert!(alike(&s) && s.roll_reference.is_none(), "{:?}", s.levels);
-    assert!(s.gains.stops[1] == 0.0 && s.gains.stops[0] * s.gains.stops[2] < 0.0, "red and blue moved apart: {:?}", s.gains);
-    rig.pump();
-    assert!(w.global::<oni_app::Store>().get_source_balance_modified(), "a slide never measured: the key's move departs from rest");
-    ctl.act(oni_app::Act::Undo);
-    rig.pump();
-    assert_eq!(settings().gains, rest.gains, "one undo takes the key back");
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
 
@@ -152,24 +140,7 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     };
     assert!(sheets().is_empty(), "{:?}", sheets());
     assert_eq!(ctl.state.borrow().picked().len(), FRAMES, "the measure picks the whole roll");
-    // The key on the slides together reads each alone: its own gains, a hair from the roll's as every
-    // slide holds one cast, its windows at rest; a second press finds the first's.
-    let (prepared, roll_gains) = (settings(), disk(0).gains.stops);
-    let mut pressed = Vec::new();
-    for _ in 0..2 {
-        panel.invoke_auto_levels();
-        rig.until("the key read", Duration::from_secs(60), || !panel.get_levelling());
-        rig.pump();
-        pressed.push(disk(0));
-    }
-    assert_eq!(pressed[0].gains, pressed[1].gains);
-    assert_ne!(pressed[0].gains.stops, roll_gains, "twin: the key reads the slide, not the roll");
-    assert!(alike(&pressed[0]) && pressed[0].gains.stops.iter().zip(roll_gains).all(|(a, b)| (a - b).abs() < 0.02), "{:?}", pressed[0].gains);
-    assert_ne!(settings().gains, prepared.gains, "the open slide, among them, is read too");
-    // One undo beside the slides takes the key back, a gallery undo every frame of the measure, a redo lays them again.
-    ctl.act(oni_app::Act::Undo);
-    rig.pump();
-    rig.until("the key taken back", Duration::from_secs(10), || disk(0).gains.stops == roll_gains);
+    // A gallery undo takes back every frame of the measure, a redo lays them again.
     ctl.act(oni_app::Act::ToggleMode);
     rig.pump();
     ctl.act(oni_app::Act::Undo);
@@ -179,18 +150,5 @@ pub(crate) fn a_slide_roll_takes_its_unflagged_slides_gains_through_one_window()
     rig.pump();
     rig.until("every slide balanced again", Duration::from_secs(10), || (0..FRAMES).all(|i| disk(i).gains != rest.gains));
 
-    // Twin: a negative on its roll levels each channel on its own, the gains aligned.
-    shell.open_folder(&negatives);
-    rig.until("the negatives read", Duration::from_secs(30), || ctl.state.borrow().read_done());
-    rig.settle();
-    lib.invoke_tile_opened(first());
-    rig.until("a negative open", Duration::from_secs(30), || ctl.state.borrow().open_path().is_some_and(|o| o.contains("Negatives")));
-    rig.settle();
-    assert!(!panel.get_slide() && !p.get_shown());
-    let before = settings();
-    panel.invoke_auto_levels();
-    rig.until("the negative levelled", Duration::from_secs(60), || settings().levels != before.levels);
-    let n = settings();
-    assert!(!alike(&n) && n.gains.stops != [0.0; 3], "{:?} {:?}", n.levels, n.gains);
     let _ = std::fs::remove_dir_all(&root);
 }
