@@ -2,7 +2,7 @@
 //! their place on their rolls, in one file.
 
 use super::*;
-use super::super::gallery_view::together::{self, Lettering};
+use super::super::gallery_view::together::{self, Captions};
 use oni_export::Failure;
 
 impl Ctl {
@@ -21,7 +21,7 @@ impl Ctl {
             (c.targets.clone(), sizes, c.settings.clone(), c.stop.clone(), metadata)
         };
         let paths: Vec<String> = targets.iter().map(|t| oni_library::paths::normal(&t.path.to_string_lossy()).into_owned()).collect();
-        let folders = self.roll_folders(&paths);
+        let (folders, heading) = (self.roll_folders(&paths), self.heading_of(&paths));
         self.job_started(std::slice::from_ref(&destination));
         let engine: Shared = self.export_engine();
         let support = self.export.borrow().support.clone();
@@ -35,7 +35,8 @@ impl Ctl {
                         oni_export::lands(&t.path, &destination, &ledger, replacing)?;
                     }
                     let numbers = together::ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-                    let Some(sheet) = together::printed(&engine, &targets, sizes, &numbers, lettering, &stop)? else { return Ok(false) };
+                    let captions = Captions { numbers, heading, lettering };
+                    let Some(sheet) = together::printed(&engine, &targets, sizes, &captions, &stop)? else { return Ok(false) };
                     let first = &targets[0];
                     let bytes = oni_export::file_bytes(&first.path, sheet, &first.settings.paper_correction, &export, &metadata, None)?;
                     oni_export::land(oni_export::Landing { path: &destination, ledger: &mut ledger, replacing }, &bytes)?;
@@ -58,13 +59,5 @@ impl Ctl {
                 }
             })
             .expect("export sheet thread");
-    }
-
-    /// The numbers' ink and weight as the canvas sets them.
-    fn lettering(&self) -> Option<Lettering> {
-        let w = self.window()?;
-        let c = w.global::<crate::Canvas>();
-        let ink = c.get_number_ink();
-        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
     }
 }

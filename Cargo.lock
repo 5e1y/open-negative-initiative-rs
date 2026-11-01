@@ -4281,6 +4281,7 @@ dependencies = [
  "pollster",
  "qrcode",
  "reqwest",
+ "resvg",
  "rfd",
  "ring",
  "roxmltree",

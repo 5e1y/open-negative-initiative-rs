@@ -1,5 +1,5 @@
 //! Edit Together's sheet written as one file: each frame decoded at a tile's side and laid row by row
-//! as the canvas lays it, on the sheet's black, each number set under its picture as `EdgePrint` sets it.
+//! as the canvas lays it, on the sheet's black under its heading, each number set as `EdgePrint` sets it.
 
 use super::*;
 use super::numbers::under;
@@ -7,22 +7,20 @@ use crate::export::Target;
 use crate::render::Laid;
 use oni_export::{Failure, Image as Picture};
 use std::sync::atomic::AtomicBool;
-use swash::scale::{Render, ScaleContext, Source as Outline};
-use swash::zeno::Format as Mask;
+use super::heading::{self, Heading};
+use super::plate::{Anchor, Face, Lettering, Plate};
+use swash::scale::ScaleContext;
 
-/// The interface's face, which the numbers are set in on screen.
-const FACE: &[u8] = include_bytes!("../../../../oni-ui/fonts/Inter.ttf");
-
-/// The numbers' ink as the design system states it, in sRGB, and their weight.
-#[derive(Clone, Copy, Debug)]
-pub(in crate::app) struct Lettering {
-    pub ink: [f32; 3],
-    pub weight: f32,
+/// What a sheet shows beside its frames: each one's number, the heading, and the ink they are set in.
+pub(in crate::app) struct Captions {
+    pub numbers: Vec<Option<usize>>,
+    pub heading: Heading,
+    pub lettering: Lettering,
 }
 
 /// The sheet of `targets` at full scale in the working space, laid on `sizes` (each frame's cropped
-/// size, else its tile's), numbered by `numbers`; `None` once `stop` is raised.
-pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, numbers: &[Option<usize>], lettering: Lettering, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
+/// size, else its tile's) with its `captions`; `None` once `stop` is raised.
+pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option<Vec<(f64, f64)>>, captions: &Captions, stop: &AtomicBool) -> Result<Option<Picture>, Failure> {
     let stopped = || stop.load(Ordering::Relaxed);
     let Some(negatives) = decoded(engine, targets, &stopped)? else { return Ok(None) };
     let tiles = || negatives.iter().zip(targets).map(|(n, t)| crate::export::cropped_size((f64::from(n.size().0), f64::from(n.size().1)), &t.settings)).collect();
@@ -52,9 +50,11 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
         laid_on(&mut picture, &band, (wx as usize, wy as usize));
     }
     let mut context = ScaleContext::new();
-    for (x, y, n) in under(numbers, &sheet.pictures) {
-        letter(&mut picture, (x, y), &n.to_string(), lettering, &mut context);
+    for (x, y, n) in under(&captions.numbers, &sheet.pictures) {
+        number(&mut picture, (x, y), n, captions.lettering, &mut context);
     }
+    let (hx, hy, hw, _) = sheet.heading;
+    heading::drawn(&captions.heading, hw as usize, captions.lettering).lay_on(&mut picture, (hx as i64, hy as i64));
     Ok(Some(picture))
 }
 
@@ -101,46 +101,18 @@ fn laid_on(sheet: &mut Picture, band: &Picture, at: (usize, usize)) {
     }
 }
 
-/// `text` set in the interface's face at `NUMBER` pixels from the left of `at`, centred in the `MARGIN`
-/// band under it, blended over the black in sRGB as the screen blends it, then linearised.
-fn letter(sheet: &mut Picture, at: (f64, f64), text: &str, lettering: Lettering, context: &mut ScaleContext) {
-    let Some(font) = swash::FontRef::from_index(FACE, 0) else { return };
-    let axes = [(b"wght", lettering.weight)];
-    let coords: Vec<_> = font.variations().normalized_coords(&axes).collect();
-    let size = NUMBER as f32;
-    let metrics = font.metrics(&coords).scale(size);
-    let advances = font.glyph_metrics(&coords).scale(size);
-    let baseline = at.1 as f32 + (MARGIN as f32 - (metrics.ascent + metrics.descent)) / 2.0 + metrics.ascent;
-    let mut scaler = context.builder(font).size(size).normalized_coords(&coords).build();
-    let mut pen = at.0 as f32;
-    let srgb = oni_colour::source::Source::of(None, None, false);
-    for c in text.chars() {
-        let glyph = font.charmap().map(c);
-        let Some(mask) = Render::new(&[Outline::Outline]).format(Mask::Alpha).render(&mut scaler, glyph) else { continue };
-        let p = mask.placement;
-        let (left, top) = ((pen.round() as i32 + p.left) as i64, (baseline.round() as i32 - p.top) as i64);
-        let mut covered: Vec<[f32; 4]> = mask.data.iter().map(|&a| lettering.ink.map(|v| v * f32::from(a) / 255.0)).map(|[r, g, b]| [r, g, b, 1.0]).collect();
-        srgb.linearise(&mut covered, false);
-        for (i, (&a, ink)) in mask.data.iter().zip(&covered).enumerate() {
-            let (x, y) = (left + (i % p.width as usize) as i64, top + (i / p.width as usize) as i64);
-            if a == 0 || x < 0 || y < 0 || x >= sheet.width as i64 || y >= sheet.height as i64 {
-                continue;
-            }
-            let d = &mut sheet.pixels[(y as usize * sheet.width + x as usize) * 4..][..3];
-            // Over black, a glyph's edge is its ink at its coverage; two glyphs touching keep the brighter.
-            for (d, v) in d.iter_mut().zip(ink) {
-                *d = d.max(*v);
-            }
-        }
-        pen += advances.advance_width(glyph);
-    }
+/// Frame `n`'s number at `NUMBER` pixels from the left of `at`, centred in the `MARGIN` band under it.
+fn number(sheet: &mut Picture, at: (f64, f64), n: usize, lettering: Lettering, context: &mut ScaleContext) {
+    let Some(face) = Face::of(lettering.weight) else { return };
+    let mut plate = Plate::clear(6 * NUMBER, MARGIN);
+    plate.text((0.0, face.centred(0.0, MARGIN as f32, NUMBER as f32)), &n.to_string(), NUMBER as f32, lettering, Anchor::Start, context);
+    plate.lay_on(sheet, (at.0.round() as i64, at.1.round() as i64));
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::plate::ORANGE;
     use super::*;
-
-    const ORANGE: Lettering = Lettering { ink: [1.0, 159.0 / 255.0, 10.0 / 255.0], weight: 700.0 };
 
     /// The rows of `p` holding any lit pixel, and its lit pixels' count.
     fn lit(p: &Picture) -> (Vec<usize>, usize) {
@@ -152,7 +124,7 @@ mod tests {
     #[test]
     fn a_number_is_set_in_the_band_under_its_picture_orange_on_black() {
         let mut sheet = black(400, 200);
-        letter(&mut sheet, (20.0, 40.0), "12", ORANGE, &mut ScaleContext::new());
+        number(&mut sheet, (20.0, 40.0), 12, ORANGE, &mut ScaleContext::new());
         let (rows, count) = lit(&sheet);
         assert!(count > 200, "the digits are drawn: {count} pixels");
         assert!(rows[0] >= 40 && *rows.last().unwrap() < 40 + MARGIN, "within the band: rows {}..{}", rows[0], rows.last().unwrap());
@@ -161,7 +133,7 @@ mod tests {
         assert!(brightest[0] > brightest[1] && brightest[1] > brightest[2] && brightest[3] == 1.0, "{brightest:?}");
         // Twin: the regular weight lights fewer pixels than the bold one.
         let mut regular = black(400, 200);
-        letter(&mut regular, (20.0, 40.0), "12", Lettering { weight: 400.0, ..ORANGE }, &mut ScaleContext::new());
+        number(&mut regular, (20.0, 40.0), 12, Lettering { weight: 400.0, ..ORANGE }, &mut ScaleContext::new());
         assert!(lit(&regular).1 < count, "a regular number as heavy as a bold one");
     }
 

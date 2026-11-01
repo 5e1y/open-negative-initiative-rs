@@ -1,0 +1,107 @@
+// The canvas's state: the photo the display kernel wrote, its overlays' places and the facts the
+// status bar carries, which Rust sets.
+import { SheetBox, EdgeNumber, Colour, Type } from "ds/ds.slint";
+
+// The canvas: the photo the display kernel wrote, and the facts the status bar carries.
+// A correction's marker on the canvas: its ring's rectangle in points and its number.
+export struct Mark {
+    x: length,
+    y: length,
+    width: length,
+    height: length,
+    number: int,
+}
+
+export global Canvas {
+    in property <image> frame;
+    // `Picture.revision` for `frame` and `before`, the textures each render rewrites in place.
+    in property <int> frame-revision;
+    in property <int> before-revision;
+    // The render's texels within `frame`, which holds a texture grown by steps; 0 shows it whole.
+    in property <int> frame-clip-width;
+    in property <int> frame-clip-height;
+    in property <string> status;
+    in property <bool> busy;
+    // The open frame's sidecar cannot be written, and what a frame that failed to decode says.
+    in property <bool> read-only;
+    in property <string> failure;
+    in-out property <length> width;
+    in-out property <length> height;
+    // Where the render sits on the canvas, which shows only the viewport's part of the image.
+    in property <length> frame-x;
+    in property <length> frame-y;
+    in property <length> frame-width;
+    in property <length> frame-height;
+    // Compare Before/After: the split as a fraction of the canvas's width, negative while off.
+    in property <float> split: -1;
+    // Frames shown together: the sheet's black, each frame's number at the sheet's scale in its band.
+    in property <bool> together;
+    in property <SheetBox> sheet;
+    in property <[EdgeNumber]> numbers;
+    in property <length> number-size;
+    in property <length> number-band;
+    // The numbers' ink and weight, which a sheet written to a file sets them in too.
+    out property <color> number-ink: Colour.edge-print;
+    out property <int> number-weight: Type.bold;
+    // The sheet's heading, drawn by Rust at the sheet's full scale, and its band on the canvas.
+    in property <image> heading;
+    in property <SheetBox> heading-box;
+    in property <image> before;
+    in property <length> before-x;
+    in property <length> before-y;
+    in property <length> before-width;
+    in property <length> before-height;
+    callback split-dragged(length);
+    // The crop frame while the Crop tab is open, and the measuring window, on the canvas.
+    in property <bool> cropping;
+    in property <length> crop-x;
+    in property <length> crop-y;
+    in property <length> crop-width;
+    in property <length> crop-height;
+    in property <bool> window-shown;
+    in property <length> window-x;
+    in property <length> window-y;
+    in property <length> window-width;
+    in property <length> window-height;
+    callback frame-grabbed(bool, int);
+    callback frame-dragged(bool, int, length, length);
+    callback frame-released(bool);
+    // De-dust: painting armed, the picture the brush shows over, the stroke being painted, the marks.
+    in property <bool> painting;
+    in property <length> picture-x;
+    in property <length> picture-y;
+    in property <length> picture-width;
+    in property <length> picture-height;
+    in property <length> brush-diameter;
+    in property <string> stroke;
+    in property <length> stroke-width;
+    in property <[Mark]> marks;
+    // The strokes whose patch is being generated, kept on the canvas until it lands.
+    in property <[{commands: string, width: length}]> pending-strokes;
+    // Each patch's source: the lines to them, and the copied strokes with their widths.
+    in property <string> source-lines;
+    in property <[{commands: string, width: length}]> source-shapes;
+    // Space held in De-dust: the drag pans instead of painting.
+    in-out property <bool> space-held;
+    // The crop's size while a handle is held, above the frame.
+    in property <string> crop-badge;
+    in property <length> crop-badge-x;
+    in property <length> crop-badge-y;
+    // `zoomBubble`: the zoom's readout and the ladder's keys, above the canvas's top right corner.
+    in property <string> zoom-label;
+    // `ONI_HZ=1`: the canvas's real rate and the window's frames this second, by the zoom.
+    in property <string> hz;
+    in property <bool> can-zoom-out;
+    in property <bool> can-zoom-in;
+    callback paint-start(length, length);
+    callback paint-move(length, length);
+    callback paint-end();
+    callback resized();
+    callback double-clicked();
+    callback grabbed(length, length);
+    callback dragged(length, length);
+    // The wheel's delta, the pointer, and whether ⌘ is held; answers whether the canvas took it.
+    callback scrolled(length, length, length, length, bool) -> bool;
+    callback pinch-started();
+    callback pinched(float, length, length);
+}

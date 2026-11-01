@@ -1,8 +1,9 @@
-//! Edit Together as a contact sheet: the sheet's black under its frames, and each frame's place on
-//! its roll, orange under its picture as a film's edge print.
+//! Edit Together as a contact sheet: the sheet's black under its frames, its heading, and each
+//! frame's place on its roll, orange under its picture as a film's edge print.
 
 use super::*;
 use crate::{EdgeNumber, SheetBox};
+use super::plate::Lettering;
 use super::sheet::Area;
 
 impl Ctl {
@@ -10,14 +11,25 @@ impl Ctl {
     /// leave it out of its folder's count.
     pub(super) fn number_frames(&self, id: u64) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
-        let folders = self.roll_folders(&paths);
+        let (folders, heading, lettering) = (self.roll_folders(&paths), self.heading_of(&paths), self.lettering());
+        let band = laid(&vec![UNKNOWN; paths.len()]).heading.2 as usize;
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-            with_shell(move |c| c.numbers_landed(id, numbers));
+            let plate = lettering.map(|l| super::heading::drawn(&heading, band, l));
+            let heading = plate.map(|p| (p.rgba8(), p.width, p.height));
+            with_shell(move |c| c.numbers_landed(id, numbers, heading));
         });
+    }
+
+    /// The numbers' ink and weight as the canvas sets them.
+    pub(in crate::app) fn lettering(&self) -> Option<Lettering> {
+        let w = self.window()?;
+        let c = w.global::<Canvas>();
+        let ink = c.get_number_ink();
+        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
     }
 
     /// Each folder of `paths` with its photos in shooting order, which `ranks` numbers them by.
@@ -27,14 +39,18 @@ impl Ctl {
         folders.into_iter().map(|f| (f.clone(), s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default())).collect()
     }
 
-    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>) {
+    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>, heading: Option<(Vec<u8>, usize, usize)>) {
         let shown = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == id => {
                 g.numbers = numbers;
-                g.shown
+                Some(g.shown)
             }
             _ => None,
         };
+        let Some(shown) = shown else { return };
+        if let (Some(w), Some((bytes, width, height))) = (self.window(), heading) {
+            w.global::<Canvas>().set_heading(image(&bytes, width, height));
+        }
         if let Some(shown) = shown {
             self.lay_sheet(shown);
         }
@@ -46,23 +62,25 @@ impl Ctl {
         let (Some(w), Some(view)) = (self.window(), self.canvas_size()) else { return };
         let density = f64::from(w.window().scale_factor());
         let k = sheet.2 / full_width.max(1.0);
-        let laid = {
+        let (laid, band) = {
             let s = self.state.borrow();
             let Some(g) = s.together.as_ref() else { return };
-            under(&g.numbers, &g.sheet.pictures)
+            (under(&g.numbers, &g.sheet.pictures), g.sheet.heading)
         };
-        let (size, band) = (NUMBER as f64 * k, MARGIN as f64 * k);
+        let (size, number_band) = (NUMBER as f64 * k, MARGIN as f64 * k);
         let points = |v: f64| (v / density) as f32;
         let numbers: Vec<EdgeNumber> = laid
             .into_iter()
             .map(|(x, y, n)| (sheet.0 + x * k, sheet.1 + y * k, n))
-            .filter(|(x, y, _)| *x < view.0 && *y < view.1 && *x + 4.0 * size > 0.0 && *y + band > 0.0)
+            .filter(|(x, y, _)| *x < view.0 && *y < view.1 && *x + 4.0 * size > 0.0 && *y + number_band > 0.0)
             .map(|(x, y, n)| EdgeNumber { x: points(x), y: points(y), text: n.to_string().into() })
             .collect();
         let c = w.global::<Canvas>();
         c.set_sheet(SheetBox { x: points(sheet.0), y: points(sheet.1), width: points(sheet.2), height: points(sheet.3) });
         c.set_number_size(points(size));
-        c.set_number_band(points(band));
+        c.set_number_band(points(number_band));
+        let (hx, hy, hw, hh) = band;
+        c.set_heading_box(SheetBox { x: points(sheet.0 + hx * k), y: points(sheet.1 + hy * k), width: points(hw * k), height: points(hh * k) });
         if let Some(m) = moved_to(&c.get_numbers(), numbers) {
             c.set_numbers(m);
         }
@@ -74,6 +92,7 @@ impl Ctl {
         let c = w.global::<Canvas>();
         c.set_together(false);
         c.set_numbers(ModelRc::default());
+        c.set_heading(slint::Image::default());
     }
 }
 

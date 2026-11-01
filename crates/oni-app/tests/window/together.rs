@@ -83,7 +83,11 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let sheet = canvas.get_sheet();
     let (fx, fy, fw, fh) = (canvas.get_frame_x(), canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
     assert!(canvas.get_together() && sheet.x < fx && sheet.y < fy && sheet.x + sheet.width > fx + fw && sheet.y + sheet.height > fy + fh, "{fx} {fy} {fw} {fh}");
-    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (2.0 * 60.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap: {} × {}", sheet.width, sheet.height);
+    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (3.0 * 60.0 + 120.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap, the heading above: {} × {}", sheet.width, sheet.height);
+    // The heading across the sheet's top, inside its margin, drawn once its roll is read.
+    let heading = canvas.get_heading_box();
+    assert!((heading.y - sheet.y - 60.0 * sheet.width / 3252.0).abs() < 1.0 && (heading.width - sheet.width * 3132.0 / 3252.0).abs() < 1.0, "{heading:?}");
+    rig.until("the heading", Duration::from_secs(10), || canvas.get_heading().size().width == 3132);
     rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
     assert_eq!(numbers(), ["A", "B", "C"].map(place));
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
