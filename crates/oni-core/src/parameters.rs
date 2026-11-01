@@ -343,12 +343,11 @@ pub fn unconverted(settings: &PipelineSettings) -> PipelineSettings {
     block
 }
 
-/// The bar's reset: the look back to rest and the crop gone, the measure's conversion kept, a roll's
+/// The bar's reset: the look back to rest, the framing and the conversion kept, its mode and a roll's
 /// reference or a slide's measured gains (owner's call). On the Scanner face Chrome is part of the
 /// face, the clicks are the edit.
 pub fn reset_blank(settings: &PipelineSettings, scanner_face: bool) -> PipelineSettings {
     let mut blank = imported(settings);
-    blank.geometry = oni_settings::frame::Geometry::reset_keeping(&settings.geometry);
     if scanner_face {
         blank.secret_sauce = settings.secret_sauce;
     } else {

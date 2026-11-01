@@ -42,7 +42,7 @@ fn lighting_leaves_the_filters_and_color_carries_them() {
 }
 
 #[test]
-fn the_reset_drops_the_crop_and_keeps_its_window_flat_field_and_dye_family() {
+fn the_reset_keeps_the_framing_flat_field_and_dye_family() {
     use oni_settings::blocks::SeparationFamily;
     let mut s = PipelineSettings::rest(ConversionMode::Negative, true);
     s.geometry.angle = 2.5;
@@ -54,13 +54,18 @@ fn the_reset_drops_the_crop_and_keeps_its_window_flat_field_and_dye_family() {
     s.print.exposure = 0.2;
     s.sharpen.amount = 2.5;
     let blank = reset_blank(&s, false);
-    assert_eq!((blank.geometry.angle, blank.geometry.crop), (0.0, oni_settings::cg::Rect::UNIT), "the crop gone");
-    assert_eq!((blank.geometry.measure_window, blank.flat_field.amount), (s.geometry.measure_window, 0.4));
+    assert_eq!(blank.geometry, s.geometry, "the crop, the straightening and the window kept");
+    assert_eq!(blank.flat_field.amount, 0.4);
     assert_eq!(blank.separation_family, s.separation_family);
     // Twin: the look goes back to rest, so the check sees a reset that kept too much.
     let rest = PipelineSettings::rest(ConversionMode::Negative, true);
     assert_eq!((blank.separation, blank.print.exposure, blank.sharpen), (rest.separation, rest.print.exposure, rest.sharpen));
     assert_ne!(blank, s);
+    // The conversion stays: a slide read as a negative is reset as one.
+    let mut slide = PipelineSettings::rest(ConversionMode::Negative, true);
+    slide.inverted_source = true;
+    let back = reset_blank(&slide, false);
+    assert!(back.inverted_source && back.mode == ConversionMode::Negative, "the conversion kept");
 }
 
 /// A slide's gains-only measure stands on no reference: its measured gains are its rest and a reset lands there.
