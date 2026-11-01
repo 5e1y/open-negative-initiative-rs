@@ -1,6 +1,6 @@
 // The canvas's state: the photo the display kernel wrote, its overlays' places and the facts the
 // status bar carries, which Rust sets.
-import { SheetBox, EdgeNumber, Colour, Type } from "ds/ds.slint";
+import { SheetBox, EdgeNumber, SheetInks, Colour, Type } from "ds/ds.slint";
 
 // The canvas: the photo the display kernel wrote, and the facts the status bar carries.
 // A correction's marker on the canvas: its ring's rectangle in points and its number.
@@ -40,8 +40,11 @@ export global Canvas {
     in property <[EdgeNumber]> numbers;
     in property <length> number-size;
     in property <length> number-band;
-    // The numbers' ink and weight, which a sheet written to a file sets them in too.
-    out property <color> number-ink: Colour.edge-print;
+    // Frames all positives lie on white: a sheet's inks either way and the numbers' weight, which a
+    // sheet written to a file sets too.
+    in property <bool> positive;
+    out property <SheetInks> negative-inks: { ground: Colour.black, number: Colour.edge-print, logo: Colour.white };
+    out property <SheetInks> positive-inks: { ground: Colour.white, number: Colour.edge-print-positive, logo: Colour.black };
     out property <int> number-weight: Type.bold;
     // The sheet's logo band, drawn by Rust at the sheet's full scale, and its place on the canvas.
     in property <image> logo;

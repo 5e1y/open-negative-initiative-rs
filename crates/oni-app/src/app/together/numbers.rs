@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::{EdgeNumber, SheetBox};
-use super::plate::Lettering;
+use super::plate::{Inks, Lettering};
 use super::sheet::Area;
 
 impl Ctl {
@@ -12,24 +12,44 @@ impl Ctl {
     pub(super) fn number_frames(&self, id: u64) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
         let folders = self.roll_folders(&paths);
-        let band = laid(&vec![UNKNOWN; paths.len()]).band.2 as usize;
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-            let plate = super::logo::drawn(band);
-            let logo = (plate.rgba8(), plate.width, plate.height);
-            with_shell(move |c| c.numbers_landed(id, numbers, logo));
+            with_shell(move |c| c.numbers_landed(id, numbers));
         });
     }
 
-    /// The numbers' ink and weight as the canvas sets them.
-    pub(in crate::app) fn lettering(&self) -> Option<Lettering> {
+    /// The sheet's inks as the canvas sets them, of positives or of negatives.
+    pub(in crate::app) fn inks(&self, positive: bool) -> Option<Inks> {
         let w = self.window()?;
         let c = w.global::<Canvas>();
-        let ink = c.get_number_ink();
-        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
+        let set = if positive { c.get_positive_inks() } else { c.get_negative_inks() };
+        let srgb = |ink: slint::Color| [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0);
+        let numbers = Lettering { ink: srgb(set.number), weight: c.get_number_weight() as f32 };
+        Some(Inks { ground: srgb(set.ground), numbers, logo: srgb(set.logo) })
+    }
+
+    /// The sheet white under frames all positives, else black: its numbers follow on the canvas, its
+    /// logo is drawn again in its ink off this thread.
+    pub(super) fn sheet_polarity(&self, id: u64, band: usize, positive: bool) {
+        let Some(inks) = self.inks(positive) else { return };
+        if let Some(w) = self.window() {
+            w.global::<Canvas>().set_positive(positive);
+        }
+        std::thread::spawn(move || {
+            let plate = super::logo::drawn(band, inks.logo);
+            let logo = (plate.rgba8(), plate.width, plate.height);
+            with_shell(move |c| c.logo_landed(id, logo));
+        });
+    }
+
+    fn logo_landed(&self, id: u64, (bytes, width, height): (Vec<u8>, usize, usize)) {
+        let current = self.state.borrow().together.as_ref().is_some_and(|g| g.id == id);
+        if let (true, Some(w)) = (current, self.window()) {
+            w.global::<Canvas>().set_logo(image(&bytes, width, height));
+        }
     }
 
     /// Each folder of `paths` with its photos in shooting order, which `ranks` numbers them by.
@@ -39,7 +59,7 @@ impl Ctl {
         folders.into_iter().map(|f| (f.clone(), s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default())).collect()
     }
 
-    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>, (bytes, width, height): (Vec<u8>, usize, usize)) {
+    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>) {
         let shown = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == id => {
                 g.numbers = numbers;
@@ -48,9 +68,6 @@ impl Ctl {
             _ => None,
         };
         let Some(shown) = shown else { return };
-        if let Some(w) = self.window() {
-            w.global::<Canvas>().set_logo(image(&bytes, width, height));
-        }
         if let Some(shown) = shown {
             self.lay_sheet(shown);
         }
@@ -91,6 +108,7 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let c = w.global::<Canvas>();
         c.set_together(false);
+        c.set_positive(false);
         c.set_numbers(ModelRc::default());
         c.set_logo(slint::Image::default());
     }
@@ -145,6 +163,15 @@ mod tests {
         assert_eq!(ranks(&paths, &folders, is_sheet), vec![Some(3), Some(1), None, None]);
         // Twin: the sheet counted, every frame after it reads one further down the roll.
         assert_eq!(ranks(&paths, &folders, |_| false)[0], Some(4));
+    }
+
+    #[test]
+    fn a_sheet_lies_on_white_when_every_frame_is_a_positive() {
+        use oni_settings::ConversionMode::{Negative, Positive};
+        let (slide, film) = (PipelineSettings::rest(Positive, true), PipelineSettings::rest(Negative, true));
+        assert!(positive([&slide, &slide]));
+        // Twin: one negative among them, or no frame known, keeps the black.
+        assert!(!positive([&slide, &film]) && !positive(std::iter::empty()));
     }
 
     #[test]

@@ -15,6 +15,21 @@ pub(in crate::app) struct Lettering {
     pub weight: f32,
 }
 
+/// A sheet's inks as the canvas sets them, in sRGB: its ground, its numbers' lettering, its logo's ink.
+#[derive(Clone, Copy, Debug)]
+pub(in crate::app) struct Inks {
+    pub ground: [f32; 3],
+    pub numbers: Lettering,
+    pub logo: [f32; 3],
+}
+
+/// An sRGB colour in the working space's light.
+pub(super) fn linear(srgb: [f32; 3]) -> [f32; 3] {
+    let mut pixel = [[srgb[0], srgb[1], srgb[2], 1.0]];
+    oni_colour::source::Source::of(None, None, false).linearise(&mut pixel, false);
+    [pixel[0][0], pixel[0][1], pixel[0][2]]
+}
+
 /// A clear plate: each pixel's ink in sRGB times its coverage, and the coverage.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Plate {
@@ -70,21 +85,18 @@ impl Plate {
         }).collect()
     }
 
-    /// The plate laid over `sheet`'s black at `at`, its ink linearised to the working space as the
-    /// screen shows it blended there.
-    pub fn lay_on(&self, sheet: &mut Picture, at: (i64, i64)) {
-        let srgb = oni_colour::source::Source::of(None, None, false);
-        let mut inked: Vec<[f32; 4]> = self.pixels.iter().map(|p| [p[0], p[1], p[2], 1.0]).collect();
-        srgb.linearise(&mut inked, false);
+    /// The plate laid over `sheet` at `at`, on its `ground` in sRGB: each inked pixel blended over the
+    /// ground as the screen blends it, then linearised to the working space.
+    pub fn lay_on(&self, sheet: &mut Picture, at: (i64, i64), ground: [f32; 3]) {
+        let over = |p: &[f32; 4]| [0, 1, 2].map(|c| p[c] + ground[c] * (1.0 - p[3]));
+        let mut inked: Vec<[f32; 4]> = self.pixels.iter().map(|p| { let [r, g, b] = over(p); [r, g, b, 1.0] }).collect();
+        oni_colour::source::Source::of(None, None, false).linearise(&mut inked, false);
         for (i, (p, ink)) in self.pixels.iter().zip(&inked).enumerate() {
             let (x, y) = (at.0 + (i % self.width) as i64, at.1 + (i / self.width) as i64);
             if p[3] <= 0.0 || x < 0 || y < 0 || x >= sheet.width as i64 || y >= sheet.height as i64 {
                 continue;
             }
-            let d = &mut sheet.pixels[(y as usize * sheet.width + x as usize) * 4..][..3];
-            for (d, v) in d.iter_mut().zip(ink) {
-                *d = d.max(*v);
-            }
+            sheet.pixels[(y as usize * sheet.width + x as usize) * 4..][..3].copy_from_slice(&ink[..3]);
         }
     }
 }
@@ -144,15 +156,21 @@ mod tests {
     }
 
     #[test]
-    fn a_plate_lays_its_ink_linearised_over_black_and_shows_straight() {
+    fn a_plate_lays_its_ink_linearised_over_its_ground_and_shows_straight() {
         let mut plate = Plate::clear(2, 1);
         plate.cover(0, 0, 0.5, ORANGE.ink);
         let rgba = plate.rgba8();
         assert_eq!(&rgba[..4], &[255, 159, 10, 128], "straight ink, its coverage in alpha");
         let mut sheet = Picture { width: 2, height: 1, pixels: vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0] };
-        plate.lay_on(&mut sheet, (0, 0));
+        plate.lay_on(&mut sheet, (0, 0), [0.0; 3]);
         assert!(sheet.pixels[0] > 0.1 && sheet.pixels[0] < 0.5, "half covered, darker than the ink: {:?}", &sheet.pixels[..4]);
         // Twin: a clear pixel leaves the black as it was.
         assert_eq!(&sheet.pixels[4..], &[0.0, 0.0, 0.0, 1.0]);
+        // On white, black ink half covering a pixel greys it as the screen blends: 0.5 in sRGB.
+        let mut black = Plate::clear(2, 1);
+        black.cover(0, 0, 0.5, [0.0; 3]);
+        let mut white = Picture { width: 2, height: 1, pixels: vec![1.0; 8] };
+        black.lay_on(&mut white, (0, 0), [1.0; 3]);
+        assert!((white.pixels[0] - 0.214).abs() < 0.01 && white.pixels[4] == 1.0, "{:?}", white.pixels);
     }
 }

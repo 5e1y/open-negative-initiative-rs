@@ -38,8 +38,10 @@ export global Colour {
     // `DS.Palette.overlay`: a dark badge's fill over the photo, black at 60 %.
     out property <color> overlay: DS.palette-overlay;
     out property <color> canvas-cropping: DS.palette-canvas-cropping;
-    // Frames shown together: their numbers in a film's orange edge print, on the sheet's black.
+    // Frames shown together: their numbers in a film's orange edge print, on the sheet's black; a
+    // sheet of positives sets them dark red on white.
     out property <color> edge-print: DS.system-orange;
+    out property <color> edge-print-positive: #8e1b1bff;
     out property <color> unaligned-balance: DS.tint-unaligned-balance;
     out property <color> contrast-edge-idle: DS.palette-contrast-edge-idle;
     out property <color> sharpen: DS.tint-sharpen;

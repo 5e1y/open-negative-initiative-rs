@@ -207,7 +207,7 @@ export component ExportPanel inherits Surface {
                 }
                 if Exporting.count > 1: Field {
                     label: @tr("Contact sheet");
-                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row on black above the logo, numbered in orange by their place on their roll.");
+                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives.");
                     Toggle { label: @tr("All photos on one sheet"); on: Exporting.sheet; toggled(on) => { Exporting.sheet-set(on); } }
                 }
                 SpaceField { }

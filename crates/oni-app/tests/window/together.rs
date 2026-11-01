@@ -90,6 +90,7 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     assert!((band.y - sheet.y - (5.0 * 60.0 + 1024.0 * 2.0 / 3.0) * k).abs() < 1.0 && (band.width - 3132.0 * k).abs() < 1.0, "{band:?}");
     assert!((sheet.y + sheet.height - band.y - band.height - 60.0 * k).abs() < 1.0, "twin: a margin under the band, not above the row");
     rig.until("the logo", Duration::from_secs(10), || canvas.get_logo().size().width == 3132);
+    assert!(!canvas.get_positive(), "negatives lie on black");
     rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
     assert_eq!(numbers(), ["A", "B", "C"].map(place));
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);

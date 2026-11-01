@@ -1,5 +1,6 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
-//! gaps, each frame's number in orange under its picture, a foot of four margins and the logo's band.
+//! gaps, each frame's number in orange under its picture, a foot of four margins and the logo's band;
+//! the same three as positives on white, numbered in dark red, the logo black.
 
 use oni_app::app::export_card::{self, Ask, job::End};
 use oni_app::app::{Options, Shell};
@@ -53,18 +54,19 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
 
     let e = w.global::<Exporting>();
     let asked: Rc<RefCell<Vec<Ask>>> = Rc::default();
-    let (record, file) = (asked.clone(), out.join("Contact Sheet.jpg"));
+    let file = Rc::new(RefCell::new(out.join("Contact Sheet.jpg")));
+    let (record, answer) = (asked.clone(), file.clone());
     export_card::answer_with(&ctl, Rc::new(move |ask| {
         record.borrow_mut().push(ask.clone());
-        vec![file.clone()]
+        vec![answer.borrow().clone()]
     }));
     export_card::job::reveal_with(&ctl, Rc::new(|_| {}));
     // B, a 4:3 scan cropped as a roll's frame was: its row grows to its height, the file to the size said.
     let mut cropped = oni_settings::PipelineSettings::default();
     cropped.geometry.crop = oni_settings::cg::Rect { x: 0.151131, y: 0.159713, width: 0.730397, height: 0.729485 };
     let settings = |n: &str| if n == "B.tif" { cropped.clone() } else { Default::default() };
-    let targets = names.iter().map(|n| oni_app::export::Target { path: folder.join(n), settings: settings(n) }).collect();
-    ctl.enter_export(targets);
+    let targets: Vec<_> = names.iter().map(|n| oni_app::export::Target { path: folder.join(n), settings: settings(n) }).collect();
+    ctl.enter_export(targets.clone());
     rig.until("the lines and sizes", LONG, || export_card::card(&ctl).rows.iter().all(Option::is_some) && e.get_dims().as_str() != "—");
     assert_eq!(e.get_dims(), "1500 × 1000", "a batch's size is its first photo's");
 
@@ -98,5 +100,29 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert!(count(60..1084, 1067..1337, &white) > 20_000, "the logo");
     assert_eq!(count(1114..3192, 1067..1337, &|p| !black(p)), 0, "twin: nothing beside the logo");
     assert_eq!(count(0..3252, 1344..1398, &|p| !black(p)) + count(0..3252, 0..56, &|p| !black(p)), 0, "twin: the margins under it and above the row");
+
+    // The same three as positives: a white sheet, the numbers dark red, the logo black.
+    *file.borrow_mut() = out.join("Positives.jpg");
+    let positive = |mut t: oni_app::export::Target| {
+        t.settings.mode = oni_settings::ConversionMode::Positive;
+        t
+    };
+    ctl.enter_export(targets.into_iter().map(positive).collect());
+    e.invoke_sheet_set(true);
+    rig.until("the positives' sheet", LONG, || e.get_dims().as_str() == "3252 × 1398");
+    e.invoke_export();
+    rig.until("the positives written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
+    assert_eq!(export_card::job::job(&ctl), Some((1, 1, Some(End::Written))));
+    let sheet = image::open(out.join("Positives.jpg")).expect("the positives decode").to_rgb8();
+    let px = |x: u32, y: u32| sheet.get_pixel(x, y).0;
+    let count = |xs: std::ops::Range<u32>, ys: std::ops::Range<u32>, f: &dyn Fn([u8; 3]) -> bool| xs.flat_map(|x| ys.clone().map(move |y| (x, y))).filter(|&(x, y)| f(px(x, y))).count();
+    let paper = |p: [u8; 3]| p.iter().all(|v| *v >= 247);
+    let dark_red = |p: [u8; 3]| p[0] > 90 && p[0] < 200 && p[1] < 80 && p[2] < 80;
+    let dark = |p: [u8; 3]| p.iter().all(|v| *v < 60);
+    assert!(paper(px(60 + 1024 + 15, 580)) && paper(px(10, 10)), "the gaps and the margin are white: {:?}", px(60 + 1024 + 15, 580));
+    let numbered = count(60..260, bottom..bottom + 60, &dark_red);
+    assert!(numbered > 100, "the first number is dark red: {numbered} pixels");
+    assert!(count(60..1084, 1067..1337, &dark) > 20_000, "the logo black");
+    assert_eq!(count(0..3252, 896..1064, &|p| !paper(p)) + count(60..260, bottom..bottom + 60, &orange), 0, "twin: the foot white, no orange number");
     let _ = std::fs::remove_dir_all(&root);
 }

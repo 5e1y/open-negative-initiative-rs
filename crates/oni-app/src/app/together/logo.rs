@@ -7,8 +7,8 @@ use resvg::{tiny_skia, usvg};
 const LOGO_SVG: &[u8] = include_bytes!("../../../../oni-ui/ui/icons/oni-logo.svg");
 
 /// The band on a clear plate `width` wide and `BAND` tall: the logo a tile wide, no wider than
-/// the plate, against its left edge and centred in its height, in its own colours.
-pub(in crate::app) fn drawn(width: usize) -> Plate {
+/// the plate, against its left edge and centred in its height, in `ink`.
+pub(in crate::app) fn drawn(width: usize, ink: [f32; 3]) -> Plate {
     let mut plate = Plate::clear(width, BAND);
     let Ok(tree) = usvg::Tree::from_data(LOGO_SVG, &usvg::Options::default()) else { return plate };
     let size = tree.size();
@@ -18,9 +18,7 @@ pub(in crate::app) fn drawn(width: usize) -> Plate {
     resvg::render(&tree, tiny_skia::Transform::from_scale(scale, scale), &mut pixmap.as_mut());
     let top = (BAND as i64 - i64::from(h)) / 2;
     for (i, p) in pixmap.pixels().iter().enumerate() {
-        let c = p.demultiply();
-        let ink = [c.red(), c.green(), c.blue()].map(|v| f32::from(v) / 255.0);
-        plate.cover((i % w as usize) as i64, top + (i / w as usize) as i64, f32::from(c.alpha()) / 255.0, ink);
+        plate.cover((i % w as usize) as i64, top + (i / w as usize) as i64, f32::from(p.alpha()) / 255.0, ink);
     }
     plate
 }
@@ -37,14 +35,15 @@ mod tests {
 
     #[test]
     fn the_logo_spans_the_first_column_centred_in_the_band_and_nothing_else_is_drawn() {
-        let plate = drawn(5 * TILE + 4 * GAP);
+        let plate = drawn(5 * TILE + 4 * GAP, [1.0; 3]);
         let (columns, rows) = inked(&plate);
         assert!(columns[0] < 4 && (TILE - 8..TILE).contains(columns.last().unwrap()), "the logo across the first column: {}..{}", columns[0], columns.last().unwrap());
         assert!(rows[0] < 12 && *rows.last().unwrap() > BAND - 12, "the logo the band's height: rows {}..{}", rows[0], rows.last().unwrap());
         let white = plate.pixels.iter().filter(|p| p[3] > 0.9 && p[0] > 0.9 && p[2] > 0.9).count();
-        assert!(white > 20_000, "in its own white: {white} pixels");
-        // Twin: a sheet narrower than a tile sets the logo across it, smaller.
-        let narrow = drawn(TILE / 2);
+        assert!(white > 20_000, "in its ink: {white} pixels");
+        // Twin: in black it lights none; a sheet narrower than a tile sets it across it, smaller.
+        assert!(!drawn(TILE, [0.0; 3]).pixels.iter().any(|p| p[0] > 0.0));
+        let narrow = drawn(TILE / 2, [1.0; 3]);
         let (columns, rows) = inked(&narrow);
         assert!(*columns.last().unwrap() > TILE / 2 - 8 && rows.len() < BAND / 2 + 8, "{} wide, {} tall", columns.last().unwrap(), rows.len());
     }
