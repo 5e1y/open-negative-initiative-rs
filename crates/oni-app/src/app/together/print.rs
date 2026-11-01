@@ -7,16 +7,13 @@ use crate::export::Target;
 use crate::render::Laid;
 use oni_export::{Failure, Image as Picture};
 use std::sync::atomic::AtomicBool;
-use super::heading::{self, Heading};
-use super::plate::{Anchor, Face, Lettering, Plate};
+use super::plate::{Face, Lettering, Plate};
 use swash::scale::ScaleContext;
 
-/// What a sheet shows beside its frames: each one's number, the heading, and the lettering each is set in.
+/// What a sheet shows beside its frames: each one's number and the ink it is set in.
 pub(in crate::app) struct Captions {
     pub numbers: Vec<Option<usize>>,
-    pub heading: Heading,
     pub lettering: Lettering,
-    pub heading_lettering: Lettering,
 }
 
 /// The sheet of `targets` at full scale in the working space, laid on `sizes` (each frame's cropped
@@ -55,7 +52,7 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
         number(&mut picture, (x, y), n, captions.lettering, &mut context);
     }
     let (hx, hy, hw, _) = sheet.heading;
-    heading::drawn(&captions.heading, hw as usize, captions.heading_lettering).lay_on(&mut picture, (hx as i64, hy as i64));
+    super::heading::drawn(hw as usize).lay_on(&mut picture, (hx as i64, hy as i64));
     Ok(Some(picture))
 }
 
@@ -106,7 +103,7 @@ fn laid_on(sheet: &mut Picture, band: &Picture, at: (usize, usize)) {
 fn number(sheet: &mut Picture, at: (f64, f64), n: usize, lettering: Lettering, context: &mut ScaleContext) {
     let Some(face) = Face::of(lettering.weight) else { return };
     let mut plate = Plate::clear(6 * NUMBER, MARGIN);
-    plate.text((0.0, face.centred(0.0, MARGIN as f32, NUMBER as f32)), &n.to_string(), NUMBER as f32, lettering, Anchor::Start, context);
+    plate.text((0.0, face.centred(0.0, MARGIN as f32, NUMBER as f32)), &n.to_string(), NUMBER as f32, lettering, context);
     plate.lay_on(sheet, (at.0.round() as i64, at.1.round() as i64));
 }
 

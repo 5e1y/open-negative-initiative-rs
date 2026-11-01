@@ -37,9 +37,10 @@ const COLUMNS: usize = 5;
 const TILE: usize = 1024;
 const GAP: usize = 30;
 /// The sheet's margin and the band under each picture where its number lies, the rows' spacing,
-/// and the numbers' size.
+/// the margin under the last row, and the numbers' size.
 const MARGIN: usize = 2 * GAP;
 const ROWS_APART: usize = 4 * GAP;
+const FOOT: usize = 4 * MARGIN;
 const NUMBER: usize = 56;
 /// The heading's band across the sheet's top, inside its margin and a margin above the first row:
 /// the logo a tile wide, 246 by 64, stands 266 px tall.

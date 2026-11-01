@@ -58,7 +58,8 @@ pub(super) struct Sheet {
 
 /// Frames of these proportions five to a row under the `HEADER` band, each `TILE` on its longest side:
 /// a column a tile wide, a row as tall as its tallest picture and each picture centred in both, `GAP`
-/// between columns, `ROWS_APART` between rows, `MARGIN` around the sheet and under the band.
+/// between columns, `ROWS_APART` between rows, `MARGIN` around the sheet and under the band, `FOOT`
+/// under the last row.
 pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
     let (tile, gap, apart, margin) = (TILE as f64, GAP as f64, ROWS_APART as f64, MARGIN as f64);
     let fitted: Vec<(f64, f64)> = proportions.iter().map(|&(w, h)| (tile * w / w.max(h).max(1e-9), tile * h / w.max(h).max(1e-9))).collect();
@@ -72,8 +73,8 @@ pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
         }
         y += height + apart;
     }
-    // The last row is followed by the margin, not the rows' spacing.
-    let bottom = if pictures.is_empty() { y + margin } else { y - apart + margin };
+    // The last row is followed by the foot, not the rows' spacing.
+    let bottom = if pictures.is_empty() { y } else { y - apart } + FOOT as f64;
     let width = 2.0 * margin + columns * tile + (columns - 1.0) * gap;
     Sheet { pictures, heading: (margin, margin, width - 2.0 * margin, HEADER as f64), size: (width, bottom) }
 }
@@ -179,7 +180,7 @@ mod tests {
         assert_eq!((x, y), (margin + (tile - low) / 2.0, top + low + apart), "under the first row, four columns' gaps apart");
         assert_eq!(apart, 2.0 * margin, "twin: the rows stand twice as far apart as the margin");
         let columns = COLUMNS as f64;
-        assert_eq!(sheet.size, (2.0 * margin + columns * tile + (columns - 1.0) * gap, top + low + apart + tile + margin));
+        assert_eq!(sheet.size, (2.0 * margin + columns * tile + (columns - 1.0) * gap, top + low + apart + tile + 4.0 * margin), "four margins under the last row");
         // Twin: a portrait frame in the first row makes it as tall as itself, the landscapes centred in it.
         frames[1] = PORTRAIT;
         let taller = laid(&frames);

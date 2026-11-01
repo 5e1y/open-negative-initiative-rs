@@ -4883,5 +4883,12 @@
     "title": "Contact sheet heading: logo, EAN and roll each a column wide, EAN and roll in white",
     "status": "done",
     "detail": "Owner's call: the logo much bigger, a column wide; the roll's name (a folder's, a date) as wide as a column too; the EAN across the whole middle column; EAN and name white. heading::drawn sets three columns a tile wide (narrower sheets set all three smaller, centred): the logo fitted to its column, the EAN over 102 modules (its first digit's seven included) with its bars' edges on whole pixels, guards 8 modules below the bars to the digits' baseline, digits 9 modules; the name sized to its column's width, no taller than its descenders still fit, its capitals centred. HEADER grows to 270 px (the logo a tile wide stands 266). The heading's ink is Canvas.heading-ink (Colour.white), read with the numbers' (Ctl::lettering returns both). Checks: heading sets the logo, the EAN and the roll each across a column, white (twins: in orange only the logo shows white; a short name stays in its band, a one-frame sheet sets three thirds side by side); window export_sheet: a 3252 × 1218 file, the logo, bars and name white in their columns (twins: no orange there, the margin under the heading black); window together: the sheet's ratio with the taller heading."
+  },
+  {
+    "id": 1026,
+    "type": "feature",
+    "title": "Contact sheet: the logo alone in the heading, a foot of four margins under the last row",
+    "status": "done",
+    "detail": "Owner's call: the EAN and the roll's name leave the heading, the logo alone stays a column wide at its left (heading::drawn takes the plate's width only; Heading, Ctl::heading_of, the EAN tables, Canvas.heading-ink, Plate::rect and text anchors go with them). The margin after the last row is four margins, 240 px (FOOT in sheet::laid). The export panel's help says the sheet lies under the logo, in fr and es too. Checks: heading the logo spans the first column, centred in the band, nothing else drawn (twin: a sheet narrower than a tile sets it across it, smaller); sheet four margins under the last row; plate text starts at its pen (twin: a pen further left); window export_sheet a 3252 × 1398 file, the logo, nothing beside it (twin), the margin under the heading and the foot black; window together the sheet's ratio with its foot."
   }
 ]

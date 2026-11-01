@@ -1,5 +1,5 @@
 //! Three photos exported as one contact sheet: one file named for it, the sheet's size, black in its
-//! gaps, each frame's number in orange under its picture, the heading's logo, EAN and roll on top in white.
+//! gaps, each frame's number in orange under its picture, the logo on top, a foot of four margins.
 
 use oni_app::app::export_card::{self, Ask, job::End};
 use oni_app::app::{Options, Shell};
@@ -69,9 +69,9 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert_eq!(e.get_dims(), "1500 × 1000", "a batch's size is its first photo's");
 
     // One sheet: three frames a tile wide, 30 px apart, a 60 px margin around them and under the
-    // 270 px heading, as tall as B.
+    // 270 px heading, four under the last row, as tall as B.
     e.invoke_sheet_set(true);
-    rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 1218");
+    rig.until("the sheet's size", LONG, || e.get_dims().as_str() == "3252 × 1398");
     assert_eq!(e.get_key_title(), "EXPORT CONTACT SHEET");
     e.invoke_export();
     rig.until("the sheet written", LONG, || export_card::job::job(&ctl).is_some_and(|j| j.2.is_some()));
@@ -80,7 +80,7 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     assert_eq!(std::fs::read_dir(&out).unwrap().count(), 1, "twin: one file, not one a photo");
 
     let sheet = image::open(out.join("Contact Sheet.jpg")).expect("the sheet decodes").to_rgb8();
-    assert_eq!(sheet.dimensions(), (3252, 1218), "the size the panel said");
+    assert_eq!(sheet.dimensions(), (3252, 1398), "the size the panel said");
     let px = |x: u32, y: u32| sheet.get_pixel(x, y).0;
     let black = |p: [u8; 3]| p.iter().all(|v| *v <= 8);
     assert!(black(px(60 + 1024 + 15, 580)) && black(px(10, 10)), "the gaps and the margin are black: {:?}", px(60 + 1024 + 15, 580));
@@ -92,12 +92,11 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     let bottom = 390 + (767 - 683) / 2 + 683;
     let numbered = count(60..260, bottom..bottom + 60, &orange);
     assert!(numbered > 100, "the first number is orange under its picture: {numbered} pixels");
-    // The heading, each part a column wide and white: the logo, the EAN's bars, the folder's name;
-    // nothing of them under the heading.
+    // The heading: the white logo across the first column, nothing beside it or under it.
     assert!(count(60..1084, 60..330, &white) > 20_000, "the logo");
-    assert!(count(1194..2138, 60..250, &white) > 40_000, "the EAN's bars");
-    assert!(count(2168..3192, 60..330, &white) > 10_000, "the roll's name");
-    assert_eq!(count(1114..3192, 60..330, &orange), 0, "twin: the EAN and the name are not the numbers' orange");
+    assert_eq!(count(1114..3192, 60..330, &|p| !black(p)), 0, "twin: nothing beside the logo");
     assert_eq!(count(60..3192, 336..384, &|p| !black(p)), 0, "twin: the margin under the heading stays black");
+    // Under the last row's numbers, its foot is black to the sheet's bottom.
+    assert_eq!(count(0..3252, 1224..1398, &|p| !black(p)), 0, "the foot under the numbers");
     let _ = std::fs::remove_dir_all(&root);
 }

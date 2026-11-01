@@ -1,5 +1,5 @@
-//! Ink on a clear plate, as the sheet's numbers and heading are set: text in the interface's face,
-//! bars and the logo, in sRGB premultiplied by coverage, laid over the sheet's black or shown as is.
+//! Ink on a clear plate, as the sheet's numbers and heading are set: text in the interface's face
+//! and the logo, in sRGB premultiplied by coverage, laid over the sheet's black or shown as is.
 
 use oni_export::Image as Picture;
 use swash::scale::{Render, ScaleContext, Source as Outline};
@@ -13,14 +13,6 @@ const FACE: &[u8] = include_bytes!("../../../../oni-ui/fonts/Inter.ttf");
 pub(in crate::app) struct Lettering {
     pub ink: [f32; 3],
     pub weight: f32,
-}
-
-/// Where a line of text stands on its pen's position.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(super) enum Anchor {
-    Start,
-    Centre,
-    End,
 }
 
 /// A clear plate: each pixel's ink in sRGB times its coverage, and the coverage.
@@ -47,28 +39,13 @@ impl Plate {
         }
     }
 
-    /// A solid rectangle of `ink`, its edges on whole pixels.
-    pub fn rect(&mut self, (x, y, w, h): (i64, i64, i64, i64), ink: [f32; 3]) {
-        for row in y..y + h {
-            for col in x..x + w {
-                self.cover(col, row, 1.0, ink);
-            }
-        }
-    }
-
-    /// `text` at `size` pixels and `weight`, its baseline at `at.1`, standing on `at.0` as `anchor` says.
-    pub fn text(&mut self, at: (f32, f32), text: &str, size: f32, lettering: Lettering, anchor: Anchor, context: &mut ScaleContext) {
+    /// `text` at `size` pixels and `weight`, its baseline at `at.1`, from its pen at `at.0`.
+    pub fn text(&mut self, at: (f32, f32), text: &str, size: f32, lettering: Lettering, context: &mut ScaleContext) {
         let Some(face) = Face::of(lettering.weight) else { return };
-        let width = face.width(text, size);
-        let start = match anchor {
-            Anchor::Start => at.0,
-            Anchor::Centre => at.0 - width / 2.0,
-            Anchor::End => at.0 - width,
-        };
         let font = face.font();
         let mut scaler = context.builder(font).size(size).normalized_coords(&face.coords).build();
         let advances = font.glyph_metrics(&face.coords).scale(size);
-        let mut pen = start;
+        let mut pen = at.0;
         for c in text.chars() {
             let glyph = font.charmap().map(c);
             if let Some(mask) = Render::new(&[Outline::Outline]).format(Mask::Alpha).render(&mut scaler, glyph) {
@@ -128,19 +105,6 @@ impl Face {
         swash::FontRef::from_index(FACE, 0).expect("the bundled face reads")
     }
 
-    /// The width `text` takes at `size` pixels.
-    pub fn width(&self, text: &str, size: f32) -> f32 {
-        let font = self.font();
-        let advances = font.glyph_metrics(&self.coords).scale(size);
-        text.chars().map(|c| advances.advance_width(font.charmap().map(c))).sum()
-    }
-
-    /// The cap height and the descent at `size` pixels.
-    pub fn heights(&self, size: f32) -> (f32, f32) {
-        let m = self.font().metrics(&self.coords).scale(size);
-        (m.cap_height, m.descent)
-    }
-
     /// The baseline that centres a line of `size` pixels in a band from `top`, `height` tall, as a
     /// label centres its text.
     pub fn centred(&self, top: f32, height: f32, size: f32) -> f32 {
@@ -149,11 +113,9 @@ impl Face {
     }
 }
 
-/// The design system's orange and white in bold, as the checks set them.
+/// The design system's orange in bold, as the checks set it.
 #[cfg(test)]
 pub(super) const ORANGE: Lettering = Lettering { ink: [1.0, 159.0 / 255.0, 10.0 / 255.0], weight: 700.0 };
-#[cfg(test)]
-pub(super) const WHITE: Lettering = Lettering { ink: [1.0; 3], weight: 700.0 };
 
 #[cfg(test)]
 mod tests {
@@ -166,19 +128,18 @@ mod tests {
     }
 
     #[test]
-    fn text_stands_on_its_anchor_and_centres_in_its_band() {
+    fn text_starts_at_its_pen_and_centres_in_its_band() {
         let face = Face::of(700.0).unwrap();
-        let width = face.width("12", 56.0);
         let mut plate = Plate::clear(400, 60);
         let baseline = face.centred(0.0, 60.0, 56.0);
-        plate.text((390.0, baseline), "12", 56.0, ORANGE, Anchor::End, &mut ScaleContext::new());
+        plate.text((200.0, baseline), "12", 56.0, ORANGE, &mut ScaleContext::new());
         let (columns, rows) = inked(&plate);
-        assert!((*columns.last().unwrap() as f32 - 390.0).abs() < 6.0 && (columns[0] as f32 - (390.0 - width)).abs() < 8.0, "ends on its anchor: {columns:?}");
+        assert!((columns[0] as i64 - 200).abs() < 10 && *columns.last().unwrap() < 290, "from its pen: {columns:?}");
         let (top, bottom) = (rows[0], *rows.last().unwrap());
         assert!(top > 2 && bottom < 58 && (top as i64 - (59 - bottom as i64)).abs() < 14, "centred in its band: rows {top}..{bottom}");
-        // Twin: the start anchor sets it from its pen on.
+        // Twin: a pen further left sets it further left.
         let mut start = Plate::clear(400, 60);
-        start.text((10.0, baseline), "12", 56.0, ORANGE, Anchor::Start, &mut ScaleContext::new());
+        start.text((10.0, baseline), "12", 56.0, ORANGE, &mut ScaleContext::new());
         assert!(inked(&start).0[0] < 20);
     }
 

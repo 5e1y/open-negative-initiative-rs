@@ -11,25 +11,25 @@ impl Ctl {
     /// leave it out of its folder's count.
     pub(super) fn number_frames(&self, id: u64) {
         let Some(paths) = self.state.borrow().together.as_ref().map(|g| g.paths.clone()) else { return };
-        let (folders, heading, lettering) = (self.roll_folders(&paths), self.heading_of(&paths), self.lettering());
+        let folders = self.roll_folders(&paths);
         let band = laid(&vec![UNKNOWN; paths.len()]).heading.2 as usize;
         if let Some(w) = self.window() {
             w.global::<Canvas>().set_together(true);
         }
         std::thread::spawn(move || {
             let numbers = ranks(&paths, &folders, oni_library::roll_membership::is_sheet);
-            let plate = lettering.map(|(_, l)| super::heading::drawn(&heading, band, l));
-            let heading = plate.map(|p| (p.rgba8(), p.width, p.height));
+            let plate = super::heading::drawn(band);
+            let heading = (plate.rgba8(), plate.width, plate.height);
             with_shell(move |c| c.numbers_landed(id, numbers, heading));
         });
     }
 
-    /// The numbers' lettering and the heading's, their inks and weight as the canvas sets them.
-    pub(in crate::app) fn lettering(&self) -> Option<(Lettering, Lettering)> {
+    /// The numbers' ink and weight as the canvas sets them.
+    pub(in crate::app) fn lettering(&self) -> Option<Lettering> {
         let w = self.window()?;
         let c = w.global::<Canvas>();
-        let set = |ink: slint::Color| Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 };
-        Some((set(c.get_number_ink()), set(c.get_heading_ink())))
+        let ink = c.get_number_ink();
+        Some(Lettering { ink: [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0), weight: c.get_number_weight() as f32 })
     }
 
     /// Each folder of `paths` with its photos in shooting order, which `ranks` numbers them by.
@@ -39,7 +39,7 @@ impl Ctl {
         folders.into_iter().map(|f| (f.clone(), s.archive.as_ref().map(|a| a.folder_photos(&f)).unwrap_or_default())).collect()
     }
 
-    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>, heading: Option<(Vec<u8>, usize, usize)>) {
+    fn numbers_landed(&self, id: u64, numbers: Vec<Option<usize>>, (bytes, width, height): (Vec<u8>, usize, usize)) {
         let shown = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == id => {
                 g.numbers = numbers;
@@ -48,7 +48,7 @@ impl Ctl {
             _ => None,
         };
         let Some(shown) = shown else { return };
-        if let (Some(w), Some((bytes, width, height))) = (self.window(), heading) {
+        if let Some(w) = self.window() {
             w.global::<Canvas>().set_heading(image(&bytes, width, height));
         }
         if let Some(shown) = shown {
