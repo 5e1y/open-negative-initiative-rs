@@ -62,9 +62,11 @@ component Word inherits Button {
     clicked => { Bar.act(root.action); }
 }
 
-// ⌘A from the bar: the whole roll selected where the hand is, shown together beside a photo.
+// ⌘A from the bar, orange as the sheet it shows: the whole roll selected where the hand is, shown
+// together beside a photo; pressed on a roll picked whole, the photo it came from alone again.
 component SelectAll inherits Item {
     action: Act.select-all;
+    kind: ButtonKind.sheet;
     icon: Icons.contact-sheet;
     help: @tr("Select the Whole Roll ({})", KeyWords.command + "A");
     enabled: Bar.can-select-all;
@@ -219,28 +221,31 @@ export component Toolbar inherits Surface {
         }
         if Pairing.available: Item { action: Act.pair-phone; icon: Icons.phone; help: @tr("Phone Remote"); }
         Item { action: Act.settings; icon: Icons.settings; help: @tr("Settings"); }
-        // Several photos picked: their contact sheet exported in one key, orange as its numbers.
-        if !Preparing.shown && Bar.targets > 1: Word {
-            action: Act.export-sheet;
-            text: @tr("EXP. CONTACT SHEET");
-            kind: ButtonKind.sheet;
-            help: @tr("Export the photos picked as one contact sheet");
-        }
-        if !Preparing.shown && Bar.update-title == "": Word {
-            action: Bar.editing ? Act.export : Act.add-folder;
-            text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");
-            kind: ButtonKind.accent;
-            fixed-width: ShellStyle.export-width;
-            help: Bar.editing ? "" : @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E");
-            enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
-        }
-        if !Preparing.shown && Bar.update-title != "": Word {
-            action: Act.update;
-            text: Bar.updating ? @tr("UPDATING") : Bar.update-title;
-            kind: ButtonKind.update;
-            fixed-width: ShellStyle.export-width;
-            help: Bar.update-help;
-            enabled: !Bar.updating;
+        // Several photos picked: their contact sheet's key, orange as its numbers, on one plate with export.
+        if !Preparing.shown: ButtonGroup {
+            plate: Bar.targets > 1;
+            if Bar.targets > 1: Word {
+                action: Act.export-sheet;
+                text: @tr("EXP. CONTACT SHEET");
+                kind: ButtonKind.sheet;
+                help: @tr("Export the photos picked as one contact sheet");
+            }
+            if Bar.update-title == "": Word {
+                action: Bar.editing ? Act.export : Act.add-folder;
+                text: Bar.editing ? Bar.export-title : @tr("ADD FOLDER…");
+                kind: ButtonKind.accent;
+                fixed-width: ShellStyle.export-width;
+                help: Bar.editing ? "" : @tr("Star a folder of scans and open it · export stays on {}", KeyWords.command + "E");
+                enabled: !Bar.editing || Bar.has-photo || Bar.targets > 0;
+            }
+            if Bar.update-title != "": Word {
+                action: Act.update;
+                text: Bar.updating ? @tr("UPDATING") : Bar.update-title;
+                kind: ButtonKind.update;
+                fixed-width: ShellStyle.export-width;
+                help: Bar.update-help;
+                enabled: !Bar.updating;
+            }
         }
     }
 }

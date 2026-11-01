@@ -106,18 +106,43 @@ impl Ctl {
     fn column_select_all(self: &Rc<Self>) {
         {
             let mut s = self.state.borrow_mut();
-            let groups: Vec<(String, Vec<String>)> = s
-                .archive
-                .as_ref()
-                .map(|a| a.groups.iter().map(|g| g.entries.iter().map(|e| e.path.clone()).collect::<Vec<_>>()))
-                .into_iter()
-                .flatten()
-                .filter_map(|paths| Some((oni_library::paths::parent(paths.first()?), paths)))
-                .collect();
-            let open = s.open.clone();
-            s.picks.selection = crate::picking::column_select_all(&groups, &s.picks.selection, None, open.as_deref());
+            s.picks.selection = column_whole(&s);
         }
         self.follow_selection();
+        self.publish_tiles();
+        self.publish_organising();
+        self.publish_tree();
+        self.publish_bar();
+    }
+
+    /// The bar's contact-sheet key: the whole roll as ⌘A picks it; pressed on a roll picked whole
+    /// already, the photo it was picked from alone again, the open one beside a photo (owner's call).
+    pub(super) fn select_roll(self: &Rc<Self>) {
+        let gallery = self.window().is_some_and(|w| w.global::<App>().get_gallery());
+        let whole = if gallery {
+            self.grid_whole()
+        } else {
+            let s = self.state.borrow();
+            s.picks.selection.len() > 1 && column_whole(&s) == s.picks.selection
+        };
+        if !whole {
+            self.key("a", true, false, false, false);
+            return;
+        }
+        let solo = {
+            let s = self.state.borrow();
+            if gallery { s.picks.cursor.clone().filter(|c| s.picks.selection.contains(c)).or_else(|| s.selected().first().cloned()) } else { s.open.clone() }
+        };
+        let Some(path) = solo else { return };
+        {
+            let mut s = self.state.borrow_mut();
+            s.picks.selection = HashSet::from([path.clone()]);
+            s.picks.anchor = Some(path.clone());
+            s.picks.cursor = Some(path);
+        }
+        if !gallery {
+            self.follow_selection();
+        }
         self.publish_tiles();
         self.publish_organising();
         self.publish_tree();
@@ -153,4 +178,18 @@ impl Ctl {
             self.close_settings();
         }
     }
+}
+
+/// What ⌘A beside a photograph picks: every photo of the folders the selection touches, else the
+/// open photo's folder.
+fn column_whole(s: &State) -> HashSet<String> {
+    let groups: Vec<(String, Vec<String>)> = s
+        .archive
+        .as_ref()
+        .map(|a| a.groups.iter().map(|g| g.entries.iter().map(|e| e.path.clone()).collect::<Vec<_>>()))
+        .into_iter()
+        .flatten()
+        .filter_map(|paths| Some((oni_library::paths::parent(paths.first()?), paths)))
+        .collect();
+    crate::picking::column_select_all(&groups, &s.picks.selection, None, s.open.as_deref())
 }

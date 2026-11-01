@@ -3,6 +3,17 @@
 use super::*;
 
 impl Ctl {
+    /// Whether ⌘A in the grid would pick nothing more: the roll is picked whole already.
+    pub(in crate::app) fn grid_whole(&self) -> bool {
+        let s = self.state.borrow();
+        if s.trash_shown() || s.picks.selection.len() < 2 {
+            return false;
+        }
+        let keys = s.band_keys();
+        let focus = s.open.as_deref().and_then(|c| keys.iter().find(|(_, p)| p.iter().any(|x| x == c))).map(|(k, _)| k.clone());
+        crate::picking::select_all(&keys, &s.picks.selection, focus.as_ref()) == s.picks.selection
+    }
+
     /// `GalleryEngine.key(stroke:)`: the arrows, Return, Space and ⌘A, while the gallery shows.
     pub(in crate::app) fn grid_key(self: &Rc<Self>, text: &str, command: bool, shift: bool, bare: bool, repeat: bool) -> bool {
         let key = match text {

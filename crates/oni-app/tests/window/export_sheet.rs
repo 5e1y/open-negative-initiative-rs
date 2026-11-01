@@ -157,5 +157,12 @@ pub(crate) fn a_selection_exports_as_one_contact_sheet_black_and_numbered() {
     ctl.act(oni_app::Act::Export);
     rig.until("the export on separate photos", LONG, || e.get_shown());
     assert!(!e.get_sheet(), "twin: the blue key writes each photo");
+    // The contact-sheet key on the roll picked whole leaves the photo last picked alone, then picks the
+    // roll again.
+    ctl.leave_export();
+    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
+    assert_eq!(ctl.state.borrow().picked().len(), 1);
+    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
+    assert_eq!(ctl.state.borrow().picked().len(), 3, "twin: one photo picked, the key picks its roll");
     let _ = std::fs::remove_dir_all(&root);
 }

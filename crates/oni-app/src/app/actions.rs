@@ -101,8 +101,7 @@ impl Ctl {
                 self.restore(&picked);
             }
             Act::NewRoll if app.get_gallery() => self.new_roll(),
-            // The bar's key does what ⌘A does where the hand is.
-            Act::SelectAll => drop(self.key("a", true, false, false, false)),
+            Act::SelectAll => self.select_roll(),
             Act::ResetToDefault if app.get_gallery() => self.ask_reset_to_default(),
             Act::Ungroup => self.ungroup(),
             Act::Open => self.pick(false),

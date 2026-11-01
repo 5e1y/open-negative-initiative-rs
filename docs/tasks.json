@@ -4953,5 +4953,12 @@
     "title": "The export offers Separate Photos or Contact Sheet first, and shows the sheet it writes",
     "status": "done",
     "detail": "Owner's call: the contact sheet's toggle sat among the settings, too quiet. With several photos the panel opens on an Export As segmented control, Separate Photos or Contact Sheet, above the presets; on Contact Sheet the column shows the sheet itself in place of the photos' lines: each frame's preview at its place, its number under it in its ink and the logo's band, on black or white, laid by sheet::laid on the sizes measured (a frame unmeasured on 3:2) and fitted by Rust to the room the column reports (Exporting.sheet-room, sheet-tiles, sheet-ground, sheet-logo-box, sheet-number-size and -band; export_card/sheet_view.rs), the logo drawn once per width and ground. Checks: window export_sheet separate photos show no sheet (twin), the sheet in the column is three tiles in a row on the file's proportions, numbered 1 to 3, the band under them on black, white for the positives."
+  },
+  {
+    "id": 1036,
+    "type": "feature",
+    "title": "The contact-sheet key turns orange and toggles back to one photo; the orange export key shares the blue one's plate",
+    "status": "done",
+    "detail": "Owner's call: the bar's contact-sheet key takes the orange of EXP. CONTACT SHEET (ButtonKind.sheet). Pressed on a roll already picked whole, as ⌘A would pick it (Ctl::grid_whole in the gallery, keys::column_whole beside a photo), it picks the photo it came from alone again: the open one beside a photo, which then shows alone, the last picked in the gallery; else it does what ⌘A does (Ctl::select_roll). ⌘A itself is unchanged. With several photos picked, EXP. CONTACT SHEET and the export key stand on one plate (ButtonGroup, plated while both show). Checks: window editor_routes the key pressed again on the three together shows C alone, selected; window export_sheet in the gallery the key on the three picked leaves one, then picks the three again (twin)."
   }
 ]

@@ -184,6 +184,10 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     assert!(w.global::<oni_app::Bar>().get_can_select_all());
     w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
     rig.until("three together", Duration::from_secs(30), || canvas.get_status().as_str() == "3 frames together");
+    // Pressed again on the roll picked whole, the open photo shows alone.
+    w.global::<oni_app::Bar>().invoke_act(oni_app::Act::SelectAll);
+    rig.until("C alone again", Duration::from_secs(30), || canvas.get_status().contains(" × "));
+    assert_eq!(*ctl.state.borrow().picked(), HashSet::from([names[2].clone()]));
     drop(shell);
     let _ = std::fs::remove_dir_all(&root);
 }
