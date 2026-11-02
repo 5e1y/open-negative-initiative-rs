@@ -5121,5 +5121,12 @@
     "title": "Version 1.5.3",
     "status": "done",
     "detail": "oni-app 1.5.3, carrying the Windows update feed (#1058); the 1.5 welcome and splash kept."
+  },
+  {
+    "id": 1060,
+    "type": "change",
+    "title": "Windows checks counted by the site, and the system named on install",
+    "status": "done",
+    "detail": "WINDOWS_FEED points at the site's /appcast-windows.xml, which proxies Pages and counts each check; /installed carries os=mac|windows so the downloads dashboard splits Mac from Windows."
   }
 ]

@@ -55,8 +55,11 @@ fn the_feed_reads_its_items_and_the_newest_runnable_one_is_offered() {
 
 #[test]
 fn the_recorder_hears_a_version_and_nothing_of_the_mac() {
-    assert_eq!(installed_url("1.3.0", None), "https://open-negative-initiative.com/installed?v=1.3.0");
-    assert_eq!(installed_url("1.3.0", Some("1.2.1")), "https://open-negative-initiative.com/installed?v=1.3.0&from=1.2.1");
+    assert_eq!(installed_url("1.3.0", None, "mac"), "https://open-negative-initiative.com/installed?v=1.3.0&os=mac");
+    assert_eq!(installed_url("1.3.0", Some("1.2.1"), "windows"), "https://open-negative-initiative.com/installed?v=1.3.0&from=1.2.1&os=windows");
+    // The recorder keeps `mac` and `windows` alone: the family is never Darwin's or the machine's name.
+    assert_eq!(os(), if cfg!(windows) { "windows" } else if cfg!(target_os = "macos") { "mac" } else { std::env::consts::OS });
+    assert_ne!(os(), "macos", "twin: the raw constant would be dropped by the recorder");
     assert_eq!(user_agent(), format!("OpenNegative/{} Sparkle-compatible", version()));
     // Twin: the recorder's pattern reads the version back, and the system's name is never in it.
     assert!(user_agent().starts_with(&format!("OpenNegative/{} ", version())));
@@ -155,6 +158,8 @@ fn windows_reads_its_own_feed_and_is_offered_what_it_finds() {
     assert_eq!(feed_for(true), WINDOWS_FEED);
     assert_eq!(feed_for(false), FEED);
     assert!(WINDOWS_FEED.starts_with("https://") && WINDOWS_FEED != FEED);
+    // Both feeds pass through the site, which counts each check, never Pages directly.
+    assert_eq!(WINDOWS_FEED.rsplit_once('/').map(|(host, _)| host), FEED.rsplit_once('/').map(|(host, _)| host));
     let windows = system_on(true, false, || panic!("Windows reads no Mac version"));
     let item = |version: &str| Item {
         title: version.into(),

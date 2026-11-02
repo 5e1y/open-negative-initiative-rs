@@ -10,9 +10,9 @@ use std::time::Duration;
 
 /// `SUFeedURL`: the site proxies the Pages feed byte for byte, so a check is counted.
 pub const FEED: &str = "https://open-negative-initiative.com/appcast.xml";
-/// Windows' feed on Pages, each item holding the Windows archive alone: no Mac reader of `FEED`,
-/// Swift's Sparkle included, ever meets an enclosure it cannot run.
-pub const WINDOWS_FEED: &str = "https://5e1y.github.io/open-negative-initiative-releases/appcast-windows.xml";
+/// Windows' feed, proxied by the site like `FEED`, each item holding the Windows archive alone: no Mac
+/// reader of `FEED`, Swift's Sparkle included, ever meets an enclosure it cannot run.
+pub const WINDOWS_FEED: &str = "https://open-negative-initiative.com/appcast-windows.xml";
 /// The Windows every build runs on at least, DirectX 12's; the Windows feed names no minimum.
 const WINDOWS_FLOOR: &str = "10.0";
 
@@ -54,14 +54,24 @@ pub const LAST_LAUNCHED_KEY: &str = "lastLaunchedVersion";
 /// The prior version of a copy that checked before it ever reported: unknown, never guessed.
 pub const UNKNOWN_PRIOR: &str = "inconnue";
 
-/// `/installed?v=…[&from=…]`: no `from` is a first installation, one is an update carried out.
-pub fn installed_url(version: &str, from: Option<&str>) -> String {
+/// `/installed?v=…[&from=…]&os=…`: no `from` is a first installation, one is an update carried out;
+/// `os` is the system's family alone, which millions of machines share.
+pub fn installed_url(version: &str, from: Option<&str>, os: &str) -> String {
     let mut url = url::Url::parse(INSTALLED).expect("the recorder's address");
     url.query_pairs_mut().append_pair("v", version);
     if let Some(from) = from {
         url.query_pairs_mut().append_pair("from", from);
     }
+    url.query_pairs_mut().append_pair("os", os);
     url.into()
+}
+
+/// The family `installed_url` names: `mac` or `windows`, the recorder keeping nothing else.
+pub fn os() -> &'static str {
+    match std::env::consts::OS {
+        "macos" => "mac",
+        other => other,
+    }
 }
 
 /// `CFBundleVersion`, what the feed is compared with: the release build stamps it, else the

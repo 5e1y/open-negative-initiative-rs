@@ -105,7 +105,7 @@ impl Ctl {
             let Some(from) = feed::prior::from(&version, ours, swift, checked) else {
                 return with_shell(move |c| c.remember(feed::LAST_LAUNCHED_KEY, version.into()));
             };
-            let url = feed::installed_url(&version, from.as_deref());
+            let url = feed::installed_url(&version, from.as_deref(), feed::os());
             if fetch(&url).is_ok() {
                 with_shell(move |c| c.remember(feed::LAST_LAUNCHED_KEY, version.into()));
             }
