@@ -170,8 +170,14 @@ pub(crate) fn the_panels_routes_and_the_measuring_window_behave_as_swifts() {
     rig.chord(Key::Control, "a");
     assert_eq!(*ctl.state.borrow().picked(), names.iter().cloned().collect::<HashSet<_>>());
     rig.until("four together", Duration::from_secs(30), || canvas.get_status().as_str() == "4 frames together");
-    // A plain click on the photo leading them, in the column, shows it alone again.
     let row = |n: &str| lib.get_rows().iter().position(|r| r.kind == 2 && r.title == n).unwrap_or_else(|| panic!("{n}'s row")) as i32;
+    // A ⌘ click in the column takes a frame of the folder ⌘A picked out, and a second puts it back.
+    lib.invoke_row_clicked(row("B"), true, false);
+    rig.until("three together", Duration::from_secs(30), || canvas.get_status().as_str() == "3 frames together");
+    assert!(!ctl.state.borrow().picked().contains(&names[1]) && ctl.state.borrow().picked().len() == 3, "{:?}", ctl.state.borrow().picked());
+    lib.invoke_row_clicked(row("B"), true, false);
+    rig.until("four together again", Duration::from_secs(30), || canvas.get_status().as_str() == "4 frames together");
+    // A plain click on the photo leading them, in the column, shows it alone again.
     std::thread::sleep(oni_app::system::double_click() + Duration::from_millis(50));
     lib.invoke_row_clicked(row("D"), false, false);
     rig.until("D alone", Duration::from_secs(5), || canvas.get_status().contains(" × ") && ctl.state.borrow().open_path() == Some(names[3].as_str()));

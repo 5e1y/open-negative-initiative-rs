@@ -5163,5 +5163,19 @@
     "title": "Contact sheets lie on black whatever their frames, the logo under a full row only",
     "status": "done",
     "detail": "Owner's call. Frames all positives no longer lie on a white sheet numbered in dark red: every sheet, on the canvas, in the export's column and in the file, is black with orange numbers and a white logo (Canvas.inks; positive(), the positive inks, Exporting.sheet-positive and edge-print-positive gone). The logo's band lies under the frames from five on, a full row; fewer end a row's spacing under their row, which holds their numbers and the margin (Sheet.band an Option). Checks: sheet the_logo_lies_under_a_full_row (twin: a fifth frame brings the band); window together, three frames carry no logo; window export_sheet, three photos 3252 x 948 with no logo, the same as positives on black with orange numbers, five photos 5360 x 1398 with the white logo (twin: nothing beside it)."
+  },
+  {
+    "id": 1066,
+    "type": "fix",
+    "title": "A ⌘ click in the column takes a frame out of the frames ⌘A, the gallery or the contact-sheet key showed together",
+    "status": "done",
+    "detail": "Owner's report: beside a photo, after ⌘A, a ⌘ click on a row of the column added it to a pick of the open photo alone instead of taking it out of the group. The tree's pick knew nothing of a selection made elsewhere; a ⌘ or ⇧ click beside a photo now starts from the frames shown together when the tree's pick does not hold them. Window check editor_routes: after ⌘A, a ⌘ click on B leaves three together without it, a second puts it back (failed before: three never came)."
+  },
+  {
+    "id": 1067,
+    "type": "change",
+    "title": "The 2.5D surfaces at half their strength",
+    "status": "done",
+    "detail": "Owner's call: Outward's rim light, sheen, foot shade, edge and cast shadow, and Inward's shade, edge and lip, at half Swift's values; the tab bar's hollow, a lighter Inward, halved with them. The keycaps' relief is unchanged."
   }
 ]
