@@ -5107,5 +5107,19 @@
     "title": "Version 1.5.2",
     "status": "done",
     "detail": "oni-app 1.5.2: the camera matrices retired (#1055) and the welcome per release (#1056); the 1.5 welcome and splash kept."
+  },
+  {
+    "id": 1058,
+    "type": "change",
+    "title": "Windows finds and installs its updates, from a feed of its own",
+    "status": "done",
+    "detail": "Every Windows build up to 1.5.2 was offered no update: updates::system() returned None outside macOS since the first updater (#79), as the feed held Mac archives alone, so the Windows swap helper (#995) never ran. Windows now reads appcast-windows.xml on the releases' Pages (WINDOWS_FEED), each item holding the Windows archive alone with sparkle:os=\"windows\", signed with the releases' EdDSA key; the Mac feed is untouched, so no Mac reader, Swift's Sparkle included, meets an archive it cannot run. system() on Windows names 10.0 (DirectX 12's floor), the Windows feed naming no minimum. scripts/windows-appcast signs ONI-windows.zip with Sparkle's sign_update and lays the item first. A Windows copy older than 1.5.3 is still offered nothing and is updated by hand once. Checks: updates::tests windows_reads_its_own_feed_and_is_offered_what_it_finds (twins: a system with no feed, a build already newest), the published archives check reads the Windows feed's archives under ONI_BUILDS_DIR (twin: one byte changed), the window updates check follows feed()."
+  },
+  {
+    "id": 1059,
+    "type": "change",
+    "title": "Version 1.5.3",
+    "status": "done",
+    "detail": "oni-app 1.5.3, carrying the Windows update feed (#1058); the 1.5 welcome and splash kept."
   }
 ]

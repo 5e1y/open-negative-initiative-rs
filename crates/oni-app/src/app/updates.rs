@@ -146,7 +146,7 @@ impl Ctl {
         self.remember(feed::LAST_CHECK_KEY, oni_settings::Date::now().iso8601().into());
         self.publish_update_key();
         std::thread::spawn(move || {
-            let found = fetch(feed::FEED).and_then(|bytes| feed::parse(&String::from_utf8_lossy(&bytes))).map(|items| feed::newest(&items, &build, system.as_deref()));
+            let found = fetch(feed::feed()).and_then(|bytes| feed::parse(&String::from_utf8_lossy(&bytes))).map(|items| feed::newest(&items, &build, system.as_deref()));
             with_shell(move |c| c.update_checked(found));
         });
     }

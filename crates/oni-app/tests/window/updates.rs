@@ -61,7 +61,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
         Updater {
             fetch: Arc::new(move |url: &str| {
                 asked.lock().unwrap().push(url.to_string());
-                if url == oni_app::updates::FEED { Ok(served.lock().unwrap().clone().into_bytes()) } else { body.lock().unwrap().clone() }
+                if url == oni_app::updates::feed() { Ok(served.lock().unwrap().clone().into_bytes()) } else { body.lock().unwrap().clone() }
             }),
             downloads: downloads.clone(),
             reveal: Arc::new(move |p: &Path| revealed.lock().unwrap().push(p.to_path_buf())),
@@ -93,7 +93,7 @@ pub(crate) fn updates_are_looked_for_on_their_own_shown_on_the_key_and_only_ever
     rig.until("the installation reported", Duration::from_secs(10), || Preferences::load(&support).string("lastLaunchedVersion").is_some());
     let mut seen = asked.lock().unwrap().clone();
     seen.sort();
-    assert_eq!(seen, [oni_app::updates::FEED.to_string(), installed]);
+    assert_eq!(seen, [oni_app::updates::feed().to_string(), installed]);
     assert_eq!(Preferences::load(&support).string("lastLaunchedVersion"), Some(oni_app::updates::version()));
     assert!(!first.window.global::<Confirm>().get_shown(), "a check on its own opens no dialog");
     assert!(Preferences::load(&support).string("SULastCheckTime").is_some());
