@@ -81,10 +81,9 @@ pub struct Card {
     pub rows: Vec<Option<Row>>,
     sizes: Vec<Option<(f64, f64)>>,
     previews: Vec<Preview>,
-    /// The room the column gives the sheet, in points, and its logo band last drawn, for its width
-    /// and its ground.
+    /// The room the column gives the sheet, in points, and its logo band last drawn, for its width.
     sheet_room: Option<(f64, f64)>,
-    logo: Option<((usize, bool), Image)>,
+    logo: Option<(usize, Image)>,
     /// The room a line's preview takes, once the column is laid out, which sizes each render.
     room: Arc<std::sync::Mutex<Option<targets::Room>>>,
     low_precision: usize,

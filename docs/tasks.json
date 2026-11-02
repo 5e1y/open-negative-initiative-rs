@@ -5153,8 +5153,15 @@
   {
     "id": 1064,
     "type": "change",
-    "title": "The editor's canvas is square against the panel's plot, and square all round with both columns folded",
+    "title": "The editor's canvas is square against the panel's plot, and square on the side of a folded column",
     "status": "done",
-    "detail": "Owner's call: the canvas card's top right corner meets the panel's histogram, square, so it is square too; with the Library and the Panel both folded its four corners are square. Card and CardCorners take square-top-right and square."
+    "detail": "Owner's call: the canvas card's top right corner meets the panel's histogram, square, so it is square too; a folded column squares both corners of its side, the Library the left ones, the Panel the right ones. Card and CardCorners take square-top-right, square-left and square-right."
+  },
+  {
+    "id": 1065,
+    "type": "change",
+    "title": "Contact sheets lie on black whatever their frames, the logo under a full row only",
+    "status": "done",
+    "detail": "Owner's call. Frames all positives no longer lie on a white sheet numbered in dark red: every sheet, on the canvas, in the export's column and in the file, is black with orange numbers and a white logo (Canvas.inks; positive(), the positive inks, Exporting.sheet-positive and edge-print-positive gone). The logo's band lies under the frames from five on, a full row; fewer end a row's spacing under their row, which holds their numbers and the margin (Sheet.band an Option). Checks: sheet the_logo_lies_under_a_full_row (twin: a fifth frame brings the band); window together, three frames carry no logo; window export_sheet, three photos 3252 x 948 with no logo, the same as positives on black with orange numbers, five photos 5360 x 1398 with the white logo (twin: nothing beside it)."
   }
 ]

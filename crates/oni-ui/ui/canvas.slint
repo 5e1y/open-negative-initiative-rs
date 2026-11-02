@@ -19,11 +19,10 @@ export component CanvasCard inherits Card {
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
     callback column-toggled(bool);
     dimmed: Canvas.cropping;
-    // Against the panel's plot, square; every corner square once both columns are folded.
+    // Against the panel's plot, square; a column folded squares both corners of its side.
     square-top-right: true;
-    square: root.library-hidden && root.panel-hidden;
-    // The sheet frames together lie on: white under positives, as paper is.
-    property <Ground> sheet: Canvas.positive ? Ground.paper : Ground.sheet;
+    square-left: root.library-hidden;
+    square-right: root.panel-hidden;
     changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
     changed height => { Canvas.height = self.height - 2 * CardStyle.padding; Canvas.resized(); }
     // Moved to a screen of another density, the same size in points holds other pixels.
@@ -39,13 +38,13 @@ export component CanvasCard inherits Card {
             height: parent.height;
             ground: Canvas.cropping ? Ground.canvas-cropping : Ground.canvas;
         }
-        if Canvas.together: Picture { x: Canvas.sheet.x; y: Canvas.sheet.y; width: Canvas.sheet.width; height: Canvas.sheet.height; ground: root.sheet; }
+        if Canvas.together: Picture { x: Canvas.sheet.x; y: Canvas.sheet.y; width: Canvas.sheet.width; height: Canvas.sheet.height; ground: Ground.sheet; }
         if Canvas.together: Picture {
             x: Canvas.logo-box.x;
             y: Canvas.logo-box.y;
             width: Canvas.logo-box.width;
             height: Canvas.logo-box.height;
-            ground: root.sheet;
+            ground: Ground.sheet;
             fit: Fit.fill;
             source: Canvas.logo;
         }
@@ -54,7 +53,7 @@ export component CanvasCard inherits Card {
             y: Canvas.frame-y;
             width: Canvas.frame-width;
             height: Canvas.frame-height;
-            ground: Canvas.cropping ? Ground.canvas-cropping : Canvas.together ? root.sheet : Ground.canvas;
+            ground: Canvas.cropping ? Ground.canvas-cropping : Canvas.together ? Ground.sheet : Ground.canvas;
             fit: Fit.fill;
             source: Canvas.frame;
             revision: Canvas.frame-revision;
@@ -73,7 +72,7 @@ export component CanvasCard inherits Card {
                 y: Canvas.before-y;
                 width: Canvas.before-width;
                 height: Canvas.before-height;
-                ground: Canvas.together ? root.sheet : Ground.canvas;
+                ground: Canvas.together ? Ground.sheet : Ground.canvas;
                 fit: Fit.fill;
                 source: Canvas.before;
                 revision: Canvas.before-revision;
@@ -86,7 +85,7 @@ export component CanvasCard inherits Card {
             height: Canvas.number-band;
             text: n.text;
             size: Canvas.number-size;
-            ink: Canvas.positive ? Canvas.positive-inks.number : Canvas.negative-inks.number;
+            ink: Canvas.inks.number;
         }
         // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
         ScaleRotateGestureHandler {
@@ -323,5 +322,5 @@ export component CanvasCard inherits Card {
             }
         }
     }
-    CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square: root.square; }
+    CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square-left: root.square-left; square-right: root.square-right; }
 }

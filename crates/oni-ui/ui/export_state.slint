@@ -69,7 +69,7 @@ export global Exporting {
     in property <bool> resized;
     in property <bool> hdr;
     // Every photo on one contact sheet, as Edit Together lays them: one file for the batch, shown in
-    // the column as the file lays it, fitted to its room, white under positives.
+    // the column as the file lays it, fitted to its room, on black.
     in property <bool> sheet;
     in property <[SheetTile]> sheet-tiles;
     in property <SheetBox> sheet-ground;
@@ -77,7 +77,6 @@ export global Exporting {
     in property <image> sheet-logo;
     in property <length> sheet-number-size;
     in property <length> sheet-number-band;
-    in property <bool> sheet-positive;
     in property <string> bits;
     in property <string> dims;
     in property <string> weight-label;

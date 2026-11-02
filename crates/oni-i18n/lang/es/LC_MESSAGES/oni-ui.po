@@ -606,8 +606,8 @@ msgid "Export As"
 msgstr "Exportar como"
 
 #: crates/oni-ui/ui/export.slint
-msgid "Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives."
-msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila encima del logo, numeradas según su lugar en su carrete, en naranja sobre negro, o en rojo oscuro sobre blanco cuando todas son positivos."
+msgid "Writes one file, the sheet the editor shows the photos on together: five to a row on black, numbered in orange by their place on their roll, the logo under them from five photos."
+msgstr "Escribe un solo archivo, la hoja en la que el editor muestra las fotos juntas: cinco por fila sobre negro, numeradas en naranja según su lugar en su carrete, con el logo debajo a partir de cinco fotos."
 
 #: crates/oni-ui/ui/export.slint
 msgid "Separate Photos"

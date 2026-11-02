@@ -22,13 +22,10 @@ pub(super) fn zebra(s: &State, k: Params, placed: Option<Placed>, texels: u32, c
     k.striped(display::Zebra { origin, stretch, canvas_height: height.max(1.0), phase })
 }
 
-/// The display kernel's block on the ground its texture's clear texels show: the sheet's while frames
-/// show together, the gaps between them too.
+/// The display kernel's block on the ground its texture's clear texels show: the sheet's black while
+/// frames show together, the gaps between them too.
 pub(super) fn grounded(s: &State, k: Params) -> Params {
-    match s.together.as_ref() {
-        Some(g) => Params { ground: g.ground(), ..k },
-        None => k,
-    }
+    if s.together.is_some() { Params { ground: 0.0, ..k } } else { k }
 }
 
 /// The stripes' clock, as Swift reads `CACurrentMediaTime`.

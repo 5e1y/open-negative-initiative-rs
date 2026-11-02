@@ -47,19 +47,19 @@ pub(super) type Window = (u32, u32, u32, u32);
 /// tile one pixel past its place would not be drawn.
 const SLACK: f64 = 2.0;
 
-/// A sheet laid at full scale: each picture's place and its size, the logo's band, and the
-/// sheet's size, margin included.
+/// A sheet laid at full scale: each picture's place and its size, the logo's band from a full row
+/// on, and the sheet's size, margin included.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(super) struct Sheet {
     pub pictures: Vec<Area>,
-    pub band: Area,
+    pub band: Option<Area>,
     pub size: (f64, f64),
 }
 
-/// Frames of these proportions five to a row above the `BAND`, each `TILE` on its longest side:
-/// a column a tile wide, a row as tall as its tallest picture and each picture centred in both, `GAP`
-/// between columns, `ROWS_APART` between rows, `MARGIN` around the sheet, `FOOT` between the last row
-/// and the band.
+/// Frames of these proportions five to a row, each `TILE` on its longest side: a column a tile wide,
+/// a row as tall as its tallest picture and each picture centred in both, `GAP` between columns,
+/// `ROWS_APART` between rows, `MARGIN` around the sheet. From five frames the `BAND` lies `FOOT` under
+/// the last row; fewer end a row's spacing under it, which holds their numbers and the margin.
 pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
     let (tile, gap, apart, margin) = (TILE as f64, GAP as f64, ROWS_APART as f64, MARGIN as f64);
     let fitted: Vec<(f64, f64)> = proportions.iter().map(|&(w, h)| (tile * w / w.max(h).max(1e-9), tile * h / w.max(h).max(1e-9))).collect();
@@ -73,10 +73,13 @@ pub(super) fn laid(proportions: &[(f64, f64)]) -> Sheet {
         }
         y += height + apart;
     }
-    // The last row is followed by the foot, not the rows' spacing.
-    let band = if pictures.is_empty() { y } else { y - apart } + FOOT as f64;
     let width = 2.0 * margin + columns * tile + (columns - 1.0) * gap;
-    Sheet { pictures, band: (margin, band, width - 2.0 * margin, BAND as f64), size: (width, band + BAND as f64 + margin) }
+    if fitted.len() < COLUMNS {
+        return Sheet { pictures, band: None, size: (width, y) };
+    }
+    // The last row is followed by the foot, not the rows' spacing.
+    let band = y - apart + FOOT as f64;
+    Sheet { pictures, band: Some((margin, band, width - 2.0 * margin, BAND as f64)), size: (width, band + BAND as f64 + margin) }
 }
 
 impl Sheet {
@@ -180,13 +183,23 @@ mod tests {
         assert_eq!(apart, 2.0 * margin, "twin: the rows stand twice as far apart as the margin");
         let columns = COLUMNS as f64;
         let foot = top + low + apart + tile + 4.0 * margin;
-        assert_eq!(sheet.band, (margin, foot, sheet.size.0 - 2.0 * margin, band), "the logo's band four margins under the last row");
+        assert_eq!(sheet.band, Some((margin, foot, sheet.size.0 - 2.0 * margin, band)), "the logo's band four margins under the last row");
         assert_eq!(sheet.size, (2.0 * margin + columns * tile + (columns - 1.0) * gap, foot + band + margin), "and a margin under it");
         // Twin: a portrait frame in the first row makes it as tall as itself, the landscapes centred in it.
         frames[1] = PORTRAIT;
         let taller = laid(&frames);
         assert_eq!(taller.pictures[0].1, top + (tile - low) / 2.0);
         assert_eq!(taller.pictures[COLUMNS].1, top + tile + apart, "the second row moves down with it");
+    }
+
+    #[test]
+    fn the_logo_lies_under_a_full_row_and_fewer_frames_end_a_row_s_spacing_under_theirs() {
+        let four = laid(&[LANDSCAPE; COLUMNS - 1]);
+        let low = TILE as f64 * 2.0 / 3.0;
+        assert_eq!(four.band, None, "no logo under four frames");
+        assert_eq!(four.size.1, MARGIN as f64 + low + ROWS_APART as f64, "their numbers and the margin under the row");
+        // Twin: a fifth frame completes the row and brings the band.
+        assert!(laid(&[LANDSCAPE; COLUMNS]).band.is_some());
     }
 
     #[test]

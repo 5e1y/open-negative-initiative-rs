@@ -42,11 +42,9 @@ export global Canvas {
     in property <[EdgeNumber]> numbers;
     in property <length> number-size;
     in property <length> number-band;
-    // Frames all positives lie on white: a sheet's inks either way and the numbers' weight, which a
-    // sheet written to a file sets too.
-    in property <bool> positive;
-    out property <SheetInks> negative-inks: { ground: Colour.black, number: Colour.edge-print, logo: Colour.white };
-    out property <SheetInks> positive-inks: { ground: Colour.white, number: Colour.edge-print-positive, logo: Colour.black };
+    // A sheet's inks, black whatever its frames, and the numbers' weight, which a sheet written to a
+    // file sets too.
+    out property <SheetInks> inks: { ground: Colour.black, number: Colour.edge-print, logo: Colour.white };
     out property <int> number-weight: Type.bold;
     // The sheet's logo band, drawn by Rust at the sheet's full scale, and its place on the canvas.
     in property <image> logo;

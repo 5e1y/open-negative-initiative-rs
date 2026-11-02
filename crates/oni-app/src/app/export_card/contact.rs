@@ -10,8 +10,7 @@ impl Ctl {
     /// first line's artist and copyright, and the first frame's date and paper correction.
     pub(super) fn write_sheet(self: &Rc<Self>, destinations: Vec<PathBuf>, replacing: bool) {
         let Some(destination) = destinations.into_iter().next() else { return };
-        let positive = together::positive(self.export.borrow().targets.iter().map(|t| &t.settings));
-        let Some(inks) = self.inks(positive) else { return };
+        let Some(inks) = self.inks() else { return };
         let (targets, sizes, export, stop, metadata) = {
             let mut c = self.export.borrow_mut();
             c.start_writing();

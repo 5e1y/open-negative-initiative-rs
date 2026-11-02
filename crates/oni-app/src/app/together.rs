@@ -26,18 +26,9 @@ use sheet::{Sheet, Window, laid, reduced, scale_for, source_side};
 pub(in crate::app) use numbers::ranks;
 pub(in crate::app) use print::{Captions, printed};
 
-/// Frames lie on a white sheet when every one of them is a positive.
-pub(in crate::app) fn positive<'a>(settings: impl IntoIterator<Item = &'a PipelineSettings>) -> bool {
-    let mut any = false;
-    settings.into_iter().all(|s| {
-        any = true;
-        s.mode == oni_settings::ConversionMode::Positive
-    }) && any
-}
-
 /// Where frames of these sizes lie on their contact sheet, one still unmeasured on 3:2, the logo's
-/// band and the sheet's size, in the full sheet's pixels.
-pub(in crate::app) fn sheet_places(sizes: &[Option<(f64, f64)>]) -> (Vec<(f64, f64, f64, f64)>, (f64, f64, f64, f64), (f64, f64)) {
+/// band from a full row on and the sheet's size, in the full sheet's pixels.
+pub(in crate::app) fn sheet_places(sizes: &[Option<(f64, f64)>]) -> (Vec<(f64, f64, f64, f64)>, Option<(f64, f64, f64, f64)>, (f64, f64)) {
     let s = laid(&sizes.iter().map(|s| s.unwrap_or(UNKNOWN)).collect::<Vec<_>>());
     (s.pictures, s.band, s.size)
 }
@@ -84,8 +75,6 @@ pub(in crate::app) struct Group {
     /// Each frame's place on its roll, and the sheet as its frames' proportions lay it.
     numbers: Vec<Option<usize>>,
     sheet: Sheet,
-    /// Whether the sheet was last set white, under frames all positives.
-    positive: Option<bool>,
     /// The last grid asked: revision, hovered preset, sources and stand-ins, scale, box, Compare on.
     asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window, bool)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
@@ -98,11 +87,6 @@ pub(in crate::app) struct Group {
 static GROUPS: AtomicU64 = AtomicU64::new(0);
 
 impl Group {
-    /// The sheet's ground in the display's light: white under frames all positives, else black.
-    pub(in crate::app) fn ground(&self) -> f32 {
-        if self.positive == Some(true) { 1.0 } else { 0.0 }
-    }
-
     /// The frames whose sources are decoded, and how many there are.
     pub(in crate::app) fn loaded(&self) -> (usize, usize) {
         (self.negatives.iter().flatten().count(), self.paths.len())
@@ -171,7 +155,9 @@ impl Ctl {
         };
         let lacking: Vec<(usize, String)> = paths.iter().enumerate().filter(|(i, _)| negatives[*i].is_none()).map(|(i, p)| (i, p.clone())).collect();
         let (stand_ins, numbers, sheet) = (vec![None; paths.len()], vec![None; paths.len()], laid(&vec![UNKNOWN; paths.len()]));
-        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, positive: None, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
+        // A full row's band is as wide whatever the frames' proportions: its logo is drawn once.
+        let band = sheet.band.map(|b| b.2 as usize);
+        let group = Group { id, paths, negatives, stand_ins, numbers, sheet, asked: None, shown: None, drawn: 0, latencies: Vec::new() };
         self.state.borrow_mut().together = Some(group);
         if fresh {
             self.state.borrow_mut().viewport.fit();
@@ -181,6 +167,7 @@ impl Ctl {
         self.stand_in(id, &lacking);
         self.decode_together(id, lacking);
         self.number_frames(id);
+        self.draw_logo(id, band);
         self.request_render();
         self.publish_tiles();
     }
@@ -275,7 +262,6 @@ impl Ctl {
         };
         let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
         let (hovered, comparing) = (self.state.borrow().shelf.hovered, self.state.borrow().compare.split.is_some());
-        let mut flipped = None;
         let ask = (|| {
             let mut s = self.state.borrow_mut();
             let g = s.together.as_mut()?;
@@ -293,11 +279,6 @@ impl Ctl {
                 })
                 .collect();
             g.sheet = laid(&proportions);
-            let positive = positive(g.paths.iter().filter_map(settings));
-            if g.positive != Some(positive) {
-                g.positive = Some(positive);
-                flipped = Some((g.id, g.sheet.band.2 as usize, positive));
-            }
             let full = g.sheet.size;
             let placed = view.map(|v| viewport.placement(full, v));
             let scale = scale_for(placed.map_or(full.0, |p| p.image.2), full.0);
@@ -338,9 +319,6 @@ impl Ctl {
             });
             Some(Ask { group: g.id, revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all), before })
         })();
-        if let Some((id, band, positive)) = flipped {
-            self.sheet_polarity(id, band, positive);
-        }
         // The sheet shown follows the view at once, stretched until the one drawn at its new size lands.
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
         if let Some(size) = shown {

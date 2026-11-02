@@ -11,7 +11,7 @@ impl Ctl {
     pub(super) fn publish_sheet_view(&self) {
         let Some(w) = self.window() else { return };
         let e = w.global::<Exporting>();
-        let (paths, sizes, previews, positive, room) = {
+        let (paths, sizes, previews, room) = {
             let c = self.export.borrow();
             let Some(room) = c.sheet_room.filter(|_| c.on_sheet()) else {
                 e.set_sheet_tiles(ModelRc::default());
@@ -24,7 +24,7 @@ impl Ctl {
                     _ => Image::default(),
                 })
                 .collect();
-            (paths, c.sizes.clone(), previews, together::positive(c.targets.iter().map(|t| &t.settings)), room)
+            (paths, c.sizes.clone(), previews, room)
         };
         let numbers = together::ranks(&paths, &self.roll_folders(&paths), oni_library::roll_membership::is_sheet);
         let (pictures, band, size) = together::sheet_places(&sizes);
@@ -42,25 +42,23 @@ impl Ctl {
             .collect();
         e.set_sheet_tiles(ModelRc::new(VecModel::from(tiles)));
         e.set_sheet_ground(placed((0.0, 0.0, size.0, size.1)));
-        e.set_sheet_logo_box(placed(band));
+        e.set_sheet_logo_box(placed(band.unwrap_or_default()));
         e.set_sheet_number_size((together::NUMBER as f64 * k) as f32);
         e.set_sheet_number_band((together::MARGIN as f64 * k) as f32);
-        e.set_sheet_positive(positive);
-        if let Some(logo) = self.sheet_logo(band.2 as usize, positive) {
-            e.set_sheet_logo(logo);
-        }
+        // A sheet of fewer than a row carries no logo.
+        e.set_sheet_logo(band.and_then(|b| self.sheet_logo(b.2 as usize)).unwrap_or_default());
     }
 
-    /// The logo's band for a sheet `width` wide, drawn once for each width and ground.
-    fn sheet_logo(&self, width: usize, positive: bool) -> Option<Image> {
+    /// The logo's band for a sheet `width` wide, drawn once for each width.
+    fn sheet_logo(&self, width: usize) -> Option<Image> {
         if let Some((key, logo)) = self.export.borrow().logo.as_ref()
-            && *key == (width, positive)
+            && *key == width
         {
             return Some(logo.clone());
         }
-        let inks = self.inks(positive)?;
+        let inks = self.inks()?;
         let logo = together::logo_image(width, inks.logo);
-        self.export.borrow_mut().logo = Some(((width, positive), logo.clone()));
+        self.export.borrow_mut().logo = Some((width, logo.clone()));
         Some(logo)
     }
 }

@@ -58,7 +58,6 @@ component FrameFields inherits VerticalLayout {
 // The contact sheet the export writes, as Rust fits it to this room: its ground, each frame's
 // preview at its place with its number under it, and the logo's band.
 component SheetPreview inherits Rectangle {
-    property <Ground> ground: Exporting.sheet-positive ? Ground.paper : Ground.sheet;
     init => { Exporting.sheet-room(self.width, self.height); }
     changed width => { Exporting.sheet-room(self.width, self.height); }
     changed height => { Exporting.sheet-room(self.width, self.height); }
@@ -67,23 +66,23 @@ component SheetPreview inherits Rectangle {
         y: Exporting.sheet-ground.y;
         width: Exporting.sheet-ground.width;
         height: Exporting.sheet-ground.height;
-        ground: root.ground;
+        ground: Ground.sheet;
     }
-    for t in Exporting.sheet-tiles: Picture { x: t.x; y: t.y; width: t.width; height: t.height; source: t.preview; fit: Fit.fill; ground: root.ground; }
+    for t in Exporting.sheet-tiles: Picture { x: t.x; y: t.y; width: t.width; height: t.height; source: t.preview; fit: Fit.fill; ground: Ground.sheet; }
     for t in Exporting.sheet-tiles: EdgePrint {
         x: t.x;
         y: t.y + t.height;
         height: Exporting.sheet-number-band;
         text: t.number;
         size: Exporting.sheet-number-size;
-        ink: Exporting.sheet-positive ? Canvas.positive-inks.number : Canvas.negative-inks.number;
+        ink: Canvas.inks.number;
     }
     Picture {
         x: Exporting.sheet-logo-box.x;
         y: Exporting.sheet-logo-box.y;
         width: Exporting.sheet-logo-box.width;
         height: Exporting.sheet-logo-box.height;
-        ground: root.ground;
+        ground: Ground.sheet;
         fit: Fit.fill;
         source: Exporting.sheet-logo;
     }
@@ -233,7 +232,7 @@ export component ExportPanel inherits Surface {
                 // First, as the bar's two keys offer it: every photo its own file, or all on one sheet.
                 if Exporting.count > 1: Field {
                     label: @tr("Export As");
-                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row above the logo, numbered by their place on their roll, in orange on black, or in dark red on white when all are positives.");
+                    help: @tr("Writes one file, the sheet the editor shows the photos on together: five to a row on black, numbered in orange by their place on their roll, the logo under them from five photos.");
                     Tabs {
                         tabs: [@tr("Separate Photos"), @tr("Contact Sheet")];
                         marked: [false, false];

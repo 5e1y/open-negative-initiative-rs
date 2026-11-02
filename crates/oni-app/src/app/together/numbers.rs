@@ -21,23 +21,22 @@ impl Ctl {
         });
     }
 
-    /// The sheet's inks as the canvas sets them, of positives or of negatives.
-    pub(in crate::app) fn inks(&self, positive: bool) -> Option<Inks> {
+    /// The sheet's inks as the canvas sets them.
+    pub(in crate::app) fn inks(&self) -> Option<Inks> {
         let w = self.window()?;
         let c = w.global::<Canvas>();
-        let set = if positive { c.get_positive_inks() } else { c.get_negative_inks() };
+        let set = c.get_inks();
         let srgb = |ink: slint::Color| [ink.red(), ink.green(), ink.blue()].map(|v| f32::from(v) / 255.0);
         let numbers = Lettering { ink: srgb(set.number), weight: c.get_number_weight() as f32 };
         Some(Inks { ground: srgb(set.ground), numbers, logo: srgb(set.logo) })
     }
 
-    /// The sheet white under frames all positives, else black: its numbers follow on the canvas, its
-    /// logo is drawn again in its ink off this thread.
-    pub(super) fn sheet_polarity(&self, id: u64, band: usize, positive: bool) {
-        let Some(inks) = self.inks(positive) else { return };
+    /// The logo of a sheet whose band is `band` wide, drawn off this thread; none under fewer than a row.
+    pub(super) fn draw_logo(&self, id: u64, band: Option<usize>) {
         if let Some(w) = self.window() {
-            w.global::<Canvas>().set_positive(positive);
+            w.global::<Canvas>().set_logo(slint::Image::default());
         }
+        let (Some(band), Some(inks)) = (band, self.inks()) else { return };
         std::thread::spawn(move || {
             let plate = super::logo::drawn(band, inks.logo);
             let logo = (plate.rgba8(), plate.width, plate.height);
@@ -96,7 +95,7 @@ impl Ctl {
         c.set_sheet(SheetBox { x: points(sheet.0), y: points(sheet.1), width: points(sheet.2), height: points(sheet.3) });
         c.set_number_size(points(size));
         c.set_number_band(points(number_band));
-        let (hx, hy, hw, hh) = band;
+        let (hx, hy, hw, hh) = band.unwrap_or_default();
         c.set_logo_box(SheetBox { x: points(sheet.0 + hx * k), y: points(sheet.1 + hy * k), width: points(hw * k), height: points(hh * k) });
         if let Some(m) = moved_to(&c.get_numbers(), numbers) {
             c.set_numbers(m);
@@ -108,7 +107,6 @@ impl Ctl {
         let Some(w) = self.window() else { return };
         let c = w.global::<Canvas>();
         c.set_together(false);
-        c.set_positive(false);
         c.set_numbers(ModelRc::default());
         c.set_logo(slint::Image::default());
     }
@@ -163,15 +161,6 @@ mod tests {
         assert_eq!(ranks(&paths, &folders, is_sheet), vec![Some(3), Some(1), None, None]);
         // Twin: the sheet counted, every frame after it reads one further down the roll.
         assert_eq!(ranks(&paths, &folders, |_| false)[0], Some(4));
-    }
-
-    #[test]
-    fn a_sheet_lies_on_white_when_every_frame_is_a_positive() {
-        use oni_settings::ConversionMode::{Negative, Positive};
-        let (slide, film) = (PipelineSettings::rest(Positive, true), PipelineSettings::rest(Negative, true));
-        assert!(positive([&slide, &slide]));
-        // Twin: one negative among them, or no frame known, keeps the black.
-        assert!(!positive([&slide, &film]) && !positive(std::iter::empty()));
     }
 
     #[test]

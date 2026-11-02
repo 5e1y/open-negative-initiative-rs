@@ -52,8 +52,9 @@ pub(in crate::app) fn printed(engine: &Shared, targets: &[Target], sizes: Option
     for (x, y, n) in under(&captions.numbers, &sheet.pictures) {
         number(&mut picture, (x, y), n, captions.inks.numbers, ground, &mut context);
     }
-    let (bx, by, bw, _) = sheet.band;
-    super::logo::drawn(bw as usize, captions.inks.logo).lay_on(&mut picture, (bx as i64, by as i64), ground);
+    if let Some((bx, by, bw, _)) = sheet.band {
+        super::logo::drawn(bw as usize, captions.inks.logo).lay_on(&mut picture, (bx as i64, by as i64), ground);
+    }
     Ok(Some(picture))
 }
 

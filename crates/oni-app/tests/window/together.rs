@@ -83,14 +83,9 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     let sheet = canvas.get_sheet();
     let (fx, fy, fw, fh) = (canvas.get_frame_x(), canvas.get_frame_y(), canvas.get_frame_width(), canvas.get_frame_height());
     assert!(canvas.get_together() && sheet.x < fx && sheet.y < fy && sheet.x + sheet.width > fx + fw && sheet.y + sheet.height > fy + fh, "{fx} {fy} {fw} {fh}");
-    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (6.0 * 60.0 + 270.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap, four margins and the logo's band below: {} × {}", sheet.width, sheet.height);
-    // The logo's band across the sheet's bottom, four margins under the row, inside the margin.
-    let band = canvas.get_logo_box();
-    let k = sheet.width / 3252.0;
-    assert!((band.y - sheet.y - (5.0 * 60.0 + 1024.0 * 2.0 / 3.0) * k).abs() < 1.0 && (band.width - 3132.0 * k).abs() < 1.0, "{band:?}");
-    assert!((sheet.y + sheet.height - band.y - band.height - 60.0 * k).abs() < 1.0, "twin: a margin under the band, not above the row");
-    rig.until("the logo", Duration::from_secs(10), || canvas.get_logo().size().width == 3132);
-    assert!(!canvas.get_positive(), "negatives lie on black");
+    // Under less than a row no logo: the row's numbers and a margin end the sheet.
+    assert!(((sheet.width / sheet.height) as f64 - 3252.0 / (3.0 * 60.0 + 1024.0 * 2.0 / 3.0)).abs() < 0.02, "a margin twice the gap above, the numbers' band and a margin below: {} × {}", sheet.width, sheet.height);
+    assert!(canvas.get_logo().size().width == 0 && canvas.get_logo_box().height == 0.0, "no logo under three frames");
     rig.until("the numbers", Duration::from_secs(10), || numbers().len() == 3);
     assert_eq!(numbers(), ["A", "B", "C"].map(place));
     let selected = |n: &str| oni_app::app::tiles(w).iter().any(|t| t.caption == n && t.selected);
@@ -104,10 +99,11 @@ pub(crate) fn frames_opened_together_take_one_drag_as_one_step_and_one_left_out_
     canvas.invoke_double_clicked();
     rig.until("twin: the sheet back to fitted", Duration::from_secs(60), || (canvas.get_frame_width() - fitted).abs() < 1.0);
     rig.settle();
-    // The window resized: the sheet's ground, numbers and logo follow its texture at once, before its render.
+    // The window resized: the sheet's ground and numbers follow its texture at once, before its render.
     let held = || {
         let s = canvas.get_sheet();
-        (s.width, canvas.get_frame_width() / s.width, (canvas.get_frame_x() - s.x) / s.width, (canvas.get_logo_box().y - s.y) / s.height)
+        let first = canvas.get_numbers().row_data(0).map_or(0.0, |n| n.y);
+        (s.width, canvas.get_frame_width() / s.width, (canvas.get_frame_x() - s.x) / s.width, (first - s.y) / s.height)
     };
     let before = held();
     rig.window.set_size(slint::PhysicalSize::new(1000, 700));
