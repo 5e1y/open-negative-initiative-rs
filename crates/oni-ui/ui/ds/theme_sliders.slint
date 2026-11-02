@@ -18,10 +18,12 @@ export global SliderStyle {
     out property <color> knob-edge: DS.palette-track-line;
     // `DSBarHandle.gripLine`: the text-on-fill white on every cap.
     out property <color> grip-ink: DS.palette-text-on-fill;
-    // The 1 pt `trackLine` edge round the rail, the knob and a plot screen, as an opacity.
+    // The 1 pt `trackLine` edge round the knob, and round the rail and a plot screen at half strength
+    // as every well (`Depth.well-edge`), as opacities.
     in-out property <float> edge: 1;
-    // `dsRecessed`'s lit lower rim outside the hollow: white at 0.4, blurred 0.7, dropped 1.
-    in-out property <float> rim: 0.4;
+    in-out property <float> well-edge: 0.5;
+    // `dsRecessed`'s lit lower rim outside the hollow, at half Swift's 0.4: blurred 0.7, dropped 1.
+    in-out property <float> rim: 0.2;
     in-out property <length> rim-blur: 0.7px;
     in-out property <length> rim-drop: 1px;
     // `DS.Motion.rise`, the knob's grow, and `settle`, a value arriving from elsewhere.

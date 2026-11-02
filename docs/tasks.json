@@ -5191,5 +5191,12 @@
     "title": "The editor's histogram on the scanner screen's black glass",
     "status": "done",
     "detail": "Owner's call: the panel's output histogram lies on ScannerStyle.glass, the Scanner face's screen black, instead of the panel's ground."
+  },
+  {
+    "id": 1070,
+    "type": "fix",
+    "title": "The sliders' rails and the plot screens at half strength with the other wells",
+    "status": "done",
+    "detail": "Owner's report: the halved Inward left the sliders' tracks as they were. A rail takes only its shade from Inward; its black edge and its lit rim are its own (SliderStyle), as a plot screen's are, and they carried the hollow's look. SliderStyle.rim goes from 0.4 to 0.2 and the rail's and the screen's edge read SliderStyle.well-edge at 0.5; the knob keeps its full edge."
   }
 ]

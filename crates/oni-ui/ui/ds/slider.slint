@@ -112,7 +112,7 @@ export component Rail inherits Rectangle {
     Rectangle {
         border-radius: SliderStyle.track-radius;
         border-width: Stroke.line;
-        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.well-edge);
     }
     if root.rest >= 0: Rectangle {
         x: root.vertical ? (parent.width - self.width) / 2 : root.overhang + root.rest * root.travel - self.width / 2;

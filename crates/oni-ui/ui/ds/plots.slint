@@ -145,7 +145,7 @@ export component Plot inherits Rectangle {
     if root.screen: Rectangle {
         border-radius: PlotStyle.radius;
         border-width: Stroke.line;
-        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.edge);
+        border-color: SliderStyle.knob-edge.with-alpha(SliderStyle.well-edge);
     }
     keys := FocusScope {
         enabled: root.focusable;
