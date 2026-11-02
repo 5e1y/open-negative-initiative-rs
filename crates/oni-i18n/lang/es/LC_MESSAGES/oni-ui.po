@@ -349,7 +349,7 @@ msgstr "Mostrar {}"
 msgid "Hide {}"
 msgstr "Ocultar {}"
 
-#: crates/oni-app/src/app/transition.rs crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint
+#: crates/oni-ui/ui/ds/containers.slint crates/oni-ui/ui/help.slint crates/oni-ui/ui/presets.slint
 msgid "Done"
 msgstr "OK"
 
@@ -2273,30 +2273,6 @@ msgstr "Marcar como favorita una carpeta de escaneos y abrirla · exportar sigue
 msgid "UPDATING"
 msgstr "ACTUALIZANDO"
 
-#: crates/oni-ui/ui/transition.slint
-msgid "Matching Your Cameras"
-msgstr "Igualando tus cámaras"
-
-#: crates/oni-ui/ui/transition.slint
-msgid "ONI now reads RAW files with LibRaw, which sees each camera's colours a little differently from the earlier version."
-msgstr "ONI lee ahora los archivos RAW con LibRaw, que ve los colores de cada cámara de forma algo distinta a la versión anterior."
-
-#: crates/oni-ui/ui/transition.slint
-msgid "Each camera is matched once to the earlier version's colours, on a few of your photos."
-msgstr "Cada cámara se iguala una vez con los colores de la versión anterior, usando algunas de tus fotos."
-
-#: crates/oni-ui/ui/transition.slint
-msgid "Nothing in your photos' settings is changed."
-msgstr "No se cambia nada en los ajustes de tus fotos."
-
-#: crates/oni-ui/ui/transition.slint
-msgid "Quitting now is safe: the work resumes at the next launch."
-msgstr "Salir ahora es seguro: el trabajo se reanuda en el próximo inicio."
-
-#: crates/oni-ui/ui/transition.slint
-msgid "CONTINUE"
-msgstr "CONTINUAR"
-
 #: crates/oni-ui/ui/wrapped.slint
 msgid "Click or press → to turn · ← to go back · Esc to leave"
 msgstr "Haz clic o pulsa → para avanzar · ← para volver · Esc para salir"
@@ -3887,58 +3863,6 @@ msgstr "Balance de blancos automático"
 msgid "{count} frames together"
 msgstr "{count} fotogramas juntos"
 
-#: crates/oni-app/src/app/transition.rs
-msgid "Looking for the cameras of your photos…"
-msgstr "Buscando las cámaras de tus fotos…"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "waiting"
-msgstr "en espera"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "matching…"
-msgstr "igualando…"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "not matched"
-msgstr "sin igualar"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "Stopped"
-msgstr "Detenido"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "No camera could be matched."
-msgstr "No se pudo igualar ninguna cámara."
-
-#: crates/oni-app/src/app/transition.rs
-msgid "Some folders could not be reached: their cameras are matched when they come back."
-msgstr "No se pudo acceder a algunas carpetas: sus cámaras se igualarán cuando vuelvan a estar disponibles."
-
-#: crates/oni-app/src/app/transition.rs
-msgid "matched, within {share} %"
-msgstr "igualada, con un margen de {share} %"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "Matching the {camera} to the earlier version…"
-msgstr "Igualando la {camera} con la versión anterior…"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "The cameras could not be matched: {error}. RAW files show LibRaw's own colours until the next launch."
-msgstr "No se pudieron igualar las cámaras: {error}. Los archivos RAW muestran los colores propios de LibRaw hasta el próximo inicio."
-
-#: crates/oni-app/src/app/transition.rs crates/oni-app/src/picking.rs
-msgid "{n} photo"
-msgid_plural "{n} photos"
-msgstr[0] "{n} foto"
-msgstr[1] "{n} fotos"
-
-#: crates/oni-app/src/app/transition.rs
-msgid "{n} camera matched."
-msgid_plural "{n} cameras matched."
-msgstr[0] "{n} cámara igualada."
-msgstr[1] "{n} cámaras igualadas."
-
 #: crates/oni-app/src/app/tree_column.rs
 msgid "{layout} — next: {next}"
 msgstr "{layout} — siguiente: {next}"
@@ -4182,6 +4106,12 @@ msgstr "{verb} ({count} fotos)"
 #: crates/oni-app/src/picking.rs
 msgid "{photos} in the ONI Trash"
 msgstr "{photos} en la Papelera de ONI"
+
+#: crates/oni-app/src/picking.rs
+msgid "{n} photo"
+msgid_plural "{n} photos"
+msgstr[0] "{n} foto"
+msgstr[1] "{n} fotos"
 
 #: crates/oni-app/src/platform.rs
 msgid "Show in Finder"

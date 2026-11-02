@@ -1,4 +1,4 @@
-//! The real sidecars: roll #8 (written by the current format) and two Lumix frames from version 14.
+//! The real sidecars: roll #8 (format 19) and two Lumix frames from version 14.
 
 use oni_settings::codec::{self, Source};
 use oni_settings::json::semantic_difference;
@@ -33,10 +33,17 @@ fn value(text: &str) -> Value {
     serde_json::from_str(text).unwrap()
 }
 
-/// The sidecar as Swift writes it: without the key this app adds for the original it was written for.
+/// The sidecar as Swift writes it: without the keys this app adds for the original it was written for.
 fn swift_form(text: &str) -> String {
-    let own = format!("  \"{}\" : ", sidecar::identity::KEY);
-    text.split_inclusive('\n').filter(|line| !line.starts_with(&own)).collect()
+    let own = [sidecar::identity::KEY, sidecar::identity::TAIL].map(|k| format!("  \"{k}\" : "));
+    text.split_inclusive('\n').filter(|line| !own.iter().any(|o| line.starts_with(o.as_str()))).collect()
+}
+
+/// The document at this format's version, which any write lays.
+fn current(text: &str) -> String {
+    text.split_inclusive('\n')
+        .map(|line| if line.starts_with("  \"version\" : ") { format!("  \"version\" : {}\n", codec::VERSION) } else { line.to_string() })
+        .collect()
 }
 
 #[test]
@@ -44,14 +51,22 @@ fn every_roll_8_sidecar_round_trips() {
     let Some(roll) = oni_fixtures::raw_dir("every_roll_8_sidecar_round_trips") else { return };
     let files = sidecars(&roll);
     assert_eq!(files.len(), 38, "roll #8 holds 38 sidecars");
-    let mut identical = 0;
+    let (mut identical, mut plain) = (0, 0);
     for path in &files {
-        let original = swift_form(&std::fs::read_to_string(path).unwrap());
-        assert_eq!(value(&original)["version"], 19);
+        let stored = swift_form(&std::fs::read_to_string(path).unwrap());
+        assert_eq!(value(&stored)["version"], 19);
+        let original = current(&stored);
+        // `autoBalance` is this app's own key, which a sidecar write keeps and the codec never lays.
+        let mut expected = value(&original);
+        let balanced = expected.as_object_mut().unwrap().remove(sidecar::AUTO_BALANCE).is_some();
         let written = rewritten(path, true);
-        if let Some(why) = semantic_difference(&value(&original), &value(&written)) {
+        if let Some(why) = semantic_difference(&expected, &value(&written)) {
             panic!("{}: {why}", path.display());
         }
+        if balanced {
+            continue;
+        }
+        plain += 1;
         if written == original {
             identical += 1;
         } else {
@@ -59,8 +74,8 @@ fn every_roll_8_sidecar_round_trips() {
             eprintln!("{}: first differing line {line:?}", path.display());
         }
     }
-    eprintln!("roll #8: {} of {} sidecars byte-identical", identical, files.len());
-    assert_eq!(identical, files.len());
+    eprintln!("roll #8: {identical} of {plain} sidecars without a kept balance byte-identical");
+    assert_eq!(identical, plain);
 }
 
 /// Every key path where two documents part, numbers compared within an f32 epsilon.
@@ -92,7 +107,7 @@ fn differences(a: &Value, b: &Value, path: &str, out: &mut Vec<String>) {
 fn twin_a_moved_field_in_a_roll_8_sidecar_is_seen() {
     let Some(roll) = oni_fixtures::raw_dir("twin_a_moved_field_in_a_roll_8_sidecar_is_seen") else { return };
     let path = roll.join("DSC_6442.NEF.json");
-    let original = swift_form(&std::fs::read_to_string(&path).unwrap());
+    let original = current(&swift_form(&std::fs::read_to_string(&path).unwrap()));
     let data = original.as_bytes();
     let decoded = codec::decode(data).unwrap();
     let encode = |settings: &PipelineSettings, label: Medal| {
@@ -312,7 +327,7 @@ fn a_newer_format_opens_read_only_and_is_never_rewritten() {
     let dir = scratch("future");
     let (original, text) = copied(&roll, &dir, "DSC_6433.NEF");
     let path = sidecar::url_for(&original);
-    let future = text.replacen("\"version\" : 19", "\"version\" : 20", 1);
+    let future = text.replacen(&format!("\"version\" : {}", codec::VERSION), &format!("\"version\" : {}", codec::VERSION + 1), 1);
     assert_ne!(future, text);
     std::fs::write(&path, &future).unwrap();
     let loaded = sidecar::read(&original, true, true).unwrap();

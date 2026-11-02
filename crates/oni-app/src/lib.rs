@@ -44,6 +44,7 @@ pub mod preferences;
 pub mod splash;
 pub mod proof;
 pub mod report;
+pub mod retired_matrices;
 pub mod render;
 pub mod roll_previews;
 pub mod scans;

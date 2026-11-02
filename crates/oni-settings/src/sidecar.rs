@@ -182,7 +182,7 @@ pub fn read(original: &Path, mosaic: bool, catching_up: bool) -> Result<Loaded, 
     Ok(Loaded {
         writable: !decoded.is_from_future(),
         is_new: false,
-        settings: decoded.settings,
+        settings: crate::retired_matrices::caught_up(original, decoded.version, decoded.settings),
         imported_at: decoded.imported_at,
         label: decoded.label,
         exif: decoded.exif,

@@ -110,6 +110,29 @@ fn an_unknown_key_survives_a_medal() {
 }
 
 #[test]
+fn an_unknown_key_of_the_previous_format_survives_its_first_rewrite() {
+    let dir = scratch("previous");
+    let photo = dir.join("P1.NEF");
+    std::fs::write(&photo, b"").unwrap();
+    let carried = |version: i64| {
+        sidecar::write(&edited(), &photo, Default::default()).unwrap();
+        let mut stored = document(&url_for(&photo));
+        stored["version"] = json!(version);
+        stored["settings"]["grainLater"] = json!(0.3);
+        std::fs::write(url_for(&photo), serde_json::to_vec_pretty(&stored).unwrap()).unwrap();
+        let read = sidecar::read(&photo, true, true).unwrap();
+        sidecar::write(&read.settings, &photo, Default::default()).unwrap();
+        let written = document(&url_for(&photo));
+        assert_eq!(written["version"], json!(codec::VERSION));
+        written["settings"].get("grainLater").cloned()
+    };
+    assert_eq!(carried(codec::KEYS_CARRIED_FROM), Some(json!(0.3)));
+    // Twin: below it a migration may have consumed the key, which is never carried.
+    assert_eq!(carried(codec::KEYS_CARRIED_FROM - 1), None);
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn a_retired_key_is_never_carried_to_be_read_twice() {
     let dir = scratch("retired");
     let photo = dir.join("P1.NEF");

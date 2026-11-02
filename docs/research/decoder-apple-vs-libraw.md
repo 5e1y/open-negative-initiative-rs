@@ -210,6 +210,11 @@ become "matches it for the cameras in the table". The owner decides.
 
 ## Transition
 
+Withdrawn on 2026-11-02 (#1055, owner's call): the matrices ran on every Mac and every RAW of each
+camera, not only on frames edited in the Swift app, and one camera's was fitted on a single flat-field
+frame. RAWs decode in LibRaw's own colours; a frame edited under a matrix keeps its look through its
+gains, anchored on its film's base. What follows describes the withdrawn module.
+
 The owner chose strategy (a), once a 3×3 proved quick to measure in the app: `crates/oni-transition`,
 behind a blocking sheet on macOS (#175). No sidecar is read to decide anything, and none is written.
 

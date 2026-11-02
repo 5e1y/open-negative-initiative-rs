@@ -26,8 +26,6 @@ typedef struct {
     int inset[4];
     // The file's orientation, LibRaw's `flip`; the pixels come out unturned and Rust turns them.
     int flip;
-    // The camera as `oni_identify` names it, which keys its rendition matrix.
-    char make[64], model[64];
     // The handle's stream, freed once LibRaw lets the file go; NULL for a file opened by name.
     void *stream;
     // 1 once LibRaw read past the file's end: a copy cut short, never a picture to show.
@@ -101,8 +99,6 @@ int oni_open(const char *path, void *stream, float exposure_gain, int min_side, 
     out->dng = lr->idata.dng_version != 0;
     memcpy(out->cam_xyz, lr->color.cam_xyz, sizeof out->cam_xyz);
     out->baseline_exposure = lr->color.dng_levels.baseline_exposure;
-    strncpy(out->make, lr->idata.make, 63);
-    strncpy(out->model, lr->idata.model, 63);
     return 0;
 }
 

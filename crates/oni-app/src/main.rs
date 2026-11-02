@@ -106,16 +106,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Whole decodes kept for the next opening, about 145 MB a 24 Mpx frame.
     oni_decode::cache::keep_in(oni_app::system::caches().join("Decodes"), DECODES_KEPT);
     let store = EditorStore::new(Archive::new(Vec::new(), oni_decode::decodes_via_mosaic));
-    // The earlier version ran on macOS alone: there its RAW settings are corrected once, never under a bench.
-    #[cfg(target_os = "macos")]
-    let transition: Option<std::sync::Arc<dyn oni_transition::AppleDecode>> =
-        bench::requested().is_none().then(|| std::sync::Arc::new(oni_transition::apple::CoreImage) as _);
-    #[cfg(not(target_os = "macos"))]
-    let transition = None;
+    // Frames edited while camera matrices shaped the decode keep their look through their gains.
+    oni_app::retired_matrices::install(&support);
+    oni_app::retired_matrices::sweep(&support, &oni_library::index::LibraryIndex::default_path(&oni_app::system::caches()));
     // The folded bench pairs a phone, so it offers the link whatever the switch says.
     let phone = oni_app::phone::offered() || bench::requested() == Some(bench::Mode::Folded);
     // The window's adapter is made here, while the hook still knows the main window is the one built.
-    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), transition, phone, ..Options::default() }).inspect(|s| {
+    let shell = oni_app::chrome::unified(|| Shell::new(Box::new(store), engine, Options { support, caches: oni_app::system::caches(), screen: if canvas { oni_app::display::WINDOW } else { oni_app::display::Screen::Srgb }, canvas, require_roll: true, pasteboard: oni_app::pasteboard::general(), computer: oni_library::navigator::Computer::system(), updates: bench::requested().is_none().then(oni_app::app::Updater::system), reporter: Options::online_reporter(), phone, ..Options::default() }).inspect(|s| {
         s.window.window();
     }))?;
     // `Diagnostics.startWatchdog`: the interface thread beats, a thread of its own watches it.

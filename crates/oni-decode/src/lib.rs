@@ -2,7 +2,6 @@
 //! `route` sorts a file onto its branch from its bytes; `container` reads a linear scan's TIFF.
 
 pub mod camera;
-pub mod rendition;
 pub mod container;
 pub mod embedded;
 pub mod plain;
@@ -33,8 +32,6 @@ struct Decoded {
     half: c_int,
     inset: [c_int; 4],
     flip: c_int,
-    make: [c_char; 64],
-    model: [c_char; 64],
     stream: *mut c_void,
     cut: c_int,
 }
@@ -291,14 +288,9 @@ pub fn decode_for(path: &Path, exposure_gain: f32, side: usize) -> Result<(Linea
     decode_in(path, exposure_gain, side, Colours::Matrix)
 }
 
-/// `decode` in LibRaw's own colours, the camera's rendition matrix left out: what it is measured on.
-pub fn decode_native(path: &Path, exposure_gain: f32) -> Result<Linear, DecodeError> {
-    decoded(path, exposure_gain, 0, Colours::Matrix, false, Neutral::Swift).map(|(linear, _)| linear)
-}
-
-/// `decode_for` in the given colours; the sensor's own never take a rendition matrix.
+/// `decode_for` in the given colours.
 pub fn decode_in(path: &Path, exposure_gain: f32, side: usize, colours: Colours) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, colours, true, Neutral::Swift)
+    decoded(path, exposure_gain, side, colours, Neutral::Swift)
 }
 
 /// Whether `path` is Nikon's High Efficiency RAW, told by LibRaw's identification alone.
@@ -310,17 +302,17 @@ pub fn is_nikon_he(path: &Path) -> bool {
 
 /// `decode_for` balanced on `neutral`.
 pub fn decode_on(path: &Path, exposure_gain: f32, side: usize, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
-    decoded(path, exposure_gain, side, Colours::Matrix, true, neutral)
+    decoded(path, exposure_gain, side, Colours::Matrix, neutral)
 }
 
-fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
-    decoded_by(path, exposure_gain, side, colours, matched, neutral, Route::PLATFORM)
+fn decoded(path: &Path, exposure_gain: f32, side: usize, colours: Colours, neutral: Neutral) -> Result<(Linear, usize), DecodeError> {
+    decoded_by(path, exposure_gain, side, colours, neutral, Route::PLATFORM)
 }
 
-fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, matched: bool, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
+fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, neutral: Neutral, route: Route) -> Result<(Linear, usize), DecodeError> {
     // A whole or a `HALF` decode is kept on disk, and one kept is read back in place of LibRaw's.
     let slide = if neutral == Neutral::Slide { "|slide" } else { "" };
-    let keyed = |side: usize| cache::key(path, &format!("{:08x}|{colours:?}|{matched}|{side}{slide}|{:016x}", exposure_gain.to_bits(), rendition::print()));
+    let keyed = |side: usize| cache::key(path, &format!("{:08x}|{colours:?}|{side}{slide}", exposure_gain.to_bits()));
     let key = (side == 0 || side == HALF).then(|| keyed(side)).flatten();
     // A shorter copy LibRaw reads at half size is the `HALF` decode pixel for pixel: one kept serves it.
     let half = (side > HALF).then(|| keyed(HALF)).flatten();
@@ -366,7 +358,7 @@ fn decoded_by(path: &Path, exposure_gain: f32, side: usize, colours: Colours, ma
     let factor = if d.half != 0 { 2 } else { 1 };
     let [cx, cy, cw, ch] = inset.map(|v| v.max(0) as usize / factor);
     let (x0, y0, w_out, h_out) = if cw > 0 && ch > 0 && cx + cw <= w && cy + ch <= h { (cx, cy, cw, ch) } else { (0, 0, w, h) };
-    let matrix = if matched && colours == Colours::Matrix { rendition::for_decode(&d.make, &d.model, d.dng != 0, conv.matrix) } else { conv.matrix };
+    let matrix = conv.matrix;
     if let Some(key) = key {
         let head = cache::Kept { width: w_out, height: h_out, flip: d.flip, factor, matrix, raw: Vec::new() };
         cache::write(&key, &head, (y0..y0 + h_out).map(|row| &raw[(row * w + x0) * 3..(row * w + x0 + w_out) * 3]));

@@ -1,7 +1,7 @@
 //! The keys a newer app added to a sidecar, carried through a rewrite: the format moves its version
 //! only for a field whose meaning changes, so a medal set here must not erase a field Swift added.
 
-use crate::codec::{self, Decoded, SettingsDocument, VERSION};
+use crate::codec::{self, Decoded, KEYS_CARRIED_FROM, SettingsDocument};
 use crate::json::{self, Node};
 use serde_json::Value;
 
@@ -28,7 +28,7 @@ fn carried(document: &SettingsDocument, stored: Option<&(Value, Decoded)>) -> Re
     let mut node = json::to_node(document)?;
     let bare = node.clone();
     // An older document's extra keys are the ones its migrations consumed, never to be read twice.
-    let Some((stored, decoded)) = stored.filter(|(_, d)| d.version == VERSION) else { return Ok(bare) };
+    let Some((stored, decoded)) = stored.filter(|(_, d)| d.version >= KEYS_CARRIED_FROM) else { return Ok(bare) };
     let known = json::to_node(&codec::document(
         &decoded.settings,
         decoded.imported_at,

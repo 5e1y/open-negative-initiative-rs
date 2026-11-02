@@ -35,8 +35,10 @@ the code; a costly trap keeps its constraint and its number in two lines.
 
 ## Decisions that look like mistakes and are not
 
-- **LibRaw replaces Apple's `CIRAWFilter`**, and a per-camera 3×3 measured once against Apple keeps RAW
-  colours as in the Swift app (owner's decision, 2026-10-20). Linear TIFF and DNG renders must not move.
+- **LibRaw replaces Apple's `CIRAWFilter`**, in its own colours on every camera and both systems: no
+  per-camera matrix (owner's call, 2026-11-02). A frame edited under the former Mac matrices keeps its look
+  through its gains (`retired_matrices`, sidecar format 20) until its roll is measured again. Linear TIFF
+  and DNG renders must not move.
 - **The balance is the Swift app's 5000 K / tint 0** (Planckian), derived from the camera's own matrix
   and adapted to D65 by Bradford; never the as-shot one or `pre_mul`. LibRaw's highlight mode 1 keeps
   every channel under the 16-bit ceiling. The exposure is 2^BaselineExposure, 0.48 stop when absent.

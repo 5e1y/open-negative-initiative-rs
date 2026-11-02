@@ -146,7 +146,6 @@ impl Shell {
             prepare: prepare::Roll::new(options.require_roll),
             updates: updates::Updates::new(options.updates),
             year: year::Year::default(),
-            transition: transition::Transition::new(options.transition, &options.support),
         };
         let ctl = Rc::new(Ctl {
             window: window.as_weak(),

@@ -192,8 +192,6 @@ fn support_folder(support: &Path, index: &Path) -> usize {
     let fresh = support.join("fresh-index.sqlite");
     let rebuilt = oni_library::LibraryIndex::open(&fresh).is_some_and(|i| i.rebuild(&[]).is_ok());
     check("library index rebuilt", rebuilt, String::new());
-    let table = oni_transition::table::Table::load(support);
-    check("camera transition table", table.is_ok(), format!("{:?} cameras", table.as_ref().map(|t| t.cameras.len()).ok()));
     let (records, names) = oni_library::journal::Journal::new(support.join("Journal")).read();
     check("journal", !records.is_empty(), format!("{} records, {} names", records.len(), names.len()));
     failures

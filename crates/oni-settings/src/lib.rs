@@ -21,6 +21,7 @@ pub mod legacy;
 pub mod levels;
 pub mod lighting_catch_up;
 pub mod modes;
+pub mod retired_matrices;
 pub mod scanner;
 pub mod settings;
 pub mod sidecar;

@@ -26,8 +26,6 @@ pub struct Options {
     pub updates: Option<Updater>,
     /// `Propagation.board`: the general pasteboard in the app, a board of the process's own for a check.
     pub pasteboard: Box<dyn crate::pasteboard::Board>,
-    /// Apple's decode, which turns the transition from the earlier version on; none in the checks.
-    pub transition: Option<Arc<dyn oni_transition::AppleDecode>>,
     /// Names the volume a path lies on: the system's in the app, a check's own for its folders.
     pub identify: oni_library::bookmarks::Identify,
     /// The phone link offered at all (`phone::offered`): off, no entry to it shows and nothing listens.
@@ -62,7 +60,6 @@ impl Default for Options {
             require_roll: false,
             updates: None,
             pasteboard: Box::new(crate::pasteboard::Memory::default()),
-            transition: None,
             identify: oni_library::bookmarks::system(),
             phone: phone::offered(),
         }

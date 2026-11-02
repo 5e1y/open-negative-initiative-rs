@@ -76,10 +76,10 @@ fn stat(path: &Path) -> Option<String> {
     Some(format!("{}@{at}", m.len()))
 }
 
-/// What a frame's decode reads: its original and its passes, each by size and change date, and the
-/// cameras' rendition matrices; `None` when the original cannot be looked at.
+/// What a frame's decode reads: its original and its passes, each by size and change date; `None`
+/// when the original cannot be looked at.
 fn sources(original: &Path, s: &PipelineSettings) -> Option<String> {
-    let mut out = format!("{} rendition {:016x}", stat(original)?, oni_decode::rendition::print());
+    let mut out = stat(original)?;
     if let Some(p) = &s.rgb_passes {
         let beside = |name: &str| original.parent().map_or_else(|| PathBuf::from(name), |f| f.join(name));
         for name in [&p.red, &p.green, &p.blue] {

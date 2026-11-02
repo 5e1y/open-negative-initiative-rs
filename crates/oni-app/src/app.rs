@@ -92,7 +92,6 @@ mod roll_tab;
 mod rolls;
 mod stock_picker;
 pub(crate) use stock_picker::StockTarget;
-mod transition;
 mod updates;
 mod year;
 mod scroll;
@@ -338,7 +337,6 @@ pub struct State {
     pub(crate) prepare: prepare::Roll,
     pub(crate) updates: updates::Updates,
     year: year::Year,
-    transition: transition::Transition,
 }
 
 pub struct Ctl {
