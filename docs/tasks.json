@@ -5198,5 +5198,12 @@
     "title": "The sliders' rails and the plot screens at half strength with the other wells",
     "status": "done",
     "detail": "Owner's report: the halved Inward left the sliders' tracks as they were. A rail takes only its shade from Inward; its black edge and its lit rim are its own (SliderStyle), as a plot screen's are, and they carried the hollow's look. SliderStyle.rim goes from 0.4 to 0.2 and the rail's and the screen's edge read SliderStyle.well-edge at 0.5; the knob keeps its full edge."
+  },
+  {
+    "id": 1071,
+    "type": "change",
+    "title": "Version 1.5.4",
+    "status": "done",
+    "detail": "oni-app 1.5.4, carrying frames together's fixes and the editor's design changes (#1061-#1070); the 1.5 welcome and splash kept."
   }
 ]
