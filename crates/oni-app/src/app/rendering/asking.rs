@@ -2,6 +2,17 @@
 
 use super::*;
 
+impl State {
+    /// The canvas asked again at the next render though no setting moved, one frame or frames together:
+    /// a proof, a table or a measure changed what they show.
+    pub(in crate::app) fn render_anew(&mut self) {
+        self.requests.requested_view = None;
+        if let Some(g) = self.together.as_mut() {
+            g.anew();
+        }
+    }
+}
+
 impl Ctl {
     /// Lays the open frame's current settings in the render slot, when they differ from the last asked.
     pub(in crate::app) fn request_render(self: &Rc<Self>) {

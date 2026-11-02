@@ -63,7 +63,7 @@ mod tree_clicks;
 mod state_read;
 use state_read::LoadBar;
 pub use workers::tiles;
-use workers::{paint, prepared, prepared_keeping, read_disk, zebra};
+use workers::{grounded, paint, prepared, prepared_keeping, read_disk, zebra};
 
 const FRAME_TICK: Duration = Duration::from_millis(16);
 /// What changes on its own rhythm, histogram and load counter, is published at this pace.

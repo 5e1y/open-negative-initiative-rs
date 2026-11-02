@@ -7,34 +7,39 @@ impl Ctl {
     pub(in crate::app) fn encode_before(&self, before: oni_graph::Source, placed: Option<Placed>) {
         let Some(w) = self.window() else { return };
         let canvas = self.canvas_size();
-        let (imported, rect) = {
+        let imported = {
             let mut s = self.state.borrow_mut();
             let screen = s.screen;
             let Some(view) = before.view().cloned() else { return };
             let e = before.extent();
-            let k = zebra(&s, Params::new(screen, e.w, e.h, s.gpu.seed), placed, e.w, canvas);
+            let k = grounded(&s, zebra(&s, Params::new(screen, e.w, e.h, s.gpu.seed), placed, e.w, canvas));
             let g = &s.gpu;
             let (target, shown) = g.encode(g.before.as_ref().map(|(t, _)| t), (e.w, e.h), &view, &k, (e.w, e.h));
             let imported = shown.ok().flatten();
             if g.before.as_ref().is_none_or(|(_, kept)| kept.id() != before.id()) {
                 s.compare.befores += 1;
             }
-            s.compare.before_placed = placed;
             s.gpu.before = Some((target, before));
-            (imported, placed)
+            imported
         };
         let c = w.global::<Canvas>();
         if let Some(image) = imported {
             c.set_before(image);
         }
         c.set_before_revision(c.get_before_revision().wrapping_add(1));
-        if let Some(p) = rect {
-            let scale = f64::from(w.window().scale_factor());
-            c.set_before_x((p.x / scale) as f32);
-            c.set_before_y((p.y / scale) as f32);
-            c.set_before_width((p.width / scale) as f32);
-            c.set_before_height((p.height / scale) as f32);
-        }
+        self.lay_before(placed);
+    }
+
+    /// Compare's before laid where `placed` puts it on the canvas.
+    pub(in crate::app) fn lay_before(&self, placed: Option<Placed>) {
+        let Some(w) = self.window() else { return };
+        self.state.borrow_mut().compare.before_placed = placed;
+        let Some(p) = placed else { return };
+        let (c, scale) = (w.global::<Canvas>(), f64::from(w.window().scale_factor()));
+        c.set_before_x((p.x / scale) as f32);
+        c.set_before_y((p.y / scale) as f32);
+        c.set_before_width((p.width / scale) as f32);
+        c.set_before_height((p.height / scale) as f32);
     }
 
     /// Compare Before/After on and off, the split at half the canvas.

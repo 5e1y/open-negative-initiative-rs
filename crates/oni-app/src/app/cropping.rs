@@ -5,10 +5,10 @@ use super::*;
 impl Ctl {
     // MARK: - Framing
 
-    /// The Crop tab open on a photo in the editor: the canvas shows the frame uncropped.
+    /// The Crop tab open on a photo alone in the editor: the canvas shows the frame uncropped.
     pub(super) fn cropping(&self) -> bool {
         let Some(w) = self.window() else { return false };
-        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().open.is_some()
+        !w.global::<App>().get_gallery() && w.global::<PanelState>().get_tab() == 1 && self.state.borrow().open.is_some() && !self.together_shown()
     }
 
     /// The open frame's raw size in full-resolution pixels; `Geometry` alone applies the quarter turns.
@@ -107,7 +107,8 @@ impl Ctl {
         }
         let window_frame = if cropping { crop_frame } else { picture_frame };
         let tab = w.global::<PanelState>().get_tab();
-        c.set_window_shown(crate::tabs::window_shown(armed, tab) && window_frame.is_some());
+        // The window is the open frame's own: a sheet of frames together shows none.
+        c.set_window_shown(crate::tabs::window_shown(armed, tab) && window_frame.is_some() && !self.together_shown());
         if let Some(frame) = window_frame {
             let (x, y, wd, ht) = frames::shown(frames::window_shown(&g, cropping), frame);
             c.set_window_x(x as f32);
@@ -133,6 +134,9 @@ impl Ctl {
     }
 
     pub(super) fn framing_act(self: &Rc<Self>, action: crate::Act) {
+        if self.together_shown() {
+            return;
+        }
         let Some(image) = self.image_size() else { return };
         let mut g = self.state.borrow().store.settings().geometry.clone();
         match action {

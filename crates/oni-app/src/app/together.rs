@@ -86,7 +86,8 @@ pub(in crate::app) struct Group {
     sheet: Sheet,
     /// Whether the sheet was last set white, under frames all positives.
     positive: Option<bool>,
-    asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window)>,
+    /// The last grid asked: revision, hovered preset, sources and stand-ins, scale, box, Compare on.
+    asked: Option<(u64, Option<oni_settings::id::Id>, usize, usize, u64, Window, bool)>,
     /// The sheet shown: its size, the box of the full sheet it covers and the scale it was drawn at.
     shown: Option<((usize, usize), Window, f64)>,
     /// The revision the last grid shown was drawn at, and each grid's time from its ask to the canvas.
@@ -111,6 +112,11 @@ impl Group {
     pub(in crate::app) fn decoded(&self) -> impl Iterator<Item = &String> {
         self.paths.iter().zip(&self.negatives).filter(|(_, n)| n.is_some()).map(|(p, _)| p)
     }
+
+    /// The grid asked again at the next render though no setting moved: a proof or a table changed.
+    pub(in crate::app) fn anew(&mut self) {
+        self.asked = None;
+    }
 }
 
 /// What a tile shows: its frame on its settings, or its thumbnail while the frame decodes.
@@ -132,6 +138,8 @@ struct Ask {
     window: Window,
     /// Every tile, when the settings or the sources moved: the histogram's sheet, drawn whole at a set scale.
     counted: Option<Vec<Option<(Arc<Negative>, PipelineSettings)>>>,
+    /// While Compare is on, each tile drawn on its frame's before, laid as the tiles are.
+    before: Option<Vec<Option<(Arc<Negative>, PipelineSettings)>>>,
 }
 
 /// The latest grid asked, which the drawing thread takes; a newer one replaces it unseen.
@@ -168,6 +176,8 @@ impl Ctl {
         if fresh {
             self.state.borrow_mut().viewport.fit();
         }
+        self.leave_frame_tools();
+        self.publish_bar();
         self.stand_in(id, &lacking);
         self.decode_together(id, lacking);
         self.number_frames(id);
@@ -202,24 +212,29 @@ impl Ctl {
     }
 
     /// The sheet where the view lays it, zoomed and panned as a contact sheet: the view reasons on the
-    /// full sheet whatever share of it was drawn.
-    fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) {
-        let Some(view) = self.canvas_size() else { return };
-        let Some((drawn, full)) = self.state.borrow().together.as_ref().map(|g| (g.sheet.drawn(scale), g.sheet.size)) else { return };
+    /// full sheet whatever share of it was drawn. Compare's before, drawn on the same box, lies on it.
+    fn lay_sheet(&self, (size, window, scale): ((usize, usize), Window, f64)) -> Option<Placed> {
+        let view = self.canvas_size()?;
+        let (drawn, full) = self.state.borrow().together.as_ref().map(|g| (g.sheet.drawn(scale), g.sheet.size))?;
         let p = self.state.borrow().viewport.placement(full, view).image;
         // Canvas pixels a pixel of the sheet drawn, which shows its box at that box's place.
         let k = p.2 / f64::from(drawn.0);
         let (x, y, w, h) = (f64::from(window.0), f64::from(window.1), f64::from(window.2), f64::from(window.3));
         let whole = (window.2, window.3) == drawn;
-        self.lay(Some(Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true }), size);
+        let placed = Placed { x: p.0 + x * k, y: p.1 + y * k, width: w * k, height: h * k, full, whole, at_full_resolution: true };
+        self.lay(Some(placed), size);
+        if self.state.borrow().compare.split.is_some() {
+            self.lay_before(Some(placed));
+        }
         self.publish_numbers(p, full.0);
+        Some(placed)
     }
 
     /// The sheet shown laid again where the view now lays it, its ground, numbers and logo with it;
     /// `false` while no sheet is shown.
     pub(in crate::app) fn lay_together(&self) -> bool {
         let shown = self.state.borrow().together.as_ref().and_then(|g| g.shown);
-        shown.inspect(|&size| self.lay_sheet(size)).is_some()
+        shown.inspect(|&size| _ = self.lay_sheet(size)).is_some()
     }
 
     /// Back to one frame: the store edits it alone and the canvas waits for its own render.
@@ -233,9 +248,12 @@ impl Ctl {
         }
         self.unnumbered();
         self.state.borrow_mut().viewport.fit();
-        let mut s = self.state.borrow_mut();
-        s.requests.rendered = 0;
-        s.requests.requested_view = None;
+        {
+            let mut s = self.state.borrow_mut();
+            s.requests.rendered = 0;
+            s.requests.requested_view = None;
+        }
+        self.publish_bar();
     }
 
     pub(in crate::app) fn together_shown(&self) -> bool {
@@ -256,7 +274,7 @@ impl Ctl {
             (s.previewed(lead), live.into_iter().map(|(path, settings)| (path, s.previewed(settings))).collect::<HashMap<_, _>>())
         };
         let (view, viewport) = (self.canvas_size(), self.state.borrow().viewport);
-        let hovered = self.state.borrow().shelf.hovered;
+        let (hovered, comparing) = (self.state.borrow().shelf.hovered, self.state.borrow().compare.split.is_some());
         let mut flipped = None;
         let ask = (|| {
             let mut s = self.state.borrow_mut();
@@ -290,7 +308,7 @@ impl Ctl {
                 (p.visible.0 * k, p.visible.1 * k, p.visible.2 * k, p.visible.3 * k)
             });
             let (shows, window) = g.sheet.seen(scale, visible);
-            let key = (revision, hovered, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window);
+            let key = (revision, hovered, g.negatives.iter().flatten().count(), g.stand_ins.iter().flatten().count(), (scale * 8.0) as u64, window, comparing);
             if g.asked == Some(key) {
                 return None;
             }
@@ -314,7 +332,11 @@ impl Ctl {
                     None => stand_in.clone().map(Tile::StandIn),
                 }.filter(|_| *shown))
                 .collect();
-            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all) })
+            // A stand-in shows the after: its tile waits in the before until its frame decodes.
+            let before = comparing.then(|| {
+                all.iter().zip(&shows).map(|(frame, shown)| frame.as_ref().filter(|_| *shown).map(|(n, s)| (n.clone(), oni_core::compare::reference(s)))).collect()
+            });
+            Some(Ask { group: g.id, revision, at: Instant::now(), tiles, sheet: g.sheet.clone(), scale, window, counted: moved.then_some(all), before })
         })();
         if let Some((id, band, positive)) = flipped {
             self.sheet_polarity(id, band, positive);
@@ -346,7 +368,8 @@ impl Ctl {
         self.state.borrow().together.as_ref().map_or(0, |g| g.drawn)
     }
 
-    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>) {
+    #[allow(clippy::too_many_arguments)]
+    fn grid_landed(&self, group: u64, revision: u64, at: Instant, sheet: oni_graph::Source, pipeline: Duration, (window, scale): (Window, f64), counted: Option<oni_graph::Source>, before: Option<oni_graph::Source>) {
         let size = (sheet.extent().w as usize, sheet.extent().h as usize);
         let count = match self.state.borrow_mut().together.as_mut() {
             Some(g) if g.id == group => {
@@ -359,7 +382,11 @@ impl Ctl {
         };
         let (Some(count), Some(w)) = (count, self.window()) else { return };
         let c = w.global::<Canvas>();
-        self.lay_sheet((size, window, scale));
+        let placed = self.lay_sheet((size, window, scale));
+        // Compare turned off while the grid was drawn takes no before.
+        if let Some(before) = before.filter(|_| self.state.borrow().compare.split.is_some()) {
+            self.encode_before(before, placed);
+        }
         let frame = format!("{count} frames together");
         self.encode(sheet, Shown { kind: Kind::Notch, asked: at, pipeline, frame }, counted);
         c.set_busy(false);

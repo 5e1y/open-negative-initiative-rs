@@ -36,8 +36,22 @@ fn side(scale: f64) -> usize {
     ((TILE as f64 * scale).round() as usize).max(1)
 }
 
+/// The frames a before was drawn from: a tile is the same when its source and its settings are.
+type Befores = Vec<Option<(Arc<Negative>, PipelineSettings)>>;
+
+fn same(a: &Befores, b: &Befores) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(a, b)| match (a, b) {
+            (Some((n, s)), Some((m, t))) => Arc::ptr_eq(n, m) && s == t,
+            (None, None) => true,
+            _ => false,
+        })
+}
+
 /// The drawing thread: the latest grid asked, each tile rendered on its own settings and laid in rows.
 pub(super) fn draw_grids(engine: Shared) {
+    // Compare's before last drawn, kept while its frames, box and scale hold: a step moves the after alone.
+    let mut kept: Option<((u64, Window, f64, Befores), oni_graph::Source)> = None;
     loop {
         let Taken::Value(ask) = SLOT.take(None) else { return };
         let started = Instant::now();
@@ -67,9 +81,29 @@ pub(super) fn draw_grids(engine: Shared) {
             let place = |i: usize, tile| sheet.place(cells[i], tile, COUNTED_SCALE);
             guard.render_laid(&present, side(COUNTED_SCALE), &place, sheet.drawn(COUNTED_SCALE)).ok()
         });
+        let before = match ask.before {
+            None => {
+                kept = None;
+                None
+            }
+            Some(tiles) => match &kept {
+                Some(((group, window, scale, held), source)) if (*group, *window, *scale) == (ask.group, ask.window, ask.scale) && same(held, &tiles) => Some(source.clone()),
+                _ => {
+                    let cells: Vec<usize> = tiles.iter().enumerate().filter_map(|(i, t)| t.as_ref().map(|_| i)).collect();
+                    let present: Vec<Laid> = tiles.iter().flatten().map(|(n, s)| Laid::Frame(n.as_ref(), s)).collect();
+                    let at = |i: usize, tile| {
+                        let (x, y) = sheet.place(cells[i], tile, scale);
+                        (x - wx as i32, y - wy as i32)
+                    };
+                    let drawn = guard.render_laid(&present, side(scale), &at, size).ok();
+                    kept = drawn.clone().map(|d| ((ask.group, ask.window, ask.scale, tiles), d));
+                    drawn
+                }
+            },
+        };
         // The gaps are clear, so the screen's encoding lays the sheet's black under them.
         drop(guard);
         let (group, revision, at, pipeline, laid) = (ask.group, ask.revision, ask.at, started.elapsed(), (ask.window, ask.scale));
-        with_shell(move |c| c.grid_landed(group, revision, at, drawn, pipeline, laid, counted));
+        with_shell(move |c| c.grid_landed(group, revision, at, drawn, pipeline, laid, counted, before));
     }
 }

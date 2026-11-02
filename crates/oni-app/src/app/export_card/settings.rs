@@ -45,6 +45,7 @@ impl Ctl {
             let mut s = self.state.borrow_mut();
             s.requests.requested = u64::MAX;
             s.requests.requested_live = None;
+            s.render_anew();
         }
         self.request_render();
     }

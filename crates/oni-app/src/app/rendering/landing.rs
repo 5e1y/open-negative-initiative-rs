@@ -170,9 +170,7 @@ impl Ctl {
             let (bw, bh) = (wd.div_ceil(TARGET_STEP) * TARGET_STEP, ht.div_ceil(TARGET_STEP) * TARGET_STEP);
             g.seed = g.seed.wrapping_add(1);
             let seed = g.seed;
-            let k = zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas);
-            // Frames together lie on a contact sheet's ground, the gaps between them too.
-            let k = match s.together.as_ref() { Some(g) => Params { ground: g.ground(), ..k }, None => k };
+            let k = grounded(&s, zebra(&s, Params::new(screen, wd, ht, seed), s.placed, wd, canvas));
             let g = &mut s.gpu;
             let (target, encoded) = g.encode(g.target.as_ref(), (bw, bh), &source, &k, (wd, ht));
             let imported = match encoded {

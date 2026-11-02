@@ -221,10 +221,16 @@ export component Surface inherits Rectangle {
 // a rounded clip renders the whole card into a texture of its own, so `CardCorners` covers it instead.
 export component Card inherits Rectangle {
     in property <bool> dimmed;
+    // Corners left square against a square neighbour: the top right one, or all four.
+    in property <bool> square-top-right;
+    in property <bool> square;
     // The screen's pixels to a point, which a move to a screen of another density changes.
     out property <float> density: 1px / 1phx;
     background: root.dimmed ? Colour.canvas-cropping : Colour.canvas;
-    border-radius: CardStyle.radius;
+    border-top-left-radius: root.square ? 0px : CardStyle.radius;
+    border-top-right-radius: root.square || root.square-top-right ? 0px : CardStyle.radius;
+    border-bottom-right-radius: root.square ? 0px : CardStyle.radius;
+    border-bottom-left-radius: root.square ? 0px : CardStyle.radius;
 }
 
 // The four corners outside a round, in the ground beneath, laid last over a content left unclipped,
@@ -232,10 +238,13 @@ export component Card inherits Rectangle {
 export component CardCorners {
     in property <length> r: CardStyle.radius;
     in property <color> ground: Colour.ground;
-    Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
-    Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
-    Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
-    Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
+    // The card's square corners, which keep their content.
+    in property <bool> square-top-right;
+    in property <bool> square;
+    if !root.square: Path { x: 0; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 0 L 1 0 A 1 1 0 0 0 0 1 Z"; }
+    if !root.square && !root.square-top-right: Path { x: root.width - root.r; y: 0; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 0 L 1 1 A 1 1 0 0 0 0 0 Z"; }
+    if !root.square: Path { x: root.width - root.r; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 1 1 L 0 1 A 1 1 0 0 0 1 0 Z"; }
+    if !root.square: Path { x: 0; y: root.height - root.r; width: root.r; height: root.r; viewbox-width: 1; viewbox-height: 1; fill: root.ground; commands: "M 0 1 L 0 0 A 1 1 0 0 0 1 1 Z"; }
 }
 
 // How a raised surface stands off what it sits on: a popover's or a menu's cast shade, a column slid

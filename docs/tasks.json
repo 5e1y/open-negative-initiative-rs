@@ -5128,5 +5128,33 @@
     "title": "Windows checks counted by the site, and the system named on install",
     "status": "done",
     "detail": "WINDOWS_FEED points at the site's /appcast-windows.xml, which proxies Pages and counts each check; /installed carries os=mac|windows so the downloads dashboard splits Mac from Windows."
+  },
+  {
+    "id": 1061,
+    "type": "fix",
+    "title": "Compare Before/After splits the sheet of frames shown together",
+    "status": "done",
+    "detail": "Owner's report. Compare on frames together showed no before, or the last single frame's before over the sheet: the drawing thread never drew one. While Compare is on, each grid asked carries every shown tile on its frame's own before (compare::reference), drawn on the same box and scale and kept while its frames, settings, box and scale hold; it is encoded on the sheet's ground and laid where the sheet lies, following pans and zooms. The numbers lie over the before too. The screen gamut's re-encode keeps the sheet's ground (workers::grounded). Window check together_tools: the before lies on the after, a tile's before differs from its after and is no black (twin), Compare off lets it go."
+  },
+  {
+    "id": 1062,
+    "type": "fix",
+    "title": "The crop, the measuring window and De-dust are out of reach on frames together",
+    "status": "done",
+    "detail": "Owner's call: a crop, a window or a dust stroke is each frame's own, and on a sheet it landed on the open frame at the sheet's coordinates. While frames show together the Crop tab is greyed (Tabs.disabled, PanelState.crop-closed), the bar's crop and De-dust keys (Bar.single), the menu's crop, mirror and De-dust are disabled, ⌘K and the dust key do nothing, the measuring window is not drawn over the sheet, and a group formed from the Crop or De-dust tab leaves for the last panel. Window check together_tools, its twin one frame alone opening the crop."
+  },
+  {
+    "id": 1063,
+    "type": "fix",
+    "title": "Frames together redraw on the Scanner face, a new proof, the Frontier table and a hover's balance",
+    "status": "done",
+    "detail": "Owner's report: the sheet stood still after a toggle that is no slider. The face changed alone was never laid on the other frames (only beside another field), so it now reaches every frame together, one undo taking it back; a roll field moved on the other face still leaves another roll's frame on its own. A proof, the Frontier table or a hovered preset's measured balance asked the open frame again but not the sheet: State::render_anew asks both. Checks: the_face_changed_alone_reaches_every_frame_together (twin: a roll field leaves another roll's face); window together_tools, the Scanner face redraws A's tile and a new space redraws the sheet (twin: nothing redraws it on its own)."
+  },
+  {
+    "id": 1064,
+    "type": "change",
+    "title": "The editor's canvas is square against the panel's plot, and square all round with both columns folded",
+    "status": "done",
+    "detail": "Owner's call: the canvas card's top right corner meets the panel's histogram, square, so it is square too; with the Library and the Panel both folded its four corners are square. Card and CardCorners take square-top-right and square."
   }
 ]

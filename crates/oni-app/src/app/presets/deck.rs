@@ -60,7 +60,7 @@ impl Ctl {
                     let moved = s.store.settings() != &through || s.open.as_deref() != Some(path.as_str());
                     if let Some(o) = outcome.filter(|_| !moved) {
                         s.shelf.hover_balance = Some((path, through, o));
-                        s.requests.requested_view = None;
+                        s.render_anew();
                     }
                     moved
                 };

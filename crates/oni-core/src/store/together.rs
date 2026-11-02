@@ -62,12 +62,14 @@ fn shared(before: &PipelineSettings, after: &PipelineSettings) -> Vec<Field> {
 }
 
 /// The `fields` moved on `open` that are laid on `other`: a roll's measured windows, gains and mode
-/// belong to its roll and its decode, so a frame of another keeps its own, and its face with them.
+/// belong to its roll and its decode, so a frame of another keeps its own, and its face with them;
+/// the face changed alone is laid on every frame.
 fn laid(fields: &[Field], open: &PipelineSettings, other: &PipelineSettings) -> Vec<Field> {
     let same_roll = open.roll_reference.as_ref().map(|r| r.id) == other.roll_reference.as_ref().map(|r| r.id)
         && open.decoded_from_mosaic == other.decoded_from_mosaic;
     let reached: Vec<Field> = fields.iter().copied().filter(|f| same_roll || f.family() != Some(Family::Roll)).collect();
-    if reached.iter().all(|f| *f == Field::Face) { Vec::new() } else { reached }
+    let face_alone = fields.iter().all(|f| *f == Field::Face);
+    if !face_alone && reached.iter().all(|f| *f == Field::Face) { Vec::new() } else { reached }
 }
 
 impl EditorStore {
@@ -210,6 +212,31 @@ mod tests {
         // Twin: a frame of the same roll takes the window moved.
         assert_eq!(read(&c).levels.red.black, 0.2);
         assert_eq!(live[1], 0.2);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_face_changed_alone_reaches_every_frame_together() {
+        let roll = |id| oni_settings::frame::RollReference { id, stops: [0.0; 3], black: [0.0; 3], white: [1.0; 3], base: None, median: None };
+        let (r1, r2) = (Id::new(), Id::new());
+        let on = |id| PipelineSettings { roll_reference: Some(roll(id)), ..PipelineSettings::default() };
+        let (mut store, dir, [_, b, c]) = three("together-face", on(r2), on(r1));
+        let next = PipelineSettings { roll_reference: Some(roll(r1)), ..store.settings().clone() };
+        store.apply_at(Command::Write(Box::new(next)), 0.0);
+        store.set_together(vec![b.clone(), c.clone()]);
+        store.apply_at(Command::Face(oni_settings::Face::Scanner), 5.0);
+        let live: Vec<oni_settings::Face> = store.together_live().iter().map(|(_, s)| s.face).collect();
+        assert_eq!([read(&b).face, read(&c).face], [oni_settings::Face::Scanner; 2], "another roll's frame takes the face too");
+        assert_eq!(live, [oni_settings::Face::Scanner; 2], "and shows it");
+        store.undo(Surface::Editor);
+        assert_eq!(read(&b).face, oni_settings::Face::Pro, "one undo takes it back");
+        // Twin: a roll field moved on the Scanner face leaves another roll's frame on its own face.
+        let mut next = store.settings().clone();
+        next.face = oni_settings::Face::Scanner;
+        next.levels.red.black = 0.2;
+        store.apply_at(Command::Write(Box::new(next)), 10.0);
+        assert_eq!((read(&b).face, read(&b).levels.red.black), (oni_settings::Face::Pro, 0.0));
+        assert_eq!((read(&c).face, read(&c).levels.red.black), (oni_settings::Face::Scanner, 0.2));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

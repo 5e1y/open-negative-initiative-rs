@@ -60,6 +60,7 @@ export component Panel inherits Surface {
             Tabs {
                 tabs: [@tr("Roll"), @tr("Crop"), @tr("Color"), @tr("Details")];
                 marked: [false, false, false, false];
+                disabled: [false, PanelState.crop-closed, false, false];
                 selected: PanelState.tab;
                 picked(i) => { PanelState.tab = i; PanelState.tab-picked(i); }
             }

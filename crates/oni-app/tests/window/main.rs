@@ -87,6 +87,7 @@ mod tab_bar;
 mod text_fields;
 mod together;
 mod together_all;
+mod together_tools;
 mod told;
 mod toolbar;
 mod tooltip;
@@ -230,6 +231,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click", tab_bar::a_tab_bar_bound_one_way_follows_its_owner_after_a_click),
     ("text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word", text_fields::a_field_entered_selects_its_value_and_a_double_click_a_word),
     ("together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own", together::frames_opened_together_take_one_drag_as_one_step_and_one_left_out_keeps_its_own),
+    ("together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame", together_tools::compare_splits_the_sheet_and_the_crop_waits_for_one_frame),
     ("together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened", together_all::every_frame_together_takes_every_step_whichever_way_they_were_opened),
     ("toolbar::the_bars_keys_keep_their_widths_as_the_window_widens", toolbar::the_bars_keys_keep_their_widths_as_the_window_widens),
     ("tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift", tree_hand::the_trees_pick_open_their_menus_and_rename_as_swift),

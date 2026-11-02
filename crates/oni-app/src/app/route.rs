@@ -37,6 +37,23 @@ impl Ctl {
         self.route_to(out);
     }
 
+    /// Frames shown together leave the crop and De-dust, each frame's own, for the last panel.
+    pub(super) fn leave_frame_tools(self: &Rc<Self>) {
+        let Some(w) = self.window() else { return };
+        let tab = w.global::<PanelState>().get_tab();
+        if tab != tabs::CROP && tab != tabs::DEDUST {
+            return;
+        }
+        self.sync_route(tab);
+        let out = {
+            let mut s = self.state.borrow_mut();
+            s.route.armed = false;
+            s.route.way_out()
+        };
+        self.route_to(out);
+        self.publish_dedust();
+    }
+
     /// `toggleCorrecting()`: the Lab left first, then into the dust tool or out to the last panel.
     pub(super) fn toggle_correcting(self: &Rc<Self>) {
         let Some(w) = self.window() else { return };

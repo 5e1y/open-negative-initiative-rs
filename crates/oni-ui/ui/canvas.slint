@@ -19,6 +19,9 @@ export component CanvasCard inherits Card {
     // A column key pressed: true for the Library's, so the shell drops that column's reveal.
     callback column-toggled(bool);
     dimmed: Canvas.cropping;
+    // Against the panel's plot, square; every corner square once both columns are folded.
+    square-top-right: true;
+    square: root.library-hidden && root.panel-hidden;
     // The sheet frames together lie on: white under positives, as paper is.
     property <Ground> sheet: Canvas.positive ? Ground.paper : Ground.sheet;
     changed width => { Canvas.width = self.width - 2 * CardStyle.padding; Canvas.resized(); }
@@ -58,14 +61,6 @@ export component CanvasCard inherits Card {
             clip-width: Canvas.frame-clip-width;
             clip-height: Canvas.frame-clip-height;
         }
-        for n in Canvas.numbers: EdgePrint {
-            x: n.x;
-            y: n.y;
-            height: Canvas.number-band;
-            text: n.text;
-            size: Canvas.number-size;
-            ink: Canvas.positive ? Canvas.positive-inks.number : Canvas.negative-inks.number;
-        }
         // Held at the left edge: an element with no place is centred in its parent.
         if Canvas.split >= 0: Rectangle {
             x: 0;
@@ -78,11 +73,20 @@ export component CanvasCard inherits Card {
                 y: Canvas.before-y;
                 width: Canvas.before-width;
                 height: Canvas.before-height;
-                ground: Ground.canvas;
+                ground: Canvas.together ? root.sheet : Ground.canvas;
                 fit: Fit.fill;
                 source: Canvas.before;
                 revision: Canvas.before-revision;
             }
+        }
+        // Over Compare's before too: a frame's number is the same on both sides.
+        for n in Canvas.numbers: EdgePrint {
+            x: n.x;
+            y: n.y;
+            height: Canvas.number-band;
+            text: n.text;
+            size: Canvas.number-size;
+            ink: Canvas.positive ? Canvas.positive-inks.number : Canvas.negative-inks.number;
         }
         // A pinch zooms about its centre; a drag pans, a double click toggles 100 %.
         ScaleRotateGestureHandler {
@@ -319,5 +323,5 @@ export component CanvasCard inherits Card {
             }
         }
     }
-    CardCorners { width: parent.width; height: parent.height; }
+    CardCorners { width: parent.width; height: parent.height; square-top-right: root.square-top-right; square: root.square; }
 }

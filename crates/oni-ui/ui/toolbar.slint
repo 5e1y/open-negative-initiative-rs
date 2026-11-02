@@ -22,6 +22,8 @@ export component RollStepKeys inherits ButtonGroup {
 export global Bar {
     in property <bool> editing;
     in property <bool> has-photo;
+    // A photo shown alone: the crop and De-dust, each frame's own, wait while frames show together.
+    in property <bool> single;
     in property <bool> can-undo;
     in property <bool> can-redo;
     in property <bool> can-paste;
@@ -89,7 +91,7 @@ component EditorKeys inherits HorizontalLayout {
     spacing: root.compact ? ShellStyle.compact-gap : ShellStyle.bar-gap;
     // `centreKeys`: each family on its own plate, De-dust alone and never plated.
     ButtonGroup { plate: true;
-        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo; }
+        Item { action: Act.framing; icon: Icons.framing; help: @tr("Crop and Straighten ({})", KeyWords.command + "K"); enabled: Bar.has-photo && Bar.single; }
         Item { action: Act.compare; icon: Icons.compare; help: @tr("Compare"); enabled: Bar.has-photo; }
         SelectAll { }
     }
@@ -127,7 +129,7 @@ component EditorKeys inherits HorizontalLayout {
         icon: Bar.dedust ? Icons.done : Icons.correction;
         help: Bar.dedust ? @tr("Leave De-dust") : @tr("De-dust");
         on: Bar.dedust;
-        enabled: Bar.has-photo;
+        enabled: Bar.has-photo && Bar.single;
     }
     ButtonGroup { plate: true;
         ResetScan { compact: root.compact; }

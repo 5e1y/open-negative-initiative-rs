@@ -30,6 +30,8 @@ impl Ctl {
             let select_all = !modal && !preparing && if gallery { !s.order.is_empty() } else { open };
             let (opened, read_done, filter, muted, columns) = (s.opened.is_some(), s.read_done, s.filter, s.muted, s.columns);
             let (split, screen_gamut, decoded) = (s.compare.split.is_some(), s.screen_gamut, s.negative.is_some());
+            // The crop and De-dust are each frame's own, out of reach while frames show together.
+            let single = s.together.is_none();
             // `zoomRung(by:)`: a step of the ladder, until the canvas is measured or at either end.
             let rung = |by: i32| match (s.full_size, canvas) {
                 (Some(full), Some(view)) if !gallery && decoded => Viewport::rung(s.viewport.effective_scale(full, view), s.viewport.is_fitted(), by).is_some(),
@@ -110,11 +112,11 @@ impl Ctl {
                 compare: !gallery && decoded,
                 hide_library: !gallery,
                 hide_panel: !gallery,
-                framing: open && !gallery,
-                correction: open,
+                framing: open && !gallery && single,
+                correction: open && single,
                 bigger_brush: painting,
                 smaller_brush: painting,
-                mirror: open,
+                mirror: open && single,
                 screen_gamut: true,
                 emulator: open && !gallery,
                 medal: selected > 0 && !modal,

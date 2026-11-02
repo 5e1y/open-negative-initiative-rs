@@ -85,12 +85,14 @@ impl Ctl {
         self.publish_menus();
         let bar = w.global::<Bar>();
         let gallery = w.global::<App>().get_gallery();
-        let (has_photo, selected, targets) = {
+        let (has_photo, single, selected, targets) = {
             let s = self.state.borrow();
-            (s.open.is_some(), s.picks.selection.len(), s.target_count(gallery))
+            (s.open.is_some(), s.together.is_none(), s.picks.selection.len(), s.target_count(gallery))
         };
         let (live, titles) = (w.global::<Menus>().get_live(), w.global::<Menus>().get_titles());
         bar.set_has_photo(has_photo);
+        bar.set_single(single);
+        w.global::<PanelState>().set_crop_closed(!single);
         bar.set_can_undo(live.undo);
         bar.set_can_redo(live.redo);
         bar.set_undo_title(titles.undo);
