@@ -1,6 +1,6 @@
 // The editors' plots: a recessed screen holding a histogram, lines and dots Rust lays out, and the
 // track whose handles a press catches; every gesture is handed to Rust with its place in points.
-import { Colour, Space, Stroke, SliderStyle, PlotStyle } from "theme.slint";
+import { Colour, Space, Stroke, SliderStyle, PlotStyle, ScannerStyle } from "theme.slint";
 import { Inward } from "depth.slint";
 import { Label, Picture, Ground, Fit, TextRole, Tone } from "base.slint";
 import { Knob, Rail } from "slider.slint";
@@ -57,6 +57,8 @@ export component Plot inherits Rectangle {
     in property <int> histogram-revision;
     in property <bool> grid: true;
     in property <bool> screen: true;
+    // Out of its hollow, on the scanner screen's black glass rather than the ground beneath.
+    in property <bool> glass;
     in property <bool> interactive: true;
     in property <bool> focusable;
     in property <[PlotLine]> lines;
@@ -72,7 +74,7 @@ export component Plot inherits Rectangle {
     callback scrolled(int, length, length, length, bool) -> bool;
     callback key(int, string, bool, bool) -> bool;
     callback focus-changed(int, bool);
-    background: root.screen ? Colour.canvas : transparent;
+    background: root.screen ? Colour.canvas : root.glass ? ScannerStyle.glass : transparent;
     border-radius: root.screen ? PlotStyle.radius : 0px;
     clip: true;
     drop-shadow-color: root.screen ? Colour.white.with-alpha(SliderStyle.rim) : transparent;

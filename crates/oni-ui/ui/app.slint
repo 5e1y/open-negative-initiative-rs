@@ -362,13 +362,14 @@ export component MainWindow inherits AppWindow {
                         revealed <=> root.revealed-library;
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.library-width + 2 * Space.s; height: card.height;
-                        Tree { width: parent.width; height: parent.height; beside-photo: true; cache-rendering-hint: true; }
+                        // Laid by the card's column, inside its inset: sized on the strip, it ran past the card.
+                        Tree { beside-photo: true; cache-rendering-hint: true; }
                     }
                     if root.beside-photo && App.panel-hidden: FloatingColumn {
                         revealed <=> root.revealed-panel; trailing: true;
                         room: parent.width; card-hovered: card-area.has-hover;
                         width: ShellStyle.panel-width + 2 * Space.s; height: card.height;
-                        Panel { height: parent.height; }
+                        Panel { }
                     }
                     // The export under way at the canvas's top-left corner, the editor and the gallery free beside it.
                     if Exporting.job-shown && !Exporting.shown: ExportProgress {

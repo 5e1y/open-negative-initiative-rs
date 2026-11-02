@@ -5177,5 +5177,19 @@
     "title": "The 2.5D surfaces at half their strength",
     "status": "done",
     "detail": "Owner's call: Outward's rim light, sheen, foot shade, edge and cast shadow, and Inward's shade, edge and lip, at half Swift's values; the tab bar's hollow, a lighter Inward, halved with them. The keycaps' relief is unchanged."
+  },
+  {
+    "id": 1068,
+    "type": "fix",
+    "title": "The folded Library slides over the canvas whole",
+    "status": "done",
+    "detail": "Owner's report: the Library slid over the canvas cut its fields and stars at its right edge. The floating column's tree was sized on the strip, its card's inset included, and ran past the card by twice the inset across and down; the tree and the panel now take the card's column. Seen on a shot of both columns slid over."
+  },
+  {
+    "id": 1069,
+    "type": "change",
+    "title": "The editor's histogram on the scanner screen's black glass",
+    "status": "done",
+    "detail": "Owner's call: the panel's output histogram lies on ScannerStyle.glass, the Scanner face's screen black, instead of the panel's ground."
   }
 ]

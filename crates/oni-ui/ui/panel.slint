@@ -17,11 +17,12 @@ export component Panel inherits Surface {
     init => { PanelState.header = self.header; }
     VerticalLayout {
         // `labScreen`: on the Scanner face the scanner's screen holds the plot band, but under Details.
-        // `DSHistogram` on the panel's ground; Lighting's curves over it on the Color tab.
+        // `DSHistogram` on the scanner screen's black glass; Lighting's curves over it on the Color tab.
         if !Lab.shown && PanelState.tab != 3: Plot {
             plot: 5;
             height: PlotStyle.main;
             screen: false;
+            glass: true;
             grid: false;
             interactive: false;
             histogram: Plots.output;
