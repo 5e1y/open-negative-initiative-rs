@@ -5123,6 +5123,13 @@
     "detail": "oni-app 1.5.3, carrying the Windows update feed (#1058); the 1.5 welcome and splash kept."
   },
   {
+    "id": 1100,
+    "type": "docs",
+    "title": "A README for developers: this is the working repository",
+    "status": "done",
+    "detail": "README rewritten for whoever reads, builds or changes the code, with the releases repository, website and manual named for everything else: stack, workspace map, build, checks, rules, keys, licences. Finder's .DS_Store files untracked and ignored."
+  },
+  {
     "id": 1060,
     "type": "change",
     "title": "Windows checks counted by the site, and the system named on install",
