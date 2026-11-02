@@ -10,19 +10,29 @@ fn the_notes_are_swifts_and_each_names_its_heading_once() {
     let mut unique = ids.clone();
     unique.dedup();
     assert_eq!(unique.len(), ids.len());
-    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.5.1"));
+    assert_eq!((SEEN_KEY, WELCOME_KEY, EDITION), ("whatsNewSeen", "welcomeSeen", "1.5"));
 }
 
 #[test]
 fn the_menu_and_the_heading_name_the_editions_release() {
-    assert_eq!(release(EDITION), "1.5");
+    assert_eq!(release(EDITION), EDITION);
     assert_eq!(release("1.3"), "1.3");
     assert_eq!(release("2.0.4.1"), "2.0");
-    // Twin: the edition itself, or the former 1.2, is not what both name.
-    assert_ne!(release(EDITION), EDITION);
-    assert_ne!(release(EDITION), "1.2");
+    // Twin: a patch is not what both name.
+    assert_ne!(release("1.5.1"), "1.5.1");
     // The sheet names the app's own release, so a new release brings its own edition.
-    assert_eq!(release(EDITION), release(env!("CARGO_PKG_VERSION")));
+    assert_eq!(EDITION, release(env!("CARGO_PKG_VERSION")));
+}
+
+#[test]
+fn the_welcome_shows_once_a_release_whatever_patch_wrote_it_seen() {
+    assert!(welcome_due(None));
+    assert!(!welcome_due(Some(EDITION)));
+    let patch = format!("{EDITION}.1");
+    assert!(!welcome_due(Some(&patch)), "a patch of this release already showed it");
+    // Twins: an earlier release's sheet, or the former 1.4.2's, leaves this one due.
+    assert!(welcome_due(Some("1.4")));
+    assert!(welcome_due(Some("1.4.2")));
 }
 
 /// `WhatsNew.selfCheck`: every note hangs on a heading the interface draws, and every heading's

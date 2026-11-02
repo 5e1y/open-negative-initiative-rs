@@ -1,5 +1,5 @@
 //! The Help menu in the window: What's New's notes on the headings they changed, the welcome sheet
-//! shown once per edition, Report a Bug sending its sealed log off this thread, and the console.
+//! shown once per release, Report a Bug sending its sealed log off this thread, and the console.
 
 use super::{Ctl, with_shell};
 use crate::{ConsoleWindow, Help, News, report, system};
@@ -19,9 +19,10 @@ pub type Reporter = Arc<dyn Fn(&str, Option<String>) -> Result<(), String> + Sen
 
 /// `WhatsNew.preferenceKey`: the notes a hover has read.
 pub const SEEN_KEY: &str = "whatsNewSeen";
-/// `WelcomeSheet.preferenceKey` and `edition`: a new edition shows the sheet to everyone again.
+/// `WelcomeSheet.preferenceKey` and `edition`: the release the sheet speaks of, 1.X; a new one shows it
+/// to everyone again, a patch of a release seen never does.
 pub const WELCOME_KEY: &str = "welcomeSeen";
-pub const EDITION: &str = "1.5.1";
+pub const EDITION: &str = "1.5";
 const SITE: &str = "https://open-negative-initiative.com";
 /// `DS.Motion.consoleRefresh`.
 const CONSOLE_REFRESH: Duration = Duration::from_millis(500);
@@ -91,6 +92,11 @@ pub const NOTES: [(&str, &str, &str); 6] = [
 /// `1.2` of `1.2.1`: the release an edition belongs to, as the menu and the sheet's heading name it.
 pub fn release(edition: &str) -> &str {
     edition.match_indices('.').nth(1).map_or(edition, |(at, _)| &edition[..at])
+}
+
+/// Whether the sheet is due after `seen`, the edition last shown: one a patch wrote names its release.
+pub fn welcome_due(seen: Option<&str>) -> bool {
+    seen.map(release) != Some(EDITION)
 }
 
 /// The default reporter: a JSON post to the site's `/report`, as `BugReport.send` makes it.
@@ -192,9 +198,9 @@ impl Ctl {
         self.publish_news();
     }
 
-    /// `WelcomeSheet.isDue`: this edition not yet shown on this Mac.
+    /// `WelcomeSheet.isDue`: this release's sheet not yet shown on this computer.
     pub fn welcome_due(&self) -> bool {
-        self.state.borrow().preferences.string(WELCOME_KEY) != Some(EDITION)
+        welcome_due(self.state.borrow().preferences.string(WELCOME_KEY))
     }
 
     pub(super) fn open_welcome(&self) {

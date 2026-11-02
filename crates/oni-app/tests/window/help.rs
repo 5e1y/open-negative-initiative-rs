@@ -66,7 +66,7 @@ pub(crate) fn the_help_menus_surfaces_behave_as_swifts() {
     assert!(help.get_welcome_shown());
     rig.key("\r");
     assert!(!help.get_welcome_shown());
-    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.5.1"));
+    assert_eq!(Preferences::load(&support).string("welcomeSeen"), Some("1.5"));
 
     // Report a Bug: a refused post stays on the sheet with its reason; an accepted one thanks.
     first.ctl.act(oni_app::Act::Report);
