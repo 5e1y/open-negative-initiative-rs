@@ -27,6 +27,7 @@ mod export_sheet;
 mod export_window;
 mod export_speed;
 mod extended;
+mod first_frame;
 mod freshness;
 mod full_release;
 mod frontier_look;
@@ -135,6 +136,7 @@ const CHECKS: &[(&str, fn())] = &[
     ("extended::a_patch_reduces_as_core_image_reduces_it", extended::a_patch_reduces_as_core_image_reduces_it),
     ("extended::a_patch_lands_and_feathers_as_swift_s", extended::a_patch_lands_and_feathers_as_swift_s),
     ("extended::an_export_writes_swift_s_pixels_profile_and_tags", extended::an_export_writes_swift_s_pixels_profile_and_tags),
+    ("first_frame::a_first_drawable_owes_nothing_to_the_occlusion_state", first_frame::a_first_drawable_owes_nothing_to_the_occlusion_state),
     ("frontier_look::a_frontier_look_file_is_read_again_on_each_save", frontier_look::a_frontier_look_file_is_read_again_on_each_save),
     ("gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand", gallery::the_gallery_picks_opens_labels_and_organises_as_swift_and_the_archive_moves_nothing_by_hand),
     ("gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop", gallery_leftovers::the_gallery_lands_on_the_open_photo_renames_its_headings_and_takes_a_drop),

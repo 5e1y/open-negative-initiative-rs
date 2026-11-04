@@ -32,6 +32,7 @@ pub mod loupe;
 pub mod mapped;
 pub mod measuring;
 pub mod motion;
+pub mod on_screen;
 pub mod organise;
 pub mod outside;
 pub mod passes;

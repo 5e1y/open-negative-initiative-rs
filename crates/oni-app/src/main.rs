@@ -175,10 +175,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             };
             viewport::note_wheel(wheel);
         }
+        if let WindowEvent::Occluded(occluded) = event {
+            timing::line(if *occluded { "window occluded" } else { "window visible" });
+        }
         if matches!(event, WindowEvent::Resized(_) | WindowEvent::ScaleFactorChanged { .. }) {
             if let Some(w) = lit.upgrade() {
                 lights(&w);
             }
+            oni_app::on_screen::settling(lit.clone());
             gate.hold();
             let open = gate.clone();
             let _ = slint::invoke_from_event_loop(move || open.release());
@@ -214,6 +218,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             if let Some(w) = main.upgrade() {
                 let _ = w.show();
                 lights(&w);
+                oni_app::on_screen::shown(w.as_weak());
             }
         })?;
     } else {

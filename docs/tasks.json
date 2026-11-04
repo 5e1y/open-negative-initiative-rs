@@ -5212,5 +5212,19 @@
     "title": "Version 1.5.4",
     "status": "done",
     "detail": "oni-app 1.5.4, carrying frames together's fixes and the editor's design changes (#1061-#1070); the 1.5 welcome and splash kept."
+  },
+  {
+    "id": 1072,
+    "type": "fix",
+    "title": "A Mac window's first frame owes nothing to the occlusion state, so a window can no longer stay away",
+    "status": "done",
+    "detail": "Report from an Intel MacBook Pro with a 4K screen (releases issue 13): the window does not show until the screen is unplugged and plugged back. wgpu's Metal surface refuses a drawable while AppKit's occlusionState lacks Visible, and Slint's backend then orders the window in at alpha 0 until a first frame lands; Apple says only that a fully transparent window may count as visible. Where it does not, nothing ever shows and the log holds no error, until any event turns the state over. Emulated on the 1.5.4 binary with an injected library (tools/window_recorder.m) answering not visible at alpha 0: the window stays on screen at alpha 0, no nextDrawable in 9 s; the answer turned truthful, the window shows at once. On this M2 Max the real answer comes 12 to 55 ms after ordering in. vendor/wgpu-hal is 30.0.1 with upstream's #10302, merged but in no release: a surface never seen visible acquires. The first frame is now drawn before the window is ordered in, so Slint's alpha 0 never engages on any Mac (recorded: nextDrawable before makeKeyAndOrderFront, no setAlphaValue); under the same emulation the window stands at alpha 1 with its frames. The x86_64 slice runs the same sequence under Rosetta and the 4K screen at 2x showed nothing different. Not run on an Intel Mac: whether this is the reporter's cause awaits their log, and their second symptom (resizing moves the elements, not the window) does not reproduce here. Check: first_frame::a_first_drawable_owes_nothing_to_the_occlusion_state on real AppKit and Metal with no window on screen (twins: seen visible then covered, a window is refused; visible again, it acquires); it fails with upstream's gate put back."
+  },
+  {
+    "id": 1073,
+    "type": "feature",
+    "title": "The log says what the system shows of the main window",
+    "status": "done",
+    "detail": "A window that stays away or keeps its old size raises no error, so a report could not tell them apart. on_screen.rs writes the screens (pixels, scale, rate) when the window is shown; three seconds later, and once settled after each resize or change of screen, AppKit's alpha, ordering and occlusion answer, the frame, the view, the Metal layer and the drawable, with the frames drawn (hz::frames); main.rs writes each turn of the occlusion state. Read on the Mac under the emulation of #1072: alpha 1.00, frames drawn, occlusion says not visible."
   }
 ]

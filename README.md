@@ -24,7 +24,7 @@ from this code. What you see here is its day-to-day state, work in progress incl
 | Pixels | `rgba32float` between every stage; a decode and its reductions in `rgba16float` |
 | RAW decoding | LibRaw 0.22.2, vendored in `crates/oni-decode/libraw` and built by `build.rs`, every automatic knob pinned in `csrc/pinned.c` |
 | Colour | Little CMS (`lcms2`) for ICC profiles |
-| Interface | Slint 1.18.1, with femtovg and Slint's femtovg renderer vendored in `vendor/` |
+| Interface | Slint 1.18.1, with femtovg, Slint's femtovg renderer and wgpu-hal vendored in `vendor/` |
 | Files | One JSON sidecar beside each photo, the source of truth; a disposable SQLite index |
 | Languages | English in the source; French and Spanish in gettext catalogues |
 
@@ -174,5 +174,6 @@ and reports on the project's feeds and website until you change those constants 
 
 GPL-3.0-or-later, see [`LICENSE`](LICENSE). Under their own licences, each kept beside its copy: LibRaw
 (LGPL-2.1 or CDDL-1.0, `crates/oni-decode/libraw`), femtovg (MIT or Apache-2.0, `vendor/femtovg`), Slint's
-femtovg renderer (GPL-3.0-only or Slint's own licences, `vendor/i-slint-renderer-femtovg`), notify
-(CC0-1.0, `vendor/notify`), and the Inter and Enriqueta fonts (OFL, `crates/oni-ui/fonts`).
+femtovg renderer (GPL-3.0-only or Slint's own licences, `vendor/i-slint-renderer-femtovg`), wgpu-hal (MIT or
+Apache-2.0, `vendor/wgpu-hal`), notify (CC0-1.0, `vendor/notify`), and the Inter and Enriqueta fonts (OFL,
+`crates/oni-ui/fonts`).

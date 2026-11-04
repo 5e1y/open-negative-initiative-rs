@@ -55,6 +55,9 @@ the code; a costly trap keeps its constraint and its number in two lines.
   Metal holds about 2.6 MB of driver memory per pass until its command buffer completes (590 MB on a first frame). Slint's femtovg renderer is
   vendored too (`vendor/i-slint-renderer-femtovg`, 1.18.1) for no vsync wait on present and three drawables
   (`ONI:` comments in `wgpu.rs`): the display link still paces the draws; with two, the interface waited on drawables.
+- **wgpu-hal is vendored** (`vendor/wgpu-hal`, 30.0.1, `[patch.crates-io]`) for upstream's fix, in no release yet: a window's first
+  frame owes nothing to AppKit's occlusion state. Without it Slint holds a window at alpha 0 until a frame wgpu refuses until that
+  state says visible: where it never does, nothing shows and nothing is logged. The copy goes at the release that carries the fix.
 - **femtovg redraws the whole window at every frame**: the columns and the bar carry `cache-rendering-hint`, or a
   pan redraws every row of the tree. A gesture renders the view lighter, sharp once the hand rests (`SETTLE`).
 

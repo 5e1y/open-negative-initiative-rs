@@ -75,3 +75,6 @@ femtovg = { path = "vendor/femtovg" }
 # descriptor per watched file and runs out at 256 (`ONI:` comment in src/lib.rs).
 notify = { path = "vendor/notify" }
 i-slint-renderer-femtovg = { path = "vendor/i-slint-renderer-femtovg" }
+# wgpu-hal 30.0.1 (MIT OR Apache-2.0): on the Mac a window's first frame owes nothing to AppKit's occlusion
+# state (`ONI:` comment in src/metal/surface.rs).
+wgpu-hal = { path = "vendor/wgpu-hal" }

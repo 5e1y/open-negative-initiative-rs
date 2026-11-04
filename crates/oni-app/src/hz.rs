@@ -10,6 +10,8 @@ use std::time::Duration;
 thread_local! {
     /// The canvas changed since the last frame drawn; frames drawn, and those with a change, this second.
     static METER: (Cell<bool>, Cell<u32>, Cell<u32>) = const { (Cell::new(false), Cell::new(0), Cell::new(0)) };
+    /// Frames drawn since the window opened.
+    static FRAMES: Cell<u64> = const { Cell::new(0) };
 }
 
 /// The canvas shows something new from the next frame drawn.
@@ -17,8 +19,14 @@ pub fn changed() {
     METER.with(|m| m.0.set(true));
 }
 
+/// The frames the window has drawn so far.
+pub fn frames() -> u64 {
+    FRAMES.with(Cell::get)
+}
+
 /// A frame drawn, counted as a canvas frame when the canvas changed since the one before.
 fn drawn() {
+    FRAMES.with(|f| f.set(f.get() + 1));
     METER.with(|m| {
         m.1.set(m.1.get() + 1);
         if m.0.replace(false) {
@@ -69,5 +77,8 @@ mod tests {
         assert_eq!(METER.with(|m| (m.1.get(), m.2.get())), (4, 2));
         // Twin: a meter counting every frame for the canvas would read 4, the window's rate.
         assert_ne!(METER.with(|m| m.2.get()), METER.with(|m| m.1.get()));
+        // The whole count outlasts the second's: the rate's reset leaves it.
+        METER.with(|m| m.1.set(0));
+        assert_eq!(frames(), 4);
     }
 }
