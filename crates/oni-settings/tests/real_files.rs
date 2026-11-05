@@ -54,7 +54,9 @@ fn every_roll_8_sidecar_round_trips() {
     let (mut identical, mut plain) = (0, 0);
     for path in &files {
         let stored = swift_form(&std::fs::read_to_string(path).unwrap());
-        assert_eq!(value(&stored)["version"], 19);
+        // A working copy holds frames the app has since rewritten at the current format.
+        let version = value(&stored)["version"].as_i64().unwrap();
+        assert!(version == 19 || version == codec::VERSION, "{}: format {version}", path.display());
         let original = current(&stored);
         // `autoBalance` is this app's own key, which a sidecar write keeps and the codec never lays.
         let mut expected = value(&original);

@@ -5268,5 +5268,12 @@
     "title": "The log says nothing of the person using the app: every line masked on its way out, names marked in the notices",
     "status": "done",
     "detail": "Owner's question: do the logs leak personal data? Measured on the 1.5.5 binary: the raw oni.log held whole paths ('Not found' with a disk's and folders' names), as only a sealed report was scrubbed; a sealed report kept a phone's name and whatever followed a comma or a bracket in a path. Every line is now masked on the log thread (anonymity::scrubbed), so the file, stderr, the console's Copy and a report read the same. A name inside a notice goes through oni_i18n::named (Unicode's isolates): the log masks it as <name>, told, say and advise lift the marks for the screen, which shows what it showed. Marked: opening refusals, thumbnails, phone names, a measure's left-out frames, a carry's and a trash's refused files, a frame with nothing to balance. A path ends at a clause's separator, a bracket it did not open or its last closing quote, so commas, brackets and apostrophes in folder names stay inside; a network path starts one. scripts/release-build now builds both Mac architectures, source paths remapped and the linker's debug map stripped, so a binary and a panic's backtrace name no folder or account of the build machine. Checks: timing's child writes a real log file with private names (twin: the same line unmasked holds them); every catalogue template naming something bare must mark it or be listed as never logged (twin: a planted template is caught); a window check that the screen shows the path whole, without marks. Real app, French: 'shown · Ouvrir · Introuvable : <name>', no private word in the file or on stderr. Limit: a bare name with no slash inside an error text from outside the app is not seen. Not run on Windows."
+  },
+  {
+    "id": 1080,
+    "type": "fix",
+    "title": "Two real-roll checks state the roll and the rule as they are",
+    "status": "done",
+    "detail": "Both fail only with ONI_RAW_DIR set. Reset to Default drops every crop (owner's call of 2026-10-31); its check still asked for the crop kept, and passed on any roll without a crop. It now asks for the crop gone, undo bringing the bytes back being its twin. The sidecar round trip accepts a frame the app has rewritten at the current format, as a working copy holds some."
   }
 ]

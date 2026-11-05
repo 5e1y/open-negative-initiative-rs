@@ -164,7 +164,6 @@ fn a_measure_lands_what_swift_wrote_on_every_frame_as_one_gallery_step_and_undoe
 #[test]
 fn reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_byte() {
     let Some(roll) = Roll::copy("reset") else { return };
-    let drawn: BTreeMap<String, PipelineSettings> = roll.frames.iter().map(|f| (f.clone(), roll.settings(f))).collect();
     let open = roll.frames[5].clone();
     let mut store = roll.store();
     store.open(&open).unwrap();
@@ -184,7 +183,7 @@ fn reset_to_default_reaches_the_whole_roll_from_one_frame_and_undoes_byte_for_by
     for f in &roll.frames {
         let s = roll.settings(f);
         assert!(s.roll_reference.is_none(), "{f} leaves its roll");
-        assert_eq!(s.geometry.crop, drawn[f].geometry.crop, "{f} keeps its crop");
+        assert_eq!(s.geometry.crop, PipelineSettings::default().geometry.crop, "{f} loses its crop");
     }
     assert!(store.measured_with(id).is_empty(), "the roll's measure is forgotten");
     store.undo(Surface::Gallery);
